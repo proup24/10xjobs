@@ -202,6 +202,20 @@ export class FakeProfilesRepository extends ProfilesRepository {
     return profile;
   }
 
+  async setState(
+    workspaceId: string,
+    profileId: string,
+    state: ProfileState,
+    publishedAt: Date | null,
+  ): Promise<ProfileWithSkills> {
+    const profile = this.rows.find(
+      (row) => row.workspaceId === workspaceId && row.id === profileId,
+    );
+    if (!profile) throw new Error('missing profile');
+    Object.assign(profile, { state, publishedAt });
+    return profile;
+  }
+
   async setResume(
     workspaceId: string,
     profileId: string,

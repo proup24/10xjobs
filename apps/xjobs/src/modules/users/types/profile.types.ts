@@ -55,3 +55,7 @@ export type ProfileView = Omit<
     uploadedAt: Date;
   } | null;
 };
+
+export type PublishedProfileView = ProfileView & {
+  querySearches: { created: number; existing: number };
+};

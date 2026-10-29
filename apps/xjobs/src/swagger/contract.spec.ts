@@ -81,7 +81,7 @@ describe('API contract', () => {
   });
 
   it('covers every route', () => {
-    expect(operations(document)).toHaveLength(20);
+    expect(operations(document)).toHaveLength(22);
   });
 
   it('documents every success body as a SuccessResponseDto with a typed data', () => {

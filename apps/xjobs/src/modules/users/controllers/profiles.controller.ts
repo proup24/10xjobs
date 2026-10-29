@@ -2,17 +2,20 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
   HttpStatus,
   Param,
   ParseUUIDPipe,
+  Post,
   Put,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { ApiErrorResponses, ApiSuccessResponse } from 'src/common/decorators';
 import { ProfileResponseDto } from '../dto/profile.response.dto';
+import { PublishProfileResponseDto } from '../dto/publish-profile.response.dto';
 import { UpsertProfileDto } from '../dto/upsert-profile.dto';
 import { ProfilesService } from '../services/profiles.service';
-import type { ProfileView } from '../types';
+import type { ProfileView, PublishedProfileView } from '../types';
 
 @ApiTags('profiles')
 @ApiErrorResponses(HttpStatus.UNAUTHORIZED, HttpStatus.INTERNAL_SERVER_ERROR)
@@ -42,5 +45,27 @@ export class ProfilesController {
     @Param('userId', ParseUUIDPipe) userId: string,
   ): Promise<ProfileView> {
     return this.profiles.get(workspaceId, userId);
+  }
+
+  @ApiSuccessResponse(PublishProfileResponseDto)
+  @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
+  @HttpCode(HttpStatus.OK)
+  @Post('publish')
+  publish(
+    @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
+    @Param('userId', ParseUUIDPipe) userId: string,
+  ): Promise<PublishedProfileView> {
+    return this.profiles.publish(workspaceId, userId);
+  }
+
+  @ApiSuccessResponse(ProfileResponseDto)
+  @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
+  @HttpCode(HttpStatus.OK)
+  @Post('unpublish')
+  unpublish(
+    @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
+    @Param('userId', ParseUUIDPipe) userId: string,
+  ): Promise<ProfileView> {
+    return this.profiles.unpublish(workspaceId, userId);
   }
 }

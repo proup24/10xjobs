@@ -1,3 +1,4 @@
+import type { QuerySearchService } from 'src/modules/query-search';
 import { createHash } from 'node:crypto';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import {
@@ -33,7 +34,7 @@ describe('ResumeService', () => {
     profiles = new FakeProfilesRepository();
     storage = new MemoryStorageService();
     service = new ResumeService(
-      new ProfilesService(users, profiles),
+      new ProfilesService(users, profiles, {} as QuerySearchService),
       profiles,
       storage,
       'resumes',

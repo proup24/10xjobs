@@ -1,10 +1,23 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Arrangement,
+  Position,
+  ProfileState,
+  Region,
+  Seniority,
+  Technology,
+} from 'src/common/enums';
+import {
+  QuerySearchService,
+  type QuerySearchProfileInput,
+} from 'src/modules/query-search';
 import { ProfilesRepository } from '../repositories/profiles.repository';
 import { UsersService } from './users.service';
 import type {
   ProfileInput,
   ProfileView,
   ProfileWithSkills,
+  PublishedProfileView,
   SkillInput,
 } from '../types';
 
@@ -47,11 +60,35 @@ export function toProfileView(profile: ProfileWithSkills): ProfileView {
   };
 }
 
+/** What query search builders are generated from; importance 0 skills stay in so the builders can drop them. */
+export function toQuerySearchInput(
+  profile: ProfileWithSkills,
+): QuerySearchProfileInput {
+  // Rows carry plain string unions; the enums have the same values.
+  return {
+    positions: [...profile.positions] as Position[],
+    regions: [...profile.regions] as Region[],
+    arrangements: [...profile.arrangements] as Arrangement[],
+    seniority: profile.seniority as Seniority,
+    country: profile.country,
+    city: profile.city,
+    skills: profile.techStack.map(
+      ({ technology, importance, preference, mastery }) => ({
+        technology: technology as Technology,
+        importance,
+        preference,
+        mastery,
+      }),
+    ),
+  };
+}
+
 @Injectable()
 export class ProfilesService {
   constructor(
     private readonly users: UsersService,
     private readonly profiles: ProfilesRepository,
+    private readonly querySearch: QuerySearchService,
   ) {}
 
   async getOrThrow(
@@ -92,6 +129,38 @@ export class ProfilesService {
         userId,
         { ...fields, city: fields.city ?? null },
         skills,
+      ),
+    );
+  }
+
+  /** Generates the query search builders first, so a failure leaves the profile a draft. */
+  async publish(
+    workspaceId: string,
+    userId: string,
+  ): Promise<PublishedProfileView> {
+    const profile = await this.getOrThrow(workspaceId, userId);
+    const querySearches = await this.querySearch.generate(
+      workspaceId,
+      toQuerySearchInput(profile),
+    );
+    const published = await this.profiles.setState(
+      workspaceId,
+      profile.id,
+      ProfileState.published,
+      new Date(),
+    );
+    return { ...toProfileView(published), querySearches };
+  }
+
+  /** Query search builders are kept; they are permanent. */
+  async unpublish(workspaceId: string, userId: string): Promise<ProfileView> {
+    const profile = await this.getOrThrow(workspaceId, userId);
+    return toProfileView(
+      await this.profiles.setState(
+        workspaceId,
+        profile.id,
+        ProfileState.draft,
+        null,
       ),
     );
   }

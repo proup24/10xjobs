@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { getStorageConfig, type EnvironmentVariables } from 'src/config';
+import { QuerySearchModule } from 'src/modules/query-search';
 import { StorageModule } from 'src/modules/storage';
 import { WorkspacesModule } from 'src/modules/workspaces';
 import { ContactsController } from './controllers/contacts.controller';
@@ -25,7 +26,7 @@ import {
 import { UsersService } from './services/users.service';
 
 @Module({
-  imports: [WorkspacesModule, StorageModule],
+  imports: [WorkspacesModule, StorageModule, QuerySearchModule],
   controllers: [
     UsersController,
     ContactsController,

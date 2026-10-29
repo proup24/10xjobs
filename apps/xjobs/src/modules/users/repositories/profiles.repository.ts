@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import type { ProfileState } from 'src/common/enums';
 import { DatabaseService, type ProfileSkillRow } from 'src/database';
 import type {
   ProfileInput,
@@ -19,6 +20,12 @@ export abstract class ProfilesRepository {
     userId: string,
     data: ProfileInput,
     skills: SkillInput[],
+  ): Promise<ProfileWithSkills>;
+  abstract setState(
+    workspaceId: string,
+    profileId: string,
+    state: ProfileState,
+    publishedAt: Date | null,
   ): Promise<ProfileWithSkills>;
   abstract setResume(
     workspaceId: string,
@@ -76,6 +83,25 @@ export class PrismaProfilesRepository extends ProfilesRepository {
       }
       return { ...profile, techStack };
     });
+  }
+
+  async setState(
+    workspaceId: string,
+    profileId: string,
+    state: ProfileState,
+    publishedAt: Date | null,
+  ): Promise<ProfileWithSkills> {
+    const orm = this.database.db.orm.public;
+    const profile = await orm.Profile.where({
+      workspaceId,
+      id: profileId,
+    }).update({ state, publishedAt });
+    if (!profile) throw new Error(`Profile ${profileId} vanished`);
+    const techStack = await orm.ProfileSkill.where({
+      workspaceId,
+      profileId,
+    }).all();
+    return { ...profile, techStack };
   }
 
   async setResume(

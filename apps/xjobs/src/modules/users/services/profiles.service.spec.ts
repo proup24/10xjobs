@@ -10,6 +10,10 @@ import {
   Technology,
 } from 'src/common/enums';
 import { ProfilesService, toProfileView } from './profiles.service';
+import { QuerySearchService } from 'src/modules/query-search';
+import { FakeQuerySearchRepository } from 'src/modules/query-search/testing/fakes';
+import { WorkspacesService } from 'src/modules/workspaces';
+import { FakeWorkspacesRepository } from 'src/modules/workspaces/testing/fakes';
 import { FakeProfilesRepository, FakeUsersRepository } from '../testing/fakes';
 import { UsersService } from './users.service';
 import type { ProfileInput, SkillInput } from '../types';
@@ -45,13 +49,22 @@ const skill = (
 
 describe('ProfilesService', () => {
   let profiles: FakeProfilesRepository;
+  let querySearches: FakeQuerySearchRepository;
   let service: ProfilesService;
   let userId: string;
 
   beforeEach(async () => {
     const users = new UsersService(new FakeUsersRepository());
     profiles = new FakeProfilesRepository();
-    service = new ProfilesService(users, profiles);
+    querySearches = new FakeQuerySearchRepository();
+    service = new ProfilesService(
+      users,
+      profiles,
+      new QuerySearchService(
+        querySearches,
+        new WorkspacesService(new FakeWorkspacesRepository()),
+      ),
+    );
     userId = (await users.create('ws', { name: 'A', email: 'a@x.com' })).id;
   });
 
@@ -166,5 +179,76 @@ describe('ProfilesService', () => {
       'rust',
       'go',
     ]);
+  });
+
+  describe('publishing', () => {
+    const stack = [skill(Technology.nodejs, 8, 9), skill(Technology.go, 5, 7)];
+
+    it('creates profiles as unpublished drafts', async () => {
+      const view = await service.upsert('ws', userId, {
+        ...profileInput,
+        techStack: stack,
+      });
+      expect(view).toMatchObject({ state: 'draft', publishedAt: null });
+    });
+
+    it('publishes, generating query search builders once', async () => {
+      await service.upsert('ws', userId, { ...profileInput, techStack: stack });
+      const first = await service.publish('ws', userId);
+      expect(first.state).toBe('published');
+      expect(first.publishedAt).toBeInstanceOf(Date);
+      expect(first.querySearches.created).toBeGreaterThan(0);
+      const again = await service.publish('ws', userId);
+      expect(again.state).toBe('published');
+      expect(again.querySearches).toEqual({
+        created: 0,
+        existing: first.querySearches.created,
+      });
+    });
+
+    it('unpublishes to draft and keeps the query search builders', async () => {
+      await service.upsert('ws', userId, { ...profileInput, techStack: stack });
+      await service.publish('ws', userId);
+      const count = querySearches.rows.length;
+      const view = await service.unpublish('ws', userId);
+      expect(view).toMatchObject({ state: 'draft', publishedAt: null });
+      expect(querySearches.rows).toHaveLength(count);
+    });
+
+    it('keeps the state when a published profile is upserted', async () => {
+      await service.upsert('ws', userId, { ...profileInput, techStack: stack });
+      await service.publish('ws', userId);
+      const view = await service.upsert('ws', userId, {
+        ...profileInput,
+        techStack: stack,
+      });
+      expect(view.state).toBe('published');
+    });
+
+    it('404s publishing without a profile and creates nothing', async () => {
+      await expect(service.publish('ws', userId)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+      expect(querySearches.rows).toHaveLength(0);
+    });
+
+    it('publishes a profile whose skills all have importance 0 without technologies', async () => {
+      await service.upsert('ws', userId, {
+        ...profileInput,
+        techStack: [skill(Technology.go, 5, 7, 0)],
+      });
+      const view = await service.publish('ws', userId);
+      expect(view.state).toBe('published');
+      expect(querySearches.rows.length).toBeGreaterThan(0);
+      for (const row of querySearches.rows)
+        expect(row.technologies).toEqual([]);
+    });
+
+    it('stays a draft when generating query search builders fails', async () => {
+      await service.upsert('ws', userId, { ...profileInput, techStack: stack });
+      vi.spyOn(querySearches, 'create').mockRejectedValue(new Error('boom'));
+      await expect(service.publish('ws', userId)).rejects.toThrow('boom');
+      expect((await service.get('ws', userId)).state).toBe('draft');
+    });
   });
 });
