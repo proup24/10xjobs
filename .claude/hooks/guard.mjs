@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 
 const segments = (p) => p.split('/');
@@ -36,12 +37,16 @@ const blockPath = (p) => ({
 // Splits a command into segments of tokens. Unquoted shell operators and
 // grouping characters end a token; `;`, `&`, `|`, newlines, parentheses and
 // backticks also end the segment. Quote characters are removed, backslashes
-// escape the next character (outside quotes and inside "..."), `#` starts a
-// comment and heredoc bodies are skipped. `unclosed` is true when a quote is
-// still open at the end, so the caller can fail closed.
+// escape the next character (outside quotes and inside "..."), and `#` starts
+// a comment. Heredoc bodies are taken out of the token stream and returned in
+// `heredocs` with the index of their segment; `pipes` holds the index of every
+// segment piped into the next one. `unclosed` is true when a quote is still
+// open at the end, so the caller can fail closed.
 function parse(command) {
   const segments = [[]];
   const heredocs = [];
+  const pending = [];
+  const pipes = new Set();
   let token = '';
   let quote = null;
   const endToken = () => {
@@ -66,24 +71,35 @@ function parse(command) {
     } else if (ch === '<' && /^<<(?!<)/.test(command.slice(i))) {
       const m = /^<<(-?)\s*(['"]?)([\w.-]+)\2/.exec(command.slice(i));
       if (m) {
-        heredocs.push({ word: m[3], strip: m[1] === '-' });
+        pending.push({
+          word: m[3],
+          strip: m[1] === '-',
+          quoted: m[2] !== '',
+          seg: segments.length - 1,
+        });
         i += m[0].length - 1;
       } else i++;
       endToken();
     } else if (ch === '\n') {
       endToken();
       segments.push([]);
-      for (const { word, strip } of heredocs.splice(0)) {
-        // skip body lines up to and including the delimiter line
+      for (const { word, strip, ...heredoc } of pending.splice(0)) {
+        // body lines up to, not including, the delimiter line
+        const body = [];
         while (i + 1 < command.length) {
           const end = command.indexOf('\n', i + 1);
           const line = command.slice(i + 1, end < 0 ? command.length : end);
           i = end < 0 ? command.length : end;
           if ((strip ? line.trim() : line) === word) break;
+          body.push(line);
         }
+        heredocs.push({ ...heredoc, body: body.join('\n') });
       }
     } else if (/[;&|()`]/.test(ch)) {
       endToken();
+      const pipe =
+        ch === '|' && command[i + 1] !== '|' && command[i - 1] !== '|';
+      if (pipe) pipes.add(segments.length - 1);
       segments.push([]);
     } else if (/[\s<>]/.test(ch)) {
       endToken();
@@ -92,7 +108,7 @@ function parse(command) {
     }
   }
   endToken();
-  return { segments, unclosed: quote !== null };
+  return { segments, heredocs, pipes, unclosed: quote !== null };
 }
 
 const WRAPPERS = ['sudo', 'env', 'time', 'command', 'nice', 'exec', 'xargs'];
@@ -141,37 +157,65 @@ function nestedCommand(tokens, i) {
   if (tokens[i] === 'eval') return tokens.slice(i + 1).join(' ');
 }
 
+// A heredoc body runs as commands when its pipeline includes a shell, and is
+// expanded (so `$(...)` runs) when its delimiter is unquoted.
+function heredocRuns({ seg, quoted }, segments, pipes) {
+  let start = seg;
+  let end = seg;
+  while (pipes.has(start - 1)) start--;
+  while (pipes.has(end)) end++;
+  const pipeline = segments.slice(start, end + 1);
+  return !quoted || pipeline.some((t) => SHELLS.includes(t[commandIndex(t)]));
+}
+
+// Every command segment that runs, in order: the top-level segments, each
+// followed by its `bash -c`/`eval` string's segments, then the segments of
+// heredoc bodies that run.
+function commands(command) {
+  const { segments, heredocs, pipes, unclosed } = parse(command);
+  const result = { segments: [], unclosed };
+  const add = (text) => {
+    const inner = commands(text);
+    result.segments.push(...inner.segments);
+    result.unclosed ||= inner.unclosed;
+  };
+  for (const tokens of segments) {
+    result.segments.push(tokens);
+    const nested = nestedCommand(tokens, commandIndex(tokens));
+    if (nested) add(nested);
+  }
+  for (const heredoc of heredocs) {
+    if (heredocRuns(heredoc, segments, pipes)) add(heredoc.body);
+  }
+  return result;
+}
+
+// The arguments after `git` and its global options, or undefined.
+function gitArgs(tokens) {
+  let i = commandIndex(tokens);
+  if (tokens[i++] !== 'git') return;
+  while (tokens[i]?.startsWith('-')) {
+    i += tokens[i] === '-C' || tokens[i] === '-c' ? 2 : 1;
+  }
+  return tokens.slice(i);
+}
+
 // Fallback for commands we could not tokenize (an unterminated quote).
 const rawTokens = (command) =>
   command.split(/[\s;&|()`'"<>=]+/).map((t) => t.replace(/^\.\//, ''));
 
 function isGitPush(command) {
-  const { segments, unclosed } = parse(command);
+  const { segments, unclosed } = commands(command);
   if (unclosed && /\bgit\b[^\n;&|]*\bpush\b/.test(command)) return true;
-  for (const tokens of segments) {
-    let i = commandIndex(tokens);
-    const nested = nestedCommand(tokens, i);
-    if (nested && isGitPush(nested)) return true;
-    if (tokens[i++] !== 'git') continue;
-    while (tokens[i]?.startsWith('-')) {
-      i += tokens[i] === '-C' || tokens[i] === '-c' ? 2 : 1;
-    }
-    if (tokens[i] === 'push') return true;
-  }
-  return false;
+  return segments.some((tokens) => gitArgs(tokens)?.[0] === 'push');
 }
 
 // Returns the first secret or private token, looking inside nested shells.
 function findBlockedToken(command) {
-  const { segments, unclosed } = parse(command);
-  if (unclosed) {
-    const raw = rawTokens(command).find(bashHit);
-    if (raw) return raw;
-  }
+  const { segments, unclosed } = commands(command);
+  const raw = unclosed && rawTokens(command).find(bashHit);
+  if (raw) return raw;
   for (const tokens of segments) {
-    const nested = nestedCommand(tokens, commandIndex(tokens));
-    const hit = nested && findBlockedToken(nested);
-    if (hit) return hit;
     for (const token of tokens) {
       if (bashHit(token) || bashHit(token.slice(token.indexOf('=') + 1))) {
         return token;
@@ -180,7 +224,33 @@ function findBlockedToken(command) {
   }
 }
 
-export function evaluate({ tool_name, tool_input = {} }) {
+// Subcommands that add commits to the current branch.
+const WRITES = ['commit', 'merge', 'cherry-pick', 'revert', 'rebase', 'am'];
+const CREATE = ['-b', '-B', '-c', '-C', '--orphan'];
+
+// The branch `git checkout`/`git switch` moves to, if any.
+function switchTarget([sub, ...args]) {
+  if ((sub !== 'checkout' && sub !== 'switch') || args.includes('--')) return;
+  const create = args.findIndex((a) => CREATE.includes(a));
+  if (create >= 0) return args[create + 1];
+  return args.find((a) => !a.startsWith('-'));
+}
+
+// True when the command commits to `main`, starting from `branch` and
+// following any checkout/switch earlier in the same command.
+function writesMain(command, branch) {
+  let current = branch;
+  for (const tokens of commands(command).segments) {
+    const args = gitArgs(tokens);
+    if (!args) continue;
+    current = switchTarget(args) ?? current;
+    if (current === 'main' && WRITES.includes(args[0])) return true;
+  }
+  return false;
+}
+
+// `branch` is the current git branch, when known.
+export function evaluate({ tool_name, tool_input = {} }, { branch } = {}) {
   if (tool_name === 'Bash') {
     const command = tool_input.command ?? '';
     if (isGitPush(command)) {
@@ -188,6 +258,13 @@ export function evaluate({ tool_name, tool_input = {} }) {
         block: true,
         reason:
           'git push is blocked for Claude in this repo — push it yourself.',
+      };
+    }
+    if (writesMain(command, branch)) {
+      return {
+        block: true,
+        reason:
+          'Committing to main is blocked — work on a branch and open a pull request (see CLAUDE.md).',
       };
     }
     const hit = findBlockedToken(command);
@@ -205,6 +282,18 @@ export function evaluate({ tool_name, tool_input = {} }) {
   return { block: false };
 }
 
+function currentBranch(cwd) {
+  try {
+    return execFileSync('git', ['symbolic-ref', '--short', 'HEAD'], {
+      cwd,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+  } catch {
+    return undefined;
+  }
+}
+
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   let input = '';
   process.stdin.setEncoding('utf8');
@@ -215,7 +304,9 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   } catch {
     process.exit(0);
   }
-  const result = evaluate(event ?? {});
+  const cwd = event?.cwd ?? process.env.CLAUDE_PROJECT_DIR ?? process.cwd();
+  const branch = event?.tool_name === 'Bash' ? currentBranch(cwd) : undefined;
+  const result = evaluate(event ?? {}, { branch });
   if (result.block) {
     console.error(result.reason);
     process.exit(2);

@@ -43,6 +43,7 @@ This project does not use Linear or any ticket tracker. Do not offer or sync tic
 
 - `.env*` files (except `.env.example`) and the repo-root `private/` folder are off-limits. `.claude/hooks/guard.mjs` enforces this for file tools and Bash.
 - Claude cannot `git push`. The human pushes.
+- Every code change reaches `main` through a PR. The guard blocks Claude from committing, merging, rebasing or cherry-picking on `main`.
 - Personal data (resumes, the fact bank) goes only in `private/`, and credentials only in untracked `.env*` files. None of these ever goes in git.
 - Personal overrides go in `.claude/settings.local.json`.
 - Prettier runs automatically on files Claude edits or writes.

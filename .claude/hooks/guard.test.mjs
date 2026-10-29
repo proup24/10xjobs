@@ -159,6 +159,69 @@ test('bash: keywords and wrappers before git push', () => {
   assert.equal(blocked('Bash', { command: 'timeout 60 git status' }), false);
 });
 
+test('bash: heredoc bodies that run', () => {
+  for (const command of [
+    "bash <<'EOF'\ngit push\nEOF",
+    'sh <<EOF\ncat .env\nEOF',
+    "cat <<'EOF' | bash\ngit push\nEOF",
+    'cat <<EOF | sh -s\ncat .env\nEOF',
+    'cat <<EOF\n$(git push)\nEOF',
+    'cat <<EOF\n`cat .env`\nEOF',
+  ]) {
+    assert.equal(blocked('Bash', { command }), true, command);
+  }
+  for (const command of [
+    "cat > /tmp/m <<'EOF'\ngit push\nEOF\nls",
+    "git commit -F - <<'EOF'\nDocument .env and git push\nEOF",
+    "cat <<'EOF' | grep push\ngit push\nEOF",
+    "cat <<'EOF' || bash x.sh\ngit push\nEOF",
+  ]) {
+    assert.equal(blocked('Bash', { command }), false, command);
+  }
+});
+
+const onBranch = (branch, command) =>
+  evaluate({ tool_name: 'Bash', tool_input: { command } }, { branch }).block;
+
+test('bash: no commits or merges on main', () => {
+  for (const command of [
+    'git commit -m x',
+    'git add . && git commit -m x',
+    'git -C . commit -m x',
+    'git merge fix/x',
+    'git cherry-pick abc123',
+    'git revert abc123',
+    'git rebase fix/x',
+    'git am fix.patch',
+    'bash -c "git commit -m x"',
+  ]) {
+    assert.equal(onBranch('main', command), true, command);
+  }
+  for (const command of [
+    'git status',
+    'git pull',
+    'git log --oneline',
+    'git checkout -b fix/x',
+    'git switch -c fix/x && git commit -m x',
+    'git checkout -b fix/x main && git commit -m x',
+    'git checkout main -- README.md',
+  ]) {
+    assert.equal(onBranch('main', command), false, command);
+  }
+});
+
+test('bash: no switching to main to commit or merge', () => {
+  for (const command of [
+    'git checkout main && git merge fix/x',
+    'git switch main; git commit -m x',
+  ]) {
+    assert.equal(onBranch('fix/x', command), true, command);
+  }
+  assert.equal(onBranch('fix/x', 'git commit -m x'), false);
+  assert.equal(onBranch('fix/x', 'git merge main'), false);
+  assert.equal(onBranch(undefined, 'git commit -m x'), false);
+});
+
 test('unrelated tools pass', () => {
   assert.equal(blocked('WebSearch', { query: '.env' }), false);
 });
@@ -174,4 +237,9 @@ test('reasons', () => {
     tool_input: { file_path: '/repo/.env' },
   });
   assert.match(secret.reason, /\/repo\/\.env/);
+  const main = evaluate(
+    { tool_name: 'Bash', tool_input: { command: 'git commit -m x' } },
+    { branch: 'main' },
+  );
+  assert.match(main.reason, /pull request/);
 });
