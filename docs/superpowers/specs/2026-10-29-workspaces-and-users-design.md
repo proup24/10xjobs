@@ -143,7 +143,7 @@ Enum values are stored as the lowercase text shown (regions and languages upperc
 - `POST /…/profile/resume`, `multipart/form-data` with one `file` field. Accepts only PDFs: the `application/pdf` mime type **and** the `%PDF-` magic bytes. Max 5 MB. Replacing an existing resume deletes the old file after the new one is saved.
 - `GET /…/profile/resume` streams the file back with its original filename. `DELETE` removes it.
 - Columns on `profiles`, all nullable: `resumeKey` (storage key), `resumeFilename`, `resumeSizeBytes Int`, `resumeSha256`, `resumeUploadedAt`.
-- Storage sits behind a `ResumeStorage` interface (`put`, `get`, `delete`). The first implementation writes to a local directory set by `RESUME_STORAGE_DIR` (env, validated, default `./storage/resumes` relative to the working directory, and `storage/` is added to `.gitignore`). The key is `<workspaceId>/<profileId>/<uuid>.pdf`; the user's filename is never part of the path. A Supabase Storage implementation can replace it later without touching the profile code.
+- Files go through the `storage` module's `StorageService` (Supabase Storage, service-role key, private bucket). The key is `<workspaceId>/<profileId>/<uuid>.pdf`; the user's filename is never part of the path.
 
 ## API
 
@@ -166,16 +166,23 @@ Errors: 400 for validation (the pipe's default body), 404 for anything not found
 
 ## Code layout
 
+Every feature module lives in `apps/xjobs/src/modules/<name>/` with the same folders, each present only when the module needs it:
+
 ```
-apps/xjobs/src/
-  workspaces/   workspaces.module.ts, .controller.ts, .service.ts, .repository.ts, dto/
-  users/        users.module.ts, users.controller.ts, users.service.ts, users.repository.ts,
-                contacts.controller.ts, contacts.service.ts, contacts.repository.ts,
-                profiles.controller.ts, profiles.service.ts, profiles.repository.ts,
-                resume-storage.ts (interface + local implementation), dto/
+apps/xjobs/src/modules/
+  workspaces/  controllers/ dto/ repositories/ services/ testing/ types/  workspaces.module.ts
+  users/       controllers/ dto/ repositories/ services/ testing/ types/  users.module.ts
+  storage/     services/ testing/ types/                                  storage.module.ts
 ```
 
-Services hold the rules (404s, primary-contact uniqueness, transactional skill replacement, resume replacement). Repositories are the only code that touches `DatabaseService`. Unit tests cover services with in-memory fake repositories, the DTOs through `class-validator`, and the local resume storage against a temp directory, so CI needs no database.
+- `controllers/` handle HTTP and validation through `dto/`.
+- `services/` hold the rules (404s, primary-contact uniqueness, transactional skill replacement, resume replacement). Unit tests sit next to them.
+- `repositories/` are the only code that touches `DatabaseService`.
+- `types/` hold the module's plain types (inputs, views, metadata), re-exported from `types/index.ts`.
+- `testing/` hold in-memory fakes for unit tests and are excluded from the app build.
+- `storage` wraps Supabase Storage behind `StorageService`; resumes live in a private bucket (`STORAGE_RESUMES_BUCKET`, default `resumes`) created on startup.
+
+Unit tests run services against the fakes, so CI needs no database or Supabase.
 
 The seed creates the `default` workspace first, then the existing starter users inside it.
 
@@ -193,5 +200,5 @@ The seed creates the `default` workspace first, then the existing starter users 
 - `regions` are the regions the user belongs to, not regions they target.
 - Timezones in minutes; `per-task` spelled `per_task`; added `fullstack`, `mobile`, `data`, `ml`, `qa` skill domains.
 - The tech stack is its own table; the position and technology enum lists above.
-- Local-disk resume storage behind an interface, 5 MB cap.
+- Resumes in a private Supabase Storage bucket behind `StorageService`, 5 MB cap.
 - No auth; the workspace id in the path.

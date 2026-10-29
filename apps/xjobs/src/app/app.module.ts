@@ -2,8 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { validateEnvironment } from 'src/config';
 import { DatabaseModule } from 'src/database';
-import { UsersModule } from 'src/users';
-import { WorkspacesModule } from 'src/workspaces';
+import { UsersModule } from 'src/modules/users';
+import { WorkspacesModule } from 'src/modules/workspaces';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
