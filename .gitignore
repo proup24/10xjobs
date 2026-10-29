@@ -45,3 +45,13 @@ Thumbs.db
 .claude/settings.local.json
 vitest.config.*.timestamp*
 .vitest
+
+# Local Supabase credentials and persistent data
+.env
+.env.*
+!.env.example
+/supabase/volumes/db/data/
+/supabase/volumes/storage/
+/supabase/volumes/snippets/
+
+supabase

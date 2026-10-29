@@ -1,0 +1,22 @@
+// use prisma-8
+//
+// Data contract for xjobs. After editing, run `pnpm db:emit` to regenerate
+// contract.json / contract.d.ts, then `pnpm db:migration:plan --name <slug>`.
+
+// `JsDate` columns read and write JavaScript `Date` values; the `Temporal`
+// variants need a global `Temporal`, which Node 24 does not ship.
+model mixin Timestamps {
+  createdAt TimestamptzJsDate(3) @default(now())
+  updatedAt TimestamptzJsDate(3) @default(now()) @onCreate(now()) @onUpdate(now())
+}
+
+// Starter model so migrations and seeds have something to work with —
+// replace or extend it with the real domain.
+model User {
+  id    Uuid    @id @onCreate(uuid(7))
+  email String  @unique
+  name  String?
+  +Timestamps
+
+  @@map("users")
+}

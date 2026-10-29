@@ -1,5 +1,57 @@
 # Xjobs
 
+## Local Supabase
+
+Requires Docker with Compose v2+ and Node.js. Allow at least 4 GB RAM for
+the stack. Uses the official Supabase `self-hosted/v0.8.3` release with pinned
+images, adapted for local development.
+
+```sh
+node scripts/setup-supabase.mjs
+docker compose up -d --wait
+```
+
+The setup script creates an ignored `.env` with random passwords and matching
+JWT API keys. Running it again preserves existing credentials.
+
+- **Studio and API:** http://localhost:8000
+- **Studio login:** `DASHBOARD_USERNAME` and `DASHBOARD_PASSWORD` in `.env`.
+- **Client API key:** `ANON_KEY` in `.env`; keep `SERVICE_ROLE_KEY` server-side only.
+- **Postgres session connection:** `postgresql://postgres.xjobs:<POSTGRES_PASSWORD>@localhost:5432/postgres`
+- **Transaction pooler:** the same connection on port `6543`.
+- **Redis:** `redis://localhost:6379` from the host, or `redis://redis:6379`
+  from another Compose service. No password is configured for local development.
+
+Redis uses the [official Redis image](https://hub.docker.com/_/redis), pinned to
+`8.2.10-alpine`, with append-only persistence in the `redis-data` named volume
+and a health check. Set `REDIS_PORT` in `.env` to change its host port (default
+`6379`). Start Redis alone with `docker compose up -d --wait redis`.
+
+For a local NestJS/Prisma connection, use the session connection above as your
+`DATABASE_URL`. If port 5432 is occupied, change `POSTGRES_HOST_PORT` in `.env`;
+keep `POSTGRES_PORT=5432` for internal service connections.
+
+```sh
+docker compose ps              # Service status
+docker compose logs -f auth    # Follow a service's logs
+docker compose down            # Stop; preserve database and uploaded files
+```
+
+Database files, uploads, and Studio snippets persist under `supabase/volumes/`
+and are ignored by Git. Encryption configuration and the Deno cache use named
+volumes. Keep `.env` together with the data: changing its passwords after database
+initialization does not rotate the database credentials.
+
+All published ports bind to localhost. Email signup auto-confirms for local
+development; email delivery requires configuring the `SMTP_*` settings. Set
+`SITE_URL` to your frontend URL when adding a frontend. This configuration is
+for local development; production requires deployment-specific configuration.
+
+Upstream: [Supabase Docker guide](https://supabase.com/docs/guides/self-hosting/docker),
+commit `bc27d2661edd09a5d0b8d76ce33da6d4071a756e`. Vendored configuration and
+initialization files are covered by `supabase/LICENSE`. The Compose file changes
+the project name, container naming, mount paths, and published port bindings.
+
 <a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
 
 ✨ Your new, shiny [Nx workspace](https://nx.dev) is ready ✨.
@@ -7,6 +59,20 @@
 [Learn more about this workspace setup and its capabilities](https://nx.dev/nx-api/node?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
 
 ## Run tasks
+
+### Application imports
+
+Keep application code under `apps/xjobs/src`. Use `src/*` for imports across
+features, such as `import { getHostName } from 'src/utils'`, and relative imports
+within a feature. Feature `index.ts` files expose explicit named exports and
+`export type` declarations; internal files should not import their own barrel.
+There is no global `src/index.ts` barrel.
+
+The alias is scoped to this app and configured for TypeScript, Webpack, and
+Vitest. Standalone TypeScript commands should use `tsx --tsconfig tsconfig.app.json`
+from `apps/xjobs`, as the `db:seed` script does. Tooling configuration entrypoints
+and their shared configuration dependencies keep relative imports because
+Prisma's configuration loader does not resolve TypeScript path aliases.
 
 To run the dev server for your app, use:
 

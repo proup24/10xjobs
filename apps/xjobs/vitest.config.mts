@@ -1,7 +1,9 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig(() => ({
   root: import.meta.dirname,
+  resolve: { alias: { src: fileURLToPath(new URL('./src', import.meta.url)) } },
   cacheDir: '../../node_modules/.vite/apps/xjobs',
   test: {
     name: '@xjobs/xjobs',

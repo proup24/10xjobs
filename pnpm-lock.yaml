@@ -193,28 +193,43 @@ importers:
     dependencies:
       '@nestjs/common':
         specifier: ^11.0.0
-        version: 11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
+        version: 11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
+      '@nestjs/config':
+        specifier: ^12.0.1
+        version: 12.0.1(@nestjs/common@11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(rxjs@7.8.2)
       '@nestjs/core':
         specifier: ^11.0.0
-        version: 11.2.8(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@11.2.8)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+        version: 11.2.8(@nestjs/common@11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@11.2.8)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@nestjs/platform-express':
         specifier: ^11.0.0
-        version: 11.2.8(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(supports-color@8.1.1)
+        version: 11.2.8(@nestjs/common@11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(supports-color@8.1.1)
+      '@nestjs/swagger':
+        specifier: ^12.0.5
+        version: 12.0.5(@nestjs/common@11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(typescript@6.0.3)
+      '@sentry/node':
+        specifier: ^11.9.0
+        version: 11.9.0(webpack@5.110.3)
       axios:
         specifier: ^1.6.0
         version: 1.21.0(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1)
+      cookie-parser:
+        specifier: ^1.4.7
+        version: 1.4.7
       dotenv:
         specifier: ^18.0.9
         version: 18.0.9
       prisma:
         specifier: 8.0.0-rc.28
-        version: 8.0.0-rc.28(@effect/vitest@4.0.3(effect@4.0.3)(vitest@5.0.5))(@types/node@22.20.5)(@vercel/nft@1.11.0(supports-color@8.1.1))(hono@4.11.4)(magicast@0.5.5)(supports-color@8.1.1)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0))(vitest@5.0.5)(ws@8.22.0)
+        version: 8.0.0-rc.28(@effect/vitest@4.0.3(effect@4.0.3)(vitest@5.0.5))(@prisma/orm-postgres@8.0.0-rc.21(@prisma/cli-engine@0.9.0(@prisma/management-api-sdk@1.80.0)(magicast@0.5.5))(magicast@0.5.5)(temporal-polyfill@1.0.6)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)))(@types/node@22.20.5)(@vercel/nft@1.11.0(supports-color@8.1.1))(hono@4.11.4)(magicast@0.5.5)(pg@8.22.0)(supports-color@8.1.1)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))(vitest@5.0.5)(ws@8.22.0)
       reflect-metadata:
         specifier: ^0.2.0
         version: 0.2.2
       rxjs:
         specifier: ^7.8.0
         version: 7.8.2
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
     devDependencies:
       '@eslint/js':
         specifier: ^9.8.0
@@ -224,7 +239,7 @@ importers:
         version: 11.1.0(chokidar@4.0.3)(prettier@3.6.2)(typescript@6.0.3)
       '@nestjs/testing':
         specifier: ^11.0.0
-        version: 11.2.8(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(@nestjs/platform-express@11.2.8)
+        version: 11.2.8(@nestjs/common@11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(@nestjs/platform-express@11.2.8)
       '@nx/docker':
         specifier: 24.0.2
         version: 24.0.2(nx@24.0.2)
@@ -239,13 +254,13 @@ importers:
         version: 24.0.2(@babel/traverse@7.29.10(supports-color@8.1.1))(nx@24.0.2)(supports-color@8.1.1)
       '@nx/nest':
         specifier: 24.0.2
-        version: 24.0.2(@babel/traverse@7.29.10(supports-color@8.1.1))(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(@types/node@22.20.5)(@zkochan/js-yaml@0.0.7)(babel-plugin-macros@3.1.0)(chokidar@4.0.3)(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(express@5.2.1(supports-color@8.1.1))(nx@24.0.2)(prettier@3.6.2)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)(typescript@6.0.3)
+        version: 24.0.2(@babel/traverse@7.29.10(supports-color@8.1.1))(@nestjs/common@11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(@types/node@22.20.5)(@zkochan/js-yaml@0.0.7)(babel-plugin-macros@3.1.0)(chokidar@4.0.3)(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(express@5.2.1(supports-color@8.1.1))(nx@24.0.2)(prettier@3.6.2)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)(typescript@6.0.3)
       '@nx/node':
         specifier: 24.0.2
         version: 24.0.2(@babel/traverse@7.29.10(supports-color@8.1.1))(@types/node@22.20.5)(@zkochan/js-yaml@0.0.7)(babel-plugin-macros@3.1.0)(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(express@5.2.1(supports-color@8.1.1))(nx@24.0.2)(supports-color@8.1.1)(typescript@6.0.3)
       '@nx/vitest':
         specifier: 24.0.2
-        version: 24.0.2(@babel/traverse@7.29.10(supports-color@8.1.1))(@nx/eslint@24.0.2(@babel/traverse@7.29.10(supports-color@8.1.1))(@nx/jest@24.0.2(@babel/traverse@7.29.10(supports-color@8.1.1))(@types/node@22.20.5)(babel-plugin-macros@3.1.0)(nx@24.0.2)(supports-color@8.1.1)(typescript@6.0.3))(@zkochan/js-yaml@0.0.7)(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(nx@24.0.2)(supports-color@8.1.1))(nx@24.0.2)(supports-color@8.1.1)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0))(vitest@5.0.5)
+        version: 24.0.2(@babel/traverse@7.29.10(supports-color@8.1.1))(@nx/eslint@24.0.2(@babel/traverse@7.29.10(supports-color@8.1.1))(@nx/jest@24.0.2(@babel/traverse@7.29.10(supports-color@8.1.1))(@types/node@22.20.5)(babel-plugin-macros@3.1.0)(nx@24.0.2)(supports-color@8.1.1)(typescript@6.0.3))(@zkochan/js-yaml@0.0.7)(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(nx@24.0.2)(supports-color@8.1.1))(nx@24.0.2)(supports-color@8.1.1)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))(vitest@5.0.5)
       '@nx/web':
         specifier: 24.0.2
         version: 24.0.2(@babel/traverse@7.29.10(supports-color@8.1.1))(@nx/eslint@24.0.2(@babel/traverse@7.29.10(supports-color@8.1.1))(@nx/jest@24.0.2(@babel/traverse@7.29.10(supports-color@8.1.1))(@types/node@22.20.5)(babel-plugin-macros@3.1.0)(nx@24.0.2)(supports-color@8.1.1)(typescript@6.0.3))(@zkochan/js-yaml@0.0.7)(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(nx@24.0.2)(supports-color@8.1.1))(@nx/jest@24.0.2(@babel/traverse@7.29.10(supports-color@8.1.1))(@types/node@22.20.5)(babel-plugin-macros@3.1.0)(nx@24.0.2)(supports-color@8.1.1)(typescript@6.0.3))(@nx/webpack@24.0.2(@babel/traverse@7.29.10(supports-color@8.1.1))(cssnano@7.1.9(postcss@8.5.32))(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(nx@24.0.2)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@7.2.3)(webpack-dev-server@5.2.7)(webpack@5.110.3))(debug@4.4.3(supports-color@8.1.1))(nx@24.0.2)(supports-color@8.1.1)
@@ -287,10 +302,10 @@ importers:
         version: 8.72.1(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@6.0.3)
       vite:
         specifier: ^8.0.0
-        version: 8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0)
+        version: 8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
       vitest:
         specifier: ~5.0.1
-        version: 5.0.5(@types/node@22.20.5)(@vitest/coverage-v8@5.0.5)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0))
+        version: 5.0.5(@opentelemetry/api@1.10.0)(@types/node@22.20.5)(@vitest/coverage-v8@5.0.5)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))
       webpack:
         specifier: ~5.110.0
         version: 5.110.3(cssnano@7.1.9(postcss@8.5.32))(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)(sharp@0.35.5(@types/node@22.20.5))(svgo@4.1.0)(webpack-cli@7.2.3)
@@ -305,13 +320,37 @@ importers:
     dependencies:
       '@nestjs/common':
         specifier: ^11.0.0
-        version: 11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
+        version: 11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
+      '@nestjs/config':
+        specifier: ^12.0.1
+        version: 12.0.1(@nestjs/common@11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(rxjs@7.8.2)
       '@nestjs/core':
         specifier: ^11.0.0
-        version: 11.2.8(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@11.2.8)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+        version: 11.2.8(@nestjs/common@11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@11.2.8)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@nestjs/platform-express':
         specifier: ^11.0.0
-        version: 11.2.8(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(supports-color@8.1.1)
+        version: 11.2.8(@nestjs/common@11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(supports-color@8.1.1)
+      '@nestjs/swagger':
+        specifier: ^12.0.5
+        version: 12.0.5(@nestjs/common@11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(typescript@6.0.3)
+      '@prisma/orm-postgres':
+        specifier: 8.0.0-rc.21
+        version: 8.0.0-rc.21(@prisma/cli-engine@0.9.0(@prisma/management-api-sdk@1.80.0)(magicast@0.5.5))(magicast@0.5.5)(temporal-polyfill@1.0.6)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))
+      '@sentry/node':
+        specifier: ^11.9.0
+        version: 11.9.0(webpack@5.110.3)
+      class-transformer:
+        specifier: ^0.5.1
+        version: 0.5.1
+      class-validator:
+        specifier: ^0.15.1
+        version: 0.15.1
+      cookie-parser:
+        specifier: ^1.4.7
+        version: 1.4.7
+      dotenv:
+        specifier: ^18.0.9
+        version: 18.0.9
       reflect-metadata:
         specifier: ^0.2.0
         version: 0.2.2
@@ -321,10 +360,25 @@ importers:
       tslib:
         specifier: ^2.3.0
         version: 2.8.1
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
     devDependencies:
       '@nestjs/testing':
         specifier: ^11.0.0
-        version: 11.2.8(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(@nestjs/platform-express@11.2.8)
+        version: 11.2.8(@nestjs/common@11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(@nestjs/platform-express@11.2.8)
+      '@prisma/cli-engine':
+        specifier: 0.9.0
+        version: 0.9.0(@prisma/management-api-sdk@1.80.0)(magicast@0.5.5)
+      '@types/cookie-parser':
+        specifier: ^1.4.10
+        version: 1.4.10(@types/express@4.17.25)
+      prisma:
+        specifier: 8.0.0-rc.28
+        version: 8.0.0-rc.28(@effect/vitest@4.0.3(effect@4.0.3)(vitest@5.0.5))(@prisma/orm-postgres@8.0.0-rc.21(@prisma/cli-engine@0.9.0(@prisma/management-api-sdk@1.80.0)(magicast@0.5.5))(magicast@0.5.5)(temporal-polyfill@1.0.6)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)))(@types/node@22.20.5)(@vercel/nft@1.11.0(supports-color@8.1.1))(hono@4.11.4)(magicast@0.5.5)(pg@8.22.0)(supports-color@8.1.1)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))(vitest@5.0.5)(ws@8.22.0)
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
 
   apps/xjobs-e2e: {}
 
@@ -1920,6 +1974,9 @@ packages:
     engines: {node: '>=18'}
     hasBin: true
 
+  '@microsoft/tsdoc@0.17.1':
+    resolution: {integrity: sha512-VHyYyyoH63jFoO3shpw9Zfijk5v/9p/VrClW35z0/q6ooK7sSmxpzOkS4iZPxs3vO4XtBW4H38HRAKkAMIK7DA==}
+
   '@mrleebo/prisma-ast@0.13.1':
     resolution: {integrity: sha512-XyroGQXcHrZdvmrGJvsA9KNeOOgGMg1Vg9OlheUsBOSKznLMDl+YChxbkboRHvtFYJEMRYmlV3uoo/njCw05iw==}
     engines: {node: '>=16'}
@@ -1959,6 +2016,12 @@ packages:
       class-validator:
         optional: true
 
+  '@nestjs/config@12.0.1':
+    resolution: {integrity: sha512-pxqEtULFi4qXda0TqyR2YFq7o4UoRa7h4K5H0lgFuBMrUGr6x6VVldaJJrowFyh4uvp8dNq9Mie3T+l+uEOTfw==}
+    peerDependencies:
+      '@nestjs/common': ^11.0.0 || ^12.0.0
+      rxjs: ^7.1.0
+
   '@nestjs/core@11.2.8':
     resolution: {integrity: sha512-XzD1okTrM160+8M9mWWorEUlFPK6ZMjTy6pVxVOOdxSdqu+QWKKx9kI2Y0yVrvEmi/0HPFUErqi9PCKFZYYZfg==}
     engines: {node: '>= 20'}
@@ -1977,6 +2040,20 @@ packages:
       '@nestjs/websockets':
         optional: true
 
+  '@nestjs/mapped-types@12.0.0':
+    resolution: {integrity: sha512-aX7lxZcqXldtnSr0bgT2ZPQvpTpIwBMW1GMX29o4s3q02vmq6JoTYuPW0GwYXa8BiFMRX7WbGZVDA703pNqOMQ==}
+    engines: {node: '>=20.19.0'}
+    peerDependencies:
+      '@nestjs/common': ^10.0.0 || ^11.0.0 || ^12.0.0
+      class-transformer: ^0.4.0 || ^0.5.0
+      class-validator: ^0.13.0 || ^0.14.0 || ^0.15.0
+      reflect-metadata: ^0.1.12 || ^0.2.0
+    peerDependenciesMeta:
+      class-transformer:
+        optional: true
+      class-validator:
+        optional: true
+
   '@nestjs/platform-express@11.2.8':
     resolution: {integrity: sha512-aSAAz8E31qv+sDsL0s7Cw/HoXmeM0TVf35ny17BjLL10c2PgFDp2vunycL7muVyp3/IP5TStMb3Ia4B/RTNHZA==}
     peerDependencies:
@@ -1990,6 +2067,27 @@ packages:
       typescript: '>=4.8.2'
     peerDependenciesMeta:
       prettier:
+        optional: true
+
+  '@nestjs/swagger@12.0.5':
+    resolution: {integrity: sha512-6Zf8DhSqyBt3409Ycpezy7cVfAiO1s9XkjyxE7RtOJmVzMPs2T4XGC7sukBvxdtIVmhUC9EoglHH73O75MKApw==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    peerDependencies:
+      '@fastify/static': ^8.0.0 || ^9.0.0 || ^10.0.0
+      '@nestjs/common': ^12.0.0
+      '@nestjs/core': ^12.0.0
+      class-transformer: '*'
+      class-validator: '*'
+      reflect-metadata: ^0.1.12 || ^0.2.0
+      typescript: ^5.5.0 || ^6.0.0
+    peerDependenciesMeta:
+      '@fastify/static':
+        optional: true
+      class-transformer:
+        optional: true
+      class-validator:
+        optional: true
+      typescript:
         optional: true
 
   '@nestjs/testing@11.2.8':
@@ -2274,8 +2372,137 @@ packages:
     resolution: {integrity: sha512-da6KbdNCV5sr1/txD896V+6W0iamFWrvVl8cHkBSPT+YlvmT3DwXa4jxZnQc+gnuTEqSWbBeoSZYTayXH9wXcw==}
     engines: {node: '>= 20'}
 
+  '@opentelemetry/api@1.10.0':
+    resolution: {integrity: sha512-lMkyes8iHrG+mk6WH7X70MdCLI2RS0FwNBY1PyQ8UemaijE2m5mv5A0Niy3HtbYTFrgkUEQjFMXmSAk2hQDuPQ==}
+    engines: {node: '>=8.0.0'}
+
+  '@oxc-parser/binding-android-arm-eabi@0.152.0':
+    resolution: {integrity: sha512-393VtirINkae4XHBTkq/yQxhOwEr4V+r0et37P2fp+sYZSdYgZTRDPo5Um8vBh0QjMZ+RmaMy4PP0qwr4cTMwA==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm]
+    os: [android]
+
+  '@oxc-parser/binding-android-arm64@0.152.0':
+    resolution: {integrity: sha512-iYFcExATJNZ0rZj0o02THbD1Nc9jAW0nVgIQPee6ejbSASpbZXlIMw8jxtpzaG14JQTWwGSZ6U5dEtRJXE6V3Q==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm64]
+    os: [android]
+
+  '@oxc-parser/binding-darwin-arm64@0.152.0':
+    resolution: {integrity: sha512-fnU+DfUzi5/rFy0LzmipYRz06PAUUkOS8kCJQ3Eg6oqlunC1XZXoffFqxmdL51RmcbYtUG3P8DVG1U5fckoa2A==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@oxc-parser/binding-darwin-x64@0.152.0':
+    resolution: {integrity: sha512-Y3U2okryWTs7hDld6UhjJwLNf8/do+x4g4C+1U5SiGwrTLwbO83WJYJA8+l9iFSilWBgnfpd/+U76tfeNxUHzA==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [x64]
+    os: [darwin]
+
+  '@oxc-parser/binding-freebsd-x64@0.152.0':
+    resolution: {integrity: sha512-XkhkRrrPffEw+ZLv/d/5pEni0buxinm/E/N6fLbJCunD1DBbeCTtVP23ESV+4CWCWdSz397asks1ViGslpmWiQ==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [x64]
+    os: [freebsd]
+
+  '@oxc-parser/binding-linux-arm-gnueabihf@0.152.0':
+    resolution: {integrity: sha512-MLzsRRbdfmdzo6JEhbC1yKU9ItfvM8tEf18HM32jCiNYZEz6J3bRBRl3cTkKR0vBdrk9ZVlcARXtwHccs+epDA==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm]
+    os: [linux]
+
+  '@oxc-parser/binding-linux-arm-musleabihf@0.152.0':
+    resolution: {integrity: sha512-HHerTEJz7Iy10Ji6BGsk4gqG6PU0UzFuBu91jIEOX89FnrI5ECWSEr7BLpkYQhp7U0QFtMnBhNfQKI0hYZK78w==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm]
+    os: [linux]
+
+  '@oxc-parser/binding-linux-arm64-gnu@0.152.0':
+    resolution: {integrity: sha512-9Bb8GyzZ2uSLzRDZ27usaKokr07mxiBe2dDF5b6bd2janmaJTT1gL51UfP7AU30yFiXrJvcRyFKREAgKwZYs0w==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm64]
+    os: [linux]
+    libc: [glibc]
+
+  '@oxc-parser/binding-linux-arm64-musl@0.152.0':
+    resolution: {integrity: sha512-om7iDMUroI74A/lfRRWY9/Ev3VWrVsrUZ4tyvyh8raBey/sdcfyAD7tYWc+iykAiotnmftyKTpUKFr1QnaBrAQ==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm64]
+    os: [linux]
+    libc: [musl]
+
+  '@oxc-parser/binding-linux-ppc64-gnu@0.152.0':
+    resolution: {integrity: sha512-Lf1OL2lMTqwDMFC6jnRb30B+WYHKV0XT+bPHcFM6xHtNVwxpobiTzUIvKH6a0LWpvfwyru8Yu6zCGHqqFHH+gg==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [ppc64]
+    os: [linux]
+    libc: [glibc]
+
+  '@oxc-parser/binding-linux-riscv64-gnu@0.152.0':
+    resolution: {integrity: sha512-BYWSMQK+YJ9ZILStPcmmiSVq8KEG9Qdq/c4BHPC3rUEq/fEDCVjUIwdj5ZzjgZ9P9is9PKu0tcAXzq1ZXg4urQ==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [riscv64]
+    os: [linux]
+    libc: [glibc]
+
+  '@oxc-parser/binding-linux-riscv64-musl@0.152.0':
+    resolution: {integrity: sha512-d2LqHNNNqdH185sRK5dPKWZu201JrNu9/CRFuVEuT+ht7n/QaVblEMWT9MALQPrDWYvhG10P+NSKJFquDWZ09w==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [riscv64]
+    os: [linux]
+    libc: [musl]
+
+  '@oxc-parser/binding-linux-s390x-gnu@0.152.0':
+    resolution: {integrity: sha512-8gBeHt5rA/8+pKhHl+zLggfa3L/V/L2at96p7ty6pBE7id6lFO19nFUc15u2PcjC4OYeYK465MKy1fhhbpFIGw==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [s390x]
+    os: [linux]
+    libc: [glibc]
+
+  '@oxc-parser/binding-linux-x64-gnu@0.152.0':
+    resolution: {integrity: sha512-ltgrSF6L+yPTVsIdaAyqKq3zTqzj/1VlNbxWZuxAe8flR3sWdyNsKvdXukoO8/ucJbLickhmieRBge+o/e8Ugw==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [x64]
+    os: [linux]
+    libc: [glibc]
+
+  '@oxc-parser/binding-linux-x64-musl@0.152.0':
+    resolution: {integrity: sha512-LcMp6BvrBnewSfdkLHoSqidhoAq4syKOTBV5TYHWd+2VnGkfD/nPRRVIzTBt/Lkbt7pfOFDGtkiTntFS0p6sQQ==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [x64]
+    os: [linux]
+    libc: [musl]
+
+  '@oxc-parser/binding-openharmony-arm64@0.152.0':
+    resolution: {integrity: sha512-jbhoMCslVxzRCRNQ8TSHxjYdSKRvk8O6ciLVDkahJvmyHDzBqba/bMQHM6ULKj/rgHNNbSzlIiakdx8SEfkJzA==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm64]
+    os: [openharmony]
+
+  '@oxc-parser/binding-win32-arm64-msvc@0.152.0':
+    resolution: {integrity: sha512-JZYVlhv36mr/nertnRB7vchJECOBb1Lz6lltalILsB+o9M/is+H6BEDRLQKdqA4JKs6NjJszo46+iM5sfwj6jQ==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm64]
+    os: [win32]
+
+  '@oxc-parser/binding-win32-ia32-msvc@0.152.0':
+    resolution: {integrity: sha512-1X9oganvVsunRH0lH10UU05N+H9atpX6WsOybByUjwnfcd3h/0tYwvuv16XuHglrIUOnxV2TodbLVEwwafd64g==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [ia32]
+    os: [win32]
+
+  '@oxc-parser/binding-win32-x64-msvc@0.152.0':
+    resolution: {integrity: sha512-sw0M80/dn9rcpu+Rqqph/C+MjvDDce6MlXmFjsNQtPEymha0eJy3ml6+foSUTqFfpDIDyHZZ4eoJ43IoMe8bJw==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [x64]
+    os: [win32]
+
   '@oxc-project/types@0.146.0':
     resolution: {integrity: sha512-XC0QsnnhVe7sLIWmYmdPw7x5P0h4W8vUU3Nv1ySgWXtvCz8NizoAEpGXA0sOYoJQV2Rl13LgURAHQ5cI5ILCSA==}
+
+  '@oxc-project/types@0.152.0':
+    resolution: {integrity: sha512-oM/5rLBm2tPkg0iBgkH/FOeR3PCDpY19GTgAZjMFM8h9WI9VW7cLgzp6nwtarYKmovavIQZ+Fe/RKX/8C8O/Rw==}
 
   '@oxc-project/types@0.155.0':
     resolution: {integrity: sha512-SeE8JPwW1xs1tHeNycjUtUBdhorRa8o4jlvjwk49R7/Z291i+4DQa7JJIgOm/TaYQZx+QrPQbVJ/9c8dMIZN8Q==}
@@ -2456,6 +2683,14 @@ packages:
   '@prisma/management-api-sdk@1.80.0':
     resolution: {integrity: sha512-pQN6hBqR2pgaF3S5sMCe3iZIlThIOgUXoDcinB6/AxXO3qM6oWnirSUAJlhFQ/Hr5A2PmdxScOuCB1dJYHZ4KQ==}
 
+  '@prisma/orm-family-sql@8.0.0-rc.21':
+    resolution: {integrity: sha512-v6PMMWISHAwJf05qbwOpxF/YdcJKZ/hQVNlSxtfbF7DslcGOHx872XNhExQd8a+QfbmvmZwzg+1iWxLL7em1Xg==}
+    peerDependencies:
+      typescript: '>=5.9'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
   '@prisma/orm-framework@8.0.0-rc.20':
     resolution: {integrity: sha512-yxeW/KdIRLj9lmxLr2PhvaDPTRpO9B6blGyW39W3SALPaFJ5riimvixbgQco7jyfTotqwTRIStCSUzJdsaDnCg==}
     peerDependencies:
@@ -2464,8 +2699,46 @@ packages:
       typescript:
         optional: true
 
+  '@prisma/orm-framework@8.0.0-rc.21':
+    resolution: {integrity: sha512-O8oCMbJxGkQzLXIz5s3DEmtJ1CITeXGv9MXxanYEwhg8ACqTDejF9MZtjZRF+Pjkv2gmX1W0WbcrPT5pujZhoA==}
+    peerDependencies:
+      typescript: '>=5.9'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
+  '@prisma/orm-postgres@8.0.0-rc.21':
+    resolution: {integrity: sha512-s8+O8S+sqgm4dNOXMnS7pu9AkB2AaY5DtIKrhDFFMHULvL7K2UnRXLDJVByUk4cbA/5HErblzATmO8HE/KivZQ==}
+    peerDependencies:
+      temporal-polyfill: ^1.0.4
+      typescript: '>=5.9'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
+  '@prisma/orm-target-postgres@8.0.0-rc.21':
+    resolution: {integrity: sha512-xsBXyKkJsfm56JAIeSr7MtLyCwh5EVZAIvgeVszZ2M9eYiNvY/bwBe1BoM06rj2YQGwSXRJk2pxPteMb/JDjvg==}
+    peerDependencies:
+      temporal-polyfill: ^1.0.4
+      typescript: '>=5.9'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
   '@prisma/orm-toolchain@8.0.0-rc.20':
     resolution: {integrity: sha512-MQnUgGmzOYDE4QJiyY8p612cRLFjQmV8fl7HL+rCxSK02Sm4HhTRIG6UFIKWcvfh5hAeR9rkJiOS/WLApZOTHA==}
+    peerDependencies:
+      '@prisma/cli-engine': 0.9.0
+      typescript: '>=5.9'
+      vite: ^7.0.0 || ^8.0.0
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+      vite:
+        optional: true
+
+  '@prisma/orm-toolchain@8.0.0-rc.21':
+    resolution: {integrity: sha512-6b9EtZbXxDwrU0JvKAy2jY9rGXoQ0S0Pm+HTyu3JwIYqNuYmD1tgizGmGWqhFziVySj+eCSIcLOJ7KRGFEaKpw==}
     peerDependencies:
       '@prisma/cli-engine': 0.9.0
       typescript: '>=5.9'
@@ -2696,8 +2969,49 @@ packages:
       rollup:
         optional: true
 
+  '@scarf/scarf@1.4.0':
+    resolution: {integrity: sha512-xxeapPiUXdZAE3che6f3xogoJPeZgig6omHEy1rIY5WVsB3H2BHNnZH+gHG6x91SCWyQCzWGsuL2Hh3ClO5/qQ==}
+
   '@sec-ant/readable-stream@0.4.1':
     resolution: {integrity: sha512-831qok9r2t8AlxLko40y2ebgSDhenenCatLVeW/uBtnHPyhHOvG0C7TvfgecV+wHzIm5KUICgzmVpWS+IMEAeg==}
+
+  '@sentry/bundler-plugins@11.9.0':
+    resolution: {integrity: sha512-wpz/gcM/6rld/wb4Mhf8kbDN9ngG5myKQSZC+45gzqR1w+GcdfVnYkp3sHL9AV4mrwL8skhTItdUghMwMTknKg==}
+    engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
+    peerDependencies:
+      rollup: '>=3.2.0'
+      webpack: '>=5.1.0'
+    peerDependenciesMeta:
+      rollup:
+        optional: true
+      webpack:
+        optional: true
+
+  '@sentry/conventions@0.27.0':
+    resolution: {integrity: sha512-Mrqd/o7n/z7qWSYfQQA7x4fFTA0IqOG6JNsbBpnC97khPwZk7n6DPtOO7YgaYplSl8R8QLRbBz9Xv2lVhToSAg==}
+    engines: {node: '>=14'}
+
+  '@sentry/core@11.9.0':
+    resolution: {integrity: sha512-t0dZyHILt2XVC4Fe9UmAty6YRfOuQv95cvWeNl+HlW4LphjF5/jkALV3cJCUMdhpblYELgIJC4U/S/GoYuI2bA==}
+    engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
+
+  '@sentry/node@11.9.0':
+    resolution: {integrity: sha512-cz219PzVaAPTlQ4bRBTRBCOvxbZkXK0KkqyqWPV6OmSn6vWn935CTfOs+MKUc1A+locvB8i9OfBIbO6v03BBuQ==}
+    engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
+
+  '@sentry/opentelemetry@11.9.0':
+    resolution: {integrity: sha512-FMCkAbEfBpFterrkR7k4P8LEabUAEHjZMbu+ycDjbnI1U4pT22tpwcFJOt06orFkacoWNsYT9+EdfmkvaCKtSA==}
+    engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
+    peerDependencies:
+      '@opentelemetry/api': ^1.9.0
+
+  '@sentry/server-runtime-injection@11.9.0':
+    resolution: {integrity: sha512-Q2G5xaeoiYwGheCZyeqZ/v//SZYjRLlITlanTsZM/fox1qk7cmbDX7+o4q+JkApVV9VuXQZVxppaVCsBglfDKA==}
+    engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
+
+  '@sentry/server-utils@11.9.0':
+    resolution: {integrity: sha512-xHETix5jAjs/4tY+b9RCejEU7O49pNBiGgCWX0KFRMSpWbw9moqQ8i8N62bS7L+/BJnBcZ5SZ1nweXh7w787Qg==}
+    engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
   '@sinclair/typebox@0.34.52':
     resolution: {integrity: sha512-XiMQh7qqVlxZzcVD+kkGMNGMzcTrDMLWI7S4x7z1MkCkbDPrekpZXEUK0eZqZFMuHQg2a2DZOcDIh9o5v3Gonw==}
@@ -2764,6 +3078,11 @@ packages:
   '@types/connect@3.4.38':
     resolution: {integrity: sha512-K6uROf1LD88uDQqJCktA4yzL1YYAK6NgfsI0v/mTgyPKWsX1CnJ0XPSDhViejru1GcRkLWb8RlzFYJRqGUbaug==}
 
+  '@types/cookie-parser@1.4.10':
+    resolution: {integrity: sha512-B4xqkqfZ8Wek+rCOeRxsjMS9OgvzebEzzLYw7NHYuvzb7IdxOkI0ZHGgeEBX4PUM7QGVvNSK60T3OvWj3YfBRg==}
+    peerDependencies:
+      '@types/express': '*'
+
   '@types/deep-eql@4.0.2':
     resolution: {integrity: sha512-c9h9dVVMigMPc4bwTvC5dxqtqJZwQPePsWjPlpSOnojbor6pGqdk541lfA7AqFQr5pB1BRdq0juY9db81BwyFw==}
 
@@ -2803,8 +3122,14 @@ packages:
   '@types/node@22.20.5':
     resolution: {integrity: sha512-U2+DNr+wSjpsTS/wZGYHq7GcwfuSmKiKvoPvK22zwTlRhU91yOniN4qRR5KhIjvif7ysw/dz/hKmfDH0Ris4aA==}
 
+  '@types/node@26.1.2':
+    resolution: {integrity: sha512-Vu4a5UFA9rIIFJ7rB/Vaafh9lrCQszopTCx6KjFboXTGQbPNasehVR5TEiithSDGyd1DEiUByggTZsg8jukeIg==}
+
   '@types/parse-json@4.0.2':
     resolution: {integrity: sha512-dISoDXWWQwUquiKsyZ4Ng+HX2KsPL7LyHKHQwgGFEA3IaKac4Obd+h2a/a6waisAoepJlBcx9paWqjA8/HVjCw==}
+
+  '@types/pg@8.20.4':
+    resolution: {integrity: sha512-Jz7UDOlIiFJuacC0TlBoLyNtmwlA/wpIyPDd3tvUqlRM+HzkWy2xUgpFpaXtbfTAFF6sIGq5lsCDBdJnhky1Xg==}
 
   '@types/qs@6.15.1':
     resolution: {integrity: sha512-GZHUBZR9hckSUhrxmp1nG6NwdpM9fCunJwyThLW1X3AyHgd9IlHb6VANpQQqDr2o/qQp6McZ3y/IA2rVzKzSbw==}
@@ -2832,6 +3157,9 @@ packages:
 
   '@types/stack-utils@2.0.3':
     resolution: {integrity: sha512-9aEbYZ3TbYMznPdcdr3SmIrLXwC/AKZXQeCf9Pgao5CKb8CyHuEX5jzWPTkvregvhRJHcpRO6BFoGW9ycaOkYw==}
+
+  '@types/validator@13.15.10':
+    resolution: {integrity: sha512-T8L6i7wCuyoK8A/ZeLYt1+q0ty3Zb9+qbSSvrIVitzT3YjZqkTZ40IbRsPanlB4h1QB3JVL1SYCdR6ngtFYcuA==}
 
   '@types/ws@8.18.2':
     resolution: {integrity: sha512-67MQl+fpWKVTT1NYdnmo3U4sc/xPo/zQBncVnI74qmQa0z/b+1g6iYqNmGCPbxO+zz2aklb08a0oHfegiVd0/w==}
@@ -3290,6 +3618,9 @@ packages:
   argparse@2.0.1:
     resolution: {integrity: sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==}
 
+  argparse@3.0.4:
+    resolution: {integrity: sha512-fwWK3Zq22l4XJJjx5mcBHGikIk+hJqO+32dPm0Jur7+rtG5x1scOjSfdT9ZKeWHPpsya/l0HHK4tDImBkTrtvA==}
+
   arkregex@0.0.14:
     resolution: {integrity: sha512-G3I/uCtWE0IKQiPh0qqmmAFDdtjZKZQ5mNPR6gJBeAMZ7VqYCpoaDeXnLju2Zo6ywExtmxZJELeVFb0MPDjPyA==}
 
@@ -3634,6 +3965,12 @@ packages:
   cjs-module-lexer@2.3.0:
     resolution: {integrity: sha512-lmNyBzi6iYiqyrExTctfmjd8tInx+dHu9PBomTfH5RXS53c27JMFJgzNv5TyAnm3PgGf+MLy0+Ws41/HlVxdKQ==}
 
+  class-transformer@0.5.1:
+    resolution: {integrity: sha512-SQa1Ws6hUbfC98vKGxZH3KFY0Y1lm5Zm0SY8XX9zbK7FJCyVEac3ATW0RIpwzW+oOfmHE5PMPufDG9hCfoEOMw==}
+
+  class-validator@0.15.1:
+    resolution: {integrity: sha512-LqoS80HBBSCVhz/3KloUly0ovokxpdOLR++Al3J3+dHXWt9sTKlKd4eYtoxhxyUjoe5+UcIM+5k9MIxyBWnRTw==}
+
   cli-cursor@3.1.0:
     resolution: {integrity: sha512-I/zHAwsKf9FqGoXM4WWRACob9+SNukZTd94DWF57E4toouRulbCxcUh6RKUEOQlYTHJnzkPMySvPNaaSLNfLZw==}
     engines: {node: '>=8'}
@@ -3762,6 +4099,13 @@ packages:
 
   convert-source-map@2.0.0:
     resolution: {integrity: sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==}
+
+  cookie-parser@1.4.7:
+    resolution: {integrity: sha512-nGUvgXnotP3BsjiLX2ypbQnWoGUPIIfHQNZkkC668ntrzGWEZVW70HDEB1qnNGMicPje6EttlIgzo51YSwNQGw==}
+    engines: {node: '>= 0.8.0'}
+
+  cookie-signature@1.0.6:
+    resolution: {integrity: sha512-QADzlaHc8icV8I7vbaJXJwod9HWYp8uCqf1xa4OfNu1T7JVxQIrUgOWtHdNDtPiywmFbiS12VjotIXLrKM3orQ==}
 
   cookie-signature@1.0.7:
     resolution: {integrity: sha512-NXdYc3dLr47pBkpUCHtKSwIOQXLVn8dZEuywboCOJY/osA0wFSLlSawr3KN8qXJEyX66FcONTH8EIlVuK0yyFA==}
@@ -4037,6 +4381,10 @@ packages:
     resolution: {integrity: sha512-uc47g4b+4k/M/SeaW1y4OApx+mtLWl92l5LMPP0GNXctZqELk+YGgOPIIC5elYmUH4OuoK3JLhuRUYegeySiFA==}
     engines: {node: '>=12'}
 
+  dotenv-expand@13.0.0:
+    resolution: {integrity: sha512-aBfBS8eYIeXmpHI9ThIlA7/WLq+SLt18iXUZhb52rW89QLKQFoIpPG1bPeewoPZsTyjSSO3T7234FBVUM1V2rA==}
+    engines: {node: '>=12'}
+
   dotenv@16.4.7:
     resolution: {integrity: sha512-47qPchRCykZC03FhkYAhrvwU4xDBFIj1QPqaarj6mdM/hgUzfPHcpkHJOn3mJAufFeeAxAzeGsr5X0M4k6fLZQ==}
     engines: {node: '>=12'}
@@ -4044,6 +4392,11 @@ packages:
   dotenv@17.4.2:
     resolution: {integrity: sha512-nI4U3TottKAcAD9LLud4Cb7b2QztQMUEfHbvhTH09bqXTxnSie8WnjPALV/WMCrJZ6UV/qHJ6L03OqO3LcdYZw==}
     engines: {node: '>=12'}
+
+  dotenv@18.0.3:
+    resolution: {integrity: sha512-/8CJTyL817qPnfbQrJgOEcrU3fDrJkRIoXBE566wHuvIXKOCHUZhPqGPbCPi9SogjdGnreF0TlvnTgK6J/8zpA==}
+    engines: {node: '>=12'}
+    hasBin: true
 
   dotenv@18.0.9:
     resolution: {integrity: sha512-3fVOW4cB02R066PUSwn8O4TJyz9NckQl7F81blIbaq9jKBm2tSmOKky7ZHIXzGvkVPXCSn6jkpziBPZdGFs8Tw==}
@@ -4137,6 +4490,9 @@ packages:
   es-set-tostringtag@2.1.0:
     resolution: {integrity: sha512-j6vWzfrGVfyXxge+O0x5sh6cvxAog0a/4Rdd2K36zCMV5eJ+/+tOAngRO8cODMNWbVRdVlmGZQL2YS3yR8bIUA==}
     engines: {node: '>= 0.4'}
+
+  es-toolkit@1.52.0:
+    resolution: {integrity: sha512-XTNEJQh1tY1ZJVcf6ayP/2n4ZPyaHlW2FWs7xvw5ddPuhUVjLD3olQVQS7kf58JbAB48iL0uL/jerTrjtV3lDA==}
 
   esbuild@0.28.2:
     resolution: {integrity: sha512-HKVLS8dvII+xoKW9kmqxbRKrnWEXfJJr/FZhhJmiqIB0e053QNYFqOBouTMO/k5sID4MvCiUCvv8b9M4h32wIA==}
@@ -4913,6 +5269,10 @@ packages:
     resolution: {integrity: sha512-SFNOvSJ+Dgf/9An904Yx+CgSlIPCkIpao4qo51lpee25TIRejdH3rhR4EZMGoNx3/TP3O+wzWuiTFl4sqbltzA==}
     hasBin: true
 
+  js-yaml@5.5.0:
+    resolution: {integrity: sha512-paNr4LFIFPjeeSmwNYdrb8FafLLG/Cr2Af3GjbsHJ5CxIjH4r0c2emlmRdAtpPAieP1gRVzk6buBbVP5gBMGAg==}
+    hasBin: true
+
   jsesc@3.1.0:
     resolution: {integrity: sha512-/sM3dO2FOzXjKQhJuo0Q173wf2KOo8t4I8vHy6lF9poUp7bKT0/NHE8fPX23PwfhnykfqnC2xRxOnVw5XuGIaA==}
     engines: {node: '>=6'}
@@ -4990,6 +5350,9 @@ packages:
   levn@0.4.1:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
     engines: {node: '>= 0.8.0'}
+
+  libphonenumber-js@1.13.15:
+    resolution: {integrity: sha512-AHdhEQeDFEJ4GKDAQ9AwxChy+v2kUILUB3TGQRpkXMkWePjXTU/WQEzWVQoIx/Gz8fE73Wr5SEuZCy2vk8jrMQ==}
 
   libsodium-wrappers@0.8.4:
     resolution: {integrity: sha512-mu8aAWucZjTB5O/BtGXtW4e1agy7uHxNYG7zPthmmD1jU43LCDmSWZLN4JhflbdPXj3yDO4lxM1O9hLDgIOXDw==}
@@ -5506,6 +5869,10 @@ packages:
     resolution: {integrity: sha512-5b6Y85tPxZZ7QytO+BQzysW31HJku27cRIlkbAXaNx+BdcVi+LlRFmVXzeF6a7JCwJpyw5c4b+YSVImQIrBpuQ==}
     engines: {node: '>=10'}
 
+  oxc-parser@0.152.0:
+    resolution: {integrity: sha512-ZztsZgaCWmPeKYMdoTT5e0oV/oxD1NeLWNR3kAtr/G707cUPYaaozRlVDHLCGnszHJRszN9mJwmPNpqgwloC0A==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+
   p-limit@2.3.0:
     resolution: {integrity: sha512-//88mFWSJx8lxCzwdAABTJL2MyWB12+eIY7MDL2SqLmAkeKU9qxRvWuSyTjm3FUmpBEMuFfckAIqEaVGUDxb6w==}
     engines: {node: '>=6'}
@@ -5615,6 +5982,45 @@ packages:
 
   perfect-debounce@2.1.0:
     resolution: {integrity: sha512-LjgdTytVFXeUgtHZr9WYViYSM/g8MkcTPYDlPa3cDqMirHjKiSZPYd6DoL7pK8AJQr+uWkQvCjHNdiMqsrJs+g==}
+
+  pg-cloudflare@1.4.1:
+    resolution: {integrity: sha512-6PQbsFWZcp9EmJEwy5cGQ2La+AMWpP46lgbb8X+U/XsHIUweYDNCpeuKck5RxL2MdVFi7krbbEi5nX4Zh7JhrQ==}
+
+  pg-connection-string@2.14.1:
+    resolution: {integrity: sha512-qR3kGNPBLpCNtz0evbKA0Y/MRFXwSSdT+pTJvYp/bXTcReZbvX1kzF0IyTc1QnxqF7AZbOeBhNL8R5mYQZV/MA==}
+
+  pg-cursor@2.22.1:
+    resolution: {integrity: sha512-X10ldv3wwBONQkOSwgWEbaEITMGLd92V2Zd+xsFPhDt3nhhU3hpAT08SERBChnIFmomczLax6lKXLJrHPPXfxA==}
+    peerDependencies:
+      pg: ^8
+
+  pg-int8@1.0.1:
+    resolution: {integrity: sha512-WCtabS6t3c8SkpDBUlb1kjOs7l66xsGdKpIPZsg4wR+B3+u9UAum2odSsF9tnvxg80h4ZxLWMy4pRjOsFIqQpw==}
+    engines: {node: '>=4.0.0'}
+
+  pg-pool@3.14.0:
+    resolution: {integrity: sha512-gKtPkFdQPU3DksooVLi9LsjZxrsBUZIpa+7aVx+LV5pNh0KzP4Zleud2po+ConrxbuXGBJ6Hfer6hdgpIBpBaw==}
+    peerDependencies:
+      pg: '>=8.0'
+
+  pg-protocol@1.16.1:
+    resolution: {integrity: sha512-p9VOFMiHB/ZbJATetbg+99PxssTVSQRnyuPSQ67mN1+1KBOjZaZ83ZQzltnxPhJwSsC3nwVjJ10DVJlerbFzLg==}
+
+  pg-types@2.2.0:
+    resolution: {integrity: sha512-qTAAlrEsl8s4OiEQY69wDvcMIdQN6wdz5ojQiOy6YRMuynxenON0O5oCpJI6lshc6scgAY8qvJ2On/p+CXY0GA==}
+    engines: {node: '>=4'}
+
+  pg@8.22.0:
+    resolution: {integrity: sha512-8wih1vVIBMxoUM2oB4soJsD9tDnDpLv4OXBJ+EJzFsvycD+lfyIreC2gGHq78f8jbLLt+bvlPTFdFZfJkOuzAA==}
+    engines: {node: '>= 16.0.0'}
+    peerDependencies:
+      pg-native: '>=3.0.1'
+    peerDependenciesMeta:
+      pg-native:
+        optional: true
+
+  pgpass@1.0.5:
+    resolution: {integrity: sha512-FdW9r/jQZhSeohs1Z3sI1yxFQNFvMcnmfuj4WBMUTxOrAyLMaTcE1aAMBiTlbMNaXvBCQuVi0R7hd8udDSP7ug==}
 
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
@@ -5873,6 +6279,22 @@ packages:
   postcss@8.5.32:
     resolution: {integrity: sha512-LJlKCCAUFKOuZxipUdYw1NzIITEsPcgyOG9LkvRJvuKj/bRzbuRY0ARXvL0pWGpsZvn8jku+LMep2eU0seHp8g==}
     engines: {node: ^10 || ^12 || >=14}
+
+  postgres-array@2.0.0:
+    resolution: {integrity: sha512-VpZrUqU5A69eQyW2c5CA1jtLecCsN2U/bD6VilrFDWq5+5UIEVO7nazS3TEcHf1zuPYO/sqGvUvW62g86RXZuA==}
+    engines: {node: '>=4'}
+
+  postgres-bytea@1.0.1:
+    resolution: {integrity: sha512-5+5HqXnsZPE65IJZSMkZtURARZelel2oXUEO8rH83VS/hxH5vv1uHquPg5wZs8yMAfdv971IU+kcPUczi7NVBQ==}
+    engines: {node: '>=0.10.0'}
+
+  postgres-date@1.0.7:
+    resolution: {integrity: sha512-suDmjLVQg78nMK2UZ454hAG+OAW+HQPZ6n++TNDUX+L0+uUlLywnoxJKDou51Zm+zTCjrCl0Nq6J9C5hP9vK/Q==}
+    engines: {node: '>=0.10.0'}
+
+  postgres-interval@1.2.0:
+    resolution: {integrity: sha512-9ZhXKM/rw350N1ovuWHbGxnGh/SNJ4cnxHiM0rxE4VN41wsg8P8zWn9hv/buK00RP4WvlOyr/RBDiptyxVbkZQ==}
+    engines: {node: '>=0.10.0'}
 
   powershell-utils@0.2.1:
     resolution: {integrity: sha512-C+y9x90UElAddDZmV4qOx9W53B61PO7cIqWz2dQsWlwswuq4mr8NEwytdGKboYbQlGZ3awrkTeNvcZiZNHnQ8A==}
@@ -6293,6 +6715,11 @@ packages:
     resolution: {integrity: sha512-1gnZf7DFcoIcajTjTwjwuDjzuz4PPcY2StKPlsGAQ1+YH20IRVrBaXSWmdjowTJ6u8Rc01PoYOGHXfP1mYcZNQ==}
     engines: {node: '>= 18'}
 
+  sentry@0.45.0:
+    resolution: {integrity: sha512-kgmEbLlC22lL7uneeUm9Sjz65rp5cvwYOMTxXbZCmBum4sbVre/lLT3zTV3kwXHJ9/BM8ZS0/GhZe9Cl1t6WyA==}
+    engines: {node: '>=20.0'}
+    hasBin: true
+
   serialize-javascript@7.1.4:
     resolution: {integrity: sha512-FqlEuoTq/zRmA4Lg6aOqyH3lCHbUtCB0bmHCeFniX2GBdDqMJM3FwdvEhlE5Pim1dlt2FfBdVPmUNNiGhhKqpw==}
     engines: {node: '>=20.0.0'}
@@ -6412,6 +6839,10 @@ packages:
     resolution: {integrity: sha512-r46gZQZQV+Kl9oItvl1JZZqJKGr+oEkB08A6BzkiR7593/7IbtuncXHd2YoYeTsG4157ZssMu9KYvUHLcjcDoA==}
     engines: {node: '>=6.0.0'}
 
+  split2@4.2.0:
+    resolution: {integrity: sha512-UcjcJOWknrNkF6PLX83qcHM6KHgVKNkV62Y8a5uYDVv9ydGQVwAHMKqHdJje1VTWpljG0WYpCDhrCdAOYH4TWg==}
+    engines: {node: '>= 10.x'}
+
   sprintf-js@1.0.3:
     resolution: {integrity: sha512-D9cPgkvLlV3t3IzL0D0YLvGA9Ahk4PcvVwUbN0dSGr1aP0Nrt4AEnTUbuGvquEC0mA64Gqt1fzirlRs5ibXx8g==}
 
@@ -6523,6 +6954,9 @@ packages:
     engines: {node: '>=16'}
     hasBin: true
 
+  swagger-ui-dist@5.34.0:
+    resolution: {integrity: sha512-H6tAIjr3XqE31PbkZl0OFya1ziRLDfTwh3J6OHdumPtPCLfjTnyLeagl/55kFNZcTOz9a9QI9WP0FXldwiGJag==}
+
   sync-child-process@1.1.1:
     resolution: {integrity: sha512-54zMOnH5qgjdKW8SGpCx3daSP+v+TtTfOxgPdhUE3P0hytMMpknZfP67S4JeRcx5IQRWJERz6890yO4dkTywww==}
     engines: {node: '>=16.0.0'}
@@ -6555,6 +6989,15 @@ packages:
 
   teex@1.0.1:
     resolution: {integrity: sha512-eYE6iEI62Ni1H8oIa7KlDU6uQBtqr4Eajni3wX7rpfXD8ysFx8z0+dri+KWEPWpBsxXfxu58x/0jvTVT1ekOSg==}
+
+  temporal-polyfill@1.0.6:
+    resolution: {integrity: sha512-tYyEry1HLGUDbm2356W3iYD0OZdo7rlP7h98Zr/EnjqLZQwTAfcBDUvJnJbfA15v/vQad57hJZScG5O0W2oKEA==}
+
+  temporal-spec@1.0.1:
+    resolution: {integrity: sha512-wxVoanmDeavXie1vu2JaQ3WIc3JZnWAOYFBsJyATaVsXsycKYUflGsyBmrRSnoCpZJpwPyr38VpgSUlQ8CbFxg==}
+
+  temporal-utils@1.0.3:
+    resolution: {integrity: sha512-9jbTSX3HvkOWvDpNpFzwX/d1mkCrgQgwLmVTOEiuocZGKHsrQJtttGZFmybJ2zYP5zCSZuU5ZyeS8+eOEPABiQ==}
 
   terser-webpack-plugin@5.6.1:
     resolution: {integrity: sha512-201R5j+sJpK8nFWwKVyNfZot8FaJbLZDq5evriVzbV1wDtSXDjRUDRfJzHpAaxFDMEhsZL1QkeqM61wgsS3KaQ==}
@@ -6681,6 +7124,9 @@ packages:
       loader-utils:
         optional: true
 
+  ts-toolbelt@9.6.0:
+    resolution: {integrity: sha512-nsZd8ZeNUzukXPlJmTBwUAuABDe/9qtVDelJeT/qW0ow3ZS3BsQJtNkan1802aM9Uf68/Y8ljw86Hu0h5IUW3w==}
+
   tsconfig-paths-webpack-plugin@4.2.0:
     resolution: {integrity: sha512-zbem3rfRS8BgeNK50Zz5SIQgXzLafiHjOwUAvk/38/o1jHn/V5QAgVUcz884or7WYcPaH3N2CIfUc2u0ul7UcA==}
     engines: {node: '>=10.13.0'}
@@ -6694,6 +7140,11 @@ packages:
 
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
+
+  tsx@4.23.15:
+    resolution: {integrity: sha512-Yiex1Ovn8z2xPpOWckIiysV1SSyRMY9BkLF++q0yKiDxCqRhosKfMg3janKkiLBwZ5c/YryloKwGZcrEmtwxKw==}
+    engines: {node: '>=18.0.0'}
+    hasBin: true
 
   tsyringe@4.10.0:
     resolution: {integrity: sha512-axr3IdNuVIxnaK5XGEUFTu3YmAQ6lllgrvqfEoR16g/HGnYY/6We4oWENtAnzK6/LpJ2ur9PAb80RBt7/U4ugw==}
@@ -6747,6 +7198,9 @@ packages:
 
   undici-types@6.21.0:
     resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
+
+  undici-types@8.3.0:
+    resolution: {integrity: sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ==}
 
   undici@7.29.0:
     resolution: {integrity: sha512-IDxfleLmmbSskfWSUATiN1nfn2rDuvnMOqb5CWR92iIfojA0Ud+ulOAAEQ57LPr9rWmsreUyf5lwyao+7GNNVw==}
@@ -6828,6 +7282,10 @@ packages:
     peerDependenciesMeta:
       typescript:
         optional: true
+
+  validator@13.15.35:
+    resolution: {integrity: sha512-TQ5pAGhd5whStmqWvYF4OjQROlmv9SMFVt37qoCBdqRffuuklWYQlCNnEs2ZaIBD1kZRNnikiZOS1eqgkar0iw==}
+    engines: {node: '>= 0.10'}
 
   varint@6.0.0:
     resolution: {integrity: sha512-cXEIW6cfr15lFv563k4GuVuW/fiwjknytD37jIOLSdSWuOI6WnO/oKwmP2FQTU2l01LP8/M5TSAJpzUaGe3uWg==}
@@ -7113,6 +7571,10 @@ packages:
     resolution: {integrity: sha512-c16PKLIRxBYpR3jSWsdS7SFp0COm5SOQdiFjY818dYFHJbMGuLBszpF07LBWmOS1uzrHa9VGdynsEgoeKy0oOQ==}
     engines: {node: '>=20'}
 
+  xtend@4.0.2:
+    resolution: {integrity: sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==}
+    engines: {node: '>=0.4'}
+
   y18n@5.0.8:
     resolution: {integrity: sha512-0pfFzegeDWJHJIAmTLRP2DwHjdF5s7jo9tuztdQxAhINCdvS+3nGINqPd00AphqJR/0LhANUS6/+7SCb98YOfA==}
     engines: {node: '>=10'}
@@ -7168,9 +7630,12 @@ packages:
   zeptomatch@2.1.0:
     resolution: {integrity: sha512-KiGErG2J0G82LSpniV0CtIzjlJ10E04j02VOudJsPyPwNZgGnRKQy7I1R7GMyg/QswnE4l7ohSGrQbQbjXPPDA==}
 
+  zod@4.6.7:
+    resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
+
 snapshots:
 
-  '@alchemy.run/cloudflare-runtime@2.0.0-beta.83(@distilled.cloud/cloudflare@1.0.0-rc.15(effect@4.0.3))(@types/node@22.20.5)(effect@4.0.3)(rolldown@1.2.5)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0))':
+  '@alchemy.run/cloudflare-runtime@2.0.0-beta.83(@distilled.cloud/cloudflare@1.0.0-rc.15(effect@4.0.3))(@types/node@22.20.5)(effect@4.0.3)(rolldown@1.2.5)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))':
     dependencies:
       '@alchemy.run/node-utils': 2.0.0-beta.83
       '@cloudflare/unenv-preset': 2.16.2(unenv@2.0.0-rc.24)(workerd@1.20261002.1)
@@ -7186,7 +7651,7 @@ snapshots:
       yauzl: 3.4.0
     optionalDependencies:
       rolldown: 1.2.5
-      vite: 8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0)
+      vite: 8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
     transitivePeerDependencies:
       - '@types/node'
       - proxy-agent
@@ -8203,7 +8668,7 @@ snapshots:
   '@effect/vitest@4.0.3(effect@4.0.3)(vitest@5.0.5)':
     dependencies:
       effect: 4.0.3
-      vitest: 5.0.5(@types/node@22.20.5)(@vitest/coverage-v8@5.0.5)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0))
+      vitest: 5.0.5(@opentelemetry/api@1.10.0)(@types/node@22.20.5)(@vitest/coverage-v8@5.0.5)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))
 
   '@electric-sql/pglite-socket@0.0.20(@electric-sql/pglite@0.3.15)':
     dependencies:
@@ -8872,6 +9337,8 @@ snapshots:
       - encoding
       - supports-color
 
+  '@microsoft/tsdoc@0.17.1': {}
+
   '@mrleebo/prisma-ast@0.13.1':
     dependencies:
       chevrotain: 10.5.0
@@ -8896,7 +9363,7 @@ snapshots:
     optionalDependencies:
       hono: 4.11.4
 
-  '@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)':
+  '@nestjs/common@11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)':
     dependencies:
       file-type: 21.3.4(supports-color@8.1.1)
       iterare: 1.2.1
@@ -8905,12 +9372,24 @@ snapshots:
       rxjs: 7.8.2
       tslib: 2.8.1
       uid: 2.0.2
+    optionalDependencies:
+      class-transformer: 0.5.1
+      class-validator: 0.15.1
     transitivePeerDependencies:
       - supports-color
 
-  '@nestjs/core@11.2.8(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@11.2.8)(reflect-metadata@0.2.2)(rxjs@7.8.2)':
+  '@nestjs/config@12.0.1(@nestjs/common@11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(rxjs@7.8.2)':
     dependencies:
-      '@nestjs/common': 11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
+      '@nestjs/common': 11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
+      '@standard-schema/spec': 1.1.0
+      dotenv: 18.0.3
+      dotenv-expand: 13.0.0
+      es-toolkit: 1.52.0
+      rxjs: 7.8.2
+
+  '@nestjs/core@11.2.8(@nestjs/common@11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@11.2.8)(reflect-metadata@0.2.2)(rxjs@7.8.2)':
+    dependencies:
+      '@nestjs/common': 11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
       fast-safe-stringify: 2.1.1
       iterare: 1.2.1
       path-to-regexp: 8.4.2
@@ -8919,12 +9398,20 @@ snapshots:
       tslib: 2.8.1
       uid: 2.0.2
     optionalDependencies:
-      '@nestjs/platform-express': 11.2.8(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(supports-color@8.1.1)
+      '@nestjs/platform-express': 11.2.8(@nestjs/common@11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(supports-color@8.1.1)
 
-  '@nestjs/platform-express@11.2.8(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(supports-color@8.1.1)':
+  '@nestjs/mapped-types@12.0.0(@nestjs/common@11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)':
     dependencies:
-      '@nestjs/common': 11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
-      '@nestjs/core': 11.2.8(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@11.2.8)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/common': 11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
+      reflect-metadata: 0.2.2
+    optionalDependencies:
+      class-transformer: 0.5.1
+      class-validator: 0.15.1
+
+  '@nestjs/platform-express@11.2.8(@nestjs/common@11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(supports-color@8.1.1)':
+    dependencies:
+      '@nestjs/common': 11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
+      '@nestjs/core': 11.2.8(@nestjs/common@11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@11.2.8)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       cors: 2.8.6
       express: 5.2.1(supports-color@8.1.1)
       multer: 2.4.0
@@ -8946,13 +9433,30 @@ snapshots:
     transitivePeerDependencies:
       - chokidar
 
-  '@nestjs/testing@11.2.8(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(@nestjs/platform-express@11.2.8)':
+  '@nestjs/swagger@12.0.5(@nestjs/common@11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(typescript@6.0.3)':
     dependencies:
-      '@nestjs/common': 11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
-      '@nestjs/core': 11.2.8(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@11.2.8)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@microsoft/tsdoc': 0.17.1
+      '@nestjs/common': 11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
+      '@nestjs/core': 11.2.8(@nestjs/common@11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@11.2.8)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/mapped-types': 12.0.0(@nestjs/common@11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)
+      '@standard-schema/spec': 1.1.0
+      es-toolkit: 1.52.0
+      js-yaml: 5.5.0
+      path-to-regexp: 8.4.2
+      reflect-metadata: 0.2.2
+      swagger-ui-dist: 5.34.0
+    optionalDependencies:
+      class-transformer: 0.5.1
+      class-validator: 0.15.1
+      typescript: 6.0.3
+
+  '@nestjs/testing@11.2.8(@nestjs/common@11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(@nestjs/platform-express@11.2.8)':
+    dependencies:
+      '@nestjs/common': 11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
+      '@nestjs/core': 11.2.8(@nestjs/common@11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@11.2.8)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       tslib: 2.8.1
     optionalDependencies:
-      '@nestjs/platform-express': 11.2.8(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(supports-color@8.1.1)
+      '@nestjs/platform-express': 11.2.8(@nestjs/common@11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(supports-color@8.1.1)
 
   '@noble/hashes@1.8.0': {}
 
@@ -9088,7 +9592,7 @@ snapshots:
       - nx
       - supports-color
 
-  '@nx/nest@24.0.2(@babel/traverse@7.29.10(supports-color@8.1.1))(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(@types/node@22.20.5)(@zkochan/js-yaml@0.0.7)(babel-plugin-macros@3.1.0)(chokidar@4.0.3)(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(express@5.2.1(supports-color@8.1.1))(nx@24.0.2)(prettier@3.6.2)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)(typescript@6.0.3)':
+  '@nx/nest@24.0.2(@babel/traverse@7.29.10(supports-color@8.1.1))(@nestjs/common@11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(@types/node@22.20.5)(@zkochan/js-yaml@0.0.7)(babel-plugin-macros@3.1.0)(chokidar@4.0.3)(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(express@5.2.1(supports-color@8.1.1))(nx@24.0.2)(prettier@3.6.2)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)(typescript@6.0.3)':
     dependencies:
       '@nestjs/schematics': 11.1.0(chokidar@4.0.3)(prettier@3.6.2)(typescript@6.0.3)
       '@nx/devkit': 24.0.2(nx@24.0.2)
@@ -9097,8 +9601,8 @@ snapshots:
       semver: 7.8.5
       tslib: 2.8.1
     optionalDependencies:
-      '@nestjs/common': 11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
-      '@nestjs/core': 11.2.8(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@11.2.8)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/common': 11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
+      '@nestjs/core': 11.2.8(@nestjs/common@11.2.8(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@11.2.8)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       reflect-metadata: 0.2.2
       rxjs: 7.8.2
     transitivePeerDependencies:
@@ -9185,7 +9689,7 @@ snapshots:
   '@nx/nx-win32-x64-msvc@24.0.2':
     optional: true
 
-  '@nx/vitest@24.0.2(@babel/traverse@7.29.10(supports-color@8.1.1))(@nx/eslint@24.0.2(@babel/traverse@7.29.10(supports-color@8.1.1))(@nx/jest@24.0.2(@babel/traverse@7.29.10(supports-color@8.1.1))(@types/node@22.20.5)(babel-plugin-macros@3.1.0)(nx@24.0.2)(supports-color@8.1.1)(typescript@6.0.3))(@zkochan/js-yaml@0.0.7)(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(nx@24.0.2)(supports-color@8.1.1))(nx@24.0.2)(supports-color@8.1.1)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0))(vitest@5.0.5)':
+  '@nx/vitest@24.0.2(@babel/traverse@7.29.10(supports-color@8.1.1))(@nx/eslint@24.0.2(@babel/traverse@7.29.10(supports-color@8.1.1))(@nx/jest@24.0.2(@babel/traverse@7.29.10(supports-color@8.1.1))(@types/node@22.20.5)(babel-plugin-macros@3.1.0)(nx@24.0.2)(supports-color@8.1.1)(typescript@6.0.3))(@zkochan/js-yaml@0.0.7)(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(nx@24.0.2)(supports-color@8.1.1))(nx@24.0.2)(supports-color@8.1.1)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))(vitest@5.0.5)':
     dependencies:
       '@nx/devkit': 24.0.2(nx@24.0.2)
       '@nx/js': 24.0.2(@babel/traverse@7.29.10(supports-color@8.1.1))(nx@24.0.2)(supports-color@8.1.1)
@@ -9194,8 +9698,8 @@ snapshots:
       tslib: 2.8.1
     optionalDependencies:
       '@nx/eslint': 24.0.2(@babel/traverse@7.29.10(supports-color@8.1.1))(@nx/jest@24.0.2(@babel/traverse@7.29.10(supports-color@8.1.1))(@types/node@22.20.5)(babel-plugin-macros@3.1.0)(nx@24.0.2)(supports-color@8.1.1)(typescript@6.0.3))(@zkochan/js-yaml@0.0.7)(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(nx@24.0.2)(supports-color@8.1.1)
-      vite: 8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0)
-      vitest: 5.0.5(@types/node@22.20.5)(@vitest/coverage-v8@5.0.5)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0))
+      vite: 8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
+      vitest: 5.0.5(@opentelemetry/api@1.10.0)(@types/node@22.20.5)(@vitest/coverage-v8@5.0.5)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))
     transitivePeerDependencies:
       - '@babel/traverse'
       - '@swc-node/register'
@@ -9385,7 +9889,68 @@ snapshots:
       '@octokit/request-error': 7.1.2
       '@octokit/webhooks-methods': 6.0.0
 
+  '@opentelemetry/api@1.10.0': {}
+
+  '@oxc-parser/binding-android-arm-eabi@0.152.0':
+    optional: true
+
+  '@oxc-parser/binding-android-arm64@0.152.0':
+    optional: true
+
+  '@oxc-parser/binding-darwin-arm64@0.152.0':
+    optional: true
+
+  '@oxc-parser/binding-darwin-x64@0.152.0':
+    optional: true
+
+  '@oxc-parser/binding-freebsd-x64@0.152.0':
+    optional: true
+
+  '@oxc-parser/binding-linux-arm-gnueabihf@0.152.0':
+    optional: true
+
+  '@oxc-parser/binding-linux-arm-musleabihf@0.152.0':
+    optional: true
+
+  '@oxc-parser/binding-linux-arm64-gnu@0.152.0':
+    optional: true
+
+  '@oxc-parser/binding-linux-arm64-musl@0.152.0':
+    optional: true
+
+  '@oxc-parser/binding-linux-ppc64-gnu@0.152.0':
+    optional: true
+
+  '@oxc-parser/binding-linux-riscv64-gnu@0.152.0':
+    optional: true
+
+  '@oxc-parser/binding-linux-riscv64-musl@0.152.0':
+    optional: true
+
+  '@oxc-parser/binding-linux-s390x-gnu@0.152.0':
+    optional: true
+
+  '@oxc-parser/binding-linux-x64-gnu@0.152.0':
+    optional: true
+
+  '@oxc-parser/binding-linux-x64-musl@0.152.0':
+    optional: true
+
+  '@oxc-parser/binding-openharmony-arm64@0.152.0':
+    optional: true
+
+  '@oxc-parser/binding-win32-arm64-msvc@0.152.0':
+    optional: true
+
+  '@oxc-parser/binding-win32-ia32-msvc@0.152.0':
+    optional: true
+
+  '@oxc-parser/binding-win32-x64-msvc@0.152.0':
+    optional: true
+
   '@oxc-project/types@0.146.0': {}
+
+  '@oxc-project/types@0.152.0': {}
 
   '@oxc-project/types@0.155.0': {}
 
@@ -9563,12 +10128,12 @@ snapshots:
     transitivePeerDependencies:
       - magicast
 
-  '@prisma/composer-cli@0.35.0(@effect/vitest@4.0.3(effect@4.0.3)(vitest@5.0.5))(@prisma/cli-engine@0.9.0(@prisma/management-api-sdk@1.80.0)(magicast@0.5.5))(@types/node@22.20.5)(@vercel/nft@1.11.0(supports-color@8.1.1))(hono@4.11.4)(prisma@8.0.0-rc.28(@effect/vitest@4.0.3(effect@4.0.3)(vitest@5.0.5))(@types/node@22.20.5)(@vercel/nft@1.11.0(supports-color@8.1.1))(hono@4.11.4)(magicast@0.5.5)(supports-color@8.1.1)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0))(vitest@5.0.5)(ws@8.22.0))(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0))(vitest@5.0.5)(ws@8.22.0)':
+  '@prisma/composer-cli@0.35.0(0bb3835e63bfba2c20163279a5c52ae1)':
     dependencies:
       '@prisma/cli-engine': 0.9.0(@prisma/management-api-sdk@1.80.0)(magicast@0.5.5)
-      '@prisma/composer': 0.35.0(@types/node@22.20.5)(@vercel/nft@1.11.0(supports-color@8.1.1))(hono@4.11.4)(prisma@8.0.0-rc.28(@effect/vitest@4.0.3(effect@4.0.3)(vitest@5.0.5))(@types/node@22.20.5)(@vercel/nft@1.11.0(supports-color@8.1.1))(hono@4.11.4)(magicast@0.5.5)(supports-color@8.1.1)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0))(vitest@5.0.5)(ws@8.22.0))(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0))(vitest@5.0.5)(ws@8.22.0)
+      '@prisma/composer': 0.35.0(baab649d63d91e0316e3e8398f1e13b2)
       '@prisma/management-api-sdk': 1.80.0
-      alchemy: 2.0.0-beta.83(@effect/vitest@4.0.3(effect@4.0.3)(vitest@5.0.5))(@types/node@22.20.5)(@vercel/nft@1.11.0(supports-color@8.1.1))(effect@4.0.3)(hono@4.11.4)(prisma@8.0.0-rc.28(@effect/vitest@4.0.3(effect@4.0.3)(vitest@5.0.5))(@types/node@22.20.5)(@vercel/nft@1.11.0(supports-color@8.1.1))(hono@4.11.4)(magicast@0.5.5)(supports-color@8.1.1)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0))(vitest@5.0.5)(ws@8.22.0))(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0))(ws@8.22.0)
+      alchemy: 2.0.0-beta.83(ade217450f37530bacfae110029dfe6a)
       cross-spawn: 7.0.6
       effect: 4.0.3
       esbuild: 0.28.2
@@ -9601,14 +10166,14 @@ snapshots:
       - vitest
       - ws
 
-  '@prisma/composer@0.35.0(@types/node@22.20.5)(@vercel/nft@1.11.0(supports-color@8.1.1))(hono@4.11.4)(prisma@8.0.0-rc.28(@effect/vitest@4.0.3(effect@4.0.3)(vitest@5.0.5))(@types/node@22.20.5)(@vercel/nft@1.11.0(supports-color@8.1.1))(hono@4.11.4)(magicast@0.5.5)(supports-color@8.1.1)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0))(vitest@5.0.5)(ws@8.22.0))(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0))(vitest@5.0.5)(ws@8.22.0)':
+  '@prisma/composer@0.35.0(baab649d63d91e0316e3e8398f1e13b2)':
     dependencies:
       '@effect/sql-d1': 4.0.3(effect@4.0.3)
       '@effect/sql-sqlite-do': 4.0.3(effect@4.0.3)
       '@effect/vitest': 4.0.3(effect@4.0.3)(vitest@5.0.5)
       '@prisma/management-api-sdk': 1.80.0
       '@standard-schema/spec': 1.1.0
-      alchemy: 2.0.0-beta.83(@effect/vitest@4.0.3(effect@4.0.3)(vitest@5.0.5))(@types/node@22.20.5)(@vercel/nft@1.11.0(supports-color@8.1.1))(effect@4.0.3)(hono@4.11.4)(prisma@8.0.0-rc.28(@effect/vitest@4.0.3(effect@4.0.3)(vitest@5.0.5))(@types/node@22.20.5)(@vercel/nft@1.11.0(supports-color@8.1.1))(hono@4.11.4)(magicast@0.5.5)(supports-color@8.1.1)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0))(vitest@5.0.5)(ws@8.22.0))(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0))(ws@8.22.0)
+      alchemy: 2.0.0-beta.83(ade217450f37530bacfae110029dfe6a)
       arktype: 2.2.9
       cross-spawn: 7.0.6
       effect: 4.0.3
@@ -9695,6 +10260,24 @@ snapshots:
     dependencies:
       openapi-fetch: 0.14.0
 
+  '@prisma/orm-family-sql@8.0.0-rc.21(@prisma/cli-engine@0.9.0(@prisma/management-api-sdk@1.80.0)(magicast@0.5.5))(magicast@0.5.5)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))':
+    dependencies:
+      '@prisma/orm-framework': 8.0.0-rc.21(typescript@6.0.3)
+      '@prisma/orm-toolchain': 8.0.0-rc.21(@prisma/cli-engine@0.9.0(@prisma/management-api-sdk@1.80.0)(magicast@0.5.5))(magicast@0.5.5)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))
+      '@standard-schema/spec': 1.1.0
+      arktype: 2.2.9
+      pathe: 2.0.3
+      pluralize: 8.0.0
+      tinyglobby: 0.2.17
+      ts-toolbelt: 9.6.0
+    optionalDependencies:
+      typescript: 6.0.3
+    transitivePeerDependencies:
+      - '@prisma/cli-engine'
+      - magicast
+      - typanion
+      - vite
+
   '@prisma/orm-framework@8.0.0-rc.20(typescript@6.0.3)':
     dependencies:
       '@standard-schema/spec': 1.1.0
@@ -9705,7 +10288,65 @@ snapshots:
     optionalDependencies:
       typescript: 6.0.3
 
-  '@prisma/orm-toolchain@8.0.0-rc.20(@prisma/cli-engine@0.9.0(@prisma/management-api-sdk@1.80.0)(magicast@0.5.5))(magicast@0.5.5)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0))':
+  '@prisma/orm-framework@8.0.0-rc.21(typescript@6.0.3)':
+    dependencies:
+      '@standard-schema/spec': 1.1.0
+      arktype: 2.2.9
+      pathe: 2.0.3
+      tinyglobby: 0.2.17
+      uniku: 0.5.0
+    optionalDependencies:
+      typescript: 6.0.3
+
+  '@prisma/orm-postgres@8.0.0-rc.21(@prisma/cli-engine@0.9.0(@prisma/management-api-sdk@1.80.0)(magicast@0.5.5))(magicast@0.5.5)(temporal-polyfill@1.0.6)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))':
+    dependencies:
+      '@prisma/orm-family-sql': 8.0.0-rc.21(@prisma/cli-engine@0.9.0(@prisma/management-api-sdk@1.80.0)(magicast@0.5.5))(magicast@0.5.5)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))
+      '@prisma/orm-framework': 8.0.0-rc.21(typescript@6.0.3)
+      '@prisma/orm-target-postgres': 8.0.0-rc.21(@prisma/cli-engine@0.9.0(@prisma/management-api-sdk@1.80.0)(magicast@0.5.5))(magicast@0.5.5)(temporal-polyfill@1.0.6)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))
+      '@prisma/orm-toolchain': 8.0.0-rc.21(@prisma/cli-engine@0.9.0(@prisma/management-api-sdk@1.80.0)(magicast@0.5.5))(magicast@0.5.5)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))
+      '@types/node': 26.1.2
+      '@types/pg': 8.20.4
+      arktype: 2.2.9
+      pathe: 2.0.3
+      pg: 8.22.0
+      temporal-polyfill: 1.0.6
+      temporal-spec: 1.0.1
+      tinyglobby: 0.2.17
+    optionalDependencies:
+      typescript: 6.0.3
+    transitivePeerDependencies:
+      - '@prisma/cli-engine'
+      - magicast
+      - pg-native
+      - typanion
+      - vite
+
+  '@prisma/orm-target-postgres@8.0.0-rc.21(@prisma/cli-engine@0.9.0(@prisma/management-api-sdk@1.80.0)(magicast@0.5.5))(magicast@0.5.5)(temporal-polyfill@1.0.6)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))':
+    dependencies:
+      '@prisma/orm-family-sql': 8.0.0-rc.21(@prisma/cli-engine@0.9.0(@prisma/management-api-sdk@1.80.0)(magicast@0.5.5))(magicast@0.5.5)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))
+      '@prisma/orm-framework': 8.0.0-rc.21(typescript@6.0.3)
+      '@prisma/orm-toolchain': 8.0.0-rc.21(@prisma/cli-engine@0.9.0(@prisma/management-api-sdk@1.80.0)(magicast@0.5.5))(magicast@0.5.5)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))
+      '@standard-schema/spec': 1.1.0
+      '@types/node': 26.1.2
+      '@types/pg': 8.20.4
+      arktype: 2.2.9
+      pathe: 2.0.3
+      pg: 8.22.0
+      pg-connection-string: 2.14.1
+      pg-cursor: 2.22.1(pg@8.22.0)
+      postgres-array: 2.0.0
+      temporal-polyfill: 1.0.6
+      temporal-spec: 1.0.1
+    optionalDependencies:
+      typescript: 6.0.3
+    transitivePeerDependencies:
+      - '@prisma/cli-engine'
+      - magicast
+      - pg-native
+      - typanion
+      - vite
+
+  '@prisma/orm-toolchain@8.0.0-rc.20(@prisma/cli-engine@0.9.0(@prisma/management-api-sdk@1.80.0)(magicast@0.5.5))(magicast@0.5.5)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))':
     dependencies:
       '@prisma/cli-engine': 0.9.0(@prisma/management-api-sdk@1.80.0)(magicast@0.5.5)
       '@prisma/orm-framework': 8.0.0-rc.20(typescript@6.0.3)
@@ -9729,7 +10370,36 @@ snapshots:
       wrap-ansi: 10.0.2
     optionalDependencies:
       typescript: 6.0.3
-      vite: 8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0)
+      vite: 8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
+    transitivePeerDependencies:
+      - magicast
+      - typanion
+
+  '@prisma/orm-toolchain@8.0.0-rc.21(@prisma/cli-engine@0.9.0(@prisma/management-api-sdk@1.80.0)(magicast@0.5.5))(magicast@0.5.5)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))':
+    dependencies:
+      '@prisma/cli-engine': 0.9.0(@prisma/management-api-sdk@1.80.0)(magicast@0.5.5)
+      '@prisma/orm-framework': 8.0.0-rc.21(typescript@6.0.3)
+      '@vercel/detect-agent': 1.2.7
+      arktype: 2.2.9
+      c12: 3.3.4(magicast@0.5.5)
+      ci-info: 4.4.0
+      clipanion: 4.0.0-rc.4(typanion@3.14.0)
+      closest-match: 1.3.3
+      colorette: 2.0.20
+      esbuild: 0.28.2
+      jsonc-parser: 3.3.1
+      package-manager-detector: 1.9.0
+      pathe: 2.0.3
+      prettier: 3.9.10
+      string-width: 8.3.0
+      strip-ansi: 7.2.0
+      tinyglobby: 0.2.17
+      vscode-languageserver: 10.1.0
+      vscode-languageserver-textdocument: 1.0.12
+      wrap-ansi: 10.0.2
+    optionalDependencies:
+      typescript: 6.0.3
+      vite: 8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
     transitivePeerDependencies:
       - magicast
       - typanion
@@ -9841,7 +10511,57 @@ snapshots:
       estree-walker: 2.0.2
       picomatch: 4.0.7
 
+  '@scarf/scarf@1.4.0': {}
+
   '@sec-ant/readable-stream@0.4.1': {}
+
+  '@sentry/bundler-plugins@11.9.0(webpack@5.110.3)':
+    dependencies:
+      '@sentry/core': 11.9.0
+      dotenv: 17.4.2
+      glob: 13.0.6
+      magic-string: 1.4.5
+      oxc-parser: 0.152.0
+      sentry: 0.45.0
+      supports-color: 8.1.1
+    optionalDependencies:
+      webpack: 5.110.3(cssnano@7.1.9(postcss@8.5.32))(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)(sharp@0.35.5(@types/node@22.20.5))(svgo@4.1.0)(webpack-cli@7.2.3)
+
+  '@sentry/conventions@0.27.0': {}
+
+  '@sentry/core@11.9.0':
+    dependencies:
+      '@sentry/conventions': 0.27.0
+
+  '@sentry/node@11.9.0(webpack@5.110.3)':
+    dependencies:
+      '@opentelemetry/api': 1.10.0
+      '@sentry/bundler-plugins': 11.9.0(webpack@5.110.3)
+      '@sentry/conventions': 0.27.0
+      '@sentry/core': 11.9.0
+      '@sentry/opentelemetry': 11.9.0(@opentelemetry/api@1.10.0)
+      '@sentry/server-runtime-injection': 11.9.0
+      '@sentry/server-utils': 11.9.0
+    transitivePeerDependencies:
+      - rollup
+      - webpack
+
+  '@sentry/opentelemetry@11.9.0(@opentelemetry/api@1.10.0)':
+    dependencies:
+      '@opentelemetry/api': 1.10.0
+      '@sentry/conventions': 0.27.0
+      '@sentry/core': 11.9.0
+
+  '@sentry/server-runtime-injection@11.9.0':
+    dependencies:
+      '@sentry/core': 11.9.0
+      '@sentry/server-utils': 11.9.0
+
+  '@sentry/server-utils@11.9.0':
+    dependencies:
+      '@opentelemetry/api': 1.10.0
+      '@sentry/conventions': 0.27.0
+      '@sentry/core': 11.9.0
 
   '@sinclair/typebox@0.34.52': {}
 
@@ -9927,6 +10647,10 @@ snapshots:
     dependencies:
       '@types/node': 22.20.5
 
+  '@types/cookie-parser@1.4.10(@types/express@4.17.25)':
+    dependencies:
+      '@types/express': 4.17.25
+
   '@types/deep-eql@4.0.2': {}
 
   '@types/esquery@1.5.4':
@@ -9973,7 +10697,17 @@ snapshots:
     dependencies:
       undici-types: 6.21.0
 
+  '@types/node@26.1.2':
+    dependencies:
+      undici-types: 8.3.0
+
   '@types/parse-json@4.0.2': {}
+
+  '@types/pg@8.20.4':
+    dependencies:
+      '@types/node': 22.20.5
+      pg-protocol: 1.16.1
+      pg-types: 2.2.0
 
   '@types/qs@6.15.1': {}
 
@@ -10005,6 +10739,8 @@ snapshots:
       '@types/node': 22.20.5
 
   '@types/stack-utils@2.0.3': {}
+
+  '@types/validator@13.15.10': {}
 
   '@types/ws@8.18.2':
     dependencies:
@@ -10210,7 +10946,7 @@ snapshots:
       obug: 3.0.0
       std-env: 4.3.0
       tinyrainbow: 3.2.0
-      vitest: 5.0.5(@types/node@22.20.5)(@vitest/coverage-v8@5.0.5)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0))
+      vitest: 5.0.5(@opentelemetry/api@1.10.0)(@types/node@22.20.5)(@vitest/coverage-v8@5.0.5)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))
 
   '@vitest/istanbul-lib-coverage@1.0.2': {}
 
@@ -10218,14 +10954,14 @@ snapshots:
     dependencies:
       '@vitest/istanbul-lib-coverage': 1.0.2
 
-  '@vitest/mocker@5.0.5(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0))':
+  '@vitest/mocker@5.0.5(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))':
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       '@vitest/spy': 5.0.5
       estree-walker: 3.0.3
       magic-string: 1.4.5
     optionalDependencies:
-      vite: 8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0)
+      vite: 8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
 
   '@vitest/spy@5.0.5': {}
 
@@ -10381,9 +11117,9 @@ snapshots:
       json-schema-traverse: 1.0.0
       require-from-string: 2.0.2
 
-  alchemy@2.0.0-beta.83(@effect/vitest@4.0.3(effect@4.0.3)(vitest@5.0.5))(@types/node@22.20.5)(@vercel/nft@1.11.0(supports-color@8.1.1))(effect@4.0.3)(hono@4.11.4)(prisma@8.0.0-rc.28(@effect/vitest@4.0.3(effect@4.0.3)(vitest@5.0.5))(@types/node@22.20.5)(@vercel/nft@1.11.0(supports-color@8.1.1))(hono@4.11.4)(magicast@0.5.5)(supports-color@8.1.1)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0))(vitest@5.0.5)(ws@8.22.0))(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0))(ws@8.22.0):
+  alchemy@2.0.0-beta.83(ade217450f37530bacfae110029dfe6a):
     dependencies:
-      '@alchemy.run/cloudflare-runtime': 2.0.0-beta.83(@distilled.cloud/cloudflare@1.0.0-rc.15(effect@4.0.3))(@types/node@22.20.5)(effect@4.0.3)(rolldown@1.2.5)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0))
+      '@alchemy.run/cloudflare-runtime': 2.0.0-beta.83(@distilled.cloud/cloudflare@1.0.0-rc.15(effect@4.0.3))(@types/node@22.20.5)(effect@4.0.3)(rolldown@1.2.5)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))
       '@alchemy.run/floci': 2.0.0-beta.83(effect@4.0.3)
       '@alchemy.run/node-utils': 2.0.0-beta.83
       '@alchemy.run/sigil': 0.1.0-alpha.1
@@ -10424,9 +11160,11 @@ snapshots:
       yaml: 2.9.0
     optionalDependencies:
       '@effect/vitest': 4.0.3(effect@4.0.3)(vitest@5.0.5)
+      '@prisma/orm-postgres': 8.0.0-rc.21(@prisma/cli-engine@0.9.0(@prisma/management-api-sdk@1.80.0)(magicast@0.5.5))(magicast@0.5.5)(temporal-polyfill@1.0.6)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))
       '@vercel/nft': 1.11.0(supports-color@8.1.1)
-      prisma: 8.0.0-rc.28(@effect/vitest@4.0.3(effect@4.0.3)(vitest@5.0.5))(@types/node@22.20.5)(@vercel/nft@1.11.0(supports-color@8.1.1))(hono@4.11.4)(magicast@0.5.5)(supports-color@8.1.1)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0))(vitest@5.0.5)(ws@8.22.0)
-      vite: 8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0)
+      pg: 8.22.0
+      prisma: 8.0.0-rc.28(@effect/vitest@4.0.3(effect@4.0.3)(vitest@5.0.5))(@prisma/orm-postgres@8.0.0-rc.21(@prisma/cli-engine@0.9.0(@prisma/management-api-sdk@1.80.0)(magicast@0.5.5))(magicast@0.5.5)(temporal-polyfill@1.0.6)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)))(@types/node@22.20.5)(@vercel/nft@1.11.0(supports-color@8.1.1))(hono@4.11.4)(magicast@0.5.5)(pg@8.22.0)(supports-color@8.1.1)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))(vitest@5.0.5)(ws@8.22.0)
+      vite: 8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
       ws: 8.22.0
     transitivePeerDependencies:
       - '@types/node'
@@ -10468,6 +11206,8 @@ snapshots:
       sprintf-js: 1.0.3
 
   argparse@2.0.1: {}
+
+  argparse@3.0.4: {}
 
   arkregex@0.0.14:
     dependencies:
@@ -10878,6 +11618,14 @@ snapshots:
 
   cjs-module-lexer@2.3.0: {}
 
+  class-transformer@0.5.1: {}
+
+  class-validator@0.15.1:
+    dependencies:
+      '@types/validator': 13.15.10
+      libphonenumber-js: 1.13.15
+      validator: 13.15.35
+
   cli-cursor@3.1.0:
     dependencies:
       restore-cursor: 3.1.0
@@ -10988,6 +11736,13 @@ snapshots:
   content-type@3.1.1: {}
 
   convert-source-map@2.0.0: {}
+
+  cookie-parser@1.4.7:
+    dependencies:
+      cookie: 0.7.2
+      cookie-signature: 1.0.6
+
+  cookie-signature@1.0.6: {}
 
   cookie-signature@1.0.7: {}
 
@@ -11250,9 +12005,15 @@ snapshots:
     dependencies:
       dotenv: 16.4.7
 
+  dotenv-expand@13.0.0:
+    dependencies:
+      dotenv: 17.4.2
+
   dotenv@16.4.7: {}
 
   dotenv@17.4.2: {}
+
+  dotenv@18.0.3: {}
 
   dotenv@18.0.9: {}
 
@@ -11324,6 +12085,8 @@ snapshots:
       get-intrinsic: 1.3.0
       has-tostringtag: 1.0.2
       hasown: 2.0.4
+
+  es-toolkit@1.52.0: {}
 
   esbuild@0.28.2:
     optionalDependencies:
@@ -12351,6 +13114,10 @@ snapshots:
     dependencies:
       argparse: 2.0.1
 
+  js-yaml@5.5.0:
+    dependencies:
+      argparse: 3.0.4
+
   jsesc@3.1.0: {}
 
   json-buffer@3.0.1: {}
@@ -12425,6 +13192,8 @@ snapshots:
     dependencies:
       prelude-ls: 1.2.1
       type-check: 0.4.0
+
+  libphonenumber-js@1.13.15: {}
 
   libsodium-wrappers@0.8.4:
     dependencies:
@@ -12937,6 +13706,30 @@ snapshots:
       strip-ansi: 6.0.1
       wcwidth: 1.0.1
 
+  oxc-parser@0.152.0:
+    dependencies:
+      '@oxc-project/types': 0.152.0
+    optionalDependencies:
+      '@oxc-parser/binding-android-arm-eabi': 0.152.0
+      '@oxc-parser/binding-android-arm64': 0.152.0
+      '@oxc-parser/binding-darwin-arm64': 0.152.0
+      '@oxc-parser/binding-darwin-x64': 0.152.0
+      '@oxc-parser/binding-freebsd-x64': 0.152.0
+      '@oxc-parser/binding-linux-arm-gnueabihf': 0.152.0
+      '@oxc-parser/binding-linux-arm-musleabihf': 0.152.0
+      '@oxc-parser/binding-linux-arm64-gnu': 0.152.0
+      '@oxc-parser/binding-linux-arm64-musl': 0.152.0
+      '@oxc-parser/binding-linux-ppc64-gnu': 0.152.0
+      '@oxc-parser/binding-linux-riscv64-gnu': 0.152.0
+      '@oxc-parser/binding-linux-riscv64-musl': 0.152.0
+      '@oxc-parser/binding-linux-s390x-gnu': 0.152.0
+      '@oxc-parser/binding-linux-x64-gnu': 0.152.0
+      '@oxc-parser/binding-linux-x64-musl': 0.152.0
+      '@oxc-parser/binding-openharmony-arm64': 0.152.0
+      '@oxc-parser/binding-win32-arm64-msvc': 0.152.0
+      '@oxc-parser/binding-win32-ia32-msvc': 0.152.0
+      '@oxc-parser/binding-win32-x64-msvc': 0.152.0
+
   p-limit@2.3.0:
     dependencies:
       p-try: 2.2.0
@@ -13025,6 +13818,45 @@ snapshots:
   pend@1.2.0: {}
 
   perfect-debounce@2.1.0: {}
+
+  pg-cloudflare@1.4.1:
+    optional: true
+
+  pg-connection-string@2.14.1: {}
+
+  pg-cursor@2.22.1(pg@8.22.0):
+    dependencies:
+      pg: 8.22.0
+
+  pg-int8@1.0.1: {}
+
+  pg-pool@3.14.0(pg@8.22.0):
+    dependencies:
+      pg: 8.22.0
+
+  pg-protocol@1.16.1: {}
+
+  pg-types@2.2.0:
+    dependencies:
+      pg-int8: 1.0.1
+      postgres-array: 2.0.0
+      postgres-bytea: 1.0.1
+      postgres-date: 1.0.7
+      postgres-interval: 1.2.0
+
+  pg@8.22.0:
+    dependencies:
+      pg-connection-string: 2.14.1
+      pg-pool: 3.14.0(pg@8.22.0)
+      pg-protocol: 1.16.1
+      pg-types: 2.2.0
+      pgpass: 1.0.5
+    optionalDependencies:
+      pg-cloudflare: 1.4.1
+
+  pgpass@1.0.5:
+    dependencies:
+      split2: 4.2.0
 
   picocolors@1.1.1: {}
 
@@ -13271,6 +14103,16 @@ snapshots:
       picocolors: 1.1.1
       source-map-js: 1.2.2
 
+  postgres-array@2.0.0: {}
+
+  postgres-bytea@1.0.1: {}
+
+  postgres-date@1.0.7: {}
+
+  postgres-interval@1.2.0:
+    dependencies:
+      xtend: 4.0.2
+
   powershell-utils@0.2.1: {}
 
   prelude-ls@1.2.1: {}
@@ -13290,14 +14132,14 @@ snapshots:
     dependencies:
       parse-ms: 4.0.0
 
-  prisma@8.0.0-rc.28(@effect/vitest@4.0.3(effect@4.0.3)(vitest@5.0.5))(@types/node@22.20.5)(@vercel/nft@1.11.0(supports-color@8.1.1))(hono@4.11.4)(magicast@0.5.5)(supports-color@8.1.1)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0))(vitest@5.0.5)(ws@8.22.0):
+  prisma@8.0.0-rc.28(@effect/vitest@4.0.3(effect@4.0.3)(vitest@5.0.5))(@prisma/orm-postgres@8.0.0-rc.21(@prisma/cli-engine@0.9.0(@prisma/management-api-sdk@1.80.0)(magicast@0.5.5))(magicast@0.5.5)(temporal-polyfill@1.0.6)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)))(@types/node@22.20.5)(@vercel/nft@1.11.0(supports-color@8.1.1))(hono@4.11.4)(magicast@0.5.5)(pg@8.22.0)(supports-color@8.1.1)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))(vitest@5.0.5)(ws@8.22.0):
     dependencies:
       '@manypkg/tools': 2.1.2
       '@prisma/cli-engine': 0.9.0(@prisma/management-api-sdk@1.80.0)(magicast@0.5.5)
-      '@prisma/composer-cli': 0.35.0(@effect/vitest@4.0.3(effect@4.0.3)(vitest@5.0.5))(@prisma/cli-engine@0.9.0(@prisma/management-api-sdk@1.80.0)(magicast@0.5.5))(@types/node@22.20.5)(@vercel/nft@1.11.0(supports-color@8.1.1))(hono@4.11.4)(prisma@8.0.0-rc.28(@effect/vitest@4.0.3(effect@4.0.3)(vitest@5.0.5))(@types/node@22.20.5)(@vercel/nft@1.11.0(supports-color@8.1.1))(hono@4.11.4)(magicast@0.5.5)(supports-color@8.1.1)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0))(vitest@5.0.5)(ws@8.22.0))(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0))(vitest@5.0.5)(ws@8.22.0)
+      '@prisma/composer-cli': 0.35.0(0bb3835e63bfba2c20163279a5c52ae1)
       '@prisma/compute-sdk': 0.43.0(@prisma/management-api-sdk@1.80.0)(supports-color@8.1.1)
       '@prisma/management-api-sdk': 1.80.0
-      '@prisma/orm-toolchain': 8.0.0-rc.20(@prisma/cli-engine@0.9.0(@prisma/management-api-sdk@1.80.0)(magicast@0.5.5))(magicast@0.5.5)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0))
+      '@prisma/orm-toolchain': 8.0.0-rc.20(@prisma/cli-engine@0.9.0(@prisma/management-api-sdk@1.80.0)(magicast@0.5.5))(magicast@0.5.5)(typanion@3.14.0)(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))
       '@vercel/detect-agent': 1.2.7
       better-result: 2.10.0
       cross-spawn: 7.0.6
@@ -13739,6 +14581,8 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  sentry@0.45.0: {}
+
   serialize-javascript@7.1.4: {}
 
   serve-index@1.9.2(supports-color@8.1.1):
@@ -13909,6 +14753,8 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  split2@4.2.0: {}
+
   sprintf-js@1.0.3: {}
 
   stack-utils@2.0.6:
@@ -14020,6 +14866,10 @@ snapshots:
       picocolors: 1.1.1
       sax: 1.6.1
 
+  swagger-ui-dist@5.34.0:
+    dependencies:
+      '@scarf/scarf': 1.4.0
+
   sync-child-process@1.1.1:
     dependencies:
       sync-message-port: 1.2.0
@@ -14072,6 +14922,15 @@ snapshots:
     transitivePeerDependencies:
       - bare-abort-controller
       - react-native-b4a
+
+  temporal-polyfill@1.0.6:
+    dependencies:
+      temporal-spec: 1.0.1
+      temporal-utils: 1.0.3
+
+  temporal-spec@1.0.1: {}
+
+  temporal-utils@1.0.3: {}
 
   terser-webpack-plugin@5.6.1(cssnano@7.1.9(postcss@8.5.32))(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)(webpack@5.110.3):
     dependencies:
@@ -14159,6 +15018,8 @@ snapshots:
     optionalDependencies:
       loader-utils: 2.0.4
 
+  ts-toolbelt@9.6.0: {}
+
   tsconfig-paths-webpack-plugin@4.2.0:
     dependencies:
       chalk: 4.1.2
@@ -14175,6 +15036,12 @@ snapshots:
   tslib@1.14.1: {}
 
   tslib@2.8.1: {}
+
+  tsx@4.23.15:
+    dependencies:
+      esbuild: 0.28.2
+    optionalDependencies:
+      fsevents: 2.3.3
 
   tsyringe@4.10.0:
     dependencies:
@@ -14223,6 +15090,8 @@ snapshots:
   uint8array-extras@1.6.0: {}
 
   undici-types@6.21.0: {}
+
+  undici-types@8.3.0: {}
 
   undici@7.29.0: {}
 
@@ -14306,11 +15175,13 @@ snapshots:
     optionalDependencies:
       typescript: 6.0.3
 
+  validator@13.15.35: {}
+
   varint@6.0.0: {}
 
   vary@1.1.2: {}
 
-  vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0):
+  vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0):
     dependencies:
       lightningcss: 1.33.0
       picomatch: 4.0.7
@@ -14326,12 +15197,13 @@ snapshots:
       sass: 1.106.1
       sass-embedded: 1.106.1
       terser: 5.51.2
+      tsx: 4.23.15
       yaml: 2.9.0
 
-  vitest@5.0.5(@types/node@22.20.5)(@vitest/coverage-v8@5.0.5)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0)):
+  vitest@5.0.5(@opentelemetry/api@1.10.0)(@types/node@22.20.5)(@vitest/coverage-v8@5.0.5)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)):
     dependencies:
       '@types/chai': 5.2.3
-      '@vitest/mocker': 5.0.5(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0))
+      '@vitest/mocker': 5.0.5(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))
       chai: 6.3.0
       es-module-lexer: 2.3.2
       expect-type: 1.4.0
@@ -14342,9 +15214,10 @@ snapshots:
       tinybench: 6.2.2
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
-      vite: 8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(yaml@2.9.0)
+      vite: 8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(less@4.8.1(supports-color@8.1.1))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
       why-is-node-running: 3.2.1
     optionalDependencies:
+      '@opentelemetry/api': 1.10.0
       '@types/node': 22.20.5
       '@vitest/coverage-v8': 5.0.5(vitest@5.0.5)
     transitivePeerDependencies:
@@ -14581,6 +15454,8 @@ snapshots:
       is-wsl: 3.1.1
       powershell-utils: 0.2.1
 
+  xtend@4.0.2: {}
+
   y18n@5.0.8: {}
 
   yallist@3.1.1: {}
@@ -14628,3 +15503,5 @@ snapshots:
     dependencies:
       grammex: 3.1.13
       graphmatch: 1.1.1
+
+  zod@4.6.7: {}

@@ -2,7 +2,13 @@ packages:
   - apps/*
 allowBuilds:
   '@parcel/watcher': false
+  '@scarf/scarf': false
   esbuild: false
   nx: false
   unrs-resolver: false
   workerd: false
+permissions:
+  '@prisma/orm-postgres':
+    skills: false
+  prisma:
+    skills: false
