@@ -10,4 +10,24 @@ export type UserRow = Row<Models.public_User>;
 export type ContactRow = Row<Models.public_Contact>;
 export type ProfileRow = Row<Models.public_Profile>;
 export type ProfileSkillRow = Row<Models.public_ProfileSkill>;
-export type Address = AddressInput;
+/** An address as callers write it; optional parts may be left out. */
+export type Address = {
+  line1: string;
+  line2?: string | null;
+  city: string;
+  postalCode?: string | null;
+  state?: string | null;
+  country: string;
+};
+
+/** The stored form, with every optional part present as `null`. */
+export function toStoredAddress(address: Address): AddressInput {
+  return {
+    line1: address.line1,
+    line2: address.line2 ?? null,
+    city: address.city,
+    postalCode: address.postalCode ?? null,
+    state: address.state ?? null,
+    country: address.country,
+  };
+}

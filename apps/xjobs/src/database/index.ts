@@ -11,3 +11,4 @@ export type {
   UserRow,
   WorkspaceRow,
 } from './models';
+export { toStoredAddress } from './models';
