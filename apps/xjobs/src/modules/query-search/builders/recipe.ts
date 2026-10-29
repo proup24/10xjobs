@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { QuerySearchCombination, QuerySearchRecipe } from '../types';
-import { CHANNEL_QUERY_BUILDERS } from './index';
+import { CHANNEL_QUERY_BUILDERS } from '../channels';
 
 export const QUERY_SEARCH_RECIPE_VERSION = 1;
 

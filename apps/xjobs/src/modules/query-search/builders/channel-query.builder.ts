@@ -45,3 +45,23 @@ export function locationText(combination: QuerySearchCombination): string {
     ? `${combination.city}, ${combination.country}`
     : combination.country;
 }
+
+/** Greenhouse and Ashby boards are filtered after fetching, not searched by text. */
+export function jobBoardFilterQuery(
+  combination: QuerySearchCombination,
+): ChannelQuery {
+  const locationTerms =
+    combination.type === Arrangement.remote
+      ? [combination.locationRegion]
+      : [combination.country, combination.city].filter(
+          (term): term is string => !!term,
+        );
+  const remote =
+    combination.type === Arrangement.unstated
+      ? null
+      : combination.type === Arrangement.remote;
+  return {
+    keywords: keywordPhrases(combination),
+    params: { locationTerms, remote },
+  };
+}

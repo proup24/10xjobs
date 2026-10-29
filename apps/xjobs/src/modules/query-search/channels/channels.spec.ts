@@ -7,7 +7,9 @@ import {
   Technology,
 } from 'src/common/enums';
 import type { QuerySearchCombination } from '../types';
-import { CHANNEL_QUERY_BUILDERS } from './index';
+import { AshbyQueryBuilder } from './ashbyhq.builder';
+import { GreenhouseQueryBuilder } from './greenhouse.builder';
+import { CHANNEL_QUERY_BUILDERS } from '.';
 
 const base: QuerySearchCombination = {
   channel: Channel.LINKEDIN_JOB_BOARD,
@@ -100,5 +102,18 @@ describe('channel query builders', () => {
     for (const channel of Object.values(Channel)) {
       expect(CHANNEL_QUERY_BUILDERS[channel].channel).toBe(channel);
     }
+  });
+
+  it('registers Greenhouse and Ashby as their own classes with identical queries', () => {
+    expect(CHANNEL_QUERY_BUILDERS[Channel.GREEN_HOUSE]).toBeInstanceOf(
+      GreenhouseQueryBuilder,
+    );
+    expect(CHANNEL_QUERY_BUILDERS[Channel.ASHBY]).toBeInstanceOf(
+      AshbyQueryBuilder,
+    );
+    const overrides = { country: 'MA', city: 'Casablanca' };
+    expect(build(Channel.GREEN_HOUSE, overrides)).toEqual(
+      build(Channel.ASHBY, overrides),
+    );
   });
 });
