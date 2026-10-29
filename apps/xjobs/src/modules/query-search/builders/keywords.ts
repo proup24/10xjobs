@@ -5,7 +5,7 @@ export const POSITION_TITLES: Record<Position, readonly string[]> = {
   [Position.backend_engineer]: [
     'backend engineer',
     'backend developer',
-    'software engineer backend',
+    'backend software engineer',
   ],
   [Position.frontend_engineer]: [
     'frontend engineer',
@@ -24,7 +24,10 @@ export const POSITION_TITLES: Record<Position, readonly string[]> = {
   ],
   [Position.devops_engineer]: ['devops engineer', 'devops'],
   [Position.site_reliability_engineer]: ['site reliability engineer', 'sre'],
-  [Position.platform_engineer]: ['platform engineer', 'platform developer'],
+  [Position.platform_engineer]: [
+    'platform engineer',
+    'infrastructure engineer',
+  ],
   [Position.cloud_engineer]: [
     'cloud engineer',
     'cloud infrastructure engineer',
@@ -33,7 +36,7 @@ export const POSITION_TITLES: Record<Position, readonly string[]> = {
     'security engineer',
     'application security engineer',
   ],
-  [Position.data_engineer]: ['data engineer', 'analytics engineer'],
+  [Position.data_engineer]: ['data engineer', 'data platform engineer'],
   [Position.ml_engineer]: [
     'machine learning engineer',
     'ml engineer',
@@ -54,7 +57,7 @@ export const POSITION_TITLES: Record<Position, readonly string[]> = {
     'embedded software engineer',
     'firmware engineer',
   ],
-  [Position.software_architect]: ['software architect', 'solutions architect'],
+  [Position.software_architect]: ['software architect', 'technical architect'],
   [Position.tech_lead]: ['tech lead', 'technical lead', 'engineering lead'],
   [Position.engineering_manager]: [
     'engineering manager',
