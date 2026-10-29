@@ -1,1 +1,1 @@
-export { BASIC_AUTH_CREDENTIALS, BasicAuthGuard } from './basic-auth.guard';
+export { BASIC_AUTH_CREDENTIALS, BasicAuthGuard } from './basic.guard';

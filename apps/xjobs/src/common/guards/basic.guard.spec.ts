@@ -1,7 +1,7 @@
 import { UnauthorizedException, type ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Public } from '../decorators';
-import { BasicAuthGuard } from './basic-auth.guard';
+import { BasicAuthGuard } from './basic.guard';
 
 const credentials = { username: 'admin', password: 'correct horse battery' };
 

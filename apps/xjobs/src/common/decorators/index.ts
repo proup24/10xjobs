@@ -3,4 +3,4 @@ export { IS_PUBLIC, Public } from './public.decorator';
 export {
   ApiErrorResponses,
   ApiSuccessResponse,
-} from './api-response.decorator';
+} from './response.decorator';
