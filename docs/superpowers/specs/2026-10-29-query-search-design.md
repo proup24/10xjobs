@@ -107,7 +107,7 @@ Example: 2 positions × 2 regions × 2 arrangements × 5 technology sets × 4 ch
 
 ### Builders
 
-`query search builders/builders/` holds a `ChannelQueryBuilder` interface (`channel`, `build(combination) → { keywords, params }`) and one implementation per channel, registered through a map keyed by `Channel`. Builders are pure functions with no I/O.
+`query-search/builders/` holds a `ChannelQueryBuilder` interface (`channel`, `build(combination) → { keywords, params }`) and one implementation per channel, registered through a map keyed by `Channel`. Builders are pure functions with no I/O.
 
 A shared **keyword mapping** turns enums into terms:
 
