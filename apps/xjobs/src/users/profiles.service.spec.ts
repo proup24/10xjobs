@@ -80,8 +80,9 @@ describe('ProfilesService', () => {
       techStack: [skill('go', 9, 5), skill('rust', 4, 8), skill('java', 7, 8)],
     });
     const stored = await profiles.findByUser('ws', userId);
+    if (!stored) throw new Error('profile was not stored');
     const view = toProfileView({
-      ...stored!,
+      ...stored,
       resumeKey: 'ws/p/secret.pdf',
       resumeFilename: 'cv.pdf',
       resumeSizeBytes: 10,

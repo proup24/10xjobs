@@ -65,4 +65,5 @@ supabase
 .superpowers
 
 # Uploaded resumes (RESUME_STORAGE_DIR default); personal data, never committed
-storage/
+/storage/
+/apps/xjobs/storage/
