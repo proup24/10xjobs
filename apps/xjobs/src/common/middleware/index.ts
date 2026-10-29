@@ -1,1 +1,1 @@
-export { traceIdMiddleware, traceIdOf } from './trace-id.middleware';
+export { traceIdMiddleware, traceIdOf } from './trace.middleware';

@@ -1,4 +1,4 @@
-import { traceIdMiddleware } from './trace-id.middleware';
+import { traceIdMiddleware } from './trace.middleware';
 
 function run(headers: Record<string, string>) {
   const request: { headers: Record<string, string>; traceId?: string } = {
