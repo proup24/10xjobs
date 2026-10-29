@@ -1,13 +1,13 @@
-# Lookups — Design
+# Query search — Design
 
 Date: 2026-10-29
 Status: draft
 
 ## Intent
 
-Phase 1 collects jobs from LinkedIn (through Apify), Ashby and Greenhouse. Before anything can be collected, the engine needs to know _what to search for_. A **lookup** is that answer: one deterministic search recipe for one channel, derived from a published job-seeker profile.
+Phase 1 collects jobs from LinkedIn (through Apify), Ashby and Greenhouse. Before anything can be collected, the engine needs to know _what to search for_. A **query search builder** is that answer: one deterministic search recipe for one channel, derived from a published job-seeker profile.
 
-Lookups are shared, not owned. Two users who want the same search share one row. A user whose combination nobody else has gets their own rows. Each row has a hash, so the same recipe is never stored twice.
+Query search builders are shared, not owned. Two users who want the same search share one row. A user whose combination nobody else has gets their own rows. Each row has a hash, so the same recipe is never stored twice.
 
 This serves the roadmap's anti-goal of "missing the right jobs". Each profile expands into every combination it covers, so no position, region or arrangement the user asked for goes unsearched. Generation is deterministic and needs no AI, so it is cheap, testable and explainable.
 
@@ -17,22 +17,22 @@ This serves the roadmap's anti-goal of "missing the right jobs". Each profile ex
 
 - An `importance` rating on each profile skill, used to pick which technologies drive searches.
 - A `state` on profiles (`draft`, `published`) and endpoints to publish and unpublish a profile.
-- On publish, generate every lookup the profile needs, for every channel, and insert only the ones that don't already exist.
-- A `lookups` module with the same layout as the other modules, including one query builder per channel.
-- A read-only endpoint to list a workspace's lookups.
+- On publish, generate every query search builder the profile needs, for every channel, and insert only the ones that don't already exist.
+- A `query_search` module (folder `query-search/`) with the same layout as the other modules, including one query builder per channel.
+- A read-only endpoint to list a workspace's query search builders.
 
 **Non-goals**
 
 - The channels module: calling Ashby, Greenhouse or Apify, scheduling, scraping. `Channel` is only an enum here.
-- A table linking profiles to lookups, or analytics on lookups. That is a separate tracking table, planned for later.
-- Deleting, editing or retiring lookups. Lookups are immutable and only grow. Stale lookups (from a dropped position or an unpublished profile) are accepted until the tracking table exists, and there is no `active` flag.
+- A table linking profiles to query search builders, or analytics on query search builders. That is a separate tracking table, planned for later.
+- Deleting, editing or retiring query search builders. Query search builders are immutable and only grow. Stale query search builders (from a dropped position or an unpublished profile) are accepted until the tracking table exists, and there is no `active` flag.
 - AI-generated keywords.
 
 **Anti-goals**
 
-- Duplicate lookups, whether from re-publishing or from two users with overlapping profiles.
+- Duplicate query search builders, whether from re-publishing or from two users with overlapping profiles.
 - Non-deterministic output: the same profile must always produce the same rows and hashes.
-- Lookups tied to a user. They must stay shareable recipes.
+- Query search builders tied to a user. They must stay shareable recipes.
 
 ## Constraints
 
@@ -60,24 +60,24 @@ Same as [workspaces and users](./2026-10-29-workspaces-and-users-design.md): Pri
 
 The `PUT …/profile` tech stack items gain an optional `importance` (0–10, default 5). The profile view returns it, and the stack sort becomes importance, then preference, then mastery. Existing rows migrate to 5.
 
-### lookups
+### query_search_builder
 
-| field          | type                       | notes                                                                                                                               |
-| -------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| workspaceId    | Uuid → workspaces, cascade |                                                                                                                                     |
-| channel        | `Channel`                  |                                                                                                                                     |
-| locationRegion | `Region`                   | one region per row                                                                                                                  |
-| country        | String?                    | ISO alpha-2 from the profile; set only on `onsite` and `hybrid` rows, null otherwise                                                |
-| city           | String?                    | the profile's city, if any; set only on `onsite` and `hybrid` rows                                                                  |
-| technologies   | `Technology[]`             | the technology set this row searches for, in rank order; empty when the profile has no skill with importance > 0                    |
-| experience     | `Seniority`                | the profile's seniority                                                                                                             |
-| type           | `Arrangement`              | one arrangement per row                                                                                                             |
-| keywords       | String[]                   | deterministic, built by the channel's builder, sorted and lowercased                                                                |
-| version        | Int                        | recipe version (`LOOKUP_RECIPE_VERSION` constant, starts at 1), bumped whenever the keyword mapping or a builder changes its output |
-| params         | jsonb                      | the channel's own fields (see Builders), keys in a fixed order                                                                      |
-| hash           | String                     | hex SHA-256 of the canonical recipe, see below                                                                                      |
+| field          | type                       | notes                                                                                                                                     |
+| -------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| workspaceId    | Uuid → workspaces, cascade |                                                                                                                                           |
+| channel        | `Channel`                  |                                                                                                                                           |
+| locationRegion | `Region`                   | one region per row                                                                                                                        |
+| country        | String?                    | ISO alpha-2 from the profile; set only on `onsite` and `hybrid` rows, null otherwise                                                      |
+| city           | String?                    | the profile's city, if any; set only on `onsite` and `hybrid` rows                                                                        |
+| technologies   | `Technology[]`             | the technology set this row searches for, in rank order; empty when the profile has no skill with importance > 0                          |
+| experience     | `Seniority`                | the profile's seniority                                                                                                                   |
+| type           | `Arrangement`              | one arrangement per row                                                                                                                   |
+| keywords       | String[]                   | deterministic, built by the channel's builder, sorted and lowercased                                                                      |
+| version        | Int                        | recipe version (`QUERY_SEARCH_RECIPE_VERSION` constant, starts at 1), bumped whenever the keyword mapping or a builder changes its output |
+| params         | jsonb                      | the channel's own fields (see Builders), keys in a fixed order                                                                            |
+| hash           | String                     | hex SHA-256 of the canonical recipe, see below                                                                                            |
 
-`@@unique([workspaceId, hash])`, `@@index([workspaceId, channel])`. Lookups have no `userId` or `profileId`.
+`@@unique([workspaceId, hash])`, `@@index([workspaceId, channel])`. Query search builders have no `userId` or `profileId`.
 
 ## Generation
 
@@ -107,7 +107,7 @@ Example: 2 positions × 2 regions × 2 arrangements × 5 technology sets × 4 ch
 
 ### Builders
 
-`lookups/builders/` holds a `LookupQueryBuilder` interface (`channel`, `build(combination) → { keywords, params }`) and one implementation per channel, registered through a map keyed by `Channel`. Builders are pure functions with no I/O.
+`query search builders/builders/` holds a `ChannelQueryBuilder` interface (`channel`, `build(combination) → { keywords, params }`) and one implementation per channel, registered through a map keyed by `Channel`. Builders are pure functions with no I/O.
 
 A shared **keyword mapping** turns enums into terms:
 
@@ -122,7 +122,7 @@ Per channel:
 
 - **LINKEDIN_JOB_BOARD**: keywords are seniority + title phrase + the set's technologies. Params hold the LinkedIn job-search filters: experience level and work type codes from seniority and arrangement, plus the location (region, or country/city for on-site and hybrid).
 - **LINKEDIN_POSTS**: keywords are hiring phrases, e.g. `hiring senior backend engineer nestjs`, with the arrangement word added when it is known. Params hold the location label.
-- **GREEN_HOUSE** and **ASHBY**: these public APIs list one company's board and offer no keyword search. So the lookup is a **filter** applied to fetched postings: keywords are the seniority word, title phrases and technology terms to match against the posting, and params hold the location terms for the region and a remote flag from the arrangement.
+- **GREEN_HOUSE** and **ASHBY**: these public APIs list one company's board and offer no keyword search. So the query search builder is a **filter** applied to fetched postings: keywords are the seniority word, title phrases and technology terms to match against the posting, and params hold the location terms for the region and a remote flag from the arrangement.
 
 If a profile lists `unstated` next to real arrangements (e.g. `[remote, unstated]`), `unstated` is dropped from the expansion, since the real values already cover it. It only produces rows when it is the only arrangement.
 
@@ -130,34 +130,34 @@ If a profile lists `unstated` next to real arrangements (e.g. `[remote, unstated
 
 ## API
 
-| method | path                                                           |                                                  |
-| ------ | -------------------------------------------------------------- | ------------------------------------------------ |
-| POST   | `/api/workspaces/:workspaceId/users/:userId/profile/publish`   | sets `published`, generates lookups, idempotent  |
-| POST   | `/api/workspaces/:workspaceId/users/:userId/profile/unpublish` | sets `draft`, leaves lookups alone               |
-| GET    | `/api/workspaces/:workspaceId/lookups?channel=`                | list, optional channel filter, no pagination yet |
+| method | path                                                           |                                                               |
+| ------ | -------------------------------------------------------------- | ------------------------------------------------------------- |
+| POST   | `/api/workspaces/:workspaceId/users/:userId/profile/publish`   | sets `published`, generates query search builders, idempotent |
+| POST   | `/api/workspaces/:workspaceId/users/:userId/profile/unpublish` | sets `draft`, leaves query search builders alone              |
+| GET    | `/api/workspaces/:workspaceId/query-search?channel=`           | list, optional channel filter, no pagination yet              |
 
-Publish returns the profile view plus `lookups: { created, existing }` counts. Both state endpoints return 404 when the user or profile doesn't exist in the workspace. The profile view and response DTO gain `state` and `publishedAt`. Every route gets Swagger and envelope decorators, as the existing controllers do.
+Publish returns the profile view plus `querySearches: { created, existing }` counts. Both state endpoints return 404 when the user or profile doesn't exist in the workspace. The profile view and response DTO gain `state` and `publishedAt`. Every route gets Swagger and envelope decorators, as the existing controllers do.
 
-`PUT …/profile` does not change `state` and does not generate lookups. To pick up edits, the user publishes again.
+`PUT …/profile` does not change `state` and does not generate query search builders. To pick up edits, the user publishes again.
 
-Order on publish: generate lookups first, then set the state. If generation fails, the profile stays as it was. Because publishing is idempotent, retrying is safe.
+Order on publish: generate query search builders first, then set the state. If generation fails, the profile stays as it was. Because publishing is idempotent, retrying is safe.
 
 ## Code layout
 
 ```
-apps/xjobs/src/modules/lookups/
-  builders/      lookup-query.builder.ts, keywords.ts, one file per channel, specs next to them
-  controllers/   lookups.controller.ts
-  dto/           lookup.response.dto.ts, list-lookups.query.dto.ts
-  repositories/  lookups.repository.ts (abstract + Prisma)
-  services/      lookups.service.ts (+ spec)
+apps/xjobs/src/modules/query-search/
+  builders/      channel-query.builder.ts, keywords.ts, one file per channel, specs next to them
+  controllers/   query-search.controller.ts
+  dto/           query-search-builder.response.dto.ts, list-query-search.query.dto.ts
+  repositories/  query-search.repository.ts (abstract + Prisma)
+  services/      query-search.service.ts (+ spec)
   testing/       fakes.ts
-  types/         lookup.types.ts, index.ts
-  lookups.module.ts, index.ts
+  types/         query-search.types.ts, index.ts
+  query-search.module.ts, index.ts
 ```
 
-- `LookupsModule` exports `LookupsService`. `UsersModule` imports it, and `ProfilesService.publish` calls `LookupsService.generate(workspaceId, input)`. `input` is a plain type (positions, regions, arrangements, seniority, country, city, skills with importance/preference/mastery), so the lookups module never imports users.
-- `LookupsModule` is registered in `AppModule`.
+- `QuerySearchModule` exports `QuerySearchService`. `UsersModule` imports it, and `ProfilesService.publish` calls `QuerySearchService.generate(workspaceId, input)`. `input` is a plain type (positions, regions, arrangements, seniority, country, city, skills with importance/preference/mastery), so the query search builders module never imports users.
+- `QuerySearchModule` is registered in `AppModule`.
 - Unit tests cover: determinism (same input, same hashes), cross-product size, dedupe across two publishes and two overlapping profiles, `unstated` handling, top-technology selection, tie-breaking and the 5 technology sets (including the 0, 1 and 2 skill cases), the keyword mapping covering every `Position` and `Technology`, and the publish/unpublish state transitions.
 
 ## Left to the builder
@@ -174,6 +174,6 @@ apps/xjobs/src/modules/lookups/
 - `unstated` is dropped when real arrangements are also listed. `unstated` seniority adds no level word.
 - Technology sets with fewer than 3 qualifying skills: only the sets that exist, no padding. `importance` defaults to 5, and 0 excludes a technology from searches.
 - The hash and uniqueness are per workspace.
-- States are `draft` and `published`. Unpublish leaves lookups in place. `PUT` doesn't change state.
+- States are `draft` and `published`. Unpublish leaves query search builders in place. `PUT` doesn't change state.
 - `publishedAt` column, the list endpoint, and the `{ created, existing }` counts on publish.
-- Greenhouse and Ashby lookups are post-fetch filters, because those APIs have no search.
+- Greenhouse and Ashby query search builders are post-fetch filters, because those APIs have no search.
