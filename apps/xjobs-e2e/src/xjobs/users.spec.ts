@@ -32,20 +32,20 @@ describe('workspaces, users, profile and resume', () => {
   beforeAll(async () => {
     workspaceId = (
       await axios.post('/api/workspaces', { name: 'E2E', slug: `e2e-${run}` })
-    ).data.id;
+    ).data.data.id;
     otherWorkspaceId = (
       await axios.post('/api/workspaces', {
         name: 'Other',
         slug: `e2e-other-${run}`,
       })
-    ).data.id;
+    ).data.data.id;
     userId = (
       await axios.post(base(), {
         name: 'E2E User',
         email: `E2E-${run}@Example.com`,
         address: { line1: '1 Rue X', city: 'Rabat', country: 'MA' },
       })
-    ).data.id;
+    ).data.data.id;
   });
 
   afterAll(async () => {
@@ -54,13 +54,42 @@ describe('workspaces, users, profile and resume', () => {
 
   it('stores the email lowercased and 409s a duplicate', async () => {
     const user = await axios.get(`${base()}/${userId}`);
-    expect(user.data.email).toBe(`e2e-${run}@example.com`);
+    expect(user.data.data.email).toBe(`e2e-${run}@example.com`);
     const duplicate = await axios.post(
       base(),
       { name: 'Again', email: `e2e-${run}@example.com` },
       ok,
     );
     expect(duplicate.status).toBe(409);
+    expect(duplicate.data).toMatchObject({
+      status: 'error',
+      version: '1.0',
+      code: 'CONFLICT',
+      trace_id: duplicate.headers['x-trace-id'],
+    });
+  });
+
+  it('wraps success in the envelope and echoes a caller trace id', async () => {
+    const res = await axios.get(`${base()}/${userId}`, {
+      headers: { 'X-Request-Id': `e2e-${run}` },
+    });
+    expect(res.headers['x-trace-id']).toBe(`e2e-${run}`);
+    expect(res.data).toMatchObject({
+      status: 'success',
+      version: '1.0',
+      trace_id: `e2e-${run}`,
+      timestamp: expect.any(String),
+      data: { id: userId },
+    });
+  });
+
+  it('lists validation failures in details', async () => {
+    const res = await axios.post(base(), { name: '', email: 'nope' }, ok);
+    expect(res.status).toBe(400);
+    expect(res.data).toMatchObject({ code: 'VALIDATION_FAILED' });
+    expect(res.data.details).toEqual(
+      expect.arrayContaining([expect.stringContaining('email')]),
+    );
   });
 
   it('adds a primary GitHub contact', async () => {
@@ -70,7 +99,7 @@ describe('workspaces, users, profile and resume', () => {
       isPrimary: true,
     });
     expect(res.status).toBe(201);
-    expect(res.data).toMatchObject({ kind: 'github', isPrimary: true });
+    expect(res.data.data).toMatchObject({ kind: 'github', isPrimary: true });
   });
 
   it('saves and reads back the profile', async () => {
@@ -78,8 +107,8 @@ describe('workspaces, users, profile and resume', () => {
     expect(put.status).toBe(200);
     const get = await axios.get(`${base()}/${userId}/profile`);
     const { techStack, ...fields } = profile;
-    expect(get.data).toMatchObject({ ...fields, resume: null });
-    expect(get.data.techStack).toEqual(techStack);
+    expect(get.data.data).toMatchObject({ ...fields, resume: null });
+    expect(get.data.data.techStack).toEqual(techStack);
   });
 
   it('rejects a profile whose timezone range is inverted', async () => {
@@ -100,7 +129,7 @@ describe('workspaces, users, profile and resume', () => {
     );
     const upload = await axios.post(`${base()}/${userId}/profile/resume`, form);
     expect(upload.status).toBe(201);
-    expect(upload.data.resume.filename).toBe('cv.pdf');
+    expect(upload.data.data.resume.filename).toBe('cv.pdf');
 
     const download = await axios.get(`${base()}/${userId}/profile/resume`, {
       responseType: 'arraybuffer',

@@ -14,6 +14,7 @@ import type { EnvironmentVariables } from 'src/config';
 import { EnvironmentType } from 'src/common/enums';
 import { getHostName } from 'src/utils';
 import { CorseConfig } from './cors';
+import { traceIdMiddleware } from 'src/common/middleware';
 
 const APP_CONFIG = {
   name: 'MAIN FILE',
@@ -51,12 +52,13 @@ function configure(
     transform: true,
   });
   const corsConfig = {
-    origin: [
-      CorseConfig(domain),
-    ],
+    origin: [CorseConfig(domain)],
     credentials: true,
+    exposedHeaders: ['X-Trace-Id'],
   };
 
+  // First, so every response and log line can carry the request's trace id.
+  app.use(traceIdMiddleware);
   app.useGlobalPipes(validatorPipe);
   app.use(cookieParser());
   app.disable('x-powered-by');
