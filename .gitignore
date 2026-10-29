@@ -64,6 +64,3 @@ supabase
 # Superpowers plan workspaces (scratch)
 .superpowers
 
-# Uploaded resumes (RESUME_STORAGE_DIR default); personal data, never committed
-/storage/
-/apps/xjobs/storage/

@@ -377,13 +377,15 @@ services:
       S3_PROTOCOL_ACCESS_KEY_ID: ${S3_PROTOCOL_ACCESS_KEY_ID}
       S3_PROTOCOL_ACCESS_KEY_SECRET: ${S3_PROTOCOL_ACCESS_KEY_SECRET}
     volumes:
-      - ./supabase/volumes/storage:/var/lib/storage:z
+      # A named volume: macOS bind mounts lack the extended attributes the
+      # file backend writes, so uploads fail on ./supabase/volumes/storage.
+      - storage-data:/var/lib/storage
 
   imgproxy:
     image: darthsim/imgproxy:v3.31.4
     restart: unless-stopped
     volumes:
-      - ./supabase/volumes/storage:/var/lib/storage:z
+      - storage-data:/var/lib/storage
     healthcheck:
       test:
         [
@@ -582,5 +584,6 @@ services:
 
 volumes:
   db-config:
+  storage-data:
   deno-cache:
   redis-data:

@@ -1,16 +1,19 @@
 import { createHash, randomUUID } from 'node:crypto';
 import {
   BadRequestException,
+  Inject,
   Injectable,
+  Logger,
   NotFoundException,
+  type OnModuleInit,
 } from '@nestjs/common';
+import { StorageObjectNotFoundError, StorageService } from 'src/storage';
 import { ProfilesRepository } from '../repositories/profiles.repository';
 import {
   ProfilesService,
   toProfileView,
   type ProfileView,
 } from './profiles.service';
-import { ResumeStorage } from '../repositories/resume-storage';
 
 /** The parts of a multer upload the resume flow reads. */
 export type UploadedPdf = {
@@ -30,13 +33,35 @@ function safeFilename(name: string): string {
   return cleaned || 'resume.pdf';
 }
 
+/** Injection token for the name of the bucket that holds resumes. */
+export const RESUMES_BUCKET = Symbol('RESUMES_BUCKET');
+
 @Injectable()
-export class ResumeService {
+export class ResumeService implements OnModuleInit {
+  private readonly logger = new Logger(ResumeService.name);
+
   constructor(
     private readonly profiles: ProfilesService,
     private readonly repository: ProfilesRepository,
-    private readonly storage: ResumeStorage,
+    private readonly storage: StorageService,
+    @Inject(RESUMES_BUCKET) private readonly bucket: string,
   ) {}
+
+  /** Creates the private resumes bucket on first start. */
+  async onModuleInit(): Promise<void> {
+    await this.storage.ensureBucket(this.bucket);
+  }
+
+  /** Removes a file nobody points at any more; a failure only leaves an orphan. */
+  private async discard(key: string): Promise<void> {
+    try {
+      await this.storage.delete(this.bucket, key);
+    } catch (error) {
+      this.logger.warn(
+        `Could not remove ${this.bucket}/${key}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
 
   async view(workspaceId: string, userId: string): Promise<ProfileView> {
     return this.profiles.get(workspaceId, userId);
@@ -58,7 +83,7 @@ export class ResumeService {
     const profile = await this.profiles.getOrThrow(workspaceId, userId);
     const previousKey = profile.resumeKey;
     const key = `${workspaceId}/${profile.id}/${randomUUID()}.pdf`;
-    await this.storage.put(key, file.buffer);
+    await this.storage.put(this.bucket, key, file.buffer, 'application/pdf');
     const meta = {
       key,
       filename: safeFilename(file.originalname),
@@ -69,10 +94,10 @@ export class ResumeService {
     try {
       await this.repository.setResume(workspaceId, profile.id, meta);
     } catch (error) {
-      await this.storage.delete(key);
+      await this.discard(key);
       throw error;
     }
-    if (previousKey) await this.storage.delete(previousKey);
+    if (previousKey) await this.discard(previousKey);
     return toProfileView({
       ...profile,
       resumeKey: meta.key,
@@ -89,22 +114,29 @@ export class ResumeService {
   ): Promise<{ filename: string; data: Buffer }> {
     const profile = await this.profiles.getOrThrow(workspaceId, userId);
     if (!profile.resumeKey) throw new NotFoundException('No resume uploaded');
-    return {
-      filename: profile.resumeFilename ?? 'resume.pdf',
-      data: await this.storage.get(profile.resumeKey),
-    };
+    try {
+      return {
+        filename: profile.resumeFilename ?? 'resume.pdf',
+        data: await this.storage.get(this.bucket, profile.resumeKey),
+      };
+    } catch (error) {
+      if (error instanceof StorageObjectNotFoundError) {
+        throw new NotFoundException('No resume uploaded');
+      }
+      throw error;
+    }
   }
 
   async delete(workspaceId: string, userId: string): Promise<void> {
     const profile = await this.profiles.getOrThrow(workspaceId, userId);
     if (!profile.resumeKey) throw new NotFoundException('No resume uploaded');
     await this.repository.setResume(workspaceId, profile.id, null);
-    await this.storage.delete(profile.resumeKey);
+    await this.discard(profile.resumeKey);
   }
 
   /** Drops a user's resume file, if any; called before the user is deleted. */
   async removeFor(workspaceId: string, userId: string): Promise<void> {
     const profile = await this.repository.findByUser(workspaceId, userId);
-    if (profile?.resumeKey) await this.storage.delete(profile.resumeKey);
+    if (profile?.resumeKey) await this.discard(profile.resumeKey);
   }
 }

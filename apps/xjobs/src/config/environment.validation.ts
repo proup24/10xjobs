@@ -47,8 +47,32 @@ export const environmentSchema = databaseEnvironmentSchema.extend({
   COOKIE_DOMAIN: z.string().min(1).optional(),
   COOKIE_SECURE: booleanFlag.optional(),
   COOKIE_SAME_SITE: z.enum(['lax', 'strict', 'none']).default('lax'),
-  /** Where uploaded resume PDFs are written. Keep it out of git. */
-  RESUME_STORAGE_DIR: z.string().min(1).default('./storage/resumes'),
+  /** Supabase API URL for Storage; falls back to the stack's SUPABASE_PUBLIC_URL. */
+  SUPABASE_URL: z.url().optional(),
+  SUPABASE_PUBLIC_URL: z.url().optional(),
+  /** Service-role key, server-side only; falls back to the stack's SERVICE_ROLE_KEY. */
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
+  SERVICE_ROLE_KEY: z.string().min(1).optional(),
+  /** Private bucket that holds resume PDFs. */
+  STORAGE_RESUMES_BUCKET: z
+    .string()
+    .regex(/^[a-z0-9][a-z0-9._-]{1,62}$/)
+    .default('resumes'),
+}).superRefine((env, ctx) => {
+  if (!env.SUPABASE_URL && !env.SUPABASE_PUBLIC_URL) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['SUPABASE_URL'],
+      message: 'Set SUPABASE_URL (or SUPABASE_PUBLIC_URL)',
+    });
+  }
+  if (!env.SUPABASE_SERVICE_ROLE_KEY && !env.SERVICE_ROLE_KEY) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['SUPABASE_SERVICE_ROLE_KEY'],
+      message: 'Set SUPABASE_SERVICE_ROLE_KEY (or SERVICE_ROLE_KEY)',
+    });
+  }
 });
 
 export type DatabaseEnvironmentVariables = z.infer<

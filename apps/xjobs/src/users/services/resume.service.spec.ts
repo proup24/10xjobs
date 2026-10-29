@@ -9,11 +9,8 @@ import {
 } from 'src/common/enums';
 import { ProfilesService } from './profiles.service';
 import { ResumeService, type UploadedPdf } from './resume.service';
-import {
-  FakeProfilesRepository,
-  FakeUsersRepository,
-  MemoryResumeStorage,
-} from '../testing/fakes';
+import { MemoryStorageService } from 'src/storage/testing';
+import { FakeProfilesRepository, FakeUsersRepository } from '../testing/fakes';
 import { UsersService } from './users.service';
 
 const pdfBytes = Buffer.from('%PDF-1.7\n%%EOF');
@@ -26,18 +23,19 @@ const pdf = (buffer = pdfBytes, mimetype = 'application/pdf'): UploadedPdf => ({
 
 describe('ResumeService', () => {
   let profiles: FakeProfilesRepository;
-  let storage: MemoryResumeStorage;
+  let storage: MemoryStorageService;
   let service: ResumeService;
   let userId: string;
 
   beforeEach(async () => {
     const users = new UsersService(new FakeUsersRepository());
     profiles = new FakeProfilesRepository();
-    storage = new MemoryResumeStorage();
+    storage = new MemoryStorageService();
     service = new ResumeService(
       new ProfilesService(users, profiles),
       profiles,
       storage,
+      'resumes',
     );
     userId = (await users.create('ws', { name: 'A', email: 'a@x.com' })).id;
     await profiles.upsert(
@@ -68,7 +66,7 @@ describe('ResumeService', () => {
       createHash('sha256').update(pdfBytes).digest('hex'),
     );
     expect(view.resume?.filename).toBe('cv.pdf');
-    expect(storage.files.size).toBe(1);
+    expect(storage.objects.get('resumes')?.size).toBe(1);
   });
 
   it('rejects a PDF sent with another mime type', async () => {
@@ -91,18 +89,18 @@ describe('ResumeService', () => {
 
   it('deletes the old file only after the new one is stored', async () => {
     await service.save('ws', userId, pdf());
-    const [oldKey] = storage.files.keys();
+    const [oldKey] = storage.keys('resumes');
     await service.save('ws', userId, pdf(Buffer.from('%PDF-1.4 second')));
-    expect(storage.files.has(oldKey)).toBe(false);
-    expect(storage.files.size).toBe(1);
+    expect(storage.keys('resumes')).not.toContain(oldKey);
+    expect(storage.keys('resumes')).toHaveLength(1);
   });
 
   it('keeps the old resume when storing the new one fails', async () => {
     const first = await service.save('ws', userId, pdf());
-    const [oldKey] = storage.files.keys();
+    const [oldKey] = storage.keys('resumes');
     storage.failNextPut = true;
     await expect(service.save('ws', userId, pdf())).rejects.toThrow();
-    expect(storage.files.has(oldKey)).toBe(true);
+    expect(storage.keys('resumes')).toContain(oldKey);
     expect((await service.view('ws', userId)).resume).toEqual(first.resume);
   });
 
@@ -115,10 +113,30 @@ describe('ResumeService', () => {
   it('removeFor deletes the stored file', async () => {
     await service.save('ws', userId, pdf());
     await service.removeFor('ws', userId);
-    expect(storage.files.size).toBe(0);
+    expect(storage.keys('resumes')).toHaveLength(0);
   });
 
   it('removeFor is a no-op for a user without a profile', async () => {
     await expect(service.removeFor('ws', 'nobody')).resolves.toBeUndefined();
+  });
+
+  it('a successful upload stands when removing the old file fails', async () => {
+    await service.save('ws', userId, pdf());
+    storage.failNextDelete = true;
+    const view = await service.save('ws', userId, pdf(Buffer.from('%PDF-1.4 b')));
+    expect(view.resume?.sizeBytes).toBe(Buffer.from('%PDF-1.4 b').length);
+  });
+
+  it('404s a download whose stored object is gone', async () => {
+    await service.save('ws', userId, pdf());
+    storage.objects.clear();
+    await expect(service.get('ws', userId)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+  });
+
+  it('ensures its bucket on startup', async () => {
+    await service.onModuleInit();
+    expect(storage.buckets).toContain('resumes');
   });
 });

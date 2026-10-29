@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { getResumeStorageDir, type EnvironmentVariables } from 'src/config';
+import { getStorageConfig, type EnvironmentVariables } from 'src/config';
+import { StorageModule } from 'src/storage';
 import { WorkspacesModule } from 'src/workspaces';
 import { ContactsController } from './controllers/contacts.controller';
 import {
@@ -14,15 +15,14 @@ import {
   ProfilesRepository,
 } from './repositories/profiles.repository';
 import { ProfilesService } from './services/profiles.service';
-import { LocalResumeStorage, ResumeStorage } from './repositories/resume-storage';
 import { ResumeController } from './controllers/resume.controller';
-import { ResumeService } from './services/resume.service';
+import { RESUMES_BUCKET, ResumeService } from './services/resume.service';
 import { UsersController } from './controllers/users.controller';
 import { PrismaUsersRepository, UsersRepository } from './repositories/users.repository';
 import { UsersService } from './services/users.service';
 
 @Module({
-  imports: [WorkspacesModule],
+  imports: [WorkspacesModule, StorageModule],
   controllers: [
     UsersController,
     ContactsController,
@@ -38,10 +38,10 @@ import { UsersService } from './services/users.service';
     { provide: ProfilesRepository, useClass: PrismaProfilesRepository },
     ResumeService,
     {
-      provide: ResumeStorage,
+      provide: RESUMES_BUCKET,
       inject: [ConfigService],
       useFactory: (config: ConfigService<EnvironmentVariables, true>) =>
-        new LocalResumeStorage(getResumeStorageDir(config)),
+        getStorageConfig(config).resumesBucket,
     },
   ],
 })

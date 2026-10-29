@@ -89,6 +89,7 @@
     "@nestjs/swagger": "^12.0.5",
     "@prisma/orm-postgres": "8.0.0-rc.21",
     "@sentry/node": "^11.9.0",
+    "@supabase/supabase-js": "^2.118.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "cookie-parser": "^1.4.7",
