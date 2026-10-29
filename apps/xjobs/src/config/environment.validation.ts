@@ -38,42 +38,49 @@ export const databaseEnvironmentSchema = z.object({
   DATABASE_LOG_QUERIES: booleanFlag.default(false),
 });
 
-export const environmentSchema = databaseEnvironmentSchema.extend({
-  NODE_ENV: z.enum(EnvironmentType).default(EnvironmentType.development),
-  HOST: z.string().min(1).default('0.0.0.0'),
-  PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
-  SYSTEM_DOMAIN: z.string().min(1).default('localhost'),
-  SENTRY_DSN: z.url().optional(),
-  COOKIE_DOMAIN: z.string().min(1).optional(),
-  COOKIE_SECURE: booleanFlag.optional(),
-  COOKIE_SAME_SITE: z.enum(['lax', 'strict', 'none']).default('lax'),
-  /** Supabase API URL for Storage; falls back to the stack's SUPABASE_PUBLIC_URL. */
-  SUPABASE_URL: z.url().optional(),
-  SUPABASE_PUBLIC_URL: z.url().optional(),
-  /** Service-role key, server-side only; falls back to the stack's SERVICE_ROLE_KEY. */
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
-  SERVICE_ROLE_KEY: z.string().min(1).optional(),
-  /** Private bucket that holds resume PDFs. */
-  STORAGE_RESUMES_BUCKET: z
-    .string()
-    .regex(/^[a-z0-9][a-z0-9._-]{1,62}$/)
-    .default('resumes'),
-}).superRefine((env, ctx) => {
-  if (!env.SUPABASE_URL && !env.SUPABASE_PUBLIC_URL) {
-    ctx.addIssue({
-      code: 'custom',
-      path: ['SUPABASE_URL'],
-      message: 'Set SUPABASE_URL (or SUPABASE_PUBLIC_URL)',
-    });
-  }
-  if (!env.SUPABASE_SERVICE_ROLE_KEY && !env.SERVICE_ROLE_KEY) {
-    ctx.addIssue({
-      code: 'custom',
-      path: ['SUPABASE_SERVICE_ROLE_KEY'],
-      message: 'Set SUPABASE_SERVICE_ROLE_KEY (or SERVICE_ROLE_KEY)',
-    });
-  }
-});
+export const environmentSchema = databaseEnvironmentSchema
+  .extend({
+    NODE_ENV: z.enum(EnvironmentType).default(EnvironmentType.development),
+    HOST: z.string().min(1).default('0.0.0.0'),
+    PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
+    SYSTEM_DOMAIN: z.string().min(1).default('localhost'),
+    SENTRY_DSN: z.url().optional(),
+    COOKIE_DOMAIN: z.string().min(1).optional(),
+    COOKIE_SECURE: booleanFlag.optional(),
+    COOKIE_SAME_SITE: z.enum(['lax', 'strict', 'none']).default('lax'),
+    /** Credentials every API request must send as HTTP Basic auth. */
+    BASIC_AUTH_USERNAME: z.string().min(1),
+    BASIC_AUTH_PASSWORD: z
+      .string()
+      .min(12, 'BASIC_AUTH_PASSWORD must be at least 12 characters'),
+    /** Supabase API URL for Storage; falls back to the stack's SUPABASE_PUBLIC_URL. */
+    SUPABASE_URL: z.url().optional(),
+    SUPABASE_PUBLIC_URL: z.url().optional(),
+    /** Service-role key, server-side only; falls back to the stack's SERVICE_ROLE_KEY. */
+    SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
+    SERVICE_ROLE_KEY: z.string().min(1).optional(),
+    /** Private bucket that holds resume PDFs. */
+    STORAGE_RESUMES_BUCKET: z
+      .string()
+      .regex(/^[a-z0-9][a-z0-9._-]{1,62}$/)
+      .default('resumes'),
+  })
+  .superRefine((env, ctx) => {
+    if (!env.SUPABASE_URL && !env.SUPABASE_PUBLIC_URL) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['SUPABASE_URL'],
+        message: 'Set SUPABASE_URL (or SUPABASE_PUBLIC_URL)',
+      });
+    }
+    if (!env.SUPABASE_SERVICE_ROLE_KEY && !env.SERVICE_ROLE_KEY) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['SUPABASE_SERVICE_ROLE_KEY'],
+        message: 'Set SUPABASE_SERVICE_ROLE_KEY (or SERVICE_ROLE_KEY)',
+      });
+    }
+  });
 
 export type DatabaseEnvironmentVariables = z.infer<
   typeof databaseEnvironmentSchema

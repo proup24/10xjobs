@@ -1,5 +1,5 @@
 import type { Seed } from './seed.interface';
-import { DEFAULT_WORKSPACE } from './workspaces.seed';
+import { defaultWorkspace } from 'src/common/constants';
 
 const users = [
   { email: 'admin@xjobs.local', name: 'Admin' },
@@ -11,7 +11,7 @@ export const usersSeed: Seed = {
   name: 'users',
   async run(tx) {
     const workspace = await tx.orm.public.Workspace.where({
-      slug: DEFAULT_WORKSPACE.slug,
+      slug: defaultWorkspace.slug,
     }).first();
     if (!workspace) {
       throw new Error('Run the workspaces seed before the users seed.');

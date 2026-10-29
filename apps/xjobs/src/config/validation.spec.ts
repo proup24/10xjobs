@@ -1,9 +1,15 @@
-import { getStorageConfig, validateEnvironment } from './index';
+import {
+  getBasicAuthConfig,
+  getStorageConfig,
+  validateEnvironment,
+} from './index';
 
 const minimal = {
   DATABASE_URL: 'postgresql://u:p@localhost:5432/db',
   SUPABASE_URL: 'http://localhost:8000',
   SUPABASE_SERVICE_ROLE_KEY: 'service-key',
+  BASIC_AUTH_USERNAME: 'admin',
+  BASIC_AUTH_PASSWORD: 'correct horse battery',
 };
 
 function storageConfigFor(raw: Record<string, unknown>) {
@@ -26,6 +32,8 @@ describe('storage configuration', () => {
         DATABASE_URL: minimal.DATABASE_URL,
         SUPABASE_PUBLIC_URL: 'http://localhost:8000',
         SERVICE_ROLE_KEY: 'legacy-key',
+        BASIC_AUTH_USERNAME: minimal.BASIC_AUTH_USERNAME,
+        BASIC_AUTH_PASSWORD: minimal.BASIC_AUTH_PASSWORD,
       }),
     ).toMatchObject({
       supabaseUrl: 'http://localhost:8000',
@@ -41,7 +49,37 @@ describe('storage configuration', () => {
 
   it('fails without any Supabase URL or key', () => {
     expect(() =>
-      validateEnvironment({ DATABASE_URL: minimal.DATABASE_URL }),
+      validateEnvironment({
+        DATABASE_URL: minimal.DATABASE_URL,
+        BASIC_AUTH_USERNAME: minimal.BASIC_AUTH_USERNAME,
+        BASIC_AUTH_PASSWORD: minimal.BASIC_AUTH_PASSWORD,
+      }),
     ).toThrow(/SUPABASE_URL[\s\S]*SUPABASE_SERVICE_ROLE_KEY/);
+  });
+});
+
+describe('basic auth configuration', () => {
+  it('reads the username and password', () => {
+    const env = validateEnvironment(minimal) as Record<string, unknown>;
+    expect(
+      getBasicAuthConfig({ get: (key: string) => env[key] } as never),
+    ).toEqual({
+      username: 'admin',
+      password: 'correct horse battery',
+    });
+  });
+
+  it('refuses to start without credentials', () => {
+    const { BASIC_AUTH_USERNAME, BASIC_AUTH_PASSWORD, ...rest } = minimal;
+    expect(() => validateEnvironment(rest)).toThrow(
+      /BASIC_AUTH_USERNAME[\s\S]*BASIC_AUTH_PASSWORD/,
+    );
+    expect(BASIC_AUTH_USERNAME && BASIC_AUTH_PASSWORD).toBeTruthy();
+  });
+
+  it('refuses a password shorter than 12 characters', () => {
+    expect(() =>
+      validateEnvironment({ ...minimal, BASIC_AUTH_PASSWORD: 'short' }),
+    ).toThrow(/BASIC_AUTH_PASSWORD/);
   });
 });

@@ -60,6 +60,18 @@ export function getSystemDomain(config: AppConfigService): string {
   return config.get('SYSTEM_DOMAIN', { infer: true });
 }
 
+export interface BasicAuthConfig {
+  username: string;
+  password: string;
+}
+
+export function getBasicAuthConfig(config: AppConfigService): BasicAuthConfig {
+  return {
+    username: config.get('BASIC_AUTH_USERNAME', { infer: true }),
+    password: config.get('BASIC_AUTH_PASSWORD', { infer: true }),
+  };
+}
+
 export interface StorageConfig {
   supabaseUrl: string;
   serviceRoleKey: string;

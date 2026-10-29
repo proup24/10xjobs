@@ -8,3 +8,24 @@ describe('GET /api', () => {
     expect(res.data.data).toEqual({ message: 'Hello API' });
   });
 });
+
+describe('basic auth', () => {
+  it('401s a protected route without credentials, with a Basic challenge', async () => {
+    // fetch, not axios: axios instances inherit the default credentials.
+    const res = await fetch(`${axios.defaults.baseURL}/api/workspaces`);
+    expect(res.status).toBe(401);
+    expect(res.headers.get('www-authenticate')).toContain('Basic');
+    expect(await res.json()).toMatchObject({
+      status: 'error',
+      code: 'UNAUTHORIZED',
+    });
+  });
+
+  it('401s wrong credentials', async () => {
+    const res = await axios.get('/api/workspaces', {
+      auth: { username: 'admin', password: 'definitely-wrong-password' },
+      validateStatus: () => true,
+    });
+    expect(res.status).toBe(401);
+  });
+});

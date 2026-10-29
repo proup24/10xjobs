@@ -7,7 +7,9 @@ export function setupSwagger(app: INestApplication): void {
     .setTitle('10xJobs API')
     .setDescription('10xJobs APIs')
     .setVersion(API_VERSION)
-    .addBearerAuth()
+    .addBasicAuth()
+    // Every route requires it; the Authorize button sends it on Try it out.
+    .addSecurityRequirements('basic')
     .build();
   const document = SwaggerModule.createDocument(app, config);
 

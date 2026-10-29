@@ -1,9 +1,14 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { HttpExceptionFilter } from 'src/common/filters';
+import { BASIC_AUTH_CREDENTIALS, BasicAuthGuard } from 'src/common/guards';
 import { ResponseInterceptor } from 'src/common/interceptors';
-import { validateEnvironment } from 'src/config';
+import {
+  getBasicAuthConfig,
+  validateEnvironment,
+  type EnvironmentVariables,
+} from 'src/config';
 import { DatabaseModule } from 'src/database';
 import { UsersModule } from 'src/modules/users';
 import { WorkspacesModule } from 'src/modules/workspaces';
@@ -26,6 +31,14 @@ import { AppService } from './app.service';
   controllers: [AppController],
   providers: [
     AppService,
+    // Every route needs HTTP Basic auth unless it is marked @Public().
+    {
+      provide: BASIC_AUTH_CREDENTIALS,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<EnvironmentVariables, true>) =>
+        getBasicAuthConfig(config),
+    },
+    { provide: APP_GUARD, useClass: BasicAuthGuard },
     // Every response uses the success or error envelope from src/common/dtos.
     { provide: APP_INTERCEPTOR, useClass: ResponseInterceptor },
     { provide: APP_FILTER, useClass: HttpExceptionFilter },

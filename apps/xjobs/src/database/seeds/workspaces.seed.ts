@@ -1,19 +1,18 @@
+import { defaultWorkspace } from 'src/common/constants';
 import type { Seed } from './seed.interface';
-
-export const DEFAULT_WORKSPACE = { name: 'Default', slug: 'default' };
 
 export const workspacesSeed: Seed = {
   name: 'workspaces',
   async run(tx) {
     const existing = await tx.orm.public.Workspace.where({
-      slug: DEFAULT_WORKSPACE.slug,
+      slug: defaultWorkspace.slug,
     }).first();
     if (existing) {
       await tx.orm.public.Workspace.where({
-        slug: DEFAULT_WORKSPACE.slug,
-      }).update({ name: DEFAULT_WORKSPACE.name });
+        slug: defaultWorkspace.slug,
+      }).update({ name: defaultWorkspace.name });
     } else {
-      await tx.orm.public.Workspace.create(DEFAULT_WORKSPACE);
+      await tx.orm.public.Workspace.create(defaultWorkspace);
     }
   },
 };
