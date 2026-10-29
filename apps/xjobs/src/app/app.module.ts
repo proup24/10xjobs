@@ -10,6 +10,7 @@ import {
   type EnvironmentVariables,
 } from 'src/config';
 import { DatabaseModule } from 'src/database';
+import { QuerySearchModule } from 'src/modules/query-search';
 import { UsersModule } from 'src/modules/users';
 import { WorkspacesModule } from 'src/modules/workspaces';
 import { AppController } from './app.controller';
@@ -27,6 +28,7 @@ import { AppService } from './app.service';
     DatabaseModule,
     WorkspacesModule,
     UsersModule,
+    QuerySearchModule,
   ],
   controllers: [AppController],
   providers: [

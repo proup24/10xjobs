@@ -6,6 +6,7 @@ import {
   type OpenAPIObject,
 } from '@nestjs/swagger';
 import { AppController } from 'src/app/app.controller';
+import { QuerySearchController } from 'src/modules/query-search/controllers/query-search.controller';
 import { ContactsController } from 'src/modules/users/controllers/contacts.controller';
 import { ProfilesController } from 'src/modules/users/controllers/profiles.controller';
 import { ResumeController } from 'src/modules/users/controllers/resume.controller';
@@ -37,6 +38,7 @@ async function buildDocument(): Promise<OpenAPIObject> {
       ContactsController,
       ProfilesController,
       ResumeController,
+      QuerySearchController,
     ],
   })
     .useMocker(() => ({}))
@@ -79,7 +81,7 @@ describe('API contract', () => {
   });
 
   it('covers every route', () => {
-    expect(operations(document)).toHaveLength(19);
+    expect(operations(document)).toHaveLength(20);
   });
 
   it('documents every success body as a SuccessResponseDto with a typed data', () => {
