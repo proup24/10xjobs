@@ -57,12 +57,23 @@ describe('recipe', () => {
 
   // Rows are deduplicated by hash forever: these digests must never change.
   it.each<[Channel, string]>([
-    [Channel.LINKEDIN_JOB_BOARD, 'TBD'],
-    [Channel.LINKEDIN_POSTS, 'TBD'],
-    [Channel.GREEN_HOUSE, 'TBD'],
-    [Channel.ASHBY, 'TBD'],
+    [
+      Channel.LINKEDIN_JOB_BOARD,
+      'b89f54db589018e1e85bdb829b7eeded5dfd559988a1a29d3cda8a4cf9b09a93',
+    ],
+    [
+      Channel.LINKEDIN_POSTS,
+      '4b78e80159536df11265b7446fb48fc12ffc718f9b97cb53f71628919afc8877',
+    ],
+    [
+      Channel.GREEN_HOUSE,
+      '5ae54382c88d663ab3b858670d9f49927e59b6ebe7c6c8c6dbdeb28ca8e77304',
+    ],
+    [
+      Channel.ASHBY,
+      '3d88c3d6e5fbeb929aadffadc0a06bf2d46dd419a0623acbf98882bc8ec89b3f',
+    ],
   ])('pins the %s hash', (channel, digest) => {
-    console.log('H', channel, toRecipe({ ...base, channel }).hash);
     expect(toRecipe({ ...base, channel }).hash).toBe(digest);
   });
 });
