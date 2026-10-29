@@ -1,22 +1,32 @@
 import { NotFoundException } from '@nestjs/common';
+import {
+  Arrangement,
+  Engagement,
+  Language,
+  Position,
+  Region,
+  Seniority,
+  SkillDomain,
+  Technology,
+} from 'src/common/enums';
 import { ProfilesService, toProfileView } from './profiles.service';
 import type { ProfileInput, SkillInput } from './profiles.repository';
 import { FakeProfilesRepository, FakeUsersRepository } from './testing/fakes';
 import { UsersService } from './users.service';
 
 const profileInput: ProfileInput = {
-  positions: ['backend_engineer'],
-  languages: ['EN'],
+  positions: [Position.backend_engineer],
+  languages: [Language.EN],
   country: 'MA',
   city: null,
-  regions: ['MENA'],
+  regions: [Region.MENA],
   yearsOfExperience: 6,
   timezoneCurrent: 60,
   timezoneMin: -240,
   timezoneMax: 240,
-  engagements: ['employee'],
-  arrangements: ['remote'],
-  seniority: 'senior',
+  engagements: [Engagement.employee],
+  arrangements: [Arrangement.remote],
+  seniority: Seniority.senior,
   noticePeriodDays: 30,
 };
 
@@ -24,7 +34,12 @@ const skill = (
   technology: SkillInput['technology'],
   mastery: number,
   preference: number,
-): SkillInput => ({ technology, domain: 'backend', mastery, preference });
+): SkillInput => ({
+  technology,
+  domain: SkillDomain.backend,
+  mastery,
+  preference,
+});
 
 describe('ProfilesService', () => {
   let profiles: FakeProfilesRepository;
@@ -41,7 +56,7 @@ describe('ProfilesService', () => {
   it('creates a profile for a user without one', async () => {
     const view = await service.upsert('ws', userId, {
       ...profileInput,
-      techStack: [skill('nodejs', 8, 9)],
+      techStack: [skill(Technology.nodejs, 8, 9)],
     });
     expect(view).toMatchObject({ userId, seniority: 'senior' });
     expect(view.techStack).toEqual([
@@ -52,11 +67,11 @@ describe('ProfilesService', () => {
   it('replaces the whole tech stack and keeps the profile id', async () => {
     const first = await service.upsert('ws', userId, {
       ...profileInput,
-      techStack: [skill('nodejs', 8, 9)],
+      techStack: [skill(Technology.nodejs, 8, 9)],
     });
     const second = await service.upsert('ws', userId, {
       ...profileInput,
-      techStack: [skill('go', 5, 7), skill('rust', 3, 8)],
+      techStack: [skill(Technology.go, 5, 7), skill(Technology.rust, 3, 8)],
     });
     expect(second.id).toBe(first.id);
     expect(second.techStack.map((s) => s.technology)).toEqual(['rust', 'go']);
@@ -77,7 +92,7 @@ describe('ProfilesService', () => {
   it('views hide the storage key and sort by preference then mastery', async () => {
     await service.upsert('ws', userId, {
       ...profileInput,
-      techStack: [skill('go', 9, 5), skill('rust', 4, 8), skill('java', 7, 8)],
+      techStack: [skill(Technology.go, 9, 5), skill(Technology.rust, 4, 8), skill(Technology.java, 7, 8)],
     });
     const stored = await profiles.findByUser('ws', userId);
     if (!stored) throw new Error('profile was not stored');

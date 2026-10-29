@@ -5,7 +5,7 @@ import {
   ArrayNotEmpty,
   ArrayUnique,
   IsArray,
-  IsIn,
+  IsEnum,
   IsInt,
   IsISO31661Alpha2,
   IsOptional,
@@ -16,20 +16,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import {
-  ARRANGEMENTS,
-  ENGAGEMENTS,
-  LANGUAGES,
-  POSITIONS,
-  REGIONS,
-  SENIORITIES,
-  type Arrangement,
-  type Engagement,
-  type Language,
-  type Position,
-  type Region,
-  type Seniority,
-} from 'src/common/enums';
+import { Arrangement, Engagement, Language, Position, Region, Seniority } from 'src/common/enums';
 import { SkillDto } from './skill.dto';
 import { IsGreaterOrEqual, UniqueBy } from './validators';
 
@@ -38,18 +25,18 @@ const MIN_OFFSET = -720;
 const MAX_OFFSET = 840;
 
 export class UpsertProfileDto {
-  @ApiProperty({ enum: POSITIONS, isArray: true })
+  @ApiProperty({ enum: Position, enumName: 'Position', isArray: true })
   @IsArray()
   @ArrayNotEmpty()
   @ArrayUnique()
-  @IsIn(POSITIONS, { each: true })
+  @IsEnum(Position, { each: true })
   positions!: Position[];
 
-  @ApiProperty({ enum: LANGUAGES, isArray: true })
+  @ApiProperty({ enum: Language, enumName: 'Language', isArray: true })
   @IsArray()
   @ArrayNotEmpty()
   @ArrayUnique()
-  @IsIn(LANGUAGES, { each: true })
+  @IsEnum(Language, { each: true })
   languages!: Language[];
 
   @ApiProperty({ example: 'MA', description: 'ISO 3166-1 alpha-2, uppercase' })
@@ -63,10 +50,10 @@ export class UpsertProfileDto {
   @MaxLength(100)
   city?: string | null;
 
-  @ApiProperty({ enum: REGIONS, isArray: true })
+  @ApiProperty({ enum: Region, enumName: 'Region', isArray: true })
   @IsArray()
   @ArrayUnique()
-  @IsIn(REGIONS, { each: true })
+  @IsEnum(Region, { each: true })
   regions!: Region[];
 
   @ApiProperty({ minimum: 0, maximum: 60 })
@@ -94,22 +81,22 @@ export class UpsertProfileDto {
   @IsGreaterOrEqual('timezoneMin')
   timezoneMax!: number;
 
-  @ApiProperty({ enum: ENGAGEMENTS, isArray: true })
+  @ApiProperty({ enum: Engagement, enumName: 'Engagement', isArray: true })
   @IsArray()
   @ArrayNotEmpty()
   @ArrayUnique()
-  @IsIn(ENGAGEMENTS, { each: true })
+  @IsEnum(Engagement, { each: true })
   engagements!: Engagement[];
 
-  @ApiProperty({ enum: ARRANGEMENTS, isArray: true })
+  @ApiProperty({ enum: Arrangement, enumName: 'Arrangement', isArray: true })
   @IsArray()
   @ArrayNotEmpty()
   @ArrayUnique()
-  @IsIn(ARRANGEMENTS, { each: true })
+  @IsEnum(Arrangement, { each: true })
   arrangements!: Arrangement[];
 
-  @ApiProperty({ enum: SENIORITIES })
-  @IsIn(SENIORITIES)
+  @ApiProperty({ enum: Seniority, enumName: 'Seniority' })
+  @IsEnum(Seniority)
   seniority!: Seniority;
 
   @ApiProperty({ minimum: 0, maximum: 365 })

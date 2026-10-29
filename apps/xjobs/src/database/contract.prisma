@@ -10,8 +10,8 @@ model mixin Timestamps {
   updatedAt TimestamptzJsDate(3) @default(now()) @onCreate(now()) @onUpdate(now())
 }
 
-// Keep the value lists in src/common/enums/profile.enums.ts in step with
-// these enums; profile.enums.spec.ts fails when they drift.
+// Each enum below has a TypeScript twin in src/common/enums/<name>.enum.ts;
+// src/common/enums/enums.spec.ts fails when they drift.
 
 enum Position {
   @@type("pg/text@1")

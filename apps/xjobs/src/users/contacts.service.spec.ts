@@ -1,4 +1,5 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
+import { ContactKind } from 'src/common/enums';
 import { ContactsService } from './contacts.service';
 import { FakeContactsRepository, FakeUsersRepository } from './testing/fakes';
 import { UsersService } from './users.service';
@@ -24,12 +25,12 @@ describe('ContactsService', () => {
 
   it('a new primary contact demotes the old primary of the same kind', async () => {
     await service.create('ws', userA, {
-      kind: 'email',
+      kind: ContactKind.email,
       value: 'one@x.com',
       isPrimary: true,
     });
     const second = await service.create('ws', userA, {
-      kind: 'email',
+      kind: ContactKind.email,
       value: 'two@x.com',
       isPrimary: true,
     });
@@ -38,12 +39,12 @@ describe('ContactsService', () => {
 
   it('marking a contact primary by update demotes the old primary', async () => {
     await service.create('ws', userA, {
-      kind: 'email',
+      kind: ContactKind.email,
       value: 'one@x.com',
       isPrimary: true,
     });
     const second = await service.create('ws', userA, {
-      kind: 'email',
+      kind: ContactKind.email,
       value: 'two@x.com',
     });
     await service.update('ws', userA, second.id, { isPrimary: true });
@@ -51,15 +52,15 @@ describe('ContactsService', () => {
   });
 
   it('409s a duplicate kind and value', async () => {
-    await service.create('ws', userA, { kind: 'email', value: 'one@x.com' });
+    await service.create('ws', userA, { kind: ContactKind.email, value: 'one@x.com' });
     await expect(
-      service.create('ws', userA, { kind: 'email', value: 'one@x.com' }),
+      service.create('ws', userA, { kind: ContactKind.email, value: 'one@x.com' }),
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
   it("404s another user's contact", async () => {
     const contact = await service.create('ws', userA, {
-      kind: 'email',
+      kind: ContactKind.email,
       value: 'one@x.com',
     });
     await expect(

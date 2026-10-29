@@ -1,17 +1,17 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsBoolean,
-  IsIn,
+  IsEnum,
   IsOptional,
   IsString,
   MaxLength,
 } from 'class-validator';
-import { CONTACT_KINDS, type ContactKind } from 'src/common/enums';
+import { ContactKind } from 'src/common/enums';
 import { IsContactValue } from './validators';
 
 export class CreateContactDto {
-  @ApiProperty({ enum: CONTACT_KINDS })
-  @IsIn(CONTACT_KINDS)
+  @ApiProperty({ enum: ContactKind, enumName: 'ContactKind' })
+  @IsEnum(ContactKind)
   kind!: ContactKind;
 
   @ApiProperty({

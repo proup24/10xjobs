@@ -1,5 +1,12 @@
 import { createHash } from 'node:crypto';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Arrangement,
+  Engagement,
+  Language,
+  Position,
+  Seniority,
+} from 'src/common/enums';
 import { ProfilesService } from './profiles.service';
 import { ResumeService, type UploadedPdf } from './resume.service';
 import {
@@ -37,8 +44,8 @@ describe('ResumeService', () => {
       'ws',
       userId,
       {
-        positions: ['backend_engineer'],
-        languages: ['EN'],
+        positions: [Position.backend_engineer],
+        languages: [Language.EN],
         country: 'MA',
         city: null,
         regions: [],
@@ -46,9 +53,9 @@ describe('ResumeService', () => {
         timezoneCurrent: 0,
         timezoneMin: 0,
         timezoneMax: 0,
-        engagements: ['employee'],
-        arrangements: ['remote'],
-        seniority: 'senior',
+        engagements: [Engagement.employee],
+        arrangements: [Arrangement.remote],
+        seniority: Seniority.senior,
         noticePeriodDays: 0,
       },
       [],

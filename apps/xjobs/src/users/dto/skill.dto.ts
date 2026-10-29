@@ -1,19 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsIn, IsInt, Max, Min } from 'class-validator';
-import {
-  SKILL_DOMAINS,
-  TECHNOLOGIES,
-  type SkillDomain,
-  type Technology,
-} from 'src/common/enums';
+import { IsEnum, IsInt, Max, Min } from 'class-validator';
+import { SkillDomain, Technology } from 'src/common/enums';
 
 export class SkillDto {
-  @ApiProperty({ enum: TECHNOLOGIES })
-  @IsIn(TECHNOLOGIES)
+  @ApiProperty({ enum: Technology, enumName: 'Technology' })
+  @IsEnum(Technology)
   technology!: Technology;
 
-  @ApiProperty({ enum: SKILL_DOMAINS })
-  @IsIn(SKILL_DOMAINS)
+  @ApiProperty({ enum: SkillDomain, enumName: 'SkillDomain' })
+  @IsEnum(SkillDomain)
   domain!: SkillDomain;
 
   @ApiProperty({ minimum: 0, maximum: 10, description: 'How well you know it' })

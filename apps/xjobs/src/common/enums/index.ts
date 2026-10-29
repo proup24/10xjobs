@@ -1,2 +1,10 @@
 export { EnvironmentType } from './environment.enum';
-export * from './profile.enums';
+export { Arrangement } from './arrangement.enum';
+export { ContactKind } from './contact-kind.enum';
+export { Engagement } from './engagement.enum';
+export { Language } from './language.enum';
+export { Position } from './position.enum';
+export { Region } from './region.enum';
+export { Seniority } from './seniority.enum';
+export { SkillDomain } from './skill-domain.enum';
+export { Technology } from './technology.enum';

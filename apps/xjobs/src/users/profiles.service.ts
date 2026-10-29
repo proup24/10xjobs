@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import type { ProfileRow } from 'src/database';
+import type { ProfileRow, ProfileSkillRow } from 'src/database';
 import {
   ProfilesRepository,
   type ProfileInput,
@@ -16,7 +16,10 @@ export type ProfileView = Omit<
   | 'resumeSha256'
   | 'resumeUploadedAt'
 > & {
-  techStack: SkillInput[];
+  techStack: Pick<
+    ProfileSkillRow,
+    'technology' | 'domain' | 'mastery' | 'preference'
+  >[];
   resume: {
     filename: string;
     sizeBytes: number;

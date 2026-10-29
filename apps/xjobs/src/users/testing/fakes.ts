@@ -1,5 +1,4 @@
 /** In-memory repositories for unit tests; not part of the application build. */
-import type { ContactKind } from 'src/common/enums';
 import {
   toStoredAddress,
   type ContactRow,
@@ -142,7 +141,7 @@ export class FakeContactsRepository extends ContactsRepository {
     workspaceId: string,
     userId: string,
     contactId: string,
-    kind: ContactKind,
+    kind: ContactRow['kind'],
   ): Promise<ContactRow> {
     for (const row of await this.list(workspaceId, userId)) {
       if (row.kind === kind) row.isPrimary = row.id === contactId;

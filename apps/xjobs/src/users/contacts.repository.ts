@@ -38,7 +38,7 @@ export abstract class ContactsRepository {
     workspaceId: string,
     userId: string,
     contactId: string,
-    kind: ContactKind,
+    kind: ContactRow['kind'],
   ): Promise<ContactRow>;
 }
 
@@ -104,7 +104,7 @@ export class PrismaContactsRepository extends ContactsRepository {
     workspaceId: string,
     userId: string,
     contactId: string,
-    kind: ContactKind,
+    kind: ContactRow['kind'],
   ): Promise<ContactRow> {
     return this.database.db.transaction(async (tx) => {
       await tx.orm.public.Contact.where({ workspaceId, userId, kind }).updateAll(
