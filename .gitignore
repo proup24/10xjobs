@@ -45,3 +45,9 @@ Thumbs.db
 .claude/settings.local.json
 vitest.config.*.timestamp*
 .vitest
+
+# secrets and personal data (never commit)
+.env
+.env.*
+!.env.example
+/private
