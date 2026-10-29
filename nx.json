@@ -1,8 +1,14 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "cli": {
+    "packageManager": "pnpm"
+  },
   "analytics": true,
   "namedInputs": {
-    "default": ["{projectRoot}/**/*", "sharedGlobals"],
+    "default": [
+      "{projectRoot}/**/*",
+      "sharedGlobals"
+    ],
     "production": [
       "default",
       "!{projectRoot}/.eslintrc.json",
@@ -10,7 +16,9 @@
       "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)",
       "!{projectRoot}/tsconfig.spec.json"
     ],
-    "sharedGlobals": ["{workspaceRoot}/.github/workflows/ci.yml"]
+    "sharedGlobals": [
+      "{workspaceRoot}/.github/workflows/ci.yml"
+    ]
   },
   "plugins": [
     {
@@ -51,11 +59,15 @@
         "ciTargetName": "test-ci",
         "testMode": "watch"
       },
-      "exclude": ["apps/xjobs-e2e/**/*"]
+      "exclude": [
+        "apps/xjobs-e2e/**/*"
+      ]
     },
     {
       "plugin": "@nx/vitest",
-      "include": ["apps/xjobs-e2e/**/*"],
+      "include": [
+        "apps/xjobs-e2e/**/*"
+      ],
       "options": {
         "testTargetName": "e2e",
         "ciTargetName": "e2e-ci",
@@ -76,14 +88,21 @@
   ],
   "targetDefaults": {
     "test": {
-      "dependsOn": ["^build"]
+      "dependsOn": [
+        "^build"
+      ]
     },
     "e2e-ci--**/**": [
       {
         "filter": {
-          "projects": ["@xjobs/xjobs-e2e"]
+          "projects": [
+            "@xjobs/xjobs-e2e"
+          ]
         },
-        "dependsOn": ["@xjobs/xjobs:build", "@xjobs/xjobs:serve"]
+        "dependsOn": [
+          "@xjobs/xjobs:build",
+          "@xjobs/xjobs:serve"
+        ]
       }
     ]
   }
