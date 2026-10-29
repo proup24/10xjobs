@@ -13,6 +13,7 @@ import {
   type ResumeMeta,
   type SkillInput,
 } from '../profiles.repository';
+import { ResumeStorage } from '../resume-storage';
 import { UsersRepository, type UserInput } from '../users.repository';
 
 export class FakeUsersRepository extends UsersRepository {
@@ -218,5 +219,28 @@ export class FakeProfilesRepository extends ProfilesRepository {
       resumeSha256: meta?.sha256 ?? null,
       resumeUploadedAt: meta?.uploadedAt ?? null,
     });
+  }
+}
+
+export class MemoryResumeStorage extends ResumeStorage {
+  files = new Map<string, Buffer>();
+  failNextPut = false;
+
+  async put(key: string, data: Buffer): Promise<void> {
+    if (this.failNextPut) {
+      this.failNextPut = false;
+      throw new Error('disk full');
+    }
+    this.files.set(key, data);
+  }
+
+  async get(key: string): Promise<Buffer> {
+    const data = this.files.get(key);
+    if (!data) throw new Error(`missing ${key}`);
+    return data;
+  }
+
+  async delete(key: string): Promise<void> {
+    this.files.delete(key);
   }
 }

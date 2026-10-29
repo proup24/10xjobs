@@ -47,6 +47,8 @@ export const environmentSchema = databaseEnvironmentSchema.extend({
   COOKIE_DOMAIN: z.string().min(1).optional(),
   COOKIE_SECURE: booleanFlag.optional(),
   COOKIE_SAME_SITE: z.enum(['lax', 'strict', 'none']).default('lax'),
+  /** Where uploaded resume PDFs are written. Keep it out of git. */
+  RESUME_STORAGE_DIR: z.string().min(1).default('./storage/resumes'),
 });
 
 export type DatabaseEnvironmentVariables = z.infer<

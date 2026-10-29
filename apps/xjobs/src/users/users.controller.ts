@@ -15,6 +15,7 @@ import type { UserRow } from 'src/database';
 import { WorkspacesService } from 'src/workspaces';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { ResumeService } from './resume.service';
 import { UsersService } from './users.service';
 
 @ApiTags('users')
@@ -23,6 +24,7 @@ export class UsersController {
   constructor(
     private readonly workspaces: WorkspacesService,
     private readonly users: UsersService,
+    private readonly resume: ResumeService,
   ) {}
 
   @Post()
@@ -68,6 +70,9 @@ export class UsersController {
     @Param('userId', ParseUUIDPipe) userId: string,
   ): Promise<void> {
     await this.workspaces.getOrThrow(workspaceId);
+    await this.users.getOrThrow(workspaceId, userId);
+    // The rows cascade; the resume file does not, so remove it first.
+    await this.resume.removeFor(workspaceId, userId);
     await this.users.delete(workspaceId, userId);
   }
 }

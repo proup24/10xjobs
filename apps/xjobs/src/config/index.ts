@@ -60,6 +60,10 @@ export function getSystemDomain(config: AppConfigService): string {
   return config.get('SYSTEM_DOMAIN', { infer: true });
 }
 
+export function getResumeStorageDir(config: AppConfigService): string {
+  return config.get('RESUME_STORAGE_DIR', { infer: true });
+}
+
 export function getCookieConfig(config: AppConfigService): CookieConfig {
   const nodeEnv = config.get('NODE_ENV', { infer: true });
   return {
