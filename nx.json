@@ -86,5 +86,6 @@
         "dependsOn": ["@xjobs/xjobs:build", "@xjobs/xjobs:serve"]
       }
     ]
-  }
+  },
+  "nxCloudId": "6ae34a14fb2ae7b3022caf5f"
 }
