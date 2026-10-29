@@ -41,8 +41,13 @@ export const databaseEnvironmentSchema = z.object({
 /** Shared by the HTTP API and the standalone queue worker. */
 export const redisEnvironmentSchema = z.object({
   REDIS_URL: z.url({ protocol: /^rediss?$/ }).default('redis://127.0.0.1:6379'),
-  REDIS_CACHE_URL: z.url({ protocol: /^rediss?$/ }).default('redis://127.0.0.1:6380'),
-  REDIS_PREFIX: z.string().regex(/^[a-zA-Z0-9_-]+$/).default('xjobs'),
+  REDIS_CACHE_URL: z
+    .url({ protocol: /^rediss?$/ })
+    .default('redis://127.0.0.1:6380'),
+  REDIS_PREFIX: z
+    .string()
+    .regex(/^[a-zA-Z0-9_-]+$/)
+    .default('xjobs'),
   REDIS_COMMAND_TIMEOUT_MS: z.coerce.number().int().positive().default(3000),
   CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(300),
   JOBS_CONCURRENCY: z.coerce.number().int().positive().max(100).default(5),
@@ -126,6 +131,8 @@ export function validateEnvironment(
 }
 
 /** Worker bootstrap validates only its infrastructure dependencies. */
-export function validateWorkerEnvironment(config: Record<string, unknown>): RedisEnvironmentVariables {
+export function validateWorkerEnvironment(
+  config: Record<string, unknown>,
+): RedisEnvironmentVariables {
   return parseEnvironment(redisEnvironmentSchema, config);
 }

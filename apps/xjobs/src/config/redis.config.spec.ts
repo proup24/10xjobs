@@ -22,14 +22,24 @@ describe('Redis configuration', () => {
   });
 
   it('accepts authenticated TLS connections', () => {
-    expect(validateWorkerEnvironment({ REDIS_URL: 'rediss://u:p@example.com:6380/2' }).REDIS_URL)
-      .toBe('rediss://u:p@example.com:6380/2');
+    expect(
+      validateWorkerEnvironment({
+        REDIS_URL: 'rediss://u:p@example.com:6380/2',
+      }).REDIS_URL,
+    ).toBe('rediss://u:p@example.com:6380/2');
   });
 });
 
 describe('Redis config accessor', () => {
   it('uses validated ConfigService values for API and worker consumers', () => {
-    const env = validateWorkerEnvironment({ REDIS_URL: 'redis://example.com:6390', JOBS_CONCURRENCY: '8' });
-    expect(getRedisConfig(new ConfigService(env))).toMatchObject({ url: 'redis://example.com:6390', jobsConcurrency: 8, cacheTtlSeconds: 300 });
+    const env = validateWorkerEnvironment({
+      REDIS_URL: 'redis://example.com:6390',
+      JOBS_CONCURRENCY: '8',
+    });
+    expect(getRedisConfig(new ConfigService(env))).toMatchObject({
+      url: 'redis://example.com:6390',
+      jobsConcurrency: 8,
+      cacheTtlSeconds: 300,
+    });
   });
 });

@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { CacheService } from './cache.service';
 import { PubSubService } from './pubsub.service';
-import { RedisConnections } from './redis-connections';
-import { RedisSettingsModule } from './redis-settings.module';
+import { RedisConnections } from './connections';
+import { RedisSettingsModule } from './settings.module';
 
 @Module({
   imports: [RedisSettingsModule],

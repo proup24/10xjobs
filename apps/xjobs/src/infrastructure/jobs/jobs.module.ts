@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { RedisSettingsModule } from '../redis/redis-settings.module';
+import { RedisSettingsModule } from '../redis/settings.module';
 import { JobsService } from './jobs.service';
 
 @Module({

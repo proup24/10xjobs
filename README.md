@@ -15,6 +15,7 @@ npx nx serve xjobs
 
 ## Docs
 
+- [Redis, caching, pub/sub, and background workers](docs/redis-jobs.md)
 - [Roadmap](docs/roadmap.md)
 - [CLAUDE.md](CLAUDE.md): conventions and workflow for working in this repo with Claude Code
 

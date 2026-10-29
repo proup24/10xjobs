@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import type { RedisConfig } from '../../config';
-import { REDIS_SETTINGS } from './redis-settings.module';
-import { RedisConnections } from './redis-connections';
+import type { RedisConfig } from 'src/config';
+import { REDIS_SETTINGS } from './settings.module';
+import { RedisConnections } from './connections';
 
 @Injectable()
 export class CacheService {
@@ -21,20 +21,31 @@ export class CacheService {
     const namespaced = this.key(key);
     try {
       const value = await this.connections.cache.get(namespaced);
-      return value === null ? null : JSON.parse(value) as T;
+      return value === null ? null : (JSON.parse(value) as T);
     } catch {
       this.logger.warn('Cache read failed; treating as a miss');
       return null;
     }
   }
 
-  async set<T>(key: string, value: T, ttlSeconds = this.settings.cacheTtlSeconds): Promise<void> {
+  async set<T>(
+    key: string,
+    value: T,
+    ttlSeconds = this.settings.cacheTtlSeconds,
+  ): Promise<void> {
     const namespaced = this.key(key);
-    if (!Number.isSafeInteger(ttlSeconds) || ttlSeconds <= 0) throw new Error('Cache TTL must be a positive integer');
+    if (!Number.isSafeInteger(ttlSeconds) || ttlSeconds <= 0)
+      throw new Error('Cache TTL must be a positive integer');
     const serialized = JSON.stringify(value);
-    if (serialized === undefined) throw new Error('Cache value must be JSON serializable');
+    if (serialized === undefined)
+      throw new Error('Cache value must be JSON serializable');
     try {
-      await this.connections.cache.set(namespaced, serialized, 'EX', ttlSeconds);
+      await this.connections.cache.set(
+        namespaced,
+        serialized,
+        'EX',
+        ttlSeconds,
+      );
     } catch {
       this.logger.warn('Cache write failed');
     }
@@ -45,7 +56,11 @@ export class CacheService {
     await this.connections.cache.del(this.key(key));
   }
 
-  async remember<T>(key: string, load: () => Promise<T>, ttlSeconds = this.settings.cacheTtlSeconds): Promise<T> {
+  async remember<T>(
+    key: string,
+    load: () => Promise<T>,
+    ttlSeconds = this.settings.cacheTtlSeconds,
+  ): Promise<T> {
     const cached = await this.get<T>(key);
     if (cached !== null) return cached;
     const value = await load();

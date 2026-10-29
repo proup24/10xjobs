@@ -5,12 +5,12 @@ services:
     build:
       context: ./apps/xjobs
       dockerfile: Dockerfile
-    command: ["node", "worker.js"]
+    command: ['node', 'worker.js']
     restart: unless-stopped
     stop_grace_period: 60s
     environment:
       NODE_ENV: production
-      XJOBS_SKIP_ENV_FILES: "1"
+      XJOBS_SKIP_ENV_FILES: '1'
       REDIS_URL: redis://redis:6379
       REDIS_PREFIX: ${REDIS_PREFIX:-xjobs}
       JOBS_CONCURRENCY: ${JOBS_CONCURRENCY:-5}

@@ -1,7 +1,12 @@
-import { Inject, Injectable, Logger, type OnApplicationShutdown } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  type OnApplicationShutdown,
+} from '@nestjs/common';
 import { Redis } from 'ioredis';
-import type { RedisConfig } from '../../config';
-import { REDIS_SETTINGS } from './redis-settings.module';
+import type { RedisConfig } from 'src/config';
+import { REDIS_SETTINGS } from './settings.module';
 
 /** Each role owns a connection; a subscribed connection cannot serve commands. */
 @Injectable()
@@ -19,7 +24,9 @@ export class RedisConnections implements OnApplicationShutdown {
         commandTimeout: settings.commandTimeoutMs,
         retryStrategy: (attempt) => Math.min(attempt * 100, 2000),
       });
-      client.on('error', () => this.logger.warn(`Redis ${role} connection unavailable`));
+      client.on('error', () =>
+        this.logger.warn(`Redis ${role} connection unavailable`),
+      );
       return client;
     };
     this.cache = create(settings.cacheUrl, 'cache');
@@ -29,6 +36,7 @@ export class RedisConnections implements OnApplicationShutdown {
 
   onApplicationShutdown(): void {
     // Cache and pub/sub do not hold jobs; disconnect also stops reconnect timers.
-    for (const client of [this.cache, this.publisher, this.subscriber]) client.disconnect();
+    for (const client of [this.cache, this.publisher, this.subscriber])
+      client.disconnect();
   }
 }

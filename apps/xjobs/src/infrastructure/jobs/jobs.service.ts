@@ -1,8 +1,13 @@
-import { Inject, Injectable, Logger, type OnApplicationShutdown } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  type OnApplicationShutdown,
+} from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { Redis } from 'ioredis';
 import type { RedisConfig } from '../../config';
-import { REDIS_SETTINGS } from '../redis/redis-settings.module';
+import { REDIS_SETTINGS } from '../redis/settings.module';
 
 export const INFRASTRUCTURE_QUEUE = 'infrastructure';
 
@@ -20,7 +25,9 @@ export class JobsService implements OnApplicationShutdown {
       commandTimeout: settings.commandTimeoutMs,
       retryStrategy: (attempt) => Math.min(attempt * 100, 2000),
     });
-    this.connection.on('error', () => this.logger.warn('Queue Redis connection unavailable'));
+    this.connection.on('error', () =>
+      this.logger.warn('Queue Redis connection unavailable'),
+    );
     this.queue = new Queue(INFRASTRUCTURE_QUEUE, {
       connection: this.connection,
       prefix: settings.prefix,
@@ -34,12 +41,21 @@ export class JobsService implements OnApplicationShutdown {
     this.queue.on('error', () => this.logger.warn('Queue operation failed'));
   }
 
-  enqueuePing(token: string) {
-    if (!token || token.length > 200) throw new Error('Ping token must contain 1–200 characters');
+  async enqueuePing(token: string) {
+    if (!token || token.length > 200)
+      throw new Error('Ping token must contain 1–200 characters');
+    // BullMQ waits for initial readiness before sending commands, outside the
+    // ioredis command timeout. Refuse now rather than enqueue later unexpectedly.
+    if (this.connection.status !== 'ready')
+      throw new Error('Queue Redis is not ready');
     return this.queue.add('ping', { token });
   }
 
   async onApplicationShutdown(): Promise<void> {
-    try { await this.queue.close(); } finally { this.connection.disconnect(); }
+    try {
+      await this.queue.close();
+    } finally {
+      this.connection.disconnect();
+    }
   }
 }

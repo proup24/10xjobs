@@ -60,7 +60,9 @@ export interface RedisConfig {
   jobsConcurrency: number;
 }
 
-export function getRedisConfig(config: ConfigService<RedisEnvironmentVariables, true>): RedisConfig {
+export function getRedisConfig(
+  config: ConfigService<RedisEnvironmentVariables, true>,
+): RedisConfig {
   return {
     url: config.get('REDIS_URL', { infer: true }),
     cacheUrl: config.get('REDIS_CACHE_URL', { infer: true }),

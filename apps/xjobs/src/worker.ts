@@ -9,6 +9,10 @@ async function bootstrap() {
 }
 
 void bootstrap().catch(() => {
-  Logger.error('Worker startup failed; check Redis configuration and availability', undefined, 'Worker');
+  Logger.error(
+    'Worker startup failed; check Redis configuration and availability',
+    undefined,
+    'Worker',
+  );
   process.exit(1);
 });
