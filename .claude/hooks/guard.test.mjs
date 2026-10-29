@@ -76,6 +76,13 @@ test('bash: separators attached to tokens', () => {
     assert.equal(blocked('Bash', { command }), true, command);
   }
   assert.equal(blocked('Bash', { command: 'cat .env.example; ls' }), false);
+  assert.equal(blocked('Bash', { command: 'bash -c "cat .env"' }), true);
+  assert.equal(blocked('Bash', { command: "sh -c 'ls private/'" }), true);
+  assert.equal(blocked('Bash', { command: 'eval cat .env' }), true);
+  assert.equal(
+    blocked('Bash', { command: 'bash -c "cat .env.example"' }),
+    false,
+  );
 });
 
 test('bash: git push through wrappers', () => {

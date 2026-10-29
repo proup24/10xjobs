@@ -61,34 +61,57 @@ function parse(command) {
 const WRAPPERS = ['sudo', 'env', 'time', 'command', 'nice', 'exec', 'xargs'];
 const SHELLS = ['bash', 'sh', 'zsh'];
 
+// Index of the command word, after grouping, VAR=value and wrapper commands.
+function commandIndex(tokens) {
+  let i = 0;
+  for (;;) {
+    const t = tokens[i];
+    if (t === '{' || /^\w+=/.test(t ?? '')) i++;
+    else if (WRAPPERS.includes(t)) {
+      i++;
+      // wrapper flags; `-n` (nice) and `-u` (env) take a value
+      while (tokens[i]?.startsWith('-') || /^\w+=/.test(tokens[i] ?? '')) {
+        i += tokens[i] === '-n' || tokens[i] === '-u' ? 2 : 1;
+      }
+    } else return i;
+  }
+}
+
+// The command string run by `bash -c "..."`, `sh -c`, `zsh -c` or `eval`.
+function nestedCommand(tokens, i) {
+  if (SHELLS.includes(tokens[i])) {
+    const c = tokens.findIndex((t, j) => j > i && /^-\w*c$/.test(t));
+    return c >= 0 ? tokens[c + 1] : undefined;
+  }
+  if (tokens[i] === 'eval') return tokens.slice(i + 1).join(' ');
+}
+
 function isGitPush(command) {
   for (const tokens of parse(command)) {
-    let i = 0;
-    for (;;) {
-      const t = tokens[i];
-      if (t === '{' || /^\w+=/.test(t ?? '')) i++;
-      else if (WRAPPERS.includes(t)) {
-        i++;
-        // wrapper flags; `-n` (nice) and `-u` (env) take a value
-        while (tokens[i]?.startsWith('-') || /^\w+=/.test(tokens[i] ?? '')) {
-          i += tokens[i] === '-n' || tokens[i] === '-u' ? 2 : 1;
-        }
-      } else break;
+    let i = commandIndex(tokens);
+    const nested = nestedCommand(tokens, i);
+    if (nested && isGitPush(nested)) return true;
+    if (tokens[i++] !== 'git') continue;
+    while (tokens[i]?.startsWith('-')) {
+      i += tokens[i] === '-C' || tokens[i] === '-c' ? 2 : 1;
     }
-    const cmd = tokens[i++];
-    if (SHELLS.includes(cmd)) {
-      const c = tokens.findIndex((t, j) => j >= i && /^-\w*c$/.test(t));
-      if (c >= 0 && tokens[c + 1] && isGitPush(tokens[c + 1])) return true;
-    } else if (cmd === 'eval') {
-      if (isGitPush(tokens.slice(i).join(' '))) return true;
-    } else if (cmd === 'git') {
-      while (tokens[i]?.startsWith('-')) {
-        i += tokens[i] === '-C' || tokens[i] === '-c' ? 2 : 1;
-      }
-      if (tokens[i] === 'push') return true;
-    }
+    if (tokens[i] === 'push') return true;
   }
   return false;
+}
+
+// Returns the first secret or private token, looking inside nested shells.
+function findBlockedToken(command) {
+  for (const tokens of parse(command)) {
+    const nested = nestedCommand(tokens, commandIndex(tokens));
+    const hit = nested && findBlockedToken(nested);
+    if (hit) return hit;
+    for (const token of tokens) {
+      if (pathHit(token) || pathHit(token.slice(token.indexOf('=') + 1))) {
+        return token;
+      }
+    }
+  }
 }
 
 export function evaluate({ tool_name, tool_input = {} }) {
@@ -101,11 +124,8 @@ export function evaluate({ tool_name, tool_input = {} }) {
           'git push is blocked for Claude in this repo — push it yourself.',
       };
     }
-    for (const token of parse(command).flat()) {
-      for (const candidate of [token, token.slice(token.indexOf('=') + 1)]) {
-        if (pathHit(candidate)) return blockPath(token);
-      }
-    }
+    const hit = findBlockedToken(command);
+    if (hit) return blockPath(hit);
     return { block: false };
   }
 
