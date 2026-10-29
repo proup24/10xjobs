@@ -1,0 +1,52 @@
+# 10xjobs
+
+## What this is
+
+10xjobs is an open-source job-search automation workspace for software engineers. It finds jobs, applies to them with care, and tracks the whole pipeline. The aim is the right jobs, applied to well, not generic applications sprayed everywhere.
+
+Anti-goals (failure even if it technically works):
+
+- Applying to the wrong jobs.
+- Missing the right jobs: weak collection or over-eager rejection.
+- Spamming recruiters or hiring-post authors with generic, low-quality applications or emails.
+
+Precision over volume: prefer a tailored application over a fast one.
+
+## Stack and layout
+
+- Nx 24 monorepo. NestJS engine in `apps/xjobs`, e2e tests in `apps/xjobs-e2e`.
+- TypeScript strict with nodenext. Tests use Vitest.
+- The Next.js web app and Supabase Postgres arrive in Phase 1.
+- Claude is called through the Anthropic API from the engine. It does not orchestrate the engine.
+- LinkedIn data comes only through Apify. Ashby and Greenhouse are read from their public APIs.
+
+## Commands
+
+- `npx nx serve xjobs`: run the engine.
+- `npx nx run-many -t lint test build typecheck`: what CI runs.
+- `npx nx test xjobs`: unit tests for the engine.
+- `npx nx e2e xjobs-e2e`: e2e tests.
+- `npm run test:hooks`: tests for the `.claude/hooks` scripts.
+
+## Conventions
+
+- Every domain record is workspace-scoped from day one, even in a single-user self-hosted install.
+- Qualify decisions record a reason, so wrong rejections can be found and fixed.
+
+## Workflow
+
+Brainstorm, then spec (`docs/superpowers/specs/`), then plan (`docs/superpowers/plans/`), then a branch and a PR to `main`. CI must be green.
+
+This project does not use Linear or any ticket tracker. Do not offer or sync tickets here, regardless of personal instructions.
+
+## Guardrails
+
+- `.env*` files (except `.env.example`) and the repo-root `private/` folder are off-limits. `.claude/hooks/guard.mjs` enforces this for file tools and Bash.
+- Claude cannot `git push`. The human pushes.
+- Personal data (resumes, the fact bank) goes only in `private/`, and credentials only in untracked `.env*` files. None of these ever goes in git.
+- Personal overrides go in `.claude/settings.local.json`.
+- Prettier runs automatically on files Claude edits or writes.
+
+## Roadmap
+
+See [docs/roadmap.md](docs/roadmap.md).

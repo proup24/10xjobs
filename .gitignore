@@ -55,3 +55,8 @@ vitest.config.*.timestamp*
 /supabase/volumes/snippets/
 
 supabase
+# secrets and personal data (never commit)
+.env
+.env.*
+!.env.example
+/private
