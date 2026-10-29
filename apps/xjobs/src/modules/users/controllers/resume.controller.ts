@@ -12,15 +12,30 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiConsumes,
+  ApiNoContentResponse,
+  ApiOkResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { ApiErrorResponses, ApiSuccessResponse } from 'src/common/decorators';
+import { ProfileResponseDto } from '../dto/profile.response.dto';
 import { MAX_RESUME_BYTES, ResumeService } from '../services/resume.service';
 import type { ProfileView, UploadedPdf } from '../types';
 
 @ApiTags('profiles')
+@ApiErrorResponses(HttpStatus.UNAUTHORIZED, HttpStatus.INTERNAL_SERVER_ERROR)
 @Controller('workspaces/:workspaceId/users/:userId/profile/resume')
 export class ResumeController {
   constructor(private readonly resume: ResumeService) {}
 
+  @ApiSuccessResponse(ProfileResponseDto, { status: HttpStatus.CREATED })
+  @ApiErrorResponses(
+    HttpStatus.BAD_REQUEST,
+    HttpStatus.NOT_FOUND,
+    HttpStatus.PAYLOAD_TOO_LARGE,
+  )
   @Post()
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -43,6 +58,13 @@ export class ResumeController {
     return this.resume.save(workspaceId, userId, file);
   }
 
+  @ApiOkResponse({
+    description: 'The PDF itself, not an envelope',
+    content: {
+      'application/pdf': { schema: { type: 'string', format: 'binary' } },
+    },
+  })
+  @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
   @Get()
   async download(
     @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
@@ -56,6 +78,8 @@ export class ResumeController {
     });
   }
 
+  @ApiNoContentResponse({ description: 'Deleted' })
+  @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
   @Delete()
   @HttpCode(HttpStatus.NO_CONTENT)
   delete(

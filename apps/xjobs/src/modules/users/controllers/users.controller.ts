@@ -10,15 +10,18 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiNoContentResponse, ApiTags } from '@nestjs/swagger';
+import { ApiErrorResponses, ApiSuccessResponse } from 'src/common/decorators';
 import type { UserRow } from 'src/database';
 import { WorkspacesService } from 'src/modules/workspaces';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
+import { UserResponseDto } from '../dto/user.response.dto';
 import { ResumeService } from '../services/resume.service';
 import { UsersService } from '../services/users.service';
 
 @ApiTags('users')
+@ApiErrorResponses(HttpStatus.UNAUTHORIZED, HttpStatus.INTERNAL_SERVER_ERROR)
 @Controller('workspaces/:workspaceId/users')
 export class UsersController {
   constructor(
@@ -27,6 +30,12 @@ export class UsersController {
     private readonly resume: ResumeService,
   ) {}
 
+  @ApiSuccessResponse(UserResponseDto, { status: HttpStatus.CREATED })
+  @ApiErrorResponses(
+    HttpStatus.BAD_REQUEST,
+    HttpStatus.NOT_FOUND,
+    HttpStatus.CONFLICT,
+  )
   @Post()
   async create(
     @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
@@ -36,6 +45,8 @@ export class UsersController {
     return this.users.create(workspaceId, body);
   }
 
+  @ApiSuccessResponse(UserResponseDto, { isArray: true })
+  @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
   @Get()
   async list(
     @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
@@ -44,6 +55,8 @@ export class UsersController {
     return this.users.list(workspaceId);
   }
 
+  @ApiSuccessResponse(UserResponseDto)
+  @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
   @Get(':userId')
   async get(
     @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
@@ -53,6 +66,12 @@ export class UsersController {
     return this.users.getOrThrow(workspaceId, userId);
   }
 
+  @ApiSuccessResponse(UserResponseDto)
+  @ApiErrorResponses(
+    HttpStatus.BAD_REQUEST,
+    HttpStatus.NOT_FOUND,
+    HttpStatus.CONFLICT,
+  )
   @Patch(':userId')
   async update(
     @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
@@ -63,6 +82,8 @@ export class UsersController {
     return this.users.update(workspaceId, userId, body);
   }
 
+  @ApiNoContentResponse({ description: 'Deleted, with the resume file' })
+  @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
   @Delete(':userId')
   @HttpCode(HttpStatus.NO_CONTENT)
   async delete(
