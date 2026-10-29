@@ -1,60 +1,6 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
-import { toStoredAddress, type UserRow } from 'src/database';
-import { UsersRepository, type UserInput } from './users.repository';
+import { FakeUsersRepository } from './testing/fakes';
 import { UsersService } from './users.service';
-
-export class FakeUsersRepository extends UsersRepository {
-  rows: UserRow[] = [];
-
-  async create(workspaceId: string, data: UserInput): Promise<UserRow> {
-    if (
-      this.rows.some(
-        (row) => row.workspaceId === workspaceId && row.email === data.email,
-      )
-    ) {
-      throw { sqlState: '23505' };
-    }
-    const now = new Date();
-    const row: UserRow = {
-      id: `user-${this.rows.length + 1}`,
-      workspaceId,
-      name: data.name,
-      email: data.email,
-      address: data.address ? toStoredAddress(data.address) : null,
-      createdAt: now,
-      updatedAt: now,
-    };
-    this.rows.push(row);
-    return row;
-  }
-
-  async list(workspaceId: string): Promise<UserRow[]> {
-    return this.rows.filter((row) => row.workspaceId === workspaceId);
-  }
-
-  async findById(workspaceId: string, userId: string) {
-    return (
-      this.rows.find(
-        (row) => row.workspaceId === workspaceId && row.id === userId,
-      ) ?? null
-    );
-  }
-
-  async update(workspaceId: string, userId: string, data: Partial<UserInput>) {
-    const row = await this.findById(workspaceId, userId);
-    if (!row) return null;
-    Object.assign(row, data);
-    return row;
-  }
-
-  async delete(workspaceId: string, userId: string): Promise<boolean> {
-    const before = this.rows.length;
-    this.rows = this.rows.filter(
-      (row) => !(row.workspaceId === workspaceId && row.id === userId),
-    );
-    return this.rows.length < before;
-  }
-}
 
 describe('UsersService', () => {
   let repository: FakeUsersRepository;
