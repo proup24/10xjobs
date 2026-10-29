@@ -10,13 +10,287 @@ model mixin Timestamps {
   updatedAt TimestamptzJsDate(3) @default(now()) @onCreate(now()) @onUpdate(now())
 }
 
-// Starter model so migrations and seeds have something to work with —
-// replace or extend it with the real domain.
-model User {
-  id    Uuid    @id @onCreate(uuid(7))
-  email String  @unique
-  name  String?
+// Keep the value lists in src/common/enums/profile.enums.ts in step with
+// these enums; profile.enums.spec.ts fails when they drift.
+
+enum Position {
+  @@type("pg/text@1")
+  backend_engineer          = "backend_engineer"
+  frontend_engineer         = "frontend_engineer"
+  fullstack_engineer        = "fullstack_engineer"
+  mobile_engineer           = "mobile_engineer"
+  devops_engineer           = "devops_engineer"
+  site_reliability_engineer = "site_reliability_engineer"
+  platform_engineer         = "platform_engineer"
+  cloud_engineer            = "cloud_engineer"
+  security_engineer         = "security_engineer"
+  data_engineer             = "data_engineer"
+  ml_engineer               = "ml_engineer"
+  ai_engineer               = "ai_engineer"
+  qa_engineer               = "qa_engineer"
+  embedded_engineer         = "embedded_engineer"
+  software_architect        = "software_architect"
+  tech_lead                 = "tech_lead"
+  engineering_manager       = "engineering_manager"
+}
+
+enum Language {
+  @@type("pg/text@1")
+  AR = "AR"
+  FR = "FR"
+  EN = "EN"
+  ES = "ES"
+}
+
+enum Region {
+  @@type("pg/text@1")
+  EMEA               = "EMEA"
+  MENA               = "MENA"
+  NORTH_AFRICA       = "NORTH_AFRICA"
+  SUB_SAHARAN_AFRICA = "SUB_SAHARAN_AFRICA"
+  MIDDLE_EAST        = "MIDDLE_EAST"
+  EUROPE             = "EUROPE"
+  EU                 = "EU"
+  UK                 = "UK"
+  NORTH_AMERICA      = "NORTH_AMERICA"
+  LATAM              = "LATAM"
+  APAC               = "APAC"
+  GLOBAL             = "GLOBAL"
+}
+
+enum Engagement {
+  @@type("pg/text@1")
+  employee   = "employee"
+  contractor = "contractor"
+  eor        = "eor"
+  agency     = "agency"
+  per_task   = "per_task"
+}
+
+enum Arrangement {
+  @@type("pg/text@1")
+  remote   = "remote"
+  hybrid   = "hybrid"
+  onsite   = "onsite"
+  unstated = "unstated"
+}
+
+enum Seniority {
+  @@type("pg/text@1")
+  junior    = "junior"
+  mid       = "mid"
+  senior    = "senior"
+  staff     = "staff"
+  lead      = "lead"
+  principal = "principal"
+  unstated  = "unstated"
+}
+
+enum ContactKind {
+  @@type("pg/text@1")
+  phone     = "phone"
+  email     = "email"
+  linkedin  = "linkedin"
+  github    = "github"
+  gitlab    = "gitlab"
+  portfolio = "portfolio"
+  website   = "website"
+  other     = "other"
+}
+
+enum SkillDomain {
+  @@type("pg/text@1")
+  backend   = "backend"
+  frontend  = "frontend"
+  fullstack = "fullstack"
+  mobile    = "mobile"
+  devops    = "devops"
+  data      = "data"
+  ml        = "ml"
+  security  = "security"
+  qa        = "qa"
+}
+
+enum Technology {
+  @@type("pg/text@1")
+  javascript     = "javascript"
+  typescript     = "typescript"
+  python         = "python"
+  java           = "java"
+  kotlin         = "kotlin"
+  go             = "go"
+  rust           = "rust"
+  csharp         = "csharp"
+  cpp            = "cpp"
+  php            = "php"
+  ruby           = "ruby"
+  scala          = "scala"
+  elixir         = "elixir"
+  swift          = "swift"
+  dart           = "dart"
+  sql            = "sql"
+  bash           = "bash"
+  nodejs         = "nodejs"
+  nestjs         = "nestjs"
+  express        = "express"
+  fastify        = "fastify"
+  django         = "django"
+  fastapi        = "fastapi"
+  flask          = "flask"
+  spring         = "spring"
+  dotnet         = "dotnet"
+  laravel        = "laravel"
+  rails          = "rails"
+  graphql        = "graphql"
+  grpc           = "grpc"
+  react          = "react"
+  nextjs         = "nextjs"
+  vue            = "vue"
+  nuxt           = "nuxt"
+  angular        = "angular"
+  svelte         = "svelte"
+  tailwindcss    = "tailwindcss"
+  react_native   = "react_native"
+  flutter        = "flutter"
+  postgresql     = "postgresql"
+  mysql          = "mysql"
+  mongodb        = "mongodb"
+  redis          = "redis"
+  elasticsearch  = "elasticsearch"
+  kafka          = "kafka"
+  rabbitmq       = "rabbitmq"
+  spark          = "spark"
+  airflow        = "airflow"
+  dbt            = "dbt"
+  snowflake      = "snowflake"
+  aws            = "aws"
+  gcp            = "gcp"
+  azure          = "azure"
+  docker         = "docker"
+  kubernetes     = "kubernetes"
+  terraform      = "terraform"
+  ansible        = "ansible"
+  github_actions = "github_actions"
+  gitlab_ci      = "gitlab_ci"
+  linux          = "linux"
+  nginx          = "nginx"
+  prometheus     = "prometheus"
+  grafana        = "grafana"
+  pytorch        = "pytorch"
+  tensorflow     = "tensorflow"
+  langchain      = "langchain"
+}
+
+// Postal address; `country` is ISO 3166-1 alpha-2.
+type Address {
+  line1      String
+  line2      String?
+  city       String
+  postalCode String?
+  state      String?
+  country    String
+}
+
+// Every domain record belongs to a workspace, even in a single-user install.
+model Workspace {
+  id   Uuid   @id @onCreate(uuid(7))
+  name String
+  slug String @unique
   +Timestamps
 
+  @@check(expression: sql`slug ~ '^[a-z0-9-]{2,64}$'`, name: "workspaces_slug_format")
+  @@map("workspaces")
+}
+
+model User {
+  id          Uuid      @id @onCreate(uuid(7))
+  workspaceId Uuid
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  // Stored lowercased; unique within the workspace.
+  email       String
+  name        String
+  address     Address?
+  +Timestamps
+
+  @@unique([workspaceId, email])
+  @@index([workspaceId])
   @@map("users")
+}
+
+// The user's own contact channels, the ones that go on applications.
+model Contact {
+  id          Uuid        @id @onCreate(uuid(7))
+  workspaceId Uuid
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      Uuid
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind        ContactKind
+  value       String
+  label       String?
+  isPrimary   Boolean     @default(false)
+  +Timestamps
+
+  @@unique([userId, kind, value])
+  @@index([workspaceId])
+  @@index([userId])
+  @@map("contacts")
+}
+
+// The job-seeker profile qualify compares jobs against. One per user.
+// Timezone offsets are minutes from UTC.
+model Profile {
+  id                Uuid          @id @onCreate(uuid(7))
+  workspaceId       Uuid
+  workspace         Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId            Uuid          @unique
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  positions         Position[]
+  languages         Language[]
+  country           String
+  city              String?
+  regions           Region[]
+  yearsOfExperience Int
+  timezoneCurrent   Int
+  timezoneMin       Int
+  timezoneMax       Int
+  engagements       Engagement[]
+  arrangements      Arrangement[]
+  seniority         Seniority
+  noticePeriodDays  Int
+  resumeKey         String?
+  resumeFilename    String?
+  resumeSizeBytes   Int?
+  resumeSha256      String?
+  resumeUploadedAt  TimestamptzJsDate(3)?
+  +Timestamps
+
+  @@check(expression: sql`"yearsOfExperience" BETWEEN 0 AND 60`, name: "profiles_years_range")
+  @@check(expression: sql`"noticePeriodDays" BETWEEN 0 AND 365`, name: "profiles_notice_range")
+  @@check(expression: sql`"timezoneCurrent" BETWEEN -720 AND 840 AND "timezoneMin" BETWEEN -720 AND 840 AND "timezoneMax" BETWEEN -720 AND 840 AND "timezoneMin" <= "timezoneMax"`, name: "profiles_tz_range")
+  @@check(expression: sql`cardinality("positions") > 0`, name: "profiles_positions_nonempty")
+  @@check(expression: sql`cardinality("languages") > 0`, name: "profiles_languages_nonempty")
+  @@check(expression: sql`cardinality("engagements") > 0`, name: "profiles_engagements_nonempty")
+  @@check(expression: sql`cardinality("arrangements") > 0`, name: "profiles_arrangements_nonempty")
+  @@index([workspaceId])
+  @@map("profiles")
+}
+
+// One row per technology and domain in a profile's tech stack.
+model ProfileSkill {
+  id          Uuid        @id @onCreate(uuid(7))
+  workspaceId Uuid
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  profileId   Uuid
+  profile     Profile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  technology  Technology
+  domain      SkillDomain
+  mastery     Int
+  preference  Int
+  +Timestamps
+
+  @@check(expression: sql`mastery BETWEEN 0 AND 10`, name: "profile_skills_mastery_range")
+  @@check(expression: sql`preference BETWEEN 0 AND 10`, name: "profile_skills_preference_range")
+  @@unique([profileId, technology, domain])
+  @@index([workspaceId])
+  @@map("profile_skills")
 }

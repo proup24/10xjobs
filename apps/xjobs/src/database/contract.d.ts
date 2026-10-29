@@ -20,12 +20,13 @@ import type {
   NamespaceId,
   ProfileHashBase,
   StorageHashBase,
+  ValueObjectTypesFromDomain,
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'3215d66362906e452511365cd5e91f5c62f0af3fba0b950d1817ae50b3f554af'>;
+  StorageHashBase<'69c74630d194988a1211212fe7a1eab60a1879ef0d622fa2803991ca3d6a5cf4'>;
 export type ExecutionHash =
-  ExecutionHashBase<'689de8456ea8e42ca9b9c2713a18fb34dc589a7259d46beb5ce58690cf12c2f6'>;
+  ExecutionHashBase<'0a12771022695dcb288f48e7388785e8d4b45dc89931b67b7206cfedab6507a9'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -269,8 +270,295 @@ type DefaultLiteralValue<CodecId extends string, Encoded> = CodecId extends keyo
     : CodecTypes[CodecId]['json']
   : Encoded;
 type ParameterizedOutputTypeFunctions = PgParameterizedOutputTypes;
-
-type FieldTypeOverrides = {};
+type ValueObjectOutputTypes = ValueObjectTypesFromDomain<
+  ContractBase['domain']['namespaces'],
+  CodecTypes,
+  ParameterizedOutputTypeFunctions,
+  FieldTypeOverrides,
+  'output'
+>;
+type ValueObjectInputTypes = ValueObjectTypesFromDomain<
+  ContractBase['domain']['namespaces'],
+  CodecTypes,
+  ParameterizedOutputTypeFunctions,
+  FieldTypeOverrides,
+  'input'
+>;
+export type AddressOutput = ValueObjectOutputTypes['public']['Address'];
+export type AddressInput = ValueObjectInputTypes['public']['Address'];
+type FieldTypeOverrides = {
+  readonly public: {
+    readonly models: {
+      readonly Contact: {
+        readonly kind: {
+          readonly output:
+            | 'phone'
+            | 'email'
+            | 'linkedin'
+            | 'github'
+            | 'gitlab'
+            | 'portfolio'
+            | 'website'
+            | 'other';
+          readonly input:
+            | 'phone'
+            | 'email'
+            | 'linkedin'
+            | 'github'
+            | 'gitlab'
+            | 'portfolio'
+            | 'website'
+            | 'other';
+        };
+      };
+      readonly Profile: {
+        readonly arrangements: {
+          readonly output: 'remote' | 'hybrid' | 'onsite' | 'unstated';
+          readonly input: 'remote' | 'hybrid' | 'onsite' | 'unstated';
+        };
+        readonly engagements: {
+          readonly output: 'employee' | 'contractor' | 'eor' | 'agency' | 'per_task';
+          readonly input: 'employee' | 'contractor' | 'eor' | 'agency' | 'per_task';
+        };
+        readonly languages: {
+          readonly output: 'AR' | 'FR' | 'EN' | 'ES';
+          readonly input: 'AR' | 'FR' | 'EN' | 'ES';
+        };
+        readonly positions: {
+          readonly output:
+            | 'backend_engineer'
+            | 'frontend_engineer'
+            | 'fullstack_engineer'
+            | 'mobile_engineer'
+            | 'devops_engineer'
+            | 'site_reliability_engineer'
+            | 'platform_engineer'
+            | 'cloud_engineer'
+            | 'security_engineer'
+            | 'data_engineer'
+            | 'ml_engineer'
+            | 'ai_engineer'
+            | 'qa_engineer'
+            | 'embedded_engineer'
+            | 'software_architect'
+            | 'tech_lead'
+            | 'engineering_manager';
+          readonly input:
+            | 'backend_engineer'
+            | 'frontend_engineer'
+            | 'fullstack_engineer'
+            | 'mobile_engineer'
+            | 'devops_engineer'
+            | 'site_reliability_engineer'
+            | 'platform_engineer'
+            | 'cloud_engineer'
+            | 'security_engineer'
+            | 'data_engineer'
+            | 'ml_engineer'
+            | 'ai_engineer'
+            | 'qa_engineer'
+            | 'embedded_engineer'
+            | 'software_architect'
+            | 'tech_lead'
+            | 'engineering_manager';
+        };
+        readonly regions: {
+          readonly output:
+            | 'EMEA'
+            | 'MENA'
+            | 'NORTH_AFRICA'
+            | 'SUB_SAHARAN_AFRICA'
+            | 'MIDDLE_EAST'
+            | 'EUROPE'
+            | 'EU'
+            | 'UK'
+            | 'NORTH_AMERICA'
+            | 'LATAM'
+            | 'APAC'
+            | 'GLOBAL';
+          readonly input:
+            | 'EMEA'
+            | 'MENA'
+            | 'NORTH_AFRICA'
+            | 'SUB_SAHARAN_AFRICA'
+            | 'MIDDLE_EAST'
+            | 'EUROPE'
+            | 'EU'
+            | 'UK'
+            | 'NORTH_AMERICA'
+            | 'LATAM'
+            | 'APAC'
+            | 'GLOBAL';
+        };
+        readonly seniority: {
+          readonly output:
+            'junior' | 'mid' | 'senior' | 'staff' | 'lead' | 'principal' | 'unstated';
+          readonly input: 'junior' | 'mid' | 'senior' | 'staff' | 'lead' | 'principal' | 'unstated';
+        };
+      };
+      readonly ProfileSkill: {
+        readonly domain: {
+          readonly output:
+            | 'backend'
+            | 'frontend'
+            | 'fullstack'
+            | 'mobile'
+            | 'devops'
+            | 'data'
+            | 'ml'
+            | 'security'
+            | 'qa';
+          readonly input:
+            | 'backend'
+            | 'frontend'
+            | 'fullstack'
+            | 'mobile'
+            | 'devops'
+            | 'data'
+            | 'ml'
+            | 'security'
+            | 'qa';
+        };
+        readonly technology: {
+          readonly output:
+            | 'javascript'
+            | 'typescript'
+            | 'python'
+            | 'java'
+            | 'kotlin'
+            | 'go'
+            | 'rust'
+            | 'csharp'
+            | 'cpp'
+            | 'php'
+            | 'ruby'
+            | 'scala'
+            | 'elixir'
+            | 'swift'
+            | 'dart'
+            | 'sql'
+            | 'bash'
+            | 'nodejs'
+            | 'nestjs'
+            | 'express'
+            | 'fastify'
+            | 'django'
+            | 'fastapi'
+            | 'flask'
+            | 'spring'
+            | 'dotnet'
+            | 'laravel'
+            | 'rails'
+            | 'graphql'
+            | 'grpc'
+            | 'react'
+            | 'nextjs'
+            | 'vue'
+            | 'nuxt'
+            | 'angular'
+            | 'svelte'
+            | 'tailwindcss'
+            | 'react_native'
+            | 'flutter'
+            | 'postgresql'
+            | 'mysql'
+            | 'mongodb'
+            | 'redis'
+            | 'elasticsearch'
+            | 'kafka'
+            | 'rabbitmq'
+            | 'spark'
+            | 'airflow'
+            | 'dbt'
+            | 'snowflake'
+            | 'aws'
+            | 'gcp'
+            | 'azure'
+            | 'docker'
+            | 'kubernetes'
+            | 'terraform'
+            | 'ansible'
+            | 'github_actions'
+            | 'gitlab_ci'
+            | 'linux'
+            | 'nginx'
+            | 'prometheus'
+            | 'grafana'
+            | 'pytorch'
+            | 'tensorflow'
+            | 'langchain';
+          readonly input:
+            | 'javascript'
+            | 'typescript'
+            | 'python'
+            | 'java'
+            | 'kotlin'
+            | 'go'
+            | 'rust'
+            | 'csharp'
+            | 'cpp'
+            | 'php'
+            | 'ruby'
+            | 'scala'
+            | 'elixir'
+            | 'swift'
+            | 'dart'
+            | 'sql'
+            | 'bash'
+            | 'nodejs'
+            | 'nestjs'
+            | 'express'
+            | 'fastify'
+            | 'django'
+            | 'fastapi'
+            | 'flask'
+            | 'spring'
+            | 'dotnet'
+            | 'laravel'
+            | 'rails'
+            | 'graphql'
+            | 'grpc'
+            | 'react'
+            | 'nextjs'
+            | 'vue'
+            | 'nuxt'
+            | 'angular'
+            | 'svelte'
+            | 'tailwindcss'
+            | 'react_native'
+            | 'flutter'
+            | 'postgresql'
+            | 'mysql'
+            | 'mongodb'
+            | 'redis'
+            | 'elasticsearch'
+            | 'kafka'
+            | 'rabbitmq'
+            | 'spark'
+            | 'airflow'
+            | 'dbt'
+            | 'snowflake'
+            | 'aws'
+            | 'gcp'
+            | 'azure'
+            | 'docker'
+            | 'kubernetes'
+            | 'terraform'
+            | 'ansible'
+            | 'github_actions'
+            | 'gitlab_ci'
+            | 'linux'
+            | 'nginx'
+            | 'prometheus'
+            | 'grafana'
+            | 'pytorch'
+            | 'tensorflow'
+            | 'langchain';
+        };
+      };
+    };
+  };
+};
 export type FieldOutputTypes = FieldTypesFromDomain<
   ContractBase['domain']['namespaces'],
   CodecTypes,
@@ -285,7 +573,262 @@ export type FieldInputTypes = FieldTypesFromDomain<
   FieldTypeOverrides,
   'input'
 >;
-type ColumnTypeOverrides = {};
+type ColumnTypeOverrides = {
+  readonly public: {
+    readonly contacts: {
+      readonly kind: {
+        readonly output:
+          'phone' | 'email' | 'linkedin' | 'github' | 'gitlab' | 'portfolio' | 'website' | 'other';
+        readonly input:
+          'phone' | 'email' | 'linkedin' | 'github' | 'gitlab' | 'portfolio' | 'website' | 'other';
+      };
+    };
+    readonly profile_skills: {
+      readonly domain: {
+        readonly output:
+          | 'backend'
+          | 'frontend'
+          | 'fullstack'
+          | 'mobile'
+          | 'devops'
+          | 'data'
+          | 'ml'
+          | 'security'
+          | 'qa';
+        readonly input:
+          | 'backend'
+          | 'frontend'
+          | 'fullstack'
+          | 'mobile'
+          | 'devops'
+          | 'data'
+          | 'ml'
+          | 'security'
+          | 'qa';
+      };
+      readonly technology: {
+        readonly output:
+          | 'javascript'
+          | 'typescript'
+          | 'python'
+          | 'java'
+          | 'kotlin'
+          | 'go'
+          | 'rust'
+          | 'csharp'
+          | 'cpp'
+          | 'php'
+          | 'ruby'
+          | 'scala'
+          | 'elixir'
+          | 'swift'
+          | 'dart'
+          | 'sql'
+          | 'bash'
+          | 'nodejs'
+          | 'nestjs'
+          | 'express'
+          | 'fastify'
+          | 'django'
+          | 'fastapi'
+          | 'flask'
+          | 'spring'
+          | 'dotnet'
+          | 'laravel'
+          | 'rails'
+          | 'graphql'
+          | 'grpc'
+          | 'react'
+          | 'nextjs'
+          | 'vue'
+          | 'nuxt'
+          | 'angular'
+          | 'svelte'
+          | 'tailwindcss'
+          | 'react_native'
+          | 'flutter'
+          | 'postgresql'
+          | 'mysql'
+          | 'mongodb'
+          | 'redis'
+          | 'elasticsearch'
+          | 'kafka'
+          | 'rabbitmq'
+          | 'spark'
+          | 'airflow'
+          | 'dbt'
+          | 'snowflake'
+          | 'aws'
+          | 'gcp'
+          | 'azure'
+          | 'docker'
+          | 'kubernetes'
+          | 'terraform'
+          | 'ansible'
+          | 'github_actions'
+          | 'gitlab_ci'
+          | 'linux'
+          | 'nginx'
+          | 'prometheus'
+          | 'grafana'
+          | 'pytorch'
+          | 'tensorflow'
+          | 'langchain';
+        readonly input:
+          | 'javascript'
+          | 'typescript'
+          | 'python'
+          | 'java'
+          | 'kotlin'
+          | 'go'
+          | 'rust'
+          | 'csharp'
+          | 'cpp'
+          | 'php'
+          | 'ruby'
+          | 'scala'
+          | 'elixir'
+          | 'swift'
+          | 'dart'
+          | 'sql'
+          | 'bash'
+          | 'nodejs'
+          | 'nestjs'
+          | 'express'
+          | 'fastify'
+          | 'django'
+          | 'fastapi'
+          | 'flask'
+          | 'spring'
+          | 'dotnet'
+          | 'laravel'
+          | 'rails'
+          | 'graphql'
+          | 'grpc'
+          | 'react'
+          | 'nextjs'
+          | 'vue'
+          | 'nuxt'
+          | 'angular'
+          | 'svelte'
+          | 'tailwindcss'
+          | 'react_native'
+          | 'flutter'
+          | 'postgresql'
+          | 'mysql'
+          | 'mongodb'
+          | 'redis'
+          | 'elasticsearch'
+          | 'kafka'
+          | 'rabbitmq'
+          | 'spark'
+          | 'airflow'
+          | 'dbt'
+          | 'snowflake'
+          | 'aws'
+          | 'gcp'
+          | 'azure'
+          | 'docker'
+          | 'kubernetes'
+          | 'terraform'
+          | 'ansible'
+          | 'github_actions'
+          | 'gitlab_ci'
+          | 'linux'
+          | 'nginx'
+          | 'prometheus'
+          | 'grafana'
+          | 'pytorch'
+          | 'tensorflow'
+          | 'langchain';
+      };
+    };
+    readonly profiles: {
+      readonly arrangements: {
+        readonly output: 'remote' | 'hybrid' | 'onsite' | 'unstated';
+        readonly input: 'remote' | 'hybrid' | 'onsite' | 'unstated';
+      };
+      readonly engagements: {
+        readonly output: 'employee' | 'contractor' | 'eor' | 'agency' | 'per_task';
+        readonly input: 'employee' | 'contractor' | 'eor' | 'agency' | 'per_task';
+      };
+      readonly languages: {
+        readonly output: 'AR' | 'FR' | 'EN' | 'ES';
+        readonly input: 'AR' | 'FR' | 'EN' | 'ES';
+      };
+      readonly positions: {
+        readonly output:
+          | 'backend_engineer'
+          | 'frontend_engineer'
+          | 'fullstack_engineer'
+          | 'mobile_engineer'
+          | 'devops_engineer'
+          | 'site_reliability_engineer'
+          | 'platform_engineer'
+          | 'cloud_engineer'
+          | 'security_engineer'
+          | 'data_engineer'
+          | 'ml_engineer'
+          | 'ai_engineer'
+          | 'qa_engineer'
+          | 'embedded_engineer'
+          | 'software_architect'
+          | 'tech_lead'
+          | 'engineering_manager';
+        readonly input:
+          | 'backend_engineer'
+          | 'frontend_engineer'
+          | 'fullstack_engineer'
+          | 'mobile_engineer'
+          | 'devops_engineer'
+          | 'site_reliability_engineer'
+          | 'platform_engineer'
+          | 'cloud_engineer'
+          | 'security_engineer'
+          | 'data_engineer'
+          | 'ml_engineer'
+          | 'ai_engineer'
+          | 'qa_engineer'
+          | 'embedded_engineer'
+          | 'software_architect'
+          | 'tech_lead'
+          | 'engineering_manager';
+      };
+      readonly regions: {
+        readonly output:
+          | 'EMEA'
+          | 'MENA'
+          | 'NORTH_AFRICA'
+          | 'SUB_SAHARAN_AFRICA'
+          | 'MIDDLE_EAST'
+          | 'EUROPE'
+          | 'EU'
+          | 'UK'
+          | 'NORTH_AMERICA'
+          | 'LATAM'
+          | 'APAC'
+          | 'GLOBAL';
+        readonly input:
+          | 'EMEA'
+          | 'MENA'
+          | 'NORTH_AFRICA'
+          | 'SUB_SAHARAN_AFRICA'
+          | 'MIDDLE_EAST'
+          | 'EUROPE'
+          | 'EU'
+          | 'UK'
+          | 'NORTH_AMERICA'
+          | 'LATAM'
+          | 'APAC'
+          | 'GLOBAL';
+      };
+      readonly seniority: {
+        readonly output: 'junior' | 'mid' | 'senior' | 'staff' | 'lead' | 'principal' | 'unstated';
+        readonly input: 'junior' | 'mid' | 'senior' | 'staff' | 'lead' | 'principal' | 'unstated';
+      };
+    };
+  };
+};
 export type StorageColumnTypes = ColumnTypesFromStorage<
   ContractBase['storage'],
   CodecTypes,
@@ -302,19 +845,90 @@ export type StorageColumnInputTypes = ColumnTypesFromStorage<
 >;
 
 export namespace Models {
+  export type public_Contact = {
+    createdAt: FieldOutputTypes['public']['Contact']['createdAt'];
+    id: FieldOutputTypes['public']['Contact']['id'];
+    isPrimary: FieldOutputTypes['public']['Contact']['isPrimary'];
+    kind: FieldOutputTypes['public']['Contact']['kind'];
+    label: FieldOutputTypes['public']['Contact']['label'];
+    updatedAt: FieldOutputTypes['public']['Contact']['updatedAt'];
+    userId: FieldOutputTypes['public']['Contact']['userId'];
+    value: FieldOutputTypes['public']['Contact']['value'];
+    workspaceId: FieldOutputTypes['public']['Contact']['workspaceId'];
+    user: public_User;
+    workspace: public_Workspace;
+    readonly [RelationKeys]?: 'user' | 'workspace';
+  };
+  export type public_Profile = {
+    arrangements: FieldOutputTypes['public']['Profile']['arrangements'];
+    city: FieldOutputTypes['public']['Profile']['city'];
+    country: FieldOutputTypes['public']['Profile']['country'];
+    createdAt: FieldOutputTypes['public']['Profile']['createdAt'];
+    engagements: FieldOutputTypes['public']['Profile']['engagements'];
+    id: FieldOutputTypes['public']['Profile']['id'];
+    languages: FieldOutputTypes['public']['Profile']['languages'];
+    noticePeriodDays: FieldOutputTypes['public']['Profile']['noticePeriodDays'];
+    positions: FieldOutputTypes['public']['Profile']['positions'];
+    regions: FieldOutputTypes['public']['Profile']['regions'];
+    resumeFilename: FieldOutputTypes['public']['Profile']['resumeFilename'];
+    resumeKey: FieldOutputTypes['public']['Profile']['resumeKey'];
+    resumeSha256: FieldOutputTypes['public']['Profile']['resumeSha256'];
+    resumeSizeBytes: FieldOutputTypes['public']['Profile']['resumeSizeBytes'];
+    resumeUploadedAt: FieldOutputTypes['public']['Profile']['resumeUploadedAt'];
+    seniority: FieldOutputTypes['public']['Profile']['seniority'];
+    timezoneCurrent: FieldOutputTypes['public']['Profile']['timezoneCurrent'];
+    timezoneMax: FieldOutputTypes['public']['Profile']['timezoneMax'];
+    timezoneMin: FieldOutputTypes['public']['Profile']['timezoneMin'];
+    updatedAt: FieldOutputTypes['public']['Profile']['updatedAt'];
+    userId: FieldOutputTypes['public']['Profile']['userId'];
+    workspaceId: FieldOutputTypes['public']['Profile']['workspaceId'];
+    yearsOfExperience: FieldOutputTypes['public']['Profile']['yearsOfExperience'];
+    user: public_User;
+    workspace: public_Workspace;
+    readonly [RelationKeys]?: 'user' | 'workspace';
+  };
+  export type public_ProfileSkill = {
+    createdAt: FieldOutputTypes['public']['ProfileSkill']['createdAt'];
+    domain: FieldOutputTypes['public']['ProfileSkill']['domain'];
+    id: FieldOutputTypes['public']['ProfileSkill']['id'];
+    mastery: FieldOutputTypes['public']['ProfileSkill']['mastery'];
+    preference: FieldOutputTypes['public']['ProfileSkill']['preference'];
+    profileId: FieldOutputTypes['public']['ProfileSkill']['profileId'];
+    technology: FieldOutputTypes['public']['ProfileSkill']['technology'];
+    updatedAt: FieldOutputTypes['public']['ProfileSkill']['updatedAt'];
+    workspaceId: FieldOutputTypes['public']['ProfileSkill']['workspaceId'];
+    profile: public_Profile;
+    workspace: public_Workspace;
+    readonly [RelationKeys]?: 'profile' | 'workspace';
+  };
   export type public_User = {
+    address: FieldOutputTypes['public']['User']['address'];
     createdAt: FieldOutputTypes['public']['User']['createdAt'];
     email: FieldOutputTypes['public']['User']['email'];
     id: FieldOutputTypes['public']['User']['id'];
     name: FieldOutputTypes['public']['User']['name'];
     updatedAt: FieldOutputTypes['public']['User']['updatedAt'];
+    workspaceId: FieldOutputTypes['public']['User']['workspaceId'];
+    workspace: public_Workspace;
+    readonly [RelationKeys]?: 'workspace';
+  };
+  export type public_Workspace = {
+    createdAt: FieldOutputTypes['public']['Workspace']['createdAt'];
+    id: FieldOutputTypes['public']['Workspace']['id'];
+    name: FieldOutputTypes['public']['Workspace']['name'];
+    slug: FieldOutputTypes['public']['Workspace']['slug'];
+    updatedAt: FieldOutputTypes['public']['Workspace']['updatedAt'];
     readonly [RelationKeys]?: never;
   };
 }
 
 export declare const models: {
   public: {
+    Contact: Models.public_Contact;
+    Profile: Models.public_Profile;
+    ProfileSkill: Models.public_ProfileSkill;
     User: Models.public_User;
+    Workspace: Models.public_Workspace;
   };
 };
 
@@ -336,8 +950,411 @@ type ContractBase = Omit<
         readonly kind: 'postgres-schema';
         readonly entries: {
           readonly table: {
+            readonly contacts: {
+              columns: {
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly isPrimary: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
+                readonly kind: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly label: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly userId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly value: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly workspaceId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['userId', 'kind', 'value'] }];
+              indexes: readonly [
+                {
+                  readonly name: 'contacts_userId_idx_a489d58a';
+                  readonly prefix: 'contacts_userId_idx';
+                  readonly columns: readonly ['userId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'contacts_workspaceId_idx_ba65f874';
+                  readonly prefix: 'contacts_workspaceId_idx';
+                  readonly columns: readonly ['workspaceId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'contacts';
+                    readonly columns: readonly ['workspaceId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'workspaces';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'contacts';
+                    readonly columns: readonly ['userId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'users';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly profile_skills: {
+              columns: {
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly domain: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly mastery: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly preference: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly profileId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly technology: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly workspaceId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [
+                { readonly columns: readonly ['profileId', 'technology', 'domain'] },
+              ];
+              indexes: readonly [
+                {
+                  readonly name: 'profile_skills_profileId_idx_d9cdfcaf';
+                  readonly prefix: 'profile_skills_profileId_idx';
+                  readonly columns: readonly ['profileId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'profile_skills_workspaceId_idx_ba65f874';
+                  readonly prefix: 'profile_skills_workspaceId_idx';
+                  readonly columns: readonly ['workspaceId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'profile_skills';
+                    readonly columns: readonly ['workspaceId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'workspaces';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'profile_skills';
+                    readonly columns: readonly ['profileId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'profiles';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly profiles: {
+              columns: {
+                readonly arrangements: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: { readonly elementNullable: false };
+                };
+                readonly city: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly country: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly engagements: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: { readonly elementNullable: false };
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly languages: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: { readonly elementNullable: false };
+                };
+                readonly noticePeriodDays: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly positions: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: { readonly elementNullable: false };
+                };
+                readonly regions: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: { readonly elementNullable: false };
+                };
+                readonly resumeFilename: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly resumeKey: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly resumeSha256: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly resumeSizeBytes: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly resumeUploadedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly seniority: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly timezoneCurrent: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly timezoneMax: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly timezoneMin: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly userId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly workspaceId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly yearsOfExperience: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['userId'] }];
+              indexes: readonly [
+                {
+                  readonly name: 'profiles_workspaceId_idx_ba65f874';
+                  readonly prefix: 'profiles_workspaceId_idx';
+                  readonly columns: readonly ['workspaceId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'profiles';
+                    readonly columns: readonly ['workspaceId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'workspaces';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'profiles';
+                    readonly columns: readonly ['userId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'users';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
             readonly users: {
               columns: {
+                readonly address: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly createdAt: {
                   readonly dataType: 'pg/timestamptz';
                   readonly codecId: 'pg/timestamptz-date@1';
@@ -361,7 +1378,75 @@ type ContractBase = Omit<
                 readonly name: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
-                  readonly nullable: true;
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly workspaceId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['workspaceId', 'email'] }];
+              indexes: readonly [
+                {
+                  readonly name: 'users_workspaceId_idx_ba65f874';
+                  readonly prefix: 'users_workspaceId_idx';
+                  readonly columns: readonly ['workspaceId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'users';
+                    readonly columns: readonly ['workspaceId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'workspaces';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly workspaces: {
+              columns: {
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly name: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly slug: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
                   readonly many: false;
                 };
                 readonly updatedAt: {
@@ -374,9 +1459,172 @@ type ContractBase = Omit<
                 };
               };
               primaryKey: { readonly columns: readonly ['id'] };
-              uniques: readonly [{ readonly columns: readonly ['email'] }];
+              uniques: readonly [{ readonly columns: readonly ['slug'] }];
               indexes: readonly [];
               foreignKeys: readonly [];
+            };
+          };
+          readonly valueSet: {
+            readonly Arrangement: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['remote', 'hybrid', 'onsite', 'unstated'];
+            };
+            readonly ContactKind: {
+              readonly kind: 'valueSet';
+              readonly values: readonly [
+                'phone',
+                'email',
+                'linkedin',
+                'github',
+                'gitlab',
+                'portfolio',
+                'website',
+                'other',
+              ];
+            };
+            readonly Engagement: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['employee', 'contractor', 'eor', 'agency', 'per_task'];
+            };
+            readonly Language: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['AR', 'FR', 'EN', 'ES'];
+            };
+            readonly Position: {
+              readonly kind: 'valueSet';
+              readonly values: readonly [
+                'backend_engineer',
+                'frontend_engineer',
+                'fullstack_engineer',
+                'mobile_engineer',
+                'devops_engineer',
+                'site_reliability_engineer',
+                'platform_engineer',
+                'cloud_engineer',
+                'security_engineer',
+                'data_engineer',
+                'ml_engineer',
+                'ai_engineer',
+                'qa_engineer',
+                'embedded_engineer',
+                'software_architect',
+                'tech_lead',
+                'engineering_manager',
+              ];
+            };
+            readonly Region: {
+              readonly kind: 'valueSet';
+              readonly values: readonly [
+                'EMEA',
+                'MENA',
+                'NORTH_AFRICA',
+                'SUB_SAHARAN_AFRICA',
+                'MIDDLE_EAST',
+                'EUROPE',
+                'EU',
+                'UK',
+                'NORTH_AMERICA',
+                'LATAM',
+                'APAC',
+                'GLOBAL',
+              ];
+            };
+            readonly Seniority: {
+              readonly kind: 'valueSet';
+              readonly values: readonly [
+                'junior',
+                'mid',
+                'senior',
+                'staff',
+                'lead',
+                'principal',
+                'unstated',
+              ];
+            };
+            readonly SkillDomain: {
+              readonly kind: 'valueSet';
+              readonly values: readonly [
+                'backend',
+                'frontend',
+                'fullstack',
+                'mobile',
+                'devops',
+                'data',
+                'ml',
+                'security',
+                'qa',
+              ];
+            };
+            readonly Technology: {
+              readonly kind: 'valueSet';
+              readonly values: readonly [
+                'javascript',
+                'typescript',
+                'python',
+                'java',
+                'kotlin',
+                'go',
+                'rust',
+                'csharp',
+                'cpp',
+                'php',
+                'ruby',
+                'scala',
+                'elixir',
+                'swift',
+                'dart',
+                'sql',
+                'bash',
+                'nodejs',
+                'nestjs',
+                'express',
+                'fastify',
+                'django',
+                'fastapi',
+                'flask',
+                'spring',
+                'dotnet',
+                'laravel',
+                'rails',
+                'graphql',
+                'grpc',
+                'react',
+                'nextjs',
+                'vue',
+                'nuxt',
+                'angular',
+                'svelte',
+                'tailwindcss',
+                'react_native',
+                'flutter',
+                'postgresql',
+                'mysql',
+                'mongodb',
+                'redis',
+                'elasticsearch',
+                'kafka',
+                'rabbitmq',
+                'spark',
+                'airflow',
+                'dbt',
+                'snowflake',
+                'aws',
+                'gcp',
+                'azure',
+                'docker',
+                'kubernetes',
+                'terraform',
+                'ansible',
+                'github_actions',
+                'gitlab_ci',
+                'linux',
+                'nginx',
+                'prometheus',
+                'grafana',
+                'pytorch',
+                'tensorflow',
+                'langchain',
+              ];
             };
           };
         };
@@ -389,14 +1637,368 @@ type ContractBase = Omit<
   readonly target: 'postgres';
   readonly targetFamily: 'sql';
   readonly roots: {
+    readonly contacts: { readonly namespace: 'public' & NamespaceId; readonly model: 'Contact' };
+    readonly profile_skills: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'ProfileSkill';
+    };
+    readonly profiles: { readonly namespace: 'public' & NamespaceId; readonly model: 'Profile' };
     readonly users: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
+    readonly workspaces: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'Workspace';
+    };
   };
   readonly domain: {
     readonly namespaces: {
       readonly public: {
         readonly models: {
+          readonly Contact: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly isPrimary: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly kind: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly label: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly userId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly value: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly workspaceId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+            };
+            readonly relations: {
+              readonly user: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['userId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly workspace: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Workspace';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['workspaceId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'contacts';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly id: { readonly column: 'id' };
+                readonly isPrimary: { readonly column: 'isPrimary' };
+                readonly kind: { readonly column: 'kind' };
+                readonly label: { readonly column: 'label' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+                readonly userId: { readonly column: 'userId' };
+                readonly value: { readonly column: 'value' };
+                readonly workspaceId: { readonly column: 'workspaceId' };
+              };
+            };
+          };
+          readonly Profile: {
+            readonly fields: {
+              readonly arrangements: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+                readonly many: { readonly elementNullable: false };
+              };
+              readonly city: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly country: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly engagements: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+                readonly many: { readonly elementNullable: false };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly languages: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+                readonly many: { readonly elementNullable: false };
+              };
+              readonly noticePeriodDays: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly positions: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+                readonly many: { readonly elementNullable: false };
+              };
+              readonly regions: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+                readonly many: { readonly elementNullable: false };
+              };
+              readonly resumeFilename: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly resumeKey: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly resumeSha256: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly resumeSizeBytes: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly resumeUploadedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly seniority: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly timezoneCurrent: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly timezoneMax: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly timezoneMin: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly userId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly workspaceId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly yearsOfExperience: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+            };
+            readonly relations: {
+              readonly user: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['userId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly workspace: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Workspace';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['workspaceId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'profiles';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly arrangements: { readonly column: 'arrangements' };
+                readonly city: { readonly column: 'city' };
+                readonly country: { readonly column: 'country' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly engagements: { readonly column: 'engagements' };
+                readonly id: { readonly column: 'id' };
+                readonly languages: { readonly column: 'languages' };
+                readonly noticePeriodDays: { readonly column: 'noticePeriodDays' };
+                readonly positions: { readonly column: 'positions' };
+                readonly regions: { readonly column: 'regions' };
+                readonly resumeFilename: { readonly column: 'resumeFilename' };
+                readonly resumeKey: { readonly column: 'resumeKey' };
+                readonly resumeSha256: { readonly column: 'resumeSha256' };
+                readonly resumeSizeBytes: { readonly column: 'resumeSizeBytes' };
+                readonly resumeUploadedAt: { readonly column: 'resumeUploadedAt' };
+                readonly seniority: { readonly column: 'seniority' };
+                readonly timezoneCurrent: { readonly column: 'timezoneCurrent' };
+                readonly timezoneMax: { readonly column: 'timezoneMax' };
+                readonly timezoneMin: { readonly column: 'timezoneMin' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+                readonly userId: { readonly column: 'userId' };
+                readonly workspaceId: { readonly column: 'workspaceId' };
+                readonly yearsOfExperience: { readonly column: 'yearsOfExperience' };
+              };
+            };
+          };
+          readonly ProfileSkill: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly domain: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly mastery: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly preference: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly profileId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly technology: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly workspaceId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+            };
+            readonly relations: {
+              readonly profile: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Profile';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['profileId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly workspace: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Workspace';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['workspaceId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'profile_skills';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly domain: { readonly column: 'domain' };
+                readonly id: { readonly column: 'id' };
+                readonly mastery: { readonly column: 'mastery' };
+                readonly preference: { readonly column: 'preference' };
+                readonly profileId: { readonly column: 'profileId' };
+                readonly technology: { readonly column: 'technology' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+                readonly workspaceId: { readonly column: 'workspaceId' };
+              };
+            };
+          };
           readonly User: {
             readonly fields: {
+              readonly address: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'valueObject'; readonly name: 'Address' };
+              };
               readonly createdAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -414,7 +2016,70 @@ type ContractBase = Omit<
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
               readonly name: {
-                readonly nullable: true;
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly workspaceId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+            };
+            readonly relations: {
+              readonly workspace: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Workspace';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['workspaceId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'users';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly address: { readonly column: 'address' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly email: { readonly column: 'email' };
+                readonly id: { readonly column: 'id' };
+                readonly name: { readonly column: 'name' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+                readonly workspaceId: { readonly column: 'workspaceId' };
+              };
+            };
+          };
+          readonly Workspace: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly name: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly slug: {
+                readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly updatedAt: {
@@ -428,17 +2093,384 @@ type ContractBase = Omit<
             };
             readonly relations: Record<string, never>;
             readonly storage: {
-              readonly table: 'users';
+              readonly table: 'workspaces';
               readonly namespaceId: 'public';
               readonly fields: {
                 readonly createdAt: { readonly column: 'createdAt' };
-                readonly email: { readonly column: 'email' };
                 readonly id: { readonly column: 'id' };
                 readonly name: { readonly column: 'name' };
+                readonly slug: { readonly column: 'slug' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
               };
             };
           };
+        };
+        readonly valueObjects: {
+          readonly Address: {
+            readonly fields: {
+              readonly city: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly country: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly line1: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly line2: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly postalCode: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly state: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+          };
+        };
+        readonly enum: {
+          readonly Arrangement: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'remote'; readonly value: 'remote' },
+              { readonly name: 'hybrid'; readonly value: 'hybrid' },
+              { readonly name: 'onsite'; readonly value: 'onsite' },
+              { readonly name: 'unstated'; readonly value: 'unstated' },
+            ];
+          };
+          readonly ContactKind: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'phone'; readonly value: 'phone' },
+              { readonly name: 'email'; readonly value: 'email' },
+              { readonly name: 'linkedin'; readonly value: 'linkedin' },
+              { readonly name: 'github'; readonly value: 'github' },
+              { readonly name: 'gitlab'; readonly value: 'gitlab' },
+              { readonly name: 'portfolio'; readonly value: 'portfolio' },
+              { readonly name: 'website'; readonly value: 'website' },
+              { readonly name: 'other'; readonly value: 'other' },
+            ];
+          };
+          readonly Engagement: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'employee'; readonly value: 'employee' },
+              { readonly name: 'contractor'; readonly value: 'contractor' },
+              { readonly name: 'eor'; readonly value: 'eor' },
+              { readonly name: 'agency'; readonly value: 'agency' },
+              { readonly name: 'per_task'; readonly value: 'per_task' },
+            ];
+          };
+          readonly Language: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'AR'; readonly value: 'AR' },
+              { readonly name: 'FR'; readonly value: 'FR' },
+              { readonly name: 'EN'; readonly value: 'EN' },
+              { readonly name: 'ES'; readonly value: 'ES' },
+            ];
+          };
+          readonly Position: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'backend_engineer'; readonly value: 'backend_engineer' },
+              { readonly name: 'frontend_engineer'; readonly value: 'frontend_engineer' },
+              { readonly name: 'fullstack_engineer'; readonly value: 'fullstack_engineer' },
+              { readonly name: 'mobile_engineer'; readonly value: 'mobile_engineer' },
+              { readonly name: 'devops_engineer'; readonly value: 'devops_engineer' },
+              {
+                readonly name: 'site_reliability_engineer';
+                readonly value: 'site_reliability_engineer';
+              },
+              { readonly name: 'platform_engineer'; readonly value: 'platform_engineer' },
+              { readonly name: 'cloud_engineer'; readonly value: 'cloud_engineer' },
+              { readonly name: 'security_engineer'; readonly value: 'security_engineer' },
+              { readonly name: 'data_engineer'; readonly value: 'data_engineer' },
+              { readonly name: 'ml_engineer'; readonly value: 'ml_engineer' },
+              { readonly name: 'ai_engineer'; readonly value: 'ai_engineer' },
+              { readonly name: 'qa_engineer'; readonly value: 'qa_engineer' },
+              { readonly name: 'embedded_engineer'; readonly value: 'embedded_engineer' },
+              { readonly name: 'software_architect'; readonly value: 'software_architect' },
+              { readonly name: 'tech_lead'; readonly value: 'tech_lead' },
+              { readonly name: 'engineering_manager'; readonly value: 'engineering_manager' },
+            ];
+          };
+          readonly Region: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'EMEA'; readonly value: 'EMEA' },
+              { readonly name: 'MENA'; readonly value: 'MENA' },
+              { readonly name: 'NORTH_AFRICA'; readonly value: 'NORTH_AFRICA' },
+              { readonly name: 'SUB_SAHARAN_AFRICA'; readonly value: 'SUB_SAHARAN_AFRICA' },
+              { readonly name: 'MIDDLE_EAST'; readonly value: 'MIDDLE_EAST' },
+              { readonly name: 'EUROPE'; readonly value: 'EUROPE' },
+              { readonly name: 'EU'; readonly value: 'EU' },
+              { readonly name: 'UK'; readonly value: 'UK' },
+              { readonly name: 'NORTH_AMERICA'; readonly value: 'NORTH_AMERICA' },
+              { readonly name: 'LATAM'; readonly value: 'LATAM' },
+              { readonly name: 'APAC'; readonly value: 'APAC' },
+              { readonly name: 'GLOBAL'; readonly value: 'GLOBAL' },
+            ];
+          };
+          readonly Seniority: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'junior'; readonly value: 'junior' },
+              { readonly name: 'mid'; readonly value: 'mid' },
+              { readonly name: 'senior'; readonly value: 'senior' },
+              { readonly name: 'staff'; readonly value: 'staff' },
+              { readonly name: 'lead'; readonly value: 'lead' },
+              { readonly name: 'principal'; readonly value: 'principal' },
+              { readonly name: 'unstated'; readonly value: 'unstated' },
+            ];
+          };
+          readonly SkillDomain: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'backend'; readonly value: 'backend' },
+              { readonly name: 'frontend'; readonly value: 'frontend' },
+              { readonly name: 'fullstack'; readonly value: 'fullstack' },
+              { readonly name: 'mobile'; readonly value: 'mobile' },
+              { readonly name: 'devops'; readonly value: 'devops' },
+              { readonly name: 'data'; readonly value: 'data' },
+              { readonly name: 'ml'; readonly value: 'ml' },
+              { readonly name: 'security'; readonly value: 'security' },
+              { readonly name: 'qa'; readonly value: 'qa' },
+            ];
+          };
+          readonly Technology: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'javascript'; readonly value: 'javascript' },
+              { readonly name: 'typescript'; readonly value: 'typescript' },
+              { readonly name: 'python'; readonly value: 'python' },
+              { readonly name: 'java'; readonly value: 'java' },
+              { readonly name: 'kotlin'; readonly value: 'kotlin' },
+              { readonly name: 'go'; readonly value: 'go' },
+              { readonly name: 'rust'; readonly value: 'rust' },
+              { readonly name: 'csharp'; readonly value: 'csharp' },
+              { readonly name: 'cpp'; readonly value: 'cpp' },
+              { readonly name: 'php'; readonly value: 'php' },
+              { readonly name: 'ruby'; readonly value: 'ruby' },
+              { readonly name: 'scala'; readonly value: 'scala' },
+              { readonly name: 'elixir'; readonly value: 'elixir' },
+              { readonly name: 'swift'; readonly value: 'swift' },
+              { readonly name: 'dart'; readonly value: 'dart' },
+              { readonly name: 'sql'; readonly value: 'sql' },
+              { readonly name: 'bash'; readonly value: 'bash' },
+              { readonly name: 'nodejs'; readonly value: 'nodejs' },
+              { readonly name: 'nestjs'; readonly value: 'nestjs' },
+              { readonly name: 'express'; readonly value: 'express' },
+              { readonly name: 'fastify'; readonly value: 'fastify' },
+              { readonly name: 'django'; readonly value: 'django' },
+              { readonly name: 'fastapi'; readonly value: 'fastapi' },
+              { readonly name: 'flask'; readonly value: 'flask' },
+              { readonly name: 'spring'; readonly value: 'spring' },
+              { readonly name: 'dotnet'; readonly value: 'dotnet' },
+              { readonly name: 'laravel'; readonly value: 'laravel' },
+              { readonly name: 'rails'; readonly value: 'rails' },
+              { readonly name: 'graphql'; readonly value: 'graphql' },
+              { readonly name: 'grpc'; readonly value: 'grpc' },
+              { readonly name: 'react'; readonly value: 'react' },
+              { readonly name: 'nextjs'; readonly value: 'nextjs' },
+              { readonly name: 'vue'; readonly value: 'vue' },
+              { readonly name: 'nuxt'; readonly value: 'nuxt' },
+              { readonly name: 'angular'; readonly value: 'angular' },
+              { readonly name: 'svelte'; readonly value: 'svelte' },
+              { readonly name: 'tailwindcss'; readonly value: 'tailwindcss' },
+              { readonly name: 'react_native'; readonly value: 'react_native' },
+              { readonly name: 'flutter'; readonly value: 'flutter' },
+              { readonly name: 'postgresql'; readonly value: 'postgresql' },
+              { readonly name: 'mysql'; readonly value: 'mysql' },
+              { readonly name: 'mongodb'; readonly value: 'mongodb' },
+              { readonly name: 'redis'; readonly value: 'redis' },
+              { readonly name: 'elasticsearch'; readonly value: 'elasticsearch' },
+              { readonly name: 'kafka'; readonly value: 'kafka' },
+              { readonly name: 'rabbitmq'; readonly value: 'rabbitmq' },
+              { readonly name: 'spark'; readonly value: 'spark' },
+              { readonly name: 'airflow'; readonly value: 'airflow' },
+              { readonly name: 'dbt'; readonly value: 'dbt' },
+              { readonly name: 'snowflake'; readonly value: 'snowflake' },
+              { readonly name: 'aws'; readonly value: 'aws' },
+              { readonly name: 'gcp'; readonly value: 'gcp' },
+              { readonly name: 'azure'; readonly value: 'azure' },
+              { readonly name: 'docker'; readonly value: 'docker' },
+              { readonly name: 'kubernetes'; readonly value: 'kubernetes' },
+              { readonly name: 'terraform'; readonly value: 'terraform' },
+              { readonly name: 'ansible'; readonly value: 'ansible' },
+              { readonly name: 'github_actions'; readonly value: 'github_actions' },
+              { readonly name: 'gitlab_ci'; readonly value: 'gitlab_ci' },
+              { readonly name: 'linux'; readonly value: 'linux' },
+              { readonly name: 'nginx'; readonly value: 'nginx' },
+              { readonly name: 'prometheus'; readonly value: 'prometheus' },
+              { readonly name: 'grafana'; readonly value: 'grafana' },
+              { readonly name: 'pytorch'; readonly value: 'pytorch' },
+              { readonly name: 'tensorflow'; readonly value: 'tensorflow' },
+              { readonly name: 'langchain'; readonly value: 'langchain' },
+            ];
+          };
+        };
+        readonly enumMemberTypes?: {
+          readonly Arrangement: readonly [
+            { readonly name: 'remote'; readonly value: 'remote' },
+            { readonly name: 'hybrid'; readonly value: 'hybrid' },
+            { readonly name: 'onsite'; readonly value: 'onsite' },
+            { readonly name: 'unstated'; readonly value: 'unstated' },
+          ];
+          readonly ContactKind: readonly [
+            { readonly name: 'phone'; readonly value: 'phone' },
+            { readonly name: 'email'; readonly value: 'email' },
+            { readonly name: 'linkedin'; readonly value: 'linkedin' },
+            { readonly name: 'github'; readonly value: 'github' },
+            { readonly name: 'gitlab'; readonly value: 'gitlab' },
+            { readonly name: 'portfolio'; readonly value: 'portfolio' },
+            { readonly name: 'website'; readonly value: 'website' },
+            { readonly name: 'other'; readonly value: 'other' },
+          ];
+          readonly Engagement: readonly [
+            { readonly name: 'employee'; readonly value: 'employee' },
+            { readonly name: 'contractor'; readonly value: 'contractor' },
+            { readonly name: 'eor'; readonly value: 'eor' },
+            { readonly name: 'agency'; readonly value: 'agency' },
+            { readonly name: 'per_task'; readonly value: 'per_task' },
+          ];
+          readonly Language: readonly [
+            { readonly name: 'AR'; readonly value: 'AR' },
+            { readonly name: 'FR'; readonly value: 'FR' },
+            { readonly name: 'EN'; readonly value: 'EN' },
+            { readonly name: 'ES'; readonly value: 'ES' },
+          ];
+          readonly Position: readonly [
+            { readonly name: 'backend_engineer'; readonly value: 'backend_engineer' },
+            { readonly name: 'frontend_engineer'; readonly value: 'frontend_engineer' },
+            { readonly name: 'fullstack_engineer'; readonly value: 'fullstack_engineer' },
+            { readonly name: 'mobile_engineer'; readonly value: 'mobile_engineer' },
+            { readonly name: 'devops_engineer'; readonly value: 'devops_engineer' },
+            {
+              readonly name: 'site_reliability_engineer';
+              readonly value: 'site_reliability_engineer';
+            },
+            { readonly name: 'platform_engineer'; readonly value: 'platform_engineer' },
+            { readonly name: 'cloud_engineer'; readonly value: 'cloud_engineer' },
+            { readonly name: 'security_engineer'; readonly value: 'security_engineer' },
+            { readonly name: 'data_engineer'; readonly value: 'data_engineer' },
+            { readonly name: 'ml_engineer'; readonly value: 'ml_engineer' },
+            { readonly name: 'ai_engineer'; readonly value: 'ai_engineer' },
+            { readonly name: 'qa_engineer'; readonly value: 'qa_engineer' },
+            { readonly name: 'embedded_engineer'; readonly value: 'embedded_engineer' },
+            { readonly name: 'software_architect'; readonly value: 'software_architect' },
+            { readonly name: 'tech_lead'; readonly value: 'tech_lead' },
+            { readonly name: 'engineering_manager'; readonly value: 'engineering_manager' },
+          ];
+          readonly Region: readonly [
+            { readonly name: 'EMEA'; readonly value: 'EMEA' },
+            { readonly name: 'MENA'; readonly value: 'MENA' },
+            { readonly name: 'NORTH_AFRICA'; readonly value: 'NORTH_AFRICA' },
+            { readonly name: 'SUB_SAHARAN_AFRICA'; readonly value: 'SUB_SAHARAN_AFRICA' },
+            { readonly name: 'MIDDLE_EAST'; readonly value: 'MIDDLE_EAST' },
+            { readonly name: 'EUROPE'; readonly value: 'EUROPE' },
+            { readonly name: 'EU'; readonly value: 'EU' },
+            { readonly name: 'UK'; readonly value: 'UK' },
+            { readonly name: 'NORTH_AMERICA'; readonly value: 'NORTH_AMERICA' },
+            { readonly name: 'LATAM'; readonly value: 'LATAM' },
+            { readonly name: 'APAC'; readonly value: 'APAC' },
+            { readonly name: 'GLOBAL'; readonly value: 'GLOBAL' },
+          ];
+          readonly Seniority: readonly [
+            { readonly name: 'junior'; readonly value: 'junior' },
+            { readonly name: 'mid'; readonly value: 'mid' },
+            { readonly name: 'senior'; readonly value: 'senior' },
+            { readonly name: 'staff'; readonly value: 'staff' },
+            { readonly name: 'lead'; readonly value: 'lead' },
+            { readonly name: 'principal'; readonly value: 'principal' },
+            { readonly name: 'unstated'; readonly value: 'unstated' },
+          ];
+          readonly SkillDomain: readonly [
+            { readonly name: 'backend'; readonly value: 'backend' },
+            { readonly name: 'frontend'; readonly value: 'frontend' },
+            { readonly name: 'fullstack'; readonly value: 'fullstack' },
+            { readonly name: 'mobile'; readonly value: 'mobile' },
+            { readonly name: 'devops'; readonly value: 'devops' },
+            { readonly name: 'data'; readonly value: 'data' },
+            { readonly name: 'ml'; readonly value: 'ml' },
+            { readonly name: 'security'; readonly value: 'security' },
+            { readonly name: 'qa'; readonly value: 'qa' },
+          ];
+          readonly Technology: readonly [
+            { readonly name: 'javascript'; readonly value: 'javascript' },
+            { readonly name: 'typescript'; readonly value: 'typescript' },
+            { readonly name: 'python'; readonly value: 'python' },
+            { readonly name: 'java'; readonly value: 'java' },
+            { readonly name: 'kotlin'; readonly value: 'kotlin' },
+            { readonly name: 'go'; readonly value: 'go' },
+            { readonly name: 'rust'; readonly value: 'rust' },
+            { readonly name: 'csharp'; readonly value: 'csharp' },
+            { readonly name: 'cpp'; readonly value: 'cpp' },
+            { readonly name: 'php'; readonly value: 'php' },
+            { readonly name: 'ruby'; readonly value: 'ruby' },
+            { readonly name: 'scala'; readonly value: 'scala' },
+            { readonly name: 'elixir'; readonly value: 'elixir' },
+            { readonly name: 'swift'; readonly value: 'swift' },
+            { readonly name: 'dart'; readonly value: 'dart' },
+            { readonly name: 'sql'; readonly value: 'sql' },
+            { readonly name: 'bash'; readonly value: 'bash' },
+            { readonly name: 'nodejs'; readonly value: 'nodejs' },
+            { readonly name: 'nestjs'; readonly value: 'nestjs' },
+            { readonly name: 'express'; readonly value: 'express' },
+            { readonly name: 'fastify'; readonly value: 'fastify' },
+            { readonly name: 'django'; readonly value: 'django' },
+            { readonly name: 'fastapi'; readonly value: 'fastapi' },
+            { readonly name: 'flask'; readonly value: 'flask' },
+            { readonly name: 'spring'; readonly value: 'spring' },
+            { readonly name: 'dotnet'; readonly value: 'dotnet' },
+            { readonly name: 'laravel'; readonly value: 'laravel' },
+            { readonly name: 'rails'; readonly value: 'rails' },
+            { readonly name: 'graphql'; readonly value: 'graphql' },
+            { readonly name: 'grpc'; readonly value: 'grpc' },
+            { readonly name: 'react'; readonly value: 'react' },
+            { readonly name: 'nextjs'; readonly value: 'nextjs' },
+            { readonly name: 'vue'; readonly value: 'vue' },
+            { readonly name: 'nuxt'; readonly value: 'nuxt' },
+            { readonly name: 'angular'; readonly value: 'angular' },
+            { readonly name: 'svelte'; readonly value: 'svelte' },
+            { readonly name: 'tailwindcss'; readonly value: 'tailwindcss' },
+            { readonly name: 'react_native'; readonly value: 'react_native' },
+            { readonly name: 'flutter'; readonly value: 'flutter' },
+            { readonly name: 'postgresql'; readonly value: 'postgresql' },
+            { readonly name: 'mysql'; readonly value: 'mysql' },
+            { readonly name: 'mongodb'; readonly value: 'mongodb' },
+            { readonly name: 'redis'; readonly value: 'redis' },
+            { readonly name: 'elasticsearch'; readonly value: 'elasticsearch' },
+            { readonly name: 'kafka'; readonly value: 'kafka' },
+            { readonly name: 'rabbitmq'; readonly value: 'rabbitmq' },
+            { readonly name: 'spark'; readonly value: 'spark' },
+            { readonly name: 'airflow'; readonly value: 'airflow' },
+            { readonly name: 'dbt'; readonly value: 'dbt' },
+            { readonly name: 'snowflake'; readonly value: 'snowflake' },
+            { readonly name: 'aws'; readonly value: 'aws' },
+            { readonly name: 'gcp'; readonly value: 'gcp' },
+            { readonly name: 'azure'; readonly value: 'azure' },
+            { readonly name: 'docker'; readonly value: 'docker' },
+            { readonly name: 'kubernetes'; readonly value: 'kubernetes' },
+            { readonly name: 'terraform'; readonly value: 'terraform' },
+            { readonly name: 'ansible'; readonly value: 'ansible' },
+            { readonly name: 'github_actions'; readonly value: 'github_actions' },
+            { readonly name: 'gitlab_ci'; readonly value: 'gitlab_ci' },
+            { readonly name: 'linux'; readonly value: 'linux' },
+            { readonly name: 'nginx'; readonly value: 'nginx' },
+            { readonly name: 'prometheus'; readonly value: 'prometheus' },
+            { readonly name: 'grafana'; readonly value: 'grafana' },
+            { readonly name: 'pytorch'; readonly value: 'pytorch' },
+            { readonly name: 'tensorflow'; readonly value: 'tensorflow' },
+            { readonly name: 'langchain'; readonly value: 'langchain' },
+          ];
         };
       };
     };
@@ -478,6 +2510,57 @@ type ContractBase = Omit<
         {
           readonly onCreate: { readonly id: 'uuidv7'; readonly kind: 'generator' };
           readonly ref: {
+            readonly entry: 'contacts';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'contacts';
+            readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'uuidv7'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'profile_skills';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'profile_skills';
+            readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'uuidv7'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'profiles';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'profiles';
+            readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'uuidv7'; readonly kind: 'generator' };
+          readonly ref: {
             readonly entry: 'users';
             readonly field: 'id';
             readonly namespace: 'public';
@@ -492,11 +2575,57 @@ type ContractBase = Omit<
             readonly namespace: 'public';
           };
         },
+        {
+          readonly onCreate: { readonly id: 'uuidv7'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'workspaces';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'workspaces';
+            readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
       ];
     };
   };
   readonly meta: {};
-
+  readonly valueObjects: {
+    readonly Address: {
+      readonly fields: {
+        readonly city: {
+          readonly nullable: false;
+          readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+        };
+        readonly country: {
+          readonly nullable: false;
+          readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+        };
+        readonly line1: {
+          readonly nullable: false;
+          readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+        };
+        readonly line2: {
+          readonly nullable: true;
+          readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+        };
+        readonly postalCode: {
+          readonly nullable: true;
+          readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+        };
+        readonly state: {
+          readonly nullable: true;
+          readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+        };
+      };
+    };
+  };
   readonly profileHash: ProfileHash;
 };
 
