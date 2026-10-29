@@ -3,7 +3,12 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "test:hooks": "node --test \".claude/hooks/*.test.mjs\""
+    "test:hooks": "node --test \".claude/hooks/*.test.mjs\"",
+    "infra:redis": "docker compose up -d redis redis-cache",
+    "worker": "node apps/xjobs/dist/worker.js",
+    "worker:dev": "pnpm --filter @xjobs/xjobs worker:dev",
+    "jobs:smoke": "pnpm --filter @xjobs/xjobs jobs:smoke",
+    "test:redis": "REDIS_INTEGRATION=1 vitest run --config apps/xjobs/vitest.config.mts src/infrastructure/redis/redis.integration.spec.ts"
   },
   "private": true,
   "dependencies": {

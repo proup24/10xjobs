@@ -10,6 +10,8 @@ import {
   type EnvironmentVariables,
 } from 'src/config';
 import { DatabaseModule } from 'src/database';
+import { RedisModule } from 'src/infrastructure/redis/redis.module';
+import { JobsModule } from 'src/infrastructure/jobs/jobs.module';
 import { QuerySearchModule } from 'src/modules/query-search';
 import { UsersModule } from 'src/modules/users';
 import { WorkspacesModule } from 'src/modules/workspaces';
@@ -26,6 +28,8 @@ import { AppService } from './app.service';
       validate: validateEnvironment,
     }),
     DatabaseModule,
+    RedisModule,
+    JobsModule,
     WorkspacesModule,
     UsersModule,
     QuerySearchModule,

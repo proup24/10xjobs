@@ -54,4 +54,15 @@ describe('recipe', () => {
     expect(recipe.version).toBe(QUERY_SEARCH_RECIPE_VERSION);
     expect(recipe.keywords).toEqual([...recipe.keywords].sort());
   });
+
+  // Rows are deduplicated by hash forever: these digests must never change.
+  it.each<[Channel, string]>([
+    [Channel.LINKEDIN_JOB_BOARD, 'TBD'],
+    [Channel.LINKEDIN_POSTS, 'TBD'],
+    [Channel.GREEN_HOUSE, 'TBD'],
+    [Channel.ASHBY, 'TBD'],
+  ])('pins the %s hash', (channel, digest) => {
+    console.log('H', channel, toRecipe({ ...base, channel }).hash);
+    expect(toRecipe({ ...base, channel }).hash).toBe(digest);
+  });
 });

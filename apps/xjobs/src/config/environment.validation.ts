@@ -38,8 +38,19 @@ export const databaseEnvironmentSchema = z.object({
   DATABASE_LOG_QUERIES: booleanFlag.default(false),
 });
 
+/** Shared by the HTTP API and the standalone queue worker. */
+export const redisEnvironmentSchema = z.object({
+  REDIS_URL: z.url({ protocol: /^rediss?$/ }).default('redis://127.0.0.1:6379'),
+  REDIS_CACHE_URL: z.url({ protocol: /^rediss?$/ }).default('redis://127.0.0.1:6380'),
+  REDIS_PREFIX: z.string().regex(/^[a-zA-Z0-9_-]+$/).default('xjobs'),
+  REDIS_COMMAND_TIMEOUT_MS: z.coerce.number().int().positive().default(3000),
+  CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(300),
+  JOBS_CONCURRENCY: z.coerce.number().int().positive().max(100).default(5),
+});
+
 export const environmentSchema = databaseEnvironmentSchema
   .extend({
+    ...redisEnvironmentSchema.shape,
     NODE_ENV: z.enum(EnvironmentType).default(EnvironmentType.development),
     HOST: z.string().min(1).default('0.0.0.0'),
     PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
@@ -86,6 +97,7 @@ export type DatabaseEnvironmentVariables = z.infer<
   typeof databaseEnvironmentSchema
 >;
 export type EnvironmentVariables = z.infer<typeof environmentSchema>;
+export type RedisEnvironmentVariables = z.infer<typeof redisEnvironmentSchema>;
 
 /**
  * @description Parses `config` against `schema`, failing with every invalid
@@ -111,4 +123,9 @@ export function validateEnvironment(
   config: Record<string, unknown>,
 ): EnvironmentVariables {
   return parseEnvironment(environmentSchema, config);
+}
+
+/** Worker bootstrap validates only its infrastructure dependencies. */
+export function validateWorkerEnvironment(config: Record<string, unknown>): RedisEnvironmentVariables {
+  return parseEnvironment(redisEnvironmentSchema, config);
 }

@@ -64,3 +64,5 @@ supabase
 # Superpowers plan workspaces (scratch)
 .superpowers
 
+
+.pnpm-store

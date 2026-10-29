@@ -10,6 +10,7 @@ import {
 import type {
   DatabaseEnvironmentVariables,
   EnvironmentVariables,
+  RedisEnvironmentVariables,
 } from './environment.validation';
 
 export { loadEnvironmentFiles } from './environment.loader';
@@ -18,10 +19,13 @@ export {
   environmentSchema,
   parseEnvironment,
   validateEnvironment,
+  redisEnvironmentSchema,
+  validateWorkerEnvironment,
 } from './environment.validation';
 export type {
   DatabaseEnvironmentVariables,
   EnvironmentVariables,
+  RedisEnvironmentVariables,
 } from './environment.validation';
 
 type AppConfigService = ConfigService<EnvironmentVariables, true>;
@@ -45,6 +49,26 @@ export interface DatabaseConfig {
   idleTimeoutMs: number;
   slowQueryMs: number;
   logQueries: boolean;
+}
+
+export interface RedisConfig {
+  url: string;
+  cacheUrl: string;
+  prefix: string;
+  commandTimeoutMs: number;
+  cacheTtlSeconds: number;
+  jobsConcurrency: number;
+}
+
+export function getRedisConfig(config: ConfigService<RedisEnvironmentVariables, true>): RedisConfig {
+  return {
+    url: config.get('REDIS_URL', { infer: true }),
+    cacheUrl: config.get('REDIS_CACHE_URL', { infer: true }),
+    prefix: config.get('REDIS_PREFIX', { infer: true }),
+    commandTimeoutMs: config.get('REDIS_COMMAND_TIMEOUT_MS', { infer: true }),
+    cacheTtlSeconds: config.get('CACHE_TTL_SECONDS', { infer: true }),
+    jobsConcurrency: config.get('JOBS_CONCURRENCY', { infer: true }),
+  };
 }
 
 export function getAppConfig(config: AppConfigService): AppConfig {

@@ -1,6 +1,7 @@
 packages:
   - apps/*
 allowBuilds:
+  msgpackr-extract: false
   '@parcel/watcher': false
   '@scarf/scarf': false
   esbuild: false
