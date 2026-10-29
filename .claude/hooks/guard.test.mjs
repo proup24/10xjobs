@@ -64,6 +64,48 @@ test('bash: git push', () => {
   assert.equal(blocked('Bash', { command: 'git status' }), false);
 });
 
+test('bash: separators attached to tokens', () => {
+  for (const command of [
+    'cat .env; ls',
+    'cat .env|head',
+    'cat private/x;ls',
+    'cat <.env',
+    'echo $(cat .env)',
+    'echo `cat .env`',
+  ]) {
+    assert.equal(blocked('Bash', { command }), true, command);
+  }
+  assert.equal(blocked('Bash', { command: 'cat .env.example; ls' }), false);
+});
+
+test('bash: git push through wrappers', () => {
+  for (const command of [
+    'sleep 1 & git push',
+    '(git push)',
+    '{ git push; }',
+    '$(git push)',
+    '`git push`',
+    'sudo git push',
+    'env git push',
+    'env FOO=1 git push',
+    'sudo -E git push',
+    'time git push',
+    'command git push',
+    'nice -n 5 git push',
+    'exec git push',
+    'xargs git push',
+    'bash -c "git push"',
+    "sh -c 'cd x && git push'",
+    'zsh -lc "git push"',
+    'eval git push',
+    'eval "git push"',
+  ]) {
+    assert.equal(blocked('Bash', { command }), true, command);
+  }
+  assert.equal(blocked('Bash', { command: 'bash -c "git status"' }), false);
+  assert.equal(blocked('Bash', { command: 'sudo git status' }), false);
+});
+
 test('unrelated tools pass', () => {
   assert.equal(blocked('WebSearch', { query: '.env' }), false);
 });

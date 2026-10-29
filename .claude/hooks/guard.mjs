@@ -28,20 +28,65 @@ const blockPath = (p) => ({
   reason: `Blocked: ${p} is a secret or private file (see CLAUDE.md).`,
 });
 
-const tokenize = (command) =>
-  (command.match(/"[^"]*"|'[^']*'|\S+/g) ?? []).map((t) =>
-    t.replace(/^["']|["']$/g, '').replace(/^\.\//, ''),
-  );
+// Splits a command into segments of tokens. Unquoted shell operators and
+// grouping characters end a token; `;`, `&`, `|`, newlines, parentheses and
+// backticks also end the segment. Quote characters are removed.
+function parse(command) {
+  const segments = [[]];
+  let token = '';
+  let quote = null;
+  const endToken = () => {
+    if (token) segments.at(-1).push(token.replace(/^\.\//, ''));
+    token = '';
+  };
+  for (const ch of command) {
+    if (quote) {
+      if (ch === quote) quote = null;
+      else token += ch;
+    } else if (ch === '"' || ch === "'") {
+      quote = ch;
+    } else if (/[;&|\n()`]/.test(ch)) {
+      endToken();
+      segments.push([]);
+    } else if (/[\s<>]/.test(ch)) {
+      endToken();
+    } else {
+      token += ch;
+    }
+  }
+  endToken();
+  return segments;
+}
+
+const WRAPPERS = ['sudo', 'env', 'time', 'command', 'nice', 'exec', 'xargs'];
+const SHELLS = ['bash', 'sh', 'zsh'];
 
 function isGitPush(command) {
-  for (const part of command.split(/;|&&|\|\||\||\n/)) {
-    const tokens = tokenize(part);
+  for (const tokens of parse(command)) {
     let i = 0;
-    while (/^\w+=/.test(tokens[i] ?? '')) i++;
-    if (tokens[i++] !== 'git') continue;
-    while (tokens[i]?.startsWith('-'))
-      i += tokens[i] === '-C' || tokens[i] === '-c' ? 2 : 1;
-    if (tokens[i] === 'push') return true;
+    for (;;) {
+      const t = tokens[i];
+      if (t === '{' || /^\w+=/.test(t ?? '')) i++;
+      else if (WRAPPERS.includes(t)) {
+        i++;
+        // wrapper flags; `-n` (nice) and `-u` (env) take a value
+        while (tokens[i]?.startsWith('-') || /^\w+=/.test(tokens[i] ?? '')) {
+          i += tokens[i] === '-n' || tokens[i] === '-u' ? 2 : 1;
+        }
+      } else break;
+    }
+    const cmd = tokens[i++];
+    if (SHELLS.includes(cmd)) {
+      const c = tokens.findIndex((t, j) => j >= i && /^-\w*c$/.test(t));
+      if (c >= 0 && tokens[c + 1] && isGitPush(tokens[c + 1])) return true;
+    } else if (cmd === 'eval') {
+      if (isGitPush(tokens.slice(i).join(' '))) return true;
+    } else if (cmd === 'git') {
+      while (tokens[i]?.startsWith('-')) {
+        i += tokens[i] === '-C' || tokens[i] === '-c' ? 2 : 1;
+      }
+      if (tokens[i] === 'push') return true;
+    }
   }
   return false;
 }
@@ -56,7 +101,7 @@ export function evaluate({ tool_name, tool_input = {} }) {
           'git push is blocked for Claude in this repo — push it yourself.',
       };
     }
-    for (const token of tokenize(command)) {
+    for (const token of parse(command).flat()) {
       for (const candidate of [token, token.slice(token.indexOf('=') + 1)]) {
         if (pathHit(candidate)) return blockPath(token);
       }
