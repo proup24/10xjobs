@@ -31,6 +31,7 @@ export type SkillInput = {
   domain: SkillDomain;
   mastery: number;
   preference: number;
+  importance: number;
 };
 
 export type ProfileWithSkills = ProfileRow & { techStack: ProfileSkillRow[] };
@@ -45,7 +46,7 @@ export type ProfileView = Omit<
 > & {
   techStack: Pick<
     ProfileSkillRow,
-    'technology' | 'domain' | 'mastery' | 'preference'
+    'technology' | 'domain' | 'mastery' | 'preference' | 'importance'
   >[];
   resume: {
     filename: string;

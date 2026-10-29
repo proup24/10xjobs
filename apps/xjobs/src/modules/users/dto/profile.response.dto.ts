@@ -76,9 +76,9 @@ export class ProfileResponseDto implements ProfileView {
 
   @ApiProperty({
     type: [SkillDto],
-    description: 'Ordered by preference, then mastery',
+    description: 'Ordered by importance, then preference, then mastery',
   })
-  techStack!: SkillDto[];
+  techStack!: Required<SkillDto>[];
 
   @ApiProperty({ type: ResumeInfoResponseDto, nullable: true })
   resume!: ResumeInfoResponseDto | null;

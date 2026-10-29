@@ -191,7 +191,6 @@ export class FakeProfilesRepository extends ProfilesRepository {
     const profileId = profile.id;
     Object.assign(profile, data, {
       techStack: skills.map((skill, index) => ({
-        importance: 5,
         ...skill,
         id: `skill-${index}`,
         workspaceId,

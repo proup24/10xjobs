@@ -34,11 +34,13 @@ const skill = (
   technology: SkillInput['technology'],
   mastery: number,
   preference: number,
+  importance = 5,
 ): SkillInput => ({
   technology,
   domain: SkillDomain.backend,
   mastery,
   preference,
+  importance,
 });
 
 describe('ProfilesService', () => {
@@ -60,7 +62,13 @@ describe('ProfilesService', () => {
     });
     expect(view).toMatchObject({ userId, seniority: 'senior' });
     expect(view.techStack).toEqual([
-      { technology: 'nodejs', domain: 'backend', mastery: 8, preference: 9 },
+      {
+        technology: 'nodejs',
+        domain: 'backend',
+        mastery: 8,
+        preference: 9,
+        importance: 5,
+      },
     ]);
   });
 
@@ -75,6 +83,30 @@ describe('ProfilesService', () => {
     });
     expect(second.id).toBe(first.id);
     expect(second.techStack.map((s) => s.technology)).toEqual(['rust', 'go']);
+  });
+
+  it('stores importance 5 when an upsert omits it', async () => {
+    const { importance: _omitted, ...withoutImportance } = skill(
+      Technology.go,
+      5,
+      7,
+    );
+    const view = await service.upsert('ws', userId, {
+      ...profileInput,
+      techStack: [withoutImportance],
+    });
+    expect(view.techStack[0].importance).toBe(5);
+  });
+
+  it('sorts the stack by importance before preference', async () => {
+    const view = await service.upsert('ws', userId, {
+      ...profileInput,
+      techStack: [
+        skill(Technology.rust, 5, 9, 2),
+        skill(Technology.go, 5, 1, 9),
+      ],
+    });
+    expect(view.techStack.map((s) => s.technology)).toEqual(['go', 'rust']);
   });
 
   it('404s a user without a profile', async () => {

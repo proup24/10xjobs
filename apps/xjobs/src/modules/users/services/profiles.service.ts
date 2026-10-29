@@ -8,7 +8,7 @@ import type {
   SkillInput,
 } from '../types';
 
-/** The API shape of a profile: no storage key, stack ordered by what the user wants most. */
+/** The API shape of a profile: no storage key, stack ordered by importance, then what the user wants most. */
 export function toProfileView(profile: ProfileWithSkills): ProfileView {
   const {
     techStack,
@@ -22,13 +22,19 @@ export function toProfileView(profile: ProfileWithSkills): ProfileView {
   return {
     ...fields,
     techStack: techStack
-      .map(({ technology, domain, mastery, preference }) => ({
+      .map(({ technology, domain, mastery, preference, importance }) => ({
         technology,
         domain,
         mastery,
         preference,
+        importance,
       }))
-      .sort((a, b) => b.preference - a.preference || b.mastery - a.mastery),
+      .sort(
+        (a, b) =>
+          b.importance - a.importance ||
+          b.preference - a.preference ||
+          b.mastery - a.mastery,
+      ),
     resume:
       resumeKey && resumeFilename && resumeSha256 && resumeUploadedAt
         ? {
@@ -65,16 +71,19 @@ export class ProfilesService {
   async upsert(
     workspaceId: string,
     userId: string,
-    data: ProfileInput & { techStack: SkillInput[] },
+    data: ProfileInput & {
+      techStack: (Omit<SkillInput, 'importance'> & { importance?: number })[];
+    },
   ): Promise<ProfileView> {
     await this.users.getOrThrow(workspaceId, userId);
     const { techStack, ...fields } = data;
     const skills = techStack.map(
-      ({ technology, domain, mastery, preference }) => ({
+      ({ technology, domain, mastery, preference, importance }) => ({
         technology,
         domain,
         mastery,
         preference,
+        importance: importance ?? 5,
       }),
     );
     return toProfileView(
