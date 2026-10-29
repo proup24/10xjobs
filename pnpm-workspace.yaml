@@ -10,5 +10,7 @@ allowBuilds:
 permissions:
   '@prisma/orm-postgres':
     skills: false
+  libpq:
+    build: false
   prisma:
     skills: false

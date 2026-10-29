@@ -13,6 +13,7 @@ import { setupSwagger } from 'src/swagger';
 import type { EnvironmentVariables } from 'src/config';
 import { EnvironmentType } from 'src/common/enums';
 import { getHostName } from 'src/utils';
+import { CorseConfig } from './cors';
 
 const APP_CONFIG = {
   name: 'MAIN FILE',
@@ -51,10 +52,7 @@ function configure(
   });
   const corsConfig = {
     origin: [
-      new RegExp(
-        String.raw`^https:\/\/([a-z0-9-]+\.)*${domain.replaceAll('.', '\\.')}$`,
-        'i',
-      ),
+      CorseConfig(domain),
     ],
     credentials: true,
   };
