@@ -30,7 +30,7 @@ Precision over volume: prefer a tailored application over a fast one.
 
 ## Conventions
 
-- Every domain record is workspace-scoped from day one, even in a single-user self-hosted install.
+- Every domain record is workspace-scoped, and workspaces are isolated from each other (the app is hosted and multi-tenant).
 - Qualify decisions record a reason, so wrong rejections can be found and fixed.
 
 ## Workflow
