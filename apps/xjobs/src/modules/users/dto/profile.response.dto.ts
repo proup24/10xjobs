@@ -4,6 +4,7 @@ import {
   Engagement,
   Language,
   Position,
+  ProfileState,
   Region,
   Seniority,
 } from 'src/common/enums';
@@ -81,6 +82,12 @@ export class ProfileResponseDto implements ProfileView {
 
   @ApiProperty({ type: ResumeInfoResponseDto, nullable: true })
   resume!: ResumeInfoResponseDto | null;
+
+  @ApiProperty({ enum: ProfileState, enumName: 'ProfileState' })
+  state!: ProfileState;
+
+  @ApiProperty({ format: 'date-time', type: Date, nullable: true })
+  publishedAt!: Date | null;
 
   @ApiProperty({ format: 'date-time' })
   createdAt!: Date;

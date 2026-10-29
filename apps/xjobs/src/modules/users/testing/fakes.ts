@@ -1,4 +1,5 @@
 /** In-memory repositories for unit tests; not part of the application build. */
+import { ProfileState } from 'src/common/enums';
 import { toStoredAddress, type ContactRow, type UserRow } from 'src/database';
 import { ContactsRepository } from '../repositories/contacts.repository';
 import { ProfilesRepository } from '../repositories/profiles.repository';
@@ -179,6 +180,8 @@ export class FakeProfilesRepository extends ProfilesRepository {
         resumeSizeBytes: null,
         resumeSha256: null,
         resumeUploadedAt: null,
+        state: ProfileState.draft,
+        publishedAt: null,
         createdAt: now,
         updatedAt: now,
         techStack: [],
@@ -188,6 +191,7 @@ export class FakeProfilesRepository extends ProfilesRepository {
     const profileId = profile.id;
     Object.assign(profile, data, {
       techStack: skills.map((skill, index) => ({
+        importance: 5,
         ...skill,
         id: `skill-${index}`,
         workspaceId,

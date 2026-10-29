@@ -1,10 +1,12 @@
 import contractJson from 'src/database/contract.json';
 import {
   Arrangement,
+  Channel,
   ContactKind,
   Engagement,
   Language,
   Position,
+  ProfileState,
   Region,
   Seniority,
   SkillDomain,
@@ -30,6 +32,8 @@ describe('enums', () => {
     ['ContactKind', ContactKind],
     ['Technology', Technology],
     ['SkillDomain', SkillDomain],
+    ['Channel', Channel],
+    ['ProfileState', ProfileState],
   ] as const)('%s matches the data contract', (name, values) => {
     expect(Object.values(values).sort()).toEqual(contractValues(name).sort());
   });

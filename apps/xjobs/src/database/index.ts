@@ -8,6 +8,7 @@ export type {
   ContactRow,
   ProfileRow,
   ProfileSkillRow,
+  QuerySearchBuilderRow,
   UserRow,
   WorkspaceRow,
 } from './models';
