@@ -4,7 +4,7 @@ import {
   keywordPhrases,
   locationText,
   type ChannelQueryBuilder,
-} from '../builders/channel-query.builder';
+} from '../builders/channel.builder';
 
 /** LinkedIn `f_E` codes: 2 entry, 3 associate, 4 mid-senior. */
 const EXPERIENCE_LEVELS: Record<Seniority, string | null> = {

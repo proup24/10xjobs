@@ -1,5 +1,5 @@
 import { Channel } from 'src/common/enums';
-import type { ChannelQueryBuilder } from '../builders/channel-query.builder';
+import type { ChannelQueryBuilder } from '../builders/channel.builder';
 import { AshbyQueryBuilder } from './ashbyhq.builder';
 import { GreenhouseQueryBuilder } from './greenhouse.builder';
 import { LinkedinJobBoardBuilder } from './linkedin_board.builder';

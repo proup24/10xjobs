@@ -3,7 +3,7 @@ import type { ChannelQuery, QuerySearchCombination } from '../types';
 import {
   jobBoardFilterQuery,
   type ChannelQueryBuilder,
-} from '../builders/channel-query.builder';
+} from '../builders/channel.builder';
 
 export class GreenhouseQueryBuilder implements ChannelQueryBuilder {
   readonly channel = Channel.GREEN_HOUSE;

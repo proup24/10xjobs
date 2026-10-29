@@ -5,7 +5,7 @@ import {
   keywordPhrases,
   locationText,
   type ChannelQueryBuilder,
-} from '../builders/channel-query.builder';
+} from '../builders/channel.builder';
 
 /** Searches hiring posts, so every phrase starts with `hiring`. */
 export class LinkedinPostsBuilder implements ChannelQueryBuilder {

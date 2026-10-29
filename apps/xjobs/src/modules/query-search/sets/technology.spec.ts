@@ -1,6 +1,6 @@
 import { Technology } from 'src/common/enums';
 import type { RankedSkill } from '../types';
-import { technologySets, topTechnologies } from './technology-sets';
+import { technologySets, topTechnologies } from './technology';
 
 const skill = (
   technology: Technology,

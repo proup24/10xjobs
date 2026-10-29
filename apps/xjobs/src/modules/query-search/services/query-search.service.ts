@@ -3,7 +3,7 @@ import { Arrangement, Channel } from 'src/common/enums';
 import { isUniqueViolation, type QuerySearchBuilderRow } from 'src/database';
 import { WorkspacesService } from 'src/modules/workspaces';
 import { toRecipe } from '../builders';
-import { technologySets } from '../builders/technology-sets';
+import { technologySets } from '../sets/technology';
 import { QuerySearchRepository } from '../repositories/query-search.repository';
 import type {
   QuerySearchCombination,

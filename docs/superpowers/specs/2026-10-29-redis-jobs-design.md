@@ -10,7 +10,7 @@ Running processors in the API is simpler but couples execution and scaling to HT
 
 - Keep the existing `redis` Compose service and data volume for queues and pub/sub. Explicitly set `noeviction`, retain AOF persistence, and use loopback-only host ports.
 - Add `redis-cache` with a bounded memory budget and `allkeys-lru`; cache data is disposable. Separate URLs allow managed Redis/TLS in deployments.
-- Add validated Redis configuration, namespaced JSON cache operations with mandatory TTLs, cache-aside loading, and explicit invalidation. Cache failures degrade to misses; failed loaders still propagate.
+- Extend the existing environment.validation.ts schema and config/index.ts accessor pattern through ConfigService with validated Redis configuration, namespaced JSON cache operations with mandatory TTLs, cache-aside loading, and explicit invalidation. Cache failures degrade to misses; failed loaders still propagate.
 - Add namespaced JSON pub/sub using separate publishing and subscribing connections. Subscriptions return an unsubscribe function, multiple local listeners can share a channel, and malformed messages/listener errors are isolated. Pub/sub is transient; work requiring retries uses BullMQ.
 - Add a queue producer with bounded connection/command waits, three attempts with exponential backoff, and bounded completed/failed retention. Prefixes isolate environments; business jobs must include workspace scope in their payloads and cache/channel keys.
 - Add a standalone worker, configurable concurrency, reconnecting Redis connections, error logging, and graceful shutdown. Initially register only an infrastructure `ping` job with payload validation; reject unknown jobs. This verifies execution without inventing business workflows.

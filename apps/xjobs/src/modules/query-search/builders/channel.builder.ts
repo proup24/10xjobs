@@ -54,8 +54,8 @@ export function jobBoardFilterQuery(
     combination.type === Arrangement.remote
       ? [combination.locationRegion]
       : [combination.country, combination.city].filter(
-          (term): term is string => !!term,
-        );
+        (term): term is string => !!term,
+      );
   const remote =
     combination.type === Arrangement.unstated
       ? null

@@ -19,27 +19,35 @@
 
 ## Task 1: Redis services
 
-- [ ] Add failing tests in `src/infrastructure/redis/redis.spec.ts` and config tests for invalid URLs, TTL and concurrency.
-- [ ] Add dependencies to `apps/xjobs/package.json` and lockfile.
-- [ ] Implement shared validated settings in `src/config/redis.config.ts`, Redis client lifecycle, cache and pub/sub services in `src/infrastructure/redis/`.
-- [ ] Integrate Redis settings into API environment validation and register the Redis module.
-- [ ] Run unit tests and typecheck.
+- [x] Add failing tests in `src/infrastructure/redis/cache.service.spec.ts` and config tests for invalid URLs, TTL and concurrency.
+- [x] Add dependencies to `apps/xjobs/package.json` and lockfile.
+- [x] Implement shared validated settings in `src/config/environment.validation.ts` and `src/config/index.ts`, Redis client lifecycle, cache and pub/sub services in `src/infrastructure/redis/`.
+- [x] Integrate Redis settings into API environment validation and register the Redis module.
+- [x] Run unit tests and typecheck.
 
 ## Task 2: Queue and worker
 
-- [ ] Add tests for infrastructure job validation and rejection of unknown jobs.
-- [ ] Implement queue producer and worker service in `src/infrastructure/jobs/`, and a dedicated `src/worker.ts` with `WorkerModule`.
-- [ ] Add both bundles to Webpack and launch scripts/targets to package manifests.
-- [ ] Add opt-in real Redis integration tests that spawn the compiled worker and prove completion, retries, TTL and pub/sub delivery.
-- [ ] Build and run tests.
+- [x] Add tests for infrastructure job validation and rejection of unknown jobs.
+- [x] Implement queue producer and worker service in `src/infrastructure/jobs/`, and a dedicated `src/worker.ts` with `WorkerModule`.
+- [x] Add both bundles to Webpack and launch scripts/targets to package manifests.
+- [x] Add opt-in real Redis integration tests that spawn the compiled worker and prove completion, retries, TTL and pub/sub delivery.
+- [x] Build and run tests.
 
 ## Task 3: Infrastructure and verification
 
-- [ ] Configure queue Redis eviction policy, isolated cache Redis, and optional worker Compose file.
-- [ ] Document environment settings, launch/scaling, extension points, and smoke-test commands.
-- [ ] Run full unit suite, typecheck, lint, builds, Compose validation and live integration tests.
-- [ ] Review final diff and resolve material findings.
+- [x] Configure queue Redis eviction policy, isolated cache Redis, and optional worker Compose file.
+- [x] Document environment settings, launch/scaling, extension points, and smoke-test commands.
+- [x] Run full unit suite, typecheck, lint, builds, Compose validation and live integration tests.
+- [x] Review final diff and resolve material findings.
 
 ## Execution notes
 
 User authorized proceeding with the separate worker. Work remains in the current checkout; no commit, branch integration, or deployment is requested. Services use explicit DI tokens so Nest injection also works under the existing Vitest transform.
+
+## Verification and decisions
+
+- Redis configuration uses the existing environment schema and ConfigService/getRedisConfig pattern, as explicitly requested. The worker initializes ConfigModule with the Redis subset because it is a separate process.
+- Preserved concurrent file renames (`connections.ts`, `settings.module.ts`, jobs `tests/`) and repaired affected imports.
+- Independent review found an unbounded initial BullMQ connection wait. A live regression test reproduced it; enqueuePing now rejects before submission when Redis is not ready, avoiding a pending enqueue executing later.
+- Live tests cover expiry, invalidation, subscriber isolation/unsubscribe, compiled-worker execution, offline-start rejection, retries, unknown-job failure, and SIGTERM shutdown.
+- Work was kept in the user's active checkout; other concurrent feature edits were not modified. No merge or push was performed.
