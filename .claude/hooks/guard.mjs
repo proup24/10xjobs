@@ -68,6 +68,9 @@ function parse(command) {
       quote = ch;
     } else if (ch === '#' && !token) {
       while (i + 1 < command.length && command[i + 1] !== '\n') i++;
+    } else if (command.startsWith('<<<', i)) {
+      endToken(); // a here-string, not a heredoc
+      i += 2;
     } else if (ch === '<' && /^<<(?!<)/.test(command.slice(i))) {
       const m = /^<<(-?)\s*(['"]?)([\w.-]+)\2/.exec(command.slice(i));
       if (m) {
@@ -124,7 +127,7 @@ const KEYWORDS = [
   '!',
   '{',
 ];
-const SHELLS = ['bash', 'sh', 'zsh'];
+const SHELLS = ['bash', 'sh', 'zsh', 'dash', 'ksh', 'fish'];
 
 // Index of the command word, after grouping, VAR=value and wrapper commands.
 function commandIndex(tokens) {
@@ -157,15 +160,25 @@ function nestedCommand(tokens, i) {
   if (tokens[i] === 'eval') return tokens.slice(i + 1).join(' ');
 }
 
-// A heredoc body runs as commands when its pipeline includes a shell, and is
-// expanded (so `$(...)` runs) when its delimiter is unquoted.
-function heredocRuns({ seg, quoted }, segments, pipes) {
+// True for a command that runs its stdin as shell code.
+const runsStdin = (tokens) => {
+  const word = tokens[commandIndex(tokens)];
+  return SHELLS.includes(word) || word === 'source' || word === '.';
+};
+
+// The part of a heredoc body that runs: all of it when its pipeline runs
+// stdin, only its `$(...)` and backtick substitutions when the delimiter is
+// unquoted (the rest is plain text), and nothing otherwise.
+function heredocCode({ seg, quoted, body }, segments, pipes) {
   let start = seg;
   let end = seg;
   while (pipes.has(start - 1)) start--;
   while (pipes.has(end)) end++;
-  const pipeline = segments.slice(start, end + 1);
-  return !quoted || pipeline.some((t) => SHELLS.includes(t[commandIndex(t)]));
+  if (segments.slice(start, end + 1).some(runsStdin)) return body;
+  if (quoted) return '';
+  return [...body.matchAll(/\$\(([^)]*)\)|`([^`]*)`/g)]
+    .map((m) => m[1] ?? m[2])
+    .join('\n');
 }
 
 // Every command segment that runs, in order: the top-level segments, each
@@ -185,7 +198,8 @@ function commands(command) {
     if (nested) add(nested);
   }
   for (const heredoc of heredocs) {
-    if (heredocRuns(heredoc, segments, pipes)) add(heredoc.body);
+    const code = heredocCode(heredoc, segments, pipes);
+    if (code) add(code);
   }
   return result;
 }
@@ -226,31 +240,46 @@ function findBlockedToken(command) {
 
 // Subcommands that add commits to the current branch.
 const WRITES = ['commit', 'merge', 'cherry-pick', 'revert', 'rebase', 'am'];
-const CREATE = ['-b', '-B', '-c', '-C', '--orphan'];
+// Options that end an operation without adding commits.
+const ABORTS = ['--abort', '--quit', '--skip'];
+const CREATE = /^(-[bBcC]|--orphan|--create|--force-create)$/;
+const CREATE_EQ = /^--(?:orphan|create|force-create)=(.+)/;
 
-// The branch `git checkout`/`git switch` moves to, if any.
-function switchTarget([sub, ...args]) {
+// The branch `git checkout`/`git switch` moves to, if any. A plain argument
+// counts only when it is `main` or a known branch, since `git checkout .`
+// or `git checkout <file>` restores files and stays put.
+function switchTarget([sub, ...args], branches = []) {
   if ((sub !== 'checkout' && sub !== 'switch') || args.includes('--')) return;
-  const create = args.findIndex((a) => CREATE.includes(a));
-  if (create >= 0) return args[create + 1];
-  return args.find((a) => !a.startsWith('-'));
+  for (let i = 0; i < args.length; i++) {
+    const eq = CREATE_EQ.exec(args[i]);
+    if (eq) return eq[1];
+    if (CREATE.test(args[i])) return args[i + 1];
+  }
+  const target = args.find((a) => !a.startsWith('-'));
+  return target === 'main' || branches.includes(target) ? target : undefined;
 }
 
 // True when the command commits to `main`, starting from `branch` and
 // following any checkout/switch earlier in the same command.
-function writesMain(command, branch) {
+function writesMain(command, branch, branches) {
   let current = branch;
   for (const tokens of commands(command).segments) {
     const args = gitArgs(tokens);
     if (!args) continue;
-    current = switchTarget(args) ?? current;
-    if (current === 'main' && WRITES.includes(args[0])) return true;
+    current = switchTarget(args, branches) ?? current;
+    const writes =
+      WRITES.includes(args[0]) && !args.some((a) => ABORTS.includes(a));
+    if (current === 'main' && writes) return true;
   }
   return false;
 }
 
-// `branch` is the current git branch, when known.
-export function evaluate({ tool_name, tool_input = {} }, { branch } = {}) {
+// `branch` is the current git branch and `branches` the local branch names,
+// when known.
+export function evaluate(
+  { tool_name, tool_input = {} },
+  { branch, branches } = {},
+) {
   if (tool_name === 'Bash') {
     const command = tool_input.command ?? '';
     if (isGitPush(command)) {
@@ -260,7 +289,7 @@ export function evaluate({ tool_name, tool_input = {} }, { branch } = {}) {
           'git push is blocked for Claude in this repo — push it yourself.',
       };
     }
-    if (writesMain(command, branch)) {
+    if (writesMain(command, branch, branches)) {
       return {
         block: true,
         reason:
@@ -282,9 +311,9 @@ export function evaluate({ tool_name, tool_input = {} }, { branch } = {}) {
   return { block: false };
 }
 
-function currentBranch(cwd) {
+function git(cwd, ...args) {
   try {
-    return execFileSync('git', ['symbolic-ref', '--short', 'HEAD'], {
+    return execFileSync('git', args, {
       cwd,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
@@ -293,6 +322,13 @@ function currentBranch(cwd) {
     return undefined;
   }
 }
+
+const gitContext = (cwd) => ({
+  branch: git(cwd, 'symbolic-ref', '--short', 'HEAD'),
+  branches: git(cwd, 'for-each-ref', '--format=%(refname:short)', 'refs/heads')
+    ?.split('\n')
+    .filter(Boolean),
+});
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   let input = '';
@@ -305,8 +341,8 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
     process.exit(0);
   }
   const cwd = event?.cwd ?? process.env.CLAUDE_PROJECT_DIR ?? process.cwd();
-  const branch = event?.tool_name === 'Bash' ? currentBranch(cwd) : undefined;
-  const result = evaluate(event ?? {}, { branch });
+  const context = event?.tool_name === 'Bash' ? gitContext(cwd) : {};
+  const result = evaluate(event ?? {}, context);
   if (result.block) {
     console.error(result.reason);
     process.exit(2);

@@ -175,13 +175,30 @@ test('bash: heredoc bodies that run', () => {
     "git commit -F - <<'EOF'\nDocument .env and git push\nEOF",
     "cat <<'EOF' | grep push\ngit push\nEOF",
     "cat <<'EOF' || bash x.sh\ngit push\nEOF",
+    'git commit -F - <<EOF\nfix: handle .env loading, then git push\nEOF',
   ]) {
     assert.equal(blocked('Bash', { command }), false, command);
   }
 });
 
+test('bash: more shells and here-strings', () => {
+  for (const command of [
+    "dash <<'EOF'\ngit push\nEOF",
+    "ksh <<'EOF'\ngit push\nEOF",
+    "source /dev/stdin <<'EOF'\ngit push\nEOF",
+    'cat <<< "hello"\ngit push origin',
+    "cat <<< 'hello'\ncat .env",
+    'cat <<<"a"\ngit push',
+  ]) {
+    assert.equal(blocked('Bash', { command }), true, command);
+  }
+  assert.equal(blocked('Bash', { command: 'cat <<< "hello"\nls' }), false);
+});
+
+const branches = ['main', 'fix/x'];
 const onBranch = (branch, command) =>
-  evaluate({ tool_name: 'Bash', tool_input: { command } }, { branch }).block;
+  evaluate({ tool_name: 'Bash', tool_input: { command } }, { branch, branches })
+    .block;
 
 test('bash: no commits or merges on main', () => {
   for (const command of [
@@ -194,6 +211,10 @@ test('bash: no commits or merges on main', () => {
     'git rebase fix/x',
     'git am fix.patch',
     'bash -c "git commit -m x"',
+    'git checkout src/a.ts && git commit -m x',
+    'git checkout . && git commit -m x',
+    'git checkout -f . && git commit -m x',
+    'git rebase --continue',
   ]) {
     assert.equal(onBranch('main', command), true, command);
   }
@@ -205,9 +226,22 @@ test('bash: no commits or merges on main', () => {
     'git switch -c fix/x && git commit -m x',
     'git checkout -b fix/x main && git commit -m x',
     'git checkout main -- README.md',
+    'git switch --create=fix/y && git commit -m x',
+    'git checkout fix/x && git merge main',
+    'git merge --abort',
+    'git rebase --abort',
   ]) {
     assert.equal(onBranch('main', command), false, command);
   }
+  // without a branch list, an unverified switch keeps main
+  const unknown = evaluate(
+    {
+      tool_name: 'Bash',
+      tool_input: { command: 'git checkout fix/x && git commit -m x' },
+    },
+    { branch: 'main' },
+  );
+  assert.equal(unknown.block, true);
 });
 
 test('bash: no switching to main to commit or merge', () => {
