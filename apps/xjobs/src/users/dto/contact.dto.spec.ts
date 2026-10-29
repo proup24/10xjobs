@@ -1,6 +1,7 @@
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { CreateContactDto } from './create-contact.dto';
+import { UpdateContactDto } from './update-contact.dto';
 
 const options = { whitelist: true, forbidNonWhitelisted: true };
 
@@ -38,5 +39,23 @@ describe('CreateContactDto', () => {
     expect(await errorsFor({ kind: 'fax', value: '+212612345678' })).toContain(
       'kind',
     );
+  });
+});
+
+describe('UpdateContactDto', () => {
+  async function updateErrors(body: object) {
+    const errors = await validate(
+      plainToInstance(UpdateContactDto, body),
+      options,
+    );
+    return errors.map((error) => error.property);
+  }
+
+  it.each(['kind', 'value', 'isPrimary'])('rejects %s: null', async (field) => {
+    expect(await updateErrors({ [field]: null })).toEqual([field]);
+  });
+
+  it('accepts label: null to clear the label', async () => {
+    expect(await updateErrors({ label: null })).toEqual([]);
   });
 });

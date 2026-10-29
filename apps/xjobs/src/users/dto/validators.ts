@@ -16,7 +16,8 @@ const URL_KINDS: ContactKind[] = [
   ContactKind.website,
 ];
 
-function isContactValue(kind: unknown, value: unknown): boolean {
+/** True when `value` is a valid contact of `kind`; see {@link IsContactValue}. */
+export function isContactValue(kind: unknown, value: unknown): boolean {
   if (typeof value !== 'string' || value.length === 0 || value.length > 500) {
     return false;
   }

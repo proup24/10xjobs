@@ -35,3 +35,11 @@ describe('UpdateWorkspaceDto', () => {
     expect(await errorsFor(UpdateWorkspaceDto, {})).toEqual([]);
   });
 });
+
+describe('UpdateWorkspaceDto nulls', () => {
+  it.each(['name', 'slug'])('rejects %s: null', async (field) => {
+    expect(await errorsFor(UpdateWorkspaceDto, { [field]: null })).toEqual([
+      field,
+    ]);
+  });
+});

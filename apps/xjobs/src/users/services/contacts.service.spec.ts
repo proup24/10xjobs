@@ -1,4 +1,8 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { ContactKind } from 'src/common/enums';
 import { ContactsService } from './contacts.service';
 import { FakeContactsRepository, FakeUsersRepository } from '../testing/fakes';
@@ -76,5 +80,45 @@ describe('ContactsService', () => {
     await expect(service.list('ws', 'missing')).rejects.toBeInstanceOf(
       NotFoundException,
     );
+  });
+
+  it('400s a new value that does not fit the stored kind', async () => {
+    const phone = await service.create('ws', userA, {
+      kind: ContactKind.phone,
+      value: '+212612345678',
+    });
+    await expect(
+      service.update('ws', userA, phone.id, { value: 'not a phone' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('400s a new kind that does not fit the stored value', async () => {
+    const github = await service.create('ws', userA, {
+      kind: ContactKind.github,
+      value: 'https://github.com/a',
+    });
+    await expect(
+      service.update('ws', userA, github.id, { kind: ContactKind.phone }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(contacts.rows[0].kind).toBe(ContactKind.github);
+  });
+
+  it('moving a primary contact to another kind keeps one primary there', async () => {
+    const other = await service.create('ws', userA, {
+      kind: ContactKind.other,
+      value: 'Telegram @a',
+      isPrimary: true,
+    });
+    const email = await service.create('ws', userA, {
+      kind: ContactKind.email,
+      value: 'one@x.com',
+      isPrimary: true,
+    });
+    await service.update('ws', userA, email.id, { kind: ContactKind.other });
+    const primaries = contacts.rows.filter(
+      (row) => row.kind === ContactKind.other && row.isPrimary,
+    );
+    expect(primaries.map((row) => row.id)).toEqual([email.id]);
+    expect(other.id).not.toBe(email.id);
   });
 });

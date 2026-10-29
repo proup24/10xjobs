@@ -65,3 +65,9 @@ describe('UpdateUserDto', () => {
     expect(await errorsFor(UpdateUserDto, { address: null })).toEqual([]);
   });
 });
+
+describe('UpdateUserDto nulls', () => {
+  it.each(['name', 'email'])('rejects %s: null', async (field) => {
+    expect(await errorsFor(UpdateUserDto, { [field]: null })).toEqual([field]);
+  });
+});

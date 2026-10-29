@@ -1,6 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { rethrowConflict, type ContactRow } from 'src/database';
 import { ContactsRepository, type ContactInput } from '../repositories/contacts.repository';
+import { isContactValue } from '../dto/validators';
 import { UsersService } from './users.service';
 
 const CONTACT_TAKEN = 'The user already has this contact';
@@ -38,6 +43,17 @@ export class ContactsService {
     contactId: string,
     data: Partial<ContactInput>,
   ): Promise<ContactRow> {
+    const existing = await this.contacts.findById(workspaceId, userId, contactId);
+    if (!existing) throw new NotFoundException('Contact not found');
+    const { kind: previousKind, isPrimary: wasPrimary } = existing;
+    // A patch may send only one of kind/value; check the pair it leaves behind.
+    const kind = data.kind ?? existing.kind;
+    if (
+      (data.kind !== undefined || data.value !== undefined) &&
+      !isContactValue(kind, data.value ?? existing.value)
+    ) {
+      throw new BadRequestException(`value is not a valid ${kind} contact`);
+    }
     const { isPrimary, ...rest } = data;
     const contact = await this.contacts
       .update(
@@ -48,7 +64,10 @@ export class ContactsService {
       )
       .catch((error: unknown) => rethrowConflict(error, CONTACT_TAKEN));
     if (!contact) throw new NotFoundException('Contact not found');
-    return isPrimary
+    // A primary contact moved to another kind must not leave two primaries there.
+    const movedPrimary =
+      isPrimary === undefined && wasPrimary && contact.kind !== previousKind;
+    return isPrimary || movedPrimary
       ? this.contacts.setPrimary(workspaceId, userId, contact.id, contact.kind)
       : contact;
   }
