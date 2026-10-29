@@ -9,7 +9,7 @@ import {
   Seniority,
 } from 'src/common/enums';
 import type { ProfileView } from '../types';
-import { SkillDto } from './skill.dto';
+import { SkillResponseDto } from './skill.response.dto';
 
 export class ResumeInfoResponseDto {
   @ApiProperty({ example: 'cv.pdf' })
@@ -75,10 +75,10 @@ export class ProfileResponseDto implements ProfileView {
   noticePeriodDays!: number;
 
   @ApiProperty({
-    type: [SkillDto],
+    type: [SkillResponseDto],
     description: 'Ordered by importance, then preference, then mastery',
   })
-  techStack!: Required<SkillDto>[];
+  techStack!: SkillResponseDto[];
 
   @ApiProperty({ type: ResumeInfoResponseDto, nullable: true })
   resume!: ResumeInfoResponseDto | null;

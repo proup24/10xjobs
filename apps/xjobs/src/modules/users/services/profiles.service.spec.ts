@@ -109,6 +109,20 @@ describe('ProfilesService', () => {
     expect(view.techStack.map((s) => s.technology)).toEqual(['go', 'rust']);
   });
 
+  it('keeps an explicit importance of 0 and sorts it last', async () => {
+    const view = await service.upsert('ws', userId, {
+      ...profileInput,
+      techStack: [
+        skill(Technology.rust, 9, 9, 0),
+        skill(Technology.go, 1, 1, 1),
+      ],
+    });
+    expect(view.techStack.map((s) => [s.technology, s.importance])).toEqual([
+      ['go', 1],
+      ['rust', 0],
+    ]);
+  });
+
   it('404s a user without a profile', async () => {
     await expect(service.get('ws', userId)).rejects.toBeInstanceOf(
       NotFoundException,
