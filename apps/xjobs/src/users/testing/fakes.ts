@@ -6,6 +6,13 @@ import {
   type UserRow,
 } from 'src/database';
 import { ContactsRepository, type ContactInput } from '../contacts.repository';
+import {
+  ProfilesRepository,
+  type ProfileInput,
+  type ProfileWithSkills,
+  type ResumeMeta,
+  type SkillInput,
+} from '../profiles.repository';
 import { UsersRepository, type UserInput } from '../users.repository';
 
 export class FakeUsersRepository extends UsersRepository {
@@ -142,5 +149,74 @@ export class FakeContactsRepository extends ContactsRepository {
     const row = await this.findById(workspaceId, userId, contactId);
     if (!row) throw new Error('missing contact');
     return row;
+  }
+}
+
+export class FakeProfilesRepository extends ProfilesRepository {
+  rows: ProfileWithSkills[] = [];
+
+  async findByUser(workspaceId: string, userId: string) {
+    return (
+      this.rows.find(
+        (row) => row.workspaceId === workspaceId && row.userId === userId,
+      ) ?? null
+    );
+  }
+
+  async upsert(
+    workspaceId: string,
+    userId: string,
+    data: ProfileInput,
+    skills: SkillInput[],
+  ): Promise<ProfileWithSkills> {
+    const now = new Date();
+    let profile = await this.findByUser(workspaceId, userId);
+    if (!profile) {
+      profile = {
+        id: `profile-${this.rows.length + 1}`,
+        workspaceId,
+        userId,
+        ...data,
+        resumeKey: null,
+        resumeFilename: null,
+        resumeSizeBytes: null,
+        resumeSha256: null,
+        resumeUploadedAt: null,
+        createdAt: now,
+        updatedAt: now,
+        techStack: [],
+      };
+      this.rows.push(profile);
+    }
+    const profileId = profile.id;
+    Object.assign(profile, data, {
+      techStack: skills.map((skill, index) => ({
+        ...skill,
+        id: `skill-${index}`,
+        workspaceId,
+        profileId,
+        createdAt: now,
+        updatedAt: now,
+      })),
+    });
+    return profile;
+  }
+
+  async setResume(
+    workspaceId: string,
+    profileId: string,
+    meta: ResumeMeta | null,
+  ): Promise<void> {
+    const profile = this.rows.find(
+      (row) => row.workspaceId === workspaceId && row.id === profileId,
+    );
+    if (!profile) return;
+    Object.assign(profile, {
+      resumeKey: meta?.key ?? null,
+      resumeFilename: meta?.filename ?? null,
+      resumeSizeBytes: meta?.sizeBytes ?? null,
+      resumeSha256: meta?.sha256 ?? null,
+      resumeUploadedAt: meta?.uploadedAt ?? null,
+    });
   }
 }

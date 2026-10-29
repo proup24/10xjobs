@@ -50,3 +50,55 @@ export function IsContactValue(options?: ValidationOptions) {
       },
     });
 }
+
+/**
+ * @description Requires the value to be a number no smaller than the number
+ * in `property` on the same object. Skips the check when that one is missing,
+ * leaving it to that property's own validators.
+ */
+export function IsGreaterOrEqual(property: string, options?: ValidationOptions) {
+  return (target: object, propertyName: string) =>
+    registerDecorator({
+      name: 'isGreaterOrEqual',
+      target: target.constructor,
+      propertyName,
+      constraints: [property],
+      options: {
+        message: `${propertyName} must be greater than or equal to ${property}`,
+        ...options,
+      },
+      validator: {
+        validate: (value: unknown, args: ValidationArguments) => {
+          const other = (args.object as Record<string, unknown>)[property];
+          if (typeof other !== 'number') return true;
+          return typeof value === 'number' && value >= other;
+        },
+      },
+    });
+}
+
+/** Requires no two items of an array to share the values of `keys`. */
+export function UniqueBy(keys: string[], options?: ValidationOptions) {
+  return (target: object, propertyName: string) =>
+    registerDecorator({
+      name: 'uniqueBy',
+      target: target.constructor,
+      propertyName,
+      constraints: keys,
+      options: {
+        message: `${propertyName} must not repeat the same ${keys.join(' and ')}`,
+        ...options,
+      },
+      validator: {
+        validate: (value: unknown) => {
+          if (!Array.isArray(value)) return true;
+          const seen = new Set(
+            value.map((item: Record<string, unknown>) =>
+              JSON.stringify(keys.map((key) => item?.[key])),
+            ),
+          );
+          return seen.size === value.length;
+        },
+      },
+    });
+}
