@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { rethrowConflict, type ContactRow } from 'src/database';
-import { ContactsRepository, type ContactInput } from './contacts.repository';
+import { ContactsRepository, type ContactInput } from '../repositories/contacts.repository';
 import { UsersService } from './users.service';
 
 const CONTACT_TAKEN = 'The user already has this contact';

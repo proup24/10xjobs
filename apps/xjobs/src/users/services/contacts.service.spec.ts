@@ -1,7 +1,7 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { ContactKind } from 'src/common/enums';
 import { ContactsService } from './contacts.service';
-import { FakeContactsRepository, FakeUsersRepository } from './testing/fakes';
+import { FakeContactsRepository, FakeUsersRepository } from '../testing/fakes';
 import { UsersService } from './users.service';
 
 describe('ContactsService', () => {

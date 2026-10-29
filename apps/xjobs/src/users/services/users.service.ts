@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { rethrowConflict, type UserRow } from 'src/database';
-import { UsersRepository, type UserInput } from './users.repository';
+import { UsersRepository, type UserInput } from '../repositories/users.repository';
 
 const EMAIL_TAKEN = 'A user with this email already exists in the workspace';
 

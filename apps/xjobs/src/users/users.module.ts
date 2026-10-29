@@ -2,24 +2,24 @@ import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { getResumeStorageDir, type EnvironmentVariables } from 'src/config';
 import { WorkspacesModule } from 'src/workspaces';
-import { ContactsController } from './contacts.controller';
+import { ContactsController } from './controllers/contacts.controller';
 import {
   ContactsRepository,
   PrismaContactsRepository,
-} from './contacts.repository';
-import { ContactsService } from './contacts.service';
-import { ProfilesController } from './profiles.controller';
+} from './repositories/contacts.repository';
+import { ContactsService } from './services/contacts.service';
+import { ProfilesController } from './controllers/profiles.controller';
 import {
   PrismaProfilesRepository,
   ProfilesRepository,
-} from './profiles.repository';
-import { ProfilesService } from './profiles.service';
-import { LocalResumeStorage, ResumeStorage } from './resume-storage';
-import { ResumeController } from './resume.controller';
-import { ResumeService } from './resume.service';
-import { UsersController } from './users.controller';
-import { PrismaUsersRepository, UsersRepository } from './users.repository';
-import { UsersService } from './users.service';
+} from './repositories/profiles.repository';
+import { ProfilesService } from './services/profiles.service';
+import { LocalResumeStorage, ResumeStorage } from './repositories/resume-storage';
+import { ResumeController } from './controllers/resume.controller';
+import { ResumeService } from './services/resume.service';
+import { UsersController } from './controllers/users.controller';
+import { PrismaUsersRepository, UsersRepository } from './repositories/users.repository';
+import { UsersService } from './services/users.service';
 
 @Module({
   imports: [WorkspacesModule],

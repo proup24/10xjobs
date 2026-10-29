@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, ParseUUIDPipe, Put } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { UpsertProfileDto } from './dto/upsert-profile.dto';
-import { ProfilesService, type ProfileView } from './profiles.service';
+import { UpsertProfileDto } from '../dto/upsert-profile.dto';
+import { ProfilesService, type ProfileView } from '../services/profiles.service';
 
 @ApiTags('profiles')
 @Controller('workspaces/:workspaceId/users/:userId/profile')

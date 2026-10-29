@@ -10,8 +10,8 @@ import {
   Technology,
 } from 'src/common/enums';
 import { ProfilesService, toProfileView } from './profiles.service';
-import type { ProfileInput, SkillInput } from './profiles.repository';
-import { FakeProfilesRepository, FakeUsersRepository } from './testing/fakes';
+import type { ProfileInput, SkillInput } from '../repositories/profiles.repository';
+import { FakeProfilesRepository, FakeUsersRepository } from '../testing/fakes';
 import { UsersService } from './users.service';
 
 const profileInput: ProfileInput = {

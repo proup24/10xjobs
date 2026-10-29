@@ -5,7 +5,7 @@ import {
   type ProfileInput,
   type ProfileWithSkills,
   type SkillInput,
-} from './profiles.repository';
+} from '../repositories/profiles.repository';
 import { UsersService } from './users.service';
 
 export type ProfileView = Omit<

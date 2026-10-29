@@ -13,7 +13,7 @@ import {
   FakeProfilesRepository,
   FakeUsersRepository,
   MemoryResumeStorage,
-} from './testing/fakes';
+} from '../testing/fakes';
 import { UsersService } from './users.service';
 
 const pdfBytes = Buffer.from('%PDF-1.7\n%%EOF');

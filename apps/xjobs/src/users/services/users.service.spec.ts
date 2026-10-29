@@ -1,5 +1,5 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
-import { FakeUsersRepository } from './testing/fakes';
+import { FakeUsersRepository } from '../testing/fakes';
 import { UsersService } from './users.service';
 
 describe('UsersService', () => {

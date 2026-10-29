@@ -13,10 +13,10 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import type { UserRow } from 'src/database';
 import { WorkspacesService } from 'src/workspaces';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { ResumeService } from './resume.service';
-import { UsersService } from './users.service';
+import { CreateUserDto } from '../dto/create-user.dto';
+import { UpdateUserDto } from '../dto/update-user.dto';
+import { ResumeService } from '../services/resume.service';
+import { UsersService } from '../services/users.service';
 
 @ApiTags('users')
 @Controller('workspaces/:workspaceId/users')

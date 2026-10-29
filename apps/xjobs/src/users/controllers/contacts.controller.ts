@@ -12,9 +12,9 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import type { ContactRow } from 'src/database';
-import { ContactsService } from './contacts.service';
-import { CreateContactDto } from './dto/create-contact.dto';
-import { UpdateContactDto } from './dto/update-contact.dto';
+import { ContactsService } from '../services/contacts.service';
+import { CreateContactDto } from '../dto/create-contact.dto';
+import { UpdateContactDto } from '../dto/update-contact.dto';
 
 @ApiTags('contacts')
 @Controller('workspaces/:workspaceId/users/:userId/contacts')

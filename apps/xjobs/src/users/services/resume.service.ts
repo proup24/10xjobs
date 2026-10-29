@@ -4,13 +4,13 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ProfilesRepository } from './profiles.repository';
+import { ProfilesRepository } from '../repositories/profiles.repository';
 import {
   ProfilesService,
   toProfileView,
   type ProfileView,
 } from './profiles.service';
-import { ResumeStorage } from './resume-storage';
+import { ResumeStorage } from '../repositories/resume-storage';
 
 /** The parts of a multer upload the resume flow reads. */
 export type UploadedPdf = {

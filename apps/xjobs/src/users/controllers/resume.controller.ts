@@ -13,12 +13,12 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
-import type { ProfileView } from './profiles.service';
+import type { ProfileView } from '../services/profiles.service';
 import {
   MAX_RESUME_BYTES,
   ResumeService,
   type UploadedPdf,
-} from './resume.service';
+} from '../services/resume.service';
 
 @ApiTags('profiles')
 @Controller('workspaces/:workspaceId/users/:userId/profile/resume')

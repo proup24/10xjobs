@@ -4,16 +4,16 @@ import {
   type ContactRow,
   type UserRow,
 } from 'src/database';
-import { ContactsRepository, type ContactInput } from '../contacts.repository';
+import { ContactsRepository, type ContactInput } from '../repositories/contacts.repository';
 import {
   ProfilesRepository,
   type ProfileInput,
   type ProfileWithSkills,
   type ResumeMeta,
   type SkillInput,
-} from '../profiles.repository';
-import { ResumeStorage } from '../resume-storage';
-import { UsersRepository, type UserInput } from '../users.repository';
+} from '../repositories/profiles.repository';
+import { ResumeStorage } from '../repositories/resume-storage';
+import { UsersRepository, type UserInput } from '../repositories/users.repository';
 
 export class FakeUsersRepository extends UsersRepository {
   rows: UserRow[] = [];
