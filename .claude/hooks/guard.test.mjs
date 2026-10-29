@@ -215,6 +215,7 @@ test('bash: no commits or merges on main', () => {
     'git checkout . && git commit -m x',
     'git checkout -f . && git commit -m x',
     'git rebase --continue',
+    'git commit -m "--skip"',
   ]) {
     assert.equal(onBranch('main', command), true, command);
   }

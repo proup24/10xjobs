@@ -267,8 +267,8 @@ function writesMain(command, branch, branches) {
     const args = gitArgs(tokens);
     if (!args) continue;
     current = switchTarget(args, branches) ?? current;
-    const writes =
-      WRITES.includes(args[0]) && !args.some((a) => ABORTS.includes(a));
+    const aborts = args[0] !== 'commit' && args.some((a) => ABORTS.includes(a));
+    const writes = WRITES.includes(args[0]) && !aborts;
     if (current === 'main' && writes) return true;
   }
   return false;
