@@ -113,6 +113,52 @@ test('bash: git push through wrappers', () => {
   assert.equal(blocked('Bash', { command: 'sudo git status' }), false);
 });
 
+test('bash: comments, escapes, heredocs, unterminated quotes', () => {
+  for (const command of [
+    "# Let's push the branch\ngit push -u origin x",
+    "# don't print it\ncat .env",
+    "cat > /tmp/m <<'EOF'\nDon't forget\nEOF\ngit commit -F /tmp/m && git push",
+    "echo it\\'s && git push",
+    "echo 'unterminated && git push",
+    "echo 'unterminated && cat .env",
+  ]) {
+    assert.equal(blocked('Bash', { command }), true, command);
+  }
+  for (const command of [
+    'git commit -m "push fix"',
+    'git commit -m "say \\"push\\" now"',
+    '# git push later\nls',
+    "cat > /tmp/m <<'EOF'\ngit push\nEOF\nls",
+  ]) {
+    assert.equal(blocked('Bash', { command }), false, command);
+  }
+});
+
+test('bash: env wildcards', () => {
+  for (const command of ['cat .env*', 'grep KEY .env*', 'cat .env{,.local}']) {
+    assert.equal(blocked('Bash', { command }), true, command);
+  }
+  assert.equal(blocked('Bash', { command: 'cat .envrc' }), false);
+  assert.equal(blocked('Bash', { command: 'cat .env.example' }), false);
+  assert.equal(blocked('Bash', { command: 'ls *.ts' }), false);
+});
+
+test('bash: keywords and wrappers before git push', () => {
+  for (const command of [
+    'if true; then git push; fi',
+    'for x in a; do git push; done',
+    'if false; then :; else git push; fi',
+    '! git push',
+    'nohup git push',
+    'timeout 60 git push',
+    'timeout -s KILL 60 git push',
+    'git \\\n push',
+  ]) {
+    assert.equal(blocked('Bash', { command }), true, command);
+  }
+  assert.equal(blocked('Bash', { command: 'timeout 60 git status' }), false);
+});
+
 test('unrelated tools pass', () => {
   assert.equal(blocked('WebSearch', { query: '.env' }), false);
 });
