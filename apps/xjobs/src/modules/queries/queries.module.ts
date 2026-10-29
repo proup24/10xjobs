@@ -4,8 +4,8 @@ import { QuerySearchController } from './controllers/query-search.controller';
 import {
   PrismaQuerySearchRepository,
   QuerySearchRepository,
-} from './repositories/query-search.repository';
-import { QuerySearchService } from './services/query-search.service';
+} from './repositories/queries.repository';
+import { QuerySearchService } from './services/queries.service';
 
 @Module({
   imports: [WorkspacesModule],

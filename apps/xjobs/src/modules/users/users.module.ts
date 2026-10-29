@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { getStorageConfig, type EnvironmentVariables } from 'src/config';
-import { QuerySearchModule } from 'src/modules/query-search';
+import { QuerySearchModule } from 'src/modules/queries';
 import { StorageModule } from 'src/modules/storage';
 import { WorkspacesModule } from 'src/modules/workspaces';
 import { ContactsController } from './controllers/contacts.controller';

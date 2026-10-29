@@ -1,7 +1,7 @@
 /** In-memory repositories for unit tests; not part of the application build. */
 import type { Channel } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
-import { QuerySearchRepository } from '../repositories/query-search.repository';
+import { QuerySearchRepository } from '../repositories/queries.repository';
 import type { QuerySearchRecipe } from '../types';
 
 export class FakeQuerySearchRepository extends QuerySearchRepository {

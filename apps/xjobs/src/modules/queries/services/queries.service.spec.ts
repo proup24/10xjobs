@@ -11,7 +11,7 @@ import { FakeWorkspacesRepository } from 'src/modules/workspaces/testing/fakes';
 import { WorkspacesService } from 'src/modules/workspaces/services/workspaces.service';
 import type { QuerySearchProfileInput, QuerySearchRecipe } from '../types';
 import { FakeQuerySearchRepository } from '../testing/fakes';
-import { QuerySearchService } from './query-search.service';
+import { QuerySearchService } from './queries.service';
 
 const profile: QuerySearchProfileInput = {
   positions: [Position.backend_engineer, Position.platform_engineer],

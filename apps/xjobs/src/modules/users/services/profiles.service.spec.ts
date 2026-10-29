@@ -11,7 +11,7 @@ import {
 } from 'src/common/enums';
 import { ProfilesService, toProfileView } from './profiles.service';
 import { QuerySearchService } from 'src/modules/query-search';
-import { FakeQuerySearchRepository } from 'src/modules/query-search/testing/fakes';
+import { FakeQuerySearchRepository } from 'src/modules/queries/testing/fakes';
 import { WorkspacesService } from 'src/modules/workspaces';
 import { FakeWorkspacesRepository } from 'src/modules/workspaces/testing/fakes';
 import { FakeProfilesRepository, FakeUsersRepository } from '../testing/fakes';

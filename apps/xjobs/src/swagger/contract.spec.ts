@@ -6,7 +6,7 @@ import {
   type OpenAPIObject,
 } from '@nestjs/swagger';
 import { AppController } from 'src/app/app.controller';
-import { QuerySearchController } from 'src/modules/query-search/controllers/query-search.controller';
+import { QuerySearchController } from 'src/modules/queries/controllers/query-search.controller';
 import { ContactsController } from 'src/modules/users/controllers/contacts.controller';
 import { ProfilesController } from 'src/modules/users/controllers/profiles.controller';
 import { ResumeController } from 'src/modules/users/controllers/resume.controller';

@@ -10,7 +10,7 @@ import {
 import {
   QuerySearchService,
   type QuerySearchProfileInput,
-} from 'src/modules/query-search';
+} from 'src/modules/queries';
 import { ProfilesRepository } from '../repositories/profiles.repository';
 import { UsersService } from './users.service';
 import type {

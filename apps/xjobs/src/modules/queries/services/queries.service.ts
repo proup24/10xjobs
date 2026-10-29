@@ -4,7 +4,7 @@ import { isUniqueViolation, type QuerySearchBuilderRow } from 'src/database';
 import { WorkspacesService } from 'src/modules/workspaces';
 import { toRecipe } from '../builders';
 import { technologySets } from '../sets/technology';
-import { QuerySearchRepository } from '../repositories/query-search.repository';
+import { QuerySearchRepository } from '../repositories/queries.repository';
 import type {
   QuerySearchCombination,
   QuerySearchProfileInput,
@@ -18,9 +18,7 @@ export class QuerySearchService {
     private readonly workspaces: WorkspacesService,
   ) {}
 
-  /** Every channel, position, region, arrangement and technology set of the profile, one recipe each. */
   expand(input: QuerySearchProfileInput): QuerySearchRecipe[] {
-    // Formatting differences must not create duplicate permanent rows.
     const country = input.country.trim().toUpperCase();
     const city = input.city?.trim() || null;
     const stated = input.arrangements.filter(
@@ -34,27 +32,48 @@ export class QuerySearchService {
       for (const position of input.positions) {
         for (const locationRegion of input.regions) {
           for (const type of arrangements) {
-            const located =
-              type === Arrangement.onsite || type === Arrangement.hybrid;
-            for (const technologies of sets) {
-              const combination: QuerySearchCombination = {
-                channel,
-                position,
-                locationRegion,
-                country: located ? country : null,
-                city: located ? city : null,
-                experience: input.seniority,
-                type,
-                technologies,
-              };
-              const recipe = toRecipe(combination);
-              if (!recipes.has(recipe.hash)) recipes.set(recipe.hash, recipe);
-            }
+            this.expandTechnologySets(
+              { channel, position, locationRegion, type, country, city, input },
+              sets,
+              recipes,
+            );
           }
         }
       }
     }
     return [...recipes.values()];
+  }
+
+  private expandTechnologySets(
+    context: {
+      channel: Channel;
+      position: string;
+      locationRegion: string;
+      type: Arrangement;
+      country: string;
+      city: string | null;
+      input: QuerySearchProfileInput;
+    },
+    sets: string[][],
+    recipes: Map<string, QuerySearchRecipe>,
+  ): void {
+    const located =
+      context.type === Arrangement.onsite ||
+      context.type === Arrangement.hybrid;
+    for (const technologies of sets) {
+      const combination: QuerySearchCombination = {
+        channel: context.channel,
+        position: context.position,
+        locationRegion: context.locationRegion,
+        country: located ? context.country : null,
+        city: located ? context.city : null,
+        experience: context.input.seniority,
+        type: context.type,
+        technologies,
+      };
+      const recipe = toRecipe(combination);
+      if (!recipes.has(recipe.hash)) recipes.set(recipe.hash, recipe);
+    }
   }
 
   /** Stores the recipes the workspace does not have yet; existing ones are left untouched. */
