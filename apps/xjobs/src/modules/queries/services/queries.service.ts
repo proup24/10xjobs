@@ -18,7 +18,9 @@ export class QuerySearchService {
     private readonly workspaces: WorkspacesService,
   ) {}
 
+  /** Expands a profile into one recipe per `(channel × position × region × arrangement × technology-set)` combination. */
   expand(input: QuerySearchProfileInput): QuerySearchRecipe[] {
+    // Formatting differences must not create duplicate permanent rows.
     const country = input.country.trim().toUpperCase();
     const city = input.city?.trim() || null;
     const stated = input.arrangements.filter(
@@ -44,19 +46,30 @@ export class QuerySearchService {
     return [...recipes.values()];
   }
 
+  /** Adds one deduplicated recipe per technology set for the given combination context. */
   private expandTechnologySets(
     context: {
+      /** The channel being expanded (e.g. LinkedIn, Greenhouse). */
       channel: Channel;
+      /** The target job position (e.g. "software-engineer"). */
       position: string;
+      /** The broad location region (e.g. "Europe", "Remote – US"). */
       locationRegion: string;
+      /** The work arrangement type; determines whether city/country are applied. */
       type: Arrangement;
+      /** Normalised (trimmed + uppercased) country code from the profile. */
       country: string;
+      /** Trimmed city name, or `null` when absent. */
       city: string | null;
+      /** The original profile input, used for seniority. */
       input: QuerySearchProfileInput;
     },
+    /** Each element is one technology set to produce a recipe for. */
     sets: string[][],
+    /** Accumulator — keyed by hash to prevent duplicates. */
     recipes: Map<string, QuerySearchRecipe>,
   ): void {
+    // Only onsite/hybrid searches are bound to a specific city or country.
     const located =
       context.type === Arrangement.onsite ||
       context.type === Arrangement.hybrid;
