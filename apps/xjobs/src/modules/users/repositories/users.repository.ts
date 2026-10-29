@@ -24,15 +24,16 @@ export class PrismaUsersRepository extends UsersRepository {
     super();
   }
 
-  private static toStored(data: Partial<UserInput>) {
-    const { address, ...rest } = data;
-    return address === undefined
-      ? rest
-      : {
-          ...rest,
-          address: address === null ? null : toStoredAddress(address),
-        };
+
+private static toStored(data: Partial<UserInput>) {
+  const {address,...rest} = data;
+  if (!data.address) return rest;
+
+  if (address && Object.keys(address).length) {
+    return { ...rest, address: toStoredAddress(address) };
   }
+  return rest;
+}
 
   private get users() {
     return this.database.db.orm.public.User;

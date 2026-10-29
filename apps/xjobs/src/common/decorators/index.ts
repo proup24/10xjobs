@@ -1,1 +1,1 @@
-export { IsOptionalNonNullable } from './is-optional-non-nullable.decorator';
+export { IsOptionalNonNullable } from './optional.decorator';
