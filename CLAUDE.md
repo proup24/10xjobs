@@ -49,4 +49,4 @@ This project does not use Linear or any ticket tracker. Do not offer or sync tic
 
 ## Roadmap
 
-See [docs/roadmap.md](docs/roadmap.md).
+See [docs/roadmap/README.md](docs/roadmap/README.md).
