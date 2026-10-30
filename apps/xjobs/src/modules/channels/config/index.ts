@@ -1,6 +1,48 @@
 import { Channel } from 'src/common/enums';
 
-export interface ChannelConfig {
+export interface LinkedinJobBoardDiscovery {
+  keywords: string[];
+  locations: string[];
+  maxRowsPerUrl: number;
+  titleExcludes: string[];
+}
+
+export interface LinkedinPostsDiscovery {
+  queries: string[];
+  maxPostsPerQuery: number;
+  linkTimeoutMs: number;
+  linkDelayMs: number;
+  linkMaxAttempts: number;
+}
+
+export interface JobBoardFetchConfig {
+  timeoutMs: number;
+  concurrency: number;
+  maxAttempts: number;
+  maxBodyBytes: number;
+  delayMs: number;
+  retryWaitsMs: number[];
+  maxRetryAfterMs: number;
+  retryBudgetMs: number;
+}
+
+export interface GreenhouseDiscovery {
+  site: string;
+  terms: string[];
+  suffix: string;
+  maxPagesPerQuery: number;
+  fetch: JobBoardFetchConfig;
+}
+
+export interface AshbyDiscovery {
+  site: string;
+  terms: string[];
+  suffix: string;
+  maxPagesPerQuery: number;
+  fetch: JobBoardFetchConfig;
+}
+
+interface ChannelConfigBase {
   enabled: boolean;
   schedule: { pattern: string; timezone: string };
   initialLookbackHours: number;
@@ -11,8 +53,34 @@ export interface ChannelConfig {
   monthlyBudgetMicroUsd: number;
   maximumOperationBudgetMicroUsd: number;
   actor: string;
+}
+
+export interface ChannelConfig extends ChannelConfigBase {
   discovery: Record<string, unknown>;
 }
+
+export interface LinkedinJobBoardConfig extends ChannelConfigBase {
+  discovery: LinkedinJobBoardDiscovery;
+}
+
+export interface LinkedinPostsConfig extends ChannelConfigBase {
+  discovery: LinkedinPostsDiscovery;
+}
+
+export interface GreenhouseConfig extends ChannelConfigBase {
+  discovery: GreenhouseDiscovery;
+}
+
+export interface AshbyConfig extends ChannelConfigBase {
+  discovery: AshbyDiscovery;
+}
+
+export type ChannelConfigMap = {
+  [Channel.LINKEDIN_JOB_BOARD]: LinkedinJobBoardConfig;
+  [Channel.LINKEDIN_POSTS]: LinkedinPostsConfig;
+  [Channel.GREEN_HOUSE]: GreenhouseConfig;
+  [Channel.ASHBY]: AshbyConfig;
+};
 
 const hourly = {
   schedule: { pattern: '0 * * * *', timezone: 'UTC' },
@@ -119,6 +187,6 @@ export const channelConfig = {
     monthlyBudgetMicroUsd: 5_000_000,
     maximumOperationBudgetMicroUsd: 500_000,
   },
-} satisfies Record<Channel, ChannelConfig>;
+} satisfies ChannelConfigMap;
 
 export const globalApifyMonthlyBudgetMicroUsd = 80_000_000;

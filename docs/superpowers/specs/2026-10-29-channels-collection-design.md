@@ -1,12 +1,22 @@
 # Hourly channel collection
 
-Status: proposed design for review; no collection implementation or live actor execution yet.
+Status: revised 2026-10-30 for review. The searches now come from workspace query recipes, not hardcoded configuration. No collection implementation or live actor execution yet.
 
-Builder review: an independent backend reviewer found no important unanswered questions preventing implementation planning. Product defaults below remain proposed until approved.
+## Revision 2026-10-30: dynamic searches
+
+The first draft carried career-hub's personal search content into `channels/config/index.ts`: keywords, locations, posts queries, Google terms and suffixes, and `titleExcludes`. That made every workspace search for one person's profile. The user profile and the queries module already exist to make searches dynamic, so this revision moves all search content into the query builders.
+
+User decisions in this revision:
+
+- Search content, including exclusions, comes from the query builders. Channel configuration keeps only operational settings.
+- Ashby and Greenhouse discover jobs the way career-hub does: Google `site:` search on Apify, then the posting from the Ashby or Greenhouse API.
+- There are no post-fetch filters. Collection fetches through the provider collectors, ported from career-hub, using Apify actors, and stores everything it gets. A later matching algorithm decides which stored jobs fit the user.
 
 ## Intent and agreed constraints
 
-Reuse the collection behavior in the sibling `career-hub` project inside xjobs. Run each of the four existing channels hourly. Keep channel configuration in `apps/xjobs/src/modules/channels/config/index.ts`. Give each channel its own Nest provider, and put every Apify operation and Chromium extraction operation in a separate provider file.
+Reuse the collection behavior in the sibling `career-hub` project inside xjobs. Port each channel's collector from `../career-hub/src/collect/{linkedin-jobs,linkedin-posts,google,ashby,greenhouse}` and its Apify runner (`apify.ts`). Run each of the four existing channels hourly. Every search a provider runs comes from the workspace's stored query recipes (`QuerySearchBuilder` rows, passed to the provider as `ChannelSearch`). Configuration in `apps/xjobs/src/modules/channels/config/index.ts` holds operational settings only. Give each channel its own Nest provider, and put every Apify operation and Chromium extraction operation in a separate provider file.
+
+Collection narrows results only at search time, through the inputs the recipe puts into the actor. It never drops a fetched item because of its title, company, location, or content. Matching, qualification, and ranking are a separate later design (my call: out of scope here, because the user asked to proceed without designing it).
 
 The user requested analysis and then asked to cover persistence, cursors, concurrency, Apify retries, budgets, extraction retries, and recovery windows. The decisions below are proposed engineering defaults, not additional user requirements.
 
@@ -64,9 +74,50 @@ Retain Ashby GraphQL and Greenhouse Job Board API extraction. Chromium is a sepa
 
 The initial phase collects raw posts and job details. LLM role splitting, qualification, ranking, applications, and career-hub's Claude prompt pipeline are outside this collection design. Posts remain distinct records and may link to canonical postings; they are not automatically treated as one job per post.
 
+## Searches come from query recipes
+
+The queries module turns a user profile into combinations, and one builder per channel (`modules/queries/channels/*.builder.ts`) turns each combination into `{ keywords, params }`. These are stored as immutable, workspace-scoped `QuerySearchBuilder` rows. A channel provider receives one row as a `ChannelSearch` and renders it into actor input. It adds only the time window and the operational limits from config. The provider never invents keywords, locations, or exclusions.
+
+Builder changes required. The recipe version becomes per channel (`QUERY_SEARCH_RECIPE_VERSIONS: Record<Channel, number>`, my call), so this change bumps only Ashby and Greenhouse and LinkedIn recipes keep their hashes and cursors:
+
+| Channel            | Builder output after this change                                                                                                                                                                                                                                                                                                                                                  | Provider renders it as (ported from career-hub)                                                                                                                                                                                                     |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| LinkedIn job board | Unchanged: `keywords`, `params.location`, optional `experienceLevel` (`f_E`) and `workType` (`f_WT`).                                                                                                                                                                                                                                                                             | One search URL per keyword (`linkedin-jobs/urls.ts`): `keywords`, `location`, filter codes, `sortBy=DD`, `f_TPR=r<seconds>` from the window. Actor `bebity/linkedin-jobs-scraper` with `maxRowsPerUrl` from config.                                 |
+| LinkedIn posts     | Unchanged: `hiring …` keywords and `params.location`.                                                                                                                                                                                                                                                                                                                             | `searchQueries` for `harvestapi/linkedin-post-search`, `maxPostsPerQuery` and the window from config.                                                                                                                                               |
+| Ashby              | Replaces `{ locationTerms, remote }` with the Google query parts (see "Ashby and Greenhouse search terms" below): short `keywords`, `params.site = 'jobs.ashbyhq.com'`, and `params.suffix` holding the title operators, exclusions, and location term. | `site:<site> "<keyword>" <suffix>` per keyword (`google/discover.ts` `googleQueries`), one `apify/google-search-scraper` run with `quickDateRange` from the window and `maxPagesPerQuery` from config. Each hit's posting comes from the Ashby API. |
+| Greenhouse         | The same shape as Ashby with `params.site = 'greenhouse.io'`.                                                                                                                                                                                                                                                                                                                     | The same Google discovery, then the Greenhouse Job Board API.                                                                                                                                                                                       |
+
+### Ashby and Greenhouse search terms
+
+Google quotes each keyword as an exact phrase, so the long LinkedIn-style phrases (`senior fullstack engineer typescript react`) would match almost nothing. These two builders emit short terms instead, the way career-hub did (`"full stack"`, `"typescript"`):
+
+- `keywords`: each title phrase of the position (`POSITION_TITLES`) and each technology term (`TECHNOLOGY_TERMS`) as separate entries, deduplicated. Seniority is not a keyword.
+- `suffix` include operators: title words that fit the position, OR-ed (`(intitle:engineer OR intitle:developer)` for engineering roles; the position's own words such as `devops`, `sre`, `architect`, or `manager` where those are the role). A position is never excluded by its own include list.
+- `suffix` exclusions: `-intitle:` words that contradict the combination. `intern` and `junior` are excluded for senior and above; `manager` and `director` are excluded only when the position is not a management role. Nothing is excluded for `unstated` seniority.
+- `suffix` location term: `"remote"` for remote work. For onsite or hybrid, the quoted city, else the English country name (the stored country is an ISO code; convert with `Intl.DisplayNames`). Nothing for unstated arrangement.
+
+The exact word tables per position and seniority are left to the builder. They must be unit-tested so every `Position` has a non-empty include list and is not matched by its own exclusions.
+
+`jobBoardFilterQuery` and its "filtered after fetching" contract are removed. Nothing consumes `locationTerms` or `remote`.
+
+Exclusions live in the builders only where the source can express them in the search itself (Google `-intitle:` operators). career-hub's LinkedIn `extraTitleExclude` was a post-fetch criteria filter (`criteria/compile.ts`), and LinkedIn's search URL has no title-exclude parameter, so it is dropped (my call). The builder may add a LinkedIn `NOT` keyword term later, but that is not part of this change.
+
+Which recipes run (user decision): only the workspace's **active** recipes. A recipe is active when it was produced by the workspace's currently published profile(s).
+
+- `QuerySearchBuilder` gains `retiredAt` (nullable). Active means `retiredAt IS NULL` and `version` equals the channel's current version.
+- On publish, the queries service regenerates the workspace's set from every published profile in the workspace. Rows in the new set are inserted or un-retired; every other active row in the workspace gets `retiredAt = now`. It runs in one transaction.
+- On unpublish, the same regeneration runs without that profile. If no published profile remains, every row is retired.
+- Retired rows are never deleted, so collected items stay traceable to the search that found them. Their collection states stop being scanned. If a recipe becomes active again, it resumes from its old cursor.
+- On deploy, a one-off backfill regenerates the active set for every workspace with a published profile, so a version bump never requires users to republish (my call).
+- A workspace with no active recipes for a channel records a skipped outcome with reason `no_recipes`, not an error.
+
+### Spending stays inside the caps
+
+A modest profile can produce about 60 searches per channel per tick, far more than career-hub's 4–24 fixed searches. Running all of them every hour would exhaust the monthly caps within days. Decision: ticks stay hourly, and each channel config gains `maximumSearchesPerTick` (per workspace). A tick selects due searches in order: oldest `coveredUntil` first, then broader recipes first (fewer technologies), then by recipe ID. Unselected searches keep their cursor and are picked up by later ticks through normal window catch-up. Initial values are proposed from the caps so that a full month of ticks fits the per-channel monthly budget at the per-operation maximum. The builder computes and records them in config with the arithmetic in a comment.
+
 ## Configuration
 
-`modules/channels/config/index.ts` exports a validated, typed configuration keyed exhaustively by `Channel`. Schedule, windows, actor IDs, limits, retries, and extraction policy live here. Secrets remain environment inputs; root environment validation only validates those inputs.
+`modules/channels/config/index.ts` exports a validated, typed configuration keyed exhaustively by `Channel`. It holds only how to run: enable flag, schedule, windows, actor IDs, page and row caps (`maxRowsPerUrl`, `maxPostsPerQuery`, `maxPagesPerQuery`), link and posting fetch policy, retries, and budgets. It holds no search content. `discovery.keywords`, `locations`, `queries`, `terms`, `site`, `suffix`, and `titleExcludes` are removed. Secrets remain environment inputs; root environment validation only validates those inputs.
 
 Proposed defaults:
 
@@ -86,11 +137,11 @@ All domain records carry `workspaceId`. References must enforce workspace consis
 
 | Model                | Purpose and essential constraints                                                                                                                                                                                                                                                                                         |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| CollectionQueryState | One row per executable search derived from a recipe: workspace, recipe ID, adapter version, deterministic search key, enabled flag, coveredUntil, nextAttemptAt, last success/error. Unique `(workspaceId, recipeId, adapterVersion, searchKey)`. Multiple keyword searches cannot share a cursor until all are complete. |
+| CollectionQueryState | One row per executable search derived from a recipe: workspace, recipe ID, adapter version, deterministic search key, coveredUntil, nextAttemptAt, last success/error. Unique `(workspaceId, recipeId, adapterVersion, searchKey)`. Multiple keyword searches cannot share a cursor until all are complete. |
 | CollectionRun        | One workspace/channel batch and fixed input/window snapshot: id, channel, scheduled hour, status, started/finished times, counters, error code. Run membership references query states and records individual outcomes.                                                                                                   |
 | CollectionOperation  | Durable external operation: run ID, operation key, actor/provider, input snapshot/hash, state, Apify run/dataset IDs, cost, reservation, lease owner/expiry/generation, retry time. Unique operation key prevents duplicate logical starts.                                                                               |
 | CollectionRunQuery   | Per-run search membership, window bounds, completeness, truncation and counts; unique `(runId, queryStateId)`. Needed for independent cursor advancement and attribution.                                                                                                                                                 |
-| CollectedItem        | Workspace-local source record: channel, external ID, kind (`job` or `post`), canonical URL, raw payload, normalized fields, first/last seen, status. Unique `(workspaceId, channel, externalId)`. Never discard posts because titles/company strings match.                                                               |
+| CollectedItem        | Workspace-local source record: channel, external ID, kind (`job` or `post`), canonical URL, raw payload, normalized fields, first/last seen, status. Unique `(workspaceId, channel, externalId)`. Never discard any fetched item because of its title, company, or content.                                                               |
 | CanonicalPosting     | Workspace-local ATS identity and shared posting details. Unique `(workspaceId, provider, externalKey)`; Greenhouse key includes board and job ID, Ashby key includes organization and posting ID. Multiple source items can refer to one posting.                                                                         |
 | CollectionHit        | Observed source item/candidate, query state, run, source rank, and observed URL. Durable even before extraction completes; unique identity makes replay safe.                                                                                                                                                             |
 | ExtractionTask       | Source candidate or canonical posting, extractor/version, input revision, pending/running/retry/succeeded/closed/exhausted state, attempt count, nextAttemptAt, lease generation, error. Unique task identity prevents duplicated extraction.                                                                             |
@@ -108,7 +159,7 @@ Register four stable BullMQ hourly scheduler identities. Every worker replica ma
 
 Use dedicated channel-discovery and extraction queues so expensive page work does not block scheduling or the infrastructure ping queue. Queue payloads contain versioned IDs, not complete raw descriptions or secrets.
 
-Each hourly tick scans enabled query states fairly in bounded pages, ordered by oldest coverage/next due time with workspace rotation. Existing saved recipes are eligible by default. New recipes get states on the next scan; immutable old recipes remain eligible until explicitly disabled. Adapter version changes create new search states rather than reusing incompatible cursors. There is no new profile-subscription model in this phase.
+Each hourly tick scans enabled query states fairly in bounded pages, ordered by oldest coverage/next due time with workspace rotation. Only active recipes are eligible (see "Searches come from query recipes"), and at most `maximumSearchesPerTick` searches per workspace and channel are selected. New recipes get states on the next scan. States of retired recipes stay stored but are not scanned. Adapter version changes create new search states rather than reusing incompatible cursors. There is no new profile-subscription model in this phase.
 
 The dispatcher records a deterministic run/batch and outbox work in one PostgreSQL transaction. Concurrent dispatchers use uniqueness and row locking so only one logical batch wins. An outbox relay retries delivery after Redis outages. Delivery before marking the outbox sent can enqueue twice; stable queue IDs and idempotent database claims make this harmless.
 
@@ -169,7 +220,12 @@ Expose structured logs and durable run summaries for queued/running/succeeded/pa
 
 ## Verification required for implementation
 
-- Registry/config coverage for all four channels and hourly schedule definitions.
+- Registry/config coverage for all four channels and hourly schedule definitions; config contains no search content.
+- Each provider renders actor input only from its `ChannelSearch` plus window and config limits, matching career-hub's rendering for the same keywords and params (fixture tests per channel).
+- Updated builders: Ashby and Greenhouse emit short keywords plus `site` and `suffix`; every position has includes it does not exclude; only Ashby and Greenhouse versions bump.
+- Active recipes: publish replaces the active set, unpublish retires it, re-activation resumes the old cursor, the deploy backfill regenerates without a republish, and a workspace without active recipes records `no_recipes`.
+- Per-tick selection respects `maximumSearchesPerTick` and ordering, and unselected searches keep their cursors.
+- No item is dropped after fetching: every valid normalized item from a complete response is stored.
 - Two replicas dispatching the same tick create one logical run; expired lease holders cannot commit.
 - PostgreSQL concurrent reservation tests prove global and channel budgets cannot be oversubscribed.
 - Recovery at every durable boundary: before queue delivery, after delivery, after remote start, during dataset pages, and after persistence before acknowledgement.
@@ -183,10 +239,11 @@ Expose structured logs and durable run summaries for queued/running/succeeded/pa
 
 ## Implementation sequence and remaining review
 
-1. Add durable models/migrations, configuration, and provider contracts.
-2. Implement atomic claims, budget reservations, outbox delivery, and recovery.
-3. Add Apify operation providers and dataset normalization using career-hub fixtures.
-4. Add the four channel providers, direct posting extraction, and bounded Chromium fallback.
-5. Wire hourly schedules, worker dependencies, visibility, and failure-path integration tests.
+1. Make recipe versions per channel, add `retiredAt` and publish/unpublish active-set replacement plus the deploy backfill, update the Ashby and Greenhouse builders, and remove `jobBoardFilterQuery`. Strip search content from channel config and add `maximumSearchesPerTick`.
+2. Add durable models/migrations, configuration, and provider contracts.
+3. Implement atomic claims, budget reservations, outbox delivery, and recovery.
+4. Add Apify operation providers and dataset normalization using career-hub fixtures.
+5. Add the four channel providers, direct posting extraction, and bounded Chromium fallback.
+6. Wire hourly schedules, worker dependencies, visibility, and failure-path integration tests.
 
-The builder may choose exact field names, helper boundaries, queue names, and SQL details while preserving these invariants. Verify actual BullMQ/Apify APIs against installed types and official documentation during implementation. Main product defaults to review are 24-hour initial lookback, seven-day automatic recovery, inherited spending caps, saved-query eligibility until explicitly disabled, and Chromium as a supported-domain fallback.
+The builder may choose exact field names, helper boundaries, queue names, and SQL details while preserving these invariants. Verify actual BullMQ/Apify APIs against installed types and official documentation during implementation. Main product defaults to review are 24-hour initial lookback, seven-day automatic recovery, inherited spending caps, only active recipes running, `maximumSearchesPerTick` values, and Chromium as a supported-domain fallback.
