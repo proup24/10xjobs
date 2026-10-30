@@ -13,7 +13,6 @@ import {
 import { ApiNoContentResponse, ApiTags } from '@nestjs/swagger';
 import { ApiErrorResponses, ApiSuccessResponse } from 'src/common/decorators';
 import type { UserRow } from 'src/database';
-import { WorkspacesService } from 'src/modules/workspaces';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { UserResponseDto } from '../dto/user.response.dto';
@@ -25,7 +24,6 @@ import { UsersService } from '../services/users.service';
 @Controller('workspaces/:workspaceId/users')
 export class UsersController {
   constructor(
-    private readonly workspaces: WorkspacesService,
     private readonly users: UsersService,
     private readonly resume: ResumeService,
   ) {}
@@ -41,7 +39,6 @@ export class UsersController {
     @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
     @Body() body: CreateUserDto,
   ): Promise<UserRow> {
-    await this.workspaces.getOrThrow(workspaceId);
     return this.users.create(workspaceId, body);
   }
 
@@ -51,7 +48,6 @@ export class UsersController {
   async list(
     @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
   ): Promise<UserRow[]> {
-    await this.workspaces.getOrThrow(workspaceId);
     return this.users.list(workspaceId);
   }
 
@@ -62,7 +58,6 @@ export class UsersController {
     @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
     @Param('userId', ParseUUIDPipe) userId: string,
   ): Promise<UserRow> {
-    await this.workspaces.getOrThrow(workspaceId);
     return this.users.getOrThrow(workspaceId, userId);
   }
 
@@ -78,7 +73,6 @@ export class UsersController {
     @Param('userId', ParseUUIDPipe) userId: string,
     @Body() body: UpdateUserDto,
   ): Promise<UserRow> {
-    await this.workspaces.getOrThrow(workspaceId);
     return this.users.update(workspaceId, userId, body);
   }
 
@@ -90,7 +84,6 @@ export class UsersController {
     @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
     @Param('userId', ParseUUIDPipe) userId: string,
   ): Promise<void> {
-    await this.workspaces.getOrThrow(workspaceId);
     await this.users.getOrThrow(workspaceId, userId);
     // The rows cascade; the resume file does not, so remove it first.
     await this.resume.removeFor(workspaceId, userId);

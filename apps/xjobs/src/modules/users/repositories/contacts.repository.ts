@@ -50,12 +50,12 @@ export class PrismaContactsRepository extends ContactsRepository {
     userId: string,
     data: ContactInput,
   ): Promise<ContactRow> {
-    return this.contacts.create({ ...data, workspaceId, userId });
+    return this.contacts.create({ ...data, userId });
   }
 
   async list(workspaceId: string, userId: string): Promise<ContactRow[]> {
     return await this.contacts
-      .where({ workspaceId, userId })
+      .where({ userId })
       .orderBy((c) => c.createdAt.asc())
       .all();
   }
@@ -65,7 +65,7 @@ export class PrismaContactsRepository extends ContactsRepository {
     userId: string,
     contactId: string,
   ): Promise<ContactRow | null> {
-    return this.contacts.where({ workspaceId, userId, id: contactId }).first();
+    return this.contacts.where({ userId, id: contactId }).first();
   }
 
   async update(
@@ -78,7 +78,7 @@ export class PrismaContactsRepository extends ContactsRepository {
       return this.findById(workspaceId, userId, contactId);
     }
     return this.contacts
-      .where({ workspaceId, userId, id: contactId })
+      .where({ userId, id: contactId })
       .update(data);
   }
 
@@ -88,7 +88,7 @@ export class PrismaContactsRepository extends ContactsRepository {
     contactId: string,
   ): Promise<boolean> {
     const deleted = await this.contacts
-      .where({ workspaceId, userId, id: contactId })
+      .where({ userId, id: contactId })
       .delete();
     return deleted !== null;
   }
@@ -101,12 +101,10 @@ export class PrismaContactsRepository extends ContactsRepository {
   ): Promise<ContactRow> {
     return this.database.db.transaction(async (tx) => {
       await tx.orm.public.Contact.where({
-        workspaceId,
         userId,
         kind,
       }).updateAll({ isPrimary: false });
       const contact = await tx.orm.public.Contact.where({
-        workspaceId,
         userId,
         id: contactId,
       }).update({ isPrimary: true });

@@ -1,4 +1,3 @@
-import { NotFoundException } from '@nestjs/common';
 import {
   Arrangement,
   Channel,
@@ -7,8 +6,6 @@ import {
   Seniority,
   Technology,
 } from 'src/common/enums';
-import { FakeWorkspacesRepository } from 'src/modules/workspaces/testing/fakes';
-import { WorkspacesService } from 'src/modules/workspaces/services/workspaces.service';
 import type { QuerySearchProfileInput, QuerySearchRecipe } from '../types';
 import { FakeQuerySearchRepository } from '../testing/fakes';
 import { QuerySearchService } from './queries.service';
@@ -21,28 +18,24 @@ const profile: QuerySearchProfileInput = {
   country: 'MA',
   city: 'Casablanca',
   skills: [
-    { technology: Technology.nestjs, importance: 9, preference: 5, mastery: 5 },
+    { technology: Technology.nestjs, importance: 9, mastery: 5 },
     {
       technology: Technology.typescript,
       importance: 8,
-      preference: 5,
       mastery: 5,
     },
     {
       technology: Technology.postgresql,
       importance: 7,
-      preference: 5,
       mastery: 5,
     },
   ],
 };
 
 async function setup() {
-  const workspaces = new WorkspacesService(new FakeWorkspacesRepository());
-  const first = await workspaces.create({ name: 'One', slug: 'one' });
   const repository = new FakeQuerySearchRepository();
-  const service = new QuerySearchService(repository, workspaces);
-  return { service, repository, workspaces, workspaceId: first.id };
+  const service = new QuerySearchService(repository);
+  return { service, repository, userId: 'user-1', profileId: 'profile-1' };
 }
 
 const hashes = (recipes: QuerySearchRecipe[]) =>
@@ -130,12 +123,12 @@ describe('QuerySearchService', () => {
 
   describe('generate', () => {
     it('creates once, then reports everything as existing', async () => {
-      const { service, repository, workspaceId } = await setup();
-      expect(await service.generate(workspaceId, profile)).toEqual({
+      const { service, repository, userId, profileId } = await setup();
+      expect(await service.generate(userId, profileId, profile)).toEqual({
         created: 160,
         existing: 0,
       });
-      expect(await service.generate(workspaceId, profile)).toEqual({
+      expect(await service.generate(userId, profileId, profile)).toEqual({
         created: 0,
         existing: 160,
       });
@@ -143,68 +136,65 @@ describe('QuerySearchService', () => {
     });
 
     it('creates only the recipes of a new position', async () => {
-      const { service, workspaceId } = await setup();
-      await service.generate(workspaceId, profile);
-      const result = await service.generate(workspaceId, {
+      const { service, userId, profileId } = await setup();
+      await service.generate(userId, profileId, profile);
+      const result = await service.generate(userId, profileId, {
         ...profile,
         positions: [...profile.positions, Position.ml_engineer],
       });
       expect(result).toEqual({ created: 80, existing: 160 });
     });
 
-    it('scopes recipes per workspace', async () => {
-      const { service, workspaceId } = await setup();
-      await service.generate(workspaceId, profile);
-      expect(await service.generate('ws2', profile)).toEqual({
+    it('scopes recipes per profile', async () => {
+      const { service, userId, profileId } = await setup();
+      await service.generate(userId, profileId, profile);
+      expect(await service.generate(userId, 'profile-2', profile)).toEqual({
         created: 160,
         existing: 0,
       });
     });
 
     it('counts a unique violation on create as existing', async () => {
-      const { service, repository, workspaceId } = await setup();
+      const { service, repository, userId, profileId } = await setup();
       const create = repository.create.bind(repository);
       let failed = false;
-      repository.create = async (id, recipe) => {
+      repository.create = async (id, profile, recipe) => {
         if (!failed) {
           failed = true;
           throw { sqlState: '23505' };
         }
-        return create(id, recipe);
+        return create(id, profile, recipe);
       };
-      expect(await service.generate(workspaceId, profile)).toEqual({
+      expect(await service.generate(userId, profileId, profile)).toEqual({
         created: 159,
         existing: 1,
       });
     });
 
     it('rethrows any other create error', async () => {
-      const { service, repository, workspaceId } = await setup();
+      const { service, repository, userId, profileId } = await setup();
       repository.create = async () => {
         throw new Error('boom');
       };
-      await expect(service.generate(workspaceId, profile)).rejects.toThrow(
-        'boom',
-      );
+      await expect(
+        service.generate(userId, profileId, profile),
+      ).rejects.toThrow('boom');
     });
   });
 
   describe('list', () => {
     it('lists a workspace and filters by channel', async () => {
-      const { service, workspaceId } = await setup();
-      await service.generate(workspaceId, profile);
-      expect(await service.list(workspaceId)).toHaveLength(160);
-      const posts = await service.list(workspaceId, Channel.LINKEDIN_POSTS);
+      const { service, userId, profileId } = await setup();
+      await service.generate(userId, profileId, profile);
+      expect(await service.list(userId, profileId)).toHaveLength(160);
+      const posts = await service.list(
+        userId,
+        profileId,
+        Channel.LINKEDIN_POSTS,
+      );
       expect(posts).toHaveLength(40);
       expect(posts.every((row) => row.channel === Channel.LINKEDIN_POSTS)).toBe(
         true,
-      );
-    });
-
-    it('404s for an unknown workspace', async () => {
-      const { service } = await setup();
-      await expect(service.list('missing')).rejects.toBeInstanceOf(
-        NotFoundException,
       );
     });
   });

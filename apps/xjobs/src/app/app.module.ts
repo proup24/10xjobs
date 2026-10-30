@@ -14,7 +14,6 @@ import { RedisModule } from 'src/infrastructure/redis/redis.module';
 import { JobsModule } from 'src/infrastructure/jobs/jobs.module';
 import { QuerySearchModule } from 'src/modules/queries';
 import { UsersModule } from 'src/modules/users';
-import { WorkspacesModule } from 'src/modules/workspaces';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -30,7 +29,6 @@ import { AppService } from './app.service';
     DatabaseModule,
     RedisModule,
     JobsModule,
-    WorkspacesModule,
     UsersModule,
     QuerySearchModule,
   ],

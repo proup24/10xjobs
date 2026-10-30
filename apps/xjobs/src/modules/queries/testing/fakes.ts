@@ -8,25 +8,27 @@ export class FakeQuerySearchRepository extends QuerySearchRepository {
   rows: QuerySearchBuilderRow[] = [];
 
   async findHashes(
-    workspaceId: string,
+    userId: string,
+    profileId: string,
     hashes: string[],
   ): Promise<Set<string>> {
     const wanted = new Set(hashes);
     return new Set(
       this.rows
-        .filter((row) => row.workspaceId === workspaceId)
+        .filter((row) => row.userId === userId && row.profileId === profileId)
         .map((row) => row.hash)
         .filter((hash) => wanted.has(hash)),
     );
   }
 
   async create(
-    workspaceId: string,
+    userId: string,
+    profileId: string,
     recipe: QuerySearchRecipe,
   ): Promise<QuerySearchBuilderRow> {
     if (
       this.rows.some(
-        (row) => row.workspaceId === workspaceId && row.hash === recipe.hash,
+        (row) => row.profileId === profileId && row.hash === recipe.hash,
       )
     ) {
       throw { sqlState: '23505' };
@@ -36,7 +38,8 @@ export class FakeQuerySearchRepository extends QuerySearchRepository {
     const row = {
       id: `qs-${this.rows.length + 1}`,
       ...columns,
-      workspaceId,
+      userId,
+      profileId,
       createdAt: now,
       updatedAt: now,
     } as QuerySearchBuilderRow;
@@ -45,12 +48,14 @@ export class FakeQuerySearchRepository extends QuerySearchRepository {
   }
 
   async list(
-    workspaceId: string,
+    userId: string,
+    profileId: string,
     channel?: Channel,
   ): Promise<QuerySearchBuilderRow[]> {
     return this.rows.filter(
       (row) =>
-        row.workspaceId === workspaceId &&
+        row.userId === userId &&
+        row.profileId === profileId &&
         (!channel || row.channel === channel),
     );
   }

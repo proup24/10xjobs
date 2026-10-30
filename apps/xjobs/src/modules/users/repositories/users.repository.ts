@@ -44,19 +44,17 @@ private static toStored(data: Partial<UserInput>) {
       ...PrismaUsersRepository.toStored(data),
       name: data.name,
       email: data.email,
-      workspaceId,
     });
   }
 
   async list(workspaceId: string): Promise<UserRow[]> {
     return await this.users
-      .where({ workspaceId })
       .orderBy((u) => u.createdAt.asc())
       .all();
   }
 
   findById(workspaceId: string, userId: string): Promise<UserRow | null> {
-    return this.users.where({ workspaceId, id: userId }).first();
+    return this.users.where({ id: userId }).first();
   }
 
   async update(
@@ -67,13 +65,13 @@ private static toStored(data: Partial<UserInput>) {
     if (Object.keys(data).length === 0)
       return this.findById(workspaceId, userId);
     return this.users
-      .where({ workspaceId, id: userId })
+      .where({ id: userId })
       .update(PrismaUsersRepository.toStored(data));
   }
 
   async delete(workspaceId: string, userId: string): Promise<boolean> {
     const deleted = await this.users
-      .where({ workspaceId, id: userId })
+      .where({ id: userId })
       .delete();
     return deleted !== null;
   }

@@ -136,7 +136,8 @@ export class ProfilesService {
   ): Promise<PublishedProfileView> {
     const profile = await this.getOrThrow(workspaceId, userId);
     const querySearches = await this.querySearch.generate(
-      workspaceId,
+      userId,
+      profile.id,
       toQuerySearchInput(profile),
     );
     const published = await this.profiles.setState(

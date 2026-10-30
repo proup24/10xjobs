@@ -15,7 +15,7 @@ import { QuerySearchService } from '../services/queries.service';
 
 @ApiTags('query-search')
 @ApiErrorResponses(HttpStatus.UNAUTHORIZED, HttpStatus.INTERNAL_SERVER_ERROR)
-@Controller('workspaces/:workspaceId/query-search')
+@Controller('users/:userId/profiles/:profileId/query-search')
 export class QuerySearchController {
   constructor(private readonly querySearch: QuerySearchService) {}
 
@@ -23,9 +23,10 @@ export class QuerySearchController {
   @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
   @Get()
   list(
-    @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Param('profileId', ParseUUIDPipe) profileId: string,
     @Query() query: ListQuerySearchQueryDto,
   ): Promise<QuerySearchBuilderRow[]> {
-    return this.querySearch.list(workspaceId, query.channel);
+    return this.querySearch.list(userId, profileId, query.channel);
   }
 }

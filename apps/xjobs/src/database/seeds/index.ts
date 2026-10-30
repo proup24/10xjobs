@@ -11,10 +11,9 @@ import { loadDatabaseEnvironment, toDatabaseConfig } from 'src/config';
 import { createDatabaseClient } from '../connection.source';
 import type { Seed } from './seed.interface';
 import { usersSeed } from './users.seed';
-import { workspacesSeed } from './workspaces.seed';
 
 /** Order matters: seeds run sequentially, so list parents before children. */
-const seeds: Seed[] = [workspacesSeed, usersSeed];
+const seeds: Seed[] = [usersSeed];
 
 function parseArgs(argv: string[]) {
   const onlyIndex = argv.indexOf('--only');

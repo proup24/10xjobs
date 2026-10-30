@@ -28,14 +28,14 @@ const build = (
 ) => CHANNEL_QUERY_BUILDERS[channel].build({ ...base, channel, ...overrides });
 
 describe('channel query builders', () => {
-  it('builds job board keywords', () => {
-    expect(build(Channel.LINKEDIN_JOB_BOARD).keywords).toContain(
+  it('builds one canonical job board keyword', () => {
+    expect(build(Channel.LINKEDIN_JOB_BOARD).keyword).toBe(
       'senior backend engineer nestjs typescript',
     );
   });
 
-  it('builds posts keywords with hiring and the arrangement word', () => {
-    expect(build(Channel.LINKEDIN_POSTS).keywords).toContain(
+  it('builds one posts keyword with hiring and the arrangement word', () => {
+    expect(build(Channel.LINKEDIN_POSTS).keyword).toBe(
       'hiring senior backend engineer nestjs typescript remote',
     );
   });
@@ -43,10 +43,8 @@ describe('channel query builders', () => {
   it('skips unstated seniority', () => {
     for (const channel of Object.values(Channel)) {
       const query = build(channel, { experience: Seniority.unstated });
-      for (const keyword of query.keywords) {
-        expect(keyword.startsWith(' ')).toBe(false);
-        expect(keyword).not.toContain('unstated');
-      }
+      expect(query.keyword.startsWith(' ')).toBe(false);
+      expect(query.keyword).not.toContain('unstated');
     }
     expect(
       build(Channel.LINKEDIN_JOB_BOARD, { experience: Seniority.unstated })
@@ -59,9 +57,7 @@ describe('channel query builders', () => {
       position: Position.tech_lead,
       experience: Seniority.lead,
     });
-    expect(query.keywords.some((k) => k.startsWith('lead tech lead'))).toBe(
-      false,
-    );
+    expect(query.keyword.startsWith('lead tech lead')).toBe(false);
   });
 
   it('omits the work type and filter remote for unstated arrangement', () => {

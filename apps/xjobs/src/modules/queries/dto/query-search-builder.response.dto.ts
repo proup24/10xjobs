@@ -13,7 +13,10 @@ export class QuerySearchBuilderResponseDto implements QuerySearchBuilderRow {
   id!: string;
 
   @ApiProperty({ format: 'uuid' })
-  workspaceId!: string;
+  userId!: string;
+
+  @ApiProperty({ format: 'uuid' })
+  profileId!: string;
 
   @ApiProperty({ enum: Channel, enumName: 'Channel' })
   channel!: Channel;
@@ -36,8 +39,8 @@ export class QuerySearchBuilderResponseDto implements QuerySearchBuilderRow {
   @ApiProperty({ enum: Arrangement, enumName: 'Arrangement' })
   type!: Arrangement;
 
-  @ApiProperty({ type: [String] })
-  keywords!: string[];
+  @ApiProperty({ type: String })
+  keyword!: string;
 
   @ApiProperty({ type: 'object', additionalProperties: true })
   params!: QuerySearchBuilderRow['params'];

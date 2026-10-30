@@ -7,7 +7,6 @@ type Row<M> = {
 };
 
 /** Rows as a default fetch returns them: every scalar, no relations. */
-export type WorkspaceRow = Row<Models.public_Workspace>;
 export type UserRow = Row<Models.public_User>;
 export type ContactRow = Row<Models.public_Contact>;
 export type ProfileRow = Row<Models.public_Profile>;

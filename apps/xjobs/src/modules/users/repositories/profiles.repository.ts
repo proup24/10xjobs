@@ -45,10 +45,9 @@ export class PrismaProfilesRepository extends ProfilesRepository {
     userId: string,
   ): Promise<ProfileWithSkills | null> {
     const orm = this.database.db.orm.public;
-    const profile = await orm.Profile.where({ workspaceId, userId }).first();
+    const profile = await orm.Profile.where({ userId }).first();
     if (!profile) return null;
     const techStack = await orm.ProfileSkill.where({
-      workspaceId,
       profileId: profile.id,
     }).all();
     return { ...profile, techStack };
@@ -62,13 +61,12 @@ export class PrismaProfilesRepository extends ProfilesRepository {
   ): Promise<ProfileWithSkills> {
     return this.database.db.transaction(async (tx) => {
       const orm = tx.orm.public;
-      const existing = await orm.Profile.where({ workspaceId, userId }).first();
+      const existing = await orm.Profile.where({ userId }).first();
       const profile = existing
-        ? await orm.Profile.where({ workspaceId, id: existing.id }).update(data)
-        : await orm.Profile.create({ ...data, workspaceId, userId });
+        ? await orm.Profile.where({ id: existing.id }).update(data)
+        : await orm.Profile.create({ ...data, userId });
       if (!profile) throw new Error(`Profile for user ${userId} vanished`);
       await orm.ProfileSkill.where({
-        workspaceId,
         profileId: profile.id,
       }).deleteAll();
       const techStack: ProfileSkillRow[] = [];
@@ -76,7 +74,6 @@ export class PrismaProfilesRepository extends ProfilesRepository {
         techStack.push(
           await orm.ProfileSkill.create({
             ...skill,
-            workspaceId,
             profileId: profile.id,
           }),
         );
@@ -93,12 +90,10 @@ export class PrismaProfilesRepository extends ProfilesRepository {
   ): Promise<ProfileWithSkills> {
     const orm = this.database.db.orm.public;
     const profile = await orm.Profile.where({
-      workspaceId,
       id: profileId,
     }).update({ state, publishedAt });
     if (!profile) throw new Error(`Profile ${profileId} vanished`);
     const techStack = await orm.ProfileSkill.where({
-      workspaceId,
       profileId,
     }).all();
     return { ...profile, techStack };
@@ -110,7 +105,6 @@ export class PrismaProfilesRepository extends ProfilesRepository {
     meta: ResumeMeta | null,
   ): Promise<void> {
     await this.database.db.orm.public.Profile.where({
-      workspaceId,
       id: profileId,
     }).update({
       resumeKey: meta?.key ?? null,

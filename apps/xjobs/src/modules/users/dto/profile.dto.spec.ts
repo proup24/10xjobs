@@ -19,7 +19,7 @@ const validProfile = {
   seniority: 'senior',
   noticePeriodDays: 30,
   techStack: [
-    { technology: 'nodejs', domain: 'backend', mastery: 8, preference: 9 },
+    { technology: 'nodejs', domain: 'backend', mastery: 8 },
   ],
 };
 
@@ -94,13 +94,11 @@ describe('UpsertProfileDto', () => {
             technology: 'typescript',
             domain: 'backend',
             mastery: 8,
-            preference: 8,
           },
           {
             technology: 'typescript',
             domain: 'frontend',
             mastery: 6,
-            preference: 5,
           },
         ],
       }),

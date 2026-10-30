@@ -1,4 +1,4 @@
-import type { QuerySearchService } from 'src/modules/query-search';
+import type { QuerySearchService } from 'src/modules/queries';
 import { createHash } from 'node:crypto';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import {

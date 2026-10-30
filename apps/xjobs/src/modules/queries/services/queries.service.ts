@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Arrangement, Channel, Position, Region, Technology } from 'src/common/enums';
 import { isUniqueViolation, type QuerySearchBuilderRow } from 'src/database';
-import { WorkspacesService } from 'src/modules/workspaces';
 import { toRecipe } from '../builders';
 import { technologySets } from '../sets/technology';
 import { QuerySearchRepository } from '../repositories/queries.repository';
@@ -15,7 +14,6 @@ import type {
 export class QuerySearchService {
   constructor(
     private readonly builders: QuerySearchRepository,
-    private readonly workspaces: WorkspacesService,
   ) {}
 
   /** Expands a profile into one recipe per `(channel × position × region × arrangement × technology-set)` combination. */
@@ -91,12 +89,14 @@ export class QuerySearchService {
 
   /** Stores the recipes the workspace does not have yet; existing ones are left untouched. */
   async generate(
-    workspaceId: string,
+    userId: string,
+    profileId: string,
     input: QuerySearchProfileInput,
   ): Promise<{ created: number; existing: number }> {
     const recipes = this.expand(input);
     const stored = await this.builders.findHashes(
-      workspaceId,
+      userId,
+      profileId,
       recipes.map((recipe) => recipe.hash),
     );
     let created = 0;
@@ -104,7 +104,7 @@ export class QuerySearchService {
     for (const recipe of recipes) {
       if (stored.has(recipe.hash)) continue;
       try {
-        await this.builders.create(workspaceId, recipe);
+        await this.builders.create(userId, profileId, recipe);
         created += 1;
       } catch (error) {
         // A concurrent generate stored it between the lookup and the insert.
@@ -116,10 +116,10 @@ export class QuerySearchService {
   }
 
   async list(
-    workspaceId: string,
+    userId: string,
+    profileId: string,
     channel?: Channel,
   ): Promise<QuerySearchBuilderRow[]> {
-    await this.workspaces.getOrThrow(workspaceId);
-    return this.builders.list(workspaceId, channel);
+    return this.builders.list(userId, profileId, channel);
   }
 }

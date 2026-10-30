@@ -10,6 +10,5 @@ export type {
   ProfileSkillRow,
   QuerySearchBuilderRow,
   UserRow,
-  WorkspaceRow,
 } from './models';
 export { toStoredAddress } from './models';

@@ -11,7 +11,6 @@ import { ContactsController } from 'src/modules/users/controllers/contacts.contr
 import { ProfilesController } from 'src/modules/users/controllers/profiles.controller';
 import { ResumeController } from 'src/modules/users/controllers/resume.controller';
 import { UsersController } from 'src/modules/users/controllers/users.controller';
-import { WorkspacesController } from 'src/modules/workspaces/controllers/workspaces.controller';
 
 type Schema = {
   $ref?: string;
@@ -33,7 +32,6 @@ async function buildDocument(): Promise<OpenAPIObject> {
   const moduleRef = await Test.createTestingModule({
     controllers: [
       AppController,
-      WorkspacesController,
       UsersController,
       ContactsController,
       ProfilesController,

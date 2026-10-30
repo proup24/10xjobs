@@ -10,10 +10,8 @@ import {
   Technology,
 } from 'src/common/enums';
 import { ProfilesService, toProfileView } from './profiles.service';
-import { QuerySearchService } from 'src/modules/query-search';
+import { QuerySearchService } from 'src/modules/queries';
 import { FakeQuerySearchRepository } from 'src/modules/queries/testing/fakes';
-import { WorkspacesService } from 'src/modules/workspaces';
-import { FakeWorkspacesRepository } from 'src/modules/workspaces/testing/fakes';
 import { FakeProfilesRepository, FakeUsersRepository } from '../testing/fakes';
 import { UsersService } from './users.service';
 import type { ProfileInput, SkillInput } from '../types';
@@ -37,13 +35,11 @@ const profileInput: ProfileInput = {
 const skill = (
   technology: SkillInput['technology'],
   mastery: number,
-  preference: number,
   importance = 5,
 ): SkillInput => ({
   technology,
   domain: SkillDomain.backend,
   mastery,
-  preference,
   importance,
 });
 
@@ -60,10 +56,7 @@ describe('ProfilesService', () => {
     service = new ProfilesService(
       users,
       profiles,
-      new QuerySearchService(
-        querySearches,
-        new WorkspacesService(new FakeWorkspacesRepository()),
-      ),
+      new QuerySearchService(querySearches),
     );
     userId = (await users.create('ws', { name: 'A', email: 'a@x.com' })).id;
   });
@@ -71,7 +64,7 @@ describe('ProfilesService', () => {
   it('creates a profile for a user without one', async () => {
     const view = await service.upsert('ws', userId, {
       ...profileInput,
-      techStack: [skill(Technology.nodejs, 8, 9)],
+      techStack: [skill(Technology.nodejs, 8)],
     });
     expect(view).toMatchObject({ userId, seniority: 'senior' });
     expect(view.techStack).toEqual([
@@ -79,7 +72,6 @@ describe('ProfilesService', () => {
         technology: 'nodejs',
         domain: 'backend',
         mastery: 8,
-        preference: 9,
         importance: 5,
       },
     ]);
@@ -88,11 +80,11 @@ describe('ProfilesService', () => {
   it('replaces the whole tech stack and keeps the profile id', async () => {
     const first = await service.upsert('ws', userId, {
       ...profileInput,
-      techStack: [skill(Technology.nodejs, 8, 9)],
+      techStack: [skill(Technology.nodejs, 8)],
     });
     const second = await service.upsert('ws', userId, {
       ...profileInput,
-      techStack: [skill(Technology.go, 5, 7), skill(Technology.rust, 3, 8)],
+      techStack: [skill(Technology.go, 5), skill(Technology.rust, 3)],
     });
     expect(second.id).toBe(first.id);
     expect(second.techStack.map((s) => s.technology)).toEqual(['rust', 'go']);
@@ -102,7 +94,6 @@ describe('ProfilesService', () => {
     const { importance: _omitted, ...withoutImportance } = skill(
       Technology.go,
       5,
-      7,
     );
     const view = await service.upsert('ws', userId, {
       ...profileInput,
@@ -111,13 +102,10 @@ describe('ProfilesService', () => {
     expect(view.techStack[0].importance).toBe(5);
   });
 
-  it('sorts the stack by importance before preference', async () => {
+  it('sorts the stack by importance then mastery', async () => {
     const view = await service.upsert('ws', userId, {
       ...profileInput,
-      techStack: [
-        skill(Technology.rust, 5, 9, 2),
-        skill(Technology.go, 5, 1, 9),
-      ],
+      techStack: [skill(Technology.rust, 5, 2), skill(Technology.go, 5, 9)],
     });
     expect(view.techStack.map((s) => s.technology)).toEqual(['go', 'rust']);
   });
@@ -125,10 +113,7 @@ describe('ProfilesService', () => {
   it('keeps an explicit importance of 0 and sorts it last', async () => {
     const view = await service.upsert('ws', userId, {
       ...profileInput,
-      techStack: [
-        skill(Technology.rust, 9, 9, 0),
-        skill(Technology.go, 1, 1, 1),
-      ],
+      techStack: [skill(Technology.rust, 9, 0), skill(Technology.go, 1, 1)],
     });
     expect(view.techStack.map((s) => [s.technology, s.importance])).toEqual([
       ['go', 1],
@@ -148,13 +133,13 @@ describe('ProfilesService', () => {
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
-  it('views hide the storage key and sort by preference then mastery', async () => {
+  it('views hide the storage key and sort by mastery', async () => {
     await service.upsert('ws', userId, {
       ...profileInput,
       techStack: [
-        skill(Technology.go, 9, 5),
-        skill(Technology.rust, 4, 8),
-        skill(Technology.java, 7, 8),
+        skill(Technology.go, 9),
+        skill(Technology.rust, 4),
+        skill(Technology.java, 7),
       ],
     });
     const stored = await profiles.findByUser('ws', userId);
@@ -182,7 +167,7 @@ describe('ProfilesService', () => {
   });
 
   describe('publishing', () => {
-    const stack = [skill(Technology.nodejs, 8, 9), skill(Technology.go, 5, 7)];
+    const stack = [skill(Technology.nodejs, 8), skill(Technology.go, 5)];
 
     it('creates profiles as unpublished drafts', async () => {
       const view = await service.upsert('ws', userId, {
@@ -235,7 +220,7 @@ describe('ProfilesService', () => {
     it('publishes a profile whose skills all have importance 0 without technologies', async () => {
       await service.upsert('ws', userId, {
         ...profileInput,
-        techStack: [skill(Technology.go, 5, 7, 0)],
+        techStack: [skill(Technology.go, 5, 0)],
       });
       const view = await service.publish('ws', userId);
       expect(view.state).toBe('published');
