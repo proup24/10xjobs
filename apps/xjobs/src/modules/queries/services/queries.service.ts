@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Arrangement, Channel } from 'src/common/enums';
+import { Arrangement, Channel, Position, Region, Technology } from 'src/common/enums';
 import { isUniqueViolation, type QuerySearchBuilderRow } from 'src/database';
 import { WorkspacesService } from 'src/modules/workspaces';
 import { toRecipe } from '../builders';
@@ -52,9 +52,9 @@ export class QuerySearchService {
       /** The channel being expanded (e.g. LinkedIn, Greenhouse). */
       channel: Channel;
       /** The target job position (e.g. "software-engineer"). */
-      position: string;
+      position: Position;
       /** The broad location region (e.g. "Europe", "Remote – US"). */
-      locationRegion: string;
+      locationRegion: Region;
       /** The work arrangement type; determines whether city/country are applied. */
       type: Arrangement;
       /** Normalised (trimmed + uppercased) country code from the profile. */
@@ -65,7 +65,7 @@ export class QuerySearchService {
       input: QuerySearchProfileInput;
     },
     /** Each element is one technology set to produce a recipe for. */
-    sets: string[][],
+    sets: Technology[][],
     /** Accumulator — keyed by hash to prevent duplicates. */
     recipes: Map<string, QuerySearchRecipe>,
   ): void {
