@@ -6,9 +6,10 @@
 
 ## Deployment model
 
-- **Now:** self-hosted. Each engineer runs their own copy with their own keys (Anthropic, Apify, Supabase, later Gmail).
-- **Later:** a shared, hosted, multi-tenant deployment where each user has a workspace.
-- Every domain record belongs to a workspace from day one, so moving to multi-tenant is a deployment change, not a data-model rewrite.
+- **Hosted from the start:** one shared, multi-tenant deployment where each user works in their own workspace.
+- Every domain record belongs to a workspace, and workspaces are isolated from each other.
+- The code stays open source, so any engineer can also run their own copy.
+- How API keys (Anthropic, Apify, later Gmail) are provided per workspace is decided in the Phase 1 spec.
 
 ## Anti-goals
 
@@ -28,24 +29,26 @@ Each phase gets its own brainstorm, then spec, then plan, then PRs. The exit cri
 
 The shared Claude Code harness and the project docs. No product code.
 
-### Phase 1: Find
+### Phase 1: Workspaces and preferences
 
-Collect jobs from LinkedIn (through Apify), Ashby and Greenhouse. Normalize and deduplicate them, extract each job's facts, and qualify each job against the user's preferences as qualified or rejected with a reason. Next.js, Supabase and the Anthropic API first enter the repo here.
+Authentication, workspaces, and a multi-tenant data model with workspace isolation, deployed as the shared hosted app. Each user sets the preferences and customization the later phases act on, such as the jobs they want and their criteria for qualifying them. Next.js and Supabase first enter the repo here.
 
-**Exit criteria:** collection runs on a schedule without manual steps, duplicates across runs and sources are merged, and the Next.js web app shows new qualified jobs since the user last looked, from all three sources. Rejected jobs and their reasons can be viewed.
+**Exit criteria:** a user can sign up on the hosted app, gets a workspace, and can set and edit their preferences. One workspace can never read or change another workspace's data, and tests prove it.
 
-### Phase 2: Apply
+### Phase 2: Find
+
+Collect jobs from LinkedIn (through Apify), Ashby and Greenhouse into each workspace. Normalize and deduplicate them, extract each job's facts, and qualify each job against the workspace's preferences as qualified or rejected with a reason. The Anthropic API first enters the repo here.
+
+**Exit criteria:** collection runs on a schedule without manual steps, duplicates across runs and sources are merged, and the web app shows new qualified jobs since the user last looked, from all three sources. Rejected jobs and their reasons can be viewed.
+
+### Phase 3: Apply
 
 - Tailor a personalized one-page resume per qualified job, and render it.
 - Fill application forms from a personal fact bank.
 - Email hiring-post authors from the user's Gmail.
 
-How much a human reviews before anything is sent is decided in the Phase 2 spec. Default going in: nothing goes out without the user approving it.
+How much a human reviews before anything is sent is decided in the Phase 3 spec. Default going in: nothing goes out without the user approving it.
 
-### Phase 3: Track and report
+### Phase 4: Track and report
 
 Report what's new and how the pipeline is performing: volume and pass rates per stage and per source, plus application outcomes.
-
-### Phase 4: Hosted multi-tenant
-
-Workspaces, authentication and a shared deployment. The ordering of this phase is tentative and not decided.
