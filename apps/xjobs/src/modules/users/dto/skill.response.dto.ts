@@ -14,13 +14,6 @@ export class SkillResponseDto {
   @ApiProperty({
     minimum: 0,
     maximum: 10,
-    description: 'How much you want to work with it',
-  })
-  preference!: number;
-
-  @ApiProperty({
-    minimum: 0,
-    maximum: 10,
     description: 'How much this technology should drive searches; 0 never',
   })
   importance!: number;

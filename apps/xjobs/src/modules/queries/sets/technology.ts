@@ -3,10 +3,9 @@ import type { RankedSkill } from '../types';
 
 export const QUERY_SEARCH_TOP_TECHNOLOGIES = 3;
 
-/** Importance desc, preference desc, mastery desc, then technology name asc. */
+/** Importance desc, mastery desc, then technology name asc. */
 const compareSkills = (a: RankedSkill, b: RankedSkill): number =>
   b.importance - a.importance ||
-  b.preference - a.preference ||
   b.mastery - a.mastery ||
   a.technology.localeCompare(b.technology);
 

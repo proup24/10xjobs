@@ -13,20 +13,19 @@ export interface ChannelQueryBuilder {
   build(combination: QuerySearchCombination): ChannelQuery;
 }
 
-/** One phrase per title phrase: `[seniority, title, ...technologies]`, nulls skipped. */
-export function keywordPhrases(combination: QuerySearchCombination): string[] {
+/** One canonical phrase: `[seniority, title, ...technologies]`, nulls skipped. */
+export function keywordPhrase(combination: QuerySearchCombination): string {
   const seniorityWord = SENIORITY_WORDS[combination.experience];
   const technologyTerms = combination.technologies.map(
     (technology) => TECHNOLOGY_TERMS[technology],
   );
-  return POSITION_TITLES[combination.position].map((title) => {
-    // "lead" + "tech lead" would read "lead tech lead", so the title wins.
-    const repeatsTitle =
-      seniorityWord !== null && title.split(' ').includes(seniorityWord);
-    return [repeatsTitle ? null : seniorityWord, title, ...technologyTerms]
-      .filter((part): part is string => part !== null)
-      .join(' ');
-  });
+  const title = POSITION_TITLES[combination.position][0]!;
+  // "lead" + "tech lead" would read "lead tech lead", so the title wins.
+  const repeatsTitle =
+    seniorityWord !== null && title.split(' ').includes(seniorityWord);
+  return [repeatsTitle ? null : seniorityWord, title, ...technologyTerms]
+    .filter((part): part is string => part !== null)
+    .join(' ');
 }
 
 export function arrangementWord(
@@ -61,7 +60,7 @@ export function jobBoardFilterQuery(
       ? null
       : combination.type === Arrangement.remote;
   return {
-    keywords: keywordPhrases(combination),
+    keyword: keywordPhrase(combination),
     params: { locationTerms, remote },
   };
 }

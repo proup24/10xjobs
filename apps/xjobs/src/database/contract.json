@@ -23,10 +23,6 @@
     "users": {
       "model": "User",
       "namespace": "public"
-    },
-    "workspaces": {
-      "model": "Workspace",
-      "namespace": "public"
     }
   },
   "domain": {
@@ -711,13 +707,6 @@
                   "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
-              },
-              "workspaceId": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/uuid@1",
-                  "kind": "scalar"
-                }
               }
             },
             "relations": {
@@ -734,22 +723,6 @@
                 },
                 "to": {
                   "model": "User",
-                  "namespace": "public"
-                }
-              },
-              "workspace": {
-                "cardinality": "N:1",
-                "nullable": false,
-                "on": {
-                  "localFields": [
-                    "workspaceId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
-                },
-                "to": {
-                  "model": "Workspace",
                   "namespace": "public"
                 }
               }
@@ -779,9 +752,6 @@
                 },
                 "value": {
                   "column": "value"
-                },
-                "workspaceId": {
-                  "column": "workspaceId"
                 }
               },
               "namespaceId": "public",
@@ -1020,13 +990,6 @@
                   "kind": "scalar"
                 }
               },
-              "workspaceId": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/uuid@1",
-                  "kind": "scalar"
-                }
-              },
               "yearsOfExperience": {
                 "nullable": false,
                 "type": {
@@ -1049,22 +1012,6 @@
                 },
                 "to": {
                   "model": "User",
-                  "namespace": "public"
-                }
-              },
-              "workspace": {
-                "cardinality": "N:1",
-                "nullable": false,
-                "on": {
-                  "localFields": [
-                    "workspaceId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
-                },
-                "to": {
-                  "model": "Workspace",
                   "namespace": "public"
                 }
               }
@@ -1140,9 +1087,6 @@
                 "userId": {
                   "column": "userId"
                 },
-                "workspaceId": {
-                  "column": "workspaceId"
-                },
                 "yearsOfExperience": {
                   "column": "yearsOfExperience"
                 }
@@ -1197,13 +1141,6 @@
                   "kind": "scalar"
                 }
               },
-              "preference": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/int4@1",
-                  "kind": "scalar"
-                }
-              },
               "profileId": {
                 "nullable": false,
                 "type": {
@@ -1233,13 +1170,6 @@
                     "precision": 3
                   }
                 }
-              },
-              "workspaceId": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/uuid@1",
-                  "kind": "scalar"
-                }
               }
             },
             "relations": {
@@ -1256,22 +1186,6 @@
                 },
                 "to": {
                   "model": "Profile",
-                  "namespace": "public"
-                }
-              },
-              "workspace": {
-                "cardinality": "N:1",
-                "nullable": false,
-                "on": {
-                  "localFields": [
-                    "workspaceId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
-                },
-                "to": {
-                  "model": "Workspace",
                   "namespace": "public"
                 }
               }
@@ -1293,9 +1207,6 @@
                 "mastery": {
                   "column": "mastery"
                 },
-                "preference": {
-                  "column": "preference"
-                },
                 "profileId": {
                   "column": "profileId"
                 },
@@ -1304,9 +1215,6 @@
                 },
                 "updatedAt": {
                   "column": "updatedAt"
-                },
-                "workspaceId": {
-                  "column": "workspaceId"
                 }
               },
               "namespaceId": "public",
@@ -1379,10 +1287,7 @@
                   "kind": "scalar"
                 }
               },
-              "keywords": {
-                "many": {
-                  "elementNullable": false
-                },
+              "keyword": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/text@1",
@@ -1406,6 +1311,13 @@
                 "nullable": false,
                 "type": {
                   "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
+              },
+              "profileId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
                   "kind": "scalar"
                 }
               },
@@ -1448,35 +1360,51 @@
                   }
                 }
               },
+              "userId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
               "version": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/int4@1",
                   "kind": "scalar"
                 }
-              },
-              "workspaceId": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/uuid@1",
-                  "kind": "scalar"
-                }
               }
             },
             "relations": {
-              "workspace": {
+              "profile": {
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
                   "localFields": [
-                    "workspaceId"
+                    "profileId"
                   ],
                   "targetFields": [
                     "id"
                   ]
                 },
                 "to": {
-                  "model": "Workspace",
+                  "model": "Profile",
+                  "namespace": "public"
+                }
+              },
+              "user": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
                   "namespace": "public"
                 }
               }
@@ -1504,14 +1432,17 @@
                 "id": {
                   "column": "id"
                 },
-                "keywords": {
-                  "column": "keywords"
+                "keyword": {
+                  "column": "keyword"
                 },
                 "locationRegion": {
                   "column": "locationRegion"
                 },
                 "params": {
                   "column": "params"
+                },
+                "profileId": {
+                  "column": "profileId"
                 },
                 "technologies": {
                   "column": "technologies"
@@ -1522,11 +1453,11 @@
                 "updatedAt": {
                   "column": "updatedAt"
                 },
+                "userId": {
+                  "column": "userId"
+                },
                 "version": {
                   "column": "version"
-                },
-                "workspaceId": {
-                  "column": "workspaceId"
                 }
               },
               "namespaceId": "public",
@@ -1582,33 +1513,9 @@
                     "precision": 3
                   }
                 }
-              },
-              "workspaceId": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/uuid@1",
-                  "kind": "scalar"
-                }
               }
             },
-            "relations": {
-              "workspace": {
-                "cardinality": "N:1",
-                "nullable": false,
-                "on": {
-                  "localFields": [
-                    "workspaceId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
-                },
-                "to": {
-                  "model": "Workspace",
-                  "namespace": "public"
-                }
-              }
-            },
+            "relations": {},
             "storage": {
               "fields": {
                 "address": {
@@ -1628,96 +1535,10 @@
                 },
                 "updatedAt": {
                   "column": "updatedAt"
-                },
-                "workspaceId": {
-                  "column": "workspaceId"
                 }
               },
               "namespaceId": "public",
               "table": "users"
-            }
-          },
-          "Workspace": {
-            "fields": {
-              "createdAt": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/timestamptz-date@1",
-                  "kind": "scalar",
-                  "typeParams": {
-                    "precision": 3
-                  }
-                }
-              },
-              "id": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/uuid@1",
-                  "kind": "scalar"
-                }
-              },
-              "name": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "slug": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "updatedAt": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/timestamptz-date@1",
-                  "kind": "scalar",
-                  "typeParams": {
-                    "precision": 3
-                  }
-                }
-              }
-            },
-            "relations": {
-              "querySearchBuilders": {
-                "cardinality": "1:N",
-                "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "workspaceId"
-                  ]
-                },
-                "to": {
-                  "model": "QuerySearchBuilder",
-                  "namespace": "public"
-                }
-              }
-            },
-            "storage": {
-              "fields": {
-                "createdAt": {
-                  "column": "createdAt"
-                },
-                "id": {
-                  "column": "id"
-                },
-                "name": {
-                  "column": "name"
-                },
-                "slug": {
-                  "column": "slug"
-                },
-                "updatedAt": {
-                  "column": "updatedAt"
-                }
-              },
-              "namespaceId": "public",
-              "table": "workspaces"
             }
           }
         },
@@ -1849,34 +1670,9 @@
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
                   "nullable": false
-                },
-                "workspaceId": {
-                  "codecId": "pg/uuid@1",
-                  "dataType": "pg/uuid",
-                  "nullable": false
                 }
               },
               "foreignKeys": [
-                {
-                  "index": {
-                    "name": "contacts_workspaceId_idx_ba65f874"
-                  },
-                  "onDelete": "cascade",
-                  "source": {
-                    "columns": [
-                      "workspaceId"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "contacts"
-                  },
-                  "target": {
-                    "columns": [
-                      "id"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "workspaces"
-                  }
-                },
                 {
                   "index": {
                     "name": "contacts_userId_idx_a489d58a"
@@ -1905,14 +1701,6 @@
                   ],
                   "name": "contacts_userId_idx_a489d58a",
                   "prefix": "contacts_userId_idx",
-                  "unique": false
-                },
-                {
-                  "columns": [
-                    "workspaceId"
-                  ],
-                  "name": "contacts_workspaceId_idx_ba65f874",
-                  "prefix": "contacts_workspaceId_idx",
                   "unique": false
                 }
               ],
@@ -1947,11 +1735,6 @@
                   "expression": "mastery BETWEEN 0 AND 10",
                   "name": "profile_skills_mastery_range_06062a09",
                   "prefix": "profile_skills_mastery_range"
-                },
-                {
-                  "expression": "preference BETWEEN 0 AND 10",
-                  "name": "profile_skills_preference_range_49782760",
-                  "prefix": "profile_skills_preference_range"
                 },
                 {
                   "expression": "\"technology\" IN ('javascript', 'typescript', 'python', 'java', 'kotlin', 'go', 'rust', 'csharp', 'cpp', 'php', 'ruby', 'scala', 'elixir', 'swift', 'dart', 'sql', 'bash', 'nodejs', 'nestjs', 'express', 'fastify', 'django', 'fastapi', 'flask', 'spring', 'dotnet', 'laravel', 'rails', 'graphql', 'grpc', 'react', 'nextjs', 'vue', 'nuxt', 'angular', 'svelte', 'tailwindcss', 'react_native', 'flutter', 'postgresql', 'mysql', 'mongodb', 'redis', 'elasticsearch', 'kafka', 'rabbitmq', 'spark', 'airflow', 'dbt', 'snowflake', 'aws', 'gcp', 'azure', 'docker', 'kubernetes', 'terraform', 'ansible', 'github_actions', 'gitlab_ci', 'linux', 'nginx', 'prometheus', 'grafana', 'pytorch', 'tensorflow', 'langchain')",
@@ -2002,11 +1785,6 @@
                   "dataType": "pg/int4",
                   "nullable": false
                 },
-                "preference": {
-                  "codecId": "pg/int4@1",
-                  "dataType": "pg/int4",
-                  "nullable": false
-                },
                 "profileId": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
@@ -2034,34 +1812,9 @@
                   "typeParams": {
                     "precision": 3
                   }
-                },
-                "workspaceId": {
-                  "codecId": "pg/uuid@1",
-                  "dataType": "pg/uuid",
-                  "nullable": false
                 }
               },
               "foreignKeys": [
-                {
-                  "index": {
-                    "name": "profile_skills_workspaceId_idx_ba65f874"
-                  },
-                  "onDelete": "cascade",
-                  "source": {
-                    "columns": [
-                      "workspaceId"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "profile_skills"
-                  },
-                  "target": {
-                    "columns": [
-                      "id"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "workspaces"
-                  }
-                },
                 {
                   "index": {
                     "name": "profile_skills_profileId_idx_d9cdfcaf"
@@ -2090,14 +1843,6 @@
                   ],
                   "name": "profile_skills_profileId_idx_d9cdfcaf",
                   "prefix": "profile_skills_profileId_idx",
-                  "unique": false
-                },
-                {
-                  "columns": [
-                    "workspaceId"
-                  ],
-                  "name": "profile_skills_workspaceId_idx_ba65f874",
-                  "prefix": "profile_skills_workspaceId_idx",
                   "unique": false
                 }
               ],
@@ -2411,11 +2156,6 @@
                   "dataType": "pg/uuid",
                   "nullable": false
                 },
-                "workspaceId": {
-                  "codecId": "pg/uuid@1",
-                  "dataType": "pg/uuid",
-                  "nullable": false
-                },
                 "yearsOfExperience": {
                   "codecId": "pg/int4@1",
                   "dataType": "pg/int4",
@@ -2425,29 +2165,7 @@
               "foreignKeys": [
                 {
                   "index": {
-                    "name": "profiles_workspaceId_idx_ba65f874"
-                  },
-                  "onDelete": "cascade",
-                  "source": {
-                    "columns": [
-                      "workspaceId"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "profiles"
-                  },
-                  "target": {
-                    "columns": [
-                      "id"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "workspaces"
-                  }
-                },
-                {
-                  "index": {
-                    "unique": [
-                      "userId"
-                    ]
+                    "name": "profiles_userId_idx_a489d58a"
                   },
                   "onDelete": "cascade",
                   "source": {
@@ -2469,10 +2187,10 @@
               "indexes": [
                 {
                   "columns": [
-                    "workspaceId"
+                    "userId"
                   ],
-                  "name": "profiles_workspaceId_idx_ba65f874",
-                  "prefix": "profiles_workspaceId_idx",
+                  "name": "profiles_userId_idx_a489d58a",
+                  "prefix": "profiles_userId_idx",
                   "unique": false
                 }
               ],
@@ -2481,13 +2199,7 @@
                   "id"
                 ]
               },
-              "uniques": [
-                {
-                  "columns": [
-                    "userId"
-                  ]
-                }
-              ]
+              "uniques": []
             },
             "query_search_builder": {
               "checks": [
@@ -2500,11 +2212,6 @@
                   "expression": "\"experience\" IN ('junior', 'mid', 'senior', 'staff', 'lead', 'principal', 'unstated')",
                   "name": "query_search_builder_experience_check_da85d416",
                   "prefix": "query_search_builder_experience_check"
-                },
-                {
-                  "expression": "array_position(\"keywords\", NULL) IS NULL",
-                  "name": "query_search_builder_keywords_elem_not_null_f10c6f3f",
-                  "prefix": "query_search_builder_keywords_elem_not_null"
                 },
                 {
                   "expression": "\"locationRegion\" IN ('EMEA', 'MENA', 'NORTH_AFRICA', 'SUB_SAHARAN_AFRICA', 'MIDDLE_EAST', 'EUROPE', 'EU', 'UK', 'NORTH_AMERICA', 'LATAM', 'APAC', 'GLOBAL')",
@@ -2582,12 +2289,9 @@
                   "dataType": "pg/uuid",
                   "nullable": false
                 },
-                "keywords": {
+                "keyword": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
-                  "many": {
-                    "elementNullable": false
-                  },
                   "nullable": false
                 },
                 "locationRegion": {
@@ -2604,6 +2308,11 @@
                 "params": {
                   "codecId": "pg/jsonb@1",
                   "dataType": "pg/jsonb",
+                  "nullable": false
+                },
+                "profileId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
                   "nullable": false
                 },
                 "technologies": {
@@ -2643,26 +2352,26 @@
                     "precision": 3
                   }
                 },
+                "userId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
                 "version": {
                   "codecId": "pg/int4@1",
                   "dataType": "pg/int4",
-                  "nullable": false
-                },
-                "workspaceId": {
-                  "codecId": "pg/uuid@1",
-                  "dataType": "pg/uuid",
                   "nullable": false
                 }
               },
               "foreignKeys": [
                 {
                   "index": {
-                    "name": "query_search_builder_workspaceId_idx_ba65f874"
+                    "name": "query_search_builder_userId_idx_a489d58a"
                   },
                   "onDelete": "cascade",
                   "source": {
                     "columns": [
-                      "workspaceId"
+                      "userId"
                     ],
                     "namespaceId": "public",
                     "tableName": "query_search_builder"
@@ -2672,26 +2381,54 @@
                       "id"
                     ],
                     "namespaceId": "public",
-                    "tableName": "workspaces"
+                    "tableName": "users"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "query_search_builder_profileId_idx_d9cdfcaf"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "profileId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "query_search_builder"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "profiles"
                   }
                 }
               ],
               "indexes": [
                 {
                   "columns": [
-                    "workspaceId",
+                    "profileId",
                     "channel"
                   ],
-                  "name": "query_search_builder_workspaceId_channel_idx_97abd8cd",
-                  "prefix": "query_search_builder_workspaceId_channel_idx",
+                  "name": "query_search_builder_profileId_channel_idx_6dd870f6",
+                  "prefix": "query_search_builder_profileId_channel_idx",
                   "unique": false
                 },
                 {
                   "columns": [
-                    "workspaceId"
+                    "profileId"
                   ],
-                  "name": "query_search_builder_workspaceId_idx_ba65f874",
-                  "prefix": "query_search_builder_workspaceId_idx",
+                  "name": "query_search_builder_profileId_idx_d9cdfcaf",
+                  "prefix": "query_search_builder_profileId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "userId"
+                  ],
+                  "name": "query_search_builder_userId_idx_a489d58a",
+                  "prefix": "query_search_builder_userId_idx",
                   "unique": false
                 }
               ],
@@ -2703,7 +2440,7 @@
               "uniques": [
                 {
                   "columns": [
-                    "workspaceId",
+                    "profileId",
                     "hash"
                   ]
                 }
@@ -2754,106 +2491,6 @@
                   "typeParams": {
                     "precision": 3
                   }
-                },
-                "workspaceId": {
-                  "codecId": "pg/uuid@1",
-                  "dataType": "pg/uuid",
-                  "nullable": false
-                }
-              },
-              "foreignKeys": [
-                {
-                  "index": {
-                    "name": "users_workspaceId_idx_ba65f874"
-                  },
-                  "onDelete": "cascade",
-                  "source": {
-                    "columns": [
-                      "workspaceId"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "users"
-                  },
-                  "target": {
-                    "columns": [
-                      "id"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "workspaces"
-                  }
-                }
-              ],
-              "indexes": [
-                {
-                  "columns": [
-                    "workspaceId"
-                  ],
-                  "name": "users_workspaceId_idx_ba65f874",
-                  "prefix": "users_workspaceId_idx",
-                  "unique": false
-                }
-              ],
-              "primaryKey": {
-                "columns": [
-                  "id"
-                ]
-              },
-              "uniques": [
-                {
-                  "columns": [
-                    "workspaceId",
-                    "email"
-                  ]
-                }
-              ]
-            },
-            "workspaces": {
-              "checks": [
-                {
-                  "expression": "slug ~ '^[a-z0-9-]{2,64}$'",
-                  "name": "workspaces_slug_format_570fc1f0",
-                  "prefix": "workspaces_slug_format"
-                }
-              ],
-              "columns": {
-                "createdAt": {
-                  "codecId": "pg/timestamptz-date@1",
-                  "dataType": "pg/timestamptz",
-                  "default": {
-                    "expression": "now()",
-                    "kind": "function"
-                  },
-                  "nullable": false,
-                  "typeParams": {
-                    "precision": 3
-                  }
-                },
-                "id": {
-                  "codecId": "pg/uuid@1",
-                  "dataType": "pg/uuid",
-                  "nullable": false
-                },
-                "name": {
-                  "codecId": "pg/text@1",
-                  "dataType": "pg/text",
-                  "nullable": false
-                },
-                "slug": {
-                  "codecId": "pg/text@1",
-                  "dataType": "pg/text",
-                  "nullable": false
-                },
-                "updatedAt": {
-                  "codecId": "pg/timestamptz-date@1",
-                  "dataType": "pg/timestamptz",
-                  "default": {
-                    "expression": "now()",
-                    "kind": "function"
-                  },
-                  "nullable": false,
-                  "typeParams": {
-                    "precision": 3
-                  }
                 }
               },
               "foreignKeys": [],
@@ -2866,7 +2503,7 @@
               "uniques": [
                 {
                   "columns": [
-                    "slug"
+                    "email"
                   ]
                 }
               ]
@@ -3072,10 +2709,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "1866040fed2777d5aee2b8b7dfaac82e7919cc83c40a1ce535f10215c0e9098e"
+    "storageHash": "e77655c24b187fa1c73badde5327bccea57ba3fabd4e6283986afd4ef4cc422e"
   },
   "execution": {
-    "executionHash": "c41929e8313bf482cd91d305ca35a7dc0fc861efc2babdd840b4912d388d9c64",
+    "executionHash": "f6ebf506e6d5979e58936cab55fd00bf6c0de01c3ef97fc82857e53b6b66313b",
     "mutations": {
       "defaults": [
         {
@@ -3204,32 +2841,6 @@
           },
           "ref": {
             "entry": "users",
-            "field": "updatedAt",
-            "namespace": "public"
-          }
-        },
-        {
-          "onCreate": {
-            "id": "uuidv7",
-            "kind": "generator"
-          },
-          "ref": {
-            "entry": "workspaces",
-            "field": "id",
-            "namespace": "public"
-          }
-        },
-        {
-          "onCreate": {
-            "id": "timestampNow",
-            "kind": "generator"
-          },
-          "onUpdate": {
-            "id": "timestampNow",
-            "kind": "generator"
-          },
-          "ref": {
-            "entry": "workspaces",
             "field": "updatedAt",
             "namespace": "public"
           }

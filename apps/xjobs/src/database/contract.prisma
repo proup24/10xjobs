@@ -205,38 +205,21 @@ type Address {
   country    String
 }
 
-// Every domain record belongs to a workspace, even in a single-user install.
-model Workspace {
-  id                  Uuid                 @id @onCreate(uuid(7))
-  name                String
-  slug                String               @unique
-  querySearchBuilders QuerySearchBuilder[]
-  +Timestamps
-
-  @@check(expression: sql`slug ~ '^[a-z0-9-]{2,64}$'`, name: "workspaces_slug_format")
-  @@map("workspaces")
-}
-
 model User {
   id          Uuid      @id @onCreate(uuid(7))
-  workspaceId Uuid
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  // Stored lowercased; unique within the workspace.
+  // Stored lowercased.
   email       String
   name        String
   address     Address?
   +Timestamps
 
-  @@unique([workspaceId, email])
-  @@index([workspaceId])
+  @@unique([email])
   @@map("users")
 }
 
 // The user's own contact channels, the ones that go on applications.
 model Contact {
   id          Uuid        @id @onCreate(uuid(7))
-  workspaceId Uuid
-  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   userId      Uuid
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   kind        ContactKind
@@ -246,18 +229,15 @@ model Contact {
   +Timestamps
 
   @@unique([userId, kind, value])
-  @@index([workspaceId])
   @@index([userId])
   @@map("contacts")
 }
 
-// The job-seeker profile qualify compares jobs against. One per user.
+// A user may maintain multiple independent job-seeker profiles.
 // Timezone offsets are minutes from UTC.
 model Profile {
   id                Uuid          @id @onCreate(uuid(7))
-  workspaceId       Uuid
-  workspace         Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  userId            Uuid          @unique
+  userId            Uuid
   user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   positions         Position[]
   languages         Language[]
@@ -288,37 +268,34 @@ model Profile {
   @@check(expression: sql`cardinality("languages") > 0`, name: "profiles_languages_nonempty")
   @@check(expression: sql`cardinality("engagements") > 0`, name: "profiles_engagements_nonempty")
   @@check(expression: sql`cardinality("arrangements") > 0`, name: "profiles_arrangements_nonempty")
-  @@index([workspaceId])
+  @@index([userId])
   @@map("profiles")
 }
 
 // One row per technology and domain in a profile's tech stack.
 model ProfileSkill {
   id          Uuid        @id @onCreate(uuid(7))
-  workspaceId Uuid
-  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   profileId   Uuid
   profile     Profile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
   technology  Technology
   domain      SkillDomain
   mastery     Int
-  preference  Int
   importance  Int         @default(5)
   +Timestamps
 
   @@check(expression: sql`mastery BETWEEN 0 AND 10`, name: "profile_skills_mastery_range")
-  @@check(expression: sql`preference BETWEEN 0 AND 10`, name: "profile_skills_preference_range")
   @@check(expression: sql`importance BETWEEN 0 AND 10`, name: "profile_skills_importance_range")
   @@unique([profileId, technology, domain])
-  @@index([workspaceId])
   @@map("profile_skills")
 }
 
 // A shared, immutable search recipe for one channel. Deduplicated by hash.
 model QuerySearchBuilder {
   id             Uuid         @id @onCreate(uuid(7))
-  workspaceId    Uuid
-  workspace      Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId         Uuid
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profileId      Uuid
+  profile        Profile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
   channel        Channel
   locationRegion Region
   country        String?
@@ -326,13 +303,13 @@ model QuerySearchBuilder {
   experience     Seniority
   technologies   Technology[]
   type           Arrangement
-  keywords       String[]
+  keyword        String
   version        Int
   params         Jsonb
   hash           String
   +Timestamps
 
-  @@unique([workspaceId, hash])
-  @@index([workspaceId, channel])
+  @@unique([profileId, hash])
+  @@index([profileId, channel])
   @@map("query_search_builder")
 }

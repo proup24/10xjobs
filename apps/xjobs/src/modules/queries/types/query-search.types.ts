@@ -10,7 +10,6 @@ import type {
 export type RankedSkill = {
   technology: Technology;
   importance: number;
-  preference: number;
   mastery: number;
 };
 
@@ -36,7 +35,7 @@ export type QuerySearchCombination = {
 };
 
 export type ChannelQuery = {
-  keywords: string[];
+  keyword: string;
   params: Record<string, unknown>;
 };
 

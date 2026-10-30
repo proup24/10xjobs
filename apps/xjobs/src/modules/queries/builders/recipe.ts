@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { QuerySearchCombination, QuerySearchRecipe } from '../types';
 import { CHANNEL_QUERY_BUILDERS } from '../channels';
-import { sortKeys, compare } from '../utils';
+import { sortKeys } from '../utils';
 export const QUERY_SEARCH_RECIPE_VERSION = 1;
 
 /** Hex SHA-256 of the recipe fields in a fixed key order; `params` keys are sorted recursively. */
@@ -17,7 +17,7 @@ export function recipeHash(
     experience: recipe.experience,
     technologies: recipe.technologies,
     type: recipe.type,
-    keywords: recipe.keywords,
+    keyword: recipe.keyword,
     params: sortKeys(recipe.params),
   };
   return createHash('sha256').update(JSON.stringify(canonical)).digest('hex');
@@ -27,13 +27,10 @@ export function toRecipe(
   combination: QuerySearchCombination,
 ): QuerySearchRecipe {
   const query = CHANNEL_QUERY_BUILDERS[combination.channel].build(combination);
-  const keywords = [
-    ...new Set(query.keywords.map((keyword) => keyword.toLowerCase())),
-  ].sort(compare);
   const recipe = {
     ...combination,
     version: QUERY_SEARCH_RECIPE_VERSION,
-    keywords,
+    keyword: query.keyword.trim().toLowerCase(),
     params: query.params,
   };
   return { ...recipe, hash: recipeHash(recipe) };

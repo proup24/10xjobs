@@ -2,7 +2,7 @@ import { Channel } from 'src/common/enums';
 import type { ChannelQuery, QuerySearchCombination } from '../types';
 import {
   arrangementWord,
-  keywordPhrases,
+  keywordPhrase,
   locationText,
   type ChannelQueryBuilder,
 } from '../builders/channel.builder';
@@ -13,9 +13,9 @@ export class LinkedinPostsBuilder implements ChannelQueryBuilder {
 
   build(combination: QuerySearchCombination): ChannelQuery {
     const word = arrangementWord(combination);
-    const keywords = keywordPhrases(combination).map((phrase) =>
-      ['hiring', phrase, word].filter((part) => part !== null).join(' '),
-    );
-    return { keywords, params: { location: locationText(combination) } };
+    const keyword = ['hiring', keywordPhrase(combination), word]
+      .filter((part) => part !== null)
+      .join(' ');
+    return { keyword, params: { location: locationText(combination) } };
   }
 }

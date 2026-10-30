@@ -1,7 +1,7 @@
 import { Arrangement, Channel, Seniority } from 'src/common/enums';
 import type { ChannelQuery, QuerySearchCombination } from '../types';
 import {
-  keywordPhrases,
+  keywordPhrase,
   locationText,
   type ChannelQueryBuilder,
 } from '../builders/channel.builder';
@@ -36,6 +36,6 @@ export class LinkedinJobBoardBuilder implements ChannelQueryBuilder {
     if (experienceLevel !== null) params.experienceLevel = experienceLevel;
     const workType = WORK_TYPES[combination.type];
     if (workType !== null) params.workType = workType;
-    return { keywords: keywordPhrases(combination), params };
+    return { keyword: keywordPhrase(combination), params };
   }
 }

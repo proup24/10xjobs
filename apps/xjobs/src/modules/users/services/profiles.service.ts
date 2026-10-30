@@ -35,17 +35,15 @@ export function toProfileView(profile: ProfileWithSkills): ProfileView {
   return {
     ...fields,
     techStack: techStack
-      .map(({ technology, domain, mastery, preference, importance }) => ({
+      .map(({ technology, domain, mastery, importance }) => ({
         technology,
         domain,
         mastery,
-        preference,
         importance,
       }))
       .sort(
         (a, b) =>
           b.importance - a.importance ||
-          b.preference - a.preference ||
           b.mastery - a.mastery,
       ),
     resume:
@@ -73,10 +71,9 @@ export function toQuerySearchInput(
     country: profile.country,
     city: profile.city,
     skills: profile.techStack.map(
-      ({ technology, importance, preference, mastery }) => ({
+      ({ technology, importance, mastery }) => ({
         technology: technology as Technology,
         importance,
-        preference,
         mastery,
       }),
     ),
@@ -115,11 +112,10 @@ export class ProfilesService {
     await this.users.getOrThrow(workspaceId, userId);
     const { techStack, ...fields } = data;
     const skills = techStack.map(
-      ({ technology, domain, mastery, preference, importance }) => ({
+      ({ technology, domain, mastery, importance }) => ({
         technology,
         domain,
         mastery,
-        preference,
         importance: importance ?? 5,
       }),
     );

@@ -17,16 +17,6 @@ export class SkillDto {
   @Max(10)
   mastery!: number;
 
-  @ApiProperty({
-    minimum: 0,
-    maximum: 10,
-    description: 'How much you want to work with it',
-  })
-  @IsInt()
-  @Min(0)
-  @Max(10)
-  preference!: number;
-
   @ApiPropertyOptional({
     minimum: 0,
     maximum: 10,
