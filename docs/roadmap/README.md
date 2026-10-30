@@ -9,7 +9,8 @@
 - **Hosted from the start:** one shared, multi-tenant deployment where each user works in their own workspace.
 - Every domain record belongs to a workspace, and workspaces are isolated from each other.
 - The code stays open source, so any engineer can also run their own copy.
-- How API keys (Anthropic, Apify, later Gmail) are provided per workspace is decided in the Phase 1 spec.
+- Anthropic and Apify run on the platform's own keys, shared by every workspace; users don't bring keys. Gmail access (Phase 3) is per user.
+- Sign-up is invite-only for now.
 
 ## Anti-goals
 
@@ -33,7 +34,9 @@ The shared Claude Code harness and the project docs. No product code.
 
 Authentication, workspaces, and a multi-tenant data model with workspace isolation, deployed as the shared hosted app. Each user sets the preferences and customization the later phases act on, such as the jobs they want and their criteria for qualifying them. Next.js and Supabase first enter the repo here.
 
-**Exit criteria:** a user can sign up on the hosted app, gets a workspace, and can set and edit their preferences. One workspace can never read or change another workspace's data, and tests prove it.
+**Exit criteria:** an invited user can sign up on the hosted app, gets a workspace, and can set and edit their preferences. One workspace can never read or change another workspace's data, and tests prove it.
+
+**Slices:** [phase-1-workspaces-and-preferences/](phase-1-workspaces-and-preferences/README.md)
 
 ### Phase 2: Find
 

@@ -15,7 +15,7 @@ npx nx serve xjobs
 
 ## Docs
 
-- [Roadmap](docs/roadmap.md)
+- [Roadmap](docs/roadmap/README.md)
 - [CLAUDE.md](CLAUDE.md): conventions and workflow for working in this repo with Claude Code
 
 ## License
