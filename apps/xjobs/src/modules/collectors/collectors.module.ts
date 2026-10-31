@@ -36,6 +36,13 @@ export const COLLECTOR_PROVIDERS = Symbol('COLLECTOR_PROVIDERS');
       ],
     },
   ],
-  exports: [COLLECTOR_PROVIDERS, ApifyActorProvider],
+  exports: [
+    COLLECTOR_PROVIDERS,
+    ApifyActorProvider,
+    AshbyCollector,
+    GreenhouseCollector,
+    LinkedinJobBoardCollector,
+    LinkedinPostsCollector,
+  ],
 })
 export class CollectorsModule {}

@@ -1,17 +1,27 @@
 import { Logger } from '@nestjs/common';
 import { Channel } from 'src/common/enums';
+import type { RedisConfig } from 'src/config';
 import type { QuerySearchBuilderRow } from 'src/database';
-import type { Collector, CollectedJob } from 'src/modules/collectors';
+import type {
+  AshbyCollector,
+  CollectedJob,
+  CollectionResult,
+  CollectorSearch,
+} from 'src/modules/collectors';
 import type { IngestReport, IngestService } from 'src/modules/ingest';
 import type { QuerySearchService } from 'src/modules/queries';
-import { CollectionProcessor } from '../collection.processor';
+import { AshbyCollectionJob } from '../collection/ashby.job';
+import { syncCollectionScheduler } from '../collection/collection.job';
+import { GreenhouseCollectionJob } from '../collection/greenhouse.job';
+import { LinkedinJobBoardCollectionJob } from '../collection/linkedin-job-board.job';
+import { LinkedinPostsCollectionJob } from '../collection/linkedin-posts.job';
 import { channelJobsConfig } from '../config';
 
-const builder = (id: string, keyword = `kw ${id}`) =>
+const builder = (id: string) =>
   ({
     id,
     channel: Channel.ASHBY,
-    keyword,
+    keyword: `kw ${id}`,
     params: { remote: true },
   }) as unknown as QuerySearchBuilderRow;
 
@@ -28,9 +38,13 @@ const report = (overrides: Partial<IngestReport> = {}): IngestReport => ({
   ...overrides,
 });
 
+const redis = { url: 'redis://127.0.0.1:1', prefix: 'test' } as RedisConfig;
+
 function setup(
   builders: QuerySearchBuilderRow[],
-  collect: Collector['collect'] = async () => ({
+  collect: (
+    search: CollectorSearch,
+  ) => Promise<CollectionResult> = async () => ({
     jobs: [job(1)],
     complete: true,
     truncated: false,
@@ -38,35 +52,57 @@ function setup(
   ingest: IngestService['ingest'] = async () => report({ inserted: 1 }),
 ) {
   const queries = { listActive: vi.fn(async () => builders) };
-  const collector = {
-    channel: Channel.ASHBY,
-    collect: vi.fn(collect),
-  } as unknown as Collector & { collect: ReturnType<typeof vi.fn> };
-  const other = {
-    channel: Channel.GREEN_HOUSE,
-    collect: vi.fn(),
-  } as unknown as Collector;
+  const collector = { channel: Channel.ASHBY, collect: vi.fn(collect) };
   const ingestService = { ingest: vi.fn(ingest) };
-  const processor = new CollectionProcessor(
+  const ashby = new AshbyCollectionJob(
+    collector as unknown as AshbyCollector,
     queries as unknown as QuerySearchService,
-    [other, collector],
     ingestService as unknown as IngestService,
+    redis,
   );
   const warn = vi
     .spyOn(Logger.prototype, 'warn')
     .mockImplementation(() => undefined);
   vi.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
-  return { processor, queries, collector, ingest: ingestService.ingest, warn };
+  return { ashby, queries, collector, ingest: ingestService.ingest, warn };
 }
 
 afterEach(() => vi.restoreAllMocks());
 
-describe('CollectionProcessor', () => {
-  it('collects each active builder once, in order, and ingests it against the builder', async () => {
-    const rows = [builder('qs-1'), builder('qs-2')];
-    const { processor, queries, collector, ingest } = setup(rows);
+describe('each channel has its own collection job', () => {
+  it.each([
+    [
+      LinkedinJobBoardCollectionJob,
+      Channel.LINKEDIN_JOB_BOARD,
+      'collect-linkedin-job-board',
+    ],
+    [
+      LinkedinPostsCollectionJob,
+      Channel.LINKEDIN_POSTS,
+      'collect-linkedin-posts',
+    ],
+    [GreenhouseCollectionJob, Channel.GREEN_HOUSE, 'collect-greenhouse'],
+    [AshbyCollectionJob, Channel.ASHBY, 'collect-ashby'],
+  ] as const)('%o collects %s on queue %s', (Job, channel, queueName) => {
+    const instance = new Job(
+      { channel } as never,
+      {} as never,
+      {} as never,
+      redis,
+    );
+    expect(instance.channel).toBe(channel);
+    expect(instance.queueName).toBe(queueName);
+  });
+});
 
-    await processor.run(Channel.ASHBY);
+describe('AshbyCollectionJob.run', () => {
+  it('collects each active builder once, in order, and ingests it against the builder', async () => {
+    const { ashby, queries, collector, ingest } = setup([
+      builder('qs-1'),
+      builder('qs-2'),
+    ]);
+
+    await ashby.run();
 
     expect(queries.listActive).toHaveBeenCalledTimes(1);
     expect(queries.listActive).toHaveBeenCalledWith(Channel.ASHBY);
@@ -95,12 +131,12 @@ describe('CollectionProcessor', () => {
   });
 
   it('ingests large results in chunks of at most 1000 items', async () => {
-    const { processor, ingest } = setup([builder('qs-1')], async () => ({
+    const { ashby, ingest } = setup([builder('qs-1')], async () => ({
       jobs: jobs(2500),
       complete: true,
       truncated: false,
     }));
-    await processor.run(Channel.ASHBY);
+    await ashby.run();
     expect(ingest.mock.calls.map(([batch]) => batch.items.length)).toEqual([
       1000, 1000, 500,
     ]);
@@ -109,12 +145,11 @@ describe('CollectionProcessor', () => {
   it.each(['collect', 'ingest'] as const)(
     'keeps going when one builder fails to %s',
     async (stage) => {
-      const rows = [builder('qs-1'), builder('qs-2'), builder('qs-3')];
       const fail = (id: string) => {
         if (id === 'qs-2') throw new Error('boom');
       };
-      const { processor, collector, warn } = setup(
-        rows,
+      const { ashby, collector, warn } = setup(
+        [builder('qs-1'), builder('qs-2'), builder('qs-3')],
         async (search) => {
           if (stage === 'collect') fail(search.id);
           return { jobs: [job(1)], complete: true, truncated: false };
@@ -124,8 +159,11 @@ describe('CollectionProcessor', () => {
           return report({ inserted: 1 });
         },
       );
-      const summary = await processor.run(Channel.ASHBY);
-      expect(summary).toMatchObject({ builders: 3, succeeded: 2, failed: 1 });
+      expect(await ashby.run()).toMatchObject({
+        builders: 3,
+        succeeded: 2,
+        failed: 1,
+      });
       expect(collector.collect).toHaveBeenCalledTimes(3);
       expect(
         warn.mock.calls.some(([message]) => String(message).includes('qs-2')),
@@ -142,12 +180,13 @@ describe('CollectionProcessor', () => {
       report({ inserted: 1, duplicate: 1 }),
       report({ updated: 1, invalid: 2 }),
     ];
-    const { processor } = setup(
+    const { ashby } = setup(
       [builder('qs-1'), builder('qs-2')],
-      async () => results.shift() ?? results[0],
+      async () =>
+        results.shift() ?? { jobs: [], complete: true, truncated: false },
       async () => reports.shift() ?? report(),
     );
-    expect(await processor.run(Channel.ASHBY)).toEqual({
+    expect(await ashby.run()).toEqual({
       channel: Channel.ASHBY,
       builders: 2,
       succeeded: 2,
@@ -163,31 +202,52 @@ describe('CollectionProcessor', () => {
   });
 
   it('fails the run when every builder failed', async () => {
-    const { processor } = setup(
-      [builder('qs-1'), builder('qs-2')],
-      async () => {
-        throw new Error('down');
-      },
-    );
-    await expect(processor.run(Channel.ASHBY)).rejects.toThrow(/ASHBY.*2/);
+    const { ashby } = setup([builder('qs-1'), builder('qs-2')], async () => {
+      throw new Error('down');
+    });
+    await expect(ashby.run()).rejects.toThrow(/ASHBY.*2/);
   });
 
-  it('succeeds without calling Apify or ingest when there are no builders', async () => {
-    const { processor, collector, ingest } = setup([]);
-    expect(await processor.run(Channel.ASHBY)).toMatchObject({
-      builders: 0,
-      failed: 0,
-    });
+  it('succeeds without collecting or ingesting when there are no builders', async () => {
+    const { ashby, collector, ingest } = setup([]);
+    expect(await ashby.run()).toMatchObject({ builders: 0, failed: 0 });
     expect(collector.collect).not.toHaveBeenCalled();
     expect(ingest).not.toHaveBeenCalled();
   });
+});
 
-  it('rejects at once when the channel has no collector', async () => {
-    const { processor, queries } = setup([builder('qs-1')]);
-    await expect(processor.run(Channel.LINKEDIN_POSTS)).rejects.toThrow(
-      /LINKEDIN_POSTS/,
+describe('syncCollectionScheduler', () => {
+  const queue = () => ({
+    upsertJobScheduler: vi.fn(async () => undefined),
+    removeJobScheduler: vi.fn(async () => true),
+  });
+
+  it("upserts the channel's cron scheduler when enabled", async () => {
+    const q = queue();
+    expect(
+      await syncCollectionScheduler(
+        q as never,
+        channelJobsConfig[Channel.ASHBY],
+      ),
+    ).toBe('scheduled');
+    expect(q.upsertJobScheduler).toHaveBeenCalledWith(
+      'collect',
+      { pattern: '0 * * * *', tz: 'UTC' },
+      { name: 'collect', opts: { attempts: 1 } },
     );
-    expect(queries.listActive).not.toHaveBeenCalled();
+    expect(q.removeJobScheduler).not.toHaveBeenCalled();
+  });
+
+  it('removes the scheduler when the channel is disabled', async () => {
+    const q = queue();
+    expect(
+      await syncCollectionScheduler(q as never, {
+        ...channelJobsConfig[Channel.ASHBY],
+        enabled: false,
+      }),
+    ).toBe('removed');
+    expect(q.removeJobScheduler).toHaveBeenCalledWith('collect');
+    expect(q.upsertJobScheduler).not.toHaveBeenCalled();
   });
 });
 

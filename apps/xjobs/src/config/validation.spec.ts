@@ -3,7 +3,9 @@ import {
   getAppConfig,
   getBasicAuthConfig,
   getStorageConfig,
+  validateChannelWorkerEnvironment,
   validateEnvironment,
+  workerChannelSchema,
 } from './index';
 
 const minimal = {
@@ -113,5 +115,38 @@ describe('collector and tooling configuration', () => {
       getAppConfig(configFor({ NX_READY_SIGNAL_SOCKET: '/tmp/nx.sock' }))
         .readySignalSocket,
     ).toBe('/tmp/nx.sock');
+  });
+});
+
+describe('channel worker configuration', () => {
+  const worker = {
+    DATABASE_URL: 'postgresql://u:p@localhost:5432/db',
+    APIFY_TOKEN: 'apify-token',
+    WORKER_CHANNEL: 'ASHBY',
+  };
+
+  it('accepts the database, Redis defaults, an Apify token and a channel', () => {
+    expect(validateChannelWorkerEnvironment(worker)).toMatchObject({
+      WORKER_CHANNEL: 'ASHBY',
+      APIFY_TOKEN: 'apify-token',
+      REDIS_PREFIX: 'xjobs',
+    });
+  });
+
+  it('refuses an unknown channel', () => {
+    expect(() =>
+      validateChannelWorkerEnvironment({ ...worker, WORKER_CHANNEL: 'ASHBYY' }),
+    ).toThrow(/WORKER_CHANNEL/);
+  });
+
+  it('refuses to collect without an Apify token', () => {
+    const { APIFY_TOKEN: _token, ...rest } = worker;
+    expect(() => validateChannelWorkerEnvironment(rest)).toThrow(/APIFY_TOKEN/);
+  });
+
+  it('treats an unset channel as the infrastructure worker', () => {
+    expect(workerChannelSchema.parse(undefined)).toBeUndefined();
+    expect(workerChannelSchema.parse('ASHBY')).toBe('ASHBY');
+    expect(() => workerChannelSchema.parse('nope')).toThrow();
   });
 });

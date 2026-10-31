@@ -1,6 +1,6 @@
 import { z } from 'zod';
 // Keep Prisma CLI's configuration dependency graph resolvable without aliases.
-import { EnvironmentType } from '../common/enums';
+import { Channel, EnvironmentType } from '../common/enums';
 
 /**
  * @description Environment variables are strings; this parses the usual
@@ -58,6 +58,19 @@ export const redisEnvironmentSchema = z.object({
   JOBS_CONCURRENCY: z.coerce.number().int().positive().max(100).default(5),
 });
 
+/**
+ * Which channel a worker process collects. Unset means the infrastructure
+ * worker; an unknown value fails startup rather than falling back to it.
+ */
+export const workerChannelSchema = z.enum(Channel).optional();
+
+/** A channel collection worker reads the queries, collects, and ingests. */
+export const channelWorkerEnvironmentSchema = databaseEnvironmentSchema.extend({
+  ...redisEnvironmentSchema.shape,
+  APIFY_TOKEN: z.string().min(1),
+  WORKER_CHANNEL: z.enum(Channel),
+});
+
 export const environmentSchema = databaseEnvironmentSchema
   .extend({
     ...redisEnvironmentSchema.shape,
@@ -113,6 +126,9 @@ export type DatabaseEnvironmentVariables = z.infer<
 export type SeedEnvironmentVariables = z.infer<typeof seedEnvironmentSchema>;
 export type EnvironmentVariables = z.infer<typeof environmentSchema>;
 export type RedisEnvironmentVariables = z.infer<typeof redisEnvironmentSchema>;
+export type ChannelWorkerEnvironmentVariables = z.infer<
+  typeof channelWorkerEnvironmentSchema
+>;
 
 /**
  * @description Parses `config` against `schema`, failing with every invalid
@@ -145,4 +161,11 @@ export function validateWorkerEnvironment(
   config: Record<string, unknown>,
 ): RedisEnvironmentVariables {
   return parseEnvironment(redisEnvironmentSchema, config);
+}
+
+/** `validate` hook for a channel collection worker. */
+export function validateChannelWorkerEnvironment(
+  config: Record<string, unknown>,
+): ChannelWorkerEnvironmentVariables {
+  return parseEnvironment(channelWorkerEnvironmentSchema, config);
 }

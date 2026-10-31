@@ -27,8 +27,12 @@ export {
   redisEnvironmentSchema,
   seedEnvironmentSchema,
   validateWorkerEnvironment,
+  channelWorkerEnvironmentSchema,
+  validateChannelWorkerEnvironment,
+  workerChannelSchema,
 } from './environment.validation';
 export type {
+  ChannelWorkerEnvironmentVariables,
   DatabaseEnvironmentVariables,
   EnvironmentVariables,
   RedisEnvironmentVariables,
