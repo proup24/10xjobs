@@ -9,6 +9,7 @@ import { ingestConfig } from '../config';
 const uuid = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 const ashbyPath = new RegExp(`^/([^/]+)/(${uuid})(?:/application)?/?$`, 'i');
 const greenhouseHosts = new Set<string>(ingestConfig.greenhouseHosts);
+const linkedinHosts = new Set(['linkedin.com', 'www.linkedin.com']);
 
 export function webUrl(value: string): URL {
   let url: URL;
@@ -87,66 +88,112 @@ export function atsIdentity(value: string): AtsIdentity | null {
   return null;
 }
 
+function canonicalAtsSource(
+  channel: Channel.ASHBY | Channel.GREEN_HOUSE,
+  parsed: URL,
+  value: string,
+): { url: string; sourceId: string; ats: AtsIdentity } {
+  const ats = atsIdentity(value);
+  const expectedProvider = channel === Channel.ASHBY ? 'ashby' : 'greenhouse';
+  if (!ats || ats.provider !== expectedProvider) {
+    throw new InvalidIngestItem('Unsupported posting URL');
+  }
+
+  if (ats.provider === 'ashby') {
+    return {
+      url: `https://jobs.ashbyhq.com/${ats.tenantKey}/${ats.postingId}`,
+      sourceId: ats.postingId,
+      ats,
+    };
+  }
+
+  const euPrefix = parsed.hostname.includes('.eu.') ? '.eu' : '';
+  return {
+    url: `https://job-boards${euPrefix}.greenhouse.io/${ats.tenantKey}/jobs/${ats.postingId}`,
+    sourceId: ats.postingId,
+    ats,
+  };
+}
+
+function canonicalLinkedInJob(
+  parsed: URL,
+): { url: string; sourceId: string; ats: null } | null {
+  const match = /^\/jobs\/view\/(?:[^/]*-)?(\d+)\/?$/.exec(parsed.pathname);
+  const jobId = match?.[1];
+  if (!jobId) return null;
+
+  return {
+    url: `https://www.linkedin.com/jobs/view/${jobId}`,
+    sourceId: jobId,
+    ats: null,
+  };
+}
+
+function canonicalLinkedInPost(
+  parsed: URL,
+): { url: string; sourceId: string | null; ats: null } | null {
+  const updateMatch =
+    /^\/feed\/update\/urn:li:(activity|groupPost):(\d+(?:-\d+)?)\/?$/.exec(
+      parsed.pathname,
+    );
+  if (updateMatch?.[1] && updateMatch?.[2]) {
+    const kind = updateMatch[1];
+    const id = updateMatch[2];
+    return {
+      url: `https://www.linkedin.com/feed/update/urn:li:${kind}:${id}/`,
+      sourceId: kind === 'groupPost' ? null : id,
+      ats: null,
+    };
+  }
+
+  const postMatch = /^\/posts\/[^/]*activity-(\d+)(?:-[^/]*)?\/?$/.exec(
+    parsed.pathname,
+  );
+  const activityId = postMatch?.[1];
+  if (activityId) {
+    return {
+      url: `https://www.linkedin.com/feed/update/urn:li:activity:${activityId}/`,
+      sourceId: activityId,
+      ats: null,
+    };
+  }
+
+  return null;
+}
+
+function canonicalLinkedInSource(
+  channel: Channel,
+  parsed: URL,
+): { url: string; sourceId: string | null; ats: AtsIdentity | null } {
+  if (!linkedinHosts.has(parsed.hostname)) {
+    throw new InvalidIngestItem('Unsupported LinkedIn host');
+  }
+
+  if (channel === Channel.LINKEDIN_JOB_BOARD) {
+    const result = canonicalLinkedInJob(parsed);
+    if (result) return result;
+  } else if (channel === Channel.LINKEDIN_POSTS) {
+    const result = canonicalLinkedInPost(parsed);
+    if (result) return result;
+  }
+
+  throw new InvalidIngestItem('Unsupported source URL');
+}
+
 export function canonicalSource(
   channel: Channel,
   value: string,
 ): { url: string; sourceId: string | null; ats: AtsIdentity | null } {
   const parsed = webUrl(value);
-  if (parsed.protocol !== 'https:')
+  if (parsed.protocol !== 'https:') {
     throw new InvalidIngestItem('Source URL must use HTTPS');
+  }
+
   if (channel === Channel.ASHBY || channel === Channel.GREEN_HOUSE) {
-    const ats = atsIdentity(value);
-    if (
-      !ats ||
-      ats.provider !== (channel === Channel.ASHBY ? 'ashby' : 'greenhouse')
-    )
-      throw new InvalidIngestItem('Unsupported posting URL');
-    const url =
-      ats.provider === 'ashby'
-        ? `https://jobs.ashbyhq.com/${ats.tenantKey}/${ats.postingId}`
-        : `https://job-boards${parsed.hostname.includes('.eu.') ? '.eu' : ''}.greenhouse.io/${ats.tenantKey}/jobs/${ats.postingId}`;
-    return { url, sourceId: ats.postingId, ats };
+    return canonicalAtsSource(channel, parsed, value);
   }
-  if (!['linkedin.com', 'www.linkedin.com'].includes(parsed.hostname))
-    throw new InvalidIngestItem('Unsupported LinkedIn host');
-  if (channel === Channel.LINKEDIN_JOB_BOARD) {
-    const match = /^\/jobs\/view\/(?:[^/]*-)?(\d+)\/?$/.exec(parsed.pathname);
-    const jobId = match?.[1];
-    if (jobId) {
-      return {
-        url: `https://www.linkedin.com/jobs/view/${jobId}`,
-        sourceId: jobId,
-        ats: null,
-      };
-    }
-  } else if (channel === Channel.LINKEDIN_POSTS) {
-    const updateMatch =
-      /^\/feed\/update\/urn:li:(activity|groupPost):(\d+(?:-\d+)?)\/?$/.exec(
-        parsed.pathname,
-      );
-    // A group-post URN identifies the group/thread, not the actor's activity ID.
-    if (updateMatch && updateMatch[1] && updateMatch[2]) {
-      const kind = updateMatch[1];
-      const id = updateMatch[2];
-      return {
-        url: `https://www.linkedin.com/feed/update/urn:li:${kind}:${id}/`,
-        sourceId: kind === 'groupPost' ? null : id,
-        ats: null,
-      };
-    }
-    const postMatch = /^\/posts\/[^/]*activity-(\d+)(?:-[^/]*)?\/?$/.exec(
-      parsed.pathname,
-    );
-    const activityId = postMatch?.[1];
-    if (activityId) {
-      return {
-        url: `https://www.linkedin.com/feed/update/urn:li:activity:${activityId}/`,
-        sourceId: activityId,
-        ats: null,
-      };
-    }
-  }
-  throw new InvalidIngestItem('Unsupported source URL');
+
+  return canonicalLinkedInSource(channel, parsed);
 }
 
 export function identityAliases(
