@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 const pingPayload = z.object({ token: z.string().min(1).max(200) }).strict();
 
-export async function processInfrastructureJob(job: {
+export  function processInfrastructureJob(job: {
   name: string;
   data: unknown;
 }) {
