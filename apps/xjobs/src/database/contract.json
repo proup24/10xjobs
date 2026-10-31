@@ -8,6 +8,10 @@
       "model": "AtsPostingIdentity",
       "namespace": "public"
     },
+    "collection_batches": {
+      "model": "CollectionBatch",
+      "namespace": "public"
+    },
     "contacts": {
       "model": "Contact",
       "namespace": "public"
@@ -26,6 +30,18 @@
     },
     "query_search_builder": {
       "model": "QuerySearchBuilder",
+      "namespace": "public"
+    },
+    "raw_item_sightings": {
+      "model": "RawItemSighting",
+      "namespace": "public"
+    },
+    "raw_item_versions": {
+      "model": "RawItemVersion",
+      "namespace": "public"
+    },
+    "raw_items": {
+      "model": "RawItem",
       "namespace": "public"
     },
     "raw_job_identities": {
@@ -711,6 +727,199 @@
               },
               "namespaceId": "public",
               "table": "ats_posting_identities"
+            }
+          },
+          "CollectionBatch": {
+            "fields": {
+              "actor": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "apifyRunId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "attempts": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "channel": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "Channel",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "formatVersion": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "ingestedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "itemCount": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "lastError": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "observedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "report": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
+              },
+              "segmentRunId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "storageKey": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "segmentRun": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "segmentRunId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "SearchSegmentRun",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "actor": {
+                  "column": "actor"
+                },
+                "apifyRunId": {
+                  "column": "apifyRunId"
+                },
+                "attempts": {
+                  "column": "attempts"
+                },
+                "channel": {
+                  "column": "channel"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "formatVersion": {
+                  "column": "formatVersion"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "ingestedAt": {
+                  "column": "ingestedAt"
+                },
+                "itemCount": {
+                  "column": "itemCount"
+                },
+                "lastError": {
+                  "column": "lastError"
+                },
+                "observedAt": {
+                  "column": "observedAt"
+                },
+                "report": {
+                  "column": "report"
+                },
+                "segmentRunId": {
+                  "column": "segmentRunId"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "storageKey": {
+                  "column": "storageKey"
+                }
+              },
+              "namespaceId": "public",
+              "table": "collection_batches"
             }
           },
           "Contact": {
@@ -1629,6 +1838,391 @@
               "table": "query_search_builder"
             }
           },
+          "RawItem": {
+            "fields": {
+              "channel": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "Channel",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "firstSeenAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "kind": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "lastSeenAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "latestVersionId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "sourceKey": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "channel": {
+                  "column": "channel"
+                },
+                "firstSeenAt": {
+                  "column": "firstSeenAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "kind": {
+                  "column": "kind"
+                },
+                "lastSeenAt": {
+                  "column": "lastSeenAt"
+                },
+                "latestVersionId": {
+                  "column": "latestVersionId"
+                },
+                "sourceKey": {
+                  "column": "sourceKey"
+                }
+              },
+              "namespaceId": "public",
+              "table": "raw_items"
+            }
+          },
+          "RawItemSighting": {
+            "fields": {
+              "attribution": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "batchId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "observedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "queryId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "rank": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "rawItemId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "versionId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "batch": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "batchId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "CollectionBatch",
+                  "namespace": "public"
+                }
+              },
+              "query": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "queryId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "QuerySearchBuilder",
+                  "namespace": "public"
+                }
+              },
+              "rawItem": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "rawItemId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "RawItem",
+                  "namespace": "public"
+                }
+              },
+              "version": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "versionId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "RawItemVersion",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "attribution": {
+                  "column": "attribution"
+                },
+                "batchId": {
+                  "column": "batchId"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "observedAt": {
+                  "column": "observedAt"
+                },
+                "queryId": {
+                  "column": "queryId"
+                },
+                "rank": {
+                  "column": "rank"
+                },
+                "rawItemId": {
+                  "column": "rawItemId"
+                },
+                "versionId": {
+                  "column": "versionId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "raw_item_sightings"
+            }
+          },
+          "RawItemVersion": {
+            "fields": {
+              "contentHash": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "firstBatchId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "firstSeenAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "lastSeenAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "payload": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
+              },
+              "rawItemId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "firstBatch": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "firstBatchId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "CollectionBatch",
+                  "namespace": "public"
+                }
+              },
+              "rawItem": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "rawItemId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "RawItem",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "contentHash": {
+                  "column": "contentHash"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "firstBatchId": {
+                  "column": "firstBatchId"
+                },
+                "firstSeenAt": {
+                  "column": "firstSeenAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "lastSeenAt": {
+                  "column": "lastSeenAt"
+                },
+                "payload": {
+                  "column": "payload"
+                },
+                "rawItemId": {
+                  "column": "rawItemId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "raw_item_versions"
+            }
+          },
           "RawJob": {
             "fields": {
               "applyUrl": {
@@ -2458,6 +3052,172 @@
                     "provider",
                     "tenantKey",
                     "postingId"
+                  ]
+                }
+              ]
+            },
+            "collection_batches": {
+              "checks": [
+                {
+                  "expression": "attempts >= 0",
+                  "name": "collection_batches_attempts_b3d879c1",
+                  "prefix": "collection_batches_attempts"
+                },
+                {
+                  "expression": "\"channel\" IN ('LINKEDIN_JOB_BOARD', 'LINKEDIN_POSTS', 'GREEN_HOUSE', 'ASHBY')",
+                  "name": "collection_batches_channel_check_687325cb",
+                  "prefix": "collection_batches_channel_check"
+                },
+                {
+                  "expression": "status IN ('pending', 'ingested', 'failed')",
+                  "name": "collection_batches_status_14e6e00d",
+                  "prefix": "collection_batches_status"
+                }
+              ],
+              "columns": {
+                "actor": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "apifyRunId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "attempts": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 0
+                  },
+                  "nullable": false
+                },
+                "channel": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "Channel",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "formatVersion": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "ingestedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "itemCount": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "lastError": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "observedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "report": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": true
+                },
+                "segmentRunId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "storageKey": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "unique": [
+                      "segmentRunId"
+                    ]
+                  },
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "segmentRunId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "collection_batches"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "search_segment_runs"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "status",
+                    "createdAt"
+                  ],
+                  "name": "collection_batches_status_createdAt_idx_58610442",
+                  "prefix": "collection_batches_status_createdAt_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "segmentRunId"
                   ]
                 }
               ]
@@ -3395,6 +4155,423 @@
                 }
               ]
             },
+            "raw_item_sightings": {
+              "checks": [
+                {
+                  "expression": "attribution = COALESCE(\"queryId\"::text, 'none')",
+                  "name": "raw_item_sightings_attribution_a531f58e",
+                  "prefix": "raw_item_sightings_attribution"
+                },
+                {
+                  "expression": "rank IS NULL OR rank > 0",
+                  "name": "raw_item_sightings_rank_d48e58d1",
+                  "prefix": "raw_item_sightings_rank"
+                }
+              ],
+              "columns": {
+                "attribution": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "batchId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "observedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "queryId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "rank": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "rawItemId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "versionId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "raw_item_sightings_batchId_idx_84d4b0b9"
+                  },
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "batchId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "raw_item_sightings"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "collection_batches"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "raw_item_sightings_rawItemId_idx_e9f47b12"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "rawItemId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "raw_item_sightings"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "raw_items"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "raw_item_sightings_versionId_idx_ef8aa804"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "versionId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "raw_item_sightings"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "raw_item_versions"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "raw_item_sightings_queryId_idx_edc2d44a"
+                  },
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "queryId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "raw_item_sightings"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "query_search_builder"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "batchId"
+                  ],
+                  "name": "raw_item_sightings_batchId_idx_84d4b0b9",
+                  "prefix": "raw_item_sightings_batchId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "queryId"
+                  ],
+                  "name": "raw_item_sightings_queryId_idx_edc2d44a",
+                  "prefix": "raw_item_sightings_queryId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "rawItemId"
+                  ],
+                  "name": "raw_item_sightings_rawItemId_idx_e9f47b12",
+                  "prefix": "raw_item_sightings_rawItemId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "versionId"
+                  ],
+                  "name": "raw_item_sightings_versionId_idx_ef8aa804",
+                  "prefix": "raw_item_sightings_versionId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "batchId",
+                    "rawItemId",
+                    "attribution"
+                  ]
+                }
+              ]
+            },
+            "raw_item_versions": {
+              "checks": [
+                {
+                  "expression": "\"firstSeenAt\" <= \"lastSeenAt\"",
+                  "name": "raw_item_versions_seen_order_9de70718",
+                  "prefix": "raw_item_versions_seen_order"
+                }
+              ],
+              "columns": {
+                "contentHash": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "firstBatchId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "firstSeenAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "lastSeenAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "payload": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": false
+                },
+                "rawItemId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "raw_item_versions_rawItemId_idx_e9f47b12"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "rawItemId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "raw_item_versions"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "raw_items"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "raw_item_versions_firstBatchId_idx_5fbe686f"
+                  },
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "firstBatchId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "raw_item_versions"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "collection_batches"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "createdAt"
+                  ],
+                  "name": "raw_item_versions_createdAt_idx_9575dbd7",
+                  "prefix": "raw_item_versions_createdAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "firstBatchId"
+                  ],
+                  "name": "raw_item_versions_firstBatchId_idx_5fbe686f",
+                  "prefix": "raw_item_versions_firstBatchId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "rawItemId"
+                  ],
+                  "name": "raw_item_versions_rawItemId_idx_e9f47b12",
+                  "prefix": "raw_item_versions_rawItemId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "rawItemId",
+                    "contentHash"
+                  ]
+                }
+              ]
+            },
+            "raw_items": {
+              "checks": [
+                {
+                  "expression": "\"channel\" IN ('LINKEDIN_JOB_BOARD', 'LINKEDIN_POSTS', 'GREEN_HOUSE', 'ASHBY')",
+                  "name": "raw_items_channel_check_687325cb",
+                  "prefix": "raw_items_channel_check"
+                },
+                {
+                  "expression": "kind IN ('job', 'post')",
+                  "name": "raw_items_kind_e26544db",
+                  "prefix": "raw_items_kind"
+                },
+                {
+                  "expression": "\"firstSeenAt\" <= \"lastSeenAt\"",
+                  "name": "raw_items_seen_order_9de70718",
+                  "prefix": "raw_items_seen_order"
+                }
+              ],
+              "columns": {
+                "channel": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "Channel",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "firstSeenAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "kind": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "lastSeenAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "latestVersionId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "sourceKey": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "channel",
+                    "sourceKey"
+                  ]
+                }
+              ]
+            },
             "raw_job_identities": {
               "checks": [
                 {
@@ -4237,10 +5414,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "60c648669fe744bbcd8b2df78952fce8b68af22bf5ea5704e018486bdeef149e"
+    "storageHash": "50cbd7ca417f2c3da56f15b50646afb61b9dee953bb30211f3bf3a4e06817933"
   },
   "execution": {
-    "executionHash": "f5322f5c97c5da6f6bb350ad8ca1b7d670aee608d34ad6d26fea7bf32342040d",
+    "executionHash": "600fab6dbcde66e311525ea6f2765937fba59098fb58a95f7e44f3df5393118d",
     "mutations": {
       "defaults": [
         {
@@ -4250,6 +5427,17 @@
           },
           "ref": {
             "entry": "ats_posting_identities",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv7",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "collection_batches",
             "field": "id",
             "namespace": "public"
           }
@@ -4366,6 +5554,39 @@
           "ref": {
             "entry": "query_search_builder",
             "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv7",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "raw_item_sightings",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv7",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "raw_item_versions",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv7",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "raw_items",
+            "field": "id",
             "namespace": "public"
           }
         },

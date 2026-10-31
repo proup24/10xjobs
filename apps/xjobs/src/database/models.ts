@@ -16,6 +16,10 @@ export type ProfileQuerySearchBuilderRow =
   Row<Models.public_ProfileQuerySearchBuilder>;
 export type RawJobRow = Row<Models.public_RawJob>;
 export type SearchSegmentRunRow = Row<Models.public_SearchSegmentRun>;
+export type CollectionBatchRow = Row<Models.public_CollectionBatch>;
+export type RawItemRow = Row<Models.public_RawItem>;
+export type RawItemVersionRow = Row<Models.public_RawItemVersion>;
+export type RawItemSightingRow = Row<Models.public_RawItemSighting>;
 /** An address as callers write it; optional parts may be left out. */
 export type Address = {
   line1: string;

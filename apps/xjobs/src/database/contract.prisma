@@ -12,26 +12,25 @@ model mixin Timestamps {
 
 // Each enum below has a TypeScript twin in src/common/enums/<name>.enum.ts;
 // src/common/enums/enums.spec.ts fails when they drift.
-
 enum Position {
   @@type("pg/text@1")
-  backend_engineer          = "backend_engineer"
-  frontend_engineer         = "frontend_engineer"
-  fullstack_engineer        = "fullstack_engineer"
-  mobile_engineer           = "mobile_engineer"
-  devops_engineer           = "devops_engineer"
+  backend_engineer = "backend_engineer"
+  frontend_engineer = "frontend_engineer"
+  fullstack_engineer = "fullstack_engineer"
+  mobile_engineer = "mobile_engineer"
+  devops_engineer = "devops_engineer"
   site_reliability_engineer = "site_reliability_engineer"
-  platform_engineer         = "platform_engineer"
-  cloud_engineer            = "cloud_engineer"
-  security_engineer         = "security_engineer"
-  data_engineer             = "data_engineer"
-  ml_engineer               = "ml_engineer"
-  ai_engineer               = "ai_engineer"
-  qa_engineer               = "qa_engineer"
-  embedded_engineer         = "embedded_engineer"
-  software_architect        = "software_architect"
-  tech_lead                 = "tech_lead"
-  engineering_manager       = "engineering_manager"
+  platform_engineer = "platform_engineer"
+  cloud_engineer = "cloud_engineer"
+  security_engineer = "security_engineer"
+  data_engineer = "data_engineer"
+  ml_engineer = "ml_engineer"
+  ai_engineer = "ai_engineer"
+  qa_engineer = "qa_engineer"
+  embedded_engineer = "embedded_engineer"
+  software_architect = "software_architect"
+  tech_lead = "tech_lead"
+  engineering_manager = "engineering_manager"
 }
 
 enum Language {
@@ -44,154 +43,154 @@ enum Language {
 
 enum Region {
   @@type("pg/text@1")
-  EMEA               = "EMEA"
-  MENA               = "MENA"
-  NORTH_AFRICA       = "NORTH_AFRICA"
+  EMEA = "EMEA"
+  MENA = "MENA"
+  NORTH_AFRICA = "NORTH_AFRICA"
   SUB_SAHARAN_AFRICA = "SUB_SAHARAN_AFRICA"
-  MIDDLE_EAST        = "MIDDLE_EAST"
-  EUROPE             = "EUROPE"
-  EU                 = "EU"
-  UK                 = "UK"
-  NORTH_AMERICA      = "NORTH_AMERICA"
-  LATAM              = "LATAM"
-  APAC               = "APAC"
-  GLOBAL             = "GLOBAL"
+  MIDDLE_EAST = "MIDDLE_EAST"
+  EUROPE = "EUROPE"
+  EU = "EU"
+  UK = "UK"
+  NORTH_AMERICA = "NORTH_AMERICA"
+  LATAM = "LATAM"
+  APAC = "APAC"
+  GLOBAL = "GLOBAL"
 }
 
 enum Engagement {
   @@type("pg/text@1")
-  employee   = "employee"
+  employee = "employee"
   contractor = "contractor"
-  eor        = "eor"
-  agency     = "agency"
-  per_task   = "per_task"
+  eor = "eor"
+  agency = "agency"
+  per_task = "per_task"
 }
 
 enum Arrangement {
   @@type("pg/text@1")
-  remote   = "remote"
-  hybrid   = "hybrid"
-  onsite   = "onsite"
+  remote = "remote"
+  hybrid = "hybrid"
+  onsite = "onsite"
   unstated = "unstated"
 }
 
 enum Seniority {
   @@type("pg/text@1")
-  junior    = "junior"
-  mid       = "mid"
-  senior    = "senior"
-  staff     = "staff"
-  lead      = "lead"
+  junior = "junior"
+  mid = "mid"
+  senior = "senior"
+  staff = "staff"
+  lead = "lead"
   principal = "principal"
-  unstated  = "unstated"
+  unstated = "unstated"
 }
 
 enum ContactKind {
   @@type("pg/text@1")
-  phone     = "phone"
-  email     = "email"
-  linkedin  = "linkedin"
-  github    = "github"
-  gitlab    = "gitlab"
+  phone = "phone"
+  email = "email"
+  linkedin = "linkedin"
+  github = "github"
+  gitlab = "gitlab"
   portfolio = "portfolio"
-  website   = "website"
-  other     = "other"
+  website = "website"
+  other = "other"
 }
 
 enum SkillDomain {
   @@type("pg/text@1")
-  backend   = "backend"
-  frontend  = "frontend"
+  backend = "backend"
+  frontend = "frontend"
   fullstack = "fullstack"
-  mobile    = "mobile"
-  devops    = "devops"
-  data      = "data"
-  ml        = "ml"
-  security  = "security"
-  qa        = "qa"
+  mobile = "mobile"
+  devops = "devops"
+  data = "data"
+  ml = "ml"
+  security = "security"
+  qa = "qa"
 }
 
 enum Technology {
   @@type("pg/text@1")
-  javascript     = "javascript"
-  typescript     = "typescript"
-  python         = "python"
-  java           = "java"
-  kotlin         = "kotlin"
-  go             = "go"
-  rust           = "rust"
-  csharp         = "csharp"
-  cpp            = "cpp"
-  php            = "php"
-  ruby           = "ruby"
-  scala          = "scala"
-  elixir         = "elixir"
-  swift          = "swift"
-  dart           = "dart"
-  sql            = "sql"
-  bash           = "bash"
-  nodejs         = "nodejs"
-  nestjs         = "nestjs"
-  express        = "express"
-  fastify        = "fastify"
-  django         = "django"
-  fastapi        = "fastapi"
-  flask          = "flask"
-  spring         = "spring"
-  dotnet         = "dotnet"
-  laravel        = "laravel"
-  rails          = "rails"
-  graphql        = "graphql"
-  grpc           = "grpc"
-  react          = "react"
-  nextjs         = "nextjs"
-  vue            = "vue"
-  nuxt           = "nuxt"
-  angular        = "angular"
-  svelte         = "svelte"
-  tailwindcss    = "tailwindcss"
-  react_native   = "react_native"
-  flutter        = "flutter"
-  postgresql     = "postgresql"
-  mysql          = "mysql"
-  mongodb        = "mongodb"
-  redis          = "redis"
-  elasticsearch  = "elasticsearch"
-  kafka          = "kafka"
-  rabbitmq       = "rabbitmq"
-  spark          = "spark"
-  airflow        = "airflow"
-  dbt            = "dbt"
-  snowflake      = "snowflake"
-  aws            = "aws"
-  gcp            = "gcp"
-  azure          = "azure"
-  docker         = "docker"
-  kubernetes     = "kubernetes"
-  terraform      = "terraform"
-  ansible        = "ansible"
+  javascript = "javascript"
+  typescript = "typescript"
+  python = "python"
+  java = "java"
+  kotlin = "kotlin"
+  go = "go"
+  rust = "rust"
+  csharp = "csharp"
+  cpp = "cpp"
+  php = "php"
+  ruby = "ruby"
+  scala = "scala"
+  elixir = "elixir"
+  swift = "swift"
+  dart = "dart"
+  sql = "sql"
+  bash = "bash"
+  nodejs = "nodejs"
+  nestjs = "nestjs"
+  express = "express"
+  fastify = "fastify"
+  django = "django"
+  fastapi = "fastapi"
+  flask = "flask"
+  spring = "spring"
+  dotnet = "dotnet"
+  laravel = "laravel"
+  rails = "rails"
+  graphql = "graphql"
+  grpc = "grpc"
+  react = "react"
+  nextjs = "nextjs"
+  vue = "vue"
+  nuxt = "nuxt"
+  angular = "angular"
+  svelte = "svelte"
+  tailwindcss = "tailwindcss"
+  react_native = "react_native"
+  flutter = "flutter"
+  postgresql = "postgresql"
+  mysql = "mysql"
+  mongodb = "mongodb"
+  redis = "redis"
+  elasticsearch = "elasticsearch"
+  kafka = "kafka"
+  rabbitmq = "rabbitmq"
+  spark = "spark"
+  airflow = "airflow"
+  dbt = "dbt"
+  snowflake = "snowflake"
+  aws = "aws"
+  gcp = "gcp"
+  azure = "azure"
+  docker = "docker"
+  kubernetes = "kubernetes"
+  terraform = "terraform"
+  ansible = "ansible"
   github_actions = "github_actions"
-  gitlab_ci      = "gitlab_ci"
-  linux          = "linux"
-  nginx          = "nginx"
-  prometheus     = "prometheus"
-  grafana        = "grafana"
-  pytorch        = "pytorch"
-  tensorflow     = "tensorflow"
-  langchain      = "langchain"
+  gitlab_ci = "gitlab_ci"
+  linux = "linux"
+  nginx = "nginx"
+  prometheus = "prometheus"
+  grafana = "grafana"
+  pytorch = "pytorch"
+  tensorflow = "tensorflow"
+  langchain = "langchain"
 }
 
 enum Channel {
   @@type("pg/text@1")
   LINKEDIN_JOB_BOARD = "LINKEDIN_JOB_BOARD"
-  LINKEDIN_POSTS     = "LINKEDIN_POSTS"
-  GREEN_HOUSE        = "GREEN_HOUSE"
-  ASHBY              = "ASHBY"
+  LINKEDIN_POSTS = "LINKEDIN_POSTS"
+  GREEN_HOUSE = "GREEN_HOUSE"
+  ASHBY = "ASHBY"
 }
 
 enum ProfileState {
   @@type("pg/text@1")
-  draft     = "draft"
+  draft = "draft"
   published = "published"
 }
 
@@ -206,11 +205,11 @@ type Address {
 }
 
 model User {
-  id          Uuid      @id @onCreate(uuid(7))
+  id      Uuid     @id @onCreate(uuid(7))
   // Stored lowercased.
-  email       String
-  name        String
-  address     Address?
+  email   String
+  name    String
+  address Address?
   +Timestamps
 
   @@unique([email])
@@ -219,13 +218,13 @@ model User {
 
 // The user's own contact channels, the ones that go on applications.
 model Contact {
-  id          Uuid        @id @onCreate(uuid(7))
-  userId      Uuid
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  kind        ContactKind
-  value       String
-  label       String?
-  isPrimary   Boolean     @default(false)
+  id        Uuid        @id @onCreate(uuid(7))
+  userId    Uuid
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      ContactKind
+  value     String
+  label     String?
+  isPrimary Boolean     @default(false)
   +Timestamps
 
   @@unique([userId, kind, value])
@@ -236,9 +235,9 @@ model Contact {
 // A user may maintain multiple independent job-seeker profiles, one per target position.
 // Timezone offsets are minutes from UTC.
 model Profile {
-  id                Uuid          @id @onCreate(uuid(7))
+  id                Uuid                  @id @onCreate(uuid(7))
   userId            Uuid
-  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   position          Position
   languages         Language[]
   country           String
@@ -257,7 +256,7 @@ model Profile {
   resumeSizeBytes   Int?
   resumeSha256      String?
   resumeUploadedAt  TimestamptzJsDate(3)?
-  state             ProfileState  @default(draft)
+  state             ProfileState          @default(draft)
   publishedAt       TimestamptzJsDate(3)?
   +Timestamps
 
@@ -273,13 +272,13 @@ model Profile {
 
 // One row per technology and domain in a profile's tech stack.
 model ProfileSkill {
-  id          Uuid        @id @onCreate(uuid(7))
-  profileId   Uuid
-  profile     Profile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  technology  Technology
-  domain      SkillDomain
-  mastery     Int
-  importance  Int         @default(5)
+  id         Uuid        @id @onCreate(uuid(7))
+  profileId  Uuid
+  profile    Profile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  technology Technology
+  domain     SkillDomain
+  mastery    Int
+  importance Int         @default(5)
   +Timestamps
 
   @@check(expression: sql`mastery BETWEEN 0 AND 10`, name: "profile_skills_mastery_range")
@@ -292,7 +291,7 @@ model ProfileSkill {
 // profile. Profiles use it through ProfileQuerySearchBuilder; rows are never hard-deleted,
 // because raw job hits are attributed to them.
 model QuerySearchBuilder {
-  id                 Uuid         @id @onCreate(uuid(7))
+  id                 Uuid                  @id @onCreate(uuid(7))
   channel            Channel
   locationRegion     Region?
   country            String?
@@ -307,11 +306,11 @@ model QuerySearchBuilder {
   params             Jsonb
   hash               String
   // Number of ProfileQuerySearchBuilder rows; kept in step under a row lock.
-  associatedProfiles Int          @default(0)
+  associatedProfiles Int                   @default(0)
   // Collected only while active: at least one published profile uses it.
-  isActive           Boolean      @default(false)
+  isActive           Boolean               @default(false)
   // Soft delete: retired recipes are never collected, linked or listed again.
-  isDeleted          Boolean      @default(false)
+  isDeleted          Boolean               @default(false)
   // Collection cursor: everything posted before this was searched. Null until first collected.
   coveredUntil       TimestamptzJsDate(3)?
   +Timestamps
@@ -325,11 +324,11 @@ model QuerySearchBuilder {
 
 // Which published profiles use which shared query search builder.
 model ProfileQuerySearchBuilder {
-  id        Uuid               @id @onCreate(uuid(7))
+  id        Uuid                 @id @onCreate(uuid(7))
   profileId Uuid
-  profile   Profile            @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profile   Profile              @relation(fields: [profileId], references: [id], onDelete: Cascade)
   queryId   Uuid
-  query     QuerySearchBuilder @relation(fields: [queryId], references: [id], onDelete: Cascade)
+  query     QuerySearchBuilder   @relation(fields: [queryId], references: [id], onDelete: Cascade)
   createdAt TimestamptzJsDate(3) @default(now())
 
   @@unique([profileId, queryId])
@@ -339,7 +338,7 @@ model ProfileQuerySearchBuilder {
 
 // Shared source observations. Ownership belongs to lookup attribution, not jobs.
 model RawJob {
-  id                   Uuid @id @onCreate(uuid(7))
+  id                   Uuid                  @id @onCreate(uuid(7))
   channel              Channel
   kind                 String
   externalId           String?
@@ -360,7 +359,7 @@ model RawJob {
   firstSeenAt          TimestamptzJsDate(3)
   lastSeenAt           TimestamptzJsDate(3)
   atsPostingId         Uuid?
-  atsPosting           AtsPostingIdentity? @relation(fields: [atsPostingId], references: [id], onDelete: SetNull)
+  atsPosting           AtsPostingIdentity?   @relation(fields: [atsPostingId], references: [id], onDelete: SetNull)
 
   @@check(expression: sql`kind IN ('job', 'post')`, name: "raw_jobs_kind")
   @@check(expression: sql`"postedAtPrecision" IN ('hour', 'day')`, name: "raw_jobs_precision")
@@ -372,12 +371,12 @@ model RawJob {
 
 // Aliases permit URL-only observations to acquire source IDs atomically.
 model RawJobIdentity {
-  id            Uuid @id @onCreate(uuid(7))
+  id            Uuid    @id @onCreate(uuid(7))
   channel       Channel
   identityType  String
   identityValue String
   rawJobId      Uuid
-  rawJob        RawJob @relation(fields: [rawJobId], references: [id], onDelete: Cascade)
+  rawJob        RawJob  @relation(fields: [rawJobId], references: [id], onDelete: Cascade)
 
   @@check(expression: sql`"identityType" IN ('source_id', 'url')`, name: "raw_job_identity_type")
   @@check(expression: sql`length(trim("identityValue")) > 0`, name: "raw_job_identity_value")
@@ -386,11 +385,11 @@ model RawJobIdentity {
 }
 
 model RawJobQueryHit {
-  id          Uuid @id @onCreate(uuid(7))
+  id          Uuid                 @id @onCreate(uuid(7))
   queryId     Uuid
-  query       QuerySearchBuilder @relation(fields: [queryId], references: [id], onDelete: Cascade)
+  query       QuerySearchBuilder   @relation(fields: [queryId], references: [id], onDelete: Cascade)
   rawJobId    Uuid
-  rawJob      RawJob @relation(fields: [rawJobId], references: [id], onDelete: Cascade)
+  rawJob      RawJob               @relation(fields: [rawJobId], references: [id], onDelete: Cascade)
   firstSeenAt TimestamptzJsDate(3)
   lastSeenAt  TimestamptzJsDate(3)
   observedUrl String
@@ -428,9 +427,94 @@ model SearchSegmentRun {
   @@map("search_segment_runs")
 }
 
+// One segment run's untouched results, stored as a file; ingest consumes it.
+// The row is the source of truth for whether it was ingested.
+model CollectionBatch {
+  id            Uuid                  @id @onCreate(uuid(7))
+  channel       Channel
+  segmentRunId  Uuid                  @unique
+  segmentRun    SearchSegmentRun      @relation(fields: [segmentRunId], references: [id], onDelete: Restrict)
+  storageKey    String
+  formatVersion Int
+  observedAt    TimestamptzJsDate(3)
+  itemCount     Int
+  actor         String
+  apifyRunId    String?
+  status        String
+  attempts      Int                   @default(0)
+  lastError     String?
+  ingestedAt    TimestamptzJsDate(3)?
+  report        Jsonb?
+  createdAt     TimestamptzJsDate(3)  @default(now())
+
+  @@check(expression: sql`status IN ('pending', 'ingested', 'failed')`, name: "collection_batches_status")
+  @@check(expression: sql`attempts >= 0`, name: "collection_batches_attempts")
+  @@index([status, createdAt])
+  @@map("collection_batches")
+}
+
+// One source posting or post per channel, identified by its source key. Shared, not workspace-scoped.
+model RawItem {
+  id              Uuid                 @id @onCreate(uuid(7))
+  channel         Channel
+  sourceKey       String
+  kind            String
+  firstSeenAt     TimestamptzJsDate(3)
+  lastSeenAt      TimestamptzJsDate(3)
+  // The version with the greatest lastSeenAt; no FK, to avoid a cycle with versions.
+  latestVersionId Uuid?
+
+  @@check(expression: sql`kind IN ('job', 'post')`, name: "raw_items_kind")
+  @@check(expression: sql`"firstSeenAt" <= "lastSeenAt"`, name: "raw_items_seen_order")
+  @@unique([channel, sourceKey])
+  @@map("raw_items")
+}
+
+// One distinct content of a raw item, untouched. Append-only: Process consumes these.
+model RawItemVersion {
+  id           Uuid                 @id @onCreate(uuid(7))
+  rawItemId    Uuid
+  rawItem      RawItem              @relation(fields: [rawItemId], references: [id], onDelete: Cascade)
+  contentHash  String
+  payload      Jsonb
+  firstBatchId Uuid
+  firstBatch   CollectionBatch      @relation(fields: [firstBatchId], references: [id], onDelete: Restrict)
+  firstSeenAt  TimestamptzJsDate(3)
+  lastSeenAt   TimestamptzJsDate(3)
+  createdAt    TimestamptzJsDate(3) @default(now())
+
+  @@check(expression: sql`"firstSeenAt" <= "lastSeenAt"`, name: "raw_item_versions_seen_order")
+  @@unique([rawItemId, contentHash])
+  @@index([createdAt])
+  @@map("raw_item_versions")
+}
+
+// Which query saw which raw item in which batch. `attribution` is the query id, or
+// 'none' for an item no member query claimed, so uniqueness also holds for those.
+model RawItemSighting {
+  id          Uuid                 @id @onCreate(uuid(7))
+  batchId     Uuid
+  batch       CollectionBatch      @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  rawItemId   Uuid
+  rawItem     RawItem              @relation(fields: [rawItemId], references: [id], onDelete: Cascade)
+  versionId   Uuid
+  version     RawItemVersion       @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  queryId     Uuid?
+  attribution String
+  query       QuerySearchBuilder?  @relation(fields: [queryId], references: [id], onDelete: Restrict)
+  rank        Int?
+  observedAt  TimestamptzJsDate(3)
+
+  @@check(expression: sql`rank IS NULL OR rank > 0`, name: "raw_item_sightings_rank")
+  @@check(expression: sql`attribution = COALESCE("queryId"::text, 'none')`, name: "raw_item_sightings_attribution")
+  @@unique([batchId, rawItemId, attribution])
+  @@index([rawItemId])
+  @@map("raw_item_sightings")
+}
+
 // Association only: observations from different channels remain separate.
 model AtsPostingIdentity {
-  id        Uuid @id @onCreate(uuid(7))
+  id        Uuid   @id @onCreate(uuid(7))
   provider  String
   tenantKey String
   postingId String

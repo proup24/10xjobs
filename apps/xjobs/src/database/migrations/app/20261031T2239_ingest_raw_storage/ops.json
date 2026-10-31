@@ -1,0 +1,1138 @@
+[
+  {
+    "id": "table.collection_batches",
+    "label": "Create table \"collection_batches\"",
+    "summary": "Creates table \"collection_batches\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "collection_batches"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"collection_batches\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"collection_batches\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"collection_batches\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"collection_batches\"",
+        "sql": "CREATE TABLE \"public\".\"collection_batches\" (\n  \"actor\" text NOT NULL,\n  \"apifyRunId\" text,\n  \"attempts\" int4 DEFAULT 0 NOT NULL,\n  \"channel\" text NOT NULL,\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"formatVersion\" int4 NOT NULL,\n  \"id\" uuid NOT NULL,\n  \"ingestedAt\" timestamptz(3),\n  \"itemCount\" int4 NOT NULL,\n  \"lastError\" text,\n  \"observedAt\" timestamptz(3) NOT NULL,\n  \"report\" jsonb,\n  \"segmentRunId\" uuid NOT NULL,\n  \"status\" text NOT NULL,\n  \"storageKey\" text NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"collection_batches_attempts_b3d879c1\" CHECK (attempts >= 0),\n  CONSTRAINT \"collection_batches_channel_check_687325cb\" CHECK (\"channel\" IN ('LINKEDIN_JOB_BOARD', 'LINKEDIN_POSTS', 'GREEN_HOUSE', 'ASHBY')),\n  CONSTRAINT \"collection_batches_status_14e6e00d\" CHECK (status IN ('pending', 'ingested', 'failed'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"collection_batches\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"collection_batches\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"collection_batches\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.raw_item_sightings",
+    "label": "Create table \"raw_item_sightings\"",
+    "summary": "Creates table \"raw_item_sightings\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "raw_item_sightings"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"raw_item_sightings\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"raw_item_sightings\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"raw_item_sightings\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"raw_item_sightings\"",
+        "sql": "CREATE TABLE \"public\".\"raw_item_sightings\" (\n  \"attribution\" text NOT NULL,\n  \"batchId\" uuid NOT NULL,\n  \"id\" uuid NOT NULL,\n  \"observedAt\" timestamptz(3) NOT NULL,\n  \"queryId\" uuid,\n  \"rank\" int4,\n  \"rawItemId\" uuid NOT NULL,\n  \"versionId\" uuid NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"raw_item_sightings_attribution_a531f58e\" CHECK (attribution = COALESCE(\"queryId\"::text, 'none')),\n  CONSTRAINT \"raw_item_sightings_rank_d48e58d1\" CHECK (rank IS NULL OR rank > 0)\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"raw_item_sightings\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"raw_item_sightings\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"raw_item_sightings\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.raw_item_versions",
+    "label": "Create table \"raw_item_versions\"",
+    "summary": "Creates table \"raw_item_versions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "raw_item_versions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"raw_item_versions\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"raw_item_versions\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"raw_item_versions\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"raw_item_versions\"",
+        "sql": "CREATE TABLE \"public\".\"raw_item_versions\" (\n  \"contentHash\" text NOT NULL,\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"firstBatchId\" uuid NOT NULL,\n  \"firstSeenAt\" timestamptz(3) NOT NULL,\n  \"id\" uuid NOT NULL,\n  \"lastSeenAt\" timestamptz(3) NOT NULL,\n  \"payload\" jsonb NOT NULL,\n  \"rawItemId\" uuid NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"raw_item_versions_seen_order_9de70718\" CHECK (\"firstSeenAt\" <= \"lastSeenAt\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"raw_item_versions\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"raw_item_versions\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"raw_item_versions\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.raw_items",
+    "label": "Create table \"raw_items\"",
+    "summary": "Creates table \"raw_items\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "raw_items"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"raw_items\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"raw_items\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"raw_items\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"raw_items\"",
+        "sql": "CREATE TABLE \"public\".\"raw_items\" (\n  \"channel\" text NOT NULL,\n  \"firstSeenAt\" timestamptz(3) NOT NULL,\n  \"id\" uuid NOT NULL,\n  \"kind\" text NOT NULL,\n  \"lastSeenAt\" timestamptz(3) NOT NULL,\n  \"latestVersionId\" uuid,\n  \"sourceKey\" text NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"raw_items_channel_check_687325cb\" CHECK (\"channel\" IN ('LINKEDIN_JOB_BOARD', 'LINKEDIN_POSTS', 'GREEN_HOUSE', 'ASHBY')),\n  CONSTRAINT \"raw_items_kind_e26544db\" CHECK (kind IN ('job', 'post')),\n  CONSTRAINT \"raw_items_seen_order_9de70718\" CHECK (\"firstSeenAt\" <= \"lastSeenAt\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"raw_items\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"raw_items\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"raw_items\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "unique.collection_batches.collection_batches_segmentRunId_key",
+    "label": "Add unique constraint on \"collection_batches\" (segmentRunId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "collection_batches_segmentRunId_key",
+        "table": "collection_batches"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"collection_batches_segmentRunId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "collection_batches_segmentRunId_key",
+          "public",
+          "\"public\".\"collection_batches\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"collection_batches_segmentRunId_key\" on \"collection_batches\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"collection_batches_segmentRunId_key\"",
+        "sql": "ALTER TABLE \"public\".\"collection_batches\" ADD CONSTRAINT \"collection_batches_segmentRunId_key\" UNIQUE (\"segmentRunId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"collection_batches_segmentRunId_key\" exists on (segmentRunId)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "collection_batches_segmentRunId_key",
+          "public",
+          "\"public\".\"collection_batches\"",
+          "u",
+          "[\"segmentRunId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.raw_item_sightings.raw_item_sightings_batchId_rawItemId_attribution_key",
+    "label": "Add unique constraint on \"raw_item_sightings\" (batchId, rawItemId, attribution)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "raw_item_sightings_batchId_rawItemId_attribution_key",
+        "table": "raw_item_sightings"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"raw_item_sightings_batchId_rawItemId_attribution_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "raw_item_sightings_batchId_rawItemId_attribution_key",
+          "public",
+          "\"public\".\"raw_item_sightings\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"raw_item_sightings_batchId_rawItemId_attribution_key\" on \"raw_item_sightings\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"raw_item_sightings_batchId_rawItemId_attribution_key\"",
+        "sql": "ALTER TABLE \"public\".\"raw_item_sightings\" ADD CONSTRAINT \"raw_item_sightings_batchId_rawItemId_attribution_key\" UNIQUE (\"batchId\", \"rawItemId\", \"attribution\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"raw_item_sightings_batchId_rawItemId_attribution_key\" exists on (batchId, rawItemId, attribution)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "raw_item_sightings_batchId_rawItemId_attribution_key",
+          "public",
+          "\"public\".\"raw_item_sightings\"",
+          "u",
+          "[\"batchId\",\"rawItemId\",\"attribution\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.raw_item_versions.raw_item_versions_rawItemId_contentHash_key",
+    "label": "Add unique constraint on \"raw_item_versions\" (rawItemId, contentHash)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "raw_item_versions_rawItemId_contentHash_key",
+        "table": "raw_item_versions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"raw_item_versions_rawItemId_contentHash_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "raw_item_versions_rawItemId_contentHash_key",
+          "public",
+          "\"public\".\"raw_item_versions\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"raw_item_versions_rawItemId_contentHash_key\" on \"raw_item_versions\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"raw_item_versions_rawItemId_contentHash_key\"",
+        "sql": "ALTER TABLE \"public\".\"raw_item_versions\" ADD CONSTRAINT \"raw_item_versions_rawItemId_contentHash_key\" UNIQUE (\"rawItemId\", \"contentHash\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"raw_item_versions_rawItemId_contentHash_key\" exists on (rawItemId, contentHash)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "raw_item_versions_rawItemId_contentHash_key",
+          "public",
+          "\"public\".\"raw_item_versions\"",
+          "u",
+          "[\"rawItemId\",\"contentHash\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.raw_items.raw_items_channel_sourceKey_key",
+    "label": "Add unique constraint on \"raw_items\" (channel, sourceKey)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "raw_items_channel_sourceKey_key",
+        "table": "raw_items"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"raw_items_channel_sourceKey_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "raw_items_channel_sourceKey_key",
+          "public",
+          "\"public\".\"raw_items\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"raw_items_channel_sourceKey_key\" on \"raw_items\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"raw_items_channel_sourceKey_key\"",
+        "sql": "ALTER TABLE \"public\".\"raw_items\" ADD CONSTRAINT \"raw_items_channel_sourceKey_key\" UNIQUE (\"channel\", \"sourceKey\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"raw_items_channel_sourceKey_key\" exists on (channel, sourceKey)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "raw_items_channel_sourceKey_key",
+          "public",
+          "\"public\".\"raw_items\"",
+          "u",
+          "[\"channel\",\"sourceKey\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.collection_batches.collection_batches_status_createdAt_idx_58610442",
+    "label": "Create index \"collection_batches_status_createdAt_idx_58610442\" on \"collection_batches\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "collection_batches_status_createdAt_idx_58610442",
+        "table": "collection_batches"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"collection_batches_status_createdAt_idx_58610442\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"collection_batches_status_createdAt_idx_58610442\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"collection_batches_status_createdAt_idx_58610442\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"collection_batches_status_createdAt_idx_58610442\"",
+        "sql": "CREATE INDEX \"collection_batches_status_createdAt_idx_58610442\" ON \"public\".\"collection_batches\" (\"status\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"collection_batches_status_createdAt_idx_58610442\" exists on \"collection_batches\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"collection_batches_status_createdAt_idx_58610442\"",
+          "i",
+          "I",
+          "\"public\".\"collection_batches\"",
+          "btree",
+          "[\"status\",\"createdAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.raw_item_sightings.raw_item_sightings_batchId_idx_84d4b0b9",
+    "label": "Create index \"raw_item_sightings_batchId_idx_84d4b0b9\" on \"raw_item_sightings\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "raw_item_sightings_batchId_idx_84d4b0b9",
+        "table": "raw_item_sightings"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"raw_item_sightings_batchId_idx_84d4b0b9\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"raw_item_sightings_batchId_idx_84d4b0b9\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"raw_item_sightings_batchId_idx_84d4b0b9\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"raw_item_sightings_batchId_idx_84d4b0b9\"",
+        "sql": "CREATE INDEX \"raw_item_sightings_batchId_idx_84d4b0b9\" ON \"public\".\"raw_item_sightings\" (\"batchId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"raw_item_sightings_batchId_idx_84d4b0b9\" exists on \"raw_item_sightings\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"raw_item_sightings_batchId_idx_84d4b0b9\"",
+          "i",
+          "I",
+          "\"public\".\"raw_item_sightings\"",
+          "btree",
+          "[\"batchId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.raw_item_sightings.raw_item_sightings_queryId_idx_edc2d44a",
+    "label": "Create index \"raw_item_sightings_queryId_idx_edc2d44a\" on \"raw_item_sightings\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "raw_item_sightings_queryId_idx_edc2d44a",
+        "table": "raw_item_sightings"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"raw_item_sightings_queryId_idx_edc2d44a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"raw_item_sightings_queryId_idx_edc2d44a\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"raw_item_sightings_queryId_idx_edc2d44a\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"raw_item_sightings_queryId_idx_edc2d44a\"",
+        "sql": "CREATE INDEX \"raw_item_sightings_queryId_idx_edc2d44a\" ON \"public\".\"raw_item_sightings\" (\"queryId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"raw_item_sightings_queryId_idx_edc2d44a\" exists on \"raw_item_sightings\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"raw_item_sightings_queryId_idx_edc2d44a\"",
+          "i",
+          "I",
+          "\"public\".\"raw_item_sightings\"",
+          "btree",
+          "[\"queryId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.raw_item_sightings.raw_item_sightings_rawItemId_idx_e9f47b12",
+    "label": "Create index \"raw_item_sightings_rawItemId_idx_e9f47b12\" on \"raw_item_sightings\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "raw_item_sightings_rawItemId_idx_e9f47b12",
+        "table": "raw_item_sightings"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"raw_item_sightings_rawItemId_idx_e9f47b12\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"raw_item_sightings_rawItemId_idx_e9f47b12\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"raw_item_sightings_rawItemId_idx_e9f47b12\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"raw_item_sightings_rawItemId_idx_e9f47b12\"",
+        "sql": "CREATE INDEX \"raw_item_sightings_rawItemId_idx_e9f47b12\" ON \"public\".\"raw_item_sightings\" (\"rawItemId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"raw_item_sightings_rawItemId_idx_e9f47b12\" exists on \"raw_item_sightings\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"raw_item_sightings_rawItemId_idx_e9f47b12\"",
+          "i",
+          "I",
+          "\"public\".\"raw_item_sightings\"",
+          "btree",
+          "[\"rawItemId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.raw_item_sightings.raw_item_sightings_versionId_idx_ef8aa804",
+    "label": "Create index \"raw_item_sightings_versionId_idx_ef8aa804\" on \"raw_item_sightings\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "raw_item_sightings_versionId_idx_ef8aa804",
+        "table": "raw_item_sightings"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"raw_item_sightings_versionId_idx_ef8aa804\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"raw_item_sightings_versionId_idx_ef8aa804\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"raw_item_sightings_versionId_idx_ef8aa804\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"raw_item_sightings_versionId_idx_ef8aa804\"",
+        "sql": "CREATE INDEX \"raw_item_sightings_versionId_idx_ef8aa804\" ON \"public\".\"raw_item_sightings\" (\"versionId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"raw_item_sightings_versionId_idx_ef8aa804\" exists on \"raw_item_sightings\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"raw_item_sightings_versionId_idx_ef8aa804\"",
+          "i",
+          "I",
+          "\"public\".\"raw_item_sightings\"",
+          "btree",
+          "[\"versionId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.raw_item_versions.raw_item_versions_createdAt_idx_9575dbd7",
+    "label": "Create index \"raw_item_versions_createdAt_idx_9575dbd7\" on \"raw_item_versions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "raw_item_versions_createdAt_idx_9575dbd7",
+        "table": "raw_item_versions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"raw_item_versions_createdAt_idx_9575dbd7\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"raw_item_versions_createdAt_idx_9575dbd7\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"raw_item_versions_createdAt_idx_9575dbd7\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"raw_item_versions_createdAt_idx_9575dbd7\"",
+        "sql": "CREATE INDEX \"raw_item_versions_createdAt_idx_9575dbd7\" ON \"public\".\"raw_item_versions\" (\"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"raw_item_versions_createdAt_idx_9575dbd7\" exists on \"raw_item_versions\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"raw_item_versions_createdAt_idx_9575dbd7\"",
+          "i",
+          "I",
+          "\"public\".\"raw_item_versions\"",
+          "btree",
+          "[\"createdAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.raw_item_versions.raw_item_versions_firstBatchId_idx_5fbe686f",
+    "label": "Create index \"raw_item_versions_firstBatchId_idx_5fbe686f\" on \"raw_item_versions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "raw_item_versions_firstBatchId_idx_5fbe686f",
+        "table": "raw_item_versions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"raw_item_versions_firstBatchId_idx_5fbe686f\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"raw_item_versions_firstBatchId_idx_5fbe686f\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"raw_item_versions_firstBatchId_idx_5fbe686f\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"raw_item_versions_firstBatchId_idx_5fbe686f\"",
+        "sql": "CREATE INDEX \"raw_item_versions_firstBatchId_idx_5fbe686f\" ON \"public\".\"raw_item_versions\" (\"firstBatchId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"raw_item_versions_firstBatchId_idx_5fbe686f\" exists on \"raw_item_versions\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"raw_item_versions_firstBatchId_idx_5fbe686f\"",
+          "i",
+          "I",
+          "\"public\".\"raw_item_versions\"",
+          "btree",
+          "[\"firstBatchId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.raw_item_versions.raw_item_versions_rawItemId_idx_e9f47b12",
+    "label": "Create index \"raw_item_versions_rawItemId_idx_e9f47b12\" on \"raw_item_versions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "raw_item_versions_rawItemId_idx_e9f47b12",
+        "table": "raw_item_versions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"raw_item_versions_rawItemId_idx_e9f47b12\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"raw_item_versions_rawItemId_idx_e9f47b12\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"raw_item_versions_rawItemId_idx_e9f47b12\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"raw_item_versions_rawItemId_idx_e9f47b12\"",
+        "sql": "CREATE INDEX \"raw_item_versions_rawItemId_idx_e9f47b12\" ON \"public\".\"raw_item_versions\" (\"rawItemId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"raw_item_versions_rawItemId_idx_e9f47b12\" exists on \"raw_item_versions\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"raw_item_versions_rawItemId_idx_e9f47b12\"",
+          "i",
+          "I",
+          "\"public\".\"raw_item_versions\"",
+          "btree",
+          "[\"rawItemId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.collection_batches.collection_batches_segmentRunId_fkey",
+    "label": "Add foreign key \"collection_batches_segmentRunId_fkey\" on \"collection_batches\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "collection_batches_segmentRunId_fkey",
+        "table": "collection_batches"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"collection_batches_segmentRunId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "collection_batches_segmentRunId_fkey",
+          "public",
+          "\"public\".\"collection_batches\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"collection_batches_segmentRunId_fkey\" on \"collection_batches\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"collection_batches_segmentRunId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"collection_batches\"\nADD CONSTRAINT \"collection_batches_segmentRunId_fkey\"\nFOREIGN KEY (\"segmentRunId\")\nREFERENCES \"public\".\"search_segment_runs\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"collection_batches_segmentRunId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "collection_batches_segmentRunId_fkey",
+          "public",
+          "\"public\".\"collection_batches\"",
+          "f",
+          "[\"segmentRunId\"]",
+          "\"public\".\"search_segment_runs\"",
+          "[\"id\"]",
+          "r",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.raw_item_sightings.raw_item_sightings_batchId_fkey",
+    "label": "Add foreign key \"raw_item_sightings_batchId_fkey\" on \"raw_item_sightings\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "raw_item_sightings_batchId_fkey",
+        "table": "raw_item_sightings"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"raw_item_sightings_batchId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "raw_item_sightings_batchId_fkey",
+          "public",
+          "\"public\".\"raw_item_sightings\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"raw_item_sightings_batchId_fkey\" on \"raw_item_sightings\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"raw_item_sightings_batchId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"raw_item_sightings\"\nADD CONSTRAINT \"raw_item_sightings_batchId_fkey\"\nFOREIGN KEY (\"batchId\")\nREFERENCES \"public\".\"collection_batches\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"raw_item_sightings_batchId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "raw_item_sightings_batchId_fkey",
+          "public",
+          "\"public\".\"raw_item_sightings\"",
+          "f",
+          "[\"batchId\"]",
+          "\"public\".\"collection_batches\"",
+          "[\"id\"]",
+          "r",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.raw_item_sightings.raw_item_sightings_rawItemId_fkey",
+    "label": "Add foreign key \"raw_item_sightings_rawItemId_fkey\" on \"raw_item_sightings\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "raw_item_sightings_rawItemId_fkey",
+        "table": "raw_item_sightings"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"raw_item_sightings_rawItemId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "raw_item_sightings_rawItemId_fkey",
+          "public",
+          "\"public\".\"raw_item_sightings\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"raw_item_sightings_rawItemId_fkey\" on \"raw_item_sightings\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"raw_item_sightings_rawItemId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"raw_item_sightings\"\nADD CONSTRAINT \"raw_item_sightings_rawItemId_fkey\"\nFOREIGN KEY (\"rawItemId\")\nREFERENCES \"public\".\"raw_items\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"raw_item_sightings_rawItemId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "raw_item_sightings_rawItemId_fkey",
+          "public",
+          "\"public\".\"raw_item_sightings\"",
+          "f",
+          "[\"rawItemId\"]",
+          "\"public\".\"raw_items\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.raw_item_sightings.raw_item_sightings_versionId_fkey",
+    "label": "Add foreign key \"raw_item_sightings_versionId_fkey\" on \"raw_item_sightings\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "raw_item_sightings_versionId_fkey",
+        "table": "raw_item_sightings"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"raw_item_sightings_versionId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "raw_item_sightings_versionId_fkey",
+          "public",
+          "\"public\".\"raw_item_sightings\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"raw_item_sightings_versionId_fkey\" on \"raw_item_sightings\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"raw_item_sightings_versionId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"raw_item_sightings\"\nADD CONSTRAINT \"raw_item_sightings_versionId_fkey\"\nFOREIGN KEY (\"versionId\")\nREFERENCES \"public\".\"raw_item_versions\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"raw_item_sightings_versionId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "raw_item_sightings_versionId_fkey",
+          "public",
+          "\"public\".\"raw_item_sightings\"",
+          "f",
+          "[\"versionId\"]",
+          "\"public\".\"raw_item_versions\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.raw_item_sightings.raw_item_sightings_queryId_fkey",
+    "label": "Add foreign key \"raw_item_sightings_queryId_fkey\" on \"raw_item_sightings\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "raw_item_sightings_queryId_fkey",
+        "table": "raw_item_sightings"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"raw_item_sightings_queryId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "raw_item_sightings_queryId_fkey",
+          "public",
+          "\"public\".\"raw_item_sightings\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"raw_item_sightings_queryId_fkey\" on \"raw_item_sightings\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"raw_item_sightings_queryId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"raw_item_sightings\"\nADD CONSTRAINT \"raw_item_sightings_queryId_fkey\"\nFOREIGN KEY (\"queryId\")\nREFERENCES \"public\".\"query_search_builder\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"raw_item_sightings_queryId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "raw_item_sightings_queryId_fkey",
+          "public",
+          "\"public\".\"raw_item_sightings\"",
+          "f",
+          "[\"queryId\"]",
+          "\"public\".\"query_search_builder\"",
+          "[\"id\"]",
+          "r",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.raw_item_versions.raw_item_versions_rawItemId_fkey",
+    "label": "Add foreign key \"raw_item_versions_rawItemId_fkey\" on \"raw_item_versions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "raw_item_versions_rawItemId_fkey",
+        "table": "raw_item_versions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"raw_item_versions_rawItemId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "raw_item_versions_rawItemId_fkey",
+          "public",
+          "\"public\".\"raw_item_versions\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"raw_item_versions_rawItemId_fkey\" on \"raw_item_versions\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"raw_item_versions_rawItemId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"raw_item_versions\"\nADD CONSTRAINT \"raw_item_versions_rawItemId_fkey\"\nFOREIGN KEY (\"rawItemId\")\nREFERENCES \"public\".\"raw_items\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"raw_item_versions_rawItemId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "raw_item_versions_rawItemId_fkey",
+          "public",
+          "\"public\".\"raw_item_versions\"",
+          "f",
+          "[\"rawItemId\"]",
+          "\"public\".\"raw_items\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.raw_item_versions.raw_item_versions_firstBatchId_fkey",
+    "label": "Add foreign key \"raw_item_versions_firstBatchId_fkey\" on \"raw_item_versions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "raw_item_versions_firstBatchId_fkey",
+        "table": "raw_item_versions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"raw_item_versions_firstBatchId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "raw_item_versions_firstBatchId_fkey",
+          "public",
+          "\"public\".\"raw_item_versions\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"raw_item_versions_firstBatchId_fkey\" on \"raw_item_versions\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"raw_item_versions_firstBatchId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"raw_item_versions\"\nADD CONSTRAINT \"raw_item_versions_firstBatchId_fkey\"\nFOREIGN KEY (\"firstBatchId\")\nREFERENCES \"public\".\"collection_batches\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"raw_item_versions_firstBatchId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "raw_item_versions_firstBatchId_fkey",
+          "public",
+          "\"public\".\"raw_item_versions\"",
+          "f",
+          "[\"firstBatchId\"]",
+          "\"public\".\"collection_batches\"",
+          "[\"id\"]",
+          "r",
+          "a"
+        ]
+      }
+    ]
+  }
+]

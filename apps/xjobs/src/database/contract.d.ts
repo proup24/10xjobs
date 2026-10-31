@@ -24,9 +24,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'60c648669fe744bbcd8b2df78952fce8b68af22bf5ea5704e018486bdeef149e'>;
+  StorageHashBase<'50cbd7ca417f2c3da56f15b50646afb61b9dee953bb30211f3bf3a4e06817933'>;
 export type ExecutionHash =
-  ExecutionHashBase<'f5322f5c97c5da6f6bb350ad8ca1b7d670aee608d34ad6d26fea7bf32342040d'>;
+  ExecutionHashBase<'600fab6dbcde66e311525ea6f2765937fba59098fb58a95f7e44f3df5393118d'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -289,6 +289,12 @@ export type AddressInput = ValueObjectInputTypes['public']['Address'];
 type FieldTypeOverrides = {
   readonly public: {
     readonly models: {
+      readonly CollectionBatch: {
+        readonly channel: {
+          readonly output: 'LINKEDIN_JOB_BOARD' | 'LINKEDIN_POSTS' | 'GREEN_HOUSE' | 'ASHBY';
+          readonly input: 'LINKEDIN_JOB_BOARD' | 'LINKEDIN_POSTS' | 'GREEN_HOUSE' | 'ASHBY';
+        };
+      };
       readonly Contact: {
         readonly kind: {
           readonly output:
@@ -761,6 +767,12 @@ type FieldTypeOverrides = {
           readonly input: 'remote' | 'hybrid' | 'onsite' | 'unstated';
         };
       };
+      readonly RawItem: {
+        readonly channel: {
+          readonly output: 'LINKEDIN_JOB_BOARD' | 'LINKEDIN_POSTS' | 'GREEN_HOUSE' | 'ASHBY';
+          readonly input: 'LINKEDIN_JOB_BOARD' | 'LINKEDIN_POSTS' | 'GREEN_HOUSE' | 'ASHBY';
+        };
+      };
       readonly RawJob: {
         readonly channel: {
           readonly output: 'LINKEDIN_JOB_BOARD' | 'LINKEDIN_POSTS' | 'GREEN_HOUSE' | 'ASHBY';
@@ -798,6 +810,12 @@ export type FieldInputTypes = FieldTypesFromDomain<
 >;
 type ColumnTypeOverrides = {
   readonly public: {
+    readonly collection_batches: {
+      readonly channel: {
+        readonly output: 'LINKEDIN_JOB_BOARD' | 'LINKEDIN_POSTS' | 'GREEN_HOUSE' | 'ASHBY';
+        readonly input: 'LINKEDIN_JOB_BOARD' | 'LINKEDIN_POSTS' | 'GREEN_HOUSE' | 'ASHBY';
+      };
+    };
     readonly contacts: {
       readonly kind: {
         readonly output:
@@ -1254,6 +1272,12 @@ type ColumnTypeOverrides = {
         readonly input: 'remote' | 'hybrid' | 'onsite' | 'unstated';
       };
     };
+    readonly raw_items: {
+      readonly channel: {
+        readonly output: 'LINKEDIN_JOB_BOARD' | 'LINKEDIN_POSTS' | 'GREEN_HOUSE' | 'ASHBY';
+        readonly input: 'LINKEDIN_JOB_BOARD' | 'LINKEDIN_POSTS' | 'GREEN_HOUSE' | 'ASHBY';
+      };
+    };
     readonly raw_job_identities: {
       readonly channel: {
         readonly output: 'LINKEDIN_JOB_BOARD' | 'LINKEDIN_POSTS' | 'GREEN_HOUSE' | 'ASHBY';
@@ -1296,6 +1320,25 @@ export namespace Models {
     provider: FieldOutputTypes['public']['AtsPostingIdentity']['provider'];
     tenantKey: FieldOutputTypes['public']['AtsPostingIdentity']['tenantKey'];
     readonly [RelationKeys]?: never;
+  };
+  export type public_CollectionBatch = {
+    actor: FieldOutputTypes['public']['CollectionBatch']['actor'];
+    apifyRunId: FieldOutputTypes['public']['CollectionBatch']['apifyRunId'];
+    attempts: FieldOutputTypes['public']['CollectionBatch']['attempts'];
+    channel: FieldOutputTypes['public']['CollectionBatch']['channel'];
+    createdAt: FieldOutputTypes['public']['CollectionBatch']['createdAt'];
+    formatVersion: FieldOutputTypes['public']['CollectionBatch']['formatVersion'];
+    id: FieldOutputTypes['public']['CollectionBatch']['id'];
+    ingestedAt: FieldOutputTypes['public']['CollectionBatch']['ingestedAt'];
+    itemCount: FieldOutputTypes['public']['CollectionBatch']['itemCount'];
+    lastError: FieldOutputTypes['public']['CollectionBatch']['lastError'];
+    observedAt: FieldOutputTypes['public']['CollectionBatch']['observedAt'];
+    report: FieldOutputTypes['public']['CollectionBatch']['report'];
+    segmentRunId: FieldOutputTypes['public']['CollectionBatch']['segmentRunId'];
+    status: FieldOutputTypes['public']['CollectionBatch']['status'];
+    storageKey: FieldOutputTypes['public']['CollectionBatch']['storageKey'];
+    segmentRun: public_SearchSegmentRun;
+    readonly [RelationKeys]?: 'segmentRun';
   };
   export type public_Contact = {
     createdAt: FieldOutputTypes['public']['Contact']['createdAt'];
@@ -1380,6 +1423,44 @@ export namespace Models {
     version: FieldOutputTypes['public']['QuerySearchBuilder']['version'];
     readonly [RelationKeys]?: never;
   };
+  export type public_RawItem = {
+    channel: FieldOutputTypes['public']['RawItem']['channel'];
+    firstSeenAt: FieldOutputTypes['public']['RawItem']['firstSeenAt'];
+    id: FieldOutputTypes['public']['RawItem']['id'];
+    kind: FieldOutputTypes['public']['RawItem']['kind'];
+    lastSeenAt: FieldOutputTypes['public']['RawItem']['lastSeenAt'];
+    latestVersionId: FieldOutputTypes['public']['RawItem']['latestVersionId'];
+    sourceKey: FieldOutputTypes['public']['RawItem']['sourceKey'];
+    readonly [RelationKeys]?: never;
+  };
+  export type public_RawItemSighting = {
+    attribution: FieldOutputTypes['public']['RawItemSighting']['attribution'];
+    batchId: FieldOutputTypes['public']['RawItemSighting']['batchId'];
+    id: FieldOutputTypes['public']['RawItemSighting']['id'];
+    observedAt: FieldOutputTypes['public']['RawItemSighting']['observedAt'];
+    queryId: FieldOutputTypes['public']['RawItemSighting']['queryId'];
+    rank: FieldOutputTypes['public']['RawItemSighting']['rank'];
+    rawItemId: FieldOutputTypes['public']['RawItemSighting']['rawItemId'];
+    versionId: FieldOutputTypes['public']['RawItemSighting']['versionId'];
+    batch: public_CollectionBatch;
+    query: public_QuerySearchBuilder | null;
+    rawItem: public_RawItem;
+    version: public_RawItemVersion;
+    readonly [RelationKeys]?: 'batch' | 'query' | 'rawItem' | 'version';
+  };
+  export type public_RawItemVersion = {
+    contentHash: FieldOutputTypes['public']['RawItemVersion']['contentHash'];
+    createdAt: FieldOutputTypes['public']['RawItemVersion']['createdAt'];
+    firstBatchId: FieldOutputTypes['public']['RawItemVersion']['firstBatchId'];
+    firstSeenAt: FieldOutputTypes['public']['RawItemVersion']['firstSeenAt'];
+    id: FieldOutputTypes['public']['RawItemVersion']['id'];
+    lastSeenAt: FieldOutputTypes['public']['RawItemVersion']['lastSeenAt'];
+    payload: FieldOutputTypes['public']['RawItemVersion']['payload'];
+    rawItemId: FieldOutputTypes['public']['RawItemVersion']['rawItemId'];
+    firstBatch: public_CollectionBatch;
+    rawItem: public_RawItem;
+    readonly [RelationKeys]?: 'firstBatch' | 'rawItem';
+  };
   export type public_RawJob = {
     applyUrl: FieldOutputTypes['public']['RawJob']['applyUrl'];
     atsPostingId: FieldOutputTypes['public']['RawJob']['atsPostingId'];
@@ -1459,11 +1540,15 @@ export namespace Models {
 export declare const models: {
   public: {
     AtsPostingIdentity: Models.public_AtsPostingIdentity;
+    CollectionBatch: Models.public_CollectionBatch;
     Contact: Models.public_Contact;
     Profile: Models.public_Profile;
     ProfileQuerySearchBuilder: Models.public_ProfileQuerySearchBuilder;
     ProfileSkill: Models.public_ProfileSkill;
     QuerySearchBuilder: Models.public_QuerySearchBuilder;
+    RawItem: Models.public_RawItem;
+    RawItemSighting: Models.public_RawItemSighting;
+    RawItemVersion: Models.public_RawItemVersion;
     RawJob: Models.public_RawJob;
     RawJobIdentity: Models.public_RawJobIdentity;
     RawJobQueryHit: Models.public_RawJobQueryHit;
@@ -1523,6 +1608,132 @@ type ContractBase = Omit<
               ];
               indexes: readonly [];
               foreignKeys: readonly [];
+            };
+            readonly collection_batches: {
+              columns: {
+                readonly actor: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly apifyRunId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly attempts: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/int4@1', 0>;
+                  };
+                  readonly many: false;
+                };
+                readonly channel: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly formatVersion: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly ingestedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly itemCount: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly lastError: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly observedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly report: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly segmentRunId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly status: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly storageKey: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['segmentRunId'] }];
+              indexes: readonly [
+                {
+                  readonly name: 'collection_batches_status_createdAt_idx_58610442';
+                  readonly prefix: 'collection_batches_status_createdAt_idx';
+                  readonly columns: readonly ['status', 'createdAt'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'collection_batches';
+                    readonly columns: readonly ['segmentRunId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'search_segment_runs';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
             };
             readonly contacts: {
               columns: {
@@ -2092,6 +2303,295 @@ type ContractBase = Omit<
                   readonly unique: false;
                 },
               ];
+              foreignKeys: readonly [];
+            };
+            readonly raw_item_sightings: {
+              columns: {
+                readonly attribution: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly batchId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly observedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly queryId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly rank: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly rawItemId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly versionId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [
+                { readonly columns: readonly ['batchId', 'rawItemId', 'attribution'] },
+              ];
+              indexes: readonly [
+                {
+                  readonly name: 'raw_item_sightings_batchId_idx_84d4b0b9';
+                  readonly prefix: 'raw_item_sightings_batchId_idx';
+                  readonly columns: readonly ['batchId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'raw_item_sightings_queryId_idx_edc2d44a';
+                  readonly prefix: 'raw_item_sightings_queryId_idx';
+                  readonly columns: readonly ['queryId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'raw_item_sightings_rawItemId_idx_e9f47b12';
+                  readonly prefix: 'raw_item_sightings_rawItemId_idx';
+                  readonly columns: readonly ['rawItemId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'raw_item_sightings_versionId_idx_ef8aa804';
+                  readonly prefix: 'raw_item_sightings_versionId_idx';
+                  readonly columns: readonly ['versionId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'raw_item_sightings';
+                    readonly columns: readonly ['batchId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'collection_batches';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'raw_item_sightings';
+                    readonly columns: readonly ['rawItemId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'raw_items';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'raw_item_sightings';
+                    readonly columns: readonly ['versionId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'raw_item_versions';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'raw_item_sightings';
+                    readonly columns: readonly ['queryId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'query_search_builder';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly raw_item_versions: {
+              columns: {
+                readonly contentHash: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly firstBatchId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly firstSeenAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly lastSeenAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly payload: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly rawItemId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['rawItemId', 'contentHash'] }];
+              indexes: readonly [
+                {
+                  readonly name: 'raw_item_versions_createdAt_idx_9575dbd7';
+                  readonly prefix: 'raw_item_versions_createdAt_idx';
+                  readonly columns: readonly ['createdAt'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'raw_item_versions_firstBatchId_idx_5fbe686f';
+                  readonly prefix: 'raw_item_versions_firstBatchId_idx';
+                  readonly columns: readonly ['firstBatchId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'raw_item_versions_rawItemId_idx_e9f47b12';
+                  readonly prefix: 'raw_item_versions_rawItemId_idx';
+                  readonly columns: readonly ['rawItemId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'raw_item_versions';
+                    readonly columns: readonly ['rawItemId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'raw_items';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'raw_item_versions';
+                    readonly columns: readonly ['firstBatchId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'collection_batches';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly raw_items: {
+              columns: {
+                readonly channel: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly firstSeenAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly kind: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly lastSeenAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly latestVersionId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly sourceKey: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['channel', 'sourceKey'] }];
+              indexes: readonly [];
               foreignKeys: readonly [];
             };
             readonly raw_job_identities: {
@@ -2761,6 +3261,10 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'AtsPostingIdentity';
     };
+    readonly collection_batches: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'CollectionBatch';
+    };
     readonly contacts: { readonly namespace: 'public' & NamespaceId; readonly model: 'Contact' };
     readonly profile_query_search_builders: {
       readonly namespace: 'public' & NamespaceId;
@@ -2775,6 +3279,15 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'QuerySearchBuilder';
     };
+    readonly raw_item_sightings: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'RawItemSighting';
+    };
+    readonly raw_item_versions: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'RawItemVersion';
+    };
+    readonly raw_items: { readonly namespace: 'public' & NamespaceId; readonly model: 'RawItem' };
     readonly raw_job_identities: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'RawJobIdentity';
@@ -2822,6 +3335,117 @@ type ContractBase = Omit<
                 readonly postingId: { readonly column: 'postingId' };
                 readonly provider: { readonly column: 'provider' };
                 readonly tenantKey: { readonly column: 'tenantKey' };
+              };
+            };
+          };
+          readonly CollectionBatch: {
+            readonly fields: {
+              readonly actor: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly apifyRunId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly attempts: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly channel: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly formatVersion: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly ingestedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly itemCount: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly lastError: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly observedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly report: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+              readonly segmentRunId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly storageKey: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly segmentRun: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'SearchSegmentRun';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['segmentRunId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'collection_batches';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly actor: { readonly column: 'actor' };
+                readonly apifyRunId: { readonly column: 'apifyRunId' };
+                readonly attempts: { readonly column: 'attempts' };
+                readonly channel: { readonly column: 'channel' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly formatVersion: { readonly column: 'formatVersion' };
+                readonly id: { readonly column: 'id' };
+                readonly ingestedAt: { readonly column: 'ingestedAt' };
+                readonly itemCount: { readonly column: 'itemCount' };
+                readonly lastError: { readonly column: 'lastError' };
+                readonly observedAt: { readonly column: 'observedAt' };
+                readonly report: { readonly column: 'report' };
+                readonly segmentRunId: { readonly column: 'segmentRunId' };
+                readonly status: { readonly column: 'status' };
+                readonly storageKey: { readonly column: 'storageKey' };
               };
             };
           };
@@ -3303,6 +3927,252 @@ type ContractBase = Omit<
                 readonly type: { readonly column: 'type' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
                 readonly version: { readonly column: 'version' };
+              };
+            };
+          };
+          readonly RawItem: {
+            readonly fields: {
+              readonly channel: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly firstSeenAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly kind: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly lastSeenAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly latestVersionId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly sourceKey: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'raw_items';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly channel: { readonly column: 'channel' };
+                readonly firstSeenAt: { readonly column: 'firstSeenAt' };
+                readonly id: { readonly column: 'id' };
+                readonly kind: { readonly column: 'kind' };
+                readonly lastSeenAt: { readonly column: 'lastSeenAt' };
+                readonly latestVersionId: { readonly column: 'latestVersionId' };
+                readonly sourceKey: { readonly column: 'sourceKey' };
+              };
+            };
+          };
+          readonly RawItemSighting: {
+            readonly fields: {
+              readonly attribution: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly batchId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly observedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly queryId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly rank: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly rawItemId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly versionId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+            };
+            readonly relations: {
+              readonly batch: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'CollectionBatch';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['batchId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly query: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'QuerySearchBuilder';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['queryId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly rawItem: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'RawItem';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['rawItemId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly version: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'RawItemVersion';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['versionId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'raw_item_sightings';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly attribution: { readonly column: 'attribution' };
+                readonly batchId: { readonly column: 'batchId' };
+                readonly id: { readonly column: 'id' };
+                readonly observedAt: { readonly column: 'observedAt' };
+                readonly queryId: { readonly column: 'queryId' };
+                readonly rank: { readonly column: 'rank' };
+                readonly rawItemId: { readonly column: 'rawItemId' };
+                readonly versionId: { readonly column: 'versionId' };
+              };
+            };
+          };
+          readonly RawItemVersion: {
+            readonly fields: {
+              readonly contentHash: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly firstBatchId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly firstSeenAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly lastSeenAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly payload: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+              readonly rawItemId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+            };
+            readonly relations: {
+              readonly firstBatch: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'CollectionBatch';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['firstBatchId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly rawItem: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'RawItem';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['rawItemId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'raw_item_versions';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly contentHash: { readonly column: 'contentHash' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly firstBatchId: { readonly column: 'firstBatchId' };
+                readonly firstSeenAt: { readonly column: 'firstSeenAt' };
+                readonly id: { readonly column: 'id' };
+                readonly lastSeenAt: { readonly column: 'lastSeenAt' };
+                readonly payload: { readonly column: 'payload' };
+                readonly rawItemId: { readonly column: 'rawItemId' };
               };
             };
           };
@@ -4173,6 +5043,14 @@ type ContractBase = Omit<
         {
           readonly onCreate: { readonly id: 'uuidv7'; readonly kind: 'generator' };
           readonly ref: {
+            readonly entry: 'collection_batches';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'uuidv7'; readonly kind: 'generator' };
+          readonly ref: {
             readonly entry: 'contacts';
             readonly field: 'id';
             readonly namespace: 'public';
@@ -4243,6 +5121,30 @@ type ContractBase = Omit<
           readonly ref: {
             readonly entry: 'query_search_builder';
             readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'uuidv7'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'raw_item_sightings';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'uuidv7'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'raw_item_versions';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'uuidv7'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'raw_items';
+            readonly field: 'id';
             readonly namespace: 'public';
           };
         },
