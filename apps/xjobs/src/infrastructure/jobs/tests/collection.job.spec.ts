@@ -151,7 +151,9 @@ describe('CollectionJob.run', () => {
       keyword: rows[0].keyword,
       params: { remote: true },
     });
-    expect(first.until.getTime() - first.since.getTime()).toBe(24 * 3_600_000);
+    expect(first.until.getTime() - first.since.getTime()).toBe(
+      channelJobsConfig[Channel.ASHBY].window.initialHours * 3_600_000,
+    );
     expect(collector.collect.mock.calls[0][1]).toBe(
       channelJobsConfig[Channel.ASHBY].run,
     );
@@ -276,5 +278,36 @@ describe('CollectionJob.run', () => {
     expect(await ashby.run()).toMatchObject({ builders: 0, segments: 0 });
     expect(collector.collect).not.toHaveBeenCalled();
     expect(segments.runs).toEqual([]);
+  });
+});
+
+describe('channelJobsConfig', () => {
+  it('collects LinkedIn hourly over a day at most', () => {
+    for (const channel of [
+      Channel.LINKEDIN_JOB_BOARD,
+      Channel.LINKEDIN_POSTS,
+    ]) {
+      expect(channelJobsConfig[channel]).toMatchObject({
+        schedule: { pattern: '0 * * * *', timezone: 'UTC' },
+        window: { initialHours: 24, overlapMinutes: 15, maximumHours: 24 },
+      });
+      expect(channelJobsConfig[channel].window).not.toHaveProperty(
+        'minimumHours',
+      );
+    }
+  });
+
+  it('collects Google boards daily over at least three days', () => {
+    for (const channel of [Channel.GREEN_HOUSE, Channel.ASHBY]) {
+      expect(channelJobsConfig[channel]).toMatchObject({
+        schedule: { pattern: '0 6 * * *', timezone: 'UTC' },
+        window: {
+          initialHours: 72,
+          overlapMinutes: 0,
+          maximumHours: 168,
+          minimumHours: 72,
+        },
+      });
+    }
   });
 });

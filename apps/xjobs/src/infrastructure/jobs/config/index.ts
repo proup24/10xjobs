@@ -34,6 +34,21 @@ const hourly = {
   window: { initialHours: 24, overlapMinutes: 15, maximumHours: 24 },
 } as const;
 
+/**
+ * Google indexes ATS pages hours to days after they are posted, so board
+ * discovery runs daily over at least three days; ingest drops the overlap.
+ */
+const daily = {
+  ...hourly,
+  schedule: { pattern: '0 6 * * *', timezone: 'UTC' },
+  window: {
+    initialHours: 72,
+    overlapMinutes: 0,
+    maximumHours: 168,
+    minimumHours: 72,
+  },
+} as const;
+
 /** One dedicated config per channel job; actors and caps carried over from career-hub. */
 export const channelJobsConfig = {
   [Channel.LINKEDIN_JOB_BOARD]: {
@@ -53,7 +68,7 @@ export const channelJobsConfig = {
     },
   },
   [Channel.GREEN_HOUSE]: {
-    ...hourly,
+    ...daily,
     run: {
       actor: 'apify/google-search-scraper',
       maxRunChargeUsd: 0.5,
@@ -63,7 +78,7 @@ export const channelJobsConfig = {
     },
   },
   [Channel.ASHBY]: {
-    ...hourly,
+    ...daily,
     run: {
       actor: 'apify/google-search-scraper',
       maxRunChargeUsd: 0.5,

@@ -7,6 +7,11 @@ export interface WindowConfig {
   overlapMinutes: number;
   /** Longest window one run searches; anything older is not caught up. */
   maximumHours: number;
+  /**
+   * Shortest window one run searches, for sources that index late (Google
+   * finds a posting hours to days after it is published).
+   */
+  minimumHours?: number;
 }
 
 export interface SegmentWindow {
@@ -41,8 +46,9 @@ export function segmentWindow(
     ),
   );
   const earliest = end - config.maximumHours * HOUR;
+  const latest = end - (config.minimumHours ?? 0) * HOUR;
   return {
-    since: new Date(Math.max(start, earliest)),
+    since: new Date(Math.min(Math.max(start, earliest), latest)),
     until,
     clipped: start < earliest,
   };

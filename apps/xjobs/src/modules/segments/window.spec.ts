@@ -55,4 +55,21 @@ describe('segmentWindow', () => {
     );
     expect(since.getTime()).toBeLessThan(until.getTime());
   });
+
+  it('searches at least the minimum span when one is set', () => {
+    const daily = {
+      ...window,
+      overlapMinutes: 0,
+      maximumHours: 168,
+      minimumHours: 72,
+    };
+    expect(segmentWindow([at('2026-10-31T11:00:00Z')], until, daily)).toEqual({
+      since: hoursBefore(72),
+      until,
+      clipped: false,
+    });
+    expect(
+      segmentWindow([at('2026-10-26T12:00:00Z')], until, daily).since,
+    ).toEqual(hoursBefore(120));
+  });
 });
