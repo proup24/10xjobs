@@ -40,6 +40,7 @@ Decided by the user:
 
 - There is one cron job and one dedicated worker process for each channel, each with its own config.
 - The jobs module manages execution. No separate collection module.
+- Each channel has its own collection job class using its own collector (`infrastructure/jobs/collection/<channel>.job.ts`), with no generic dispatch layer. The shared run loop and worker lifecycle live in one base class, `CollectionJob`.
 - Searches come from the queries module, collection from the collectors module, and saving, deduplication and normalization from the ingest module.
 - The old channels-collection design is set aside.
 
@@ -51,7 +52,7 @@ Builder's calls (open to change):
 4. **Process selection.** `worker.ts` reads an optional `WORKER_CHANNEL`. If it is unset, the infrastructure worker runs as today. If it is set to a `Channel`, that channel's worker runs. An unknown value fails startup. There is one package script and Nx target for each channel, and one Docker image.
 5. **Worker environment.** A channel worker validates the Redis vars, the database vars, `APIFY_TOKEN` (required) and `WORKER_CHANNEL`. The infrastructure worker keeps today's validation.
 6. **Queries API.** Add `QuerySearchService.listActive(channel)`. It returns builders where `channel = X AND isActive AND NOT isDeleted`, oldest first, with no profile scope.
-7. **Run loop** (`infrastructure/jobs/collection.processor.ts`). Fix `observedAt` at the start of the run. For each builder, in order:
+7. **Run loop** (`CollectionJob.run`). Fix `observedAt` at the start of the run. For each builder, in order:
    - collect;
    - ingest `{ queryId: builder.id, observedAt, channel, items: jobs }`, split into chunks of at most `ingestConfig.maxBatchItems` (1000).
 
