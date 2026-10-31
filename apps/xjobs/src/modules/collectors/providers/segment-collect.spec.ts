@@ -146,6 +146,25 @@ describe('LinkedIn job board segment', () => {
     ).not.toThrow();
   });
 
+  it('matches echoed URLs whatever their encoding and parameter order', async () => {
+    const url = new URL(urlOf(0));
+    const echoed =
+      `${url.origin}${url.pathname}?` +
+      [...url.searchParams]
+        .reverse()
+        .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+        .join('&');
+    expect(echoed).not.toBe(urlOf(0));
+    const { provider } = actor(() => [item(1, echoed, 1)]);
+    const result = await new LinkedinJobSearchProvider(provider).search(
+      segment(Channel.LINKEDIN_JOB_BOARD, queries),
+      board,
+    );
+    expect(result.jobsByQuery.get('qs-1')?.map((j) => j.sourceJobId)).toEqual([
+      '1',
+    ]);
+  });
+
   it('reports the cost and whether the charge cap was reached', async () => {
     const capped = await new LinkedinJobSearchProvider(
       actor(() => [], 0.96).provider,

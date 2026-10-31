@@ -44,6 +44,23 @@ export function linkedinJobSearchUrl(
   return `https://www.linkedin.com/jobs/search/?${query.toString()}`;
 }
 
+/**
+ * A search URL compared by meaning, not spelling: path plus decoded parameters
+ * in order, so an echo that re-encodes or reorders them still matches.
+ */
+function canonicalUrl(value: string | null): string | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    const params = [...url.searchParams].sort(([a], [b]) =>
+      a < b ? -1 : a > b ? 1 : 0,
+    );
+    return `${url.origin}${url.pathname}?${JSON.stringify(params)}`;
+  } catch {
+    return null;
+  }
+}
+
 /** Where the actor found an item: the start URL it echoes, and its position there. */
 function scrapingInfo(item: unknown): {
   inputUrl: string | null;
@@ -90,8 +107,11 @@ export class LinkedinJobSearchProvider {
 
     const byQuery = attribute(
       items,
-      (item) => scrapingInfo(item).inputUrl,
-      searches,
+      (item) => canonicalUrl(scrapingInfo(item).inputUrl),
+      searches.map(({ id, search }) => ({
+        id,
+        search: canonicalUrl(search) ?? search,
+      })),
     );
     const jobsByQuery = new Map<string, CollectedJob[]>();
     const truncatedQueryIds: string[] = [];
