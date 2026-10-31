@@ -13,7 +13,7 @@ describe('syncCollectionScheduler', () => {
     expect(
       await syncCollectionScheduler(
         q as never,
-        channelJobsConfig[Channel.ASHBY],
+        channelJobsConfig[Channel.LINKEDIN_JOB_BOARD],
       ),
     ).toBe('scheduled');
     expect(q.upsertJobScheduler).toHaveBeenCalledWith(
@@ -28,7 +28,7 @@ describe('syncCollectionScheduler', () => {
     const q = queue();
     expect(
       await syncCollectionScheduler(q as never, {
-        ...channelJobsConfig[Channel.ASHBY],
+        ...channelJobsConfig[Channel.LINKEDIN_JOB_BOARD],
         enabled: false,
       }),
     ).toBe('removed');
