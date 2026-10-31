@@ -61,8 +61,7 @@ export class AshbyCollector extends Collector<BoardSearchRunConfig> {
       fetched: found.fetched,
       costUsd: found.costUsd,
       capped: found.capped,
-      // Google reports no row limit per query, so no member is marked truncated.
-      truncatedQueryIds: [],
+      truncatedQueryIds: found.truncatedQueryIds,
     };
   }
 }

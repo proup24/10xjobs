@@ -78,6 +78,21 @@ describe('linkedinJobSearchUrl', () => {
     });
   });
 
+  it('pins the location with a geoId when the builder has one', () => {
+    const url = new URL(
+      linkedinJobSearchUrl(
+        '("backend engineer" OR "backend developer") AND nestjs',
+        { location: 'EMEA', geoId: '91000007' },
+        60,
+      ),
+    );
+    expect(url.searchParams.get('geoId')).toBe('91000007');
+    expect(url.searchParams.get('location')).toBe('EMEA');
+    expect(url.searchParams.get('keywords')).toBe(
+      '("backend engineer" OR "backend developer") AND nestjs',
+    );
+  });
+
   it('sends GLOBAL as Worldwide and omits missing filters', () => {
     const url = new URL(linkedinJobSearchUrl('x', { location: 'GLOBAL' }, 60));
     expect(url.searchParams.get('location')).toBe('Worldwide');
@@ -230,22 +245,36 @@ describe('LinkedIn posts segment', () => {
 });
 
 describe('job board segments on Google', () => {
-  it('builds one query per member, adding remote only for remote builders', () => {
-    expect(boardQuery('backend engineer', { remote: true }, ashby)).toBe(
-      'site:jobs.ashbyhq.com "backend engineer" intitle:engineer "remote"',
+  const titles = '("backend engineer" OR "backend developer")';
+
+  it('adds the site and suffix to the builder query without requoting it', () => {
+    expect(boardQuery(`${titles} nestjs senior "remote"`, ashby)).toBe(
+      `site:jobs.ashbyhq.com ${titles} nestjs senior "remote" intitle:engineer`,
     );
-    expect(boardQuery('backend engineer', { remote: false }, ashby)).toBe(
-      'site:jobs.ashbyhq.com "backend engineer" intitle:engineer',
+    expect(boardQuery(`${titles} nestjs`, { ...ashby, suffix: '' })).toBe(
+      `site:jobs.ashbyhq.com ${titles} nestjs`,
     );
   });
 
   it('runs once over every member in the window and attributes hits', async () => {
     const queries = [
-      { id: 'qs-1', keyword: 'backend', params: { remote: true } },
-      { id: 'qs-2', keyword: 'frontend', params: { remote: true } },
-      { id: 'qs-3', keyword: 'devops', params: { remote: true } },
+      {
+        id: 'qs-1',
+        keyword: `${titles} nestjs "remote"`,
+        params: { remote: true },
+      },
+      {
+        id: 'qs-2',
+        keyword: `${titles} go "remote"`,
+        params: { remote: true },
+      },
+      {
+        id: 'qs-3',
+        keyword: `${titles} java "remote"`,
+        params: { remote: true },
+      },
     ];
-    const lines = queries.map((q) => boardQuery(q.keyword, q.params, ashby));
+    const lines = queries.map((q) => boardQuery(q.keyword, ashby));
     const { run, provider } = actor(() => [
       {
         searchQuery: { term: lines[0] },
@@ -274,11 +303,66 @@ describe('job board segments on Google', () => {
       'https://jobs.ashbyhq.com/acme/3',
     ]);
     expect(result.fetched).toBe(2);
+    expect(result.truncatedQueryIds).toEqual([]);
+  });
+
+  it('localises an onsite segment to its country and searches whole days', async () => {
+    const onsite = (id: string, countryCode: string) => ({
+      id,
+      keyword: `${titles} nestjs "casablanca"`,
+      params: { remote: false, countryCode },
+    });
+    const long = {
+      channel: Channel.ASHBY,
+      since: new Date('2026-10-28T12:00:00Z'),
+      until,
+    };
+    const shared = actor(() => []);
+    await new GoogleJobsSearchProvider(shared.provider).search(
+      { ...long, queries: [onsite('qs-1', 'ma'), onsite('qs-2', 'ma')] },
+      ashby,
+    );
+    expect(shared.run.mock.calls[0][1]).toMatchObject({
+      countryCode: 'ma',
+      quickDateRange: 'd3',
+    });
+
+    const mixed = actor(() => []);
+    await new GoogleJobsSearchProvider(mixed.provider).search(
+      { ...long, queries: [onsite('qs-1', 'ma'), onsite('qs-2', 'fr')] },
+      ashby,
+    );
+    expect(mixed.run.mock.calls[0][1]).not.toHaveProperty('countryCode');
+  });
+
+  it('marks a query truncated when its last allowed page has more', async () => {
+    const queries = [
+      { id: 'qs-1', keyword: `${titles} nestjs`, params: {} },
+      { id: 'qs-2', keyword: `${titles} go`, params: {} },
+    ];
+    const [a, b] = queries.map((q) => boardQuery(q.keyword, ashby));
+    const page = (term: string, hasNextPage: boolean) => ({
+      searchQuery: { term },
+      hasNextPage,
+      organicResults: [{ url: `https://jobs.ashbyhq.com/acme/${term.length}` }],
+    });
+    const { provider } = actor(() => [
+      page(a, true),
+      page(a, true),
+      page(a, true),
+      page(b, true),
+      page(b, false),
+    ]);
+    const result = await new GoogleJobsSearchProvider(provider).search(
+      segment(Channel.ASHBY, queries),
+      ashby,
+    );
+    expect(result.truncatedQueryIds).toEqual(['qs-1']);
   });
 
   it('drops postings it cannot fetch instead of failing the segment', async () => {
-    const queries = [{ id: 'qs-1', keyword: 'backend', params: {} }];
-    const line = boardQuery('backend', {}, ashby);
+    const queries = [{ id: 'qs-1', keyword: `${titles} nestjs`, params: {} }];
+    const line = boardQuery(queries[0].keyword, ashby);
     const { provider } = actor(() => [
       {
         searchQuery: { term: line },

@@ -25,31 +25,43 @@ export interface SegmentDiscovery {
   fetched: number;
   costUsd: number | null;
   capped: boolean;
+  /** Members whose last allowed page still had more results. */
+  truncatedQueryIds: string[];
 }
 
 /**
- * The Google query of one board builder. Remote builders also require the word
- * "remote"; on-site and hybrid builders are searched by keyword alone.
+ * The Google query of one board builder: the site, the builder's query as it
+ * is (titles, technologies, seniority and place already in place), and the
+ * channel's suffix.
  */
 export function boardQuery(
   keyword: string,
-  params: Record<string, unknown>,
   config: Pick<BoardSearchRunConfig, 'site' | 'suffix'>,
 ): string {
-  return [
-    `site:${config.site}`,
-    `"${keyword}"`,
-    config.suffix,
-    params.remote === true ? '"remote"' : null,
-  ]
-    .filter((part): part is string => !!part)
+  return [`site:${config.site}`, keyword, config.suffix]
+    .filter((part) => !!part)
     .join(' ');
 }
 
-/** Google's `quickDateRange` for a window: whole hours, rounded up, at least one. */
+/** Google's `quickDateRange` for a window: whole hours below a day, whole days from a day. */
 function quickDateRange(since: Date, until: Date): string {
   const hours = (until.getTime() - since.getTime()) / 3_600_000;
-  return `h${Math.max(1, Math.ceil(hours))}`;
+  return hours < 24
+    ? `h${Math.max(1, Math.ceil(hours))}`
+    : `d${Math.ceil(hours / 24)}`;
+}
+
+/** The country every member searches in, or null when they differ or have none. */
+function sharedCountry(segment: SegmentSearch): string | null {
+  const codes = new Set(
+    segment.queries.map((query) =>
+      typeof query.params.countryCode === 'string'
+        ? query.params.countryCode
+        : null,
+    ),
+  );
+  const [code] = codes;
+  return codes.size === 1 && code ? code : null;
 }
 
 /** Apify trigger for Greenhouse and Ashby discovery: one Google run per segment. */
@@ -63,17 +75,30 @@ export class GoogleJobsSearchProvider {
   ): Promise<SegmentDiscovery> {
     const searches = segment.queries.map((query) => ({
       id: query.id,
-      search: boardQuery(query.keyword, query.params, config),
+      search: boardQuery(query.keyword, config),
     }));
+    const countryCode = sharedCountry(segment);
     const { items, costUsd } = await this.actor.run(
       config.actor,
       {
         queries: [...new Set(searches.map(({ search }) => search))].join('\n'),
         maxPagesPerQuery: config.maxPagesPerQuery,
         quickDateRange: quickDateRange(segment.since, segment.until),
+        // Onsite segments share a city, so Google searches from its country.
+        ...(countryCode ? { countryCode } : {}),
       },
       { maxChargeUsd: config.maxRunChargeUsd },
     );
+    // Per query: pages returned and whether the last one had more (career-hub).
+    const pages = new Map<string, number>();
+    const hasMore = new Map<string, boolean>();
+    for (const value of items) {
+      const page = record(value);
+      const search = text(record(page.searchQuery).term);
+      if (!search) continue;
+      pages.set(search, (pages.get(search) ?? 0) + 1);
+      hasMore.set(search, page.hasNextPage === true);
+    }
     // Each dataset item is one results page; its query is echoed in searchQuery.term.
     const hits = items.flatMap((value) => {
       const page = record(value);
@@ -91,6 +116,13 @@ export class GoogleJobsSearchProvider {
       fetched: hits.length,
       costUsd,
       capped: reachedChargeCap(costUsd, config.maxRunChargeUsd),
+      truncatedQueryIds: searches
+        .filter(
+          ({ search }) =>
+            hasMore.get(search) === true &&
+            (pages.get(search) ?? 0) >= config.maxPagesPerQuery,
+        )
+        .map(({ id }) => id),
     };
   }
 }
