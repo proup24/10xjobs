@@ -9,10 +9,14 @@ export {
 } from './errors';
 export type {
   Address,
+  CollectionBatchRow,
   ContactRow,
   ProfileRow,
   ProfileSkillRow,
   QuerySearchBuilderRow,
+  RawItemRow,
+  RawItemSightingRow,
+  RawItemVersionRow,
   ProfileQuerySearchBuilderRow,
   SearchSegmentRunRow,
   UserRow,
