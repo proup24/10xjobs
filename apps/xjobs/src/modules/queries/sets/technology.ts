@@ -1,7 +1,7 @@
 import type { Technology } from 'src/common/enums';
 import type { RankedSkill } from '../types';
 
-export const QUERY_SEARCH_TOP_TECHNOLOGIES = 3;
+export const QUERY_SEARCH_TOP_TECHNOLOGIES = 2;
 
 /** Importance desc, mastery desc, then technology name asc. */
 const compareSkills = (a: RankedSkill, b: RankedSkill): number =>
@@ -18,12 +18,9 @@ export function topTechnologies(skills: RankedSkill[]): Technology[] {
   return [...unique].slice(0, QUERY_SEARCH_TOP_TECHNOLOGIES);
 }
 
-/** Singles, then the top two together, then the top three together. */
+/** Each top technology alone, never combined; `[[]]` (position only) when there are none. */
 export function technologySets(skills: RankedSkill[]): Technology[][] {
   const top = topTechnologies(skills);
   if (top.length === 0) return [[]];
-  const sets = top.map((technology) => [technology]);
-  if (top.length >= 2) sets.push(top.slice(0, 2));
-  if (top.length >= 3) sets.push(top.slice(0, 3));
-  return sets;
+  return top.map((technology) => [technology]);
 }

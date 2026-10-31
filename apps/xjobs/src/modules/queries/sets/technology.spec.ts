@@ -16,7 +16,7 @@ describe('topTechnologies', () => {
         skill(Technology.rust, 8, 5),
         skill(Technology.nestjs, 8, 5),
       ]),
-    ).toEqual([Technology.nestjs, Technology.rust, Technology.go]);
+    ).toEqual([Technology.nestjs, Technology.rust]);
   });
 
   it('breaks full ties by technology name', () => {
@@ -47,7 +47,7 @@ describe('topTechnologies', () => {
     ).toEqual([Technology.go, Technology.rust]);
   });
 
-  it('keeps only the top 3 of 5', () => {
+  it('keeps only the top 2 of 5', () => {
     expect(
       topTechnologies([
         skill(Technology.go, 1, 5),
@@ -56,7 +56,7 @@ describe('topTechnologies', () => {
         skill(Technology.react, 4, 5),
         skill(Technology.postgresql, 5, 5),
       ]),
-    ).toEqual([Technology.postgresql, Technology.react, Technology.nestjs]);
+    ).toEqual([Technology.postgresql, Technology.react]);
   });
 });
 
@@ -64,12 +64,12 @@ describe('technologySets', () => {
   const [a, b, c] = [Technology.go, Technology.rust, Technology.nestjs];
   const skills = [skill(a, 9, 5), skill(b, 8, 5), skill(c, 7, 5)];
 
-  it('returns 5 sets for 3 technologies', () => {
-    expect(technologySets(skills)).toEqual([[a], [b], [c], [a, b], [a, b, c]]);
+  it('returns 2 single sets for 3 technologies', () => {
+    expect(technologySets(skills)).toEqual([[a], [b]]);
   });
 
-  it('returns 3 sets for 2 technologies', () => {
-    expect(technologySets(skills.slice(0, 2))).toEqual([[a], [b], [a, b]]);
+  it('returns 2 single sets for 2 technologies', () => {
+    expect(technologySets(skills.slice(0, 2))).toEqual([[a], [b]]);
   });
 
   it('returns 1 set for 1 technology', () => {
