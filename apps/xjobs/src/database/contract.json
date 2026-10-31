@@ -40,6 +40,10 @@
       "model": "RawJob",
       "namespace": "public"
     },
+    "search_segment_runs": {
+      "model": "SearchSegmentRun",
+      "namespace": "public"
+    },
     "users": {
       "model": "User",
       "namespace": "public"
@@ -1412,6 +1416,16 @@
                   "kind": "scalar"
                 }
               },
+              "coveredUntil": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
               "createdAt": {
                 "nullable": false,
                 "type": {
@@ -1564,6 +1578,9 @@
                 },
                 "country": {
                   "column": "country"
+                },
+                "coveredUntil": {
+                  "column": "coveredUntil"
                 },
                 "createdAt": {
                   "column": "createdAt"
@@ -2067,6 +2084,201 @@
               },
               "namespaceId": "public",
               "table": "raw_job_query_hits"
+            }
+          },
+          "SearchSegmentRun": {
+            "fields": {
+              "capped": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "channel": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "Channel",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "costMicroUsd": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "error": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "fetched": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "finishedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "perQuery": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
+              },
+              "queryIds": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "segmentHash": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "segmentKey": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "startedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "truncatedQueryIds": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "windowEnd": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "windowStart": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "capped": {
+                  "column": "capped"
+                },
+                "channel": {
+                  "column": "channel"
+                },
+                "costMicroUsd": {
+                  "column": "costMicroUsd"
+                },
+                "error": {
+                  "column": "error"
+                },
+                "fetched": {
+                  "column": "fetched"
+                },
+                "finishedAt": {
+                  "column": "finishedAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "perQuery": {
+                  "column": "perQuery"
+                },
+                "queryIds": {
+                  "column": "queryIds"
+                },
+                "segmentHash": {
+                  "column": "segmentHash"
+                },
+                "segmentKey": {
+                  "column": "segmentKey"
+                },
+                "startedAt": {
+                  "column": "startedAt"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "truncatedQueryIds": {
+                  "column": "truncatedQueryIds"
+                },
+                "windowEnd": {
+                  "column": "windowEnd"
+                },
+                "windowStart": {
+                  "column": "windowStart"
+                }
+              },
+              "namespaceId": "public",
+              "table": "search_segment_runs"
             }
           },
           "User": {
@@ -3023,6 +3235,14 @@
                   "dataType": "pg/text",
                   "nullable": true
                 },
+                "coveredUntil": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
                 "createdAt": {
                   "codecId": "pg/timestamptz-date@1",
                   "dataType": "pg/timestamptz",
@@ -3601,6 +3821,159 @@
               },
               "uniques": []
             },
+            "search_segment_runs": {
+              "checks": [
+                {
+                  "expression": "\"channel\" IN ('LINKEDIN_JOB_BOARD', 'LINKEDIN_POSTS', 'GREEN_HOUSE', 'ASHBY')",
+                  "name": "search_segment_runs_channel_check_687325cb",
+                  "prefix": "search_segment_runs_channel_check"
+                },
+                {
+                  "expression": "array_position(\"queryIds\", NULL) IS NULL",
+                  "name": "search_segment_runs_queryIds_elem_not_null_4915023e",
+                  "prefix": "search_segment_runs_queryIds_elem_not_null"
+                },
+                {
+                  "expression": "status IN ('succeeded', 'partial', 'failed')",
+                  "name": "search_segment_runs_status_c2d610e5",
+                  "prefix": "search_segment_runs_status"
+                },
+                {
+                  "expression": "array_position(\"truncatedQueryIds\", NULL) IS NULL",
+                  "name": "search_segment_runs_truncatedQueryIds_elem_not_null_f687001d",
+                  "prefix": "search_segment_runs_truncatedQueryIds_elem_not_null"
+                },
+                {
+                  "expression": "\"windowStart\" < \"windowEnd\"",
+                  "name": "search_segment_runs_window_83d3058e",
+                  "prefix": "search_segment_runs_window"
+                }
+              ],
+              "columns": {
+                "capped": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "nullable": false
+                },
+                "channel": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "Channel",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "costMicroUsd": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "error": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "fetched": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "finishedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "perQuery": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": false
+                },
+                "queryIds": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": false
+                },
+                "segmentHash": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "segmentKey": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "startedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "truncatedQueryIds": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": false
+                },
+                "windowEnd": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "windowStart": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [
+                {
+                  "columns": [
+                    "channel",
+                    "startedAt"
+                  ],
+                  "name": "search_segment_runs_channel_startedAt_idx_346540ce",
+                  "prefix": "search_segment_runs_channel_startedAt_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "users": {
               "columns": {
                 "address": {
@@ -3864,10 +4237,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "8efec91cbf32348047d5188f086d7fc07ba38a6a22a20c02f9e5ae387e4ad123"
+    "storageHash": "60c648669fe744bbcd8b2df78952fce8b68af22bf5ea5704e018486bdeef149e"
   },
   "execution": {
-    "executionHash": "4a9e258933018fc487b8d987b217a9b93dccd535dfc21b0f53b0cbefd690f4ff",
+    "executionHash": "f5322f5c97c5da6f6bb350ad8ca1b7d670aee608d34ad6d26fea7bf32342040d",
     "mutations": {
       "defaults": [
         {
@@ -4025,6 +4398,17 @@
           },
           "ref": {
             "entry": "raw_jobs",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv7",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "search_segment_runs",
             "field": "id",
             "namespace": "public"
           }
