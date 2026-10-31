@@ -1,6 +1,5 @@
 import { Logger } from '@nestjs/common';
 import { Channel } from 'src/common/enums';
-import type { RedisConfig } from 'src/config';
 import type { QuerySearchBuilderRow } from 'src/database';
 import type {
   AshbyCollector,
@@ -11,7 +10,6 @@ import type {
 import type { IngestReport, IngestService } from 'src/modules/ingest';
 import type { QuerySearchService } from 'src/modules/queries';
 import { AshbyCollectionJob } from '../collection/ashby.job';
-import { syncCollectionScheduler } from '../collection/collection.job';
 import { GreenhouseCollectionJob } from '../collection/greenhouse.job';
 import { LinkedinJobBoardCollectionJob } from '../collection/linkedin-job-board.job';
 import { LinkedinPostsCollectionJob } from '../collection/linkedin-posts.job';
@@ -38,8 +36,6 @@ const report = (overrides: Partial<IngestReport> = {}): IngestReport => ({
   ...overrides,
 });
 
-const redis = { url: 'redis://127.0.0.1:1', prefix: 'test' } as RedisConfig;
-
 function setup(
   builders: QuerySearchBuilderRow[],
   collect: (
@@ -58,7 +54,6 @@ function setup(
     collector as unknown as AshbyCollector,
     queries as unknown as QuerySearchService,
     ingestService as unknown as IngestService,
-    redis,
   );
   const warn = vi
     .spyOn(Logger.prototype, 'warn')
@@ -84,12 +79,7 @@ describe('each channel has its own collection job', () => {
     [GreenhouseCollectionJob, Channel.GREEN_HOUSE, 'collect-greenhouse'],
     [AshbyCollectionJob, Channel.ASHBY, 'collect-ashby'],
   ] as const)('%o collects %s on queue %s', (Job, channel, queueName) => {
-    const instance = new Job(
-      { channel } as never,
-      {} as never,
-      {} as never,
-      redis,
-    );
+    const instance = new Job({ channel } as never, {} as never, {} as never);
     expect(instance.channel).toBe(channel);
     expect(instance.queueName).toBe(queueName);
   });
@@ -213,41 +203,6 @@ describe('AshbyCollectionJob.run', () => {
     expect(await ashby.run()).toMatchObject({ builders: 0, failed: 0 });
     expect(collector.collect).not.toHaveBeenCalled();
     expect(ingest).not.toHaveBeenCalled();
-  });
-});
-
-describe('syncCollectionScheduler', () => {
-  const queue = () => ({
-    upsertJobScheduler: vi.fn(async () => undefined),
-    removeJobScheduler: vi.fn(async () => true),
-  });
-
-  it("upserts the channel's cron scheduler when enabled", async () => {
-    const q = queue();
-    expect(
-      await syncCollectionScheduler(
-        q as never,
-        channelJobsConfig[Channel.ASHBY],
-      ),
-    ).toBe('scheduled');
-    expect(q.upsertJobScheduler).toHaveBeenCalledWith(
-      'collect',
-      { pattern: '0 * * * *', tz: 'UTC' },
-      { name: 'collect', opts: { attempts: 1 } },
-    );
-    expect(q.removeJobScheduler).not.toHaveBeenCalled();
-  });
-
-  it('removes the scheduler when the channel is disabled', async () => {
-    const q = queue();
-    expect(
-      await syncCollectionScheduler(q as never, {
-        ...channelJobsConfig[Channel.ASHBY],
-        enabled: false,
-      }),
-    ).toBe('removed');
-    expect(q.removeJobScheduler).toHaveBeenCalledWith('collect');
-    expect(q.upsertJobScheduler).not.toHaveBeenCalled();
   });
 });
 

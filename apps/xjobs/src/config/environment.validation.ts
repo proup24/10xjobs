@@ -59,17 +59,24 @@ export const redisEnvironmentSchema = z.object({
 });
 
 /**
- * Which channel a worker process collects. Unset means the infrastructure
- * worker; an unknown value fails startup rather than falling back to it.
+ * A worker process. `WORKER_CHANNEL` unset runs the infrastructure worker; a
+ * channel runs that channel's collection job and needs an Apify token. An
+ * unknown channel fails startup rather than falling back.
  */
-export const workerChannelSchema = z.enum(Channel).optional();
-
-/** A channel collection worker reads the queries, collects, and ingests. */
-export const channelWorkerEnvironmentSchema = databaseEnvironmentSchema.extend({
-  ...redisEnvironmentSchema.shape,
-  APIFY_TOKEN: z.string().min(1),
-  WORKER_CHANNEL: z.enum(Channel),
-});
+export const workerProcessEnvironmentSchema = databaseEnvironmentSchema
+  .extend({
+    ...redisEnvironmentSchema.shape,
+    APIFY_TOKEN: z.string().min(1).optional(),
+    WORKER_CHANNEL: z.enum(Channel).optional(),
+  })
+  .superRefine((env, ctx) => {
+    if (env.WORKER_CHANNEL && !env.APIFY_TOKEN)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['APIFY_TOKEN'],
+        message: 'Set APIFY_TOKEN to run a channel collection worker',
+      });
+  });
 
 export const environmentSchema = databaseEnvironmentSchema
   .extend({
@@ -126,8 +133,8 @@ export type DatabaseEnvironmentVariables = z.infer<
 export type SeedEnvironmentVariables = z.infer<typeof seedEnvironmentSchema>;
 export type EnvironmentVariables = z.infer<typeof environmentSchema>;
 export type RedisEnvironmentVariables = z.infer<typeof redisEnvironmentSchema>;
-export type ChannelWorkerEnvironmentVariables = z.infer<
-  typeof channelWorkerEnvironmentSchema
+export type WorkerProcessEnvironmentVariables = z.infer<
+  typeof workerProcessEnvironmentSchema
 >;
 
 /**
@@ -163,9 +170,9 @@ export function validateWorkerEnvironment(
   return parseEnvironment(redisEnvironmentSchema, config);
 }
 
-/** `validate` hook for a channel collection worker. */
-export function validateChannelWorkerEnvironment(
+/** `validate` hook for the worker process. */
+export function validateWorkerProcessEnvironment(
   config: Record<string, unknown>,
-): ChannelWorkerEnvironmentVariables {
-  return parseEnvironment(channelWorkerEnvironmentSchema, config);
+): WorkerProcessEnvironmentVariables {
+  return parseEnvironment(workerProcessEnvironmentSchema, config);
 }

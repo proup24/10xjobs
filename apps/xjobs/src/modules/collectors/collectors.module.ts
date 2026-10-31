@@ -9,9 +9,6 @@ import { LinkedinJobSearchProvider } from './providers/apify/linkedin.job_search
 import { LinkedinPostSearchProvider } from './providers/apify/linkedin.post_search.collector';
 import { AshbyPostingProvider } from './providers/extraction/ashby.provider';
 import { GreenhousePostingProvider } from './providers/extraction/greenhouse.provider';
-import { Collector } from './types/collector';
-
-export const COLLECTOR_PROVIDERS = Symbol('COLLECTOR_PROVIDERS');
 
 @Module({
   providers: [
@@ -25,20 +22,8 @@ export const COLLECTOR_PROVIDERS = Symbol('COLLECTOR_PROVIDERS');
     GreenhouseCollector,
     LinkedinJobBoardCollector,
     LinkedinPostsCollector,
-    {
-      provide: COLLECTOR_PROVIDERS,
-      useFactory: (...providers: Collector[]) => providers,
-      inject: [
-        AshbyCollector,
-        GreenhouseCollector,
-        LinkedinJobBoardCollector,
-        LinkedinPostsCollector,
-      ],
-    },
   ],
   exports: [
-    COLLECTOR_PROVIDERS,
-    ApifyActorProvider,
     AshbyCollector,
     GreenhouseCollector,
     LinkedinJobBoardCollector,

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Scope } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   ApifyApiError,
@@ -50,8 +50,9 @@ function isNotFound(error: unknown): boolean {
 /**
  * Thin wrapper over the official Apify client. The token comes from the config
  * service and the client is built on first use, so the API boots without one.
+ * Transient: every Apify trigger that injects it gets its own client.
  */
-@Injectable()
+@Injectable({ scope: Scope.TRANSIENT })
 export class ApifyActorProvider {
   private readonly logger = new Logger(ApifyActorProvider.name);
   private apify?: ApifyClient;

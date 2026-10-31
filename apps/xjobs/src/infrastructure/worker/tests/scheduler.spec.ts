@@ -1,0 +1,38 @@
+import { Channel } from 'src/common/enums';
+import { channelJobsConfig } from 'src/infrastructure/jobs/config';
+import { syncCollectionScheduler } from '../scheduler';
+
+describe('syncCollectionScheduler', () => {
+  const queue = () => ({
+    upsertJobScheduler: vi.fn(async () => undefined),
+    removeJobScheduler: vi.fn(async () => true),
+  });
+
+  it("upserts the channel's cron scheduler when enabled", async () => {
+    const q = queue();
+    expect(
+      await syncCollectionScheduler(
+        q as never,
+        channelJobsConfig[Channel.ASHBY],
+      ),
+    ).toBe('scheduled');
+    expect(q.upsertJobScheduler).toHaveBeenCalledWith(
+      'collect',
+      { pattern: '0 * * * *', tz: 'UTC' },
+      { name: 'collect', opts: { attempts: 1 } },
+    );
+    expect(q.removeJobScheduler).not.toHaveBeenCalled();
+  });
+
+  it('removes the scheduler when the channel is disabled', async () => {
+    const q = queue();
+    expect(
+      await syncCollectionScheduler(q as never, {
+        ...channelJobsConfig[Channel.ASHBY],
+        enabled: false,
+      }),
+    ).toBe('removed');
+    expect(q.removeJobScheduler).toHaveBeenCalledWith('collect');
+    expect(q.upsertJobScheduler).not.toHaveBeenCalled();
+  });
+});

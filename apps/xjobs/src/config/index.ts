@@ -27,16 +27,15 @@ export {
   redisEnvironmentSchema,
   seedEnvironmentSchema,
   validateWorkerEnvironment,
-  channelWorkerEnvironmentSchema,
-  validateChannelWorkerEnvironment,
-  workerChannelSchema,
+  validateWorkerProcessEnvironment,
+  workerProcessEnvironmentSchema,
 } from './environment.validation';
 export type {
-  ChannelWorkerEnvironmentVariables,
   DatabaseEnvironmentVariables,
   EnvironmentVariables,
   RedisEnvironmentVariables,
   SeedEnvironmentVariables,
+  WorkerProcessEnvironmentVariables,
 } from './environment.validation';
 
 type AppConfigService = ConfigService<EnvironmentVariables, true>;

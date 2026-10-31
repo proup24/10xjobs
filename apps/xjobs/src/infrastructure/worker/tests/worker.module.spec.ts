@@ -6,19 +6,17 @@ vi.hoisted(() => {
   process.env.APIFY_TOKEN ??= 'apify-token';
   process.env.WORKER_CHANNEL ??= 'ASHBY';
 });
-import { Channel } from 'src/common/enums';
-import { COLLECTION_JOBS } from '../collection';
-import { CollectionWorkerModule } from '../collection/collection-worker.module';
 
-it('provides one collection job per channel, wired to its own collector', async () => {
+import { WorkerModule } from '../worker.module';
+import { WorkerService } from '../worker.service';
+
+it('wires the jobs module into the worker without connecting', async () => {
   // Compiling builds the providers without lifecycle hooks: nothing connects.
   const module = await Test.createTestingModule({
-    imports: [CollectionWorkerModule],
+    imports: [WorkerModule],
   }).compile();
   try {
-    for (const channel of Object.values(Channel)) {
-      expect(module.get(COLLECTION_JOBS[channel]).channel).toBe(channel);
-    }
+    expect(module.get(WorkerService).active).toBe(true);
   } finally {
     await module.close();
   }

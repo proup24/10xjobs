@@ -3,9 +3,8 @@ import {
   getAppConfig,
   getBasicAuthConfig,
   getStorageConfig,
-  validateChannelWorkerEnvironment,
   validateEnvironment,
-  workerChannelSchema,
+  validateWorkerProcessEnvironment,
 } from './index';
 
 const minimal = {
@@ -118,35 +117,43 @@ describe('collector and tooling configuration', () => {
   });
 });
 
-describe('channel worker configuration', () => {
+describe('worker process configuration', () => {
   const worker = {
     DATABASE_URL: 'postgresql://u:p@localhost:5432/db',
-    APIFY_TOKEN: 'apify-token',
-    WORKER_CHANNEL: 'ASHBY',
   };
 
-  it('accepts the database, Redis defaults, an Apify token and a channel', () => {
-    expect(validateChannelWorkerEnvironment(worker)).toMatchObject({
-      WORKER_CHANNEL: 'ASHBY',
-      APIFY_TOKEN: 'apify-token',
+  it('runs the infrastructure worker without a channel or Apify token', () => {
+    expect(validateWorkerProcessEnvironment(worker)).toMatchObject({
       REDIS_PREFIX: 'xjobs',
     });
+    expect(
+      validateWorkerProcessEnvironment(worker).WORKER_CHANNEL,
+    ).toBeUndefined();
+  });
+
+  it('accepts a channel with an Apify token', () => {
+    expect(
+      validateWorkerProcessEnvironment({
+        ...worker,
+        WORKER_CHANNEL: 'ASHBY',
+        APIFY_TOKEN: 'apify-token',
+      }),
+    ).toMatchObject({ WORKER_CHANNEL: 'ASHBY' });
   });
 
   it('refuses an unknown channel', () => {
     expect(() =>
-      validateChannelWorkerEnvironment({ ...worker, WORKER_CHANNEL: 'ASHBYY' }),
+      validateWorkerProcessEnvironment({
+        ...worker,
+        WORKER_CHANNEL: 'ASHBYY',
+        APIFY_TOKEN: 'apify-token',
+      }),
     ).toThrow(/WORKER_CHANNEL/);
   });
 
-  it('refuses to collect without an Apify token', () => {
-    const { APIFY_TOKEN: _token, ...rest } = worker;
-    expect(() => validateChannelWorkerEnvironment(rest)).toThrow(/APIFY_TOKEN/);
-  });
-
-  it('treats an unset channel as the infrastructure worker', () => {
-    expect(workerChannelSchema.parse(undefined)).toBeUndefined();
-    expect(workerChannelSchema.parse('ASHBY')).toBe('ASHBY');
-    expect(() => workerChannelSchema.parse('nope')).toThrow();
+  it('refuses a channel without an Apify token', () => {
+    expect(() =>
+      validateWorkerProcessEnvironment({ ...worker, WORKER_CHANNEL: 'ASHBY' }),
+    ).toThrow(/APIFY_TOKEN/);
   });
 });

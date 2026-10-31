@@ -1,8 +1,5 @@
-import { Logger, type OnApplicationShutdown } from '@nestjs/common';
-import { Queue, UnrecoverableError, Worker } from 'bullmq';
-import { Redis } from 'ioredis';
+import { Logger } from '@nestjs/common';
 import type { Channel } from 'src/common/enums';
-import type { RedisConfig } from 'src/config';
 import type { QuerySearchBuilderRow } from 'src/database';
 import type { CollectedJob, Collector } from 'src/modules/collectors';
 import { type IngestService, ingestConfig } from 'src/modules/ingest';
@@ -11,8 +8,6 @@ import { type ChannelJobConfig, channelJobsConfig } from '../config';
 
 /** Scheduler id and job name of a channel's recurring collect job. */
 export const COLLECT_JOB = 'collect';
-
-const STARTUP_TIMEOUT_MS = 15000;
 
 /** What one collect run did. */
 export interface CollectionSummary {
@@ -29,92 +24,25 @@ export interface CollectionSummary {
   invalid: number;
 }
 
-/** Makes the queue's cron scheduler match the channel's config; idempotent. */
-export async function syncCollectionScheduler(
-  queue: Pick<Queue, 'upsertJobScheduler' | 'removeJobScheduler'>,
-  config: ChannelJobConfig,
-): Promise<'scheduled' | 'removed'> {
-  if (!config.enabled) {
-    await queue.removeJobScheduler(COLLECT_JOB);
-    return 'removed';
-  }
-  await queue.upsertJobScheduler(
-    COLLECT_JOB,
-    { pattern: config.schedule.pattern, tz: config.schedule.timezone },
-    { name: COLLECT_JOB, opts: { attempts: config.attempts } },
-  );
-  return 'scheduled';
-}
-
 /**
- * A channel's collection job: on its own cron schedule and queue, it searches
- * the channel's active query search builders with the channel's collector and
- * saves each builder's results through ingest.
+ * A channel's collection job: its queue, its schedule config, and one run that
+ * searches the channel's active query search builders with the channel's
+ * collector and saves each builder's results through ingest. A worker process
+ * schedules and consumes it.
  */
-export abstract class CollectionJob implements OnApplicationShutdown {
+export abstract class CollectionJob {
   abstract readonly channel: Channel;
   abstract readonly queueName: string;
   protected readonly logger = new Logger(this.constructor.name);
-  private connection?: Redis;
-  private queue?: Queue;
-  private worker?: Worker;
 
   constructor(
     protected readonly collector: Collector,
     protected readonly queries: QuerySearchService,
     protected readonly ingest: IngestService,
-    protected readonly redis: RedisConfig,
   ) {}
 
-  /**
-   * Registers the cron scheduler and starts consuming the queue. Returns false,
-   * after removing the scheduler, when the channel is disabled.
-   */
-  async start(): Promise<boolean> {
-    const config = channelJobsConfig[this.channel];
-    this.connection = new Redis(this.redis.url, {
-      // Blocking workers must retry indefinitely; never use producer timeouts here.
-      maxRetriesPerRequest: null,
-      connectTimeout: this.redis.commandTimeoutMs,
-      retryStrategy: (attempt) => Math.min(attempt * 100, 2000),
-    });
-    this.connection.on('error', () =>
-      this.logger.warn('Redis connection unavailable'),
-    );
-    this.queue = new Queue(this.queueName, {
-      connection: this.connection,
-      prefix: this.redis.prefix,
-    });
-    this.queue.on('error', () => this.logger.warn('Queue operation failed'));
-    await withTimeout(this.queue.waitUntilReady());
-
-    if ((await syncCollectionScheduler(this.queue, config)) === 'removed') {
-      this.logger.log('Channel disabled; scheduler removed');
-      return false;
-    }
-
-    this.worker = new Worker(
-      this.queueName,
-      async (job) => {
-        if (job.name !== COLLECT_JOB)
-          throw new UnrecoverableError(`Unsupported job: ${job.name}`);
-        return this.run();
-      },
-      {
-        connection: this.connection,
-        prefix: this.redis.prefix,
-        concurrency: config.concurrency,
-      },
-    );
-    this.worker.on('error', () => this.logger.error('Worker Redis failed'));
-    this.worker.on('failed', (job, error) =>
-      this.logger.warn(`Job ${job?.id ?? 'unknown'} failed: ${error.message}`),
-    );
-    await withTimeout(this.worker.waitUntilReady());
-    this.logger.log(
-      `Collecting ${this.channel} on ${config.schedule.pattern} ${config.schedule.timezone}`,
-    );
-    return true;
+  get config(): ChannelJobConfig {
+    return channelJobsConfig[this.channel];
   }
 
   /** One collect run over the channel's active builders. */
@@ -188,16 +116,6 @@ export abstract class CollectionJob implements OnApplicationShutdown {
       summary.invalid += report.invalid;
     }
   }
-
-  async onApplicationShutdown(): Promise<void> {
-    // Stop taking jobs and let the active run finish before releasing Redis.
-    try {
-      await this.worker?.close();
-      await this.queue?.close();
-    } finally {
-      this.connection?.disconnect();
-    }
-  }
 }
 
 function chunks(items: CollectedJob[], size: number): CollectedJob[][] {
@@ -205,21 +123,4 @@ function chunks(items: CollectedJob[], size: number): CollectedJob[][] {
   for (let start = 0; start < items.length; start += size)
     out.push(items.slice(start, start + size));
   return out;
-}
-
-async function withTimeout<T>(promise: Promise<T>): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  try {
-    return await Promise.race([
-      promise,
-      new Promise<never>((_, reject) => {
-        timer = setTimeout(
-          () => reject(new Error('Redis startup timed out')),
-          STARTUP_TIMEOUT_MS,
-        );
-      }),
-    ]);
-  } finally {
-    clearTimeout(timer);
-  }
 }

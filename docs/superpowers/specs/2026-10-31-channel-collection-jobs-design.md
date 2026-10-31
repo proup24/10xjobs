@@ -40,7 +40,9 @@ Decided by the user:
 
 - There is one cron job and one dedicated worker process for each channel, each with its own config.
 - The jobs module manages execution. No separate collection module.
-- Each channel has its own collection job class using its own collector (`infrastructure/jobs/collection/<channel>.job.ts`), with no generic dispatch layer. The shared run loop and worker lifecycle live in one base class, `CollectionJob`.
+- Each channel has its own collection job class using its own collector (`infrastructure/jobs/collection/<channel>.job.ts`). There is no generic dispatch layer and no `COLLECTOR_PROVIDERS`.
+- `JobsModule` declares and executes the jobs: queue name, config and `run()`. The worker is its own module in `infrastructure/worker`: it registers the cron scheduler and consumes the queue of the job `WORKER_CHANNEL` names, or the infrastructure queue when that is unset.
+- Each Apify trigger (`google_search`, `linkedin.job_search`, `linkedin.post_search`) has its own Apify client: `ApifyActorProvider` is transient-scoped.
 - Searches come from the queries module, collection from the collectors module, and saving, deduplication and normalization from the ingest module.
 - The old channels-collection design is set aside.
 
@@ -50,7 +52,7 @@ Builder's calls (open to change):
 2. **Queues.** One queue for each channel, named `collect-<channel>` in kebab-case (for example `collect-linkedin-job-board`), with the existing `REDIS_PREFIX`. The `infrastructure` queue and the `ping` job are unchanged.
 3. **Automatic scheduling.** When a channel worker starts, it calls `queue.upsertJobScheduler('collect', { pattern, tz }, { name: 'collect', data: { channel }, opts: { attempts } })`. This is idempotent, so restarts and replicas are safe. If the channel is `enabled: false`, the worker removes the scheduler and exits with code 0.
 4. **Process selection.** `worker.ts` reads an optional `WORKER_CHANNEL`. If it is unset, the infrastructure worker runs as today. If it is set to a `Channel`, that channel's worker runs. An unknown value fails startup. There is one package script and Nx target for each channel, and one Docker image.
-5. **Worker environment.** A channel worker validates the Redis vars, the database vars, `APIFY_TOKEN` (required) and `WORKER_CHANNEL`. The infrastructure worker keeps today's validation.
+5. **Worker environment.** The worker process validates the database vars, the Redis vars, an optional `WORKER_CHANNEL` and `APIFY_TOKEN`, which is required only when a channel is set. The infrastructure worker therefore now needs the database too, because the jobs module brings in queries and ingest.
 6. **Queries API.** Add `QuerySearchService.listActive(channel)`. It returns builders where `channel = X AND isActive AND NOT isDeleted`, oldest first, with no profile scope.
 7. **Run loop** (`CollectionJob.run`). Fix `observedAt` at the start of the run. For each builder, in order:
    - collect;
