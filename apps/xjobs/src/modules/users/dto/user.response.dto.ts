@@ -25,9 +25,6 @@ export class UserResponseDto implements UserRow {
   @ApiProperty({ format: 'uuid' })
   id!: string;
 
-  @ApiProperty({ format: 'uuid' })
-  workspaceId!: string;
-
   @ApiProperty()
   name!: string;
 

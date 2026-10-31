@@ -21,7 +21,7 @@ import { UsersService } from '../services/users.service';
 
 @ApiTags('users')
 @ApiErrorResponses(HttpStatus.UNAUTHORIZED, HttpStatus.INTERNAL_SERVER_ERROR)
-@Controller('workspaces/:workspaceId/users')
+@Controller('users')
 export class UsersController {
   constructor(
     private readonly users: UsersService,
@@ -35,30 +35,22 @@ export class UsersController {
     HttpStatus.CONFLICT,
   )
   @Post()
-  async create(
-    @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
-    @Body() body: CreateUserDto,
-  ): Promise<UserRow> {
-    return this.users.create(workspaceId, body);
+  async create(@Body() body: CreateUserDto): Promise<UserRow> {
+    return this.users.create(body);
   }
 
   @ApiSuccessResponse(UserResponseDto, { isArray: true })
   @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
   @Get()
-  async list(
-    @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
-  ): Promise<UserRow[]> {
-    return this.users.list(workspaceId);
+  async list(): Promise<UserRow[]> {
+    return this.users.list();
   }
 
   @ApiSuccessResponse(UserResponseDto)
   @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
   @Get(':userId')
-  async get(
-    @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
-    @Param('userId', ParseUUIDPipe) userId: string,
-  ): Promise<UserRow> {
-    return this.users.getOrThrow(workspaceId, userId);
+  async get(@Param('userId', ParseUUIDPipe) userId: string): Promise<UserRow> {
+    return this.users.getOrThrow(userId);
   }
 
   @ApiSuccessResponse(UserResponseDto)
@@ -69,24 +61,22 @@ export class UsersController {
   )
   @Patch(':userId')
   async update(
-    @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
     @Param('userId', ParseUUIDPipe) userId: string,
     @Body() body: UpdateUserDto,
   ): Promise<UserRow> {
-    return this.users.update(workspaceId, userId, body);
+    return this.users.update(userId, body);
   }
 
-  @ApiNoContentResponse({ description: 'Deleted, with the resume file' })
+  @ApiNoContentResponse({
+    description: 'Deleted, with every profile and resume file',
+  })
   @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
   @Delete(':userId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async delete(
-    @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
-    @Param('userId', ParseUUIDPipe) userId: string,
-  ): Promise<void> {
-    await this.users.getOrThrow(workspaceId, userId);
-    // The rows cascade; the resume file does not, so remove it first.
-    await this.resume.removeFor(workspaceId, userId);
-    await this.users.delete(workspaceId, userId);
+  async delete(@Param('userId', ParseUUIDPipe) userId: string): Promise<void> {
+    await this.users.getOrThrow(userId);
+    // The rows cascade; the resume files do not, so remove them first.
+    await this.resume.removeAllFor(userId);
+    await this.users.delete(userId);
   }
 }

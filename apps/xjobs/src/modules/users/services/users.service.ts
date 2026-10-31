@@ -3,7 +3,7 @@ import { rethrowConflict, type UserRow } from 'src/database';
 import { UsersRepository } from '../repositories/users.repository';
 import type { UserInput } from '../types';
 
-const EMAIL_TAKEN = 'A user with this email already exists in the workspace';
+const EMAIL_TAKEN = 'A user with this email already exists';
 
 function normalize<T extends Partial<UserInput>>(data: T): T {
   return data.email === undefined
@@ -15,36 +15,32 @@ function normalize<T extends Partial<UserInput>>(data: T): T {
 export class UsersService {
   constructor(private readonly users: UsersRepository) {}
 
-  create(workspaceId: string, data: UserInput): Promise<UserRow> {
+  create(data: UserInput): Promise<UserRow> {
     return this.users
-      .create(workspaceId, normalize(data))
+      .create(normalize(data))
       .catch((error: unknown) => rethrowConflict(error, EMAIL_TAKEN));
   }
 
-  list(workspaceId: string): Promise<UserRow[]> {
-    return this.users.list(workspaceId);
+  list(): Promise<UserRow[]> {
+    return this.users.list();
   }
 
-  async getOrThrow(workspaceId: string, userId: string): Promise<UserRow> {
-    const user = await this.users.findById(workspaceId, userId);
+  async getOrThrow(userId: string): Promise<UserRow> {
+    const user = await this.users.findById(userId);
     if (!user) throw new NotFoundException('User not found');
     return user;
   }
 
-  async update(
-    workspaceId: string,
-    userId: string,
-    data: Partial<UserInput>,
-  ): Promise<UserRow> {
+  async update(userId: string, data: Partial<UserInput>): Promise<UserRow> {
     const user = await this.users
-      .update(workspaceId, userId, normalize(data))
+      .update(userId, normalize(data))
       .catch((error: unknown) => rethrowConflict(error, EMAIL_TAKEN));
     if (!user) throw new NotFoundException('User not found');
     return user;
   }
 
-  async delete(workspaceId: string, userId: string): Promise<void> {
-    await this.getOrThrow(workspaceId, userId);
-    await this.users.delete(workspaceId, userId);
+  async delete(userId: string): Promise<void> {
+    if (!(await this.users.delete(userId)))
+      throw new NotFoundException('User not found');
   }
 }

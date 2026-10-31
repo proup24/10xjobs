@@ -58,14 +58,14 @@ export class ResumeService implements OnModuleInit {
     }
   }
 
-  async view(workspaceId: string, userId: string): Promise<ProfileView> {
-    return this.profiles.get(workspaceId, userId);
+  async view(userId: string, profileId: string): Promise<ProfileView> {
+    return this.profiles.get(userId, profileId);
   }
 
   /** Stores the new PDF, then points the profile at it, then drops the old file. */
   async save(
-    workspaceId: string,
     userId: string,
+    profileId: string,
     file: UploadedPdf | undefined,
   ): Promise<ProfileView> {
     if (!file) throw new BadRequestException('A PDF file is required');
@@ -75,9 +75,9 @@ export class ResumeService implements OnModuleInit {
     ) {
       throw new BadRequestException('The resume must be a PDF file');
     }
-    const profile = await this.profiles.getOrThrow(workspaceId, userId);
+    const profile = await this.profiles.getOrThrow(userId, profileId);
     const previousKey = profile.resumeKey;
-    const key = `${workspaceId}/${profile.id}/${randomUUID()}.pdf`;
+    const key = `${userId}/${profile.id}/${randomUUID()}.pdf`;
     await this.storage.put(this.bucket, key, file.buffer, 'application/pdf');
     const meta = {
       key,
@@ -86,11 +86,17 @@ export class ResumeService implements OnModuleInit {
       sha256: createHash('sha256').update(file.buffer).digest('hex'),
       uploadedAt: new Date(),
     };
+    let stored: boolean;
     try {
-      await this.repository.setResume(workspaceId, profile.id, meta);
+      stored = await this.repository.setResume(userId, profile.id, meta);
     } catch (error) {
       await this.discard(key);
       throw error;
+    }
+    if (!stored) {
+      // The profile was deleted mid-upload.
+      await this.discard(key);
+      throw new NotFoundException('Profile not found');
     }
     if (previousKey) await this.discard(previousKey);
     return toProfileView({
@@ -104,10 +110,10 @@ export class ResumeService implements OnModuleInit {
   }
 
   async get(
-    workspaceId: string,
     userId: string,
+    profileId: string,
   ): Promise<{ filename: string; data: Buffer }> {
-    const profile = await this.profiles.getOrThrow(workspaceId, userId);
+    const profile = await this.profiles.getOrThrow(userId, profileId);
     if (!profile.resumeKey) throw new NotFoundException('No resume uploaded');
     try {
       return {
@@ -122,16 +128,24 @@ export class ResumeService implements OnModuleInit {
     }
   }
 
-  async delete(workspaceId: string, userId: string): Promise<void> {
-    const profile = await this.profiles.getOrThrow(workspaceId, userId);
+  async delete(userId: string, profileId: string): Promise<void> {
+    const profile = await this.profiles.getOrThrow(userId, profileId);
     if (!profile.resumeKey) throw new NotFoundException('No resume uploaded');
-    await this.repository.setResume(workspaceId, profile.id, null);
+    await this.repository.setResume(userId, profile.id, null);
     await this.discard(profile.resumeKey);
   }
 
-  /** Drops a user's resume file, if any; called before the user is deleted. */
-  async removeFor(workspaceId: string, userId: string): Promise<void> {
-    const profile = await this.repository.findByUser(workspaceId, userId);
-    if (profile?.resumeKey) await this.discard(profile.resumeKey);
+  /** Deletes a profile, then its resume file; the file is only an orphan if that fails. */
+  async deleteProfile(userId: string, profileId: string): Promise<void> {
+    const profile = await this.profiles.getOrThrow(userId, profileId);
+    await this.profiles.delete(userId, profile.id);
+    if (profile.resumeKey) await this.discard(profile.resumeKey);
+  }
+
+  /** Drops the resume files of every profile a user owns; called before the user is deleted. */
+  async removeAllFor(userId: string): Promise<void> {
+    for (const profile of await this.repository.list(userId)) {
+      if (profile.resumeKey) await this.discard(profile.resumeKey);
+    }
   }
 }

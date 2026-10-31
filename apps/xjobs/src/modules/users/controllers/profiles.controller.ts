@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -9,63 +10,92 @@ import {
   Post,
   Put,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiNoContentResponse, ApiTags } from '@nestjs/swagger';
 import { ApiErrorResponses, ApiSuccessResponse } from 'src/common/decorators';
 import { ProfileResponseDto } from '../dto/profile.response.dto';
 import { PublishProfileResponseDto } from '../dto/publish-profile.response.dto';
 import { UpsertProfileDto } from '../dto/upsert-profile.dto';
 import { ProfilesService } from '../services/profiles.service';
+import { ResumeService } from '../services/resume.service';
 import type { ProfileView, PublishedProfileView } from '../types';
 
 @ApiTags('profiles')
 @ApiErrorResponses(HttpStatus.UNAUTHORIZED, HttpStatus.INTERNAL_SERVER_ERROR)
-@Controller('workspaces/:workspaceId/users/:userId/profile')
+@Controller('users/:userId/profiles')
 export class ProfilesController {
-  constructor(private readonly profiles: ProfilesService) {}
+  constructor(
+    private readonly profiles: ProfilesService,
+    private readonly resume: ResumeService,
+  ) {}
 
-  @ApiSuccessResponse(ProfileResponseDto)
+  @ApiSuccessResponse(ProfileResponseDto, { status: HttpStatus.CREATED })
   @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
-  @Put()
-  upsert(
-    @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
+  @Post()
+  create(
     @Param('userId', ParseUUIDPipe) userId: string,
     @Body() body: UpsertProfileDto,
   ): Promise<ProfileView> {
-    return this.profiles.upsert(workspaceId, userId, {
-      ...body,
-      city: body.city ?? null,
-    });
+    return this.profiles.create(userId, body);
+  }
+
+  @ApiSuccessResponse(ProfileResponseDto, { isArray: true })
+  @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
+  @Get()
+  list(@Param('userId', ParseUUIDPipe) userId: string): Promise<ProfileView[]> {
+    return this.profiles.list(userId);
   }
 
   @ApiSuccessResponse(ProfileResponseDto)
   @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
-  @Get()
+  @Get(':profileId')
   get(
-    @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
     @Param('userId', ParseUUIDPipe) userId: string,
+    @Param('profileId', ParseUUIDPipe) profileId: string,
   ): Promise<ProfileView> {
-    return this.profiles.get(workspaceId, userId);
+    return this.profiles.get(userId, profileId);
+  }
+
+  @ApiSuccessResponse(ProfileResponseDto)
+  @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
+  @Put(':profileId')
+  replace(
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Param('profileId', ParseUUIDPipe) profileId: string,
+    @Body() body: UpsertProfileDto,
+  ): Promise<ProfileView> {
+    return this.profiles.replace(userId, profileId, body);
+  }
+
+  @ApiNoContentResponse({ description: 'Deleted, with its resume file' })
+  @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
+  @Delete(':profileId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  delete(
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Param('profileId', ParseUUIDPipe) profileId: string,
+  ): Promise<void> {
+    return this.resume.deleteProfile(userId, profileId);
   }
 
   @ApiSuccessResponse(PublishProfileResponseDto)
   @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
   @HttpCode(HttpStatus.OK)
-  @Post('publish')
+  @Post(':profileId/publish')
   publish(
-    @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
     @Param('userId', ParseUUIDPipe) userId: string,
+    @Param('profileId', ParseUUIDPipe) profileId: string,
   ): Promise<PublishedProfileView> {
-    return this.profiles.publish(workspaceId, userId);
+    return this.profiles.publish(userId, profileId);
   }
 
   @ApiSuccessResponse(ProfileResponseDto)
   @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
   @HttpCode(HttpStatus.OK)
-  @Post('unpublish')
+  @Post(':profileId/unpublish')
   unpublish(
-    @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
     @Param('userId', ParseUUIDPipe) userId: string,
+    @Param('profileId', ParseUUIDPipe) profileId: string,
   ): Promise<ProfileView> {
-    return this.profiles.unpublish(workspaceId, userId);
+    return this.profiles.unpublish(userId, profileId);
   }
 }

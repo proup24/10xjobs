@@ -7,9 +7,6 @@ export class ContactResponseDto implements ContactRow {
   id!: string;
 
   @ApiProperty({ format: 'uuid' })
-  workspaceId!: string;
-
-  @ApiProperty({ format: 'uuid' })
   userId!: string;
 
   @ApiProperty({ enum: ContactKind, enumName: 'ContactKind' })

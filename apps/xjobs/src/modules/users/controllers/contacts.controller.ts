@@ -20,7 +20,7 @@ import { ContactsService } from '../services/contacts.service';
 
 @ApiTags('contacts')
 @ApiErrorResponses(HttpStatus.UNAUTHORIZED, HttpStatus.INTERNAL_SERVER_ERROR)
-@Controller('workspaces/:workspaceId/users/:userId/contacts')
+@Controller('users/:userId/contacts')
 export class ContactsController {
   constructor(private readonly contacts: ContactsService) {}
 
@@ -32,21 +32,17 @@ export class ContactsController {
   )
   @Post()
   create(
-    @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
     @Param('userId', ParseUUIDPipe) userId: string,
     @Body() body: CreateContactDto,
   ): Promise<ContactRow> {
-    return this.contacts.create(workspaceId, userId, body);
+    return this.contacts.create(userId, body);
   }
 
   @ApiSuccessResponse(ContactResponseDto, { isArray: true })
   @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
   @Get()
-  list(
-    @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
-    @Param('userId', ParseUUIDPipe) userId: string,
-  ): Promise<ContactRow[]> {
-    return this.contacts.list(workspaceId, userId);
+  list(@Param('userId', ParseUUIDPipe) userId: string): Promise<ContactRow[]> {
+    return this.contacts.list(userId);
   }
 
   @ApiSuccessResponse(ContactResponseDto)
@@ -57,12 +53,11 @@ export class ContactsController {
   )
   @Patch(':contactId')
   update(
-    @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
     @Param('userId', ParseUUIDPipe) userId: string,
     @Param('contactId', ParseUUIDPipe) contactId: string,
     @Body() body: UpdateContactDto,
   ): Promise<ContactRow> {
-    return this.contacts.update(workspaceId, userId, contactId, body);
+    return this.contacts.update(userId, contactId, body);
   }
 
   @ApiNoContentResponse({ description: 'Deleted' })
@@ -70,10 +65,9 @@ export class ContactsController {
   @Delete(':contactId')
   @HttpCode(HttpStatus.NO_CONTENT)
   delete(
-    @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
     @Param('userId', ParseUUIDPipe) userId: string,
     @Param('contactId', ParseUUIDPipe) contactId: string,
   ): Promise<void> {
-    return this.contacts.delete(workspaceId, userId, contactId);
+    return this.contacts.delete(userId, contactId);
   }
 }

@@ -11,41 +11,35 @@ describe('UsersService', () => {
     service = new UsersService(repository);
   });
 
-  it('409s the same email in the same workspace, ignoring case', async () => {
-    await service.create('ws-a', { name: 'Bob', email: 'bob@example.com' });
+  it('stores the email lowercased and 409s a duplicate, ignoring case', async () => {
+    const user = await service.create({
+      name: 'Bob',
+      email: ' Bob@Example.com ',
+    });
+    expect(user.email).toBe('bob@example.com');
     await expect(
-      service.create('ws-a', { name: 'Bob', email: ' Bob@Example.com ' }),
+      service.create({ name: 'Bob', email: 'BOB@example.com' }),
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
-  it('allows the same email in another workspace', async () => {
-    await service.create('ws-a', { name: 'Bob', email: 'bob@example.com' });
-    await expect(
-      service.create('ws-b', { name: 'Bob', email: 'bob@example.com' }),
-    ).resolves.toMatchObject({ workspaceId: 'ws-b' });
-  });
-
-  it('404s a user reached through another workspace', async () => {
-    const user = await service.create('ws-a', {
-      name: 'Bob',
-      email: 'bob@example.com',
-    });
-    await expect(service.getOrThrow('ws-b', user.id)).rejects.toBeInstanceOf(
+  it('404s an unknown user on get, update and delete', async () => {
+    await expect(service.getOrThrow('missing')).rejects.toBeInstanceOf(
       NotFoundException,
     );
-  });
-
-  it('does not update or delete across workspaces', async () => {
-    const user = await service.create('ws-a', {
-      name: 'Bob',
-      email: 'bob@example.com',
-    });
     await expect(
-      service.update('ws-b', user.id, { name: 'Mallory' }),
+      service.update('missing', { name: 'Mallory' }),
     ).rejects.toBeInstanceOf(NotFoundException);
-    await expect(service.delete('ws-b', user.id)).rejects.toBeInstanceOf(
+    await expect(service.delete('missing')).rejects.toBeInstanceOf(
       NotFoundException,
     );
-    expect(repository.rows).toEqual([expect.objectContaining({ name: 'Bob' })]);
+  });
+
+  it('updates and deletes a user by id', async () => {
+    const user = await service.create({ name: 'Bob', email: 'bob@x.com' });
+    await expect(
+      service.update(user.id, { name: 'Robert' }),
+    ).resolves.toMatchObject({ name: 'Robert' });
+    await service.delete(user.id);
+    expect(repository.rows).toEqual([]);
   });
 });

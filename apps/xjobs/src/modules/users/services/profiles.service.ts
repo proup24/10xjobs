@@ -41,11 +41,7 @@ export function toProfileView(profile: ProfileWithSkills): ProfileView {
         mastery,
         importance,
       }))
-      .sort(
-        (a, b) =>
-          b.importance - a.importance ||
-          b.mastery - a.mastery,
-      ),
+      .sort((a, b) => b.importance - a.importance || b.mastery - a.mastery),
     resume:
       resumeKey && resumeFilename && resumeSha256 && resumeUploadedAt
         ? {
@@ -70,16 +66,36 @@ export function toQuerySearchInput(
     seniority: profile.seniority as Seniority,
     country: profile.country,
     city: profile.city,
-    skills: profile.techStack.map(
-      ({ technology, importance, mastery }) => ({
-        technology: technology as Technology,
-        importance,
-        mastery,
-      }),
-    ),
+    skills: profile.techStack.map(({ technology, importance, mastery }) => ({
+      technology: technology as Technology,
+      importance,
+      mastery,
+    })),
   };
 }
 
+/** A profile write as the API sends it: importance may be left out and defaults to 5. */
+export type ProfileWrite = Omit<ProfileInput, 'city'> & {
+  city?: string | null;
+  techStack: (Omit<SkillInput, 'importance'> & { importance?: number })[];
+};
+
+function toStored(data: ProfileWrite): [ProfileInput, SkillInput[]] {
+  const { techStack, ...fields } = data;
+  return [
+    { ...fields, city: fields.city ?? null },
+    techStack.map(({ technology, domain, mastery, importance }) => ({
+      technology,
+      domain,
+      mastery,
+      importance: importance ?? 5,
+    })),
+  ];
+}
+
+const PROFILE_NOT_FOUND = 'Profile not found';
+
+/** A user owns many profiles; every operation takes `(userId, profileId)` and checks ownership. */
 @Injectable()
 export class ProfilesService {
   constructor(
@@ -88,60 +104,68 @@ export class ProfilesService {
     private readonly querySearch: QuerySearchService,
   ) {}
 
+  /** 404s an unknown user, or a profile that is not this user's. */
   async getOrThrow(
-    workspaceId: string,
     userId: string,
+    profileId: string,
   ): Promise<ProfileWithSkills> {
-    await this.users.getOrThrow(workspaceId, userId);
-    const profile = await this.profiles.findByUser(workspaceId, userId);
-    if (!profile) throw new NotFoundException('Profile not found');
+    await this.users.getOrThrow(userId);
+    const profile = await this.profiles.findById(userId, profileId);
+    if (!profile) throw new NotFoundException(PROFILE_NOT_FOUND);
     return profile;
   }
 
-  async get(workspaceId: string, userId: string): Promise<ProfileView> {
-    return toProfileView(await this.getOrThrow(workspaceId, userId));
+  async list(userId: string): Promise<ProfileView[]> {
+    await this.users.getOrThrow(userId);
+    return (await this.profiles.list(userId)).map(toProfileView);
   }
 
-  async upsert(
-    workspaceId: string,
+  async get(userId: string, profileId: string): Promise<ProfileView> {
+    return toProfileView(await this.getOrThrow(userId, profileId));
+  }
+
+  /** New profiles start as unpublished drafts. */
+  async create(userId: string, data: ProfileWrite): Promise<ProfileView> {
+    await this.users.getOrThrow(userId);
+    return toProfileView(await this.profiles.create(userId, ...toStored(data)));
+  }
+
+  /** Replaces the fields and the whole tech stack; the state is kept. */
+  async replace(
     userId: string,
-    data: ProfileInput & {
-      techStack: (Omit<SkillInput, 'importance'> & { importance?: number })[];
-    },
+    profileId: string,
+    data: ProfileWrite,
   ): Promise<ProfileView> {
-    await this.users.getOrThrow(workspaceId, userId);
-    const { techStack, ...fields } = data;
-    const skills = techStack.map(
-      ({ technology, domain, mastery, importance }) => ({
-        technology,
-        domain,
-        mastery,
-        importance: importance ?? 5,
-      }),
+    await this.users.getOrThrow(userId);
+    const profile = await this.profiles.replace(
+      userId,
+      profileId,
+      ...toStored(data),
     );
-    return toProfileView(
-      await this.profiles.upsert(
-        workspaceId,
-        userId,
-        { ...fields, city: fields.city ?? null },
-        skills,
-      ),
-    );
+    if (!profile) throw new NotFoundException(PROFILE_NOT_FOUND);
+    return toProfileView(profile);
+  }
+
+  /** Deletes the row only; the caller removes its resume file. */
+  async delete(userId: string, profileId: string): Promise<void> {
+    await this.users.getOrThrow(userId);
+    if (!(await this.profiles.delete(userId, profileId)))
+      throw new NotFoundException(PROFILE_NOT_FOUND);
   }
 
   /** Generates the query search builders first, so a failure leaves the profile a draft. */
   async publish(
-    workspaceId: string,
     userId: string,
+    profileId: string,
   ): Promise<PublishedProfileView> {
-    const profile = await this.getOrThrow(workspaceId, userId);
+    const profile = await this.getOrThrow(userId, profileId);
     const querySearches = await this.querySearch.generate(
       userId,
       profile.id,
       toQuerySearchInput(profile),
     );
-    const published = await this.profiles.setState(
-      workspaceId,
+    const published = await this.setState(
+      userId,
       profile.id,
       ProfileState.published,
       new Date(),
@@ -150,15 +174,26 @@ export class ProfilesService {
   }
 
   /** Query search builders are kept; they are permanent. */
-  async unpublish(workspaceId: string, userId: string): Promise<ProfileView> {
-    const profile = await this.getOrThrow(workspaceId, userId);
+  async unpublish(userId: string, profileId: string): Promise<ProfileView> {
+    const profile = await this.getOrThrow(userId, profileId);
     return toProfileView(
-      await this.profiles.setState(
-        workspaceId,
-        profile.id,
-        ProfileState.draft,
-        null,
-      ),
+      await this.setState(userId, profile.id, ProfileState.draft, null),
     );
+  }
+
+  private async setState(
+    userId: string,
+    profileId: string,
+    state: ProfileState,
+    publishedAt: Date | null,
+  ): Promise<ProfileWithSkills> {
+    const profile = await this.profiles.setState(
+      userId,
+      profileId,
+      state,
+      publishedAt,
+    );
+    if (!profile) throw new NotFoundException(PROFILE_NOT_FOUND);
+    return profile;
   }
 }

@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import type { ProfileState } from 'src/common/enums';
-import { DatabaseService, type ProfileSkillRow } from 'src/database';
+import {
+  DatabaseService,
+  type ProfileRow,
+  type ProfileSkillRow,
+} from 'src/database';
+import type { DatabaseTransaction } from 'src/database/seeds/seed.interface';
 import type {
   ProfileInput,
   ProfileWithSkills,
@@ -8,30 +13,42 @@ import type {
   SkillInput,
 } from '../types';
 
-/** Injection token and contract for profile persistence, scoped by workspace. */
+/**
+ * Injection token and contract for profile persistence. A user owns many profiles;
+ * every lookup and write is filtered by both `userId` and `profileId`, so one user
+ * can never reach another user's profile.
+ */
 export abstract class ProfilesRepository {
-  abstract findByUser(
-    workspaceId: string,
+  abstract list(userId: string): Promise<ProfileWithSkills[]>;
+  abstract findById(
     userId: string,
+    profileId: string,
   ): Promise<ProfileWithSkills | null>;
-  /** Creates or replaces the user's profile and its whole tech stack, atomically. */
-  abstract upsert(
-    workspaceId: string,
+  /** Creates a profile with its whole tech stack, atomically. */
+  abstract create(
     userId: string,
     data: ProfileInput,
     skills: SkillInput[],
   ): Promise<ProfileWithSkills>;
+  /** Replaces a profile's fields and whole tech stack atomically; null when not the user's. */
+  abstract replace(
+    userId: string,
+    profileId: string,
+    data: ProfileInput,
+    skills: SkillInput[],
+  ): Promise<ProfileWithSkills | null>;
+  abstract delete(userId: string, profileId: string): Promise<boolean>;
   abstract setState(
-    workspaceId: string,
+    userId: string,
     profileId: string,
     state: ProfileState,
     publishedAt: Date | null,
-  ): Promise<ProfileWithSkills>;
+  ): Promise<ProfileWithSkills | null>;
   abstract setResume(
-    workspaceId: string,
+    userId: string,
     profileId: string,
     meta: ResumeMeta | null,
-  ): Promise<void>;
+  ): Promise<boolean>;
 }
 
 @Injectable()
@@ -40,72 +57,116 @@ export class PrismaProfilesRepository extends ProfilesRepository {
     super();
   }
 
-  async findByUser(
-    workspaceId: string,
-    userId: string,
-  ): Promise<ProfileWithSkills | null> {
-    const orm = this.database.db.orm.public;
-    const profile = await orm.Profile.where({ userId }).first();
-    if (!profile) return null;
-    const techStack = await orm.ProfileSkill.where({
+  private get orm() {
+    return this.database.db.orm.public;
+  }
+
+  private async withSkills(profile: ProfileRow): Promise<ProfileWithSkills> {
+    const techStack = await this.orm.ProfileSkill.where({
       profileId: profile.id,
     }).all();
     return { ...profile, techStack };
   }
 
-  upsert(
-    workspaceId: string,
+  private static async writeSkills(
+    tx: DatabaseTransaction,
+    profileId: string,
+    skills: SkillInput[],
+  ): Promise<ProfileSkillRow[]> {
+    await tx.orm.public.ProfileSkill.where({ profileId }).deleteAll();
+    const techStack: ProfileSkillRow[] = [];
+    for (const skill of skills) {
+      techStack.push(
+        await tx.orm.public.ProfileSkill.create({ ...skill, profileId }),
+      );
+    }
+    return techStack;
+  }
+
+  async list(userId: string): Promise<ProfileWithSkills[]> {
+    const profiles = await this.orm.Profile.where({ userId })
+      .orderBy((p) => p.createdAt.asc())
+      .all();
+    return Promise.all(profiles.map((profile) => this.withSkills(profile)));
+  }
+
+  async findById(
+    userId: string,
+    profileId: string,
+  ): Promise<ProfileWithSkills | null> {
+    const profile = await this.orm.Profile.where({
+      id: profileId,
+      userId,
+    }).first();
+    return profile ? this.withSkills(profile) : null;
+  }
+
+  create(
     userId: string,
     data: ProfileInput,
     skills: SkillInput[],
   ): Promise<ProfileWithSkills> {
     return this.database.db.transaction(async (tx) => {
-      const orm = tx.orm.public;
-      const existing = await orm.Profile.where({ userId }).first();
-      const profile = existing
-        ? await orm.Profile.where({ id: existing.id }).update(data)
-        : await orm.Profile.create({ ...data, userId });
-      if (!profile) throw new Error(`Profile for user ${userId} vanished`);
-      await orm.ProfileSkill.where({
-        profileId: profile.id,
-      }).deleteAll();
-      const techStack: ProfileSkillRow[] = [];
-      for (const skill of skills) {
-        techStack.push(
-          await orm.ProfileSkill.create({
-            ...skill,
-            profileId: profile.id,
-          }),
-        );
-      }
+      const profile = await tx.orm.public.Profile.create({ ...data, userId });
+      const techStack = await PrismaProfilesRepository.writeSkills(
+        tx,
+        profile.id,
+        skills,
+      );
       return { ...profile, techStack };
     });
   }
 
+  replace(
+    userId: string,
+    profileId: string,
+    data: ProfileInput,
+    skills: SkillInput[],
+  ): Promise<ProfileWithSkills | null> {
+    return this.database.db.transaction(async (tx) => {
+      const profile = await tx.orm.public.Profile.where({
+        id: profileId,
+        userId,
+      }).update(data);
+      if (!profile) return null;
+      const techStack = await PrismaProfilesRepository.writeSkills(
+        tx,
+        profile.id,
+        skills,
+      );
+      return { ...profile, techStack };
+    });
+  }
+
+  async delete(userId: string, profileId: string): Promise<boolean> {
+    const deleted = await this.orm.Profile.where({
+      id: profileId,
+      userId,
+    }).delete();
+    return deleted !== null;
+  }
+
   async setState(
-    workspaceId: string,
+    userId: string,
     profileId: string,
     state: ProfileState,
     publishedAt: Date | null,
-  ): Promise<ProfileWithSkills> {
-    const orm = this.database.db.orm.public;
-    const profile = await orm.Profile.where({
+  ): Promise<ProfileWithSkills | null> {
+    const profile = await this.orm.Profile.where({
       id: profileId,
+      userId,
     }).update({ state, publishedAt });
-    if (!profile) throw new Error(`Profile ${profileId} vanished`);
-    const techStack = await orm.ProfileSkill.where({
-      profileId,
-    }).all();
-    return { ...profile, techStack };
+    return profile ? this.withSkills(profile) : null;
   }
 
   async setResume(
-    workspaceId: string,
+    userId: string,
     profileId: string,
     meta: ResumeMeta | null,
-  ): Promise<void> {
-    await this.database.db.orm.public.Profile.where({
+  ): Promise<boolean> {
+    const profile = await this.orm.Profile.where({
       id: profileId,
+      userId,
     }).update({
       resumeKey: meta?.key ?? null,
       resumeFilename: meta?.filename ?? null,
@@ -113,5 +174,6 @@ export class PrismaProfilesRepository extends ProfilesRepository {
       resumeSha256: meta?.sha256 ?? null,
       resumeUploadedAt: meta?.uploadedAt ?? null,
     });
+    return profile !== null;
   }
 }

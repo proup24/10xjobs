@@ -30,9 +30,6 @@ export class ProfileResponseDto implements ProfileView {
   id!: string;
 
   @ApiProperty({ format: 'uuid' })
-  workspaceId!: string;
-
-  @ApiProperty({ format: 'uuid' })
   userId!: string;
 
   @ApiProperty({ enum: Position, enumName: 'Position', isArray: true })

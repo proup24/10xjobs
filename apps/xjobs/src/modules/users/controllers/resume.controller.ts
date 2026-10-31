@@ -26,7 +26,7 @@ import type { ProfileView, UploadedPdf } from '../types';
 
 @ApiTags('profiles')
 @ApiErrorResponses(HttpStatus.UNAUTHORIZED, HttpStatus.INTERNAL_SERVER_ERROR)
-@Controller('workspaces/:workspaceId/users/:userId/profile/resume')
+@Controller('users/:userId/profiles/:profileId/resume')
 export class ResumeController {
   constructor(private readonly resume: ResumeService) {}
 
@@ -51,11 +51,11 @@ export class ResumeController {
     }),
   )
   upload(
-    @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
     @Param('userId', ParseUUIDPipe) userId: string,
+    @Param('profileId', ParseUUIDPipe) profileId: string,
     @UploadedFile() file: UploadedPdf | undefined,
   ): Promise<ProfileView> {
-    return this.resume.save(workspaceId, userId, file);
+    return this.resume.save(userId, profileId, file);
   }
 
   @ApiOkResponse({
@@ -67,10 +67,10 @@ export class ResumeController {
   @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
   @Get()
   async download(
-    @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
     @Param('userId', ParseUUIDPipe) userId: string,
+    @Param('profileId', ParseUUIDPipe) profileId: string,
   ): Promise<StreamableFile> {
-    const { filename, data } = await this.resume.get(workspaceId, userId);
+    const { filename, data } = await this.resume.get(userId, profileId);
     return new StreamableFile(data, {
       type: 'application/pdf',
       disposition: `attachment; filename="${filename}"`,
@@ -83,9 +83,9 @@ export class ResumeController {
   @Delete()
   @HttpCode(HttpStatus.NO_CONTENT)
   delete(
-    @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
     @Param('userId', ParseUUIDPipe) userId: string,
+    @Param('profileId', ParseUUIDPipe) profileId: string,
   ): Promise<void> {
-    return this.resume.delete(workspaceId, userId);
+    return this.resume.delete(userId, profileId);
   }
 }

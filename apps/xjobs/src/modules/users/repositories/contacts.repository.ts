@@ -2,33 +2,22 @@ import { Injectable } from '@nestjs/common';
 import { DatabaseService, type ContactRow } from 'src/database';
 import type { ContactInput } from '../types';
 
-/** Injection token and contract for contact persistence, scoped by workspace and user. */
+/** Injection token and contract for contact persistence, scoped by user. */
 export abstract class ContactsRepository {
-  abstract create(
-    workspaceId: string,
-    userId: string,
-    data: ContactInput,
-  ): Promise<ContactRow>;
-  abstract list(workspaceId: string, userId: string): Promise<ContactRow[]>;
+  abstract create(userId: string, data: ContactInput): Promise<ContactRow>;
+  abstract list(userId: string): Promise<ContactRow[]>;
   abstract findById(
-    workspaceId: string,
     userId: string,
     contactId: string,
   ): Promise<ContactRow | null>;
   abstract update(
-    workspaceId: string,
     userId: string,
     contactId: string,
     data: Partial<ContactInput>,
   ): Promise<ContactRow | null>;
-  abstract delete(
-    workspaceId: string,
-    userId: string,
-    contactId: string,
-  ): Promise<boolean>;
+  abstract delete(userId: string, contactId: string): Promise<boolean>;
   /** Makes `contactId` the user's only primary contact of `kind`. */
   abstract setPrimary(
-    workspaceId: string,
     userId: string,
     contactId: string,
     kind: ContactRow['kind'],
@@ -45,48 +34,33 @@ export class PrismaContactsRepository extends ContactsRepository {
     return this.database.db.orm.public.Contact;
   }
 
-  create(
-    workspaceId: string,
-    userId: string,
-    data: ContactInput,
-  ): Promise<ContactRow> {
+  create(userId: string, data: ContactInput): Promise<ContactRow> {
     return this.contacts.create({ ...data, userId });
   }
 
-  async list(workspaceId: string, userId: string): Promise<ContactRow[]> {
+  async list(userId: string): Promise<ContactRow[]> {
     return await this.contacts
       .where({ userId })
       .orderBy((c) => c.createdAt.asc())
       .all();
   }
 
-  findById(
-    workspaceId: string,
-    userId: string,
-    contactId: string,
-  ): Promise<ContactRow | null> {
+  findById(userId: string, contactId: string): Promise<ContactRow | null> {
     return this.contacts.where({ userId, id: contactId }).first();
   }
 
   async update(
-    workspaceId: string,
     userId: string,
     contactId: string,
     data: Partial<ContactInput>,
   ): Promise<ContactRow | null> {
     if (Object.keys(data).length === 0) {
-      return this.findById(workspaceId, userId, contactId);
+      return this.findById(userId, contactId);
     }
-    return this.contacts
-      .where({ userId, id: contactId })
-      .update(data);
+    return this.contacts.where({ userId, id: contactId }).update(data);
   }
 
-  async delete(
-    workspaceId: string,
-    userId: string,
-    contactId: string,
-  ): Promise<boolean> {
+  async delete(userId: string, contactId: string): Promise<boolean> {
     const deleted = await this.contacts
       .where({ userId, id: contactId })
       .delete();
@@ -94,7 +68,6 @@ export class PrismaContactsRepository extends ContactsRepository {
   }
 
   setPrimary(
-    workspaceId: string,
     userId: string,
     contactId: string,
     kind: ContactRow['kind'],

@@ -16,7 +16,7 @@ import type {
 export class FakeUsersRepository extends UsersRepository {
   rows: UserRow[] = [];
 
-  async create(workspaceId: string, data: UserInput): Promise<UserRow> {
+  async create(data: UserInput): Promise<UserRow> {
     if (this.rows.some((row) => row.email === data.email)) {
       throw { sqlState: '23505' };
     }
@@ -33,22 +33,22 @@ export class FakeUsersRepository extends UsersRepository {
     return row;
   }
 
-  async list(workspaceId: string): Promise<UserRow[]> {
+  async list(): Promise<UserRow[]> {
     return this.rows;
   }
 
-  async findById(workspaceId: string, userId: string) {
+  async findById(userId: string) {
     return this.rows.find((row) => row.id === userId) ?? null;
   }
 
-  async update(workspaceId: string, userId: string, data: Partial<UserInput>) {
-    const row = await this.findById(workspaceId, userId);
+  async update(userId: string, data: Partial<UserInput>) {
+    const row = await this.findById(userId);
     if (!row) return null;
     Object.assign(row, data);
     return row;
   }
 
-  async delete(workspaceId: string, userId: string): Promise<boolean> {
+  async delete(userId: string): Promise<boolean> {
     const before = this.rows.length;
     this.rows = this.rows.filter((row) => row.id !== userId);
     return this.rows.length < before;
@@ -58,11 +58,7 @@ export class FakeUsersRepository extends UsersRepository {
 export class FakeContactsRepository extends ContactsRepository {
   rows: ContactRow[] = [];
 
-  async create(
-    workspaceId: string,
-    userId: string,
-    data: ContactInput,
-  ): Promise<ContactRow> {
+  async create(userId: string, data: ContactInput): Promise<ContactRow> {
     if (
       this.rows.some(
         (row) =>
@@ -88,45 +84,39 @@ export class FakeContactsRepository extends ContactsRepository {
     return row;
   }
 
-  async list(workspaceId: string, userId: string): Promise<ContactRow[]> {
+  async list(userId: string): Promise<ContactRow[]> {
     return this.rows.filter((row) => row.userId === userId);
   }
 
-  async findById(workspaceId: string, userId: string, contactId: string) {
+  async findById(userId: string, contactId: string) {
     return (
       this.rows.find((row) => row.userId === userId && row.id === contactId) ??
       null
     );
   }
 
-  async update(
-    workspaceId: string,
-    userId: string,
-    contactId: string,
-    data: Partial<ContactInput>,
-  ) {
-    const row = await this.findById(workspaceId, userId, contactId);
+  async update(userId: string, contactId: string, data: Partial<ContactInput>) {
+    const row = await this.findById(userId, contactId);
     if (!row) return null;
     Object.assign(row, data);
     return row;
   }
 
-  async delete(workspaceId: string, userId: string, contactId: string) {
-    const row = await this.findById(workspaceId, userId, contactId);
+  async delete(userId: string, contactId: string) {
+    const row = await this.findById(userId, contactId);
     this.rows = this.rows.filter((candidate) => candidate !== row);
     return row !== null;
   }
 
   async setPrimary(
-    workspaceId: string,
     userId: string,
     contactId: string,
     kind: ContactRow['kind'],
   ): Promise<ContactRow> {
-    for (const row of await this.list(workspaceId, userId)) {
+    for (const row of await this.list(userId)) {
       if (row.kind === kind) row.isPrimary = row.id === contactId;
     }
-    const row = await this.findById(workspaceId, userId, contactId);
+    const row = await this.findById(userId, contactId);
     if (!row) throw new Error('missing contact');
     return row;
   }
@@ -135,69 +125,90 @@ export class FakeContactsRepository extends ContactsRepository {
 export class FakeProfilesRepository extends ProfilesRepository {
   rows: ProfileWithSkills[] = [];
 
-  async findByUser(workspaceId: string, userId: string) {
-    return this.rows.find((row) => row.userId === userId) ?? null;
+  private static techStack(profileId: string, skills: SkillInput[]) {
+    const now = new Date();
+    return skills.map((skill, index) => ({
+      ...skill,
+      id: `${profileId}-skill-${index}`,
+      profileId,
+      createdAt: now,
+      updatedAt: now,
+    }));
   }
 
-  async upsert(
-    workspaceId: string,
+  async list(userId: string) {
+    return this.rows.filter((row) => row.userId === userId);
+  }
+
+  async findById(userId: string, profileId: string) {
+    return (
+      this.rows.find((row) => row.userId === userId && row.id === profileId) ??
+      null
+    );
+  }
+
+  async create(
     userId: string,
     data: ProfileInput,
     skills: SkillInput[],
   ): Promise<ProfileWithSkills> {
     const now = new Date();
-    let profile = await this.findByUser(workspaceId, userId);
-    if (!profile) {
-      profile = {
-        id: `profile-${this.rows.length + 1}`,
-        userId,
-        ...data,
-        resumeKey: null,
-        resumeFilename: null,
-        resumeSizeBytes: null,
-        resumeSha256: null,
-        resumeUploadedAt: null,
-        state: ProfileState.draft,
-        publishedAt: null,
-        createdAt: now,
-        updatedAt: now,
-        techStack: [],
-      };
-      this.rows.push(profile);
-    }
-    const currentProfile = profile;
-    const profileId = currentProfile.id;
-    Object.assign(currentProfile, data, {
-      techStack: skills.map((skill, index) => ({
-        ...skill,
-        id: `skill-${index}`,
-        profileId,
-        createdAt: now,
-        updatedAt: now,
-      })),
-    });
-    return currentProfile;
-  }
-
-  async setState(
-    workspaceId: string,
-    profileId: string,
-    state: ProfileState,
-    publishedAt: Date | null,
-  ): Promise<ProfileWithSkills> {
-    const profile = this.rows.find((row) => row.id === profileId);
-    if (!profile) throw new Error('missing profile');
-    Object.assign(profile, { state, publishedAt });
+    const id = `profile-${this.rows.length + 1}`;
+    const profile: ProfileWithSkills = {
+      id,
+      userId,
+      ...data,
+      resumeKey: null,
+      resumeFilename: null,
+      resumeSizeBytes: null,
+      resumeSha256: null,
+      resumeUploadedAt: null,
+      state: ProfileState.draft,
+      publishedAt: null,
+      createdAt: now,
+      updatedAt: now,
+      techStack: FakeProfilesRepository.techStack(id, skills),
+    };
+    this.rows.push(profile);
     return profile;
   }
 
+  async replace(
+    userId: string,
+    profileId: string,
+    data: ProfileInput,
+    skills: SkillInput[],
+  ) {
+    const profile = await this.findById(userId, profileId);
+    if (!profile) return null;
+    return Object.assign(profile, data, {
+      techStack: FakeProfilesRepository.techStack(profileId, skills),
+    });
+  }
+
+  async delete(userId: string, profileId: string) {
+    const profile = await this.findById(userId, profileId);
+    this.rows = this.rows.filter((row) => row !== profile);
+    return profile !== null;
+  }
+
+  async setState(
+    userId: string,
+    profileId: string,
+    state: ProfileState,
+    publishedAt: Date | null,
+  ) {
+    const profile = await this.findById(userId, profileId);
+    return profile ? Object.assign(profile, { state, publishedAt }) : null;
+  }
+
   async setResume(
-    workspaceId: string,
+    userId: string,
     profileId: string,
     meta: ResumeMeta | null,
-  ): Promise<void> {
-    const profile = this.rows.find((row) => row.id === profileId);
-    if (!profile) return;
+  ): Promise<boolean> {
+    const profile = await this.findById(userId, profileId);
+    if (!profile) return false;
     Object.assign(profile, {
       resumeKey: meta?.key ?? null,
       resumeFilename: meta?.filename ?? null,
@@ -205,5 +216,6 @@ export class FakeProfilesRepository extends ProfilesRepository {
       resumeSha256: meta?.sha256 ?? null,
       resumeUploadedAt: meta?.uploadedAt ?? null,
     });
+    return true;
   }
 }

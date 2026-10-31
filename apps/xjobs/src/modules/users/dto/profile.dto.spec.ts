@@ -18,9 +18,7 @@ const validProfile = {
   arrangements: ['remote'],
   seniority: 'senior',
   noticePeriodDays: 30,
-  techStack: [
-    { technology: 'nodejs', domain: 'backend', mastery: 8 },
-  ],
+  techStack: [{ technology: 'nodejs', domain: 'backend', mastery: 8 }],
 };
 
 function paths(errors: ValidationError[], prefix = ''): string[] {

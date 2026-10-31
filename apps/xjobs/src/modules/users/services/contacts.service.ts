@@ -18,37 +18,28 @@ export class ContactsService {
     private readonly contacts: ContactsRepository,
   ) {}
 
-  async create(
-    workspaceId: string,
-    userId: string,
-    data: ContactInput,
-  ): Promise<ContactRow> {
-    await this.users.getOrThrow(workspaceId, userId);
+  async create(userId: string, data: ContactInput): Promise<ContactRow> {
+    await this.users.getOrThrow(userId);
     const { isPrimary, ...rest } = data;
     const contact = await this.contacts
-      .create(workspaceId, userId, { ...rest, isPrimary: false })
+      .create(userId, { ...rest, isPrimary: false })
       .catch((error: unknown) => rethrowConflict(error, CONTACT_TAKEN));
     return isPrimary
-      ? this.contacts.setPrimary(workspaceId, userId, contact.id, contact.kind)
+      ? this.contacts.setPrimary(userId, contact.id, contact.kind)
       : contact;
   }
 
-  async list(workspaceId: string, userId: string): Promise<ContactRow[]> {
-    await this.users.getOrThrow(workspaceId, userId);
-    return this.contacts.list(workspaceId, userId);
+  async list(userId: string): Promise<ContactRow[]> {
+    await this.users.getOrThrow(userId);
+    return this.contacts.list(userId);
   }
 
   async update(
-    workspaceId: string,
     userId: string,
     contactId: string,
     data: Partial<ContactInput>,
   ): Promise<ContactRow> {
-    const existing = await this.contacts.findById(
-      workspaceId,
-      userId,
-      contactId,
-    );
+    const existing = await this.contacts.findById(userId, contactId);
     if (!existing) throw new NotFoundException('Contact not found');
     const { kind: previousKind, isPrimary: wasPrimary } = existing;
     // A patch may send only one of kind/value; check the pair it leaves behind.
@@ -62,7 +53,6 @@ export class ContactsService {
     const { isPrimary, ...rest } = data;
     const contact = await this.contacts
       .update(
-        workspaceId,
         userId,
         contactId,
         isPrimary === false ? { ...rest, isPrimary } : rest,
@@ -73,16 +63,12 @@ export class ContactsService {
     const movedPrimary =
       isPrimary === undefined && wasPrimary && contact.kind !== previousKind;
     return isPrimary || movedPrimary
-      ? this.contacts.setPrimary(workspaceId, userId, contact.id, contact.kind)
+      ? this.contacts.setPrimary(userId, contact.id, contact.kind)
       : contact;
   }
 
-  async delete(
-    workspaceId: string,
-    userId: string,
-    contactId: string,
-  ): Promise<void> {
-    const deleted = await this.contacts.delete(workspaceId, userId, contactId);
+  async delete(userId: string, contactId: string): Promise<void> {
+    const deleted = await this.contacts.delete(userId, contactId);
     if (!deleted) throw new NotFoundException('Contact not found');
   }
 }
