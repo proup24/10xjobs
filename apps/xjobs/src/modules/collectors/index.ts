@@ -10,6 +10,7 @@ export type {
   CollectedJob,
   LinkedinJobBoardRunConfig,
   LinkedinPostsRunConfig,
+  RawCollectedItem,
   SegmentQuery,
   SegmentResult,
   SegmentSearch,

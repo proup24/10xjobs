@@ -1,0 +1,13 @@
+{
+  "id": "4012345678",
+  "url": "https://www.linkedin.com/jobs/view/senior-backend-engineer-at-acme-4012345678?trk=public_jobs",
+  "title": "Senior Backend Engineer",
+  "companyName": "Acme",
+  "location": "Remote",
+  "publishedAt": "2026-10-31T10:00:00.000Z",
+  "postedTime": "2 hours ago",
+  "applicantsCount": "12",
+  "descriptionHtml": "<p>Build APIs.</p>",
+  "applyUrl": "https://jobs.ashbyhq.com/acme/0b1c2d3e-0000-4000-8000-000000000001",
+  "scrapingInfo": { "inputUrl": "https://www.linkedin.com/jobs/search/?keywords=node", "index": 3 }
+}

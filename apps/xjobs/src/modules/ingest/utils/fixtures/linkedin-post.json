@@ -1,0 +1,9 @@
+{
+  "id": "7390000000000000001",
+  "linkedinUrl": "https://www.linkedin.com/posts/jane-doe_hiring-activity-7390000000000000001-abcd",
+  "content": "We're hiring a senior Node.js engineer. DM me.",
+  "author": { "type": "profile", "name": "Jane Doe", "linkedinUrl": "https://www.linkedin.com/in/jane-doe" },
+  "postedAt": { "timestamp": 1761904800000, "date": "2026-10-31T10:00:00.000Z", "postedAgoText": "2h" },
+  "engagement": { "likes": 14, "comments": 3, "shares": 1 },
+  "query": "senior node engineer hiring"
+}

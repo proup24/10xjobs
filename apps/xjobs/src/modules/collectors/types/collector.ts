@@ -1,5 +1,13 @@
 import { Channel } from 'src/common/enums';
 
+/** One item exactly as the source returned it, with where its query ranked it. */
+export interface RawCollectedItem {
+  /** 1-based position the source reported; null when it reports none. */
+  rank: number | null;
+  /** Untouched source payload. */
+  payload: unknown;
+}
+
 /** One member builder of a search segment, as a collector searches it. */
 export interface SegmentQuery {
   /** The builder id; results are attributed and ingested against it. */
