@@ -78,6 +78,15 @@ describe('API contract', () => {
     document = await buildDocument();
   });
 
+  it('documents a query search builder region as nullable', () => {
+    const builder = document.components?.schemas?.[
+      'QuerySearchBuilderResponseDto'
+    ] as Schema & { properties: Record<string, Record<string, unknown>> };
+    expect(JSON.stringify(builder.properties['locationRegion'])).toContain(
+      '"nullable":true',
+    );
+  });
+
   it('covers every route', () => {
     expect(
       operations(document)

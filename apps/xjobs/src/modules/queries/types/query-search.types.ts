@@ -26,7 +26,8 @@ export type QuerySearchProfileInput = {
 export type QuerySearchCombination = {
   channel: Channel;
   position: Position;
-  locationRegion: Region;
+  /** Null for onsite and hybrid: those are bound to the city, not a region. */
+  locationRegion: Region | null;
   country: string | null;
   city: string | null;
   experience: Seniority;

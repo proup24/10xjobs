@@ -9,3 +9,8 @@ export {
   isLocatable,
   PLACE_BOUND,
 } from './locatable';
+export {
+  dedupeByHash,
+  localCombinations,
+  remoteCombinations,
+} from './combinations';

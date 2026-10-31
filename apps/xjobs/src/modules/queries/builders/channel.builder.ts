@@ -1,4 +1,4 @@
-import { Arrangement, type Channel } from 'src/common/enums';
+import { Arrangement, Region, type Channel } from 'src/common/enums';
 import type { ChannelQuery, QuerySearchCombination } from '../types';
 import {
   ARRANGEMENT_WORDS,
@@ -34,12 +34,14 @@ export function arrangementWord(
   return ARRANGEMENT_WORDS[combination.type];
 }
 
-/** The region for remote or unstated work, otherwise `city, country` or `country`. */
+/** The region for remote work, otherwise `city, country` (or `country` when no city). */
 export function locationText(combination: QuerySearchCombination): string {
   const placeBound =
     combination.type === Arrangement.onsite ||
     combination.type === Arrangement.hybrid;
-  if (!placeBound || !combination.country) return combination.locationRegion;
+  // Remote always carries a region; GLOBAL only guards a malformed combination.
+  if (!placeBound || !combination.country)
+    return combination.locationRegion ?? Region.GLOBAL;
   return combination.city
     ? `${combination.city}, ${combination.country}`
     : combination.country;
@@ -51,7 +53,9 @@ export function jobBoardFilterQuery(
 ): ChannelQuery {
   const locationTerms =
     combination.type === Arrangement.remote
-      ? [combination.locationRegion]
+      ? combination.locationRegion
+        ? [combination.locationRegion]
+        : []
       : [combination.country, combination.city].filter(
         (term): term is string => !!term,
       );

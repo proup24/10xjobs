@@ -15,8 +15,13 @@ export class QuerySearchBuilderResponseDto implements QuerySearchBuilderRow {
   @ApiProperty({ enum: Channel, enumName: 'Channel' })
   channel!: Channel;
 
-  @ApiProperty({ enum: Region, enumName: 'Region' })
-  locationRegion!: Region;
+  @ApiProperty({
+    enum: Region,
+    enumName: 'Region',
+    nullable: true,
+    description: 'Null for onsite and hybrid searches, which use the city',
+  })
+  locationRegion!: Region | null;
 
   @ApiProperty({ type: String, nullable: true, example: 'MA' })
   country!: string | null;

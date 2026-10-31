@@ -42,6 +42,17 @@ describe('recipe', () => {
     expect(toRecipe({ ...base, ...change }).hash).not.toBe(toRecipe(base).hash);
   });
 
+  it('hashes a null region apart from a real one', () => {
+    expect(toRecipe({ ...base, locationRegion: null }).hash).not.toBe(
+      toRecipe(base).hash,
+    );
+  });
+
+  it('is at recipe version 2', () => {
+    expect(QUERY_SEARCH_RECIPE_VERSION).toBe(2);
+    expect(toRecipe(base).version).toBe(2);
+  });
+
   it('ignores params key order', () => {
     const rest = { ...toRecipe(base), hash: undefined, position: undefined };
     expect(recipeHash({ ...rest, params: { a: 1, b: { d: 1, c: 2 } } })).toBe(
@@ -55,23 +66,23 @@ describe('recipe', () => {
     expect(recipe.keyword).toBe('senior backend engineer nestjs typescript');
   });
 
-  // Rows are deduplicated by hash forever: these digests must never change.
+  // Rows are deduplicated by hash forever: these digests change only with QUERY_SEARCH_RECIPE_VERSION (v2).
   it.each<[Channel, string]>([
     [
       Channel.LINKEDIN_JOB_BOARD,
-      'c50265896c5b84b51ef1f8c62b8ef658afdccf211bbabdbbc5a17514899aa059',
+      '2fbae1ea4d6b06e48700d70914aca7c323b7102e79b434242e1b153fade5fbf3',
     ],
     [
       Channel.LINKEDIN_POSTS,
-      '9b8c473481b5bbed5703a4dcc77502793d34ba1a9f29093fdd1a5fdb43139c31',
+      'ea1832bb50ddbacfcb37ad48fd0dff84c9b5755595d0a5c253a0107f617356df',
     ],
     [
       Channel.GREEN_HOUSE,
-      'bcf157e25f4208ae162288ac2d52088d372a73619a25f70f243dfe2dc9dcea5f',
+      '7b3ae6f11163fa612c3cd78f890151eb42ed16ae3f7a625cb44dcfe36d2c1758',
     ],
     [
       Channel.ASHBY,
-      '22df481f53f396880cae8b3e96342d234678605a639b485112bff3ef08db6d42',
+      '9385470c6bdcd435233045a2ce06ce05d106f2a9a14eb8274778fb5099e8c940',
     ],
   ])('pins the %s hash', (channel, digest) => {
     expect(toRecipe({ ...base, channel }).hash).toBe(digest);

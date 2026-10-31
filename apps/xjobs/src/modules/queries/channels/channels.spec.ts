@@ -86,6 +86,22 @@ describe('channel query builders', () => {
     expect(terms).toEqual(expect.arrayContaining(['MA', 'Casablanca']));
   });
 
+  it('uses only city and country for onsite work without a region', () => {
+    const overrides = {
+      type: Arrangement.onsite,
+      locationRegion: null,
+      country: 'FR',
+      city: 'Paris',
+    };
+    expect(build(Channel.LINKEDIN_JOB_BOARD, overrides).params.location).toBe(
+      'Paris, FR',
+    );
+    expect(build(Channel.GREEN_HOUSE, overrides).params).toEqual({
+      locationTerms: ['FR', 'Paris'],
+      remote: false,
+    });
+  });
+
   it('uses the region for remote work', () => {
     expect(build(Channel.LINKEDIN_JOB_BOARD).params.location).toBe('EMEA');
     expect(build(Channel.ASHBY).params).toEqual({

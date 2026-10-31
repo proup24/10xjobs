@@ -294,7 +294,7 @@ model ProfileSkill {
 model QuerySearchBuilder {
   id                 Uuid         @id @onCreate(uuid(7))
   channel            Channel
-  locationRegion     Region
+  locationRegion     Region?
   country            String?
   city               String?
   experience         Seniority
