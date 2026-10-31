@@ -81,6 +81,8 @@ The `PUT …/profile` tech stack items gain an optional `importance` (0–10, de
 
 ## Generation
 
+> **Superseded (2026-10-31):** the expansion rules below (top-3 technology sets, onsite/hybrid per region, `unstated` recipes) are replaced by [2026-10-31-query-search-generate-design.md](2026-10-31-query-search-generate-design.md).
+
 On publish, the profile expands into the cross product:
 
 ```

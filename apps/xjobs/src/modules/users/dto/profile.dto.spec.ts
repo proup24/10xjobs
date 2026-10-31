@@ -158,8 +158,10 @@ describe('profile city rule', () => {
       arrangements: ['onsite'],
       city: null,
     });
-    const [error] = await validate(dto, options);
-    expect(Object.values(error!.constraints ?? {})).toContain(CITY_REQUIRED);
+    const errors = await validate(dto, options);
+    expect(
+      errors.flatMap((error) => Object.values(error.constraints ?? {})),
+    ).toContain(CITY_REQUIRED);
   });
 
   it('accepts onsite with a city', async () => {
@@ -181,9 +183,9 @@ describe('profile city rule', () => {
   });
 
   it('applies to replacements too', async () => {
-    const { position: _position, ...editable } = validProfile;
     const dto = plainToInstance(ReplaceProfileDto, {
-      ...editable,
+      ...validProfile,
+      position: undefined,
       arrangements: ['hybrid'],
       city: null,
     });

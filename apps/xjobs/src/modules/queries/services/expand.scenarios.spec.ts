@@ -150,9 +150,9 @@ describe('expand scenarios over mock profiles', () => {
           r.type === Arrangement.remote && r.locationRegion === Region.APAC,
       ),
     ).toBe(true);
-    const [board] = on(recipes, Channel.LINKEDIN_JOB_BOARD);
-    expect(board!.keyword).toBe('data engineer python');
-    expect(board!.params).toEqual({ location: 'APAC', workType: '2' });
+    expect(
+      on(recipes, Channel.LINKEDIN_JOB_BOARD).map((r) => [r.keyword, r.params]),
+    ).toEqual([['data engineer python', { location: 'APAC', workType: '2' }]]);
     expect(keywords(recipes, Channel.LINKEDIN_POSTS)).toEqual([
       'hiring data engineer python remote',
     ]);

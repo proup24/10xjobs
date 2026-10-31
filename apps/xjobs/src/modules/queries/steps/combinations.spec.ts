@@ -7,7 +7,7 @@ import {
   Technology,
 } from 'src/common/enums';
 import { toRecipe } from '../builders';
-import type { QuerySearchProfileInput } from '../types';
+import type { QuerySearchProfileInput, QuerySearchRecipe } from '../types';
 import {
   dedupeByHash,
   localCombinations,
@@ -95,11 +95,11 @@ describe('localCombinations', () => {
 
 describe('dedupeByHash', () => {
   it('keeps the first of each hash, in order', () => {
-    const [a, b] = remoteCombinations(profile, [Arrangement.remote], sets).map(
-      toRecipe,
-    );
-    const copy = { ...a! };
-    expect(dedupeByHash([a!, b!, copy])).toEqual([a, b]);
-    expect(dedupeByHash([a!, b!, copy])[0]).toBe(a);
+    const [a, b] = remoteCombinations(profile, [Arrangement.remote], sets)
+      .slice(0, 2)
+      .map(toRecipe) as [QuerySearchRecipe, QuerySearchRecipe];
+    const copy = { ...a };
+    expect(dedupeByHash([a, b, copy])).toEqual([a, b]);
+    expect(dedupeByHash([a, b, copy])[0]).toBe(a);
   });
 });
