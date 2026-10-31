@@ -5,6 +5,7 @@ import {
   POSITION_IMMUTABLE,
   ReplaceProfileDto,
 } from './profile.dto';
+import { CITY_REQUIRED } from 'src/modules/queries';
 
 const options = { whitelist: true, forbidNonWhitelisted: true };
 
@@ -139,5 +140,53 @@ describe('CreateProfileDto', () => {
 
   it('accepts an empty tech stack', async () => {
     expect(await errorsFor({ techStack: [] })).toEqual([]);
+  });
+});
+
+describe('profile city rule', () => {
+  it.each([
+    [{ arrangements: ['onsite'], city: null }],
+    [{ arrangements: ['hybrid'], city: undefined }],
+    [{ arrangements: ['remote', 'hybrid'], city: '   ' }],
+  ])('requires a city for onsite or hybrid: %j', async (changes) => {
+    expect(await errorsFor(changes)).toEqual(['city']);
+  });
+
+  it('says why the city is required', async () => {
+    const dto = plainToInstance(CreateProfileDto, {
+      ...validProfile,
+      arrangements: ['onsite'],
+      city: null,
+    });
+    const [error] = await validate(dto, options);
+    expect(Object.values(error!.constraints ?? {})).toContain(CITY_REQUIRED);
+  });
+
+  it('accepts onsite with a city', async () => {
+    expect(
+      await errorsFor({ arrangements: ['onsite'], city: 'Rabat' }),
+    ).toEqual([]);
+  });
+
+  it('accepts remote without a city', async () => {
+    expect(await errorsFor({ arrangements: ['remote'], city: null })).toEqual(
+      [],
+    );
+  });
+
+  it('accepts unstated with no regions (remote defaults to GLOBAL)', async () => {
+    expect(
+      await errorsFor({ arrangements: ['unstated'], regions: [] }),
+    ).toEqual([]);
+  });
+
+  it('applies to replacements too', async () => {
+    const { position: _position, ...editable } = validProfile;
+    const dto = plainToInstance(ReplaceProfileDto, {
+      ...editable,
+      arrangements: ['hybrid'],
+      city: null,
+    });
+    expect(paths(await validate(dto, options))).toEqual(['city']);
   });
 });

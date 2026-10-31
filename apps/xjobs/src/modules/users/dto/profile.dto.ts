@@ -9,12 +9,12 @@ import {
   IsEnum,
   IsInt,
   IsISO31661Alpha2,
-  IsOptional,
   IsString,
   Matches,
   Max,
   MaxLength,
   Min,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import {
@@ -26,7 +26,12 @@ import {
   Seniority,
 } from 'src/common/enums';
 import { SkillDto } from './skill.dto';
-import { IsGreaterOrEqual, UniqueBy } from './validators';
+import {
+  cityNeedsValidation,
+  IsGreaterOrEqual,
+  IsLocatableCity,
+  UniqueBy,
+} from './validators';
 
 /** UTC offsets in minutes: UTC-12:00 to UTC+14:00. */
 const MIN_OFFSET = -720;
@@ -49,8 +54,13 @@ export class ProfileFieldsDto {
   @IsISO31661Alpha2()
   country!: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
+  @ApiPropertyOptional({
+    description: 'Required when arrangements include onsite or hybrid',
+  })
+  @ValidateIf((object: object, value: unknown) =>
+    cityNeedsValidation(object, value),
+  )
+  @IsLocatableCity()
   @IsString()
   @MaxLength(100)
   city?: string | null;

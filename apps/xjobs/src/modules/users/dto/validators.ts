@@ -5,7 +5,8 @@ import {
   type ValidationArguments,
   type ValidationOptions,
 } from 'class-validator';
-import { ContactKind } from 'src/common/enums';
+import { type Arrangement, ContactKind } from 'src/common/enums';
+import { CITY_REQUIRED, isLocatable } from 'src/modules/queries';
 
 const E164 = /^\+[1-9]\d{6,14}$/;
 const URL_KINDS: ContactKind[] = [
@@ -108,4 +109,39 @@ export function UniqueBy(keys: string[], options?: ValidationOptions) {
         },
       },
     });
+}
+
+/**
+ * @description Requires a city when `arrangements` on the same object includes
+ * onsite or hybrid: those searches are bound to the user's city. Skips the
+ * check when `arrangements` is not an array, leaving it to its own validators.
+ */
+export function IsLocatableCity(options?: ValidationOptions) {
+  return (target: object, propertyName: string) =>
+    registerDecorator({
+      name: 'isLocatableCity',
+      target: target.constructor,
+      propertyName,
+      options: { message: CITY_REQUIRED, ...options },
+      validator: {
+        validate: (value: unknown, args: ValidationArguments) => {
+          const { arrangements } = args.object as { arrangements?: unknown };
+          if (!Array.isArray(arrangements)) return true;
+          return isLocatable(
+            arrangements as Arrangement[],
+            typeof value === 'string' ? value : null,
+          );
+        },
+      },
+    });
+}
+
+/** Runs `city` validators when a city is given, or when onsite/hybrid needs one. */
+export function cityNeedsValidation(object: object, value: unknown): boolean {
+  if (value !== null && value !== undefined) return true;
+  const { arrangements } = object as { arrangements?: unknown };
+  return (
+    Array.isArray(arrangements) &&
+    !isLocatable(arrangements as Arrangement[], null)
+  );
 }
