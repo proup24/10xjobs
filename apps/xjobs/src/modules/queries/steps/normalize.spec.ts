@@ -28,6 +28,15 @@ describe('normalizeProfile', () => {
     );
   });
 
+  it.each([
+    ['paris', 'Paris'],
+    ['PARIS', 'Paris'],
+    ['New  York', 'New York'],
+    ['saint-étienne', 'Saint-Étienne'],
+  ])('canonicalises city %j as %j', (city, expected) => {
+    expect(normalizeProfile({ ...input, city }).city).toBe(expected);
+  });
+
   it('turns a blank city into null', () => {
     expect(normalizeProfile({ ...input, city: '   ' }).city).toBeNull();
   });

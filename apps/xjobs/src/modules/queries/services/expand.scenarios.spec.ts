@@ -257,6 +257,16 @@ describe('expand scenarios over mock profiles', () => {
       );
     });
 
+    it('same city typed differently: identical onsite builders', () => {
+      const paris = MOCK_PROFILES.onsiteFrontendParis;
+      expect(hashSet(expand({ ...paris, city: 'paris' }))).toEqual(
+        hashSet(expand({ ...paris, city: ' PARIS ' })),
+      );
+      expect(hashSet(expand({ ...paris, city: 'paris' }))).toEqual(
+        hashSet(expand(paris)),
+      );
+    });
+
     it('different cities: no onsite builder is shared', () => {
       const paris = expand(MOCK_PROFILES.onsiteFrontendParis);
       const lyon = expand({ ...MOCK_PROFILES.onsiteFrontendParis, city: 'Lyon' });
