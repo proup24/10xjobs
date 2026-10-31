@@ -38,13 +38,25 @@ function retryable(error: unknown): boolean {
 }
 
 function snapshot(item: NormalizedJob) {
-  const {
-    ats: _ats,
-    rank: _rank,
-    observedUrl: _observedUrl,
-    ...columns
-  } = item;
-  return { ...columns, raw: columns.raw as RawJobRow['raw'] };
+  return {
+    channel: item.channel,
+    kind: item.kind,
+    externalId: item.externalId,
+    url: item.url,
+    applyUrl: item.applyUrl,
+    title: item.title,
+    company: item.company,
+    location: item.location,
+    description: item.description,
+    postedAt: item.postedAt,
+    postedAtPrecision: item.postedAtPrecision,
+    authorName: item.authorName,
+    authorUrl: item.authorUrl,
+    contactName: item.contactName,
+    contactUrl: item.contactUrl,
+    raw: item.raw as RawJobRow['raw'],
+    normalizationVersion: item.normalizationVersion,
+  };
 }
 
 @Injectable()
@@ -87,116 +99,197 @@ export class PrismaIngestRepository extends IngestRepository {
     observedAt: Date,
   ): Promise<SaveOutcome> {
     const aliases = identityAliases(item);
+    const { existing, found } = await this.findExistingJob(
+      tx,
+      item.channel,
+      item.externalId,
+      aliases,
+    );
+    const newer = !existing || observedAt > existing.lastSeenAt;
+    const atsPostingId = await this.resolveAtsPostingId(
+      tx,
+      item,
+      existing,
+      newer,
+    );
+    const { row, outcome } = await this.upsertRawJob(
+      tx,
+      item,
+      existing,
+      atsPostingId,
+      observedAt,
+      newer,
+    );
+
+    await this.syncIdentities(tx, item.channel, row.id, aliases, found);
+    await this.recordQueryHit(tx, queryId, row.id, item, observedAt);
+
+    return { id: row.id, outcome };
+  }
+
+  private async findExistingJob(
+    tx: DatabaseTransaction,
+    channel: Channel,
+    externalId: string | null,
+    aliases: { identityType: string; identityValue: string }[],
+  ): Promise<{
+    existing: RawJobRow | null;
+    found: { identityType: string; identityValue: string; rawJobId: string }[];
+  }> {
     const found = [];
     for (const alias of aliases) {
-      const existing = await tx.orm.public.RawJobIdentity.where({
-        channel: item.channel,
+      const match = await tx.orm.public.RawJobIdentity.where({
+        channel,
         ...alias,
       }).first();
-      if (existing) found.push(existing);
+      if (match) found.push(match);
     }
     const ids = new Set(found.map((alias) => alias.rawJobId));
-    if (ids.size > 1)
+    if (ids.size > 1) {
       throw new IngestIdentityConflict(
         'Source ID and URL belong to different jobs',
       );
-    const existingId = [...ids][0];
+    }
+    const [existingId] = ids;
+    if (!existingId) {
+      return { existing: null, found };
+    }
     // NO KEY UPDATE serializes snapshots without blocking FK checks from attribution inserts.
-    const existing = existingId
-      ? await tx.orm.public.RawJob.where({ id: existingId })
-          .forNoKeyUpdate()
-          .first()
-      : null;
-    if (existingId && !existing)
+    const existing = await tx.orm.public.RawJob.where({ id: existingId })
+      .forNoKeyUpdate()
+      .first();
+    if (!existing) {
       throw new IngestIdentityConflict('Identity target no longer exists');
+    }
     if (
-      existing &&
       existing.externalId &&
-      item.externalId &&
-      existing.externalId !== item.externalId
+      externalId &&
+      existing.externalId !== externalId
     ) {
       throw new IngestIdentityConflict(
         'URL already belongs to another source ID',
       );
     }
-    const newer = !existing || observedAt > existing.lastSeenAt;
-    let atsPostingId = existing?.atsPostingId ?? null;
-    if (newer) {
-      atsPostingId = null;
-      if (item.ats) {
-        const ats =
-          (await tx.orm.public.AtsPostingIdentity.where(item.ats).first()) ??
-          (await tx.orm.public.AtsPostingIdentity.create(item.ats));
-        atsPostingId = ats.id;
-      }
+    return { existing, found };
+  }
+
+  private async resolveAtsPostingId(
+    tx: DatabaseTransaction,
+    item: NormalizedJob,
+    existing: RawJobRow | null,
+    newer: boolean,
+  ): Promise<string | null> {
+    if (!newer) {
+      return existing?.atsPostingId ?? null;
     }
-    let row: RawJobRow;
-    let outcome: SaveOutcome['outcome'];
+    if (!item.ats) {
+      return null;
+    }
+    const ats =
+      (await tx.orm.public.AtsPostingIdentity.where(item.ats).first()) ??
+      (await tx.orm.public.AtsPostingIdentity.create(item.ats));
+    return ats.id;
+  }
+
+  private async upsertRawJob(
+    tx: DatabaseTransaction,
+    item: NormalizedJob,
+    existing: RawJobRow | null,
+    atsPostingId: string | null,
+    observedAt: Date,
+    newer: boolean,
+  ): Promise<{ row: RawJobRow; outcome: SaveOutcome['outcome'] }> {
     if (!existing) {
-      row = await tx.orm.public.RawJob.create({
+      const row = await tx.orm.public.RawJob.create({
         ...snapshot(item),
         atsPostingId,
         firstSeenAt: observedAt,
         lastSeenAt: observedAt,
       });
-      outcome = 'inserted';
-    } else {
-      const updated = await tx.orm.public.RawJob.where({
-        id: existing.id,
-      }).update({
-        ...(newer
-          ? { ...snapshot(item), atsPostingId, lastSeenAt: observedAt }
-          : {}),
-        // Identity enrichment is safe even for an older observation; identities never regress to null.
-        externalId: existing.externalId ?? item.externalId,
-        firstSeenAt:
-          observedAt < existing.firstSeenAt ? observedAt : existing.firstSeenAt,
-      });
-      if (!updated) throw new Error('Job disappeared during ingestion');
-      row = updated;
-      outcome = newer ? 'updated' : 'duplicate';
+      return { row, outcome: 'inserted' };
     }
+
+    const firstSeenAt =
+      observedAt < existing.firstSeenAt ? observedAt : existing.firstSeenAt;
+    const updates = newer
+      ? { ...snapshot(item), atsPostingId, lastSeenAt: observedAt }
+      : {};
+
+    const updated = await tx.orm.public.RawJob.where({
+      id: existing.id,
+    }).update({
+      ...updates,
+      // Identity enrichment is safe even for an older observation; identities never regress to null.
+      externalId: existing.externalId ?? item.externalId,
+      firstSeenAt,
+    });
+    if (!updated) {
+      throw new Error('Job disappeared during ingestion');
+    }
+    return { row: updated, outcome: newer ? 'updated' : 'duplicate' };
+  }
+
+  private async syncIdentities(
+    tx: DatabaseTransaction,
+    channel: Channel,
+    rawJobId: string,
+    aliases: { identityType: string; identityValue: string }[],
+    found: { identityType: string; identityValue: string }[],
+  ): Promise<void> {
     for (const alias of aliases) {
-      if (
-        !found.some(
-          (entry) =>
-            entry.identityType === alias.identityType &&
-            entry.identityValue === alias.identityValue,
-        )
-      ) {
+      const exists = found.some(
+        (entry) =>
+          entry.identityType === alias.identityType &&
+          entry.identityValue === alias.identityValue,
+      );
+      if (!exists) {
         await tx.orm.public.RawJobIdentity.create({
-          channel: item.channel,
+          channel,
           ...alias,
-          rawJobId: row.id,
+          rawJobId,
         });
       }
     }
+  }
+
+  private async recordQueryHit(
+    tx: DatabaseTransaction,
+    queryId: string,
+    rawJobId: string,
+    item: NormalizedJob,
+    observedAt: Date,
+  ): Promise<void> {
     const hit = await tx.orm.public.RawJobQueryHit.where({
       queryId,
-      rawJobId: row.id,
+      rawJobId,
     }).first();
+
     if (hit) {
-      await tx.orm.public.RawJobQueryHit.where({ id: hit.id }).update({
-        firstSeenAt:
-          observedAt < hit.firstSeenAt ? observedAt : hit.firstSeenAt,
-        ...(observedAt > hit.lastSeenAt
+      const firstSeenAt =
+        observedAt < hit.firstSeenAt ? observedAt : hit.firstSeenAt;
+      const latestData =
+        observedAt > hit.lastSeenAt
           ? {
               lastSeenAt: observedAt,
               observedUrl: item.observedUrl,
               rank: item.rank,
             }
-          : {}),
+          : {};
+
+      await tx.orm.public.RawJobQueryHit.where({ id: hit.id }).update({
+        firstSeenAt,
+        ...latestData,
       });
-    } else {
-      await tx.orm.public.RawJobQueryHit.create({
-        queryId,
-        rawJobId: row.id,
-        firstSeenAt: observedAt,
-        lastSeenAt: observedAt,
-        observedUrl: item.observedUrl,
-        rank: item.rank,
-      });
+      return;
     }
-    return { id: row.id, outcome };
+
+    await tx.orm.public.RawJobQueryHit.create({
+      queryId,
+      rawJobId,
+      firstSeenAt: observedAt,
+      lastSeenAt: observedAt,
+      observedUrl: item.observedUrl,
+      rank: item.rank,
+    });
   }
 }

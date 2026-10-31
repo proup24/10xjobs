@@ -1,7 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { DatabaseService } from 'src/database';
 import { IngestModule } from './ingest.module';
-import { IngestService } from './ingest.service';
+import { IngestService } from './services/ingest.service';
 
 it('exports a wired ingest service from its Nest module', async () => {
   const first = vi.fn().mockResolvedValue(null);
