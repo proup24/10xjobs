@@ -12,7 +12,7 @@ describe('GET /api', () => {
 describe('basic auth', () => {
   it('401s a protected route without credentials, with a Basic challenge', async () => {
     // fetch, not axios: axios instances inherit the default credentials.
-    const res = await fetch(`${axios.defaults.baseURL}/api/workspaces`);
+    const res = await fetch(`${axios.defaults.baseURL}/api/users`);
     expect(res.status).toBe(401);
     expect(res.headers.get('www-authenticate')).toContain('Basic');
     expect(await res.json()).toMatchObject({
@@ -22,7 +22,7 @@ describe('basic auth', () => {
   });
 
   it('401s wrong credentials', async () => {
-    const res = await axios.get('/api/workspaces', {
+    const res = await axios.get('/api/users', {
       auth: { username: 'admin', password: 'definitely-wrong-password' },
       validateStatus: () => true,
     });

@@ -17,9 +17,6 @@ export class LinkedinJobSearchProvider {
 
   async search(_search: CollectorSearch): Promise<CollectedJob[]> {
     const cfg = channelConfig[Channel.LINKEDIN_JOB_BOARD];
-    const token = process.env.APIFY_TOKEN;
-    if (!token)
-      throw new Error('APIFY_TOKEN is required for LinkedIn collection');
     const searches = cfg.discovery.locations.flatMap((location) =>
       cfg.discovery.keywords.map((keyword) => ({
         search: `${keyword} in ${location}`,
@@ -34,7 +31,6 @@ export class LinkedinJobSearchProvider {
       const items = await this.actor.run(
         cfg.actor,
         { startUrls: [{ url }], maxRowsPerUrl: cfg.discovery.maxRowsPerUrl },
-        token,
         budgetUsd,
       );
       jobs.push(...items.map((item) => toJob(record(item), search)));

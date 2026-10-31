@@ -7,7 +7,7 @@
  */
 import { Logger } from '@nestjs/common';
 import { EnvironmentType } from 'src/common/enums';
-import { loadDatabaseEnvironment, toDatabaseConfig } from 'src/config';
+import { loadSeedEnvironment, toDatabaseConfig } from 'src/config';
 import { createDatabaseClient } from '../connection.source';
 import type { Seed } from './seed.interface';
 import { usersSeed } from './users.seed';
@@ -27,12 +27,9 @@ function parseArgs(argv: string[]) {
 async function main(): Promise<void> {
   const logger = new Logger('Seed');
   const { only, allowProduction } = parseArgs(process.argv.slice(2));
-  const env = loadDatabaseEnvironment();
+  const env = loadSeedEnvironment();
 
-  if (
-    process.env['NODE_ENV'] === EnvironmentType.production &&
-    !allowProduction
-  ) {
+  if (env.NODE_ENV === EnvironmentType.production && !allowProduction) {
     throw new Error(
       'Refusing to seed with NODE_ENV=production; pass --allow-production.',
     );

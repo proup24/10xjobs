@@ -76,9 +76,9 @@ describe('ContactsService', () => {
     await expect(
       service.update(userB, contact.id, { label: 'stolen' }),
     ).rejects.toBeInstanceOf(NotFoundException);
-    await expect(
-      service.delete(userB, contact.id),
-    ).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.delete(userB, contact.id)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
     expect(contacts.rows[0].label).toBeNull();
   });
 

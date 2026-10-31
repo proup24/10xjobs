@@ -1,4 +1,6 @@
 import {
+  getApifyToken,
+  getAppConfig,
   getBasicAuthConfig,
   getStorageConfig,
   validateEnvironment,
@@ -81,5 +83,35 @@ describe('basic auth configuration', () => {
     expect(() =>
       validateEnvironment({ ...minimal, BASIC_AUTH_PASSWORD: 'short' }),
     ).toThrow(/BASIC_AUTH_PASSWORD/);
+  });
+});
+
+describe('collector and tooling configuration', () => {
+  const configFor = (raw: Record<string, unknown>) => {
+    const env = validateEnvironment({ ...minimal, ...raw }) as Record<
+      string,
+      unknown
+    >;
+    return { get: (key: string) => env[key] } as never;
+  };
+
+  it('serves the Apify token through the config service', () => {
+    expect(getApifyToken(configFor({ APIFY_TOKEN: 'apify-token' }))).toBe(
+      'apify-token',
+    );
+  });
+
+  it('boots without an Apify token and fails only when collection asks for it', () => {
+    const config = configFor({});
+    expect(() => getApifyToken(config)).toThrow(
+      'APIFY_TOKEN is required for job collection',
+    );
+  });
+
+  it("exposes Nx's ready-signal socket through the app config", () => {
+    expect(
+      getAppConfig(configFor({ NX_READY_SIGNAL_SOCKET: '/tmp/nx.sock' }))
+        .readySignalSocket,
+    ).toBe('/tmp/nx.sock');
   });
 });

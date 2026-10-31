@@ -5,7 +5,7 @@ import { Redis } from 'ioredis';
 import {
   getRedisConfig,
   validateWorkerEnvironment,
-  loadEnvironmentFiles,
+  loadApplicationEnvironment,
 } from '../../../config';
 import { INFRASTRUCTURE_QUEUE, JobsService } from '../jobs.service';
 
@@ -13,7 +13,7 @@ import { INFRASTRUCTURE_QUEUE, JobsService } from '../jobs.service';
 it.skipIf(process.env.JOBS_SMOKE !== '1')(
   'a running worker executes a smoke job',
   async () => {
-    if (process.env.XJOBS_SKIP_ENV_FILES !== '1') loadEnvironmentFiles();
+    loadApplicationEnvironment();
     const settings = getRedisConfig(
       new ConfigService(validateWorkerEnvironment(process.env)),
     );

@@ -17,9 +17,6 @@ export class LinkedinPostSearchProvider {
 
   async search(search: CollectorSearch): Promise<CollectedJob[]> {
     const cfg = channelConfig[Channel.LINKEDIN_POSTS];
-    const token = process.env.APIFY_TOKEN;
-    if (!token)
-      throw new Error('APIFY_TOKEN is required for LinkedIn collection');
     const queries = search.keywords.length
       ? search.keywords
       : cfg.discovery.queries;
@@ -35,7 +32,6 @@ export class LinkedinPostSearchProvider {
           maxPosts: cfg.discovery.maxPostsPerQuery,
           sortBy: 'date',
         },
-        token,
         budgetUsd,
       );
       jobs.push(...items.map((item) => toJob(record(item), query)));

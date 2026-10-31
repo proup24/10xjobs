@@ -7,7 +7,8 @@ import { LinkedinPostSearchProvider } from './apify/linkedin.post_search.provide
 
 const search = {
   id: 'search-1',
-  workspaceId: 'workspace-1',
+  userId: 'user-1',
+  profileId: 'profile-1',
   channel: Channel.LINKEDIN_POSTS,
   keywords: [] as string[],
   params: {},
@@ -21,9 +22,6 @@ function actor(results: (input: Record<string, unknown>) => unknown[]) {
 }
 
 describe('collected job mapping', () => {
-  beforeEach(() => vi.stubEnv('APIFY_TOKEN', 'token'));
-  afterEach(() => vi.unstubAllEnvs());
-
   it('maps LinkedIn jobs to the contract with the query that found them', async () => {
     const { run, provider } = actor((input) => {
       const [{ url }] = input.startUrls as { url: string }[];

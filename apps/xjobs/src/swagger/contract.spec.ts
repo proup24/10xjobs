@@ -79,7 +79,38 @@ describe('API contract', () => {
   });
 
   it('covers every route', () => {
-    expect(operations(document)).toHaveLength(22);
+    expect(
+      operations(document)
+        .map((o) => o.name)
+        .sort(),
+    ).toEqual([
+      'DELETE /api/users/{userId}',
+      'DELETE /api/users/{userId}/contacts/{contactId}',
+      'DELETE /api/users/{userId}/profiles/{profileId}',
+      'DELETE /api/users/{userId}/profiles/{profileId}/resume',
+      'GET /api',
+      'GET /api/users',
+      'GET /api/users/{userId}',
+      'GET /api/users/{userId}/contacts',
+      'GET /api/users/{userId}/profiles',
+      'GET /api/users/{userId}/profiles/{profileId}',
+      'GET /api/users/{userId}/profiles/{profileId}/query-search',
+      'GET /api/users/{userId}/profiles/{profileId}/resume',
+      'PATCH /api/users/{userId}',
+      'PATCH /api/users/{userId}/contacts/{contactId}',
+      'POST /api/users',
+      'POST /api/users/{userId}/contacts',
+      'POST /api/users/{userId}/profiles',
+      'POST /api/users/{userId}/profiles/{profileId}/publish',
+      'POST /api/users/{userId}/profiles/{profileId}/resume',
+      'POST /api/users/{userId}/profiles/{profileId}/unpublish',
+      'PUT /api/users/{userId}/profiles/{profileId}',
+    ]);
+  });
+
+  it('has no workspace route or parameter', () => {
+    for (const path of Object.keys(document.paths))
+      expect(path).not.toMatch(/workspace/i);
   });
 
   it('documents every success body as a SuccessResponseDto with a typed data', () => {
@@ -134,7 +165,7 @@ describe('API contract', () => {
 
   it('documents the resume upload limit and the PDF download', () => {
     const resume = document.paths[
-      '/api/workspaces/{workspaceId}/users/{userId}/profile/resume'
+      '/api/users/{userId}/profiles/{profileId}/resume'
     ] as Record<string, Operation>;
     expect(Object.keys(resume['post'].responses)).toContain('413');
     expect(resume['get'].responses['200'].content).toHaveProperty(

@@ -18,27 +18,19 @@ const profile = {
   seniority: 'senior',
   noticePeriodDays: 30,
   techStack: [
-    { technology: 'nodejs', domain: 'backend', mastery: 8, preference: 9 },
-    { technology: 'typescript', domain: 'backend', mastery: 8, preference: 8 },
+    { technology: 'nodejs', domain: 'backend', mastery: 8, importance: 9 },
+    { technology: 'typescript', domain: 'backend', mastery: 8, importance: 8 },
   ],
 };
 
-describe('workspaces, users, profile and resume', () => {
-  let workspaceId: string;
-  let otherWorkspaceId: string;
+describe('users, profiles and resume', () => {
   let userId: string;
-  const base = () => `/api/workspaces/${workspaceId}/users`;
+  let otherUserId: string;
+  let profileId: string;
+  const base = () => '/api/users';
+  const profiles = () => `${base()}/${userId}/profiles`;
 
   beforeAll(async () => {
-    workspaceId = (
-      await axios.post('/api/workspaces', { name: 'E2E', slug: `e2e-${run}` })
-    ).data.data.id;
-    otherWorkspaceId = (
-      await axios.post('/api/workspaces', {
-        name: 'Other',
-        slug: `e2e-other-${run}`,
-      })
-    ).data.data.id;
     userId = (
       await axios.post(base(), {
         name: 'E2E User',
@@ -46,10 +38,17 @@ describe('workspaces, users, profile and resume', () => {
         address: { line1: '1 Rue X', city: 'Rabat', country: 'MA' },
       })
     ).data.data.id;
+    otherUserId = (
+      await axios.post(base(), {
+        name: 'Other',
+        email: `e2e-other-${run}@example.com`,
+      })
+    ).data.data.id;
   });
 
   afterAll(async () => {
     await axios.delete(`${base()}/${userId}`, ok);
+    await axios.delete(`${base()}/${otherUserId}`, ok);
   });
 
   it('stores the email lowercased and 409s a duplicate', async () => {
@@ -102,18 +101,41 @@ describe('workspaces, users, profile and resume', () => {
     expect(res.data.data).toMatchObject({ kind: 'github', isPrimary: true });
   });
 
-  it('saves and reads back the profile', async () => {
-    const put = await axios.put(`${base()}/${userId}/profile`, profile);
+  it('creates, replaces and reads back a profile', async () => {
+    const created = await axios.post(profiles(), profile);
+    expect(created.status).toBe(201);
+    profileId = created.data.data.id;
+    const put = await axios.put(`${profiles()}/${profileId}`, {
+      ...profile,
+      noticePeriodDays: 15,
+    });
     expect(put.status).toBe(200);
-    const get = await axios.get(`${base()}/${userId}/profile`);
+    expect(put.data.data.id).toBe(profileId);
+    const get = await axios.get(`${profiles()}/${profileId}`);
     const { techStack, ...fields } = profile;
-    expect(get.data.data).toMatchObject({ ...fields, resume: null });
+    expect(get.data.data).toMatchObject({
+      ...fields,
+      noticePeriodDays: 15,
+      resume: null,
+    });
     expect(get.data.data.techStack).toEqual(techStack);
+  });
+
+  it('keeps several profiles per user and deletes one', async () => {
+    const second = (await axios.post(profiles(), profile)).data.data.id;
+    const listed = await axios.get(profiles());
+    expect(listed.data.data.map((p: { id: string }) => p.id)).toEqual([
+      profileId,
+      second,
+    ]);
+    const deleted = await axios.delete(`${profiles()}/${second}`);
+    expect(deleted.status).toBe(204);
+    expect((await axios.get(profiles())).data.data).toHaveLength(1);
   });
 
   it('rejects a profile whose timezone range is inverted', async () => {
     const res = await axios.put(
-      `${base()}/${userId}/profile`,
+      `${profiles()}/${profileId}`,
       { ...profile, timezoneMin: 300, timezoneMax: 240 },
       ok,
     );
@@ -127,11 +149,11 @@ describe('workspaces, users, profile and resume', () => {
       new Blob([Buffer.from('%PDF-1.4\n%%EOF')], { type: 'application/pdf' }),
       'cv.pdf',
     );
-    const upload = await axios.post(`${base()}/${userId}/profile/resume`, form);
+    const upload = await axios.post(`${profiles()}/${profileId}/resume`, form);
     expect(upload.status).toBe(201);
     expect(upload.data.data.resume.filename).toBe('cv.pdf');
 
-    const download = await axios.get(`${base()}/${userId}/profile/resume`, {
+    const download = await axios.get(`${profiles()}/${profileId}/resume`, {
       responseType: 'arraybuffer',
     });
     expect(download.status).toBe(200);
@@ -146,17 +168,13 @@ describe('workspaces, users, profile and resume', () => {
       new Blob(['hello'], { type: 'application/pdf' }),
       'cv.pdf',
     );
-    const res = await axios.post(
-      `${base()}/${userId}/profile/resume`,
-      form,
-      ok,
-    );
+    const res = await axios.post(`${profiles()}/${profileId}/resume`, form, ok);
     expect(res.status).toBe(400);
   });
 
-  it('404s the user through another workspace', async () => {
+  it('404s a profile reached through another user', async () => {
     const res = await axios.get(
-      `/api/workspaces/${otherWorkspaceId}/users/${userId}`,
+      `${base()}/${otherUserId}/profiles/${profileId}`,
       ok,
     );
     expect(res.status).toBe(404);

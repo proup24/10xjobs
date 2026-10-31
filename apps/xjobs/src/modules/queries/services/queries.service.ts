@@ -87,7 +87,7 @@ export class QuerySearchService {
     }
   }
 
-  /** Stores the recipes the workspace does not have yet; existing ones are left untouched. */
+  /** Stores the recipes the profile does not have yet; existing ones are left untouched. */
   async generate(
     userId: string,
     profileId: string,

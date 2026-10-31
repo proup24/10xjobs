@@ -82,12 +82,13 @@ async function bootstrap() {
   const logger = new Logger(APP_CONFIG.name);
   const configService =
     app.get<ConfigService<EnvironmentVariables, true>>(ConfigService);
-  const { host, port, nodeEnv, sentryDsn } = getAppConfig(configService);
+  const { host, port, nodeEnv, sentryDsn, readySignalSocket } =
+    getAppConfig(configService);
   const domain = getSystemDomain(configService);
 
   configure(app, sentryDsn, nodeEnv, domain);
   await app.listen(port, host);
-  if (process.env.NX_READY_SIGNAL_SOCKET) {
+  if (readySignalSocket) {
     try {
       const load = new Function('s', 'return import(s)') as (
         s: string,

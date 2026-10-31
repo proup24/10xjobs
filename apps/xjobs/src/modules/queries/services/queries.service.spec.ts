@@ -183,7 +183,7 @@ describe('QuerySearchService', () => {
   });
 
   describe('list', () => {
-    it('lists a workspace and filters by channel', async () => {
+    it('lists the builders of a profile and filters by channel', async () => {
       const { service, userId, profileId } = await setup();
       await service.generate(userId, profileId, profile);
       expect(await service.list(userId, profileId)).toHaveLength(160);

@@ -20,8 +20,6 @@ export class GoogleJobsSearchProvider {
     keywords: string[],
   ): Promise<DiscoveryHit[]> {
     const cfg = channelConfig[channel];
-    const token = process.env.APIFY_TOKEN;
-    if (!token) throw new Error('APIFY_TOKEN is required for job discovery');
     const queries = (keywords.length ? keywords : cfg.discovery.terms).map(
       (term) => `site:${cfg.discovery.site} "${term}" ${cfg.discovery.suffix}`,
     );
@@ -31,7 +29,6 @@ export class GoogleJobsSearchProvider {
         queries: queries.join('\n'),
         maxPagesPerQuery: cfg.discovery.maxPagesPerQuery,
       },
-      token,
       cfg.maximumOperationBudgetMicroUsd / 1_000_000,
     );
     return pages.flatMap((value) => {

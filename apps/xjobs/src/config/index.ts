@@ -5,27 +5,34 @@ import { loadEnvironmentFiles } from './environment.loader';
 import {
   databaseEnvironmentSchema,
   parseEnvironment,
+  seedEnvironmentSchema,
 } from './environment.validation';
 
 import type {
   DatabaseEnvironmentVariables,
   EnvironmentVariables,
   RedisEnvironmentVariables,
+  SeedEnvironmentVariables,
 } from './environment.validation';
 
-export { loadEnvironmentFiles } from './environment.loader';
+export {
+  loadApplicationEnvironment,
+  loadEnvironmentFiles,
+} from './environment.loader';
 export {
   databaseEnvironmentSchema,
   environmentSchema,
   parseEnvironment,
   validateEnvironment,
   redisEnvironmentSchema,
+  seedEnvironmentSchema,
   validateWorkerEnvironment,
 } from './environment.validation';
 export type {
   DatabaseEnvironmentVariables,
   EnvironmentVariables,
   RedisEnvironmentVariables,
+  SeedEnvironmentVariables,
 } from './environment.validation';
 
 type AppConfigService = ConfigService<EnvironmentVariables, true>;
@@ -35,6 +42,8 @@ export interface AppConfig {
   port: number;
   nodeEnv: EnvironmentType;
   sentryDsn?: string;
+  /** Nx's development ready-signal socket, when the server runs under Nx. */
+  readySignalSocket?: string;
 }
 
 export interface CookieConfig {
@@ -79,6 +88,7 @@ export function getAppConfig(config: AppConfigService): AppConfig {
     port: config.get('PORT', { infer: true }),
     nodeEnv: config.get('NODE_ENV', { infer: true }),
     sentryDsn: config.get('SENTRY_DSN', { infer: true }),
+    readySignalSocket: config.get('NX_READY_SIGNAL_SOCKET', { infer: true }),
   };
 }
 
@@ -96,6 +106,16 @@ export function getBasicAuthConfig(config: AppConfigService): BasicAuthConfig {
     username: config.get('BASIC_AUTH_USERNAME', { infer: true }),
     password: config.get('BASIC_AUTH_PASSWORD', { infer: true }),
   };
+}
+
+/**
+ * @description The Apify API token. Read when a collector runs, so the API
+ * still boots without one; throws if collection is attempted unconfigured.
+ */
+export function getApifyToken(config: AppConfigService): string {
+  const token = config.get('APIFY_TOKEN', { infer: true });
+  if (!token) throw new Error('APIFY_TOKEN is required for job collection');
+  return token;
 }
 
 export interface StorageConfig {
@@ -164,4 +184,13 @@ export function getDatabaseConfig(config: AppConfigService): DatabaseConfig {
 export function loadDatabaseEnvironment(): DatabaseEnvironmentVariables {
   loadEnvironmentFiles();
   return parseEnvironment(databaseEnvironmentSchema, process.env);
+}
+
+/**
+ * @description For the seed runner: loads the env files and validates the
+ * database variables plus `NODE_ENV`.
+ */
+export function loadSeedEnvironment(): SeedEnvironmentVariables {
+  loadEnvironmentFiles();
+  return parseEnvironment(seedEnvironmentSchema, process.env);
 }

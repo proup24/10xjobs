@@ -2,7 +2,8 @@ import { Channel } from 'src/common/enums';
 
 export interface CollectorSearch {
   id: string;
-  workspaceId: string;
+  userId: string;
+  profileId: string;
   channel: Channel;
   keywords: string[];
   params: Record<string, unknown>;

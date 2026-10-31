@@ -39,13 +39,13 @@ Queue Redis retains its existing `redis-data` volume, uses AOF (`everysec`), and
 Import `RedisModule` into a consuming module and inject `CacheService` or `PubSubService`. Import `JobsModule` to inject `JobsService`. These modules are registered in the API root but exports remain scoped to importing modules, following Nest module boundaries.
 
 ```ts
-const profile = await cache.remember(`workspace:${workspaceId}:profile:${profileId}`, () => repository.findById(workspaceId, profileId), 60);
-await cache.delete(`workspace:${workspaceId}:profile:${profileId}`);
+const profile = await cache.remember(`user:${userId}:profile:${profileId}`, () => repository.findById(userId, profileId), 60);
+await cache.delete(`user:${userId}:profile:${profileId}`);
 
-const unsubscribe = await pubsub.subscribe(`workspace:${workspaceId}:profile-updated`, async (message: unknown) => {
+const unsubscribe = await pubsub.subscribe(`user:${userId}:profile-updated`, async (message: unknown) => {
   /* validate payload, then handle */
 });
-await pubsub.publish(`workspace:${workspaceId}:profile-updated`, { profileId });
+await pubsub.publish(`user:${userId}:profile-updated`, { profileId });
 await unsubscribe();
 
 await jobs.enqueuePing('deployment-check');
@@ -53,11 +53,11 @@ await jobs.enqueuePing('deployment-check');
 
 Cache values must be JSON serializable. Reads treat errors/corrupt entries as misses, writes tolerate Redis outages, and source-loader errors propagate. Invalidation errors propagate so callers cannot assume stale data was removed. A cached `null` is treated as a miss; concurrent misses can invoke the loader more than once. Do not use this cache as authoritative storage or a lock.
 
-Redis pub/sub is transient and delivers only to connected subscribers. Use BullMQ for work requiring persistence and retries. Subscriber callbacks receive `unknown` and should validate messages. Channels and cache keys containing domain data must include workspace IDs; Redis database numbers do not isolate pub/sub channels.
+Redis pub/sub is transient and delivers only to connected subscribers. Use BullMQ for work requiring persistence and retries. Subscriber callbacks receive `unknown` and should validate messages. Channels and cache keys containing domain data must include user IDs; Redis database numbers do not isolate pub/sub channels.
 
 Jobs default to three attempts, exponential backoff starting at one second, completed retention of up to one day/1,000 jobs, and failed retention of up to seven days/5,000 jobs. Cleanup is lazy as BullMQ processes jobs. Unknown jobs and invalid ping payloads fail without retries. Enqueue operations fail promptly during outages; callers decide how to report/retry failed enqueue requests. Workers reconnect after temporary Redis loss.
 
-To add business work, define a dedicated queue and producer, validate its payload (including `workspaceId`), and register its worker only in `WorkerModule`. Handlers must be idempotent because retries and stalled-job recovery can execute a job again. Use BullMQ's `prefix` option, not ioredis `keyPrefix`.
+To add business work, define a dedicated queue and producer, validate its payload (including the owning `userId` and `profileId`), and register its worker only in `WorkerModule`. Handlers must be idempotent because retries and stalled-job recovery can execute a job again. Use BullMQ's `prefix` option, not ioredis `keyPrefix`.
 
 ## Docker worker
 

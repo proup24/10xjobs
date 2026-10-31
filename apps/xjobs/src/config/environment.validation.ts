@@ -38,6 +38,11 @@ export const databaseEnvironmentSchema = z.object({
   DATABASE_LOG_QUERIES: booleanFlag.default(false),
 });
 
+/** What standalone scripts (the seed runner) read: the database plus the environment type. */
+export const seedEnvironmentSchema = databaseEnvironmentSchema.extend({
+  NODE_ENV: z.enum(EnvironmentType).default(EnvironmentType.development),
+});
+
 /** Shared by the HTTP API and the standalone queue worker. */
 export const redisEnvironmentSchema = z.object({
   REDIS_URL: z.url({ protocol: /^rediss?$/ }).default('redis://127.0.0.1:6379'),
@@ -80,6 +85,10 @@ export const environmentSchema = databaseEnvironmentSchema
       .string()
       .regex(/^[a-z0-9][a-z0-9._-]{1,62}$/)
       .default('resumes'),
+    /** Apify API token for the collectors. Optional so the API boots without collection. */
+    APIFY_TOKEN: z.string().min(1).optional(),
+    /** Set by Nx in development to receive the server's ready signal. */
+    NX_READY_SIGNAL_SOCKET: z.string().min(1).optional(),
   })
   .superRefine((env, ctx) => {
     if (!env.SUPABASE_URL && !env.SUPABASE_PUBLIC_URL) {
@@ -101,6 +110,7 @@ export const environmentSchema = databaseEnvironmentSchema
 export type DatabaseEnvironmentVariables = z.infer<
   typeof databaseEnvironmentSchema
 >;
+export type SeedEnvironmentVariables = z.infer<typeof seedEnvironmentSchema>;
 export type EnvironmentVariables = z.infer<typeof environmentSchema>;
 export type RedisEnvironmentVariables = z.infer<typeof redisEnvironmentSchema>;
 
