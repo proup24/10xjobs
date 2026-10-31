@@ -1,0 +1,2885 @@
+{
+  "schemaVersion": "1",
+  "targetFamily": "sql",
+  "target": "postgres",
+  "profileHash": "3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2",
+  "roots": {
+    "contacts": {
+      "model": "Contact",
+      "namespace": "public"
+    },
+    "profile_skills": {
+      "model": "ProfileSkill",
+      "namespace": "public"
+    },
+    "profiles": {
+      "model": "Profile",
+      "namespace": "public"
+    },
+    "query_search_builder": {
+      "model": "QuerySearchBuilder",
+      "namespace": "public"
+    },
+    "users": {
+      "model": "User",
+      "namespace": "public"
+    }
+  },
+  "domain": {
+    "namespaces": {
+      "public": {
+        "enum": {
+          "Arrangement": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "remote",
+                "value": "remote"
+              },
+              {
+                "name": "hybrid",
+                "value": "hybrid"
+              },
+              {
+                "name": "onsite",
+                "value": "onsite"
+              },
+              {
+                "name": "unstated",
+                "value": "unstated"
+              }
+            ]
+          },
+          "Channel": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "LINKEDIN_JOB_BOARD",
+                "value": "LINKEDIN_JOB_BOARD"
+              },
+              {
+                "name": "LINKEDIN_POSTS",
+                "value": "LINKEDIN_POSTS"
+              },
+              {
+                "name": "GREEN_HOUSE",
+                "value": "GREEN_HOUSE"
+              },
+              {
+                "name": "ASHBY",
+                "value": "ASHBY"
+              }
+            ]
+          },
+          "ContactKind": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "phone",
+                "value": "phone"
+              },
+              {
+                "name": "email",
+                "value": "email"
+              },
+              {
+                "name": "linkedin",
+                "value": "linkedin"
+              },
+              {
+                "name": "github",
+                "value": "github"
+              },
+              {
+                "name": "gitlab",
+                "value": "gitlab"
+              },
+              {
+                "name": "portfolio",
+                "value": "portfolio"
+              },
+              {
+                "name": "website",
+                "value": "website"
+              },
+              {
+                "name": "other",
+                "value": "other"
+              }
+            ]
+          },
+          "Engagement": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "employee",
+                "value": "employee"
+              },
+              {
+                "name": "contractor",
+                "value": "contractor"
+              },
+              {
+                "name": "eor",
+                "value": "eor"
+              },
+              {
+                "name": "agency",
+                "value": "agency"
+              },
+              {
+                "name": "per_task",
+                "value": "per_task"
+              }
+            ]
+          },
+          "Language": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "AR",
+                "value": "AR"
+              },
+              {
+                "name": "FR",
+                "value": "FR"
+              },
+              {
+                "name": "EN",
+                "value": "EN"
+              },
+              {
+                "name": "ES",
+                "value": "ES"
+              }
+            ]
+          },
+          "Position": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "backend_engineer",
+                "value": "backend_engineer"
+              },
+              {
+                "name": "frontend_engineer",
+                "value": "frontend_engineer"
+              },
+              {
+                "name": "fullstack_engineer",
+                "value": "fullstack_engineer"
+              },
+              {
+                "name": "mobile_engineer",
+                "value": "mobile_engineer"
+              },
+              {
+                "name": "devops_engineer",
+                "value": "devops_engineer"
+              },
+              {
+                "name": "site_reliability_engineer",
+                "value": "site_reliability_engineer"
+              },
+              {
+                "name": "platform_engineer",
+                "value": "platform_engineer"
+              },
+              {
+                "name": "cloud_engineer",
+                "value": "cloud_engineer"
+              },
+              {
+                "name": "security_engineer",
+                "value": "security_engineer"
+              },
+              {
+                "name": "data_engineer",
+                "value": "data_engineer"
+              },
+              {
+                "name": "ml_engineer",
+                "value": "ml_engineer"
+              },
+              {
+                "name": "ai_engineer",
+                "value": "ai_engineer"
+              },
+              {
+                "name": "qa_engineer",
+                "value": "qa_engineer"
+              },
+              {
+                "name": "embedded_engineer",
+                "value": "embedded_engineer"
+              },
+              {
+                "name": "software_architect",
+                "value": "software_architect"
+              },
+              {
+                "name": "tech_lead",
+                "value": "tech_lead"
+              },
+              {
+                "name": "engineering_manager",
+                "value": "engineering_manager"
+              }
+            ]
+          },
+          "ProfileState": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "draft",
+                "value": "draft"
+              },
+              {
+                "name": "published",
+                "value": "published"
+              }
+            ]
+          },
+          "Region": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "EMEA",
+                "value": "EMEA"
+              },
+              {
+                "name": "MENA",
+                "value": "MENA"
+              },
+              {
+                "name": "NORTH_AFRICA",
+                "value": "NORTH_AFRICA"
+              },
+              {
+                "name": "SUB_SAHARAN_AFRICA",
+                "value": "SUB_SAHARAN_AFRICA"
+              },
+              {
+                "name": "MIDDLE_EAST",
+                "value": "MIDDLE_EAST"
+              },
+              {
+                "name": "EUROPE",
+                "value": "EUROPE"
+              },
+              {
+                "name": "EU",
+                "value": "EU"
+              },
+              {
+                "name": "UK",
+                "value": "UK"
+              },
+              {
+                "name": "NORTH_AMERICA",
+                "value": "NORTH_AMERICA"
+              },
+              {
+                "name": "LATAM",
+                "value": "LATAM"
+              },
+              {
+                "name": "APAC",
+                "value": "APAC"
+              },
+              {
+                "name": "GLOBAL",
+                "value": "GLOBAL"
+              }
+            ]
+          },
+          "Seniority": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "junior",
+                "value": "junior"
+              },
+              {
+                "name": "mid",
+                "value": "mid"
+              },
+              {
+                "name": "senior",
+                "value": "senior"
+              },
+              {
+                "name": "staff",
+                "value": "staff"
+              },
+              {
+                "name": "lead",
+                "value": "lead"
+              },
+              {
+                "name": "principal",
+                "value": "principal"
+              },
+              {
+                "name": "unstated",
+                "value": "unstated"
+              }
+            ]
+          },
+          "SkillDomain": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "backend",
+                "value": "backend"
+              },
+              {
+                "name": "frontend",
+                "value": "frontend"
+              },
+              {
+                "name": "fullstack",
+                "value": "fullstack"
+              },
+              {
+                "name": "mobile",
+                "value": "mobile"
+              },
+              {
+                "name": "devops",
+                "value": "devops"
+              },
+              {
+                "name": "data",
+                "value": "data"
+              },
+              {
+                "name": "ml",
+                "value": "ml"
+              },
+              {
+                "name": "security",
+                "value": "security"
+              },
+              {
+                "name": "qa",
+                "value": "qa"
+              }
+            ]
+          },
+          "Technology": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "javascript",
+                "value": "javascript"
+              },
+              {
+                "name": "typescript",
+                "value": "typescript"
+              },
+              {
+                "name": "python",
+                "value": "python"
+              },
+              {
+                "name": "java",
+                "value": "java"
+              },
+              {
+                "name": "kotlin",
+                "value": "kotlin"
+              },
+              {
+                "name": "go",
+                "value": "go"
+              },
+              {
+                "name": "rust",
+                "value": "rust"
+              },
+              {
+                "name": "csharp",
+                "value": "csharp"
+              },
+              {
+                "name": "cpp",
+                "value": "cpp"
+              },
+              {
+                "name": "php",
+                "value": "php"
+              },
+              {
+                "name": "ruby",
+                "value": "ruby"
+              },
+              {
+                "name": "scala",
+                "value": "scala"
+              },
+              {
+                "name": "elixir",
+                "value": "elixir"
+              },
+              {
+                "name": "swift",
+                "value": "swift"
+              },
+              {
+                "name": "dart",
+                "value": "dart"
+              },
+              {
+                "name": "sql",
+                "value": "sql"
+              },
+              {
+                "name": "bash",
+                "value": "bash"
+              },
+              {
+                "name": "nodejs",
+                "value": "nodejs"
+              },
+              {
+                "name": "nestjs",
+                "value": "nestjs"
+              },
+              {
+                "name": "express",
+                "value": "express"
+              },
+              {
+                "name": "fastify",
+                "value": "fastify"
+              },
+              {
+                "name": "django",
+                "value": "django"
+              },
+              {
+                "name": "fastapi",
+                "value": "fastapi"
+              },
+              {
+                "name": "flask",
+                "value": "flask"
+              },
+              {
+                "name": "spring",
+                "value": "spring"
+              },
+              {
+                "name": "dotnet",
+                "value": "dotnet"
+              },
+              {
+                "name": "laravel",
+                "value": "laravel"
+              },
+              {
+                "name": "rails",
+                "value": "rails"
+              },
+              {
+                "name": "graphql",
+                "value": "graphql"
+              },
+              {
+                "name": "grpc",
+                "value": "grpc"
+              },
+              {
+                "name": "react",
+                "value": "react"
+              },
+              {
+                "name": "nextjs",
+                "value": "nextjs"
+              },
+              {
+                "name": "vue",
+                "value": "vue"
+              },
+              {
+                "name": "nuxt",
+                "value": "nuxt"
+              },
+              {
+                "name": "angular",
+                "value": "angular"
+              },
+              {
+                "name": "svelte",
+                "value": "svelte"
+              },
+              {
+                "name": "tailwindcss",
+                "value": "tailwindcss"
+              },
+              {
+                "name": "react_native",
+                "value": "react_native"
+              },
+              {
+                "name": "flutter",
+                "value": "flutter"
+              },
+              {
+                "name": "postgresql",
+                "value": "postgresql"
+              },
+              {
+                "name": "mysql",
+                "value": "mysql"
+              },
+              {
+                "name": "mongodb",
+                "value": "mongodb"
+              },
+              {
+                "name": "redis",
+                "value": "redis"
+              },
+              {
+                "name": "elasticsearch",
+                "value": "elasticsearch"
+              },
+              {
+                "name": "kafka",
+                "value": "kafka"
+              },
+              {
+                "name": "rabbitmq",
+                "value": "rabbitmq"
+              },
+              {
+                "name": "spark",
+                "value": "spark"
+              },
+              {
+                "name": "airflow",
+                "value": "airflow"
+              },
+              {
+                "name": "dbt",
+                "value": "dbt"
+              },
+              {
+                "name": "snowflake",
+                "value": "snowflake"
+              },
+              {
+                "name": "aws",
+                "value": "aws"
+              },
+              {
+                "name": "gcp",
+                "value": "gcp"
+              },
+              {
+                "name": "azure",
+                "value": "azure"
+              },
+              {
+                "name": "docker",
+                "value": "docker"
+              },
+              {
+                "name": "kubernetes",
+                "value": "kubernetes"
+              },
+              {
+                "name": "terraform",
+                "value": "terraform"
+              },
+              {
+                "name": "ansible",
+                "value": "ansible"
+              },
+              {
+                "name": "github_actions",
+                "value": "github_actions"
+              },
+              {
+                "name": "gitlab_ci",
+                "value": "gitlab_ci"
+              },
+              {
+                "name": "linux",
+                "value": "linux"
+              },
+              {
+                "name": "nginx",
+                "value": "nginx"
+              },
+              {
+                "name": "prometheus",
+                "value": "prometheus"
+              },
+              {
+                "name": "grafana",
+                "value": "grafana"
+              },
+              {
+                "name": "pytorch",
+                "value": "pytorch"
+              },
+              {
+                "name": "tensorflow",
+                "value": "tensorflow"
+              },
+              {
+                "name": "langchain",
+                "value": "langchain"
+              }
+            ]
+          }
+        },
+        "models": {
+          "Contact": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "isPrimary": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "kind": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "ContactKind",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "label": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "userId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "value": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "user": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "isPrimary": {
+                  "column": "isPrimary"
+                },
+                "kind": {
+                  "column": "kind"
+                },
+                "label": {
+                  "column": "label"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                },
+                "userId": {
+                  "column": "userId"
+                },
+                "value": {
+                  "column": "value"
+                }
+              },
+              "namespaceId": "public",
+              "table": "contacts"
+            }
+          },
+          "Profile": {
+            "fields": {
+              "arrangements": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "Arrangement",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "city": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "country": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "engagements": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "Engagement",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "languages": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "Language",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "noticePeriodDays": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "positions": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "Position",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "publishedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "regions": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "Region",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "resumeFilename": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "resumeKey": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "resumeSha256": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "resumeSizeBytes": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "resumeUploadedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "seniority": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "Seniority",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "state": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "ProfileState",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "timezoneCurrent": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "timezoneMax": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "timezoneMin": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "userId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "yearsOfExperience": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "user": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "arrangements": {
+                  "column": "arrangements"
+                },
+                "city": {
+                  "column": "city"
+                },
+                "country": {
+                  "column": "country"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "engagements": {
+                  "column": "engagements"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "languages": {
+                  "column": "languages"
+                },
+                "noticePeriodDays": {
+                  "column": "noticePeriodDays"
+                },
+                "positions": {
+                  "column": "positions"
+                },
+                "publishedAt": {
+                  "column": "publishedAt"
+                },
+                "regions": {
+                  "column": "regions"
+                },
+                "resumeFilename": {
+                  "column": "resumeFilename"
+                },
+                "resumeKey": {
+                  "column": "resumeKey"
+                },
+                "resumeSha256": {
+                  "column": "resumeSha256"
+                },
+                "resumeSizeBytes": {
+                  "column": "resumeSizeBytes"
+                },
+                "resumeUploadedAt": {
+                  "column": "resumeUploadedAt"
+                },
+                "seniority": {
+                  "column": "seniority"
+                },
+                "state": {
+                  "column": "state"
+                },
+                "timezoneCurrent": {
+                  "column": "timezoneCurrent"
+                },
+                "timezoneMax": {
+                  "column": "timezoneMax"
+                },
+                "timezoneMin": {
+                  "column": "timezoneMin"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                },
+                "userId": {
+                  "column": "userId"
+                },
+                "yearsOfExperience": {
+                  "column": "yearsOfExperience"
+                }
+              },
+              "namespaceId": "public",
+              "table": "profiles"
+            }
+          },
+          "ProfileSkill": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "domain": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "SkillDomain",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "importance": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "mastery": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "profileId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "technology": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "Technology",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              }
+            },
+            "relations": {
+              "profile": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "profileId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Profile",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "domain": {
+                  "column": "domain"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "importance": {
+                  "column": "importance"
+                },
+                "mastery": {
+                  "column": "mastery"
+                },
+                "profileId": {
+                  "column": "profileId"
+                },
+                "technology": {
+                  "column": "technology"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "profile_skills"
+            }
+          },
+          "QuerySearchBuilder": {
+            "fields": {
+              "channel": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "Channel",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "city": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "country": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "experience": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "Seniority",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "hash": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "keyword": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "locationRegion": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "Region",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "params": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
+              },
+              "profileId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "technologies": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "Technology",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "type": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "Arrangement",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "userId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "version": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "profile": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "profileId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Profile",
+                  "namespace": "public"
+                }
+              },
+              "user": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "channel": {
+                  "column": "channel"
+                },
+                "city": {
+                  "column": "city"
+                },
+                "country": {
+                  "column": "country"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "experience": {
+                  "column": "experience"
+                },
+                "hash": {
+                  "column": "hash"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "keyword": {
+                  "column": "keyword"
+                },
+                "locationRegion": {
+                  "column": "locationRegion"
+                },
+                "params": {
+                  "column": "params"
+                },
+                "profileId": {
+                  "column": "profileId"
+                },
+                "technologies": {
+                  "column": "technologies"
+                },
+                "type": {
+                  "column": "type"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                },
+                "userId": {
+                  "column": "userId"
+                },
+                "version": {
+                  "column": "version"
+                }
+              },
+              "namespaceId": "public",
+              "table": "query_search_builder"
+            }
+          },
+          "User": {
+            "fields": {
+              "address": {
+                "nullable": true,
+                "type": {
+                  "kind": "valueObject",
+                  "name": "Address"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "email": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "name": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "address": {
+                  "column": "address"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "email": {
+                  "column": "email"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "name": {
+                  "column": "name"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "users"
+            }
+          }
+        },
+        "valueObjects": {
+          "Address": {
+            "fields": {
+              "city": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "country": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "line1": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "line2": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "postalCode": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "state": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "storage": {
+    "namespaces": {
+      "public": {
+        "entries": {
+          "table": {
+            "contacts": {
+              "checks": [
+                {
+                  "expression": "\"kind\" IN ('phone', 'email', 'linkedin', 'github', 'gitlab', 'portfolio', 'website', 'other')",
+                  "name": "contacts_kind_check_01673cfa",
+                  "prefix": "contacts_kind_check"
+                }
+              ],
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "isPrimary": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "kind": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "ContactKind",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "label": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "userId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "value": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "contacts_userId_idx_a489d58a"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "contacts"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "users"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "userId"
+                  ],
+                  "name": "contacts_userId_idx_a489d58a",
+                  "prefix": "contacts_userId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "userId",
+                    "kind",
+                    "value"
+                  ]
+                }
+              ]
+            },
+            "profile_skills": {
+              "checks": [
+                {
+                  "expression": "\"domain\" IN ('backend', 'frontend', 'fullstack', 'mobile', 'devops', 'data', 'ml', 'security', 'qa')",
+                  "name": "profile_skills_domain_check_5fdc18af",
+                  "prefix": "profile_skills_domain_check"
+                },
+                {
+                  "expression": "importance BETWEEN 0 AND 10",
+                  "name": "profile_skills_importance_range_c5238a16",
+                  "prefix": "profile_skills_importance_range"
+                },
+                {
+                  "expression": "mastery BETWEEN 0 AND 10",
+                  "name": "profile_skills_mastery_range_06062a09",
+                  "prefix": "profile_skills_mastery_range"
+                },
+                {
+                  "expression": "\"technology\" IN ('javascript', 'typescript', 'python', 'java', 'kotlin', 'go', 'rust', 'csharp', 'cpp', 'php', 'ruby', 'scala', 'elixir', 'swift', 'dart', 'sql', 'bash', 'nodejs', 'nestjs', 'express', 'fastify', 'django', 'fastapi', 'flask', 'spring', 'dotnet', 'laravel', 'rails', 'graphql', 'grpc', 'react', 'nextjs', 'vue', 'nuxt', 'angular', 'svelte', 'tailwindcss', 'react_native', 'flutter', 'postgresql', 'mysql', 'mongodb', 'redis', 'elasticsearch', 'kafka', 'rabbitmq', 'spark', 'airflow', 'dbt', 'snowflake', 'aws', 'gcp', 'azure', 'docker', 'kubernetes', 'terraform', 'ansible', 'github_actions', 'gitlab_ci', 'linux', 'nginx', 'prometheus', 'grafana', 'pytorch', 'tensorflow', 'langchain')",
+                  "name": "profile_skills_technology_check_415c1e16",
+                  "prefix": "profile_skills_technology_check"
+                }
+              ],
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "domain": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "SkillDomain",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "importance": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 5
+                  },
+                  "nullable": false
+                },
+                "mastery": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "profileId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "technology": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "Technology",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "profile_skills_profileId_idx_d9cdfcaf"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "profileId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "profile_skills"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "profiles"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "profileId"
+                  ],
+                  "name": "profile_skills_profileId_idx_d9cdfcaf",
+                  "prefix": "profile_skills_profileId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "profileId",
+                    "technology",
+                    "domain"
+                  ]
+                }
+              ]
+            },
+            "profiles": {
+              "checks": [
+                {
+                  "expression": "array_remove(\"arrangements\", NULL) <@ '{\"remote\",\"hybrid\",\"onsite\",\"unstated\"}'",
+                  "name": "profiles_arrangements_check_7606728b",
+                  "prefix": "profiles_arrangements_check"
+                },
+                {
+                  "expression": "array_position(\"arrangements\", NULL) IS NULL",
+                  "name": "profiles_arrangements_elem_not_null_d7d34c79",
+                  "prefix": "profiles_arrangements_elem_not_null"
+                },
+                {
+                  "expression": "cardinality(\"arrangements\") > 0",
+                  "name": "profiles_arrangements_nonempty_52fb6f2a",
+                  "prefix": "profiles_arrangements_nonempty"
+                },
+                {
+                  "expression": "array_remove(\"engagements\", NULL) <@ '{\"employee\",\"contractor\",\"eor\",\"agency\",\"per_task\"}'",
+                  "name": "profiles_engagements_check_8a34079e",
+                  "prefix": "profiles_engagements_check"
+                },
+                {
+                  "expression": "array_position(\"engagements\", NULL) IS NULL",
+                  "name": "profiles_engagements_elem_not_null_49d9c5b3",
+                  "prefix": "profiles_engagements_elem_not_null"
+                },
+                {
+                  "expression": "cardinality(\"engagements\") > 0",
+                  "name": "profiles_engagements_nonempty_2beb6a31",
+                  "prefix": "profiles_engagements_nonempty"
+                },
+                {
+                  "expression": "array_remove(\"languages\", NULL) <@ '{\"AR\",\"FR\",\"EN\",\"ES\"}'",
+                  "name": "profiles_languages_check_dd30c302",
+                  "prefix": "profiles_languages_check"
+                },
+                {
+                  "expression": "array_position(\"languages\", NULL) IS NULL",
+                  "name": "profiles_languages_elem_not_null_d4aa0a00",
+                  "prefix": "profiles_languages_elem_not_null"
+                },
+                {
+                  "expression": "cardinality(\"languages\") > 0",
+                  "name": "profiles_languages_nonempty_ee0e6ea8",
+                  "prefix": "profiles_languages_nonempty"
+                },
+                {
+                  "expression": "\"noticePeriodDays\" BETWEEN 0 AND 365",
+                  "name": "profiles_notice_range_62c2438c",
+                  "prefix": "profiles_notice_range"
+                },
+                {
+                  "expression": "array_remove(\"positions\", NULL) <@ '{\"backend_engineer\",\"frontend_engineer\",\"fullstack_engineer\",\"mobile_engineer\",\"devops_engineer\",\"site_reliability_engineer\",\"platform_engineer\",\"cloud_engineer\",\"security_engineer\",\"data_engineer\",\"ml_engineer\",\"ai_engineer\",\"qa_engineer\",\"embedded_engineer\",\"software_architect\",\"tech_lead\",\"engineering_manager\"}'",
+                  "name": "profiles_positions_check_189b7313",
+                  "prefix": "profiles_positions_check"
+                },
+                {
+                  "expression": "array_position(\"positions\", NULL) IS NULL",
+                  "name": "profiles_positions_elem_not_null_8c5582cf",
+                  "prefix": "profiles_positions_elem_not_null"
+                },
+                {
+                  "expression": "cardinality(\"positions\") > 0",
+                  "name": "profiles_positions_nonempty_fbe59e7d",
+                  "prefix": "profiles_positions_nonempty"
+                },
+                {
+                  "expression": "array_remove(\"regions\", NULL) <@ '{\"EMEA\",\"MENA\",\"NORTH_AFRICA\",\"SUB_SAHARAN_AFRICA\",\"MIDDLE_EAST\",\"EUROPE\",\"EU\",\"UK\",\"NORTH_AMERICA\",\"LATAM\",\"APAC\",\"GLOBAL\"}'",
+                  "name": "profiles_regions_check_76fa66e0",
+                  "prefix": "profiles_regions_check"
+                },
+                {
+                  "expression": "array_position(\"regions\", NULL) IS NULL",
+                  "name": "profiles_regions_elem_not_null_0c7680bd",
+                  "prefix": "profiles_regions_elem_not_null"
+                },
+                {
+                  "expression": "\"seniority\" IN ('junior', 'mid', 'senior', 'staff', 'lead', 'principal', 'unstated')",
+                  "name": "profiles_seniority_check_2e7615f6",
+                  "prefix": "profiles_seniority_check"
+                },
+                {
+                  "expression": "\"state\" IN ('draft', 'published')",
+                  "name": "profiles_state_check_1caa8f71",
+                  "prefix": "profiles_state_check"
+                },
+                {
+                  "expression": "\"timezoneCurrent\" BETWEEN -720 AND 840 AND \"timezoneMin\" BETWEEN -720 AND 840 AND \"timezoneMax\" BETWEEN -720 AND 840 AND \"timezoneMin\" <= \"timezoneMax\"",
+                  "name": "profiles_tz_range_530d220d",
+                  "prefix": "profiles_tz_range"
+                },
+                {
+                  "expression": "\"yearsOfExperience\" BETWEEN 0 AND 60",
+                  "name": "profiles_years_range_422da6f6",
+                  "prefix": "profiles_years_range"
+                }
+              ],
+              "columns": {
+                "arrangements": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "Arrangement",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "city": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "country": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "engagements": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "Engagement",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "languages": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "Language",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "noticePeriodDays": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "positions": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "Position",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "publishedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "regions": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "Region",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "resumeFilename": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "resumeKey": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "resumeSha256": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "resumeSizeBytes": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "resumeUploadedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "seniority": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "Seniority",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "state": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "draft"
+                  },
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "ProfileState",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "timezoneCurrent": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "timezoneMax": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "timezoneMin": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "userId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "yearsOfExperience": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "profiles_userId_idx_a489d58a"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "profiles"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "users"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "userId"
+                  ],
+                  "name": "profiles_userId_idx_a489d58a",
+                  "prefix": "profiles_userId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "query_search_builder": {
+              "checks": [
+                {
+                  "expression": "\"channel\" IN ('LINKEDIN_JOB_BOARD', 'LINKEDIN_POSTS', 'GREEN_HOUSE', 'ASHBY')",
+                  "name": "query_search_builder_channel_check_687325cb",
+                  "prefix": "query_search_builder_channel_check"
+                },
+                {
+                  "expression": "\"experience\" IN ('junior', 'mid', 'senior', 'staff', 'lead', 'principal', 'unstated')",
+                  "name": "query_search_builder_experience_check_da85d416",
+                  "prefix": "query_search_builder_experience_check"
+                },
+                {
+                  "expression": "\"locationRegion\" IN ('EMEA', 'MENA', 'NORTH_AFRICA', 'SUB_SAHARAN_AFRICA', 'MIDDLE_EAST', 'EUROPE', 'EU', 'UK', 'NORTH_AMERICA', 'LATAM', 'APAC', 'GLOBAL')",
+                  "name": "query_search_builder_locationRegion_check_eb30a260",
+                  "prefix": "query_search_builder_locationRegion_check"
+                },
+                {
+                  "expression": "array_remove(\"technologies\", NULL) <@ '{\"javascript\",\"typescript\",\"python\",\"java\",\"kotlin\",\"go\",\"rust\",\"csharp\",\"cpp\",\"php\",\"ruby\",\"scala\",\"elixir\",\"swift\",\"dart\",\"sql\",\"bash\",\"nodejs\",\"nestjs\",\"express\",\"fastify\",\"django\",\"fastapi\",\"flask\",\"spring\",\"dotnet\",\"laravel\",\"rails\",\"graphql\",\"grpc\",\"react\",\"nextjs\",\"vue\",\"nuxt\",\"angular\",\"svelte\",\"tailwindcss\",\"react_native\",\"flutter\",\"postgresql\",\"mysql\",\"mongodb\",\"redis\",\"elasticsearch\",\"kafka\",\"rabbitmq\",\"spark\",\"airflow\",\"dbt\",\"snowflake\",\"aws\",\"gcp\",\"azure\",\"docker\",\"kubernetes\",\"terraform\",\"ansible\",\"github_actions\",\"gitlab_ci\",\"linux\",\"nginx\",\"prometheus\",\"grafana\",\"pytorch\",\"tensorflow\",\"langchain\"}'",
+                  "name": "query_search_builder_technologies_check_84960705",
+                  "prefix": "query_search_builder_technologies_check"
+                },
+                {
+                  "expression": "array_position(\"technologies\", NULL) IS NULL",
+                  "name": "query_search_builder_technologies_elem_not_null_89b37e18",
+                  "prefix": "query_search_builder_technologies_elem_not_null"
+                },
+                {
+                  "expression": "\"type\" IN ('remote', 'hybrid', 'onsite', 'unstated')",
+                  "name": "query_search_builder_type_check_21429531",
+                  "prefix": "query_search_builder_type_check"
+                }
+              ],
+              "columns": {
+                "channel": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "Channel",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "city": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "country": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "experience": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "Seniority",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "hash": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "keyword": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "locationRegion": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "Region",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "params": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": false
+                },
+                "profileId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "technologies": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "Technology",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "type": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "Arrangement",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "userId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "version": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "query_search_builder_userId_idx_a489d58a"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "query_search_builder"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "users"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "query_search_builder_profileId_idx_d9cdfcaf"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "profileId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "query_search_builder"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "profiles"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "profileId",
+                    "channel"
+                  ],
+                  "name": "query_search_builder_profileId_channel_idx_6dd870f6",
+                  "prefix": "query_search_builder_profileId_channel_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "profileId"
+                  ],
+                  "name": "query_search_builder_profileId_idx_d9cdfcaf",
+                  "prefix": "query_search_builder_profileId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "userId"
+                  ],
+                  "name": "query_search_builder_userId_idx_a489d58a",
+                  "prefix": "query_search_builder_userId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "profileId",
+                    "hash"
+                  ]
+                }
+              ]
+            },
+            "users": {
+              "columns": {
+                "address": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": true
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "email": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "name": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "email"
+                  ]
+                }
+              ]
+            }
+          },
+          "valueSet": {
+            "Arrangement": {
+              "kind": "valueSet",
+              "values": [
+                "remote",
+                "hybrid",
+                "onsite",
+                "unstated"
+              ]
+            },
+            "Channel": {
+              "kind": "valueSet",
+              "values": [
+                "LINKEDIN_JOB_BOARD",
+                "LINKEDIN_POSTS",
+                "GREEN_HOUSE",
+                "ASHBY"
+              ]
+            },
+            "ContactKind": {
+              "kind": "valueSet",
+              "values": [
+                "phone",
+                "email",
+                "linkedin",
+                "github",
+                "gitlab",
+                "portfolio",
+                "website",
+                "other"
+              ]
+            },
+            "Engagement": {
+              "kind": "valueSet",
+              "values": [
+                "employee",
+                "contractor",
+                "eor",
+                "agency",
+                "per_task"
+              ]
+            },
+            "Language": {
+              "kind": "valueSet",
+              "values": [
+                "AR",
+                "FR",
+                "EN",
+                "ES"
+              ]
+            },
+            "Position": {
+              "kind": "valueSet",
+              "values": [
+                "backend_engineer",
+                "frontend_engineer",
+                "fullstack_engineer",
+                "mobile_engineer",
+                "devops_engineer",
+                "site_reliability_engineer",
+                "platform_engineer",
+                "cloud_engineer",
+                "security_engineer",
+                "data_engineer",
+                "ml_engineer",
+                "ai_engineer",
+                "qa_engineer",
+                "embedded_engineer",
+                "software_architect",
+                "tech_lead",
+                "engineering_manager"
+              ]
+            },
+            "ProfileState": {
+              "kind": "valueSet",
+              "values": [
+                "draft",
+                "published"
+              ]
+            },
+            "Region": {
+              "kind": "valueSet",
+              "values": [
+                "EMEA",
+                "MENA",
+                "NORTH_AFRICA",
+                "SUB_SAHARAN_AFRICA",
+                "MIDDLE_EAST",
+                "EUROPE",
+                "EU",
+                "UK",
+                "NORTH_AMERICA",
+                "LATAM",
+                "APAC",
+                "GLOBAL"
+              ]
+            },
+            "Seniority": {
+              "kind": "valueSet",
+              "values": [
+                "junior",
+                "mid",
+                "senior",
+                "staff",
+                "lead",
+                "principal",
+                "unstated"
+              ]
+            },
+            "SkillDomain": {
+              "kind": "valueSet",
+              "values": [
+                "backend",
+                "frontend",
+                "fullstack",
+                "mobile",
+                "devops",
+                "data",
+                "ml",
+                "security",
+                "qa"
+              ]
+            },
+            "Technology": {
+              "kind": "valueSet",
+              "values": [
+                "javascript",
+                "typescript",
+                "python",
+                "java",
+                "kotlin",
+                "go",
+                "rust",
+                "csharp",
+                "cpp",
+                "php",
+                "ruby",
+                "scala",
+                "elixir",
+                "swift",
+                "dart",
+                "sql",
+                "bash",
+                "nodejs",
+                "nestjs",
+                "express",
+                "fastify",
+                "django",
+                "fastapi",
+                "flask",
+                "spring",
+                "dotnet",
+                "laravel",
+                "rails",
+                "graphql",
+                "grpc",
+                "react",
+                "nextjs",
+                "vue",
+                "nuxt",
+                "angular",
+                "svelte",
+                "tailwindcss",
+                "react_native",
+                "flutter",
+                "postgresql",
+                "mysql",
+                "mongodb",
+                "redis",
+                "elasticsearch",
+                "kafka",
+                "rabbitmq",
+                "spark",
+                "airflow",
+                "dbt",
+                "snowflake",
+                "aws",
+                "gcp",
+                "azure",
+                "docker",
+                "kubernetes",
+                "terraform",
+                "ansible",
+                "github_actions",
+                "gitlab_ci",
+                "linux",
+                "nginx",
+                "prometheus",
+                "grafana",
+                "pytorch",
+                "tensorflow",
+                "langchain"
+              ]
+            }
+          }
+        },
+        "id": "public",
+        "kind": "postgres-schema"
+      }
+    },
+    "storageHash": "e77655c24b187fa1c73badde5327bccea57ba3fabd4e6283986afd4ef4cc422e"
+  },
+  "execution": {
+    "executionHash": "f6ebf506e6d5979e58936cab55fd00bf6c0de01c3ef97fc82857e53b6b66313b",
+    "mutations": {
+      "defaults": [
+        {
+          "onCreate": {
+            "id": "uuidv7",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "contacts",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "contacts",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv7",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "profile_skills",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "profile_skills",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv7",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "profiles",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "profiles",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv7",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "query_search_builder",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "query_search_builder",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv7",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "users",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "users",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        }
+      ]
+    }
+  },
+  "capabilities": {
+    "postgres": {
+      "distinctOn": true,
+      "forKeyShare": true,
+      "forNoKeyUpdate": true,
+      "jsonAgg": true,
+      "lateral": true,
+      "limit": true,
+      "orderBy": true,
+      "returning": true
+    },
+    "sql": {
+      "checkConstraint": true,
+      "defaultInInsert": true,
+      "enums": true,
+      "forShare": true,
+      "forUpdate": true,
+      "insertOnConflictSkip": true,
+      "insertOnConflictWithoutTarget": true,
+      "lateral": true,
+      "lockNowait": true,
+      "lockOf": true,
+      "lockSkipLocked": true,
+      "returning": true,
+      "scalarList": true
+    }
+  },
+  "extensions": {},
+  "meta": {},
+  "_generated": {
+    "warning": "⚠️  GENERATED FILE - DO NOT EDIT",
+    "message": "This file is automatically generated by \"prisma contract emit\".",
+    "regenerate": "To regenerate, run: prisma contract emit"
+  }
+}

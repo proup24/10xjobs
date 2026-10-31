@@ -12,6 +12,7 @@ export type ContactRow = Row<Models.public_Contact>;
 export type ProfileRow = Row<Models.public_Profile>;
 export type ProfileSkillRow = Row<Models.public_ProfileSkill>;
 export type QuerySearchBuilderRow = Row<Models.public_QuerySearchBuilder>;
+export type RawJobRow = Row<Models.public_RawJob>;
 /** An address as callers write it; optional parts may be left out. */
 export type Address = {
   line1: string;
