@@ -90,6 +90,18 @@ export class FakeQuerySearchRepository extends QuerySearchRepository {
     );
   }
 
+  async listActive(channel: Channel): Promise<QuerySearchBuilderRow[]> {
+    return this.rows
+      .filter(
+        (row) => row.channel === channel && row.isActive && !row.isDeleted,
+      )
+      .sort(
+        (a, b) =>
+          a.createdAt.getTime() - b.createdAt.getTime() ||
+          (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+      );
+  }
+
   async softDelete(queryId: string): Promise<QuerySearchBuilderRow | null> {
     const row = this.rows.find((candidate) => candidate.id === queryId);
     if (!row) return null;

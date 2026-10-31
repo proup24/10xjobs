@@ -66,6 +66,11 @@ export class QuerySearchService {
     return rows;
   }
 
+  /** A channel's active, non-deleted builders across every profile, oldest first. */
+  listActive(channel: Channel): Promise<QuerySearchBuilderRow[]> {
+    return this.builders.listActive(channel);
+  }
+
   /** Retires a builder for good: it is unlinked from every profile and never collected again. */
   async softDelete(queryId: string): Promise<QuerySearchBuilderRow> {
     const row = await this.builders.softDelete(queryId);

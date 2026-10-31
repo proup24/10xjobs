@@ -272,4 +272,33 @@ describe('QuerySearchService', () => {
       expect(await service.list(userId, profileId)).toHaveLength(23);
     });
   });
+  describe('listActive', () => {
+    it("returns a channel's active, non-deleted builders across profiles, oldest first", async () => {
+      const { service, repository, profileId } = await setup();
+      await service.generate(profileId, profile);
+      const ashby = repository.rows.filter(
+        (row) => row.channel === Channel.ASHBY,
+      );
+      ashby.forEach((row, index) => {
+        row.createdAt = new Date(Date.UTC(2026, 0, ashby.length - index));
+      });
+      await service.softDelete(ashby[0].id);
+      Object.assign(ashby[1], { associatedProfiles: 0, isActive: false });
+
+      const active = await service.listActive(Channel.ASHBY);
+
+      expect(active.map((row) => row.id)).toEqual(
+        ashby
+          .slice(2)
+          .map((row) => row.id)
+          .reverse(),
+      );
+      expect(active.every((row) => row.channel === Channel.ASHBY)).toBe(true);
+    });
+
+    it('returns nothing for a channel without active builders', async () => {
+      const { service } = await setup();
+      expect(await service.listActive(Channel.GREEN_HOUSE)).toEqual([]);
+    });
+  });
 });

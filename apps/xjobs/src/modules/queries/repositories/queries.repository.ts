@@ -37,6 +37,11 @@ export abstract class QuerySearchRepository {
     profileId: string,
     channel?: Channel,
   ): Promise<QuerySearchBuilderRow[] | null>;
+  /**
+   * Every active, non-deleted builder of one channel, across all profiles,
+   * oldest first: what that channel's collection job searches.
+   */
+  abstract listActive(channel: Channel): Promise<QuerySearchBuilderRow[]>;
   /** Retires a builder: unlinks every profile and deactivates it for good. */
   abstract softDelete(queryId: string): Promise<QuerySearchBuilderRow | null>;
 }
@@ -168,6 +173,17 @@ export class PrismaQuerySearchRepository extends QuerySearchRepository {
       channel ? { channel, isDeleted: false } : { isDeleted: false },
     ).where((row) => row.id.in(ids));
     return await builders.orderBy((row) => row.createdAt.asc()).all();
+  }
+
+  async listActive(channel: Channel): Promise<QuerySearchBuilderRow[]> {
+    return await this.database.db.orm.public.QuerySearchBuilder.where({
+      channel,
+      isActive: true,
+      isDeleted: false,
+    })
+      .orderBy((row) => row.createdAt.asc())
+      .orderBy((row) => row.id.asc())
+      .all();
   }
 
   softDelete(queryId: string): Promise<QuerySearchBuilderRow | null> {
