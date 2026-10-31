@@ -1,14 +1,21 @@
 import { Channel } from 'src/common/enums';
 import { normalizeItem } from './normalize';
+import type { CollectedJob } from '../types';
 
 const ashbyId = '12345678-abcd-4000-8000-123456789abc';
-const base = {
-  externalId: '123',
+const base: CollectedJob = {
+  source: 'linkedin-jobs',
+  sourceJobId: '123',
   url: 'https://www.linkedin.com/jobs/view/engineer-123/?trk=search',
+  applyUrl: null,
   title: 'Engineer',
   company: 'Acme',
-  description: 'Build APIs',
   location: 'Remote',
+  postedAt: null,
+  postedAtPrecision: 'day',
+  description: 'Build APIs',
+  contact: null,
+  search: 'typescript in Germany',
   raw: { id: '123' },
 };
 
@@ -35,8 +42,10 @@ describe('ingest normalization', () => {
     };
     const job = normalizeItem(Channel.LINKEDIN_POSTS, {
       ...base,
+      source: 'linkedin-posts',
       url: 'https://www.linkedin.com/feed/update/urn:li:activity:123/',
       company: 'Jane',
+      postedAtPrecision: 'hour',
       raw,
     });
     expect(job).toMatchObject({
@@ -58,7 +67,8 @@ describe('ingest normalization', () => {
     };
     const job = normalizeItem(Channel.ASHBY, {
       ...base,
-      externalId: ashbyId,
+      source: 'ashby',
+      sourceJobId: ashbyId,
       url: `https://jobs.ashbyhq.com/acme/${ashbyId}/application?utm_source=test`,
       description: '<p>Build &amp; maintain APIs</p><script>alert(1)</script>',
       raw,
@@ -74,6 +84,7 @@ describe('ingest normalization', () => {
   it('uses Greenhouse board identity and canonicalizes supported aliases', () => {
     const job = normalizeItem(Channel.GREEN_HOUSE, {
       ...base,
+      source: 'greenhouse',
       url: 'https://boards.greenhouse.io/acme/jobs/123?gh_src=abc',
       raw: { posting: { first_published: '2026-10-28T10:00:00Z' } },
     });
@@ -83,12 +94,64 @@ describe('ingest normalization', () => {
     });
   });
 
-  it('uses URL fallback for absent or sentinel source IDs', () => {
-    for (const externalId of [undefined, '', 'undefined', 'null']) {
+  it('uses URL fallback for blank or sentinel source IDs', () => {
+    for (const sourceJobId of ['', ' ', 'undefined', 'null']) {
       expect(
-        normalizeItem(Channel.LINKEDIN_JOB_BOARD, { ...base, externalId })
+        normalizeItem(Channel.LINKEDIN_JOB_BOARD, { ...base, sourceJobId })
           .externalId,
       ).toBeNull();
+    }
+  });
+
+  it('maps the contact object and stores blank title or company as null', () => {
+    const job = normalizeItem(Channel.LINKEDIN_JOB_BOARD, {
+      ...base,
+      title: ' ',
+      company: '',
+      contact: {
+        name: 'Jane Recruiter',
+        url: 'https://www.linkedin.com/in/jane?trk=x',
+      },
+    });
+    expect(job).toMatchObject({
+      title: null,
+      company: null,
+      contactName: 'Jane Recruiter',
+      contactUrl: 'https://www.linkedin.com/in/jane',
+      authorName: null,
+    });
+  });
+
+  it('rejects items whose source does not match the lookup channel', () => {
+    expect(() => normalizeItem(Channel.LINKEDIN_POSTS, base)).toThrow(
+      'Source does not match lookup query',
+    );
+  });
+
+  it.each([
+    'sourceJobId',
+    'title',
+    'company',
+    'postedAtPrecision',
+    'search',
+    'contact',
+    'applyUrl',
+  ] as const)('rejects items missing the required %s field', (field) => {
+    const { [field]: _omitted, ...item } = base;
+    expect(() => normalizeItem(Channel.LINKEDIN_JOB_BOARD, item)).toThrow(
+      'Malformed collector item',
+    );
+  });
+
+  it('rejects a blank search and a partial contact', () => {
+    for (const item of [
+      { ...base, search: ' ' },
+      { ...base, contact: { name: 'Jane', url: '' } },
+      { ...base, source: 'indeed' },
+    ]) {
+      expect(() => normalizeItem(Channel.LINKEDIN_JOB_BOARD, item)).toThrow(
+        'Malformed collector item',
+      );
     }
   });
 
@@ -106,7 +169,10 @@ describe('ingest normalization', () => {
 
   it('rejects mismatched source identity, empty text, malformed optional fields and non-JSON raw', () => {
     expect(() =>
-      normalizeItem(Channel.LINKEDIN_JOB_BOARD, { ...base, externalId: '456' }),
+      normalizeItem(Channel.LINKEDIN_JOB_BOARD, {
+        ...base,
+        sourceJobId: '456',
+      }),
     ).toThrow();
     expect(() =>
       normalizeItem(Channel.LINKEDIN_JOB_BOARD, { ...base, description: ' ' }),
@@ -148,6 +214,7 @@ describe('ingest normalization', () => {
   it('preserves a group post URL even when the actor activity ID is different', () => {
     const job = normalizeItem(Channel.LINKEDIN_POSTS, {
       ...base,
+      source: 'linkedin-posts',
       url: 'https://www.linkedin.com/feed/update/urn:li:groupPost:456-789/',
       raw: { content: 'We are hiring' },
     });
@@ -166,6 +233,7 @@ describe('ingest normalization', () => {
     };
     const job = normalizeItem(Channel.GREEN_HOUSE, {
       ...base,
+      source: 'greenhouse',
       company: 'Unknown',
       url: 'https://boards.greenhouse.io/acme/jobs/123',
       description: raw.posting.content,
@@ -181,6 +249,7 @@ describe('ingest normalization', () => {
       normalizeItem(Channel.LINKEDIN_JOB_BOARD, {
         ...base,
         postedAt: '2026-10-30',
+        postedAtPrecision: 'hour',
       }).postedAtPrecision,
     ).toBe('day');
   });

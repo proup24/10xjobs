@@ -1,13 +1,19 @@
 import { Channel } from 'src/common/enums';
-import { ChannelProvider, type ChannelCollectionResult, type ChannelSearch } from '../types/channel-provider';
+import {
+  Collector,
+  type CollectionResult,
+  type CollectorSearch,
+} from '../types/collector';
 import { Injectable } from '@nestjs/common';
 import { LinkedinPostSearchProvider } from './apify/linkedin-post-search.provider';
 
 @Injectable()
-export class LinkedinPostsProvider extends ChannelProvider {
+export class LinkedinPostsProvider extends Collector {
   readonly channel = Channel.LINKEDIN_POSTS;
-  constructor(private readonly searchProvider: LinkedinPostSearchProvider) { super(); }
-  async collect(search: ChannelSearch): Promise<ChannelCollectionResult> {
+  constructor(private readonly searchProvider: LinkedinPostSearchProvider) {
+    super();
+  }
+  async collect(search: CollectorSearch): Promise<CollectionResult> {
     const jobs = await this.searchProvider.search(search);
     return { jobs, complete: true, truncated: false };
   }

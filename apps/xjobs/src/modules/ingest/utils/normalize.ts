@@ -1,6 +1,7 @@
-import { convert } from 'html-to-text';
 import { z } from 'zod';
 import { Channel } from 'src/common/enums';
+import { channelSource } from '../../collectors/types/collector';
+import { plainText } from '../../collectors/utils/collected-job';
 import { applicationUrl, atsIdentity, canonicalSource } from './identity';
 import {
   InvalidIngestItem,
@@ -10,23 +11,27 @@ import {
 } from '../types';
 import { ingestConfig } from '../config';
 
-const optionalText = z.string().trim().nullable().optional();
+const nullableText = z.string().trim().nullable();
+/** Mirrors CollectedJob: the record every channel provider emits. */
 const inputSchema = z.object({
-  externalId: optionalText,
+  source: z.enum(Object.values(channelSource)),
+  sourceJobId: z.string().trim(),
   url: z.string().trim().min(1),
-  title: optionalText,
-  company: optionalText,
-  location: optionalText,
+  applyUrl: nullableText,
+  title: z.string().trim(),
+  company: z.string().trim(),
+  location: nullableText,
+  postedAt: nullableText,
+  postedAtPrecision: z.enum(['hour', 'day']),
   description: z.string(),
+  contact: z
+    .object({
+      name: z.string().trim().min(1),
+      url: z.string().trim().min(1),
+    })
+    .nullable(),
+  search: z.string().trim().min(1),
   raw: z.unknown(),
-  applyUrl: optionalText,
-  postedAt: optionalText,
-  postedAtPrecision: z.enum(['hour', 'day']).nullable().optional(),
-  authorName: optionalText,
-  authorUrl: optionalText,
-  contactName: optionalText,
-  contactUrl: optionalText,
-  rank: z.number().int().positive().nullable().optional(),
 });
 
 function record(value: unknown): Record<string, unknown> {
@@ -116,26 +121,11 @@ function extractDescription(
   original: Record<string, unknown>,
   itemDescription: string,
 ): string {
-  let body = isPost
+  const body = isPost
     ? (text(original.content) ?? itemDescription)
     : itemDescription;
-  // Greenhouse can wrap HTML in another entity-encoding layer. Decode that
-  // transport layer before parsing the markup; the untouched payload stays in raw.
-  if (
-    channel === Channel.GREEN_HOUSE &&
-    /&lt;\/?[a-z][\s\S]*?&gt;/i.test(body)
-  ) {
-    body = convert(body, { wordwrap: false });
-  }
-  const description = /<\/?[a-z][^>]*>/i.test(body)
-    ? convert(body, {
-        wordwrap: false,
-        selectors: [
-          { selector: 'a', options: { ignoreHref: true } },
-          { selector: 'img', format: 'skip' },
-        ],
-      }).trim()
-    : body.trim();
+  // Greenhouse can wrap HTML in another entity-encoding layer; the untouched payload stays in raw.
+  const description = plainText(body, channel === Channel.GREEN_HOUSE);
   if (!description) throw new InvalidIngestItem('Empty description');
   return description;
 }
@@ -208,7 +198,7 @@ function resolvePostedAt(
   channel: Channel,
   isPost: boolean,
   itemPostedAt: unknown,
-  itemPrecision: 'hour' | 'day' | null | undefined,
+  itemPrecision: 'hour' | 'day',
   original: Record<string, unknown>,
   posting: Record<string, unknown>,
 ): { postedAt: Date | null; postedAtPrecision: 'hour' | 'day' | null } {
@@ -223,13 +213,11 @@ function resolvePostedAt(
   if (!postedAt) {
     return { postedAt: null, postedAtPrecision: null };
   }
-  const defaultPrecision =
-    channel === Channel.ASHBY || (rawDate && !rawDate.includes('T'))
-      ? 'day'
-      : 'hour';
+  // A date-only value cannot carry hour precision, whatever the collector claims.
+  const isDateOnly = Boolean(rawDate && !rawDate.includes('T'));
   return {
     postedAt,
-    postedAtPrecision: itemPrecision ?? defaultPrecision,
+    postedAtPrecision: isDateOnly ? 'day' : itemPrecision,
   };
 }
 
@@ -242,44 +230,35 @@ interface AuthorAndContact {
 
 function resolveAuthorAndContact(
   isPost: boolean,
-  item: {
-    authorName?: string | null;
-    authorUrl?: string | null;
-    contactName?: string | null;
-    contactUrl?: string | null;
-  },
+  contact: { name: string; url: string } | null,
   original: Record<string, unknown>,
 ): AuthorAndContact {
   if (!isPost) {
     return {
       authorName: null,
       authorUrl: null,
-      contactName: text(item.contactName) ?? text(original.posterFullName),
+      contactName: contact?.name ?? text(original.posterFullName),
       contactUrl: applicationUrl(
-        text(item.contactUrl) ?? text(original.posterProfileUrl),
+        contact?.url ?? text(original.posterProfileUrl),
       ),
     };
   }
 
   const author = record(original.author);
-  const authorName =
-    text(item.authorName) ?? text(author.name) ?? text(original.authorName);
+  const authorName = text(author.name) ?? text(original.authorName);
 
   const publicId = text(author.publicIdentifier);
   const profileUrl = publicId
     ? `https://www.linkedin.com/in/${encodeURIComponent(publicId)}`
     : null;
-  const rawAuthorUrl =
-    text(item.authorUrl) ?? text(author.linkedinUrl) ?? profileUrl;
+  const rawAuthorUrl = text(author.linkedinUrl) ?? profileUrl;
   const authorUrl = applicationUrl(rawAuthorUrl);
 
   const isProfile = author.type === 'profile';
   const contactName =
-    text(item.contactName) ??
-    (isProfile ? authorName : text(original.posterFullName));
+    contact?.name ?? (isProfile ? authorName : text(original.posterFullName));
   const rawContactUrl =
-    text(item.contactUrl) ??
-    (isProfile ? authorUrl : text(original.posterProfileUrl));
+    contact?.url ?? (isProfile ? authorUrl : text(original.posterProfileUrl));
 
   return {
     authorName,
@@ -289,11 +268,13 @@ function resolveAuthorAndContact(
   };
 }
 
-/** Maps the collector envelope, using original source fields only where the envelope loses information. */
+/** Maps a CollectedJob, using original source fields only where the envelope loses information. */
 export function normalizeItem(channel: Channel, value: unknown): NormalizedJob {
   const parsed = inputSchema.safeParse(value);
   if (!parsed.success) throw new InvalidIngestItem('Malformed collector item');
   const item = parsed.data;
+  if (item.source !== channelSource[channel])
+    throw new InvalidIngestItem('Source does not match lookup query');
   const raw = json(item.raw);
   const original = record(raw);
   const posting = record(original.posting);
@@ -302,7 +283,7 @@ export function normalizeItem(channel: Channel, value: unknown): NormalizedJob {
 
   const externalId = resolveExternalId(
     channel,
-    item.externalId,
+    item.sourceJobId,
     item.url,
     source.sourceId,
   );
@@ -324,7 +305,7 @@ export function normalizeItem(channel: Channel, value: unknown): NormalizedJob {
     posting,
   );
   const { authorName, authorUrl, contactName, contactUrl } =
-    resolveAuthorAndContact(isPost, item, original);
+    resolveAuthorAndContact(isPost, item.contact, original);
   const ats = source.ats ?? (applyUrl ? atsIdentity(applyUrl) : null);
 
   return {
@@ -347,6 +328,7 @@ export function normalizeItem(channel: Channel, value: unknown): NormalizedJob {
     normalizationVersion: ingestConfig.normalizationVersion,
     ats,
     observedUrl: item.url,
-    rank: item.rank ?? null,
+    // The collector contract carries no result rank.
+    rank: null,
   };
 }

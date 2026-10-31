@@ -13,7 +13,19 @@ npm ci
 npx nx serve xjobs
 ```
 
-## Docs
+## Debugging xjobs
+
+In VS Code, set a breakpoint in `apps/xjobs/src`, select **Debug @xjobs/xjobs with Nx** in Run and Debug, and press **F5**.
+
+To start from a terminal:
+
+```sh
+pnpm exec nx serve @xjobs/xjobs --inspect=inspect --port=9229
+```
+
+Then select **Attach to xjobs (9229)** in VS Code and press **F5**. Use `--inspect=inspect-brk` instead to pause before startup code runs. Nx rebuilds and restarts the app as you edit; the attach configuration reconnects automatically.
+
+## Documentation
 
 - [Redis, caching, pub/sub, and background workers](docs/redis-jobs.md)
 - [Roadmap](docs/roadmap.md)

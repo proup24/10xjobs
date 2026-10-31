@@ -13,13 +13,24 @@ const url = process.env.INGEST_TEST_DATABASE_URL;
 const first = new Date('2026-10-30T10:00:00Z');
 const later = new Date('2026-10-30T11:00:00Z');
 const older = new Date('2026-10-30T09:00:00Z');
+const collected = {
+  applyUrl: null,
+  title: 'Engineer',
+  company: 'Acme',
+  location: null,
+  postedAt: null,
+  postedAtPrecision: 'day',
+  description: 'Build APIs',
+  contact: null,
+  search: 'typescript in Germany',
+} as const;
+/** A null source ID is sent as blank, which ingest stores as a URL-only identity. */
 const item = (externalId: string | null = '123') =>
   normalizeItem(Channel.LINKEDIN_JOB_BOARD, {
-    externalId,
+    ...collected,
+    source: 'linkedin-jobs',
+    sourceJobId: externalId ?? '',
     url: 'https://www.linkedin.com/jobs/view/123',
-    title: 'Engineer',
-    company: 'Acme',
-    description: 'Build APIs',
     raw: { id: externalId },
   });
 
@@ -223,9 +234,10 @@ describe.skipIf(!url)('ingest PostgreSQL transactions', () => {
     });
     for (const tenant of ['acme', 'another']) {
       const job = normalizeItem(Channel.GREEN_HOUSE, {
-        externalId: '123',
+        ...collected,
+        source: 'greenhouse',
+        sourceJobId: '123',
         url: `https://boards.greenhouse.io/${tenant}/jobs/123`,
-        description: 'Build APIs',
         raw: {},
       });
       await repository.save(queryId, job, first);

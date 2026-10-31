@@ -1,23 +1,7 @@
 import type { Channel } from 'src/common/enums';
-import type { ChannelJob } from '../../channels/types/channel-provider';
 
-/** Existing collectors can pass ChannelJob directly; future adapters can supply the optional fields. */
-export type FetchedItem = Omit<
-  ChannelJob,
-  'externalId' | 'title' | 'company'
-> & {
-  externalId?: string | null;
-  title?: string | null;
-  company?: string | null;
-  applyUrl?: string | null;
-  postedAt?: string | null;
-  postedAtPrecision?: 'hour' | 'day' | null;
-  authorName?: string | null;
-  authorUrl?: string | null;
-  contactName?: string | null;
-  contactUrl?: string | null;
-  rank?: number | null;
-};
+/** Ingest accepts the collector contract directly. */
+export type { CollectedJob } from '../../collectors/types/collector';
 
 export type JsonValue =
   | null
