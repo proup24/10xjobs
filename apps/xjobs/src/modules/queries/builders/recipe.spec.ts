@@ -51,9 +51,13 @@ describe('recipe', () => {
     );
   });
 
-  it('is at recipe version 3', () => {
-    expect(QUERY_SEARCH_RECIPE_VERSION).toBe(3);
-    expect(toRecipe(base).version).toBe(3);
+  it('is at recipe version 4', () => {
+    expect(QUERY_SEARCH_RECIPE_VERSION).toBe(4);
+    expect(toRecipe(base).version).toBe(4);
+  });
+
+  it('keeps boolean operators uppercase in the stored keyword', () => {
+    expect(toRecipe(base).keyword).toContain(' OR ');
   });
 
   it('ignores params key order', () => {
@@ -63,29 +67,30 @@ describe('recipe', () => {
     );
   });
 
-  it('has the version and stores one normalized keyword', () => {
+  it('has the version and stores the trimmed channel keyword', () => {
     const recipe = toRecipe(base);
     expect(recipe.version).toBe(QUERY_SEARCH_RECIPE_VERSION);
-    expect(recipe.keyword).toBe('senior backend engineer nestjs typescript');
+    expect(recipe.keyword).toBe(recipe.keyword.trim());
+    expect(recipe.keyword).not.toContain('senior');
   });
 
-  // Rows are deduplicated by hash forever: these digests change only with QUERY_SEARCH_RECIPE_VERSION (v3).
+  // Rows are deduplicated by hash forever: these digests change only with QUERY_SEARCH_RECIPE_VERSION (v4).
   it.each<[Channel, string]>([
     [
       Channel.LINKEDIN_JOB_BOARD,
-      '974259a90c88b69fbe0789e7cc7babda02e715c087a907e2d1457476631b5e1d',
+      '33d9940682e4c075f93b236447265b66a9c2e3b8476cc1146eda1e6c8957bccd',
     ],
     [
       Channel.LINKEDIN_POSTS,
-      '679bd7549c8b52d5c50972fa68520a68a01059b013b13c68100b53edf97e76a6',
+      'b09095ed3be8be2dca6f4b22edae5837aac67e3cea0a3d820acdc22f050cfec1',
     ],
     [
       Channel.GREEN_HOUSE,
-      '0bd8d027e1cbda88af25e473a543947dd4de4dfd2f84379813ff9bbffce730a5',
+      '386bd32aca55aa6a8c6348b12663f04ee58b27634e089b64cf074ad3d86b3a1e',
     ],
     [
       Channel.ASHBY,
-      'bf7c3f146edc19bc4d03e54021b9e9c415068f0e895587c46a27e12d7ff4fb1a',
+      '5387499a016f672cf97a9a2c88819866f4bc9eec664af5b3ddc38697e283dcd1',
     ],
   ])('pins the %s hash', (channel, digest) => {
     expect(toRecipe({ ...base, channel }).hash).toBe(digest);

@@ -1,10 +1,12 @@
-import { Arrangement, Channel, Seniority } from 'src/common/enums';
+import { Arrangement, Channel, Region, Seniority } from 'src/common/enums';
 import type { ChannelQuery, QuerySearchCombination } from '../types';
 import {
-  keywordPhrase,
-  locationText,
   type ChannelQueryBuilder,
+  locationText,
+  technologyTerms,
+  titleClause,
 } from '../builders/channel.builder';
+import { LINKEDIN_REGIONS } from './linkedin_geo';
 
 /** LinkedIn `f_E` codes: 2 entry, 3 associate, 4 mid-senior. */
 const EXPERIENCE_LEVELS: Record<Seniority, string | null> = {
@@ -25,17 +27,33 @@ const WORK_TYPES: Record<Arrangement, string | null> = {
   [Arrangement.unstated]: null,
 };
 
+/**
+ * Title alternatives ANDed with the technologies; seniority, work type and
+ * place go in LinkedIn's own filters, never in the keyword.
+ */
 export class LinkedinJobBoardBuilder implements ChannelQueryBuilder {
   readonly channel = Channel.LINKEDIN_JOB_BOARD;
 
   build(combination: QuerySearchCombination): ChannelQuery {
-    const params: Record<string, unknown> = {
-      location: locationText(combination),
-    };
+    const params: Record<string, unknown> = {};
     const experienceLevel = EXPERIENCE_LEVELS[combination.experience];
     if (experienceLevel !== null) params.experienceLevel = experienceLevel;
     const workType = WORK_TYPES[combination.type];
     if (workType !== null) params.workType = workType;
-    return { keyword: keywordPhrase(combination), params };
+    const placeBound =
+      combination.type === Arrangement.onsite ||
+      combination.type === Arrangement.hybrid;
+    if (placeBound && combination.country) {
+      params.location = locationText(combination);
+    } else {
+      const region =
+        LINKEDIN_REGIONS[combination.locationRegion ?? Region.GLOBAL];
+      params.location = region.location;
+      if (region.geoId) params.geoId = region.geoId;
+    }
+    return {
+      keyword: `${titleClause(combination.position)} AND ${technologyTerms(combination.technologies)}`,
+      params,
+    };
   }
 }
