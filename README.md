@@ -29,6 +29,7 @@ Then select **Attach to xjobs (9229)** in VS Code and press **F5**. Use `--inspe
 
 - [Redis, caching, pub/sub, and background workers](docs/redis-jobs.md)
 - [Roadmap](docs/roadmap.md)
+- [Roadmap](docs/roadmap/README.md)
 - [CLAUDE.md](CLAUDE.md): conventions and workflow for working in this repo with Claude Code
 
 ## License
