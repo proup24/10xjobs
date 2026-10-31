@@ -6,6 +6,7 @@ import { ProfilesRepository } from '../repositories/profiles.repository';
 import { UsersRepository } from '../repositories/users.repository';
 import type {
   ContactInput,
+  ProfileFields,
   ProfileInput,
   ProfileWithSkills,
   ResumeMeta,
@@ -124,6 +125,7 @@ export class FakeContactsRepository extends ContactsRepository {
 
 export class FakeProfilesRepository extends ProfilesRepository {
   rows: ProfileWithSkills[] = [];
+  private nextId = 1;
 
   private static techStack(profileId: string, skills: SkillInput[]) {
     const now = new Date();
@@ -153,7 +155,8 @@ export class FakeProfilesRepository extends ProfilesRepository {
     skills: SkillInput[],
   ): Promise<ProfileWithSkills> {
     const now = new Date();
-    const id = `profile-${this.rows.length + 1}`;
+    // A counter, not the row count: ids are never reused after a delete.
+    const id = `profile-${this.nextId++}`;
     const profile: ProfileWithSkills = {
       id,
       userId,
@@ -176,7 +179,7 @@ export class FakeProfilesRepository extends ProfilesRepository {
   async replace(
     userId: string,
     profileId: string,
-    data: ProfileInput,
+    data: ProfileFields,
     skills: SkillInput[],
   ) {
     const profile = await this.findById(userId, profileId);

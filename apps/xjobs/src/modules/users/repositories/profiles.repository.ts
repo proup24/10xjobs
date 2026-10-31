@@ -7,6 +7,7 @@ import {
 } from 'src/database';
 import type { DatabaseTransaction } from 'src/database/seeds/seed.interface';
 import type {
+  ProfileFields,
   ProfileInput,
   ProfileWithSkills,
   ResumeMeta,
@@ -30,11 +31,11 @@ export abstract class ProfilesRepository {
     data: ProfileInput,
     skills: SkillInput[],
   ): Promise<ProfileWithSkills>;
-  /** Replaces a profile's fields and whole tech stack atomically; null when not the user's. */
+  /** Replaces a profile's editable fields and whole tech stack atomically; null when not the user's. The position never changes. */
   abstract replace(
     userId: string,
     profileId: string,
-    data: ProfileInput,
+    data: ProfileFields,
     skills: SkillInput[],
   ): Promise<ProfileWithSkills | null>;
   abstract delete(userId: string, profileId: string): Promise<boolean>;
@@ -120,7 +121,7 @@ export class PrismaProfilesRepository extends ProfilesRepository {
   replace(
     userId: string,
     profileId: string,
-    data: ProfileInput,
+    data: ProfileFields,
     skills: SkillInput[],
   ): Promise<ProfileWithSkills | null> {
     return this.database.db.transaction(async (tx) => {

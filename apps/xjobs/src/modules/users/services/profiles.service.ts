@@ -14,6 +14,7 @@ import {
 import { ProfilesRepository } from '../repositories/profiles.repository';
 import { UsersService } from './users.service';
 import type {
+  ProfileFields,
   ProfileInput,
   ProfileView,
   ProfileWithSkills,
@@ -60,7 +61,7 @@ export function toQuerySearchInput(
 ): QuerySearchProfileInput {
   // Rows carry plain string unions; the enums have the same values.
   return {
-    positions: [...profile.positions] as Position[],
+    position: profile.position as Position,
     regions: [...profile.regions] as Region[],
     arrangements: [...profile.arrangements] as Arrangement[],
     seniority: profile.seniority as Seniority,
@@ -80,17 +81,16 @@ export type ProfileWrite = Omit<ProfileInput, 'city'> & {
   techStack: (Omit<SkillInput, 'importance'> & { importance?: number })[];
 };
 
-function toStored(data: ProfileWrite): [ProfileInput, SkillInput[]] {
-  const { techStack, ...fields } = data;
-  return [
-    { ...fields, city: fields.city ?? null },
-    techStack.map(({ technology, domain, mastery, importance }) => ({
-      technology,
-      domain,
-      mastery,
-      importance: importance ?? 5,
-    })),
-  ];
+/** A replacement as the API sends it: the position is fixed at creation and cannot be sent. */
+export type ProfileReplaceWrite = Omit<ProfileWrite, 'position'>;
+
+function toSkills(techStack: ProfileReplaceWrite['techStack']): SkillInput[] {
+  return techStack.map(({ technology, domain, mastery, importance }) => ({
+    technology,
+    domain,
+    mastery,
+    importance: importance ?? 5,
+  }));
 }
 
 const PROFILE_NOT_FOUND = 'Profile not found';
@@ -127,20 +127,43 @@ export class ProfilesService {
   /** New profiles start as unpublished drafts. */
   async create(userId: string, data: ProfileWrite): Promise<ProfileView> {
     await this.users.getOrThrow(userId);
-    return toProfileView(await this.profiles.create(userId, ...toStored(data)));
+    const { techStack, ...fields } = data;
+    return toProfileView(
+      await this.profiles.create(
+        userId,
+        { ...fields, city: fields.city ?? null },
+        toSkills(techStack),
+      ),
+    );
   }
 
-  /** Replaces the fields and the whole tech stack; the state is kept. */
+  /** Replaces the editable fields and the whole tech stack; the position and state are kept. */
   async replace(
     userId: string,
     profileId: string,
-    data: ProfileWrite,
+    data: ProfileReplaceWrite,
   ): Promise<ProfileView> {
     await this.users.getOrThrow(userId);
+    // Built field by field so a stray `position` can never reach the update.
+    const fields: ProfileFields = {
+      languages: data.languages,
+      country: data.country,
+      city: data.city ?? null,
+      regions: data.regions,
+      yearsOfExperience: data.yearsOfExperience,
+      timezoneCurrent: data.timezoneCurrent,
+      timezoneMin: data.timezoneMin,
+      timezoneMax: data.timezoneMax,
+      engagements: data.engagements,
+      arrangements: data.arrangements,
+      seniority: data.seniority,
+      noticePeriodDays: data.noticePeriodDays,
+    };
     const profile = await this.profiles.replace(
       userId,
       profileId,
-      ...toStored(data),
+      fields,
+      toSkills(data.techStack),
     );
     if (!profile) throw new NotFoundException(PROFILE_NOT_FOUND);
     return toProfileView(profile);

@@ -17,7 +17,7 @@ import { UsersService } from './users.service';
 import type { ProfileInput, SkillInput } from '../types';
 
 const profileInput: ProfileInput = {
-  positions: [Position.backend_engineer],
+  position: Position.backend_engineer,
   languages: [Language.EN],
   country: 'MA',
   city: null,
@@ -31,6 +31,9 @@ const profileInput: ProfileInput = {
   seniority: Seniority.senior,
   noticePeriodDays: 30,
 };
+
+/** What a replacement may send: everything but the position. */
+const { position: _position, ...editable } = profileInput;
 
 const skill = (
   technology: SkillInput['technology'],
@@ -88,7 +91,7 @@ describe('ProfilesService', () => {
     const backend = await create([skill(Technology.go, 8)]);
     const frontend = await service.create(userId, {
       ...profileInput,
-      positions: [Position.frontend_engineer],
+      position: Position.frontend_engineer,
       techStack: [skill(Technology.react, 7)],
     });
     expect(frontend.id).not.toBe(backend.id);
@@ -102,7 +105,7 @@ describe('ProfilesService', () => {
 
   it("404s every operation on another user's profile and changes nothing", async () => {
     const { id } = await create();
-    const input = { ...profileInput, techStack: [] };
+    const input = { ...editable, techStack: [] };
     for (const attempt of [
       () => service.get(otherUserId, id),
       () => service.replace(otherUserId, id, input),
@@ -122,11 +125,43 @@ describe('ProfilesService', () => {
   it('replaces the whole tech stack and keeps the profile id', async () => {
     const first = await create();
     const second = await service.replace(userId, first.id, {
-      ...profileInput,
+      ...editable,
       techStack: [skill(Technology.go, 5), skill(Technology.rust, 3)],
     });
     expect(second.id).toBe(first.id);
     expect(second.techStack.map((s) => s.technology)).toEqual(['go', 'rust']);
+  });
+
+  it('never changes the position on replace, even if a caller sends one', async () => {
+    const { id } = await create();
+    const sneaky = {
+      ...editable,
+      noticePeriodDays: 60,
+      position: Position.ml_engineer,
+      techStack: [],
+    };
+    const view = await service.replace(userId, id, sneaky);
+    expect(view).toMatchObject({
+      position: Position.backend_engineer,
+      noticePeriodDays: 60,
+    });
+    expect((await profiles.findById(userId, id))?.position).toBe(
+      Position.backend_engineer,
+    );
+  });
+
+  it('changes position only by deleting the profile and creating another', async () => {
+    const backend = await create();
+    await service.delete(userId, backend.id);
+    const ml = await service.create(userId, {
+      ...profileInput,
+      position: Position.ml_engineer,
+      techStack: [],
+    });
+    expect((await service.list(userId)).map((p) => p.position)).toEqual([
+      Position.ml_engineer,
+    ]);
+    expect(ml.id).not.toBe(backend.id);
   });
 
   it('deletes only the named profile', async () => {
@@ -252,7 +287,7 @@ describe('ProfilesService', () => {
       const { id } = await create(stack);
       await service.publish(userId, id);
       const view = await service.replace(userId, id, {
-        ...profileInput,
+        ...editable,
         techStack: stack,
       });
       expect(view.state).toBe('published');

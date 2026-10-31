@@ -14,7 +14,7 @@ import { ApiNoContentResponse, ApiTags } from '@nestjs/swagger';
 import { ApiErrorResponses, ApiSuccessResponse } from 'src/common/decorators';
 import { ProfileResponseDto } from '../dto/profile.response.dto';
 import { PublishProfileResponseDto } from '../dto/publish-profile.response.dto';
-import { UpsertProfileDto } from '../dto/upsert-profile.dto';
+import { CreateProfileDto, ReplaceProfileDto } from '../dto/profile.dto';
 import { ProfilesService } from '../services/profiles.service';
 import { ResumeService } from '../services/resume.service';
 import type { ProfileView, PublishedProfileView } from '../types';
@@ -33,7 +33,7 @@ export class ProfilesController {
   @Post()
   create(
     @Param('userId', ParseUUIDPipe) userId: string,
-    @Body() body: UpsertProfileDto,
+    @Body() body: CreateProfileDto,
   ): Promise<ProfileView> {
     return this.profiles.create(userId, body);
   }
@@ -61,7 +61,7 @@ export class ProfilesController {
   replace(
     @Param('userId', ParseUUIDPipe) userId: string,
     @Param('profileId', ParseUUIDPipe) profileId: string,
-    @Body() body: UpsertProfileDto,
+    @Body() body: ReplaceProfileDto,
   ): Promise<ProfileView> {
     return this.profiles.replace(userId, profileId, body);
   }

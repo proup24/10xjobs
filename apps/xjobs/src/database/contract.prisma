@@ -233,13 +233,13 @@ model Contact {
   @@map("contacts")
 }
 
-// A user may maintain multiple independent job-seeker profiles.
+// A user may maintain multiple independent job-seeker profiles, one per target position.
 // Timezone offsets are minutes from UTC.
 model Profile {
   id                Uuid          @id @onCreate(uuid(7))
   userId            Uuid
   user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  positions         Position[]
+  position          Position
   languages         Language[]
   country           String
   city              String?
@@ -264,7 +264,6 @@ model Profile {
   @@check(expression: sql`"yearsOfExperience" BETWEEN 0 AND 60`, name: "profiles_years_range")
   @@check(expression: sql`"noticePeriodDays" BETWEEN 0 AND 365`, name: "profiles_notice_range")
   @@check(expression: sql`"timezoneCurrent" BETWEEN -720 AND 840 AND "timezoneMin" BETWEEN -720 AND 840 AND "timezoneMax" BETWEEN -720 AND 840 AND "timezoneMin" <= "timezoneMax"`, name: "profiles_tz_range")
-  @@check(expression: sql`cardinality("positions") > 0`, name: "profiles_positions_nonempty")
   @@check(expression: sql`cardinality("languages") > 0`, name: "profiles_languages_nonempty")
   @@check(expression: sql`cardinality("engagements") > 0`, name: "profiles_engagements_nonempty")
   @@check(expression: sql`cardinality("arrangements") > 0`, name: "profiles_arrangements_nonempty")

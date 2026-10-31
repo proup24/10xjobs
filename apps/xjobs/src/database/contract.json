@@ -913,10 +913,7 @@
                   "kind": "scalar"
                 }
               },
-              "positions": {
-                "many": {
-                  "elementNullable": false
-                },
+              "position": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/text@1",
@@ -1109,8 +1106,8 @@
                 "noticePeriodDays": {
                   "column": "noticePeriodDays"
                 },
-                "positions": {
-                  "column": "positions"
+                "position": {
+                  "column": "position"
                 },
                 "publishedAt": {
                   "column": "publishedAt"
@@ -2485,19 +2482,9 @@
                   "prefix": "profiles_notice_range"
                 },
                 {
-                  "expression": "array_remove(\"positions\", NULL) <@ '{\"backend_engineer\",\"frontend_engineer\",\"fullstack_engineer\",\"mobile_engineer\",\"devops_engineer\",\"site_reliability_engineer\",\"platform_engineer\",\"cloud_engineer\",\"security_engineer\",\"data_engineer\",\"ml_engineer\",\"ai_engineer\",\"qa_engineer\",\"embedded_engineer\",\"software_architect\",\"tech_lead\",\"engineering_manager\"}'",
-                  "name": "profiles_positions_check_189b7313",
-                  "prefix": "profiles_positions_check"
-                },
-                {
-                  "expression": "array_position(\"positions\", NULL) IS NULL",
-                  "name": "profiles_positions_elem_not_null_8c5582cf",
-                  "prefix": "profiles_positions_elem_not_null"
-                },
-                {
-                  "expression": "cardinality(\"positions\") > 0",
-                  "name": "profiles_positions_nonempty_fbe59e7d",
-                  "prefix": "profiles_positions_nonempty"
+                  "expression": "\"position\" IN ('backend_engineer', 'frontend_engineer', 'fullstack_engineer', 'mobile_engineer', 'devops_engineer', 'site_reliability_engineer', 'platform_engineer', 'cloud_engineer', 'security_engineer', 'data_engineer', 'ml_engineer', 'ai_engineer', 'qa_engineer', 'embedded_engineer', 'software_architect', 'tech_lead', 'engineering_manager')",
+                  "name": "profiles_position_check_af0c0d09",
+                  "prefix": "profiles_position_check"
                 },
                 {
                   "expression": "array_remove(\"regions\", NULL) <@ '{\"EMEA\",\"MENA\",\"NORTH_AFRICA\",\"SUB_SAHARAN_AFRICA\",\"MIDDLE_EAST\",\"EUROPE\",\"EU\",\"UK\",\"NORTH_AMERICA\",\"LATAM\",\"APAC\",\"GLOBAL\"}'",
@@ -2605,12 +2592,9 @@
                   "dataType": "pg/int4",
                   "nullable": false
                 },
-                "positions": {
+                "position": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
-                  "many": {
-                    "elementNullable": false
-                  },
                   "nullable": false,
                   "valueSet": {
                     "entityKind": "valueSet",
@@ -3706,7 +3690,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "64733e95e0c7fb5bff5ac7480083265995823beeb7bc089770bc3bd088a60b13"
+    "storageHash": "bfacc3d4a0bb9a652f031e22963be006d874e300384a392fe43c4d1e0975548f"
   },
   "execution": {
     "executionHash": "f7fbc6444ec4c1e7e24f1d05348329761db55f775d781c78b477230e13d83450",

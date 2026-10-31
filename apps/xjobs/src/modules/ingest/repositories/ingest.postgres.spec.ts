@@ -69,7 +69,7 @@ describe.skipIf(!url)('ingest PostgreSQL transactions', () => {
       });
       const profile = await db.orm.public.Profile.create({
         userId: user.id,
-        positions: ['backend_engineer'],
+        position: 'backend_engineer',
         languages: ['EN'],
         country: 'MA',
         regions: ['GLOBAL'],

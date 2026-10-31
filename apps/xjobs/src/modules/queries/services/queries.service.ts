@@ -1,5 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { Arrangement, Channel, Position, Region, Technology } from 'src/common/enums';
+import {
+  Arrangement,
+  Channel,
+  Position,
+  Region,
+  Technology,
+} from 'src/common/enums';
 import { isUniqueViolation, type QuerySearchBuilderRow } from 'src/database';
 import { toRecipe } from '../builders';
 import { technologySets } from '../sets/technology';
@@ -12,11 +18,9 @@ import type {
 
 @Injectable()
 export class QuerySearchService {
-  constructor(
-    private readonly builders: QuerySearchRepository,
-  ) {}
+  constructor(private readonly builders: QuerySearchRepository) {}
 
-  /** Expands a profile into one recipe per `(channel × position × region × arrangement × technology-set)` combination. */
+  /** Expands a profile's single position into one recipe per `(channel × region × arrangement × technology-set)` combination. */
   expand(input: QuerySearchProfileInput): QuerySearchRecipe[] {
     // Formatting differences must not create duplicate permanent rows.
     const country = input.country.trim().toUpperCase();
@@ -28,16 +32,15 @@ export class QuerySearchService {
     const sets = technologySets(input.skills);
 
     const recipes = new Map<string, QuerySearchRecipe>();
+    const { position } = input;
     for (const channel of Object.values(Channel)) {
-      for (const position of input.positions) {
-        for (const locationRegion of input.regions) {
-          for (const type of arrangements) {
-            this.expandTechnologySets(
-              { channel, position, locationRegion, type, country, city, input },
-              sets,
-              recipes,
-            );
-          }
+      for (const locationRegion of input.regions) {
+        for (const type of arrangements) {
+          this.expandTechnologySets(
+            { channel, position, locationRegion, type, country, city, input },
+            sets,
+            recipes,
+          );
         }
       }
     }

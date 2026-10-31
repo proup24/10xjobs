@@ -24,7 +24,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'64733e95e0c7fb5bff5ac7480083265995823beeb7bc089770bc3bd088a60b13'>;
+  StorageHashBase<'bfacc3d4a0bb9a652f031e22963be006d874e300384a392fe43c4d1e0975548f'>;
 export type ExecutionHash =
   ExecutionHashBase<'f7fbc6444ec4c1e7e24f1d05348329761db55f775d781c78b477230e13d83450'>;
 export type ProfileHash =
@@ -324,7 +324,7 @@ type FieldTypeOverrides = {
           readonly output: 'AR' | 'FR' | 'EN' | 'ES';
           readonly input: 'AR' | 'FR' | 'EN' | 'ES';
         };
-        readonly positions: {
+        readonly position: {
           readonly output:
             | 'backend_engineer'
             | 'frontend_engineer'
@@ -951,7 +951,7 @@ type ColumnTypeOverrides = {
         readonly output: 'AR' | 'FR' | 'EN' | 'ES';
         readonly input: 'AR' | 'FR' | 'EN' | 'ES';
       };
-      readonly positions: {
+      readonly position: {
         readonly output:
           | 'backend_engineer'
           | 'frontend_engineer'
@@ -1262,7 +1262,7 @@ export namespace Models {
     id: FieldOutputTypes['public']['Profile']['id'];
     languages: FieldOutputTypes['public']['Profile']['languages'];
     noticePeriodDays: FieldOutputTypes['public']['Profile']['noticePeriodDays'];
-    positions: FieldOutputTypes['public']['Profile']['positions'];
+    position: FieldOutputTypes['public']['Profile']['position'];
     publishedAt: FieldOutputTypes['public']['Profile']['publishedAt'];
     regions: FieldOutputTypes['public']['Profile']['regions'];
     resumeFilename: FieldOutputTypes['public']['Profile']['resumeFilename'];
@@ -1659,11 +1659,11 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly many: false;
                 };
-                readonly positions: {
+                readonly position: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: false;
-                  readonly many: { readonly elementNullable: false };
+                  readonly many: false;
                 };
                 readonly publishedAt: {
                   readonly dataType: 'pg/timestamptz';
@@ -2659,10 +2659,9 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
               };
-              readonly positions: {
+              readonly position: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
-                readonly many: { readonly elementNullable: false };
               };
               readonly publishedAt: {
                 readonly nullable: true;
@@ -2761,7 +2760,7 @@ type ContractBase = Omit<
                 readonly id: { readonly column: 'id' };
                 readonly languages: { readonly column: 'languages' };
                 readonly noticePeriodDays: { readonly column: 'noticePeriodDays' };
-                readonly positions: { readonly column: 'positions' };
+                readonly position: { readonly column: 'position' };
                 readonly publishedAt: { readonly column: 'publishedAt' };
                 readonly regions: { readonly column: 'regions' };
                 readonly resumeFilename: { readonly column: 'resumeFilename' };

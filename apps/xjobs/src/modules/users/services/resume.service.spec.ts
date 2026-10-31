@@ -24,7 +24,7 @@ const pdf = (buffer = pdfBytes, mimetype = 'application/pdf'): UploadedPdf => ({
 });
 
 const profileInput: ProfileInput = {
-  positions: [Position.backend_engineer],
+  position: Position.backend_engineer,
   languages: [Language.EN],
   country: 'MA',
   city: null,

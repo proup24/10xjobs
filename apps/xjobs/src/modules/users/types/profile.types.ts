@@ -11,7 +11,7 @@ import type {
 import type { ProfileRow, ProfileSkillRow } from 'src/database';
 
 export type ProfileInput = {
-  positions: Position[];
+  position: Position;
   languages: Language[];
   country: string;
   city: string | null;
@@ -25,6 +25,9 @@ export type ProfileInput = {
   seniority: Seniority;
   noticePeriodDays: number;
 };
+
+/** The editable part of a profile: everything but its position. */
+export type ProfileFields = Omit<ProfileInput, 'position'>;
 
 export type SkillInput = {
   technology: Technology;

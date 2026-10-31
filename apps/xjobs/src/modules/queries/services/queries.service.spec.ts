@@ -11,7 +11,7 @@ import { FakeQuerySearchRepository } from '../testing/fakes';
 import { QuerySearchService } from './queries.service';
 
 const profile: QuerySearchProfileInput = {
-  positions: [Position.backend_engineer, Position.platform_engineer],
+  position: Position.backend_engineer,
   regions: [Region.EMEA, Region.MENA],
   arrangements: [Arrangement.remote, Arrangement.onsite],
   seniority: Seniority.senior,
@@ -43,12 +43,12 @@ const hashes = (recipes: QuerySearchRecipe[]) =>
 
 describe('QuerySearchService', () => {
   describe('expand', () => {
-    it('expands every channel, position, region, arrangement and set', async () => {
+    it('expands every channel, region, arrangement and set of the position', async () => {
       const { service } = await setup();
       const recipes = service.expand(profile);
-      // 4 channels x 2 positions x 2 regions x 2 arrangements x 5 sets
-      expect(recipes).toHaveLength(160);
-      expect(new Set(hashes(recipes)).size).toBe(160);
+      // 4 channels x 2 regions x 2 arrangements x 5 sets
+      expect(recipes).toHaveLength(80);
+      expect(new Set(hashes(recipes)).size).toBe(80);
     });
 
     it('drops unstated when a real arrangement remains', async () => {
@@ -125,31 +125,39 @@ describe('QuerySearchService', () => {
     it('creates once, then reports everything as existing', async () => {
       const { service, repository, userId, profileId } = await setup();
       expect(await service.generate(userId, profileId, profile)).toEqual({
-        created: 160,
+        created: 80,
         existing: 0,
       });
       expect(await service.generate(userId, profileId, profile)).toEqual({
         created: 0,
-        existing: 160,
+        existing: 80,
       });
-      expect(repository.rows).toHaveLength(160);
+      expect(repository.rows).toHaveLength(80);
     });
 
-    it('creates only the recipes of a new position', async () => {
+    it('builds every recipe from the one position', async () => {
+      const { service } = await setup();
+      const recipes = service.expand(profile);
+      expect(
+        recipes.every((r) => r.position === Position.backend_engineer),
+      ).toBe(true);
+    });
+
+    it('creates fresh recipes when the profile changes position', async () => {
       const { service, userId, profileId } = await setup();
       await service.generate(userId, profileId, profile);
       const result = await service.generate(userId, profileId, {
         ...profile,
-        positions: [...profile.positions, Position.ml_engineer],
+        position: Position.ml_engineer,
       });
-      expect(result).toEqual({ created: 80, existing: 160 });
+      expect(result).toEqual({ created: 80, existing: 0 });
     });
 
     it('scopes recipes per profile', async () => {
       const { service, userId, profileId } = await setup();
       await service.generate(userId, profileId, profile);
       expect(await service.generate(userId, 'profile-2', profile)).toEqual({
-        created: 160,
+        created: 80,
         existing: 0,
       });
     });
@@ -166,7 +174,7 @@ describe('QuerySearchService', () => {
         return create(id, profile, recipe);
       };
       expect(await service.generate(userId, profileId, profile)).toEqual({
-        created: 159,
+        created: 79,
         existing: 1,
       });
     });
@@ -186,13 +194,13 @@ describe('QuerySearchService', () => {
     it('lists the builders of a profile and filters by channel', async () => {
       const { service, userId, profileId } = await setup();
       await service.generate(userId, profileId, profile);
-      expect(await service.list(userId, profileId)).toHaveLength(160);
+      expect(await service.list(userId, profileId)).toHaveLength(80);
       const posts = await service.list(
         userId,
         profileId,
         Channel.LINKEDIN_POSTS,
       );
-      expect(posts).toHaveLength(40);
+      expect(posts).toHaveLength(20);
       expect(posts.every((row) => row.channel === Channel.LINKEDIN_POSTS)).toBe(
         true,
       );

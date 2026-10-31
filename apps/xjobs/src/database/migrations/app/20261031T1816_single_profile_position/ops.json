@@ -1,0 +1,332 @@
+[
+  {
+    "id": "dropCheckConstraint.profiles.profiles_positions_check_189b7313",
+    "label": "Drop check constraint \"profiles_positions_check_189b7313\" on \"profiles\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "profiles_positions_check_189b7313",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"profiles_positions_check_189b7313\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_positions_check_189b7313",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "constraint \"profiles_positions_check_189b7313\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"profiles_positions_check_189b7313\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" DROP CONSTRAINT \"profiles_positions_check_189b7313\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"profiles_positions_check_189b7313\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_positions_check_189b7313",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"profiles_positions_check_189b7313\" on \"profiles\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "dropCheckConstraint.profiles.profiles_positions_elem_not_null_8c5582cf",
+    "label": "Drop check constraint \"profiles_positions_elem_not_null_8c5582cf\" on \"profiles\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "profiles_positions_elem_not_null_8c5582cf",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"profiles_positions_elem_not_null_8c5582cf\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_positions_elem_not_null_8c5582cf",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "constraint \"profiles_positions_elem_not_null_8c5582cf\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"profiles_positions_elem_not_null_8c5582cf\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" DROP CONSTRAINT \"profiles_positions_elem_not_null_8c5582cf\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"profiles_positions_elem_not_null_8c5582cf\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_positions_elem_not_null_8c5582cf",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"profiles_positions_elem_not_null_8c5582cf\" on \"profiles\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "dropCheckConstraint.profiles.profiles_positions_nonempty_fbe59e7d",
+    "label": "Drop check constraint \"profiles_positions_nonempty_fbe59e7d\" on \"profiles\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "profiles_positions_nonempty_fbe59e7d",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"profiles_positions_nonempty_fbe59e7d\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_positions_nonempty_fbe59e7d",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "constraint \"profiles_positions_nonempty_fbe59e7d\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"profiles_positions_nonempty_fbe59e7d\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" DROP CONSTRAINT \"profiles_positions_nonempty_fbe59e7d\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"profiles_positions_nonempty_fbe59e7d\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_positions_nonempty_fbe59e7d",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"profiles_positions_nonempty_fbe59e7d\" on \"profiles\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "dropColumn.profiles.positions",
+    "label": "Drop column \"positions\" from \"profiles\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "positions",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"positions\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "positions"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"positions\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop column \"positions\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" DROP COLUMN \"positions\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"positions\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "positions"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"positions\" on \"profiles\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "column.profiles.position",
+    "label": "Add column position to profiles",
+    "summary": "Adds column position to table profiles",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "position",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"position\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "position"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"position\" on \"profiles\""
+        }
+      },
+      {
+        "description": "ensure table \"profiles\" is empty before adding NOT NULL column without default",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"public\".\"profiles\" LIMIT 1) AS \"result\"",
+        "params": [],
+        "meta": {
+          "requiredColumn": {
+            "table": "profiles",
+            "column": "position",
+            "reason": "newField"
+          }
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"position\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ADD COLUMN \"position\" text NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"position\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "position"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"position\" on \"profiles\""
+        }
+      },
+      {
+        "description": "verify column \"position\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "position",
+          "NO"
+        ]
+      },
+      {
+        "description": "verify column \"position\" has type \"text\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "position",
+          "text"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.profiles.profiles_position_check_af0c0d09",
+    "label": "Add check constraint \"profiles_position_check_af0c0d09\" on \"profiles\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "profiles_position_check_af0c0d09",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"profiles_position_check_af0c0d09\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_position_check_af0c0d09",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"profiles_position_check_af0c0d09\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"profiles_position_check_af0c0d09\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ADD CONSTRAINT \"profiles_position_check_af0c0d09\" CHECK (\"position\" IN ('backend_engineer', 'frontend_engineer', 'fullstack_engineer', 'mobile_engineer', 'devops_engineer', 'site_reliability_engineer', 'platform_engineer', 'cloud_engineer', 'security_engineer', 'data_engineer', 'ml_engineer', 'ai_engineer', 'qa_engineer', 'embedded_engineer', 'software_architect', 'tech_lead', 'engineering_manager'))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify check constraint \"profiles_position_check_af0c0d09\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4)) AS \"result\"",
+        "params": [
+          "profiles_position_check_af0c0d09",
+          "public",
+          "\"public\".\"profiles\"",
+          "c"
+        ]
+      }
+    ]
+  }
+]

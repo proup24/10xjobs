@@ -4,7 +4,7 @@ const run = Date.now().toString(36);
 const ok = { validateStatus: () => true };
 
 const profile = {
-  positions: ['backend_engineer'],
+  position: 'backend_engineer',
   languages: ['EN', 'FR'],
   country: 'MA',
   city: 'Rabat',
@@ -22,6 +22,9 @@ const profile = {
     { technology: 'typescript', domain: 'backend', mastery: 8, importance: 8 },
   ],
 };
+
+/** A replacement carries every field except the position, which is fixed at creation. */
+const { position: _position, ...editable } = profile;
 
 describe('users, profiles and resume', () => {
   let userId: string;
@@ -106,7 +109,7 @@ describe('users, profiles and resume', () => {
     expect(created.status).toBe(201);
     profileId = created.data.data.id;
     const put = await axios.put(`${profiles()}/${profileId}`, {
-      ...profile,
+      ...editable,
       noticePeriodDays: 15,
     });
     expect(put.status).toBe(200);
@@ -133,10 +136,24 @@ describe('users, profiles and resume', () => {
     expect((await axios.get(profiles())).data.data).toHaveLength(1);
   });
 
+  it('refuses to change the position of an existing profile', async () => {
+    const res = await axios.put(
+      `${profiles()}/${profileId}`,
+      { ...editable, position: 'ml_engineer' },
+      ok,
+    );
+    expect(res.status).toBe(400);
+    expect(res.data.details).toEqual([
+      expect.stringContaining('position cannot be changed'),
+    ]);
+    const get = await axios.get(`${profiles()}/${profileId}`);
+    expect(get.data.data.position).toBe('backend_engineer');
+  });
+
   it('rejects a profile whose timezone range is inverted', async () => {
     const res = await axios.put(
       `${profiles()}/${profileId}`,
-      { ...profile, timezoneMin: 300, timezoneMax: 240 },
+      { ...editable, timezoneMin: 300, timezoneMax: 240 },
       ok,
     );
     expect(res.status).toBe(400);

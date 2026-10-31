@@ -1,11 +1,15 @@
 import { plainToInstance } from 'class-transformer';
 import { validate, type ValidationError } from 'class-validator';
-import { UpsertProfileDto } from './upsert-profile.dto';
+import {
+  CreateProfileDto,
+  POSITION_IMMUTABLE,
+  ReplaceProfileDto,
+} from './profile.dto';
 
 const options = { whitelist: true, forbidNonWhitelisted: true };
 
 const validProfile = {
-  positions: ['backend_engineer'],
+  position: 'backend_engineer',
   languages: ['EN', 'FR'],
   country: 'MA',
   city: 'Rabat',
@@ -29,22 +33,52 @@ function paths(errors: ValidationError[], prefix = ''): string[] {
 }
 
 async function errorsFor(changes: object) {
-  const dto = plainToInstance(UpsertProfileDto, {
+  const dto = plainToInstance(CreateProfileDto, {
     ...validProfile,
     ...changes,
   });
   return paths(await validate(dto, options));
 }
 
-describe('UpsertProfileDto', () => {
+describe('ReplaceProfileDto', () => {
+  const { position: _position, ...editable } = validProfile;
+
+  it('accepts every editable field without a position', async () => {
+    const dto = plainToInstance(ReplaceProfileDto, editable);
+    expect(await validate(dto, options)).toEqual([]);
+  });
+
+  it('rejects any position, saying the profile must be recreated', async () => {
+    for (const position of ['backend_engineer', 'ml_engineer']) {
+      const dto = plainToInstance(ReplaceProfileDto, {
+        ...editable,
+        position,
+      });
+      const errors = await validate(dto, options);
+      expect(errors.map((e) => e.property)).toEqual(['position']);
+      expect(Object.values(errors[0].constraints ?? {})).toEqual([
+        POSITION_IMMUTABLE,
+      ]);
+    }
+  });
+});
+
+describe('CreateProfileDto', () => {
   it('accepts a full profile', async () => {
     expect(await errorsFor({})).toEqual([]);
   });
 
-  it.each(['positions', 'languages', 'engagements', 'arrangements'])(
+  it.each(['languages', 'engagements', 'arrangements'])(
     'rejects an empty %s list',
     async (field) => {
       expect(await errorsFor({ [field]: [] })).toEqual([field]);
+    },
+  );
+
+  it.each([[['backend_engineer']], [undefined], ['wizard']])(
+    'requires exactly one known position, rejecting %j',
+    async (position) => {
+      expect(await errorsFor({ position })).toEqual(['position']);
     },
   );
 

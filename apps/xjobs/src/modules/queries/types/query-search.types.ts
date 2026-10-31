@@ -14,7 +14,7 @@ export type RankedSkill = {
 };
 
 export type QuerySearchProfileInput = {
-  positions: Position[];
+  position: Position;
   regions: Region[];
   arrangements: Arrangement[];
   seniority: Seniority;

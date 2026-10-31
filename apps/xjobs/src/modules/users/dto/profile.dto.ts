@@ -5,6 +5,7 @@ import {
   ArrayNotEmpty,
   ArrayUnique,
   IsArray,
+  IsEmpty,
   IsEnum,
   IsInt,
   IsISO31661Alpha2,
@@ -31,14 +32,11 @@ import { IsGreaterOrEqual, UniqueBy } from './validators';
 const MIN_OFFSET = -720;
 const MAX_OFFSET = 840;
 
-export class UpsertProfileDto {
-  @ApiProperty({ enum: Position, enumName: 'Position', isArray: true })
-  @IsArray()
-  @ArrayNotEmpty()
-  @ArrayUnique()
-  @IsEnum(Position, { each: true })
-  positions!: Position[];
+export const POSITION_IMMUTABLE =
+  'position cannot be changed; delete this profile and create one for the new position';
 
+/** Every profile field except `position`, which is fixed when the profile is created. */
+export class ProfileFieldsDto {
   @ApiProperty({ enum: Language, enumName: 'Language', isArray: true })
   @IsArray()
   @ArrayNotEmpty()
@@ -125,4 +123,22 @@ export class UpsertProfileDto {
   @Type(() => SkillDto)
   @UniqueBy(['technology', 'domain'])
   techStack!: SkillDto[];
+}
+
+export class CreateProfileDto extends ProfileFieldsDto {
+  @ApiProperty({
+    enum: Position,
+    enumName: 'Position',
+    description:
+      'The one position this profile targets. It cannot be changed later: delete the profile and create another one instead.',
+  })
+  @IsEnum(Position)
+  position!: Position;
+}
+
+/** A full replacement of a profile's editable fields. The position is not editable. */
+export class ReplaceProfileDto extends ProfileFieldsDto {
+  // Undocumented on purpose: declared only so a sent position gets a clear 400.
+  @IsEmpty({ message: POSITION_IMMUTABLE })
+  position?: never;
 }

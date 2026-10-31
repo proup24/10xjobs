@@ -32,8 +32,8 @@ export class ProfileResponseDto implements ProfileView {
   @ApiProperty({ format: 'uuid' })
   userId!: string;
 
-  @ApiProperty({ enum: Position, enumName: 'Position', isArray: true })
-  positions!: Position[];
+  @ApiProperty({ enum: Position, enumName: 'Position' })
+  position!: Position;
 
   @ApiProperty({ enum: Language, enumName: 'Language', isArray: true })
   languages!: Language[];
