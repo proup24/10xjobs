@@ -51,6 +51,11 @@ export class JobsService implements OnApplicationShutdown {
     return this.queue.add('ping', { token });
   }
 
+  /** Round-trips PING on the queue connection; rejects at once while it is not ready. */
+  async ping(): Promise<void> {
+    await this.connection.ping();
+  }
+
   async onApplicationShutdown(): Promise<void> {
     try {
       await this.queue.close();

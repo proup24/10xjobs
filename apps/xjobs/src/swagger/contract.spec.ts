@@ -5,7 +5,7 @@ import {
   SwaggerModule,
   type OpenAPIObject,
 } from '@nestjs/swagger';
-import { AppController } from 'src/app/app.controller';
+import { HealthController } from 'src/app/health.controller';
 import { QuerySearchController } from 'src/modules/queries/controllers/query-search.controller';
 import { ContactsController } from 'src/modules/users/controllers/contacts.controller';
 import { ProfilesController } from 'src/modules/users/controllers/profiles.controller';
@@ -31,7 +31,7 @@ const ERROR = '#/components/schemas/ErrorResponseDto';
 async function buildDocument(): Promise<OpenAPIObject> {
   const moduleRef = await Test.createTestingModule({
     controllers: [
-      AppController,
+      HealthController,
       UsersController,
       ContactsController,
       ProfilesController,
@@ -88,7 +88,7 @@ describe('API contract', () => {
       'DELETE /api/users/{userId}/contacts/{contactId}',
       'DELETE /api/users/{userId}/profiles/{profileId}',
       'DELETE /api/users/{userId}/profiles/{profileId}/resume',
-      'GET /api',
+      'GET /api/health',
       'GET /api/users',
       'GET /api/users/{userId}',
       'GET /api/users/{userId}/contacts',
@@ -154,7 +154,7 @@ describe('API contract', () => {
     for (const { name, operation } of operations(document)) {
       const statuses = Object.keys(operation.responses);
       expect(statuses, name).toContain('500');
-      if (name !== 'GET /api') expect(statuses, name).toContain('401');
+      if (name !== 'GET /api/health') expect(statuses, name).toContain('401');
       if (operation.parameters?.some((p) => p.in === 'path')) {
         expect(statuses, name).toContain('404');
       }

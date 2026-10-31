@@ -14,8 +14,8 @@ import { RedisModule } from 'src/infrastructure/redis/redis.module';
 import { JobsModule } from 'src/infrastructure/jobs/jobs.module';
 import { QuerySearchModule } from 'src/modules/queries';
 import { UsersModule } from 'src/modules/users';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { HealthController } from './health.controller';
+import { HealthService } from './health.service';
 
 @Module({
   imports: [
@@ -32,9 +32,9 @@ import { AppService } from './app.service';
     UsersModule,
     QuerySearchModule,
   ],
-  controllers: [AppController],
+  controllers: [HealthController],
   providers: [
-    AppService,
+    HealthService,
     // Every route needs HTTP Basic auth unless it is marked @Public().
     {
       provide: BASIC_AUTH_CREDENTIALS,

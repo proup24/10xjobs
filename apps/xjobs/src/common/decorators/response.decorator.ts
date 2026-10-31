@@ -10,6 +10,8 @@ const ERROR_DESCRIPTIONS: Partial<Record<HttpStatus, string>> = {
   [HttpStatus.CONFLICT]: 'Conflicts with an existing record',
   [HttpStatus.PAYLOAD_TOO_LARGE]: 'Upload over the size limit',
   [HttpStatus.INTERNAL_SERVER_ERROR]: 'Unexpected error; quote the trace_id',
+  [HttpStatus.SERVICE_UNAVAILABLE]:
+    'A critical dependency is down (code SERVICE_UNAVAILABLE)',
 };
 
 /**

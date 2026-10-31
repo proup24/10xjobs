@@ -17,6 +17,11 @@ export class CacheService {
     return `${this.settings.prefix}:cache:${key}`;
   }
 
+  /** Round-trips PING on the cache connection. Unlike reads, failures are thrown. */
+  async ping(): Promise<void> {
+    await this.connections.cache.ping();
+  }
+
   async get<T>(key: string): Promise<T | null> {
     const namespaced = this.key(key);
     try {
