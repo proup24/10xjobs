@@ -14,9 +14,9 @@ export const usersSeed: Seed = {
         email: user.email,
       }).first();
       if (existing) {
-        await tx.orm.public.User.where({ email: user.email }).update({
-          name: user.name,
-        });
+        await tx.orm.public.User.where({
+          email: user.email,
+        }).update({ name: user.name });
       } else {
         await tx.orm.public.User.create(user);
       }

@@ -54,9 +54,14 @@ vitest.config.*.timestamp*
 /supabase/volumes/storage/
 /supabase/volumes/snippets/
 
-supabase
 # secrets and personal data (never commit)
 .env
 .env.*
 !.env.example
 /private
+
+# Superpowers plan workspaces (scratch)
+.superpowers
+
+
+.pnpm-store

@@ -1,0 +1,49 @@
+[
+  {
+    "id": "alterNullability.dropNotNull.query_search_builder.locationRegion",
+    "label": "Drop NOT NULL on \"query_search_builder\".\"locationRegion\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "locationRegion",
+        "table": "query_search_builder"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"locationRegion\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "query_search_builder",
+          "locationRegion"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"locationRegion\" on \"query_search_builder\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop NOT NULL on \"locationRegion\"",
+        "sql": "ALTER TABLE \"public\".\"query_search_builder\" ALTER COLUMN \"locationRegion\" DROP NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"locationRegion\" is nullable",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "query_search_builder",
+          "locationRegion",
+          "YES"
+        ]
+      }
+    ]
+  }
+]

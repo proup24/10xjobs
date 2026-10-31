@@ -81,10 +81,30 @@ services:
     ports:
       - 127.0.0.1:${API_GW_HTTP_PORT:-8000}:8000/tcp
     volumes:
-      - ./supabase/volumes/api/envoy/envoy.yaml:/etc/envoy/envoy.yaml:ro
-      - ./supabase/volumes/api/envoy/cds.yaml:/etc/envoy/cds.yaml:ro
-      - ./supabase/volumes/api/envoy/lds.template.yaml:/etc/envoy/lds.template.yaml:ro
-      - ./supabase/volumes/api/envoy/docker-entrypoint.sh:/docker-entrypoint.sh:ro
+      - type: bind
+        source: ./supabase/volumes/api/envoy/envoy.yaml
+        target: /etc/envoy/envoy.yaml
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./supabase/volumes/api/envoy/cds.yaml
+        target: /etc/envoy/cds.yaml
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./supabase/volumes/api/envoy/lds.template.yaml
+        target: /etc/envoy/lds.template.yaml
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./supabase/volumes/api/envoy/docker-entrypoint.sh
+        target: /docker-entrypoint.sh
+        read_only: true
+        bind:
+          create_host_path: false
     environment:
       ANON_KEY: ${ANON_KEY}
       SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
@@ -377,13 +397,15 @@ services:
       S3_PROTOCOL_ACCESS_KEY_ID: ${S3_PROTOCOL_ACCESS_KEY_ID}
       S3_PROTOCOL_ACCESS_KEY_SECRET: ${S3_PROTOCOL_ACCESS_KEY_SECRET}
     volumes:
-      - ./supabase/volumes/storage:/var/lib/storage:z
+      # A named volume: macOS bind mounts lack the extended attributes the
+      # file backend writes, so uploads fail on ./supabase/volumes/storage.
+      - storage-data:/var/lib/storage
 
   imgproxy:
     image: darthsim/imgproxy:v3.31.4
     restart: unless-stopped
     volumes:
-      - ./supabase/volumes/storage:/var/lib/storage:z
+      - storage-data:/var/lib/storage
     healthcheck:
       test:
         [
@@ -570,7 +592,8 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:${REDIS_PORT:-6379}:6379"
-    command: ["redis-server", "--appendonly", "yes"]
+    # BullMQ keys must never be evicted; AOF preserves queued jobs on restart.
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec", "--maxmemory-policy", "noeviction"]
     volumes:
       - redis-data:/data
     healthcheck:
@@ -580,7 +603,21 @@ services:
       retries: 5
       start_period: 5s
 
+  redis-cache:
+    image: redis:8.2.10-alpine
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${REDIS_CACHE_PORT:-6380}:6379"
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "${REDIS_CACHE_MAXMEMORY:-128mb}", "--maxmemory-policy", "allkeys-lru"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
 volumes:
   db-config:
+  storage-data:
   deno-cache:
   redis-data:

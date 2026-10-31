@@ -57,3 +57,11 @@ export function loadEnvironmentFiles(start = process.cwd()): void {
   }
   expandReferences(process.env, [...keys]);
 }
+
+/**
+ * @description Entry-point loading for the API and worker. Containers and
+ * integration runs set `XJOBS_SKIP_ENV_FILES=1` to use only explicitly supplied settings.
+ */
+export function loadApplicationEnvironment(): void {
+  if (process.env.XJOBS_SKIP_ENV_FILES !== '1') loadEnvironmentFiles();
+}

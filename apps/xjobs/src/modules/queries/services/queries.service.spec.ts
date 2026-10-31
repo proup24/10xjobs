@@ -1,0 +1,275 @@
+import {
+  Arrangement,
+  Channel,
+  Position,
+  Region,
+  Seniority,
+  Technology,
+} from 'src/common/enums';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { CITY_REQUIRED } from '../steps';
+import type { QuerySearchProfileInput, QuerySearchRecipe } from '../types';
+import { FakeQuerySearchRepository } from '../testing/fakes';
+import { QuerySearchService } from './queries.service';
+
+const profile: QuerySearchProfileInput = {
+  position: Position.backend_engineer,
+  regions: [Region.EMEA, Region.MENA],
+  arrangements: [Arrangement.remote, Arrangement.onsite],
+  seniority: Seniority.senior,
+  country: 'MA',
+  city: 'Casablanca',
+  skills: [
+    { technology: Technology.nestjs, importance: 9, mastery: 5 },
+    {
+      technology: Technology.typescript,
+      importance: 8,
+      mastery: 5,
+    },
+    {
+      technology: Technology.postgresql,
+      importance: 7,
+      mastery: 5,
+    },
+  ],
+};
+
+async function setup() {
+  const repository = new FakeQuerySearchRepository();
+  repository.owners.set('profile-1', 'user-1');
+  repository.owners.set('profile-2', 'user-2');
+  const service = new QuerySearchService(repository);
+  return { service, repository, userId: 'user-1', profileId: 'profile-1' };
+}
+
+const counts = (repository: FakeQuerySearchRepository) =>
+  repository.rows.map((row) => row.associatedProfiles);
+
+const hashes = (recipes: QuerySearchRecipe[]) =>
+  recipes.map((recipe) => recipe.hash);
+
+describe('QuerySearchService', () => {
+  describe('expand', () => {
+    it('expands remote by region and onsite by city only', async () => {
+      const { service } = await setup();
+      const recipes = service.expand(profile);
+      // remote: 4 channels x 2 regions x 2 sets; onsite: 4 channels x 2 sets
+      expect(recipes).toHaveLength(24);
+      expect(new Set(hashes(recipes)).size).toBe(24);
+      expect(recipes.filter((r) => r.type === Arrangement.onsite)).toHaveLength(
+        8,
+      );
+    });
+
+    it('maps unstated to remote', async () => {
+      const { service } = await setup();
+      const recipes = service.expand({
+        ...profile,
+        arrangements: [Arrangement.unstated],
+      });
+      expect(recipes).toHaveLength(16);
+      expect(recipes.every((r) => r.type === Arrangement.remote)).toBe(true);
+    });
+
+    it('adds remote when unstated sits next to onsite', async () => {
+      const { service } = await setup();
+      const recipes = service.expand({
+        ...profile,
+        arrangements: [Arrangement.onsite, Arrangement.unstated],
+      });
+      expect(recipes).toHaveLength(24);
+      expect(recipes.some((r) => r.type === Arrangement.unstated)).toBe(false);
+    });
+
+    it('shares onsite builders across regions', async () => {
+      const { service } = await setup();
+      const onsite = (regions: Region[]) =>
+        hashes(
+          service
+            .expand({ ...profile, regions })
+            .filter((recipe) => recipe.type === Arrangement.onsite),
+        );
+      expect(onsite([Region.EMEA])).toEqual(onsite([Region.EU, Region.UK]));
+    });
+
+    it('rejects onsite without a city', async () => {
+      const { service } = await setup();
+      const expand = () => service.expand({ ...profile, city: '   ' });
+      expect(expand).toThrow(BadRequestException);
+      expect(expand).toThrow(CITY_REQUIRED);
+    });
+
+    it('defaults remote to GLOBAL', async () => {
+      const { service } = await setup();
+      const recipes = service.expand({ ...profile, regions: [] });
+      const remote = recipes.filter((r) => r.type === Arrangement.remote);
+      expect(remote).toHaveLength(8);
+      expect(remote.every((r) => r.locationRegion === Region.GLOBAL)).toBe(true);
+      expect(recipes.filter((r) => r.type === Arrangement.onsite)).toHaveLength(
+        8,
+      );
+    });
+
+    it('sets the location only for onsite and hybrid recipes', async () => {
+      const { service } = await setup();
+      const recipes = service.expand(profile);
+      for (const recipe of recipes) {
+        if (recipe.type === Arrangement.remote) {
+          expect(recipe.country).toBeNull();
+          expect(recipe.city).toBeNull();
+          expect(recipe.locationRegion).not.toBeNull();
+        } else {
+          expect(recipe.country).toBe('MA');
+          expect(recipe.city).toBe('Casablanca');
+          expect(recipe.locationRegion).toBeNull();
+        }
+      }
+    });
+
+    it('leaves remote hashes unchanged when only the city changes', async () => {
+      const { service } = await setup();
+      const remote = (input: QuerySearchProfileInput) =>
+        hashes(
+          service
+            .expand(input)
+            .filter((recipe) => recipe.type === Arrangement.remote),
+        );
+      expect(remote({ ...profile, city: 'Rabat' })).toEqual(remote(profile));
+    });
+
+    it('normalizes country and city formatting', async () => {
+      const { service } = await setup();
+      const messy = service.expand({
+        ...profile,
+        country: ' ma ',
+        city: '  Casablanca ',
+      });
+      expect(hashes(messy)).toEqual(hashes(service.expand(profile)));
+    });
+
+    it('orders channels first, in enum order', async () => {
+      const { service } = await setup();
+      const channels = [
+        ...new Set(service.expand(profile).map((r) => r.channel)),
+      ];
+      expect(channels).toEqual(Object.values(Channel));
+    });
+  });
+
+  describe('generate', () => {
+    it('creates shared builders once, then reuses them', async () => {
+      const { service, repository, profileId } = await setup();
+      expect(await service.generate(profileId, profile)).toEqual({
+        created: 24,
+        existing: 0,
+      });
+      expect(await service.generate(profileId, profile)).toEqual({
+        created: 0,
+        existing: 24,
+      });
+      expect(repository.rows).toHaveLength(24);
+      expect(repository.links).toHaveLength(24);
+      expect(new Set(counts(repository))).toEqual(new Set([1]));
+      expect(repository.rows.every((row) => row.isActive)).toBe(true);
+    });
+
+    it('builds every recipe from the one position', async () => {
+      const { service } = await setup();
+      const recipes = service.expand(profile);
+      expect(
+        recipes.every((r) => r.position === Position.backend_engineer),
+      ).toBe(true);
+    });
+
+    it('shares one builder between profiles with the same recipe and counts both', async () => {
+      const { service, repository, profileId } = await setup();
+      await service.generate(profileId, profile);
+      expect(await service.generate('profile-2', profile)).toEqual({
+        created: 0,
+        existing: 24,
+      });
+      expect(repository.rows).toHaveLength(24);
+      expect(repository.links).toHaveLength(48);
+      expect(new Set(counts(repository))).toEqual(new Set([2]));
+    });
+
+    it('is idempotent: attaching twice adds no link and counts nothing twice', async () => {
+      const { service, repository, profileId } = await setup();
+      await service.generate(profileId, profile);
+      await service.generate(profileId, profile);
+      expect(repository.links).toHaveLength(24);
+      expect(new Set(counts(repository))).toEqual(new Set([1]));
+    });
+
+    it('never links a soft-deleted builder again', async () => {
+      const { service, repository, profileId } = await setup();
+      await service.generate(profileId, profile);
+      const [retired] = repository.rows;
+      await service.softDelete(retired.id);
+      expect(retired).toMatchObject({
+        isDeleted: true,
+        isActive: false,
+        associatedProfiles: 0,
+      });
+      await service.generate('profile-2', profile);
+      expect(repository.links.some((link) => link.queryId === retired.id)).toBe(
+        false,
+      );
+      expect(retired.isActive).toBe(false);
+    });
+
+    it('404s retiring an unknown builder', async () => {
+      const { service } = await setup();
+      await expect(service.softDelete('missing')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('detach', () => {
+    it('takes one associated profile off each shared builder, inactive only at 0', async () => {
+      const { service, repository, profileId } = await setup();
+      await service.generate(profileId, profile);
+      await service.generate('profile-2', profile);
+      expect(await service.detach(profileId)).toBe(24);
+      expect(new Set(counts(repository))).toEqual(new Set([1]));
+      expect(repository.rows.every((row) => row.isActive)).toBe(true);
+      await service.detach('profile-2');
+      expect(new Set(counts(repository))).toEqual(new Set([0]));
+      expect(repository.rows.some((row) => row.isActive)).toBe(false);
+      expect(repository.rows).toHaveLength(24);
+    });
+  });
+
+  describe('list', () => {
+    it('lists the builders of a profile and filters by channel', async () => {
+      const { service, userId, profileId } = await setup();
+      await service.generate(profileId, profile);
+      expect(await service.list(userId, profileId)).toHaveLength(24);
+      const posts = await service.list(
+        userId,
+        profileId,
+        Channel.LINKEDIN_POSTS,
+      );
+      expect(posts).toHaveLength(6);
+      expect(posts.every((row) => row.channel === Channel.LINKEDIN_POSTS)).toBe(
+        true,
+      );
+    });
+
+    it("404s another user's profile", async () => {
+      const { service, profileId } = await setup();
+      await service.generate(profileId, profile);
+      await expect(service.list('user-2', profileId)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+    });
+
+    it('hides soft-deleted builders', async () => {
+      const { service, repository, userId, profileId } = await setup();
+      await service.generate(profileId, profile);
+      await service.softDelete(repository.rows[0].id);
+      expect(await service.list(userId, profileId)).toHaveLength(23);
+    });
+  });
+});

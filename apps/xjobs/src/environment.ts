@@ -1,3 +1,3 @@
-import { loadEnvironmentFiles } from 'src/config/environment.loader';
+import { loadApplicationEnvironment } from 'src/config/environment.loader';
 
-loadEnvironmentFiles();
+loadApplicationEnvironment();

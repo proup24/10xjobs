@@ -5,23 +5,34 @@ import { loadEnvironmentFiles } from './environment.loader';
 import {
   databaseEnvironmentSchema,
   parseEnvironment,
+  seedEnvironmentSchema,
 } from './environment.validation';
 
 import type {
   DatabaseEnvironmentVariables,
   EnvironmentVariables,
+  RedisEnvironmentVariables,
+  SeedEnvironmentVariables,
 } from './environment.validation';
 
-export { loadEnvironmentFiles } from './environment.loader';
+export {
+  loadApplicationEnvironment,
+  loadEnvironmentFiles,
+} from './environment.loader';
 export {
   databaseEnvironmentSchema,
   environmentSchema,
   parseEnvironment,
   validateEnvironment,
+  redisEnvironmentSchema,
+  seedEnvironmentSchema,
+  validateWorkerEnvironment,
 } from './environment.validation';
 export type {
   DatabaseEnvironmentVariables,
   EnvironmentVariables,
+  RedisEnvironmentVariables,
+  SeedEnvironmentVariables,
 } from './environment.validation';
 
 type AppConfigService = ConfigService<EnvironmentVariables, true>;
@@ -31,6 +42,8 @@ export interface AppConfig {
   port: number;
   nodeEnv: EnvironmentType;
   sentryDsn?: string;
+  /** Nx's development ready-signal socket, when the server runs under Nx. */
+  readySignalSocket?: string;
 }
 
 export interface CookieConfig {
@@ -47,17 +60,79 @@ export interface DatabaseConfig {
   logQueries: boolean;
 }
 
+export interface RedisConfig {
+  url: string;
+  cacheUrl: string;
+  prefix: string;
+  commandTimeoutMs: number;
+  cacheTtlSeconds: number;
+  jobsConcurrency: number;
+}
+
+export function getRedisConfig(
+  config: ConfigService<RedisEnvironmentVariables, true>,
+): RedisConfig {
+  return {
+    url: config.get('REDIS_URL', { infer: true }),
+    cacheUrl: config.get('REDIS_CACHE_URL', { infer: true }),
+    prefix: config.get('REDIS_PREFIX', { infer: true }),
+    commandTimeoutMs: config.get('REDIS_COMMAND_TIMEOUT_MS', { infer: true }),
+    cacheTtlSeconds: config.get('CACHE_TTL_SECONDS', { infer: true }),
+    jobsConcurrency: config.get('JOBS_CONCURRENCY', { infer: true }),
+  };
+}
+
 export function getAppConfig(config: AppConfigService): AppConfig {
   return {
     host: config.get('HOST', { infer: true }),
     port: config.get('PORT', { infer: true }),
     nodeEnv: config.get('NODE_ENV', { infer: true }),
     sentryDsn: config.get('SENTRY_DSN', { infer: true }),
+    readySignalSocket: config.get('NX_READY_SIGNAL_SOCKET', { infer: true }),
   };
 }
 
 export function getSystemDomain(config: AppConfigService): string {
   return config.get('SYSTEM_DOMAIN', { infer: true });
+}
+
+export interface BasicAuthConfig {
+  username: string;
+  password: string;
+}
+
+export function getBasicAuthConfig(config: AppConfigService): BasicAuthConfig {
+  return {
+    username: config.get('BASIC_AUTH_USERNAME', { infer: true }),
+    password: config.get('BASIC_AUTH_PASSWORD', { infer: true }),
+  };
+}
+
+/**
+ * @description The Apify API token. Read when a collector runs, so the API
+ * still boots without one; throws if collection is attempted unconfigured.
+ */
+export function getApifyToken(config: AppConfigService): string {
+  const token = config.get('APIFY_TOKEN', { infer: true });
+  if (!token) throw new Error('APIFY_TOKEN is required for job collection');
+  return token;
+}
+
+export interface StorageConfig {
+  supabaseUrl: string;
+  serviceRoleKey: string;
+  resumesBucket: string;
+}
+
+/** Validation guarantees one of each URL and key pair is set. */
+export function getStorageConfig(config: AppConfigService): StorageConfig {
+  return {
+    supabaseUrl: (config.get('SUPABASE_URL', { infer: true }) ??
+      config.get('SUPABASE_PUBLIC_URL', { infer: true })) as string,
+    serviceRoleKey: (config.get('SUPABASE_SERVICE_ROLE_KEY', { infer: true }) ??
+      config.get('SERVICE_ROLE_KEY', { infer: true })) as string,
+    resumesBucket: config.get('STORAGE_RESUMES_BUCKET', { infer: true }),
+  };
 }
 
 export function getCookieConfig(config: AppConfigService): CookieConfig {
@@ -109,4 +184,13 @@ export function getDatabaseConfig(config: AppConfigService): DatabaseConfig {
 export function loadDatabaseEnvironment(): DatabaseEnvironmentVariables {
   loadEnvironmentFiles();
   return parseEnvironment(databaseEnvironmentSchema, process.env);
+}
+
+/**
+ * @description For the seed runner: loads the env files and validates the
+ * database variables plus `NODE_ENV`.
+ */
+export function loadSeedEnvironment(): SeedEnvironmentVariables {
+  loadEnvironmentFiles();
+  return parseEnvironment(seedEnvironmentSchema, process.env);
 }

@@ -10,13 +10,402 @@ model mixin Timestamps {
   updatedAt TimestamptzJsDate(3) @default(now()) @onCreate(now()) @onUpdate(now())
 }
 
-// Starter model so migrations and seeds have something to work with —
-// replace or extend it with the real domain.
+// Each enum below has a TypeScript twin in src/common/enums/<name>.enum.ts;
+// src/common/enums/enums.spec.ts fails when they drift.
+
+enum Position {
+  @@type("pg/text@1")
+  backend_engineer          = "backend_engineer"
+  frontend_engineer         = "frontend_engineer"
+  fullstack_engineer        = "fullstack_engineer"
+  mobile_engineer           = "mobile_engineer"
+  devops_engineer           = "devops_engineer"
+  site_reliability_engineer = "site_reliability_engineer"
+  platform_engineer         = "platform_engineer"
+  cloud_engineer            = "cloud_engineer"
+  security_engineer         = "security_engineer"
+  data_engineer             = "data_engineer"
+  ml_engineer               = "ml_engineer"
+  ai_engineer               = "ai_engineer"
+  qa_engineer               = "qa_engineer"
+  embedded_engineer         = "embedded_engineer"
+  software_architect        = "software_architect"
+  tech_lead                 = "tech_lead"
+  engineering_manager       = "engineering_manager"
+}
+
+enum Language {
+  @@type("pg/text@1")
+  AR = "AR"
+  FR = "FR"
+  EN = "EN"
+  ES = "ES"
+}
+
+enum Region {
+  @@type("pg/text@1")
+  EMEA               = "EMEA"
+  MENA               = "MENA"
+  NORTH_AFRICA       = "NORTH_AFRICA"
+  SUB_SAHARAN_AFRICA = "SUB_SAHARAN_AFRICA"
+  MIDDLE_EAST        = "MIDDLE_EAST"
+  EUROPE             = "EUROPE"
+  EU                 = "EU"
+  UK                 = "UK"
+  NORTH_AMERICA      = "NORTH_AMERICA"
+  LATAM              = "LATAM"
+  APAC               = "APAC"
+  GLOBAL             = "GLOBAL"
+}
+
+enum Engagement {
+  @@type("pg/text@1")
+  employee   = "employee"
+  contractor = "contractor"
+  eor        = "eor"
+  agency     = "agency"
+  per_task   = "per_task"
+}
+
+enum Arrangement {
+  @@type("pg/text@1")
+  remote   = "remote"
+  hybrid   = "hybrid"
+  onsite   = "onsite"
+  unstated = "unstated"
+}
+
+enum Seniority {
+  @@type("pg/text@1")
+  junior    = "junior"
+  mid       = "mid"
+  senior    = "senior"
+  staff     = "staff"
+  lead      = "lead"
+  principal = "principal"
+  unstated  = "unstated"
+}
+
+enum ContactKind {
+  @@type("pg/text@1")
+  phone     = "phone"
+  email     = "email"
+  linkedin  = "linkedin"
+  github    = "github"
+  gitlab    = "gitlab"
+  portfolio = "portfolio"
+  website   = "website"
+  other     = "other"
+}
+
+enum SkillDomain {
+  @@type("pg/text@1")
+  backend   = "backend"
+  frontend  = "frontend"
+  fullstack = "fullstack"
+  mobile    = "mobile"
+  devops    = "devops"
+  data      = "data"
+  ml        = "ml"
+  security  = "security"
+  qa        = "qa"
+}
+
+enum Technology {
+  @@type("pg/text@1")
+  javascript     = "javascript"
+  typescript     = "typescript"
+  python         = "python"
+  java           = "java"
+  kotlin         = "kotlin"
+  go             = "go"
+  rust           = "rust"
+  csharp         = "csharp"
+  cpp            = "cpp"
+  php            = "php"
+  ruby           = "ruby"
+  scala          = "scala"
+  elixir         = "elixir"
+  swift          = "swift"
+  dart           = "dart"
+  sql            = "sql"
+  bash           = "bash"
+  nodejs         = "nodejs"
+  nestjs         = "nestjs"
+  express        = "express"
+  fastify        = "fastify"
+  django         = "django"
+  fastapi        = "fastapi"
+  flask          = "flask"
+  spring         = "spring"
+  dotnet         = "dotnet"
+  laravel        = "laravel"
+  rails          = "rails"
+  graphql        = "graphql"
+  grpc           = "grpc"
+  react          = "react"
+  nextjs         = "nextjs"
+  vue            = "vue"
+  nuxt           = "nuxt"
+  angular        = "angular"
+  svelte         = "svelte"
+  tailwindcss    = "tailwindcss"
+  react_native   = "react_native"
+  flutter        = "flutter"
+  postgresql     = "postgresql"
+  mysql          = "mysql"
+  mongodb        = "mongodb"
+  redis          = "redis"
+  elasticsearch  = "elasticsearch"
+  kafka          = "kafka"
+  rabbitmq       = "rabbitmq"
+  spark          = "spark"
+  airflow        = "airflow"
+  dbt            = "dbt"
+  snowflake      = "snowflake"
+  aws            = "aws"
+  gcp            = "gcp"
+  azure          = "azure"
+  docker         = "docker"
+  kubernetes     = "kubernetes"
+  terraform      = "terraform"
+  ansible        = "ansible"
+  github_actions = "github_actions"
+  gitlab_ci      = "gitlab_ci"
+  linux          = "linux"
+  nginx          = "nginx"
+  prometheus     = "prometheus"
+  grafana        = "grafana"
+  pytorch        = "pytorch"
+  tensorflow     = "tensorflow"
+  langchain      = "langchain"
+}
+
+enum Channel {
+  @@type("pg/text@1")
+  LINKEDIN_JOB_BOARD = "LINKEDIN_JOB_BOARD"
+  LINKEDIN_POSTS     = "LINKEDIN_POSTS"
+  GREEN_HOUSE        = "GREEN_HOUSE"
+  ASHBY              = "ASHBY"
+}
+
+enum ProfileState {
+  @@type("pg/text@1")
+  draft     = "draft"
+  published = "published"
+}
+
+// Postal address; `country` is ISO 3166-1 alpha-2.
+type Address {
+  line1      String
+  line2      String?
+  city       String
+  postalCode String?
+  state      String?
+  country    String
+}
+
 model User {
-  id    Uuid    @id @onCreate(uuid(7))
-  email String  @unique
-  name  String?
+  id          Uuid      @id @onCreate(uuid(7))
+  // Stored lowercased.
+  email       String
+  name        String
+  address     Address?
   +Timestamps
 
+  @@unique([email])
   @@map("users")
+}
+
+// The user's own contact channels, the ones that go on applications.
+model Contact {
+  id          Uuid        @id @onCreate(uuid(7))
+  userId      Uuid
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind        ContactKind
+  value       String
+  label       String?
+  isPrimary   Boolean     @default(false)
+  +Timestamps
+
+  @@unique([userId, kind, value])
+  @@index([userId])
+  @@map("contacts")
+}
+
+// A user may maintain multiple independent job-seeker profiles, one per target position.
+// Timezone offsets are minutes from UTC.
+model Profile {
+  id                Uuid          @id @onCreate(uuid(7))
+  userId            Uuid
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  position          Position
+  languages         Language[]
+  country           String
+  city              String?
+  regions           Region[]
+  yearsOfExperience Int
+  timezoneCurrent   Int
+  timezoneMin       Int
+  timezoneMax       Int
+  engagements       Engagement[]
+  arrangements      Arrangement[]
+  seniority         Seniority
+  noticePeriodDays  Int
+  resumeKey         String?
+  resumeFilename    String?
+  resumeSizeBytes   Int?
+  resumeSha256      String?
+  resumeUploadedAt  TimestamptzJsDate(3)?
+  state             ProfileState  @default(draft)
+  publishedAt       TimestamptzJsDate(3)?
+  +Timestamps
+
+  @@check(expression: sql`"yearsOfExperience" BETWEEN 0 AND 60`, name: "profiles_years_range")
+  @@check(expression: sql`"noticePeriodDays" BETWEEN 0 AND 365`, name: "profiles_notice_range")
+  @@check(expression: sql`"timezoneCurrent" BETWEEN -720 AND 840 AND "timezoneMin" BETWEEN -720 AND 840 AND "timezoneMax" BETWEEN -720 AND 840 AND "timezoneMin" <= "timezoneMax"`, name: "profiles_tz_range")
+  @@check(expression: sql`cardinality("languages") > 0`, name: "profiles_languages_nonempty")
+  @@check(expression: sql`cardinality("engagements") > 0`, name: "profiles_engagements_nonempty")
+  @@check(expression: sql`cardinality("arrangements") > 0`, name: "profiles_arrangements_nonempty")
+  @@index([userId])
+  @@map("profiles")
+}
+
+// One row per technology and domain in a profile's tech stack.
+model ProfileSkill {
+  id          Uuid        @id @onCreate(uuid(7))
+  profileId   Uuid
+  profile     Profile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  technology  Technology
+  domain      SkillDomain
+  mastery     Int
+  importance  Int         @default(5)
+  +Timestamps
+
+  @@check(expression: sql`mastery BETWEEN 0 AND 10`, name: "profile_skills_mastery_range")
+  @@check(expression: sql`importance BETWEEN 0 AND 10`, name: "profile_skills_importance_range")
+  @@unique([profileId, technology, domain])
+  @@map("profile_skills")
+}
+
+// A shared, immutable search recipe for one channel, deduplicated by hash across every
+// profile. Profiles use it through ProfileQuerySearchBuilder; rows are never hard-deleted,
+// because raw job hits are attributed to them.
+model QuerySearchBuilder {
+  id                 Uuid         @id @onCreate(uuid(7))
+  channel            Channel
+  locationRegion     Region?
+  country            String?
+  city               String?
+  experience         Seniority
+  technologies       Technology[]
+  type               Arrangement
+  keyword            String
+  version            Int
+  params             Jsonb
+  hash               String
+  // Number of ProfileQuerySearchBuilder rows; kept in step under a row lock.
+  associatedProfiles Int          @default(0)
+  // Collected only while active: at least one published profile uses it.
+  isActive           Boolean      @default(false)
+  // Soft delete: retired recipes are never collected, linked or listed again.
+  isDeleted          Boolean      @default(false)
+  +Timestamps
+
+  @@check(expression: sql`"associatedProfiles" >= 0`, name: "query_search_builder_associated_profiles")
+  @@check(expression: sql`NOT ("isDeleted" AND "isActive")`, name: "query_search_builder_deleted_inactive")
+  @@unique([hash])
+  @@index([channel, isActive, isDeleted])
+  @@map("query_search_builder")
+}
+
+// Which published profiles use which shared query search builder.
+model ProfileQuerySearchBuilder {
+  id        Uuid               @id @onCreate(uuid(7))
+  profileId Uuid
+  profile   Profile            @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  queryId   Uuid
+  query     QuerySearchBuilder @relation(fields: [queryId], references: [id], onDelete: Cascade)
+  createdAt TimestamptzJsDate(3) @default(now())
+
+  @@unique([profileId, queryId])
+  @@index([queryId])
+  @@map("profile_query_search_builders")
+}
+
+// Shared source observations. Ownership belongs to lookup attribution, not jobs.
+model RawJob {
+  id                   Uuid @id @onCreate(uuid(7))
+  channel              Channel
+  kind                 String
+  externalId           String?
+  url                  String
+  applyUrl             String?
+  title                String?
+  company              String?
+  location             String?
+  description          String
+  postedAt             TimestamptzJsDate(3)?
+  postedAtPrecision    String?
+  authorName           String?
+  authorUrl            String?
+  contactName          String?
+  contactUrl           String?
+  raw                  Jsonb
+  normalizationVersion Int
+  firstSeenAt          TimestamptzJsDate(3)
+  lastSeenAt           TimestamptzJsDate(3)
+  atsPostingId         Uuid?
+  atsPosting           AtsPostingIdentity? @relation(fields: [atsPostingId], references: [id], onDelete: SetNull)
+
+  @@check(expression: sql`kind IN ('job', 'post')`, name: "raw_jobs_kind")
+  @@check(expression: sql`"postedAtPrecision" IN ('hour', 'day')`, name: "raw_jobs_precision")
+  @@check(expression: sql`"firstSeenAt" <= "lastSeenAt"`, name: "raw_jobs_seen_order")
+  @@check(expression: sql`length(trim(description)) > 0 AND length(trim(url)) > 0`, name: "raw_jobs_content")
+  @@index([channel, lastSeenAt])
+  @@map("raw_jobs")
+}
+
+// Aliases permit URL-only observations to acquire source IDs atomically.
+model RawJobIdentity {
+  id            Uuid @id @onCreate(uuid(7))
+  channel       Channel
+  identityType  String
+  identityValue String
+  rawJobId      Uuid
+  rawJob        RawJob @relation(fields: [rawJobId], references: [id], onDelete: Cascade)
+
+  @@check(expression: sql`"identityType" IN ('source_id', 'url')`, name: "raw_job_identity_type")
+  @@check(expression: sql`length(trim("identityValue")) > 0`, name: "raw_job_identity_value")
+  @@unique([channel, identityType, identityValue])
+  @@map("raw_job_identities")
+}
+
+model RawJobQueryHit {
+  id          Uuid @id @onCreate(uuid(7))
+  queryId     Uuid
+  query       QuerySearchBuilder @relation(fields: [queryId], references: [id], onDelete: Cascade)
+  rawJobId    Uuid
+  rawJob      RawJob @relation(fields: [rawJobId], references: [id], onDelete: Cascade)
+  firstSeenAt TimestamptzJsDate(3)
+  lastSeenAt  TimestamptzJsDate(3)
+  observedUrl String
+  rank        Int?
+
+  @@check(expression: sql`"firstSeenAt" <= "lastSeenAt"`, name: "raw_job_query_hits_seen_order")
+  @@check(expression: sql`rank IS NULL OR rank > 0`, name: "raw_job_query_hits_rank")
+  @@unique([queryId, rawJobId])
+  @@map("raw_job_query_hits")
+}
+
+// Association only: observations from different channels remain separate.
+model AtsPostingIdentity {
+  id        Uuid @id @onCreate(uuid(7))
+  provider  String
+  tenantKey String
+  postingId String
+
+  @@check(expression: sql`provider IN ('ashby', 'greenhouse')`, name: "ats_posting_identity_provider")
+  @@unique([provider, tenantKey, postingId])
+  @@map("ats_posting_identities")
 }

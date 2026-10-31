@@ -1,0 +1,20 @@
+# Build the runtime files first: pnpm exec nx prune @xjobs/xjobs
+# Start: docker compose -f docker-compose.yaml -f docker-compose.worker.yaml up -d --build worker redis-cache
+services:
+  worker:
+    build:
+      context: ./apps/xjobs
+      dockerfile: Dockerfile
+    command: ['node', 'worker.js']
+    restart: unless-stopped
+    stop_grace_period: 60s
+    environment:
+      NODE_ENV: production
+      XJOBS_SKIP_ENV_FILES: '1'
+      REDIS_URL: redis://redis:6379
+      REDIS_PREFIX: ${REDIS_PREFIX:-xjobs}
+      JOBS_CONCURRENCY: ${JOBS_CONCURRENCY:-5}
+      REDIS_COMMAND_TIMEOUT_MS: ${REDIS_COMMAND_TIMEOUT_MS:-3000}
+    depends_on:
+      redis:
+        condition: service_healthy
