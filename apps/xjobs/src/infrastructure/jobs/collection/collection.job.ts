@@ -1,23 +1,29 @@
+import { randomUUID } from 'node:crypto';
 import { Logger } from '@nestjs/common';
 import type { Channel } from 'src/common/enums';
-import type { QuerySearchBuilderRow } from 'src/database';
 import type {
   ActorRunConfig,
-  CollectedJob,
   Collector,
   SegmentResult,
 } from 'src/modules/collectors';
-import { type IngestService, ingestConfig } from 'src/modules/ingest';
+import {
+  type BatchFile,
+  batchStorageKey,
+  ingestConfig,
+  serializeBatchFile,
+} from 'src/modules/ingest';
 import type { QuerySearchService } from 'src/modules/queries';
 import {
+  type NewSegmentRun,
   type SearchSegment,
   type SearchSegmentsRepository,
   type SegmentQueryOutcome,
-  type SegmentRunStatus,
   buildSegments,
   segmentWindow,
 } from 'src/modules/segments';
+import type { StorageService } from 'src/modules/storage';
 import type { ChannelJobConfig } from '../config';
+import type { IngestQueue } from '../ingest-queue.service';
 
 /** Scheduler id and job name of a channel's recurring collect job. */
 export const COLLECT_JOB = 'collect';
@@ -28,31 +34,23 @@ export interface CollectionSummary {
   builders: number;
   segments: number;
   segmentsFailed: number;
+  /** Items returned, attributed or not. */
   collected: number;
-  inserted: number;
-  updated: number;
-  duplicate: number;
-  invalid: number;
+  /** Batches stored for ingest. */
+  batches: number;
   costUsd: number;
 }
-
-const emptyOutcome = (): SegmentQueryOutcome => ({
-  returned: 0,
-  inserted: 0,
-  updated: 0,
-  duplicate: 0,
-  invalid: 0,
-});
 
 const message = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
 
 /**
  * A channel's collection job. Each run groups the channel's active query search
- * builders into search segments, searches each segment with one Apify run over
- * the window its members have not covered, ingests every member's results
- * against that member, moves the cursors of members that were fully ingested,
- * and records the segment run. A worker process schedules and consumes it.
+ * builders into search segments and searches each segment with one Apify run
+ * over the window its members have not covered. It stores each run's untouched
+ * results as a batch file, records the run, its pending batch and the moved
+ * cursors together, then hands the batch to ingest. It interprets nothing.
+ * A worker process schedules and consumes it.
  */
 export abstract class CollectionJob<R extends ActorRunConfig = ActorRunConfig> {
   abstract readonly channel: Channel;
@@ -63,8 +61,9 @@ export abstract class CollectionJob<R extends ActorRunConfig = ActorRunConfig> {
   constructor(
     protected readonly collector: Collector<R>,
     protected readonly queries: QuerySearchService,
-    protected readonly ingest: IngestService,
     protected readonly segments: SearchSegmentsRepository,
+    protected readonly storage: StorageService,
+    protected readonly ingestQueue: IngestQueue,
   ) {}
 
   async run(): Promise<CollectionSummary> {
@@ -78,17 +77,13 @@ export abstract class CollectionJob<R extends ActorRunConfig = ActorRunConfig> {
       segments: segments.length,
       segmentsFailed: 0,
       collected: 0,
-      inserted: 0,
-      updated: 0,
-      duplicate: 0,
-      invalid: 0,
+      batches: 0,
       costUsd: 0,
     };
 
-    for (const segment of segments) {
-      const status = await this.runSegment(segment, until, summary);
-      if (status === 'failed') summary.segmentsFailed += 1;
-    }
+    for (const segment of segments)
+      if (!(await this.runSegment(segment, until, summary)))
+        summary.segmentsFailed += 1;
 
     this.logger.log(
       Object.entries(summary)
@@ -102,50 +97,51 @@ export abstract class CollectionJob<R extends ActorRunConfig = ActorRunConfig> {
     return summary;
   }
 
+  /** True when the segment's results were stored as a pending batch. */
   private async runSegment(
     segment: SearchSegment,
     until: Date,
     summary: CollectionSummary,
-  ): Promise<SegmentRunStatus> {
+  ): Promise<boolean> {
     const startedAt = new Date();
     const window = segmentWindow(segment.members, until, this.config.window);
     if (window.clipped)
       this.logger.warn(
         `Segment ${segment.key} was not collected for longer than ${this.config.window.maximumHours}h; older postings are not caught up`,
       );
-    const queryIds = segment.members.map((member) => member.id);
-    const record = (
-      status: SegmentRunStatus,
+    const runId = randomUUID();
+    const batchId = randomUUID();
+    const run = (
       result: SegmentResult | null,
-      perQuery: Record<string, SegmentQueryOutcome>,
       error: string | null,
-    ) =>
-      this.segments
-        .recordRun({
-          channel: this.channel,
-          segmentKey: segment.key,
-          segmentHash: segment.hash,
-          queryIds,
-          windowStart: window.since,
-          windowEnd: window.until,
-          startedAt,
-          finishedAt: new Date(),
-          status,
-          fetched: result?.fetched ?? 0,
-          costMicroUsd:
-            result?.costUsd == null
-              ? null
-              : Math.round(result.costUsd * 1_000_000),
-          capped: result?.capped ?? false,
-          truncatedQueryIds: result?.truncatedQueryIds ?? [],
-          perQuery,
-          error,
-        })
+    ): NewSegmentRun => ({
+      channel: this.channel,
+      segmentKey: segment.key,
+      segmentHash: segment.hash,
+      queryIds: segment.members.map((member) => member.id),
+      windowStart: window.since,
+      windowEnd: window.until,
+      startedAt,
+      finishedAt: new Date(),
+      status: error ? 'failed' : 'succeeded',
+      fetched: result?.fetched ?? 0,
+      costMicroUsd:
+        result?.costUsd == null ? null : Math.round(result.costUsd * 1_000_000),
+      capped: result?.capped ?? false,
+      truncatedQueryIds: result?.truncatedQueryIds ?? [],
+      perQuery: result ? perQuery(result) : {},
+      error,
+    });
+    const recordFailed = (result: SegmentResult | null, error: unknown) => {
+      this.logger.warn(`Segment ${segment.key} failed: ${message(error)}`);
+      return this.segments
+        .recordRun(run(result, message(error)))
         .catch((recordError: unknown) =>
           this.logger.error(
             `Could not record segment ${segment.hash}: ${message(recordError)}`,
           ),
         );
+    };
 
     let result: SegmentResult;
     try {
@@ -163,70 +159,75 @@ export abstract class CollectionJob<R extends ActorRunConfig = ActorRunConfig> {
         this.config.run,
       );
     } catch (error) {
-      this.logger.warn(`Segment ${segment.key} failed: ${message(error)}`);
-      await record('failed', null, {}, message(error));
-      return 'failed';
+      await recordFailed(null, error);
+      return false;
     }
     summary.costUsd += result.costUsd ?? 0;
 
-    const perQuery: Record<string, SegmentQueryOutcome> = {};
-    const ingested: string[] = [];
-    for (const member of segment.members) {
-      const outcome = await this.ingestMember(
-        member,
-        result.jobsByQuery.get(member.id) ?? [],
-        until,
-      );
-      perQuery[member.id] = outcome;
-      summary.collected += outcome.returned;
-      summary.inserted += outcome.inserted;
-      summary.updated += outcome.updated;
-      summary.duplicate += outcome.duplicate;
-      summary.invalid += outcome.invalid;
-      if (outcome.error)
-        this.logger.warn(`Builder ${member.id} failed: ${outcome.error}`);
-      else ingested.push(member.id);
-    }
-
-    // A capped run may have stopped before some postings: search them again.
-    if (!result.capped) await this.segments.advanceCursors(ingested, until);
-    const status: SegmentRunStatus =
-      ingested.length === segment.members.length
-        ? 'succeeded'
-        : ingested.length === 0
-          ? 'failed'
-          : 'partial';
-    await record(status, result, perQuery, null);
-    return status;
-  }
-
-  private async ingestMember(
-    member: QuerySearchBuilderRow,
-    jobs: CollectedJob[],
-    observedAt: Date,
-  ): Promise<SegmentQueryOutcome> {
-    const outcome = emptyOutcome();
-    outcome.returned = jobs.length;
+    const file: BatchFile = {
+      formatVersion: 1,
+      batchId,
+      channel: this.channel,
+      segmentRunId: runId,
+      observedAt: window.until.toISOString(),
+      source: result.source,
+      queries: segment.members.map((member) => ({
+        id: member.id,
+        keyword: member.keyword,
+        params: member.params as Record<string, unknown>,
+      })),
+      itemsByQuery: Object.fromEntries(result.itemsByQuery),
+      unattributed: result.unattributed,
+    };
+    const itemCount =
+      [...result.itemsByQuery.values()].reduce((n, items) => n + items.length, 0) +
+      result.unattributed.length;
+    const storageKey = batchStorageKey(this.channel, window.until, runId);
     try {
-      for (
-        let start = 0;
-        start < jobs.length;
-        start += ingestConfig.maxBatchItems
-      ) {
-        const report = await this.ingest.ingest({
-          queryId: member.id,
-          observedAt,
-          channel: this.channel,
-          items: jobs.slice(start, start + ingestConfig.maxBatchItems),
-        });
-        outcome.inserted += report.inserted;
-        outcome.updated += report.updated;
-        outcome.duplicate += report.duplicate;
-        outcome.invalid += report.invalid;
-      }
+      await this.storage.put(
+        ingestConfig.bucket,
+        storageKey,
+        serializeBatchFile(file),
+        'application/json',
+      );
+      await this.segments.recordCollectedRun(
+        { ...run(result, null), id: runId },
+        {
+          id: batchId,
+          storageKey,
+          formatVersion: 1,
+          observedAt: window.until,
+          itemCount,
+          actor: result.source.actor,
+          apifyRunId: result.source.apifyRunId,
+        },
+        // A capped run may have stopped before some postings: search them again.
+        result.capped ? [] : segment.members.map((member) => member.id),
+      );
     } catch (error) {
-      outcome.error = message(error);
+      await recordFailed(result, error);
+      return false;
     }
-    return outcome;
+    summary.collected += itemCount;
+    summary.batches += 1;
+
+    try {
+      await this.ingestQueue.enqueue(batchId);
+    } catch (error) {
+      // The batch is stored and pending: the ingest sweeper picks it up.
+      this.logger.warn(
+        `Batch ${batchId} stored but not enqueued: ${message(error)}`,
+      );
+    }
+    return true;
   }
+}
+
+function perQuery(result: SegmentResult): Record<string, SegmentQueryOutcome> {
+  return Object.fromEntries(
+    [...result.itemsByQuery].map(([id, items]) => [
+      id,
+      { returned: items.length },
+    ]),
+  );
 }

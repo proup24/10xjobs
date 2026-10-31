@@ -1,6 +1,7 @@
 export { SearchSegmentsModule } from './segments.module';
 export {
   SearchSegmentsRepository,
+  type NewCollectionBatch,
   type NewSegmentRun,
   type SegmentQueryOutcome,
   type SegmentRunStatus,

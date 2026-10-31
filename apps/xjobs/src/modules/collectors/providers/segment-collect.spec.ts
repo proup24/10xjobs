@@ -1,5 +1,4 @@
 import { Channel } from 'src/common/enums';
-import { normalizeItem } from '../../ingest/utils';
 import type {
   BoardSearchRunConfig,
   LinkedinJobBoardRunConfig,
@@ -29,6 +28,7 @@ function actor(
   const run = vi.fn(async (_actor: string, input: Record<string, unknown>) => ({
     items: items(input),
     costUsd,
+    runId: 'run-1',
   }));
   return { run, provider: { run } as unknown as ApifyActorProvider };
 }
@@ -138,27 +138,24 @@ describe('LinkedIn job board segment', () => {
       startUrls: [0, 1, 2].map((i) => ({ url: urlOf(i) })),
       maxRowsPerUrl: 2,
     });
-    expect(result.jobsByQuery.get('qs-1')?.map((j) => j.sourceJobId)).toEqual([
-      '1',
-      '2',
+    expect(result.itemsByQuery.get('qs-1')).toEqual([
+      { rank: 1, payload: item(1, urlOf(0), 1) },
+      { rank: 2, payload: item(2, urlOf(0), 2) },
     ]);
-    expect(result.jobsByQuery.get('qs-2')).toEqual([]);
-    expect(result.jobsByQuery.get('qs-3')?.map((j) => j.sourceJobId)).toEqual([
-      '3',
+    expect(result.itemsByQuery.get('qs-2')).toEqual([]);
+    expect(result.itemsByQuery.get('qs-3')).toEqual([
+      { rank: 1, payload: item(3, urlOf(2), 1) },
+    ]);
+    // The redirected item matches no member, and is kept, untouched.
+    expect(result.unattributed).toEqual([
+      {
+        rank: 1,
+        payload: item(4, 'https://www.linkedin.com/jobs/search/?redirected', 1),
+      },
     ]);
     expect(result.fetched).toBe(4);
     expect(result.truncatedQueryIds).toEqual(['qs-1']);
-    expect(result.jobsByQuery.get('qs-1')?.[0]).toMatchObject({
-      source: 'linkedin-jobs',
-      search: 'backend nestjs in Germany',
-      description: 'Build & ship',
-    });
-    expect(() =>
-      normalizeItem(
-        Channel.LINKEDIN_JOB_BOARD,
-        result.jobsByQuery.get('qs-1')?.[0],
-      ),
-    ).not.toThrow();
+    expect(result.source).toEqual({ actor: board.actor, apifyRunId: 'run-1' });
   });
 
   it('matches echoed URLs whatever their encoding and parameter order', async () => {
@@ -175,9 +172,20 @@ describe('LinkedIn job board segment', () => {
       segment(Channel.LINKEDIN_JOB_BOARD, queries),
       board,
     );
-    expect(result.jobsByQuery.get('qs-1')?.map((j) => j.sourceJobId)).toEqual([
-      '1',
+    expect(
+      result.itemsByQuery.get('qs-1')?.map((i) => (i.payload as { id: number }).id),
+    ).toEqual([1]);
+  });
+
+  it('has no rank when the actor reports no position', async () => {
+    const { provider } = actor(() => [
+      { ...item(1, urlOf(0), 0), scrapingInfo: { inputUrl: urlOf(0) } },
     ]);
+    const result = await new LinkedinJobSearchProvider(provider).search(
+      segment(Channel.LINKEDIN_JOB_BOARD, queries),
+      board,
+    );
+    expect(result.itemsByQuery.get('qs-1')?.[0]?.rank).toBeNull();
   });
 
   it('reports the cost and whether the charge cap was reached', async () => {
@@ -228,19 +236,17 @@ describe('LinkedIn posts segment', () => {
       postedLimitDate: since.toISOString(),
       sortBy: 'date',
     });
-    expect(result.jobsByQuery.get('qs-2')?.map((j) => j.sourceJobId)).toEqual([
-      '7',
-      '8',
+    expect(result.itemsByQuery.get('qs-2')).toEqual([
+      { rank: null, payload: post('7', queries[1].keyword) },
+      { rank: null, payload: post('8', queries[1].keyword) },
     ]);
-    expect(result.jobsByQuery.get('qs-1')).toEqual([]);
+    expect(result.itemsByQuery.get('qs-1')).toEqual([]);
+    expect(result.unattributed).toEqual([
+      { rank: null, payload: post('9', 'unknown query') },
+    ]);
     expect(result.truncatedQueryIds).toEqual(['qs-2']);
     expect(result.fetched).toBe(3);
-    expect(
-      normalizeItem(
-        Channel.LINKEDIN_POSTS,
-        result.jobsByQuery.get('qs-2')?.[0],
-      ),
-    ).toMatchObject({ company: null, authorName: 'Jane' });
+    expect(result.source).toEqual({ actor: posts.actor, apifyRunId: 'run-1' });
   });
 });
 
@@ -304,6 +310,26 @@ describe('job board segments on Google', () => {
     ]);
     expect(result.fetched).toBe(2);
     expect(result.truncatedQueryIds).toEqual([]);
+    expect(result.unattributed).toEqual([]);
+    expect(result.source).toEqual({ actor: ashby.actor, apifyRunId: 'run-1' });
+  });
+
+  it('keeps hits whose query matches no member as unattributed', async () => {
+    const queries = [{ id: 'qs-1', keyword: `${titles} nestjs`, params: {} }];
+    const { provider } = actor(() => [
+      {
+        searchQuery: { term: 'another query' },
+        organicResults: [{ url: 'https://jobs.ashbyhq.com/acme/9', position: 4 }],
+      },
+    ]);
+    const result = await new GoogleJobsSearchProvider(provider).search(
+      segment(Channel.ASHBY, queries),
+      ashby,
+    );
+    expect(result.hitsByQuery.get('qs-1')).toEqual([]);
+    expect(result.unattributed.map((h) => [h.url, h.rank])).toEqual([
+      ['https://jobs.ashbyhq.com/acme/9', 4],
+    ]);
   });
 
   it('localises an onsite segment to its country and searches whole days', async () => {
@@ -360,15 +386,15 @@ describe('job board segments on Google', () => {
     expect(result.truncatedQueryIds).toEqual(['qs-1']);
   });
 
-  it('drops postings it cannot fetch instead of failing the segment', async () => {
+  it('keeps postings it cannot fetch, with the fetch error, instead of failing the segment', async () => {
     const queries = [{ id: 'qs-1', keyword: `${titles} nestjs`, params: {} }];
     const line = boardQuery(queries[0].keyword, ashby);
     const { provider } = actor(() => [
       {
         searchQuery: { term: line },
         organicResults: [
-          { url: 'https://jobs.ashbyhq.com/acme/1' },
-          { url: 'https://jobs.ashbyhq.com/acme/closed' },
+          { url: 'https://jobs.ashbyhq.com/acme/1', position: 1 },
+          { url: 'https://jobs.ashbyhq.com/acme/closed', position: 2 },
         ],
       },
     ]);
@@ -382,8 +408,24 @@ describe('job board segments on Google', () => {
       new GoogleJobsSearchProvider(provider),
       postings,
     ).collect(segment(Channel.ASHBY, queries), ashby);
-    expect(result.jobsByQuery.get('qs-1')?.map((j) => j.sourceJobId)).toEqual([
-      'p1',
+    expect(result.itemsByQuery.get('qs-1')).toEqual([
+      {
+        rank: 1,
+        payload: {
+          hit: { url: 'https://jobs.ashbyhq.com/acme/1', position: 1 },
+          posting: { id: 'p1', title: 'Engineer', descriptionHtml: '<p>x</p>' },
+          fetchError: null,
+        },
+      },
+      {
+        rank: 2,
+        payload: {
+          hit: { url: 'https://jobs.ashbyhq.com/acme/closed', position: 2 },
+          posting: null,
+          fetchError: 'closed',
+        },
+      },
     ]);
+    expect(result.source).toEqual({ actor: ashby.actor, apifyRunId: 'run-1' });
   });
 });

@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { CollectorsModule } from 'src/modules/collectors';
-import { IngestModule } from 'src/modules/ingest';
 import { QuerySearchModule } from 'src/modules/queries';
 import { SearchSegmentsModule } from 'src/modules/segments';
+import { StorageModule } from 'src/modules/storage';
 import { RedisSettingsModule } from '../redis/settings.module';
 import {
   AshbyCollectionJob,
@@ -10,6 +10,7 @@ import {
   LinkedinJobBoardCollectionJob,
   LinkedinPostsCollectionJob,
 } from './collection';
+import { IngestQueue } from './ingest-queue.service';
 import { JobsService } from './jobs.service';
 
 const COLLECTION_JOBS = [
@@ -21,17 +22,17 @@ const COLLECTION_JOBS = [
 
 /**
  * Declares and executes the jobs: the infrastructure queue producer and one
- * collection job per channel. Worker processes live in `infrastructure/worker`.
+ * collection job per channel, and the producer of the ingest queue. Worker processes live in `infrastructure/worker`.
  */
 @Module({
   imports: [
     RedisSettingsModule,
     QuerySearchModule,
     CollectorsModule,
-    IngestModule,
     SearchSegmentsModule,
+    StorageModule,
   ],
-  providers: [JobsService, ...COLLECTION_JOBS],
-  exports: [JobsService, ...COLLECTION_JOBS],
+  providers: [JobsService, IngestQueue, ...COLLECTION_JOBS],
+  exports: [JobsService, IngestQueue, ...COLLECTION_JOBS],
 })
 export class JobsModule {}

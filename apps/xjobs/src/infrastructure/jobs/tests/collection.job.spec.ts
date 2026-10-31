@@ -3,18 +3,20 @@ import { Arrangement, Channel, Region, SkillDomain } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
 import type {
   AshbyCollector,
-  CollectedJob,
+  RawCollectedItem,
   SegmentResult,
   SegmentSearch,
 } from 'src/modules/collectors';
-import type { IngestReport, IngestService } from 'src/modules/ingest';
+import { ingestConfig, parseBatchFile } from 'src/modules/ingest';
 import type { QuerySearchService } from 'src/modules/queries';
 import { FakeSearchSegmentsRepository } from 'src/modules/segments/testing/fakes';
+import { MemoryStorageService } from 'src/modules/storage/testing';
 import { AshbyCollectionJob } from '../collection/ashby.job';
 import { GreenhouseCollectionJob } from '../collection/greenhouse.job';
 import { LinkedinJobBoardCollectionJob } from '../collection/linkedin-job-board.job';
 import { LinkedinPostsCollectionJob } from '../collection/linkedin-posts.job';
 import { channelJobsConfig } from '../config';
+import type { IngestQueue } from '../ingest-queue.service';
 
 let n = 0;
 const builder = (overrides: Partial<QuerySearchBuilderRow> = {}) =>
@@ -37,30 +39,21 @@ const builders = (
   overrides: Partial<QuerySearchBuilderRow> = {},
 ) => Array.from({ length: count }, () => builder(overrides));
 
-const job = (n: number) => ({ sourceJobId: `j${n}` }) as CollectedJob;
-const jobs = (count: number) => Array.from({ length: count }, (_, i) => job(i));
+const item = (n: number) => ({ rank: n, payload: { id: `j${n}` } });
 
-const report = (overrides: Partial<IngestReport> = {}): IngestReport => ({
-  inserted: 0,
-  updated: 0,
-  duplicate: 0,
-  invalid: 0,
-  jobIds: [],
-  errors: [],
-  ...overrides,
-});
-
-/** One job per member unless `perMember` says otherwise. */
+/** One item per member unless `perMember` says otherwise. */
 const resultFor = (
   segment: SegmentSearch,
-  perMember: (id: string) => CollectedJob[] = () => [job(1)],
+  perMember: (id: string) => RawCollectedItem[] = () => [item(1)],
   extra: Partial<SegmentResult> = {},
 ): SegmentResult => ({
-  jobsByQuery: new Map(segment.queries.map((q) => [q.id, perMember(q.id)])),
+  itemsByQuery: new Map(segment.queries.map((q) => [q.id, perMember(q.id)])),
+  unattributed: [{ rank: null, payload: { id: 'stray' } }],
   fetched: segment.queries.length,
   costUsd: 0.1,
   capped: false,
   truncatedQueryIds: [],
+  source: { actor: 'apify/google-search-scraper', apifyRunId: 'run-1' },
   ...extra,
 });
 
@@ -68,7 +61,6 @@ function setup(
   rows: QuerySearchBuilderRow[],
   collect: (segment: SegmentSearch) => Promise<SegmentResult> = async (s) =>
     resultFor(s),
-  ingest: IngestService['ingest'] = async () => report({ inserted: 1 }),
 ) {
   const queries = { listActive: vi.fn(async () => rows) };
   const collector = {
@@ -77,26 +69,39 @@ function setup(
       collect(segment),
     ),
   };
-  const ingestService = { ingest: vi.fn(ingest) };
   const segments = new FakeSearchSegmentsRepository();
+  const storage = new MemoryStorageService();
+  const order: string[] = [];
+  const put = storage.put.bind(storage);
+  vi.spyOn(storage, 'put').mockImplementation(async (...args) => {
+    order.push('put');
+    return put(...args);
+  });
+  const recordCollectedRun = segments.recordCollectedRun.bind(segments);
+  vi.spyOn(segments, 'recordCollectedRun').mockImplementation(
+    async (...args) => {
+      order.push('record');
+      return recordCollectedRun(...args);
+    },
+  );
+  const ingestQueue = {
+    enqueue: vi.fn(async (_batchId: string) => {
+      order.push('enqueue');
+    }),
+  };
   const ashby = new AshbyCollectionJob(
     collector as unknown as AshbyCollector,
     queries as unknown as QuerySearchService,
-    ingestService as unknown as IngestService,
     segments,
+    storage,
+    ingestQueue as unknown as IngestQueue,
   );
   const warn = vi
     .spyOn(Logger.prototype, 'warn')
     .mockImplementation(() => undefined);
   vi.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
-  return {
-    ashby,
-    queries,
-    collector,
-    ingest: ingestService.ingest,
-    segments,
-    warn,
-  };
+  vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+  return { ashby, queries, collector, segments, storage, ingestQueue, order, warn };
 }
 
 afterEach(() => vi.restoreAllMocks());
@@ -121,8 +126,9 @@ describe('each channel has its own collection job', () => {
       const instance = new Job(
         { channel } as never,
         {} as never,
-        {} as never,
         new FakeSearchSegmentsRepository(),
+        new MemoryStorageService(),
+        {} as never,
       );
       expect(instance.channel).toBe(channel);
       expect(instance.queueName).toBe(queueName);
@@ -164,42 +170,92 @@ describe('CollectionJob.run', () => {
     });
   });
 
-  it('ingests each member against its own builder in batches of 1000', async () => {
+  it('stores the untouched results, then records run, batch and cursors, then enqueues', async () => {
     const rows = builders(2);
-    const { ashby, ingest } = setup(rows, async (s) =>
-      resultFor(s, (id) => (id === rows[0].id ? jobs(2500) : [job(9)])),
+    const { ashby, segments, storage, ingestQueue, order } = setup(rows, async (s) =>
+      resultFor(s, (id) => (id === rows[0].id ? [item(1), item(2)] : [])),
     );
-    await ashby.run();
-    const batches = ingest.mock.calls.map(([batch]) => batch);
-    expect(batches.map((b) => [b.queryId, b.items.length])).toEqual([
-      [rows[0].id, 1000],
-      [rows[0].id, 1000],
-      [rows[0].id, 500],
-      [rows[1].id, 1],
-    ]);
-    expect(batches.every((b) => b.channel === Channel.ASHBY)).toBe(true);
-    expect(new Set(batches.map((b) => b.observedAt)).size).toBe(1);
+    const summary = await ashby.run();
+
+    expect(order).toEqual(['put', 'record', 'enqueue']);
+    const [collected] = segments.collected;
+    const { run, batch } = collected!;
+    expect(batch).toMatchObject({
+      formatVersion: 1,
+      itemCount: 3,
+      actor: 'apify/google-search-scraper',
+      apifyRunId: 'run-1',
+      observedAt: run.windowEnd,
+    });
+    expect(batch.storageKey).toBe(
+      `ASHBY/${run.windowEnd.toISOString().slice(0, 10)}/${run.id}.json`,
+    );
+    const file = parseBatchFile(
+      await storage.get(ingestConfig.bucket, batch.storageKey),
+    );
+    expect(file).toMatchObject({
+      batchId: batch.id,
+      segmentRunId: run.id,
+      channel: Channel.ASHBY,
+      observedAt: run.windowEnd.toISOString(),
+      source: { actor: 'apify/google-search-scraper', apifyRunId: 'run-1' },
+      itemsByQuery: { [rows[0].id]: [item(1), item(2)], [rows[1].id]: [] },
+      unattributed: [{ rank: null, payload: { id: 'stray' } }],
+    });
+    expect(file.queries.map((q) => q.id)).toEqual(rows.map((r) => r.id));
+    expect(run.perQuery).toEqual({
+      [rows[0].id]: { returned: 2 },
+      [rows[1].id]: { returned: 0 },
+    });
+    expect(ingestQueue.enqueue).toHaveBeenCalledWith(batch.id);
+    expect([...segments.cursors.keys()].sort()).toEqual(
+      rows.map((r) => r.id).sort(),
+    );
+    expect(summary).toMatchObject({ batches: 1, collected: 3 });
+    expect(summary).not.toHaveProperty('inserted');
   });
 
-  it('advances cursors only for members whose results were ingested', async () => {
-    const rows = builders(3);
-    const { ashby, segments } = setup(rows, undefined, async (batch) => {
-      if (batch.queryId === rows[1].id) throw new Error('db down');
-      return report({ inserted: 1 });
+  it('keeps cursors and records a failed run when the batch cannot be stored', async () => {
+    const { ashby, segments, storage, ingestQueue } = setup(builders(2));
+    storage.failNextPut = true;
+
+    await expect(ashby.run()).rejects.toThrow(/ASHBY/);
+    expect(segments.collected).toEqual([]);
+    expect(segments.runs[0]).toMatchObject({ status: 'failed' });
+    expect(segments.runs[0].error).toContain('storage unavailable');
+    expect(segments.cursors.size).toBe(0);
+    expect(ingestQueue.enqueue).not.toHaveBeenCalled();
+  });
+
+  it('keeps cursors when recording the run and batch fails', async () => {
+    const { ashby, segments, ingestQueue } = setup(builders(2));
+    vi.spyOn(segments, 'recordCollectedRun').mockRejectedValueOnce(
+      new Error('db down'),
+    );
+
+    await expect(ashby.run()).rejects.toThrow(/ASHBY/);
+    expect(segments.runs[0]).toMatchObject({ status: 'failed' });
+    expect(segments.runs[0].error).toContain('db down');
+    expect(segments.cursors.size).toBe(0);
+    expect(ingestQueue.enqueue).not.toHaveBeenCalled();
+  });
+
+  it('writes no file when the collector fails', async () => {
+    const { ashby, storage } = setup(builders(1), async () => {
+      throw new Error('Apify run FAILED');
     });
-    await ashby.run();
-    expect([...segments.cursors.keys()].sort()).toEqual([
-      rows[0].id,
-      rows[2].id,
-    ]);
-    const [run] = segments.runs;
-    expect(run.status).toBe('partial');
-    expect(run.windowEnd).toEqual(segments.cursors.get(rows[0].id));
-    expect(run.perQuery[rows[1].id].error).toContain('db down');
-    expect(run.perQuery[rows[0].id]).toMatchObject({
-      returned: 1,
-      inserted: 1,
-    });
+    await expect(ashby.run()).rejects.toThrow();
+    expect(storage.keys(ingestConfig.bucket)).toEqual([]);
+  });
+
+  it('counts a segment as collected when only the enqueue fails', async () => {
+    const { ashby, segments, ingestQueue, warn } = setup(builders(1));
+    ingestQueue.enqueue.mockRejectedValueOnce(new Error('redis down'));
+
+    const summary = await ashby.run();
+    expect(summary).toMatchObject({ segmentsFailed: 0, batches: 1 });
+    expect(segments.collected).toHaveLength(1);
+    expect(warn).toHaveBeenCalled();
   });
 
   it('records a succeeded run with the segment, window, cost and truncation', async () => {
@@ -212,8 +268,8 @@ describe('CollectionJob.run', () => {
       }),
     );
     await ashby.run();
-    expect(segments.runs).toHaveLength(1);
-    expect(segments.runs[0]).toMatchObject({
+    expect(segments.collected).toHaveLength(1);
+    expect(segments.collected[0]!.run).toMatchObject({
       channel: Channel.ASHBY,
       segmentKey: 'ASHBY|backend|remote|EMEA',
       queryIds: rows.map((r) => r.id),
@@ -224,7 +280,7 @@ describe('CollectionJob.run', () => {
       truncatedQueryIds: [rows[1].id],
       error: null,
     });
-    expect(segments.runs[0].segmentHash).toMatch(/^[0-9a-f]{64}$/);
+    expect(segments.collected[0]!.run.segmentHash).toMatch(/^[0-9a-f]{64}$/);
   });
 
   it('records a failed segment and keeps going with the next one', async () => {
@@ -238,20 +294,12 @@ describe('CollectionJob.run', () => {
       return resultFor(s);
     });
     const summary = await ashby.run();
-    expect(segments.runs.map((r) => r.status)).toEqual(['failed', 'succeeded']);
+    expect(segments.runs.map((r) => r.status)).toEqual(['failed']);
+    expect(segments.collected.map((c) => c.run.status)).toEqual(['succeeded']);
     expect(segments.runs[0].error).toContain('Apify run FAILED');
     expect(segments.cursors.size).toBe(1);
     expect(summary).toMatchObject({ segments: 2, segmentsFailed: 1 });
     expect(warn).toHaveBeenCalled();
-  });
-
-  it('marks a segment failed when every member failed to ingest', async () => {
-    const { ashby, segments } = setup(builders(2), undefined, async () => {
-      throw new Error('db down');
-    });
-    await expect(ashby.run()).rejects.toThrow(/ASHBY/);
-    expect(segments.runs[0].status).toBe('failed');
-    expect(segments.cursors.size).toBe(0);
   });
 
   it('does not advance cursors of a run stopped by its charge cap', async () => {
@@ -259,10 +307,11 @@ describe('CollectionJob.run', () => {
       resultFor(s, undefined, { capped: true }),
     );
     await ashby.run();
-    expect(segments.runs[0]).toMatchObject({
+    expect(segments.collected[0]!.run).toMatchObject({
       capped: true,
       status: 'succeeded',
     });
+    expect(segments.collected[0]!.advance).toEqual([]);
     expect(segments.cursors.size).toBe(0);
   });
 
@@ -278,6 +327,7 @@ describe('CollectionJob.run', () => {
     expect(await ashby.run()).toMatchObject({ builders: 0, segments: 0 });
     expect(collector.collect).not.toHaveBeenCalled();
     expect(segments.runs).toEqual([]);
+    expect(segments.collected).toEqual([]);
   });
 });
 

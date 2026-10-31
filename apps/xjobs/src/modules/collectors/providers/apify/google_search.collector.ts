@@ -5,6 +5,7 @@ import type {
 } from '../../types/collector';
 import {
   attribute,
+  rankOf,
   reachedChargeCap,
   record,
   text,
@@ -15,12 +16,17 @@ export interface DiscoveryHit {
   url: string;
   /** Google query that returned this result. */
   search: string;
+  /** Google's position for the result, when it reports one. */
+  rank: number | null;
   raw: Record<string, unknown>;
 }
 
 /** What one Google run discovered for a segment, per member builder. */
 export interface SegmentDiscovery {
   hitsByQuery: Map<string, DiscoveryHit[]>;
+  /** Hits whose query matches no member; kept for the batch. */
+  unattributed: DiscoveryHit[];
+  source: { actor: string; apifyRunId: string | null };
   /** Results Google returned, attributed or not. */
   fetched: number;
   costUsd: number | null;
@@ -78,7 +84,7 @@ export class GoogleJobsSearchProvider {
       search: boardQuery(query.keyword, config),
     }));
     const countryCode = sharedCountry(segment);
-    const { items, costUsd } = await this.actor.run(
+    const { items, costUsd, runId } = await this.actor.run(
       config.actor,
       {
         queries: [...new Set(searches.map(({ search }) => search))].join('\n'),
@@ -108,11 +114,20 @@ export class GoogleJobsSearchProvider {
         : [];
       return results.flatMap((result) => {
         const url = text(result.url) ?? text(result.link);
-        return url && search ? [{ url, search, raw: result }] : [];
+        return url && search
+          ? [{ url, search, rank: rankOf(result.position), raw: result }]
+          : [];
       });
     });
+    const { byQuery, unattributed } = attribute(
+      hits,
+      (hit) => hit.search,
+      searches,
+    );
     return {
-      hitsByQuery: attribute(hits, (hit) => hit.search, searches),
+      hitsByQuery: byQuery,
+      unattributed,
+      source: { actor: config.actor, apifyRunId: runId },
       fetched: hits.length,
       costUsd,
       capped: reachedChargeCap(costUsd, config.maxRunChargeUsd),

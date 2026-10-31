@@ -1,15 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import type {
-  CollectedJob,
   LinkedinJobBoardRunConfig,
+  RawCollectedItem,
   SegmentResult,
   SegmentSearch,
 } from '../../types/collector';
 import {
   attribute,
-  contact,
-  plainText,
-  precisionOf,
+  rankOf,
   reachedChargeCap,
   record,
   text,
@@ -88,15 +86,11 @@ export class LinkedinJobSearchProvider {
       1,
       Math.round((segment.until.getTime() - segment.since.getTime()) / 1000),
     );
-    const searches = segment.queries.map((query) => {
-      const location = linkedinLocation(query.params.location);
-      return {
-        id: query.id,
-        search: linkedinJobSearchUrl(query.keyword, query.params, seconds),
-        label: location ? `${query.keyword} in ${location}` : query.keyword,
-      };
-    });
-    const { items, costUsd } = await this.actor.run(
+    const searches = segment.queries.map((query) => ({
+      id: query.id,
+      search: linkedinJobSearchUrl(query.keyword, query.params, seconds),
+    }));
+    const { items, costUsd, runId } = await this.actor.run(
       config.actor,
       {
         startUrls: searches.map(({ search }) => ({ url: search })),
@@ -107,7 +101,7 @@ export class LinkedinJobSearchProvider {
       { maxChargeUsd: config.maxRunChargeUsd },
     );
 
-    const byQuery = attribute(
+    const { byQuery, unattributed } = attribute(
       items,
       (item) => canonicalUrl(scrapingInfo(item).inputUrl),
       searches.map(({ id, search }) => ({
@@ -115,14 +109,15 @@ export class LinkedinJobSearchProvider {
         search: canonicalUrl(search) ?? search,
       })),
     );
-    const jobsByQuery = new Map<string, CollectedJob[]>();
+    const raw = (item: unknown): RawCollectedItem => ({
+      rank: rankOf(record(record(item).scrapingInfo).index),
+      payload: item,
+    });
+    const itemsByQuery = new Map<string, RawCollectedItem[]>();
     const truncatedQueryIds: string[] = [];
-    for (const { id, label } of searches) {
+    for (const { id } of searches) {
       const found = byQuery.get(id) ?? [];
-      jobsByQuery.set(
-        id,
-        found.map((item) => toJob(record(item), label)),
-      );
+      itemsByQuery.set(id, found.map(raw));
       // Scanned positions: what it returned, or the deepest index it reached.
       const scanned = Math.max(
         found.length,
@@ -131,32 +126,13 @@ export class LinkedinJobSearchProvider {
       if (scanned >= config.maxRowsPerUrl) truncatedQueryIds.push(id);
     }
     return {
-      jobsByQuery,
+      itemsByQuery,
+      unattributed: unattributed.map(raw),
       fetched: items.length,
       costUsd,
       capped: reachedChargeCap(costUsd, config.maxRunChargeUsd),
       truncatedQueryIds,
+      source: { actor: config.actor, apifyRunId: runId },
     };
   }
-}
-
-function toJob(item: Record<string, unknown>, search: string): CollectedJob {
-  const postedAt = text(item.publishedAt) ?? text(item.postedAt);
-  return {
-    source: 'linkedin-jobs',
-    sourceJobId: text(item.id) ?? text(item.jobId) ?? '',
-    url: text(item.url) ?? text(item.link) ?? text(item.jobUrl) ?? '',
-    applyUrl: text(item.applyUrl),
-    title: text(item.title) ?? '',
-    company: text(item.companyName) ?? text(item.company) ?? '',
-    location: text(item.location),
-    postedAt,
-    postedAtPrecision: precisionOf(postedAt),
-    description: plainText(
-      text(item.descriptionHtml) ?? text(item.description) ?? '',
-    ),
-    contact: contact(item.posterFullName, item.posterProfileUrl),
-    search,
-    raw: item,
-  };
 }

@@ -1,15 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import type {
-  CollectedJob,
   LinkedinPostsRunConfig,
+  RawCollectedItem,
   SegmentResult,
   SegmentSearch,
 } from '../../types/collector';
 import {
   attribute,
-  contact,
-  plainText,
-  precisionOf,
   reachedChargeCap,
   record,
   text,
@@ -35,7 +32,7 @@ export class LinkedinPostSearchProvider {
       search: query.keyword,
     }));
     // The actor has no location filter, so `params.location` is not applied.
-    const { items, costUsd } = await this.actor.run(
+    const { items, costUsd, runId } = await this.actor.run(
       config.actor,
       {
         searchQueries: [...new Set(searches.map(({ search }) => search))],
@@ -47,53 +44,25 @@ export class LinkedinPostSearchProvider {
       { maxChargeUsd: config.maxRunChargeUsd },
     );
 
-    const byQuery = attribute(items, querySearch, searches);
-    const jobsByQuery = new Map<string, CollectedJob[]>();
+    const { byQuery, unattributed } = attribute(items, querySearch, searches);
+    // The actor reports no positions, so posts carry no rank.
+    const raw = (item: unknown): RawCollectedItem => ({ rank: null, payload: item });
+    const itemsByQuery = new Map<string, RawCollectedItem[]>();
     const truncatedQueryIds: string[] = [];
-    for (const { id, search } of searches) {
+    for (const { id } of searches) {
       const found = byQuery.get(id) ?? [];
-      jobsByQuery.set(
-        id,
-        found.map((item) => toJob(record(item), search)),
-      );
-      // The actor reports no positions, so scanned is what it returned.
+      itemsByQuery.set(id, found.map(raw));
+      // Scanned is what it returned.
       if (found.length >= config.maxPostsPerQuery) truncatedQueryIds.push(id);
     }
     return {
-      jobsByQuery,
+      itemsByQuery,
+      unattributed: unattributed.map(raw),
       fetched: items.length,
       costUsd,
       capped: reachedChargeCap(costUsd, config.maxRunChargeUsd),
       truncatedQueryIds,
+      source: { actor: config.actor, apifyRunId: runId },
     };
   }
-}
-
-function toJob(item: Record<string, unknown>, search: string): CollectedJob {
-  const author = record(item.author);
-  const postedAt = text(record(item.postedAt).date);
-  const body = plainText(
-    text(item.content) ?? text(item.text) ?? text(item.description) ?? '',
-  );
-  const isProfile = author.type === 'profile';
-  return {
-    source: 'linkedin-posts',
-    sourceJobId: text(item.id) ?? text(item.urn) ?? '',
-    url: text(item.linkedinUrl) ?? text(item.url) ?? text(item.postUrl) ?? '',
-    applyUrl: text(record(item.article).link),
-    title:
-      body
-        .split('\n')
-        .find((line) => line.trim())
-        ?.trim() ?? '',
-    // Posts name an author, not an employer.
-    company: '',
-    location: null,
-    postedAt,
-    postedAtPrecision: precisionOf(postedAt),
-    description: body,
-    contact: isProfile ? contact(author.name, author.linkedinUrl) : null,
-    search,
-    raw: item,
-  };
 }

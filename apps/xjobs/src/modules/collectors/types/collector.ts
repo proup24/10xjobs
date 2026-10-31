@@ -24,10 +24,14 @@ export interface SegmentSearch {
   queries: SegmentQuery[];
 }
 
-/** What one segment run collected, per member builder. */
+/** What one segment run collected, per member builder, untouched. */
 export interface SegmentResult {
   /** Every member id is a key, with an empty list when nothing matched it. */
-  jobsByQuery: Map<string, CollectedJob[]>;
+  itemsByQuery: Map<string, RawCollectedItem[]>;
+  /** Items the run returned that no member query claims; kept, never dropped. */
+  unattributed: RawCollectedItem[];
+  /** The actor that ran and its Apify run, for tracing a batch back to its source. */
+  source: { actor: string; apifyRunId: string | null };
   /** Items the actor returned, attributed or not. */
   fetched: number;
   /** What Apify charged, or null when it did not report it. */

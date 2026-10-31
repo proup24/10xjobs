@@ -1,5 +1,4 @@
 import { convert } from 'html-to-text';
-import type { CollectedJob } from '../types/collector';
 
 export function record(value: unknown): Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -14,7 +13,7 @@ export function text(value: unknown): string | null {
 }
 
 /**
- * Converts source markup to plain text. Plain text passes through unchanged.
+ * Converts source markup to plain text (used by the legacy ingest normalizer until it is removed). Plain text passes through unchanged.
  * `entityEncoded` decodes an extra entity layer first (Greenhouse wraps its HTML this way).
  */
 export function plainText(body: string, entityEncoded = false): string {
@@ -33,20 +32,6 @@ export function plainText(body: string, entityEncoded = false): string {
     : value.trim();
 }
 
-/** A contact needs both a name and a profile URL; anything less is no contact. */
-export function contact(name: unknown, url: unknown): CollectedJob['contact'] {
-  const contactName = text(name);
-  const contactUrl = text(url);
-  return contactName && contactUrl
-    ? { name: contactName, url: contactUrl }
-    : null;
-}
-
-/** Date-only values carry day precision; timestamps carry hour precision. */
-export function precisionOf(postedAt: string | null): 'hour' | 'day' {
-  return postedAt?.includes('T') ? 'hour' : 'day';
-}
-
 /** Share of the charge cap from which a run counts as stopped by it (career-hub). */
 const CHARGE_CAP_RATIO = 0.95;
 
@@ -61,24 +46,33 @@ export function reachedChargeCap(
 /**
  * Attributes items to the segment members whose search found them: `searchOf`
  * reads the search an item echoes (input URL, query), `searches` maps each
- * member to its search. Items matching no member are dropped. Every member id
- * is a key of the result.
+ * member to its search. Items matching no member are returned as
+ * `unattributed`. Every member id is a key of `byQuery`.
  */
 export function attribute<T>(
   items: readonly T[],
   searchOf: (item: T) => string | null,
   searches: readonly { id: string; search: string }[],
-): Map<string, T[]> {
+): { byQuery: Map<string, T[]>; unattributed: T[] } {
   const byQuery = new Map<string, T[]>(searches.map(({ id }) => [id, []]));
   const idsBySearch = new Map<string, string[]>();
   for (const { id, search } of searches)
     idsBySearch.set(search, [...(idsBySearch.get(search) ?? []), id]);
+  const unattributed: T[] = [];
   for (const item of items) {
     const search = searchOf(item);
-    for (const id of (search && idsBySearch.get(search)) || [])
-      byQuery.get(id)?.push(item);
+    const ids = (search && idsBySearch.get(search)) || [];
+    if (ids.length === 0) unattributed.push(item);
+    for (const id of ids) byQuery.get(id)?.push(item);
   }
-  return byQuery;
+  return { byQuery, unattributed };
+}
+
+/** A 1-based position, or null when the value is not a positive integer. */
+export function rankOf(value: unknown): number | null {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0
+    ? value
+    : null;
 }
 
 /**

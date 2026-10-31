@@ -4,10 +4,11 @@ import {
   LinkedinPostsCollector,
   type LinkedinPostsRunConfig,
 } from 'src/modules/collectors';
-import { IngestService } from 'src/modules/ingest';
 import { QuerySearchService } from 'src/modules/queries';
 import { SearchSegmentsRepository } from 'src/modules/segments';
+import { StorageService } from 'src/modules/storage';
 import { channelJobsConfig } from '../config';
+import { IngestQueue } from '../ingest-queue.service';
 import { CollectionJob } from './collection.job';
 
 @Injectable()
@@ -19,9 +20,10 @@ export class LinkedinPostsCollectionJob extends CollectionJob<LinkedinPostsRunCo
   constructor(
     collector: LinkedinPostsCollector,
     queries: QuerySearchService,
-    ingest: IngestService,
     segments: SearchSegmentsRepository,
+    storage: StorageService,
+    ingestQueue: IngestQueue,
   ) {
-    super(collector, queries, ingest, segments);
+    super(collector, queries, segments, storage, ingestQueue);
   }
 }
