@@ -51,8 +51,9 @@ Today it over-generates:
    name asc; drop importance 0; count a technology once at its best rank. Keep
    the top 2. Sets are `[a]`, `[b]`. One technology gives `[[a]]`; none gives
    `[[]]` (a position-only search).
-2. **Arrangements.** `unstated` maps to `remote`; duplicates are removed. After
-   this step no recipe has `type = unstated`.
+2. **Arrangements.** `unstated` is always treated as `remote`, including next to
+   other arrangements (`[onsite, unstated]` → `[onsite, remote]`); an empty list
+   is `[remote]`; duplicates are removed. No recipe has `type = unstated`.
 3. **Remote.** One recipe per `channel × region × technology set`. `country` and
    `city` are null.
 4. **Onsite / hybrid.** One recipe per `channel × arrangement × technology set`,
@@ -63,11 +64,9 @@ Today it over-generates:
    `senior backend engineer nestjs` @ Paris.
 5. **City required.** If `arrangements` contains `onsite` or `hybrid` and `city`
    is empty after trimming, the profile is invalid.
-6. **Region required for remote** (Claude's call, mirroring rule 5). If the
-   normalized arrangements contain `remote` (including from `unstated`) and
-   `regions` is empty, the profile is invalid with
-   `regions is required when arrangements include remote or unstated`. No
-   silent default to `GLOBAL`: the user picks it explicitly if they mean it.
+6. **Remote defaults to `GLOBAL`** (user decision). If the normalized
+   arrangements contain `remote` (including from `unstated`) and `regions` is
+   empty, remote searches use `[GLOBAL]`. This is never an error.
 
 Worked count: 4 channels, 2 regions, remote + onsite, 2 technologies →
 remote 4×2×2 = 16, onsite 4×1×2 = 8, total 24 (was 4×2×2×5 = 80).
@@ -80,8 +79,8 @@ under `apps/xjobs/src/modules/queries/steps/` with a co-located spec:
 
 ```ts
 expand(input: QuerySearchProfileInput): QuerySearchRecipe[] {
-  const profile = normalizeProfile(input);                  // trim + uppercase country, trim city → null if empty
-  assertLocatable(profile);                                 // rules 5 and 6
+  const profile = normalizeProfile(input);                  // trim + uppercase country, trim city → null if empty, dedupe regions
+  assertLocatable(profile);                                 // rule 5
   const technologies = technologySets(profile.skills);      // rule 1
   const arrangements = normalizeArrangements(profile.arrangements); // rule 2
   const combinations = [
@@ -100,17 +99,17 @@ expand(input: QuerySearchProfileInput): QuerySearchRecipe[] {
 - `localCombinations` loops over a city list of one, so multiple cities later
   is a type change plus a loop source, not a redesign.
 
-## City and region validation
+## City validation
 
-One predicate per rule (`isLocatable(arrangements, city)`, `hasRemoteRegion(arrangements, regions)`),
-lives in the queries module and is used in two places:
+One predicate, `isLocatable(arrangements, city)`, lives in the queries module
+and is used in two places:
 
 - **Profile create/replace (400).** A class-level validator on
   `ProfileFieldsDto` (same pattern as `IsGreaterOrEqual` in
   `users/dto/validators.ts`) fails with
-  `city is required when arrangements include onsite or hybrid` (and the rule 6 message for regions).
+  `city is required when arrangements include onsite or hybrid`.
 - **`assertLocatable` in `expand`.** Throws a `BadRequestException` with the
-  same messages, as a safety net for profiles saved before this rule (publish
+  same message, as a safety net for profiles saved before this rule (publish
   then fails cleanly before anything is attached).
 
 ## Schema
@@ -137,10 +136,22 @@ lives in the queries module and is used in two places:
 - One spec per step in `steps/`.
 - `queries.service.spec.ts`: the worked count above; onsite not multiplied by
   region; two profiles in the same city with different regions produce the same
-  onsite hashes; `unstated` → remote recipes; missing city throws.
+  onsite hashes; `unstated` → remote recipes; empty regions → `GLOBAL`; missing
+  city throws.
+- **Generation scenarios (user ask: "real strong cases with mock data").** A
+  fixture file of realistic mock profiles (`queries/testing/profiles.fixture.ts`)
+  and a scenario spec that runs each one through `expand` and asserts the exact
+  recipe set: count, per-channel keywords, locations, params, and which
+  combinations must *not* appear. Covers at least: remote-only multi-region;
+  onsite-only; hybrid + remote; unstated alone; unstated next to onsite; empty
+  regions (→ `GLOBAL`); one technology; no technologies; technology ties and a
+  technology under two domains; importance-0 skills; messy country/city
+  formatting; seniority that repeats the title (`lead` + tech lead); cross-profile
+  sharing (two profiles, same city, different regions → shared onsite hashes;
+  same remote setup → identical hashes).
 - `channels.spec.ts`: null `locationRegion` for onsite/hybrid.
-- Profile DTO spec: onsite/hybrid without city is a 400; remote or unstated with no regions is a 400; remote without city is
-  fine.
+- Profile DTO spec: onsite/hybrid without city is a 400; remote without city
+  and remote with no regions are fine.
 - Repository/Postgres spec: a builder row with null `locationRegion` round-trips.
 
 ## Left to the builder
