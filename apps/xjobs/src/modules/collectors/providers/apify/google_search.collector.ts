@@ -29,7 +29,7 @@ export class GoogleJobsSearchProvider {
         queries: queries.join('\n'),
         maxPagesPerQuery: cfg.discovery.maxPagesPerQuery,
       },
-      cfg.maximumOperationBudgetMicroUsd / 1_000_000,
+      { maxChargeUsd: cfg.maximumOperationBudgetMicroUsd / 1_000_000 },
     );
     return pages.flatMap((value) => {
       const page = record(value);

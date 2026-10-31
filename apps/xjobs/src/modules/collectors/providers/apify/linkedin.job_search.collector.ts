@@ -31,7 +31,7 @@ export class LinkedinJobSearchProvider {
       const items = await this.actor.run(
         cfg.actor,
         { startUrls: [{ url }], maxRowsPerUrl: cfg.discovery.maxRowsPerUrl },
-        budgetUsd,
+        { maxChargeUsd: budgetUsd },
       );
       jobs.push(...items.map((item) => toJob(record(item), search)));
     }

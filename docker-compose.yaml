@@ -81,10 +81,30 @@ services:
     ports:
       - 127.0.0.1:${API_GW_HTTP_PORT:-8000}:8000/tcp
     volumes:
-      - ./supabase/volumes/api/envoy/envoy.yaml:/etc/envoy/envoy.yaml:ro
-      - ./supabase/volumes/api/envoy/cds.yaml:/etc/envoy/cds.yaml:ro
-      - ./supabase/volumes/api/envoy/lds.template.yaml:/etc/envoy/lds.template.yaml:ro
-      - ./supabase/volumes/api/envoy/docker-entrypoint.sh:/docker-entrypoint.sh:ro
+      - type: bind
+        source: ./supabase/volumes/api/envoy/envoy.yaml
+        target: /etc/envoy/envoy.yaml
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./supabase/volumes/api/envoy/cds.yaml
+        target: /etc/envoy/cds.yaml
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./supabase/volumes/api/envoy/lds.template.yaml
+        target: /etc/envoy/lds.template.yaml
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./supabase/volumes/api/envoy/docker-entrypoint.sh
+        target: /docker-entrypoint.sh
+        read_only: true
+        bind:
+          create_host_path: false
     environment:
       ANON_KEY: ${ANON_KEY}
       SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}

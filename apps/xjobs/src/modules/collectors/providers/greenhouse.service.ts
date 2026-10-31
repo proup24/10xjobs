@@ -7,7 +7,7 @@ import {
   type CollectedJob,
 } from '../types/collector';
 import { plainText, precisionOf, record, text } from '../utils/collected-job';
-import { GoogleJobsSearchProvider } from './apify/google_search.provider';
+import { GoogleJobsSearchProvider } from './apify/google_search.collector';
 import { GreenhousePostingProvider } from './extraction/greenhouse.provider';
 
 @Injectable()

@@ -32,7 +32,7 @@ export class LinkedinPostSearchProvider {
           maxPosts: cfg.discovery.maxPostsPerQuery,
           sortBy: 'date',
         },
-        budgetUsd,
+        { maxChargeUsd: budgetUsd },
       );
       jobs.push(...items.map((item) => toJob(record(item), query)));
     }
