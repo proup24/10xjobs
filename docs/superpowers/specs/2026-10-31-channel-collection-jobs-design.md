@@ -1,78 +1,77 @@
 # Channel collection jobs
 
-Date: 2026-10-31. Supersedes the scheduling parts of `2026-10-29-channels-collection-design.md` for now (runs, cursors, windows, budgets, leases, outbox and gap recovery are not built here).
+Date: 2026-10-31. Supersedes the scheduling parts of `2026-10-29-channels-collection-design.md` (runs, cursors, windows, budgets, leases, outbox and gap recovery are not built here).
 
 ## Intent
 
-Collection should run by itself. There is one recurring job for each channel (LinkedIn job board, LinkedIn posts, Greenhouse, Ashby). Each job searches exactly what the queries module says is wanted right now. That is the active, non-deleted shared query search builders for that channel, which come from published profiles. Each channel runs in its own worker process, so a slow or failing channel never holds up the others.
+Collection runs by itself, end to end. Each channel (LinkedIn job board, LinkedIn posts, Greenhouse, Ashby) has its own cron-scheduled job and its own dedicated worker process, configured separately. The jobs module manages execution. On each tick a channel job does four things:
 
-Today the collectors exist but nothing calls them, and `CollectorsModule` is not imported anywhere. The search terms are also hard-coded in `modules/collectors/config` (`discovery.keywords`, `locations`, `queries`, `terms`). The LinkedIn job-board provider ignores its input completely. This work makes the queries module the only source of what gets searched.
+1. It asks the **queries module** for the channel's search segments: the active, non-deleted shared query search builders.
+2. It runs the **collectors module**'s collector for that channel once per builder.
+3. It hands each builder's results to the **ingest module**, which validates, normalizes, deduplicates and saves them, attributed to that builder.
+4. It reports what happened.
+
+Today the collectors and ingest exist, but nothing calls them. The search terms are hard-coded in `modules/collectors/config`, and the LinkedIn job-board provider ignores its input completely.
 
 ## Goals
 
-- One BullMQ job scheduler for each channel, with its own schedule, in its own queue.
-- One dedicated worker process for each channel. It consumes only that channel's queue.
-- On each tick the job loads the channel's active builders through `QuerySearchService` and runs that channel's `Collector` once per builder.
-- Collectors search with the builder's `keyword` and `params` only. The static search lists are removed from the collectors config.
-
-## Rollout
-
-Until ingest exists, collected jobs are only counted and logged. Nothing runs unless a channel worker process is started, so starting that process is the switch. Do not deploy the channel workers until ingest is wired. The user was asked about this and said to proceed; this is the builder's call.
+- Every channel has its own scheduler, queue and worker process. The jobs module registers the schedules on its own.
+- Each channel worker has a dedicated config in `infrastructure/jobs/config`.
+- What is searched comes only from the queries module. The static search lists are removed from the collectors config.
+- Every collected batch goes through `IngestService.ingest`.
 
 ## Non-goals
 
-- Doing anything with collected jobs beyond logging counts. Ingest has a separate spec and is not built yet.
-- Run records, time windows or cursors, budget accounting, recovery and gap tracking.
+- Changes inside the ingest module.
+- Run history records, time windows or cursors, budget accounting, recovery and gap tracking.
 - Editing schedules at runtime or storing them in the database.
 - An HTTP trigger or admin UI for runs.
 
 ## Anti-goals
 
-- Searching anything that no published profile asked for. The static fallbacks must go, not just be bypassed.
-- Silently skipping builders. Every builder that is skipped or fails gets a log line with its id and the reason.
-- One channel's failure stopping another channel's collection.
+- Searching anything no published profile asked for. The static fallbacks must go, not just be bypassed.
+- Silently skipping builders. Every builder that is skipped or fails is logged with its id and the reason.
+- One channel's failure stopping another channel.
 - Overlapping runs of the same channel, which would double Apify spend.
 
 ## Decisions
 
 Decided by the user:
 
-- There is one job for each channel, and each job has its own schedule.
-- What is searched comes from the queries module, not static config.
-- Each channel has a dedicated worker process.
+- There is one cron job and one dedicated worker process for each channel, each with its own config.
+- The jobs module manages execution. No separate collection module.
+- Searches come from the queries module, collection from the collectors module, and saving, deduplication and normalization from the ingest module.
 - The old channels-collection design is set aside.
 
-Builder's calls (marked as mine, open to change):
+Builder's calls (open to change):
 
-1. **Schedules stay in code.** `channelConfig[channel].schedule` (cron pattern + timezone) and `enabled` keep living in `modules/collectors/config`. Only _what_ is searched is dynamic.
+1. **Per-channel worker config.** `infrastructure/jobs/config/index.ts` replaces the unused `JOB_CONFIG` with `channelJobsConfig: Record<Channel, ChannelJobConfig>`, where `ChannelJobConfig = { enabled: boolean; schedule: { pattern: string; timezone: string }; concurrency: number; attempts: number }`. The starting values for every channel are `enabled: true`, `{ pattern: '0 * * * *', timezone: 'UTC' }`, concurrency 1 and attempts 1. `enabled`, `schedule` and the unused window and recovery fields move out of `modules/collectors/config`. The collectors config keeps only operational settings: actors, limits, fetch policy and per-operation budget caps.
 2. **Queues.** One queue for each channel, named `collect-<channel>` in kebab-case (for example `collect-linkedin-job-board`), with the existing `REDIS_PREFIX`. The `infrastructure` queue and the `ping` job are unchanged.
-3. **Scheduler registration.** When a channel worker starts, it calls `queue.upsertJobScheduler('collect', schedule, { name: 'collect', data: { channel } })`. This is idempotent, so restarts and replicas are safe. If the channel is `enabled: false`, the worker removes the scheduler and exits cleanly.
-4. **Process selection.** The existing `worker.ts` entry reads a new optional `WORKER_CHANNEL` env var:
-   - unset: the infrastructure worker, as today;
-   - set to a `Channel` value: that channel's collection worker.
+3. **Automatic scheduling.** When a channel worker starts, it calls `queue.upsertJobScheduler('collect', { pattern, tz }, { name: 'collect', data: { channel }, opts: { attempts } })`. This is idempotent, so restarts and replicas are safe. If the channel is `enabled: false`, the worker removes the scheduler and exits with code 0.
+4. **Process selection.** `worker.ts` reads an optional `WORKER_CHANNEL`. If it is unset, the infrastructure worker runs as today. If it is set to a `Channel`, that channel's worker runs. An unknown value fails startup. There is one package script and Nx target for each channel, and one Docker image.
+5. **Worker environment.** A channel worker validates the Redis vars, the database vars, `APIFY_TOKEN` (required) and `WORKER_CHANNEL`. The infrastructure worker keeps today's validation.
+6. **Queries API.** Add `QuerySearchService.listActive(channel)`. It returns builders where `channel = X AND isActive AND NOT isDeleted`, oldest first, with no profile scope.
+7. **Run loop** (`infrastructure/jobs/collection.processor.ts`). Fix `observedAt` at the start of the run. For each builder, in order:
+   - collect;
+   - ingest `{ queryId: builder.id, observedAt, channel, items: jobs }`, split into chunks of at most `ingestConfig.maxBatchItems` (1000).
 
-   Add a package script and an Nx target for each channel (`worker:linkedin-job-board`, `worker:linkedin-posts`, `worker:greenhouse`, `worker:ashby`), plus `:dev` variants. The Dockerfile keeps one image, and the process is chosen by env.
+   If collect or ingest throws for one builder, log it with the builder id and continue. At the end there is one summary line: channel, number of builders, succeeded, failed, collected, truncated, incomplete, inserted, updated, duplicate and invalid. If every builder failed, the job fails so BullMQ records it. An empty builder list is a successful no-op.
 
-5. **Worker environment.** A channel worker validates the Redis vars, the database vars, `APIFY_TOKEN` (required in a channel worker) and `WORKER_CHANNEL`. The infrastructure worker keeps today's Redis-only validation.
-6. **No overlap.** Each channel worker uses concurrency 1, and the collect job uses `attempts: 1` so a failed paid run is never retried automatically. The next tick is the retry.
-7. **Queries API.** Add `QuerySearchService.listActive(channel)` and the matching repository method. It returns builders where `channel = X AND isActive AND NOT isDeleted`, oldest first, and uses the existing `(channel, isActive, isDeleted)` index. There is no profile or user scope because builders are shared.
-8. **Run loop.** Builders run one after another, in order. If one builder throws, the error is logged with the builder id and the loop continues. At the end there is one summary log line: channel, number of builders, number succeeded, number failed, jobs collected, and how many results were `truncated` or not `complete`. If every builder failed, the job fails so BullMQ records it.
-9. **Collector input.** `CollectorSearch` becomes `{ id, channel, keyword, params }`. It loses `userId` and `profileId` because builders are shared, and `keywords: string[]` becomes the builder's single `keyword`. Each collector maps it as follows:
-   - LinkedIn job board: one search URL built from `keyword`, `params.location`, `params.experienceLevel` (`f_E`) and `params.workType` (`f_WT`).
-   - LinkedIn posts: one actor run for `keyword`. `params.location` goes to the actor's location filter if it has one, otherwise it is dropped. Check the actor's input schema.
-   - Greenhouse and Ashby: one Google query `site:<site> "<keyword>" <suffix>`. `site`, `suffix` and `maxPagesPerQuery` stay in config. `params.locationTerms` and `params.remote` are not applied in this step, and the code says so in a comment.
-
-   Remove `discovery.keywords`, `locations`, `queries` and `terms` from the config types and values. Keep the operational settings (actor ids, limits, fetch policy, per-operation budget caps).
-
-10. **Module wiring.** A new `CollectionModule` in `modules/collection` imports `DatabaseModule`, `QuerySearchModule` and `CollectorsModule`. It provides the processor that picks the collector for the job's channel from `COLLECTOR_PROVIDERS`. `QuerySearchModule` currently registers an HTTP controller. The worker builds an application context and does not serve HTTP, so that is harmless, but the worker module should not need `BasicAuthGuard` config to boot.
+8. **Collector input.** `CollectorSearch` becomes `{ id, channel, keyword, params }`. Each collector maps it as follows:
+   - **LinkedIn job board:** one URL from `keyword`, `params.location` (with `GLOBAL` sent as `Worldwide`), `f_E` from `params.experienceLevel` and `f_WT` from `params.workType`. A missing param is omitted.
+   - **LinkedIn posts:** one actor run for `keyword`. `params.location` is used only if the actor supports a location filter.
+   - **Greenhouse and Ashby:** one Google query `site:<site> "<keyword>" <suffix>`. `params.locationTerms` and `params.remote` are not applied yet, and the code says so in a comment.
 
 ## Testing
 
-- Unit: `listActive` filters (active, not deleted, right channel, order). The run loop: per-builder failure isolation, the summary counts, all-failed makes the job fail, and an empty builder list is a successful no-op. Each collector builds its search from `keyword` and `params` with no static fallback.
-- Unit: scheduler registration upserts when enabled and removes when disabled. `WORKER_CHANNEL` parsing rejects unknown values.
-- Existing collector and queries tests keep passing after the `CollectorSearch` change.
-- No e2e that calls Apify.
+Unit tests cover the following. No test calls Apify.
+
+- **`listActive`:** filtering and order.
+- **Run loop:** builders loaded once, ingest called per builder with the builder id and the fixed `observedAt`, chunking above 1000 items, isolation of a failure in one builder (collect or ingest), the summary counts, the all-failed rejection, and the empty no-op.
+- **Collectors:** each builds its search from `keyword` and `params`, with no static fallback.
+- **Scheduler:** it upserts when enabled and removes when disabled.
+- **Config:** `WORKER_CHANNEL` and channel-worker env validation.
 
 ## Left to the builder
 
-File layout inside `modules/collection`, log wording, and how the per-channel Nx targets are expressed.
+File names inside `infrastructure/jobs`, log wording, and how the per-channel Nx targets are expressed.
