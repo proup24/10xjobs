@@ -4,6 +4,7 @@ import {
   Position,
   Region,
   Seniority,
+  SkillDomain,
   Technology,
 } from 'src/common/enums';
 import type { QuerySearchCombination } from '../types';
@@ -20,6 +21,7 @@ const base: QuerySearchCombination = {
   experience: Seniority.senior,
   type: Arrangement.remote,
   technologies: [Technology.nestjs, Technology.typescript],
+  domain: SkillDomain.backend,
 };
 
 const build = (

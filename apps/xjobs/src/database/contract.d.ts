@@ -24,7 +24,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'c51c7914f0f544daa1a0e22a4d406646bccf81ca2d88613e66422c47fd69fb1d'>;
+  StorageHashBase<'8efec91cbf32348047d5188f086d7fc07ba38a6a22a20c02f9e5ae387e4ad123'>;
 export type ExecutionHash =
   ExecutionHashBase<'4a9e258933018fc487b8d987b217a9b93dccd535dfc21b0f53b0cbefd690f4ff'>;
 export type ProfileHash =
@@ -565,6 +565,28 @@ type FieldTypeOverrides = {
           readonly output: 'LINKEDIN_JOB_BOARD' | 'LINKEDIN_POSTS' | 'GREEN_HOUSE' | 'ASHBY';
           readonly input: 'LINKEDIN_JOB_BOARD' | 'LINKEDIN_POSTS' | 'GREEN_HOUSE' | 'ASHBY';
         };
+        readonly domain: {
+          readonly output:
+            | 'backend'
+            | 'frontend'
+            | 'fullstack'
+            | 'mobile'
+            | 'devops'
+            | 'data'
+            | 'ml'
+            | 'security'
+            | 'qa';
+          readonly input:
+            | 'backend'
+            | 'frontend'
+            | 'fullstack'
+            | 'mobile'
+            | 'devops'
+            | 'data'
+            | 'ml'
+            | 'security'
+            | 'qa';
+        };
         readonly experience: {
           readonly output:
             'junior' | 'mid' | 'senior' | 'staff' | 'lead' | 'principal' | 'unstated';
@@ -1031,6 +1053,28 @@ type ColumnTypeOverrides = {
         readonly output: 'LINKEDIN_JOB_BOARD' | 'LINKEDIN_POSTS' | 'GREEN_HOUSE' | 'ASHBY';
         readonly input: 'LINKEDIN_JOB_BOARD' | 'LINKEDIN_POSTS' | 'GREEN_HOUSE' | 'ASHBY';
       };
+      readonly domain: {
+        readonly output:
+          | 'backend'
+          | 'frontend'
+          | 'fullstack'
+          | 'mobile'
+          | 'devops'
+          | 'data'
+          | 'ml'
+          | 'security'
+          | 'qa';
+        readonly input:
+          | 'backend'
+          | 'frontend'
+          | 'fullstack'
+          | 'mobile'
+          | 'devops'
+          | 'data'
+          | 'ml'
+          | 'security'
+          | 'qa';
+      };
       readonly experience: {
         readonly output: 'junior' | 'mid' | 'senior' | 'staff' | 'lead' | 'principal' | 'unstated';
         readonly input: 'junior' | 'mid' | 'senior' | 'staff' | 'lead' | 'principal' | 'unstated';
@@ -1308,6 +1352,7 @@ export namespace Models {
     city: FieldOutputTypes['public']['QuerySearchBuilder']['city'];
     country: FieldOutputTypes['public']['QuerySearchBuilder']['country'];
     createdAt: FieldOutputTypes['public']['QuerySearchBuilder']['createdAt'];
+    domain: FieldOutputTypes['public']['QuerySearchBuilder']['domain'];
     experience: FieldOutputTypes['public']['QuerySearchBuilder']['experience'];
     hash: FieldOutputTypes['public']['QuerySearchBuilder']['hash'];
     id: FieldOutputTypes['public']['QuerySearchBuilder']['id'];
@@ -1906,6 +1951,12 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
                   readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly domain: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
                   readonly many: false;
                 };
                 readonly experience: {
@@ -3003,6 +3054,10 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 3 };
                 };
               };
+              readonly domain: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly experience: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -3067,6 +3122,7 @@ type ContractBase = Omit<
                 readonly city: { readonly column: 'city' };
                 readonly country: { readonly column: 'country' };
                 readonly createdAt: { readonly column: 'createdAt' };
+                readonly domain: { readonly column: 'domain' };
                 readonly experience: { readonly column: 'experience' };
                 readonly hash: { readonly column: 'hash' };
                 readonly id: { readonly column: 'id' };

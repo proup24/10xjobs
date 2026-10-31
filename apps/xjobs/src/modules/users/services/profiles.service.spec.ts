@@ -1,4 +1,8 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   Arrangement,
   Engagement,
@@ -14,7 +18,7 @@ import {
   ProfilesService,
   toProfileView,
 } from './profiles.service';
-import { QuerySearchService } from 'src/modules/queries';
+import { QuerySearchService, SKILLS_REQUIRED } from 'src/modules/queries';
 import { FakeQuerySearchRepository } from 'src/modules/queries/testing/fakes';
 import { FakeProfilesRepository, FakeUsersRepository } from '../testing/fakes';
 import { UsersService } from './users.service';
@@ -358,13 +362,16 @@ describe('ProfilesService', () => {
       expect(querySearches.rows.some((row) => row.isActive)).toBe(false);
     });
 
-    it('publishes a profile whose skills all have importance 0 without technologies', async () => {
+    it('refuses to publish a profile whose skills all have importance 0, leaving it a draft', async () => {
       const { id } = await create([skill(Technology.go, 5, 0)]);
-      const view = await service.publish(userId, id);
-      expect(view.state).toBe('published');
-      expect(querySearches.rows.length).toBeGreaterThan(0);
-      for (const row of querySearches.rows)
-        expect(row.technologies).toEqual([]);
+      await expect(service.publish(userId, id)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.publish(userId, id)).rejects.toThrow(
+        SKILLS_REQUIRED,
+      );
+      expect((await service.get(userId, id)).state).toBe('draft');
+      expect(querySearches.rows).toHaveLength(0);
     });
 
     it('stays a draft when generating query search builders fails', async () => {

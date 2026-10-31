@@ -1,8 +1,9 @@
-import { Arrangement, Channel, type Technology } from 'src/common/enums';
+import { Arrangement, Channel } from 'src/common/enums';
 import type {
   QuerySearchCombination,
   QuerySearchProfileInput,
   QuerySearchRecipe,
+  TechnologySet,
 } from '../types';
 import { PLACE_BOUND } from './locatable';
 
@@ -10,12 +11,12 @@ import { PLACE_BOUND } from './locatable';
 export function remoteCombinations(
   profile: QuerySearchProfileInput,
   arrangements: Arrangement[],
-  technologies: Technology[][],
+  technologies: TechnologySet[],
 ): QuerySearchCombination[] {
   if (!arrangements.includes(Arrangement.remote)) return [];
   return Object.values(Channel).flatMap((channel) =>
     profile.regions.flatMap((locationRegion) =>
-      technologies.map((set) => ({
+      technologies.map(({ technologies: set, domain }) => ({
         channel,
         position: profile.position,
         locationRegion,
@@ -24,6 +25,7 @@ export function remoteCombinations(
         experience: profile.seniority,
         type: Arrangement.remote,
         technologies: set,
+        domain,
       })),
     ),
   );
@@ -36,7 +38,7 @@ export function remoteCombinations(
 export function localCombinations(
   profile: QuerySearchProfileInput,
   arrangements: Arrangement[],
-  technologies: Technology[][],
+  technologies: TechnologySet[],
 ): QuerySearchCombination[] {
   // One city for now; a list later only changes this source.
   const cities = [profile.city];
@@ -46,7 +48,7 @@ export function localCombinations(
   return local.flatMap((type) =>
     Object.values(Channel).flatMap((channel) =>
       cities.flatMap((city) =>
-        technologies.map((set) => ({
+        technologies.map(({ technologies: set, domain }) => ({
           channel,
           position: profile.position,
           locationRegion: null,
@@ -55,6 +57,7 @@ export function localCombinations(
           experience: profile.seniority,
           type,
           technologies: set,
+          domain,
         })),
       ),
     ),

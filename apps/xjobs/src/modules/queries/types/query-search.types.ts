@@ -4,13 +4,21 @@ import type {
   Position,
   Region,
   Seniority,
+  SkillDomain,
   Technology,
 } from 'src/common/enums';
 
 export type RankedSkill = {
   technology: Technology;
+  domain: SkillDomain;
   importance: number;
   mastery: number;
+};
+
+/** The technologies one search uses and the skill domain they came from. */
+export type TechnologySet = {
+  technologies: Technology[];
+  domain: SkillDomain;
 };
 
 export type QuerySearchProfileInput = {
@@ -33,6 +41,8 @@ export type QuerySearchCombination = {
   experience: Seniority;
   type: Arrangement;
   technologies: Technology[];
+  /** The domain of the skill the technologies came from; part of the hash. */
+  domain: SkillDomain;
 };
 
 export type ChannelQuery = {

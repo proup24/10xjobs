@@ -9,6 +9,7 @@ import {
   ProfileState,
   Region,
   Seniority,
+  SkillDomain,
   Technology,
 } from 'src/common/enums';
 import {
@@ -71,8 +72,9 @@ export function toQuerySearchInput(
     seniority: profile.seniority as Seniority,
     country: profile.country,
     city: profile.city,
-    skills: profile.techStack.map(({ technology, importance, mastery }) => ({
+    skills: profile.techStack.map(({ technology, domain, importance, mastery }) => ({
       technology: technology as Technology,
+      domain: domain as SkillDomain,
       importance,
       mastery,
     })),

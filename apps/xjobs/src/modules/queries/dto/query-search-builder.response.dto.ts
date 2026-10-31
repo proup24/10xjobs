@@ -4,6 +4,7 @@ import {
   Channel,
   Region,
   Seniority,
+  SkillDomain,
   Technology,
 } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
@@ -31,6 +32,13 @@ export class QuerySearchBuilderResponseDto implements QuerySearchBuilderRow {
 
   @ApiProperty({ enum: Seniority, enumName: 'Seniority' })
   experience!: Seniority;
+
+  @ApiProperty({
+    enum: SkillDomain,
+    enumName: 'SkillDomain',
+    description: 'The skill domain the technologies came from',
+  })
+  domain!: SkillDomain;
 
   @ApiProperty({ enum: Technology, enumName: 'Technology', isArray: true })
   technologies!: Technology[];

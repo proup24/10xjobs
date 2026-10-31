@@ -3,6 +3,7 @@ import {
   Position,
   Region,
   Seniority,
+  SkillDomain,
   Technology,
 } from 'src/common/enums';
 import type {
@@ -14,9 +15,11 @@ import { sortKeys } from '../utils';
 
 const skill = (
   technology: Technology,
+  domain: SkillDomain,
   importance: number,
   mastery: number,
-): RankedSkill => ({ technology, importance, mastery });
+): RankedSkill => ({ technology, domain, importance, mastery });
+const { backend, frontend, fullstack, devops, data, ml, qa } = SkillDomain;
 
 const remoteBackendMa: QuerySearchProfileInput = {
   position: Position.backend_engineer,
@@ -26,9 +29,9 @@ const remoteBackendMa: QuerySearchProfileInput = {
   country: 'MA',
   city: 'Casablanca',
   skills: [
-    skill(Technology.nestjs, 9, 8),
-    skill(Technology.typescript, 9, 7),
-    skill(Technology.postgresql, 6, 9),
+    skill(Technology.nestjs, backend, 9, 8),
+    skill(Technology.typescript, fullstack, 9, 7),
+    skill(Technology.postgresql, backend, 6, 9),
   ],
 };
 
@@ -39,7 +42,7 @@ const onsiteFrontendParis: QuerySearchProfileInput = {
   arrangements: [Arrangement.onsite],
   country: 'FR',
   city: 'Paris',
-  skills: [skill(Technology.react, 9, 8), skill(Technology.nextjs, 8, 7)],
+  skills: [skill(Technology.react, frontend, 9, 8), skill(Technology.nextjs, frontend, 8, 7)],
 };
 
 /** Realistic mock profiles for the generation scenarios. */
@@ -54,9 +57,9 @@ export const MOCK_PROFILES = {
     country: 'US',
     city: 'Austin',
     skills: [
-      skill(Technology.kubernetes, 9, 9),
-      skill(Technology.terraform, 9, 9),
-      skill(Technology.aws, 9, 8),
+      skill(Technology.kubernetes, devops, 9, 9),
+      skill(Technology.terraform, devops, 9, 9),
+      skill(Technology.aws, devops, 9, 8),
     ],
   },
   unstatedOnly: {
@@ -66,7 +69,7 @@ export const MOCK_PROFILES = {
     arrangements: [Arrangement.unstated],
     country: 'SG',
     city: null,
-    skills: [skill(Technology.python, 7, 7)],
+    skills: [skill(Technology.python, data, 7, 7)],
   },
   unstatedWithOnsite: {
     position: Position.backend_engineer,
@@ -75,7 +78,7 @@ export const MOCK_PROFILES = {
     arrangements: [Arrangement.onsite, Arrangement.unstated],
     country: 'MA',
     city: 'Rabat',
-    skills: [skill(Technology.go, 8, 6), skill(Technology.nodejs, 5, 5)],
+    skills: [skill(Technology.go, backend, 8, 6), skill(Technology.nodejs, backend, 5, 5)],
   },
   noRegionsRemote: {
     position: Position.ml_engineer,
@@ -84,16 +87,17 @@ export const MOCK_PROFILES = {
     arrangements: [Arrangement.remote],
     country: 'DE',
     city: null,
-    skills: [skill(Technology.pytorch, 9, 9), skill(Technology.python, 8, 9)],
+    skills: [skill(Technology.pytorch, ml, 9, 9), skill(Technology.python, ml, 8, 9)],
   },
-  noTechnologies: {
+  /** Nothing to search: every builder needs a skill domain. */
+  noRankedSkills: {
     position: Position.qa_engineer,
     seniority: Seniority.senior,
     regions: [Region.EU],
     arrangements: [Arrangement.remote, Arrangement.onsite],
     country: 'ES',
     city: 'Madrid',
-    skills: [],
+    skills: [skill(Technology.python, qa, 0, 6)],
   },
   leadTechLead: {
     position: Position.tech_lead,
@@ -102,7 +106,7 @@ export const MOCK_PROFILES = {
     arrangements: [Arrangement.onsite],
     country: 'GB',
     city: 'London',
-    skills: [skill(Technology.typescript, 9, 9)],
+    skills: [skill(Technology.typescript, fullstack, 9, 9)],
   },
   tiesAndDuplicates: {
     position: Position.backend_engineer,
@@ -112,11 +116,11 @@ export const MOCK_PROFILES = {
     country: 'NL',
     city: null,
     skills: [
-      skill(Technology.go, 5, 5),
-      skill(Technology.rust, 5, 5),
-      // The same technology under a second domain, ranked higher.
-      skill(Technology.go, 8, 1),
-      skill(Technology.java, 0, 9),
+      skill(Technology.go, devops, 5, 5),
+      skill(Technology.rust, backend, 5, 5),
+      // The same technology under a second domain, ranked higher: backend wins.
+      skill(Technology.go, backend, 8, 1),
+      skill(Technology.java, backend, 0, 9),
     ],
   },
   messyLocation: {
@@ -133,7 +137,7 @@ export function summarize(recipes: QuerySearchRecipe[]): string[] {
   return recipes
     .map(
       (recipe) =>
-        `${recipe.channel} | ${recipe.type} | ${recipe.locationRegion ?? '-'} | ${recipe.city ?? '-'}, ${recipe.country ?? '-'} | ${recipe.keyword} | ${JSON.stringify(sortKeys(recipe.params))}`,
+        `${recipe.channel} | ${recipe.domain} | ${recipe.type} | ${recipe.locationRegion ?? '-'} | ${recipe.city ?? '-'}, ${recipe.country ?? '-'} | ${recipe.keyword} | ${JSON.stringify(sortKeys(recipe.params))}`,
     )
     .sort();
 }

@@ -5,6 +5,7 @@ import { toRecipe } from '../builders';
 import { technologySets } from '../sets/technology';
 import { QuerySearchRepository } from '../repositories/queries.repository';
 import {
+  assertHasSkills,
   assertLocatable,
   dedupeByHash,
   localCombinations,
@@ -30,6 +31,7 @@ export class QuerySearchService {
   expand(input: QuerySearchProfileInput): QuerySearchRecipe[] {
     const profile = normalizeProfile(input);
     assertLocatable(profile);
+    assertHasSkills(profile);
     const technologies = technologySets(profile.skills);
     const arrangements = normalizeArrangements(profile.arrangements);
     const combinations = [

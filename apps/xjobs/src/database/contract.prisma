@@ -299,6 +299,8 @@ model QuerySearchBuilder {
   city               String?
   experience         Seniority
   technologies       Technology[]
+  // The skill domain the technologies came from; part of the hash.
+  domain             SkillDomain
   type               Arrangement
   keyword            String
   version            Int
