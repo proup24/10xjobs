@@ -1,11 +1,11 @@
 import { Channel } from 'src/common/enums';
 
+/** One shared query search builder, as a collector searches it. */
 export interface CollectorSearch {
+  /** The builder id; ingest attributes results to it. */
   id: string;
-  userId: string;
-  profileId: string;
   channel: Channel;
-  keywords: string[];
+  keyword: string;
   params: Record<string, unknown>;
 }
 

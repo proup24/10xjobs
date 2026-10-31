@@ -15,28 +15,41 @@ import { ApifyActorProvider } from './apify.provider';
 export class LinkedinJobSearchProvider {
   constructor(private readonly actor: ApifyActorProvider) {}
 
-  async search(_search: CollectorSearch): Promise<CollectedJob[]> {
+  async search(search: CollectorSearch): Promise<CollectedJob[]> {
     const cfg = channelConfig[Channel.LINKEDIN_JOB_BOARD];
-    const searches = cfg.discovery.locations.flatMap((location) =>
-      cfg.discovery.keywords.map((keyword) => ({
-        search: `${keyword} in ${location}`,
-        url: `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(keyword)}&location=${encodeURIComponent(location)}`,
-      })),
+    const url = linkedinJobSearchUrl(search.keyword, search.params);
+    const location = linkedinLocation(search.params.location);
+    const label = location ? `${search.keyword} in ${location}` : search.keyword;
+    const items = await this.actor.run(
+      cfg.actor,
+      { startUrls: [{ url }], maxRowsPerUrl: cfg.discovery.maxRowsPerUrl },
+      { maxChargeUsd: cfg.maximumOperationBudgetMicroUsd / 1_000_000 },
     );
-    // One run per search URL so every job is attributed to the query that found it.
-    const budgetUsd =
-      cfg.maximumOperationBudgetMicroUsd / 1_000_000 / searches.length;
-    const jobs: CollectedJob[] = [];
-    for (const { search, url } of searches) {
-      const items = await this.actor.run(
-        cfg.actor,
-        { startUrls: [{ url }], maxRowsPerUrl: cfg.discovery.maxRowsPerUrl },
-        { maxChargeUsd: budgetUsd },
-      );
-      jobs.push(...items.map((item) => toJob(record(item), search)));
-    }
-    return jobs;
+    return items.map((item) => toJob(record(item), label));
   }
+}
+
+/** LinkedIn has no `GLOBAL` location; its worldwide search is `Worldwide`. */
+function linkedinLocation(value: unknown): string | null {
+  if (typeof value !== 'string' || !value) return null;
+  return value === 'GLOBAL' ? 'Worldwide' : value;
+}
+
+/**
+ * The job search URL for one builder: its keyword, location, and the
+ * `f_E` (experience) and `f_WT` (work type) filters when the builder has them.
+ */
+export function linkedinJobSearchUrl(
+  keyword: string,
+  params: Record<string, unknown>,
+): string {
+  const query = new URLSearchParams({ keywords: keyword });
+  const location = linkedinLocation(params.location);
+  if (location) query.set('location', location);
+  if (typeof params.experienceLevel === 'string')
+    query.set('f_E', params.experienceLevel);
+  if (typeof params.workType === 'string') query.set('f_WT', params.workType);
+  return `https://www.linkedin.com/jobs/search/?${query.toString()}`;
 }
 
 function toJob(item: Record<string, unknown>, search: string): CollectedJob {

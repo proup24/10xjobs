@@ -17,12 +17,12 @@ export class GoogleJobsSearchProvider {
 
   async search(
     channel: Channel.ASHBY | Channel.GREEN_HOUSE,
-    keywords: string[],
+    keyword: string,
   ): Promise<DiscoveryHit[]> {
     const cfg = channelConfig[channel];
-    const queries = (keywords.length ? keywords : cfg.discovery.terms).map(
-      (term) => `site:${cfg.discovery.site} "${term}" ${cfg.discovery.suffix}`,
-    );
+    const queries = [
+      `site:${cfg.discovery.site} "${keyword}" ${cfg.discovery.suffix}`,
+    ];
     const pages = await this.actor.run(
       cfg.actor,
       {

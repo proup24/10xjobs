@@ -17,26 +17,18 @@ export class LinkedinPostSearchProvider {
 
   async search(search: CollectorSearch): Promise<CollectedJob[]> {
     const cfg = channelConfig[Channel.LINKEDIN_POSTS];
-    const queries = search.keywords.length
-      ? search.keywords
-      : cfg.discovery.queries;
-    // One run per query so every post is attributed to the query that found it.
-    const budgetUsd =
-      cfg.maximumOperationBudgetMicroUsd / 1_000_000 / queries.length;
-    const jobs: CollectedJob[] = [];
-    for (const query of queries) {
-      const items = await this.actor.run(
-        cfg.actor,
-        {
-          searchQueries: [query],
-          maxPosts: cfg.discovery.maxPostsPerQuery,
-          sortBy: 'date',
-        },
-        { maxChargeUsd: budgetUsd },
-      );
-      jobs.push(...items.map((item) => toJob(record(item), query)));
-    }
-    return jobs;
+    // The actor has no location filter, so `params.location` is not applied.
+    const query = search.keyword;
+    const items = await this.actor.run(
+      cfg.actor,
+      {
+        searchQueries: [query],
+        maxPosts: cfg.discovery.maxPostsPerQuery,
+        sortBy: 'date',
+      },
+      { maxChargeUsd: cfg.maximumOperationBudgetMicroUsd / 1_000_000 },
+    );
+    return items.map((item) => toJob(record(item), query));
   }
 }
 

@@ -21,7 +21,9 @@ export class AshbyCollector extends Collector {
   }
 
   async collect(search: CollectorSearch): Promise<CollectionResult> {
-    const hits = await this.discovery.search(this.channel, search.keywords);
+    // Boards are searched by keyword only; `params.locationTerms` and
+    // `params.remote` are not applied yet.
+    const hits = await this.discovery.search(this.channel, search.keyword);
     const jobs = await Promise.all(
       hits.map(async (hit): Promise<CollectedJob> => {
         const posting = record(await this.postings.fetch(hit.url));

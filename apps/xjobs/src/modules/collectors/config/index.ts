@@ -1,14 +1,15 @@
 import { Channel } from 'src/common/enums';
 
+/**
+ * Operational settings per channel. What gets searched comes from the active
+ * query search builders; when it runs comes from `infrastructure/jobs/config`.
+ */
 export interface LinkedinJobBoardDiscovery {
-  keywords: string[];
-  locations: string[];
   maxRowsPerUrl: number;
   titleExcludes: string[];
 }
 
 export interface LinkedinPostsDiscovery {
-  queries: string[];
   maxPostsPerQuery: number;
   linkTimeoutMs: number;
   linkDelayMs: number;
@@ -28,7 +29,6 @@ export interface JobBoardFetchConfig {
 
 export interface GreenhouseDiscovery {
   site: string;
-  terms: string[];
   suffix: string;
   maxPagesPerQuery: number;
   fetch: JobBoardFetchConfig;
@@ -36,20 +36,12 @@ export interface GreenhouseDiscovery {
 
 export interface AshbyDiscovery {
   site: string;
-  terms: string[];
   suffix: string;
   maxPagesPerQuery: number;
   fetch: JobBoardFetchConfig;
 }
 
 interface ChannelConfigBase {
-  enabled: boolean;
-  schedule: { pattern: string; timezone: string };
-  initialLookbackHours: number;
-  overlapMinutes: number;
-  maximumWindowHours: number;
-  recoveryDays: number;
-  maximumSearchesPerOperation: number;
   monthlyBudgetMicroUsd: number;
   maximumOperationBudgetMicroUsd: number;
   actor: string;
@@ -82,30 +74,10 @@ export type ChannelConfigMap = {
   [Channel.ASHBY]: AshbyConfig;
 };
 
-const hourly = {
-  schedule: { pattern: '0 * * * *', timezone: 'UTC' },
-  initialLookbackHours: 24,
-  overlapMinutes: 15,
-  maximumWindowHours: 24,
-  recoveryDays: 7,
-  maximumSearchesPerOperation: 10,
-} as const;
-
 export const channelConfig = {
   [Channel.LINKEDIN_JOB_BOARD]: {
-    ...hourly,
-    enabled: true,
     actor: 'bebity/linkedin-jobs-scraper',
     discovery: {
-      keywords: ['fullstack node', 'typescript', 'next js', 'react js'],
-      locations: [
-        'Worldwide',
-        'EMEA',
-        'European Union',
-        'Morocco',
-        'United Kingdom',
-        'Germany',
-      ],
       maxRowsPerUrl: 100,
       titleExcludes: [
         'sales',
@@ -122,16 +94,8 @@ export const channelConfig = {
     maximumOperationBudgetMicroUsd: 1_000_000,
   },
   [Channel.LINKEDIN_POSTS]: {
-    ...hourly,
-    enabled: true,
     actor: 'harvestapi/linkedin-post-search',
     discovery: {
-      queries: [
-        'hiring fullstack remote',
-        'hiring typescript remote',
-        'hiring react node remote',
-        'hiring next js remote',
-      ],
       maxPostsPerQuery: 100,
       linkTimeoutMs: 10_000,
       linkDelayMs: 1_000,
@@ -141,12 +105,9 @@ export const channelConfig = {
     maximumOperationBudgetMicroUsd: 750_000,
   },
   [Channel.GREEN_HOUSE]: {
-    ...hourly,
-    enabled: true,
     actor: 'apify/google-search-scraper',
     discovery: {
       site: 'greenhouse.io',
-      terms: ['full stack', 'typescript', 'next.js', 'react', 'node'],
       suffix: 'remote',
       maxPagesPerQuery: 3,
       fetch: {
@@ -164,12 +125,9 @@ export const channelConfig = {
     maximumOperationBudgetMicroUsd: 500_000,
   },
   [Channel.ASHBY]: {
-    ...hourly,
-    enabled: true,
     actor: 'apify/google-search-scraper',
     discovery: {
       site: 'jobs.ashbyhq.com',
-      terms: ['full stack', 'typescript', 'next.js', 'react', 'node'],
       suffix:
         '(intitle:engineer OR intitle:developer) -intitle:manager -intitle:director -intitle:intern "remote"',
       maxPagesPerQuery: 3,

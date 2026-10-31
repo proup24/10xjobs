@@ -5,14 +5,12 @@ import { GoogleJobsSearchProvider } from './apify/google_search.collector';
 import { LinkedinJobSearchProvider } from './apify/linkedin.job_search.collector';
 import { LinkedinPostSearchProvider } from './apify/linkedin.post_search.collector';
 
-const search = {
+const search = (keyword: string, params: Record<string, unknown> = {}) => ({
   id: 'search-1',
-  userId: 'user-1',
-  profileId: 'profile-1',
   channel: Channel.LINKEDIN_POSTS,
-  keywords: [] as string[],
-  params: {},
-};
+  keyword,
+  params,
+});
 
 function actor(results: (input: Record<string, unknown>) => unknown[]) {
   const run = vi.fn(async (_actor: string, input: Record<string, unknown>) =>
@@ -42,8 +40,10 @@ describe('collected job mapping', () => {
           ]
         : [];
     });
-    const jobs = await new LinkedinJobSearchProvider(provider).search(search);
-    expect(run).toHaveBeenCalledTimes(24);
+    const jobs = await new LinkedinJobSearchProvider(provider).search(
+      search('typescript', { location: 'Germany' }),
+    );
+    expect(run).toHaveBeenCalledTimes(1);
     expect(jobs).toEqual([
       {
         source: 'linkedin-jobs',
@@ -85,7 +85,9 @@ describe('collected job mapping', () => {
           ]
         : [],
     );
-    const [job] = await new LinkedinPostSearchProvider(provider).search(search);
+    const [job] = await new LinkedinPostSearchProvider(provider).search(
+      search('hiring typescript remote'),
+    );
     expect(job).toMatchObject({
       source: 'linkedin-posts',
       title: 'We are hiring',
@@ -109,7 +111,7 @@ describe('collected job mapping', () => {
     ]);
     const hits = await new GoogleJobsSearchProvider(provider).search(
       Channel.ASHBY,
-      ['node'],
+      'node',
     );
     expect(hits).toEqual([
       {
