@@ -288,29 +288,49 @@ model ProfileSkill {
   @@map("profile_skills")
 }
 
-// A shared, immutable search recipe for one channel. Deduplicated by hash.
+// A shared, immutable search recipe for one channel, deduplicated by hash across every
+// profile. Profiles use it through ProfileQuerySearchBuilder; rows are never hard-deleted,
+// because raw job hits are attributed to them.
 model QuerySearchBuilder {
-  id             Uuid         @id @onCreate(uuid(7))
-  userId         Uuid
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  profileId      Uuid
-  profile        Profile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  channel        Channel
-  locationRegion Region
-  country        String?
-  city           String?
-  experience     Seniority
-  technologies   Technology[]
-  type           Arrangement
-  keyword        String
-  version        Int
-  params         Jsonb
-  hash           String
+  id                 Uuid         @id @onCreate(uuid(7))
+  channel            Channel
+  locationRegion     Region
+  country            String?
+  city               String?
+  experience         Seniority
+  technologies       Technology[]
+  type               Arrangement
+  keyword            String
+  version            Int
+  params             Jsonb
+  hash               String
+  // Number of ProfileQuerySearchBuilder rows; kept in step under a row lock.
+  associatedProfiles Int          @default(0)
+  // Collected only while active: at least one published profile uses it.
+  isActive           Boolean      @default(false)
+  // Soft delete: retired recipes are never collected, linked or listed again.
+  isDeleted          Boolean      @default(false)
   +Timestamps
 
-  @@unique([profileId, hash])
-  @@index([profileId, channel])
+  @@check(expression: sql`"associatedProfiles" >= 0`, name: "query_search_builder_associated_profiles")
+  @@check(expression: sql`NOT ("isDeleted" AND "isActive")`, name: "query_search_builder_deleted_inactive")
+  @@unique([hash])
+  @@index([channel, isActive, isDeleted])
   @@map("query_search_builder")
+}
+
+// Which published profiles use which shared query search builder.
+model ProfileQuerySearchBuilder {
+  id        Uuid               @id @onCreate(uuid(7))
+  profileId Uuid
+  profile   Profile            @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  queryId   Uuid
+  query     QuerySearchBuilder @relation(fields: [queryId], references: [id], onDelete: Cascade)
+  createdAt TimestamptzJsDate(3) @default(now())
+
+  @@unique([profileId, queryId])
+  @@index([queryId])
+  @@map("profile_query_search_builders")
 }
 
 // Shared source observations. Ownership belongs to lookup attribution, not jobs.

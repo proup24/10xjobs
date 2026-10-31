@@ -16,6 +16,7 @@ import type { UserRow } from 'src/database';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { UserResponseDto } from '../dto/user.response.dto';
+import { ProfilesService } from '../services/profiles.service';
 import { ResumeService } from '../services/resume.service';
 import { UsersService } from '../services/users.service';
 
@@ -25,6 +26,7 @@ import { UsersService } from '../services/users.service';
 export class UsersController {
   constructor(
     private readonly users: UsersService,
+    private readonly profiles: ProfilesService,
     private readonly resume: ResumeService,
   ) {}
 
@@ -75,7 +77,8 @@ export class UsersController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async delete(@Param('userId', ParseUUIDPipe) userId: string): Promise<void> {
     await this.users.getOrThrow(userId);
-    // The rows cascade; the resume files do not, so remove them first.
+    // The rows cascade; the shared builder counters and resume files do not.
+    await this.profiles.releaseAll(userId);
     await this.resume.removeAllFor(userId);
     await this.users.delete(userId);
   }

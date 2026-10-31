@@ -3,10 +3,15 @@ import type { PublishedProfileView } from '../types';
 import { ProfileResponseDto } from './profile.response.dto';
 
 export class QuerySearchCountsResponseDto {
-  @ApiProperty({ description: 'Query search builders created by this publish' })
+  @ApiProperty({
+    description: 'Shared query search builders created by this publish',
+  })
   created!: number;
 
-  @ApiProperty({ description: 'Query search builders that already existed' })
+  @ApiProperty({
+    description:
+      'Recipes that already had a shared builder, reused instead of duplicated',
+  })
   existing!: number;
 }
 

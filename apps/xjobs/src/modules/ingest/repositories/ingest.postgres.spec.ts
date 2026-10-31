@@ -58,7 +58,8 @@ describe.skipIf(!url)('ingest PostgreSQL transactions', () => {
   });
   beforeEach(async () => {
     await db.execute(
-      db.raw.sql`TRUNCATE raw_jobs, ats_posting_identities, users CASCADE`
+      db.raw
+        .sql`TRUNCATE raw_jobs, ats_posting_identities, query_search_builder, users CASCADE`
         .affectedCount()
         .build(),
     );
@@ -82,9 +83,8 @@ describe.skipIf(!url)('ingest PostgreSQL transactions', () => {
         seniority: 'senior',
         noticePeriodDays: 0,
       });
-      return db.orm.public.QuerySearchBuilder.create({
-        userId: user.id,
-        profileId: profile.id,
+      // Builders are shared; a profile uses one through an association row.
+      const builder = await db.orm.public.QuerySearchBuilder.create({
         channel: Channel.LINKEDIN_JOB_BOARD,
         locationRegion: 'GLOBAL',
         experience: 'senior',
@@ -94,7 +94,15 @@ describe.skipIf(!url)('ingest PostgreSQL transactions', () => {
         version: 1,
         params: {},
         hash: randomUUID(),
+        associatedProfiles: 1,
+        isActive: true,
+        isDeleted: false,
       });
+      await db.orm.public.ProfileQuerySearchBuilder.create({
+        profileId: profile.id,
+        queryId: builder.id,
+      });
+      return builder;
     }
     queryId = (await query()).id;
     otherQueryId = (await query()).id;

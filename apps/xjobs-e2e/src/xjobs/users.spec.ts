@@ -150,6 +150,26 @@ describe('users, profiles and resume', () => {
     expect(get.data.data.position).toBe('backend_engineer');
   });
 
+  it('freezes a profile once published; it can only be deleted', async () => {
+    const id = (await axios.post(profiles(), profile)).data.data.id;
+    const published = await axios.post(`${profiles()}/${id}/publish`);
+    expect(published.status).toBe(200);
+    expect(published.data.data.state).toBe('published');
+
+    const put = await axios.put(
+      `${profiles()}/${id}`,
+      { ...editable, noticePeriodDays: 90 },
+      ok,
+    );
+    expect(put.status).toBe(409);
+    const again = await axios.post(`${profiles()}/${id}/publish`, {}, ok);
+    expect(again.status).toBe(409);
+    const unpublish = await axios.post(`${profiles()}/${id}/unpublish`, {}, ok);
+    expect(unpublish.status).toBe(404);
+
+    expect((await axios.delete(`${profiles()}/${id}`)).status).toBe(204);
+  });
+
   it('rejects a profile whose timezone range is inverted', async () => {
     const res = await axios.put(
       `${profiles()}/${profileId}`,

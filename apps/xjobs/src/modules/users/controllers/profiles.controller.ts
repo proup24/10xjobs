@@ -55,8 +55,14 @@ export class ProfilesController {
     return this.profiles.get(userId, profileId);
   }
 
-  @ApiSuccessResponse(ProfileResponseDto)
-  @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
+  @ApiSuccessResponse(ProfileResponseDto, {
+    description: 'Drafts only; a published profile is frozen (409)',
+  })
+  @ApiErrorResponses(
+    HttpStatus.BAD_REQUEST,
+    HttpStatus.NOT_FOUND,
+    HttpStatus.CONFLICT,
+  )
   @Put(':profileId')
   replace(
     @Param('userId', ParseUUIDPipe) userId: string,
@@ -66,7 +72,10 @@ export class ProfilesController {
     return this.profiles.replace(userId, profileId, body);
   }
 
-  @ApiNoContentResponse({ description: 'Deleted, with its resume file' })
+  @ApiNoContentResponse({
+    description:
+      'Deleted with its resume file; each shared query search builder it used loses one associated profile',
+  })
   @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
   @Delete(':profileId')
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -77,8 +86,14 @@ export class ProfilesController {
     return this.resume.deleteProfile(userId, profileId);
   }
 
-  @ApiSuccessResponse(PublishProfileResponseDto)
-  @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
+  @ApiSuccessResponse(PublishProfileResponseDto, {
+    description: 'One-way: afterwards the profile can only be deleted',
+  })
+  @ApiErrorResponses(
+    HttpStatus.BAD_REQUEST,
+    HttpStatus.NOT_FOUND,
+    HttpStatus.CONFLICT,
+  )
   @HttpCode(HttpStatus.OK)
   @Post(':profileId/publish')
   publish(
@@ -86,16 +101,5 @@ export class ProfilesController {
     @Param('profileId', ParseUUIDPipe) profileId: string,
   ): Promise<PublishedProfileView> {
     return this.profiles.publish(userId, profileId);
-  }
-
-  @ApiSuccessResponse(ProfileResponseDto)
-  @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
-  @HttpCode(HttpStatus.OK)
-  @Post(':profileId/unpublish')
-  unpublish(
-    @Param('userId', ParseUUIDPipe) userId: string,
-    @Param('profileId', ParseUUIDPipe) profileId: string,
-  ): Promise<ProfileView> {
-    return this.profiles.unpublish(userId, profileId);
   }
 }

@@ -34,6 +34,7 @@ export class ResumeController {
   @ApiErrorResponses(
     HttpStatus.BAD_REQUEST,
     HttpStatus.NOT_FOUND,
+    HttpStatus.CONFLICT,
     HttpStatus.PAYLOAD_TOO_LARGE,
   )
   @Post()
@@ -79,7 +80,11 @@ export class ResumeController {
   }
 
   @ApiNoContentResponse({ description: 'Deleted' })
-  @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
+  @ApiErrorResponses(
+    HttpStatus.BAD_REQUEST,
+    HttpStatus.NOT_FOUND,
+    HttpStatus.CONFLICT,
+  )
   @Delete()
   @HttpCode(HttpStatus.NO_CONTENT)
   delete(

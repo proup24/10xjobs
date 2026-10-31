@@ -9,6 +9,7 @@ import type {
   Technology,
 } from 'src/common/enums';
 import type { ProfileRow, ProfileSkillRow } from 'src/database';
+import type { QuerySearchAttachResult } from 'src/modules/queries';
 
 export type ProfileInput = {
   position: Position;
@@ -59,5 +60,5 @@ export type ProfileView = Omit<
 };
 
 export type PublishedProfileView = ProfileView & {
-  querySearches: { created: number; existing: number };
+  querySearches: QuerySearchAttachResult;
 };

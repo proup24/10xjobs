@@ -2,35 +2,24 @@
 import type { Channel } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
 import { QuerySearchRepository } from '../repositories/queries.repository';
-import type { QuerySearchRecipe } from '../types';
+import type { QuerySearchRecipe, QuerySearchAttachResult } from '../types';
 
 export class FakeQuerySearchRepository extends QuerySearchRepository {
   rows: QuerySearchBuilderRow[] = [];
+  links: { profileId: string; queryId: string }[] = [];
+  /** Profile id → owning user id; profiles not listed here are not anyone's. */
+  owners = new Map<string, string>();
 
-  async findHashes(
-    userId: string,
-    profileId: string,
-    hashes: string[],
-  ): Promise<Set<string>> {
-    const wanted = new Set(hashes);
-    return new Set(
-      this.rows
-        .filter((row) => row.userId === userId && row.profileId === profileId)
-        .map((row) => row.hash)
-        .filter((hash) => wanted.has(hash)),
-    );
+  private adjust(queryId: string, delta: number): void {
+    const row = this.rows.find((candidate) => candidate.id === queryId);
+    if (!row) throw new Error('missing builder');
+    row.associatedProfiles = Math.max(0, row.associatedProfiles + delta);
+    row.isActive = row.associatedProfiles > 0 && !row.isDeleted;
   }
 
-  async create(
-    userId: string,
-    profileId: string,
-    recipe: QuerySearchRecipe,
-  ): Promise<QuerySearchBuilderRow> {
-    if (
-      this.rows.some(
-        (row) => row.profileId === profileId && row.hash === recipe.hash,
-      )
-    ) {
+  /** Inserts a shared builder; a duplicate hash is a unique violation. */
+  async create(recipe: QuerySearchRecipe): Promise<QuerySearchBuilderRow> {
+    if (this.rows.some((row) => row.hash === recipe.hash)) {
       throw { sqlState: '23505' };
     }
     const { position: _position, ...columns } = recipe;
@@ -38,8 +27,9 @@ export class FakeQuerySearchRepository extends QuerySearchRepository {
     const row = {
       id: `qs-${this.rows.length + 1}`,
       ...columns,
-      userId,
-      profileId,
+      associatedProfiles: 0,
+      isActive: false,
+      isDeleted: false,
       createdAt: now,
       updatedAt: now,
     } as QuerySearchBuilderRow;
@@ -47,16 +37,68 @@ export class FakeQuerySearchRepository extends QuerySearchRepository {
     return row;
   }
 
+  async attach(
+    profileId: string,
+    recipes: QuerySearchRecipe[],
+  ): Promise<QuerySearchAttachResult> {
+    const result = { created: 0, existing: 0 };
+    for (const recipe of recipes) {
+      let row = this.rows.find((candidate) => candidate.hash === recipe.hash);
+      if (row) {
+        result.existing += 1;
+      } else {
+        row = await this.create(recipe);
+        result.created += 1;
+      }
+      if (row.isDeleted) continue;
+      const queryId = row.id;
+      if (
+        this.links.some(
+          (link) => link.profileId === profileId && link.queryId === queryId,
+        )
+      )
+        continue;
+      this.links.push({ profileId, queryId });
+      this.adjust(queryId, 1);
+    }
+    return result;
+  }
+
+  async detach(profileId: string): Promise<number> {
+    const mine = this.links.filter((link) => link.profileId === profileId);
+    this.links = this.links.filter((link) => link.profileId !== profileId);
+    for (const link of mine) this.adjust(link.queryId, -1);
+    return mine.length;
+  }
+
   async list(
     userId: string,
     profileId: string,
     channel?: Channel,
-  ): Promise<QuerySearchBuilderRow[]> {
+  ): Promise<QuerySearchBuilderRow[] | null> {
+    if (this.owners.get(profileId) !== userId) return null;
+    const ids = new Set(
+      this.links
+        .filter((link) => link.profileId === profileId)
+        .map((link) => link.queryId),
+    );
     return this.rows.filter(
       (row) =>
-        row.userId === userId &&
-        row.profileId === profileId &&
+        ids.has(row.id) &&
+        !row.isDeleted &&
         (!channel || row.channel === channel),
     );
+  }
+
+  async softDelete(queryId: string): Promise<QuerySearchBuilderRow | null> {
+    const row = this.rows.find((candidate) => candidate.id === queryId);
+    if (!row) return null;
+    this.links = this.links.filter((link) => link.queryId !== queryId);
+    Object.assign(row, {
+      isDeleted: true,
+      isActive: false,
+      associatedProfiles: 0,
+    });
+    return row;
   }
 }

@@ -103,7 +103,6 @@ describe('API contract', () => {
       'POST /api/users/{userId}/profiles',
       'POST /api/users/{userId}/profiles/{profileId}/publish',
       'POST /api/users/{userId}/profiles/{profileId}/resume',
-      'POST /api/users/{userId}/profiles/{profileId}/unpublish',
       'PUT /api/users/{userId}/profiles/{profileId}',
     ]);
   });

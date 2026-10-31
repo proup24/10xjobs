@@ -6,6 +6,7 @@ import {
   Seniority,
   Technology,
 } from 'src/common/enums';
+import { NotFoundException } from '@nestjs/common';
 import type { QuerySearchProfileInput, QuerySearchRecipe } from '../types';
 import { FakeQuerySearchRepository } from '../testing/fakes';
 import { QuerySearchService } from './queries.service';
@@ -34,9 +35,14 @@ const profile: QuerySearchProfileInput = {
 
 async function setup() {
   const repository = new FakeQuerySearchRepository();
+  repository.owners.set('profile-1', 'user-1');
+  repository.owners.set('profile-2', 'user-2');
   const service = new QuerySearchService(repository);
   return { service, repository, userId: 'user-1', profileId: 'profile-1' };
 }
+
+const counts = (repository: FakeQuerySearchRepository) =>
+  repository.rows.map((row) => row.associatedProfiles);
 
 const hashes = (recipes: QuerySearchRecipe[]) =>
   recipes.map((recipe) => recipe.hash);
@@ -122,17 +128,20 @@ describe('QuerySearchService', () => {
   });
 
   describe('generate', () => {
-    it('creates once, then reports everything as existing', async () => {
-      const { service, repository, userId, profileId } = await setup();
-      expect(await service.generate(userId, profileId, profile)).toEqual({
+    it('creates shared builders once, then reuses them', async () => {
+      const { service, repository, profileId } = await setup();
+      expect(await service.generate(profileId, profile)).toEqual({
         created: 80,
         existing: 0,
       });
-      expect(await service.generate(userId, profileId, profile)).toEqual({
+      expect(await service.generate(profileId, profile)).toEqual({
         created: 0,
         existing: 80,
       });
       expect(repository.rows).toHaveLength(80);
+      expect(repository.links).toHaveLength(80);
+      expect(new Set(counts(repository))).toEqual(new Set([1]));
+      expect(repository.rows.every((row) => row.isActive)).toBe(true);
     });
 
     it('builds every recipe from the one position', async () => {
@@ -143,57 +152,70 @@ describe('QuerySearchService', () => {
       ).toBe(true);
     });
 
-    it('creates fresh recipes when the profile changes position', async () => {
-      const { service, userId, profileId } = await setup();
-      await service.generate(userId, profileId, profile);
-      const result = await service.generate(userId, profileId, {
-        ...profile,
-        position: Position.ml_engineer,
+    it('shares one builder between profiles with the same recipe and counts both', async () => {
+      const { service, repository, profileId } = await setup();
+      await service.generate(profileId, profile);
+      expect(await service.generate('profile-2', profile)).toEqual({
+        created: 0,
+        existing: 80,
       });
-      expect(result).toEqual({ created: 80, existing: 0 });
+      expect(repository.rows).toHaveLength(80);
+      expect(repository.links).toHaveLength(160);
+      expect(new Set(counts(repository))).toEqual(new Set([2]));
     });
 
-    it('scopes recipes per profile', async () => {
-      const { service, userId, profileId } = await setup();
-      await service.generate(userId, profileId, profile);
-      expect(await service.generate(userId, 'profile-2', profile)).toEqual({
-        created: 80,
-        existing: 0,
-      });
+    it('is idempotent: attaching twice adds no link and counts nothing twice', async () => {
+      const { service, repository, profileId } = await setup();
+      await service.generate(profileId, profile);
+      await service.generate(profileId, profile);
+      expect(repository.links).toHaveLength(80);
+      expect(new Set(counts(repository))).toEqual(new Set([1]));
     });
 
-    it('counts a unique violation on create as existing', async () => {
-      const { service, repository, userId, profileId } = await setup();
-      const create = repository.create.bind(repository);
-      let failed = false;
-      repository.create = async (id, profile, recipe) => {
-        if (!failed) {
-          failed = true;
-          throw { sqlState: '23505' };
-        }
-        return create(id, profile, recipe);
-      };
-      expect(await service.generate(userId, profileId, profile)).toEqual({
-        created: 79,
-        existing: 1,
+    it('never links a soft-deleted builder again', async () => {
+      const { service, repository, profileId } = await setup();
+      await service.generate(profileId, profile);
+      const [retired] = repository.rows;
+      await service.softDelete(retired.id);
+      expect(retired).toMatchObject({
+        isDeleted: true,
+        isActive: false,
+        associatedProfiles: 0,
       });
+      await service.generate('profile-2', profile);
+      expect(repository.links.some((link) => link.queryId === retired.id)).toBe(
+        false,
+      );
+      expect(retired.isActive).toBe(false);
     });
 
-    it('rethrows any other create error', async () => {
-      const { service, repository, userId, profileId } = await setup();
-      repository.create = async () => {
-        throw new Error('boom');
-      };
-      await expect(
-        service.generate(userId, profileId, profile),
-      ).rejects.toThrow('boom');
+    it('404s retiring an unknown builder', async () => {
+      const { service } = await setup();
+      await expect(service.softDelete('missing')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('detach', () => {
+    it('takes one associated profile off each shared builder, inactive only at 0', async () => {
+      const { service, repository, profileId } = await setup();
+      await service.generate(profileId, profile);
+      await service.generate('profile-2', profile);
+      expect(await service.detach(profileId)).toBe(80);
+      expect(new Set(counts(repository))).toEqual(new Set([1]));
+      expect(repository.rows.every((row) => row.isActive)).toBe(true);
+      await service.detach('profile-2');
+      expect(new Set(counts(repository))).toEqual(new Set([0]));
+      expect(repository.rows.some((row) => row.isActive)).toBe(false);
+      expect(repository.rows).toHaveLength(80);
     });
   });
 
   describe('list', () => {
     it('lists the builders of a profile and filters by channel', async () => {
       const { service, userId, profileId } = await setup();
-      await service.generate(userId, profileId, profile);
+      await service.generate(profileId, profile);
       expect(await service.list(userId, profileId)).toHaveLength(80);
       const posts = await service.list(
         userId,
@@ -204,6 +226,21 @@ describe('QuerySearchService', () => {
       expect(posts.every((row) => row.channel === Channel.LINKEDIN_POSTS)).toBe(
         true,
       );
+    });
+
+    it("404s another user's profile", async () => {
+      const { service, profileId } = await setup();
+      await service.generate(profileId, profile);
+      await expect(service.list('user-2', profileId)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+    });
+
+    it('hides soft-deleted builders', async () => {
+      const { service, repository, userId, profileId } = await setup();
+      await service.generate(profileId, profile);
+      await service.softDelete(repository.rows[0].id);
+      expect(await service.list(userId, profileId)).toHaveLength(79);
     });
   });
 });

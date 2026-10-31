@@ -24,9 +24,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'bfacc3d4a0bb9a652f031e22963be006d874e300384a392fe43c4d1e0975548f'>;
+  StorageHashBase<'011c27adc77250e0999b038bf6bcf28ff796c3c79c781a3e7b29e7093dda6209'>;
 export type ExecutionHash =
-  ExecutionHashBase<'f7fbc6444ec4c1e7e24f1d05348329761db55f775d781c78b477230e13d83450'>;
+  ExecutionHashBase<'4a9e258933018fc487b8d987b217a9b93dccd535dfc21b0f53b0cbefd690f4ff'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -1281,6 +1281,15 @@ export namespace Models {
     user: public_User;
     readonly [RelationKeys]?: 'user';
   };
+  export type public_ProfileQuerySearchBuilder = {
+    createdAt: FieldOutputTypes['public']['ProfileQuerySearchBuilder']['createdAt'];
+    id: FieldOutputTypes['public']['ProfileQuerySearchBuilder']['id'];
+    profileId: FieldOutputTypes['public']['ProfileQuerySearchBuilder']['profileId'];
+    queryId: FieldOutputTypes['public']['ProfileQuerySearchBuilder']['queryId'];
+    profile: public_Profile;
+    query: public_QuerySearchBuilder;
+    readonly [RelationKeys]?: 'profile' | 'query';
+  };
   export type public_ProfileSkill = {
     createdAt: FieldOutputTypes['public']['ProfileSkill']['createdAt'];
     domain: FieldOutputTypes['public']['ProfileSkill']['domain'];
@@ -1294,6 +1303,7 @@ export namespace Models {
     readonly [RelationKeys]?: 'profile';
   };
   export type public_QuerySearchBuilder = {
+    associatedProfiles: FieldOutputTypes['public']['QuerySearchBuilder']['associatedProfiles'];
     channel: FieldOutputTypes['public']['QuerySearchBuilder']['channel'];
     city: FieldOutputTypes['public']['QuerySearchBuilder']['city'];
     country: FieldOutputTypes['public']['QuerySearchBuilder']['country'];
@@ -1301,18 +1311,16 @@ export namespace Models {
     experience: FieldOutputTypes['public']['QuerySearchBuilder']['experience'];
     hash: FieldOutputTypes['public']['QuerySearchBuilder']['hash'];
     id: FieldOutputTypes['public']['QuerySearchBuilder']['id'];
+    isActive: FieldOutputTypes['public']['QuerySearchBuilder']['isActive'];
+    isDeleted: FieldOutputTypes['public']['QuerySearchBuilder']['isDeleted'];
     keyword: FieldOutputTypes['public']['QuerySearchBuilder']['keyword'];
     locationRegion: FieldOutputTypes['public']['QuerySearchBuilder']['locationRegion'];
     params: FieldOutputTypes['public']['QuerySearchBuilder']['params'];
-    profileId: FieldOutputTypes['public']['QuerySearchBuilder']['profileId'];
     technologies: FieldOutputTypes['public']['QuerySearchBuilder']['technologies'];
     type: FieldOutputTypes['public']['QuerySearchBuilder']['type'];
     updatedAt: FieldOutputTypes['public']['QuerySearchBuilder']['updatedAt'];
-    userId: FieldOutputTypes['public']['QuerySearchBuilder']['userId'];
     version: FieldOutputTypes['public']['QuerySearchBuilder']['version'];
-    profile: public_Profile;
-    user: public_User;
-    readonly [RelationKeys]?: 'profile' | 'user';
+    readonly [RelationKeys]?: never;
   };
   export type public_RawJob = {
     applyUrl: FieldOutputTypes['public']['RawJob']['applyUrl'];
@@ -1376,6 +1384,7 @@ export declare const models: {
     AtsPostingIdentity: Models.public_AtsPostingIdentity;
     Contact: Models.public_Contact;
     Profile: Models.public_Profile;
+    ProfileQuerySearchBuilder: Models.public_ProfileQuerySearchBuilder;
     ProfileSkill: Models.public_ProfileSkill;
     QuerySearchBuilder: Models.public_QuerySearchBuilder;
     RawJob: Models.public_RawJob;
@@ -1516,6 +1525,78 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'users';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly profile_query_search_builders: {
+              columns: {
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly profileId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly queryId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['profileId', 'queryId'] }];
+              indexes: readonly [
+                {
+                  readonly name: 'profile_query_search_builders_profileId_idx_d9cdfcaf';
+                  readonly prefix: 'profile_query_search_builders_profileId_idx';
+                  readonly columns: readonly ['profileId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'profile_query_search_builders_queryId_idx_edc2d44a';
+                  readonly prefix: 'profile_query_search_builders_queryId_idx';
+                  readonly columns: readonly ['queryId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'profile_query_search_builders';
+                    readonly columns: readonly ['profileId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'profiles';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'profile_query_search_builders';
+                    readonly columns: readonly ['queryId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'query_search_builder';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -1791,6 +1872,16 @@ type ContractBase = Omit<
             };
             readonly query_search_builder: {
               columns: {
+                readonly associatedProfiles: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/int4@1', 0>;
+                  };
+                  readonly many: false;
+                };
                 readonly channel: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -1835,6 +1926,26 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly many: false;
                 };
+                readonly isActive: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
+                readonly isDeleted: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
                 readonly keyword: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -1850,12 +1961,6 @@ type ContractBase = Omit<
                 readonly params: {
                   readonly dataType: 'pg/jsonb';
                   readonly codecId: 'pg/jsonb@1';
-                  readonly nullable: false;
-                  readonly many: false;
-                };
-                readonly profileId: {
-                  readonly dataType: 'pg/uuid';
-                  readonly codecId: 'pg/uuid@1';
                   readonly nullable: false;
                   readonly many: false;
                 };
@@ -1879,12 +1984,6 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 3 };
                   readonly many: false;
                 };
-                readonly userId: {
-                  readonly dataType: 'pg/uuid';
-                  readonly codecId: 'pg/uuid@1';
-                  readonly nullable: false;
-                  readonly many: false;
-                };
                 readonly version: {
                   readonly dataType: 'pg/int4';
                   readonly codecId: 'pg/int4@1';
@@ -1893,53 +1992,16 @@ type ContractBase = Omit<
                 };
               };
               primaryKey: { readonly columns: readonly ['id'] };
-              uniques: readonly [{ readonly columns: readonly ['profileId', 'hash'] }];
+              uniques: readonly [{ readonly columns: readonly ['hash'] }];
               indexes: readonly [
                 {
-                  readonly name: 'query_search_builder_profileId_channel_idx_6dd870f6';
-                  readonly prefix: 'query_search_builder_profileId_channel_idx';
-                  readonly columns: readonly ['profileId', 'channel'];
-                  readonly unique: false;
-                },
-                {
-                  readonly name: 'query_search_builder_profileId_idx_d9cdfcaf';
-                  readonly prefix: 'query_search_builder_profileId_idx';
-                  readonly columns: readonly ['profileId'];
-                  readonly unique: false;
-                },
-                {
-                  readonly name: 'query_search_builder_userId_idx_a489d58a';
-                  readonly prefix: 'query_search_builder_userId_idx';
-                  readonly columns: readonly ['userId'];
+                  readonly name: 'query_search_builder_channel_isActive_isDeleted_idx_f3572b4f';
+                  readonly prefix: 'query_search_builder_channel_isActive_isDeleted_idx';
+                  readonly columns: readonly ['channel', 'isActive', 'isDeleted'];
                   readonly unique: false;
                 },
               ];
-              foreignKeys: readonly [
-                {
-                  readonly source: {
-                    readonly namespaceId: 'public' & NamespaceId;
-                    readonly tableName: 'query_search_builder';
-                    readonly columns: readonly ['userId'];
-                  };
-                  readonly target: {
-                    readonly namespaceId: 'public' & NamespaceId;
-                    readonly tableName: 'users';
-                    readonly columns: readonly ['id'];
-                  };
-                },
-                {
-                  readonly source: {
-                    readonly namespaceId: 'public' & NamespaceId;
-                    readonly tableName: 'query_search_builder';
-                    readonly columns: readonly ['profileId'];
-                  };
-                  readonly target: {
-                    readonly namespaceId: 'public' & NamespaceId;
-                    readonly tableName: 'profiles';
-                    readonly columns: readonly ['id'];
-                  };
-                },
-              ];
+              foreignKeys: readonly [];
             };
             readonly raw_job_identities: {
               columns: {
@@ -2494,6 +2556,10 @@ type ContractBase = Omit<
       readonly model: 'AtsPostingIdentity';
     };
     readonly contacts: { readonly namespace: 'public' & NamespaceId; readonly model: 'Contact' };
+    readonly profile_query_search_builders: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'ProfileQuerySearchBuilder';
+    };
     readonly profile_skills: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'ProfileSkill';
@@ -2779,6 +2845,66 @@ type ContractBase = Omit<
               };
             };
           };
+          readonly ProfileQuerySearchBuilder: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly profileId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly queryId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+            };
+            readonly relations: {
+              readonly profile: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Profile';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['profileId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly query: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'QuerySearchBuilder';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['queryId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'profile_query_search_builders';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly id: { readonly column: 'id' };
+                readonly profileId: { readonly column: 'profileId' };
+                readonly queryId: { readonly column: 'queryId' };
+              };
+            };
+          };
           readonly ProfileSkill: {
             readonly fields: {
               readonly createdAt: {
@@ -2853,6 +2979,10 @@ type ContractBase = Omit<
           };
           readonly QuerySearchBuilder: {
             readonly fields: {
+              readonly associatedProfiles: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
               readonly channel: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -2885,6 +3015,14 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
+              readonly isActive: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly isDeleted: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
               readonly keyword: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -2896,10 +3034,6 @@ type ContractBase = Omit<
               readonly params: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
-              };
-              readonly profileId: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
               readonly technologies: {
                 readonly nullable: false;
@@ -2918,42 +3052,17 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 3 };
                 };
               };
-              readonly userId: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
-              };
               readonly version: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
               };
             };
-            readonly relations: {
-              readonly profile: {
-                readonly to: {
-                  readonly namespace: 'public' & NamespaceId;
-                  readonly model: 'Profile';
-                };
-                readonly cardinality: 'N:1';
-                readonly nullable: false;
-                readonly on: {
-                  readonly localFields: readonly ['profileId'];
-                  readonly targetFields: readonly ['id'];
-                };
-              };
-              readonly user: {
-                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
-                readonly cardinality: 'N:1';
-                readonly nullable: false;
-                readonly on: {
-                  readonly localFields: readonly ['userId'];
-                  readonly targetFields: readonly ['id'];
-                };
-              };
-            };
+            readonly relations: Record<string, never>;
             readonly storage: {
               readonly table: 'query_search_builder';
               readonly namespaceId: 'public';
               readonly fields: {
+                readonly associatedProfiles: { readonly column: 'associatedProfiles' };
                 readonly channel: { readonly column: 'channel' };
                 readonly city: { readonly column: 'city' };
                 readonly country: { readonly column: 'country' };
@@ -2961,14 +3070,14 @@ type ContractBase = Omit<
                 readonly experience: { readonly column: 'experience' };
                 readonly hash: { readonly column: 'hash' };
                 readonly id: { readonly column: 'id' };
+                readonly isActive: { readonly column: 'isActive' };
+                readonly isDeleted: { readonly column: 'isDeleted' };
                 readonly keyword: { readonly column: 'keyword' };
                 readonly locationRegion: { readonly column: 'locationRegion' };
                 readonly params: { readonly column: 'params' };
-                readonly profileId: { readonly column: 'profileId' };
                 readonly technologies: { readonly column: 'technologies' };
                 readonly type: { readonly column: 'type' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
-                readonly userId: { readonly column: 'userId' };
                 readonly version: { readonly column: 'version' };
               };
             };
@@ -3742,6 +3851,14 @@ type ContractBase = Omit<
           readonly ref: {
             readonly entry: 'contacts';
             readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'uuidv7'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'profile_query_search_builders';
+            readonly field: 'id';
             readonly namespace: 'public';
           };
         },

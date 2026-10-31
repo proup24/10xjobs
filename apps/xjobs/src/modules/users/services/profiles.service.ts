@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   Arrangement,
   Position,
@@ -94,6 +98,8 @@ function toSkills(techStack: ProfileReplaceWrite['techStack']): SkillInput[] {
 }
 
 const PROFILE_NOT_FOUND = 'Profile not found';
+export const PROFILE_PUBLISHED =
+  'A published profile cannot be changed; delete it and create a new one';
 
 /** A user owns many profiles; every operation takes `(userId, profileId)` and checks ownership. */
 @Injectable()
@@ -120,6 +126,24 @@ export class ProfilesService {
     return (await this.profiles.list(userId)).map(toProfileView);
   }
 
+  /** 404s like getOrThrow, and 409s a published profile: only drafts can change. */
+  async getDraftOrThrow(
+    userId: string,
+    profileId: string,
+  ): Promise<ProfileWithSkills> {
+    const profile = await this.getOrThrow(userId, profileId);
+    if (profile.state !== ProfileState.draft)
+      throw new ConflictException(PROFILE_PUBLISHED);
+    return profile;
+  }
+
+  /** After a guarded write matched nothing: 404 if the profile is gone, otherwise it was published. */
+  private async rejectWrite(userId: string, profileId: string): Promise<never> {
+    await this.getDraftOrThrow(userId, profileId);
+    // Still a draft yet the write missed: treat it as a lost race on publish.
+    throw new ConflictException(PROFILE_PUBLISHED);
+  }
+
   async get(userId: string, profileId: string): Promise<ProfileView> {
     return toProfileView(await this.getOrThrow(userId, profileId));
   }
@@ -137,13 +161,13 @@ export class ProfilesService {
     );
   }
 
-  /** Replaces the editable fields and the whole tech stack; the position and state are kept. */
+  /** Replaces a draft's editable fields and whole tech stack; the position is kept. Published profiles are frozen. */
   async replace(
     userId: string,
     profileId: string,
     data: ProfileReplaceWrite,
   ): Promise<ProfileView> {
-    await this.users.getOrThrow(userId);
+    await this.getDraftOrThrow(userId, profileId);
     // Built field by field so a stray `position` can never reach the update.
     const fields: ProfileFields = {
       languages: data.languages,
@@ -165,58 +189,57 @@ export class ProfilesService {
       fields,
       toSkills(data.techStack),
     );
-    if (!profile) throw new NotFoundException(PROFILE_NOT_FOUND);
+    if (!profile) return this.rejectWrite(userId, profileId);
     return toProfileView(profile);
   }
 
-  /** Deletes the row only; the caller removes its resume file. */
+  /**
+   * The only way out of a profile, published or not: releases its shared query
+   * search builders (each loses one associated profile and goes inactive at 0),
+   * then deletes the row. The caller removes its resume file.
+   */
   async delete(userId: string, profileId: string): Promise<void> {
-    await this.users.getOrThrow(userId);
-    if (!(await this.profiles.delete(userId, profileId)))
+    const profile = await this.getOrThrow(userId, profileId);
+    await this.querySearch.detach(profile.id);
+    if (!(await this.profiles.delete(userId, profile.id)))
       throw new NotFoundException(PROFILE_NOT_FOUND);
   }
 
-  /** Generates the query search builders first, so a failure leaves the profile a draft. */
+  /**
+   * Releases the builders of every profile a user owns, so the shared counters
+   * stay right when the user's rows cascade away.
+   */
+  async releaseAll(userId: string): Promise<void> {
+    for (const profile of await this.profiles.list(userId)) {
+      await this.querySearch.detach(profile.id);
+    }
+  }
+
+  /**
+   * Publishes a draft for good. Its shared query search builders are attached
+   * first, so a failure leaves it a draft; after this it can only be deleted.
+   */
   async publish(
     userId: string,
     profileId: string,
   ): Promise<PublishedProfileView> {
-    const profile = await this.getOrThrow(userId, profileId);
+    const profile = await this.getDraftOrThrow(userId, profileId);
     const querySearches = await this.querySearch.generate(
-      userId,
       profile.id,
       toQuerySearchInput(profile),
     );
-    const published = await this.setState(
+    const published = await this.profiles.publish(
       userId,
       profile.id,
-      ProfileState.published,
       new Date(),
     );
+    if (!published) {
+      // Deleted meanwhile: release what was just attached so counts stay right.
+      // Published meanwhile: the winner attached the same builders; keep them.
+      if (!(await this.profiles.findById(userId, profile.id)))
+        await this.querySearch.detach(profile.id);
+      return this.rejectWrite(userId, profile.id);
+    }
     return { ...toProfileView(published), querySearches };
-  }
-
-  /** Query search builders are kept; they are permanent. */
-  async unpublish(userId: string, profileId: string): Promise<ProfileView> {
-    const profile = await this.getOrThrow(userId, profileId);
-    return toProfileView(
-      await this.setState(userId, profile.id, ProfileState.draft, null),
-    );
-  }
-
-  private async setState(
-    userId: string,
-    profileId: string,
-    state: ProfileState,
-    publishedAt: Date | null,
-  ): Promise<ProfileWithSkills> {
-    const profile = await this.profiles.setState(
-      userId,
-      profileId,
-      state,
-      publishedAt,
-    );
-    if (!profile) throw new NotFoundException(PROFILE_NOT_FOUND);
-    return profile;
   }
 }

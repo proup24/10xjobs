@@ -183,7 +183,7 @@ export class FakeProfilesRepository extends ProfilesRepository {
     skills: SkillInput[],
   ) {
     const profile = await this.findById(userId, profileId);
-    if (!profile) return null;
+    if (profile?.state !== ProfileState.draft) return null;
     return Object.assign(profile, data, {
       techStack: FakeProfilesRepository.techStack(profileId, skills),
     });
@@ -195,14 +195,13 @@ export class FakeProfilesRepository extends ProfilesRepository {
     return profile !== null;
   }
 
-  async setState(
-    userId: string,
-    profileId: string,
-    state: ProfileState,
-    publishedAt: Date | null,
-  ) {
+  async publish(userId: string, profileId: string, publishedAt: Date) {
     const profile = await this.findById(userId, profileId);
-    return profile ? Object.assign(profile, { state, publishedAt }) : null;
+    if (profile?.state !== ProfileState.draft) return null;
+    return Object.assign(profile, {
+      state: ProfileState.published,
+      publishedAt,
+    });
   }
 
   async setResume(
@@ -211,7 +210,7 @@ export class FakeProfilesRepository extends ProfilesRepository {
     meta: ResumeMeta | null,
   ): Promise<boolean> {
     const profile = await this.findById(userId, profileId);
-    if (!profile) return false;
+    if (profile?.state !== ProfileState.draft) return false;
     Object.assign(profile, {
       resumeKey: meta?.key ?? null,
       resumeFilename: meta?.filename ?? null,

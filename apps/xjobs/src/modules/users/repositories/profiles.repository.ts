@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { ProfileState } from 'src/common/enums';
+import { ProfileState } from 'src/common/enums';
 import {
   DatabaseService,
   type ProfileRow,
@@ -31,7 +31,11 @@ export abstract class ProfilesRepository {
     data: ProfileInput,
     skills: SkillInput[],
   ): Promise<ProfileWithSkills>;
-  /** Replaces a profile's editable fields and whole tech stack atomically; null when not the user's. The position never changes. */
+  /**
+   * Replaces a draft profile's editable fields and whole tech stack atomically.
+   * Null when the profile is not the user's or is published: published
+   * profiles are frozen. The position never changes.
+   */
   abstract replace(
     userId: string,
     profileId: string,
@@ -39,12 +43,13 @@ export abstract class ProfilesRepository {
     skills: SkillInput[],
   ): Promise<ProfileWithSkills | null>;
   abstract delete(userId: string, profileId: string): Promise<boolean>;
-  abstract setState(
+  /** Publishes a draft for good; null when not the user's or already published. */
+  abstract publish(
     userId: string,
     profileId: string,
-    state: ProfileState,
-    publishedAt: Date | null,
+    publishedAt: Date,
   ): Promise<ProfileWithSkills | null>;
+  /** Sets or clears a draft's resume; false when not the user's or published. */
   abstract setResume(
     userId: string,
     profileId: string,
@@ -125,9 +130,11 @@ export class PrismaProfilesRepository extends ProfilesRepository {
     skills: SkillInput[],
   ): Promise<ProfileWithSkills | null> {
     return this.database.db.transaction(async (tx) => {
+      // Matching drafts only: a profile published meanwhile is left untouched.
       const profile = await tx.orm.public.Profile.where({
         id: profileId,
         userId,
+        state: ProfileState.draft,
       }).update(data);
       if (!profile) return null;
       const techStack = await PrismaProfilesRepository.writeSkills(
@@ -147,16 +154,16 @@ export class PrismaProfilesRepository extends ProfilesRepository {
     return deleted !== null;
   }
 
-  async setState(
+  async publish(
     userId: string,
     profileId: string,
-    state: ProfileState,
-    publishedAt: Date | null,
+    publishedAt: Date,
   ): Promise<ProfileWithSkills | null> {
     const profile = await this.orm.Profile.where({
       id: profileId,
       userId,
-    }).update({ state, publishedAt });
+      state: ProfileState.draft,
+    }).update({ state: ProfileState.published, publishedAt });
     return profile ? this.withSkills(profile) : null;
   }
 
@@ -168,6 +175,7 @@ export class PrismaProfilesRepository extends ProfilesRepository {
     const profile = await this.orm.Profile.where({
       id: profileId,
       userId,
+      state: ProfileState.draft,
     }).update({
       resumeKey: meta?.key ?? null,
       resumeFilename: meta?.filename ?? null,

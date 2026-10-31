@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import {
   BadRequestException,
+  ConflictException,
   Inject,
   Injectable,
   Logger,
@@ -12,21 +13,17 @@ import {
   StorageService,
 } from 'src/modules/storage';
 import { ProfilesRepository } from '../repositories/profiles.repository';
-import { ProfilesService, toProfileView } from './profiles.service';
+import {
+  PROFILE_PUBLISHED,
+  ProfilesService,
+  toProfileView,
+} from './profiles.service';
 import type { ProfileView, UploadedPdf } from '../types';
+import { safeFilename } from 'src/utils';
 
 export const MAX_RESUME_BYTES = 5 * 1024 * 1024;
 const PDF_MAGIC = Buffer.from('%PDF-');
 
-/** Keeps a filename safe to echo back in a Content-Disposition header. */
-function safeFilename(name: string): string {
-  const base = name.split(/[\\/]/).pop() ?? '';
-  const cleaned = base
-    .replace(/[^\w.\- ]/g, '_')
-    .slice(0, 200)
-    .trim();
-  return cleaned || 'resume.pdf';
-}
 
 /** Injection token for the name of the bucket that holds resumes. */
 export const RESUMES_BUCKET = Symbol('RESUMES_BUCKET');
@@ -62,7 +59,7 @@ export class ResumeService implements OnModuleInit {
     return this.profiles.get(userId, profileId);
   }
 
-  /** Stores the new PDF, then points the profile at it, then drops the old file. */
+  /** Stores the new PDF, then points the profile at it, then drops the old file. Drafts only. */
   async save(
     userId: string,
     profileId: string,
@@ -75,7 +72,7 @@ export class ResumeService implements OnModuleInit {
     ) {
       throw new BadRequestException('The resume must be a PDF file');
     }
-    const profile = await this.profiles.getOrThrow(userId, profileId);
+    const profile = await this.profiles.getDraftOrThrow(userId, profileId);
     const previousKey = profile.resumeKey;
     const key = `${userId}/${profile.id}/${randomUUID()}.pdf`;
     await this.storage.put(this.bucket, key, file.buffer, 'application/pdf');
@@ -94,9 +91,10 @@ export class ResumeService implements OnModuleInit {
       throw error;
     }
     if (!stored) {
-      // The profile was deleted mid-upload.
+      // Deleted or published mid-upload: drop the file, then report which.
       await this.discard(key);
-      throw new NotFoundException('Profile not found');
+      await this.profiles.getDraftOrThrow(userId, profileId);
+      throw new ConflictException(PROFILE_PUBLISHED);
     }
     if (previousKey) await this.discard(previousKey);
     return toProfileView({
@@ -128,10 +126,14 @@ export class ResumeService implements OnModuleInit {
     }
   }
 
+  /** Drafts only: a published profile keeps the resume it was published with. */
   async delete(userId: string, profileId: string): Promise<void> {
-    const profile = await this.profiles.getOrThrow(userId, profileId);
+    const profile = await this.profiles.getDraftOrThrow(userId, profileId);
     if (!profile.resumeKey) throw new NotFoundException('No resume uploaded');
-    await this.repository.setResume(userId, profile.id, null);
+    if (!(await this.repository.setResume(userId, profile.id, null))) {
+      await this.profiles.getDraftOrThrow(userId, profileId);
+      throw new ConflictException(PROFILE_PUBLISHED);
+    }
     await this.discard(profile.resumeKey);
   }
 

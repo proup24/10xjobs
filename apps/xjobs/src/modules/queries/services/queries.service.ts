@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   Arrangement,
   Channel,
@@ -6,7 +6,7 @@ import {
   Region,
   Technology,
 } from 'src/common/enums';
-import { isUniqueViolation, type QuerySearchBuilderRow } from 'src/database';
+import type { QuerySearchBuilderRow } from 'src/database';
 import { toRecipe } from '../builders';
 import { technologySets } from '../sets/technology';
 import { QuerySearchRepository } from '../repositories/queries.repository';
@@ -14,6 +14,7 @@ import type {
   QuerySearchCombination,
   QuerySearchProfileInput,
   QuerySearchRecipe,
+  QuerySearchAttachResult,
 } from '../types';
 
 @Injectable()
@@ -90,39 +91,37 @@ export class QuerySearchService {
     }
   }
 
-  /** Stores the recipes the profile does not have yet; existing ones are left untouched. */
-  async generate(
-    userId: string,
+  /**
+   * Attaches the profile to the shared builder of each of its recipes, reusing
+   * builders by hash and creating missing ones. Done once, at publish.
+   */
+  generate(
     profileId: string,
     input: QuerySearchProfileInput,
-  ): Promise<{ created: number; existing: number }> {
-    const recipes = this.expand(input);
-    const stored = await this.builders.findHashes(
-      userId,
-      profileId,
-      recipes.map((recipe) => recipe.hash),
-    );
-    let created = 0;
-    let existing = stored.size;
-    for (const recipe of recipes) {
-      if (stored.has(recipe.hash)) continue;
-      try {
-        await this.builders.create(userId, profileId, recipe);
-        created += 1;
-      } catch (error) {
-        // A concurrent generate stored it between the lookup and the insert.
-        if (!isUniqueViolation(error)) throw error;
-        existing += 1;
-      }
-    }
-    return { created, existing };
+  ): Promise<QuerySearchAttachResult> {
+    return this.builders.attach(profileId, this.expand(input));
   }
 
+  /** Releases every builder the profile uses: each loses one associated profile, inactive at 0. */
+  detach(profileId: string): Promise<number> {
+    return this.builders.detach(profileId);
+  }
+
+  /** The profile's active-or-idle, non-deleted builders; 404 when the profile is not the user's. */
   async list(
     userId: string,
     profileId: string,
     channel?: Channel,
   ): Promise<QuerySearchBuilderRow[]> {
-    return this.builders.list(userId, profileId, channel);
+    const rows = await this.builders.list(userId, profileId, channel);
+    if (!rows) throw new NotFoundException('Profile not found');
+    return rows;
+  }
+
+  /** Retires a builder for good: it is unlinked from every profile and never collected again. */
+  async softDelete(queryId: string): Promise<QuerySearchBuilderRow> {
+    const row = await this.builders.softDelete(queryId);
+    if (!row) throw new NotFoundException('Query search builder not found');
+    return row;
   }
 }

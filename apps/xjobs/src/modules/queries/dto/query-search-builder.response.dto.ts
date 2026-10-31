@@ -12,12 +12,6 @@ export class QuerySearchBuilderResponseDto implements QuerySearchBuilderRow {
   @ApiProperty({ format: 'uuid' })
   id!: string;
 
-  @ApiProperty({ format: 'uuid' })
-  userId!: string;
-
-  @ApiProperty({ format: 'uuid' })
-  profileId!: string;
-
   @ApiProperty({ enum: Channel, enumName: 'Channel' })
   channel!: Channel;
 
@@ -50,6 +44,22 @@ export class QuerySearchBuilderResponseDto implements QuerySearchBuilderRow {
 
   @ApiProperty({ description: 'SHA-256 of the recipe, hex' })
   hash!: string;
+
+  @ApiProperty({
+    description: 'Profiles currently associated with this shared builder',
+  })
+  associatedProfiles!: number;
+
+  @ApiProperty({
+    description:
+      'Collected only while true: at least one published profile uses it',
+  })
+  isActive!: boolean;
+
+  @ApiProperty({
+    description: 'Soft-deleted: retired, never collected or linked again',
+  })
+  isDeleted!: boolean;
 
   @ApiProperty({ format: 'date-time' })
   createdAt!: Date;

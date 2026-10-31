@@ -12,6 +12,10 @@
       "model": "Contact",
       "namespace": "public"
     },
+    "profile_query_search_builders": {
+      "model": "ProfileQuerySearchBuilder",
+      "namespace": "public"
+    },
     "profile_skills": {
       "model": "ProfileSkill",
       "namespace": "public"
@@ -1159,6 +1163,93 @@
               "table": "profiles"
             }
           },
+          "ProfileQuerySearchBuilder": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "profileId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "queryId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "profile": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "profileId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Profile",
+                  "namespace": "public"
+                }
+              },
+              "query": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "queryId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "QuerySearchBuilder",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "profileId": {
+                  "column": "profileId"
+                },
+                "queryId": {
+                  "column": "queryId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "profile_query_search_builders"
+            }
+          },
           "ProfileSkill": {
             "fields": {
               "createdAt": {
@@ -1287,6 +1378,13 @@
           },
           "QuerySearchBuilder": {
             "fields": {
+              "associatedProfiles": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
               "channel": {
                 "nullable": false,
                 "type": {
@@ -1351,6 +1449,20 @@
                   "kind": "scalar"
                 }
               },
+              "isActive": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "isDeleted": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "keyword": {
                 "nullable": false,
                 "type": {
@@ -1375,13 +1487,6 @@
                 "nullable": false,
                 "type": {
                   "codecId": "pg/jsonb@1",
-                  "kind": "scalar"
-                }
-              },
-              "profileId": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/uuid@1",
                   "kind": "scalar"
                 }
               },
@@ -1424,13 +1529,6 @@
                   }
                 }
               },
-              "userId": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/uuid@1",
-                  "kind": "scalar"
-                }
-              },
               "version": {
                 "nullable": false,
                 "type": {
@@ -1439,42 +1537,12 @@
                 }
               }
             },
-            "relations": {
-              "profile": {
-                "cardinality": "N:1",
-                "nullable": false,
-                "on": {
-                  "localFields": [
-                    "profileId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
-                },
-                "to": {
-                  "model": "Profile",
-                  "namespace": "public"
-                }
-              },
-              "user": {
-                "cardinality": "N:1",
-                "nullable": false,
-                "on": {
-                  "localFields": [
-                    "userId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
-                },
-                "to": {
-                  "model": "User",
-                  "namespace": "public"
-                }
-              }
-            },
+            "relations": {},
             "storage": {
               "fields": {
+                "associatedProfiles": {
+                  "column": "associatedProfiles"
+                },
                 "channel": {
                   "column": "channel"
                 },
@@ -1496,6 +1564,12 @@
                 "id": {
                   "column": "id"
                 },
+                "isActive": {
+                  "column": "isActive"
+                },
+                "isDeleted": {
+                  "column": "isDeleted"
+                },
                 "keyword": {
                   "column": "keyword"
                 },
@@ -1505,9 +1579,6 @@
                 "params": {
                   "column": "params"
                 },
-                "profileId": {
-                  "column": "profileId"
-                },
                 "technologies": {
                   "column": "technologies"
                 },
@@ -1516,9 +1587,6 @@
                 },
                 "updatedAt": {
                   "column": "updatedAt"
-                },
-                "userId": {
-                  "column": "userId"
                 },
                 "version": {
                   "column": "version"
@@ -2287,6 +2355,110 @@
                 }
               ]
             },
+            "profile_query_search_builders": {
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "profileId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "queryId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "profile_query_search_builders_profileId_idx_d9cdfcaf"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "profileId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "profile_query_search_builders"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "profiles"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "profile_query_search_builders_queryId_idx_edc2d44a"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "queryId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "profile_query_search_builders"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "query_search_builder"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "profileId"
+                  ],
+                  "name": "profile_query_search_builders_profileId_idx_d9cdfcaf",
+                  "prefix": "profile_query_search_builders_profileId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "queryId"
+                  ],
+                  "name": "profile_query_search_builders_queryId_idx_edc2d44a",
+                  "prefix": "profile_query_search_builders_queryId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "profileId",
+                    "queryId"
+                  ]
+                }
+              ]
+            },
             "profile_skills": {
               "checks": [
                 {
@@ -2759,9 +2931,19 @@
             "query_search_builder": {
               "checks": [
                 {
+                  "expression": "\"associatedProfiles\" >= 0",
+                  "name": "query_search_builder_associated_profiles_dccf74eb",
+                  "prefix": "query_search_builder_associated_profiles"
+                },
+                {
                   "expression": "\"channel\" IN ('LINKEDIN_JOB_BOARD', 'LINKEDIN_POSTS', 'GREEN_HOUSE', 'ASHBY')",
                   "name": "query_search_builder_channel_check_687325cb",
                   "prefix": "query_search_builder_channel_check"
+                },
+                {
+                  "expression": "NOT (\"isDeleted\" AND \"isActive\")",
+                  "name": "query_search_builder_deleted_inactive_11da4d0f",
+                  "prefix": "query_search_builder_deleted_inactive"
                 },
                 {
                   "expression": "\"experience\" IN ('junior', 'mid', 'senior', 'staff', 'lead', 'principal', 'unstated')",
@@ -2790,6 +2972,15 @@
                 }
               ],
               "columns": {
+                "associatedProfiles": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 0
+                  },
+                  "nullable": false
+                },
                 "channel": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -2844,6 +3035,24 @@
                   "dataType": "pg/uuid",
                   "nullable": false
                 },
+                "isActive": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "isDeleted": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
                 "keyword": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -2863,11 +3072,6 @@
                 "params": {
                   "codecId": "pg/jsonb@1",
                   "dataType": "pg/jsonb",
-                  "nullable": false
-                },
-                "profileId": {
-                  "codecId": "pg/uuid@1",
-                  "dataType": "pg/uuid",
                   "nullable": false
                 },
                 "technologies": {
@@ -2907,83 +3111,22 @@
                     "precision": 3
                   }
                 },
-                "userId": {
-                  "codecId": "pg/uuid@1",
-                  "dataType": "pg/uuid",
-                  "nullable": false
-                },
                 "version": {
                   "codecId": "pg/int4@1",
                   "dataType": "pg/int4",
                   "nullable": false
                 }
               },
-              "foreignKeys": [
-                {
-                  "index": {
-                    "name": "query_search_builder_userId_idx_a489d58a"
-                  },
-                  "onDelete": "cascade",
-                  "source": {
-                    "columns": [
-                      "userId"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "query_search_builder"
-                  },
-                  "target": {
-                    "columns": [
-                      "id"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "users"
-                  }
-                },
-                {
-                  "index": {
-                    "name": "query_search_builder_profileId_idx_d9cdfcaf"
-                  },
-                  "onDelete": "cascade",
-                  "source": {
-                    "columns": [
-                      "profileId"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "query_search_builder"
-                  },
-                  "target": {
-                    "columns": [
-                      "id"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "profiles"
-                  }
-                }
-              ],
+              "foreignKeys": [],
               "indexes": [
                 {
                   "columns": [
-                    "profileId",
-                    "channel"
+                    "channel",
+                    "isActive",
+                    "isDeleted"
                   ],
-                  "name": "query_search_builder_profileId_channel_idx_6dd870f6",
-                  "prefix": "query_search_builder_profileId_channel_idx",
-                  "unique": false
-                },
-                {
-                  "columns": [
-                    "profileId"
-                  ],
-                  "name": "query_search_builder_profileId_idx_d9cdfcaf",
-                  "prefix": "query_search_builder_profileId_idx",
-                  "unique": false
-                },
-                {
-                  "columns": [
-                    "userId"
-                  ],
-                  "name": "query_search_builder_userId_idx_a489d58a",
-                  "prefix": "query_search_builder_userId_idx",
+                  "name": "query_search_builder_channel_isActive_isDeleted_idx_f3572b4f",
+                  "prefix": "query_search_builder_channel_isActive_isDeleted_idx",
                   "unique": false
                 }
               ],
@@ -2995,7 +3138,6 @@
               "uniques": [
                 {
                   "columns": [
-                    "profileId",
                     "hash"
                   ]
                 }
@@ -3690,10 +3832,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "bfacc3d4a0bb9a652f031e22963be006d874e300384a392fe43c4d1e0975548f"
+    "storageHash": "011c27adc77250e0999b038bf6bcf28ff796c3c79c781a3e7b29e7093dda6209"
   },
   "execution": {
-    "executionHash": "f7fbc6444ec4c1e7e24f1d05348329761db55f775d781c78b477230e13d83450",
+    "executionHash": "4a9e258933018fc487b8d987b217a9b93dccd535dfc21b0f53b0cbefd690f4ff",
     "mutations": {
       "defaults": [
         {
@@ -3730,6 +3872,17 @@
           "ref": {
             "entry": "contacts",
             "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv7",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "profile_query_search_builders",
+            "field": "id",
             "namespace": "public"
           }
         },

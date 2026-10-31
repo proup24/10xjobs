@@ -1,14 +1,20 @@
-import type { QuerySearchService } from 'src/modules/queries';
+import { QuerySearchService } from 'src/modules/queries';
+import { FakeQuerySearchRepository } from 'src/modules/queries/testing/fakes';
 import { createHash } from 'node:crypto';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   Arrangement,
   Engagement,
   Language,
   Position,
+  ProfileState,
   Seniority,
 } from 'src/common/enums';
-import { ProfilesService } from './profiles.service';
+import { PROFILE_PUBLISHED, ProfilesService } from './profiles.service';
 import { ResumeService } from './resume.service';
 import { MemoryStorageService } from 'src/modules/storage/testing';
 import { FakeProfilesRepository, FakeUsersRepository } from '../testing/fakes';
@@ -52,7 +58,11 @@ describe('ResumeService', () => {
     profiles = new FakeProfilesRepository();
     storage = new MemoryStorageService();
     service = new ResumeService(
-      new ProfilesService(users, profiles, {} as QuerySearchService),
+      new ProfilesService(
+        users,
+        profiles,
+        new QuerySearchService(new FakeQuerySearchRepository()),
+      ),
       profiles,
       storage,
       'resumes',
@@ -81,6 +91,27 @@ describe('ResumeService', () => {
     expect((await service.get(userId, second)).data.toString()).toBe(
       '%PDF-1.4 second',
     );
+  });
+
+  it('refuses to change the resume of a published profile, but still serves it', async () => {
+    await service.save(userId, profileId, pdf());
+    profiles.rows[0].state = ProfileState.published;
+    await expect(
+      service.save(userId, profileId, pdf(Buffer.from('%PDF-1.4 new'))),
+    ).rejects.toThrow(new ConflictException(PROFILE_PUBLISHED));
+    await expect(service.delete(userId, profileId)).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+    expect(storage.keys('resumes')).toHaveLength(1);
+    expect((await service.get(userId, profileId)).data).toEqual(pdfBytes);
+  });
+
+  it('deletes a published profile with its resume file', async () => {
+    await service.save(userId, profileId, pdf());
+    profiles.rows[0].state = ProfileState.published;
+    await service.deleteProfile(userId, profileId);
+    expect(profiles.rows).toHaveLength(0);
+    expect(storage.keys('resumes')).toHaveLength(0);
   });
 
   it("404s another user's profile and stores nothing", async () => {

@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import {
   Arrangement,
   Engagement,
@@ -9,7 +9,11 @@ import {
   SkillDomain,
   Technology,
 } from 'src/common/enums';
-import { ProfilesService, toProfileView } from './profiles.service';
+import {
+  PROFILE_PUBLISHED,
+  ProfilesService,
+  toProfileView,
+} from './profiles.service';
 import { QuerySearchService } from 'src/modules/queries';
 import { FakeQuerySearchRepository } from 'src/modules/queries/testing/fakes';
 import { FakeProfilesRepository, FakeUsersRepository } from '../testing/fakes';
@@ -110,7 +114,6 @@ describe('ProfilesService', () => {
       () => service.get(otherUserId, id),
       () => service.replace(otherUserId, id, input),
       () => service.publish(otherUserId, id),
-      () => service.unpublish(otherUserId, id),
       () => service.delete(otherUserId, id),
     ]) {
       await expect(attempt()).rejects.toBeInstanceOf(NotFoundException);
@@ -250,21 +253,48 @@ describe('ProfilesService', () => {
   describe('publishing', () => {
     const stack = [skill(Technology.nodejs, 8), skill(Technology.go, 5)];
 
-    it('publishes, generating query search builders once', async () => {
+    it('publishes once, attaching its query search builders', async () => {
       const { id } = await create(stack);
       const first = await service.publish(userId, id);
       expect(first.state).toBe('published');
       expect(first.publishedAt).toBeInstanceOf(Date);
       expect(first.querySearches.created).toBeGreaterThan(0);
-      expect(querySearches.rows.every((row) => row.profileId === id)).toBe(
+      expect(querySearches.links.every((link) => link.profileId === id)).toBe(
         true,
       );
-      const again = await service.publish(userId, id);
-      expect(again.state).toBe('published');
-      expect(again.querySearches).toEqual({
-        created: 0,
-        existing: first.querySearches.created,
+      await expect(service.publish(userId, id)).rejects.toThrow(
+        new ConflictException(PROFILE_PUBLISHED),
+      );
+      expect(querySearches.links).toHaveLength(first.querySearches.created);
+    });
+
+    it('freezes a published profile: replacing it is a 409 and changes nothing', async () => {
+      const { id } = await create(stack);
+      await service.publish(userId, id);
+      await expect(
+        service.replace(userId, id, {
+          ...editable,
+          noticePeriodDays: 90,
+          techStack: [],
+        }),
+      ).rejects.toThrow(new ConflictException(PROFILE_PUBLISHED));
+      expect(await service.get(userId, id)).toMatchObject({
+        state: 'published',
+        noticePeriodDays: profileInput.noticePeriodDays,
+        techStack: [
+          expect.objectContaining({ technology: 'nodejs' }),
+          expect.objectContaining({ technology: 'go' }),
+        ],
       });
+    });
+
+    it('still 404s a missing profile before any 409', async () => {
+      await expect(
+        service.replace(userId, 'missing', { ...editable, techStack: [] }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.publish(userId, 'missing')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
 
     it('publishes one profile without touching the other', async () => {
@@ -274,23 +304,58 @@ describe('ProfilesService', () => {
       expect((await service.get(userId, b.id)).state).toBe('draft');
     });
 
-    it('unpublishes to draft and keeps the query search builders', async () => {
-      const { id } = await create(stack);
-      await service.publish(userId, id);
-      const count = querySearches.rows.length;
-      const view = await service.unpublish(userId, id);
-      expect(view).toMatchObject({ state: 'draft', publishedAt: null });
-      expect(querySearches.rows).toHaveLength(count);
+    it('shares builders between profiles with the same recipes', async () => {
+      const a = await create(stack);
+      const b = await create(stack);
+      await service.publish(userId, a.id);
+      const second = await service.publish(userId, b.id);
+      expect(second.querySearches.created).toBe(0);
+      expect(
+        querySearches.rows.every((row) => row.associatedProfiles === 2),
+      ).toBe(true);
     });
 
-    it('keeps the state when a published profile is replaced', async () => {
-      const { id } = await create(stack);
-      await service.publish(userId, id);
-      const view = await service.replace(userId, id, {
-        ...editable,
-        techStack: stack,
-      });
-      expect(view.state).toBe('published');
+    it('deleting a published profile takes one associated profile off each shared builder, down to 0', async () => {
+      const a = await create(stack);
+      const b = await create(stack);
+      await service.publish(userId, a.id);
+      await service.publish(userId, b.id);
+      const total = querySearches.rows.length;
+
+      await service.delete(userId, a.id);
+      expect(
+        querySearches.rows.every(
+          (row) => row.associatedProfiles === 1 && row.isActive,
+        ),
+      ).toBe(true);
+
+      await service.delete(userId, b.id);
+      expect(
+        querySearches.rows.every(
+          (row) => row.associatedProfiles === 0 && !row.isActive,
+        ),
+      ).toBe(true);
+      // The shared rows stay, with their job hits; only the associations go.
+      expect(querySearches.rows).toHaveLength(total);
+      expect(querySearches.links).toHaveLength(0);
+    });
+
+    it('deleting a draft leaves shared builder counts alone', async () => {
+      const published = await create(stack);
+      const draft = await create(stack);
+      await service.publish(userId, published.id);
+      await service.delete(userId, draft.id);
+      expect(
+        querySearches.rows.every((row) => row.associatedProfiles === 1),
+      ).toBe(true);
+    });
+
+    it('releases every profile of a user before the user goes', async () => {
+      const a = await create(stack);
+      await service.publish(userId, a.id);
+      await service.releaseAll(userId);
+      expect(querySearches.links).toHaveLength(0);
+      expect(querySearches.rows.some((row) => row.isActive)).toBe(false);
     });
 
     it('publishes a profile whose skills all have importance 0 without technologies', async () => {
@@ -304,7 +369,7 @@ describe('ProfilesService', () => {
 
     it('stays a draft when generating query search builders fails', async () => {
       const { id } = await create(stack);
-      vi.spyOn(querySearches, 'create').mockRejectedValue(new Error('boom'));
+      vi.spyOn(querySearches, 'attach').mockRejectedValue(new Error('boom'));
       await expect(service.publish(userId, id)).rejects.toThrow('boom');
       expect((await service.get(userId, id)).state).toBe('draft');
     });

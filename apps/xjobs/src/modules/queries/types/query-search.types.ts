@@ -42,3 +42,11 @@ export type ChannelQuery = {
 /** `position` builds the keywords and is not stored as a column. */
 export type QuerySearchRecipe = QuerySearchCombination &
   ChannelQuery & { version: number; hash: string };
+
+/** What attaching a profile to its builders did. */
+export type QuerySearchAttachResult = {
+  /** Shared builders created because no profile had the recipe yet. */
+  created: number;
+  /** Recipes that already had a shared builder (reused, not duplicated). */
+  existing: number;
+};
