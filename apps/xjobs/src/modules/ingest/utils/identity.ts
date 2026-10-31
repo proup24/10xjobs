@@ -46,32 +46,42 @@ export function atsIdentity(value: string): AtsIdentity | null {
   const url = webUrl(value);
   if (url.hostname === 'jobs.ashbyhq.com') {
     const match = ashbyPath.exec(url.pathname);
-    if (match && /^[a-zA-Z0-9_-]+$/.test(match[1]!)) {
+    const tenantKey = match?.[1];
+    const postingId = match?.[2];
+    if (tenantKey && postingId && /^[a-zA-Z0-9_-]+$/.test(tenantKey)) {
       return {
         provider: 'ashby',
-        tenantKey: match[1]!,
-        postingId: match[2]!.toLowerCase(),
+        tenantKey,
+        postingId: postingId.toLowerCase(),
       };
     }
   }
   if (greenhouseHosts.has(url.hostname)) {
     const match = /^\/([^/]+)\/jobs\/(\d+)\/?$/.exec(url.pathname);
-    if (match && /^[a-zA-Z0-9_-]+$/.test(match[1]!))
+    const tenantKey = match?.[1];
+    const postingId = match?.[2];
+    if (tenantKey && postingId && /^[a-zA-Z0-9_-]+$/.test(tenantKey)) {
       return {
         provider: 'greenhouse',
-        tenantKey: match[1]!,
-        postingId: match[2]!,
+        tenantKey,
+        postingId,
       };
-    if (
-      url.pathname === '/embed/job_app' &&
-      /^[a-zA-Z0-9_-]+$/.test(url.searchParams.get('for') ?? '') &&
-      /^\d+$/.test(url.searchParams.get('token') ?? '')
-    ) {
-      return {
-        provider: 'greenhouse',
-        tenantKey: url.searchParams.get('for')!,
-        postingId: url.searchParams.get('token')!,
-      };
+    }
+    if (url.pathname === '/embed/job_app') {
+      const forParam = url.searchParams.get('for');
+      const tokenParam = url.searchParams.get('token');
+      if (
+        forParam &&
+        tokenParam &&
+        /^[a-zA-Z0-9_-]+$/.test(forParam) &&
+        /^\d+$/.test(tokenParam)
+      ) {
+        return {
+          provider: 'greenhouse',
+          tenantKey: forParam,
+          postingId: tokenParam,
+        };
+      }
     }
   }
   return null;
@@ -101,33 +111,40 @@ export function canonicalSource(
     throw new InvalidIngestItem('Unsupported LinkedIn host');
   if (channel === Channel.LINKEDIN_JOB_BOARD) {
     const match = /^\/jobs\/view\/(?:[^/]*-)?(\d+)\/?$/.exec(parsed.pathname);
-    if (match)
+    const jobId = match?.[1];
+    if (jobId) {
       return {
-        url: `https://www.linkedin.com/jobs/view/${match[1]}`,
-        sourceId: match[1]!,
+        url: `https://www.linkedin.com/jobs/view/${jobId}`,
+        sourceId: jobId,
         ats: null,
       };
+    }
   } else if (channel === Channel.LINKEDIN_POSTS) {
-    const match =
+    const updateMatch =
       /^\/feed\/update\/urn:li:(activity|groupPost):(\d+(?:-\d+)?)\/?$/.exec(
         parsed.pathname,
       );
     // A group-post URN identifies the group/thread, not the actor's activity ID.
-    if (match)
+    if (updateMatch && updateMatch[1] && updateMatch[2]) {
+      const kind = updateMatch[1];
+      const id = updateMatch[2];
       return {
-        url: `https://www.linkedin.com/feed/update/urn:li:${match[1]}:${match[2]}/`,
-        sourceId: match[1] === 'groupPost' ? null : match[2]!,
+        url: `https://www.linkedin.com/feed/update/urn:li:${kind}:${id}/`,
+        sourceId: kind === 'groupPost' ? null : id,
         ats: null,
       };
-    const post = /^\/posts\/[^/]*activity-(\d+)(?:-[^/]*)?\/?$/.exec(
+    }
+    const postMatch = /^\/posts\/[^/]*activity-(\d+)(?:-[^/]*)?\/?$/.exec(
       parsed.pathname,
     );
-    if (post)
+    const activityId = postMatch?.[1];
+    if (activityId) {
       return {
-        url: `https://www.linkedin.com/feed/update/urn:li:activity:${post[1]}/`,
-        sourceId: post[1]!,
+        url: `https://www.linkedin.com/feed/update/urn:li:activity:${activityId}/`,
+        sourceId: activityId,
         ats: null,
       };
+    }
   }
   throw new InvalidIngestItem('Unsupported source URL');
 }

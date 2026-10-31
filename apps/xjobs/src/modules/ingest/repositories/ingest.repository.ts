@@ -21,22 +21,39 @@ export abstract class IngestRepository {
   ): Promise<SaveOutcome>;
 }
 
-function retryable(error: unknown): boolean {
+type IdentityAlias = { identityType: string; identityValue: string };
+type FoundIdentity = { identityType: string; identityValue: string; rawJobId: string };
+
+const MAX_TRANSACTION_RETRIES = 3;
+const RETRY_BASE_DELAY_MS = 10;
+
+/** PostgreSQL error codes for concurrency and uniqueness conflicts that can be retried. */
+const RETRYABLE_SQL_CODES = new Set([
+  '23505', // unique_violation
+  '40001', // serialization_failure
+  '40P01', // deadlock_detected
+]);
+
+function isRetryableError(error: unknown): boolean {
   let current = error;
   for (
     let depth = 0;
     depth < 10 && current && typeof current === 'object';
     depth++
   ) {
-    const state =
-      (current as { sqlState?: string; code?: string }).sqlState ??
-      (current as { code?: string }).code;
-    if (state && ['23505', '40001', '40P01'].includes(state)) return true;
-    current = (current as { cause?: unknown }).cause;
+    const errorObj = current as { sqlState?: string; code?: string; cause?: unknown };
+    const code = errorObj.sqlState ?? errorObj.code;
+    if (code && RETRYABLE_SQL_CODES.has(code)) return true;
+    current = errorObj.cause;
   }
   return false;
 }
 
+function earliestDate(a: Date, b: Date): Date {
+  return a < b ? a : b;
+}
+
+/** Extracts scalar columns from a NormalizedJob matching RawJob table schema. */
 function snapshot(item: NormalizedJob) {
   return {
     channel: item.channel,
@@ -86,8 +103,10 @@ export class PrismaIngestRepository extends IngestRepository {
         );
       } catch (error) {
         // Re-run the complete transaction: a uniqueness race must not leave a partially stored item.
-        if (attempt >= 3 || !retryable(error)) throw error;
-        await new Promise((resolve) => setTimeout(resolve, 10 * 2 ** attempt));
+        if (attempt >= MAX_TRANSACTION_RETRIES || !isRetryableError(error)) throw error;
+        await new Promise((resolve) =>
+          setTimeout(resolve, RETRY_BASE_DELAY_MS * 2 ** attempt),
+        );
       }
     }
   }
@@ -105,20 +124,22 @@ export class PrismaIngestRepository extends IngestRepository {
       item.externalId,
       aliases,
     );
-    const newer = !existing || observedAt > existing.lastSeenAt;
+
+    const isNewer = !existing || observedAt > existing.lastSeenAt;
     const atsPostingId = await this.resolveAtsPostingId(
       tx,
       item,
       existing,
-      newer,
+      isNewer,
     );
+
     const { row, outcome } = await this.upsertRawJob(
       tx,
       item,
       existing,
       atsPostingId,
       observedAt,
-      newer,
+      isNewer,
     );
 
     await this.syncIdentities(tx, item.channel, row.id, aliases, found);
@@ -127,16 +148,17 @@ export class PrismaIngestRepository extends IngestRepository {
     return { id: row.id, outcome };
   }
 
+  /**
+   * Resolves existing job by looking up all identity aliases (e.g. source URL, source ID).
+   * Validates that aliases resolve to at most one job and checks for conflicting external IDs.
+   */
   private async findExistingJob(
     tx: DatabaseTransaction,
     channel: Channel,
     externalId: string | null,
-    aliases: { identityType: string; identityValue: string }[],
-  ): Promise<{
-    existing: RawJobRow | null;
-    found: { identityType: string; identityValue: string; rawJobId: string }[];
-  }> {
-    const found = [];
+    aliases: IdentityAlias[],
+  ): Promise<{ existing: RawJobRow | null; found: FoundIdentity[] }> {
+    const found: FoundIdentity[] = [];
     for (const alias of aliases) {
       const match = await tx.orm.public.RawJobIdentity.where({
         channel,
@@ -144,42 +166,51 @@ export class PrismaIngestRepository extends IngestRepository {
       }).first();
       if (match) found.push(match);
     }
-    const ids = new Set(found.map((alias) => alias.rawJobId));
-    if (ids.size > 1) {
+
+    const matchedJobIds = new Set(found.map((alias) => alias.rawJobId));
+    if (matchedJobIds.size > 1) {
       throw new IngestIdentityConflict(
         'Source ID and URL belong to different jobs',
       );
     }
-    const [existingId] = ids;
+
+    const [existingId] = matchedJobIds;
     if (!existingId) {
       return { existing: null, found };
     }
-    // NO KEY UPDATE serializes snapshots without blocking FK checks from attribution inserts.
+
+    // NO KEY UPDATE serializes snapshots without blocking foreign-key checks from attribution inserts.
     const existing = await tx.orm.public.RawJob.where({ id: existingId })
       .forNoKeyUpdate()
       .first();
+
     if (!existing) {
       throw new IngestIdentityConflict('Identity target no longer exists');
     }
-    if (
-      existing.externalId &&
-      externalId &&
-      existing.externalId !== externalId
-    ) {
+
+    const hasConflictingExternalId = Boolean(
+      existing.externalId && externalId && existing.externalId !== externalId,
+    );
+    if (hasConflictingExternalId) {
       throw new IngestIdentityConflict(
         'URL already belongs to another source ID',
       );
     }
+
     return { existing, found };
   }
 
+  /**
+   * Resolves or creates an AtsPostingIdentity record if the item contains ATS identity
+   * and represents the newest observation.
+   */
   private async resolveAtsPostingId(
     tx: DatabaseTransaction,
     item: NormalizedJob,
     existing: RawJobRow | null,
-    newer: boolean,
+    isNewer: boolean,
   ): Promise<string | null> {
-    if (!newer) {
+    if (!isNewer) {
       return existing?.atsPostingId ?? null;
     }
     if (!item.ats) {
@@ -191,13 +222,17 @@ export class PrismaIngestRepository extends IngestRepository {
     return ats.id;
   }
 
+  /**
+   * Inserts a new RawJob or updates an existing one, preserving monotonic timestamp invariants:
+   * `firstSeenAt` tracks the earliest observation, and `lastSeenAt` tracks the latest observation.
+   */
   private async upsertRawJob(
     tx: DatabaseTransaction,
     item: NormalizedJob,
     existing: RawJobRow | null,
     atsPostingId: string | null,
     observedAt: Date,
-    newer: boolean,
+    isNewer: boolean,
   ): Promise<{ row: RawJobRow; outcome: SaveOutcome['outcome'] }> {
     if (!existing) {
       const row = await tx.orm.public.RawJob.create({
@@ -209,9 +244,7 @@ export class PrismaIngestRepository extends IngestRepository {
       return { row, outcome: 'inserted' };
     }
 
-    const firstSeenAt =
-      observedAt < existing.firstSeenAt ? observedAt : existing.firstSeenAt;
-    const updates = newer
+    const updates = isNewer
       ? { ...snapshot(item), atsPostingId, lastSeenAt: observedAt }
       : {};
 
@@ -219,30 +252,35 @@ export class PrismaIngestRepository extends IngestRepository {
       id: existing.id,
     }).update({
       ...updates,
-      // Identity enrichment is safe even for an older observation; identities never regress to null.
+      // Identity enrichment is safe even for older observations; external ID never regresses to null.
       externalId: existing.externalId ?? item.externalId,
-      firstSeenAt,
+      firstSeenAt: earliestDate(observedAt, existing.firstSeenAt),
     });
+
     if (!updated) {
       throw new Error('Job disappeared during ingestion');
     }
-    return { row: updated, outcome: newer ? 'updated' : 'duplicate' };
+
+    return { row: updated, outcome: isNewer ? 'updated' : 'duplicate' };
   }
 
+  /**
+   * Links any new identity aliases (such as newly discovered source ID) to the RawJob row.
+   */
   private async syncIdentities(
     tx: DatabaseTransaction,
     channel: Channel,
     rawJobId: string,
-    aliases: { identityType: string; identityValue: string }[],
-    found: { identityType: string; identityValue: string }[],
+    aliases: IdentityAlias[],
+    found: FoundIdentity[],
   ): Promise<void> {
     for (const alias of aliases) {
-      const exists = found.some(
+      const alreadyExists = found.some(
         (entry) =>
           entry.identityType === alias.identityType &&
           entry.identityValue === alias.identityValue,
       );
-      if (!exists) {
+      if (!alreadyExists) {
         await tx.orm.public.RawJobIdentity.create({
           channel,
           ...alias,
@@ -252,6 +290,9 @@ export class PrismaIngestRepository extends IngestRepository {
     }
   }
 
+  /**
+   * Records or updates attribution for this search query.
+   */
   private async recordQueryHit(
     tx: DatabaseTransaction,
     queryId: string,
@@ -265,20 +306,16 @@ export class PrismaIngestRepository extends IngestRepository {
     }).first();
 
     if (hit) {
-      const firstSeenAt =
-        observedAt < hit.firstSeenAt ? observedAt : hit.firstSeenAt;
-      const latestData =
-        observedAt > hit.lastSeenAt
+      const isNewerObservation = observedAt > hit.lastSeenAt;
+      await tx.orm.public.RawJobQueryHit.where({ id: hit.id }).update({
+        firstSeenAt: earliestDate(observedAt, hit.firstSeenAt),
+        ...(isNewerObservation
           ? {
               lastSeenAt: observedAt,
               observedUrl: item.observedUrl,
               rank: item.rank,
             }
-          : {};
-
-      await tx.orm.public.RawJobQueryHit.where({ id: hit.id }).update({
-        firstSeenAt,
-        ...latestData,
+          : {}),
       });
       return;
     }
