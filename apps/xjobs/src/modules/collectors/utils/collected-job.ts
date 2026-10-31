@@ -1,4 +1,3 @@
-import { convert } from 'html-to-text';
 
 export function record(value: unknown): Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -10,26 +9,6 @@ export function record(value: unknown): Record<string, unknown> {
 export function text(value: unknown): string | null {
   if (typeof value === 'number' && Number.isFinite(value)) return String(value);
   return typeof value === 'string' && value.trim() ? value.trim() : null;
-}
-
-/**
- * Converts source markup to plain text (used by the legacy ingest normalizer until it is removed). Plain text passes through unchanged.
- * `entityEncoded` decodes an extra entity layer first (Greenhouse wraps its HTML this way).
- */
-export function plainText(body: string, entityEncoded = false): string {
-  let value = body;
-  if (entityEncoded && /&lt;\/?[a-z][\s\S]*?&gt;/i.test(value)) {
-    value = convert(value, { wordwrap: false });
-  }
-  return /<\/?[a-z][^>]*>/i.test(value)
-    ? convert(value, {
-        wordwrap: false,
-        selectors: [
-          { selector: 'a', options: { ignoreHref: true } },
-          { selector: 'img', format: 'skip' },
-        ],
-      }).trim()
-    : value.trim();
 }
 
 /** Share of the charge cap from which a run counts as stopped by it (career-hub). */

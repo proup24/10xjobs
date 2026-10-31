@@ -1,9 +1,12 @@
 import { Channel } from 'src/common/enums';
-import {
-  InvalidIngestItem,
-  type AtsIdentity,
-  type NormalizedJob,
-} from '../types';
+import { InvalidIngestItem } from '../types';
+
+/** A posting identified exactly by its ATS provider, tenant and posting id. */
+export interface AtsIdentity {
+  provider: 'ashby' | 'greenhouse';
+  tenantKey: string;
+  postingId: string;
+}
 import { ingestConfig } from '../config';
 
 const uuid = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
@@ -29,17 +32,6 @@ export function webUrl(value: string): URL {
     );
   }
   return url;
-}
-
-export function applicationUrl(value: string | null): string | null {
-  if (!value) return null;
-  const url = webUrl(value);
-  url.hash = '';
-  for (const key of [...url.searchParams.keys()]) {
-    if (/^(utm_|trk)/i.test(key) || key === 'gh_src')
-      url.searchParams.delete(key);
-  }
-  return url.toString();
 }
 
 /** Recognizes exact supported posting identities without fetching the URL. */
@@ -194,21 +186,4 @@ export function canonicalSource(
   }
 
   return canonicalLinkedInSource(channel, parsed);
-}
-
-export function identityAliases(
-  job: NormalizedJob,
-): { identityType: string; identityValue: string }[] {
-  const aliases = [{ identityType: 'url', identityValue: job.url }];
-  if (job.externalId) {
-    // Board IDs are scoped by their tenant; application-link ATS identities do not scope LinkedIn IDs.
-    const tenant = [Channel.ASHBY, Channel.GREEN_HOUSE].includes(job.channel)
-      ? job.ats?.tenantKey
-      : null;
-    aliases.push({
-      identityType: 'source_id',
-      identityValue: tenant ? `${tenant}:${job.externalId}` : job.externalId,
-    });
-  }
-  return aliases;
 }

@@ -9,12 +9,7 @@ export const ingestConfig = {
   sweepEveryMs: 300_000,
   /** A pending batch older than this is considered stranded. */
   staleAfterMs: 600_000,
-  /** Upper bound on items accepted in one ingest batch. */
-  maxBatchItems: 1000,
-  /** Deepest raw payload nesting accepted before an item is rejected. */
-  maxRawDepth: 100,
-  /** Bump when normalization output changes, so stored rows can be re-normalized. */
-  normalizationVersion: 1,
+  /** Greenhouse hosts whose posting URLs name a board and job id. */
   greenhouseHosts: [
     'boards.greenhouse.io',
     'job-boards.greenhouse.io',

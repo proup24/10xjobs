@@ -1,6 +1,6 @@
 # Channel collection jobs
 
-Date: 2026-10-31. Supersedes the scheduling parts of `2026-10-29-channels-collection-design.md` (runs, cursors, windows, budgets, leases, outbox and gap recovery are not built here).
+Date: 2026-10-31. Its hand-off to ingest (calling `IngestService.ingest` per builder) is superseded by `2026-10-31-ingest-raw-storage-design.md`: collection now stores a batch and enqueues it. Supersedes the scheduling parts of `2026-10-29-channels-collection-design.md` (runs, cursors, windows, budgets, leases, outbox and gap recovery are not built here).
 
 ## Intent
 

@@ -6,14 +6,10 @@ export {
   type SaveItemInput,
 } from './repositories/raw-storage.repository';
 export { BatchIngestService } from './services/batch-ingest.service';
-export { IngestService } from './services/ingest.service';
 export type {
   BatchFile,
   BatchReport,
   BatchStatus,
-  CollectedJob,
-  IngestBatch,
-  IngestReport,
   RawCollectedItem,
 } from './types';
 export {

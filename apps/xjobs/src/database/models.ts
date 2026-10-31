@@ -14,7 +14,6 @@ export type ProfileSkillRow = Row<Models.public_ProfileSkill>;
 export type QuerySearchBuilderRow = Row<Models.public_QuerySearchBuilder>;
 export type ProfileQuerySearchBuilderRow =
   Row<Models.public_ProfileQuerySearchBuilder>;
-export type RawJobRow = Row<Models.public_RawJob>;
 export type SearchSegmentRunRow = Row<Models.public_SearchSegmentRun>;
 export type CollectionBatchRow = Row<Models.public_CollectionBatch>;
 export type RawItemRow = Row<Models.public_RawItem>;

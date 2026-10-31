@@ -7,7 +7,6 @@ export { Collector } from './types/collector';
 export type {
   ActorRunConfig,
   BoardSearchRunConfig,
-  CollectedJob,
   LinkedinJobBoardRunConfig,
   LinkedinPostsRunConfig,
   RawCollectedItem,
