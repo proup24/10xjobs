@@ -7,8 +7,8 @@ import {
   type CollectedJob,
 } from '../types/collector';
 import { plainText, record, text } from '../utils/collected-job';
-import { GoogleJobsSearchProvider } from './apify/google-jobs-search.provider';
-import { AshbyPostingProvider } from './extraction/ashby-posting.provider';
+import { GoogleJobsSearchProvider } from './apify/google_search.provider';
+import { AshbyPostingProvider } from './extraction/ashby.provider';
 
 @Injectable()
 export class AshbyCollector extends Collector {

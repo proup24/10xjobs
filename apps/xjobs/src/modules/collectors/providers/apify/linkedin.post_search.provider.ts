@@ -9,7 +9,7 @@ import {
   record,
   text,
 } from '../../utils/collected-job';
-import { ApifyActorProvider } from './apify-actor.provider';
+import { ApifyActorProvider } from './apify.provider';
 
 @Injectable()
 export class LinkedinPostSearchProvider {

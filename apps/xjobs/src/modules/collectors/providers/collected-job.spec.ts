@@ -1,9 +1,9 @@
 import { Channel } from 'src/common/enums';
 import { normalizeItem } from '../../ingest/utils';
-import type { ApifyActorProvider } from './apify/apify-actor.provider';
-import { GoogleJobsSearchProvider } from './apify/google-jobs-search.provider';
-import { LinkedinJobSearchProvider } from './apify/linkedin-job-search.provider';
-import { LinkedinPostSearchProvider } from './apify/linkedin-post-search.provider';
+import type { ApifyActorProvider } from './apify/apify.provider';
+import { GoogleJobsSearchProvider } from './apify/google_search.provider';
+import { LinkedinJobSearchProvider } from './apify/linkedin.job_search.provider';
+import { LinkedinPostSearchProvider } from './apify/linkedin.post_search.provider';
 
 const search = {
   id: 'search-1',

@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { channelConfig } from '../../config';
 import { Channel } from 'src/common/enums';
 import { record, text } from '../../utils/collected-job';
-import { ApifyActorProvider } from './apify-actor.provider';
+import { ApifyActorProvider } from './apify.provider';
 
 export interface DiscoveryHit {
   url: string;

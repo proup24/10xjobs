@@ -1,16 +1,16 @@
+import { Injectable } from '@nestjs/common';
 import { Channel } from 'src/common/enums';
 import {
   Collector,
   type CollectionResult,
   type CollectorSearch,
 } from '../types/collector';
-import { Injectable } from '@nestjs/common';
-import { LinkedinPostSearchProvider } from './apify/linkedin-post-search.provider';
+import { LinkedinJobSearchProvider } from './apify/linkedin.job_search.provider';
 
 @Injectable()
-export class LinkedinPostsCollector extends Collector {
-  readonly channel = Channel.LINKEDIN_POSTS;
-  constructor(private readonly searchProvider: LinkedinPostSearchProvider) {
+export class LinkedinJobBoardCollector extends Collector {
+  readonly channel = Channel.LINKEDIN_JOB_BOARD;
+  constructor(private readonly searchProvider: LinkedinJobSearchProvider) {
     super();
   }
   async collect(search: CollectorSearch): Promise<CollectionResult> {
