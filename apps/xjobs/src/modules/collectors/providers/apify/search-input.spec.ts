@@ -84,15 +84,18 @@ describe('search input comes only from the builder', () => {
   it.each([
     [Channel.ASHBY, 'jobs.ashbyhq.com'],
     [Channel.GREEN_HOUSE, 'greenhouse.io'],
-  ] as const)('searches %s boards on Google with one query', async (channel, site) => {
-    const { run, provider } = actor();
-    await new GoogleJobsSearchProvider(provider).search(
-      channel,
-      'backend engineer',
-    );
-    expect(run).toHaveBeenCalledTimes(1);
-    expect(run.mock.calls[0][1]).toMatchObject({
-      queries: `site:${site} "backend engineer" ${channelConfig[channel].discovery.suffix}`,
-    });
-  });
+  ] as const)(
+    'searches %s boards on Google with one query',
+    async (channel, site) => {
+      const { run, provider } = actor();
+      await new GoogleJobsSearchProvider(provider).search(
+        channel,
+        'backend engineer',
+      );
+      expect(run).toHaveBeenCalledTimes(1);
+      expect(run.mock.calls[0][1]).toMatchObject({
+        queries: `site:${site} "backend engineer" ${channelConfig[channel].discovery.suffix}`,
+      });
+    },
+  );
 });

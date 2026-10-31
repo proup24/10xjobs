@@ -19,7 +19,9 @@ export class LinkedinJobSearchProvider {
     const cfg = channelConfig[Channel.LINKEDIN_JOB_BOARD];
     const url = linkedinJobSearchUrl(search.keyword, search.params);
     const location = linkedinLocation(search.params.location);
-    const label = location ? `${search.keyword} in ${location}` : search.keyword;
+    const label = location
+      ? `${search.keyword} in ${location}`
+      : search.keyword;
     const items = await this.actor.run(
       cfg.actor,
       { startUrls: [{ url }], maxRowsPerUrl: cfg.discovery.maxRowsPerUrl },
