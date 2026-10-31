@@ -11,7 +11,7 @@ import { GoogleJobsSearchProvider } from './apify/google-jobs-search.provider';
 import { GreenhousePostingProvider } from './extraction/greenhouse-posting.provider';
 
 @Injectable()
-export class GreenhouseProvider extends Collector {
+export class GreenhouseCollector extends Collector {
   readonly channel = Channel.GREEN_HOUSE;
   constructor(
     private readonly discovery: GoogleJobsSearchProvider,

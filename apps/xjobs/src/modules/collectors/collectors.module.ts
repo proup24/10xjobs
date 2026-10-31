@@ -1,26 +1,26 @@
 import { Module } from '@nestjs/common';
-import { AshbyProvider } from './providers/ashby.provider';
-import { GreenhouseProvider } from './providers/greenhouse.provider';
-import { LinkedinJobBoardProvider } from './providers/linkedin-job-board.provider';
-import { LinkedinPostsProvider } from './providers/linkedin-posts.provider';
+import { AshbyCollector } from './providers/ashby.collector';
+import { GreenhouseCollector } from './providers/greenhouse.collector';
+import { LinkedinJobBoardCollector } from './providers/linkedin-job-board.collector';
+import { LinkedinPostsCollector } from './providers/linkedin-posts.collector';
 import { Collector } from './types/collector';
 
 export const COLLECTOR_PROVIDERS = Symbol('COLLECTOR_PROVIDERS');
 
 @Module({
   providers: [
-    AshbyProvider,
-    GreenhouseProvider,
-    LinkedinJobBoardProvider,
-    LinkedinPostsProvider,
+    AshbyCollector,
+    GreenhouseCollector,
+    LinkedinJobBoardCollector,
+    LinkedinPostsCollector,
     {
       provide: COLLECTOR_PROVIDERS,
       useFactory: (...providers: Collector[]) => providers,
       inject: [
-        AshbyProvider,
-        GreenhouseProvider,
-        LinkedinJobBoardProvider,
-        LinkedinPostsProvider,
+        AshbyCollector,
+        GreenhouseCollector,
+        LinkedinJobBoardCollector,
+        LinkedinPostsCollector,
       ],
     },
   ],

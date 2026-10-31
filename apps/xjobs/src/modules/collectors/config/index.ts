@@ -91,6 +91,10 @@ const hourly = {
   maximumSearchesPerOperation: 10,
 } as const;
 
+
+
+
+
 export const channelConfig = {
   [Channel.LINKEDIN_JOB_BOARD]: {
     ...hourly,

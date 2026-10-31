@@ -8,7 +8,7 @@ import {
 import { LinkedinJobSearchProvider } from './apify/linkedin-job-search.provider';
 
 @Injectable()
-export class LinkedinJobBoardProvider extends Collector {
+export class LinkedinJobBoardCollector extends Collector {
   readonly channel = Channel.LINKEDIN_JOB_BOARD;
   constructor(private readonly searchProvider: LinkedinJobSearchProvider) {
     super();

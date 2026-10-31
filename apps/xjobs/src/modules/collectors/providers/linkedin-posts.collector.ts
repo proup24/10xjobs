@@ -8,7 +8,7 @@ import { Injectable } from '@nestjs/common';
 import { LinkedinPostSearchProvider } from './apify/linkedin-post-search.provider';
 
 @Injectable()
-export class LinkedinPostsProvider extends Collector {
+export class LinkedinPostsCollector extends Collector {
   readonly channel = Channel.LINKEDIN_POSTS;
   constructor(private readonly searchProvider: LinkedinPostSearchProvider) {
     super();
