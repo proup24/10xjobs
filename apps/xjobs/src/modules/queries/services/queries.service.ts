@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type { Channel } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
-import { toRecipe } from '../builders';
+import { QUERY_SEARCH_RECIPE_VERSION, toRecipe } from '../builders';
 import { technologySets } from '../sets/technology';
 import { QuerySearchRepository } from '../repositories/queries.repository';
 import {
@@ -71,6 +71,14 @@ export class QuerySearchService {
   /** A channel's active, non-deleted builders across every profile, oldest first. */
   listActive(channel: Channel): Promise<QuerySearchBuilderRow[]> {
     return this.builders.listActive(channel);
+  }
+
+  /**
+   * Soft-deletes builders of an older recipe that no profile uses any more:
+   * after regeneration, these are the outdated ones.
+   */
+  retireOutdated(): Promise<number> {
+    return this.builders.retireOutdated(QUERY_SEARCH_RECIPE_VERSION);
   }
 
   /** Retires a builder for good: it is unlinked from every profile and never collected again. */

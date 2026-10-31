@@ -72,12 +72,14 @@ export function toQuerySearchInput(
     seniority: profile.seniority as Seniority,
     country: profile.country,
     city: profile.city,
-    skills: profile.techStack.map(({ technology, domain, importance, mastery }) => ({
-      technology: technology as Technology,
-      domain: domain as SkillDomain,
-      importance,
-      mastery,
-    })),
+    skills: profile.techStack.map(
+      ({ technology, domain, importance, mastery }) => ({
+        technology: technology as Technology,
+        domain: domain as SkillDomain,
+        importance,
+        mastery,
+      }),
+    ),
   };
 }
 
@@ -215,6 +217,23 @@ export class ProfilesService {
     for (const profile of await this.profiles.list(userId)) {
       await this.querySearch.detach(profile.id);
     }
+  }
+
+  /**
+   * Re-attaches every published profile to the builders of the current recipe,
+   * then retires the outdated builders nothing uses any more. Run once after a
+   * recipe version bump; running it again changes nothing.
+   */
+  async regeneratePublished(): Promise<{ profiles: number; retired: number }> {
+    const published = await this.profiles.listPublished();
+    for (const profile of published) {
+      await this.querySearch.detach(profile.id);
+      await this.querySearch.generate(profile.id, toQuerySearchInput(profile));
+    }
+    return {
+      profiles: published.length,
+      retired: await this.querySearch.retireOutdated(),
+    };
   }
 
   /**

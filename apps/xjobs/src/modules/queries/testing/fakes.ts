@@ -103,6 +103,14 @@ export class FakeQuerySearchRepository extends QuerySearchRepository {
       );
   }
 
+  async retireOutdated(version: number): Promise<number> {
+    const outdated = this.rows.filter(
+      (row) => row.version < version && !row.isActive && !row.isDeleted,
+    );
+    for (const row of outdated) row.isDeleted = true;
+    return outdated.length;
+  }
+
   async softDelete(queryId: string): Promise<QuerySearchBuilderRow | null> {
     const row = this.rows.find((candidate) => candidate.id === queryId);
     if (!row) return null;

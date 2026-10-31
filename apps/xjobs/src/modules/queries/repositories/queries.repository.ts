@@ -42,6 +42,11 @@ export abstract class QuerySearchRepository {
    * oldest first: what that channel's collection job searches.
    */
   abstract listActive(channel: Channel): Promise<QuerySearchBuilderRow[]>;
+  /**
+   * Soft-deletes builders of a recipe older than `version` that nothing uses
+   * any more (inactive). Returns how many it retired.
+   */
+  abstract retireOutdated(version: number): Promise<number>;
   /** Retires a builder: unlinks every profile and deactivates it for good. */
   abstract softDelete(queryId: string): Promise<QuerySearchBuilderRow | null>;
 }
@@ -184,6 +189,15 @@ export class PrismaQuerySearchRepository extends QuerySearchRepository {
       .orderBy((row) => row.createdAt.asc())
       .orderBy((row) => row.id.asc())
       .all();
+  }
+
+  retireOutdated(version: number): Promise<number> {
+    return this.database.db.orm.public.QuerySearchBuilder.where({
+      isActive: false,
+      isDeleted: false,
+    })
+      .where((row) => row.version.lt(version))
+      .updateAndCount({ isDeleted: true });
   }
 
   softDelete(queryId: string): Promise<QuerySearchBuilderRow | null> {
