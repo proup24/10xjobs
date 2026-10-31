@@ -1,79 +1,93 @@
 import { Logger } from '@nestjs/common';
 import type { Channel } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
-import type { CollectedJob, Collector } from 'src/modules/collectors';
+import type {
+  ActorRunConfig,
+  CollectedJob,
+  Collector,
+  SegmentResult,
+} from 'src/modules/collectors';
 import { type IngestService, ingestConfig } from 'src/modules/ingest';
 import type { QuerySearchService } from 'src/modules/queries';
-import { type ChannelJobConfig, channelJobsConfig } from '../config';
+import {
+  type SearchSegment,
+  type SearchSegmentsRepository,
+  type SegmentQueryOutcome,
+  type SegmentRunStatus,
+  buildSegments,
+  segmentWindow,
+} from 'src/modules/segments';
+import type { ChannelJobConfig } from '../config';
 
 /** Scheduler id and job name of a channel's recurring collect job. */
 export const COLLECT_JOB = 'collect';
 
-/** What one collect run did. */
+/** What one collect job did across the channel's segments. */
 export interface CollectionSummary {
   channel: Channel;
   builders: number;
-  succeeded: number;
-  failed: number;
+  segments: number;
+  segmentsFailed: number;
   collected: number;
-  truncated: number;
-  incomplete: number;
   inserted: number;
   updated: number;
   duplicate: number;
   invalid: number;
+  costUsd: number;
 }
 
+const emptyOutcome = (): SegmentQueryOutcome => ({
+  returned: 0,
+  inserted: 0,
+  updated: 0,
+  duplicate: 0,
+  invalid: 0,
+});
+
+const message = (error: unknown) =>
+  error instanceof Error ? error.message : String(error);
+
 /**
- * A channel's collection job: its queue, its schedule config, and one run that
- * searches the channel's active query search builders with the channel's
- * collector and saves each builder's results through ingest. A worker process
- * schedules and consumes it.
+ * A channel's collection job. Each run groups the channel's active query search
+ * builders into search segments, searches each segment with one Apify run over
+ * the window its members have not covered, ingests every member's results
+ * against that member, moves the cursors of members that were fully ingested,
+ * and records the segment run. A worker process schedules and consumes it.
  */
-export abstract class CollectionJob {
+export abstract class CollectionJob<R extends ActorRunConfig = ActorRunConfig> {
   abstract readonly channel: Channel;
   abstract readonly queueName: string;
+  abstract readonly config: ChannelJobConfig<R>;
   protected readonly logger = new Logger(this.constructor.name);
 
   constructor(
-    protected readonly collector: Collector,
+    protected readonly collector: Collector<R>,
     protected readonly queries: QuerySearchService,
     protected readonly ingest: IngestService,
+    protected readonly segments: SearchSegmentsRepository,
   ) {}
 
-  get config(): ChannelJobConfig {
-    return channelJobsConfig[this.channel];
-  }
-
-  /** One collect run over the channel's active builders. */
   async run(): Promise<CollectionSummary> {
-    // One observation time and one snapshot of the builders for the whole run.
-    const observedAt = new Date();
+    // One end of window and observation time for every segment of the run.
+    const until = new Date();
     const builders = await this.queries.listActive(this.channel);
+    const segments = buildSegments(builders, this.config.segmentSize);
     const summary: CollectionSummary = {
       channel: this.channel,
       builders: builders.length,
-      succeeded: 0,
-      failed: 0,
+      segments: segments.length,
+      segmentsFailed: 0,
       collected: 0,
-      truncated: 0,
-      incomplete: 0,
       inserted: 0,
       updated: 0,
       duplicate: 0,
       invalid: 0,
+      costUsd: 0,
     };
 
-    for (const builder of builders) {
-      try {
-        await this.collectBuilder(builder, observedAt, summary);
-        summary.succeeded += 1;
-      } catch (error) {
-        summary.failed += 1;
-        this.logger.warn(
-          `Builder ${builder.id} failed: ${error instanceof Error ? error.message : String(error)}`,
-        );
-      }
+    for (const segment of segments) {
+      const status = await this.runSegment(segment, until, summary);
+      if (status === 'failed') summary.segmentsFailed += 1;
     }
 
     this.logger.log(
@@ -81,46 +95,138 @@ export abstract class CollectionJob {
         .map(([key, value]) => `${key}=${value}`)
         .join(' '),
     );
-    if (summary.builders > 0 && summary.succeeded === 0)
+    if (summary.segments > 0 && summary.segmentsFailed === summary.segments)
       throw new Error(
-        `${this.channel} collection failed for all ${summary.failed} builders`,
+        `${this.channel} collection failed for all ${summary.segments} segments`,
       );
     return summary;
   }
 
-  private async collectBuilder(
-    builder: QuerySearchBuilderRow,
-    observedAt: Date,
+  private async runSegment(
+    segment: SearchSegment,
+    until: Date,
     summary: CollectionSummary,
-  ): Promise<void> {
-    const result = await this.collector.collect({
-      id: builder.id,
-      channel: this.channel,
-      keyword: builder.keyword,
-      params: builder.params as Record<string, unknown>,
-    });
-    summary.collected += result.jobs.length;
-    if (result.truncated) summary.truncated += 1;
-    if (!result.complete) summary.incomplete += 1;
+  ): Promise<SegmentRunStatus> {
+    const startedAt = new Date();
+    const window = segmentWindow(segment.members, until, this.config.window);
+    if (window.clipped)
+      this.logger.warn(
+        `Segment ${segment.key} was not collected for longer than ${this.config.window.maximumHours}h; older postings are not caught up`,
+      );
+    const queryIds = segment.members.map((member) => member.id);
+    const record = (
+      status: SegmentRunStatus,
+      result: SegmentResult | null,
+      perQuery: Record<string, SegmentQueryOutcome>,
+      error: string | null,
+    ) =>
+      this.segments
+        .recordRun({
+          channel: this.channel,
+          segmentKey: segment.key,
+          segmentHash: segment.hash,
+          queryIds,
+          windowStart: window.since,
+          windowEnd: window.until,
+          startedAt,
+          finishedAt: new Date(),
+          status,
+          fetched: result?.fetched ?? 0,
+          costMicroUsd:
+            result?.costUsd == null
+              ? null
+              : Math.round(result.costUsd * 1_000_000),
+          capped: result?.capped ?? false,
+          truncatedQueryIds: result?.truncatedQueryIds ?? [],
+          perQuery,
+          error,
+        })
+        .catch((recordError: unknown) =>
+          this.logger.error(
+            `Could not record segment ${segment.hash}: ${message(recordError)}`,
+          ),
+        );
 
-    for (const items of chunks(result.jobs, ingestConfig.maxBatchItems)) {
-      const report = await this.ingest.ingest({
-        queryId: builder.id,
-        observedAt,
-        channel: this.channel,
-        items,
-      });
-      summary.inserted += report.inserted;
-      summary.updated += report.updated;
-      summary.duplicate += report.duplicate;
-      summary.invalid += report.invalid;
+    let result: SegmentResult;
+    try {
+      result = await this.collector.collect(
+        {
+          channel: this.channel,
+          since: window.since,
+          until: window.until,
+          queries: segment.members.map((member) => ({
+            id: member.id,
+            keyword: member.keyword,
+            params: member.params as Record<string, unknown>,
+          })),
+        },
+        this.config.run,
+      );
+    } catch (error) {
+      this.logger.warn(`Segment ${segment.key} failed: ${message(error)}`);
+      await record('failed', null, {}, message(error));
+      return 'failed';
     }
-  }
-}
+    summary.costUsd += result.costUsd ?? 0;
 
-function chunks(items: CollectedJob[], size: number): CollectedJob[][] {
-  const out: CollectedJob[][] = [];
-  for (let start = 0; start < items.length; start += size)
-    out.push(items.slice(start, start + size));
-  return out;
+    const perQuery: Record<string, SegmentQueryOutcome> = {};
+    const ingested: string[] = [];
+    for (const member of segment.members) {
+      const outcome = await this.ingestMember(
+        member,
+        result.jobsByQuery.get(member.id) ?? [],
+        until,
+      );
+      perQuery[member.id] = outcome;
+      summary.collected += outcome.returned;
+      summary.inserted += outcome.inserted;
+      summary.updated += outcome.updated;
+      summary.duplicate += outcome.duplicate;
+      summary.invalid += outcome.invalid;
+      if (outcome.error)
+        this.logger.warn(`Builder ${member.id} failed: ${outcome.error}`);
+      else ingested.push(member.id);
+    }
+
+    // A capped run may have stopped before some postings: search them again.
+    if (!result.capped) await this.segments.advanceCursors(ingested, until);
+    const status: SegmentRunStatus =
+      ingested.length === segment.members.length
+        ? 'succeeded'
+        : ingested.length === 0
+          ? 'failed'
+          : 'partial';
+    await record(status, result, perQuery, null);
+    return status;
+  }
+
+  private async ingestMember(
+    member: QuerySearchBuilderRow,
+    jobs: CollectedJob[],
+    observedAt: Date,
+  ): Promise<SegmentQueryOutcome> {
+    const outcome = emptyOutcome();
+    outcome.returned = jobs.length;
+    try {
+      for (
+        let start = 0;
+        start < jobs.length;
+        start += ingestConfig.maxBatchItems
+      ) {
+        const report = await this.ingest.ingest({
+          queryId: member.id,
+          observedAt,
+          channel: this.channel,
+          items: jobs.slice(start, start + ingestConfig.maxBatchItems),
+        });
+        outcome.inserted += report.inserted;
+        outcome.updated += report.updated;
+        outcome.duplicate += report.duplicate;
+        outcome.invalid += report.invalid;
+      }
+    } catch (error) {
+      outcome.error = message(error);
+    }
+    return outcome;
+  }
 }

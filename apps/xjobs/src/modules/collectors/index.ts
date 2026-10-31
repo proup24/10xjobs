@@ -5,7 +5,12 @@ export { LinkedinJobBoardCollector } from './providers/linkedin.job_board.servic
 export { LinkedinPostsCollector } from './providers/linkedin.posts.service';
 export { Collector } from './types/collector';
 export type {
+  ActorRunConfig,
+  BoardSearchRunConfig,
   CollectedJob,
-  CollectionResult,
-  CollectorSearch,
+  LinkedinJobBoardRunConfig,
+  LinkedinPostsRunConfig,
+  SegmentQuery,
+  SegmentResult,
+  SegmentSearch,
 } from './types/collector';

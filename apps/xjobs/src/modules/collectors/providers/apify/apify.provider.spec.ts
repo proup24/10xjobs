@@ -96,7 +96,7 @@ describe('ApifyActorProvider', () => {
       { queries: 'q' },
       { maxChargeUsd: 0.5 },
     );
-    expect(items).toEqual([{ id: 1 }, { id: 2 }]);
+    expect(items).toEqual({ items: [{ id: 1 }, { id: 2 }], costUsd: null });
     expect(sdk.actor.call).toHaveBeenCalledWith(
       { queries: 'q' },
       expect.objectContaining({ maxTotalChargeUsd: 0.5, waitSecs: 300 }),

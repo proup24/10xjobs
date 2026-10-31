@@ -25,6 +25,13 @@ export interface ApifyRunOptions extends ApifyStartOptions {
   waitSecs?: number;
 }
 
+/** A finished run's dataset and what Apify charged for it. */
+export interface ApifyRunResult {
+  items: unknown[];
+  /** `usageTotalUsd`, or null when Apify did not report it. */
+  costUsd: number | null;
+}
+
 export interface ApifyListRunsOptions {
   status?: ApifyRunStatus | ApifyRunStatus[];
   startedAfter?: Date;
@@ -67,14 +74,15 @@ export class ApifyActorProvider {
   }
 
   /**
-   * Runs an actor to completion and returns every item of its default dataset.
-   * A run still going after `waitSecs` is aborted so it stops spending.
+   * Runs an actor to completion and returns every item of its default dataset
+   * with the run's cost. A run still going after `waitSecs` is aborted so it
+   * stops spending.
    */
   async run(
     actor: string,
     input: Record<string, unknown>,
     options: ApifyRunOptions,
-  ): Promise<unknown[]> {
+  ): Promise<ApifyRunResult> {
     const run = await this.client.actor(actor).call(input, {
       ...this.startOptions(options),
       waitSecs: options.waitSecs ?? DEFAULT_WAIT_SECS,
@@ -90,7 +98,10 @@ export class ApifyActorProvider {
         `Apify actor ${actor} run ${run.id} ended ${run.status}${run.statusMessage ? `: ${run.statusMessage}` : ''}`,
       );
     }
-    return this.items(run.defaultDatasetId);
+    return {
+      items: await this.items(run.defaultDatasetId),
+      costUsd: typeof run.usageTotalUsd === 'number' ? run.usageTotalUsd : null,
+    };
   }
 
   /** Starts an actor run without waiting for it. */

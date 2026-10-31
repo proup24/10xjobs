@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { CollectorsModule } from 'src/modules/collectors';
 import { IngestModule } from 'src/modules/ingest';
 import { QuerySearchModule } from 'src/modules/queries';
+import { SearchSegmentsModule } from 'src/modules/segments';
 import { RedisSettingsModule } from '../redis/settings.module';
 import {
   AshbyCollectionJob,
@@ -28,6 +29,7 @@ const COLLECTION_JOBS = [
     QuerySearchModule,
     CollectorsModule,
     IngestModule,
+    SearchSegmentsModule,
   ],
   providers: [JobsService, ...COLLECTION_JOBS],
   exports: [JobsService, ...COLLECTION_JOBS],

@@ -82,15 +82,11 @@ export class WorkerService implements OnModuleInit, OnApplicationShutdown {
   }
 
   private startInfrastructure(connection: Redis): void {
-    this.worker = new Worker(
-      INFRASTRUCTURE_QUEUE,
-      async (job) => processInfrastructureJob(job),
-      {
-        connection,
-        prefix: this.settings.prefix,
-        concurrency: this.settings.jobsConcurrency,
-      },
-    );
+    this.worker = new Worker(INFRASTRUCTURE_QUEUE, processInfrastructureJob, {
+      connection,
+      prefix: this.settings.prefix,
+      concurrency: this.settings.jobsConcurrency,
+    });
   }
 
   private async startCollection(
