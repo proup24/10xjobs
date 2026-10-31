@@ -159,3 +159,27 @@ and is used in two places:
 - Exact file names inside `steps/` and whether `dedupeByHash` lives there or in
   `utils/`.
 - Wording of test names and the migration name.
+
+## Revision: builder domain (2026-10-31)
+
+Decided with the user:
+
+- `QuerySearchBuilder.domain` is a **required** `SkillDomain` and part of the
+  recipe hash. Breaking changes are accepted: `QUERY_SEARCH_RECIPE_VERSION`
+  goes to 3, no compatibility with v2 hashes.
+- A builder's domain is the domain of the skill its technology came from. The
+  same search under two domains (`nestjs/backend`, `nestjs/fullstack`) is two
+  builders: correctness of the domain over deduplication.
+- Profiles are associated to domains through the builders they link to; no new
+  column on `profiles`.
+- Publishing requires at least one skill with importance above 0
+  (`at least one skill with importance above 0 is required to publish`, 400).
+  The position-only search is gone. Drafts may still have an empty tech stack.
+
+Claude's call: top technologies are still ranked per technology. A technology
+listed under two domains counts once, under the domain of its best-ranked
+entry, so one profile cannot fill both top slots with the same search.
+
+Shape changes: `RankedSkill` gains `domain`; `technologySets` returns
+`TechnologySet[]` (`{ technologies, domain }`); `QuerySearchCombination` gains
+`domain`; `assertHasSkills` runs in `expand` next to `assertLocatable`.

@@ -1,5 +1,5 @@
 import type { Technology } from 'src/common/enums';
-import type { RankedSkill } from '../types';
+import type { RankedSkill, TechnologySet } from '../types';
 
 export const QUERY_SEARCH_TOP_TECHNOLOGIES = 2;
 
@@ -9,18 +9,25 @@ const compareSkills = (a: RankedSkill, b: RankedSkill): number =>
   b.mastery - a.mastery ||
   a.technology.localeCompare(b.technology);
 
-/** The user's best technologies: importance 0 dropped, each kept once at its highest rank. */
-export function topTechnologies(skills: RankedSkill[]): Technology[] {
-  const ranked = skills
+/** The user's best skills: importance 0 dropped, each technology kept once at its best-ranked entry. */
+export function topSkills(skills: RankedSkill[]): RankedSkill[] {
+  const best = new Map<Technology, RankedSkill>();
+  for (const skill of skills
     .filter((skill) => skill.importance > 0)
-    .sort(compareSkills);
-  const unique = new Set(ranked.map((skill) => skill.technology));
-  return [...unique].slice(0, QUERY_SEARCH_TOP_TECHNOLOGIES);
+    .sort(compareSkills))
+    if (!best.has(skill.technology)) best.set(skill.technology, skill);
+  return [...best.values()].slice(0, QUERY_SEARCH_TOP_TECHNOLOGIES);
 }
 
-/** Each top technology alone, never combined; `[[]]` (position only) when there are none. */
-export function technologySets(skills: RankedSkill[]): Technology[][] {
-  const top = topTechnologies(skills);
-  if (top.length === 0) return [[]];
-  return top.map((technology) => [technology]);
+/** The user's best technologies; see {@link topSkills}. */
+export function topTechnologies(skills: RankedSkill[]): Technology[] {
+  return topSkills(skills).map((skill) => skill.technology);
+}
+
+/** Each top technology alone, never combined, under the domain of its best-ranked entry. */
+export function technologySets(skills: RankedSkill[]): TechnologySet[] {
+  return topSkills(skills).map(({ technology, domain }) => ({
+    technologies: [technology],
+    domain,
+  }));
 }

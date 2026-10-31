@@ -1422,6 +1422,19 @@
                   }
                 }
               },
+              "domain": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "SkillDomain",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
               "experience": {
                 "nullable": false,
                 "type": {
@@ -1554,6 +1567,9 @@
                 },
                 "createdAt": {
                   "column": "createdAt"
+                },
+                "domain": {
+                  "column": "domain"
                 },
                 "experience": {
                   "column": "experience"
@@ -2946,6 +2962,11 @@
                   "prefix": "query_search_builder_deleted_inactive"
                 },
                 {
+                  "expression": "\"domain\" IN ('backend', 'frontend', 'fullstack', 'mobile', 'devops', 'data', 'ml', 'security', 'qa')",
+                  "name": "query_search_builder_domain_check_5fdc18af",
+                  "prefix": "query_search_builder_domain_check"
+                },
+                {
                   "expression": "\"experience\" IN ('junior', 'mid', 'senior', 'staff', 'lead', 'principal', 'unstated')",
                   "name": "query_search_builder_experience_check_da85d416",
                   "prefix": "query_search_builder_experience_check"
@@ -3012,6 +3033,17 @@
                   "nullable": false,
                   "typeParams": {
                     "precision": 3
+                  }
+                },
+                "domain": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "SkillDomain",
+                    "namespaceId": "public",
+                    "plane": "storage"
                   }
                 },
                 "experience": {
@@ -3832,7 +3864,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "c51c7914f0f544daa1a0e22a4d406646bccf81ca2d88613e66422c47fd69fb1d"
+    "storageHash": "8efec91cbf32348047d5188f086d7fc07ba38a6a22a20c02f9e5ae387e4ad123"
   },
   "execution": {
     "executionHash": "4a9e258933018fc487b8d987b217a9b93dccd535dfc21b0f53b0cbefd690f4ff",

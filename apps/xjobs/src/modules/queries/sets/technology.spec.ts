@@ -1,4 +1,4 @@
-import { Technology } from 'src/common/enums';
+import { SkillDomain, Technology } from 'src/common/enums';
 import type { RankedSkill } from '../types';
 import { technologySets, topTechnologies } from './technology';
 
@@ -6,7 +6,8 @@ const skill = (
   technology: Technology,
   importance: number,
   mastery: number,
-): RankedSkill => ({ technology, importance, mastery });
+  domain: SkillDomain = SkillDomain.backend,
+): RankedSkill => ({ technology, importance, mastery, domain });
 
 describe('topTechnologies', () => {
   it('orders by importance, then mastery', () => {
@@ -62,21 +63,36 @@ describe('topTechnologies', () => {
 
 describe('technologySets', () => {
   const [a, b, c] = [Technology.go, Technology.rust, Technology.nestjs];
-  const skills = [skill(a, 9, 5), skill(b, 8, 5), skill(c, 7, 5)];
+  const skills = [
+    skill(a, 9, 5, SkillDomain.backend),
+    skill(b, 8, 5, SkillDomain.devops),
+    skill(c, 7, 5),
+  ];
 
-  it('returns 2 single sets for 3 technologies', () => {
-    expect(technologySets(skills)).toEqual([[a], [b]]);
-  });
-
-  it('returns 2 single sets for 2 technologies', () => {
-    expect(technologySets(skills.slice(0, 2))).toEqual([[a], [b]]);
+  it('returns one set per top technology, with its domain', () => {
+    expect(technologySets(skills)).toEqual([
+      { technologies: [a], domain: SkillDomain.backend },
+      { technologies: [b], domain: SkillDomain.devops },
+    ]);
   });
 
   it('returns 1 set for 1 technology', () => {
-    expect(technologySets(skills.slice(0, 1))).toEqual([[a]]);
+    expect(technologySets(skills.slice(0, 1))).toEqual([
+      { technologies: [a], domain: SkillDomain.backend },
+    ]);
   });
 
-  it('returns one empty set for 0 technologies', () => {
-    expect(technologySets([])).toEqual([[]]);
+  it('takes the domain of the best-ranked entry of a technology', () => {
+    expect(
+      technologySets([
+        skill(a, 3, 9, SkillDomain.devops),
+        skill(a, 8, 1, SkillDomain.backend),
+      ]),
+    ).toEqual([{ technologies: [a], domain: SkillDomain.backend }]);
+  });
+
+  it('returns no sets without a ranked skill', () => {
+    expect(technologySets([])).toEqual([]);
+    expect(technologySets([skill(a, 0, 9)])).toEqual([]);
   });
 });

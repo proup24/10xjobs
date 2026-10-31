@@ -14,3 +14,4 @@ export {
   localCombinations,
   remoteCombinations,
 } from './combinations';
+export { assertHasSkills, hasRankedSkill, SKILLS_REQUIRED } from './skills';
