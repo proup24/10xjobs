@@ -92,10 +92,11 @@ function requireStorage(
 }
 
 /**
- * A worker process. `WORKER_CHANNEL` unset runs the infrastructure worker; a
- * channel runs that channel's collection job and needs an Apify token. An
- * unknown channel fails startup rather than falling back. Every worker needs
- * Supabase Storage, where collection batches are written and read.
+ * A worker process. `WORKER_ROLE=ingest` runs the ingest worker. Otherwise
+ * `WORKER_CHANNEL` unset runs the infrastructure worker, and a channel runs
+ * that channel's collection job and needs an Apify token. An unknown role or
+ * channel fails startup rather than falling back. Every worker needs Supabase
+ * Storage, where collection batches are written and read.
  */
 export const workerProcessEnvironmentSchema = databaseEnvironmentSchema
   .extend({
@@ -103,9 +104,16 @@ export const workerProcessEnvironmentSchema = databaseEnvironmentSchema
     ...storageEnvironmentShape,
     APIFY_TOKEN: z.string().min(1).optional(),
     WORKER_CHANNEL: z.enum(Channel).optional(),
+    WORKER_ROLE: z.enum(['ingest']).optional(),
   })
   .superRefine((env, ctx) => {
     requireStorage(env, ctx);
+    if (env.WORKER_ROLE && env.WORKER_CHANNEL)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['WORKER_ROLE'],
+        message: 'Set either WORKER_ROLE or WORKER_CHANNEL, not both',
+      });
     if (env.WORKER_CHANNEL && !env.APIFY_TOKEN)
       ctx.addIssue({
         code: 'custom',

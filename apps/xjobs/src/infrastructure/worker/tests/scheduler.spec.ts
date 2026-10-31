@@ -1,6 +1,6 @@
 import { Channel } from 'src/common/enums';
 import { channelJobsConfig } from 'src/infrastructure/jobs/config';
-import { syncCollectionScheduler } from '../scheduler';
+import { syncCollectionScheduler, syncSweepScheduler } from '../scheduler';
 
 describe('syncCollectionScheduler', () => {
   const queue = () => ({
@@ -34,5 +34,17 @@ describe('syncCollectionScheduler', () => {
     ).toBe('removed');
     expect(q.removeJobScheduler).toHaveBeenCalledWith('collect');
     expect(q.upsertJobScheduler).not.toHaveBeenCalled();
+  });
+});
+
+describe('syncSweepScheduler', () => {
+  it('sweeps stale pending batches every five minutes', async () => {
+    const q = { upsertJobScheduler: vi.fn(async () => undefined) };
+    await syncSweepScheduler(q as never);
+    expect(q.upsertJobScheduler).toHaveBeenCalledWith(
+      'sweep',
+      { every: 300_000 },
+      { name: 'sweep', opts: { attempts: 1 } },
+    );
   });
 });

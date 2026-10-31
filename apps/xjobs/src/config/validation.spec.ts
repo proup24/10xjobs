@@ -178,6 +178,38 @@ describe('worker process configuration', () => {
     ).toThrow(/WORKER_CHANNEL/);
   });
 
+  it('runs the ingest worker without an Apify token', () => {
+    expect(
+      validateWorkerProcessEnvironment({ ...worker, WORKER_ROLE: 'ingest' }),
+    ).toMatchObject({ WORKER_ROLE: 'ingest' });
+  });
+
+  it('refuses an unknown worker role', () => {
+    expect(() =>
+      validateWorkerProcessEnvironment({ ...worker, WORKER_ROLE: 'other' }),
+    ).toThrow(/WORKER_ROLE/);
+  });
+
+  it('refuses a worker role together with a channel', () => {
+    expect(() =>
+      validateWorkerProcessEnvironment({
+        ...worker,
+        WORKER_ROLE: 'ingest',
+        WORKER_CHANNEL: 'ASHBY',
+        APIFY_TOKEN: 'apify-token',
+      }),
+    ).toThrow(/WORKER_ROLE/);
+  });
+
+  it('refuses the ingest worker without Supabase storage', () => {
+    expect(() =>
+      validateWorkerProcessEnvironment({
+        DATABASE_URL: worker.DATABASE_URL,
+        WORKER_ROLE: 'ingest',
+      }),
+    ).toThrow('Set SUPABASE_URL (or SUPABASE_PUBLIC_URL)');
+  });
+
   it('refuses a channel without an Apify token', () => {
     expect(() =>
       validateWorkerProcessEnvironment({ ...worker, WORKER_CHANNEL: 'ASHBY' }),
