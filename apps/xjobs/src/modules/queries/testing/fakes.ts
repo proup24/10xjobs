@@ -30,6 +30,7 @@ export class FakeQuerySearchRepository extends QuerySearchRepository {
       associatedProfiles: 0,
       isActive: false,
       isDeleted: false,
+      coveredUntil: null,
       createdAt: now,
       updatedAt: now,
     } as QuerySearchBuilderRow;

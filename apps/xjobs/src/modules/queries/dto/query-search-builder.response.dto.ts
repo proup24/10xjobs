@@ -74,6 +74,15 @@ export class QuerySearchBuilderResponseDto implements QuerySearchBuilderRow {
   })
   isDeleted!: boolean;
 
+  @ApiProperty({
+    format: 'date-time',
+    nullable: true,
+    type: String,
+    description:
+      'Collection cursor: postings before this were searched; null until first collected',
+  })
+  coveredUntil!: Date | null;
+
   @ApiProperty({ format: 'date-time' })
   createdAt!: Date;
 
