@@ -10,10 +10,11 @@ import { EnvironmentType } from 'src/common/enums';
 import { loadSeedEnvironment, toDatabaseConfig } from 'src/config';
 import { createDatabaseClient } from '../connection.source';
 import type { Seed } from './seed.interface';
+import { processorListsSeed } from './processor-lists.seed';
 import { usersSeed } from './users.seed';
 
 /** Order matters: seeds run sequentially, so list parents before children. */
-const seeds: Seed[] = [usersSeed];
+const seeds: Seed[] = [usersSeed, processorListsSeed];
 
 function parseArgs(argv: string[]) {
   const onlyIndex = argv.indexOf('--only');
