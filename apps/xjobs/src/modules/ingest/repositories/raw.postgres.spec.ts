@@ -331,6 +331,7 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
       capped: false,
       truncatedQueryIds: [],
       perQuery: { [queryId]: { returned: 1 } },
+      searchTotals: null,
       error: null,
     });
     const batch = (

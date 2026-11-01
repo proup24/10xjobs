@@ -2895,6 +2895,13 @@
                   "kind": "scalar"
                 }
               },
+              "searchTotals": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
+              },
               "segmentHash": {
                 "nullable": false,
                 "type": {
@@ -2986,6 +2993,9 @@
                 },
                 "queryIds": {
                   "column": "queryIds"
+                },
+                "searchTotals": {
+                  "column": "searchTotals"
                 },
                 "segmentHash": {
                   "column": "segmentHash"
@@ -5296,6 +5306,11 @@
                   },
                   "nullable": false
                 },
+                "searchTotals": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": true
+                },
                 "segmentHash": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -5626,7 +5641,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "d63d407c65b181083ae45e022582f6caa9704846c24a2c204a4612ba8adfc38d"
+    "storageHash": "dd2bee4d84c2645ce32848a522a3f0f3afddd186f4df9d922c4a60326320b8e1"
   },
   "execution": {
     "executionHash": "0fc17b66822d3c35eae48bf17625f9a5d6187dcfed6118ce7301aec2b41f667b",

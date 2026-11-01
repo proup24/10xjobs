@@ -186,6 +186,49 @@ describe('LinkedIn job board segment', () => {
     expect(result.truncatedQueryIds).toEqual(['qs-a', 'qs-b']);
   });
 
+  it("keeps the run's search totals, untouched", async () => {
+    const totals = { [urlOf(0)]: 41 };
+    const record = vi.fn(async () => totals);
+    const run = vi.fn(async () => ({
+      items: [],
+      costUsd: 0.1,
+      runId: 'run-1',
+      keyValueStoreId: 'kv-1',
+    }));
+    const result = await new LinkedinJobBoardCollector({
+      run,
+      record,
+    } as unknown as ApifyActorProvider).collect(
+      segment(Channel.LINKEDIN_JOB_BOARD, queries),
+      board,
+    );
+    expect(record).toHaveBeenCalledWith('kv-1', 'SEARCH_TOTALS');
+    expect(result.searchTotals).toEqual(totals);
+  });
+
+  it('stores no totals when LinkedIn exposed none, and still succeeds', async () => {
+    for (const record of [
+      vi.fn(async () => null),
+      vi.fn(async () => {
+        throw new Error('store unavailable');
+      }),
+    ]) {
+      const result = await new LinkedinJobBoardCollector({
+        run: vi.fn(async () => ({
+          items: [],
+          costUsd: 0.1,
+          runId: 'run-1',
+          keyValueStoreId: 'kv-1',
+        })),
+        record,
+      } as unknown as ApifyActorProvider).collect(
+        segment(Channel.LINKEDIN_JOB_BOARD, queries),
+        board,
+      );
+      expect(result.searchTotals).toBeNull();
+    }
+  });
+
   it('matches echoed URLs whatever their encoding and parameter order', async () => {
     const url = new URL(urlOf(0));
     const echoed =

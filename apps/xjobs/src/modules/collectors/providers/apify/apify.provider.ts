@@ -32,6 +32,8 @@ export interface ApifyRunResult {
   costUsd: number | null;
   /** The Apify run id. */
   runId: string;
+  /** The run's default key-value store, where actors put side records. */
+  keyValueStoreId: string | null;
 }
 
 export interface ApifyListRunsOptions {
@@ -104,6 +106,7 @@ export class ApifyActorProvider {
       items: await this.items(run.defaultDatasetId),
       costUsd: typeof run.usageTotalUsd === 'number' ? run.usageTotalUsd : null,
       runId: run.id,
+      keyValueStoreId: run.defaultKeyValueStoreId ?? null,
     };
   }
 
@@ -147,6 +150,17 @@ export class ApifyActorProvider {
     } catch (error) {
       if (isNotFound(error)) return null;
       this.logger.warn(`Could not abort Apify run ${runId}`);
+      throw error;
+    }
+  }
+
+  /** A key-value store record's value, or null when there is none. */
+  async record(storeId: string, key: string): Promise<unknown> {
+    try {
+      const found = await this.client.keyValueStore(storeId).getRecord(key);
+      return found?.value ?? null;
+    } catch (error) {
+      if (isNotFound(error)) return null;
       throw error;
     }
   }

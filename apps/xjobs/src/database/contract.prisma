@@ -354,6 +354,8 @@ model SearchSegmentRun {
   capped            Boolean
   truncatedQueryIds Uuid[]
   perQuery          Jsonb
+  // What the source said matched each search (LinkedIn's SEARCH_TOTALS), untouched.
+  searchTotals      Jsonb?
   error             String?
 
   @@check(expression: sql`status IN ('succeeded', 'partial', 'failed')`, name: "search_segment_runs_status")

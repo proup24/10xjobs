@@ -38,6 +38,8 @@ export interface NewSegmentRun {
   capped: boolean;
   truncatedQueryIds: string[];
   perQuery: Record<string, SegmentQueryOutcome>;
+  /** What the source said matched each search, untouched; null when not reported. */
+  searchTotals: unknown;
   error: string | null;
 }
 
@@ -68,6 +70,8 @@ export class PrismaSearchSegmentsRepository extends SearchSegmentsRepository {
     await this.database.db.orm.public.SearchSegmentRun.create({
       ...run,
       perQuery: run.perQuery as unknown as SearchSegmentRunRow['perQuery'],
+      searchTotals: (run.searchTotals ??
+        null) as SearchSegmentRunRow['searchTotals'],
     });
   }
 
@@ -80,6 +84,8 @@ export class PrismaSearchSegmentsRepository extends SearchSegmentsRepository {
       await tx.orm.public.SearchSegmentRun.create({
         ...run,
         perQuery: run.perQuery as unknown as SearchSegmentRunRow['perQuery'],
+        searchTotals: (run.searchTotals ??
+          null) as SearchSegmentRunRow['searchTotals'],
       });
       await tx.orm.public.CollectionBatch.create({
         ...batch,

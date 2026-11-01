@@ -24,7 +24,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'d63d407c65b181083ae45e022582f6caa9704846c24a2c204a4612ba8adfc38d'>;
+  StorageHashBase<'dd2bee4d84c2645ce32848a522a3f0f3afddd186f4df9d922c4a60326320b8e1'>;
 export type ExecutionHash =
   ExecutionHashBase<'0fc17b66822d3c35eae48bf17625f9a5d6187dcfed6118ce7301aec2b41f667b'>;
 export type ProfileHash =
@@ -1505,6 +1505,7 @@ export namespace Models {
     id: FieldOutputTypes['public']['SearchSegmentRun']['id'];
     perQuery: FieldOutputTypes['public']['SearchSegmentRun']['perQuery'];
     queryIds: FieldOutputTypes['public']['SearchSegmentRun']['queryIds'];
+    searchTotals: FieldOutputTypes['public']['SearchSegmentRun']['searchTotals'];
     segmentHash: FieldOutputTypes['public']['SearchSegmentRun']['segmentHash'];
     segmentKey: FieldOutputTypes['public']['SearchSegmentRun']['segmentKey'];
     startedAt: FieldOutputTypes['public']['SearchSegmentRun']['startedAt'];
@@ -3045,6 +3046,12 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/uuid@1';
                   readonly nullable: false;
                   readonly many: { readonly elementNullable: false };
+                };
+                readonly searchTotals: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: true;
+                  readonly many: false;
                 };
                 readonly segmentHash: {
                   readonly dataType: 'pg/text';
@@ -4652,6 +4659,10 @@ type ContractBase = Omit<
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
                 readonly many: { readonly elementNullable: false };
               };
+              readonly searchTotals: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
               readonly segmentHash: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -4708,6 +4719,7 @@ type ContractBase = Omit<
                 readonly id: { readonly column: 'id' };
                 readonly perQuery: { readonly column: 'perQuery' };
                 readonly queryIds: { readonly column: 'queryIds' };
+                readonly searchTotals: { readonly column: 'searchTotals' };
                 readonly segmentHash: { readonly column: 'segmentHash' };
                 readonly segmentKey: { readonly column: 'segmentKey' };
                 readonly startedAt: { readonly column: 'startedAt' };

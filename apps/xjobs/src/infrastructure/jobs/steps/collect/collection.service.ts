@@ -145,6 +145,7 @@ export class CollectionService {
         capped: result.capped,
         truncatedQueryIds: result.truncatedQueryIds,
         perQuery: perQuery(result),
+        searchTotals: result.searchTotals ?? null,
       });
       batch = buildBatch(search, result, run.id);
       collected = await this.saveBatch(batch, run);
@@ -286,6 +287,7 @@ function buildRun(
     capped: false,
     truncatedQueryIds: [],
     perQuery: {},
+    searchTotals: null,
     error: null,
   };
 }

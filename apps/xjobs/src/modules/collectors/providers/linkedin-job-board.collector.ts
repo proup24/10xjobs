@@ -103,7 +103,7 @@ export class LinkedinJobBoardCollector {
       id: query.id,
       search: linkedinJobSearchUrl(query.keyword, query.params, seconds),
     }));
-    const { items, costUsd, runId } = await this.actor.run(
+    const { items, costUsd, runId, keyValueStoreId } = await this.actor.run(
       config.actor,
       {
         // Members with identical searches share one start URL; attribution
@@ -144,6 +144,7 @@ export class LinkedinJobBoardCollector {
     }
     return {
       itemsByQuery,
+      searchTotals: await this.searchTotals(keyValueStoreId),
       unattributed: unattributed.map(raw),
       fetched: items.length,
       costUsd,
@@ -151,5 +152,18 @@ export class LinkedinJobBoardCollector {
       truncatedQueryIds,
       source: { actor: config.actor, apifyRunId: runId },
     };
+  }
+
+  /**
+   * What LinkedIn said matched each start URL, as the actor stored it. A
+   * missing or unreadable record is null: the paid results never depend on it.
+   */
+  private async searchTotals(storeId: string | null): Promise<unknown> {
+    if (!storeId) return null;
+    try {
+      return (await this.actor.record(storeId, 'SEARCH_TOTALS')) ?? null;
+    } catch {
+      return null;
+    }
   }
 }

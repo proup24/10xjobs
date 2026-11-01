@@ -224,6 +224,22 @@ describe('CollectionService.collect', () => {
     expect(summary).not.toHaveProperty('inserted');
   });
 
+  it('records the search totals a run reports with its segment run', async () => {
+    const rows = builders(2);
+    const totals = { anything: [1, 2] };
+    const { collection, segments } = setup(rows, async (s) =>
+      resultFor(s, undefined, { searchTotals: totals }),
+    );
+    await collection.collect(Channel.ASHBY);
+    expect(segments.collected[0]!.run.searchTotals).toEqual(totals);
+  });
+
+  it('records null totals when the collector reports none', async () => {
+    const { collection, segments } = setup(builders(1));
+    await collection.collect(Channel.ASHBY);
+    expect(segments.collected[0]!.run.searchTotals).toBeNull();
+  });
+
   it('keeps cursors and records a failed run when the batch cannot be stored', async () => {
     const { collection, segments, storage, ingestQueue } = setup(builders(2));
     storage.failNextPut = true;
