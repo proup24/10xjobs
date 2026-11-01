@@ -19,6 +19,7 @@ import type { BatchFile } from '../types';
 import { contentHash, serializeBatchFile, sourceKey } from '../utils';
 import ashbyFailed from '../utils/fixtures/ashby-failed.json';
 import ashby from '../utils/fixtures/ashby.json';
+import linkedinJob from '../utils/fixtures/linkedin-job.json';
 import {
   PrismaRawStorageRepository,
   type SaveItemInput,
@@ -148,7 +149,7 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
 
   it('stores a first sighting as an item, a version and a sighting', async () => {
     const b = await batch();
-    expect(await repo.saveItem(input(b, job('a'), t1))).toEqual({
+    expect(await repo.saveItem(input(b, job('a'), t1))).toMatchObject({
       newItem: true,
       newVersion: true,
     });
@@ -164,14 +165,16 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
     await repo.saveItem(input(await batch(), job('a'), t1));
     const result = await repo.saveItem(input(await batch(), job('a'), t2));
 
-    expect(result).toEqual({ newItem: false, newVersion: false });
+    expect(result).toMatchObject({ newItem: false, newVersion: false });
     expect(await db.orm.public.RawItemVersion.all()).toHaveLength(1);
     expect(await db.orm.public.RawItemSighting.all()).toHaveLength(2);
   });
 
   it('adds a version when the content changes, and points back at A after A → B → A', async () => {
     await repo.saveItem(input(await batch(), job('a'), t1));
-    expect(await repo.saveItem(input(await batch(), job('b'), t2))).toEqual({
+    expect(
+      await repo.saveItem(input(await batch(), job('b'), t2)),
+    ).toMatchObject({
       newItem: false,
       newVersion: true,
     });
@@ -387,6 +390,223 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
         (await db.orm.public.QuerySearchBuilder.where({ id: queryId }).first())!
           .coveredUntil,
       ).toBeNull();
+    });
+  });
+
+  describe('normalized jobs', () => {
+    const day = 24 * 60 * 60 * 1000;
+    const at = (days: number) => new Date(t1.getTime() + days * day);
+    const sii =
+      'https://sii.pl/en/job-ads/id/38247/?sii_source=10&utm_source=linkedin.com#apply-contact-form';
+    const ashbyUrl = ashby.hit.url;
+    const liJob = (
+      id: string,
+      overrides: Record<string, unknown> = {},
+    ): Record<string, unknown> => ({
+      ...linkedinJob,
+      id,
+      jobUrl: `https://www.linkedin.com/jobs/view/${id}`,
+      applyType: 'EXTERNAL',
+      applyUrl: sii,
+      ...overrides,
+    });
+    const save = async (
+      payload: Record<string, unknown>,
+      observedAt: Date,
+      channel = Channel.LINKEDIN_JOB_BOARD,
+    ) =>
+      repo.saveItem(
+        input(await batch(channel), payload, observedAt, q1, channel),
+      );
+    const jobs = () => db.orm.public.NormalizedJob.all();
+    const sources = () => db.orm.public.NormalizedJobSource.all();
+    const markProcessed = () =>
+      db.orm.public.NormalizedJob.where({ status: 'active' }).updateAll({
+        processingStatus: 'processed',
+      });
+    const rawItemId = async (sourceKey: string) =>
+      (await db.orm.public.RawItem.where({ sourceKey }).first())!.id;
+
+    it('unifies LinkedIn copies of one ad into one pending new job', async () => {
+      for (const [i, city] of ['Cracow', 'Poznań', 'Katowice'].entries())
+        await save(liJob(`448394177${i}`, { location: city }), t1);
+
+      const [only, ...rest] = await jobs();
+      expect(rest).toHaveLength(0);
+      expect(only).toMatchObject({
+        jobKey: 'url:https://sii.pl/en/job-ads/id/38247?sii_source=10',
+        status: 'active',
+        processingStatus: 'pending',
+        processingReason: 'new',
+        processingRequestedAt: t1,
+      });
+      expect(await sources()).toHaveLength(3);
+    });
+
+    it('unifies a LinkedIn job with its Ashby posting, the ATS winning', async () => {
+      await save(
+        liJob('4483900001', {
+          applyUrl: `${ashbyUrl}/application`,
+          location: 'United States',
+        }),
+        t1,
+      );
+      await save(ashby, t2, Channel.ASHBY);
+
+      const [only, ...rest] = await jobs();
+      expect(rest).toHaveLength(0);
+      expect(only).toMatchObject({
+        location: ashby.posting.locationName,
+        companyName: linkedinJob.companyName,
+        title: ashby.posting.title,
+      });
+      expect((only!.fieldSources as Record<string, string>).location).toBe(
+        await rawItemId(`posting:acme/${ashby.posting.id}`),
+      );
+    });
+
+    it('updates a processed job for a new source without sending it back', async () => {
+      await save(liJob('4483900001', { applyUrl: ashbyUrl }), t1);
+      await markProcessed();
+      const result = await save(ashby, t2, Channel.ASHBY);
+
+      expect(result.job).toMatchObject({ created: false, reopened: false });
+      const [only] = await jobs();
+      expect(only).toMatchObject({
+        processingStatus: 'processed',
+        location: ashby.posting.locationName,
+      });
+    });
+
+    it('reopens a job seen again after three weeks unseen, not before', async () => {
+      await save(liJob('4483900001'), t1);
+      await markProcessed();
+      await save(liJob('4483900001'), at(20));
+      expect((await jobs())[0]!.processingStatus).toBe('processed');
+
+      const result = await save(liJob('4483900001'), at(41));
+      expect(result.job).toMatchObject({ reopened: true });
+      expect((await jobs())[0]).toMatchObject({
+        processingStatus: 'pending',
+        processingReason: 'reopened',
+        processingRequestedAt: at(41),
+      });
+    });
+
+    it('moves an item whose apply URL appears later, merging its old job', async () => {
+      await save(
+        liJob('4483941772', { applyType: 'EASY_APPLY', applyUrl: '' }),
+        t1,
+      );
+      await markProcessed();
+      const result = await save(liJob('4483941772'), t2);
+
+      expect(result.job).toMatchObject({ created: false });
+      const all = await jobs();
+      const old = all.find((j) => j.jobKey === 'linkedin-job:4483941772')!;
+      const moved = all.find((j) => j.jobKey.startsWith('url:'))!;
+      expect(old).toMatchObject({ status: 'merged', mergedIntoId: moved.id });
+      expect(moved).toMatchObject({
+        status: 'active',
+        processingStatus: 'processed',
+      });
+      expect(await sources()).toEqual([
+        expect.objectContaining({ jobId: moved.id }),
+      ]);
+    });
+
+    it('re-merges the old job when a moved item leaves other sources behind', async () => {
+      await save(liJob('4483900001', { title: 'Stays' }), t1);
+      await save(liJob('4483900002', { title: 'Leaves' }), t2);
+      const before = (await jobs())[0]!;
+      expect(before.title).toBe('Leaves');
+
+      await save(
+        liJob('4483900002', {
+          title: 'Leaves',
+          applyUrl: 'https://acme.com/jobs/99999',
+        }),
+        t3,
+      );
+      const after = await db.orm.public.NormalizedJob.where({
+        id: before.id,
+      }).first();
+      const stays = await rawItemId('id:4483900001');
+      expect(after).toMatchObject({ status: 'active', title: 'Stays' });
+      expect(
+        Object.values(after!.fieldSources as Record<string, string>),
+      ).toEqual(expect.arrayContaining([stays]));
+      expect(
+        Object.values(after!.fieldSources as Record<string, string>).every(
+          (id) => id === stays,
+        ),
+      ).toBe(true);
+      const moved = await db.orm.public.NormalizedJob.where({
+        jobKey: 'url:https://acme.com/jobs/99999',
+      }).first();
+      expect(moved).toMatchObject({
+        processingStatus: 'pending',
+        processingReason: 'new',
+      });
+    });
+
+    it('writes nothing new when a batch is replayed', async () => {
+      const b = await batch();
+      await repo.saveItem(input(b, liJob('4483900001'), t1));
+      const once = { jobs: await jobs(), sources: await sources() };
+      const again = await repo.saveItem(input(b, liJob('4483900001'), t1));
+
+      expect(again.job).toMatchObject({ created: false, reopened: false });
+      expect(await jobs()).toEqual(
+        once.jobs.map((j) => ({ ...j, updatedAt: expect.any(Date) })),
+      );
+      expect(await sources()).toEqual(once.sources);
+    });
+
+    it('ignores an older observation replayed after a newer one', async () => {
+      await save(liJob('4483941772'), at(30));
+      await markProcessed();
+      await save(
+        liJob('4483941772', { applyType: 'EASY_APPLY', applyUrl: '' }),
+        t1,
+      );
+
+      const all = await jobs();
+      expect(all).toHaveLength(1);
+      expect(all[0]).toMatchObject({
+        jobKey: 'url:https://sii.pl/en/job-ads/id/38247?sii_source=10',
+        processingStatus: 'processed',
+      });
+    });
+
+    it('creates one job when items with the same apply URL are saved concurrently', async () => {
+      const [b1, b2] = [await batch(), await batch()];
+      await Promise.all([
+        repo.saveItem(input(b1, liJob('4483900001'), t1)),
+        repo.saveItem(input(b2, liJob('4483900002'), t1)),
+      ]);
+      expect(await jobs()).toHaveLength(1);
+      expect(await sources()).toHaveLength(2);
+    });
+
+    it('keeps raw rows but makes no job when normalization rejects the item', async () => {
+      const result = await save(
+        liJob('4483900001', {
+          title: '',
+          description: '',
+          descriptionHtml: '',
+        }),
+        t1,
+      );
+      expect(result).toMatchObject({
+        newItem: true,
+        job: { invalid: expect.stringMatching(/^normalize:/) },
+      });
+      expect(await db.orm.public.RawItem.all()).toHaveLength(1);
+      expect(await jobs()).toHaveLength(0);
+      expect(await db.orm.public.NormalizedVersion.all()).toEqual([
+        expect.objectContaining({ status: 'invalid', record: null }),
+      ]);
     });
   });
 });

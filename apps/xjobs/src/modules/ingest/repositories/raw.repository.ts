@@ -8,6 +8,9 @@ import {
 } from 'src/database';
 import type { DatabaseTransaction } from 'src/database/seeds/seed.interface';
 import type { BatchReport, BatchStatus } from '../types';
+import { type LinkOutcome, linkJob } from './jobs.writer';
+
+export type { LinkOutcome };
 
 /** The part of a batch row ingest needs. */
 export interface BatchRecord {
@@ -32,13 +35,21 @@ export interface SaveItemInput {
   observedAt: Date;
 }
 
+/** What saving one item did, raw and normalized. */
+export interface SaveItemResult {
+  newItem: boolean;
+  newVersion: boolean;
+  job: LinkOutcome;
+}
+
 /** Stores raw items and moves collection batches through their statuses. */
 export abstract class RawStorageRepository {
   abstract findBatch(id: string): Promise<BatchRecord | null>;
-  /** One transaction per item; saving the same item again writes nothing new. */
-  abstract saveItem(
-    input: SaveItemInput,
-  ): Promise<{ newItem: boolean; newVersion: boolean }>;
+  /**
+   * One transaction per item: raw rows, then its normalized job. Saving the
+   * same item again writes nothing new.
+   */
+  abstract saveItem(input: SaveItemInput): Promise<SaveItemResult>;
   /** Only from `pending`. */
   abstract markIngested(id: string, report: BatchReport): Promise<void>;
   /** Counts a failed attempt; the final one marks the batch `failed`. */
@@ -79,9 +90,7 @@ export class PrismaRawStorageRepository extends RawStorageRepository {
     return row ? record(row) : null;
   }
 
-  async saveItem(
-    input: SaveItemInput,
-  ): Promise<{ newItem: boolean; newVersion: boolean }> {
+  async saveItem(input: SaveItemInput): Promise<SaveItemResult> {
     for (let attempt = 0; ; attempt++) {
       try {
         return await this.database.db.transaction((tx) => save(tx, input));
@@ -163,7 +172,7 @@ function record(row: CollectionBatchRow): BatchRecord {
 async function save(
   tx: DatabaseTransaction,
   input: SaveItemInput,
-): Promise<{ newItem: boolean; newVersion: boolean }> {
+): Promise<SaveItemResult> {
   const { orm } = tx;
   const at = input.observedAt;
 
@@ -208,10 +217,11 @@ async function save(
     .orderBy((row) => row.lastSeenAt.desc())
     .orderBy((row) => row.createdAt.desc())
     .first();
+  const latestVersionId = latest?.id ?? version.id;
   await orm.public.RawItem.where({ id: item.id }).updateAll({
     firstSeenAt: min(at, item.firstSeenAt),
     lastSeenAt: max(at, item.lastSeenAt),
-    latestVersionId: latest?.id ?? version.id,
+    latestVersionId,
   });
 
   const attribution = input.queryId ?? NO_QUERY;
@@ -231,5 +241,14 @@ async function save(
       observedAt: at,
     });
 
-  return { newItem, newVersion };
+  const job = await linkJob(tx, {
+    rawItemId: item.id,
+    channel: input.channel,
+    sourceKey: input.sourceKey,
+    latestVersionId,
+    observedAt: at,
+    rebuild: false,
+  });
+
+  return { newItem, newVersion, job };
 }

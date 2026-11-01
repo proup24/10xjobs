@@ -3,6 +3,7 @@ import { MemoryStorageService } from 'src/modules/storage/testing';
 import { ingestConfig } from '../config';
 import {
   type BatchRecord,
+  type LinkOutcome,
   RawStorageRepository,
   type SaveItemInput,
 } from '../repositories/raw.repository';
@@ -25,6 +26,8 @@ class FakeRepository extends RawStorageRepository {
   attemptFailures: { id: string; error: string; final: boolean }[] = [];
   keys = new Set<string>();
   failSave = false;
+  /** The job outcome per source key; a created job by default. */
+  outcomes = new Map<string, LinkOutcome>();
 
   async findBatch(id: string) {
     return this.batches.get(id) ?? null;
@@ -34,7 +37,12 @@ class FakeRepository extends RawStorageRepository {
     this.saved.push(input);
     const newItem = !this.keys.has(input.sourceKey);
     this.keys.add(input.sourceKey);
-    return { newItem, newVersion: newItem };
+    const job = this.outcomes.get(input.sourceKey) ?? {
+      jobId: `job-${input.sourceKey}`,
+      created: newItem,
+      reopened: false,
+    };
+    return { newItem, newVersion: newItem, job };
   }
   async markIngested(id: string, report: BatchReport) {
     this.reports.set(id, report);
