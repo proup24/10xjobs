@@ -1,0 +1,2391 @@
+[
+  {
+    "id": "table.arrangements",
+    "label": "Create table \"arrangements\"",
+    "summary": "Creates table \"arrangements\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "arrangements"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"arrangements\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"arrangements\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"arrangements\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"arrangements\"",
+        "sql": "CREATE TABLE \"public\".\"arrangements\" (\n  \"aliases\" text[] NOT NULL,\n  \"approvedAt\" timestamptz(3),\n  \"code\" text NOT NULL,\n  \"firstSeenAt\" timestamptz(3) NOT NULL,\n  \"label\" text NOT NULL,\n  \"occurrences\" int4 DEFAULT 0 NOT NULL,\n  \"status\" text NOT NULL,\n  PRIMARY KEY (\"code\"),\n  CONSTRAINT \"arrangements_aliases_elem_not_null_3676266c\" CHECK (array_position(\"aliases\", NULL) IS NULL),\n  CONSTRAINT \"arrangements_status_e626d06d\" CHECK (status IN ('approved', 'proposed'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"arrangements\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"arrangements\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"arrangements\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.cities",
+    "label": "Create table \"cities\"",
+    "summary": "Creates table \"cities\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "cities"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"cities\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"cities\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"cities\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"cities\"",
+        "sql": "CREATE TABLE \"public\".\"cities\" (\n  \"aliases\" text[] NOT NULL,\n  \"approvedAt\" timestamptz(3),\n  \"countryCode\" text NOT NULL,\n  \"firstSeenAt\" timestamptz(3) NOT NULL,\n  \"geonamesId\" int4,\n  \"id\" uuid NOT NULL,\n  \"name\" text NOT NULL,\n  \"nameKey\" text NOT NULL,\n  \"occurrences\" int4 DEFAULT 0 NOT NULL,\n  \"status\" text NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"cities_aliases_elem_not_null_3676266c\" CHECK (array_position(\"aliases\", NULL) IS NULL),\n  CONSTRAINT \"cities_status_e626d06d\" CHECK (status IN ('approved', 'proposed'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"cities\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"cities\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"cities\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.contract_types",
+    "label": "Create table \"contract_types\"",
+    "summary": "Creates table \"contract_types\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "contract_types"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"contract_types\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"contract_types\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"contract_types\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"contract_types\"",
+        "sql": "CREATE TABLE \"public\".\"contract_types\" (\n  \"aliases\" text[] NOT NULL,\n  \"approvedAt\" timestamptz(3),\n  \"code\" text NOT NULL,\n  \"firstSeenAt\" timestamptz(3) NOT NULL,\n  \"label\" text NOT NULL,\n  \"occurrences\" int4 DEFAULT 0 NOT NULL,\n  \"status\" text NOT NULL,\n  PRIMARY KEY (\"code\"),\n  CONSTRAINT \"contract_types_aliases_elem_not_null_3676266c\" CHECK (array_position(\"aliases\", NULL) IS NULL),\n  CONSTRAINT \"contract_types_status_e626d06d\" CHECK (status IN ('approved', 'proposed'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"contract_types\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"contract_types\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"contract_types\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.countries",
+    "label": "Create table \"countries\"",
+    "summary": "Creates table \"countries\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "countries"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"countries\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"countries\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"countries\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"countries\"",
+        "sql": "CREATE TABLE \"public\".\"countries\" (\n  \"aliases\" text[] NOT NULL,\n  \"approvedAt\" timestamptz(3),\n  \"code\" text NOT NULL,\n  \"firstSeenAt\" timestamptz(3) NOT NULL,\n  \"label\" text NOT NULL,\n  \"occurrences\" int4 DEFAULT 0 NOT NULL,\n  \"status\" text NOT NULL,\n  PRIMARY KEY (\"code\"),\n  CONSTRAINT \"countries_aliases_elem_not_null_3676266c\" CHECK (array_position(\"aliases\", NULL) IS NULL),\n  CONSTRAINT \"countries_status_e626d06d\" CHECK (status IN ('approved', 'proposed'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"countries\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"countries\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"countries\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.engagements",
+    "label": "Create table \"engagements\"",
+    "summary": "Creates table \"engagements\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "engagements"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"engagements\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"engagements\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"engagements\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"engagements\"",
+        "sql": "CREATE TABLE \"public\".\"engagements\" (\n  \"aliases\" text[] NOT NULL,\n  \"approvedAt\" timestamptz(3),\n  \"code\" text NOT NULL,\n  \"firstSeenAt\" timestamptz(3) NOT NULL,\n  \"label\" text NOT NULL,\n  \"occurrences\" int4 DEFAULT 0 NOT NULL,\n  \"status\" text NOT NULL,\n  PRIMARY KEY (\"code\"),\n  CONSTRAINT \"engagements_aliases_elem_not_null_3676266c\" CHECK (array_position(\"aliases\", NULL) IS NULL),\n  CONSTRAINT \"engagements_status_e626d06d\" CHECK (status IN ('approved', 'proposed'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"engagements\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"engagements\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"engagements\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.job_extractions",
+    "label": "Create table \"job_extractions\"",
+    "summary": "Creates table \"job_extractions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "job_extractions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"job_extractions\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"job_extractions\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"job_extractions\"",
+        "sql": "CREATE TABLE \"public\".\"job_extractions\" (\n  \"arrangement\" text,\n  \"cityIds\" uuid[] NOT NULL,\n  \"contractType\" text,\n  \"costUsd\" numeric NOT NULL,\n  \"countryCodes\" text[] NOT NULL,\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"data\" jsonb NOT NULL,\n  \"decisionModel\" text NOT NULL,\n  \"engagement\" text,\n  \"extractionModel\" text NOT NULL,\n  \"id\" uuid NOT NULL,\n  \"inputHash\" text NOT NULL,\n  \"isSoftwareEngineeringRole\" bool,\n  \"jobId\" uuid NOT NULL,\n  \"mainStackTags\" text[] NOT NULL,\n  \"needsReview\" bool NOT NULL,\n  \"promptHash\" text NOT NULL,\n  \"regionCodes\" text[] NOT NULL,\n  \"roleKind\" text,\n  \"salaryCurrency\" text,\n  \"salaryMax\" int4,\n  \"salaryMin\" int4,\n  \"salaryPeriod\" text,\n  \"schemaVersion\" int4 NOT NULL,\n  \"seniority\" text,\n  \"techTags\" text[] NOT NULL,\n  \"worldwide\" bool NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"job_extractions_cityIds_elem_not_null_6db9e1dc\" CHECK (array_position(\"cityIds\", NULL) IS NULL),\n  CONSTRAINT \"job_extractions_countryCodes_elem_not_null_59dca6fd\" CHECK (array_position(\"countryCodes\", NULL) IS NULL),\n  CONSTRAINT \"job_extractions_mainStackTags_elem_not_null_e0558217\" CHECK (array_position(\"mainStackTags\", NULL) IS NULL),\n  CONSTRAINT \"job_extractions_regionCodes_elem_not_null_65a1cb26\" CHECK (array_position(\"regionCodes\", NULL) IS NULL),\n  CONSTRAINT \"job_extractions_techTags_elem_not_null_93a73d6b\" CHECK (array_position(\"techTags\", NULL) IS NULL)\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"job_extractions\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"job_extractions\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.junk_flags",
+    "label": "Create table \"junk_flags\"",
+    "summary": "Creates table \"junk_flags\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "junk_flags"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"junk_flags\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"junk_flags\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"junk_flags\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"junk_flags\"",
+        "sql": "CREATE TABLE \"public\".\"junk_flags\" (\n  \"aliases\" text[] NOT NULL,\n  \"approvedAt\" timestamptz(3),\n  \"code\" text NOT NULL,\n  \"firstSeenAt\" timestamptz(3) NOT NULL,\n  \"label\" text NOT NULL,\n  \"occurrences\" int4 DEFAULT 0 NOT NULL,\n  \"status\" text NOT NULL,\n  PRIMARY KEY (\"code\"),\n  CONSTRAINT \"junk_flags_aliases_elem_not_null_3676266c\" CHECK (array_position(\"aliases\", NULL) IS NULL),\n  CONSTRAINT \"junk_flags_status_e626d06d\" CHECK (status IN ('approved', 'proposed'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"junk_flags\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"junk_flags\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"junk_flags\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.processing_attempts",
+    "label": "Create table \"processing_attempts\"",
+    "summary": "Creates table \"processing_attempts\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "processing_attempts"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"processing_attempts\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"processing_attempts\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"processing_attempts\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"processing_attempts\"",
+        "sql": "CREATE TABLE \"public\".\"processing_attempts\" (\n  \"cachedInputTokens\" int4 NOT NULL,\n  \"costUsd\" numeric NOT NULL,\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"error\" text,\n  \"eval\" bool DEFAULT false NOT NULL,\n  \"extractionId\" uuid,\n  \"id\" uuid NOT NULL,\n  \"inputTokens\" int4 NOT NULL,\n  \"jobId\" uuid,\n  \"latencyMs\" int4 NOT NULL,\n  \"model\" text NOT NULL,\n  \"outcome\" text NOT NULL,\n  \"outputTokens\" int4 NOT NULL,\n  \"providerRequestId\" text,\n  \"quoteFailures\" int4 DEFAULT 0 NOT NULL,\n  \"step\" text NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"processing_attempts_outcome_f70ba339\" CHECK (outcome IN ('ok', 'error', 'invalid')),\n  CONSTRAINT \"processing_attempts_step_0068b0ea\" CHECK (step IN ('decision', 'extraction', 'extraction_retry'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"processing_attempts\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"processing_attempts\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"processing_attempts\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.region_countries",
+    "label": "Create table \"region_countries\"",
+    "summary": "Creates table \"region_countries\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "region_countries"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"region_countries\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"region_countries\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"region_countries\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"region_countries\"",
+        "sql": "CREATE TABLE \"public\".\"region_countries\" (\n  \"countryCode\" text NOT NULL,\n  \"regionCode\" text NOT NULL,\n  PRIMARY KEY (\"regionCode\", \"countryCode\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"region_countries\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"region_countries\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"region_countries\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.regions",
+    "label": "Create table \"regions\"",
+    "summary": "Creates table \"regions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "regions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"regions\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"regions\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"regions\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"regions\"",
+        "sql": "CREATE TABLE \"public\".\"regions\" (\n  \"aliases\" text[] NOT NULL,\n  \"approvedAt\" timestamptz(3),\n  \"code\" text NOT NULL,\n  \"firstSeenAt\" timestamptz(3) NOT NULL,\n  \"label\" text NOT NULL,\n  \"occurrences\" int4 DEFAULT 0 NOT NULL,\n  \"status\" text NOT NULL,\n  PRIMARY KEY (\"code\"),\n  CONSTRAINT \"regions_aliases_elem_not_null_3676266c\" CHECK (array_position(\"aliases\", NULL) IS NULL),\n  CONSTRAINT \"regions_status_e626d06d\" CHECK (status IN ('approved', 'proposed'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"regions\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"regions\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"regions\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.role_kinds",
+    "label": "Create table \"role_kinds\"",
+    "summary": "Creates table \"role_kinds\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "role_kinds"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"role_kinds\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"role_kinds\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"role_kinds\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"role_kinds\"",
+        "sql": "CREATE TABLE \"public\".\"role_kinds\" (\n  \"aliases\" text[] NOT NULL,\n  \"approvedAt\" timestamptz(3),\n  \"code\" text NOT NULL,\n  \"firstSeenAt\" timestamptz(3) NOT NULL,\n  \"label\" text NOT NULL,\n  \"occurrences\" int4 DEFAULT 0 NOT NULL,\n  \"status\" text NOT NULL,\n  PRIMARY KEY (\"code\"),\n  CONSTRAINT \"role_kinds_aliases_elem_not_null_3676266c\" CHECK (array_position(\"aliases\", NULL) IS NULL),\n  CONSTRAINT \"role_kinds_status_e626d06d\" CHECK (status IN ('approved', 'proposed'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"role_kinds\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"role_kinds\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"role_kinds\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.seniorities",
+    "label": "Create table \"seniorities\"",
+    "summary": "Creates table \"seniorities\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "seniorities"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"seniorities\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"seniorities\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"seniorities\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"seniorities\"",
+        "sql": "CREATE TABLE \"public\".\"seniorities\" (\n  \"aliases\" text[] NOT NULL,\n  \"approvedAt\" timestamptz(3),\n  \"code\" text NOT NULL,\n  \"firstSeenAt\" timestamptz(3) NOT NULL,\n  \"label\" text NOT NULL,\n  \"occurrences\" int4 DEFAULT 0 NOT NULL,\n  \"status\" text NOT NULL,\n  PRIMARY KEY (\"code\"),\n  CONSTRAINT \"seniorities_aliases_elem_not_null_3676266c\" CHECK (array_position(\"aliases\", NULL) IS NULL),\n  CONSTRAINT \"seniorities_status_e626d06d\" CHECK (status IN ('approved', 'proposed'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"seniorities\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"seniorities\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"seniorities\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.tech_tags",
+    "label": "Create table \"tech_tags\"",
+    "summary": "Creates table \"tech_tags\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "tech_tags"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"tech_tags\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"tech_tags\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"tech_tags\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"tech_tags\"",
+        "sql": "CREATE TABLE \"public\".\"tech_tags\" (\n  \"aliases\" text[] NOT NULL,\n  \"approvedAt\" timestamptz(3),\n  \"code\" text NOT NULL,\n  \"family\" text,\n  \"firstSeenAt\" timestamptz(3) NOT NULL,\n  \"implies\" text[] NOT NULL,\n  \"label\" text NOT NULL,\n  \"occurrences\" int4 DEFAULT 0 NOT NULL,\n  \"status\" text NOT NULL,\n  PRIMARY KEY (\"code\"),\n  CONSTRAINT \"tech_tags_aliases_elem_not_null_3676266c\" CHECK (array_position(\"aliases\", NULL) IS NULL),\n  CONSTRAINT \"tech_tags_implies_elem_not_null_0dbb5db7\" CHECK (array_position(\"implies\", NULL) IS NULL),\n  CONSTRAINT \"tech_tags_status_e626d06d\" CHECK (status IN ('approved', 'proposed'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"tech_tags\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"tech_tags\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"tech_tags\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "column.public.normalized_jobs.currentExtractionId",
+    "label": "Add column \"currentExtractionId\" to \"normalized_jobs\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "currentExtractionId",
+        "table": "normalized_jobs"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"currentExtractionId\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "normalized_jobs",
+          "currentExtractionId"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"currentExtractionId\" on \"normalized_jobs\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"currentExtractionId\"",
+        "sql": "ALTER TABLE \"public\".\"normalized_jobs\" ADD COLUMN \"currentExtractionId\" uuid"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"currentExtractionId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "normalized_jobs",
+          "currentExtractionId"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"currentExtractionId\" on \"normalized_jobs\""
+        }
+      },
+      {
+        "description": "verify column \"currentExtractionId\" has type \"uuid\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "normalized_jobs",
+          "currentExtractionId",
+          "uuid"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.normalized_jobs.processingStartedAt",
+    "label": "Add column \"processingStartedAt\" to \"normalized_jobs\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "processingStartedAt",
+        "table": "normalized_jobs"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"processingStartedAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "normalized_jobs",
+          "processingStartedAt"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"processingStartedAt\" on \"normalized_jobs\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"processingStartedAt\"",
+        "sql": "ALTER TABLE \"public\".\"normalized_jobs\" ADD COLUMN \"processingStartedAt\" timestamptz(3)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"processingStartedAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "normalized_jobs",
+          "processingStartedAt"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"processingStartedAt\" on \"normalized_jobs\""
+        }
+      },
+      {
+        "description": "verify column \"processingStartedAt\" has type \"timestamp(3) with time zone\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "normalized_jobs",
+          "processingStartedAt",
+          "timestamp(3) with time zone"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.cities.cities_nameKey_countryCode_key",
+    "label": "Add unique constraint on \"cities\" (nameKey, countryCode)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "cities_nameKey_countryCode_key",
+        "table": "cities"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"cities_nameKey_countryCode_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "cities_nameKey_countryCode_key",
+          "public",
+          "\"public\".\"cities\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"cities_nameKey_countryCode_key\" on \"cities\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"cities_nameKey_countryCode_key\"",
+        "sql": "ALTER TABLE \"public\".\"cities\" ADD CONSTRAINT \"cities_nameKey_countryCode_key\" UNIQUE (\"nameKey\", \"countryCode\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"cities_nameKey_countryCode_key\" exists on (nameKey, countryCode)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "cities_nameKey_countryCode_key",
+          "public",
+          "\"public\".\"cities\"",
+          "u",
+          "[\"nameKey\",\"countryCode\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.cities.cities_countryCode_idx_479cc5a2",
+    "label": "Create index \"cities_countryCode_idx_479cc5a2\" on \"cities\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "cities_countryCode_idx_479cc5a2",
+        "table": "cities"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"cities_countryCode_idx_479cc5a2\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"cities_countryCode_idx_479cc5a2\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"cities_countryCode_idx_479cc5a2\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"cities_countryCode_idx_479cc5a2\"",
+        "sql": "CREATE INDEX \"cities_countryCode_idx_479cc5a2\" ON \"public\".\"cities\" (\"countryCode\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"cities_countryCode_idx_479cc5a2\" exists on \"cities\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"cities_countryCode_idx_479cc5a2\"",
+          "i",
+          "I",
+          "\"public\".\"cities\"",
+          "btree",
+          "[\"countryCode\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.job_extractions.job_extractions_arrangement_idx_5f2eb234",
+    "label": "Create index \"job_extractions_arrangement_idx_5f2eb234\" on \"job_extractions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "job_extractions_arrangement_idx_5f2eb234",
+        "table": "job_extractions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"job_extractions_arrangement_idx_5f2eb234\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_arrangement_idx_5f2eb234\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"job_extractions_arrangement_idx_5f2eb234\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"job_extractions_arrangement_idx_5f2eb234\"",
+        "sql": "CREATE INDEX \"job_extractions_arrangement_idx_5f2eb234\" ON \"public\".\"job_extractions\" (\"arrangement\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"job_extractions_arrangement_idx_5f2eb234\" exists on \"job_extractions\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_arrangement_idx_5f2eb234\"",
+          "i",
+          "I",
+          "\"public\".\"job_extractions\"",
+          "btree",
+          "[\"arrangement\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.job_extractions.job_extractions_cityIds_gin_36569053",
+    "label": "Create index \"job_extractions_cityIds_gin_36569053\" on \"job_extractions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "job_extractions_cityIds_gin_36569053",
+        "table": "job_extractions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"job_extractions_cityIds_gin_36569053\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_cityIds_gin_36569053\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"job_extractions_cityIds_gin_36569053\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"job_extractions_cityIds_gin_36569053\"",
+        "sql": "CREATE INDEX \"job_extractions_cityIds_gin_36569053\" ON \"public\".\"job_extractions\" USING \"gin\" (\"cityIds\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"job_extractions_cityIds_gin_36569053\" exists on \"job_extractions\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_cityIds_gin_36569053\"",
+          "i",
+          "I",
+          "\"public\".\"job_extractions\"",
+          "gin",
+          "[\"cityIds\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.job_extractions.job_extractions_contractType_idx_7af72bd3",
+    "label": "Create index \"job_extractions_contractType_idx_7af72bd3\" on \"job_extractions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "job_extractions_contractType_idx_7af72bd3",
+        "table": "job_extractions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"job_extractions_contractType_idx_7af72bd3\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_contractType_idx_7af72bd3\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"job_extractions_contractType_idx_7af72bd3\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"job_extractions_contractType_idx_7af72bd3\"",
+        "sql": "CREATE INDEX \"job_extractions_contractType_idx_7af72bd3\" ON \"public\".\"job_extractions\" (\"contractType\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"job_extractions_contractType_idx_7af72bd3\" exists on \"job_extractions\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_contractType_idx_7af72bd3\"",
+          "i",
+          "I",
+          "\"public\".\"job_extractions\"",
+          "btree",
+          "[\"contractType\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.job_extractions.job_extractions_countryCodes_gin_d29e2bf0",
+    "label": "Create index \"job_extractions_countryCodes_gin_d29e2bf0\" on \"job_extractions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "job_extractions_countryCodes_gin_d29e2bf0",
+        "table": "job_extractions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"job_extractions_countryCodes_gin_d29e2bf0\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_countryCodes_gin_d29e2bf0\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"job_extractions_countryCodes_gin_d29e2bf0\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"job_extractions_countryCodes_gin_d29e2bf0\"",
+        "sql": "CREATE INDEX \"job_extractions_countryCodes_gin_d29e2bf0\" ON \"public\".\"job_extractions\" USING \"gin\" (\"countryCodes\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"job_extractions_countryCodes_gin_d29e2bf0\" exists on \"job_extractions\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_countryCodes_gin_d29e2bf0\"",
+          "i",
+          "I",
+          "\"public\".\"job_extractions\"",
+          "gin",
+          "[\"countryCodes\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.job_extractions.job_extractions_engagement_idx_01398bc8",
+    "label": "Create index \"job_extractions_engagement_idx_01398bc8\" on \"job_extractions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "job_extractions_engagement_idx_01398bc8",
+        "table": "job_extractions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"job_extractions_engagement_idx_01398bc8\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_engagement_idx_01398bc8\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"job_extractions_engagement_idx_01398bc8\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"job_extractions_engagement_idx_01398bc8\"",
+        "sql": "CREATE INDEX \"job_extractions_engagement_idx_01398bc8\" ON \"public\".\"job_extractions\" (\"engagement\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"job_extractions_engagement_idx_01398bc8\" exists on \"job_extractions\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_engagement_idx_01398bc8\"",
+          "i",
+          "I",
+          "\"public\".\"job_extractions\"",
+          "btree",
+          "[\"engagement\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.job_extractions.job_extractions_jobId_idx_623c8f77",
+    "label": "Create index \"job_extractions_jobId_idx_623c8f77\" on \"job_extractions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "job_extractions_jobId_idx_623c8f77",
+        "table": "job_extractions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"job_extractions_jobId_idx_623c8f77\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_jobId_idx_623c8f77\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"job_extractions_jobId_idx_623c8f77\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"job_extractions_jobId_idx_623c8f77\"",
+        "sql": "CREATE INDEX \"job_extractions_jobId_idx_623c8f77\" ON \"public\".\"job_extractions\" (\"jobId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"job_extractions_jobId_idx_623c8f77\" exists on \"job_extractions\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_jobId_idx_623c8f77\"",
+          "i",
+          "I",
+          "\"public\".\"job_extractions\"",
+          "btree",
+          "[\"jobId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.job_extractions.job_extractions_job_created",
+    "label": "Create index \"job_extractions_job_created\" on \"job_extractions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "job_extractions_job_created",
+        "table": "job_extractions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"job_extractions_job_created\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_job_created\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"job_extractions_job_created\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"job_extractions_job_created\"",
+        "sql": "CREATE INDEX \"job_extractions_job_created\" ON \"public\".\"job_extractions\" (\"jobId\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"job_extractions_job_created\" exists on \"job_extractions\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_job_created\"",
+          "i",
+          "I",
+          "\"public\".\"job_extractions\"",
+          "btree",
+          "[\"jobId\",\"createdAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.job_extractions.job_extractions_mainStackTags_gin_a32a2b95",
+    "label": "Create index \"job_extractions_mainStackTags_gin_a32a2b95\" on \"job_extractions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "job_extractions_mainStackTags_gin_a32a2b95",
+        "table": "job_extractions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"job_extractions_mainStackTags_gin_a32a2b95\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_mainStackTags_gin_a32a2b95\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"job_extractions_mainStackTags_gin_a32a2b95\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"job_extractions_mainStackTags_gin_a32a2b95\"",
+        "sql": "CREATE INDEX \"job_extractions_mainStackTags_gin_a32a2b95\" ON \"public\".\"job_extractions\" USING \"gin\" (\"mainStackTags\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"job_extractions_mainStackTags_gin_a32a2b95\" exists on \"job_extractions\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_mainStackTags_gin_a32a2b95\"",
+          "i",
+          "I",
+          "\"public\".\"job_extractions\"",
+          "gin",
+          "[\"mainStackTags\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.job_extractions.job_extractions_regionCodes_gin_2489d722",
+    "label": "Create index \"job_extractions_regionCodes_gin_2489d722\" on \"job_extractions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "job_extractions_regionCodes_gin_2489d722",
+        "table": "job_extractions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"job_extractions_regionCodes_gin_2489d722\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_regionCodes_gin_2489d722\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"job_extractions_regionCodes_gin_2489d722\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"job_extractions_regionCodes_gin_2489d722\"",
+        "sql": "CREATE INDEX \"job_extractions_regionCodes_gin_2489d722\" ON \"public\".\"job_extractions\" USING \"gin\" (\"regionCodes\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"job_extractions_regionCodes_gin_2489d722\" exists on \"job_extractions\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_regionCodes_gin_2489d722\"",
+          "i",
+          "I",
+          "\"public\".\"job_extractions\"",
+          "gin",
+          "[\"regionCodes\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.job_extractions.job_extractions_reuse",
+    "label": "Create index \"job_extractions_reuse\" on \"job_extractions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "job_extractions_reuse",
+        "table": "job_extractions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"job_extractions_reuse\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_reuse\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"job_extractions_reuse\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"job_extractions_reuse\"",
+        "sql": "CREATE INDEX \"job_extractions_reuse\" ON \"public\".\"job_extractions\" (\"inputHash\", \"schemaVersion\", \"promptHash\", \"decisionModel\", \"extractionModel\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"job_extractions_reuse\" exists on \"job_extractions\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_reuse\"",
+          "i",
+          "I",
+          "\"public\".\"job_extractions\"",
+          "btree",
+          "[\"inputHash\",\"schemaVersion\",\"promptHash\",\"decisionModel\",\"extractionModel\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.job_extractions.job_extractions_roleKind_idx_0a94017d",
+    "label": "Create index \"job_extractions_roleKind_idx_0a94017d\" on \"job_extractions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "job_extractions_roleKind_idx_0a94017d",
+        "table": "job_extractions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"job_extractions_roleKind_idx_0a94017d\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_roleKind_idx_0a94017d\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"job_extractions_roleKind_idx_0a94017d\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"job_extractions_roleKind_idx_0a94017d\"",
+        "sql": "CREATE INDEX \"job_extractions_roleKind_idx_0a94017d\" ON \"public\".\"job_extractions\" (\"roleKind\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"job_extractions_roleKind_idx_0a94017d\" exists on \"job_extractions\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_roleKind_idx_0a94017d\"",
+          "i",
+          "I",
+          "\"public\".\"job_extractions\"",
+          "btree",
+          "[\"roleKind\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.job_extractions.job_extractions_seniority_idx_79fd7107",
+    "label": "Create index \"job_extractions_seniority_idx_79fd7107\" on \"job_extractions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "job_extractions_seniority_idx_79fd7107",
+        "table": "job_extractions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"job_extractions_seniority_idx_79fd7107\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_seniority_idx_79fd7107\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"job_extractions_seniority_idx_79fd7107\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"job_extractions_seniority_idx_79fd7107\"",
+        "sql": "CREATE INDEX \"job_extractions_seniority_idx_79fd7107\" ON \"public\".\"job_extractions\" (\"seniority\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"job_extractions_seniority_idx_79fd7107\" exists on \"job_extractions\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_seniority_idx_79fd7107\"",
+          "i",
+          "I",
+          "\"public\".\"job_extractions\"",
+          "btree",
+          "[\"seniority\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.job_extractions.job_extractions_techTags_gin_e48af3d5",
+    "label": "Create index \"job_extractions_techTags_gin_e48af3d5\" on \"job_extractions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "job_extractions_techTags_gin_e48af3d5",
+        "table": "job_extractions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"job_extractions_techTags_gin_e48af3d5\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_techTags_gin_e48af3d5\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"job_extractions_techTags_gin_e48af3d5\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"job_extractions_techTags_gin_e48af3d5\"",
+        "sql": "CREATE INDEX \"job_extractions_techTags_gin_e48af3d5\" ON \"public\".\"job_extractions\" USING \"gin\" (\"techTags\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"job_extractions_techTags_gin_e48af3d5\" exists on \"job_extractions\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_techTags_gin_e48af3d5\"",
+          "i",
+          "I",
+          "\"public\".\"job_extractions\"",
+          "gin",
+          "[\"techTags\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.normalized_jobs.normalized_jobs_currentExtractionId_idx_6f0ea778",
+    "label": "Create index \"normalized_jobs_currentExtractionId_idx_6f0ea778\" on \"normalized_jobs\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "normalized_jobs_currentExtractionId_idx_6f0ea778",
+        "table": "normalized_jobs"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"normalized_jobs_currentExtractionId_idx_6f0ea778\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"normalized_jobs_currentExtractionId_idx_6f0ea778\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"normalized_jobs_currentExtractionId_idx_6f0ea778\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"normalized_jobs_currentExtractionId_idx_6f0ea778\"",
+        "sql": "CREATE INDEX \"normalized_jobs_currentExtractionId_idx_6f0ea778\" ON \"public\".\"normalized_jobs\" (\"currentExtractionId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"normalized_jobs_currentExtractionId_idx_6f0ea778\" exists on \"normalized_jobs\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"normalized_jobs_currentExtractionId_idx_6f0ea778\"",
+          "i",
+          "I",
+          "\"public\".\"normalized_jobs\"",
+          "btree",
+          "[\"currentExtractionId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.processing_attempts.processing_attempts_created_noneval_95f31976",
+    "label": "Create index \"processing_attempts_created_noneval_95f31976\" on \"processing_attempts\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "processing_attempts_created_noneval_95f31976",
+        "table": "processing_attempts"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"processing_attempts_created_noneval_95f31976\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"processing_attempts_created_noneval_95f31976\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"processing_attempts_created_noneval_95f31976\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"processing_attempts_created_noneval_95f31976\"",
+        "sql": "CREATE INDEX \"processing_attempts_created_noneval_95f31976\" ON \"public\".\"processing_attempts\" (\"createdAt\") WHERE (NOT eval)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"processing_attempts_created_noneval_95f31976\" exists on \"processing_attempts\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NOT NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"processing_attempts_created_noneval_95f31976\"",
+          "i",
+          "I",
+          "\"public\".\"processing_attempts\"",
+          "btree",
+          "[\"createdAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.processing_attempts.processing_attempts_extractionId_idx_3dd68fa6",
+    "label": "Create index \"processing_attempts_extractionId_idx_3dd68fa6\" on \"processing_attempts\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "processing_attempts_extractionId_idx_3dd68fa6",
+        "table": "processing_attempts"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"processing_attempts_extractionId_idx_3dd68fa6\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"processing_attempts_extractionId_idx_3dd68fa6\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"processing_attempts_extractionId_idx_3dd68fa6\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"processing_attempts_extractionId_idx_3dd68fa6\"",
+        "sql": "CREATE INDEX \"processing_attempts_extractionId_idx_3dd68fa6\" ON \"public\".\"processing_attempts\" (\"extractionId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"processing_attempts_extractionId_idx_3dd68fa6\" exists on \"processing_attempts\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"processing_attempts_extractionId_idx_3dd68fa6\"",
+          "i",
+          "I",
+          "\"public\".\"processing_attempts\"",
+          "btree",
+          "[\"extractionId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.processing_attempts.processing_attempts_jobId_idx_623c8f77",
+    "label": "Create index \"processing_attempts_jobId_idx_623c8f77\" on \"processing_attempts\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "processing_attempts_jobId_idx_623c8f77",
+        "table": "processing_attempts"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"processing_attempts_jobId_idx_623c8f77\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"processing_attempts_jobId_idx_623c8f77\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"processing_attempts_jobId_idx_623c8f77\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"processing_attempts_jobId_idx_623c8f77\"",
+        "sql": "CREATE INDEX \"processing_attempts_jobId_idx_623c8f77\" ON \"public\".\"processing_attempts\" (\"jobId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"processing_attempts_jobId_idx_623c8f77\" exists on \"processing_attempts\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"processing_attempts_jobId_idx_623c8f77\"",
+          "i",
+          "I",
+          "\"public\".\"processing_attempts\"",
+          "btree",
+          "[\"jobId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.region_countries.region_countries_countryCode_idx_479cc5a2",
+    "label": "Create index \"region_countries_countryCode_idx_479cc5a2\" on \"region_countries\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "region_countries_countryCode_idx_479cc5a2",
+        "table": "region_countries"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"region_countries_countryCode_idx_479cc5a2\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"region_countries_countryCode_idx_479cc5a2\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"region_countries_countryCode_idx_479cc5a2\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"region_countries_countryCode_idx_479cc5a2\"",
+        "sql": "CREATE INDEX \"region_countries_countryCode_idx_479cc5a2\" ON \"public\".\"region_countries\" (\"countryCode\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"region_countries_countryCode_idx_479cc5a2\" exists on \"region_countries\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"region_countries_countryCode_idx_479cc5a2\"",
+          "i",
+          "I",
+          "\"public\".\"region_countries\"",
+          "btree",
+          "[\"countryCode\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.region_countries.region_countries_regionCode_idx_65b6bdbe",
+    "label": "Create index \"region_countries_regionCode_idx_65b6bdbe\" on \"region_countries\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "region_countries_regionCode_idx_65b6bdbe",
+        "table": "region_countries"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"region_countries_regionCode_idx_65b6bdbe\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"region_countries_regionCode_idx_65b6bdbe\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"region_countries_regionCode_idx_65b6bdbe\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"region_countries_regionCode_idx_65b6bdbe\"",
+        "sql": "CREATE INDEX \"region_countries_regionCode_idx_65b6bdbe\" ON \"public\".\"region_countries\" (\"regionCode\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"region_countries_regionCode_idx_65b6bdbe\" exists on \"region_countries\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"region_countries_regionCode_idx_65b6bdbe\"",
+          "i",
+          "I",
+          "\"public\".\"region_countries\"",
+          "btree",
+          "[\"regionCode\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.cities.cities_countryCode_fkey",
+    "label": "Add foreign key \"cities_countryCode_fkey\" on \"cities\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "cities_countryCode_fkey",
+        "table": "cities"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"cities_countryCode_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "cities_countryCode_fkey",
+          "public",
+          "\"public\".\"cities\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"cities_countryCode_fkey\" on \"cities\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"cities_countryCode_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"cities\"\nADD CONSTRAINT \"cities_countryCode_fkey\"\nFOREIGN KEY (\"countryCode\")\nREFERENCES \"public\".\"countries\" (\"code\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"cities_countryCode_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "cities_countryCode_fkey",
+          "public",
+          "\"public\".\"cities\"",
+          "f",
+          "[\"countryCode\"]",
+          "\"public\".\"countries\"",
+          "[\"code\"]",
+          "r",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.job_extractions.job_extractions_jobId_fkey",
+    "label": "Add foreign key \"job_extractions_jobId_fkey\" on \"job_extractions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "job_extractions_jobId_fkey",
+        "table": "job_extractions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"job_extractions_jobId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "job_extractions_jobId_fkey",
+          "public",
+          "\"public\".\"job_extractions\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"job_extractions_jobId_fkey\" on \"job_extractions\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"job_extractions_jobId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"job_extractions\"\nADD CONSTRAINT \"job_extractions_jobId_fkey\"\nFOREIGN KEY (\"jobId\")\nREFERENCES \"public\".\"normalized_jobs\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"job_extractions_jobId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "job_extractions_jobId_fkey",
+          "public",
+          "\"public\".\"job_extractions\"",
+          "f",
+          "[\"jobId\"]",
+          "\"public\".\"normalized_jobs\"",
+          "[\"id\"]",
+          "r",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.job_extractions.job_extractions_arrangement_fkey",
+    "label": "Add foreign key \"job_extractions_arrangement_fkey\" on \"job_extractions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "job_extractions_arrangement_fkey",
+        "table": "job_extractions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"job_extractions_arrangement_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "job_extractions_arrangement_fkey",
+          "public",
+          "\"public\".\"job_extractions\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"job_extractions_arrangement_fkey\" on \"job_extractions\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"job_extractions_arrangement_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"job_extractions\"\nADD CONSTRAINT \"job_extractions_arrangement_fkey\"\nFOREIGN KEY (\"arrangement\")\nREFERENCES \"public\".\"arrangements\" (\"code\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"job_extractions_arrangement_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "job_extractions_arrangement_fkey",
+          "public",
+          "\"public\".\"job_extractions\"",
+          "f",
+          "[\"arrangement\"]",
+          "\"public\".\"arrangements\"",
+          "[\"code\"]",
+          "r",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.job_extractions.job_extractions_seniority_fkey",
+    "label": "Add foreign key \"job_extractions_seniority_fkey\" on \"job_extractions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "job_extractions_seniority_fkey",
+        "table": "job_extractions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"job_extractions_seniority_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "job_extractions_seniority_fkey",
+          "public",
+          "\"public\".\"job_extractions\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"job_extractions_seniority_fkey\" on \"job_extractions\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"job_extractions_seniority_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"job_extractions\"\nADD CONSTRAINT \"job_extractions_seniority_fkey\"\nFOREIGN KEY (\"seniority\")\nREFERENCES \"public\".\"seniorities\" (\"code\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"job_extractions_seniority_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "job_extractions_seniority_fkey",
+          "public",
+          "\"public\".\"job_extractions\"",
+          "f",
+          "[\"seniority\"]",
+          "\"public\".\"seniorities\"",
+          "[\"code\"]",
+          "r",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.job_extractions.job_extractions_roleKind_fkey",
+    "label": "Add foreign key \"job_extractions_roleKind_fkey\" on \"job_extractions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "job_extractions_roleKind_fkey",
+        "table": "job_extractions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"job_extractions_roleKind_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "job_extractions_roleKind_fkey",
+          "public",
+          "\"public\".\"job_extractions\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"job_extractions_roleKind_fkey\" on \"job_extractions\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"job_extractions_roleKind_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"job_extractions\"\nADD CONSTRAINT \"job_extractions_roleKind_fkey\"\nFOREIGN KEY (\"roleKind\")\nREFERENCES \"public\".\"role_kinds\" (\"code\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"job_extractions_roleKind_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "job_extractions_roleKind_fkey",
+          "public",
+          "\"public\".\"job_extractions\"",
+          "f",
+          "[\"roleKind\"]",
+          "\"public\".\"role_kinds\"",
+          "[\"code\"]",
+          "r",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.job_extractions.job_extractions_contractType_fkey",
+    "label": "Add foreign key \"job_extractions_contractType_fkey\" on \"job_extractions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "job_extractions_contractType_fkey",
+        "table": "job_extractions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"job_extractions_contractType_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "job_extractions_contractType_fkey",
+          "public",
+          "\"public\".\"job_extractions\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"job_extractions_contractType_fkey\" on \"job_extractions\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"job_extractions_contractType_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"job_extractions\"\nADD CONSTRAINT \"job_extractions_contractType_fkey\"\nFOREIGN KEY (\"contractType\")\nREFERENCES \"public\".\"contract_types\" (\"code\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"job_extractions_contractType_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "job_extractions_contractType_fkey",
+          "public",
+          "\"public\".\"job_extractions\"",
+          "f",
+          "[\"contractType\"]",
+          "\"public\".\"contract_types\"",
+          "[\"code\"]",
+          "r",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.job_extractions.job_extractions_engagement_fkey",
+    "label": "Add foreign key \"job_extractions_engagement_fkey\" on \"job_extractions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "job_extractions_engagement_fkey",
+        "table": "job_extractions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"job_extractions_engagement_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "job_extractions_engagement_fkey",
+          "public",
+          "\"public\".\"job_extractions\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"job_extractions_engagement_fkey\" on \"job_extractions\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"job_extractions_engagement_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"job_extractions\"\nADD CONSTRAINT \"job_extractions_engagement_fkey\"\nFOREIGN KEY (\"engagement\")\nREFERENCES \"public\".\"engagements\" (\"code\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"job_extractions_engagement_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "job_extractions_engagement_fkey",
+          "public",
+          "\"public\".\"job_extractions\"",
+          "f",
+          "[\"engagement\"]",
+          "\"public\".\"engagements\"",
+          "[\"code\"]",
+          "r",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.normalized_jobs.normalized_jobs_currentExtractionId_fkey",
+    "label": "Add foreign key \"normalized_jobs_currentExtractionId_fkey\" on \"normalized_jobs\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "normalized_jobs_currentExtractionId_fkey",
+        "table": "normalized_jobs"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"normalized_jobs_currentExtractionId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "normalized_jobs_currentExtractionId_fkey",
+          "public",
+          "\"public\".\"normalized_jobs\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"normalized_jobs_currentExtractionId_fkey\" on \"normalized_jobs\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"normalized_jobs_currentExtractionId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"normalized_jobs\"\nADD CONSTRAINT \"normalized_jobs_currentExtractionId_fkey\"\nFOREIGN KEY (\"currentExtractionId\")\nREFERENCES \"public\".\"job_extractions\" (\"id\")\nON DELETE SET NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"normalized_jobs_currentExtractionId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "normalized_jobs_currentExtractionId_fkey",
+          "public",
+          "\"public\".\"normalized_jobs\"",
+          "f",
+          "[\"currentExtractionId\"]",
+          "\"public\".\"job_extractions\"",
+          "[\"id\"]",
+          "n",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.processing_attempts.processing_attempts_jobId_fkey",
+    "label": "Add foreign key \"processing_attempts_jobId_fkey\" on \"processing_attempts\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "processing_attempts_jobId_fkey",
+        "table": "processing_attempts"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"processing_attempts_jobId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "processing_attempts_jobId_fkey",
+          "public",
+          "\"public\".\"processing_attempts\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"processing_attempts_jobId_fkey\" on \"processing_attempts\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"processing_attempts_jobId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"processing_attempts\"\nADD CONSTRAINT \"processing_attempts_jobId_fkey\"\nFOREIGN KEY (\"jobId\")\nREFERENCES \"public\".\"normalized_jobs\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"processing_attempts_jobId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "processing_attempts_jobId_fkey",
+          "public",
+          "\"public\".\"processing_attempts\"",
+          "f",
+          "[\"jobId\"]",
+          "\"public\".\"normalized_jobs\"",
+          "[\"id\"]",
+          "r",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.processing_attempts.processing_attempts_extractionId_fkey",
+    "label": "Add foreign key \"processing_attempts_extractionId_fkey\" on \"processing_attempts\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "processing_attempts_extractionId_fkey",
+        "table": "processing_attempts"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"processing_attempts_extractionId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "processing_attempts_extractionId_fkey",
+          "public",
+          "\"public\".\"processing_attempts\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"processing_attempts_extractionId_fkey\" on \"processing_attempts\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"processing_attempts_extractionId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"processing_attempts\"\nADD CONSTRAINT \"processing_attempts_extractionId_fkey\"\nFOREIGN KEY (\"extractionId\")\nREFERENCES \"public\".\"job_extractions\" (\"id\")\nON DELETE SET NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"processing_attempts_extractionId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "processing_attempts_extractionId_fkey",
+          "public",
+          "\"public\".\"processing_attempts\"",
+          "f",
+          "[\"extractionId\"]",
+          "\"public\".\"job_extractions\"",
+          "[\"id\"]",
+          "n",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.region_countries.region_countries_regionCode_fkey",
+    "label": "Add foreign key \"region_countries_regionCode_fkey\" on \"region_countries\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "region_countries_regionCode_fkey",
+        "table": "region_countries"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"region_countries_regionCode_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "region_countries_regionCode_fkey",
+          "public",
+          "\"public\".\"region_countries\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"region_countries_regionCode_fkey\" on \"region_countries\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"region_countries_regionCode_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"region_countries\"\nADD CONSTRAINT \"region_countries_regionCode_fkey\"\nFOREIGN KEY (\"regionCode\")\nREFERENCES \"public\".\"regions\" (\"code\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"region_countries_regionCode_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "region_countries_regionCode_fkey",
+          "public",
+          "\"public\".\"region_countries\"",
+          "f",
+          "[\"regionCode\"]",
+          "\"public\".\"regions\"",
+          "[\"code\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.region_countries.region_countries_countryCode_fkey",
+    "label": "Add foreign key \"region_countries_countryCode_fkey\" on \"region_countries\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "region_countries_countryCode_fkey",
+        "table": "region_countries"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"region_countries_countryCode_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "region_countries_countryCode_fkey",
+          "public",
+          "\"public\".\"region_countries\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"region_countries_countryCode_fkey\" on \"region_countries\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"region_countries_countryCode_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"region_countries\"\nADD CONSTRAINT \"region_countries_countryCode_fkey\"\nFOREIGN KEY (\"countryCode\")\nREFERENCES \"public\".\"countries\" (\"code\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"region_countries_countryCode_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "region_countries_countryCode_fkey",
+          "public",
+          "\"public\".\"region_countries\"",
+          "f",
+          "[\"countryCode\"]",
+          "\"public\".\"countries\"",
+          "[\"code\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  }
+]
