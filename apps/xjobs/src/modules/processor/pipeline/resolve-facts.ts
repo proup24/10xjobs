@@ -127,6 +127,8 @@ export function resolveFacts(args: {
     };
   };
 
+  // Rule: an unconfident Jev answer that Opus overrode is not a conflict;
+  // the standing answer (Opus's, or the ingest fallback) is what gets compared.
   const recordConflict = (
     field: string,
     key: DecisionQuestion['key'],
@@ -207,17 +209,18 @@ export function resolveFacts(args: {
     seniority: closed('seniority', 'seniority', output.seniority),
     yearsRequired: openFact(output.yearsRequired),
     arrangement: closed('arrangement', 'arrangement', output.arrangement),
-    openings: output.openings.map((o) => ({
+    openings: output.openings.map(({ fromListing, ...o }) => ({
       ...o,
       places: o.places.map((p) =>
         p.kind === 'city' ? { ...p, cityId: null } : p,
       ),
-      decidedBy: 'opus' as const,
+      confidence: fromListing ? ('unsure' as const) : o.confidence,
+      decidedBy: fromListing ? ('ingest' as const) : ('opus' as const),
     })),
     contractType: closed('contractType', 'contractType', output.contractType),
     engagement: closed('engagement', 'engagement', output.engagement),
     contractMonths: openFact(output.contractMonths),
-    salary: openFact(output.salary),
+    salary: resolveSalary(openFact(output.salary), evidence, conflicts),
     techStack: openFact(output.techStack),
     requiredLanguages: openFact(output.requiredLanguages),
     workAuthorization,
@@ -255,7 +258,10 @@ function resolveSponsorship(
       requirements: open.value?.requirements ?? [],
       sponsorship: wanted,
     },
-    confidence: sponsorship.confidence,
+    confidence:
+      open.confidence === 'unsure' || sponsorship.confidence === 'unsure'
+        ? 'unsure'
+        : 'sure',
     decidedBy: sponsorship.decidedBy,
     score: sponsorship.score,
     model: sponsorship.model,
@@ -276,6 +282,7 @@ function resolveJunk(
     ...[...answerByKey.keys()].filter((k) => k.startsWith('junk:')),
     ...[...fallbackKeys].filter((k) => k.startsWith('junk:')),
   ]);
+  let downgraded = false;
   for (const key of keys) {
     const code = key.slice('junk:'.length);
     const answer = answerByKey.get(key as DecisionAnswer['key']);
@@ -292,17 +299,24 @@ function resolveJunk(
     const value = jevStands
       ? (answer.value as boolean)
       : (opusFallback[key]?.value ?? flags.has(code));
+    const unsureOpus = !jevStands && opusFallback[key]?.confidence === 'unsure';
     if (value === true && !flags.has(code)) {
+      downgraded ||= unsureOpus;
       flags.set(code, {
         code,
         quote: jevStands ? '' : (opusFallback[key]?.quote ?? ''),
       });
     } else if (value === false) {
+      downgraded ||= unsureOpus && flags.has(code);
       flags.delete(code);
     }
   }
   return {
     ...openJunk(output, models.extraction),
+    confidence:
+      downgraded || output.junkFlags.confidence === 'unsure'
+        ? 'unsure'
+        : 'sure',
     value: [...flags.values()],
   };
 }
@@ -317,5 +331,65 @@ function openJunk(
     score: null,
     quote: output.junkFlags.quote,
     model,
+  };
+}
+
+const PERIODS: Record<string, 'hour' | 'day' | 'month' | 'year'> = {
+  hour: 'hour',
+  hourly: 'hour',
+  day: 'day',
+  daily: 'day',
+  month: 'month',
+  monthly: 'month',
+  year: 'year',
+  yearly: 'year',
+  annual: 'year',
+  annually: 'year',
+};
+
+/** The posting text wins over LinkedIn's salary; a difference is a conflict. */
+function resolveSalary(
+  fact: ExtractionDocument['salary'],
+  evidence: Evidence,
+  conflicts: Conflict[],
+): ExtractionDocument['salary'] {
+  const ev = evidence.salary;
+  if (!ev || (ev.min === null && ev.max === null)) return fact;
+  if (fact.value !== null) {
+    const differs =
+      (ev.min !== null && ev.min !== fact.value.min) ||
+      (ev.max !== null && ev.max !== fact.value.max) ||
+      (ev.currency !== null && ev.currency !== fact.value.currency);
+    if (differs) {
+      conflicts.push({
+        field: 'salary',
+        ingestValue: {
+          min: ev.min,
+          max: ev.max,
+          currency: ev.currency,
+          period: ev.period,
+        },
+        extractedValue: fact.value,
+      });
+    }
+    return fact;
+  }
+  const period =
+    ev.period === null ? undefined : PERIODS[ev.period.toLowerCase()];
+  if (ev.currency === null || !/^[A-Z]{3}$/.test(ev.currency) || !period) {
+    return fact;
+  }
+  return {
+    value: {
+      min: ev.min === null ? null : Math.round(ev.min),
+      max: ev.max === null ? null : Math.round(ev.max),
+      currency: ev.currency,
+      period,
+    },
+    confidence: 'unsure',
+    decidedBy: 'ingest',
+    score: null,
+    quote: '',
+    model: null,
   };
 }

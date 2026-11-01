@@ -206,4 +206,116 @@ describe('resolveFacts', () => {
     expect(doc.models).toEqual(models);
     expect(doc.truncated).toBe(false);
   });
+
+  it('keeps workAuthorization unsure when Opus was unsure of the requirements', () => {
+    const out = output({ sponsorshipOffered: mf('yes', 'sure') });
+    out.workAuthorization.confidence = 'unsure';
+    const doc = resolveFacts({
+      output: out,
+      answers: [ans('sponsorshipOffered', 'yes', 0.95)],
+      fallback: [],
+      input: input(evidence()),
+      models,
+    });
+    expect(doc.workAuthorization.value?.sponsorship).toBe('yes');
+    expect(doc.workAuthorization.confidence).toBe('unsure');
+  });
+
+  it('marks junk flags unsure when an unsure Opus answer changes them', () => {
+    const doc = resolveFacts({
+      output: output({ 'junk:spam': mf(true, 'unsure', '') }),
+      answers: [ans('junk:spam', true, 0.4)],
+      fallback: [{ key: 'junk:spam', kind: 'yesno', instructions: '' }],
+      input: input(evidence()),
+      models,
+    });
+    expect(doc.junkFlags.value).toEqual([{ code: 'spam', quote: '' }]);
+    expect(doc.junkFlags.confidence).toBe('unsure');
+  });
+
+  it('records a salary conflict and keeps the posting value', () => {
+    const out = output();
+    out.salary = mf({
+      min: 80000,
+      max: 100000,
+      currency: 'EUR',
+      period: 'year',
+    }) as never;
+    const doc = resolveFacts({
+      output: out,
+      answers: [],
+      fallback: [],
+      input: input(
+        evidence({
+          salary: {
+            text: null,
+            min: 50000,
+            max: 100000,
+            currency: 'EUR',
+            period: 'yearly',
+          },
+        }),
+      ),
+      models,
+    });
+    expect(doc.salary.value?.min).toBe(80000);
+    expect(doc.conflicts).toContainEqual({
+      field: 'salary',
+      ingestValue: {
+        min: 50000,
+        max: 100000,
+        currency: 'EUR',
+        period: 'yearly',
+      },
+      extractedValue: {
+        min: 80000,
+        max: 100000,
+        currency: 'EUR',
+        period: 'year',
+      },
+    });
+  });
+
+  it('takes the evidence salary when the posting has none', () => {
+    const doc = resolveFacts({
+      output: output(),
+      answers: [],
+      fallback: [],
+      input: input(
+        evidence({
+          salary: {
+            text: null,
+            min: 50000,
+            max: 60000,
+            currency: 'USD',
+            period: 'yearly',
+          },
+        }),
+      ),
+      models,
+    });
+    expect(doc.salary).toMatchObject({
+      value: { min: 50000, max: 60000, currency: 'USD', period: 'year' },
+      decidedBy: 'ingest',
+      confidence: 'unsure',
+      model: null,
+    });
+  });
+
+  it('marks an opening taken from the listing as ingest and unsure', () => {
+    const out = output();
+    (out.openings[0] as { fromListing?: boolean }).fromListing = true;
+    const doc = resolveFacts({
+      output: out,
+      answers: [],
+      fallback: [],
+      input: input(evidence()),
+      models,
+    });
+    expect(doc.openings[0]).toMatchObject({
+      decidedBy: 'ingest',
+      confidence: 'unsure',
+    });
+    expect(doc.openings[0]).not.toHaveProperty('fromListing');
+  });
 });

@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { Logger } from '@nestjs/common';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Evidence } from '../models/types';
-import { contradictsEvidence } from './evidence';
+import { contradictsEvidence, resetEvidenceWarnings } from './evidence';
 
 const ev = (p: Partial<Evidence>): Evidence => ({
   location: null,
@@ -11,6 +12,22 @@ const ev = (p: Partial<Evidence>): Evidence => ({
 });
 
 describe('contradictsEvidence', () => {
+  let warn: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => {
+    resetEvidenceWarnings();
+    warn = vi
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
+  });
+  afterEach(() => warn.mockRestore());
+
+  it('logs an unmapped value once', () => {
+    const e = ev({ experienceLevel: 'Weird level' });
+    contradictsEvidence('seniority', 'junior', e);
+    contradictsEvidence('seniority', 'senior', e);
+    expect(warn).toHaveBeenCalledTimes(1);
+  });
+
   it('allows every code in the mapped set', () => {
     const e = ev({ experienceLevel: 'Mid-Senior level' });
     expect(contradictsEvidence('seniority', 'senior', e)).toBe(false);

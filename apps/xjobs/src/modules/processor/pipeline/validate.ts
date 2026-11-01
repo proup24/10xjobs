@@ -4,19 +4,45 @@ import type { ExtractionDocument } from '../schema';
 
 const ENGINEERING_CODES = new Set<string>(Object.values(Position));
 
+// Soft hyphen, zero-width space/non-joiner/joiner, word joiner, BOM.
+const INVISIBLES = new RegExp('[\\u00AD\\u200B-\\u200D\\u2060\\uFEFF]', 'g');
+
 /** NFKC, straight quotes and dashes, single spaces, lower case. */
 export function normalizeForQuote(s: string): string {
   return s
     .normalize('NFKC')
+    .replace(INVISIBLES, '')
+    .replace(/′′|″/g, '"')
     .replace(/[‘’‚‛′]/g, "'")
-    .replace(/[“”„‟″]/g, '"')
+    .replace(/[“”„‟]/g, '"')
     .replace(/[‐-―−]/g, '-')
     .replace(/\s+/g, ' ')
     .trim()
     .toLowerCase();
 }
 
-type AnyFact = { quote: string; confidence: 'sure' | 'unsure' };
+/** Whether a value says something about the posting (null, unstated and empty do not). */
+function isEstablished(name: string, value: unknown): boolean {
+  if (value === null || value === undefined || value === 'unstated')
+    return false;
+  if (Array.isArray(value)) return value.length > 0;
+  if (name === 'workAuthorization') {
+    const w = value as { requirements: unknown[]; sponsorship: string };
+    return w.requirements.length > 0 || w.sponsorship !== 'unstated';
+  }
+  if (name === 'techStack') {
+    const t = value as Record<string, unknown[]>;
+    return Object.values(t).some((l) => l.length > 0);
+  }
+  return true;
+}
+
+type AnyFact = {
+  quote: string;
+  confidence: 'sure' | 'unsure';
+  decidedBy: string;
+  value: unknown;
+};
 
 /** Clear every quote that is not in the input and downgrade the fact that carried it. */
 export function checkQuotes(
@@ -48,11 +74,19 @@ export function checkQuotes(
     workAuthorization: out.workAuthorization,
     junkFlags: out.junkFlags,
   };
-  for (const fact of Object.values(facts)) {
+  for (const [name, fact] of Object.entries(facts)) {
     if (bad(fact.quote)) {
       fact.quote = '';
       fact.confidence = 'unsure';
       quoteFailures++;
+    } else if (
+      fact.quote === '' &&
+      fact.confidence === 'sure' &&
+      fact.decidedBy === 'opus' &&
+      isEstablished(name, fact.value)
+    ) {
+      // Opus established a value without quoting the posting: not supported.
+      fact.confidence = 'unsure';
     }
   }
   for (const opening of out.openings) {
@@ -60,6 +94,13 @@ export function checkQuotes(
       opening.quote = '';
       opening.confidence = 'unsure';
       quoteFailures++;
+    } else if (
+      opening.quote === '' &&
+      opening.confidence === 'sure' &&
+      opening.decidedBy === 'opus' &&
+      opening.places.length > 0
+    ) {
+      opening.confidence = 'unsure';
     }
   }
   for (const lang of out.requiredLanguages.value ?? []) {

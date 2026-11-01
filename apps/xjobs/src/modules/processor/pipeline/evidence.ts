@@ -8,6 +8,11 @@ import type { ClosedQuestionKey, Evidence } from '../models/types';
 const logger = new Logger('ProcessorEvidence');
 const warned = new Set<string>();
 
+/** Test hook: forget which values were already logged. */
+export function resetEvidenceWarnings(): void {
+  warned.clear();
+}
+
 function warnOnce(kind: string, linkedinValue: string): void {
   const id = `${kind}:${linkedinValue}`;
   if (warned.has(id)) return;

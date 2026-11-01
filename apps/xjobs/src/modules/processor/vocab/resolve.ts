@@ -92,6 +92,7 @@ export function resolveTerms(
           doc.unmatched.push({ list: 'cities', text: place.name, at: path });
           return;
         }
+        requireCode('countries', place.countryCode, `${path}.countryCode`);
         const id = `${place.name.toLowerCase()}|${place.countryCode}`;
         if (!seenCities.has(id)) {
           seenCities.add(id);

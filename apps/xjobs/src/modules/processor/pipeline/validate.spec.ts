@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PostingInput } from '../models/types';
+import { extractionDocumentSchema } from '../schema';
 import { fixtureDocument } from '../schema/fixture.testing';
 import {
   checkConsistency,
@@ -38,6 +39,14 @@ function quietDocument() {
   return doc;
 }
 
+describe('normalizeForQuote invisibles', () => {
+  it('strips soft hyphens and zero-width spaces and maps double primes', () => {
+    expect(normalizeForQuote('Type\u00ADScr\u200Bipt')).toBe('typescript');
+    expect(normalizeForQuote('5\u2033')).toBe('5"');
+    expect(normalizeForQuote('5\u2032\u2032')).toBe('5"');
+  });
+});
+
 describe('checkQuotes', () => {
   it('passes a quote found in the input', () => {
     const doc = quietDocument();
@@ -62,6 +71,47 @@ describe('checkQuotes', () => {
     expect(r.quoteFailures).toBe(1);
     expect(r.doc.seniority).toMatchObject({ quote: '', confidence: 'unsure' });
     expect(doc.seniority.quote).toBe('made up');
+  });
+});
+
+describe('checkQuotes without a quote', () => {
+  it('downgrades an Opus fact with a value and no quote', () => {
+    const doc = quietDocument();
+    doc.seniority.quote = '';
+    const r = checkQuotes(doc, input('x'));
+    expect(r.quoteFailures).toBe(0);
+    expect(r.doc.seniority.confidence).toBe('unsure');
+  });
+
+  it('leaves Jev and ingest facts alone', () => {
+    const doc = quietDocument();
+    doc.seniority.decidedBy = 'jev';
+    doc.contractType.decidedBy = 'ingest';
+    const r = checkQuotes(doc, input('x'));
+    expect(r.doc.seniority.confidence).toBe('sure');
+    expect(r.doc.contractType.confidence).toBe('sure');
+  });
+
+  it('leaves an unestablished Opus fact alone', () => {
+    const doc = quietDocument();
+    doc.yearsRequired.value = null;
+    doc.yearsRequired.quote = '';
+    expect(checkQuotes(doc, input('x')).doc.yearsRequired.confidence).toBe(
+      'sure',
+    );
+  });
+});
+
+describe('schema rules the validation relies on', () => {
+  it('rejects fromUtc > toUtc', () => {
+    const doc = fixtureDocument();
+    doc.openings[0].timezones = [{ fromUtc: 5, toUtc: 1, label: 'x' }];
+    expect(extractionDocumentSchema.safeParse(doc).success).toBe(false);
+  });
+  it('rejects placeStrictness unstated with places', () => {
+    const doc = fixtureDocument();
+    doc.openings[0].placeStrictness = 'unstated';
+    expect(extractionDocumentSchema.safeParse(doc).success).toBe(false);
   });
 });
 

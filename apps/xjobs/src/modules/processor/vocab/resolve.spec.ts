@@ -20,6 +20,7 @@ function vocab(): VocabSnapshot {
   add('contractTypes', 'full_time');
   add('engagements', 'employee');
   add('regions', 'EMEA');
+  add('countries', 'FR');
   return { approved };
 }
 
@@ -65,6 +66,14 @@ describe('resolveTerms', () => {
     ];
     const r = resolveTerms(doc, vocab());
     expect(r.cities).toEqual([{ name: 'Paris', countryCode: 'FR' }]);
+  });
+
+  it('throws for an unapproved city country code', () => {
+    const doc = fixtureDocument();
+    doc.openings[0].places = [
+      { kind: 'city', name: 'Paris', countryCode: 'XX', cityId: null },
+    ];
+    expect(() => resolveTerms(doc, vocab())).toThrow(ExtractionInvalidError);
   });
 
   it('throws for an unapproved choice code', () => {
