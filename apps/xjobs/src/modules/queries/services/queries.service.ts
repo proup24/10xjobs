@@ -41,6 +41,7 @@ export class QuerySearchService {
       ...profileLocalCombinations,
     ];
     const queriesRecipes = combinations.map(toRecipe);
+    console.debug(`length of queriesRecipes is : ${queriesRecipes.length} For Profile With ${technologies.length} Technologies And ${arrangements.length} Arrangement Levels`);
     return dedupeByHash(queriesRecipes);
   }
 
