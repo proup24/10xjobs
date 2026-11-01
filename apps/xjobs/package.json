@@ -13,7 +13,12 @@
     "db:migrate:show": "prisma db migrate --show",
     "db:verify": "prisma db verify",
     "db:seed": "tsx --tsconfig tsconfig.app.json src/database/seeds/index.ts",
+    "db:regenerate": "tsx --tsconfig tsconfig.app.json src/scripts/regenerate-query-search.ts",
     "worker:dev": "tsx watch --tsconfig tsconfig.app.json src/worker.ts",
+    "worker:linkedin-job-board:dev": "WORKER_CHANNEL=LINKEDIN_JOB_BOARD tsx watch --tsconfig tsconfig.app.json src/worker.ts",
+    "worker:linkedin-posts:dev": "WORKER_CHANNEL=LINKEDIN_POSTS tsx watch --tsconfig tsconfig.app.json src/worker.ts",
+    "worker:greenhouse:dev": "WORKER_CHANNEL=GREEN_HOUSE tsx watch --tsconfig tsconfig.app.json src/worker.ts",
+    "worker:ashby:dev": "WORKER_CHANNEL=ASHBY tsx watch --tsconfig tsconfig.app.json src/worker.ts",
     "jobs:smoke": "JOBS_SMOKE=1 vitest run --config vitest.config.mts src/infrastructure/jobs/tests/smoke.spec.ts"
   },
   "nx": {
@@ -89,6 +94,58 @@
         ],
         "options": {
           "command": "node apps/xjobs/dist/worker.js"
+        }
+      },
+      "worker-linkedin-job-board": {
+        "continuous": true,
+        "executor": "nx:run-commands",
+        "dependsOn": [
+          "build"
+        ],
+        "options": {
+          "command": "node apps/xjobs/dist/worker.js",
+          "env": {
+            "WORKER_CHANNEL": "LINKEDIN_JOB_BOARD"
+          }
+        }
+      },
+      "worker-linkedin-posts": {
+        "continuous": true,
+        "executor": "nx:run-commands",
+        "dependsOn": [
+          "build"
+        ],
+        "options": {
+          "command": "node apps/xjobs/dist/worker.js",
+          "env": {
+            "WORKER_CHANNEL": "LINKEDIN_POSTS"
+          }
+        }
+      },
+      "worker-greenhouse": {
+        "continuous": true,
+        "executor": "nx:run-commands",
+        "dependsOn": [
+          "build"
+        ],
+        "options": {
+          "command": "node apps/xjobs/dist/worker.js",
+          "env": {
+            "WORKER_CHANNEL": "GREEN_HOUSE"
+          }
+        }
+      },
+      "worker-ashby": {
+        "continuous": true,
+        "executor": "nx:run-commands",
+        "dependsOn": [
+          "build"
+        ],
+        "options": {
+          "command": "node apps/xjobs/dist/worker.js",
+          "env": {
+            "WORKER_CHANNEL": "ASHBY"
+          }
         }
       }
     }

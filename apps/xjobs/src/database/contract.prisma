@@ -299,6 +299,8 @@ model QuerySearchBuilder {
   city               String?
   experience         Seniority
   technologies       Technology[]
+  // The skill domain the technologies came from; part of the hash.
+  domain             SkillDomain
   type               Arrangement
   keyword            String
   version            Int
@@ -310,6 +312,8 @@ model QuerySearchBuilder {
   isActive           Boolean      @default(false)
   // Soft delete: retired recipes are never collected, linked or listed again.
   isDeleted          Boolean      @default(false)
+  // Collection cursor: everything posted before this was searched. Null until first collected.
+  coveredUntil       TimestamptzJsDate(3)?
   +Timestamps
 
   @@check(expression: sql`"associatedProfiles" >= 0`, name: "query_search_builder_associated_profiles")
@@ -396,6 +400,32 @@ model RawJobQueryHit {
   @@check(expression: sql`rank IS NULL OR rank > 0`, name: "raw_job_query_hits_rank")
   @@unique([queryId, rawJobId])
   @@map("raw_job_query_hits")
+}
+
+// One Apify run over one search segment: up to 10 builders of a channel sharing
+// domain, arrangement and place. Segments are recomputed per run, saved only here.
+model SearchSegmentRun {
+  id                Uuid                 @id @onCreate(uuid(7))
+  channel           Channel
+  segmentKey        String
+  segmentHash       String
+  queryIds          Uuid[]
+  windowStart       TimestamptzJsDate(3)
+  windowEnd         TimestamptzJsDate(3)
+  startedAt         TimestamptzJsDate(3)
+  finishedAt        TimestamptzJsDate(3)
+  status            String
+  fetched           Int
+  costMicroUsd      Int?
+  capped            Boolean
+  truncatedQueryIds Uuid[]
+  perQuery          Jsonb
+  error             String?
+
+  @@check(expression: sql`status IN ('succeeded', 'partial', 'failed')`, name: "search_segment_runs_status")
+  @@check(expression: sql`"windowStart" < "windowEnd"`, name: "search_segment_runs_window")
+  @@index([channel, startedAt])
+  @@map("search_segment_runs")
 }
 
 // Association only: observations from different channels remain separate.

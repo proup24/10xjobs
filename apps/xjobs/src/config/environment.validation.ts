@@ -1,6 +1,6 @@
 import { z } from 'zod';
 // Keep Prisma CLI's configuration dependency graph resolvable without aliases.
-import { EnvironmentType } from '../common/enums';
+import { Channel, EnvironmentType } from '../common/enums';
 
 /**
  * @description Environment variables are strings; this parses the usual
@@ -58,6 +58,26 @@ export const redisEnvironmentSchema = z.object({
   JOBS_CONCURRENCY: z.coerce.number().int().positive().max(100).default(5),
 });
 
+/**
+ * A worker process. `WORKER_CHANNEL` unset runs the infrastructure worker; a
+ * channel runs that channel's collection job and needs an Apify token. An
+ * unknown channel fails startup rather than falling back.
+ */
+export const workerProcessEnvironmentSchema = databaseEnvironmentSchema
+  .extend({
+    ...redisEnvironmentSchema.shape,
+    APIFY_TOKEN: z.string().min(1).optional(),
+    WORKER_CHANNEL: z.enum(Channel).optional(),
+  })
+  .superRefine((env, ctx) => {
+    if (env.WORKER_CHANNEL && !env.APIFY_TOKEN)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['APIFY_TOKEN'],
+        message: 'Set APIFY_TOKEN to run a channel collection worker',
+      });
+  });
+
 export const environmentSchema = databaseEnvironmentSchema
   .extend({
     ...redisEnvironmentSchema.shape,
@@ -113,6 +133,9 @@ export type DatabaseEnvironmentVariables = z.infer<
 export type SeedEnvironmentVariables = z.infer<typeof seedEnvironmentSchema>;
 export type EnvironmentVariables = z.infer<typeof environmentSchema>;
 export type RedisEnvironmentVariables = z.infer<typeof redisEnvironmentSchema>;
+export type WorkerProcessEnvironmentVariables = z.infer<
+  typeof workerProcessEnvironmentSchema
+>;
 
 /**
  * @description Parses `config` against `schema`, failing with every invalid
@@ -145,4 +168,11 @@ export function validateWorkerEnvironment(
   config: Record<string, unknown>,
 ): RedisEnvironmentVariables {
   return parseEnvironment(redisEnvironmentSchema, config);
+}
+
+/** `validate` hook for the worker process. */
+export function validateWorkerProcessEnvironment(
+  config: Record<string, unknown>,
+): WorkerProcessEnvironmentVariables {
+  return parseEnvironment(workerProcessEnvironmentSchema, config);
 }

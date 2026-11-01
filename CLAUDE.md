@@ -23,9 +23,11 @@ Precision over volume: prefer a tailored application over a fast one.
 ## Commands
 
 - `npx nx serve xjobs`: run the engine.
+- `npx nx worker-<channel> xjobs` (`linkedin-job-board`, `linkedin-posts`, `greenhouse`, `ashby`): run one channel's scheduled collection worker.
 - `npx nx run-many -t lint test build typecheck`: what CI runs.
 - `npx nx test xjobs`: unit tests for the engine.
 - `npx nx e2e xjobs-e2e`: e2e tests.
+- `pnpm --filter @xjobs/xjobs db:regenerate`: move published profiles to the current query recipe; run once after a recipe version bump.
 - `npm run test:hooks`: tests for the `.claude/hooks` scripts.
 
 ## Conventions

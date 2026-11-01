@@ -1,4 +1,8 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   Arrangement,
   Engagement,
@@ -14,7 +18,11 @@ import {
   ProfilesService,
   toProfileView,
 } from './profiles.service';
-import { QuerySearchService } from 'src/modules/queries';
+import {
+  QUERY_SEARCH_RECIPE_VERSION,
+  QuerySearchService,
+  SKILLS_REQUIRED,
+} from 'src/modules/queries';
 import { FakeQuerySearchRepository } from 'src/modules/queries/testing/fakes';
 import { FakeProfilesRepository, FakeUsersRepository } from '../testing/fakes';
 import { UsersService } from './users.service';
@@ -358,13 +366,16 @@ describe('ProfilesService', () => {
       expect(querySearches.rows.some((row) => row.isActive)).toBe(false);
     });
 
-    it('publishes a profile whose skills all have importance 0 without technologies', async () => {
+    it('refuses to publish a profile whose skills all have importance 0, leaving it a draft', async () => {
       const { id } = await create([skill(Technology.go, 5, 0)]);
-      const view = await service.publish(userId, id);
-      expect(view.state).toBe('published');
-      expect(querySearches.rows.length).toBeGreaterThan(0);
-      for (const row of querySearches.rows)
-        expect(row.technologies).toEqual([]);
+      await expect(service.publish(userId, id)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.publish(userId, id)).rejects.toThrow(
+        SKILLS_REQUIRED,
+      );
+      expect((await service.get(userId, id)).state).toBe('draft');
+      expect(querySearches.rows).toHaveLength(0);
     });
 
     it('stays a draft when generating query search builders fails', async () => {
@@ -372,6 +383,83 @@ describe('ProfilesService', () => {
       vi.spyOn(querySearches, 'attach').mockRejectedValue(new Error('boom'));
       await expect(service.publish(userId, id)).rejects.toThrow('boom');
       expect((await service.get(userId, id)).state).toBe('draft');
+    });
+  });
+
+  describe('regenerating to the current recipe', () => {
+    /** Turns every builder into one from an older recipe, as after a version bump. */
+    const ageBuilders = () => {
+      for (const row of querySearches.rows) {
+        row.version = QUERY_SEARCH_RECIPE_VERSION - 1;
+        row.hash = `old-${row.hash}`;
+      }
+    };
+    const linkedVersions = (profileId: string) =>
+      querySearches.links
+        .filter((link) => link.profileId === profileId)
+        .map(
+          (link) =>
+            querySearches.rows.find((row) => row.id === link.queryId)?.version,
+        );
+
+    it('moves published profiles to current builders and retires the old ones', async () => {
+      const { id } = await create();
+      await service.publish(userId, id);
+      ageBuilders();
+      const old = querySearches.rows.length;
+
+      const result = await service.regeneratePublished();
+
+      expect(result).toEqual({ profiles: 1, retired: old });
+      expect(new Set(linkedVersions(id))).toEqual(
+        new Set([QUERY_SEARCH_RECIPE_VERSION]),
+      );
+      const outdated = querySearches.rows.filter(
+        (row) => row.version < QUERY_SEARCH_RECIPE_VERSION,
+      );
+      expect(outdated).toHaveLength(old);
+      expect(outdated.every((row) => row.isDeleted && !row.isActive)).toBe(
+        true,
+      );
+    });
+
+    it('changes nothing when run again', async () => {
+      const { id } = await create();
+      await service.publish(userId, id);
+      ageBuilders();
+      await service.regeneratePublished();
+      const rows = querySearches.rows.length;
+      const links = querySearches.links.length;
+
+      expect(await service.regeneratePublished()).toEqual({
+        profiles: 1,
+        retired: 0,
+      });
+      expect(querySearches.rows).toHaveLength(rows);
+      expect(querySearches.links).toHaveLength(links);
+    });
+
+    it('leaves drafts alone', async () => {
+      const { id } = await create();
+      expect(await service.regeneratePublished()).toEqual({
+        profiles: 0,
+        retired: 0,
+      });
+      expect(linkedVersions(id)).toEqual([]);
+    });
+
+    it('never retires an old builder something still uses', async () => {
+      const { id } = await create();
+      await service.publish(userId, id);
+      ageBuilders();
+      const kept = querySearches.rows[0];
+      // A link the regeneration does not own, e.g. a profile mid-deletion.
+      querySearches.links.push({ profileId: 'elsewhere', queryId: kept.id });
+      kept.associatedProfiles += 1;
+
+      await service.regeneratePublished();
+
+      expect(kept).toMatchObject({ isActive: true, isDeleted: false });
     });
   });
 });

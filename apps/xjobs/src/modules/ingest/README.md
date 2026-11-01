@@ -11,7 +11,7 @@ const result = await ingest.ingest({
 });
 ```
 
-Items follow the `CollectedJob` collector contract (`collectors/types/collector.ts`): `source`, `sourceJobId`, canonical `url`, `applyUrl`, `title`, `company`, `location`, `postedAt` (ISO 8601 UTC) with `postedAtPrecision`, plain-text `description`, `contact`, the `search` query that found it, and `raw`. An item whose `source` does not match the lookup query's channel is rejected. A blank or sentinel `sourceJobId`, `title` or `company` is stored as null. The service accepts untrusted items so it can report malformed entries individually. No scheduler or collector is invoked by ingestion. Collection orchestration is not currently implemented in xjobs; this module exposes the service for that integration.
+Items follow the `CollectedJob` collector contract (`collectors/types/collector.ts`): `source`, `sourceJobId`, canonical `url`, `applyUrl`, `title`, `company`, `location`, `postedAt` (ISO 8601 UTC) with `postedAtPrecision`, plain-text `description`, `contact`, the `search` query that found it, and `raw`. An item whose `source` does not match the lookup query's channel is rejected. A blank or sentinel `sourceJobId`, `title` or `company` is stored as null. The service accepts untrusted items so it can report malformed entries individually. No scheduler or collector is invoked by ingestion. Each channel's collection job in `infrastructure/jobs/collection` calls it once per query search builder.
 
 ## Storage
 

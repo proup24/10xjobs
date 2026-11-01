@@ -15,6 +15,7 @@ export type QuerySearchBuilderRow = Row<Models.public_QuerySearchBuilder>;
 export type ProfileQuerySearchBuilderRow =
   Row<Models.public_ProfileQuerySearchBuilder>;
 export type RawJobRow = Row<Models.public_RawJob>;
+export type SearchSegmentRunRow = Row<Models.public_SearchSegmentRun>;
 /** An address as callers write it; optional parts may be left out. */
 export type Address = {
   line1: string;

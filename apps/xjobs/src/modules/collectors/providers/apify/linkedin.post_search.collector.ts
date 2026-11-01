@@ -1,42 +1,71 @@
 import { Injectable } from '@nestjs/common';
-import { Channel } from 'src/common/enums';
-import { channelConfig } from '../../config';
-import type { CollectorSearch, CollectedJob } from '../../types/collector';
+import type {
+  CollectedJob,
+  LinkedinPostsRunConfig,
+  SegmentResult,
+  SegmentSearch,
+} from '../../types/collector';
 import {
+  attribute,
   contact,
   plainText,
   precisionOf,
+  reachedChargeCap,
   record,
   text,
 } from '../../utils/collected-job';
 import { ApifyActorProvider } from './apify.provider';
 
+/** The query a post was found by, as the actor echoes it. */
+function querySearch(item: unknown): string | null {
+  return text(record(record(item).query).search);
+}
+
+/** Apify trigger for LinkedIn posts: one actor run per search segment. */
 @Injectable()
 export class LinkedinPostSearchProvider {
   constructor(private readonly actor: ApifyActorProvider) {}
 
-  async search(search: CollectorSearch): Promise<CollectedJob[]> {
-    const cfg = channelConfig[Channel.LINKEDIN_POSTS];
-    const queries = search.keywords.length
-      ? search.keywords
-      : cfg.discovery.queries;
-    // One run per query so every post is attributed to the query that found it.
-    const budgetUsd =
-      cfg.maximumOperationBudgetMicroUsd / 1_000_000 / queries.length;
-    const jobs: CollectedJob[] = [];
-    for (const query of queries) {
-      const items = await this.actor.run(
-        cfg.actor,
-        {
-          searchQueries: [query],
-          maxPosts: cfg.discovery.maxPostsPerQuery,
-          sortBy: 'date',
-        },
-        { maxChargeUsd: budgetUsd },
+  async search(
+    segment: SegmentSearch,
+    config: LinkedinPostsRunConfig,
+  ): Promise<SegmentResult> {
+    const searches = segment.queries.map((query) => ({
+      id: query.id,
+      search: query.keyword,
+    }));
+    // The actor has no location filter, so `params.location` is not applied.
+    const { items, costUsd } = await this.actor.run(
+      config.actor,
+      {
+        searchQueries: [...new Set(searches.map(({ search }) => search))],
+        maxPosts: config.maxPostsPerQuery,
+        postedLimitDate: segment.since.toISOString(),
+        sortBy: 'date',
+        profileScraperMode: 'short',
+      },
+      { maxChargeUsd: config.maxRunChargeUsd },
+    );
+
+    const byQuery = attribute(items, querySearch, searches);
+    const jobsByQuery = new Map<string, CollectedJob[]>();
+    const truncatedQueryIds: string[] = [];
+    for (const { id, search } of searches) {
+      const found = byQuery.get(id) ?? [];
+      jobsByQuery.set(
+        id,
+        found.map((item) => toJob(record(item), search)),
       );
-      jobs.push(...items.map((item) => toJob(record(item), query)));
+      // The actor reports no positions, so scanned is what it returned.
+      if (found.length >= config.maxPostsPerQuery) truncatedQueryIds.push(id);
     }
-    return jobs;
+    return {
+      jobsByQuery,
+      fetched: items.length,
+      costUsd,
+      capped: reachedChargeCap(costUsd, config.maxRunChargeUsd),
+      truncatedQueryIds,
+    };
   }
 }
 

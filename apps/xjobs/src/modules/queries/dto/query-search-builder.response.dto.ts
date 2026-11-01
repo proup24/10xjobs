@@ -4,6 +4,7 @@ import {
   Channel,
   Region,
   Seniority,
+  SkillDomain,
   Technology,
 } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
@@ -31,6 +32,13 @@ export class QuerySearchBuilderResponseDto implements QuerySearchBuilderRow {
 
   @ApiProperty({ enum: Seniority, enumName: 'Seniority' })
   experience!: Seniority;
+
+  @ApiProperty({
+    enum: SkillDomain,
+    enumName: 'SkillDomain',
+    description: 'The skill domain the technologies came from',
+  })
+  domain!: SkillDomain;
 
   @ApiProperty({ enum: Technology, enumName: 'Technology', isArray: true })
   technologies!: Technology[];
@@ -65,6 +73,15 @@ export class QuerySearchBuilderResponseDto implements QuerySearchBuilderRow {
     description: 'Soft-deleted: retired, never collected or linked again',
   })
   isDeleted!: boolean;
+
+  @ApiProperty({
+    format: 'date-time',
+    nullable: true,
+    type: String,
+    description:
+      'Collection cursor: postings before this were searched; null until first collected',
+  })
+  coveredUntil!: Date | null;
 
   @ApiProperty({ format: 'date-time' })
   createdAt!: Date;

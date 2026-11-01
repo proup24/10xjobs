@@ -14,6 +14,7 @@ export type {
   ProfileSkillRow,
   QuerySearchBuilderRow,
   ProfileQuerySearchBuilderRow,
+  SearchSegmentRunRow,
   UserRow,
 } from './models';
 export { toStoredAddress } from './models';

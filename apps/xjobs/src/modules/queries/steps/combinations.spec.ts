@@ -4,6 +4,7 @@ import {
   Position,
   Region,
   Seniority,
+  SkillDomain,
   Technology,
 } from 'src/common/enums';
 import { toRecipe } from '../builders';
@@ -23,7 +24,10 @@ const profile: QuerySearchProfileInput = {
   city: 'Casablanca',
   skills: [],
 };
-const sets = [[Technology.nestjs], [Technology.typescript]];
+const sets = [
+  { technologies: [Technology.nestjs], domain: SkillDomain.backend },
+  { technologies: [Technology.typescript], domain: SkillDomain.fullstack },
+];
 const remoteAndOnsite = [Arrangement.remote, Arrangement.onsite];
 
 describe('remoteCombinations', () => {
@@ -37,6 +41,18 @@ describe('remoteCombinations', () => {
     expect(combinations.every((c) => c.experience === Seniority.senior)).toBe(
       true,
     );
+  });
+
+  it('carries each set domain', () => {
+    const [first, second] = remoteCombinations(profile, remoteAndOnsite, sets);
+    expect(first).toMatchObject({
+      technologies: [Technology.nestjs],
+      domain: SkillDomain.backend,
+    });
+    expect(second).toMatchObject({
+      technologies: [Technology.typescript],
+      domain: SkillDomain.fullstack,
+    });
   });
 
   it('orders channel, then region, then set', () => {
@@ -74,6 +90,10 @@ describe('localCombinations', () => {
         city: 'Casablanca',
       });
     }
+    expect(combinations.map((c) => c.domain).slice(0, 2)).toEqual([
+      SkillDomain.backend,
+      SkillDomain.fullstack,
+    ]);
   });
 
   it('expands onsite and hybrid separately', () => {
