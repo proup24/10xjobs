@@ -6,13 +6,13 @@ import { REDIS_SETTINGS } from 'src/infrastructure/redis/settings.module';
 
 const STARTUP_TIMEOUT_MS = 15000;
 
-/** Owns the Redis resources for the single worker selected in this process. */
+/** Owns the Redis resources for the workers selected in this process. */
 @Injectable()
 export class WorkerRuntimeService {
   private readonly logger = new Logger(WorkerRuntimeService.name);
   private connection?: Redis;
-  private queue?: Queue;
-  private worker?: Worker;
+  private readonly queues: Queue[] = [];
+  private readonly workers: Worker[] = [];
 
   constructor(@Inject(REDIS_SETTINGS) private readonly settings: RedisConfig) {}
 
@@ -35,7 +35,7 @@ export class WorkerRuntimeService {
       prefix: this.settings.prefix,
     });
     // Retain the queue for shutdown even if readiness fails.
-    this.queue = queue;
+    this.queues.push(queue);
     queue.on('error', () => this.logger.warn('Queue operation failed'));
     await withTimeout(queue.waitUntilReady());
     return queue;
@@ -47,31 +47,37 @@ export class WorkerRuntimeService {
     concurrency: number,
     connection: Redis,
   ): void {
-    this.worker = new Worker(name, processor, {
-      connection,
-      prefix: this.settings.prefix,
-      concurrency,
-    });
+    this.workers.push(
+      new Worker(name, processor, {
+        connection,
+        prefix: this.settings.prefix,
+        concurrency,
+      }),
+    );
   }
 
   async waitUntilReady(): Promise<void> {
-    if (!this.worker) return;
-
-    this.worker.on('error', () =>
-      this.logger.error('Worker Redis operation failed'),
+    await Promise.all(
+      this.workers.map(async (worker) => {
+        worker.on('error', () =>
+          this.logger.error(`Worker ${worker.name} Redis operation failed`),
+        );
+        worker.on('failed', (job, error) =>
+          this.logger.warn(
+            `Job ${job?.id ?? 'unknown'} on ${worker.name} failed: ${error.message}`,
+          ),
+        );
+        await withTimeout(worker.waitUntilReady());
+        this.logger.log(`Worker ready on ${worker.name}`);
+      }),
     );
-    this.worker.on('failed', (job, error) =>
-      this.logger.warn(`Job ${job?.id ?? 'unknown'} failed: ${error.message}`),
-    );
-    await withTimeout(this.worker.waitUntilReady());
-    this.logger.log(`Worker ready on ${this.worker.name}`);
   }
 
   async close(): Promise<void> {
     // Stop accepting jobs and await active handlers before releasing Redis.
     try {
-      await this.worker?.close();
-      await this.queue?.close();
+      await Promise.all(this.workers.map((worker) => worker.close()));
+      await Promise.all(this.queues.map((queue) => queue.close()));
     } finally {
       this.connection?.disconnect();
     }

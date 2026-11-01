@@ -16,6 +16,7 @@ import { QuerySearchModule } from 'src/modules/queries';
 import { UsersModule } from 'src/modules/users';
 import { HealthController } from './controllers/health.controller';
 import { HealthService } from './services/health.service';
+import { WorkerModule } from 'src/infrastructure/worker/worker.module';
 
 @Module({
   imports: [
@@ -31,7 +32,7 @@ import { HealthService } from './services/health.service';
     JobsModule,
     UsersModule,
     QuerySearchModule,
-    // WorkerModule,
+    WorkerModule,
   ],
   controllers: [HealthController],
   providers: [
