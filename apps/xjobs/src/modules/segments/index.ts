@@ -12,4 +12,8 @@ export {
   segmentKey,
   type SearchSegment,
 } from './services/segments';
-export { segmentWindow, type SegmentWindow, type WindowConfig } from './services/window';
+export {
+  segmentWindow,
+  type SegmentWindow,
+  type WindowConfig,
+} from './services/window';

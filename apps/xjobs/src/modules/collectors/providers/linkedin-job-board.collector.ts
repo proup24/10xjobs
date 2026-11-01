@@ -62,6 +62,17 @@ function canonicalUrl(value: string | null): string | null {
   }
 }
 
+/** Each URL once, by meaning, keeping the first spelling and order. */
+function distinctUrls(urls: readonly string[]): string[] {
+  const seen = new Set<string>();
+  return urls.filter((url) => {
+    const key = canonicalUrl(url) ?? url;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 /** Where the actor found an item: the start URL it echoes, and its position there. */
 function scrapingInfo(item: unknown): {
   inputUrl: string | null;
@@ -95,7 +106,11 @@ export class LinkedinJobBoardCollector {
     const { items, costUsd, runId } = await this.actor.run(
       config.actor,
       {
-        startUrls: searches.map(({ search }) => ({ url: search })),
+        // Members with identical searches share one start URL; attribution
+        // gives every one of them the URL's items.
+        startUrls: distinctUrls(searches.map(({ search }) => search)).map(
+          (url) => ({ url }),
+        ),
         maxRowsPerUrl: config.maxRowsPerUrl,
         companyProfile: false,
         enrichCompany: false,

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { Arrangement, type Channel, Region } from 'src/common/enums';
+import { Arrangement, Channel, Region } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
 
 /** Builders searched together in one Apify run. */
@@ -14,8 +14,24 @@ export interface SearchSegment {
 
 export const SEGMENT_SIZE = 10;
 
-/** On-site and hybrid share a city; remote shares the selected region. */
+/** The place a LinkedIn job board builder searches: its geoId, else its location text. */
+function linkedinSearchPlace(builder: QuerySearchBuilderRow): string | null {
+  const params = (builder.params ?? {}) as Record<string, unknown>;
+  const place = params.geoId ?? params.location;
+  return typeof place === 'string' && place ? `search:${place}` : null;
+}
+
+/**
+ * On-site and hybrid share a city; remote shares the selected region. LinkedIn
+ * job board builders share the place they search, so builders of different
+ * regions that search the same place (MENA and EMEA both search `EMEA`) meet
+ * in one segment and run as one search.
+ */
 function placeOf(builder: QuerySearchBuilderRow): string {
+  if (builder.channel === Channel.LINKEDIN_JOB_BOARD) {
+    const place = linkedinSearchPlace(builder);
+    if (place) return place;
+  }
   if (
     builder.type === Arrangement.onsite ||
     builder.type === Arrangement.hybrid

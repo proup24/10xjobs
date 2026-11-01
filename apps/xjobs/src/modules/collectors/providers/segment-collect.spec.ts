@@ -158,6 +158,34 @@ describe('LinkedIn job board segment', () => {
     expect(result.source).toEqual({ actor: board.actor, apifyRunId: 'run-1' });
   });
 
+  it('searches a URL shared by several members once and gives each its items', async () => {
+    const twins = [
+      { id: 'qs-a', keyword: 'backend nestjs', params: { location: 'EMEA' } },
+      { id: 'qs-b', keyword: 'backend nestjs', params: { location: 'EMEA' } },
+    ];
+    const shared = linkedinJobSearchUrl(
+      twins[0].keyword,
+      twins[0].params,
+      7200,
+    );
+    const { run, provider } = actor(() => [
+      item(1, shared, 1),
+      item(2, shared, 2),
+      item(3, shared, 3),
+    ]);
+    const result = await new LinkedinJobBoardCollector(provider).collect(
+      segment(Channel.LINKEDIN_JOB_BOARD, twins),
+      board,
+    );
+
+    expect(run.mock.calls[0][1]).toMatchObject({
+      startUrls: [{ url: shared }],
+    });
+    expect(result.itemsByQuery.get('qs-a')).toHaveLength(3);
+    expect(result.itemsByQuery.get('qs-b')).toHaveLength(3);
+    expect(result.truncatedQueryIds).toEqual(['qs-a', 'qs-b']);
+  });
+
   it('matches echoed URLs whatever their encoding and parameter order', async () => {
     const url = new URL(urlOf(0));
     const echoed =

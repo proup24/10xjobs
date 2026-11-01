@@ -1,6 +1,7 @@
 import { Arrangement, Channel, Region, SkillDomain } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
-import { buildSegments } from './segments';
+import { buildSegments, segmentKey } from './segments';
+import { segmentWindow } from './window';
 
 let n = 0;
 const builder = (
@@ -87,5 +88,80 @@ describe('buildSegments', () => {
         .slice(0, 10)
         .map((b) => b.id),
     );
+  });
+
+  it('groups LinkedIn builders that search the same place, whatever their region', () => {
+    const remote = { type: Arrangement.remote, country: null, city: null };
+    const segments = buildSegments([
+      builder({
+        ...remote,
+        locationRegion: Region.EMEA,
+        params: { location: 'EMEA' },
+      }),
+      builder({
+        ...remote,
+        locationRegion: Region.MENA,
+        params: { location: 'EMEA' },
+      }),
+    ]);
+    expect(segments).toHaveLength(1);
+    expect(segments[0].members).toHaveLength(2);
+  });
+
+  it('groups LinkedIn builders by geoId before location text', () => {
+    const remote = { type: Arrangement.remote, country: null, city: null };
+    const segments = buildSegments([
+      builder({
+        ...remote,
+        locationRegion: Region.EMEA,
+        params: { location: 'EMEA', geoId: '91000007' },
+      }),
+      builder({
+        ...remote,
+        locationRegion: Region.MENA,
+        params: {
+          location: 'Europe, Middle East and Africa',
+          geoId: '91000007',
+        },
+      }),
+    ]);
+    expect(segments).toHaveLength(1);
+  });
+
+  it('keeps the region key for channels other than the LinkedIn job board', () => {
+    const b = builder({
+      channel: Channel.ASHBY,
+      type: Arrangement.remote,
+      country: null,
+      city: null,
+      locationRegion: Region.MENA,
+      params: { location: 'EMEA' },
+    });
+    expect(segmentKey(b)).toBe(`${Channel.ASHBY}|backend|remote|MENA`);
+  });
+
+  it('keeps each member cursor when builders are regrouped', () => {
+    const remote = { type: Arrangement.remote, country: null, city: null };
+    const until = new Date('2026-11-01T12:00:00Z');
+    const [merged] = buildSegments([
+      builder({
+        ...remote,
+        locationRegion: Region.EMEA,
+        params: { location: 'EMEA' },
+        coveredUntil: new Date('2026-11-01T11:00:00Z'),
+      }),
+      builder({
+        ...remote,
+        locationRegion: Region.MENA,
+        params: { location: 'EMEA' },
+        coveredUntil: new Date('2026-11-01T10:00:00Z'),
+      }),
+    ]);
+    const window = segmentWindow(merged.members, until, {
+      initialHours: 24,
+      overlapMinutes: 15,
+      maximumHours: 24,
+    });
+    expect(window.since).toEqual(new Date('2026-11-01T09:45:00Z'));
   });
 });
