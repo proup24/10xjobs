@@ -15,6 +15,7 @@
     "db:seed": "tsx --tsconfig tsconfig.app.json src/database/seeds/index.ts",
     "db:regenerate": "tsx --tsconfig tsconfig.app.json src/scripts/regenerate-query-search.ts",
     "db:renormalize": "tsx --tsconfig tsconfig.app.json src/scripts/renormalize-jobs.ts",
+    "apify:probe-linkedin": "tsx --tsconfig tsconfig.app.json src/scripts/probe-linkedin-search.ts",
     "worker:dev": "tsx watch --tsconfig tsconfig.app.json src/worker.ts",
     "worker:all:dev": "WORKER_ROLE=all tsx watch --tsconfig tsconfig.app.json src/worker.ts",
     "worker:linkedin-job-board:dev": "WORKER_CHANNEL=LINKEDIN_JOB_BOARD tsx watch --tsconfig tsconfig.app.json src/worker.ts",
