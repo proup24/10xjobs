@@ -12,7 +12,11 @@ import { TECHNOLOGY_TERMS } from '../builders/keywords';
 import { AshbyQueryBuilder } from './ashbyhq.builder';
 import { GreenhouseQueryBuilder } from './greenhouse.builder';
 import { CHANNEL_QUERY_BUILDERS } from '.';
-import { LINKEDIN_REGIONS } from './linkedin_geo';
+import {
+  countryName,
+  LINKEDIN_CITY_GEO_IDS,
+  LINKEDIN_REGIONS,
+} from './linkedin_geo';
 
 const base: QuerySearchCombination = {
   channel: Channel.LINKEDIN_JOB_BOARD,
@@ -68,12 +72,40 @@ describe('LinkedIn job board builder', () => {
     }
   });
 
-  it('uses city and country for onsite work, without a geoId', () => {
+  it('names the country, never its ISO code, for onsite work', () => {
     expect(build(Channel.LINKEDIN_JOB_BOARD, onsite).params).toEqual({
       experienceLevel: '4',
       workType: '1',
-      location: 'Casablanca, MA',
+      location: 'Casablanca, Morocco',
     });
+  });
+
+  it('searches the country alone when there is no city', () => {
+    expect(
+      build(Channel.LINKEDIN_JOB_BOARD, { ...onsite, city: null }).params
+        .location,
+    ).toBe('Morocco');
+  });
+
+  it('pins a city by its verified geoId', () => {
+    LINKEDIN_CITY_GEO_IDS['MA|Casablanca'] = '123';
+    try {
+      expect(build(Channel.LINKEDIN_JOB_BOARD, onsite).params).toMatchObject({
+        location: 'Casablanca, Morocco',
+        geoId: '123',
+      });
+    } finally {
+      delete LINKEDIN_CITY_GEO_IDS['MA|Casablanca'];
+    }
+  });
+
+  it('falls back to the code for a country it cannot name', () => {
+    for (const code of ['XK', 'ZZ', 'Q1']) {
+      const name = countryName(code);
+      expect(typeof name).toBe('string');
+      expect(name).not.toContain('undefined');
+      expect(name.length).toBeGreaterThan(0);
+    }
   });
 
   it('omits filters it has no value for', () => {

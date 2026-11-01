@@ -1,10 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import {
-  Arrangement,
-  Position,
-  Region,
-  Seniority,
-} from 'src/common/enums';
+import { Arrangement, Position, Region, Seniority } from 'src/common/enums';
 import type { QuerySearchProfileInput } from '../types';
 import { assertLocatable, CITY_REQUIRED, isLocatable } from './locatable';
 
@@ -28,9 +23,9 @@ describe('isLocatable', () => {
   });
 
   it('rejects onsite next to remote without a city', () => {
-    expect(isLocatable([Arrangement.remote, Arrangement.onsite], undefined)).toBe(
-      false,
-    );
+    expect(
+      isLocatable([Arrangement.remote, Arrangement.onsite], undefined),
+    ).toBe(false);
   });
 
   it('accepts remote without a city', () => {

@@ -65,7 +65,9 @@ export function localCombinations(
 }
 
 /** The first recipe of each hash, in order. */
-export function dedupeByHash(recipes: QuerySearchRecipe[]): QuerySearchRecipe[] {
+export function dedupeByHash(
+  recipes: QuerySearchRecipe[],
+): QuerySearchRecipe[] {
   const unique = new Map<string, QuerySearchRecipe>();
   for (const recipe of recipes)
     if (!unique.has(recipe.hash)) unique.set(recipe.hash, recipe);

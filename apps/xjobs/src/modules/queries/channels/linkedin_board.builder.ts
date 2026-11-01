@@ -2,11 +2,10 @@ import { Arrangement, Channel, Region, Seniority } from 'src/common/enums';
 import type { ChannelQuery, QuerySearchCombination } from '../types';
 import {
   type ChannelQueryBuilder,
-  locationText,
   technologyTerms,
   titleClause,
 } from '../builders/channel.builder';
-import { LINKEDIN_REGIONS } from './linkedin_geo';
+import { LINKEDIN_REGIONS, linkedinPlace } from './linkedin_geo';
 
 /** LinkedIn `f_E` codes: 2 entry, 3 associate, 4 mid-senior. */
 const EXPERIENCE_LEVELS: Record<Seniority, string | null> = {
@@ -44,7 +43,9 @@ export class LinkedinJobBoardBuilder implements ChannelQueryBuilder {
       combination.type === Arrangement.onsite ||
       combination.type === Arrangement.hybrid;
     if (placeBound && combination.country) {
-      params.location = locationText(combination);
+      const place = linkedinPlace(combination.country, combination.city);
+      params.location = place.location;
+      if (place.geoId) params.geoId = place.geoId;
     } else {
       const region =
         LINKEDIN_REGIONS[combination.locationRegion ?? Region.GLOBAL];

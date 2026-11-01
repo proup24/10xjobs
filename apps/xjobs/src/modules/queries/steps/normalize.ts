@@ -10,8 +10,10 @@ export function canonicalCity(city: string | null | undefined): string | null {
   if (!collapsed) return null;
   return collapsed
     .toLowerCase()
-    .replace(/(^|[\s-])(\p{L})/gu, (_match, separator: string, letter: string) =>
-      separator + letter.toUpperCase(),
+    .replace(
+      /(^|[\s-])(\p{L})/gu,
+      (_match, separator: string, letter: string) =>
+        separator + letter.toUpperCase(),
     );
 }
 

@@ -31,3 +31,38 @@ export const LINKEDIN_REGIONS: Record<Region, LinkedinRegion> = {
   [Region.NORTH_AFRICA]: { location: 'North Africa', geoId: null },
   [Region.SUB_SAHARAN_AFRICA]: { location: 'Africa', geoId: null },
 };
+
+/**
+ * Cities pinned by a verified LinkedIn geoId, keyed `<ISO country>|<City>`.
+ * Fill a value only after checking it on linkedin.com: pick the place in the
+ * jobs search and read `geoId` from the URL.
+ */
+export const LINKEDIN_CITY_GEO_IDS: Record<string, string> = {};
+
+const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
+
+/**
+ * The English name of an ISO country code, as LinkedIn's location box reads
+ * it: a bare code is ambiguous (`MA` is Morocco and Massachusetts). An
+ * unknown or malformed code is returned as given.
+ */
+export function countryName(iso: string): string {
+  try {
+    const name = regionNames.of(iso);
+    return name && name !== iso && !/unknown/i.test(name) ? name : iso;
+  } catch {
+    return iso;
+  }
+}
+
+/** The place a LinkedIn onsite or hybrid search names: `City, Country`, and its geoId once verified. */
+export function linkedinPlace(
+  country: string,
+  city: string | null,
+): { location: string; geoId: string | null } {
+  const name = countryName(country);
+  return {
+    location: city ? `${city}, ${name}` : name,
+    geoId: (city && LINKEDIN_CITY_GEO_IDS[`${country}|${city}`]) || null,
+  };
+}

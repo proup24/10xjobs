@@ -1,9 +1,4 @@
-import {
-  Arrangement,
-  Position,
-  Region,
-  Seniority,
-} from 'src/common/enums';
+import { Arrangement, Position, Region, Seniority } from 'src/common/enums';
 import type { QuerySearchProfileInput } from '../types';
 import { normalizeArrangements, normalizeProfile } from './normalize';
 

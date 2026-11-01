@@ -123,7 +123,9 @@ describe('QuerySearchService', () => {
       const recipes = service.expand({ ...profile, regions: [] });
       const remote = recipes.filter((r) => r.type === Arrangement.remote);
       expect(remote).toHaveLength(8);
-      expect(remote.every((r) => r.locationRegion === Region.GLOBAL)).toBe(true);
+      expect(remote.every((r) => r.locationRegion === Region.GLOBAL)).toBe(
+        true,
+      );
       expect(recipes.filter((r) => r.type === Arrangement.onsite)).toHaveLength(
         8,
       );

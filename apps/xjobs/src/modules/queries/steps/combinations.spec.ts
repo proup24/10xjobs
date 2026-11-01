@@ -35,9 +35,9 @@ describe('remoteCombinations', () => {
     const combinations = remoteCombinations(profile, remoteAndOnsite, sets);
     expect(combinations).toHaveLength(16);
     expect(combinations.every((c) => c.type === Arrangement.remote)).toBe(true);
-    expect(combinations.every((c) => c.country === null && c.city === null)).toBe(
-      true,
-    );
+    expect(
+      combinations.every((c) => c.country === null && c.city === null),
+    ).toBe(true);
     expect(combinations.every((c) => c.experience === Seniority.senior)).toBe(
       true,
     );
@@ -103,9 +103,9 @@ describe('localCombinations', () => {
       sets,
     );
     expect(combinations).toHaveLength(16);
-    expect(combinations.filter((c) => c.type === Arrangement.hybrid)).toHaveLength(
-      8,
-    );
+    expect(
+      combinations.filter((c) => c.type === Arrangement.hybrid),
+    ).toHaveLength(8);
   });
 
   it('is empty for remote only', () => {

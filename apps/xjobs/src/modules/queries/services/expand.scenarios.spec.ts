@@ -70,11 +70,11 @@ describe('expand scenarios over mock profiles', () => {
     ).toEqual([
       [
         '("frontend engineer" OR "frontend developer" OR "front end engineer") AND react',
-        { location: 'Paris, FR', experienceLevel: '3', workType: '1' },
+        { location: 'Paris, France', experienceLevel: '3', workType: '1' },
       ],
       [
         '("frontend engineer" OR "frontend developer" OR "front end engineer") AND "next.js"',
-        { location: 'Paris, FR', experienceLevel: '3', workType: '1' },
+        { location: 'Paris, France', experienceLevel: '3', workType: '1' },
       ],
     ]);
     expect(keywords(recipes, Channel.LINKEDIN_POSTS)).toEqual([
@@ -127,8 +127,8 @@ describe('expand scenarios over mock profiles', () => {
           "GREEN_HOUSE | devops | hybrid | - | Austin, US | ("devops engineer" OR "devops") terraform staff "austin" | {"countryCode":"us","remote":false}",
           "GREEN_HOUSE | devops | remote | NORTH_AMERICA | -, - | ("devops engineer" OR "devops") kubernetes staff "remote" | {"remote":true}",
           "GREEN_HOUSE | devops | remote | NORTH_AMERICA | -, - | ("devops engineer" OR "devops") terraform staff "remote" | {"remote":true}",
-          "LINKEDIN_JOB_BOARD | devops | hybrid | - | Austin, US | ("devops engineer" OR "devops") AND kubernetes | {"experienceLevel":"4","location":"Austin, US","workType":"3"}",
-          "LINKEDIN_JOB_BOARD | devops | hybrid | - | Austin, US | ("devops engineer" OR "devops") AND terraform | {"experienceLevel":"4","location":"Austin, US","workType":"3"}",
+          "LINKEDIN_JOB_BOARD | devops | hybrid | - | Austin, US | ("devops engineer" OR "devops") AND kubernetes | {"experienceLevel":"4","location":"Austin, United States","workType":"3"}",
+          "LINKEDIN_JOB_BOARD | devops | hybrid | - | Austin, US | ("devops engineer" OR "devops") AND terraform | {"experienceLevel":"4","location":"Austin, United States","workType":"3"}",
           "LINKEDIN_JOB_BOARD | devops | remote | NORTH_AMERICA | -, - | ("devops engineer" OR "devops") AND kubernetes | {"experienceLevel":"4","location":"North America","workType":"2"}",
           "LINKEDIN_JOB_BOARD | devops | remote | NORTH_AMERICA | -, - | ("devops engineer" OR "devops") AND terraform | {"experienceLevel":"4","location":"North America","workType":"2"}",
           "LINKEDIN_POSTS | devops | hybrid | - | Austin, US | hiring ("devops engineer" OR "devops") kubernetes staff austin | {}",

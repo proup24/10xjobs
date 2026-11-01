@@ -34,14 +34,24 @@ export class QuerySearchService {
     assertHasSkills(profile);
     const technologies = technologySets(profile.skills);
     const arrangements = normalizeArrangements(profile.arrangements);
-    const profileRemoteCombinations = remoteCombinations(profile, arrangements, technologies);
-    const profileLocalCombinations = localCombinations(profile, arrangements, technologies);
+    const profileRemoteCombinations = remoteCombinations(
+      profile,
+      arrangements,
+      technologies,
+    );
+    const profileLocalCombinations = localCombinations(
+      profile,
+      arrangements,
+      technologies,
+    );
     const combinations = [
       ...profileRemoteCombinations,
       ...profileLocalCombinations,
     ];
     const queriesRecipes = combinations.map(toRecipe);
-    console.debug(`length of queriesRecipes is : ${queriesRecipes.length} For Profile With ${technologies.length} Technologies And ${arrangements.length} Arrangement Levels`);
+    console.debug(
+      `length of queriesRecipes is : ${queriesRecipes.length} For Profile With ${technologies.length} Technologies And ${arrangements.length} Arrangement Levels`,
+    );
     return dedupeByHash(queriesRecipes);
   }
 

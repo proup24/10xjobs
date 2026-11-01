@@ -42,7 +42,10 @@ const onsiteFrontendParis: QuerySearchProfileInput = {
   arrangements: [Arrangement.onsite],
   country: 'FR',
   city: 'Paris',
-  skills: [skill(Technology.react, frontend, 9, 8), skill(Technology.nextjs, frontend, 8, 7)],
+  skills: [
+    skill(Technology.react, frontend, 9, 8),
+    skill(Technology.nextjs, frontend, 8, 7),
+  ],
 };
 
 /** Realistic mock profiles for the generation scenarios. */
@@ -78,7 +81,10 @@ export const MOCK_PROFILES = {
     arrangements: [Arrangement.onsite, Arrangement.unstated],
     country: 'MA',
     city: 'Rabat',
-    skills: [skill(Technology.go, backend, 8, 6), skill(Technology.nodejs, backend, 5, 5)],
+    skills: [
+      skill(Technology.go, backend, 8, 6),
+      skill(Technology.nodejs, backend, 5, 5),
+    ],
   },
   noRegionsRemote: {
     position: Position.ml_engineer,
@@ -87,7 +93,10 @@ export const MOCK_PROFILES = {
     arrangements: [Arrangement.remote],
     country: 'DE',
     city: null,
-    skills: [skill(Technology.pytorch, ml, 9, 9), skill(Technology.python, ml, 8, 9)],
+    skills: [
+      skill(Technology.pytorch, ml, 9, 9),
+      skill(Technology.python, ml, 8, 9),
+    ],
   },
   /** Nothing to search: every builder needs a skill domain. */
   noRankedSkills: {
