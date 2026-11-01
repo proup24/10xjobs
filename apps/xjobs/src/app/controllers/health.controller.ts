@@ -10,8 +10,8 @@ import {
   ApiSuccessResponse,
   Public,
 } from 'src/common/decorators';
-import { HealthResponseDto, HealthStatus } from './dto/health.response.dto';
-import { HealthService } from './health.service';
+import { HealthResponseDto, HealthStatus } from '../dto/health.response.dto';
+import { HealthService } from '../services/health.service';
 
 @ApiErrorResponses(
   HttpStatus.INTERNAL_SERVER_ERROR,

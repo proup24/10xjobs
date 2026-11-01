@@ -7,7 +7,7 @@ import {
   HealthStatus,
   type HealthCheckDto,
   type HealthResponseDto,
-} from './dto/health.response.dto';
+} from '../dto/health.response.dto';
 
 /** A probe that hangs counts as down; orchestrators time out around 5s. */
 export const HEALTH_CHECK_TIMEOUT_MS = 2000;
