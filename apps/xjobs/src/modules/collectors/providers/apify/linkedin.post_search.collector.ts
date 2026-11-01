@@ -46,7 +46,10 @@ export class LinkedinPostSearchProvider {
 
     const { byQuery, unattributed } = attribute(items, querySearch, searches);
     // The actor reports no positions, so posts carry no rank.
-    const raw = (item: unknown): RawCollectedItem => ({ rank: null, payload: item });
+    const raw = (item: unknown): RawCollectedItem => ({
+      rank: null,
+      payload: item,
+    });
     const itemsByQuery = new Map<string, RawCollectedItem[]>();
     const truncatedQueryIds: string[] = [];
     for (const { id } of searches) {

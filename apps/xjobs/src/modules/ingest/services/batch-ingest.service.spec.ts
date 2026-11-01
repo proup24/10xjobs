@@ -97,10 +97,7 @@ describe('BatchIngestService', () => {
       status,
       attempts: 0,
     });
-    await storage.put(
-      ingestConfig.bucket,
-      key,
-      serializeBatchFile(batch));
+    await storage.put(ingestConfig.bucket, key, serializeBatchFile(batch));
   }
 
   beforeEach(() => {
@@ -137,6 +134,29 @@ describe('BatchIngestService', () => {
     });
     expect(repo.batches.get('b1')!.status).toBe('ingested');
     expect(repo.reports.get('b1')).toEqual(report);
+  });
+
+  it('removes null characters PostgreSQL cannot store, keeping the hash of the original', async () => {
+    const post = {
+      id: '7',
+      content: 'Hiring\u0000 now',
+      author: { name: 'A\u0000' },
+    };
+    await store(
+      file({
+        channel: Channel.LINKEDIN_POSTS,
+        itemsByQuery: { q1: [{ rank: null, payload: post }] },
+        unattributed: [],
+      }),
+    );
+    await service.ingestBatch('b1', { final: false });
+
+    expect(repo.saved[0]!.payload).toEqual({
+      id: '7',
+      content: 'Hiring now',
+      author: { name: 'A' },
+    });
+    expect(JSON.stringify(repo.saved[0]!.payload)).not.toContain('\\u0000');
   });
 
   it('does nothing for a batch that is not pending', async () => {

@@ -100,14 +100,12 @@ export class PrismaRawStorageRepository extends RawStorageRepository {
   }
 
   async markIngested(id: string, report: BatchReport): Promise<void> {
-    await this.batches
-      .where({ id, status: 'pending' })
-      .updateAll({
-        status: 'ingested',
-        ingestedAt: new Date(),
-        report: report as unknown as CollectionBatchRow['report'],
-        lastError: null,
-      });
+    await this.batches.where({ id, status: 'pending' }).updateAll({
+      status: 'ingested',
+      ingestedAt: new Date(),
+      report: report as unknown as CollectionBatchRow['report'],
+      lastError: null,
+    });
   }
 
   async recordAttemptFailure(

@@ -173,7 +173,9 @@ describe('LinkedIn job board segment', () => {
       board,
     );
     expect(
-      result.itemsByQuery.get('qs-1')?.map((i) => (i.payload as { id: number }).id),
+      result.itemsByQuery
+        .get('qs-1')
+        ?.map((i) => (i.payload as { id: number }).id),
     ).toEqual([1]);
   });
 
@@ -319,7 +321,9 @@ describe('job board segments on Google', () => {
     const { provider } = actor(() => [
       {
         searchQuery: { term: 'another query' },
-        organicResults: [{ url: 'https://jobs.ashbyhq.com/acme/9', position: 4 }],
+        organicResults: [
+          { url: 'https://jobs.ashbyhq.com/acme/9', position: 4 },
+        ],
       },
     ]);
     const result = await new GoogleJobsSearchProvider(provider).search(
@@ -413,6 +417,7 @@ describe('job board segments on Google', () => {
         rank: 1,
         payload: {
           hit: { url: 'https://jobs.ashbyhq.com/acme/1', position: 1 },
+          resolvedUrl: null,
           posting: { id: 'p1', title: 'Engineer', descriptionHtml: '<p>x</p>' },
           fetchError: null,
         },
@@ -421,11 +426,73 @@ describe('job board segments on Google', () => {
         rank: 2,
         payload: {
           hit: { url: 'https://jobs.ashbyhq.com/acme/closed', position: 2 },
+          resolvedUrl: null,
           posting: null,
           fetchError: 'closed',
         },
       },
     ]);
     expect(result.source).toEqual({ actor: ashby.actor, apifyRunId: 'run-1' });
+  });
+
+  it('follows Google redirect links to the posting, keeping the hit untouched', async () => {
+    const queries = [{ id: 'qs-1', keyword: `${titles} nestjs`, params: {} }];
+    const line = boardQuery(queries[0].keyword, ashby);
+    const goto = 'https://www.google.com/goto?url=CAES123';
+    const lost = 'https://www.google.com/goto?url=CAESlost';
+    const real =
+      'https://jobs.ashbyhq.com/acme/0b1c2d3e-0000-4000-8000-000000000001';
+    const { provider } = actor(() => [
+      {
+        searchQuery: { term: line },
+        organicResults: [
+          { url: goto, position: 1 },
+          { url: lost, position: 2 },
+        ],
+      },
+    ]);
+    const http = vi.fn(async (url: string) =>
+      url === goto
+        ? new Response(null, { status: 302, headers: { location: real } })
+        : new Response('gone', { status: 404 }),
+    );
+    vi.stubGlobal('fetch', http);
+    const postings = {
+      fetch: vi.fn(async (url: string) => ({ id: url.split('/').at(-1) })),
+    } as unknown as AshbyPostingProvider;
+    try {
+      const result = await new AshbyCollector(
+        new GoogleJobsSearchProvider(provider),
+        postings,
+      ).collect(segment(Channel.ASHBY, queries), ashby);
+
+      expect(http).toHaveBeenCalledWith(
+        goto,
+        expect.objectContaining({ redirect: 'manual' }),
+      );
+      expect(postings.fetch).toHaveBeenCalledWith(real);
+      expect(result.itemsByQuery.get('qs-1')).toEqual([
+        {
+          rank: 1,
+          payload: {
+            hit: { url: goto, position: 1 },
+            resolvedUrl: real,
+            posting: { id: '0b1c2d3e-0000-4000-8000-000000000001' },
+            fetchError: null,
+          },
+        },
+        {
+          rank: 2,
+          payload: {
+            hit: { url: lost, position: 2 },
+            resolvedUrl: null,
+            posting: null,
+            fetchError: 'Google redirect not resolved: HTTP 404',
+          },
+        },
+      ]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

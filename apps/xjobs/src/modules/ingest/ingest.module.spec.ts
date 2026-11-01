@@ -27,7 +27,9 @@ it('exports a wired batch ingest service that skips unknown batches', async () =
   const module = await compile(first);
   try {
     expect(
-      await module.get(BatchIngestService).ingestBatch('missing', { final: false }),
+      await module
+        .get(BatchIngestService)
+        .ingestBatch('missing', { final: false }),
     ).toBeNull();
     expect(first).toHaveBeenCalledOnce();
   } finally {

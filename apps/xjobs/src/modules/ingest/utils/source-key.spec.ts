@@ -111,6 +111,18 @@ describe('sourceKey', () => {
       ).toEqual({ key: 'posting:airbnb/8231416' });
     });
 
+    it('keys a Google redirect hit by the posting it resolved to', () => {
+      expect(
+        sourceKey(Channel.ASHBY, {
+          hit: { url: 'https://www.google.com/goto?url=CAES123' },
+          resolvedUrl:
+            'https://jobs.ashbyhq.com/acme/0b1c2d3e-0000-4000-8000-000000000001',
+          posting: null,
+          fetchError: null,
+        }),
+      ).toEqual(sourceKey(Channel.ASHBY, ashby));
+    });
+
     it('rejects a hit that is not a posting page', () => {
       expect(
         sourceKey(Channel.ASHBY, {

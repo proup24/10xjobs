@@ -92,13 +92,14 @@ function linkedinKey(
   return { invalid: 'no source id or URL' };
 }
 
-/** Ashby and Greenhouse: the posting the Google hit names, whether or not it was fetched. */
+/** Ashby and Greenhouse: the posting the Google hit names (or redirects to), whether or not it was fetched. */
 function postingKey(
   channel: Channel.ASHBY | Channel.GREEN_HOUSE,
   item: Record<string, unknown>,
 ): SourceKeyResult {
   const hit = isObject(item.hit) ? item.hit : {};
-  const url = idText(hit.url);
+  // A Google redirect hit carries the posting URL the collector resolved it to.
+  const url = idText(item.resolvedUrl) ?? idText(hit.url);
   if (!url) return { invalid: 'no source id or URL' };
   let ats: ReturnType<typeof atsIdentity> = null;
   try {

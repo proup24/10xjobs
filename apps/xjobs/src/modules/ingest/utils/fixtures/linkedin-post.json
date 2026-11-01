@@ -14,7 +14,9 @@
     "info": "Engineering Manager at Acme • 1,204 followers",
     "website": null,
     "websiteLabel": null,
-    "avatar": { "url": "https://media.licdn.com/dms/image/v2/X/profile/0/1/jane?e=1793836800&v=beta&t=sig1" },
+    "avatar": {
+      "url": "https://media.licdn.com/dms/image/v2/X/profile/0/1/jane?e=1793836800&v=beta&t=sig1"
+    },
     "urn": "102634140"
   },
   "postedAt": {
@@ -31,5 +33,10 @@
     "description": null,
     "image": null
   },
-  "query": { "sortBy": "date", "page": 1, "search": "senior node engineer hiring", "postedLimit": "24h" }
+  "query": {
+    "sortBy": "date",
+    "page": 1,
+    "search": "senior node engineer hiring",
+    "postedLimit": "24h"
+  }
 }

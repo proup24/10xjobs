@@ -14,7 +14,11 @@
   "workType": "",
   "sector": "IT Services and IT Consulting",
   "salary": "",
-  "scrapingInfo": { "page": 1, "index": 3, "inputUrl": "https://www.linkedin.com/jobs/search/?keywords=node" },
+  "scrapingInfo": {
+    "page": 1,
+    "index": 3,
+    "inputUrl": "https://www.linkedin.com/jobs/search/?keywords=node"
+  },
   "applyType": "EXTERNAL",
   "applyUrl": "https://jobs.ashbyhq.com/acme/0b1c2d3e-0000-4000-8000-000000000001",
   "descriptionHtml": "<p>Build APIs.</p>",

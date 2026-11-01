@@ -13,6 +13,7 @@ import {
   BatchFileError,
   contentHash,
   parseBatchFile,
+  postgresSafe,
   sourceKey,
 } from '../utils';
 
@@ -93,7 +94,10 @@ export class BatchIngestService {
     return file;
   }
 
-  private async store(batch: BatchRecord, file: BatchFile): Promise<BatchReport> {
+  private async store(
+    batch: BatchRecord,
+    file: BatchFile,
+  ): Promise<BatchReport> {
     const report: BatchReport = {
       received: 0,
       newItems: 0,
@@ -124,7 +128,7 @@ export class BatchIngestService {
           kind,
           sourceKey: key.key,
           contentHash: contentHash(batch.channel, item.payload),
-          payload: item.payload,
+          payload: postgresSafe(item.payload),
           queryId,
           rank: item.rank,
           observedAt,
