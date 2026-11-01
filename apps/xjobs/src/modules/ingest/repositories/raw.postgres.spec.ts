@@ -15,6 +15,7 @@ import { ingestConfig } from '../config';
 import { BatchFileReaderService } from '../services/batch-file-reader.service';
 import { BatchItemWriterService } from '../services/batch-item-writer.service';
 import { BatchIngestService } from '../services/batch.service';
+import { RenormalizeService } from '../services/renormalize.service';
 import type { BatchFile } from '../types';
 import { contentHash, serializeBatchFile, sourceKey } from '../utils';
 import ashbyFailed from '../utils/fixtures/ashby-failed.json';
@@ -607,6 +608,68 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
       expect(await db.orm.public.NormalizedVersion.all()).toEqual([
         expect.objectContaining({ status: 'invalid', record: null }),
       ]);
+    });
+
+    describe('rebuild', () => {
+      const wipe = () =>
+        db.execute(
+          db.raw
+            .sql`TRUNCATE normalized_job_sources, normalized_jobs, normalized_versions CASCADE`
+            .affectedCount()
+            .build(),
+        );
+      /** Job rows without ids, timestamps, sources and processing columns. */
+      const fields = async () => {
+        const skip = new Set([
+          'id',
+          'createdAt',
+          'updatedAt',
+          'fieldSources',
+          'processingStatus',
+          'processingReason',
+          'processingRequestedAt',
+        ]);
+        return (await jobs())
+          .map((j) =>
+            Object.fromEntries(
+              Object.entries(j).filter(([key]) => !skip.has(key)),
+            ),
+          )
+          .sort((a, b) => String(a.jobKey).localeCompare(String(b.jobKey)));
+      };
+      const rebuild = () =>
+        new RenormalizeService({ db } as DatabaseService).run();
+
+      beforeEach(async () => {
+        await save(liJob('4483900001'), t1);
+        await save(liJob('4483900002', { location: 'Poznań' }), t2);
+        await save(liJob('4483900003', { applyType: 'EASY_APPLY' }), t2);
+        await save(ashby, t3, Channel.ASHBY);
+      });
+
+      it('rebuilds the same jobs from raw storage without sending any to Process', async () => {
+        const before = await fields();
+        const linksBefore = (await sources()).length;
+        await wipe();
+
+        expect(await rebuild()).toEqual({ items: 4, invalid: 0, jobs: 3 });
+        expect(await fields()).toEqual(before);
+        expect(await sources()).toHaveLength(linksBefore);
+        expect((await jobs()).every((j) => j.processingStatus === null)).toBe(
+          true,
+        );
+      });
+
+      it('changes nothing when run twice, and keeps processing status', async () => {
+        await markProcessed();
+        await rebuild();
+        const once = await fields();
+        await rebuild();
+        expect(await fields()).toEqual(once);
+        expect(
+          (await jobs()).every((j) => j.processingStatus === 'processed'),
+        ).toBe(true);
+      });
     });
   });
 });

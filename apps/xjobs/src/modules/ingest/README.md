@@ -1,8 +1,8 @@
 # Ingest
 
-Ingest is the second stage of the pipeline (Collect → **Ingest** → Process → Match). It accepts what collection fetched, reliably and traceably, and stores it untouched. It interprets nothing beyond two exact facts per item: a **source key** (its identity within its channel) and a **content hash** (whether its content changed). Company, title, hiring manager, requirements and cross-channel duplicates belong to Process and Match.
+Ingest is the second stage of the pipeline (Collect → **Ingest** → Process → Match). It accepts what collection fetched, reliably and traceably, and stores it untouched. On top of that raw storage it builds **normalized jobs**: a deterministic mapping of every item to one LinkedIn-shaped format, unified by apply URL. It interprets exact facts only: no LLM, no network, no guessing. Judgment (LLM extraction, fuzzy and cross-channel matching, qualification) belongs to Process and Match.
 
-Design: `docs/superpowers/specs/2026-10-31-ingest-raw-storage-design.md`.
+Designs: `docs/superpowers/specs/2026-10-31-ingest-raw-storage-design.md` (raw storage) and `docs/superpowers/specs/2026-11-01-ingest-normalized-jobs-design.md` (normalized jobs).
 
 ## Flow
 
@@ -11,7 +11,7 @@ Design: `docs/superpowers/specs/2026-10-31-ingest-raw-storage-design.md`.
 3. The ingest worker (`WORKER_ROLE=ingest`) runs `BatchIngestService.ingestBatch`:
    - it reads the file;
    - it validates each item (an object with a source key) and keeps going past invalid ones;
-   - it stores each valid item;
+   - it stores each valid item and, in the same transaction, links it to its normalized job;
    - it sets the batch to `ingested` with a report, or `failed` with the reason.
 
 `BatchIngestService` coordinates status and retry decisions. `BatchFileReaderService` loads and validates stored files; `BatchItemWriterService` validates item identities, persists observations sequentially, and builds the report. These collaborators stay internal to `IngestModule`.
@@ -20,11 +20,11 @@ The batch row is the source of truth for status. The queue message is only a nud
 
 ## Statuses
 
-| Status     | Meaning                                                                                                                                                                                                                                                   |
-| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pending`  | Stored, not ingested yet. Infrastructure errors (database or storage down) leave a batch here: `attempts` and `lastError` are updated and the queue retries it.                                                                                           |
-| `ingested` | Done. `report` = `{ received, newItems, newVersions, repeats, invalid, errors }`. `errors` lists up to 100 items, and `invalid` is the full count. A batch whose items are all invalid is still `ingested`.                                               |
-| `failed`   | The file is missing or unreadable (unknown format version, bad JSON, wrong channel), or the last attempt failed. `BatchIngestService.replay(batchId)` sets it back to `pending`; enqueue it with `IngestQueue.enqueue(batchId)`. No Apify call is needed. |
+| Status     | Meaning                                                                                                                                                                                                                                                                                                                               |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pending`  | Stored, not ingested yet. Infrastructure errors (database or storage down) leave a batch here: `attempts` and `lastError` are updated and the queue retries it.                                                                                                                                                                       |
+| `ingested` | Done. `report` = `{ received, newItems, newVersions, repeats, invalid, normalized, normalizeInvalid, newJobs, reopened, errors }`. `errors` lists up to 100 items across both stages (`stage: 'validate' \| 'normalize'`); `invalid` and `normalizeInvalid` are full counts. A batch whose items are all invalid is still `ingested`. |
+| `failed`   | The file is missing or unreadable (unknown format version, bad JSON, wrong channel), or the last attempt failed. `BatchIngestService.replay(batchId)` sets it back to `pending`; enqueue it with `IngestQueue.enqueue(batchId)`. No Apify call is needed.                                                                             |
 
 ## Tables
 
@@ -34,6 +34,22 @@ The batch row is the source of truth for status. The queue message is only a nud
 - `raw_item_sightings`: which query saw which item in which batch, with its rank and the version it matched. `attribution` is the query id, or `none` for items no member query claimed. It is unique per `(batchId, rawItemId, attribution)`.
 
 These tables are shared, not workspace-scoped: collection is attributed to shared query builders.
+
+## Normalized jobs
+
+Each raw item's **latest** version is mapped (`normalize/`) to one unified record shaped like the LinkedIn job board: title, company, location, contract type, experience level, sector, salary, published date, descriptions, apply and posting URLs, poster, `closed`. Facts a source does not state stay null (an Ashby company is never guessed). A LinkedIn post keeps only its body and author, never as the employer: a post may hold several jobs or none, so Process splits it.
+
+- `normalized_versions`: one row per raw version and `NORMALIZER_VERSION`, `valid` with its record and job key, or `invalid` with a reason (the raw rows are kept either way).
+- `normalized_jobs`: one row per job key, with one typed column per field, `fieldSources` (which raw item each value came from), seen times, and the processing status Process reads. A job whose last source moved to another job is `merged` into it, never deleted.
+- `normalized_job_sources`: which job each raw item belongs to (exactly one).
+
+**Job key** (`normalize/job-key.ts`): an Ashby or Greenhouse posting is `ats:<provider>/<tenant>/<id>`, also when a LinkedIn job applies to it. Another external apply URL is `url:<canonical>` (no fragment, no `utm_*`/`trk*`/`gh_src`/`refId`/`ref`/`src`/`source`, other parameters kept and sorted) if it carries an identifier. Otherwise the item's own id: `linkedin-job:<id>`. A post is always `linkedin-post:<id>`.
+
+**Merging:** per field, the first non-null value from the employer's ATS posting, then the LinkedIn job, then a post; the most recently seen source wins within a rank. The job is `closed` when every ATS posting behind it is.
+
+**Processing status:** ingest sets `processingStatus = 'pending'` only when an observation creates a job (`new`) or finds it after 21 days unseen (`reopened`, `config/normalize.ts`). A new source or a content change updates the columns and leaves the status alone. `processing`, `processed` and `failed` belong to Process.
+
+**Rebuild:** after a `NORMALIZER_VERSION` bump, `pnpm --filter @xjobs/xjobs db:renormalize` re-normalizes every raw item and rebuilds links and merges. It never changes processing status; jobs it creates have none until Process decides.
 
 ## Source keys and hashes
 

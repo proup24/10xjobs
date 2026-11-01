@@ -6,6 +6,7 @@ export {
   type SaveItemInput,
 } from './repositories/raw.repository';
 export { BatchIngestService } from './services/batch.service';
+export { RenormalizeService } from './services/renormalize.service';
 export type {
   BatchFile,
   BatchReport,

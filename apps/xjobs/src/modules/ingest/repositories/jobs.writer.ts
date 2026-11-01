@@ -91,6 +91,12 @@ function fieldColumns(record: NormalizedRecord): JobPatch {
   };
 }
 
+function found<T>(value: T | undefined | null, what: string): T {
+  if (value === undefined || value === null)
+    throw new Error(`normalized job: missing ${what}`);
+  return value;
+}
+
 /** The normalized row of a raw version at the current normalizer version. */
 async function normalizedVersion(tx: DatabaseTransaction, input: LinkJobInput) {
   const { orm } = tx;
@@ -141,9 +147,18 @@ async function remerge(tx: DatabaseTransaction, jobId: string): Promise<void> {
   ).all();
 
   const merge: MergeSource[] = links.map((link) => {
-    const version = versions.find((v) => v.id === link.normalizedVersionId)!;
-    const raw = rawVersions.find((r) => r.id === version.rawVersionId)!;
-    const item = items.find((i) => i.id === link.rawItemId)!;
+    const version = found(
+      versions.find((v) => v.id === link.normalizedVersionId),
+      'normalized version',
+    );
+    const raw = found(
+      rawVersions.find((r) => r.id === version.rawVersionId),
+      'raw version',
+    );
+    const item = found(
+      items.find((i) => i.id === link.rawItemId),
+      'raw item',
+    );
     return {
       rawItemId: link.rawItemId,
       channel: item.channel as Channel,
@@ -223,9 +238,12 @@ export async function linkJob(
       });
   } else {
     // The item's job key changed: it leaves its old job for this one.
-    const old = (await orm.public.NormalizedJob.where({ id: link.jobId })
-      .forNoKeyUpdate()
-      .first())!;
+    const old = found(
+      await orm.public.NormalizedJob.where({ id: link.jobId })
+        .forNoKeyUpdate()
+        .first(),
+      'previous job',
+    );
     await orm.public.NormalizedJobSource.where({ id: link.id }).updateAll({
       jobId: job.id,
       normalizedVersionId: version.id,

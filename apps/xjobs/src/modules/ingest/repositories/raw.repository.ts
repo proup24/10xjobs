@@ -75,6 +75,30 @@ const max = (a: Date, b: Date) => (a > b ? a : b);
 
 type Json = RawItemVersionRow['payload'];
 
+/**
+ * Runs `fn` in a transaction, re-running it from the start when it loses a
+ * uniqueness race, serialization failure or deadlock.
+ */
+export async function inRetriedTransaction<T>(
+  database: DatabaseService,
+  fn: (tx: DatabaseTransaction) => Promise<T>,
+): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await database.db.transaction(fn);
+    } catch (error) {
+      if (
+        attempt >= MAX_TRANSACTION_RETRIES ||
+        !isRetryableTransactionError(error)
+      )
+        throw error;
+      await new Promise((resolve) =>
+        setTimeout(resolve, RETRY_BASE_DELAY_MS * 2 ** attempt),
+      );
+    }
+  }
+}
+
 @Injectable()
 export class PrismaRawStorageRepository extends RawStorageRepository {
   constructor(private readonly database: DatabaseService) {
@@ -91,21 +115,7 @@ export class PrismaRawStorageRepository extends RawStorageRepository {
   }
 
   async saveItem(input: SaveItemInput): Promise<SaveItemResult> {
-    for (let attempt = 0; ; attempt++) {
-      try {
-        return await this.database.db.transaction((tx) => save(tx, input));
-      } catch (error) {
-        // A uniqueness race lost the whole transaction: re-run it from the start.
-        if (
-          attempt >= MAX_TRANSACTION_RETRIES ||
-          !isRetryableTransactionError(error)
-        )
-          throw error;
-        await new Promise((resolve) =>
-          setTimeout(resolve, RETRY_BASE_DELAY_MS * 2 ** attempt),
-        );
-      }
-    }
+    return inRetriedTransaction(this.database, (tx) => save(tx, input));
   }
 
   async markIngested(id: string, report: BatchReport): Promise<void> {

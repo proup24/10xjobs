@@ -8,16 +8,18 @@ import {
 import { BatchFileReaderService } from './services/batch-file-reader.service';
 import { BatchItemWriterService } from './services/batch-item-writer.service';
 import { BatchIngestService } from './services/batch.service';
+import { RenormalizeService } from './services/renormalize.service';
 
-/** Ingests stored collection batches into raw storage. */
+/** Ingests stored collection batches into raw storage and normalized jobs. */
 @Module({
   imports: [DatabaseModule, StorageModule],
   providers: [
     BatchIngestService,
     BatchFileReaderService,
     BatchItemWriterService,
+    RenormalizeService,
     { provide: RawStorageRepository, useClass: PrismaRawStorageRepository },
   ],
-  exports: [BatchIngestService, RawStorageRepository],
+  exports: [BatchIngestService, RawStorageRepository, RenormalizeService],
 })
 export class IngestModule {}

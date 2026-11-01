@@ -14,6 +14,7 @@
     "db:verify": "prisma db verify",
     "db:seed": "tsx --tsconfig tsconfig.app.json src/database/seeds/index.ts",
     "db:regenerate": "tsx --tsconfig tsconfig.app.json src/scripts/regenerate-query-search.ts",
+    "db:renormalize": "tsx --tsconfig tsconfig.app.json src/scripts/renormalize-jobs.ts",
     "worker:dev": "tsx watch --tsconfig tsconfig.app.json src/worker.ts",
     "worker:linkedin-job-board:dev": "WORKER_CHANNEL=LINKEDIN_JOB_BOARD tsx watch --tsconfig tsconfig.app.json src/worker.ts",
     "worker:linkedin-posts:dev": "WORKER_CHANNEL=LINKEDIN_POSTS tsx watch --tsconfig tsconfig.app.json src/worker.ts",
