@@ -5,6 +5,17 @@ import {
   type SeedTerm,
 } from 'src/modules/processor/vocab/seed-data';
 import type { ListName } from 'src/modules/processor/vocab/lists';
+import type {
+  ArrangementTermRow,
+  ContractTypeRow,
+  CountryRow,
+  EngagementTermRow,
+  JunkFlagRow,
+  RegionTermRow,
+  RoleKindRow,
+  SeniorityTermRow,
+  TechTagRow,
+} from '../models';
 import type { DatabaseTransaction, Seed } from './seed.interface';
 
 /** The slice of a list table the seed touches; every list model has it. */
@@ -15,6 +26,36 @@ interface ListTable {
   };
   create(data: Record<string, unknown>): Promise<unknown>;
 }
+
+/** Columns every list row has; the seed writes exactly these. */
+interface ListRow {
+  code: string;
+  label: string;
+  aliases: readonly string[];
+  status: string;
+  occurrences: number;
+  firstSeenAt: Date;
+  approvedAt: Date | null;
+}
+
+/**
+ * Compile-time guard: renaming or retyping a list column in the contract breaks
+ * typecheck here, instead of failing at seed time.
+ */
+type AssertListRows<_T extends ListRow[]> = true;
+export type ListRowsMatchSeed = AssertListRows<
+  [
+    TechTagRow,
+    RegionTermRow,
+    CountryRow,
+    RoleKindRow,
+    SeniorityTermRow,
+    ArrangementTermRow,
+    ContractTypeRow,
+    EngagementTermRow,
+    JunkFlagRow,
+  ]
+>;
 
 function listTables(tx: DatabaseTransaction): Record<ListName, ListTable> {
   const orm = tx.orm.public;
@@ -28,7 +69,7 @@ function listTables(tx: DatabaseTransaction): Record<ListName, ListTable> {
     contractTypes: orm.ContractType,
     engagements: orm.EngagementTerm,
     junkFlags: orm.JunkFlag,
-  } as unknown as Record<ListName, ListTable>;
+  };
 }
 
 async function upsertTerm(

@@ -39,6 +39,10 @@ describe('processor seed data', () => {
     expect(all).toHaveLength(250);
   });
 
+  it.each(['US', 'MA', 'DE', 'GB', 'FR'])('has country %s', (code) => {
+    expect(codes('countries')).toContain(code);
+  });
+
   it('region_countries reference seeded regions and countries', () => {
     const regions = new Set(codes('regions'));
     const countries = new Set(codes('countries'));
