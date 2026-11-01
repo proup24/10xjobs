@@ -43,7 +43,7 @@ Each raw item's **latest** version is mapped (`normalize/`) to one unified recor
 - `normalized_jobs`: one row per job key, with one typed column per field, `fieldSources` (which raw item each value came from), seen times, and the processing status Process reads. A job whose last source moved to another job is `merged` into it, never deleted.
 - `normalized_job_sources`: which job each raw item belongs to (exactly one).
 
-**Job key** (`normalize/job-key.ts`): an Ashby or Greenhouse posting is `ats:<provider>/<tenant>/<id>`, also when a LinkedIn job applies to it. Another external apply URL is `url:<canonical>` (no fragment, no `utm_*`/`trk*`/`gh_src`/`refId`/`ref`/`src`/`source`, other parameters kept and sorted) if it carries an identifier. Otherwise the item's own id: `linkedin-job:<id>`. A post is always `linkedin-post:<id>`.
+**Job key** (`normalize/job-key.ts`): an Ashby or Greenhouse posting is `ats:<provider>/<tenant>/<id>`, also when a LinkedIn job applies to it. Another external apply URL is `url:<canonical>|<exact title>` (no fragment, no `utm_*`/`trk*`/`gh_src`/`refId`/`ref`/`src`/`source`, other parameters kept and sorted) if it carries an identifier; the title keeps different roles on one listing page apart. Otherwise the item's own id: `linkedin-job:<id>`. A post is always `linkedin-post:<id>`. A raw item never falls back from an `ats:`/`url:` key to its own id: if a rescrape drops the apply URL, its most recent version with a posting key decides.
 
 **Merging:** per field, the first non-null value from the employer's ATS posting, then the LinkedIn job, then a post; the most recently seen source wins within a rank. The job is `closed` when every ATS posting behind it is.
 

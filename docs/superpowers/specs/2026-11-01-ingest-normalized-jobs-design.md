@@ -102,7 +102,7 @@ Fix in the same change: add `document.manifest` to the LinkedIn posts volatile k
 `jobKey(channel, record, rawItem)`, deterministic, in this order:
 
 1. **ATS posting** — the apply URL (or, for Ashby/Greenhouse items, the posting URL) is recognized by the existing `atsIdentity` (Ashby `jobs.ashbyhq.com/<org>/<uuid>[/application]`, Greenhouse boards, `/embed/job_app?for=&token=`, EU hosts): `ats:<provider>/<tenant>/<postingId>`. This is what unifies a LinkedIn job with the Ashby/Greenhouse posting we collected.
-2. **Other external apply URL** — canonicalized: lowercase host, `www.` kept as is, fragment removed, trailing slash removed, known tracking parameters removed (`utm_*`, `trk*`, `gh_src`, `refId`, `ref`, `src`, `source`), remaining parameters sorted. **All other query parameters are kept**, because they often carry the job id. Used only if the URL identifies a posting: its path or remaining query contains an identifier-like token (a run of 4+ digits, or a UUID). Key: `url:<canonical>`.
+2. **Other external apply URL** — canonicalized: lowercase host, `www.` kept as is, fragment removed, trailing slash removed, known tracking parameters removed (`utm_*`, `trk*`, `gh_src`, `refId`, `ref`, `src`, `source`), remaining parameters sorted. **All other query parameters are kept**, because they often carry the job id. Used only if the URL identifies a posting: its path or remaining query contains an identifier-like token (a run of 4+ digits, or a UUID), and the record has a title. Key: `url:<canonical>|<exact title>` (revised 2026-11-01, normalizer version 2): an identifier in the URL can belong to the company or job board rather than the job (Paylocity, UKG, SuccessFactors listing pages), so the exact title keeps different roles behind one listing URL apart, while copies of one ad (same URL, same title) still unify.
 3. **Fallback** — the raw item's own identity: `linkedin-job:<id>`, `ats:…` for an Ashby/Greenhouse item, `linkedin-post:<id>`.
 
 **LinkedIn posts always use their own key** (`linkedin-post:<id>`), even with an article link: a post can hold several jobs or none, so it must never absorb or be absorbed by another job.
@@ -113,7 +113,7 @@ The tracking-parameter list and the identifier rule live in one config next to `
 
 ### 3. Normalized jobs and their sources
 
-- A raw item belongs to **exactly one** normalized job at a time, decided by the job key of its **latest** version.
+- A raw item belongs to **exactly one** normalized job at a time, decided by the job key of its **latest** version, with one exception (revised 2026-11-01, normalizer version 2): a raw item never falls back from a posting key (`ats:`, `url:`) to its own id. When the latest version yields only a fallback key (a LinkedIn rescrape that dropped the apply URL), the most recent earlier version with a posting key decides. It still moves when its apply URL changes to another posting key.
 - When a raw item's key changes (the Sii case: no apply URL, then one), the link moves to the new normalized job. A normalized job left with no sources is marked `merged` with `mergedIntoId` pointing at the job its last source moved to; it is never deleted, so anything Process already wrote against it can follow the pointer.
 - **Merge** (re-run whenever a source is linked, moved, or gets a new latest version): per field, take the first non-null value by source precedence:
   1. Ashby / Greenhouse posting (the employer's ATS wins),

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 /** Bump on any change to a mapper or the job key; then run `db:renormalize`. */
-export const NORMALIZER_VERSION = 1;
+export const NORMALIZER_VERSION = 2;
 
 const text = z.string().min(1).nullable();
 const url = z.url({ protocol: /^https?$/ });

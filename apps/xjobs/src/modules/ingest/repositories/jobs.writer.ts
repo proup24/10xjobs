@@ -2,6 +2,7 @@ import type { Channel } from 'src/common/enums';
 import type { NormalizedJobRow, RawItemVersionRow } from 'src/database';
 import type { DatabaseTransaction } from 'src/database/seeds/seed.interface';
 import {
+  isStrongJobKey,
   jobKey,
   type MergeSource,
   mergeSources,
@@ -177,6 +178,42 @@ async function remerge(tx: DatabaseTransaction, jobId: string): Promise<void> {
 }
 
 /**
+ * The key the item links under. A scrape can drop a field the item had (a
+ * LinkedIn rescrape with no apply URL), so a raw item never falls back from a
+ * key naming the posting to its own id: when the latest version only yields a
+ * fallback key, the most recent version with a posting key wins. Derived from
+ * stored versions only, so a rebuild gives the same answer.
+ */
+async function effectiveKey(
+  tx: DatabaseTransaction,
+  item: {
+    id: string;
+    channel: string;
+    sourceKey: string;
+    latestVersionId: string | null;
+  },
+  latestKey: string,
+): Promise<string> {
+  if (isStrongJobKey(latestKey)) return latestKey;
+  const versions = await tx.orm.public.RawItemVersion.where({
+    rawItemId: item.id,
+  })
+    .orderBy((row) => row.lastSeenAt.desc())
+    .orderBy((row) => row.createdAt.desc())
+    .all();
+  for (const raw of versions) {
+    if (raw.id === item.latestVersionId) continue;
+    const earlier = await normalizedVersion(tx, {
+      latestVersionId: raw.id,
+      channel: item.channel as Channel,
+      sourceKey: item.sourceKey,
+    });
+    if (earlier.jobKey && isStrongJobKey(earlier.jobKey)) return earlier.jobKey;
+  }
+  return latestKey;
+}
+
+/**
  * Links a raw item to the job its latest version's job key names, inside the
  * raw item's transaction, and re-merges every job the link touched. Sends the
  * job to Process (`pending`) only when this observation creates it or finds
@@ -202,14 +239,15 @@ export async function linkJob(
   if (version.status !== 'valid' || !version.jobKey || !version.record)
     return { invalid: version.reason ?? 'normalize: invalid' };
   const record = version.record as unknown as NormalizedRecord;
+  const key = await effectiveKey(tx, item, version.jobKey);
 
-  let job = await orm.public.NormalizedJob.where({ jobKey: version.jobKey })
+  let job = await orm.public.NormalizedJob.where({ jobKey: key })
     .forNoKeyUpdate()
     .first();
   const created = !job;
   if (!job)
     job = await orm.public.NormalizedJob.create({
-      jobKey: version.jobKey,
+      jobKey: key,
       kind: record.kind,
       status: 'active',
       mergedIntoId: null,

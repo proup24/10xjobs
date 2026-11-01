@@ -7,7 +7,7 @@ export {
   type NormalizeResult,
   RECORD_FIELDS,
 } from './record';
-export { canonicalApplyUrl, jobKey } from './job-key';
+export { canonicalApplyUrl, isStrongJobKey, jobKey } from './job-key';
 export { type MergedJob, type MergeSource, mergeSources } from './merge';
 export {
   nextProcessing,
