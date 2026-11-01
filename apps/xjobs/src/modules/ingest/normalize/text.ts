@@ -47,7 +47,7 @@ const namedEntities: Record<string, string> = {
   amp: '&',
   quot: '"',
   apos: "'",
-  nbsp: ' ',
+  nbsp: '\u00a0',
 };
 
 /**
