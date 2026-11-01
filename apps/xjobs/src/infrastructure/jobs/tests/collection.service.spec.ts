@@ -262,7 +262,12 @@ describe('CollectionService.collect', () => {
     ingestQueue.enqueue.mockRejectedValueOnce(new Error('redis down'));
 
     const summary = await collection.collect(Channel.ASHBY);
-    expect(summary).toMatchObject({ segmentsFailed: 0, batches: 1 });
+    expect(summary).toMatchObject({
+      segmentsFailed: 0,
+      batches: 1,
+      collected: 2,
+      costUsd: 0.1,
+    });
     expect(segments.collected).toHaveLength(1);
     expect(warn).toHaveBeenCalled();
   });
@@ -307,8 +312,59 @@ describe('CollectionService.collect', () => {
     expect(segments.collected.map((c) => c.run.status)).toEqual(['succeeded']);
     expect(segments.runs[0].error).toContain('Apify run FAILED');
     expect(segments.cursors.size).toBe(1);
-    expect(summary).toMatchObject({ segments: 2, segmentsFailed: 1 });
+    expect(summary).toMatchObject({
+      segments: 2,
+      segmentsFailed: 1,
+      batches: 1,
+      collected: 2,
+      costUsd: 0.1,
+    });
     expect(warn).toHaveBeenCalled();
+  });
+
+  it.each(['storage', 'database'] as const)(
+    'includes paid collection cost when %s fails, but counts only stored items',
+    async (failure) => {
+      const rows = builders(11);
+      const { collection, storage, segments, ingestQueue } = setup(
+        rows,
+        async (search) => resultFor(search, undefined, { costUsd: 0.25 }),
+      );
+      if (failure === 'storage') storage.failNextPut = true;
+      else
+        vi.spyOn(segments, 'recordCollectedRun').mockRejectedValueOnce(
+          new Error('db down'),
+        );
+
+      expect(await collection.collect(Channel.ASHBY)).toEqual({
+        channel: Channel.ASHBY,
+        builders: 11,
+        segments: 2,
+        segmentsFailed: 1,
+        batches: 1,
+        collected: 2,
+        costUsd: 0.5,
+      });
+      expect(segments.runs[0]).toMatchObject({
+        status: 'failed',
+        costMicroUsd: 250000,
+      });
+      expect(segments.collected).toHaveLength(1);
+      expect(ingestQueue.enqueue).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it('treats unreported cost as zero in totals while retaining null in the run', async () => {
+    const { collection, segments } = setup(builders(1), async (search) =>
+      resultFor(search, undefined, { costUsd: null }),
+    );
+    expect(await collection.collect(Channel.ASHBY)).toMatchObject({
+      costUsd: 0,
+      collected: 2,
+      batches: 1,
+      segmentsFailed: 0,
+    });
+    expect(segments.collected[0]?.run.costMicroUsd).toBeNull();
   });
 
   it('does not advance cursors of a run stopped by its charge cap', async () => {

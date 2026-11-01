@@ -19,6 +19,7 @@ import { QuerySearchService } from 'src/modules/queries';
 import {
   type NewSegmentRun,
   type SearchSegment,
+  type SegmentWindow,
   SearchSegmentsRepository,
   type SegmentQueryOutcome,
   buildSegments,
@@ -41,6 +42,13 @@ export interface CollectionSummary {
   collected: number;
   /** Batches stored for ingest. */
   batches: number;
+  costUsd: number;
+}
+
+/** Cost is retained even when the fetched results could not be stored. */
+interface SegmentOutcome {
+  stored: boolean;
+  collected: number;
   costUsd: number;
 }
 
@@ -86,9 +94,13 @@ export class CollectionService {
       costUsd: 0,
     };
 
-    for (const segment of segments)
-      if (!(await this.runSegment(channel, segment, until, summary)))
-        summary.segmentsFailed += 1;
+    for (const segment of segments) {
+      const outcome = await this.runSegment(channel, segment, until);
+      summary.costUsd += outcome.costUsd;
+      summary.collected += outcome.collected;
+      if (outcome.stored) summary.batches += 1;
+      else summary.segmentsFailed += 1;
+    }
 
     this.logger.log(
       Object.entries(summary)
@@ -102,13 +114,12 @@ export class CollectionService {
     return summary;
   }
 
-  /** True when the segment's results were stored as a pending batch. */
+  /** Fetch and store one segment, returning its contribution to the totals. */
   private async runSegment(
     channel: Channel,
     segment: SearchSegment,
     until: Date,
-    summary: CollectionSummary,
-  ): Promise<boolean> {
+  ): Promise<SegmentOutcome> {
     const config = channelJobsConfig[channel];
     const startedAt = new Date();
     const window = segmentWindow(segment.members, until, config.window);
@@ -116,39 +127,15 @@ export class CollectionService {
       this.logger.warn(
         `Segment ${segment.key} was not collected for longer than ${config.window.maximumHours}h; older postings are not caught up`,
       );
-    const queries = segment.members.map((member) => ({
-      id: member.id,
-      keyword: member.keyword,
-      params: member.params as Record<string, unknown>,
-    }));
-    const batchId = randomUUID();
-    const run: NewSegmentRun & { id: string } = {
-      id: randomUUID(),
-      channel,
-      segmentKey: segment.key,
-      segmentHash: segment.hash,
-      queryIds: queries.map(({ id }) => id),
-      windowStart: window.since,
-      windowEnd: window.until,
-      startedAt,
-      finishedAt: startedAt,
-      status: 'succeeded',
-      fetched: 0,
-      costMicroUsd: null,
-      capped: false,
-      truncatedQueryIds: [],
-      perQuery: {},
-      error: null,
-    };
+    const search = buildSearch(channel, segment, window);
+    const run = buildRun(segment, search, startedAt);
+    let batch: BatchFile;
+    let collected: number;
+    let costUsd = 0;
 
     try {
-      const result = await this.fetch({
-        channel,
-        since: window.since,
-        until: window.until,
-        queries,
-      });
-      summary.costUsd += result.costUsd ?? 0;
+      const result = await this.fetch(search);
+      costUsd = result.costUsd ?? 0;
       Object.assign(run, {
         fetched: result.fetched,
         costMicroUsd:
@@ -159,22 +146,8 @@ export class CollectionService {
         truncatedQueryIds: result.truncatedQueryIds,
         perQuery: perQuery(result),
       });
-      const itemCount = await this.saveBatch(
-        {
-          formatVersion: 1,
-          batchId,
-          channel,
-          segmentRunId: run.id,
-          observedAt: window.until.toISOString(),
-          source: result.source,
-          queries,
-          itemsByQuery: Object.fromEntries(result.itemsByQuery),
-          unattributed: result.unattributed,
-        },
-        run,
-      );
-      summary.collected += itemCount;
-      summary.batches += 1;
+      batch = buildBatch(search, result, run.id);
+      collected = await this.saveBatch(batch, run);
     } catch (error) {
       this.logger.warn(`Segment ${segment.key} failed: ${message(error)}`);
       await this.segments
@@ -189,9 +162,14 @@ export class CollectionService {
             `Could not record segment ${segment.hash}: ${message(recordError)}`,
           ),
         );
-      return false;
+      return { stored: false, collected: 0, costUsd };
     }
 
+    await this.enqueueBatch(batch.batchId);
+    return { stored: true, collected, costUsd };
+  }
+
+  private async enqueueBatch(batchId: string): Promise<void> {
     try {
       await this.ingestQueue.enqueue(batchId);
     } catch (error) {
@@ -200,7 +178,6 @@ export class CollectionService {
         `Batch ${batchId} stored but not enqueued: ${message(error)}`,
       );
     }
-    return true;
   }
 
   /** Store the file before committing its run, pending batch, and cursors. */
@@ -269,4 +246,64 @@ function perQuery(result: SegmentResult): Record<string, SegmentQueryOutcome> {
       { returned: items.length },
     ]),
   );
+}
+
+function buildSearch(
+  channel: Channel,
+  segment: SearchSegment,
+  window: SegmentWindow,
+): SegmentSearch {
+  return {
+    channel,
+    since: window.since,
+    until: window.until,
+    queries: segment.members.map((member) => ({
+      id: member.id,
+      keyword: member.keyword,
+      params: member.params as Record<string, unknown>,
+    })),
+  };
+}
+
+function buildRun(
+  segment: SearchSegment,
+  search: SegmentSearch,
+  startedAt: Date,
+): NewSegmentRun & { id: string } {
+  return {
+    id: randomUUID(),
+    channel: search.channel,
+    segmentKey: segment.key,
+    segmentHash: segment.hash,
+    queryIds: search.queries.map(({ id }) => id),
+    windowStart: search.since,
+    windowEnd: search.until,
+    startedAt,
+    finishedAt: startedAt,
+    status: 'succeeded',
+    fetched: 0,
+    costMicroUsd: null,
+    capped: false,
+    truncatedQueryIds: [],
+    perQuery: {},
+    error: null,
+  };
+}
+
+function buildBatch(
+  search: SegmentSearch,
+  result: SegmentResult,
+  runId: string,
+): BatchFile {
+  return {
+    formatVersion: 1,
+    batchId: randomUUID(),
+    channel: search.channel,
+    segmentRunId: runId,
+    observedAt: search.until.toISOString(),
+    source: result.source,
+    queries: search.queries,
+    itemsByQuery: Object.fromEntries(result.itemsByQuery),
+    unattributed: result.unattributed,
+  };
 }

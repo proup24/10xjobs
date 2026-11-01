@@ -12,6 +12,8 @@ Collection fetches source results and saves a batch for ingestion.
 
 Start reading at `infrastructure/jobs/steps/collect/collection.service.ts`. Each channel's source-specific logic lives in `providers/<channel>.collector.ts`. The Apify client, Google discovery, and posting fetchers are shared helpers; there are no collector base classes or per-channel job subclasses.
 
+The segment workflow uses local `buildSearch`, `buildRun`, and `buildBatch` functions to keep data construction out of the main flow. Each segment returns `{ stored, collected, costUsd }`; only `collect()` updates the overall summary. A failed save contributes its known collection cost but contributes zero stored items and batches.
+
 ## Failure behavior
 
 - A failed segment is recorded; other segments continue. The collection job fails if every segment failed.
