@@ -106,6 +106,37 @@ export const PROFILE_PUBLISHED =
   'A published profile cannot be changed; delete it and create a new one';
 
 /** A user owns many profiles; every operation takes `(userId, profileId)` and checks ownership. */
+/** What regenerating published profiles needs. */
+export interface RegenerateDeps {
+  profiles: Pick<ProfilesRepository, 'listPublished'>;
+  querySearch: Pick<
+    QuerySearchService,
+    'detach' | 'generate' | 'retireOutdated'
+  >;
+}
+
+/**
+ * Moves every published profile to the query search builders of the current
+ * recipe, then retires the builders no profile uses any more. A plain
+ * function, so scripts can run it without Nest injection.
+ */
+export async function regeneratePublished(
+  deps: RegenerateDeps,
+  toInput: (
+    profile: ProfileWithSkills,
+  ) => QuerySearchProfileInput = toQuerySearchInput,
+): Promise<{ profiles: number; retired: number }> {
+  const published = await deps.profiles.listPublished();
+  for (const profile of published) {
+    await deps.querySearch.detach(profile.id);
+    await deps.querySearch.generate(profile.id, toInput(profile));
+  }
+  return {
+    profiles: published.length,
+    retired: await deps.querySearch.retireOutdated(),
+  };
+}
+
 @Injectable()
 export class ProfilesService {
   constructor(
@@ -225,15 +256,10 @@ export class ProfilesService {
    * recipe version bump; running it again changes nothing.
    */
   async regeneratePublished(): Promise<{ profiles: number; retired: number }> {
-    const published = await this.profiles.listPublished();
-    for (const profile of published) {
-      await this.querySearch.detach(profile.id);
-      await this.querySearch.generate(profile.id, toQuerySearchInput(profile));
-    }
-    return {
-      profiles: published.length,
-      retired: await this.querySearch.retireOutdated(),
-    };
+    return regeneratePublished({
+      profiles: this.profiles,
+      querySearch: this.querySearch,
+    });
   }
 
   /**
