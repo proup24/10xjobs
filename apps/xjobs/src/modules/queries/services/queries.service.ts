@@ -34,9 +34,11 @@ export class QuerySearchService {
     assertHasSkills(profile);
     const technologies = technologySets(profile.skills);
     const arrangements = normalizeArrangements(profile.arrangements);
+    const profileRemoteCombinations = remoteCombinations(profile, arrangements, technologies);
+    const profileLocalCombinations = localCombinations(profile, arrangements, technologies);
     const combinations = [
-      ...remoteCombinations(profile, arrangements, technologies),
-      ...localCombinations(profile, arrangements, technologies),
+      ...profileRemoteCombinations,
+      ...profileLocalCombinations,
     ];
     return dedupeByHash(combinations.map(toRecipe));
   }
@@ -49,7 +51,8 @@ export class QuerySearchService {
     profileId: string,
     input: QuerySearchProfileInput,
   ): Promise<QuerySearchAttachResult> {
-    return this.builders.attach(profileId, this.expand(input));
+    const queries = this.expand(input);
+    return this.builders.attach(profileId, queries);
   }
 
   /** Releases every builder the profile uses: each loses one associated profile, inactive at 0. */
