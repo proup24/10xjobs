@@ -16,34 +16,11 @@ import {
 /** Approved codes per list. */
 export type ListOptions = Record<ListName, string[]>;
 
-export interface ModelFact<T> {
-  value: T | null;
-  quote: string;
-  confidence: 'sure' | 'unsure';
+/** An enum of the approved codes of one list. An empty list is a programming error. */
+function codeEnum(list: string, values: string[]): z.ZodType<string> {
+  if (values.length === 0) throw new Error(`no approved options for ${list}`);
+  return z.enum(values as [string, ...string[]]);
 }
-
-/** What Opus returns; structurally checked here, codes are enums of the approved options. */
-export interface ModelOutput {
-  position: ModelFact<{ roleKind: string; title: string }>;
-  isSoftwareEngineeringRole: ModelFact<boolean>;
-  seniority: ModelFact<string>;
-  yearsRequired: ModelFact<number>;
-  arrangement: ModelFact<string>;
-  openings: unknown[];
-  contractType: ModelFact<string>;
-  engagement: ModelFact<string>;
-  contractMonths: ModelFact<number>;
-  salary: ModelFact<z.infer<typeof salarySchema>>;
-  techStack: ModelFact<unknown>;
-  requiredLanguages: ModelFact<z.infer<typeof languageSchema>[]>;
-  workAuthorization: ModelFact<z.infer<typeof workAuthorizationSchema>>;
-  junkFlags: ModelFact<{ code: string; quote: string }[]>;
-  fallback: Record<string, ModelFact<string | boolean>>;
-}
-
-/** A non-empty string enum; an empty option list admits nothing but null (use a literal that cannot match). */
-const codeEnum = (values: string[]) =>
-  values.length > 0 ? z.enum(values as [string, ...string[]]) : z.never();
 
 const modelFact = <T extends z.ZodType>(value: T) =>
   z.strictObject({
@@ -52,19 +29,16 @@ const modelFact = <T extends z.ZodType>(value: T) =>
     confidence: confidenceSchema,
   });
 
-export function modelOutputSchema(
-  options: ListOptions,
-  fallback: DecisionQuestion[],
-): z.ZodType<ModelOutput> {
+function buildModelOutput(options: ListOptions, fallback: DecisionQuestion[]) {
   const place = z.discriminatedUnion('kind', [
     z.strictObject({ kind: z.literal('worldwide') }),
     z.strictObject({
       kind: z.literal('region'),
-      code: codeEnum(options.regions),
+      code: codeEnum('regions', options.regions),
     }),
     z.strictObject({
       kind: z.literal('country'),
-      code: codeEnum(options.countries),
+      code: codeEnum('countries', options.countries),
     }),
     z.strictObject({
       kind: z.literal('city'),
@@ -73,7 +47,9 @@ export function modelOutputSchema(
     }),
   ]);
   const opening = z.strictObject({
-    arrangements: z.array(codeEnum(options.arrangements)).min(1),
+    arrangements: z
+      .array(codeEnum('arrangements', options.arrangements))
+      .min(1),
     places: z.array(place),
     placeStrictness: z.enum(PLACE_STRICTNESS),
     timezones: z.array(
@@ -87,29 +63,35 @@ export function modelOutputSchema(
     confidence: confidenceSchema,
   });
 
-  const fallbackShape: Record<string, z.ZodType> = {};
+  const fallbackShape: Record<
+    string,
+    ReturnType<typeof modelFact<z.ZodType<string | boolean>>>
+  > = {};
   for (const q of fallback) {
     fallbackShape[q.key] = modelFact(
-      q.kind === 'choice' ? codeEnum(q.options) : z.boolean(),
+      q.kind === 'choice'
+        ? codeEnum(`fallback ${q.key}`, q.options)
+        : z.boolean(),
     );
   }
 
-  const schema = z.strictObject({
+  return z.strictObject({
     position: modelFact(
       z.strictObject({
-        roleKind: codeEnum(options.roleKinds),
+        roleKind: codeEnum('roleKinds', options.roleKinds),
         title: z.string(),
       }),
     ),
     isSoftwareEngineeringRole: modelFact(z.boolean()),
-    seniority: modelFact(codeEnum(options.seniorities)),
+    seniority: modelFact(codeEnum('seniorities', options.seniorities)),
     yearsRequired: modelFact(z.number().nonnegative()),
-    arrangement: modelFact(codeEnum(options.arrangements)),
+    arrangement: modelFact(codeEnum('arrangements', options.arrangements)),
     openings: z.array(opening).min(1),
-    contractType: modelFact(codeEnum(options.contractTypes)),
-    engagement: modelFact(codeEnum(options.engagements)),
+    contractType: modelFact(codeEnum('contractTypes', options.contractTypes)),
+    engagement: modelFact(codeEnum('engagements', options.engagements)),
     contractMonths: modelFact(z.number().positive()),
     salary: modelFact(salarySchema),
+    // Term codes stay free strings: unmatched terms are resolved to approved codes afterwards (Task 5).
     techStack: modelFact(
       z.strictObject({
         mainStack: z.array(groupSchema),
@@ -122,14 +104,23 @@ export function modelOutputSchema(
     junkFlags: modelFact(
       z.array(
         z.strictObject({
-          code: codeEnum(options.junkFlags),
+          code: codeEnum('junkFlags', options.junkFlags),
           quote: z.string(),
         }),
       ),
     ),
     fallback: z.strictObject(fallbackShape),
   });
-  return schema as unknown as z.ZodType<ModelOutput>;
+}
+
+/** What Opus returns; structurally checked here, codes are enums of the approved options. */
+export type ModelOutput = z.infer<ReturnType<typeof buildModelOutput>>;
+
+export function modelOutputSchema(
+  options: ListOptions,
+  fallback: DecisionQuestion[],
+) {
+  return buildModelOutput(options, fallback);
 }
 
 /**

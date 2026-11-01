@@ -35,9 +35,9 @@ export const languageSchema = z.strictObject({
 });
 
 export const salarySchema = z.strictObject({
-  min: z.number().nullable(),
-  max: z.number().nullable(),
-  currency: z.string().min(1),
+  min: z.number().int().nullable(),
+  max: z.number().int().nullable(),
+  currency: z.string().regex(/^[A-Z]{3}$/),
   period: z.enum(['hour', 'day', 'month', 'year']),
 });
 

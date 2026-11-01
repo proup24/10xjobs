@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { ListName } from '../vocab/lists';
+import { LIST_NAMES } from '../vocab/lists';
 import { confidenceSchema, decidedBySchema, factSchema } from './fact';
 import {
   PLACE_STRICTNESS,
@@ -37,6 +37,12 @@ const openingSchema = z.strictObject({
   decidedBy: decidedBySchema,
 });
 
+const unmatchedSchema = z.strictObject({
+  list: z.enum([...LIST_NAMES, 'cities']),
+  text: z.string(),
+  at: z.string(),
+});
+
 const techStackSchema = z.strictObject({
   mainStack: z.array(groupSchema),
   mustHaves: z.array(mustHaveSchema),
@@ -70,13 +76,7 @@ export const extractionDocumentSchema = z
         extractedValue: z.unknown(),
       }),
     ),
-    unmatched: z.array(
-      z.strictObject({
-        list: z.string().min(1),
-        text: z.string(),
-        at: z.string(),
-      }),
-    ),
+    unmatched: z.array(unmatchedSchema),
     truncated: z.boolean(),
     models: z.strictObject({
       decision: z.string().nullable(),
@@ -107,9 +107,5 @@ export const extractionDocumentSchema = z
 export type ExtractionDocument = z.infer<typeof extractionDocumentSchema>;
 export type Place = z.infer<typeof placeSchema>;
 export type Opening = z.infer<typeof openingSchema>;
-export type Term = { text: string; code: string | null };
-export type UnmatchedTerm = {
-  list: ListName | 'cities';
-  text: string;
-  at: string;
-};
+export type Term = z.infer<typeof termSchema>;
+export type UnmatchedTerm = z.infer<typeof unmatchedSchema>;

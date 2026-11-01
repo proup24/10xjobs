@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { LIST_NAMES } from '../vocab/lists';
 import type { DecisionQuestion } from '../models/types';
 import { extractionDocumentSchema } from './extraction';
-import { fixtureDocument } from './fixture';
+import { fixtureDocument } from './fixture.testing';
 import {
   modelOutputJsonSchema,
   modelOutputSchema,
@@ -48,6 +48,19 @@ describe('extractionDocumentSchema', () => {
   });
 });
 
+describe('document salary and unmatched', () => {
+  it('rejects a bad currency and a non-integer salary', () => {
+    const doc = fixtureDocument();
+    doc.salary.value = { min: 1.5, max: 2, currency: 'eur', period: 'year' };
+    expect(extractionDocumentSchema.safeParse(doc).success).toBe(false);
+  });
+  it('rejects an unknown unmatched list', () => {
+    const doc = fixtureDocument();
+    (doc.unmatched as unknown[]).push({ list: 'nope', text: 'x', at: 'a' });
+    expect(extractionDocumentSchema.safeParse(doc).success).toBe(false);
+  });
+});
+
 describe('modelOutputSchema', () => {
   it('rejects a seniority outside the options', () => {
     const valid = (s: string) => ({
@@ -86,6 +99,12 @@ describe('modelOutputSchema', () => {
     expect(
       schema.safeParse({ ...base, seniority: valid('senior') }).success,
     ).toBe(true);
+  });
+
+  it('throws when a list has no approved options', () => {
+    expect(() =>
+      modelOutputSchema({ ...options, regions: [] }, fallback),
+    ).toThrow('no approved options for regions');
   });
 
   it('produces a JSON schema with additionalProperties false at the root', () => {

@@ -41,7 +41,10 @@ export function deriveTypedColumns(
         regions.push(place.code);
         countries.push(...(regionCountries.get(place.code) ?? []));
       } else if (place.kind === 'country') countries.push(place.code);
-      else if (place.cityId !== null) cities.push(place.cityId);
+      else {
+        if (place.countryCode !== null) countries.push(place.countryCode);
+        if (place.cityId !== null) cities.push(place.cityId);
+      }
     }
   }
 
