@@ -1,0 +1,31 @@
+{
+  "id": "4012345678",
+  "title": "Senior Backend Engineer",
+  "jobUrl": "https://ro.linkedin.com/jobs/view/senior-backend-engineer-at-acme-4012345678?position=1&pageNum=0&refId=abc&trackingId=xyz",
+  "companyName": "Acme",
+  "companyUrl": "https://ch.linkedin.com/company/acme?trk=public_jobs_topcard-org-name",
+  "location": "Romania",
+  "postedTime": "3 minutes ago",
+  "publishedAt": "2026-10-31",
+  "applicationsCount": "41 applicants",
+  "description": "Build APIs.",
+  "contractType": "Full-time",
+  "experienceLevel": "Mid-Senior level",
+  "workType": "",
+  "sector": "IT Services and IT Consulting",
+  "salary": "",
+  "scrapingInfo": {
+    "page": 1,
+    "index": 3,
+    "inputUrl": "https://www.linkedin.com/jobs/search/?keywords=node"
+  },
+  "applyType": "EXTERNAL",
+  "applyUrl": "https://jobs.ashbyhq.com/acme/0b1c2d3e-0000-4000-8000-000000000001",
+  "descriptionHtml": "<p>Build APIs.</p>",
+  "jobFunction": "",
+  "companyId": "5300",
+  "companyLogo": "https://media.licdn.com/dms/image/v2/X/company-logo_100_100/Y/0/1/acme_logo?e=2147483647&v=beta&t=sig1",
+  "benefits": "",
+  "posterProfileUrl": "https://www.linkedin.com/in/poster-1",
+  "posterFullName": "Poster Name 1"
+}

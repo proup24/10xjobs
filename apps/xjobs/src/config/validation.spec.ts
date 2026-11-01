@@ -120,7 +120,34 @@ describe('collector and tooling configuration', () => {
 describe('worker process configuration', () => {
   const worker = {
     DATABASE_URL: 'postgresql://u:p@localhost:5432/db',
+    SUPABASE_URL: 'http://localhost:8000',
+    SUPABASE_SERVICE_ROLE_KEY: 'service-key',
   };
+
+  it('refuses any worker without Supabase storage, which batches are written to', () => {
+    const { SUPABASE_URL: _url, ...noUrl } = worker;
+    expect(() => validateWorkerProcessEnvironment(noUrl)).toThrow(
+      'Set SUPABASE_URL (or SUPABASE_PUBLIC_URL)',
+    );
+    const { SUPABASE_SERVICE_ROLE_KEY: _key, ...noKey } = worker;
+    expect(() =>
+      validateWorkerProcessEnvironment({
+        ...noKey,
+        WORKER_CHANNEL: 'ASHBY',
+        APIFY_TOKEN: 'apify-token',
+      }),
+    ).toThrow('Set SUPABASE_SERVICE_ROLE_KEY (or SERVICE_ROLE_KEY)');
+  });
+
+  it("accepts the Supabase stack's own storage variables", () => {
+    expect(() =>
+      validateWorkerProcessEnvironment({
+        DATABASE_URL: worker.DATABASE_URL,
+        SUPABASE_PUBLIC_URL: 'http://localhost:8000',
+        SERVICE_ROLE_KEY: 'service-key',
+      }),
+    ).not.toThrow();
+  });
 
   it('runs the infrastructure worker without a channel or Apify token', () => {
     expect(validateWorkerProcessEnvironment(worker)).toMatchObject({
@@ -149,6 +176,38 @@ describe('worker process configuration', () => {
         APIFY_TOKEN: 'apify-token',
       }),
     ).toThrow(/WORKER_CHANNEL/);
+  });
+
+  it('runs the ingest worker without an Apify token', () => {
+    expect(
+      validateWorkerProcessEnvironment({ ...worker, WORKER_ROLE: 'ingest' }),
+    ).toMatchObject({ WORKER_ROLE: 'ingest' });
+  });
+
+  it('refuses an unknown worker role', () => {
+    expect(() =>
+      validateWorkerProcessEnvironment({ ...worker, WORKER_ROLE: 'other' }),
+    ).toThrow(/WORKER_ROLE/);
+  });
+
+  it('refuses a worker role together with a channel', () => {
+    expect(() =>
+      validateWorkerProcessEnvironment({
+        ...worker,
+        WORKER_ROLE: 'ingest',
+        WORKER_CHANNEL: 'ASHBY',
+        APIFY_TOKEN: 'apify-token',
+      }),
+    ).toThrow(/WORKER_ROLE/);
+  });
+
+  it('refuses the ingest worker without Supabase storage', () => {
+    expect(() =>
+      validateWorkerProcessEnvironment({
+        DATABASE_URL: worker.DATABASE_URL,
+        WORKER_ROLE: 'ingest',
+      }),
+    ).toThrow('Set SUPABASE_URL (or SUPABASE_PUBLIC_URL)');
   });
 
   it('refuses a channel without an Apify token', () => {

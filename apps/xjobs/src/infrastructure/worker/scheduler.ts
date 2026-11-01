@@ -1,6 +1,10 @@
 import type { Queue } from 'bullmq';
-import { COLLECT_JOB } from 'src/infrastructure/jobs/collection';
-import type { ChannelJobConfig } from 'src/infrastructure/jobs/config';
+import {
+  COLLECT_JOB,
+  type ChannelJobConfig,
+} from 'src/infrastructure/jobs/steps/collect';
+import { SWEEP_JOB } from 'src/infrastructure/jobs/steps/ingest/queue.service';
+import { ingestConfig } from 'src/modules/ingest';
 
 /** Makes the queue's cron scheduler match the channel's config; idempotent. */
 export async function syncCollectionScheduler(
@@ -17,4 +21,15 @@ export async function syncCollectionScheduler(
     { name: COLLECT_JOB, opts: { attempts: config.attempts } },
   );
   return 'scheduled';
+}
+
+/** Re-enqueues stranded pending batches on a fixed interval; idempotent. */
+export async function syncSweepScheduler(
+  queue: Pick<Queue, 'upsertJobScheduler'>,
+): Promise<void> {
+  await queue.upsertJobScheduler(
+    SWEEP_JOB,
+    { every: ingestConfig.sweepEveryMs },
+    { name: SWEEP_JOB, opts: { attempts: 1 } },
+  );
 }

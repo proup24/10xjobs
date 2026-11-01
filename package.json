@@ -7,6 +7,8 @@
     "infra:redis": "docker compose up -d redis redis-cache",
     "worker": "node apps/xjobs/dist/worker.js",
     "worker:dev": "pnpm --filter @xjobs/xjobs worker:dev",
+    "worker:all": "WORKER_ROLE=all node apps/xjobs/dist/worker.js",
+    "worker:all:dev": "pnpm --filter @xjobs/xjobs worker:all:dev",
     "worker:linkedin-job-board": "WORKER_CHANNEL=LINKEDIN_JOB_BOARD node apps/xjobs/dist/worker.js",
     "worker:linkedin-job-board:dev": "pnpm --filter @xjobs/xjobs worker:linkedin-job-board:dev",
     "worker:linkedin-posts": "WORKER_CHANNEL=LINKEDIN_POSTS node apps/xjobs/dist/worker.js",
@@ -15,6 +17,8 @@
     "worker:greenhouse:dev": "pnpm --filter @xjobs/xjobs worker:greenhouse:dev",
     "worker:ashby": "WORKER_CHANNEL=ASHBY node apps/xjobs/dist/worker.js",
     "worker:ashby:dev": "pnpm --filter @xjobs/xjobs worker:ashby:dev",
+    "worker:ingest": "WORKER_ROLE=ingest node apps/xjobs/dist/worker.js",
+    "worker:ingest:dev": "pnpm --filter @xjobs/xjobs worker:ingest:dev",
     "jobs:smoke": "pnpm --filter @xjobs/xjobs jobs:smoke",
     "test:redis": "REDIS_INTEGRATION=1 vitest run --config apps/xjobs/vitest.config.mts src/infrastructure/redis/redis.integration.spec.ts"
   },

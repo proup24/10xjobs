@@ -86,7 +86,7 @@
 
 **Files:**
 
-- Modify `infrastructure/jobs/config/index.ts`.
+- Modify `infrastructure/jobs/steps/collect/config.ts`.
 - Delete `modules/collectors/config/*`.
 - Modify `apify.provider.ts`, the three Apify triggers, and the four collectors in `types/collector.ts`.
 - Tests: rewrite `search-input.spec.ts` and `collected-job.spec.ts`.
@@ -106,7 +106,7 @@
 
 ### Task 5: `CollectionJob.run` over segments
 
-**Files:** `infrastructure/jobs/collection/*.job.ts`, `jobs.module.ts` (import `SearchSegmentsModule`), `tests/collection.job.spec.ts`
+**Files:** `infrastructure/jobs/steps/collect/collection.job.ts`, `infrastructure/jobs/steps/collect/channels/*.job.ts`, `jobs.module.ts` (import `SearchSegmentsModule`), `tests/collection.job.spec.ts`
 
 **Produces:** `CollectionJob.run(): Promise<CollectionSummary>`. The summary gains `segments` and `segmentsFailed`.
 

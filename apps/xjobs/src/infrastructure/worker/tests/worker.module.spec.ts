@@ -5,6 +5,9 @@ vi.hoisted(() => {
   process.env.DATABASE_URL ??= 'postgresql://u:p@127.0.0.1:1/db';
   process.env.APIFY_TOKEN ??= 'apify-token';
   process.env.WORKER_CHANNEL ??= 'ASHBY';
+  delete process.env.WORKER_ROLE;
+  process.env.SUPABASE_URL ??= 'http://127.0.0.1:1';
+  process.env.SUPABASE_SERVICE_ROLE_KEY ??= 'service-key';
 });
 
 import { WorkerModule } from '../worker.module';

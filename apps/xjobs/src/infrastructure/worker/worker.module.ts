@@ -4,11 +4,17 @@ import { validateWorkerProcessEnvironment } from 'src/config';
 import { DatabaseModule } from 'src/database';
 import { JobsModule } from 'src/infrastructure/jobs/jobs.module';
 import { RedisSettingsModule } from 'src/infrastructure/redis/settings.module';
+import { IngestModule } from 'src/modules/ingest';
+import { StorageModule } from 'src/modules/storage';
+import { CollectionWorkerService } from './collection.service';
+import { InfrastructureWorkerService } from './infrastructure.service';
+import { IngestWorkerService } from './ingest.service';
+import { WorkerRuntimeService } from './runtime.service';
 import { WorkerService } from './worker.service';
 
 /**
  * The worker process: consumes the jobs the jobs module declares. One process
- * runs either the infrastructure queue or one channel's collection job.
+ * runs the infrastructure queue, one channel's collection job, or ingest.
  */
 @Module({
   imports: [
@@ -22,7 +28,15 @@ import { WorkerService } from './worker.service';
     DatabaseModule,
     RedisSettingsModule,
     JobsModule,
+    IngestModule,
+    StorageModule,
   ],
-  providers: [WorkerService],
+  providers: [
+    WorkerService,
+    WorkerRuntimeService,
+    CollectionWorkerService,
+    IngestWorkerService,
+    InfrastructureWorkerService,
+  ],
 })
 export class WorkerModule {}

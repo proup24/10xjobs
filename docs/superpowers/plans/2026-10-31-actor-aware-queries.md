@@ -8,7 +8,7 @@
 
 - **Channel builders** in `modules/queries/channels` produce the final `keyword` and `params`, built from shared pieces in `builders/channel.builder.ts`.
 - **Collectors** in `modules/collectors` only add actor plumbing: Google `site:`/suffix/`countryCode`/`quickDateRange`, and LinkedIn `geoId`.
-- **Job configs** in `infrastructure/jobs/config` set the schedule and window for each channel.
+- **Job configs** in `infrastructure/jobs/steps/collect/config.ts` set the schedule and window for each channel.
 - **Regeneration** is a CLI over `ProfilesService`.
 
 **Tech Stack:** NestJS 11, Prisma 8, BullMQ, Vitest.
@@ -122,7 +122,7 @@
 
 ### Task 5: Minimum window and daily Google schedule
 
-**Files:** `modules/segments/window.ts` (+ spec), `infrastructure/jobs/config/index.ts` (+ `tests/collection.job.spec.ts` config assertions)
+**Files:** `modules/segments/window.ts` (+ spec), `infrastructure/jobs/steps/collect/config.ts` (+ `tests/collection.job.spec.ts` config assertions)
 
 **Produces:** `WindowConfig.minimumHours?: number`, so `since ≤ until − minimumHours`. The Greenhouse and Ashby configs use the values in Global Constraints.
 

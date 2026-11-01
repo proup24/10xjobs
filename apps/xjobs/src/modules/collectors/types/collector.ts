@@ -1,5 +1,13 @@
 import { Channel } from 'src/common/enums';
 
+/** One item exactly as the source returned it, with where its query ranked it. */
+export interface RawCollectedItem {
+  /** 1-based position the source reported; null when it reports none. */
+  rank: number | null;
+  /** Untouched source payload. */
+  payload: unknown;
+}
+
 /** One member builder of a search segment, as a collector searches it. */
 export interface SegmentQuery {
   /** The builder id; results are attributed and ingested against it. */
@@ -16,10 +24,14 @@ export interface SegmentSearch {
   queries: SegmentQuery[];
 }
 
-/** What one segment run collected, per member builder. */
+/** What one segment run collected, per member builder, untouched. */
 export interface SegmentResult {
   /** Every member id is a key, with an empty list when nothing matched it. */
-  jobsByQuery: Map<string, CollectedJob[]>;
+  itemsByQuery: Map<string, RawCollectedItem[]>;
+  /** Items the run returned that no member query claims; kept, never dropped. */
+  unattributed: RawCollectedItem[];
+  /** The actor that ran and its Apify run, for tracing a batch back to its source. */
+  source: { actor: string; apifyRunId: string | null };
   /** Items the actor returned, attributed or not. */
   fetched: number;
   /** What Apify charged, or null when it did not report it. */
@@ -50,44 +62,4 @@ export interface BoardSearchRunConfig extends ActorRunConfig {
   site: string;
   suffix: string;
   maxPagesPerQuery: number;
-}
-
-/** Wire name of the source a collected job came from. */
-export type JobSource =
-  | 'linkedin-jobs'
-  | 'linkedin-posts'
-  | 'ashby'
-  | 'greenhouse';
-
-export const channelSource = {
-  [Channel.LINKEDIN_JOB_BOARD]: 'linkedin-jobs',
-  [Channel.LINKEDIN_POSTS]: 'linkedin-posts',
-  [Channel.ASHBY]: 'ashby',
-  [Channel.GREEN_HOUSE]: 'greenhouse',
-} as const satisfies Record<Channel, JobSource>;
-
-/** The record every channel provider emits, and the item shape ingest accepts. */
-export interface CollectedJob {
-  source: JobSource;
-  sourceJobId: string;
-  /** Canonical posting URL. */
-  url: string;
-  applyUrl: string | null;
-  title: string;
-  company: string;
-  location: string | null;
-  /** ISO 8601 UTC. */
-  postedAt: string | null;
-  postedAtPrecision: 'hour' | 'day';
-  /** Plain text. */
-  description: string;
-  contact: { name: string; url: string } | null;
-  /** Query that found it. */
-  search: string;
-  raw: unknown;
-}
-
-export abstract class Collector<C extends ActorRunConfig = ActorRunConfig> {
-  abstract readonly channel: Channel;
-  abstract collect(segment: SegmentSearch, config: C): Promise<SegmentResult>;
 }

@@ -1,5 +1,4 @@
 import { Channel } from 'src/common/enums';
-import { normalizeItem } from '../../ingest/utils';
 import type {
   BoardSearchRunConfig,
   LinkedinJobBoardRunConfig,
@@ -10,13 +9,13 @@ import type { ApifyActorProvider } from './apify/apify.provider';
 import {
   GoogleJobsSearchProvider,
   boardQuery,
-} from './apify/google_search.collector';
+} from './apify/google-search.provider';
 import {
-  LinkedinJobSearchProvider,
+  LinkedinJobBoardCollector,
   linkedinJobSearchUrl,
-} from './apify/linkedin.job_search.collector';
-import { LinkedinPostSearchProvider } from './apify/linkedin.post_search.collector';
-import { AshbyCollector } from './ashby.service';
+} from './linkedin-job-board.collector';
+import { LinkedinPostsCollector } from './linkedin-posts.collector';
+import { AshbyCollector } from './ashby.collector';
 import type { AshbyPostingProvider } from './extraction/ashby.provider';
 
 const until = new Date('2026-10-31T12:00:00Z');
@@ -29,6 +28,7 @@ function actor(
   const run = vi.fn(async (_actor: string, input: Record<string, unknown>) => ({
     items: items(input),
     costUsd,
+    runId: 'run-1',
   }));
   return { run, provider: { run } as unknown as ApifyActorProvider };
 }
@@ -127,7 +127,7 @@ describe('LinkedIn job board segment', () => {
       item(3, urlOf(2), 1),
       item(4, 'https://www.linkedin.com/jobs/search/?redirected', 1),
     ]);
-    const result = await new LinkedinJobSearchProvider(provider).search(
+    const result = await new LinkedinJobBoardCollector(provider).collect(
       segment(Channel.LINKEDIN_JOB_BOARD, queries),
       board,
     );
@@ -138,27 +138,24 @@ describe('LinkedIn job board segment', () => {
       startUrls: [0, 1, 2].map((i) => ({ url: urlOf(i) })),
       maxRowsPerUrl: 2,
     });
-    expect(result.jobsByQuery.get('qs-1')?.map((j) => j.sourceJobId)).toEqual([
-      '1',
-      '2',
+    expect(result.itemsByQuery.get('qs-1')).toEqual([
+      { rank: 1, payload: item(1, urlOf(0), 1) },
+      { rank: 2, payload: item(2, urlOf(0), 2) },
     ]);
-    expect(result.jobsByQuery.get('qs-2')).toEqual([]);
-    expect(result.jobsByQuery.get('qs-3')?.map((j) => j.sourceJobId)).toEqual([
-      '3',
+    expect(result.itemsByQuery.get('qs-2')).toEqual([]);
+    expect(result.itemsByQuery.get('qs-3')).toEqual([
+      { rank: 1, payload: item(3, urlOf(2), 1) },
+    ]);
+    // The redirected item matches no member, and is kept, untouched.
+    expect(result.unattributed).toEqual([
+      {
+        rank: 1,
+        payload: item(4, 'https://www.linkedin.com/jobs/search/?redirected', 1),
+      },
     ]);
     expect(result.fetched).toBe(4);
     expect(result.truncatedQueryIds).toEqual(['qs-1']);
-    expect(result.jobsByQuery.get('qs-1')?.[0]).toMatchObject({
-      source: 'linkedin-jobs',
-      search: 'backend nestjs in Germany',
-      description: 'Build & ship',
-    });
-    expect(() =>
-      normalizeItem(
-        Channel.LINKEDIN_JOB_BOARD,
-        result.jobsByQuery.get('qs-1')?.[0],
-      ),
-    ).not.toThrow();
+    expect(result.source).toEqual({ actor: board.actor, apifyRunId: 'run-1' });
   });
 
   it('matches echoed URLs whatever their encoding and parameter order', async () => {
@@ -171,24 +168,37 @@ describe('LinkedIn job board segment', () => {
         .join('&');
     expect(echoed).not.toBe(urlOf(0));
     const { provider } = actor(() => [item(1, echoed, 1)]);
-    const result = await new LinkedinJobSearchProvider(provider).search(
+    const result = await new LinkedinJobBoardCollector(provider).collect(
       segment(Channel.LINKEDIN_JOB_BOARD, queries),
       board,
     );
-    expect(result.jobsByQuery.get('qs-1')?.map((j) => j.sourceJobId)).toEqual([
-      '1',
+    expect(
+      result.itemsByQuery
+        .get('qs-1')
+        ?.map((i) => (i.payload as { id: number }).id),
+    ).toEqual([1]);
+  });
+
+  it('has no rank when the actor reports no position', async () => {
+    const { provider } = actor(() => [
+      { ...item(1, urlOf(0), 0), scrapingInfo: { inputUrl: urlOf(0) } },
     ]);
+    const result = await new LinkedinJobBoardCollector(provider).collect(
+      segment(Channel.LINKEDIN_JOB_BOARD, queries),
+      board,
+    );
+    expect(result.itemsByQuery.get('qs-1')?.[0]?.rank).toBeNull();
   });
 
   it('reports the cost and whether the charge cap was reached', async () => {
-    const capped = await new LinkedinJobSearchProvider(
+    const capped = await new LinkedinJobBoardCollector(
       actor(() => [], 0.96).provider,
-    ).search(segment(Channel.LINKEDIN_JOB_BOARD, queries), board);
+    ).collect(segment(Channel.LINKEDIN_JOB_BOARD, queries), board);
     expect(capped).toMatchObject({ costUsd: 0.96, capped: true });
 
-    const unknown = await new LinkedinJobSearchProvider(
+    const unknown = await new LinkedinJobBoardCollector(
       actor(() => [], null).provider,
-    ).search(segment(Channel.LINKEDIN_JOB_BOARD, queries), board);
+    ).collect(segment(Channel.LINKEDIN_JOB_BOARD, queries), board);
     expect(unknown).toMatchObject({ costUsd: null, capped: false });
   });
 });
@@ -217,7 +227,7 @@ describe('LinkedIn posts segment', () => {
       post('8', queries[1].keyword),
       post('9', 'unknown query'),
     ]);
-    const result = await new LinkedinPostSearchProvider(provider).search(
+    const result = await new LinkedinPostsCollector(provider).collect(
       segment(Channel.LINKEDIN_POSTS, queries),
       posts,
     );
@@ -228,19 +238,17 @@ describe('LinkedIn posts segment', () => {
       postedLimitDate: since.toISOString(),
       sortBy: 'date',
     });
-    expect(result.jobsByQuery.get('qs-2')?.map((j) => j.sourceJobId)).toEqual([
-      '7',
-      '8',
+    expect(result.itemsByQuery.get('qs-2')).toEqual([
+      { rank: null, payload: post('7', queries[1].keyword) },
+      { rank: null, payload: post('8', queries[1].keyword) },
     ]);
-    expect(result.jobsByQuery.get('qs-1')).toEqual([]);
+    expect(result.itemsByQuery.get('qs-1')).toEqual([]);
+    expect(result.unattributed).toEqual([
+      { rank: null, payload: post('9', 'unknown query') },
+    ]);
     expect(result.truncatedQueryIds).toEqual(['qs-2']);
     expect(result.fetched).toBe(3);
-    expect(
-      normalizeItem(
-        Channel.LINKEDIN_POSTS,
-        result.jobsByQuery.get('qs-2')?.[0],
-      ),
-    ).toMatchObject({ company: null, authorName: 'Jane' });
+    expect(result.source).toEqual({ actor: posts.actor, apifyRunId: 'run-1' });
   });
 });
 
@@ -304,6 +312,28 @@ describe('job board segments on Google', () => {
     ]);
     expect(result.fetched).toBe(2);
     expect(result.truncatedQueryIds).toEqual([]);
+    expect(result.unattributed).toEqual([]);
+    expect(result.source).toEqual({ actor: ashby.actor, apifyRunId: 'run-1' });
+  });
+
+  it('keeps hits whose query matches no member as unattributed', async () => {
+    const queries = [{ id: 'qs-1', keyword: `${titles} nestjs`, params: {} }];
+    const { provider } = actor(() => [
+      {
+        searchQuery: { term: 'another query' },
+        organicResults: [
+          { url: 'https://jobs.ashbyhq.com/acme/9', position: 4 },
+        ],
+      },
+    ]);
+    const result = await new GoogleJobsSearchProvider(provider).search(
+      segment(Channel.ASHBY, queries),
+      ashby,
+    );
+    expect(result.hitsByQuery.get('qs-1')).toEqual([]);
+    expect(result.unattributed.map((h) => [h.url, h.rank])).toEqual([
+      ['https://jobs.ashbyhq.com/acme/9', 4],
+    ]);
   });
 
   it('localises an onsite segment to its country and searches whole days', async () => {
@@ -360,15 +390,15 @@ describe('job board segments on Google', () => {
     expect(result.truncatedQueryIds).toEqual(['qs-1']);
   });
 
-  it('drops postings it cannot fetch instead of failing the segment', async () => {
+  it('keeps postings it cannot fetch, with the fetch error, instead of failing the segment', async () => {
     const queries = [{ id: 'qs-1', keyword: `${titles} nestjs`, params: {} }];
     const line = boardQuery(queries[0].keyword, ashby);
     const { provider } = actor(() => [
       {
         searchQuery: { term: line },
         organicResults: [
-          { url: 'https://jobs.ashbyhq.com/acme/1' },
-          { url: 'https://jobs.ashbyhq.com/acme/closed' },
+          { url: 'https://jobs.ashbyhq.com/acme/1', position: 1 },
+          { url: 'https://jobs.ashbyhq.com/acme/closed', position: 2 },
         ],
       },
     ]);
@@ -382,8 +412,87 @@ describe('job board segments on Google', () => {
       new GoogleJobsSearchProvider(provider),
       postings,
     ).collect(segment(Channel.ASHBY, queries), ashby);
-    expect(result.jobsByQuery.get('qs-1')?.map((j) => j.sourceJobId)).toEqual([
-      'p1',
+    expect(result.itemsByQuery.get('qs-1')).toEqual([
+      {
+        rank: 1,
+        payload: {
+          hit: { url: 'https://jobs.ashbyhq.com/acme/1', position: 1 },
+          resolvedUrl: null,
+          posting: { id: 'p1', title: 'Engineer', descriptionHtml: '<p>x</p>' },
+          fetchError: null,
+        },
+      },
+      {
+        rank: 2,
+        payload: {
+          hit: { url: 'https://jobs.ashbyhq.com/acme/closed', position: 2 },
+          resolvedUrl: null,
+          posting: null,
+          fetchError: 'closed',
+        },
+      },
     ]);
+    expect(result.source).toEqual({ actor: ashby.actor, apifyRunId: 'run-1' });
+  });
+
+  it('follows Google redirect links to the posting, keeping the hit untouched', async () => {
+    const queries = [{ id: 'qs-1', keyword: `${titles} nestjs`, params: {} }];
+    const line = boardQuery(queries[0].keyword, ashby);
+    const goto = 'https://www.google.com/goto?url=CAES123';
+    const lost = 'https://www.google.com/goto?url=CAESlost';
+    const real =
+      'https://jobs.ashbyhq.com/acme/0b1c2d3e-0000-4000-8000-000000000001';
+    const { provider } = actor(() => [
+      {
+        searchQuery: { term: line },
+        organicResults: [
+          { url: goto, position: 1 },
+          { url: lost, position: 2 },
+        ],
+      },
+    ]);
+    const http = vi.fn(async (url: string) =>
+      url === goto
+        ? new Response(null, { status: 302, headers: { location: real } })
+        : new Response('gone', { status: 404 }),
+    );
+    vi.stubGlobal('fetch', http);
+    const postings = {
+      fetch: vi.fn(async (url: string) => ({ id: url.split('/').at(-1) })),
+    } as unknown as AshbyPostingProvider;
+    try {
+      const result = await new AshbyCollector(
+        new GoogleJobsSearchProvider(provider),
+        postings,
+      ).collect(segment(Channel.ASHBY, queries), ashby);
+
+      expect(http).toHaveBeenCalledWith(
+        goto,
+        expect.objectContaining({ redirect: 'manual' }),
+      );
+      expect(postings.fetch).toHaveBeenCalledWith(real);
+      expect(result.itemsByQuery.get('qs-1')).toEqual([
+        {
+          rank: 1,
+          payload: {
+            hit: { url: goto, position: 1 },
+            resolvedUrl: real,
+            posting: { id: '0b1c2d3e-0000-4000-8000-000000000001' },
+            fetchError: null,
+          },
+        },
+        {
+          rank: 2,
+          payload: {
+            hit: { url: lost, position: 2 },
+            resolvedUrl: null,
+            posting: null,
+            fetchError: 'Google redirect not resolved: HTTP 404',
+          },
+        },
+      ]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

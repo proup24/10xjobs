@@ -3,7 +3,7 @@ import { DatabaseModule } from 'src/database';
 import {
   PrismaSearchSegmentsRepository,
   SearchSegmentsRepository,
-} from './segments.repository';
+} from './repositories/segments.repository';
 
 /** Search segments: run records and builder collection cursors. */
 @Module({

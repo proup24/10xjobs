@@ -1,0 +1,40 @@
+import { Channel } from 'src/common/enums';
+
+/** How ingest treats one channel's payloads. */
+export interface ChannelIngestConfig {
+  kind: 'job' | 'post';
+  /**
+   * Payload fields (dotted paths) left out of the content hash: they change
+   * between observations of the same content (positions, relative times,
+   * counters, signed image URLs, the search that found it). Checked against
+   * the real actor payloads in career-hub's fixtures.
+   */
+  volatileKeys: readonly string[];
+}
+
+export const channelIngestConfig: Record<Channel, ChannelIngestConfig> = {
+  [Channel.LINKEDIN_JOB_BOARD]: {
+    kind: 'job',
+    volatileKeys: [
+      'scrapingInfo',
+      'postedTime',
+      'applicationsCount',
+      'companyLogo',
+    ],
+  },
+  [Channel.LINKEDIN_POSTS]: {
+    kind: 'post',
+    volatileKeys: [
+      'query',
+      'postedAt.postedAgoShort',
+      'postedAt.postedAgoText',
+      'author.info',
+      'author.avatar',
+      'engagement',
+      'document.manifest',
+    ],
+  },
+  // The Google snippet varies with the search that found it; the posting is the content.
+  [Channel.ASHBY]: { kind: 'job', volatileKeys: ['hit'] },
+  [Channel.GREEN_HOUSE]: { kind: 'job', volatileKeys: ['hit'] },
+};

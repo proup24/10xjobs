@@ -30,6 +30,8 @@ export interface ApifyRunResult {
   items: unknown[];
   /** `usageTotalUsd`, or null when Apify did not report it. */
   costUsd: number | null;
+  /** The Apify run id. */
+  runId: string;
 }
 
 export interface ApifyListRunsOptions {
@@ -101,6 +103,7 @@ export class ApifyActorProvider {
     return {
       items: await this.items(run.defaultDatasetId),
       costUsd: typeof run.usageTotalUsd === 'number' ? run.usageTotalUsd : null,
+      runId: run.id,
     };
   }
 

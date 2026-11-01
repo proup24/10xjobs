@@ -1,0 +1,42 @@
+{
+  "type": "post",
+  "id": "7390000000000000001",
+  "linkedinUrl": "https://www.linkedin.com/posts/jane-doe_hiring-activity-7390000000000000001-abcd",
+  "shareLinkedinUrl": "https://www.linkedin.com/feed/update/urn:li:share:7390000000000000009/",
+  "content": "We're hiring a senior Node.js engineer. DM me.",
+  "author": {
+    "id": "102634140",
+    "universalName": "jane-doe",
+    "publicIdentifier": null,
+    "type": "profile",
+    "name": "Jane Doe",
+    "linkedinUrl": "https://www.linkedin.com/in/jane-doe",
+    "info": "Engineering Manager at Acme • 1,204 followers",
+    "website": null,
+    "websiteLabel": null,
+    "avatar": {
+      "url": "https://media.licdn.com/dms/image/v2/X/profile/0/1/jane?e=1793836800&v=beta&t=sig1"
+    },
+    "urn": "102634140"
+  },
+  "postedAt": {
+    "timestamp": 1761904800000,
+    "date": "2026-10-31T10:00:00.000Z",
+    "postedAgoShort": "2h",
+    "postedAgoText": "2 hours ago • Visible to anyone on or off LinkedIn"
+  },
+  "article": {
+    "title": "Senior Node.js Engineer at Acme",
+    "subtitle": "jobs.ashbyhq.com",
+    "link": "https://jobs.ashbyhq.com/acme/0b1c2d3e-0000-4000-8000-000000000001",
+    "linkLabel": "Open article: Senior Node.js Engineer at Acme",
+    "description": null,
+    "image": null
+  },
+  "query": {
+    "sortBy": "date",
+    "page": 1,
+    "search": "senior node engineer hiring",
+    "postedLimit": "24h"
+  }
+}

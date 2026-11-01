@@ -22,7 +22,7 @@ void bootstrap().catch((error: unknown) => {
   Logger.error(
     invalidEnvironment
       ? error.message
-      : 'Worker startup failed; check Redis, database and Apify configuration',
+      : 'Worker startup failed; check Redis, database, storage and Apify configuration',
     undefined,
     'Worker',
   );

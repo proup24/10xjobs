@@ -58,23 +58,69 @@ export const redisEnvironmentSchema = z.object({
   JOBS_CONCURRENCY: z.coerce.number().int().positive().max(100).default(5),
 });
 
+/** Supabase Storage credentials, each with the Supabase stack's own fallback name. */
+const storageEnvironmentShape = {
+  /** Supabase API URL for Storage; falls back to the stack's SUPABASE_PUBLIC_URL. */
+  SUPABASE_URL: z.url().optional(),
+  SUPABASE_PUBLIC_URL: z.url().optional(),
+  /** Service-role key, server-side only; falls back to the stack's SERVICE_ROLE_KEY. */
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
+  SERVICE_ROLE_KEY: z.string().min(1).optional(),
+};
+
+function requireStorage(
+  env: {
+    SUPABASE_URL?: string;
+    SUPABASE_PUBLIC_URL?: string;
+    SUPABASE_SERVICE_ROLE_KEY?: string;
+    SERVICE_ROLE_KEY?: string;
+  },
+  ctx: z.RefinementCtx,
+): void {
+  if (!env.SUPABASE_URL && !env.SUPABASE_PUBLIC_URL)
+    ctx.addIssue({
+      code: 'custom',
+      path: ['SUPABASE_URL'],
+      message: 'Set SUPABASE_URL (or SUPABASE_PUBLIC_URL)',
+    });
+  if (!env.SUPABASE_SERVICE_ROLE_KEY && !env.SERVICE_ROLE_KEY)
+    ctx.addIssue({
+      code: 'custom',
+      path: ['SUPABASE_SERVICE_ROLE_KEY'],
+      message: 'Set SUPABASE_SERVICE_ROLE_KEY (or SERVICE_ROLE_KEY)',
+    });
+}
+
 /**
- * A worker process. `WORKER_CHANNEL` unset runs the infrastructure worker; a
- * channel runs that channel's collection job and needs an Apify token. An
- * unknown channel fails startup rather than falling back.
+ * A worker process. `WORKER_ROLE=ingest` runs the ingest worker, and
+ * `WORKER_ROLE=all` runs the infrastructure, ingest and every channel's
+ * collection worker in one process. Otherwise `WORKER_CHANNEL` unset runs the
+ * infrastructure worker, and a channel runs that channel's collection job.
+ * Collection needs an Apify token. An unknown role or
+ * channel fails startup rather than falling back. Every worker needs Supabase
+ * Storage, where collection batches are written and read.
  */
 export const workerProcessEnvironmentSchema = databaseEnvironmentSchema
   .extend({
     ...redisEnvironmentSchema.shape,
+    ...storageEnvironmentShape,
     APIFY_TOKEN: z.string().min(1).optional(),
     WORKER_CHANNEL: z.enum(Channel).optional(),
+    WORKER_ROLE: z.enum(['ingest', 'all']).optional(),
   })
   .superRefine((env, ctx) => {
-    if (env.WORKER_CHANNEL && !env.APIFY_TOKEN)
+    requireStorage(env, ctx);
+    if (env.WORKER_ROLE && env.WORKER_CHANNEL)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['WORKER_ROLE'],
+        message: 'Set either WORKER_ROLE or WORKER_CHANNEL, not both',
+      });
+    if ((env.WORKER_CHANNEL || env.WORKER_ROLE === 'all') && !env.APIFY_TOKEN)
       ctx.addIssue({
         code: 'custom',
         path: ['APIFY_TOKEN'],
-        message: 'Set APIFY_TOKEN to run a channel collection worker',
+        message: 'Set APIFY_TOKEN to run channel collection workers',
       });
   });
 
@@ -94,12 +140,7 @@ export const environmentSchema = databaseEnvironmentSchema
     BASIC_AUTH_PASSWORD: z
       .string()
       .min(12, 'BASIC_AUTH_PASSWORD must be at least 12 characters'),
-    /** Supabase API URL for Storage; falls back to the stack's SUPABASE_PUBLIC_URL. */
-    SUPABASE_URL: z.url().optional(),
-    SUPABASE_PUBLIC_URL: z.url().optional(),
-    /** Service-role key, server-side only; falls back to the stack's SERVICE_ROLE_KEY. */
-    SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
-    SERVICE_ROLE_KEY: z.string().min(1).optional(),
+    ...storageEnvironmentShape,
     /** Private bucket that holds resume PDFs. */
     STORAGE_RESUMES_BUCKET: z
       .string()
@@ -110,22 +151,7 @@ export const environmentSchema = databaseEnvironmentSchema
     /** Set by Nx in development to receive the server's ready signal. */
     NX_READY_SIGNAL_SOCKET: z.string().min(1).optional(),
   })
-  .superRefine((env, ctx) => {
-    if (!env.SUPABASE_URL && !env.SUPABASE_PUBLIC_URL) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['SUPABASE_URL'],
-        message: 'Set SUPABASE_URL (or SUPABASE_PUBLIC_URL)',
-      });
-    }
-    if (!env.SUPABASE_SERVICE_ROLE_KEY && !env.SERVICE_ROLE_KEY) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['SUPABASE_SERVICE_ROLE_KEY'],
-        message: 'Set SUPABASE_SERVICE_ROLE_KEY (or SERVICE_ROLE_KEY)',
-      });
-    }
-  });
+  .superRefine(requireStorage);
 
 export type DatabaseEnvironmentVariables = z.infer<
   typeof databaseEnvironmentSchema

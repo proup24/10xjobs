@@ -1,0 +1,182 @@
+[
+  {
+    "id": "dropTable.raw_job_identities",
+    "label": "Drop table \"raw_job_identities\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "raw_job_identities"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"raw_job_identities\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"raw_job_identities\""
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"raw_job_identities\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop table \"raw_job_identities\"",
+        "sql": "DROP TABLE \"public\".\"raw_job_identities\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"raw_job_identities\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"raw_job_identities\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"raw_job_identities\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "dropTable.raw_job_query_hits",
+    "label": "Drop table \"raw_job_query_hits\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "raw_job_query_hits"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"raw_job_query_hits\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"raw_job_query_hits\""
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"raw_job_query_hits\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop table \"raw_job_query_hits\"",
+        "sql": "DROP TABLE \"public\".\"raw_job_query_hits\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"raw_job_query_hits\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"raw_job_query_hits\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"raw_job_query_hits\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "dropTable.raw_jobs",
+    "label": "Drop table \"raw_jobs\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "raw_jobs"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"raw_jobs\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"raw_jobs\""
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"raw_jobs\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop table \"raw_jobs\"",
+        "sql": "DROP TABLE \"public\".\"raw_jobs\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"raw_jobs\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"raw_jobs\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"raw_jobs\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "dropTable.ats_posting_identities",
+    "label": "Drop table \"ats_posting_identities\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "ats_posting_identities"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"ats_posting_identities\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ats_posting_identities\""
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"ats_posting_identities\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop table \"ats_posting_identities\"",
+        "sql": "DROP TABLE \"public\".\"ats_posting_identities\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"ats_posting_identities\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ats_posting_identities\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"ats_posting_identities\""
+        }
+      }
+    ]
+  }
+]

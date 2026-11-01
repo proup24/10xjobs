@@ -1,6 +1,6 @@
 # Channel collection jobs
 
-Date: 2026-10-31. Supersedes the scheduling parts of `2026-10-29-channels-collection-design.md` (runs, cursors, windows, budgets, leases, outbox and gap recovery are not built here).
+Date: 2026-10-31. Its hand-off to ingest (calling `IngestService.ingest` per builder) is superseded by `2026-10-31-ingest-raw-storage-design.md`: collection now stores a batch and enqueues it. Supersedes the scheduling parts of `2026-10-29-channels-collection-design.md` (runs, cursors, windows, budgets, leases, outbox and gap recovery are not built here).
 
 ## Intent
 
@@ -16,7 +16,7 @@ Today the collectors and ingest exist, but nothing calls them. The search terms 
 ## Goals
 
 - Every channel has its own scheduler, queue and worker process. The jobs module registers the schedules on its own.
-- Each channel worker has a dedicated config in `infrastructure/jobs/config`.
+- Each channel worker has a dedicated config in `infrastructure/jobs/steps/collect/config.ts`.
 - What is searched comes only from the queries module. The static search lists are removed from the collectors config.
 - Every collected batch goes through `IngestService.ingest`.
 
@@ -40,7 +40,7 @@ Decided by the user:
 
 - There is one cron job and one dedicated worker process for each channel, each with its own config.
 - The jobs module manages execution. No separate collection module.
-- Each channel has its own collection job class using its own collector (`infrastructure/jobs/collection/<channel>.job.ts`). There is no generic dispatch layer and no `COLLECTOR_PROVIDERS`.
+- Each channel has its own collection job class using its own collector (`infrastructure/jobs/steps/collect/channels/<channel>.job.ts`, sharing the base `steps/collect/collection.job.ts`). There is no generic dispatch layer and no `COLLECTOR_PROVIDERS`.
 - `JobsModule` declares and executes the jobs: queue name, config and `run()`. The worker is its own module in `infrastructure/worker`: it registers the cron scheduler and consumes the queue of the job `WORKER_CHANNEL` names, or the infrastructure queue when that is unset.
 - Each Apify trigger (`google_search`, `linkedin.job_search`, `linkedin.post_search`) has its own Apify client: `ApifyActorProvider` is transient-scoped.
 - Searches come from the queries module, collection from the collectors module, and saving, deduplication and normalization from the ingest module.
@@ -48,7 +48,7 @@ Decided by the user:
 
 Builder's calls (open to change):
 
-1. **Per-channel worker config.** `infrastructure/jobs/config/index.ts` replaces the unused `JOB_CONFIG` with `channelJobsConfig: Record<Channel, ChannelJobConfig>`, where `ChannelJobConfig = { enabled: boolean; schedule: { pattern: string; timezone: string }; concurrency: number; attempts: number }`. The starting values for every channel are `enabled: true`, `{ pattern: '0 * * * *', timezone: 'UTC' }`, concurrency 1 and attempts 1. `enabled`, `schedule` and the unused window and recovery fields move out of `modules/collectors/config`. The collectors config keeps only operational settings: actors, limits, fetch policy and per-operation budget caps.
+1. **Per-channel worker config.** `infrastructure/jobs/steps/collect/config.ts` replaces the unused `JOB_CONFIG` with `channelJobsConfig: Record<Channel, ChannelJobConfig>`, where `ChannelJobConfig = { enabled: boolean; schedule: { pattern: string; timezone: string }; concurrency: number; attempts: number }`. The starting values for every channel are `enabled: true`, `{ pattern: '0 * * * *', timezone: 'UTC' }`, concurrency 1 and attempts 1. `enabled`, `schedule` and the unused window and recovery fields move out of `modules/collectors/config`. The collectors config keeps only operational settings: actors, limits, fetch policy and per-operation budget caps.
 2. **Queues.** One queue for each channel, named `collect-<channel>` in kebab-case (for example `collect-linkedin-job-board`), with the existing `REDIS_PREFIX`. The `infrastructure` queue and the `ping` job are unchanged.
 3. **Automatic scheduling.** When a channel worker starts, it calls `queue.upsertJobScheduler('collect', { pattern, tz }, { name: 'collect', data: { channel }, opts: { attempts } })`. This is idempotent, so restarts and replicas are safe. If the channel is `enabled: false`, the worker removes the scheduler and exits with code 0.
 4. **Process selection.** `worker.ts` reads an optional `WORKER_CHANNEL`. If it is unset, the infrastructure worker runs as today. If it is set to a `Channel`, that channel's worker runs. An unknown value fails startup. There is one package script and Nx target for each channel, and one Docker image.

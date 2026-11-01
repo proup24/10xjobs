@@ -2,13 +2,11 @@ import { ConfigModule } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import { Channel } from 'src/common/enums';
 import { CollectorsModule } from './collectors.module';
-import { GoogleJobsSearchProvider } from './providers/apify/google_search.collector';
-import { LinkedinJobSearchProvider } from './providers/apify/linkedin.job_search.collector';
-import { LinkedinPostSearchProvider } from './providers/apify/linkedin.post_search.collector';
-import { AshbyCollector } from './providers/ashby.service';
-import { GreenhouseCollector } from './providers/greenhouse.service';
-import { LinkedinJobBoardCollector } from './providers/linkedin.job_board.service';
-import { LinkedinPostsCollector } from './providers/linkedin.posts.service';
+import { GoogleJobsSearchProvider } from './providers/apify/google-search.provider';
+import { AshbyCollector } from './providers/ashby.collector';
+import { GreenhouseCollector } from './providers/greenhouse.collector';
+import { LinkedinJobBoardCollector } from './providers/linkedin-job-board.collector';
+import { LinkedinPostsCollector } from './providers/linkedin-posts.collector';
 
 async function compile() {
   return Test.createTestingModule({
@@ -42,8 +40,8 @@ it('gives every Apify trigger its own Apify client', async () => {
   try {
     const actors = [
       GoogleJobsSearchProvider,
-      LinkedinJobSearchProvider,
-      LinkedinPostSearchProvider,
+      LinkedinJobBoardCollector,
+      LinkedinPostsCollector,
     ].map(
       (trigger) => (module.get(trigger) as unknown as { actor: object }).actor,
     );
