@@ -1,4 +1,5 @@
 import { Channel } from 'src/common/enums';
+import { mapAshby, mapGreenhouse } from './ats';
 import { mapLinkedinJob, mapLinkedinPost } from './linkedin';
 import {
   type NormalizedRecord,
@@ -14,8 +15,8 @@ type Mapper = (
 const mappers: Record<Channel, Mapper> = {
   [Channel.LINKEDIN_JOB_BOARD]: mapLinkedinJob,
   [Channel.LINKEDIN_POSTS]: mapLinkedinPost,
-  [Channel.ASHBY]: () => ({ invalid: 'normalize: unsupported channel' }),
-  [Channel.GREEN_HOUSE]: () => ({ invalid: 'normalize: unsupported channel' }),
+  [Channel.ASHBY]: mapAshby,
+  [Channel.GREEN_HOUSE]: mapGreenhouse,
 };
 
 /**

@@ -40,3 +40,32 @@ export function objectAt(value: unknown): Record<string, unknown> {
     ? (value as Record<string, unknown>)
     : {};
 }
+
+const namedEntities: Record<string, string> = {
+  lt: '<',
+  gt: '>',
+  amp: '&',
+  quot: '"',
+  apos: "'",
+  nbsp: ' ',
+};
+
+/**
+ * Decodes HTML entities in one left-to-right pass, so `&amp;lt;` becomes
+ * `&lt;`, never `<`. Unknown entities are left as they are.
+ */
+export function decodeEntitiesOnce(value: string): string {
+  return value.replace(
+    /&(#x[0-9a-f]+|#\d+|[a-z]+);/gi,
+    (match, body: string) => {
+      if (body[0] === '#') {
+        const hex = body[1] === 'x' || body[1] === 'X';
+        const code = Number.parseInt(body.slice(hex ? 2 : 1), hex ? 16 : 10);
+        return Number.isFinite(code) && code > 0 && code <= 0x10ffff
+          ? String.fromCodePoint(code)
+          : match;
+      }
+      return namedEntities[body.toLowerCase()] ?? match;
+    },
+  );
+}
