@@ -84,7 +84,7 @@ export const channelJobsConfig = {
       maxRunChargeUsd: 0.5,
       site: 'jobs.ashbyhq.com',
       suffix:
-        '(intitle:engineer OR intitle:developer) -intitle:manager -intitle:director -intitle:intern',
+        '(intitle:engineer OR intitle:developer OR intitle:lead) -intitle:manager -intitle:director -intitle:intern -intitle:recruiter',
       maxPagesPerQuery: 3,
     },
   },
