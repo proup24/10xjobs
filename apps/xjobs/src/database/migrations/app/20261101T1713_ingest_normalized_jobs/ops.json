@@ -1,0 +1,793 @@
+[
+  {
+    "id": "table.normalized_job_sources",
+    "label": "Create table \"normalized_job_sources\"",
+    "summary": "Creates table \"normalized_job_sources\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "normalized_job_sources"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"normalized_job_sources\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"normalized_job_sources\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"normalized_job_sources\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"normalized_job_sources\"",
+        "sql": "CREATE TABLE \"public\".\"normalized_job_sources\" (\n  \"id\" uuid NOT NULL,\n  \"jobId\" uuid NOT NULL,\n  \"linkedAt\" timestamptz(3) NOT NULL,\n  \"normalizedVersionId\" uuid NOT NULL,\n  \"rawItemId\" uuid NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"normalized_job_sources\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"normalized_job_sources\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"normalized_job_sources\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.normalized_jobs",
+    "label": "Create table \"normalized_jobs\"",
+    "summary": "Creates table \"normalized_jobs\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "normalized_jobs"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"normalized_jobs\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"normalized_jobs\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"normalized_jobs\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"normalized_jobs\"",
+        "sql": "CREATE TABLE \"public\".\"normalized_jobs\" (\n  \"applyUrl\" text,\n  \"closed\" bool NOT NULL,\n  \"companyName\" text,\n  \"companyUrl\" text,\n  \"contractType\" text,\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"descriptionHtml\" text,\n  \"descriptionText\" text,\n  \"experienceLevel\" text,\n  \"fieldSources\" jsonb NOT NULL,\n  \"firstSeenAt\" timestamptz(3) NOT NULL,\n  \"id\" uuid NOT NULL,\n  \"jobKey\" text NOT NULL,\n  \"kind\" text NOT NULL,\n  \"lastSeenAt\" timestamptz(3) NOT NULL,\n  \"location\" text,\n  \"mergedIntoId\" uuid,\n  \"normalizerVersion\" int4 NOT NULL,\n  \"posterName\" text,\n  \"posterProfileUrl\" text,\n  \"posterType\" text,\n  \"postingUrl\" text NOT NULL,\n  \"processedAt\" timestamptz(3),\n  \"processingAttempts\" int4 DEFAULT 0 NOT NULL,\n  \"processingError\" text,\n  \"processingReason\" text,\n  \"processingRequestedAt\" timestamptz(3),\n  \"processingStatus\" text,\n  \"publishedAt\" text,\n  \"salaryCurrency\" text,\n  \"salaryMax\" int4,\n  \"salaryMin\" int4,\n  \"salaryPeriod\" text,\n  \"salaryText\" text,\n  \"sector\" text,\n  \"status\" text NOT NULL,\n  \"title\" text,\n  \"updatedAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"normalized_jobs_kind_e26544db\" CHECK (kind IN ('job', 'post')),\n  CONSTRAINT \"normalized_jobs_merged_into_49ee8511\" CHECK ((status = 'merged') = (\"mergedIntoId\" IS NOT NULL)),\n  CONSTRAINT \"normalized_jobs_processing_attempts_bc077913\" CHECK (\"processingAttempts\" >= 0),\n  CONSTRAINT \"normalized_jobs_processing_reason_0a1726bc\" CHECK (\"processingReason\" IS NULL OR \"processingReason\" IN ('new', 'reopened')),\n  CONSTRAINT \"normalized_jobs_processing_status_eba7bd28\" CHECK (\"processingStatus\" IS NULL OR \"processingStatus\" IN ('pending', 'processing', 'processed', 'failed')),\n  CONSTRAINT \"normalized_jobs_seen_order_9de70718\" CHECK (\"firstSeenAt\" <= \"lastSeenAt\"),\n  CONSTRAINT \"normalized_jobs_status_e7531d73\" CHECK (status IN ('active', 'merged'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"normalized_jobs\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"normalized_jobs\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"normalized_jobs\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.normalized_versions",
+    "label": "Create table \"normalized_versions\"",
+    "summary": "Creates table \"normalized_versions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "normalized_versions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"normalized_versions\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"normalized_versions\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"normalized_versions\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"normalized_versions\"",
+        "sql": "CREATE TABLE \"public\".\"normalized_versions\" (\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"id\" uuid NOT NULL,\n  \"jobKey\" text,\n  \"normalizerVersion\" int4 NOT NULL,\n  \"rawVersionId\" uuid NOT NULL,\n  \"reason\" text,\n  \"record\" jsonb,\n  \"status\" text NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"normalized_versions_status_6e0d386f\" CHECK (status IN ('valid', 'invalid')),\n  CONSTRAINT \"normalized_versions_valid_record_0400e26d\" CHECK ((status = 'valid') = (record IS NOT NULL AND \"jobKey\" IS NOT NULL))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"normalized_versions\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"normalized_versions\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"normalized_versions\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "unique.normalized_job_sources.normalized_job_sources_rawItemId_key",
+    "label": "Add unique constraint on \"normalized_job_sources\" (rawItemId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "normalized_job_sources_rawItemId_key",
+        "table": "normalized_job_sources"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"normalized_job_sources_rawItemId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "normalized_job_sources_rawItemId_key",
+          "public",
+          "\"public\".\"normalized_job_sources\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"normalized_job_sources_rawItemId_key\" on \"normalized_job_sources\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"normalized_job_sources_rawItemId_key\"",
+        "sql": "ALTER TABLE \"public\".\"normalized_job_sources\" ADD CONSTRAINT \"normalized_job_sources_rawItemId_key\" UNIQUE (\"rawItemId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"normalized_job_sources_rawItemId_key\" exists on (rawItemId)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "normalized_job_sources_rawItemId_key",
+          "public",
+          "\"public\".\"normalized_job_sources\"",
+          "u",
+          "[\"rawItemId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.normalized_jobs.normalized_jobs_jobKey_key",
+    "label": "Add unique constraint on \"normalized_jobs\" (jobKey)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "normalized_jobs_jobKey_key",
+        "table": "normalized_jobs"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"normalized_jobs_jobKey_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "normalized_jobs_jobKey_key",
+          "public",
+          "\"public\".\"normalized_jobs\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"normalized_jobs_jobKey_key\" on \"normalized_jobs\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"normalized_jobs_jobKey_key\"",
+        "sql": "ALTER TABLE \"public\".\"normalized_jobs\" ADD CONSTRAINT \"normalized_jobs_jobKey_key\" UNIQUE (\"jobKey\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"normalized_jobs_jobKey_key\" exists on (jobKey)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "normalized_jobs_jobKey_key",
+          "public",
+          "\"public\".\"normalized_jobs\"",
+          "u",
+          "[\"jobKey\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.normalized_versions.normalized_versions_rawVersionId_normalizerVersion_key",
+    "label": "Add unique constraint on \"normalized_versions\" (rawVersionId, normalizerVersion)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "normalized_versions_rawVersionId_normalizerVersion_key",
+        "table": "normalized_versions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"normalized_versions_rawVersionId_normalizerVersion_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "normalized_versions_rawVersionId_normalizerVersion_key",
+          "public",
+          "\"public\".\"normalized_versions\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"normalized_versions_rawVersionId_normalizerVersion_key\" on \"normalized_versions\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"normalized_versions_rawVersionId_normalizerVersion_key\"",
+        "sql": "ALTER TABLE \"public\".\"normalized_versions\" ADD CONSTRAINT \"normalized_versions_rawVersionId_normalizerVersion_key\" UNIQUE (\"rawVersionId\", \"normalizerVersion\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"normalized_versions_rawVersionId_normalizerVersion_key\" exists on (rawVersionId, normalizerVersion)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "normalized_versions_rawVersionId_normalizerVersion_key",
+          "public",
+          "\"public\".\"normalized_versions\"",
+          "u",
+          "[\"rawVersionId\",\"normalizerVersion\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.normalized_job_sources.normalized_job_sources_jobId_idx_623c8f77",
+    "label": "Create index \"normalized_job_sources_jobId_idx_623c8f77\" on \"normalized_job_sources\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "normalized_job_sources_jobId_idx_623c8f77",
+        "table": "normalized_job_sources"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"normalized_job_sources_jobId_idx_623c8f77\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"normalized_job_sources_jobId_idx_623c8f77\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"normalized_job_sources_jobId_idx_623c8f77\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"normalized_job_sources_jobId_idx_623c8f77\"",
+        "sql": "CREATE INDEX \"normalized_job_sources_jobId_idx_623c8f77\" ON \"public\".\"normalized_job_sources\" (\"jobId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"normalized_job_sources_jobId_idx_623c8f77\" exists on \"normalized_job_sources\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"normalized_job_sources_jobId_idx_623c8f77\"",
+          "i",
+          "I",
+          "\"public\".\"normalized_job_sources\"",
+          "btree",
+          "[\"jobId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.normalized_job_sources.normalized_job_sources_normalizedVersionId_idx_e69af444",
+    "label": "Create index \"normalized_job_sources_normalizedVersionId_idx_e69af444\" on \"normalized_job_sources\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "normalized_job_sources_normalizedVersionId_idx_e69af444",
+        "table": "normalized_job_sources"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"normalized_job_sources_normalizedVersionId_idx_e69af444\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"normalized_job_sources_normalizedVersionId_idx_e69af444\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"normalized_job_sources_normalizedVersionId_idx_e69af444\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"normalized_job_sources_normalizedVersionId_idx_e69af444\"",
+        "sql": "CREATE INDEX \"normalized_job_sources_normalizedVersionId_idx_e69af444\" ON \"public\".\"normalized_job_sources\" (\"normalizedVersionId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"normalized_job_sources_normalizedVersionId_idx_e69af444\" exists on \"normalized_job_sources\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"normalized_job_sources_normalizedVersionId_idx_e69af444\"",
+          "i",
+          "I",
+          "\"public\".\"normalized_job_sources\"",
+          "btree",
+          "[\"normalizedVersionId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.normalized_jobs.normalized_jobs_mergedIntoId_idx_470bd53d",
+    "label": "Create index \"normalized_jobs_mergedIntoId_idx_470bd53d\" on \"normalized_jobs\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "normalized_jobs_mergedIntoId_idx_470bd53d",
+        "table": "normalized_jobs"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"normalized_jobs_mergedIntoId_idx_470bd53d\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"normalized_jobs_mergedIntoId_idx_470bd53d\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"normalized_jobs_mergedIntoId_idx_470bd53d\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"normalized_jobs_mergedIntoId_idx_470bd53d\"",
+        "sql": "CREATE INDEX \"normalized_jobs_mergedIntoId_idx_470bd53d\" ON \"public\".\"normalized_jobs\" (\"mergedIntoId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"normalized_jobs_mergedIntoId_idx_470bd53d\" exists on \"normalized_jobs\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"normalized_jobs_mergedIntoId_idx_470bd53d\"",
+          "i",
+          "I",
+          "\"public\".\"normalized_jobs\"",
+          "btree",
+          "[\"mergedIntoId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.normalized_jobs.normalized_jobs_processing_queue",
+    "label": "Create index \"normalized_jobs_processing_queue\" on \"normalized_jobs\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "normalized_jobs_processing_queue",
+        "table": "normalized_jobs"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"normalized_jobs_processing_queue\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"normalized_jobs_processing_queue\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"normalized_jobs_processing_queue\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"normalized_jobs_processing_queue\"",
+        "sql": "CREATE INDEX \"normalized_jobs_processing_queue\" ON \"public\".\"normalized_jobs\" (\"processingStatus\", \"processingRequestedAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"normalized_jobs_processing_queue\" exists on \"normalized_jobs\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"normalized_jobs_processing_queue\"",
+          "i",
+          "I",
+          "\"public\".\"normalized_jobs\"",
+          "btree",
+          "[\"processingStatus\",\"processingRequestedAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.normalized_versions.normalized_versions_rawVersionId_idx_db7572f8",
+    "label": "Create index \"normalized_versions_rawVersionId_idx_db7572f8\" on \"normalized_versions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "normalized_versions_rawVersionId_idx_db7572f8",
+        "table": "normalized_versions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"normalized_versions_rawVersionId_idx_db7572f8\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"normalized_versions_rawVersionId_idx_db7572f8\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"normalized_versions_rawVersionId_idx_db7572f8\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"normalized_versions_rawVersionId_idx_db7572f8\"",
+        "sql": "CREATE INDEX \"normalized_versions_rawVersionId_idx_db7572f8\" ON \"public\".\"normalized_versions\" (\"rawVersionId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"normalized_versions_rawVersionId_idx_db7572f8\" exists on \"normalized_versions\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"normalized_versions_rawVersionId_idx_db7572f8\"",
+          "i",
+          "I",
+          "\"public\".\"normalized_versions\"",
+          "btree",
+          "[\"rawVersionId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.normalized_job_sources.normalized_job_sources_jobId_fkey",
+    "label": "Add foreign key \"normalized_job_sources_jobId_fkey\" on \"normalized_job_sources\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "normalized_job_sources_jobId_fkey",
+        "table": "normalized_job_sources"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"normalized_job_sources_jobId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "normalized_job_sources_jobId_fkey",
+          "public",
+          "\"public\".\"normalized_job_sources\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"normalized_job_sources_jobId_fkey\" on \"normalized_job_sources\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"normalized_job_sources_jobId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"normalized_job_sources\"\nADD CONSTRAINT \"normalized_job_sources_jobId_fkey\"\nFOREIGN KEY (\"jobId\")\nREFERENCES \"public\".\"normalized_jobs\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"normalized_job_sources_jobId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "normalized_job_sources_jobId_fkey",
+          "public",
+          "\"public\".\"normalized_job_sources\"",
+          "f",
+          "[\"jobId\"]",
+          "\"public\".\"normalized_jobs\"",
+          "[\"id\"]",
+          "r",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.normalized_job_sources.normalized_job_sources_rawItemId_fkey",
+    "label": "Add foreign key \"normalized_job_sources_rawItemId_fkey\" on \"normalized_job_sources\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "normalized_job_sources_rawItemId_fkey",
+        "table": "normalized_job_sources"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"normalized_job_sources_rawItemId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "normalized_job_sources_rawItemId_fkey",
+          "public",
+          "\"public\".\"normalized_job_sources\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"normalized_job_sources_rawItemId_fkey\" on \"normalized_job_sources\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"normalized_job_sources_rawItemId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"normalized_job_sources\"\nADD CONSTRAINT \"normalized_job_sources_rawItemId_fkey\"\nFOREIGN KEY (\"rawItemId\")\nREFERENCES \"public\".\"raw_items\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"normalized_job_sources_rawItemId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "normalized_job_sources_rawItemId_fkey",
+          "public",
+          "\"public\".\"normalized_job_sources\"",
+          "f",
+          "[\"rawItemId\"]",
+          "\"public\".\"raw_items\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.normalized_job_sources.normalized_job_sources_normalizedVersionId_fkey",
+    "label": "Add foreign key \"normalized_job_sources_normalizedVersionId_fkey\" on \"normalized_job_sources\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "normalized_job_sources_normalizedVersionId_fkey",
+        "table": "normalized_job_sources"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"normalized_job_sources_normalizedVersionId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "normalized_job_sources_normalizedVersionId_fkey",
+          "public",
+          "\"public\".\"normalized_job_sources\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"normalized_job_sources_normalizedVersionId_fkey\" on \"normalized_job_sources\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"normalized_job_sources_normalizedVersionId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"normalized_job_sources\"\nADD CONSTRAINT \"normalized_job_sources_normalizedVersionId_fkey\"\nFOREIGN KEY (\"normalizedVersionId\")\nREFERENCES \"public\".\"normalized_versions\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"normalized_job_sources_normalizedVersionId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "normalized_job_sources_normalizedVersionId_fkey",
+          "public",
+          "\"public\".\"normalized_job_sources\"",
+          "f",
+          "[\"normalizedVersionId\"]",
+          "\"public\".\"normalized_versions\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.normalized_jobs.normalized_jobs_mergedIntoId_fkey",
+    "label": "Add foreign key \"normalized_jobs_mergedIntoId_fkey\" on \"normalized_jobs\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "normalized_jobs_mergedIntoId_fkey",
+        "table": "normalized_jobs"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"normalized_jobs_mergedIntoId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "normalized_jobs_mergedIntoId_fkey",
+          "public",
+          "\"public\".\"normalized_jobs\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"normalized_jobs_mergedIntoId_fkey\" on \"normalized_jobs\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"normalized_jobs_mergedIntoId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"normalized_jobs\"\nADD CONSTRAINT \"normalized_jobs_mergedIntoId_fkey\"\nFOREIGN KEY (\"mergedIntoId\")\nREFERENCES \"public\".\"normalized_jobs\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"normalized_jobs_mergedIntoId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "normalized_jobs_mergedIntoId_fkey",
+          "public",
+          "\"public\".\"normalized_jobs\"",
+          "f",
+          "[\"mergedIntoId\"]",
+          "\"public\".\"normalized_jobs\"",
+          "[\"id\"]",
+          "r",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.normalized_versions.normalized_versions_rawVersionId_fkey",
+    "label": "Add foreign key \"normalized_versions_rawVersionId_fkey\" on \"normalized_versions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "normalized_versions_rawVersionId_fkey",
+        "table": "normalized_versions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"normalized_versions_rawVersionId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "normalized_versions_rawVersionId_fkey",
+          "public",
+          "\"public\".\"normalized_versions\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"normalized_versions_rawVersionId_fkey\" on \"normalized_versions\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"normalized_versions_rawVersionId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"normalized_versions\"\nADD CONSTRAINT \"normalized_versions_rawVersionId_fkey\"\nFOREIGN KEY (\"rawVersionId\")\nREFERENCES \"public\".\"raw_item_versions\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"normalized_versions_rawVersionId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "normalized_versions_rawVersionId_fkey",
+          "public",
+          "\"public\".\"normalized_versions\"",
+          "f",
+          "[\"rawVersionId\"]",
+          "\"public\".\"raw_item_versions\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  }
+]

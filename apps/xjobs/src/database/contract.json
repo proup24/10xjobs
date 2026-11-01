@@ -12,6 +12,18 @@
       "model": "Contact",
       "namespace": "public"
     },
+    "normalized_job_sources": {
+      "model": "NormalizedJobSource",
+      "namespace": "public"
+    },
+    "normalized_jobs": {
+      "model": "NormalizedJob",
+      "namespace": "public"
+    },
+    "normalized_versions": {
+      "model": "NormalizedVersion",
+      "namespace": "public"
+    },
     "profile_query_search_builders": {
       "model": "ProfileQuerySearchBuilder",
       "namespace": "public"
@@ -973,6 +985,656 @@
               },
               "namespaceId": "public",
               "table": "contacts"
+            }
+          },
+          "NormalizedJob": {
+            "fields": {
+              "applyUrl": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "closed": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "companyName": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "companyUrl": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "contractType": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "descriptionHtml": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "descriptionText": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "experienceLevel": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "fieldSources": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
+              },
+              "firstSeenAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "jobKey": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "kind": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "lastSeenAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "location": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "mergedIntoId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "normalizerVersion": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "posterName": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "posterProfileUrl": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "posterType": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "postingUrl": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "processedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "processingAttempts": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "processingError": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "processingReason": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "processingRequestedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "processingStatus": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "publishedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "salaryCurrency": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "salaryMax": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "salaryMin": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "salaryPeriod": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "salaryText": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "sector": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "title": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              }
+            },
+            "relations": {
+              "mergedInto": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "mergedIntoId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "NormalizedJob",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "applyUrl": {
+                  "column": "applyUrl"
+                },
+                "closed": {
+                  "column": "closed"
+                },
+                "companyName": {
+                  "column": "companyName"
+                },
+                "companyUrl": {
+                  "column": "companyUrl"
+                },
+                "contractType": {
+                  "column": "contractType"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "descriptionHtml": {
+                  "column": "descriptionHtml"
+                },
+                "descriptionText": {
+                  "column": "descriptionText"
+                },
+                "experienceLevel": {
+                  "column": "experienceLevel"
+                },
+                "fieldSources": {
+                  "column": "fieldSources"
+                },
+                "firstSeenAt": {
+                  "column": "firstSeenAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "jobKey": {
+                  "column": "jobKey"
+                },
+                "kind": {
+                  "column": "kind"
+                },
+                "lastSeenAt": {
+                  "column": "lastSeenAt"
+                },
+                "location": {
+                  "column": "location"
+                },
+                "mergedIntoId": {
+                  "column": "mergedIntoId"
+                },
+                "normalizerVersion": {
+                  "column": "normalizerVersion"
+                },
+                "posterName": {
+                  "column": "posterName"
+                },
+                "posterProfileUrl": {
+                  "column": "posterProfileUrl"
+                },
+                "posterType": {
+                  "column": "posterType"
+                },
+                "postingUrl": {
+                  "column": "postingUrl"
+                },
+                "processedAt": {
+                  "column": "processedAt"
+                },
+                "processingAttempts": {
+                  "column": "processingAttempts"
+                },
+                "processingError": {
+                  "column": "processingError"
+                },
+                "processingReason": {
+                  "column": "processingReason"
+                },
+                "processingRequestedAt": {
+                  "column": "processingRequestedAt"
+                },
+                "processingStatus": {
+                  "column": "processingStatus"
+                },
+                "publishedAt": {
+                  "column": "publishedAt"
+                },
+                "salaryCurrency": {
+                  "column": "salaryCurrency"
+                },
+                "salaryMax": {
+                  "column": "salaryMax"
+                },
+                "salaryMin": {
+                  "column": "salaryMin"
+                },
+                "salaryPeriod": {
+                  "column": "salaryPeriod"
+                },
+                "salaryText": {
+                  "column": "salaryText"
+                },
+                "sector": {
+                  "column": "sector"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "title": {
+                  "column": "title"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "normalized_jobs"
+            }
+          },
+          "NormalizedJobSource": {
+            "fields": {
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "jobId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "linkedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "normalizedVersionId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "rawItemId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "job": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "jobId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "NormalizedJob",
+                  "namespace": "public"
+                }
+              },
+              "normalizedVersion": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "normalizedVersionId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "NormalizedVersion",
+                  "namespace": "public"
+                }
+              },
+              "rawItem": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "rawItemId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "RawItem",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "id": {
+                  "column": "id"
+                },
+                "jobId": {
+                  "column": "jobId"
+                },
+                "linkedAt": {
+                  "column": "linkedAt"
+                },
+                "normalizedVersionId": {
+                  "column": "normalizedVersionId"
+                },
+                "rawItemId": {
+                  "column": "rawItemId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "normalized_job_sources"
+            }
+          },
+          "NormalizedVersion": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "jobKey": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "normalizerVersion": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "rawVersionId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "reason": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "record": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "rawVersion": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "rawVersionId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "RawItemVersion",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "jobKey": {
+                  "column": "jobKey"
+                },
+                "normalizerVersion": {
+                  "column": "normalizerVersion"
+                },
+                "rawVersionId": {
+                  "column": "rawVersionId"
+                },
+                "reason": {
+                  "column": "reason"
+                },
+                "record": {
+                  "column": "record"
+                },
+                "status": {
+                  "column": "status"
+                }
+              },
+              "namespaceId": "public",
+              "table": "normalized_versions"
             }
           },
           "Profile": {
@@ -2772,6 +3434,553 @@
                 }
               ]
             },
+            "normalized_job_sources": {
+              "columns": {
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "jobId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "linkedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "normalizedVersionId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "rawItemId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "normalized_job_sources_jobId_idx_623c8f77"
+                  },
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "jobId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "normalized_job_sources"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "normalized_jobs"
+                  }
+                },
+                {
+                  "index": {
+                    "unique": [
+                      "rawItemId"
+                    ]
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "rawItemId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "normalized_job_sources"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "raw_items"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "normalized_job_sources_normalizedVersionId_idx_e69af444"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "normalizedVersionId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "normalized_job_sources"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "normalized_versions"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "jobId"
+                  ],
+                  "name": "normalized_job_sources_jobId_idx_623c8f77",
+                  "prefix": "normalized_job_sources_jobId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "normalizedVersionId"
+                  ],
+                  "name": "normalized_job_sources_normalizedVersionId_idx_e69af444",
+                  "prefix": "normalized_job_sources_normalizedVersionId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "rawItemId"
+                  ]
+                }
+              ]
+            },
+            "normalized_jobs": {
+              "checks": [
+                {
+                  "expression": "kind IN ('job', 'post')",
+                  "name": "normalized_jobs_kind_e26544db",
+                  "prefix": "normalized_jobs_kind"
+                },
+                {
+                  "expression": "(status = 'merged') = (\"mergedIntoId\" IS NOT NULL)",
+                  "name": "normalized_jobs_merged_into_49ee8511",
+                  "prefix": "normalized_jobs_merged_into"
+                },
+                {
+                  "expression": "\"processingAttempts\" >= 0",
+                  "name": "normalized_jobs_processing_attempts_bc077913",
+                  "prefix": "normalized_jobs_processing_attempts"
+                },
+                {
+                  "expression": "\"processingReason\" IS NULL OR \"processingReason\" IN ('new', 'reopened')",
+                  "name": "normalized_jobs_processing_reason_0a1726bc",
+                  "prefix": "normalized_jobs_processing_reason"
+                },
+                {
+                  "expression": "\"processingStatus\" IS NULL OR \"processingStatus\" IN ('pending', 'processing', 'processed', 'failed')",
+                  "name": "normalized_jobs_processing_status_eba7bd28",
+                  "prefix": "normalized_jobs_processing_status"
+                },
+                {
+                  "expression": "\"firstSeenAt\" <= \"lastSeenAt\"",
+                  "name": "normalized_jobs_seen_order_9de70718",
+                  "prefix": "normalized_jobs_seen_order"
+                },
+                {
+                  "expression": "status IN ('active', 'merged')",
+                  "name": "normalized_jobs_status_e7531d73",
+                  "prefix": "normalized_jobs_status"
+                }
+              ],
+              "columns": {
+                "applyUrl": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "closed": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "nullable": false
+                },
+                "companyName": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "companyUrl": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "contractType": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "descriptionHtml": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "descriptionText": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "experienceLevel": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "fieldSources": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": false
+                },
+                "firstSeenAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "jobKey": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "kind": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "lastSeenAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "location": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "mergedIntoId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "normalizerVersion": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "posterName": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "posterProfileUrl": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "posterType": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "postingUrl": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "processedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "processingAttempts": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 0
+                  },
+                  "nullable": false
+                },
+                "processingError": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "processingReason": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "processingRequestedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "processingStatus": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "publishedAt": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "salaryCurrency": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "salaryMax": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "salaryMin": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "salaryPeriod": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "salaryText": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "sector": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "title": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "normalized_jobs_mergedIntoId_idx_470bd53d"
+                  },
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "mergedIntoId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "normalized_jobs"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "normalized_jobs"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "mergedIntoId"
+                  ],
+                  "name": "normalized_jobs_mergedIntoId_idx_470bd53d",
+                  "prefix": "normalized_jobs_mergedIntoId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "processingStatus",
+                    "processingRequestedAt"
+                  ],
+                  "name": "normalized_jobs_processing_queue",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "jobKey"
+                  ]
+                }
+              ]
+            },
+            "normalized_versions": {
+              "checks": [
+                {
+                  "expression": "status IN ('valid', 'invalid')",
+                  "name": "normalized_versions_status_6e0d386f",
+                  "prefix": "normalized_versions_status"
+                },
+                {
+                  "expression": "(status = 'valid') = (record IS NOT NULL AND \"jobKey\" IS NOT NULL)",
+                  "name": "normalized_versions_valid_record_0400e26d",
+                  "prefix": "normalized_versions_valid_record"
+                }
+              ],
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "jobKey": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "normalizerVersion": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "rawVersionId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "reason": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "record": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": true
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "normalized_versions_rawVersionId_idx_db7572f8"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "rawVersionId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "normalized_versions"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "raw_item_versions"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "rawVersionId"
+                  ],
+                  "name": "normalized_versions_rawVersionId_idx_db7572f8",
+                  "prefix": "normalized_versions_rawVersionId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "rawVersionId",
+                    "normalizerVersion"
+                  ]
+                }
+              ]
+            },
             "profile_query_search_builders": {
               "columns": {
                 "createdAt": {
@@ -4417,10 +5626,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "71f86469bdf4706dad90b99722716a5ad1b9e428c15e1aa3a09ec99a443fbe95"
+    "storageHash": "d63d407c65b181083ae45e022582f6caa9704846c24a2c204a4612ba8adfc38d"
   },
   "execution": {
-    "executionHash": "3ba1dab1683de7281a517d71cd03146543e895976fad0b674c445d72df03c051",
+    "executionHash": "0fc17b66822d3c35eae48bf17625f9a5d6187dcfed6118ce7301aec2b41f667b",
     "mutations": {
       "defaults": [
         {
@@ -4457,6 +5666,54 @@
           "ref": {
             "entry": "contacts",
             "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv7",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "normalized_job_sources",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv7",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "normalized_jobs",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "normalized_jobs",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv7",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "normalized_versions",
+            "field": "id",
             "namespace": "public"
           }
         },

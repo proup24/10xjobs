@@ -446,3 +446,98 @@ model RawItemSighting {
   @@index([rawItemId])
   @@map("raw_item_sightings")
 }
+
+// One raw version mapped to the unified job format by a given normalizer version.
+// Deterministic: rebuilt from the raw version whenever the normalizer changes.
+model NormalizedVersion {
+  id                Uuid                 @id @onCreate(uuid(7))
+  rawVersionId      Uuid
+  rawVersion        RawItemVersion       @relation(fields: [rawVersionId], references: [id], onDelete: Cascade)
+  normalizerVersion Int
+  status            String
+  reason            String?
+  record            Jsonb?
+  jobKey            String?
+  createdAt         TimestamptzJsDate(3) @default(now())
+
+  @@check(expression: sql`status IN ('valid', 'invalid')`, name: "normalized_versions_status")
+  @@check(expression: sql`(status = 'valid') = (record IS NOT NULL AND "jobKey" IS NOT NULL)`, name: "normalized_versions_valid_record")
+  @@unique([rawVersionId, normalizerVersion])
+  @@map("normalized_versions")
+}
+
+// One job, unified from every raw item whose job key (its canonical apply URL)
+// matches. Fields are merged with the employer's ATS posting winning. Process
+// reads these rows; ingest only ever sets processingStatus to 'pending'.
+// Shared, not workspace-scoped, like the raw tables it is derived from.
+model NormalizedJob {
+  id                    Uuid                  @id @onCreate(uuid(7))
+  jobKey                String
+  kind                  String
+  status                String
+  // Set when the job lost its last source to another job; never deleted.
+  mergedIntoId          Uuid?
+  mergedInto            NormalizedJob?        @relation(fields: [mergedIntoId], references: [id], onDelete: Restrict)
+  title                 String?
+  companyName           String?
+  companyUrl            String?
+  location              String?
+  contractType          String?
+  experienceLevel       String?
+  sector                String?
+  salaryText            String?
+  // Whole currency units.
+  salaryMin             Int?
+  salaryMax             Int?
+  salaryCurrency        String?
+  salaryPeriod          String?
+  // YYYY-MM-DD.
+  publishedAt           String?
+  descriptionHtml       String?
+  descriptionText       String?
+  applyUrl              String?
+  postingUrl            String
+  posterName            String?
+  posterProfileUrl      String?
+  posterType            String?
+  closed                Boolean
+  // Which raw item each field came from.
+  fieldSources          Jsonb
+  firstSeenAt           TimestamptzJsDate(3)
+  lastSeenAt            TimestamptzJsDate(3)
+  processingStatus      String?
+  processingReason      String?
+  processingRequestedAt TimestamptzJsDate(3)?
+  processingAttempts    Int                   @default(0)
+  processingError       String?
+  processedAt           TimestamptzJsDate(3)?
+  normalizerVersion     Int
+  +Timestamps
+
+  @@check(expression: sql`kind IN ('job', 'post')`, name: "normalized_jobs_kind")
+  @@check(expression: sql`status IN ('active', 'merged')`, name: "normalized_jobs_status")
+  @@check(expression: sql`(status = 'merged') = ("mergedIntoId" IS NOT NULL)`, name: "normalized_jobs_merged_into")
+  @@check(expression: sql`"processingStatus" IS NULL OR "processingStatus" IN ('pending', 'processing', 'processed', 'failed')`, name: "normalized_jobs_processing_status")
+  @@check(expression: sql`"processingReason" IS NULL OR "processingReason" IN ('new', 'reopened')`, name: "normalized_jobs_processing_reason")
+  @@check(expression: sql`"processingAttempts" >= 0`, name: "normalized_jobs_processing_attempts")
+  @@check(expression: sql`"firstSeenAt" <= "lastSeenAt"`, name: "normalized_jobs_seen_order")
+  @@unique([jobKey])
+  @@index([processingStatus, processingRequestedAt], map: "normalized_jobs_processing_queue")
+  @@map("normalized_jobs")
+}
+
+// Which job a raw item belongs to (exactly one), decided by its latest version.
+model NormalizedJobSource {
+  id                  Uuid                 @id @onCreate(uuid(7))
+  jobId               Uuid
+  job                 NormalizedJob        @relation(fields: [jobId], references: [id], onDelete: Restrict)
+  rawItemId           Uuid
+  rawItem             RawItem              @relation(fields: [rawItemId], references: [id], onDelete: Cascade)
+  normalizedVersionId Uuid
+  normalizedVersion   NormalizedVersion    @relation(fields: [normalizedVersionId], references: [id], onDelete: Cascade)
+  linkedAt            TimestamptzJsDate(3)
+
+  @@unique([rawItemId])
+  @@index([jobId])
+  @@map("normalized_job_sources")
+}

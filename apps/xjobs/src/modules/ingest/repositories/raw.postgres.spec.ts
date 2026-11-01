@@ -138,7 +138,7 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
   beforeEach(async () => {
     await db.execute(
       db.raw
-        .sql`TRUNCATE raw_item_sightings, raw_item_versions, raw_items, collection_batches, search_segment_runs, query_search_builder CASCADE`
+        .sql`TRUNCATE normalized_job_sources, normalized_jobs, normalized_versions, raw_item_sightings, raw_item_versions, raw_items, collection_batches, search_segment_runs, query_search_builder CASCADE`
         .affectedCount()
         .build(),
     );

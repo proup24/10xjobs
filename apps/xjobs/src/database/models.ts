@@ -19,6 +19,9 @@ export type CollectionBatchRow = Row<Models.public_CollectionBatch>;
 export type RawItemRow = Row<Models.public_RawItem>;
 export type RawItemVersionRow = Row<Models.public_RawItemVersion>;
 export type RawItemSightingRow = Row<Models.public_RawItemSighting>;
+export type NormalizedVersionRow = Row<Models.public_NormalizedVersion>;
+export type NormalizedJobRow = Row<Models.public_NormalizedJob>;
+export type NormalizedJobSourceRow = Row<Models.public_NormalizedJobSource>;
 /** An address as callers write it; optional parts may be left out. */
 export type Address = {
   line1: string;
