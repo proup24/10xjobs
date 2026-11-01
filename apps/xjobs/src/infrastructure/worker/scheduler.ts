@@ -1,8 +1,10 @@
 import type { Queue } from 'bullmq';
-import { COLLECT_JOB } from 'src/infrastructure/jobs/collection';
+import {
+  COLLECT_JOB,
+  type ChannelJobConfig,
+} from 'src/infrastructure/jobs/steps/collect';
 import { SWEEP_JOB } from 'src/infrastructure/jobs/steps/ingest/queue.service';
 import { ingestConfig } from 'src/modules/ingest';
-import type { ChannelJobConfig } from 'src/infrastructure/jobs/config';
 
 /** Makes the queue's cron scheduler match the channel's config; idempotent. */
 export async function syncCollectionScheduler(

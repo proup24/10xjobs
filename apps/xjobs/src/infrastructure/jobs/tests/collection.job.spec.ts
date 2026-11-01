@@ -11,11 +11,13 @@ import { ingestConfig, parseBatchFile } from 'src/modules/ingest';
 import type { QuerySearchService } from 'src/modules/queries';
 import { FakeSearchSegmentsRepository } from 'src/modules/segments/testing/fakes';
 import { MemoryStorageService } from 'src/modules/storage/testing';
-import { AshbyCollectionJob } from '../collection/ashby.job';
-import { GreenhouseCollectionJob } from '../collection/greenhouse.job';
-import { LinkedinJobBoardCollectionJob } from '../collection/linkedin-job-board.job';
-import { LinkedinPostsCollectionJob } from '../collection/linkedin-posts.job';
-import { channelJobsConfig } from '../config';
+import {
+  AshbyCollectionJob,
+  channelJobsConfig,
+  GreenhouseCollectionJob,
+  LinkedinJobBoardCollectionJob,
+  LinkedinPostsCollectionJob,
+} from '../steps/collect';
 import type { IngestQueue } from '../steps/ingest/queue.service';
 
 let n = 0;
@@ -101,7 +103,16 @@ function setup(
     .mockImplementation(() => undefined);
   vi.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
   vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
-  return { ashby, queries, collector, segments, storage, ingestQueue, order, warn };
+  return {
+    ashby,
+    queries,
+    collector,
+    segments,
+    storage,
+    ingestQueue,
+    order,
+    warn,
+  };
 }
 
 afterEach(() => vi.restoreAllMocks());
@@ -172,8 +183,10 @@ describe('CollectionJob.run', () => {
 
   it('stores the untouched results, then records run, batch and cursors, then enqueues', async () => {
     const rows = builders(2);
-    const { ashby, segments, storage, ingestQueue, order } = setup(rows, async (s) =>
-      resultFor(s, (id) => (id === rows[0].id ? [item(1), item(2)] : [])),
+    const { ashby, segments, storage, ingestQueue, order } = setup(
+      rows,
+      async (s) =>
+        resultFor(s, (id) => (id === rows[0].id ? [item(1), item(2)] : [])),
     );
     const summary = await ashby.run();
 

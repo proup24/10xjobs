@@ -1,5 +1,5 @@
 import { Channel } from 'src/common/enums';
-import { channelJobsConfig } from 'src/infrastructure/jobs/config';
+import { channelJobsConfig } from 'src/infrastructure/jobs/steps/collect';
 import { syncCollectionScheduler, syncSweepScheduler } from '../scheduler';
 
 describe('syncCollectionScheduler', () => {

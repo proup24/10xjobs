@@ -19,13 +19,13 @@ import {
   GreenhouseCollectionJob,
   LinkedinJobBoardCollectionJob,
   LinkedinPostsCollectionJob,
-} from 'src/infrastructure/jobs/collection';
-import { ingestWorkerConfig } from 'src/infrastructure/jobs/config';
+} from 'src/infrastructure/jobs/steps/collect';
 import {
   INGEST_QUEUE,
   IngestQueue,
-} from 'src/infrastructure/jobs/steps/ingest/queue.service';
-import { processIngestJob } from 'src/infrastructure/jobs/steps/ingest/processor';
+  ingestWorkerConfig,
+  processIngestJob,
+} from 'src/infrastructure/jobs/steps/ingest';
 import { INFRASTRUCTURE_QUEUE } from 'src/infrastructure/jobs/jobs.service';
 import { processInfrastructureJob } from 'src/infrastructure/jobs/processor';
 import { REDIS_SETTINGS } from 'src/infrastructure/redis/settings.module';

@@ -1,24 +1,24 @@
 import { Injectable } from '@nestjs/common';
 import { Channel } from 'src/common/enums';
 import {
-  AshbyCollector,
-  type BoardSearchRunConfig,
+  LinkedinPostsCollector,
+  type LinkedinPostsRunConfig,
 } from 'src/modules/collectors';
 import { QuerySearchService } from 'src/modules/queries';
 import { SearchSegmentsRepository } from 'src/modules/segments';
 import { StorageService } from 'src/modules/storage';
 import { channelJobsConfig } from '../config';
-import { IngestQueue } from '../steps';
-import { CollectionJob } from './collection.job';
+import { IngestQueue } from '../../ingest';
+import { CollectionJob } from '../collection.job';
 
 @Injectable()
-export class AshbyCollectionJob extends CollectionJob<BoardSearchRunConfig> {
-  readonly channel = Channel.ASHBY;
-  readonly queueName = 'collect-ashby';
-  readonly config = channelJobsConfig[Channel.ASHBY];
+export class LinkedinPostsCollectionJob extends CollectionJob<LinkedinPostsRunConfig> {
+  readonly channel = Channel.LINKEDIN_POSTS;
+  readonly queueName = 'collect-linkedin-posts';
+  readonly config = channelJobsConfig[Channel.LINKEDIN_POSTS];
 
   constructor(
-    collector: AshbyCollector,
+    collector: LinkedinPostsCollector,
     queries: QuerySearchService,
     segments: SearchSegmentsRepository,
     storage: StorageService,

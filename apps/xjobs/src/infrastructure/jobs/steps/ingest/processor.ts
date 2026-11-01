@@ -5,11 +5,7 @@ import {
   type RawStorageRepository,
   ingestConfig,
 } from 'src/modules/ingest';
-import {
-  INGEST_BATCH_JOB,
-  type IngestQueue,
-  SWEEP_JOB,
-} from './queue.service';
+import { INGEST_BATCH_JOB, type IngestQueue, SWEEP_JOB } from './queue.service';
 
 /** Stranded batches re-enqueued per sweep. */
 const SWEEP_LIMIT = 100;

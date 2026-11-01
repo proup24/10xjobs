@@ -7,10 +7,10 @@ import { RedisSettingsModule } from '../redis/settings.module';
 import {
   AshbyCollectionJob,
   GreenhouseCollectionJob,
+  IngestQueue,
   LinkedinJobBoardCollectionJob,
   LinkedinPostsCollectionJob,
-} from './collection';
-import { IngestQueue } from './steps';
+} from './steps';
 import { JobsService } from './jobs.service';
 
 const COLLECTION_JOBS = [

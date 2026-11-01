@@ -21,13 +21,17 @@ describe('processIngestJob', () => {
   it('ingests a batch, final only on its last attempt', async () => {
     const d = deps();
     await processIngestJob(job('ingest-batch', { batchId: 'b1' }), d as never);
-    expect(d.ingest.ingestBatch).toHaveBeenLastCalledWith('b1', { final: false });
+    expect(d.ingest.ingestBatch).toHaveBeenLastCalledWith('b1', {
+      final: false,
+    });
 
     await processIngestJob(
       job('ingest-batch', { batchId: 'b1' }, INGEST_ATTEMPTS - 1),
       d as never,
     );
-    expect(d.ingest.ingestBatch).toHaveBeenLastCalledWith('b1', { final: true });
+    expect(d.ingest.ingestBatch).toHaveBeenLastCalledWith('b1', {
+      final: true,
+    });
   });
 
   it('refuses a batch job without a batch id', async () => {
@@ -41,7 +45,8 @@ describe('processIngestJob', () => {
     const now = Date.now();
     await processIngestJob(job('sweep', {}), d as never);
 
-    const [olderThan, limit] = d.repo.listStalePending.mock.calls[0] as unknown as [Date, number];
+    const [olderThan, limit] = d.repo.listStalePending.mock
+      .calls[0] as unknown as [Date, number];
     expect(now - olderThan.getTime()).toBeGreaterThanOrEqual(
       ingestConfig.staleAfterMs - 1000,
     );

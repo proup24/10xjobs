@@ -22,7 +22,7 @@ import {
   segmentWindow,
 } from 'src/modules/segments';
 import type { StorageService } from 'src/modules/storage';
-import type { ChannelJobConfig } from '../../config';
+import type { ChannelJobConfig } from './config';
 import type { IngestQueue } from '../ingest';
 
 /** Scheduler id and job name of a channel's recurring collect job. */
@@ -180,8 +180,10 @@ export abstract class CollectionJob<R extends ActorRunConfig = ActorRunConfig> {
       unattributed: result.unattributed,
     };
     const itemCount =
-      [...result.itemsByQuery.values()].reduce((n, items) => n + items.length, 0) +
-      result.unattributed.length;
+      [...result.itemsByQuery.values()].reduce(
+        (n, items) => n + items.length,
+        0,
+      ) + result.unattributed.length;
     const storageKey = batchStorageKey(this.channel, window.until, runId);
     try {
       await this.storage.put(

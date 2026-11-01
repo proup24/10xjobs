@@ -1,5 +1,5 @@
 import { ServiceUnavailableException } from '@nestjs/common';
-import { HealthStatus } from './dto/health.response.dto';
+import { HealthStatus } from '../dto/health.response.dto';
 import { HealthController } from './health.controller';
 
 const up = { status: 'up', latencyMs: 1 } as const;

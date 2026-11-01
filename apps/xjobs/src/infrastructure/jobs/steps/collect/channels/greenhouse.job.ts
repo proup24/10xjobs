@@ -8,8 +8,8 @@ import { QuerySearchService } from 'src/modules/queries';
 import { SearchSegmentsRepository } from 'src/modules/segments';
 import { StorageService } from 'src/modules/storage';
 import { channelJobsConfig } from '../config';
-import { IngestQueue } from '../steps';
-import { CollectionJob } from './collection.job';
+import { IngestQueue } from '../../ingest';
+import { CollectionJob } from '../collection.job';
 
 @Injectable()
 export class GreenhouseCollectionJob extends CollectionJob<BoardSearchRunConfig> {
