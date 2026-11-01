@@ -6,6 +6,10 @@ import { JobsModule } from 'src/infrastructure/jobs/jobs.module';
 import { RedisSettingsModule } from 'src/infrastructure/redis/settings.module';
 import { IngestModule } from 'src/modules/ingest';
 import { StorageModule } from 'src/modules/storage';
+import { CollectionWorkerService } from './collection.service';
+import { InfrastructureWorkerService } from './infrastructure.service';
+import { IngestWorkerService } from './ingest.service';
+import { WorkerRuntimeService } from './runtime.service';
 import { WorkerService } from './worker.service';
 
 /**
@@ -27,6 +31,12 @@ import { WorkerService } from './worker.service';
     IngestModule,
     StorageModule,
   ],
-  providers: [WorkerService],
+  providers: [
+    WorkerService,
+    WorkerRuntimeService,
+    CollectionWorkerService,
+    IngestWorkerService,
+    InfrastructureWorkerService,
+  ],
 })
 export class WorkerModule {}
