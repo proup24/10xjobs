@@ -145,6 +145,13 @@ describe('channel selection', () => {
 });
 
 describe('CollectionService.collect', () => {
+  it('board discovery reads up to 10 Google pages', () => {
+    expect(channelJobsConfig[Channel.ASHBY].run.maxPagesPerQuery).toBe(10);
+    expect(channelJobsConfig[Channel.GREEN_HOUSE].run.maxPagesPerQuery).toBe(
+      10,
+    );
+  });
+
   it('runs the collector once per segment of up to 10 builders', async () => {
     const rows = builders(12);
     const { collection, queries, collector } = setup(rows);

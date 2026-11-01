@@ -78,7 +78,9 @@ export const channelJobsConfig = {
       maxRunChargeUsd: 0.5,
       site: 'job-boards.greenhouse.io',
       suffix: '',
-      maxPagesPerQuery: 3,
+      // Google serves 10 results per page (no `num=100` since Sept 2025);
+      // at 3 pages every query was truncated.
+      maxPagesPerQuery: 10,
     },
   },
   [Channel.ASHBY]: {
@@ -90,7 +92,9 @@ export const channelJobsConfig = {
       site: 'jobs.ashbyhq.com',
       suffix:
         '(intitle:engineer OR intitle:developer OR intitle:lead) -intitle:manager -intitle:director -intitle:intern -intitle:recruiter',
-      maxPagesPerQuery: 3,
+      // Google serves 10 results per page (no `num=100` since Sept 2025);
+      // at 3 pages every query was truncated.
+      maxPagesPerQuery: 10,
     },
   },
 } satisfies {
