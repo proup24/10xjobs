@@ -1,17 +1,18 @@
 import { Injectable } from '@nestjs/common';
+import { Channel } from 'src/common/enums';
 import type {
   LinkedinPostsRunConfig,
   RawCollectedItem,
   SegmentResult,
   SegmentSearch,
-} from '../../types/collector';
+} from '../types/collector';
 import {
   attribute,
   reachedChargeCap,
   record,
   text,
-} from '../../utils/collected-job';
-import { ApifyActorProvider } from './apify.provider';
+} from '../utils/collected-job';
+import { ApifyActorProvider } from './apify/apify.provider';
 
 /** The query a post was found by, as the actor echoes it. */
 function querySearch(item: unknown): string | null {
@@ -20,10 +21,11 @@ function querySearch(item: unknown): string | null {
 
 /** Apify trigger for LinkedIn posts: one actor run per search segment. */
 @Injectable()
-export class LinkedinPostSearchProvider {
+export class LinkedinPostsCollector {
+  readonly channel = Channel.LINKEDIN_POSTS;
   constructor(private readonly actor: ApifyActorProvider) {}
 
-  async search(
+  async collect(
     segment: SegmentSearch,
     config: LinkedinPostsRunConfig,
   ): Promise<SegmentResult> {

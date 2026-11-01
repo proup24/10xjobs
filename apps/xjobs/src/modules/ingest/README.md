@@ -14,6 +14,8 @@ Design: `docs/superpowers/specs/2026-10-31-ingest-raw-storage-design.md`.
    - it stores each valid item;
    - it sets the batch to `ingested` with a report, or `failed` with the reason.
 
+`BatchIngestService` coordinates status and retry decisions. `BatchFileReaderService` loads and validates stored files; `BatchItemWriterService` validates item identities, persists observations sequentially, and builds the report. These collaborators stay internal to `IngestModule`.
+
 The batch row is the source of truth for status. The queue message is only a nudge: a sweeper re-enqueues `pending` batches older than 10 minutes every 5 minutes.
 
 ## Statuses

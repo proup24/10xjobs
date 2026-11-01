@@ -12,6 +12,8 @@ import {
 } from 'src/modules/segments/repositories/segments.repository';
 import { MemoryStorageService } from 'src/modules/storage/testing';
 import { ingestConfig } from '../config';
+import { BatchFileReaderService } from '../services/batch-file-reader.service';
+import { BatchItemWriterService } from '../services/batch-item-writer.service';
 import { BatchIngestService } from '../services/batch.service';
 import type { BatchFile } from '../types';
 import { contentHash, serializeBatchFile, sourceKey } from '../utils';
@@ -244,7 +246,11 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
 
   it('ingests a stored batch once; a redelivered message changes nothing', async () => {
     const storage = new MemoryStorageService();
-    const service = new BatchIngestService(repo, storage);
+    const service = new BatchIngestService(
+      repo,
+      new BatchFileReaderService(storage),
+      new BatchItemWriterService(repo),
+    );
     const id = await batch();
     const row = await db.orm.public.CollectionBatch.where({ id }).first();
     const file: BatchFile = {

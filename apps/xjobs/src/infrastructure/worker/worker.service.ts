@@ -12,13 +12,11 @@ import type {
   RedisConfig,
   WorkerProcessEnvironmentVariables,
 } from 'src/config';
+import { Channel } from 'src/common/enums';
 import {
-  AshbyCollectionJob,
   COLLECT_JOB,
-  type CollectionJob,
-  GreenhouseCollectionJob,
-  LinkedinJobBoardCollectionJob,
-  LinkedinPostsCollectionJob,
+  CollectionService,
+  channelJobsConfig,
 } from 'src/infrastructure/jobs/steps/collect';
 import {
   INGEST_QUEUE,
@@ -47,7 +45,7 @@ const STARTUP_TIMEOUT_MS = 15000;
 @Injectable()
 export class WorkerService implements OnModuleInit, OnApplicationShutdown {
   private readonly logger = new Logger(WorkerService.name);
-  private readonly job?: CollectionJob;
+  private readonly channel?: Channel;
   private readonly role?: 'ingest';
   private connection?: Redis;
   private queue?: Queue;
@@ -58,20 +56,14 @@ export class WorkerService implements OnModuleInit, OnApplicationShutdown {
   constructor(
     @Inject(REDIS_SETTINGS) private readonly settings: RedisConfig,
     config: ConfigService<WorkerProcessEnvironmentVariables, true>,
-    ashby: AshbyCollectionJob,
-    greenhouse: GreenhouseCollectionJob,
-    linkedinJobBoard: LinkedinJobBoardCollectionJob,
-    linkedinPosts: LinkedinPostsCollectionJob,
+    private readonly collection: CollectionService,
     private readonly storage: StorageService,
     private readonly ingest: BatchIngestService,
     private readonly rawStorage: RawStorageRepository,
     private readonly ingestQueue: IngestQueue,
   ) {
     this.role = config.get('WORKER_ROLE', { infer: true });
-    const channel = config.get('WORKER_CHANNEL', { infer: true });
-    this.job = [ashby, greenhouse, linkedinJobBoard, linkedinPosts].find(
-      (job) => job.channel === channel,
-    );
+    this.channel = config.get('WORKER_CHANNEL', { infer: true });
   }
 
   async onModuleInit(): Promise<void> {
@@ -85,7 +77,8 @@ export class WorkerService implements OnModuleInit, OnApplicationShutdown {
       this.logger.warn('Worker Redis connection unavailable'),
     );
     if (this.role === 'ingest') await this.startIngest(this.connection);
-    else if (this.job) await this.startCollection(this.job, this.connection);
+    else if (this.channel)
+      await this.startCollection(this.channel, this.connection);
     else this.startInfrastructure(this.connection);
     if (this.worker) {
       this.worker.on('error', () =>
@@ -138,36 +131,37 @@ export class WorkerService implements OnModuleInit, OnApplicationShutdown {
   }
 
   private async startCollection(
-    job: CollectionJob,
+    channel: Channel,
     connection: Redis,
   ): Promise<void> {
     await this.storage.ensureBucket(ingestConfig.bucket);
-    this.queue = new Queue(job.queueName, {
+    const config = channelJobsConfig[channel];
+    this.queue = new Queue(config.queueName, {
       connection,
       prefix: this.settings.prefix,
     });
     this.queue.on('error', () => this.logger.warn('Queue operation failed'));
     await withTimeout(this.queue.waitUntilReady());
-    if ((await syncCollectionScheduler(this.queue, job.config)) === 'removed') {
+    if ((await syncCollectionScheduler(this.queue, config)) === 'removed') {
       this.active = false;
-      this.logger.log(`${job.channel} disabled; scheduler removed`);
+      this.logger.log(`${channel} disabled; scheduler removed`);
       return;
     }
     this.worker = new Worker(
-      job.queueName,
+      config.queueName,
       async (bullJob) => {
         if (bullJob.name !== COLLECT_JOB)
           throw new UnrecoverableError(`Unsupported job: ${bullJob.name}`);
-        return job.run();
+        return this.collection.collect(channel);
       },
       {
         connection,
         prefix: this.settings.prefix,
-        concurrency: job.config.concurrency,
+        concurrency: config.concurrency,
       },
     );
     this.logger.log(
-      `Collecting ${job.channel} on ${job.config.schedule.pattern} ${job.config.schedule.timezone}`,
+      `Collecting ${channel} on ${config.schedule.pattern} ${config.schedule.timezone}`,
     );
   }
 

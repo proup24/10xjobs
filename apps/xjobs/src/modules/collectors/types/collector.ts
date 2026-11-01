@@ -63,8 +63,3 @@ export interface BoardSearchRunConfig extends ActorRunConfig {
   suffix: string;
   maxPagesPerQuery: number;
 }
-
-export abstract class Collector<C extends ActorRunConfig = ActorRunConfig> {
-  abstract readonly channel: Channel;
-  abstract collect(segment: SegmentSearch, config: C): Promise<SegmentResult>;
-}

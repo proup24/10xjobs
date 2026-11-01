@@ -9,13 +9,13 @@ import type { ApifyActorProvider } from './apify/apify.provider';
 import {
   GoogleJobsSearchProvider,
   boardQuery,
-} from './apify/google_search.collector';
+} from './apify/google-search.provider';
 import {
-  LinkedinJobSearchProvider,
+  LinkedinJobBoardCollector,
   linkedinJobSearchUrl,
-} from './apify/linkedin.job_search.collector';
-import { LinkedinPostSearchProvider } from './apify/linkedin.post_search.collector';
-import { AshbyCollector } from './ashby.service';
+} from './linkedin-job-board.collector';
+import { LinkedinPostsCollector } from './linkedin-posts.collector';
+import { AshbyCollector } from './ashby.collector';
 import type { AshbyPostingProvider } from './extraction/ashby.provider';
 
 const until = new Date('2026-10-31T12:00:00Z');
@@ -127,7 +127,7 @@ describe('LinkedIn job board segment', () => {
       item(3, urlOf(2), 1),
       item(4, 'https://www.linkedin.com/jobs/search/?redirected', 1),
     ]);
-    const result = await new LinkedinJobSearchProvider(provider).search(
+    const result = await new LinkedinJobBoardCollector(provider).collect(
       segment(Channel.LINKEDIN_JOB_BOARD, queries),
       board,
     );
@@ -168,7 +168,7 @@ describe('LinkedIn job board segment', () => {
         .join('&');
     expect(echoed).not.toBe(urlOf(0));
     const { provider } = actor(() => [item(1, echoed, 1)]);
-    const result = await new LinkedinJobSearchProvider(provider).search(
+    const result = await new LinkedinJobBoardCollector(provider).collect(
       segment(Channel.LINKEDIN_JOB_BOARD, queries),
       board,
     );
@@ -183,7 +183,7 @@ describe('LinkedIn job board segment', () => {
     const { provider } = actor(() => [
       { ...item(1, urlOf(0), 0), scrapingInfo: { inputUrl: urlOf(0) } },
     ]);
-    const result = await new LinkedinJobSearchProvider(provider).search(
+    const result = await new LinkedinJobBoardCollector(provider).collect(
       segment(Channel.LINKEDIN_JOB_BOARD, queries),
       board,
     );
@@ -191,14 +191,14 @@ describe('LinkedIn job board segment', () => {
   });
 
   it('reports the cost and whether the charge cap was reached', async () => {
-    const capped = await new LinkedinJobSearchProvider(
+    const capped = await new LinkedinJobBoardCollector(
       actor(() => [], 0.96).provider,
-    ).search(segment(Channel.LINKEDIN_JOB_BOARD, queries), board);
+    ).collect(segment(Channel.LINKEDIN_JOB_BOARD, queries), board);
     expect(capped).toMatchObject({ costUsd: 0.96, capped: true });
 
-    const unknown = await new LinkedinJobSearchProvider(
+    const unknown = await new LinkedinJobBoardCollector(
       actor(() => [], null).provider,
-    ).search(segment(Channel.LINKEDIN_JOB_BOARD, queries), board);
+    ).collect(segment(Channel.LINKEDIN_JOB_BOARD, queries), board);
     expect(unknown).toMatchObject({ costUsd: null, capped: false });
   });
 });
@@ -227,7 +227,7 @@ describe('LinkedIn posts segment', () => {
       post('8', queries[1].keyword),
       post('9', 'unknown query'),
     ]);
-    const result = await new LinkedinPostSearchProvider(provider).search(
+    const result = await new LinkedinPostsCollector(provider).collect(
       segment(Channel.LINKEDIN_POSTS, queries),
       posts,
     );

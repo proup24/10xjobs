@@ -1,7 +1,6 @@
-export * from './channels';
 export {
   COLLECT_JOB,
-  CollectionJob,
+  CollectionService,
   type CollectionSummary,
-} from './collection.job';
+} from './collection.service';
 export * from './config';

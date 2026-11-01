@@ -9,6 +9,7 @@ import type { WindowConfig } from 'src/modules/segments';
 
 /** How one channel's collection job runs. */
 export interface ChannelJobConfig<R extends ActorRunConfig = ActorRunConfig> {
+  queueName: string;
   /** A disabled channel's worker removes its schedule and exits. */
   enabled: boolean;
   /** Cron pattern for the recurring collect job. */
@@ -52,6 +53,7 @@ const daily = {
 /** One dedicated config per channel job; actors and caps carried over from career-hub. */
 export const channelJobsConfig = {
   [Channel.LINKEDIN_JOB_BOARD]: {
+    queueName: 'collect-linkedin-job-board',
     ...hourly,
     run: {
       actor: 'bebity/linkedin-jobs-scraper',
@@ -60,6 +62,7 @@ export const channelJobsConfig = {
     },
   },
   [Channel.LINKEDIN_POSTS]: {
+    queueName: 'collect-linkedin-posts',
     ...hourly,
     run: {
       actor: 'harvestapi/linkedin-post-search',
@@ -68,16 +71,18 @@ export const channelJobsConfig = {
     },
   },
   [Channel.GREEN_HOUSE]: {
+    queueName: 'collect-greenhouse',
     ...daily,
     run: {
       actor: 'apify/google-search-scraper',
       maxRunChargeUsd: 0.5,
-      site: 'greenhouse.io',
+      site: 'job-boards.greenhouse.io',
       suffix: '',
       maxPagesPerQuery: 3,
     },
   },
   [Channel.ASHBY]: {
+    queueName: 'collect-ashby',
     ...daily,
     run: {
       actor: 'apify/google-search-scraper',

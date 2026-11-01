@@ -8,6 +8,8 @@ import {
 } from '../repositories/raw.repository';
 import type { BatchFile, BatchReport, BatchStatus } from '../types';
 import { serializeBatchFile } from '../utils';
+import { BatchFileReaderService } from './batch-file-reader.service';
+import { BatchItemWriterService } from './batch-item-writer.service';
 import { BatchIngestService } from './batch.service';
 
 const job = (id: string) => ({
@@ -103,7 +105,11 @@ describe('BatchIngestService', () => {
   beforeEach(() => {
     repo = new FakeRepository();
     storage = new MemoryStorageService();
-    service = new BatchIngestService(repo, storage);
+    service = new BatchIngestService(
+      repo,
+      new BatchFileReaderService(storage),
+      new BatchItemWriterService(repo),
+    );
   });
 
   it('saves every item with its query, rank and the batch observation time', async () => {
@@ -199,11 +205,9 @@ describe('BatchIngestService', () => {
   it('fails a channel mismatch without saving items or consuming a retry', async () => {
     await store(file());
     const key = repo.batches.get('b1')!.storageKey;
-    await storage.put(
-      ingestConfig.bucket,
-      key,
-      serializeBatchFile(file({ channel: Channel.LINKEDIN_POSTS })),
-    );
+    storage.objects
+      .get(ingestConfig.bucket)!
+      .set(key, serializeBatchFile(file({ channel: Channel.LINKEDIN_POSTS })));
 
     expect(await service.ingestBatch('b1', { final: false })).toBeNull();
     expect(repo.batches.get('b1')!.status).toBe('failed');

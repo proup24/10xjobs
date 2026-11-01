@@ -1,18 +1,19 @@
 import { Injectable } from '@nestjs/common';
+import { Channel } from 'src/common/enums';
 import type {
   LinkedinJobBoardRunConfig,
   RawCollectedItem,
   SegmentResult,
   SegmentSearch,
-} from '../../types/collector';
+} from '../types/collector';
 import {
   attribute,
   rankOf,
   reachedChargeCap,
   record,
   text,
-} from '../../utils/collected-job';
-import { ApifyActorProvider } from './apify.provider';
+} from '../utils/collected-job';
+import { ApifyActorProvider } from './apify/apify.provider';
 
 /** LinkedIn has no `GLOBAL` location; its worldwide search is `Worldwide`. */
 function linkedinLocation(value: unknown): string | null {
@@ -75,10 +76,11 @@ function scrapingInfo(item: unknown): {
 
 /** Apify trigger for the LinkedIn job board: one actor run per search segment. */
 @Injectable()
-export class LinkedinJobSearchProvider {
+export class LinkedinJobBoardCollector {
+  readonly channel = Channel.LINKEDIN_JOB_BOARD;
   constructor(private readonly actor: ApifyActorProvider) {}
 
-  async search(
+  async collect(
     segment: SegmentSearch,
     config: LinkedinJobBoardRunConfig,
   ): Promise<SegmentResult> {

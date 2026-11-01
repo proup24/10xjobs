@@ -2,26 +2,23 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Channel } from 'src/common/enums';
 import {
   type BoardSearchRunConfig,
-  Collector,
   type SegmentResult,
   type SegmentSearch,
 } from '../types/collector';
-import { GoogleJobsSearchProvider } from './apify/google_search.collector';
+import { GoogleJobsSearchProvider } from './apify/google-search.provider';
 import { withPostings } from './board-postings';
-import { GreenhousePostingProvider } from './extraction/greenhouse.provider';
+import { AshbyPostingProvider } from './extraction/ashby.provider';
 
-/** Greenhouse postings: discovered through Google, fetched from the board's public API. */
+/** Ashby postings: discovered through Google, fetched from the board's public API. */
 @Injectable()
-export class GreenhouseCollector extends Collector<BoardSearchRunConfig> {
-  readonly channel = Channel.GREEN_HOUSE;
-  private readonly logger = new Logger(GreenhouseCollector.name);
+export class AshbyCollector {
+  readonly channel = Channel.ASHBY;
+  private readonly logger = new Logger(AshbyCollector.name);
 
   constructor(
     private readonly discovery: GoogleJobsSearchProvider,
-    private readonly postings: GreenhousePostingProvider,
-  ) {
-    super();
-  }
+    private readonly postings: AshbyPostingProvider,
+  ) {}
 
   async collect(
     segment: SegmentSearch,

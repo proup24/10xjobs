@@ -2,7 +2,6 @@ import { Logger } from '@nestjs/common';
 import { Arrangement, Channel, Region, SkillDomain } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
 import type {
-  AshbyCollector,
   RawCollectedItem,
   SegmentResult,
   SegmentSearch,
@@ -11,13 +10,7 @@ import { ingestConfig, parseBatchFile } from 'src/modules/ingest';
 import type { QuerySearchService } from 'src/modules/queries';
 import { FakeSearchSegmentsRepository } from 'src/modules/segments/testing/fakes';
 import { MemoryStorageService } from 'src/modules/storage/testing';
-import {
-  AshbyCollectionJob,
-  channelJobsConfig,
-  GreenhouseCollectionJob,
-  LinkedinJobBoardCollectionJob,
-  LinkedinPostsCollectionJob,
-} from '../steps/collect';
+import { CollectionService, channelJobsConfig } from '../steps/collect';
 import type { IngestQueue } from '../steps/ingest/queue.service';
 
 let n = 0;
@@ -63,14 +56,20 @@ function setup(
   rows: QuerySearchBuilderRow[],
   collect: (segment: SegmentSearch) => Promise<SegmentResult> = async (s) =>
     resultFor(s),
+  channel: Channel = Channel.ASHBY,
 ) {
   const queries = { listActive: vi.fn(async () => rows) };
-  const collector = {
-    channel: Channel.ASHBY,
-    collect: vi.fn((segment: SegmentSearch, _config: unknown) =>
-      collect(segment),
-    ),
-  };
+  const collectors = Object.fromEntries(
+    Object.values(Channel).map((value) => [
+      value,
+      {
+        collect: vi.fn((segment: SegmentSearch, _config: unknown) =>
+          collect(segment),
+        ),
+      },
+    ]),
+  );
+  const collector = collectors[channel];
   const segments = new FakeSearchSegmentsRepository();
   const storage = new MemoryStorageService();
   const order: string[] = [];
@@ -91,8 +90,11 @@ function setup(
       order.push('enqueue');
     }),
   };
-  const ashby = new AshbyCollectionJob(
-    collector as unknown as AshbyCollector,
+  const collection = new CollectionService(
+    collectors[Channel.ASHBY] as never,
+    collectors[Channel.GREEN_HOUSE] as never,
+    collectors[Channel.LINKEDIN_JOB_BOARD] as never,
+    collectors[Channel.LINKEDIN_POSTS] as never,
     queries as unknown as QuerySearchService,
     segments,
     storage,
@@ -104,7 +106,8 @@ function setup(
   vi.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
   vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
   return {
-    ashby,
+    collection,
+    collectors,
     queries,
     collector,
     segments,
@@ -117,42 +120,35 @@ function setup(
 
 afterEach(() => vi.restoreAllMocks());
 
-describe('each channel has its own collection job', () => {
-  it.each([
-    [
-      LinkedinJobBoardCollectionJob,
-      Channel.LINKEDIN_JOB_BOARD,
-      'collect-linkedin-job-board',
-    ],
-    [
-      LinkedinPostsCollectionJob,
-      Channel.LINKEDIN_POSTS,
-      'collect-linkedin-posts',
-    ],
-    [GreenhouseCollectionJob, Channel.GREEN_HOUSE, 'collect-greenhouse'],
-    [AshbyCollectionJob, Channel.ASHBY, 'collect-ashby'],
-  ] as const)(
-    '%o collects %s on queue %s with its own config',
-    (Job, channel, queueName) => {
-      const instance = new Job(
-        { channel } as never,
-        {} as never,
-        new FakeSearchSegmentsRepository(),
-        new MemoryStorageService(),
-        {} as never,
+describe('channel selection', () => {
+  it.each(Object.values(Channel))(
+    'collects %s with its matching collector and limits',
+    async (channel) => {
+      const { collection, collectors, queries } = setup(
+        builders(1, { channel }),
+        undefined,
+        channel,
       );
-      expect(instance.channel).toBe(channel);
-      expect(instance.queueName).toBe(queueName);
-      expect(instance.config).toBe(channelJobsConfig[channel]);
+      const summary = await collection.collect(channel);
+      expect(summary).toMatchObject({ channel, batches: 1, segmentsFailed: 0 });
+      expect(queries.listActive).toHaveBeenCalledWith(channel);
+      for (const other of Object.values(Channel)) {
+        if (other === channel) {
+          expect(collectors[other].collect).toHaveBeenCalledWith(
+            expect.objectContaining({ channel }),
+            channelJobsConfig[channel].run,
+          );
+        } else expect(collectors[other].collect).not.toHaveBeenCalled();
+      }
     },
   );
 });
 
-describe('CollectionJob.run', () => {
+describe('CollectionService.collect', () => {
   it('runs the collector once per segment of up to 10 builders', async () => {
     const rows = builders(12);
-    const { ashby, queries, collector } = setup(rows);
-    const summary = await ashby.run();
+    const { collection, queries, collector } = setup(rows);
+    const summary = await collection.collect(Channel.ASHBY);
 
     expect(queries.listActive).toHaveBeenCalledWith(Channel.ASHBY);
     expect(collector.collect).toHaveBeenCalledTimes(2);
@@ -183,12 +179,12 @@ describe('CollectionJob.run', () => {
 
   it('stores the untouched results, then records run, batch and cursors, then enqueues', async () => {
     const rows = builders(2);
-    const { ashby, segments, storage, ingestQueue, order } = setup(
+    const { collection, segments, storage, ingestQueue, order } = setup(
       rows,
       async (s) =>
         resultFor(s, (id) => (id === rows[0].id ? [item(1), item(2)] : [])),
     );
-    const summary = await ashby.run();
+    const summary = await collection.collect(Channel.ASHBY);
 
     expect(order).toEqual(['put', 'record', 'enqueue']);
     const [collected] = segments.collected;
@@ -229,10 +225,10 @@ describe('CollectionJob.run', () => {
   });
 
   it('keeps cursors and records a failed run when the batch cannot be stored', async () => {
-    const { ashby, segments, storage, ingestQueue } = setup(builders(2));
+    const { collection, segments, storage, ingestQueue } = setup(builders(2));
     storage.failNextPut = true;
 
-    await expect(ashby.run()).rejects.toThrow(/ASHBY/);
+    await expect(collection.collect(Channel.ASHBY)).rejects.toThrow(/ASHBY/);
     expect(segments.collected).toEqual([]);
     expect(segments.runs[0]).toMatchObject({ status: 'failed' });
     expect(segments.runs[0].error).toContain('storage unavailable');
@@ -241,12 +237,12 @@ describe('CollectionJob.run', () => {
   });
 
   it('keeps cursors when recording the run and batch fails', async () => {
-    const { ashby, segments, ingestQueue } = setup(builders(2));
+    const { collection, segments, ingestQueue } = setup(builders(2));
     vi.spyOn(segments, 'recordCollectedRun').mockRejectedValueOnce(
       new Error('db down'),
     );
 
-    await expect(ashby.run()).rejects.toThrow(/ASHBY/);
+    await expect(collection.collect(Channel.ASHBY)).rejects.toThrow(/ASHBY/);
     expect(segments.runs[0]).toMatchObject({ status: 'failed' });
     expect(segments.runs[0].error).toContain('db down');
     expect(segments.cursors.size).toBe(0);
@@ -254,18 +250,18 @@ describe('CollectionJob.run', () => {
   });
 
   it('writes no file when the collector fails', async () => {
-    const { ashby, storage } = setup(builders(1), async () => {
+    const { collection, storage } = setup(builders(1), async () => {
       throw new Error('Apify run FAILED');
     });
-    await expect(ashby.run()).rejects.toThrow();
+    await expect(collection.collect(Channel.ASHBY)).rejects.toThrow();
     expect(storage.keys(ingestConfig.bucket)).toEqual([]);
   });
 
   it('counts a segment as collected when only the enqueue fails', async () => {
-    const { ashby, segments, ingestQueue, warn } = setup(builders(1));
+    const { collection, segments, ingestQueue, warn } = setup(builders(1));
     ingestQueue.enqueue.mockRejectedValueOnce(new Error('redis down'));
 
-    const summary = await ashby.run();
+    const summary = await collection.collect(Channel.ASHBY);
     expect(summary).toMatchObject({ segmentsFailed: 0, batches: 1 });
     expect(segments.collected).toHaveLength(1);
     expect(warn).toHaveBeenCalled();
@@ -273,14 +269,14 @@ describe('CollectionJob.run', () => {
 
   it('records a succeeded run with the segment, window, cost and truncation', async () => {
     const rows = builders(2);
-    const { ashby, segments } = setup(rows, async (s) =>
+    const { collection, segments } = setup(rows, async (s) =>
       resultFor(s, undefined, {
         costUsd: 0.123456,
         truncatedQueryIds: [rows[1].id],
         fetched: 5,
       }),
     );
-    await ashby.run();
+    await collection.collect(Channel.ASHBY);
     expect(segments.collected).toHaveLength(1);
     expect(segments.collected[0]!.run).toMatchObject({
       channel: Channel.ASHBY,
@@ -302,11 +298,11 @@ describe('CollectionJob.run', () => {
       ...builders(1, { domain: SkillDomain.frontend }),
     ];
     let calls = 0;
-    const { ashby, segments, warn } = setup(rows, async (s) => {
+    const { collection, segments, warn } = setup(rows, async (s) => {
       if (calls++ === 0) throw new Error('Apify run FAILED');
       return resultFor(s);
     });
-    const summary = await ashby.run();
+    const summary = await collection.collect(Channel.ASHBY);
     expect(segments.runs.map((r) => r.status)).toEqual(['failed']);
     expect(segments.collected.map((c) => c.run.status)).toEqual(['succeeded']);
     expect(segments.runs[0].error).toContain('Apify run FAILED');
@@ -316,10 +312,10 @@ describe('CollectionJob.run', () => {
   });
 
   it('does not advance cursors of a run stopped by its charge cap', async () => {
-    const { ashby, segments } = setup(builders(2), async (s) =>
+    const { collection, segments } = setup(builders(2), async (s) =>
       resultFor(s, undefined, { capped: true }),
     );
-    await ashby.run();
+    await collection.collect(Channel.ASHBY);
     expect(segments.collected[0]!.run).toMatchObject({
       capped: true,
       status: 'succeeded',
@@ -329,15 +325,18 @@ describe('CollectionJob.run', () => {
   });
 
   it('fails the job only when every segment failed', async () => {
-    const { ashby } = setup(builders(2), async () => {
+    const { collection } = setup(builders(2), async () => {
       throw new Error('down');
     });
-    await expect(ashby.run()).rejects.toThrow(/ASHBY.*1/);
+    await expect(collection.collect(Channel.ASHBY)).rejects.toThrow(/ASHBY.*1/);
   });
 
   it('does nothing without active builders', async () => {
-    const { ashby, collector, segments } = setup([]);
-    expect(await ashby.run()).toMatchObject({ builders: 0, segments: 0 });
+    const { collection, collector, segments } = setup([]);
+    expect(await collection.collect(Channel.ASHBY)).toMatchObject({
+      builders: 0,
+      segments: 0,
+    });
     expect(collector.collect).not.toHaveBeenCalled();
     expect(segments.runs).toEqual([]);
     expect(segments.collected).toEqual([]);

@@ -8,7 +8,7 @@ import {
 import type {
   DiscoveryHit,
   SegmentDiscovery,
-} from './apify/google_search.collector';
+} from './apify/google-search.provider';
 
 /** Postings fetched at once from the board's public API. */
 const POSTING_CONCURRENCY = 4;
