@@ -20,6 +20,7 @@ import type { BatchFile } from '../types';
 import { contentHash, serializeBatchFile, sourceKey } from '../utils';
 import ashbyFailed from '../utils/fixtures/ashby-failed.json';
 import ashby from '../utils/fixtures/ashby.json';
+import greenhouse from '../utils/fixtures/greenhouse.json';
 import linkedinJob from '../utils/fixtures/linkedin-job.json';
 import {
   PrismaRawStorageRepository,
@@ -608,6 +609,69 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
       expect(await db.orm.public.NormalizedVersion.all()).toEqual([
         expect.objectContaining({ status: 'invalid', record: null }),
       ]);
+    });
+
+    it('keeps a job for a salary too large for its column, without the salary', async () => {
+      const result = await save(
+        liJob('4483900001', {
+          salary: 'VND 3,000,000,000/yr',
+          salaryMin: 3e9,
+          salaryMax: 4e9,
+          salaryCurrency: 'VND',
+          salaryPeriod: 'yr',
+        }),
+        t1,
+      );
+      expect(result).toMatchObject({ newItem: true, job: { created: true } });
+      expect((await jobs())[0]).toMatchObject({
+        salaryText: 'VND 3,000,000,000/yr',
+        salaryMin: null,
+        salaryMax: null,
+      });
+    });
+
+    it('stores the raw item and its job when a description holds an unpaired surrogate entity', async () => {
+      const result = await save(
+        {
+          ...greenhouse,
+          posting: {
+            ...greenhouse.posting,
+            content: '&lt;p&gt;bad &amp;#xD800; char&lt;/p&gt;&#xD800;',
+          },
+        },
+        t1,
+        Channel.GREEN_HOUSE,
+      );
+      expect(result).toMatchObject({ newItem: true, job: { created: true } });
+      expect(await db.orm.public.RawItem.all()).toHaveLength(1);
+    });
+
+    it('never leaves an active job without sources when a rebuild races a move', async () => {
+      for (let round = 0; round < 5; round++) {
+        const id = `44839500${round}`;
+        await save(liJob(id, { applyType: 'EASY_APPLY', applyUrl: '' }), t1);
+        await Promise.all([
+          save(
+            liJob(id, { applyUrl: `https://acme.com/jobs/7777${round}` }),
+            t2,
+          ),
+          new RenormalizeService({ db } as DatabaseService).run(),
+        ]);
+      }
+      const linked = new Set((await sources()).map((s) => s.jobId));
+      const ghosts = (await jobs()).filter(
+        (j) => j.status === 'active' && !linked.has(j.id),
+      );
+      expect(ghosts).toEqual([]);
+      for (let round = 0; round < 5; round++) {
+        const link = await db.orm.public.NormalizedJobSource.where({
+          rawItemId: await rawItemId(`id:44839500${round}`),
+        }).first();
+        const job = await db.orm.public.NormalizedJob.where({
+          id: link!.jobId,
+        }).first();
+        expect(job!.jobKey).toBe(`url:https://acme.com/jobs/7777${round}`);
+      }
     });
 
     describe('rebuild', () => {

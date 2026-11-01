@@ -62,6 +62,17 @@ describe('normalize LinkedIn job board', () => {
     });
   });
 
+  it('drops salary bounds too large to store, keeping the stated text', () => {
+    const r = record(
+      job({ salary: 'VND 3,000,000,000', salaryMin: 3e9, salaryMax: 4e9 }),
+    );
+    expect(r.salary).toMatchObject({
+      text: 'VND 3,000,000,000',
+      min: null,
+      max: null,
+    });
+  });
+
   it('has no salary when the actor states none', () => {
     expect(record(job({ salary: '' })).salary).toBeNull();
   });

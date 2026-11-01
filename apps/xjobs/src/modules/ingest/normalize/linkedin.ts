@@ -7,6 +7,15 @@ import {
   objectAt,
 } from './text';
 
+/** The largest salary bound the job columns hold (PostgreSQL `integer`). */
+const MAX_SALARY = 2_147_483_647;
+
+/** A salary bound that can be stored; anything larger is not kept. */
+function salaryBound(value: unknown): number | null {
+  const n = cleanNumber(value);
+  return n !== null && Math.abs(n) <= MAX_SALARY ? n : null;
+}
+
 /** A parsed http(s) URL, or null. */
 export function httpUrl(value: unknown): URL | null {
   const raw = cleanText(value);
@@ -44,8 +53,8 @@ function linkedinJobUrl(p: Record<string, unknown>): string | null {
 export function mapLinkedinJob(p: Record<string, unknown>): NormalizedRecord {
   const descriptionHtml = cleanText(p.descriptionHtml);
   const salaryText = cleanText(p.salary);
-  const salaryMin = cleanNumber(p.salaryMin);
-  const salaryMax = cleanNumber(p.salaryMax);
+  const salaryMin = salaryBound(p.salaryMin);
+  const salaryMax = salaryBound(p.salaryMax);
   const apply = p.applyType === 'EXTERNAL' ? httpUrl(p.applyUrl) : null;
   const posterName = cleanText(p.posterFullName);
   const posterUrl = httpUrl(p.posterProfileUrl)?.toString() ?? null;

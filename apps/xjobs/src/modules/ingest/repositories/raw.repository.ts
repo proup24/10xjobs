@@ -8,7 +8,7 @@ import {
 } from 'src/database';
 import type { DatabaseTransaction } from 'src/database/seeds/seed.interface';
 import type { BatchReport, BatchStatus } from '../types';
-import { type LinkOutcome, linkJob } from './jobs.writer';
+import { type LinkJobInput, type LinkOutcome, linkJob } from './jobs.writer';
 
 export type { LinkOutcome };
 
@@ -80,7 +80,7 @@ type Json = RawItemVersionRow['payload'];
  * uniqueness race, serialization failure or deadlock.
  */
 export async function inRetriedTransaction<T>(
-  database: DatabaseService,
+  database: Pick<DatabaseService, 'db'>,
   fn: (tx: DatabaseTransaction) => Promise<T>,
 ): Promise<T> {
   for (let attempt = 0; ; attempt++) {
@@ -96,6 +96,42 @@ export async function inRetriedTransaction<T>(
         setTimeout(resolve, RETRY_BASE_DELAY_MS * 2 ** attempt),
       );
     }
+  }
+}
+
+/** Connection-level failures: the database is unreachable, not the data wrong. */
+function isInfrastructureError(error: unknown): boolean {
+  let current: unknown = error;
+  for (let depth = 0; depth < 10 && current; depth++) {
+    if (typeof current !== 'object') return false;
+    const { sqlState, code } = current as {
+      sqlState?: unknown;
+      code?: unknown;
+    };
+    if (typeof sqlState === 'string' && /^(08|53|57|58|XX)/.test(sqlState))
+      return true;
+    if (typeof code === 'string' && /^E[A-Z]+$/.test(code)) return true;
+    current = (current as { cause?: unknown }).cause;
+  }
+  return isRetryableTransactionError(error);
+}
+
+/**
+ * Links a raw item to its normalized job in its own transaction, after the
+ * raw rows committed: raw storage never depends on normalization. A data
+ * error while linking makes the item `invalid` for normalization instead of
+ * failing the batch; an unreachable database still fails it, so it retries.
+ */
+export async function linkJobSafely(
+  database: Pick<DatabaseService, 'db'>,
+  input: LinkJobInput,
+): Promise<LinkOutcome> {
+  try {
+    return await inRetriedTransaction(database, (tx) => linkJob(tx, input));
+  } catch (error) {
+    if (isInfrastructureError(error)) throw error;
+    const reason = error instanceof Error ? error.message : String(error);
+    return { invalid: `normalize: ${reason}` };
   }
 }
 
@@ -115,7 +151,16 @@ export class PrismaRawStorageRepository extends RawStorageRepository {
   }
 
   async saveItem(input: SaveItemInput): Promise<SaveItemResult> {
-    return inRetriedTransaction(this.database, (tx) => save(tx, input));
+    const { rawItemId, newItem, newVersion } = await inRetriedTransaction(
+      this.database,
+      (tx) => save(tx, input),
+    );
+    const job = await linkJobSafely(this.database, {
+      rawItemId,
+      observedAt: input.observedAt,
+      rebuild: false,
+    });
+    return { newItem, newVersion, job };
   }
 
   async markIngested(id: string, report: BatchReport): Promise<void> {
@@ -182,7 +227,7 @@ function record(row: CollectionBatchRow): BatchRecord {
 async function save(
   tx: DatabaseTransaction,
   input: SaveItemInput,
-): Promise<SaveItemResult> {
+): Promise<{ rawItemId: string; newItem: boolean; newVersion: boolean }> {
   const { orm } = tx;
   const at = input.observedAt;
 
@@ -251,14 +296,5 @@ async function save(
       observedAt: at,
     });
 
-  const job = await linkJob(tx, {
-    rawItemId: item.id,
-    channel: input.channel,
-    sourceKey: input.sourceKey,
-    latestVersionId,
-    observedAt: at,
-    rebuild: false,
-  });
-
-  return { newItem, newVersion, job };
+  return { rawItemId: item.id, newItem, newVersion };
 }

@@ -61,7 +61,12 @@ export function decodeEntitiesOnce(value: string): string {
       if (body[0] === '#') {
         const hex = body[1] === 'x' || body[1] === 'X';
         const code = Number.parseInt(body.slice(hex ? 2 : 1), hex ? 16 : 10);
-        return Number.isFinite(code) && code > 0 && code <= 0x10ffff
+        // Unpaired surrogates are not text: PostgreSQL rejects them in jsonb.
+        const surrogate = code >= 0xd800 && code <= 0xdfff;
+        return Number.isFinite(code) &&
+          code > 0 &&
+          code <= 0x10ffff &&
+          !surrogate
           ? String.fromCodePoint(code)
           : match;
       }

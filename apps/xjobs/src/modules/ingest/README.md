@@ -11,7 +11,7 @@ Designs: `docs/superpowers/specs/2026-10-31-ingest-raw-storage-design.md` (raw s
 3. The ingest worker (`WORKER_ROLE=ingest`) runs `BatchIngestService.ingestBatch`:
    - it reads the file;
    - it validates each item (an object with a source key) and keeps going past invalid ones;
-   - it stores each valid item and, in the same transaction, links it to its normalized job;
+   - it stores each valid item, then links it to its normalized job in a second transaction under the raw item's lock (a normalization failure marks the item `normalizeInvalid`; it never undoes or blocks the raw write);
    - it sets the batch to `ingested` with a report, or `failed` with the reason.
 
 `BatchIngestService` coordinates status and retry decisions. `BatchFileReaderService` loads and validates stored files; `BatchItemWriterService` validates item identities, persists observations sequentially, and builds the report. These collaborators stay internal to `IngestModule`.
@@ -49,7 +49,7 @@ Each raw item's **latest** version is mapped (`normalize/`) to one unified recor
 
 **Processing status:** ingest sets `processingStatus = 'pending'` only when an observation creates a job (`new`) or finds it after 21 days unseen (`reopened`, `config/normalize.ts`). A new source or a content change updates the columns and leaves the status alone. `processing`, `processed` and `failed` belong to Process.
 
-**Rebuild:** after a `NORMALIZER_VERSION` bump, `pnpm --filter @xjobs/xjobs db:renormalize` re-normalizes every raw item and rebuilds links and merges. It never changes processing status; jobs it creates have none until Process decides.
+**Rebuild:** after a `NORMALIZER_VERSION` bump, `pnpm --filter @xjobs/xjobs db:renormalize` re-normalizes every raw item and rebuilds links and merges. It never changes processing status; jobs it creates have none until Process decides. It needs only the database variables and is safe to run while ingest runs.
 
 ## Source keys and hashes
 

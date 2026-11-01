@@ -19,10 +19,6 @@ export type LinkOutcome =
 
 export interface LinkJobInput {
   rawItemId: string;
-  channel: Channel;
-  sourceKey: string;
-  /** The raw item's latest version: the job link always follows it. */
-  latestVersionId: string;
   observedAt: Date;
   /** True when rebuilding: links and fields change, processing status never does. */
   rebuild: boolean;
@@ -98,7 +94,10 @@ function found<T>(value: T | undefined | null, what: string): T {
 }
 
 /** The normalized row of a raw version at the current normalizer version. */
-async function normalizedVersion(tx: DatabaseTransaction, input: LinkJobInput) {
+async function normalizedVersion(
+  tx: DatabaseTransaction,
+  input: { latestVersionId: string; channel: Channel; sourceKey: string },
+) {
   const { orm } = tx;
   const found = await orm.public.NormalizedVersion.where({
     rawVersionId: input.latestVersionId,
@@ -188,7 +187,18 @@ export async function linkJob(
   input: LinkJobInput,
 ): Promise<LinkOutcome> {
   const { orm } = tx;
-  const version = await normalizedVersion(tx, input);
+  // The raw item lock serializes every link of this item (ingest and rebuild),
+  // and its latest version is read under it, so a link never follows a stale one.
+  const item = await orm.public.RawItem.where({ id: input.rawItemId })
+    .forNoKeyUpdate()
+    .first();
+  if (!item?.latestVersionId)
+    return { invalid: 'normalize: raw item has no version' };
+  const version = await normalizedVersion(tx, {
+    latestVersionId: item.latestVersionId,
+    channel: item.channel as Channel,
+    sourceKey: item.sourceKey,
+  });
   if (version.status !== 'valid' || !version.jobKey || !version.record)
     return { invalid: version.reason ?? 'normalize: invalid' };
   const record = version.record as unknown as NormalizedRecord;

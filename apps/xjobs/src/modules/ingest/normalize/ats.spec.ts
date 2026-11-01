@@ -144,6 +144,12 @@ describe('decodeEntitiesOnce', () => {
     );
   });
 
+  it('leaves an entity for an unpaired surrogate undecoded', () => {
+    expect(decodeEntitiesOnce('a&#xD800;b&#57343;c')).toBe(
+      'a&#xD800;b&#57343;c',
+    );
+  });
+
   it('decodes a double-encoded entity exactly once', () => {
     expect(decodeEntitiesOnce('&amp;lt;p&amp;gt;')).toBe('&lt;p&gt;');
   });
