@@ -40,7 +40,8 @@ export class QuerySearchService {
       ...profileRemoteCombinations,
       ...profileLocalCombinations,
     ];
-    return dedupeByHash(combinations.map(toRecipe));
+    const queriesRecipes = combinations.map(toRecipe);
+    return dedupeByHash(queriesRecipes);
   }
 
   /**
