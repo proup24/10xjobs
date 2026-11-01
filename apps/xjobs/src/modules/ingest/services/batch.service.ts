@@ -43,7 +43,7 @@ export class BatchIngestService {
       const report = await this.writer.write(batch, file);
       await this.repository.markIngested(batch.id, report);
       this.logger.log(
-        `Batch ${batch.id} ingested: received=${report.received} new=${report.newItems} versions=${report.newVersions} repeats=${report.repeats} invalid=${report.invalid}`,
+        `Batch ${batch.id} ingested: received=${report.received} new=${report.newItems} versions=${report.newVersions} repeats=${report.repeats} invalid=${report.invalid} jobs=${report.newJobs} reopened=${report.reopened} normalizeInvalid=${report.normalizeInvalid}`,
       );
       return report;
     } catch (error) {

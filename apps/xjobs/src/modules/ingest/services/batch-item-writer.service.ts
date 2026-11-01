@@ -19,7 +19,15 @@ export class BatchItemWriterService {
       newVersions: 0,
       repeats: 0,
       invalid: 0,
+      normalized: 0,
+      normalizeInvalid: 0,
+      newJobs: 0,
+      reopened: 0,
       errors: [],
+    };
+    const addError = (error: BatchReport['errors'][number]) => {
+      if (report.errors.length < ingestConfig.maxReportErrors)
+        report.errors.push(error);
     };
     const observedAt = new Date(file.observedAt);
     const { kind } = channelIngestConfig[batch.channel];
@@ -33,8 +41,7 @@ export class BatchItemWriterService {
         const key = sourceKey(batch.channel, item.payload);
         if ('invalid' in key) {
           report.invalid += 1;
-          if (report.errors.length < ingestConfig.maxReportErrors)
-            report.errors.push({ queryId, index, reason: key.invalid });
+          addError({ stage: 'validate', queryId, index, reason: key.invalid });
           continue;
         }
         const saved = await this.repository.saveItem({
@@ -51,6 +58,19 @@ export class BatchItemWriterService {
         if (saved.newItem) report.newItems += 1;
         else if (saved.newVersion) report.newVersions += 1;
         else report.repeats += 1;
+        if ('invalid' in saved.job) {
+          report.normalizeInvalid += 1;
+          addError({
+            stage: 'normalize',
+            queryId,
+            index,
+            reason: saved.job.invalid,
+          });
+        } else {
+          report.normalized += 1;
+          if (saved.job.created) report.newJobs += 1;
+          if (saved.job.reopened) report.reopened += 1;
+        }
       }
     return report;
   }

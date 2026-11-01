@@ -144,6 +144,10 @@ describe('BatchIngestService', () => {
       newVersions: 0,
       repeats: 1,
       invalid: 0,
+      normalized: 4,
+      normalizeInvalid: 0,
+      newJobs: 3,
+      reopened: 0,
       errors: [],
     });
     expect(repo.batches.get('b1')!.status).toBe('ingested');
@@ -231,7 +235,7 @@ describe('BatchIngestService', () => {
     vi.spyOn(repo, 'saveItem').mockImplementation(async (input) => {
       const result = await save(input);
       return input.queryId === 'q2' && input.sourceKey === 'id:1'
-        ? { newItem: false, newVersion: true }
+        ? { ...result, newItem: false, newVersion: true }
         : result;
     });
 
@@ -241,6 +245,10 @@ describe('BatchIngestService', () => {
       newVersions: 1,
       repeats: 0,
       invalid: 0,
+      normalized: 4,
+      normalizeInvalid: 0,
+      newJobs: 3,
+      reopened: 0,
       errors: [],
     });
   });
@@ -256,8 +264,18 @@ describe('BatchIngestService', () => {
 
     expect(report).toMatchObject({ received: 2, invalid: 2, newItems: 0 });
     expect(report!.errors).toEqual([
-      { queryId: 'q1', index: 0, reason: 'no source id or URL' },
-      { queryId: null, index: 0, reason: 'payload is not a JSON object' },
+      {
+        stage: 'validate',
+        queryId: 'q1',
+        index: 0,
+        reason: 'no source id or URL',
+      },
+      {
+        stage: 'validate',
+        queryId: null,
+        index: 0,
+        reason: 'payload is not a JSON object',
+      },
     ]);
     expect(repo.batches.get('b1')!.status).toBe('ingested');
   });
@@ -313,5 +331,29 @@ describe('BatchIngestService', () => {
 
     await store(file({ batchId: 'b2', segmentRunId: 'r2' }), 'ingested');
     expect(await service.replay('b2')).toBe(false);
+  });
+
+  it('counts normalization outcomes and lists normalize errors by stage', async () => {
+    await store(file());
+    repo.outcomes.set('id:2', { invalid: 'normalize: title: required' });
+    repo.outcomes.set('id:3', { jobId: 'j3', created: false, reopened: true });
+    const report = await service.ingestBatch('b1', { final: false });
+
+    expect(report).toMatchObject({
+      received: 4,
+      invalid: 0,
+      normalized: 3,
+      normalizeInvalid: 1,
+      newJobs: 1,
+      reopened: 1,
+    });
+    expect(report!.errors).toEqual([
+      {
+        stage: 'normalize',
+        queryId: 'q2',
+        index: 1,
+        reason: 'normalize: title: required',
+      },
+    ]);
   });
 });
