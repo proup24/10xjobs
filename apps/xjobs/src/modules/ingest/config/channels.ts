@@ -31,6 +31,7 @@ export const channelIngestConfig: Record<Channel, ChannelIngestConfig> = {
       'author.info',
       'author.avatar',
       'engagement',
+      'document.manifest',
     ],
   },
   // The Google snippet varies with the search that found it; the posting is the content.

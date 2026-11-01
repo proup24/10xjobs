@@ -90,4 +90,18 @@ describe('contentHash', () => {
       }),
     ).not.toBe(contentHash(Channel.LINKEDIN_JOB_BOARD, linkedinJob));
   });
+
+  it('ignores a LinkedIn post document manifest, which rescrapes garble', () => {
+    const a = {
+      ...linkedinPost,
+      document: { title: 'Resume', manifest: { asset: 'urn:li:x' } },
+    };
+    const b = {
+      ...linkedinPost,
+      document: { title: 'Resume', manifest: '\u0000garbled' },
+    };
+    expect(contentHash(Channel.LINKEDIN_POSTS, a)).toBe(
+      contentHash(Channel.LINKEDIN_POSTS, b),
+    );
+  });
 });
