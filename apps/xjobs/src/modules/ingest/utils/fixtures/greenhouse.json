@@ -1,5 +1,5 @@
 {
-  "hit": { "url": "https://boards.greenhouse.io/acme/jobs/42", "title": "Platform Engineer at Acme", "position": 1 },
+  "hit": { "title": "Platform Engineer - Acme", "url": "https://boards.greenhouse.io/acme/jobs/42", "description": "Run k8s ...", "date": "2026-10-20T09:00:00.000Z", "position": 1 },
   "posting": { "id": 42, "title": "Platform Engineer", "content": "&lt;p&gt;Run k8s.&lt;/p&gt;", "updated_at": "2026-10-30T09:00:00Z" },
   "fetchError": null
 }

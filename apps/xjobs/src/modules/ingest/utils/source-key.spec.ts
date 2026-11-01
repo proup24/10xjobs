@@ -28,6 +28,15 @@ describe('sourceKey', () => {
         ).toEqual({ key: 'id:4012345678' });
     });
 
+    it('takes the id from a regional jobUrl, the field the actor really sends', () => {
+      expect(
+        sourceKey(Channel.LINKEDIN_JOB_BOARD, {
+          jobUrl:
+            'https://de.linkedin.com/jobs/view/backend-engineer-at-acme-4012345678?refId=x',
+        }),
+      ).toEqual({ key: 'id:4012345678' });
+    });
+
     it('falls back to the canonical URL when no id can be found', () => {
       expect(
         sourceKey(Channel.LINKEDIN_JOB_BOARD, {
@@ -90,6 +99,16 @@ describe('sourceKey', () => {
           fetchError: 'timeout',
         }),
       ).toEqual({ key: 'posting:acme/42' });
+    });
+
+    it('keys a Greenhouse URL with a -n suffix, as Google returns them, by its job id', () => {
+      expect(
+        sourceKey(Channel.GREEN_HOUSE, {
+          hit: { url: 'https://boards.greenhouse.io/airbnb/jobs/8231416-3' },
+          posting: null,
+          fetchError: null,
+        }),
+      ).toEqual({ key: 'posting:airbnb/8231416' });
     });
 
     it('rejects a hit that is not a posting page', () => {

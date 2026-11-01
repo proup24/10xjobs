@@ -1,5 +1,5 @@
 {
-  "hit": { "url": "https://jobs.ashbyhq.com/acme/0b1c2d3e-0000-4000-8000-000000000001", "title": "Senior Backend Engineer - Acme", "position": 5 },
+  "hit": { "title": "Senior Backend Engineer @ Acme", "url": "https://jobs.ashbyhq.com/acme/0b1c2d3e-0000-4000-8000-000000000001", "description": "We're looking for ...", "date": "2026-10-21T14:20:54.822Z", "position": 5 },
   "posting": null,
   "fetchError": "timeout"
 }

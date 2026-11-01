@@ -16,7 +16,10 @@ function idText(value: unknown): string | null {
   return trimmed;
 }
 
-function firstText(item: Record<string, unknown>, keys: string[]): string | null {
+function firstText(
+  item: Record<string, unknown>,
+  keys: string[],
+): string | null {
   for (const key of keys) {
     const value = idText(item[key]);
     if (value) return value;
@@ -38,10 +41,16 @@ function canonicalUrl(value: string): string | null {
   }
 }
 
-/** The posting/post id a LinkedIn URL names, when it names one. */
+/**
+ * The posting/post id a LinkedIn URL names, when it names one. The actor
+ * returns regional hosts (`de.linkedin.com`), which name the same posting.
+ */
 function idFromLinkedinUrl(channel: Channel, value: string): string | null {
   try {
-    return canonicalSource(channel, value).sourceId;
+    const url = new URL(value);
+    if (url.hostname.endsWith('.linkedin.com'))
+      url.hostname = 'www.linkedin.com';
+    return canonicalSource(channel, url.toString()).sourceId;
   } catch {
     return null;
   }
@@ -53,7 +62,7 @@ const linkedinFields: Record<
 > = {
   [Channel.LINKEDIN_JOB_BOARD]: {
     ids: ['id', 'jobId'],
-    urls: ['url', 'link', 'jobUrl'],
+    urls: ['jobUrl', 'url', 'link'],
   },
   [Channel.LINKEDIN_POSTS]: {
     ids: ['id'],
@@ -98,7 +107,8 @@ function postingKey(
     ats = null;
   }
   const provider = channel === Channel.ASHBY ? 'ashby' : 'greenhouse';
-  if (!ats || ats.provider !== provider) return { invalid: 'not a posting URL' };
+  if (!ats || ats.provider !== provider)
+    return { invalid: 'not a posting URL' };
   return { key: `posting:${ats.tenantKey}/${ats.postingId}` };
 }
 

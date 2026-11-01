@@ -16,19 +16,26 @@ export function canonicalJson(value: unknown): string {
   return JSON.stringify(value) ?? 'null';
 }
 
+/** A copy of `value` without the dotted `path` (`author.info`); other values are shared. */
+function without(value: unknown, path: string[]): unknown {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+  const [head, ...rest] = path;
+  const object = value as Record<string, unknown>;
+  if (!head || !(head in object)) return value;
+  const copy = { ...object };
+  if (rest.length === 0) delete copy[head];
+  else copy[head] = without(copy[head], rest);
+  return copy;
+}
+
 /**
  * SHA-256 hex of the payload's canonical JSON without the channel's volatile
- * top-level keys: the same content observed twice hashes the same.
+ * fields (dotted paths): the same content observed twice hashes the same.
  */
 export function contentHash(channel: Channel, payload: unknown): string {
-  let content = payload;
-  if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
-    const volatile = new Set(channelIngestConfig[channel].volatileKeys);
-    content = Object.fromEntries(
-      Object.entries(payload as Record<string, unknown>).filter(
-        ([key]) => !volatile.has(key),
-      ),
-    );
-  }
+  const content = channelIngestConfig[channel].volatileKeys.reduce<unknown>(
+    (current, key) => without(current, key.split('.')),
+    payload,
+  );
   return createHash('sha256').update(canonicalJson(content)).digest('hex');
 }

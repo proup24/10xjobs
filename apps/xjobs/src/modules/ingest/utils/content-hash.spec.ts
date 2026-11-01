@@ -13,36 +13,60 @@ describe('contentHash', () => {
   });
 
   it('ignores key order at every depth', () => {
-    const reordered = Object.fromEntries(Object.entries(linkedinJob).reverse());
-    reordered.scrapingInfo = {
-      index: 3,
-      inputUrl: linkedinJob.scrapingInfo.inputUrl,
+    const reverse = <T extends object>(o: T) =>
+      Object.fromEntries(Object.entries(o).reverse()) as T;
+    const reordered = {
+      ...reverse(linkedinPost),
+      article: reverse(linkedinPost.article),
     };
-    expect(contentHash(Channel.LINKEDIN_JOB_BOARD, reordered)).toBe(
-      contentHash(Channel.LINKEDIN_JOB_BOARD, linkedinJob),
+    expect(JSON.stringify(reordered)).not.toBe(JSON.stringify(linkedinPost));
+    expect(contentHash(Channel.LINKEDIN_POSTS, reordered)).toBe(
+      contentHash(Channel.LINKEDIN_POSTS, linkedinPost),
     );
   });
 
   it('ignores the volatile fields of LinkedIn jobs', () => {
     const later = {
       ...linkedinJob,
-      scrapingInfo: { inputUrl: 'https://other', index: 9 },
+      scrapingInfo: { page: 2, inputUrl: 'https://other', index: 9 },
       postedTime: '5 hours ago',
-      applicantsCount: '40',
+      applicationsCount: '90 applicants',
+      companyLogo: 'https://media.licdn.com/logo?e=1&t=sig2',
     };
     expect(contentHash(Channel.LINKEDIN_JOB_BOARD, later)).toBe(
       contentHash(Channel.LINKEDIN_JOB_BOARD, linkedinJob),
     );
   });
 
-  it('ignores engagement counters on posts', () => {
+  it('ignores what changes on an unchanged post: query, relative time, author followers and avatar', () => {
     const later = {
       ...linkedinPost,
-      engagement: { likes: 99, comments: 9, shares: 4 },
+      query: { ...linkedinPost.query, search: 'another search', page: 3 },
+      postedAt: { ...linkedinPost.postedAt, postedAgoShort: '1d' },
+      author: {
+        ...linkedinPost.author,
+        info: 'Engineering Manager at Acme • 1,350 followers',
+        avatar: { url: 'https://media.licdn.com/x?e=1800000000&t=sig2' },
+      },
     };
     expect(contentHash(Channel.LINKEDIN_POSTS, later)).toBe(
       contentHash(Channel.LINKEDIN_POSTS, linkedinPost),
     );
+  });
+
+  it('still sees a post edit and an author change', () => {
+    expect(
+      contentHash(Channel.LINKEDIN_POSTS, {
+        ...linkedinPost,
+        content: 'Edited.',
+      }),
+    ).not.toBe(contentHash(Channel.LINKEDIN_POSTS, linkedinPost));
+    expect(
+      contentHash(Channel.LINKEDIN_POSTS, {
+        ...linkedinPost,
+        author: { ...linkedinPost.author, name: 'John Roe' },
+      }),
+    ).not.toBe(contentHash(Channel.LINKEDIN_POSTS, linkedinPost));
   });
 
   it('ignores the Google hit of an ATS posting, not the posting', () => {

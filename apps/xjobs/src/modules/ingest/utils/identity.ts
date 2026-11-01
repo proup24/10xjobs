@@ -50,7 +50,8 @@ export function atsIdentity(value: string): AtsIdentity | null {
     }
   }
   if (greenhouseHosts.has(url.hostname)) {
-    const match = /^\/([^/]+)\/jobs\/(\d+)\/?$/.exec(url.pathname);
+    // Google often returns a `-n` suffix after the job id (`/jobs/8231416-3`).
+    const match = /^\/([^/]+)\/jobs\/(\d+)(?:-\d+)?\/?$/.exec(url.pathname);
     const tenantKey = match?.[1];
     const postingId = match?.[2];
     if (tenantKey && postingId && /^[a-zA-Z0-9_-]+$/.test(tenantKey)) {

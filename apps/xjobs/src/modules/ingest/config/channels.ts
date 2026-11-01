@@ -4,8 +4,10 @@ import { Channel } from 'src/common/enums';
 export interface ChannelIngestConfig {
   kind: 'job' | 'post';
   /**
-   * Top-level payload keys left out of the content hash: they change between
-   * observations of the same content (positions, relative times, counters).
+   * Payload fields (dotted paths) left out of the content hash: they change
+   * between observations of the same content (positions, relative times,
+   * counters, signed image URLs, the search that found it). Checked against
+   * the real actor payloads in career-hub's fixtures.
    */
   volatileKeys: readonly string[];
 }
@@ -13,11 +15,23 @@ export interface ChannelIngestConfig {
 export const channelIngestConfig: Record<Channel, ChannelIngestConfig> = {
   [Channel.LINKEDIN_JOB_BOARD]: {
     kind: 'job',
-    volatileKeys: ['scrapingInfo', 'postedTime', 'applicantsCount'],
+    volatileKeys: [
+      'scrapingInfo',
+      'postedTime',
+      'applicationsCount',
+      'companyLogo',
+    ],
   },
   [Channel.LINKEDIN_POSTS]: {
     kind: 'post',
-    volatileKeys: ['engagement', 'postedAt', 'query'],
+    volatileKeys: [
+      'query',
+      'postedAt.postedAgoShort',
+      'postedAt.postedAgoText',
+      'author.info',
+      'author.avatar',
+      'engagement',
+    ],
   },
   // The Google snippet varies with the search that found it; the posting is the content.
   [Channel.ASHBY]: { kind: 'job', volatileKeys: ['hit'] },
