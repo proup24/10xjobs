@@ -238,8 +238,8 @@ Steps:
 **Files:**
 
 - Modify: `modules/collectors/types/collector.ts` (the `SegmentResult` change; delete `CollectedJob`, `JobSource` and `channelSource` if nothing else uses them), `modules/collectors/utils/collected-job.ts` (`attribute` also returns unattributed items; drop the mapping helpers nothing uses any more), `providers/apify/apify.provider.ts` (return `runId`), `providers/apify/linkedin.job_search.collector.ts`, `providers/apify/linkedin.post_search.collector.ts`, `providers/apify/google_search.collector.ts`, `providers/ashby.service.ts`, `providers/greenhouse.service.ts`, `providers/linkedin.job_board.service.ts`, `providers/linkedin.posts.service.ts`
-- Create: `infrastructure/jobs/ingest-queue.service.ts`
-- Modify: `modules/segments/segments.repository.ts`, `infrastructure/jobs/collection/collection.job.ts` and the four `*.job.ts` files (replace the `IngestService` dependency with `StorageService` and `IngestQueue`), `infrastructure/jobs/jobs.module.ts` (import `StorageModule`, provide `IngestQueue`), `config/environment.validation.ts` + `config/validation.spec.ts` (the worker schema now requires the Supabase vars — `SUPABASE_URL`/`SUPABASE_PUBLIC_URL` and `SUPABASE_SERVICE_ROLE_KEY`/`SERVICE_ROLE_KEY`, same messages as the app schema — in **every** worker mode, because `JobsModule` now pulls in `StorageModule`), `docker-compose.worker.yaml` (pass those vars to `worker`)
+- Create: `infrastructure/jobs/steps/ingest/queue.service.ts`
+- Modify: `modules/segments/segments.repository.ts`, `infrastructure/jobs/steps/collect/collection.job.ts` and the four `steps/collect/channels/*.job.ts` files (replace the `IngestService` dependency with `StorageService` and `IngestQueue`), `infrastructure/jobs/jobs.module.ts` (import `StorageModule`, provide `IngestQueue`), `config/environment.validation.ts` + `config/validation.spec.ts` (the worker schema now requires the Supabase vars — `SUPABASE_URL`/`SUPABASE_PUBLIC_URL` and `SUPABASE_SERVICE_ROLE_KEY`/`SERVICE_ROLE_KEY`, same messages as the app schema — in **every** worker mode, because `JobsModule` now pulls in `StorageModule`), `docker-compose.worker.yaml` (pass those vars to `worker`)
 - Test: `modules/collectors/providers/segment-collect.spec.ts`, `providers/apify/apify.provider.spec.ts`, `modules/segments/segments.repository.spec.ts`, `infrastructure/jobs/tests/collection.job.spec.ts`
 
 **Interfaces:**
@@ -312,7 +312,7 @@ Steps:
   - `WORKER_ROLE` and `WORKER_CHANNEL` are mutually exclusive.
   - The Supabase vars are already required in every worker mode (Task 4).
 - Modify: `config/validation.spec.ts`, `infrastructure/worker/worker.service.ts` (third mode), `infrastructure/worker/worker.module.ts` (import `IngestModule`), `infrastructure/worker/scheduler.ts` (add `syncSweepScheduler`), `worker.ts` (error text mentions storage)
-- Create: `infrastructure/jobs/ingest.processor.ts`
+- Create: `infrastructure/jobs/steps/ingest/processor.ts`, `infrastructure/jobs/steps/ingest/config.ts` (`ingestWorkerConfig`)
 - Modify: root `package.json` and `apps/xjobs/package.json` (`worker:ingest` and `worker:ingest:dev`, like the channel scripts), `docker-compose.worker.yaml` (service `ingest-worker`, the same image with `WORKER_ROLE: ingest` and the Supabase and database env passed through), `modules/ingest/README.md` (rewritten for the new flow: tables, statuses, replay, sweeper, how to run the worker, the Postgres test guard)
 - Test: `infrastructure/worker/tests/worker.module.spec.ts`, `infrastructure/worker/tests/scheduler.spec.ts`, `infrastructure/jobs/tests/ingest.processor.spec.ts`
 

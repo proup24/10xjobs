@@ -5,11 +5,11 @@ export {
   type NewSegmentRun,
   type SegmentQueryOutcome,
   type SegmentRunStatus,
-} from './segments.repository';
+} from './repositories/segments.repository';
 export {
   SEGMENT_SIZE,
   buildSegments,
   segmentKey,
   type SearchSegment,
-} from './segments';
-export { segmentWindow, type SegmentWindow, type WindowConfig } from './window';
+} from './services/segments';
+export { segmentWindow, type SegmentWindow, type WindowConfig } from './services/window';

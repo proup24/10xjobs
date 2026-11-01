@@ -19,7 +19,7 @@
 
 ## Global Constraints
 
-- `channelJobsConfig: Record<Channel, ChannelJobConfig>` in `infrastructure/jobs/config/index.ts`, where `ChannelJobConfig = { enabled: boolean; schedule: { pattern: string; timezone: string }; concurrency: number; attempts: number }`. Every channel starts with `enabled: true`, `{ pattern: '0 * * * *', timezone: 'UTC' }`, `concurrency: 1` and `attempts: 1`.
+- `channelJobsConfig: Record<Channel, ChannelJobConfig>` in `infrastructure/jobs/steps/collect/config.ts`, where `ChannelJobConfig = { enabled: boolean; schedule: { pattern: string; timezone: string }; concurrency: number; attempts: number }`. Every channel starts with `enabled: true`, `{ pattern: '0 * * * *', timezone: 'UTC' }`, `concurrency: 1` and `attempts: 1`.
 - Queue per channel, named `collect-<channel>` in kebab-case: `collect-linkedin-job-board`, `collect-linkedin-posts`, `collect-greenhouse`, `collect-ashby`. Use the existing `REDIS_PREFIX`.
 - Scheduler id `collect`, job name `collect`, data `{ channel }`.
 - `enabled: false` means remove the scheduler and exit with code 0.
@@ -91,7 +91,7 @@
 
 **Files:**
 
-- Modify: `apps/xjobs/src/infrastructure/jobs/config/index.ts` (replace `JOB_CONFIG`)
+- Modify: `apps/xjobs/src/infrastructure/jobs/steps/collect/config.ts` (replace `JOB_CONFIG`)
 - Create: `apps/xjobs/src/infrastructure/jobs/collection.processor.ts`
 - Test: `apps/xjobs/src/infrastructure/jobs/tests/collection.processor.spec.ts`
 

@@ -3,7 +3,7 @@ import {
   type NewCollectionBatch,
   type NewSegmentRun,
   SearchSegmentsRepository,
-} from '../segments.repository';
+} from '../repositories/segments.repository';
 
 export class FakeSearchSegmentsRepository extends SearchSegmentsRepository {
   runs: NewSegmentRun[] = [];

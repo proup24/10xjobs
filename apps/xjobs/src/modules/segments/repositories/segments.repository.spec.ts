@@ -1,4 +1,4 @@
-import { FakeSearchSegmentsRepository } from './testing/fakes';
+import { FakeSearchSegmentsRepository } from '../testing/fakes';
 
 describe('advanceCursors', () => {
   it('moves only the given builders forward, never back', async () => {

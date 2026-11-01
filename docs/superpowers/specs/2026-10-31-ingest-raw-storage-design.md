@@ -101,7 +101,7 @@ The row is the source of truth for status. The queue message is only a nudge.
 
 ### Ingest side (the ingest module, rewritten)
 
-**Worker.** A dedicated ingest worker process, selected like the channel workers (`WORKER_CHANNEL=INGEST`, or a separate `WORKER_ROLE`; builder's choice), consuming the `ingest` queue with its own config in `infrastructure/jobs/config` (concurrency, attempts, backoff). It validates the database, Redis and storage environment variables; it does not need `APIFY_TOKEN`.
+**Worker.** A dedicated ingest worker process, selected like the channel workers (`WORKER_CHANNEL=INGEST`, or a separate `WORKER_ROLE`; builder's choice), consuming the `ingest` queue with its own config in `infrastructure/jobs/steps/ingest/config.ts` (concurrency, attempts, backoff). It validates the database, Redis and storage environment variables; it does not need `APIFY_TOKEN`.
 
 **Per batch:**
 
