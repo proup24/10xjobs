@@ -17,3 +17,4 @@ export const ingestConfig = {
     'job-boards.eu.greenhouse.io',
   ],
 } as const;
+export { normalizeConfig } from './normalize';
