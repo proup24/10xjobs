@@ -4,8 +4,8 @@ import { StorageModule } from 'src/modules/storage';
 import {
   PrismaRawStorageRepository,
   RawStorageRepository,
-} from './repositories/raw-storage.repository';
-import { BatchIngestService } from './services/batch-ingest.service';
+} from './repositories/raw.repository';
+import { BatchIngestService } from './services/batch.service';
 
 /** Ingests stored collection batches into raw storage. */
 @Module({

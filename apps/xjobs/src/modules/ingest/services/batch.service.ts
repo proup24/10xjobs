@@ -7,7 +7,7 @@ import { channelIngestConfig, ingestConfig } from '../config';
 import {
   type BatchRecord,
   RawStorageRepository,
-} from '../repositories/raw-storage.repository';
+} from '../repositories/raw.repository';
 import type { BatchFile, BatchReport, RawCollectedItem } from '../types';
 import {
   BatchFileError,

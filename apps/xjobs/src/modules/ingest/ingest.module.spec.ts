@@ -3,7 +3,7 @@ import { DatabaseService } from 'src/database';
 import { StorageService } from 'src/modules/storage';
 import { MemoryStorageService } from 'src/modules/storage/testing';
 import { IngestModule } from './ingest.module';
-import { BatchIngestService } from './services/batch-ingest.service';
+import { BatchIngestService } from './services/batch.service';
 
 async function compile(first = vi.fn().mockResolvedValue(null)) {
   return Test.createTestingModule({ imports: [IngestModule] })

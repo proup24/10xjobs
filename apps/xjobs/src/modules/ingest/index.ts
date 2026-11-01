@@ -4,8 +4,8 @@ export {
   type BatchRecord,
   RawStorageRepository,
   type SaveItemInput,
-} from './repositories/raw-storage.repository';
-export { BatchIngestService } from './services/batch-ingest.service';
+} from './repositories/raw.repository';
+export { BatchIngestService } from './services/batch.service';
 export type {
   BatchFile,
   BatchReport,

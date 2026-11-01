@@ -5,10 +5,10 @@ import {
   type BatchRecord,
   RawStorageRepository,
   type SaveItemInput,
-} from '../repositories/raw-storage.repository';
+} from '../repositories/raw.repository';
 import type { BatchFile, BatchReport, BatchStatus } from '../types';
 import { serializeBatchFile } from '../utils';
-import { BatchIngestService } from './batch-ingest.service';
+import { BatchIngestService } from './batch.service';
 
 const job = (id: string) => ({
   id,
@@ -194,6 +194,43 @@ describe('BatchIngestService', () => {
     await service.ingestBatch('b1', { final: false });
     expect(repo.failed.get('b1')).toMatch(/format version 2/);
     expect(repo.saved).toEqual([]);
+  });
+
+  it('fails a channel mismatch without saving items or consuming a retry', async () => {
+    await store(file());
+    const key = repo.batches.get('b1')!.storageKey;
+    await storage.put(
+      ingestConfig.bucket,
+      key,
+      serializeBatchFile(file({ channel: Channel.LINKEDIN_POSTS })),
+    );
+
+    expect(await service.ingestBatch('b1', { final: false })).toBeNull();
+    expect(repo.batches.get('b1')!.status).toBe('failed');
+    expect(repo.failed.get('b1')).toBe('batch file channel mismatch');
+    expect(repo.saved).toEqual([]);
+    expect(repo.attemptFailures).toEqual([]);
+    expect(repo.reports.size).toBe(0);
+  });
+
+  it('counts a new version separately from a new item and a repeat', async () => {
+    await store(file());
+    const save = repo.saveItem.bind(repo);
+    vi.spyOn(repo, 'saveItem').mockImplementation(async (input) => {
+      const result = await save(input);
+      return input.queryId === 'q2' && input.sourceKey === 'id:1'
+        ? { newItem: false, newVersion: true }
+        : result;
+    });
+
+    expect(await service.ingestBatch('b1', { final: false })).toEqual({
+      received: 4,
+      newItems: 3,
+      newVersions: 1,
+      repeats: 0,
+      invalid: 0,
+      errors: [],
+    });
   });
 
   it('ingests a batch whose items are all invalid, listing each reason', async () => {

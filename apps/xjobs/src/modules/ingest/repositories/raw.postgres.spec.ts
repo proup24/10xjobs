@@ -9,10 +9,10 @@ import {
   type NewCollectionBatch,
   type NewSegmentRun,
   PrismaSearchSegmentsRepository,
-} from 'src/modules/segments/segments.repository';
+} from 'src/modules/segments/repositories/segments.repository';
 import { MemoryStorageService } from 'src/modules/storage/testing';
 import { ingestConfig } from '../config';
-import { BatchIngestService } from '../services/batch-ingest.service';
+import { BatchIngestService } from '../services/batch.service';
 import type { BatchFile } from '../types';
 import { contentHash, serializeBatchFile, sourceKey } from '../utils';
 import ashbyFailed from '../utils/fixtures/ashby-failed.json';
@@ -20,7 +20,7 @@ import ashby from '../utils/fixtures/ashby.json';
 import {
   PrismaRawStorageRepository,
   type SaveItemInput,
-} from './raw-storage.repository';
+} from './raw.repository';
 
 /**
  * Needs INGEST_TEST_DATABASE_URL: a disposable `ingest_test` database on
