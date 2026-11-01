@@ -23,7 +23,7 @@ import {
 } from 'src/modules/segments';
 import type { StorageService } from 'src/modules/storage';
 import type { ChannelJobConfig } from '../config';
-import type { IngestQueue } from '../ingest-queue.service';
+import type { IngestQueue } from '../steps';
 
 /** Scheduler id and job name of a channel's recurring collect job. */
 export const COLLECT_JOB = 'collect';

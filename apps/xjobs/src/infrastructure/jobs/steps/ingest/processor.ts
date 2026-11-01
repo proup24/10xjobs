@@ -9,7 +9,7 @@ import {
   INGEST_BATCH_JOB,
   type IngestQueue,
   SWEEP_JOB,
-} from './ingest-queue.service';
+} from './queue.service';
 
 /** Stranded batches re-enqueued per sweep. */
 const SWEEP_LIMIT = 100;

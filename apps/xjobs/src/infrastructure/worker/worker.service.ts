@@ -24,8 +24,8 @@ import { ingestWorkerConfig } from 'src/infrastructure/jobs/config';
 import {
   INGEST_QUEUE,
   IngestQueue,
-} from 'src/infrastructure/jobs/ingest-queue.service';
-import { processIngestJob } from 'src/infrastructure/jobs/ingest.processor';
+} from 'src/infrastructure/jobs/steps/ingest/queue.service';
+import { processIngestJob } from 'src/infrastructure/jobs/steps/ingest/processor';
 import { INFRASTRUCTURE_QUEUE } from 'src/infrastructure/jobs/jobs.service';
 import { processInfrastructureJob } from 'src/infrastructure/jobs/processor';
 import { REDIS_SETTINGS } from 'src/infrastructure/redis/settings.module';

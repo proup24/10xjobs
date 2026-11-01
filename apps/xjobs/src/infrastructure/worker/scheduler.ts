@@ -1,6 +1,6 @@
 import type { Queue } from 'bullmq';
 import { COLLECT_JOB } from 'src/infrastructure/jobs/collection';
-import { SWEEP_JOB } from 'src/infrastructure/jobs/ingest-queue.service';
+import { SWEEP_JOB } from 'src/infrastructure/jobs/steps/ingest/queue.service';
 import { ingestConfig } from 'src/modules/ingest';
 import type { ChannelJobConfig } from 'src/infrastructure/jobs/config';
 

@@ -6,8 +6,8 @@ import {
 } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { Redis } from 'ioredis';
-import type { RedisConfig } from '../../config';
-import { REDIS_SETTINGS } from '../redis/settings.module';
+import type { RedisConfig } from '../../../../config';
+import { REDIS_SETTINGS } from '../../../redis/settings.module';
 
 /** Queue the ingest worker consumes. */
 export const INGEST_QUEUE = 'ingest';

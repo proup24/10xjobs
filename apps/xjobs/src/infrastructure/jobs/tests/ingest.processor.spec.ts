@@ -1,7 +1,7 @@
 import { UnrecoverableError } from 'bullmq';
 import { ingestConfig } from 'src/modules/ingest';
-import { processIngestJob } from '../ingest.processor';
-import { INGEST_ATTEMPTS } from '../ingest-queue.service';
+import { processIngestJob } from '../steps/ingest/processor';
+import { INGEST_ATTEMPTS } from '../steps/ingest/queue.service';
 
 function deps() {
   return {

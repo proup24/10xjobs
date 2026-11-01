@@ -16,7 +16,7 @@ import { GreenhouseCollectionJob } from '../collection/greenhouse.job';
 import { LinkedinJobBoardCollectionJob } from '../collection/linkedin-job-board.job';
 import { LinkedinPostsCollectionJob } from '../collection/linkedin-posts.job';
 import { channelJobsConfig } from '../config';
-import type { IngestQueue } from '../ingest-queue.service';
+import type { IngestQueue } from '../steps/ingest/queue.service';
 
 let n = 0;
 const builder = (overrides: Partial<QuerySearchBuilderRow> = {}) =>

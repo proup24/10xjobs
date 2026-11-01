@@ -10,7 +10,7 @@ import {
   LinkedinJobBoardCollectionJob,
   LinkedinPostsCollectionJob,
 } from './collection';
-import { IngestQueue } from './ingest-queue.service';
+import { IngestQueue } from './steps';
 import { JobsService } from './jobs.service';
 
 const COLLECTION_JOBS = [
