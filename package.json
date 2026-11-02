@@ -4,6 +4,10 @@
   "license": "MIT",
   "scripts": {
     "test:hooks": "node --test \".claude/hooks/*.test.mjs\"",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:status": "supabase status",
+    "db:reset": "supabase stop --no-backup && supabase start && XJOBS_SKIP_ENV_FILES=1 DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres pnpm --filter @xjobs/xjobs db:migrate && XJOBS_SKIP_ENV_FILES=1 DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres pnpm --filter @xjobs/xjobs db:seed",
     "infra:redis": "docker compose up -d redis redis-cache",
     "worker": "node apps/xjobs/dist/worker.js",
     "worker:dev": "pnpm --filter @xjobs/xjobs worker:dev",
@@ -52,6 +56,7 @@
     "eslint-config-prettier": "^10.0.0",
     "nx": "24.0.2",
     "prettier": "~3.6.2",
+    "supabase": "3.0.0-next.27",
     "tslib": "^2.3.0",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.58.0",

@@ -13,6 +13,18 @@ npm ci
 npx nx serve xjobs
 ```
 
+## Local stack
+
+Supabase runs locally through the Supabase CLI (Docker required); Compose only runs Redis. In order:
+
+1. `pnpm db:start` starts Supabase (API 54321, Postgres 54322, Studio 54323, Mailpit 54324).
+2. Copy `.env.example` to `.env` and fill `SUPABASE_SERVICE_ROLE_KEY` from `pnpm db:status`.
+3. `pnpm --filter @xjobs/xjobs db:migrate`, then `pnpm --filter @xjobs/xjobs db:seed`.
+4. `pnpm infra:redis` starts Redis.
+5. `npx nx serve xjobs` runs the engine.
+
+`pnpm db:stop` stops the stack, and `pnpm db:reset` wipes it and re-applies migrations and the seed. The old self-hosted Compose stack is retired: its data and your old `.env` are not carried over, so build a fresh `.env` from `.env.example`.
+
 ## Debugging xjobs
 
 In VS Code, set a breakpoint in `apps/xjobs/src`, select **Debug @xjobs/xjobs with Nx** in Run and Debug, and press **F5**.
