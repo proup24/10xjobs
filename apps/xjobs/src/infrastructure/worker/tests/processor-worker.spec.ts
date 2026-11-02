@@ -43,13 +43,15 @@ vi.mock('bullmq', async (importOriginal) => {
 });
 
 const checks = vi.hoisted(() => ({
-  assertApiKey: vi.fn(async () => undefined),
-  assertStructuredOutputs: vi.fn(async () => undefined),
-  loadModelPricing: vi.fn(
-    async (models: string[]) =>
-      new Map(
-        models.map((m) => [m, { prompt: 0.000001, completion: 0.000002 }]),
-      ),
+  assertApiKey: vi.fn(async (_client: unknown) => undefined),
+  checkModels: vi.fn(
+    async (
+      _client: unknown,
+      config: { decisionModel: string; extractionModel: string },
+    ) =>
+      new Map([
+        [config.extractionModel, { prompt: 0.000001, completion: 0.000002 }],
+      ]),
   ),
 }));
 vi.mock(
@@ -61,6 +63,7 @@ vi.mock(
 );
 
 import { ModelPricing } from 'src/modules/processor';
+import { OPENROUTER_CLIENT } from 'src/modules/processor/models/openrouter.client';
 import { WorkerModule } from '../worker.module';
 import { WorkerService } from '../worker.service';
 
@@ -75,17 +78,16 @@ it('runs only the processor queue with its sweeper after the startup checks', as
   }).compile();
   try {
     await module.get(WorkerService).onModuleInit();
-    expect(checks.assertApiKey).toHaveBeenCalledWith(
-      process.env.OPENROUTER_API_KEY,
+    const client = module.get(OPENROUTER_CLIENT);
+    expect(checks.assertApiKey).toHaveBeenCalledWith(client);
+    expect(checks.checkModels).toHaveBeenCalledWith(
+      client,
+      expect.objectContaining({
+        decisionModel: 'typesafe/jev-1.14',
+        extractionModel: 'anthropic/claude-opus-5.5',
+      }),
     );
-    expect(checks.assertStructuredOutputs).toHaveBeenCalledWith(
-      'anthropic/claude-opus-5.5',
-    );
-    expect(checks.loadModelPricing).toHaveBeenCalledWith([
-      'typesafe/jev-1.14',
-      'anthropic/claude-opus-5.5',
-    ]);
-    expect(module.get(ModelPricing).get('typesafe/jev-1.14')).toEqual({
+    expect(module.get(ModelPricing).get('anthropic/claude-opus-5.5')).toEqual({
       prompt: 0.000001,
       completion: 0.000002,
     });
@@ -98,9 +100,9 @@ it('runs only the processor queue with its sweeper after the startup checks', as
 });
 
 it('refuses to start when a model has no pricing', async () => {
-  checks.loadModelPricing.mockRejectedValueOnce(
+  checks.checkModels.mockRejectedValueOnce(
     new Error(
-      'OpenRouter lists no numeric pricing for model typesafe/jev-1.14',
+      'OpenRouter lists no numeric pricing for model anthropic/claude-opus-5.5',
     ),
   );
   const module = await Test.createTestingModule({

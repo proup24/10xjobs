@@ -1,5 +1,4 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import type { Redis } from 'ioredis';
 import {
   PROCESS_QUEUE,
@@ -7,7 +6,6 @@ import {
   processProcessJob,
   processSweepConfig,
 } from 'src/infrastructure/jobs/steps/process';
-import type { WorkerProcessEnvironmentVariables } from 'src/config';
 import {
   ModelPricing,
   PROCESSOR_CONFIG,
@@ -17,8 +15,9 @@ import {
 } from 'src/modules/processor';
 import {
   assertApiKey,
-  assertStructuredOutputs,
-  loadModelPricing,
+  checkModels,
+  OPENROUTER_CLIENT,
+  type OpenRouterClient,
 } from 'src/modules/processor/models/openrouter.client';
 import { WorkerRuntimeService } from './runtime.service';
 import { syncProcessSweepScheduler } from './scheduler';
@@ -35,29 +34,19 @@ export class ProcessorWorkerService {
     private readonly processQueue: ProcessQueue,
     @Inject(PROCESSOR_CONFIG) private readonly config: ProcessorConfig,
     private readonly pricing: ModelPricing,
-    private readonly env: ConfigService<
-      WorkerProcessEnvironmentVariables,
-      true
-    >,
+    @Inject(OPENROUTER_CLIENT) private readonly client: OpenRouterClient,
   ) {}
 
   /**
-   * Fails startup, not every job, when the key is rejected, a model is not
-   * listed or priced, or the extraction model cannot do structured output.
+   * Fails startup, not every job, when the key is rejected, or the extraction
+   * model is not listed, not priced, or cannot do structured output. The
+   * decision model is priced only when OpenRouter lists it (see checkModels).
    * Runs once; `start` runs it when nobody did before.
    */
   async checkStartup(): Promise<void> {
     if (this.checked) return;
-    await assertApiKey(
-      this.env.get('OPENROUTER_API_KEY', { infer: true }) ?? '',
-    );
-    await assertStructuredOutputs(this.config.extractionModel);
-    this.pricing.set(
-      await loadModelPricing([
-        this.config.decisionModel,
-        this.config.extractionModel,
-      ]),
-    );
+    await assertApiKey(this.client);
+    this.pricing.set(await checkModels(this.client, this.config));
     this.checked = true;
   }
 

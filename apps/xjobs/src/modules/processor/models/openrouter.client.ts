@@ -1,161 +1,165 @@
+import { OpenRouter } from '@openrouter/sdk';
 import {
+  ConnectionError,
+  HTTPClientError,
+  InvalidRequestError,
+  OpenRouterError,
+  RequestAbortedError,
+  RequestTimeoutError,
+  ResponseValidationError,
+  SDKValidationError,
+} from '@openrouter/sdk/models/errors';
+import {
+  ModelOutputError,
   ModelRequestError,
   ProviderUnavailableError,
   TransientModelError,
 } from './errors';
 import type { Price } from './pricing';
 
-const BASE_URL = 'https://openrouter.ai';
 const CALL_TIMEOUT_MS = 120_000;
 /** Key, credit or account problems: no job can succeed until a human acts. */
 const PROVIDER_UNAVAILABLE = new Set([401, 402, 403]);
 
-export interface PostResult {
-  body: Record<string, unknown>;
-  latencyMs: number;
+/** Injection token for the processor's {@link OpenRouterClient}. */
+export const OPENROUTER_CLIENT = Symbol('OPENROUTER_CLIENT');
+
+/** The parts of the SDK client the processor uses; tests fake exactly these. */
+export type OpenRouterClient = Pick<
+  OpenRouter,
+  'alpha' | 'chat' | 'models' | 'apiKeys'
+>;
+
+/**
+ * The SDK client for the processor. The SDK's own retries are off: the
+ * processor's retry rules (BullMQ backoff, attempt counting, the provider
+ * pause) decide what happens after a failed call.
+ */
+export function createOpenRouterClient(apiKey: string): OpenRouterClient {
+  return new OpenRouter({
+    apiKey,
+    appTitle: 'xjobs',
+    timeoutMs: CALL_TIMEOUT_MS,
+    retryConfig: { strategy: 'none' },
+  });
 }
 
-/** Provider error code and message only (message truncated), never a body excerpt. */
-function describeError(parsed: unknown): string {
-  const error = (parsed as { error?: { code?: unknown; message?: unknown } })
-    ?.error;
-  if (!error || typeof error !== 'object') return '';
-  const code = error.code === undefined ? '' : ` code=${String(error.code)}`;
-  const message =
-    typeof error.message === 'string' ? ` ${error.message.slice(0, 200)}` : '';
-  return `:${code}${message}`;
+/**
+ * Maps an SDK failure to the processor's error classes. Messages carry the
+ * status only, never a response body, so posting text never reaches logs.
+ */
+export function toModelError(error: unknown, latencyMs: number): Error {
+  const meta = { latencyMs };
+  // Checked before OpenRouterError: it extends it, with the 2xx status of a
+  // response the SDK could not read.
+  if (error instanceof ResponseValidationError)
+    return new ModelOutputError(
+      'OpenRouter returned an unreadable response',
+      meta,
+    );
+  if (error instanceof OpenRouterError) {
+    const status = error.statusCode;
+    const message = `OpenRouter returned ${status}`;
+    if (PROVIDER_UNAVAILABLE.has(status))
+      return new ProviderUnavailableError(message, meta);
+    if (status === 408 || status === 429 || status >= 500)
+      return new TransientModelError(message, meta);
+    return new ModelRequestError(message, meta);
+  }
+  if (
+    error instanceof SDKValidationError ||
+    error instanceof InvalidRequestError
+  )
+    return new ModelRequestError(
+      `OpenRouter request rejected before sending: ${error.message}`,
+      meta,
+    );
+  if (
+    error instanceof ConnectionError ||
+    error instanceof RequestTimeoutError ||
+    error instanceof RequestAbortedError ||
+    error instanceof HTTPClientError
+  )
+    return new TransientModelError(
+      `OpenRouter call failed: ${error.message}`,
+      meta,
+    );
+  if (error instanceof Error) return error;
+  return new TransientModelError(
+    `OpenRouter call failed: ${String(error)}`,
+    meta,
+  );
 }
 
-/** Thin OpenRouter HTTP client: maps statuses to the model error classes. */
-export class OpenRouterClient {
-  constructor(private readonly apiKey: string) {}
-
-  async postJson(
-    path: string,
-    body: unknown,
-    signal: AbortSignal = AbortSignal.timeout(CALL_TIMEOUT_MS),
-  ): Promise<PostResult> {
-    const started = Date.now();
-    let response: Response;
-    try {
-      response = await fetch(`${BASE_URL}${path}`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-        signal,
-      });
-    } catch (error) {
-      throw new TransientModelError(
-        `OpenRouter request failed: ${error instanceof Error ? error.message : String(error)}`,
-        { latencyMs: Date.now() - started },
-      );
-    }
-    const text = await response.text().catch(() => '');
-    const latencyMs = Date.now() - started;
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      parsed = undefined;
-    }
-    const status = response.status;
-    if (!response.ok) {
-      const message = `OpenRouter ${path} returned ${status}${describeError(parsed)}`;
-      if (PROVIDER_UNAVAILABLE.has(status))
-        throw new ProviderUnavailableError(message, { latencyMs });
-      if (status === 408 || status === 429 || status >= 500)
-        throw new TransientModelError(message, { latencyMs });
-      throw new ModelRequestError(message, { latencyMs });
-    }
-    if (typeof parsed !== 'object' || parsed === null)
-      throw new TransientModelError(
-        `OpenRouter ${path} returned an unparseable body`,
-        { latencyMs },
-      );
-    const record = parsed as Record<string, unknown>;
-    if (record.error) {
-      const message = `OpenRouter ${path} returned an error body${describeError(record)}`;
-      const code = (record.error as { code?: unknown }).code;
-      if (typeof code === 'number' && PROVIDER_UNAVAILABLE.has(code))
-        throw new ProviderUnavailableError(message, { latencyMs });
-      if (
-        typeof code === 'number' &&
-        code >= 400 &&
-        code < 500 &&
-        code !== 408 &&
-        code !== 429
-      )
-        throw new ModelRequestError(message, { latencyMs });
-      throw new TransientModelError(message, { latencyMs });
-    }
-    return { body: record, latencyMs };
+/** Runs one SDK call, measuring its latency and mapping its failure. */
+export async function timed<T>(
+  call: () => Promise<T>,
+): Promise<{ value: T; latencyMs: number }> {
+  const started = Date.now();
+  try {
+    const value = await call();
+    return { value, latencyMs: Date.now() - started };
+  } catch (error) {
+    throw toModelError(error, Date.now() - started);
   }
 }
 
-interface ListedModel {
-  id: string;
-  supported_parameters?: string[];
-  pricing?: { prompt?: unknown; completion?: unknown };
-}
-
-async function listModels(): Promise<ListedModel[]> {
-  const response = await fetch(`${BASE_URL}/api/v1/models`, {
-    signal: AbortSignal.timeout(CALL_TIMEOUT_MS),
-  });
-  if (!response.ok)
-    throw new Error(`Could not list OpenRouter models: ${response.status}`);
-  const body = (await response.json()) as { data?: ListedModel[] };
-  return body.data ?? [];
-}
-
 /** Startup check: the key is accepted. A rejected key fails startup, not every job. */
-export async function assertApiKey(apiKey: string): Promise<void> {
-  const response = await fetch(`${BASE_URL}/api/v1/key`, {
-    headers: { Authorization: `Bearer ${apiKey}` },
-    signal: AbortSignal.timeout(CALL_TIMEOUT_MS),
-  });
-  if (!response.ok)
-    throw new Error(
-      `OpenRouter rejected OPENROUTER_API_KEY (GET /api/v1/key returned ${response.status})`,
-    );
+export async function assertApiKey(client: OpenRouterClient): Promise<void> {
+  try {
+    await client.apiKeys.getCurrentKeyMetadata();
+  } catch (error) {
+    const status =
+      error instanceof OpenRouterError ? ` (${error.statusCode})` : '';
+    throw new Error(`OpenRouter rejected OPENROUTER_API_KEY${status}`);
+  }
 }
 
 /** USD per token from a listed price (OpenRouter sends decimal strings). */
-function perToken(value: unknown): number | null {
-  if (typeof value !== 'number' && typeof value !== 'string') return null;
-  if (typeof value === 'string' && value.trim() === '') return null;
+function perToken(value: string | undefined): number | null {
+  if (value === undefined || value.trim() === '') return null;
   const n = Number(value);
   return Number.isFinite(n) && n >= 0 ? n : null;
 }
 
 /**
- * Startup check: every model is listed with a numeric prompt and completion
- * price, kept to estimate a call's cost when a response does not report it.
+ * Startup check of the configured models, returning their list prices.
+ *
+ * The extraction model must be listed, support `structured_outputs`, and have
+ * numeric prices (to estimate a call whose response reports no cost). The
+ * decision model is served by the Decisions API and may not be in the public
+ * list; its responses report `usage.cost`, so it is priced only when listed.
  */
-export async function loadModelPricing(
-  models: string[],
+export async function checkModels(
+  client: OpenRouterClient,
+  config: { decisionModel: string; extractionModel: string },
 ): Promise<Map<string, Price>> {
-  const listed = await listModels();
-  const prices = new Map<string, Price>();
-  for (const model of new Set(models)) {
-    const entry = listed.find((m) => m.id === model);
-    if (!entry) throw new Error(`OpenRouter does not list model ${model}`);
-    const prompt = perToken(entry.pricing?.prompt);
-    const completion = perToken(entry.pricing?.completion);
-    if (prompt === null || completion === null)
-      throw new Error(`OpenRouter lists no numeric pricing for model ${model}`);
-    prices.set(model, { prompt, completion });
-  }
-  return prices;
-}
+  const listed = (await client.models.list()).result.data;
+  const find = (id: string) => listed.find((m) => m.id === id);
+  const price = (id: string): Price | null => {
+    const entry = find(id);
+    const prompt = perToken(entry?.pricing.prompt);
+    const completion = perToken(entry?.pricing.completion);
+    return prompt === null || completion === null
+      ? null
+      : { prompt, completion };
+  };
 
-/** Startup check: the extraction model must be listed with `structured_outputs`. */
-export async function assertStructuredOutputs(model: string): Promise<void> {
-  const entry = (await listModels()).find((m) => m.id === model);
-  if (!entry) throw new Error(`OpenRouter does not list model ${model}`);
-  if (!entry.supported_parameters?.includes('structured_outputs'))
-    throw new Error(`Model ${model} does not support structured_outputs`);
+  const extraction = find(config.extractionModel);
+  if (!extraction)
+    throw new Error(`OpenRouter does not list model ${config.extractionModel}`);
+  if (!extraction.supportedParameters.includes('structured_outputs'))
+    throw new Error(
+      `Model ${config.extractionModel} does not support structured_outputs`,
+    );
+  const extractionPrice = price(config.extractionModel);
+  if (!extractionPrice)
+    throw new Error(
+      `OpenRouter lists no numeric pricing for model ${config.extractionModel}`,
+    );
+
+  const prices = new Map([[config.extractionModel, extractionPrice]]);
+  const decisionPrice = price(config.decisionModel);
+  if (decisionPrice) prices.set(config.decisionModel, decisionPrice);
+  return prices;
 }

@@ -28,8 +28,8 @@ import {
 import { OpenRouterDecisionModel } from 'src/modules/processor/models/openrouter-decision.model';
 import { OpenRouterExtractionModel } from 'src/modules/processor/models/openrouter-extraction.model';
 import {
-  loadModelPricing,
-  OpenRouterClient,
+  checkModels,
+  createOpenRouterClient,
 } from 'src/modules/processor/models/openrouter.client';
 import { ModelPricing } from 'src/modules/processor/models/pricing';
 import {
@@ -130,12 +130,10 @@ async function main(): Promise<void> {
     `decision ${config.decisionModel}, extraction ${config.extractionModel}`,
   );
 
-  const client = new OpenRouterClient(apiKey);
+  const client = createOpenRouterClient(apiKey);
   // Cost per job is a bar: a response without a cost is estimated, not 0.
   const pricing = new ModelPricing();
-  pricing.set(
-    await loadModelPricing([config.decisionModel, config.extractionModel]),
-  );
+  pricing.set(await checkModels(client, config));
   const decision = new RecordingDecisionModel(
     new OpenRouterDecisionModel(client, config.decisionModel, pricing),
   );

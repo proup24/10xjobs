@@ -8,7 +8,11 @@ import {
 } from './config/processor.config';
 import { OpenRouterDecisionModel } from './models/openrouter-decision.model';
 import { OpenRouterExtractionModel } from './models/openrouter-extraction.model';
-import { OpenRouterClient } from './models/openrouter.client';
+import {
+  createOpenRouterClient,
+  OPENROUTER_CLIENT,
+  type OpenRouterClient,
+} from './models/openrouter.client';
 import { ModelPricing } from './models/pricing';
 import { DecisionModel, ExtractionModel } from './models/types';
 import { ProcessJobService } from './pipeline/process-job.service';
@@ -50,17 +54,17 @@ type Env = ConfigService<WorkerProcessEnvironmentVariables, true>;
       }),
     },
     {
-      provide: OpenRouterClient,
+      provide: OPENROUTER_CLIENT,
       inject: [ConfigService],
-      // The key is required only for the processor role (startup validation).
-      useFactory: (config: Env) =>
-        new OpenRouterClient(
+      // The key is required only when the processor runs (startup validation).
+      useFactory: (config: Env): OpenRouterClient =>
+        createOpenRouterClient(
           config.get('OPENROUTER_API_KEY', { infer: true }) ?? '',
         ),
     },
     {
       provide: DecisionModel,
-      inject: [OpenRouterClient, PROCESSOR_CONFIG, ModelPricing],
+      inject: [OPENROUTER_CLIENT, PROCESSOR_CONFIG, ModelPricing],
       useFactory: (
         client: OpenRouterClient,
         config: ProcessorConfig,
@@ -69,7 +73,7 @@ type Env = ConfigService<WorkerProcessEnvironmentVariables, true>;
     },
     {
       provide: ExtractionModel,
-      inject: [OpenRouterClient, PROCESSOR_CONFIG, ModelPricing],
+      inject: [OPENROUTER_CLIENT, PROCESSOR_CONFIG, ModelPricing],
       useFactory: (
         client: OpenRouterClient,
         config: ProcessorConfig,
@@ -79,6 +83,7 @@ type Env = ConfigService<WorkerProcessEnvironmentVariables, true>;
     },
   ],
   exports: [
+    OPENROUTER_CLIENT,
     ProcessJobService,
     ProcessorRepository,
     PROCESSOR_CONFIG,

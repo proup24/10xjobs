@@ -62,8 +62,7 @@ import { StorageService } from 'src/modules/storage';
 import { MemoryStorageService } from 'src/modules/storage/testing';
 const checks = vi.hoisted(() => ({
   assertApiKey: vi.fn(async () => undefined),
-  assertStructuredOutputs: vi.fn(async () => undefined),
-  loadModelPricing: vi.fn(async () => new Map()),
+  checkModels: vi.fn(async () => new Map()),
 }));
 vi.mock(
   'src/modules/processor/models/openrouter.client',

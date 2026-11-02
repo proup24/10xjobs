@@ -17,7 +17,7 @@ import {
   loadGolden,
 } from 'src/modules/processor/golden/golden';
 import { OpenRouterExtractionModel } from 'src/modules/processor/models/openrouter-extraction.model';
-import { OpenRouterClient } from 'src/modules/processor/models/openrouter.client';
+import { createOpenRouterClient } from 'src/modules/processor/models/openrouter.client';
 import type { PostingInput } from 'src/modules/processor/models/types';
 import { SEED } from 'src/modules/processor/vocab/seed-data';
 
@@ -58,7 +58,7 @@ async function main(): Promise<void> {
   const model =
     process.env.PROCESSOR_EXTRACTION_MODEL ?? 'anthropic/claude-opus-5.5';
   const extraction = new OpenRouterExtractionModel(
-    new OpenRouterClient(apiKey),
+    createOpenRouterClient(apiKey),
     model,
   );
   const todo = loadGolden().filter((c) => KEYS.some((k) => !c.drafted[k]));

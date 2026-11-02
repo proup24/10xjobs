@@ -45,8 +45,7 @@ vi.mock('bullmq', async (importOriginal) => {
 
 const checks = vi.hoisted(() => ({
   assertApiKey: vi.fn(async () => undefined),
-  assertStructuredOutputs: vi.fn(async () => undefined),
-  loadModelPricing: vi.fn(async () => new Map()),
+  checkModels: vi.fn(async () => new Map()),
 }));
 vi.mock(
   'src/modules/processor/models/openrouter.client',
@@ -89,7 +88,7 @@ it('runs the processor with the others when PROCESSOR_ENABLED=true', async () =>
   try {
     await service.onModuleInit();
     expect(checks.assertApiKey).toHaveBeenCalledTimes(1);
-    expect(checks.loadModelPricing).toHaveBeenCalledTimes(1);
+    expect(checks.checkModels).toHaveBeenCalledTimes(1);
     expect(created.workers).toEqual([
       'infrastructure',
       'ingest',
@@ -106,7 +105,7 @@ it('runs the processor with the others when PROCESSOR_ENABLED=true', async () =>
 });
 
 it('runs the processor checks before any worker, so a failure starts nothing', async () => {
-  checks.assertStructuredOutputs.mockRejectedValueOnce(
+  checks.checkModels.mockRejectedValueOnce(
     new Error(
       'Model anthropic/claude-opus-5.5 does not support structured_outputs',
     ),

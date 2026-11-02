@@ -1,30 +1,28 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Logger } from '@nestjs/common';
+import type { DecisionsResponse } from '@openrouter/sdk/models';
+import type { CreateApiAlphaDecisionsRequest } from '@openrouter/sdk/models/operations';
+import { OpenRouterError } from '@openrouter/sdk/models/errors';
 import {
-  ModelRequestError,
+  ModelOutputError,
   ProviderUnavailableError,
   TransientModelError,
 } from './errors';
-import { OpenRouterClient } from './openrouter.client';
 import { OpenRouterDecisionModel } from './openrouter-decision.model';
+import type { OpenRouterClient } from './openrouter.client';
 import { ModelPricing } from './pricing';
 import type { DecisionQuestion, PostingInput } from './types';
 
-const fixture = (name: string): string =>
-  readFileSync(resolve(__dirname, 'fixtures', name), 'utf8');
+const MODEL = 'typesafe/jev-1.14';
 
 const input: PostingInput = {
   jobId: 'j1',
   title: 'Senior Backend Engineer',
   companyName: 'Acme',
-  description: 'Build NestJS services.',
+  description: 'Remote in the EU. TypeScript and PostgreSQL.',
   truncated: false,
   evidence: {
-    location: null,
-    contractType: null,
-    experienceLevel: null,
+    location: 'Paris, France',
+    contractType: 'Full-time',
+    experienceLevel: 'Mid-Senior level',
     salary: null,
   },
 };
@@ -34,160 +32,206 @@ const questions: DecisionQuestion[] = [
     key: 'seniority',
     kind: 'choice',
     options: ['junior', 'mid', 'senior', 'unstated'],
-    instructions: 'What seniority?',
+    instructions: 'The seniority the posting asks for.',
   },
   {
     key: 'isSoftwareEngineeringRole',
     kind: 'yesno',
-    instructions: 'Software role?',
+    instructions: 'Is this a software engineering role?',
   },
 ];
 
-function stubFetch(body: string, status = 200) {
-  const fetchMock = vi.fn(async () => new Response(body, { status }));
-  vi.stubGlobal('fetch', fetchMock);
-  return fetchMock;
+function response(over: Partial<DecisionsResponse> = {}): DecisionsResponse {
+  return {
+    id: 'dec-1',
+    model: MODEL,
+    answers: {
+      seniority: {
+        type: 'choice',
+        choice: 'senior',
+        confidence: 0.91,
+        probabilities: {
+          junior: 0.01,
+          mid: 0.06,
+          senior: 0.92,
+          unstated: 0.01,
+        },
+      },
+      isSoftwareEngineeringRole: { type: 'noul', noul: 0.97 },
+    },
+    usage: { cost: 0.00002, inputTokens: 480, outputTokens: 0 },
+    ...over,
+  };
 }
 
-const model = () =>
-  new OpenRouterDecisionModel(new OpenRouterClient('key'), 'typesafe/jev-1.14');
+function client(result: DecisionsResponse | Error) {
+  const create = vi.fn(async (_req: CreateApiAlphaDecisionsRequest) => {
+    if (result instanceof Error) throw result;
+    return result;
+  });
+  return {
+    create,
+    client: { alpha: { decisions: { create } } } as unknown as OpenRouterClient,
+  };
+}
+
+function httpError(status: number) {
+  return new OpenRouterError(`status ${status}`, {
+    response: new Response('', { status }),
+    request: new Request('https://openrouter.ai/api/alpha/decisions'),
+    body: '',
+  });
+}
 
 describe('OpenRouterDecisionModel', () => {
-  afterEach(() => {
-    vi.unstubAllGlobals();
-    vi.restoreAllMocks();
+  it('sends one Decisions request with every question', async () => {
+    const fake = client(response());
+    await new OpenRouterDecisionModel(fake.client, MODEL).decide(
+      input,
+      questions,
+    );
+
+    const [req] = fake.create.mock.calls[0]!;
+    expect(req.decisionsRequest.model).toBe(MODEL);
+    expect(req.decisionsRequest.state).toContain('Senior Backend Engineer');
+    expect(req.decisionsRequest.state).toContain('Remote in the EU');
+    expect(req.decisionsRequest.state).toContain(
+      'Listing metadata (context only):',
+    );
+    expect(req.decisionsRequest.questions.seniority).toEqual({
+      type: 'choice',
+      instructions: 'The seniority the posting asks for.',
+      criteria: {
+        junior: 'junior',
+        mid: 'mid',
+        senior: 'senior',
+        unstated: 'unstated',
+      },
+    });
+    expect(req.decisionsRequest.questions.isSoftwareEngineeringRole).toEqual({
+      type: 'noul',
+      instructions: 'Is this a software engineering role?',
+      criteria: { true: 'Yes.', false: 'No.' },
+    });
   });
 
-  it('maps answers and cost, and sends the pinned model', async () => {
-    const fetchMock = stubFetch(fixture('decision-ok.json'));
-    const { answers, meta } = await model().decide(input, questions);
+  it('reads a choice with its confidence and a yes/no with |p − 0.5| × 2', async () => {
+    const { answers, meta } = await new OpenRouterDecisionModel(
+      client(response()).client,
+      MODEL,
+    ).decide(input, questions);
+
     expect(answers).toEqual([
-      { key: 'seniority', value: 'senior', score: 0.9 },
-      { key: 'isSoftwareEngineeringRole', value: true, score: 0.95 },
+      { key: 'seniority', value: 'senior', score: 0.91 },
+      {
+        key: 'isSoftwareEngineeringRole',
+        value: true,
+        score: expect.closeTo(0.94, 10),
+      },
     ]);
-    expect(meta.costUsd).toBe(0.0021);
-    const [url, init] = fetchMock.mock.calls[0] as unknown as [
-      string,
-      RequestInit,
-    ];
-    expect(url).toBe('https://openrouter.ai/api/alpha/decisions');
-    const sent = JSON.parse(init.body as string);
-    expect(sent.model).toBe('typesafe/jev-1.14');
-    expect(sent.questions.isSoftwareEngineeringRole.type).toBe('noul');
-    expect(Object.keys(sent.questions.seniority.criteria)).toEqual(
-      questions[0].kind === 'choice' ? questions[0].options : [],
-    );
+    expect(meta).toMatchObject({
+      model: MODEL,
+      providerRequestId: 'dec-1',
+      inputTokens: 480,
+      outputTokens: 0,
+      costUsd: 0.00002,
+    });
   });
 
-  it('turns an option outside the question into a null answer', async () => {
-    stubFetch(fixture('decision-bad-option.json'));
-    const { answers } = await model().decide(input, questions);
-    expect(answers[0]).toEqual({ key: 'seniority', value: null, score: 0 });
-    expect(answers[1].value).toBe(false);
+  it('uses the chosen option probability when no confidence is given', async () => {
+    const res = response();
+    res.answers.seniority = {
+      type: 'choice',
+      choice: 'mid',
+      probabilities: { mid: 0.64 },
+    };
+    const { answers } = await new OpenRouterDecisionModel(
+      client(res).client,
+      MODEL,
+    ).decide(input, questions);
+    expect(answers[0]).toEqual({ key: 'seniority', value: 'mid', score: 0.64 });
   });
 
-  it('turns a missing answer into a null answer', async () => {
-    stubFetch(
-      JSON.stringify({
-        answers: {
-          seniority: { type: 'choice', selected: 'mid', confidence: 0.6 },
-        },
-        usage: { cost: 0.001 },
-      }),
-    );
-    const { answers } = await model().decide(input, questions);
+  it('reads "no" from a low yes probability', async () => {
+    const res = response();
+    res.answers.isSoftwareEngineeringRole = { type: 'noul', noul: 0.1 };
+    const { answers } = await new OpenRouterDecisionModel(
+      client(res).client,
+      MODEL,
+    ).decide(input, questions);
     expect(answers[1]).toEqual({
       key: 'isSoftwareEngineeringRole',
+      value: false,
+      score: expect.closeTo(0.8, 10),
+    });
+  });
+
+  it('scores 0 an option that was never offered, a missing answer, or an answer of the wrong type', async () => {
+    const res = response();
+    res.answers.seniority = {
+      type: 'choice',
+      choice: 'guru',
+      confidence: 0.99,
+    };
+    delete res.answers.isSoftwareEngineeringRole;
+    const first = await new OpenRouterDecisionModel(
+      client(res).client,
+      MODEL,
+    ).decide(input, questions);
+    expect(first.answers).toEqual([
+      { key: 'seniority', value: null, score: 0 },
+      { key: 'isSoftwareEngineeringRole', value: null, score: 0 },
+    ]);
+
+    const swapped = response();
+    swapped.answers.seniority = { type: 'noul', noul: 0.9 };
+    const second = await new OpenRouterDecisionModel(
+      client(swapped).client,
+      MODEL,
+    ).decide(input, questions);
+    expect(second.answers[0]).toEqual({
+      key: 'seniority',
       value: null,
       score: 0,
     });
   });
 
-  it('throws a transient error on 429', async () => {
-    stubFetch(fixture('error-429.json'), 429);
-    await expect(model().decide(input, questions)).rejects.toBeInstanceOf(
-      TransientModelError,
-    );
+  it('throws an output error with the call cost when no question was answered', async () => {
+    const error = await new OpenRouterDecisionModel(
+      client(response({ answers: {} })).client,
+      MODEL,
+    )
+      .decide(input, questions)
+      .catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ModelOutputError);
+    expect((error as ModelOutputError).meta?.costUsd).toBe(0.00002);
   });
 
-  it.each([
-    ['null', null],
-    ['string', 'senior'],
-  ])('treats a %s answer as missing', async (_name, bad) => {
-    stubFetch(
-      JSON.stringify({
-        answers: {
-          seniority: bad,
-          isSoftwareEngineeringRole: { type: 'noul', probability: 0.5 },
-        },
-        usage: { cost: 0.001 },
-      }),
-    );
-    const { answers } = await model().decide(input, questions);
-    expect(answers.map((a) => [a.value, a.score])).toEqual([
-      [null, 0],
-      [true, 0],
-    ]);
-  });
-
-  it('scores 0 when the option score is not a number', async () => {
-    stubFetch(
-      JSON.stringify({
-        answers: {
-          seniority: {
-            type: 'choice',
-            selected: 'mid',
-            probabilities: { mid: 'high' },
-            confidence: 'high',
-          },
-        },
-      }),
-    );
-    const { answers } = await model().decide(input, questions);
-    expect(answers[0]).toEqual({ key: 'seniority', value: 'mid', score: 0 });
-  });
-
-  it('throws a request error on a 200 with a 4xx error code', async () => {
-    stubFetch('{"error":{"code":404,"message":"no model"}}');
-    await expect(model().decide(input, questions)).rejects.toBeInstanceOf(
-      ModelRequestError,
-    );
-  });
-
-  it('throws provider-unavailable on a 200 with a 401 code', async () => {
-    stubFetch('{"error":{"code":401,"message":"no key"}}');
-    await expect(model().decide(input, questions)).rejects.toBeInstanceOf(
-      ProviderUnavailableError,
-    );
-  });
-
-  it('estimates a missing cost from the reported tokens and list prices', async () => {
-    const warn = vi
-      .spyOn(Logger.prototype, 'warn')
-      .mockImplementation(() => undefined);
+  it('estimates a missing cost from the input tokens and the listed price', async () => {
     const pricing = new ModelPricing();
-    pricing.set(
-      new Map([['typesafe/jev-1.14', { prompt: 0.000001, completion: 0 }]]),
-    );
-    const priced = new OpenRouterDecisionModel(
-      new OpenRouterClient('key'),
-      'typesafe/jev-1.14',
+    pricing.set(new Map([[MODEL, { prompt: 0.00000004, completion: 0 }]]));
+    const { meta } = await new OpenRouterDecisionModel(
+      client(
+        response({ usage: { inputTokens: 1000, outputTokens: 0 } }),
+      ).client,
+      MODEL,
       pricing,
-    );
-    const body = (usage: unknown) =>
-      JSON.stringify({
-        answers: { seniority: { selected: 'mid', confidence: 0.9 } },
-        usage,
-      });
-    stubFetch(body({ prompt_tokens: 2000 }));
-    const { meta } = await priced.decide(input, questions);
-    expect(meta.inputTokens).toBe(2000);
-    expect(meta.costUsd).toBeCloseTo(0.002, 9);
+    ).decide(input, questions);
+    expect(meta.costUsd).toBeCloseTo(0.00004, 10);
+  });
 
-    // No tokens either: about four characters of request per token.
-    stubFetch(body({}));
-    const again = await priced.decide(input, questions);
-    expect(again.meta.costUsd).toBeGreaterThan(0);
-    expect(warn).toHaveBeenCalledTimes(1);
+  it('maps provider failures', async () => {
+    await expect(
+      new OpenRouterDecisionModel(client(httpError(402)).client, MODEL).decide(
+        input,
+        questions,
+      ),
+    ).rejects.toBeInstanceOf(ProviderUnavailableError);
+    await expect(
+      new OpenRouterDecisionModel(client(httpError(503)).client, MODEL).decide(
+        input,
+        questions,
+      ),
+    ).rejects.toBeInstanceOf(TransientModelError);
   });
 });

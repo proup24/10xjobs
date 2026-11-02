@@ -126,7 +126,7 @@ export function modelOutputSchema(
 }
 
 /**
- * OpenRouter strict mode may reject parts of the JSON Schema; see models/SPIKE.md.
+ * OpenRouter strict mode may reject parts of the JSON Schema; `pnpm --filter @xjobs/xjobs processor:smoke` sends the real schema.
  * Identity until the spike says what must be flattened.
  */
 export function flattenForStrict(schema: object): object {
