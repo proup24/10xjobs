@@ -22,6 +22,7 @@ Supabase runs locally through the Supabase CLI (Docker required); Compose only r
 3. `pnpm --filter @xjobs/xjobs db:migrate`, then `pnpm --filter @xjobs/xjobs db:seed`.
 4. `pnpm infra:redis` starts Redis.
 5. `npx nx serve xjobs` runs the engine.
+6. For the web app, copy `apps/web/.env.example` to `apps/web/.env.local` and fill `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` from `pnpm db:status`. Then `npx nx dev web` serves on http://localhost:3001.
 
 `pnpm db:stop` stops the stack, and `pnpm db:reset` wipes it and re-applies migrations and the seed. The old self-hosted Compose stack is retired: its data and your old `.env` are not carried over, so build a fresh `.env` from `.env.example`.
 

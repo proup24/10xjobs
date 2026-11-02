@@ -46,6 +46,10 @@ jobs:
 
   database:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      XJOBS_SKIP_ENV_FILES: '1'
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
     steps:
       - uses: actions/checkout@v7
 
@@ -65,19 +69,23 @@ jobs:
 
       - name: Apply the Prisma migrations
         run: pnpm --filter @xjobs/xjobs db:migrate
-        env:
-          XJOBS_SKIP_ENV_FILES: '1'
-          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
 
       # The only CI step that runs the engine's runtime client against a real database
       - name: Seed the database
         run: pnpm --filter @xjobs/xjobs db:seed
-        env:
-          XJOBS_SKIP_ENV_FILES: '1'
-          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
 
       - name: Check the generated database types are current
         run: pnpm db:types && git diff --exit-code apps/web/src/lib/supabase/database.types.ts
 
       - name: Run the database tests
         run: pnpm db:test
+
+      - name: Show Supabase status and container logs
+        if: failure()
+        run: |
+          pnpm exec supabase status || true
+          for c in $(docker ps -a --filter name=supabase_ --format '{{.Names}}'); do
+            echo "::group::$c"
+            docker logs --tail 100 "$c" || true
+            echo "::endgroup::"
+          done
