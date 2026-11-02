@@ -7,12 +7,20 @@ import {
 import type { BatchFile, BatchReport, RawCollectedItem } from '../types';
 import { contentHash, postgresSafe, sourceKey } from '../utils';
 
+/** What writing a batch produced: its report, and the jobs now pending for Process. */
+export interface BatchWriteResult {
+  report: BatchReport;
+  /** Distinct, in first-seen order. */
+  pendingJobIds: string[];
+}
+
 /** Validates and persists batch items, collecting a bounded ingestion report. */
 @Injectable()
 export class BatchItemWriterService {
   constructor(private readonly repository: RawStorageRepository) {}
 
-  async write(batch: BatchRecord, file: BatchFile): Promise<BatchReport> {
+  async write(batch: BatchRecord, file: BatchFile): Promise<BatchWriteResult> {
+    const pending = new Set<string>();
     const report: BatchReport = {
       received: 0,
       newItems: 0,
@@ -70,8 +78,9 @@ export class BatchItemWriterService {
           report.normalized += 1;
           if (saved.job.created) report.newJobs += 1;
           if (saved.job.reopened) report.reopened += 1;
+          if (saved.job.pending) pending.add(saved.job.jobId);
         }
       }
-    return report;
+    return { report, pendingJobIds: [...pending] };
   }
 }

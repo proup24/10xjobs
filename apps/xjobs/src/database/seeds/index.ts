@@ -2,7 +2,7 @@
  * Seed runner — Prisma 8 has no built-in seed command.
  *
  *   pnpm db:seed                    run every seed, in order
- *   pnpm db:seed --only users       run the named seeds
+ *   pnpm db:seed --only processor-lists   run the named seeds
  *   pnpm db:seed --allow-production required when NODE_ENV=production
  */
 import { Logger } from '@nestjs/common';
@@ -10,10 +10,10 @@ import { EnvironmentType } from 'src/common/enums';
 import { loadSeedEnvironment, toDatabaseConfig } from 'src/config';
 import { createDatabaseClient } from '../connection.source';
 import type { Seed } from './seed.interface';
-import { usersSeed } from './users.seed';
+import { processorListsSeed } from './processor.seed';
 
 /** Order matters: seeds run sequentially, so list parents before children. */
-const seeds: Seed[] = [usersSeed];
+const seeds: Seed[] = [processorListsSeed];
 
 function parseArgs(argv: string[]) {
   const onlyIndex = argv.indexOf('--only');

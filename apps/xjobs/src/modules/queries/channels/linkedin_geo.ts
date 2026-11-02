@@ -1,33 +1,48 @@
-import { Region } from 'src/common/enums';
-
-/** How LinkedIn's job search names a region: its location text and, once verified, its geoId. */
-export interface LinkedinRegion {
-  location: string;
-  /**
-   * LinkedIn's geoId pins the region exactly; free text is geocoded and may
-   * drift. Fill a value only after checking it on linkedin.com: pick the
-   * location in the jobs search and read `geoId` from the URL.
-   */
-  geoId: string | null;
-}
+import { locationKey } from '../steps/normalize';
 
 /**
- * Remote regions as LinkedIn searches them. `Worldwide`, `EMEA`,
- * `European Union` and `United Kingdom` are the texts career-hub collected
- * with; the others are LinkedIn's usual names and still unverified.
+ * Locations pinned by a verified LinkedIn geoId, keyed by the canonical
+ * (lowercased) location text, for any kind of place. Free text is geocoded
+ * and may drift; fill a value only after checking it on linkedin.com: pick
+ * the location in the jobs search and read `geoId` from the URL.
  */
-export const LINKEDIN_REGIONS: Record<Region, LinkedinRegion> = {
-  [Region.GLOBAL]: { location: 'Worldwide', geoId: null },
-  [Region.EMEA]: { location: 'EMEA', geoId: null },
-  [Region.EU]: { location: 'European Union', geoId: null },
-  [Region.UK]: { location: 'United Kingdom', geoId: null },
-  [Region.EUROPE]: { location: 'Europe', geoId: null },
-  [Region.NORTH_AMERICA]: { location: 'North America', geoId: null },
-  [Region.LATAM]: { location: 'Latin America', geoId: null },
-  [Region.APAC]: { location: 'Asia Pacific', geoId: null },
-  [Region.MIDDLE_EAST]: { location: 'Middle East', geoId: null },
-  // LinkedIn has no MENA location; EMEA is the closest region that covers it.
-  [Region.MENA]: { location: 'EMEA', geoId: null },
-  [Region.NORTH_AFRICA]: { location: 'North Africa', geoId: null },
-  [Region.SUB_SAHARAN_AFRICA]: { location: 'Africa', geoId: null },
+export const LINKEDIN_GEO_IDS: Record<string, string> = {
+  // Gulf (GCC), verified 2026-11-02.
+  'united arab emirates': '104305776',
+  uae: '104305776',
+  'saudi arabia': '100459316',
+  qatar: '104170880',
+  kuwait: '103239229',
+  bahrain: '100425729',
+  oman: '103619019',
+  // Europe's main tech markets, verified 2026-11-02.
+  'united kingdom': '101165590',
+  uk: '101165590',
+  germany: '101282230',
+  france: '105015875',
+  netherlands: '102890719',
+  ireland: '104738515',
+  spain: '105646813',
+  portugal: '100364837',
+  switzerland: '106693272',
+  sweden: '105117694',
+  denmark: '104514075',
+  norway: '103819153',
+  finland: '100456013',
+  poland: '105072130',
+  belgium: '100565514',
+  austria: '103883259',
+  italy: '103350119',
+  luxembourg: '104042105',
+  estonia: '102974008',
+  czechia: '104508036',
+  'czech republic': '104508036',
 };
+
+/** The location that means "no place restriction". */
+export const WORLDWIDE = 'worldwide';
+
+/** True for `worldwide`, whatever its spelling: it is never added to a keyword. */
+export function isWorldwide(location: string): boolean {
+  return locationKey(location) === WORLDWIDE;
+}

@@ -158,6 +158,77 @@ describe('LinkedIn job board segment', () => {
     expect(result.source).toEqual({ actor: board.actor, apifyRunId: 'run-1' });
   });
 
+  it('searches a URL shared by several members once and gives each its items', async () => {
+    const twins = [
+      { id: 'qs-a', keyword: 'backend nestjs', params: { location: 'EMEA' } },
+      { id: 'qs-b', keyword: 'backend nestjs', params: { location: 'EMEA' } },
+    ];
+    const shared = linkedinJobSearchUrl(
+      twins[0].keyword,
+      twins[0].params,
+      7200,
+    );
+    const { run, provider } = actor(() => [
+      item(1, shared, 1),
+      item(2, shared, 2),
+      item(3, shared, 3),
+    ]);
+    const result = await new LinkedinJobBoardCollector(provider).collect(
+      segment(Channel.LINKEDIN_JOB_BOARD, twins),
+      board,
+    );
+
+    expect(run.mock.calls[0][1]).toMatchObject({
+      startUrls: [{ url: shared }],
+    });
+    expect(result.itemsByQuery.get('qs-a')).toHaveLength(3);
+    expect(result.itemsByQuery.get('qs-b')).toHaveLength(3);
+    expect(result.truncatedQueryIds).toEqual(['qs-a', 'qs-b']);
+  });
+
+  it("keeps the run's search totals, untouched", async () => {
+    const totals = { [urlOf(0)]: 41 };
+    const record = vi.fn(async () => totals);
+    const run = vi.fn(async () => ({
+      items: [],
+      costUsd: 0.1,
+      runId: 'run-1',
+      keyValueStoreId: 'kv-1',
+    }));
+    const result = await new LinkedinJobBoardCollector({
+      run,
+      record,
+    } as unknown as ApifyActorProvider).collect(
+      segment(Channel.LINKEDIN_JOB_BOARD, queries),
+      board,
+    );
+    expect(record).toHaveBeenCalledWith('kv-1', 'SEARCH_TOTALS');
+    expect(result.searchTotals).toEqual(totals);
+  });
+
+  it('stores no totals when LinkedIn exposed none, and still succeeds', async () => {
+    for (const record of [
+      vi.fn(async () => null),
+      vi.fn(async () => {
+        throw new Error('store unavailable');
+      }),
+    ]) {
+      const result = await new LinkedinJobBoardCollector({
+        run: vi.fn(async () => ({
+          items: [],
+          costUsd: 0.1,
+          runId: 'run-1',
+          keyValueStoreId: 'kv-1',
+        })),
+        record,
+      } as unknown as ApifyActorProvider).collect(
+        segment(Channel.LINKEDIN_JOB_BOARD, queries),
+        board,
+      );
+      expect(result.searchTotals).toBeNull();
+    }
+  });
+
   it('matches echoed URLs whatever their encoding and parameter order', async () => {
     const url = new URL(urlOf(0));
     const echoed =
@@ -336,33 +407,25 @@ describe('job board segments on Google', () => {
     ]);
   });
 
-  it('localises an onsite segment to its country and searches whole days', async () => {
-    const onsite = (id: string, countryCode: string) => ({
+  it('never sets a Google country and searches whole days', async () => {
+    // A countryCode left on an older builder's params must not leak through.
+    const onsite = (id: string) => ({
       id,
-      keyword: `${titles} nestjs "casablanca"`,
-      params: { remote: false, countryCode },
+      keyword: `${titles} nestjs "casablanca, morocco"`,
+      params: { remote: false, countryCode: 'ma' },
     });
-    const long = {
-      channel: Channel.ASHBY,
-      since: new Date('2026-10-28T12:00:00Z'),
-      until,
-    };
     const shared = actor(() => []);
     await new GoogleJobsSearchProvider(shared.provider).search(
-      { ...long, queries: [onsite('qs-1', 'ma'), onsite('qs-2', 'ma')] },
+      {
+        channel: Channel.ASHBY,
+        since: new Date('2026-10-28T12:00:00Z'),
+        until,
+        queries: [onsite('qs-1'), onsite('qs-2')],
+      },
       ashby,
     );
-    expect(shared.run.mock.calls[0][1]).toMatchObject({
-      countryCode: 'ma',
-      quickDateRange: 'd3',
-    });
-
-    const mixed = actor(() => []);
-    await new GoogleJobsSearchProvider(mixed.provider).search(
-      { ...long, queries: [onsite('qs-1', 'ma'), onsite('qs-2', 'fr')] },
-      ashby,
-    );
-    expect(mixed.run.mock.calls[0][1]).not.toHaveProperty('countryCode');
+    expect(shared.run.mock.calls[0][1]).toMatchObject({ quickDateRange: 'd3' });
+    expect(shared.run.mock.calls[0][1]).not.toHaveProperty('countryCode');
   });
 
   it('marks a query truncated when its last allowed page has more', async () => {

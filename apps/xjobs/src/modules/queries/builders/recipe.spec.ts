@@ -2,20 +2,18 @@ import {
   Arrangement,
   Channel,
   Position,
-  Region,
   Seniority,
   SkillDomain,
   Technology,
 } from 'src/common/enums';
+import { locationKey } from '../steps/normalize';
 import type { QuerySearchCombination } from '../types';
 import { QUERY_SEARCH_RECIPE_VERSION, recipeHash, toRecipe } from './recipe';
 
 const base: QuerySearchCombination = {
   channel: Channel.LINKEDIN_JOB_BOARD,
   position: Position.backend_engineer,
-  locationRegion: Region.EMEA,
-  country: 'MA',
-  city: 'Casablanca',
+  location: 'casablanca, morocco',
   experience: Seniority.senior,
   type: Arrangement.onsite,
   technologies: [Technology.nestjs, Technology.typescript],
@@ -31,9 +29,7 @@ describe('recipe', () => {
 
   it.each<[string, Partial<QuerySearchCombination>]>([
     ['channel', { channel: Channel.LINKEDIN_POSTS }],
-    ['region', { locationRegion: Region.EU }],
-    ['country', { country: 'FR' }],
-    ['city', { city: 'Rabat' }],
+    ['location', { location: 'rabat, morocco' }],
     ['experience', { experience: Seniority.staff }],
     ['type', { type: Arrangement.hybrid }],
     ['domain', { domain: SkillDomain.fullstack }],
@@ -45,19 +41,27 @@ describe('recipe', () => {
     expect(toRecipe({ ...base, ...change }).hash).not.toBe(toRecipe(base).hash);
   });
 
-  it('hashes a null region apart from a real one', () => {
-    expect(toRecipe({ ...base, locationRegion: null }).hash).not.toBe(
-      toRecipe(base).hash,
+  it('hashes two spellings of one location alike', () => {
+    expect(
+      toRecipe({ ...base, location: locationKey('Paris,  France') }).hash,
+    ).toBe(toRecipe({ ...base, location: locationKey('paris, france') }).hash);
+  });
+
+  it('hashes one location apart across arrangements', () => {
+    expect(toRecipe({ ...base, type: Arrangement.hybrid }).hash).not.toBe(
+      toRecipe({ ...base, type: Arrangement.onsite }).hash,
     );
   });
 
-  it('is at recipe version 4', () => {
-    expect(QUERY_SEARCH_RECIPE_VERSION).toBe(4);
-    expect(toRecipe(base).version).toBe(4);
+  it('is at recipe version 10', () => {
+    expect(QUERY_SEARCH_RECIPE_VERSION).toBe(10);
+    expect(toRecipe(base).version).toBe(10);
   });
 
   it('keeps boolean operators uppercase in the stored keyword', () => {
-    expect(toRecipe(base).keyword).toContain(' OR ');
+    expect(
+      toRecipe({ ...base, channel: Channel.LINKEDIN_POSTS }).keyword,
+    ).toContain(' OR ');
   });
 
   it('ignores params key order', () => {
@@ -74,23 +78,23 @@ describe('recipe', () => {
     expect(recipe.keyword).not.toContain('senior');
   });
 
-  // Rows are deduplicated by hash forever: these digests change only with QUERY_SEARCH_RECIPE_VERSION (v4).
+  // Rows are deduplicated by hash forever: these digests change only with QUERY_SEARCH_RECIPE_VERSION (v10).
   it.each<[Channel, string]>([
     [
       Channel.LINKEDIN_JOB_BOARD,
-      '33d9940682e4c075f93b236447265b66a9c2e3b8476cc1146eda1e6c8957bccd',
+      '8f277c0f5fd3da838c213317656900227cc6601a3d800a3678bb034ffa1ae736',
     ],
     [
       Channel.LINKEDIN_POSTS,
-      'b09095ed3be8be2dca6f4b22edae5837aac67e3cea0a3d820acdc22f050cfec1',
+      '37c6591648dafe59d7de63c534947f47d35a8bdb42411474bdb640d32c613bea',
     ],
     [
       Channel.GREEN_HOUSE,
-      '386bd32aca55aa6a8c6348b12663f04ee58b27634e089b64cf074ad3d86b3a1e',
+      'df54b288f9698c48ced25837dce8f247e6ab1e4cab37c83c9116c5f9ff8125cc',
     ],
     [
       Channel.ASHBY,
-      '5387499a016f672cf97a9a2c88819866f4bc9eec664af5b3ddc38697e283dcd1',
+      '74d918680eece79f2082ad489ac3e1404412bf68ecbad5b63c65468355842cbf',
     ],
   ])('pins the %s hash', (channel, digest) => {
     expect(toRecipe({ ...base, channel }).hash).toBe(digest);

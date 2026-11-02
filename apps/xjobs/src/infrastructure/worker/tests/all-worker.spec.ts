@@ -6,6 +6,8 @@ vi.hoisted(() => {
   process.env.SUPABASE_URL ??= 'http://127.0.0.1:1';
   process.env.SUPABASE_SERVICE_ROLE_KEY ??= 'service-key';
   process.env.APIFY_TOKEN ??= 'apify-token';
+  // No OpenRouter key: `all` runs every worker except the processor.
+  delete process.env.OPENROUTER_API_KEY;
   process.env.WORKER_ROLE = 'all';
   delete process.env.WORKER_CHANNEL;
 });
@@ -58,16 +60,29 @@ import {
 } from 'src/infrastructure/jobs/steps/collect';
 import { StorageService } from 'src/modules/storage';
 import { MemoryStorageService } from 'src/modules/storage/testing';
+const checks = vi.hoisted(() => ({
+  assertApiKey: vi.fn(async () => undefined),
+  checkModels: vi.fn(async () => new Map()),
+}));
+vi.mock(
+  'src/modules/processor/models/client',
+  async (importOriginal) => ({
+    ...(await importOriginal<object>()),
+    ...checks,
+  }),
+);
+
+import { Logger } from '@nestjs/common';
 import { WorkerModule } from '../worker.module';
 import { WorkerService } from '../worker.service';
 
-const allWorkers = [
-  'infrastructure',
-  'ingest',
-  'collect-linkedin-job-board',
-  'collect-linkedin-posts',
-  'collect-greenhouse',
-  'collect-ashby',
+// OPENROUTER_API_KEY is unset: the processor is off in `all`.
+// Only the job board is an active channel; the others remove their schedules.
+const allWorkers = ['infrastructure', 'ingest', 'collect-linkedin-job-board'];
+const inactiveSchedulers = [
+  'collect-linkedin-posts:collect',
+  'collect-greenhouse:collect',
+  'collect-ashby:collect',
 ];
 
 beforeEach(() => {
@@ -91,18 +106,22 @@ async function startAll() {
   return { module, service };
 }
 
-it('runs infrastructure, ingest and every channel collection in one process', async () => {
+it('runs infrastructure, ingest and every active channel collection, but not the processor, in one process', async () => {
+  const warn = vi.spyOn(Logger.prototype, 'warn');
   const { module, service } = await startAll();
   try {
     expect(service.active).toBe(true);
     expect(created.workers).toEqual(allWorkers);
+    expect(warn).toHaveBeenCalledWith(
+      'processor not started: OPENROUTER_API_KEY is not set, so new jobs wait in the process queue',
+    );
+    for (const check of Object.values(checks))
+      expect(check).not.toHaveBeenCalled();
     expect(created.schedulers).toEqual([
       'ingest:sweep',
       'collect-linkedin-job-board:collect',
-      'collect-linkedin-posts:collect',
-      'collect-greenhouse:collect',
-      'collect-ashby:collect',
     ]);
+    expect(created.removedSchedulers).toEqual(inactiveSchedulers);
   } finally {
     // Closing the module runs the shutdown hook.
     await module.close();
@@ -115,13 +134,16 @@ it('runs infrastructure, ingest and every channel collection in one process', as
 });
 
 it('skips a disabled channel and keeps running the others', async () => {
-  const config: ChannelJobConfig = channelJobsConfig.ASHBY;
+  const config: ChannelJobConfig = channelJobsConfig.LINKEDIN_JOB_BOARD;
   vi.spyOn(config, 'enabled', 'get').mockReturnValue(false);
   const { module, service } = await startAll();
   try {
     expect(service.active).toBe(true);
     expect(created.workers).toEqual(allWorkers.slice(0, -1));
-    expect(created.removedSchedulers).toEqual(['collect-ashby:collect']);
+    expect(created.removedSchedulers).toEqual([
+      'collect-linkedin-job-board:collect',
+      ...inactiveSchedulers,
+    ]);
   } finally {
     // Closing the module runs the shutdown hook.
     await module.close();

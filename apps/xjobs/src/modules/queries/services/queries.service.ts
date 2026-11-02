@@ -5,13 +5,13 @@ import { QUERY_SEARCH_RECIPE_VERSION, toRecipe } from '../builders';
 import { technologySets } from '../sets/technology';
 import { QuerySearchRepository } from '../repositories/queries.repository';
 import {
+  assertHasLocations,
+  assertHasSeniorities,
   assertHasSkills,
-  assertLocatable,
   dedupeByHash,
-  localCombinations,
-  normalizeArrangements,
+  dedupeBySearch,
+  locationCombinations,
   normalizeProfile,
-  remoteCombinations,
 } from '../steps';
 import type {
   QuerySearchProfileInput,
@@ -24,25 +24,17 @@ export class QuerySearchService {
   constructor(private readonly builders: QuerySearchRepository) {}
 
   /**
-   * Turns a profile into its search recipes: remote per `channel × region ×
-   * technology`, onsite/hybrid per `channel × technology` in the city.
-   * Each step is a pure function in `../steps`.
+   * Turns a profile into its search recipes: one per `arrangement × channel ×
+   * location × technology × seniority`. Each step is a pure function in `../steps`.
    */
   expand(input: QuerySearchProfileInput): QuerySearchRecipe[] {
     const profile = normalizeProfile(input);
-    assertLocatable(profile);
+    assertHasLocations(profile);
+    assertHasSeniorities(profile);
     assertHasSkills(profile);
     const technologies = technologySets(profile.skills);
-    const arrangements = normalizeArrangements(profile.arrangements);
-    const profileRemoteCombinations = remoteCombinations(profile, arrangements, technologies);
-    const profileLocalCombinations = localCombinations(profile, arrangements, technologies);
-    const combinations = [
-      ...profileRemoteCombinations,
-      ...profileLocalCombinations,
-    ];
-    const queriesRecipes = combinations.map(toRecipe);
-    console.debug(`length of queriesRecipes is : ${queriesRecipes.length} For Profile With ${technologies.length} Technologies And ${arrangements.length} Arrangement Levels`);
-    return dedupeByHash(queriesRecipes);
+    const combinations = locationCombinations(profile, technologies);
+    return dedupeBySearch(dedupeByHash(combinations.map(toRecipe)));
   }
 
   /**

@@ -8,14 +8,13 @@ const profile = {
   languages: ['EN', 'FR'],
   country: 'MA',
   city: 'Rabat',
-  regions: ['MENA', 'NORTH_AFRICA', 'EMEA'],
+  locations: { remote: ['EMEA', 'North Africa'], hybrid: [], onsite: [] },
   yearsOfExperience: 6,
   timezoneCurrent: 60,
   timezoneMin: -240,
   timezoneMax: 240,
   engagements: ['employee', 'contractor'],
-  arrangements: ['remote'],
-  seniority: 'senior',
+  seniorities: ['senior'],
   noticePeriodDays: 30,
   techStack: [
     { technology: 'nodejs', domain: 'backend', mastery: 8, importance: 9 },
@@ -168,6 +167,36 @@ describe('users, profiles and resume', () => {
     expect(unpublish.status).toBe(404);
 
     expect((await axios.delete(`${profiles()}/${id}`)).status).toBe(204);
+  });
+
+  it('accepts onsite in a location with no city of residence, and returns it as sent', async () => {
+    const locations = { remote: [], hybrid: [], onsite: ['Paris, France'] };
+    const res = await axios.post(
+      profiles(),
+      { ...profile, city: null, locations },
+      ok,
+    );
+    expect(res.status).toBe(201);
+    expect(res.data.data.locations).toEqual(locations);
+    expect(res.data.data).not.toHaveProperty('regions');
+    expect(res.data.data).not.toHaveProperty('arrangements');
+    await axios.delete(`${profiles()}/${res.data.data.id}`);
+  });
+
+  it('rejects a profile with no location, saying why', async () => {
+    const res = await axios.post(
+      profiles(),
+      { ...profile, locations: { remote: [], hybrid: [], onsite: [] } },
+      ok,
+    );
+    expect(res.status).toBe(400);
+    expect(res.data.details).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining(
+          'locations must list at least one place in remote, hybrid or onsite',
+        ),
+      ]),
+    );
   });
 
   it('rejects a profile whose timezone range is inverted', async () => {

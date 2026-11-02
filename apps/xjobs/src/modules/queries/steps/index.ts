@@ -1,17 +1,22 @@
 export {
-  DEFAULT_REMOTE_REGION,
-  normalizeArrangements,
+  displayLocation,
+  locationKey,
+  normalizeLocations,
   normalizeProfile,
 } from './normalize';
 export {
-  assertLocatable,
-  CITY_REQUIRED,
-  isLocatable,
-  PLACE_BOUND,
-} from './locatable';
+  assertHasLocations,
+  hasLocation,
+  LOCATIONS_REQUIRED,
+} from './locations';
+export {
+  assertHasSeniorities,
+  normalizeSeniorities,
+  SENIORITIES_REQUIRED,
+} from './seniorities';
 export {
   dedupeByHash,
-  localCombinations,
-  remoteCombinations,
+  dedupeBySearch,
+  locationCombinations,
 } from './combinations';
 export { assertHasSkills, hasRankedSkill, SKILLS_REQUIRED } from './skills';

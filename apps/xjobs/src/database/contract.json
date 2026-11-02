@@ -4,12 +4,40 @@
   "target": "postgres",
   "profileHash": "3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2",
   "roots": {
+    "arrangements": {
+      "model": "ArrangementTerm",
+      "namespace": "public"
+    },
+    "cities": {
+      "model": "City",
+      "namespace": "public"
+    },
     "collection_batches": {
       "model": "CollectionBatch",
       "namespace": "public"
     },
     "contacts": {
       "model": "Contact",
+      "namespace": "public"
+    },
+    "contract_types": {
+      "model": "ContractType",
+      "namespace": "public"
+    },
+    "countries": {
+      "model": "Country",
+      "namespace": "public"
+    },
+    "engagements": {
+      "model": "EngagementTerm",
+      "namespace": "public"
+    },
+    "job_extractions": {
+      "model": "JobExtraction",
+      "namespace": "public"
+    },
+    "junk_flags": {
+      "model": "JunkFlag",
       "namespace": "public"
     },
     "normalized_job_sources": {
@@ -22,6 +50,10 @@
     },
     "normalized_versions": {
       "model": "NormalizedVersion",
+      "namespace": "public"
+    },
+    "processing_attempts": {
+      "model": "ProcessingAttempt",
       "namespace": "public"
     },
     "profile_query_search_builders": {
@@ -52,8 +84,28 @@
       "model": "RawItem",
       "namespace": "public"
     },
+    "region_countries": {
+      "model": "RegionCountry",
+      "namespace": "public"
+    },
+    "regions": {
+      "model": "RegionTerm",
+      "namespace": "public"
+    },
+    "role_kinds": {
+      "model": "RoleKind",
+      "namespace": "public"
+    },
     "search_segment_runs": {
       "model": "SearchSegmentRun",
+      "namespace": "public"
+    },
+    "seniorities": {
+      "model": "SeniorityTerm",
+      "namespace": "public"
+    },
+    "tech_tags": {
+      "model": "TechTag",
       "namespace": "public"
     },
     "users": {
@@ -674,6 +726,249 @@
           }
         },
         "models": {
+          "ArrangementTerm": {
+            "fields": {
+              "aliases": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "approvedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "code": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "firstSeenAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "label": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "occurrences": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "extractions": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "code"
+                  ],
+                  "targetFields": [
+                    "arrangement"
+                  ]
+                },
+                "to": {
+                  "model": "JobExtraction",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "aliases": {
+                  "column": "aliases"
+                },
+                "approvedAt": {
+                  "column": "approvedAt"
+                },
+                "code": {
+                  "column": "code"
+                },
+                "firstSeenAt": {
+                  "column": "firstSeenAt"
+                },
+                "label": {
+                  "column": "label"
+                },
+                "occurrences": {
+                  "column": "occurrences"
+                },
+                "status": {
+                  "column": "status"
+                }
+              },
+              "namespaceId": "public",
+              "table": "arrangements"
+            }
+          },
+          "City": {
+            "fields": {
+              "aliases": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "approvedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "countryCode": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "firstSeenAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "geonamesId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "name": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "nameKey": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "occurrences": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "country": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "countryCode"
+                  ],
+                  "targetFields": [
+                    "code"
+                  ]
+                },
+                "to": {
+                  "model": "Country",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "aliases": {
+                  "column": "aliases"
+                },
+                "approvedAt": {
+                  "column": "approvedAt"
+                },
+                "countryCode": {
+                  "column": "countryCode"
+                },
+                "firstSeenAt": {
+                  "column": "firstSeenAt"
+                },
+                "geonamesId": {
+                  "column": "geonamesId"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "name": {
+                  "column": "name"
+                },
+                "nameKey": {
+                  "column": "nameKey"
+                },
+                "occurrences": {
+                  "column": "occurrences"
+                },
+                "status": {
+                  "column": "status"
+                }
+              },
+              "namespaceId": "public",
+              "table": "cities"
+            }
+          },
           "CollectionBatch": {
             "fields": {
               "actor": {
@@ -987,6 +1282,855 @@
               "table": "contacts"
             }
           },
+          "ContractType": {
+            "fields": {
+              "aliases": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "approvedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "code": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "firstSeenAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "label": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "occurrences": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "extractions": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "code"
+                  ],
+                  "targetFields": [
+                    "contractType"
+                  ]
+                },
+                "to": {
+                  "model": "JobExtraction",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "aliases": {
+                  "column": "aliases"
+                },
+                "approvedAt": {
+                  "column": "approvedAt"
+                },
+                "code": {
+                  "column": "code"
+                },
+                "firstSeenAt": {
+                  "column": "firstSeenAt"
+                },
+                "label": {
+                  "column": "label"
+                },
+                "occurrences": {
+                  "column": "occurrences"
+                },
+                "status": {
+                  "column": "status"
+                }
+              },
+              "namespaceId": "public",
+              "table": "contract_types"
+            }
+          },
+          "Country": {
+            "fields": {
+              "aliases": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "approvedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "code": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "firstSeenAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "label": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "occurrences": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "cities": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "code"
+                  ],
+                  "targetFields": [
+                    "countryCode"
+                  ]
+                },
+                "to": {
+                  "model": "City",
+                  "namespace": "public"
+                }
+              },
+              "regions": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "code"
+                  ],
+                  "targetFields": [
+                    "countryCode"
+                  ]
+                },
+                "to": {
+                  "model": "RegionCountry",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "aliases": {
+                  "column": "aliases"
+                },
+                "approvedAt": {
+                  "column": "approvedAt"
+                },
+                "code": {
+                  "column": "code"
+                },
+                "firstSeenAt": {
+                  "column": "firstSeenAt"
+                },
+                "label": {
+                  "column": "label"
+                },
+                "occurrences": {
+                  "column": "occurrences"
+                },
+                "status": {
+                  "column": "status"
+                }
+              },
+              "namespaceId": "public",
+              "table": "countries"
+            }
+          },
+          "EngagementTerm": {
+            "fields": {
+              "aliases": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "approvedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "code": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "firstSeenAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "label": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "occurrences": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "extractions": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "code"
+                  ],
+                  "targetFields": [
+                    "engagement"
+                  ]
+                },
+                "to": {
+                  "model": "JobExtraction",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "aliases": {
+                  "column": "aliases"
+                },
+                "approvedAt": {
+                  "column": "approvedAt"
+                },
+                "code": {
+                  "column": "code"
+                },
+                "firstSeenAt": {
+                  "column": "firstSeenAt"
+                },
+                "label": {
+                  "column": "label"
+                },
+                "occurrences": {
+                  "column": "occurrences"
+                },
+                "status": {
+                  "column": "status"
+                }
+              },
+              "namespaceId": "public",
+              "table": "engagements"
+            }
+          },
+          "JobExtraction": {
+            "fields": {
+              "arrangement": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "cityIds": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "contractType": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "costUsd": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar"
+                }
+              },
+              "countryCodes": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "data": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
+              },
+              "decisionModel": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "engagement": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "extractionModel": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "inputHash": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "isSoftwareEngineeringRole": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "jobId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "mainStackTags": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "needsReview": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "promptHash": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "regionCodes": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "roleKind": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "salaryCurrency": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "salaryMax": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "salaryMin": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "salaryPeriod": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "schemaVersion": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "seniority": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "techTags": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "worldwide": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "arrangementTerm": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "arrangement"
+                  ],
+                  "targetFields": [
+                    "code"
+                  ]
+                },
+                "to": {
+                  "model": "ArrangementTerm",
+                  "namespace": "public"
+                }
+              },
+              "attempts": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "extractionId"
+                  ]
+                },
+                "to": {
+                  "model": "ProcessingAttempt",
+                  "namespace": "public"
+                }
+              },
+              "contractTypeTerm": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "contractType"
+                  ],
+                  "targetFields": [
+                    "code"
+                  ]
+                },
+                "to": {
+                  "model": "ContractType",
+                  "namespace": "public"
+                }
+              },
+              "currentFor": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "currentExtractionId"
+                  ]
+                },
+                "to": {
+                  "model": "NormalizedJob",
+                  "namespace": "public"
+                }
+              },
+              "engagementTerm": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "engagement"
+                  ],
+                  "targetFields": [
+                    "code"
+                  ]
+                },
+                "to": {
+                  "model": "EngagementTerm",
+                  "namespace": "public"
+                }
+              },
+              "job": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "jobId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "NormalizedJob",
+                  "namespace": "public"
+                }
+              },
+              "roleKindTerm": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "roleKind"
+                  ],
+                  "targetFields": [
+                    "code"
+                  ]
+                },
+                "to": {
+                  "model": "RoleKind",
+                  "namespace": "public"
+                }
+              },
+              "seniorityTerm": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "seniority"
+                  ],
+                  "targetFields": [
+                    "code"
+                  ]
+                },
+                "to": {
+                  "model": "SeniorityTerm",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "arrangement": {
+                  "column": "arrangement"
+                },
+                "cityIds": {
+                  "column": "cityIds"
+                },
+                "contractType": {
+                  "column": "contractType"
+                },
+                "costUsd": {
+                  "column": "costUsd"
+                },
+                "countryCodes": {
+                  "column": "countryCodes"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "data": {
+                  "column": "data"
+                },
+                "decisionModel": {
+                  "column": "decisionModel"
+                },
+                "engagement": {
+                  "column": "engagement"
+                },
+                "extractionModel": {
+                  "column": "extractionModel"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "inputHash": {
+                  "column": "inputHash"
+                },
+                "isSoftwareEngineeringRole": {
+                  "column": "isSoftwareEngineeringRole"
+                },
+                "jobId": {
+                  "column": "jobId"
+                },
+                "mainStackTags": {
+                  "column": "mainStackTags"
+                },
+                "needsReview": {
+                  "column": "needsReview"
+                },
+                "promptHash": {
+                  "column": "promptHash"
+                },
+                "regionCodes": {
+                  "column": "regionCodes"
+                },
+                "roleKind": {
+                  "column": "roleKind"
+                },
+                "salaryCurrency": {
+                  "column": "salaryCurrency"
+                },
+                "salaryMax": {
+                  "column": "salaryMax"
+                },
+                "salaryMin": {
+                  "column": "salaryMin"
+                },
+                "salaryPeriod": {
+                  "column": "salaryPeriod"
+                },
+                "schemaVersion": {
+                  "column": "schemaVersion"
+                },
+                "seniority": {
+                  "column": "seniority"
+                },
+                "techTags": {
+                  "column": "techTags"
+                },
+                "worldwide": {
+                  "column": "worldwide"
+                }
+              },
+              "namespaceId": "public",
+              "table": "job_extractions"
+            }
+          },
+          "JunkFlag": {
+            "fields": {
+              "aliases": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "approvedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "code": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "firstSeenAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "label": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "occurrences": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "aliases": {
+                  "column": "aliases"
+                },
+                "approvedAt": {
+                  "column": "approvedAt"
+                },
+                "code": {
+                  "column": "code"
+                },
+                "firstSeenAt": {
+                  "column": "firstSeenAt"
+                },
+                "label": {
+                  "column": "label"
+                },
+                "occurrences": {
+                  "column": "occurrences"
+                },
+                "status": {
+                  "column": "status"
+                }
+              },
+              "namespaceId": "public",
+              "table": "junk_flags"
+            }
+          },
           "NormalizedJob": {
             "fields": {
               "applyUrl": {
@@ -1032,6 +2176,13 @@
                   "typeParams": {
                     "precision": 3
                   }
+                }
+              },
+              "currentExtractionId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
                 }
               },
               "descriptionHtml": {
@@ -1193,6 +2344,16 @@
                   }
                 }
               },
+              "processingStartedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
               "processingStatus": {
                 "nullable": true,
                 "type": {
@@ -1275,6 +2436,52 @@
               }
             },
             "relations": {
+              "attempts": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "jobId"
+                  ]
+                },
+                "to": {
+                  "model": "ProcessingAttempt",
+                  "namespace": "public"
+                }
+              },
+              "currentExtraction": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "currentExtractionId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "JobExtraction",
+                  "namespace": "public"
+                }
+              },
+              "extractions": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "jobId"
+                  ]
+                },
+                "to": {
+                  "model": "JobExtraction",
+                  "namespace": "public"
+                }
+              },
               "mergedInto": {
                 "cardinality": "N:1",
                 "nullable": true,
@@ -1311,6 +2518,9 @@
                 },
                 "createdAt": {
                   "column": "createdAt"
+                },
+                "currentExtractionId": {
+                  "column": "currentExtractionId"
                 },
                 "descriptionHtml": {
                   "column": "descriptionHtml"
@@ -1374,6 +2584,9 @@
                 },
                 "processingRequestedAt": {
                   "column": "processingRequestedAt"
+                },
+                "processingStartedAt": {
+                  "column": "processingStartedAt"
                 },
                 "processingStatus": {
                   "column": "processingStatus"
@@ -1637,24 +2850,215 @@
               "table": "normalized_versions"
             }
           },
-          "Profile": {
+          "ProcessingAttempt": {
             "fields": {
-              "arrangements": {
-                "many": {
-                  "elementNullable": false
-                },
+              "cachedInputTokens": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "costUsd": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "error": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "eval": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "extractionId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "inputTokens": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "jobId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "latencyMs": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "model": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
-                },
-                "valueSet": {
-                  "entityKind": "enum",
-                  "entityName": "Arrangement",
-                  "namespaceId": "public",
-                  "plane": "domain"
                 }
               },
+              "outcome": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "outputTokens": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "providerRequestId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "quoteFailures": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "step": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "extraction": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "extractionId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "JobExtraction",
+                  "namespace": "public"
+                }
+              },
+              "job": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "jobId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "NormalizedJob",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "cachedInputTokens": {
+                  "column": "cachedInputTokens"
+                },
+                "costUsd": {
+                  "column": "costUsd"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "error": {
+                  "column": "error"
+                },
+                "eval": {
+                  "column": "eval"
+                },
+                "extractionId": {
+                  "column": "extractionId"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "inputTokens": {
+                  "column": "inputTokens"
+                },
+                "jobId": {
+                  "column": "jobId"
+                },
+                "latencyMs": {
+                  "column": "latencyMs"
+                },
+                "model": {
+                  "column": "model"
+                },
+                "outcome": {
+                  "column": "outcome"
+                },
+                "outputTokens": {
+                  "column": "outputTokens"
+                },
+                "providerRequestId": {
+                  "column": "providerRequestId"
+                },
+                "quoteFailures": {
+                  "column": "quoteFailures"
+                },
+                "step": {
+                  "column": "step"
+                }
+              },
+              "namespaceId": "public",
+              "table": "processing_attempts"
+            }
+          },
+          "Profile": {
+            "fields": {
               "city": {
                 "nullable": true,
                 "type": {
@@ -1718,6 +3122,13 @@
                   "plane": "domain"
                 }
               },
+              "locations": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
+              },
               "noticePeriodDays": {
                 "nullable": false,
                 "type": {
@@ -1746,22 +3157,6 @@
                   "typeParams": {
                     "precision": 3
                   }
-                }
-              },
-              "regions": {
-                "many": {
-                  "elementNullable": false
-                },
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                },
-                "valueSet": {
-                  "entityKind": "enum",
-                  "entityName": "Region",
-                  "namespaceId": "public",
-                  "plane": "domain"
                 }
               },
               "resumeFilename": {
@@ -1802,7 +3197,10 @@
                   }
                 }
               },
-              "seniority": {
+              "seniorities": {
+                "many": {
+                  "elementNullable": false
+                },
                 "nullable": false,
                 "type": {
                   "codecId": "pg/text@1",
@@ -1894,9 +3292,6 @@
             },
             "storage": {
               "fields": {
-                "arrangements": {
-                  "column": "arrangements"
-                },
                 "city": {
                   "column": "city"
                 },
@@ -1915,6 +3310,9 @@
                 "languages": {
                   "column": "languages"
                 },
+                "locations": {
+                  "column": "locations"
+                },
                 "noticePeriodDays": {
                   "column": "noticePeriodDays"
                 },
@@ -1923,9 +3321,6 @@
                 },
                 "publishedAt": {
                   "column": "publishedAt"
-                },
-                "regions": {
-                  "column": "regions"
                 },
                 "resumeFilename": {
                   "column": "resumeFilename"
@@ -1942,8 +3337,8 @@
                 "resumeUploadedAt": {
                   "column": "resumeUploadedAt"
                 },
-                "seniority": {
-                  "column": "seniority"
+                "seniorities": {
+                  "column": "seniorities"
                 },
                 "state": {
                   "column": "state"
@@ -2206,18 +3601,41 @@
                   "plane": "domain"
                 }
               },
-              "city": {
+              "claimExpiresAt": {
                 "nullable": true,
                 "type": {
-                  "codecId": "pg/text@1",
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "claimRunId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
                   "kind": "scalar"
                 }
               },
-              "country": {
+              "claimWindowEnd": {
                 "nullable": true,
                 "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "claimWindowStart": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
                 }
               },
               "coveredUntil": {
@@ -2301,17 +3719,11 @@
                   "kind": "scalar"
                 }
               },
-              "locationRegion": {
-                "nullable": true,
+              "location": {
+                "nullable": false,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
-                },
-                "valueSet": {
-                  "entityKind": "enum",
-                  "entityName": "Region",
-                  "namespaceId": "public",
-                  "plane": "domain"
                 }
               },
               "params": {
@@ -2377,11 +3789,17 @@
                 "channel": {
                   "column": "channel"
                 },
-                "city": {
-                  "column": "city"
+                "claimExpiresAt": {
+                  "column": "claimExpiresAt"
                 },
-                "country": {
-                  "column": "country"
+                "claimRunId": {
+                  "column": "claimRunId"
+                },
+                "claimWindowEnd": {
+                  "column": "claimWindowEnd"
+                },
+                "claimWindowStart": {
+                  "column": "claimWindowStart"
                 },
                 "coveredUntil": {
                   "column": "coveredUntil"
@@ -2410,8 +3828,8 @@
                 "keyword": {
                   "column": "keyword"
                 },
-                "locationRegion": {
-                  "column": "locationRegion"
+                "location": {
+                  "column": "location"
                 },
                 "params": {
                   "column": "params"
@@ -2818,6 +4236,282 @@
               "table": "raw_item_versions"
             }
           },
+          "RegionCountry": {
+            "fields": {
+              "countryCode": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "regionCode": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "country": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "countryCode"
+                  ],
+                  "targetFields": [
+                    "code"
+                  ]
+                },
+                "to": {
+                  "model": "Country",
+                  "namespace": "public"
+                }
+              },
+              "region": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "regionCode"
+                  ],
+                  "targetFields": [
+                    "code"
+                  ]
+                },
+                "to": {
+                  "model": "RegionTerm",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "countryCode": {
+                  "column": "countryCode"
+                },
+                "regionCode": {
+                  "column": "regionCode"
+                }
+              },
+              "namespaceId": "public",
+              "table": "region_countries"
+            }
+          },
+          "RegionTerm": {
+            "fields": {
+              "aliases": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "approvedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "code": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "firstSeenAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "label": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "occurrences": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "countries": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "code"
+                  ],
+                  "targetFields": [
+                    "regionCode"
+                  ]
+                },
+                "to": {
+                  "model": "RegionCountry",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "aliases": {
+                  "column": "aliases"
+                },
+                "approvedAt": {
+                  "column": "approvedAt"
+                },
+                "code": {
+                  "column": "code"
+                },
+                "firstSeenAt": {
+                  "column": "firstSeenAt"
+                },
+                "label": {
+                  "column": "label"
+                },
+                "occurrences": {
+                  "column": "occurrences"
+                },
+                "status": {
+                  "column": "status"
+                }
+              },
+              "namespaceId": "public",
+              "table": "regions"
+            }
+          },
+          "RoleKind": {
+            "fields": {
+              "aliases": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "approvedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "code": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "firstSeenAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "label": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "occurrences": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "extractions": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "code"
+                  ],
+                  "targetFields": [
+                    "roleKind"
+                  ]
+                },
+                "to": {
+                  "model": "JobExtraction",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "aliases": {
+                  "column": "aliases"
+                },
+                "approvedAt": {
+                  "column": "approvedAt"
+                },
+                "code": {
+                  "column": "code"
+                },
+                "firstSeenAt": {
+                  "column": "firstSeenAt"
+                },
+                "label": {
+                  "column": "label"
+                },
+                "occurrences": {
+                  "column": "occurrences"
+                },
+                "status": {
+                  "column": "status"
+                }
+              },
+              "namespaceId": "public",
+              "table": "role_kinds"
+            }
+          },
           "SearchSegmentRun": {
             "fields": {
               "capped": {
@@ -2892,6 +4586,13 @@
                 "nullable": false,
                 "type": {
                   "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "searchTotals": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/jsonb@1",
                   "kind": "scalar"
                 }
               },
@@ -2987,6 +4688,9 @@
                 "queryIds": {
                   "column": "queryIds"
                 },
+                "searchTotals": {
+                  "column": "searchTotals"
+                },
                 "segmentHash": {
                   "column": "segmentHash"
                 },
@@ -3011,6 +4715,225 @@
               },
               "namespaceId": "public",
               "table": "search_segment_runs"
+            }
+          },
+          "SeniorityTerm": {
+            "fields": {
+              "aliases": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "approvedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "code": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "firstSeenAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "label": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "occurrences": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "extractions": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "code"
+                  ],
+                  "targetFields": [
+                    "seniority"
+                  ]
+                },
+                "to": {
+                  "model": "JobExtraction",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "aliases": {
+                  "column": "aliases"
+                },
+                "approvedAt": {
+                  "column": "approvedAt"
+                },
+                "code": {
+                  "column": "code"
+                },
+                "firstSeenAt": {
+                  "column": "firstSeenAt"
+                },
+                "label": {
+                  "column": "label"
+                },
+                "occurrences": {
+                  "column": "occurrences"
+                },
+                "status": {
+                  "column": "status"
+                }
+              },
+              "namespaceId": "public",
+              "table": "seniorities"
+            }
+          },
+          "TechTag": {
+            "fields": {
+              "aliases": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "approvedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "code": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "family": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "firstSeenAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "implies": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "label": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "occurrences": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "aliases": {
+                  "column": "aliases"
+                },
+                "approvedAt": {
+                  "column": "approvedAt"
+                },
+                "code": {
+                  "column": "code"
+                },
+                "family": {
+                  "column": "family"
+                },
+                "firstSeenAt": {
+                  "column": "firstSeenAt"
+                },
+                "implies": {
+                  "column": "implies"
+                },
+                "label": {
+                  "column": "label"
+                },
+                "occurrences": {
+                  "column": "occurrences"
+                },
+                "status": {
+                  "column": "status"
+                }
+              },
+              "namespaceId": "public",
+              "table": "tech_tags"
             }
           },
           "User": {
@@ -3147,6 +5070,202 @@
       "public": {
         "entries": {
           "table": {
+            "arrangements": {
+              "checks": [
+                {
+                  "expression": "array_position(\"aliases\", NULL) IS NULL",
+                  "name": "arrangements_aliases_elem_not_null_3676266c",
+                  "prefix": "arrangements_aliases_elem_not_null"
+                },
+                {
+                  "expression": "status IN ('approved', 'proposed')",
+                  "name": "arrangements_status_e626d06d",
+                  "prefix": "arrangements_status"
+                }
+              ],
+              "columns": {
+                "aliases": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": false
+                },
+                "approvedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "code": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "firstSeenAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "label": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "occurrences": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 0
+                  },
+                  "nullable": false
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "code"
+                ]
+              },
+              "uniques": []
+            },
+            "cities": {
+              "checks": [
+                {
+                  "expression": "array_position(\"aliases\", NULL) IS NULL",
+                  "name": "cities_aliases_elem_not_null_3676266c",
+                  "prefix": "cities_aliases_elem_not_null"
+                },
+                {
+                  "expression": "status IN ('approved', 'proposed')",
+                  "name": "cities_status_e626d06d",
+                  "prefix": "cities_status"
+                }
+              ],
+              "columns": {
+                "aliases": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": false
+                },
+                "approvedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "countryCode": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "firstSeenAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "geonamesId": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "name": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "nameKey": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "occurrences": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 0
+                  },
+                  "nullable": false
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "cities_countryCode_idx_479cc5a2"
+                  },
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "countryCode"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "cities"
+                  },
+                  "target": {
+                    "columns": [
+                      "code"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "countries"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "countryCode"
+                  ],
+                  "name": "cities_countryCode_idx_479cc5a2",
+                  "prefix": "cities_countryCode_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "nameKey",
+                    "countryCode"
+                  ]
+                }
+              ]
+            },
             "collection_batches": {
               "checks": [
                 {
@@ -3434,6 +5553,724 @@
                 }
               ]
             },
+            "contract_types": {
+              "checks": [
+                {
+                  "expression": "array_position(\"aliases\", NULL) IS NULL",
+                  "name": "contract_types_aliases_elem_not_null_3676266c",
+                  "prefix": "contract_types_aliases_elem_not_null"
+                },
+                {
+                  "expression": "status IN ('approved', 'proposed')",
+                  "name": "contract_types_status_e626d06d",
+                  "prefix": "contract_types_status"
+                }
+              ],
+              "columns": {
+                "aliases": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": false
+                },
+                "approvedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "code": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "firstSeenAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "label": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "occurrences": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 0
+                  },
+                  "nullable": false
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "code"
+                ]
+              },
+              "uniques": []
+            },
+            "countries": {
+              "checks": [
+                {
+                  "expression": "array_position(\"aliases\", NULL) IS NULL",
+                  "name": "countries_aliases_elem_not_null_3676266c",
+                  "prefix": "countries_aliases_elem_not_null"
+                },
+                {
+                  "expression": "status IN ('approved', 'proposed')",
+                  "name": "countries_status_e626d06d",
+                  "prefix": "countries_status"
+                }
+              ],
+              "columns": {
+                "aliases": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": false
+                },
+                "approvedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "code": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "firstSeenAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "label": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "occurrences": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 0
+                  },
+                  "nullable": false
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "code"
+                ]
+              },
+              "uniques": []
+            },
+            "engagements": {
+              "checks": [
+                {
+                  "expression": "array_position(\"aliases\", NULL) IS NULL",
+                  "name": "engagements_aliases_elem_not_null_3676266c",
+                  "prefix": "engagements_aliases_elem_not_null"
+                },
+                {
+                  "expression": "status IN ('approved', 'proposed')",
+                  "name": "engagements_status_e626d06d",
+                  "prefix": "engagements_status"
+                }
+              ],
+              "columns": {
+                "aliases": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": false
+                },
+                "approvedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "code": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "firstSeenAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "label": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "occurrences": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 0
+                  },
+                  "nullable": false
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "code"
+                ]
+              },
+              "uniques": []
+            },
+            "job_extractions": {
+              "checks": [
+                {
+                  "expression": "array_position(\"cityIds\", NULL) IS NULL",
+                  "name": "job_extractions_cityIds_elem_not_null_6db9e1dc",
+                  "prefix": "job_extractions_cityIds_elem_not_null"
+                },
+                {
+                  "expression": "array_position(\"countryCodes\", NULL) IS NULL",
+                  "name": "job_extractions_countryCodes_elem_not_null_59dca6fd",
+                  "prefix": "job_extractions_countryCodes_elem_not_null"
+                },
+                {
+                  "expression": "array_position(\"mainStackTags\", NULL) IS NULL",
+                  "name": "job_extractions_mainStackTags_elem_not_null_e0558217",
+                  "prefix": "job_extractions_mainStackTags_elem_not_null"
+                },
+                {
+                  "expression": "array_position(\"regionCodes\", NULL) IS NULL",
+                  "name": "job_extractions_regionCodes_elem_not_null_65a1cb26",
+                  "prefix": "job_extractions_regionCodes_elem_not_null"
+                },
+                {
+                  "expression": "array_position(\"techTags\", NULL) IS NULL",
+                  "name": "job_extractions_techTags_elem_not_null_93a73d6b",
+                  "prefix": "job_extractions_techTags_elem_not_null"
+                }
+              ],
+              "columns": {
+                "arrangement": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "cityIds": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": false
+                },
+                "contractType": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "costUsd": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": false
+                },
+                "countryCodes": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "data": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": false
+                },
+                "decisionModel": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "engagement": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "extractionModel": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "inputHash": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "isSoftwareEngineeringRole": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "nullable": true
+                },
+                "jobId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "mainStackTags": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": false
+                },
+                "needsReview": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "nullable": false
+                },
+                "promptHash": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "regionCodes": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": false
+                },
+                "roleKind": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "salaryCurrency": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "salaryMax": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "salaryMin": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "salaryPeriod": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "schemaVersion": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "seniority": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "techTags": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": false
+                },
+                "worldwide": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "job_extractions_jobId_idx_623c8f77"
+                  },
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "jobId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "job_extractions"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "normalized_jobs"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "job_extractions_arrangement_idx_5f2eb234"
+                  },
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "arrangement"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "job_extractions"
+                  },
+                  "target": {
+                    "columns": [
+                      "code"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "arrangements"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "job_extractions_seniority_idx_79fd7107"
+                  },
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "seniority"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "job_extractions"
+                  },
+                  "target": {
+                    "columns": [
+                      "code"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "seniorities"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "job_extractions_roleKind_idx_0a94017d"
+                  },
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "roleKind"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "job_extractions"
+                  },
+                  "target": {
+                    "columns": [
+                      "code"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "role_kinds"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "job_extractions_contractType_idx_7af72bd3"
+                  },
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "contractType"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "job_extractions"
+                  },
+                  "target": {
+                    "columns": [
+                      "code"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "contract_types"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "job_extractions_engagement_idx_01398bc8"
+                  },
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "engagement"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "job_extractions"
+                  },
+                  "target": {
+                    "columns": [
+                      "code"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "engagements"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "arrangement"
+                  ],
+                  "name": "job_extractions_arrangement_idx_5f2eb234",
+                  "prefix": "job_extractions_arrangement_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "cityIds"
+                  ],
+                  "name": "job_extractions_cityIds_gin_36569053",
+                  "prefix": "job_extractions_cityIds_gin",
+                  "type": "gin",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "contractType"
+                  ],
+                  "name": "job_extractions_contractType_idx_7af72bd3",
+                  "prefix": "job_extractions_contractType_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "countryCodes"
+                  ],
+                  "name": "job_extractions_countryCodes_gin_d29e2bf0",
+                  "prefix": "job_extractions_countryCodes_gin",
+                  "type": "gin",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "engagement"
+                  ],
+                  "name": "job_extractions_engagement_idx_01398bc8",
+                  "prefix": "job_extractions_engagement_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "jobId"
+                  ],
+                  "name": "job_extractions_jobId_idx_623c8f77",
+                  "prefix": "job_extractions_jobId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "jobId",
+                    "createdAt"
+                  ],
+                  "name": "job_extractions_job_created",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "mainStackTags"
+                  ],
+                  "name": "job_extractions_mainStackTags_gin_a32a2b95",
+                  "prefix": "job_extractions_mainStackTags_gin",
+                  "type": "gin",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "regionCodes"
+                  ],
+                  "name": "job_extractions_regionCodes_gin_2489d722",
+                  "prefix": "job_extractions_regionCodes_gin",
+                  "type": "gin",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "inputHash",
+                    "schemaVersion",
+                    "promptHash",
+                    "decisionModel",
+                    "extractionModel"
+                  ],
+                  "name": "job_extractions_reuse",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "roleKind"
+                  ],
+                  "name": "job_extractions_roleKind_idx_0a94017d",
+                  "prefix": "job_extractions_roleKind_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "seniority"
+                  ],
+                  "name": "job_extractions_seniority_idx_79fd7107",
+                  "prefix": "job_extractions_seniority_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "techTags"
+                  ],
+                  "name": "job_extractions_techTags_gin_e48af3d5",
+                  "prefix": "job_extractions_techTags_gin",
+                  "type": "gin",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "junk_flags": {
+              "checks": [
+                {
+                  "expression": "array_position(\"aliases\", NULL) IS NULL",
+                  "name": "junk_flags_aliases_elem_not_null_3676266c",
+                  "prefix": "junk_flags_aliases_elem_not_null"
+                },
+                {
+                  "expression": "status IN ('approved', 'proposed')",
+                  "name": "junk_flags_status_e626d06d",
+                  "prefix": "junk_flags_status"
+                }
+              ],
+              "columns": {
+                "aliases": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": false
+                },
+                "approvedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "code": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "firstSeenAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "label": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "occurrences": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 0
+                  },
+                  "nullable": false
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "code"
+                ]
+              },
+              "uniques": []
+            },
             "normalized_job_sources": {
               "columns": {
                 "id": {
@@ -3636,6 +6473,11 @@
                     "precision": 3
                   }
                 },
+                "currentExtractionId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
                 "descriptionHtml": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -3757,6 +6599,14 @@
                     "precision": 3
                   }
                 },
+                "processingStartedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
                 "processingStatus": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -3840,9 +6690,37 @@
                     "namespaceId": "public",
                     "tableName": "normalized_jobs"
                   }
+                },
+                {
+                  "index": {
+                    "name": "normalized_jobs_currentExtractionId_idx_6f0ea778"
+                  },
+                  "onDelete": "setNull",
+                  "source": {
+                    "columns": [
+                      "currentExtractionId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "normalized_jobs"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "job_extractions"
+                  }
                 }
               ],
               "indexes": [
+                {
+                  "columns": [
+                    "currentExtractionId"
+                  ],
+                  "name": "normalized_jobs_currentExtractionId_idx_6f0ea778",
+                  "prefix": "normalized_jobs_currentExtractionId_idx",
+                  "unique": false
+                },
                 {
                   "columns": [
                     "mergedIntoId"
@@ -3980,6 +6858,192 @@
                   ]
                 }
               ]
+            },
+            "processing_attempts": {
+              "checks": [
+                {
+                  "expression": "outcome IN ('ok', 'error', 'invalid')",
+                  "name": "processing_attempts_outcome_f70ba339",
+                  "prefix": "processing_attempts_outcome"
+                },
+                {
+                  "expression": "step IN ('decision', 'extraction', 'extraction_retry')",
+                  "name": "processing_attempts_step_0068b0ea",
+                  "prefix": "processing_attempts_step"
+                }
+              ],
+              "columns": {
+                "cachedInputTokens": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "costUsd": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "error": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "eval": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "extractionId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "inputTokens": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "jobId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "latencyMs": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "model": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "outcome": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "outputTokens": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "providerRequestId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "quoteFailures": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 0
+                  },
+                  "nullable": false
+                },
+                "step": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "processing_attempts_jobId_idx_623c8f77"
+                  },
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "jobId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "processing_attempts"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "normalized_jobs"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "processing_attempts_extractionId_idx_3dd68fa6"
+                  },
+                  "onDelete": "setNull",
+                  "source": {
+                    "columns": [
+                      "extractionId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "processing_attempts"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "job_extractions"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "createdAt"
+                  ],
+                  "name": "processing_attempts_created_noneval_95f31976",
+                  "prefix": "processing_attempts_created_noneval",
+                  "unique": false,
+                  "where": "NOT eval"
+                },
+                {
+                  "columns": [
+                    "extractionId"
+                  ],
+                  "name": "processing_attempts_extractionId_idx_3dd68fa6",
+                  "prefix": "processing_attempts_extractionId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "jobId"
+                  ],
+                  "name": "processing_attempts_jobId_idx_623c8f77",
+                  "prefix": "processing_attempts_jobId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
             },
             "profile_query_search_builders": {
               "columns": {
@@ -4230,21 +7294,6 @@
             "profiles": {
               "checks": [
                 {
-                  "expression": "array_remove(\"arrangements\", NULL) <@ '{\"remote\",\"hybrid\",\"onsite\",\"unstated\"}'",
-                  "name": "profiles_arrangements_check_7606728b",
-                  "prefix": "profiles_arrangements_check"
-                },
-                {
-                  "expression": "array_position(\"arrangements\", NULL) IS NULL",
-                  "name": "profiles_arrangements_elem_not_null_d7d34c79",
-                  "prefix": "profiles_arrangements_elem_not_null"
-                },
-                {
-                  "expression": "cardinality(\"arrangements\") > 0",
-                  "name": "profiles_arrangements_nonempty_52fb6f2a",
-                  "prefix": "profiles_arrangements_nonempty"
-                },
-                {
                   "expression": "array_remove(\"engagements\", NULL) <@ '{\"employee\",\"contractor\",\"eor\",\"agency\",\"per_task\"}'",
                   "name": "profiles_engagements_check_8a34079e",
                   "prefix": "profiles_engagements_check"
@@ -4275,6 +7324,16 @@
                   "prefix": "profiles_languages_nonempty"
                 },
                 {
+                  "expression": "jsonb_path_exists(\"locations\", '$.*[*]')",
+                  "name": "profiles_locations_nonempty_dfbcb81c",
+                  "prefix": "profiles_locations_nonempty"
+                },
+                {
+                  "expression": "jsonb_typeof(\"locations\") = 'object' AND \"locations\" ?& ARRAY['remote', 'hybrid', 'onsite'] AND (\"locations\" - ARRAY['remote', 'hybrid', 'onsite']) = '{}'::jsonb AND CASE WHEN jsonb_typeof(\"locations\" -> 'remote') = 'array' AND jsonb_typeof(\"locations\" -> 'hybrid') = 'array' AND jsonb_typeof(\"locations\" -> 'onsite') = 'array' THEN jsonb_array_length(\"locations\" -> 'remote') <= 20 AND jsonb_array_length(\"locations\" -> 'hybrid') <= 20 AND jsonb_array_length(\"locations\" -> 'onsite') <= 20 AND NOT jsonb_path_exists(\"locations\", '$.*[*] ? (@.type() != \"string\")') ELSE false END",
+                  "name": "profiles_locations_shape_8e195cce",
+                  "prefix": "profiles_locations_shape"
+                },
+                {
                   "expression": "\"noticePeriodDays\" BETWEEN 0 AND 365",
                   "name": "profiles_notice_range_62c2438c",
                   "prefix": "profiles_notice_range"
@@ -4285,19 +7344,19 @@
                   "prefix": "profiles_position_check"
                 },
                 {
-                  "expression": "array_remove(\"regions\", NULL) <@ '{\"EMEA\",\"MENA\",\"NORTH_AFRICA\",\"SUB_SAHARAN_AFRICA\",\"MIDDLE_EAST\",\"EUROPE\",\"EU\",\"UK\",\"NORTH_AMERICA\",\"LATAM\",\"APAC\",\"GLOBAL\"}'",
-                  "name": "profiles_regions_check_76fa66e0",
-                  "prefix": "profiles_regions_check"
+                  "expression": "array_remove(\"seniorities\", NULL) <@ '{\"junior\",\"mid\",\"senior\",\"staff\",\"lead\",\"principal\",\"unstated\"}'",
+                  "name": "profiles_seniorities_check_c892abac",
+                  "prefix": "profiles_seniorities_check"
                 },
                 {
-                  "expression": "array_position(\"regions\", NULL) IS NULL",
-                  "name": "profiles_regions_elem_not_null_0c7680bd",
-                  "prefix": "profiles_regions_elem_not_null"
+                  "expression": "array_position(\"seniorities\", NULL) IS NULL",
+                  "name": "profiles_seniorities_elem_not_null_f6b227c2",
+                  "prefix": "profiles_seniorities_elem_not_null"
                 },
                 {
-                  "expression": "\"seniority\" IN ('junior', 'mid', 'senior', 'staff', 'lead', 'principal', 'unstated')",
-                  "name": "profiles_seniority_check_2e7615f6",
-                  "prefix": "profiles_seniority_check"
+                  "expression": "cardinality(\"seniorities\") > 0",
+                  "name": "profiles_seniorities_nonempty_798996d1",
+                  "prefix": "profiles_seniorities_nonempty"
                 },
                 {
                   "expression": "\"state\" IN ('draft', 'published')",
@@ -4316,20 +7375,6 @@
                 }
               ],
               "columns": {
-                "arrangements": {
-                  "codecId": "pg/text@1",
-                  "dataType": "pg/text",
-                  "many": {
-                    "elementNullable": false
-                  },
-                  "nullable": false,
-                  "valueSet": {
-                    "entityKind": "valueSet",
-                    "entityName": "Arrangement",
-                    "namespaceId": "public",
-                    "plane": "storage"
-                  }
-                },
                 "city": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -4385,6 +7430,11 @@
                     "plane": "storage"
                   }
                 },
+                "locations": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": false
+                },
                 "noticePeriodDays": {
                   "codecId": "pg/int4@1",
                   "dataType": "pg/int4",
@@ -4407,20 +7457,6 @@
                   "nullable": true,
                   "typeParams": {
                     "precision": 3
-                  }
-                },
-                "regions": {
-                  "codecId": "pg/text@1",
-                  "dataType": "pg/text",
-                  "many": {
-                    "elementNullable": false
-                  },
-                  "nullable": false,
-                  "valueSet": {
-                    "entityKind": "valueSet",
-                    "entityName": "Region",
-                    "namespaceId": "public",
-                    "plane": "storage"
                   }
                 },
                 "resumeFilename": {
@@ -4451,9 +7487,12 @@
                     "precision": 3
                   }
                 },
-                "seniority": {
+                "seniorities": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
+                  "many": {
+                    "elementNullable": false
+                  },
                   "nullable": false,
                   "valueSet": {
                     "entityKind": "valueSet",
@@ -4567,6 +7606,11 @@
                   "prefix": "query_search_builder_channel_check"
                 },
                 {
+                  "expression": "(\"claimRunId\" IS NULL) = (\"claimWindowStart\" IS NULL) AND (\"claimRunId\" IS NULL) = (\"claimWindowEnd\" IS NULL) AND (\"claimRunId\" IS NULL) = (\"claimExpiresAt\" IS NULL)",
+                  "name": "query_search_builder_claim_complete_98a85abe",
+                  "prefix": "query_search_builder_claim_complete"
+                },
+                {
                   "expression": "NOT (\"isDeleted\" AND \"isActive\")",
                   "name": "query_search_builder_deleted_inactive_11da4d0f",
                   "prefix": "query_search_builder_deleted_inactive"
@@ -4580,11 +7624,6 @@
                   "expression": "\"experience\" IN ('junior', 'mid', 'senior', 'staff', 'lead', 'principal', 'unstated')",
                   "name": "query_search_builder_experience_check_da85d416",
                   "prefix": "query_search_builder_experience_check"
-                },
-                {
-                  "expression": "\"locationRegion\" IN ('EMEA', 'MENA', 'NORTH_AFRICA', 'SUB_SAHARAN_AFRICA', 'MIDDLE_EAST', 'EUROPE', 'EU', 'UK', 'NORTH_AMERICA', 'LATAM', 'APAC', 'GLOBAL')",
-                  "name": "query_search_builder_locationRegion_check_eb30a260",
-                  "prefix": "query_search_builder_locationRegion_check"
                 },
                 {
                   "expression": "array_remove(\"technologies\", NULL) <@ '{\"javascript\",\"typescript\",\"python\",\"java\",\"kotlin\",\"go\",\"rust\",\"csharp\",\"cpp\",\"php\",\"ruby\",\"scala\",\"elixir\",\"swift\",\"dart\",\"sql\",\"bash\",\"nodejs\",\"nestjs\",\"express\",\"fastify\",\"django\",\"fastapi\",\"flask\",\"spring\",\"dotnet\",\"laravel\",\"rails\",\"graphql\",\"grpc\",\"react\",\"nextjs\",\"vue\",\"nuxt\",\"angular\",\"svelte\",\"tailwindcss\",\"react_native\",\"flutter\",\"postgresql\",\"mysql\",\"mongodb\",\"redis\",\"elasticsearch\",\"kafka\",\"rabbitmq\",\"spark\",\"airflow\",\"dbt\",\"snowflake\",\"aws\",\"gcp\",\"azure\",\"docker\",\"kubernetes\",\"terraform\",\"ansible\",\"github_actions\",\"gitlab_ci\",\"linux\",\"nginx\",\"prometheus\",\"grafana\",\"pytorch\",\"tensorflow\",\"langchain\"}'",
@@ -4623,15 +7662,34 @@
                     "plane": "storage"
                   }
                 },
-                "city": {
-                  "codecId": "pg/text@1",
-                  "dataType": "pg/text",
+                "claimExpiresAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "claimRunId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
                   "nullable": true
                 },
-                "country": {
-                  "codecId": "pg/text@1",
-                  "dataType": "pg/text",
-                  "nullable": true
+                "claimWindowEnd": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "claimWindowStart": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
                 },
                 "coveredUntil": {
                   "codecId": "pg/timestamptz-date@1",
@@ -4708,16 +7766,10 @@
                   "dataType": "pg/text",
                   "nullable": false
                 },
-                "locationRegion": {
+                "location": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
-                  "nullable": true,
-                  "valueSet": {
-                    "entityKind": "valueSet",
-                    "entityName": "Region",
-                    "namespaceId": "public",
-                    "plane": "storage"
-                  }
+                  "nullable": false
                 },
                 "params": {
                   "codecId": "pg/jsonb@1",
@@ -5210,6 +8262,231 @@
                 }
               ]
             },
+            "region_countries": {
+              "columns": {
+                "countryCode": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "regionCode": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "region_countries_regionCode_idx_65b6bdbe"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "regionCode"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "region_countries"
+                  },
+                  "target": {
+                    "columns": [
+                      "code"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "regions"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "region_countries_countryCode_idx_479cc5a2"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "countryCode"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "region_countries"
+                  },
+                  "target": {
+                    "columns": [
+                      "code"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "countries"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "countryCode"
+                  ],
+                  "name": "region_countries_countryCode_idx_479cc5a2",
+                  "prefix": "region_countries_countryCode_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "regionCode"
+                  ],
+                  "name": "region_countries_regionCode_idx_65b6bdbe",
+                  "prefix": "region_countries_regionCode_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "regionCode",
+                  "countryCode"
+                ]
+              },
+              "uniques": []
+            },
+            "regions": {
+              "checks": [
+                {
+                  "expression": "array_position(\"aliases\", NULL) IS NULL",
+                  "name": "regions_aliases_elem_not_null_3676266c",
+                  "prefix": "regions_aliases_elem_not_null"
+                },
+                {
+                  "expression": "status IN ('approved', 'proposed')",
+                  "name": "regions_status_e626d06d",
+                  "prefix": "regions_status"
+                }
+              ],
+              "columns": {
+                "aliases": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": false
+                },
+                "approvedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "code": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "firstSeenAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "label": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "occurrences": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 0
+                  },
+                  "nullable": false
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "code"
+                ]
+              },
+              "uniques": []
+            },
+            "role_kinds": {
+              "checks": [
+                {
+                  "expression": "array_position(\"aliases\", NULL) IS NULL",
+                  "name": "role_kinds_aliases_elem_not_null_3676266c",
+                  "prefix": "role_kinds_aliases_elem_not_null"
+                },
+                {
+                  "expression": "status IN ('approved', 'proposed')",
+                  "name": "role_kinds_status_e626d06d",
+                  "prefix": "role_kinds_status"
+                }
+              ],
+              "columns": {
+                "aliases": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": false
+                },
+                "approvedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "code": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "firstSeenAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "label": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "occurrences": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 0
+                  },
+                  "nullable": false
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "code"
+                ]
+              },
+              "uniques": []
+            },
             "search_segment_runs": {
               "checks": [
                 {
@@ -5296,6 +8573,11 @@
                   },
                   "nullable": false
                 },
+                "searchTotals": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": true
+                },
                 "segmentHash": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -5359,6 +8641,168 @@
               "primaryKey": {
                 "columns": [
                   "id"
+                ]
+              },
+              "uniques": []
+            },
+            "seniorities": {
+              "checks": [
+                {
+                  "expression": "array_position(\"aliases\", NULL) IS NULL",
+                  "name": "seniorities_aliases_elem_not_null_3676266c",
+                  "prefix": "seniorities_aliases_elem_not_null"
+                },
+                {
+                  "expression": "status IN ('approved', 'proposed')",
+                  "name": "seniorities_status_e626d06d",
+                  "prefix": "seniorities_status"
+                }
+              ],
+              "columns": {
+                "aliases": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": false
+                },
+                "approvedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "code": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "firstSeenAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "label": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "occurrences": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 0
+                  },
+                  "nullable": false
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "code"
+                ]
+              },
+              "uniques": []
+            },
+            "tech_tags": {
+              "checks": [
+                {
+                  "expression": "array_position(\"aliases\", NULL) IS NULL",
+                  "name": "tech_tags_aliases_elem_not_null_3676266c",
+                  "prefix": "tech_tags_aliases_elem_not_null"
+                },
+                {
+                  "expression": "array_position(\"implies\", NULL) IS NULL",
+                  "name": "tech_tags_implies_elem_not_null_0dbb5db7",
+                  "prefix": "tech_tags_implies_elem_not_null"
+                },
+                {
+                  "expression": "status IN ('approved', 'proposed')",
+                  "name": "tech_tags_status_e626d06d",
+                  "prefix": "tech_tags_status"
+                }
+              ],
+              "columns": {
+                "aliases": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": false
+                },
+                "approvedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "code": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "family": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "firstSeenAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "implies": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": false
+                },
+                "label": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "occurrences": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 0
+                  },
+                  "nullable": false
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "code"
                 ]
               },
               "uniques": []
@@ -5626,12 +9070,23 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "d63d407c65b181083ae45e022582f6caa9704846c24a2c204a4612ba8adfc38d"
+    "storageHash": "eb0f366d51b0fedb19b470dde53b69cbbe1fc892bb3471c9bb95af7005385b57"
   },
   "execution": {
-    "executionHash": "0fc17b66822d3c35eae48bf17625f9a5d6187dcfed6118ce7301aec2b41f667b",
+    "executionHash": "c6873c5a9f9e3698427d663f89066a9052d28a2625e473b43a449e049a00b87b",
     "mutations": {
       "defaults": [
+        {
+          "onCreate": {
+            "id": "uuidv7",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "cities",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
         {
           "onCreate": {
             "id": "uuidv7",
@@ -5666,6 +9121,17 @@
           "ref": {
             "entry": "contacts",
             "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv7",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "job_extractions",
+            "field": "id",
             "namespace": "public"
           }
         },
@@ -5713,6 +9179,17 @@
           },
           "ref": {
             "entry": "normalized_versions",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv7",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "processing_attempts",
             "field": "id",
             "namespace": "public"
           }

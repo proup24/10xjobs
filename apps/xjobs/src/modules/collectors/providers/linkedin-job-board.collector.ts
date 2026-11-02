@@ -62,6 +62,17 @@ function canonicalUrl(value: string | null): string | null {
   }
 }
 
+/** Each URL once, by meaning, keeping the first spelling and order. */
+function distinctUrls(urls: readonly string[]): string[] {
+  const seen = new Set<string>();
+  return urls.filter((url) => {
+    const key = canonicalUrl(url) ?? url;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 /** Where the actor found an item: the start URL it echoes, and its position there. */
 function scrapingInfo(item: unknown): {
   inputUrl: string | null;
@@ -78,7 +89,7 @@ function scrapingInfo(item: unknown): {
 @Injectable()
 export class LinkedinJobBoardCollector {
   readonly channel = Channel.LINKEDIN_JOB_BOARD;
-  constructor(private readonly actor: ApifyActorProvider) {}
+  constructor(private readonly actor: ApifyActorProvider) { }
 
   async collect(
     segment: SegmentSearch,
@@ -92,10 +103,14 @@ export class LinkedinJobBoardCollector {
       id: query.id,
       search: linkedinJobSearchUrl(query.keyword, query.params, seconds),
     }));
-    const { items, costUsd, runId } = await this.actor.run(
+    const { items, costUsd, runId, keyValueStoreId } = await this.actor.run(
       config.actor,
       {
-        startUrls: searches.map(({ search }) => ({ url: search })),
+        // Members with identical searches share one start URL; attribution
+        // gives every one of them the URL's items.
+        startUrls: distinctUrls(searches.map(({ search }) => search)).map(
+          (url) => ({ url }),
+        ),
         maxRowsPerUrl: config.maxRowsPerUrl,
         companyProfile: false,
         enrichCompany: false,
@@ -129,6 +144,7 @@ export class LinkedinJobBoardCollector {
     }
     return {
       itemsByQuery,
+      searchTotals: await this.searchTotals(keyValueStoreId),
       unattributed: unattributed.map(raw),
       fetched: items.length,
       costUsd,
@@ -136,5 +152,18 @@ export class LinkedinJobBoardCollector {
       truncatedQueryIds,
       source: { actor: config.actor, apifyRunId: runId },
     };
+  }
+
+  /**
+   * What LinkedIn said matched each start URL, as the actor stored it. A
+   * missing or unreadable record is null: the paid results never depend on it.
+   */
+  private async searchTotals(storeId: string | null): Promise<unknown> {
+    if (!storeId) return null;
+    try {
+      return (await this.actor.record(storeId, 'SEARCH_TOTALS')) ?? null;
+    } catch {
+      return null;
+    }
   }
 }

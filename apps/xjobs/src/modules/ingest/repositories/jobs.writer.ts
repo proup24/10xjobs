@@ -16,7 +16,13 @@ import {
 /** What linking one raw item to its job did. */
 export type LinkOutcome =
   | { invalid: string }
-  | { jobId: string; created: boolean; reopened: boolean };
+  | {
+      jobId: string;
+      created: boolean;
+      reopened: boolean;
+      /** The job is `pending` for Process after this link (new, reopened, or still waiting). */
+      pending: boolean;
+    };
 
 export interface LinkJobInput {
   rawItemId: string;
@@ -349,5 +355,6 @@ export async function linkJob(
     jobId: job.id,
     created: created && !inherited,
     reopened: changed && next.reason === 'reopened',
+    pending: (changed ? next : current).status === 'pending',
   };
 }

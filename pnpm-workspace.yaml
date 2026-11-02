@@ -9,6 +9,8 @@ allowBuilds:
   unrs-resolver: false
   workerd: false
 permissions:
+  '@openrouter/sdk':
+    build: false
   '@prisma/orm-postgres':
     skills: false
   libpq:

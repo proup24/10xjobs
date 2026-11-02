@@ -1,0 +1,69 @@
+{
+  "id": "10807",
+  "input": {
+    "title": "Full-Stack Engineer — Product",
+    "companyName": "Savant Bio",
+    "description": "Location: New York, NY\n\nAbout Us\n\nSavant is transforming how healthcare and life sciences organizations unlock the value trapped in unstructured medical data. Our platform combines cutting-edge large language models (LLMs) with domain-specific quality controls to convert free-text clinical records into structured, analysis-ready data — efficiently, accurately, and at scale. We work with leading institutions across healthcare, life sciences, and research, supporting faster studies, sharper insights, and better care. Backed by Roivant (NASDAQ: ROIV), Savant is built for organizations that see structured data not just as an output, but as a foundation for innovation.\n\nThe Opportunity\n\nWe’re looking for a Full-Stack Engineer with special affection for frontend work. This role will own and improve the Savant’s user-facing surfaces. You’ll turn complex clinical-research workflows into interfaces that feel legible, fast, and trustworthy, while also contributing to the services and systems behind them.\n\nYou’ll have substantial ownership of frontend architecture, interaction patterns, and product polish.\n\nSavant is based in NYC, and this role is remote-eligible. Preference will be given to candidates able to come to work in NYC.\n\nSome Things You Might Work On\n\n\n * Turn complex technical and clinical workflows into clear, approachable product experiences\n * Develop reusable frontend components and establish consistent interaction patterns across the product\n * Improve application responsiveness, accessibility, reliability, and perceived performance\n * Design stateful and asynchronous workflows using Cloudflare Workers, Durable Objects, queues, and related patterns\n * Build and extend APIs and backend services that support product functionality\n * Implement real-time progress, background-job, notification, and collaboration experiences\n * Improve frontend testing, observability, release processes, and error handling\n * Participate in customer feedback sessions and use what you learn to improve the product\n * Help define a high bar for product quality, usability, and visual polish\n   \n   \n\nWhat We’re Looking For\n\n\n * 3+ years of professional software engineering experience, or equivalent evidence of strong production work\n * Strong TypeScript, HTML, and CSS skills\n * Strong product judgment, attention to the details, and excellent taste\n * Experience building modern, component-based web applications\n * Working knowledge of APIs, backend services, data persistence, and asynchronous application patterns\n   \n   \n\nBonus Points For\n\n\n * Experience with React or another modern frontend framework\n * Experience with Cloudflare Workers, Durable Objects, edge runtimes, or serverless application patterns\n * Backend experience with Python, SQL, or relational databases\n * Experience with healthcare, scientific, or other sensitive and data-intensive products\n * Experience in an early-stage startup or small, fast-moving product team\n   \n   \n\nWhy Join Us\n\n\n * Visible Ownership: Shape the primary interfaces through which customers experience Savant\n * Product Influence: Help define not only how features are built, but how they should work\n * Full-Stack Growth: Go deep on frontend development while expanding into services and distributed systems\n * Close Collaboration: Work directly with product, clinical, AI, and backend partners\n * Mission-Driven Work: Make sophisticated clinical-data technology genuinely useful to the people who depend on it\n   \n   \n\nBase salary for this role will be determined during the interview process and will vary based on multiple factors, including but not limited to prior experience, relevant expertise, current business needs, and market conditions. The expected base salary for the role will generally be between $150,000 to $200,000 per year, with meaningful equity. The final salary offered may be outside this range based on individual circumstances and business and market conditions.\n\nBase salary if hired is only part of the total compensation package, which, depending on the position, may also include other components such as discretionary bonuses and Company-sponsored benefit programs.\n\nThis position is at-will and Savant reserves the right to modify base salary (as well as any other discretionary payment or compensation program) at any time, including for reasons related to individual performance and business and market conditions.\n\nSavant provides equal employment opportunities to all employees and applicants for employment and prohibits discrimination and harassment of any type without regard to race, color, religion, age, sex, national origin, disability status, genetics, protected veteran status, sexual orientation, gender identity or expression, or any other characteristic protected by federal, state or local laws.",
+    "evidence": {
+      "location": "New York, NY",
+      "contractType": null,
+      "experienceLevel": null,
+      "salary": null
+    }
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["remote"],
+        "places": [
+          {
+            "kind": "city",
+            "name": "New York",
+            "countryCode": "US"
+          }
+        ],
+        "placeStrictness": "mention"
+      }
+    ],
+    "roleKind": "fullstack_engineer",
+    "seniority": "unstated",
+    "yearsRequired": 3,
+    "contractMonths": null,
+    "mainStack": [
+      {
+        "anyOf": [
+          {
+            "text": "TypeScript",
+            "code": "typescript"
+          }
+        ]
+      },
+      {
+        "anyOf": [
+          {
+            "text": "HTML",
+            "code": "html"
+          }
+        ]
+      },
+      {
+        "anyOf": [
+          {
+            "text": "CSS",
+            "code": "css"
+          }
+        ]
+      }
+    ],
+    "requiredLanguages": [],
+    "sponsorship": "unstated",
+    "salary": {
+      "min": 150000,
+      "max": 200000,
+      "currency": "USD",
+      "period": "year"
+    },
+    "junkFlags": []
+  },
+  "drafted": {}
+}

@@ -57,19 +57,6 @@ function quickDateRange(since: Date, until: Date): string {
     : `d${Math.ceil(hours / 24)}`;
 }
 
-/** The country every member searches in, or null when they differ or have none. */
-function sharedCountry(segment: SegmentSearch): string | null {
-  const codes = new Set(
-    segment.queries.map((query) =>
-      typeof query.params.countryCode === 'string'
-        ? query.params.countryCode
-        : null,
-    ),
-  );
-  const [code] = codes;
-  return codes.size === 1 && code ? code : null;
-}
-
 /** Apify trigger for Greenhouse and Ashby discovery: one Google run per segment. */
 @Injectable()
 export class GoogleJobsSearchProvider {
@@ -83,15 +70,12 @@ export class GoogleJobsSearchProvider {
       id: query.id,
       search: boardQuery(query.keyword, config),
     }));
-    const countryCode = sharedCountry(segment);
     const { items, costUsd, runId } = await this.actor.run(
       config.actor,
       {
         queries: [...new Set(searches.map(({ search }) => search))].join('\n'),
         maxPagesPerQuery: config.maxPagesPerQuery,
         quickDateRange: quickDateRange(segment.since, segment.until),
-        // Onsite segments share a city, so Google searches from its country.
-        ...(countryCode ? { countryCode } : {}),
       },
       { maxChargeUsd: config.maxRunChargeUsd },
     );

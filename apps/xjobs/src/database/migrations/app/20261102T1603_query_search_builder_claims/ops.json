@@ -1,0 +1,289 @@
+[
+  {
+    "id": "column.public.query_search_builder.claimExpiresAt",
+    "label": "Add column \"claimExpiresAt\" to \"query_search_builder\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "claimExpiresAt",
+        "table": "query_search_builder"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"claimExpiresAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "query_search_builder",
+          "claimExpiresAt"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"claimExpiresAt\" on \"query_search_builder\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"claimExpiresAt\"",
+        "sql": "ALTER TABLE \"public\".\"query_search_builder\" ADD COLUMN \"claimExpiresAt\" timestamptz(3)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"claimExpiresAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "query_search_builder",
+          "claimExpiresAt"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"claimExpiresAt\" on \"query_search_builder\""
+        }
+      },
+      {
+        "description": "verify column \"claimExpiresAt\" has type \"timestamp(3) with time zone\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "query_search_builder",
+          "claimExpiresAt",
+          "timestamp(3) with time zone"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.query_search_builder.claimRunId",
+    "label": "Add column \"claimRunId\" to \"query_search_builder\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "claimRunId",
+        "table": "query_search_builder"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"claimRunId\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "query_search_builder",
+          "claimRunId"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"claimRunId\" on \"query_search_builder\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"claimRunId\"",
+        "sql": "ALTER TABLE \"public\".\"query_search_builder\" ADD COLUMN \"claimRunId\" uuid"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"claimRunId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "query_search_builder",
+          "claimRunId"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"claimRunId\" on \"query_search_builder\""
+        }
+      },
+      {
+        "description": "verify column \"claimRunId\" has type \"uuid\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "query_search_builder",
+          "claimRunId",
+          "uuid"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.query_search_builder.claimWindowEnd",
+    "label": "Add column \"claimWindowEnd\" to \"query_search_builder\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "claimWindowEnd",
+        "table": "query_search_builder"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"claimWindowEnd\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "query_search_builder",
+          "claimWindowEnd"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"claimWindowEnd\" on \"query_search_builder\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"claimWindowEnd\"",
+        "sql": "ALTER TABLE \"public\".\"query_search_builder\" ADD COLUMN \"claimWindowEnd\" timestamptz(3)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"claimWindowEnd\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "query_search_builder",
+          "claimWindowEnd"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"claimWindowEnd\" on \"query_search_builder\""
+        }
+      },
+      {
+        "description": "verify column \"claimWindowEnd\" has type \"timestamp(3) with time zone\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "query_search_builder",
+          "claimWindowEnd",
+          "timestamp(3) with time zone"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.query_search_builder.claimWindowStart",
+    "label": "Add column \"claimWindowStart\" to \"query_search_builder\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "claimWindowStart",
+        "table": "query_search_builder"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"claimWindowStart\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "query_search_builder",
+          "claimWindowStart"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"claimWindowStart\" on \"query_search_builder\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"claimWindowStart\"",
+        "sql": "ALTER TABLE \"public\".\"query_search_builder\" ADD COLUMN \"claimWindowStart\" timestamptz(3)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"claimWindowStart\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "query_search_builder",
+          "claimWindowStart"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"claimWindowStart\" on \"query_search_builder\""
+        }
+      },
+      {
+        "description": "verify column \"claimWindowStart\" has type \"timestamp(3) with time zone\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "query_search_builder",
+          "claimWindowStart",
+          "timestamp(3) with time zone"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.query_search_builder.query_search_builder_claim_complete_98a85abe",
+    "label": "Add check constraint \"query_search_builder_claim_complete_98a85abe\" on \"query_search_builder\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "query_search_builder_claim_complete_98a85abe",
+        "table": "query_search_builder"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"query_search_builder_claim_complete_98a85abe\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "query_search_builder_claim_complete_98a85abe",
+          "public",
+          "\"public\".\"query_search_builder\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"query_search_builder_claim_complete_98a85abe\" on \"query_search_builder\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"query_search_builder_claim_complete_98a85abe\"",
+        "sql": "ALTER TABLE \"public\".\"query_search_builder\" ADD CONSTRAINT \"query_search_builder_claim_complete_98a85abe\" CHECK ((\"claimRunId\" IS NULL) = (\"claimWindowStart\" IS NULL) AND (\"claimRunId\" IS NULL) = (\"claimWindowEnd\" IS NULL) AND (\"claimRunId\" IS NULL) = (\"claimExpiresAt\" IS NULL))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify check constraint \"query_search_builder_claim_complete_98a85abe\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4)) AS \"result\"",
+        "params": [
+          "query_search_builder_claim_complete_98a85abe",
+          "public",
+          "\"public\".\"query_search_builder\"",
+          "c"
+        ]
+      }
+    ]
+  }
+]

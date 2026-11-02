@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { Arrangement, type Channel, Region } from 'src/common/enums';
+import { Channel } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
 
 /** Builders searched together in one Apify run. */
@@ -14,20 +14,37 @@ export interface SearchSegment {
 
 export const SEGMENT_SIZE = 10;
 
-/** On-site and hybrid share a city; remote shares the selected region. */
+/** The place a LinkedIn job board builder searches: its geoId, else its location text. */
+function linkedinSearchPlace(builder: QuerySearchBuilderRow): string | null {
+  const params = (builder.params ?? {}) as Record<string, unknown>;
+  const place = params.geoId ?? params.location;
+  return typeof place === 'string' && place ? `search:${place}` : null;
+}
+
+/**
+ * Builders share the location they search, whatever the arrangement (the
+ * arrangement is its own part of the key). LinkedIn job board builders share
+ * the place LinkedIn searches: its geoId, else its location text.
+ */
 function placeOf(builder: QuerySearchBuilderRow): string {
-  if (
-    builder.type === Arrangement.onsite ||
-    builder.type === Arrangement.hybrid
-  )
-    return `${builder.country ?? ''}|${builder.city ?? ''}`;
-  return builder.locationRegion ?? Region.GLOBAL;
+  if (builder.channel === Channel.LINKEDIN_JOB_BOARD) {
+    const place = linkedinSearchPlace(builder);
+    if (place) return place;
+  }
+  return builder.location;
 }
 
 export function segmentKey(builder: QuerySearchBuilderRow): string {
   return [builder.channel, builder.domain, builder.type, placeOf(builder)].join(
     '|',
   );
+}
+
+/** sha256 of the key and the ordered member ids: a segment's identity. */
+export function segmentHash(key: string, memberIds: readonly string[]): string {
+  return createHash('sha256')
+    .update([key, ...memberIds].join('\n'))
+    .digest('hex');
 }
 
 /**
@@ -53,9 +70,10 @@ export function buildSegments(
       const chunk = members.slice(start, start + size);
       segments.push({
         key,
-        hash: createHash('sha256')
-          .update([key, ...chunk.map((member) => member.id)].join('\n'))
-          .digest('hex'),
+        hash: segmentHash(
+          key,
+          chunk.map((member) => member.id),
+        ),
         channel: chunk[0].channel as Channel,
         members: chunk,
       });

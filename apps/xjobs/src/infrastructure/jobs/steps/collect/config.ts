@@ -1,4 +1,4 @@
-import { Channel } from 'src/common/enums';
+import { ACTIVE_CHANNELS, Channel } from 'src/common/enums';
 import type {
   ActorRunConfig,
   BoardSearchRunConfig,
@@ -22,6 +22,8 @@ export interface ChannelJobConfig<R extends ActorRunConfig = ActorRunConfig> {
   segmentSize: number;
   /** The span each segment run searches. */
   window: WindowConfig;
+  /** How long a run holds its claim on a query; longer than the slowest segment run. */
+  claimLeaseMinutes: number;
   /** The channel's actor and its limits. */
   run: R;
 }
@@ -33,6 +35,7 @@ const hourly = {
   attempts: 1,
   segmentSize: 10,
   window: { initialHours: 24, overlapMinutes: 15, maximumHours: 24 },
+  claimLeaseMinutes: 30,
 } as const;
 
 /**
@@ -55,6 +58,7 @@ export const channelJobsConfig = {
   [Channel.LINKEDIN_JOB_BOARD]: {
     queueName: 'collect-linkedin-job-board',
     ...hourly,
+    enabled: ACTIVE_CHANNELS.includes(Channel.LINKEDIN_JOB_BOARD),
     run: {
       actor: 'bebity/linkedin-jobs-scraper',
       maxRunChargeUsd: 1,
@@ -64,6 +68,7 @@ export const channelJobsConfig = {
   [Channel.LINKEDIN_POSTS]: {
     queueName: 'collect-linkedin-posts',
     ...hourly,
+    enabled: ACTIVE_CHANNELS.includes(Channel.LINKEDIN_POSTS),
     run: {
       actor: 'harvestapi/linkedin-post-search',
       maxRunChargeUsd: 0.75,
@@ -73,24 +78,30 @@ export const channelJobsConfig = {
   [Channel.GREEN_HOUSE]: {
     queueName: 'collect-greenhouse',
     ...daily,
+    enabled: ACTIVE_CHANNELS.includes(Channel.GREEN_HOUSE),
     run: {
       actor: 'apify/google-search-scraper',
       maxRunChargeUsd: 0.5,
       site: 'job-boards.greenhouse.io',
       suffix: '',
-      maxPagesPerQuery: 3,
+      // Google serves 10 results per page (no `num=100` since Sept 2025);
+      // at 3 pages every query was truncated.
+      maxPagesPerQuery: 10,
     },
   },
   [Channel.ASHBY]: {
     queueName: 'collect-ashby',
     ...daily,
+    enabled: ACTIVE_CHANNELS.includes(Channel.ASHBY),
     run: {
       actor: 'apify/google-search-scraper',
       maxRunChargeUsd: 0.5,
       site: 'jobs.ashbyhq.com',
       suffix:
         '(intitle:engineer OR intitle:developer OR intitle:lead) -intitle:manager -intitle:director -intitle:intern -intitle:recruiter',
-      maxPagesPerQuery: 3,
+      // Google serves 10 results per page (no `num=100` since Sept 2025);
+      // at 3 pages every query was truncated.
+      maxPagesPerQuery: 10,
     },
   },
 } satisfies {

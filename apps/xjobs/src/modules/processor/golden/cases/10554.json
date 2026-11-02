@@ -1,0 +1,60 @@
+{
+  "id": "10554",
+  "input": {
+    "title": "Product Engineer",
+    "companyName": "Prysm Health",
+    "description": "Location: United States\nWorkplace: Remote\nEmployment: Full time\nSalary: $170K – $230K • Offers Equity\n\nWhat you'll work on\n• Work with customers to understand user needs, identify opportunity, and translate large, ambiguous problems into scoped, testable features.\n\n• Participate in discovery, solution design, technical implementation, testing, and post-launch iteration.\n\n• Work with frontend components, APIs, backend services, and data models to deliver a complete solution that meets the user need and is maintainable, observable, and performant.\n\n• Build software that is accessible, observable, and performant, with a focus on user experience and reliability.\n\nYou might be a fit if\n• Experience shipping products in production and working with cross-functional teams to deliver high-quality software.\n\n• You model messy domains carefully and scope features appropriately.\n\n• Clear communication and the ability to explain complex technical concepts to non-technical stakeholders.\n\n• You effectively use AI tools to accelerate your work and improve the quality of your output.\n\nBonus points\n• Experience with TypeScript and React on both sides of the API.\n\n• Experience in healthcare, EHRs, or another regulated domain.\n\n• Event-driven systems, where one write fans out to many consumers.\n\nOur stack\nBackend\nTypeScript, Node, NestJS\nData\nPostgreSQL with row-level security, Prisma, pgvector\nFrontend\nReact, Vite, Radix\nInfra\nAWS (ECS Fargate, RDS, SNS/SQS, Bedrock), Terraform\nQuality\nJest, Vitest, Puppeteer acceptance specs, GitHub Actions merge queue",
+    "evidence": {
+      "location": null,
+      "contractType": null,
+      "experienceLevel": null,
+      "salary": null
+    }
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["remote"],
+        "places": [
+          {
+            "kind": "country",
+            "code": "US"
+          }
+        ],
+        "placeStrictness": "label"
+      }
+    ],
+    "roleKind": "fullstack_engineer",
+    "seniority": "unstated",
+    "yearsRequired": null,
+    "contractMonths": null,
+    "mainStack": [
+      {
+        "anyOf": [
+          {
+            "text": "TypeScript",
+            "code": "typescript"
+          }
+        ]
+      },
+      {
+        "anyOf": [
+          {
+            "text": "React",
+            "code": "react"
+          }
+        ]
+      }
+    ],
+    "requiredLanguages": [],
+    "sponsorship": "unstated",
+    "salary": {
+      "min": 170000,
+      "max": 230000,
+      "currency": "USD",
+      "period": "year"
+    },
+    "junkFlags": []
+  },
+  "drafted": {}
+}

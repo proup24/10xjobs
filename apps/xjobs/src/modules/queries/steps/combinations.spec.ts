@@ -1,121 +1,113 @@
 import {
+  ACTIVE_CHANNELS,
   Arrangement,
-  Channel,
   Position,
-  Region,
   Seniority,
   SkillDomain,
   Technology,
 } from 'src/common/enums';
 import { toRecipe } from '../builders';
 import type { QuerySearchProfileInput, QuerySearchRecipe } from '../types';
-import {
-  dedupeByHash,
-  localCombinations,
-  remoteCombinations,
-} from './combinations';
+import { dedupeByHash, locationCombinations } from './combinations';
 
 const profile: QuerySearchProfileInput = {
   position: Position.backend_engineer,
-  regions: [Region.EMEA, Region.MENA],
-  arrangements: [Arrangement.remote, Arrangement.onsite],
-  seniority: Seniority.senior,
-  country: 'MA',
-  city: 'Casablanca',
+  seniorities: [Seniority.senior],
+  locations: { remote: ['Europe'], hybrid: ['France'], onsite: ['France'] },
   skills: [],
 };
 const sets = [
   { technologies: [Technology.nestjs], domain: SkillDomain.backend },
   { technologies: [Technology.typescript], domain: SkillDomain.fullstack },
 ];
-const remoteAndOnsite = [Arrangement.remote, Arrangement.onsite];
+const channels = ACTIVE_CHANNELS.length;
 
-describe('remoteCombinations', () => {
-  it('expands channel x region x technology set', () => {
-    const combinations = remoteCombinations(profile, remoteAndOnsite, sets);
-    expect(combinations).toHaveLength(16);
-    expect(combinations.every((c) => c.type === Arrangement.remote)).toBe(true);
-    expect(combinations.every((c) => c.country === null && c.city === null)).toBe(
-      true,
-    );
-    expect(combinations.every((c) => c.experience === Seniority.senior)).toBe(
-      true,
-    );
+describe('locationCombinations', () => {
+  it('expands arrangement x active channel x location x technology set', () => {
+    expect(locationCombinations(profile, sets)).toHaveLength(3 * channels * 2);
   });
 
-  it('carries each set domain', () => {
-    const [first, second] = remoteCombinations(profile, remoteAndOnsite, sets);
+  it('carries the location key and its arrangement', () => {
+    const combinations = locationCombinations(profile, sets);
+    const pairs = new Set(combinations.map((c) => `${c.type}|${c.location}`));
+    expect([...pairs]).toEqual([
+      `${Arrangement.remote}|europe`,
+      `${Arrangement.hybrid}|france`,
+      `${Arrangement.onsite}|france`,
+    ]);
+  });
+
+  it('has no region, country or city', () => {
+    for (const combination of locationCombinations(profile, sets)) {
+      expect(combination).not.toHaveProperty('locationRegion');
+      expect(combination).not.toHaveProperty('country');
+      expect(combination).not.toHaveProperty('city');
+    }
+  });
+
+  it('orders arrangement, then channel, then location, then set', () => {
+    const [first, second] = locationCombinations(profile, sets);
     expect(first).toMatchObject({
+      type: Arrangement.remote,
+      channel: ACTIVE_CHANNELS[0],
+      location: 'europe',
       technologies: [Technology.nestjs],
       domain: SkillDomain.backend,
+      experience: Seniority.senior,
     });
     expect(second).toMatchObject({
+      location: 'europe',
       technologies: [Technology.typescript],
       domain: SkillDomain.fullstack,
     });
   });
 
-  it('orders channel, then region, then set', () => {
-    const [first, second, third] = remoteCombinations(
-      profile,
-      remoteAndOnsite,
+  it('builds no combination for an inactive channel', () => {
+    const built = new Set(
+      locationCombinations(profile, sets).map((c) => c.channel),
+    );
+    expect([...built]).toEqual([...ACTIVE_CHANNELS]);
+  });
+
+  it('expands one combination per seniority', () => {
+    const both = locationCombinations(
+      { ...profile, seniorities: [Seniority.senior, Seniority.staff] },
       sets,
     );
-    expect(first).toMatchObject({
-      channel: Object.values(Channel)[0],
-      locationRegion: Region.EMEA,
-      technologies: [Technology.nestjs],
-    });
-    expect(second).toMatchObject({
-      locationRegion: Region.EMEA,
-      technologies: [Technology.typescript],
-    });
-    expect(third).toMatchObject({ locationRegion: Region.MENA });
+    expect(both).toHaveLength(3 * channels * 2 * 2);
+    const tuple = (c: (typeof both)[number]) =>
+      [c.type, c.channel, c.location, c.technologies.join(',')].join('|');
+    const byTuple = new Map<string, Seniority[]>();
+    for (const c of both)
+      byTuple.set(tuple(c), [...(byTuple.get(tuple(c)) ?? []), c.experience]);
+    expect(byTuple.size).toBe(3 * channels * 2);
+    for (const levels of byTuple.values())
+      expect(levels).toEqual([Seniority.senior, Seniority.staff]);
   });
 
-  it('is empty without remote', () => {
-    expect(remoteCombinations(profile, [Arrangement.onsite], sets)).toEqual([]);
-  });
-});
-
-describe('localCombinations', () => {
-  it('expands channel x technology set in the city, with no region', () => {
-    const combinations = localCombinations(profile, remoteAndOnsite, sets);
-    expect(combinations).toHaveLength(8);
-    for (const combination of combinations) {
-      expect(combination).toMatchObject({
-        type: Arrangement.onsite,
-        locationRegion: null,
-        country: 'MA',
-        city: 'Casablanca',
-      });
-    }
-    expect(combinations.map((c) => c.domain).slice(0, 2)).toEqual([
-      SkillDomain.backend,
-      SkillDomain.fullstack,
-    ]);
-  });
-
-  it('expands onsite and hybrid separately', () => {
-    const combinations = localCombinations(
-      profile,
-      [Arrangement.onsite, Arrangement.hybrid],
+  it('puts seniority innermost, after the technology set', () => {
+    const [first, second] = locationCombinations(
+      { ...profile, seniorities: [Seniority.senior, Seniority.staff] },
       sets,
     );
-    expect(combinations).toHaveLength(16);
-    expect(combinations.filter((c) => c.type === Arrangement.hybrid)).toHaveLength(
-      8,
-    );
+    expect(first?.experience).toBe(Seniority.senior);
+    expect(second?.experience).toBe(Seniority.staff);
+    expect(second?.technologies).toEqual(first?.technologies);
   });
 
-  it('is empty for remote only', () => {
-    expect(localCombinations(profile, [Arrangement.remote], sets)).toEqual([]);
+  it('skips an arrangement with no locations', () => {
+    const combinations = locationCombinations(
+      { ...profile, locations: { remote: [], hybrid: [], onsite: ['Rabat'] } },
+      sets,
+    );
+    expect(combinations).toHaveLength(channels * 2);
+    expect(combinations.every((c) => c.type === Arrangement.onsite)).toBe(true);
   });
 });
 
 describe('dedupeByHash', () => {
   it('keeps the first of each hash, in order', () => {
-    const [a, b] = remoteCombinations(profile, [Arrangement.remote], sets)
+    const [a, b] = locationCombinations(profile, sets)
       .slice(0, 2)
       .map(toRecipe) as [QuerySearchRecipe, QuerySearchRecipe];
     const copy = { ...a };

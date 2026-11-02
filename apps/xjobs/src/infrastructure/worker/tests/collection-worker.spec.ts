@@ -5,7 +5,7 @@ vi.hoisted(() => {
   process.env.DATABASE_URL ??= 'postgresql://u:p@127.0.0.1:1/db';
   process.env.SUPABASE_URL ??= 'http://127.0.0.1:1';
   process.env.SUPABASE_SERVICE_ROLE_KEY ??= 'service-key';
-  process.env.WORKER_CHANNEL = 'ASHBY';
+  process.env.WORKER_CHANNEL = 'LINKEDIN_JOB_BOARD';
   process.env.APIFY_TOKEN ??= 'apify-token';
   delete process.env.WORKER_ROLE;
 });
@@ -88,18 +88,19 @@ it('routes the scheduled collect job to the coordinator and rejects unknown jobs
   try {
     await module.get(WorkerService).onModuleInit();
     expect(ensureBucket).toHaveBeenCalledWith('collection-batches');
-    expect(created.workers).toEqual(['collect-ashby']);
+    expect(created.workers).toEqual(['collect-linkedin-job-board']);
+    const { schedule } = channelJobsConfig.LINKEDIN_JOB_BOARD;
     expect(created.schedulers).toEqual([
       [
         'collect',
-        { pattern: '0 6 * * *', tz: 'UTC' },
+        { pattern: schedule.pattern, tz: schedule.timezone },
         { name: 'collect', opts: { attempts: 1 } },
       ],
     ]);
     expect(await created.process?.({ name: 'collect', data: {} })).toEqual({
       batches: 1,
     });
-    expect(collect).toHaveBeenCalledExactlyOnceWith(Channel.ASHBY);
+    expect(collect).toHaveBeenCalledExactlyOnceWith(Channel.LINKEDIN_JOB_BOARD);
     await expect(
       created.process?.({ name: 'unknown', data: {} }),
     ).rejects.toThrow('Unsupported job');
@@ -111,7 +112,7 @@ it('routes the scheduled collect job to the coordinator and rejects unknown jobs
 });
 
 it('removes a disabled channel schedule without starting any worker', async () => {
-  const config: ChannelJobConfig = channelJobsConfig.ASHBY;
+  const config: ChannelJobConfig = channelJobsConfig.LINKEDIN_JOB_BOARD;
   vi.spyOn(config, 'enabled', 'get').mockReturnValue(false);
   const module = await Test.createTestingModule({ imports: [WorkerModule] })
     .overrideProvider(StorageService)

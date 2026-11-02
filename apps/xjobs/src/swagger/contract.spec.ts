@@ -78,13 +78,29 @@ describe('API contract', () => {
     document = await buildDocument();
   });
 
-  it('documents a query search builder region as nullable', () => {
+  it('documents a query search builder location as a string', () => {
     const builder = document.components?.schemas?.[
       'QuerySearchBuilderResponseDto'
     ] as Schema & { properties: Record<string, Record<string, unknown>> };
-    expect(JSON.stringify(builder.properties['locationRegion'])).toContain(
-      '"nullable":true',
-    );
+    expect(builder.properties['location']?.type).toBe('string');
+    expect(builder.properties).not.toHaveProperty('locationRegion');
+    expect(builder.properties).not.toHaveProperty('country');
+    expect(builder.properties).not.toHaveProperty('city');
+  });
+
+  it('documents profile locations per arrangement, without regions or arrangements', () => {
+    const profile = document.components?.schemas?.['ProfileResponseDto'] as
+      Schema & { properties: Record<string, unknown> };
+    const locations = document.components?.schemas?.['LocationsDto'] as
+      Schema & { properties: Record<string, unknown> };
+    expect(profile.properties).toHaveProperty('locations');
+    expect(profile.properties).not.toHaveProperty('regions');
+    expect(profile.properties).not.toHaveProperty('arrangements');
+    expect(Object.keys(locations.properties).sort()).toEqual([
+      'hybrid',
+      'onsite',
+      'remote',
+    ]);
   });
 
   it('covers every route', () => {

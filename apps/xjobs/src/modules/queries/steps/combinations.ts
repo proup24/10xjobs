@@ -1,73 +1,79 @@
-import { Arrangement, Channel } from 'src/common/enums';
+import { ACTIVE_CHANNELS } from 'src/common/enums';
 import type {
   QuerySearchCombination,
   QuerySearchProfileInput,
   QuerySearchRecipe,
   TechnologySet,
 } from '../types';
-import { PLACE_BOUND } from './locatable';
-
-/** Remote: one combination per `channel × region × technology set`, with no city or country. */
-export function remoteCombinations(
-  profile: QuerySearchProfileInput,
-  arrangements: Arrangement[],
-  technologies: TechnologySet[],
-): QuerySearchCombination[] {
-  if (!arrangements.includes(Arrangement.remote)) return [];
-  return Object.values(Channel).flatMap((channel) =>
-    profile.regions.flatMap((locationRegion) =>
-      technologies.map(({ technologies: set, domain }) => ({
-        channel,
-        position: profile.position,
-        locationRegion,
-        country: null,
-        city: null,
-        experience: profile.seniority,
-        type: Arrangement.remote,
-        technologies: set,
-        domain,
-      })),
-    ),
-  );
-}
+import { LOCATION_ARRANGEMENTS } from '../types';
+import { sortKeys } from '../utils';
+import { locationKey } from './normalize';
 
 /**
- * Onsite and hybrid: one combination per `channel × arrangement × city × technology set`.
- * Never multiplied by region, so profiles in the same city share builders.
+ * One combination per `arrangement × active channel × location × technology set ×
+ * seniority`.
+ * The location is searched as given, whatever the arrangement, so profiles
+ * listing the same location share builders.
  */
-export function localCombinations(
+export function locationCombinations(
   profile: QuerySearchProfileInput,
-  arrangements: Arrangement[],
   technologies: TechnologySet[],
 ): QuerySearchCombination[] {
-  // One city for now; a list later only changes this source.
-  const cities = [profile.city];
-  const local = arrangements.filter((arrangement) =>
-    PLACE_BOUND.includes(arrangement),
-  );
-  return local.flatMap((type) =>
-    Object.values(Channel).flatMap((channel) =>
-      cities.flatMap((city) =>
-        technologies.map(({ technologies: set, domain }) => ({
-          channel,
-          position: profile.position,
-          locationRegion: null,
-          country: profile.country,
-          city,
-          experience: profile.seniority,
-          type,
-          technologies: set,
-          domain,
-        })),
+  return LOCATION_ARRANGEMENTS.flatMap((type) =>
+    ACTIVE_CHANNELS.flatMap((channel) =>
+      profile.locations[type].flatMap((text) =>
+        technologies.flatMap(({ technologies: set, domain }) =>
+          profile.seniorities.map((experience) => ({
+            channel,
+            position: profile.position,
+            location: locationKey(text),
+            experience,
+            type,
+            technologies: set,
+            domain,
+          })),
+        ),
       ),
     ),
   );
 }
 
 /** The first recipe of each hash, in order. */
-export function dedupeByHash(recipes: QuerySearchRecipe[]): QuerySearchRecipe[] {
+export function dedupeByHash(
+  recipes: QuerySearchRecipe[],
+): QuerySearchRecipe[] {
   const unique = new Map<string, QuerySearchRecipe>();
   for (const recipe of recipes)
     if (!unique.has(recipe.hash)) unique.set(recipe.hash, recipe);
+  return [...unique.values()];
+}
+
+/** What a channel actually runs: every recipe field except the seniority it came from. */
+function searchKey(recipe: QuerySearchRecipe): string {
+  return JSON.stringify([
+    recipe.channel,
+    recipe.type,
+    recipe.location,
+    recipe.technologies,
+    recipe.domain,
+    recipe.keyword,
+    sortKeys(recipe.params),
+  ]);
+}
+
+/**
+ * The first recipe of each distinct search, in order. Seniorities can build
+ * the same search (staff, lead and principal share LinkedIn's f_E 4,5; mid
+ * and unstated add no word), and running it twice adds cost, not recall.
+ * Combinations list seniorities in enum order, so the lowest level is kept.
+ */
+export function dedupeBySearch(
+  recipes: QuerySearchRecipe[],
+): QuerySearchRecipe[] {
+  const unique = new Map<string, QuerySearchRecipe>();
+  for (const recipe of recipes) {
+    const key = searchKey(recipe);
+    if (!unique.has(key)) unique.set(key, recipe);
+  }
   return [...unique.values()];
 }

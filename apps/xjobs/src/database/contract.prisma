@@ -242,14 +242,14 @@ model Profile {
   languages         Language[]
   country           String
   city              String?
-  regions           Region[]
+  // { remote, hybrid, onsite } lists of location text in display form.
+  locations         Jsonb
   yearsOfExperience Int
   timezoneCurrent   Int
   timezoneMin       Int
   timezoneMax       Int
   engagements       Engagement[]
-  arrangements      Arrangement[]
-  seniority         Seniority
+  seniorities       Seniority[]
   noticePeriodDays  Int
   resumeKey         String?
   resumeFilename    String?
@@ -265,7 +265,10 @@ model Profile {
   @@check(expression: sql`"timezoneCurrent" BETWEEN -720 AND 840 AND "timezoneMin" BETWEEN -720 AND 840 AND "timezoneMax" BETWEEN -720 AND 840 AND "timezoneMin" <= "timezoneMax"`, name: "profiles_tz_range")
   @@check(expression: sql`cardinality("languages") > 0`, name: "profiles_languages_nonempty")
   @@check(expression: sql`cardinality("engagements") > 0`, name: "profiles_engagements_nonempty")
-  @@check(expression: sql`cardinality("arrangements") > 0`, name: "profiles_arrangements_nonempty")
+  @@check(expression: sql`cardinality("seniorities") > 0`, name: "profiles_seniorities_nonempty")
+  // locations is exactly { remote, hybrid, onsite }: arrays of at most 20 strings, at least one location overall.
+  @@check(expression: sql`jsonb_typeof("locations") = 'object' AND "locations" ?& ARRAY['remote', 'hybrid', 'onsite'] AND ("locations" - ARRAY['remote', 'hybrid', 'onsite']) = '{}'::jsonb AND CASE WHEN jsonb_typeof("locations" -> 'remote') = 'array' AND jsonb_typeof("locations" -> 'hybrid') = 'array' AND jsonb_typeof("locations" -> 'onsite') = 'array' THEN jsonb_array_length("locations" -> 'remote') <= 20 AND jsonb_array_length("locations" -> 'hybrid') <= 20 AND jsonb_array_length("locations" -> 'onsite') <= 20 AND NOT jsonb_path_exists("locations", '$.*[*] ? (@.type() != "string")') ELSE false END`, name: "profiles_locations_shape")
+  @@check(expression: sql`jsonb_path_exists("locations", '$.*[*]')`, name: "profiles_locations_nonempty")
   @@index([userId])
   @@map("profiles")
 }
@@ -293,9 +296,8 @@ model ProfileSkill {
 model QuerySearchBuilder {
   id                 Uuid                  @id @onCreate(uuid(7))
   channel            Channel
-  locationRegion     Region?
-  country            String?
-  city               String?
+  // Canonical (lowercased) location text the channels search.
+  location           String
   experience         Seniority
   technologies       Technology[]
   // The skill domain the technologies came from; part of the hash.
@@ -313,9 +315,15 @@ model QuerySearchBuilder {
   isDeleted          Boolean               @default(false)
   // Collection cursor: everything posted before this was searched. Null until first collected.
   coveredUntil       TimestamptzJsDate(3)?
+  // Collection claim: the segment run collecting this query now, its interval and lease. All null when unclaimed.
+  claimRunId         Uuid?
+  claimWindowStart   TimestamptzJsDate(3)?
+  claimWindowEnd     TimestamptzJsDate(3)?
+  claimExpiresAt     TimestamptzJsDate(3)?
   +Timestamps
 
   @@check(expression: sql`"associatedProfiles" >= 0`, name: "query_search_builder_associated_profiles")
+  @@check(expression: sql`("claimRunId" IS NULL) = ("claimWindowStart" IS NULL) AND ("claimRunId" IS NULL) = ("claimWindowEnd" IS NULL) AND ("claimRunId" IS NULL) = ("claimExpiresAt" IS NULL)`, name: "query_search_builder_claim_complete")
   @@check(expression: sql`NOT ("isDeleted" AND "isActive")`, name: "query_search_builder_deleted_inactive")
   @@unique([hash])
   @@index([channel, isActive, isDeleted])
@@ -354,6 +362,8 @@ model SearchSegmentRun {
   capped            Boolean
   truncatedQueryIds Uuid[]
   perQuery          Jsonb
+  // What the source said matched each search (LinkedIn's SEARCH_TOTALS), untouched.
+  searchTotals      Jsonb?
   error             String?
 
   @@check(expression: sql`status IN ('succeeded', 'partial', 'failed')`, name: "search_segment_runs_status")
@@ -511,7 +521,14 @@ model NormalizedJob {
   processingAttempts    Int                   @default(0)
   processingError       String?
   processedAt           TimestamptzJsDate(3)?
+  // The extraction qualify reads; set by the processor.
+  currentExtractionId   Uuid?
+  currentExtraction     JobExtraction?        @relation("CurrentExtraction", fields: [currentExtractionId], references: [id], onDelete: SetNull)
+  // Claim time while processingStatus is 'processing'; the sweeper reads it.
+  processingStartedAt   TimestamptzJsDate(3)?
   normalizerVersion     Int
+  extractions           JobExtraction[]       @relation("JobExtractions")
+  attempts              ProcessingAttempt[]
   +Timestamps
 
   @@check(expression: sql`kind IN ('job', 'post')`, name: "normalized_jobs_kind")
@@ -540,4 +557,252 @@ model NormalizedJobSource {
   @@unique([rawItemId])
   @@index([jobId])
   @@map("normalized_job_sources")
+}
+
+// TechTag list: a closed vocabulary of codes; unknown terms enter as 'proposed'.
+model TechTag {
+  code        String                @id
+  label       String
+  aliases     String[]
+  status      String
+  occurrences Int                   @default(0)
+  firstSeenAt TimestamptzJsDate(3)
+  approvedAt  TimestamptzJsDate(3)?
+  family      String?
+  implies     String[]
+
+  @@check(expression: sql`status IN ('approved', 'proposed')`, name: "tech_tags_status")
+  @@map("tech_tags")
+}
+
+// RegionTerm list: a closed vocabulary of codes; unknown terms enter as 'proposed'.
+model RegionTerm {
+  code        String                @id
+  label       String
+  aliases     String[]
+  status      String
+  occurrences Int                   @default(0)
+  firstSeenAt TimestamptzJsDate(3)
+  approvedAt  TimestamptzJsDate(3)?
+  countries   RegionCountry[]
+
+  @@check(expression: sql`status IN ('approved', 'proposed')`, name: "regions_status")
+  @@map("regions")
+}
+
+// Country list: a closed vocabulary of codes; unknown terms enter as 'proposed'.
+model Country {
+  code        String                @id
+  label       String
+  aliases     String[]
+  status      String
+  occurrences Int                   @default(0)
+  firstSeenAt TimestamptzJsDate(3)
+  approvedAt  TimestamptzJsDate(3)?
+  regions     RegionCountry[]
+  cities      City[]
+
+  @@check(expression: sql`status IN ('approved', 'proposed')`, name: "countries_status")
+  @@map("countries")
+}
+
+// RoleKind list: a closed vocabulary of codes; unknown terms enter as 'proposed'.
+model RoleKind {
+  code        String                @id
+  label       String
+  aliases     String[]
+  status      String
+  occurrences Int                   @default(0)
+  firstSeenAt TimestamptzJsDate(3)
+  approvedAt  TimestamptzJsDate(3)?
+  extractions JobExtraction[]
+
+  @@check(expression: sql`status IN ('approved', 'proposed')`, name: "role_kinds_status")
+  @@map("role_kinds")
+}
+
+// SeniorityTerm list: a closed vocabulary of codes; unknown terms enter as 'proposed'.
+model SeniorityTerm {
+  code        String                @id
+  label       String
+  aliases     String[]
+  status      String
+  occurrences Int                   @default(0)
+  firstSeenAt TimestamptzJsDate(3)
+  approvedAt  TimestamptzJsDate(3)?
+  extractions JobExtraction[]
+
+  @@check(expression: sql`status IN ('approved', 'proposed')`, name: "seniorities_status")
+  @@map("seniorities")
+}
+
+// ArrangementTerm list: a closed vocabulary of codes; unknown terms enter as 'proposed'.
+model ArrangementTerm {
+  code        String                @id
+  label       String
+  aliases     String[]
+  status      String
+  occurrences Int                   @default(0)
+  firstSeenAt TimestamptzJsDate(3)
+  approvedAt  TimestamptzJsDate(3)?
+  extractions JobExtraction[]
+
+  @@check(expression: sql`status IN ('approved', 'proposed')`, name: "arrangements_status")
+  @@map("arrangements")
+}
+
+// ContractType list: a closed vocabulary of codes; unknown terms enter as 'proposed'.
+model ContractType {
+  code        String                @id
+  label       String
+  aliases     String[]
+  status      String
+  occurrences Int                   @default(0)
+  firstSeenAt TimestamptzJsDate(3)
+  approvedAt  TimestamptzJsDate(3)?
+  extractions JobExtraction[]
+
+  @@check(expression: sql`status IN ('approved', 'proposed')`, name: "contract_types_status")
+  @@map("contract_types")
+}
+
+// EngagementTerm list: a closed vocabulary of codes; unknown terms enter as 'proposed'.
+model EngagementTerm {
+  code        String                @id
+  label       String
+  aliases     String[]
+  status      String
+  occurrences Int                   @default(0)
+  firstSeenAt TimestamptzJsDate(3)
+  approvedAt  TimestamptzJsDate(3)?
+  extractions JobExtraction[]
+
+  @@check(expression: sql`status IN ('approved', 'proposed')`, name: "engagements_status")
+  @@map("engagements")
+}
+
+// JunkFlag list: a closed vocabulary of codes; unknown terms enter as 'proposed'.
+model JunkFlag {
+  code        String                @id
+  label       String
+  aliases     String[]
+  status      String
+  occurrences Int                   @default(0)
+  firstSeenAt TimestamptzJsDate(3)
+  approvedAt  TimestamptzJsDate(3)?
+
+  @@check(expression: sql`status IN ('approved', 'proposed')`, name: "junk_flags_status")
+  @@map("junk_flags")
+}
+
+// Which countries a region contains; lets a country filter match "EMEA remote" jobs.
+model RegionCountry {
+  regionCode  String
+  region      RegionTerm @relation(fields: [regionCode], references: [code], onDelete: Cascade)
+  countryCode String
+  country     Country    @relation(fields: [countryCode], references: [code], onDelete: Cascade)
+
+  @@id([regionCode, countryCode])
+  @@index([countryCode])
+  @@map("region_countries")
+}
+
+// A city named by postings; created as they appear, not pre-seeded. Unique per
+// country by lower-cased name (nameKey), because the contract has no functional index.
+model City {
+  id          Uuid                  @id @onCreate(uuid(7))
+  name        String
+  nameKey     String
+  countryCode String
+  country     Country               @relation(fields: [countryCode], references: [code], onDelete: Restrict)
+  geonamesId  Int?
+  aliases     String[]
+  status      String
+  occurrences Int                   @default(0)
+  firstSeenAt TimestamptzJsDate(3)
+  approvedAt  TimestamptzJsDate(3)?
+
+  @@check(expression: sql`status IN ('approved', 'proposed')`, name: "cities_status")
+  @@unique([nameKey, countryCode])
+  @@map("cities")
+}
+
+// One completed extraction run for a job. Append-only; typed columns are copies
+// of the validated document in data, kept for filtering. Shared, not workspace-scoped.
+model JobExtraction {
+  id                        Uuid                 @id @onCreate(uuid(7))
+  jobId                     Uuid
+  job                       NormalizedJob        @relation("JobExtractions", fields: [jobId], references: [id], onDelete: Restrict)
+  inputHash                 String
+  schemaVersion             Int
+  promptHash                String
+  decisionModel             String
+  extractionModel           String
+  data                      Jsonb
+  needsReview               Boolean
+  arrangement               String?
+  arrangementTerm           ArrangementTerm?     @relation(fields: [arrangement], references: [code], onDelete: Restrict)
+  seniority                 String?
+  seniorityTerm             SeniorityTerm?       @relation(fields: [seniority], references: [code], onDelete: Restrict)
+  roleKind                  String?
+  roleKindTerm              RoleKind?            @relation(fields: [roleKind], references: [code], onDelete: Restrict)
+  contractType              String?
+  contractTypeTerm          ContractType?        @relation(fields: [contractType], references: [code], onDelete: Restrict)
+  engagement                String?
+  engagementTerm            EngagementTerm?      @relation(fields: [engagement], references: [code], onDelete: Restrict)
+  isSoftwareEngineeringRole Boolean?
+  worldwide                 Boolean
+  regionCodes               String[]
+  countryCodes              String[]
+  cityIds                   Uuid[]
+  techTags                  String[]
+  mainStackTags             String[]
+  salaryMin                 Int?
+  salaryMax                 Int?
+  salaryCurrency            String?
+  salaryPeriod              String?
+  costUsd                   Decimal
+  createdAt                 TimestamptzJsDate(3) @default(now())
+  currentFor                NormalizedJob[]      @relation("CurrentExtraction")
+  attempts                  ProcessingAttempt[]
+
+  @@index([jobId, createdAt], map: "job_extractions_job_created")
+  @@index([inputHash, schemaVersion, promptHash, decisionModel, extractionModel], map: "job_extractions_reuse")
+  @@index([arrangement])
+  @@index([seniority])
+  @@index([roleKind])
+  @@index([regionCodes], type: "gin", name: "job_extractions_regionCodes_gin")
+  @@index([countryCodes], type: "gin", name: "job_extractions_countryCodes_gin")
+  @@index([cityIds], type: "gin", name: "job_extractions_cityIds_gin")
+  @@index([techTags], type: "gin", name: "job_extractions_techTags_gin")
+  @@index([mainStackTags], type: "gin", name: "job_extractions_mainStackTags_gin")
+  @@map("job_extractions")
+}
+
+// One model call made while processing a job. Append-only; feeds the daily budget.
+// jobId is null for golden-set eval rows.
+model ProcessingAttempt {
+  id                Uuid                 @id @onCreate(uuid(7))
+  jobId             Uuid?
+  job               NormalizedJob?       @relation(fields: [jobId], references: [id], onDelete: Restrict)
+  extractionId      Uuid?
+  extraction        JobExtraction?       @relation(fields: [extractionId], references: [id], onDelete: SetNull)
+  eval              Boolean              @default(false)
+  step              String
+  model             String
+  providerRequestId String?
+  inputTokens       Int
+  outputTokens      Int
+  cachedInputTokens Int
+  costUsd           Decimal
+  latencyMs         Int
+  outcome           String
+  error             String?
+  quoteFailures     Int                  @default(0)
+  createdAt         TimestamptzJsDate(3) @default(now())
+
+  @@check(expression: sql`step IN ('decision', 'extraction', 'extraction_retry')`, name: "processing_attempts_step")
+  @@check(expression: sql`outcome IN ('ok', 'error', 'invalid')`, name: "processing_attempts_outcome")
+  @@index([createdAt], where: sql`NOT eval`, name: "processing_attempts_created_noneval")
+  @@map("processing_attempts")
 }

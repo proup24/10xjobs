@@ -38,16 +38,47 @@ export interface NewSegmentRun {
   capped: boolean;
   truncatedQueryIds: string[];
   perQuery: Record<string, SegmentQueryOutcome>;
+  /** What the source said matched each search, untouched; null when not reported. */
+  searchTotals: unknown;
   error: string | null;
 }
 
-/** Saves segment runs and moves builder collection cursors. */
+/** Why a member was not claimed. */
+export type ClaimSkipReason = 'in-flight' | 'already-covered';
+
+/** The interval a run claims its members for. */
+export interface ClaimWindow {
+  since: Date;
+  until: Date;
+}
+
+export interface ClaimResult {
+  /** Members this run now owns, with their cursor as of the claim. */
+  claimed: { id: string; coveredUntil: Date | null }[];
+  skipped: { id: string; reason: ClaimSkipReason }[];
+}
+
+/** Saves segment runs, moves builder collection cursors and holds collection claims. */
 export abstract class SearchSegmentsRepository {
-  /** A run with no batch, such as a failed one. */
-  abstract recordRun(run: NewSegmentRun): Promise<void>;
   /**
-   * In one transaction: the run, its pending batch, and the cursors of
-   * `advance` moved to the run's `windowEnd`. All of them land, or none.
+   * Claims, for `runId`, every member that is active, not already covered up
+   * to `until`, and not held by a live claim whose interval overlaps `window`.
+   * Members it cannot claim are skipped; only the first run collects them.
+   */
+  abstract claim(
+    runId: string,
+    queryIds: string[],
+    window: ClaimWindow,
+    leaseMs: number,
+  ): Promise<ClaimResult>;
+  /** Clears the claims `runId` holds; never another run's. */
+  abstract releaseClaims(runId: string): Promise<void>;
+  /** A run with no batch, such as a failed one; releases the run's claims. */
+  abstract recordRun(run: NewSegmentRun & { id: string }): Promise<void>;
+  /**
+   * In one transaction: the run, its pending batch, the cursors of `advance`
+   * moved to the run's `windowEnd`, and the run's claims released. All of
+   * them land, or none.
    */
   abstract recordCollectedRun(
     run: NewSegmentRun & { id: string },
@@ -64,10 +95,79 @@ export class PrismaSearchSegmentsRepository extends SearchSegmentsRepository {
     super();
   }
 
-  async recordRun(run: NewSegmentRun): Promise<void> {
-    await this.database.db.orm.public.SearchSegmentRun.create({
-      ...run,
-      perQuery: run.perQuery as unknown as SearchSegmentRunRow['perQuery'],
+  /**
+   * One UPDATE, so the check and the write are atomic. Two runs claiming the
+   * same builder both find it free, but the second blocks on the row lock the
+   * first UPDATE takes; once the first commits, Postgres re-checks the WHERE
+   * against the new row version (READ COMMITTED re-evaluation), sees the live
+   * claim, and skips the row. The follow-up read only labels the skips.
+   */
+  async claim(
+    runId: string,
+    queryIds: string[],
+    window: ClaimWindow,
+    leaseMs: number,
+  ): Promise<ClaimResult> {
+    if (queryIds.length === 0) return { claimed: [], skipped: [] };
+    const { db } = this.database;
+    const { raw } = db;
+    // Raw SQL takes scalars only: the ids travel as an array literal, times as ISO text.
+    const ids = `{${queryIds.join(',')}}`;
+    const since = window.since.toISOString();
+    const until = window.until.toISOString();
+    const rows = await db.query(
+      raw.sql`UPDATE query_search_builder SET
+          "claimRunId" = ${runId}::uuid,
+          "claimWindowStart" = ${since}::timestamptz,
+          "claimWindowEnd" = ${until}::timestamptz,
+          "claimExpiresAt" = now() + make_interval(secs => ${leaseMs / 1000}::float8)
+        WHERE id = ANY(${ids}::uuid[])
+          AND "isActive" AND NOT "isDeleted"
+          AND ("coveredUntil" IS NULL OR "coveredUntil" < ${until}::timestamptz)
+          AND ("claimExpiresAt" IS NULL OR "claimExpiresAt" <= now()
+            OR "claimWindowEnd" <= ${since}::timestamptz
+            OR "claimWindowStart" >= ${until}::timestamptz)
+        RETURNING id, "coveredUntil"`
+        .returnsRow({ id: UUID, coveredUntil: TIMESTAMP })
+        .build(),
+    );
+    const claimed = rows.map((row) => ({
+      id: row.id as string,
+      coveredUntil: (row.coveredUntil as Date | null) ?? null,
+    }));
+    const owned = new Set(claimed.map(({ id }) => id));
+    const rest = queryIds.filter((id) => !owned.has(id));
+    if (rest.length === 0) return { claimed, skipped: [] };
+    const others = await db.orm.public.QuerySearchBuilder.where((row) =>
+      row.id.in(rest),
+    ).all();
+    const covered = new Set(
+      others
+        .filter((row) => row.coveredUntil && row.coveredUntil >= window.until)
+        .map((row) => row.id),
+    );
+    return {
+      claimed,
+      skipped: rest.map((id) => ({
+        id,
+        reason: covered.has(id) ? 'already-covered' : 'in-flight',
+      })),
+    };
+  }
+
+  async releaseClaims(runId: string): Promise<void> {
+    await clearClaims(this.database.db.orm, runId);
+  }
+
+  async recordRun(run: NewSegmentRun & { id: string }): Promise<void> {
+    await this.database.db.transaction(async (tx) => {
+      await tx.orm.public.SearchSegmentRun.create({
+        ...run,
+        perQuery: run.perQuery as unknown as SearchSegmentRunRow['perQuery'],
+        searchTotals: (run.searchTotals ??
+          null) as SearchSegmentRunRow['searchTotals'],
+      });
+      await clearClaims(tx.orm, run.id);
     });
   }
 
@@ -80,6 +180,8 @@ export class PrismaSearchSegmentsRepository extends SearchSegmentsRepository {
       await tx.orm.public.SearchSegmentRun.create({
         ...run,
         perQuery: run.perQuery as unknown as SearchSegmentRunRow['perQuery'],
+        searchTotals: (run.searchTotals ??
+          null) as SearchSegmentRunRow['searchTotals'],
       });
       await tx.orm.public.CollectionBatch.create({
         ...batch,
@@ -88,6 +190,7 @@ export class PrismaSearchSegmentsRepository extends SearchSegmentsRepository {
         status: 'pending',
       });
       await moveCursors(tx.orm, advance, run.windowEnd);
+      await clearClaims(tx.orm, run.id);
     });
   }
 
@@ -97,6 +200,20 @@ export class PrismaSearchSegmentsRepository extends SearchSegmentsRepository {
 }
 
 type Orm = DatabaseService['db']['orm'];
+
+const TIMESTAMP = 'pg/timestamptz-date@1';
+const UUID = 'pg/uuid@1';
+
+async function clearClaims(orm: Orm, runId: string): Promise<void> {
+  await orm.public.QuerySearchBuilder.where((row) =>
+    row.claimRunId.eq(runId),
+  ).updateAll({
+    claimRunId: null,
+    claimWindowStart: null,
+    claimWindowEnd: null,
+    claimExpiresAt: null,
+  });
+}
 
 async function moveCursors(
   orm: Orm,

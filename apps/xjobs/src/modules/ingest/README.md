@@ -47,7 +47,7 @@ Each raw item's **latest** version is mapped (`normalize/`) to one unified recor
 
 **Merging:** per field, the first non-null value from the employer's ATS posting, then the LinkedIn job, then a post; the most recently seen source wins within a rank. The job is `closed` when every ATS posting behind it is.
 
-**Processing status:** ingest sets `processingStatus = 'pending'` only when an observation creates a job (`new`) or finds it after 21 days unseen (`reopened`, `config/normalize.ts`). A new source or a content change updates the columns and leaves the status alone. `processing`, `processed` and `failed` belong to Process.
+**Processing status:** ingest sets `processingStatus = 'pending'` only when an observation creates a job (`new`) or finds it after 21 days unseen (`reopened`, `config/normalize.ts`). A new source or a content change updates the columns and leaves the status alone. `processing`, `processed` and `failed` belong to Process. After a batch is marked `ingested`, `ingestBatch` reports the jobs it left `pending` to its `onPending` hook; the ingest worker uses it to enqueue them on the processor's `process` queue (LinkedIn job board batches only). That is a nudge: a failure is logged, the batch stays `ingested`, and Process's sweeper finds the jobs anyway.
 
 **Rebuild:** after a `NORMALIZER_VERSION` bump, `pnpm --filter @xjobs/xjobs db:renormalize` re-normalizes every raw item and rebuilds links and merges. It never changes processing status; jobs it creates have none until Process decides. It needs only the database variables and is safe to run while ingest runs.
 

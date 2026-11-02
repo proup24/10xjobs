@@ -1,0 +1,55 @@
+{
+  "id": "878",
+  "input": {
+    "title": "Senior React Native Developer",
+    "companyName": "Miratech",
+    "description": "Miratech helps visionaries change the world. We are a global IT services and consulting company that brings together enterprise and start-up innovation. Today, we support digital transformation for some of the world's largest enterprises. By partnering with both large and small players, we stay at the leading edge of technology, remain nimble even as a global leader, and create technology that helps our clients further enhance their business. We are a values-driven organization, and our culture of Relentless Performance has enabled over 99% of Miratech's engagements to succeed by meeting or exceeding our scope, schedule, and/or budget objectives since our inception in 1989.\n\nMiratech has coverage across 5 continents and operates in over 25 countries around the world. Miratech retains nearly 1000 full-time professionals, and our annual growth rate exceeds 25%.\n\nJob Description\n\nMiratech is looking for a skilled Senior React Native Developer to join our Mobile Excellence team.\n\nOur customer uses patented technology that enables anyone with a smartphone camera to create an interactive 3D model with detailed measurements and powerful design capabilities.\n\nThe Mobile Excellence team’s mission is to advance mobile applications and empower mobile developers by driving improvements across architecture, frameworks, infrastructure, and product features within business-critical mobile applications.\n\nOn a daily basis, you will identify opportunities to improve mobile applications across the architecture, feature, and infrastructure layers. You will contribute to the evolution of hybrid React Native and native applications, improve design patterns, and help make the development and release process more efficient and reliable.\n\nKey Responsibilities\n\n\n * Design, develop, test, and deploy high-quality mobile applications using React Native, TypeScript, and React.\n * Build and deliver new product features that improve user experience and business outcomes.\n * Contribute to application architecture, technical design, and the long-term scalability of mobile solutions.\n * Continuously improve existing codebases through refactoring, optimization, and modern engineering practices.\n * Write and maintain unit tests to ensure code quality, reliability, and maintainability.\n * Contribute to continuous delivery and release processes, including reliable CI/CD pipelines for mobile applications.\n * Work closely with Product Managers, Designers, and QA Engineers to define requirements and deliver user-focused solutions.\n * Collaborate with fellow engineers on technical decisions, architecture improvements, and complex engineering challenges.\n * Take ownership of technical initiatives and, as you grow in the role, lead the delivery of new features and engineering improvements.\n   \n   \n\nQualifications\n\n\n * 7+ years of professional experience designing, developing, and deploying mobile applications.\n * 5+ years of hands-on React Native experience in production environments.\n * 2+ years of professional React experience and strong proficiency in TypeScript and JavaScript.\n * Hands-on experience writing and maintaining unit tests.\n * Solid understanding of mobile application architecture and design patterns.\n * Experience working with CI/CD platforms and automated mobile application delivery.\n * Strong problem-solving skills and the ability to translate complex product requirements into maintainable technical solutions.\n * A product-oriented mindset, with a focus on user experience and measurable business impact rather than technical implementation alone.\n * Strong communication and collaboration skills.\n * Good spoken and written English.\n   \n   \n\nAdditional Information\n\nWe offer:\n\n\n * Culture of Relentless Performance: join an unstoppable technology development team with a 99% project success rate and more than 30% year-over-year revenue growth.\n * Competitive Pay and Benefits: enjoy a comprehensive compensation and benefits package, including health insurance, and a relocation program.\n * Work From Anywhere Culture: make the most of the flexibility that comes with remote work.\n * Growth Mindset: reap the benefits of a range of professional development opportunities, including certification programs, mentorship and talent investment programs, internal mobility and internship opportunities.\n * Global Impact: collaborate on impactful projects for top global clients and shape the future of industries.\n * Welcoming Multicultural Environment: be a part of a dynamic, global team and thrive in an inclusive and supportive work environment with open communication and regular team-building company social events.\n * Social Sustainability Values: join our sustainable business practices focused on five pillars, including IT education, community empowerment, fair operating practices, environmental sustainability, and gender equality.\n * Miratech is an equal opportunity employer and does not discriminate against any employee or applicant for employment on the basis of race, color, religion, sex, national origin, age, disability, veteran status, sexual orientation, gender identity, or any other protected status under applicable law.",
+    "evidence": {
+      "location": "Mexico City, Mexico",
+      "contractType": null,
+      "experienceLevel": null,
+      "salary": null
+    }
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["unstated"],
+        "places": [],
+        "placeStrictness": "unstated"
+      }
+    ],
+    "roleKind": "mobile_engineer",
+    "seniority": "senior",
+    "yearsRequired": 7,
+    "contractMonths": null,
+    "mainStack": [
+      {
+        "anyOf": [
+          {
+            "text": "React Native",
+            "code": "react_native"
+          }
+        ]
+      },
+      {
+        "anyOf": [
+          {
+            "text": "TypeScript",
+            "code": "typescript"
+          }
+        ]
+      }
+    ],
+    "requiredLanguages": [
+      {
+        "lang": "en",
+        "level": "working"
+      }
+    ],
+    "sponsorship": "unstated",
+    "salary": null,
+    "junkFlags": []
+  },
+  "drafted": {}
+}

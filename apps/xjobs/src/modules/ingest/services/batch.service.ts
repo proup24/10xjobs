@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import type { Channel } from 'src/common/enums';
 import { StorageObjectNotFoundError } from 'src/modules/storage';
 import {
   type BatchRecord,
@@ -8,6 +9,23 @@ import type { BatchFile, BatchReport } from '../types';
 import { BatchFileError } from '../utils';
 import { BatchFileReaderService } from './batch-file-reader.service';
 import { BatchItemWriterService } from './batch-item-writer.service';
+
+/** The jobs a batch left `pending` for Process. */
+export interface PendingJobs {
+  channel: Channel;
+  jobIds: string[];
+}
+
+export interface IngestAttempt {
+  /** The last attempt: an infrastructure error fails the batch. */
+  final: boolean;
+  /**
+   * Called once after the batch is marked ingested, so every job it names is
+   * committed `pending`. A nudge only: its failure is logged and never fails
+   * the batch, because Process's sweeper finds pending jobs anyway.
+   */
+  onPending?: (pending: PendingJobs) => Promise<void>;
+}
 
 const message = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
@@ -33,18 +51,19 @@ export class BatchIngestService {
    */
   async ingestBatch(
     batchId: string,
-    attempt: { final: boolean },
+    attempt: IngestAttempt,
   ): Promise<BatchReport | null> {
     const batch = await this.repository.findBatch(batchId);
     if (!batch || batch.status !== 'pending') return null;
     try {
       const file = await this.read(batch);
       if (!file) return null;
-      const report = await this.writer.write(batch, file);
+      const { report, pendingJobIds } = await this.writer.write(batch, file);
       await this.repository.markIngested(batch.id, report);
       this.logger.log(
         `Batch ${batch.id} ingested: received=${report.received} new=${report.newItems} versions=${report.newVersions} repeats=${report.repeats} invalid=${report.invalid} jobs=${report.newJobs} reopened=${report.reopened} normalizeInvalid=${report.normalizeInvalid}`,
       );
+      await this.notifyPending(batch, pendingJobIds, attempt);
       return report;
     } catch (error) {
       await this.repository.recordAttemptFailure(
@@ -53,6 +72,21 @@ export class BatchIngestService {
         attempt.final,
       );
       throw error;
+    }
+  }
+
+  private async notifyPending(
+    batch: BatchRecord,
+    jobIds: string[],
+    attempt: IngestAttempt,
+  ): Promise<void> {
+    if (!attempt.onPending || jobIds.length === 0) return;
+    try {
+      await attempt.onPending({ channel: batch.channel, jobIds });
+    } catch (error) {
+      this.logger.warn(
+        `Batch ${batch.id}: could not nudge Process for ${jobIds.length} pending jobs (the sweeper will pick them up): ${message(error)}`,
+      );
     }
   }
 

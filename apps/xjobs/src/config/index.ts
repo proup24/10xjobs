@@ -23,6 +23,7 @@ export {
   databaseEnvironmentSchema,
   environmentSchema,
   parseEnvironment,
+  processorEnvironmentSchema,
   validateEnvironment,
   redisEnvironmentSchema,
   seedEnvironmentSchema,
@@ -33,6 +34,7 @@ export {
 export type {
   DatabaseEnvironmentVariables,
   EnvironmentVariables,
+  ProcessorEnvironmentVariables,
   RedisEnvironmentVariables,
   SeedEnvironmentVariables,
   WorkerProcessEnvironmentVariables,

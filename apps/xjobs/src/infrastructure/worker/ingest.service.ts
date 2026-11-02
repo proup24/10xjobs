@@ -6,6 +6,7 @@ import {
   ingestWorkerConfig,
   processIngestJob,
 } from 'src/infrastructure/jobs/steps/ingest';
+import { ProcessQueue } from 'src/infrastructure/jobs/steps/process';
 import {
   BatchIngestService,
   RawStorageRepository,
@@ -25,6 +26,7 @@ export class IngestWorkerService {
     private readonly ingest: BatchIngestService,
     private readonly rawStorage: RawStorageRepository,
     private readonly ingestQueue: IngestQueue,
+    private readonly processQueue: ProcessQueue,
   ) {}
 
   async start(connection: Redis): Promise<void> {
@@ -38,6 +40,7 @@ export class IngestWorkerService {
           ingest: this.ingest,
           repo: this.rawStorage,
           queue: this.ingestQueue,
+          processQueue: this.processQueue,
         }),
       ingestWorkerConfig.concurrency,
       connection,

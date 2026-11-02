@@ -2,14 +2,38 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   Arrangement,
   Channel,
-  Region,
   Seniority,
   SkillDomain,
   Technology,
 } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
 
-export class QuerySearchBuilderResponseDto implements QuerySearchBuilderRow {
+/** Collection claim columns: engine-internal, never returned by the API. */
+export const CLAIM_COLUMNS = [
+  'claimRunId',
+  'claimWindowStart',
+  'claimWindowEnd',
+  'claimExpiresAt',
+] as const;
+
+/** A query search builder as the API returns it. */
+export type QueryBuilderView = Omit<
+  QuerySearchBuilderRow,
+  (typeof CLAIM_COLUMNS)[number]
+>;
+
+export function withoutClaim(row: QuerySearchBuilderRow): QueryBuilderView {
+  const {
+    claimRunId: _runId,
+    claimWindowStart: _start,
+    claimWindowEnd: _end,
+    claimExpiresAt: _expires,
+    ...view
+  } = row;
+  return view;
+}
+
+export class QuerySearchBuilderResponseDto implements QueryBuilderView {
   @ApiProperty({ format: 'uuid' })
   id!: string;
 
@@ -17,18 +41,10 @@ export class QuerySearchBuilderResponseDto implements QuerySearchBuilderRow {
   channel!: Channel;
 
   @ApiProperty({
-    enum: Region,
-    enumName: 'Region',
-    nullable: true,
-    description: 'Null for onsite and hybrid searches, which use the city',
+    example: 'paris, france',
+    description: 'Canonical (lowercased) location text the channels search',
   })
-  locationRegion!: Region | null;
-
-  @ApiProperty({ type: String, nullable: true, example: 'MA' })
-  country!: string | null;
-
-  @ApiProperty({ type: String, nullable: true })
-  city!: string | null;
+  location!: string;
 
   @ApiProperty({ enum: Seniority, enumName: 'Seniority' })
   experience!: Seniority;

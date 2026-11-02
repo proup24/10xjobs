@@ -34,6 +34,11 @@ export interface SegmentResult {
   source: { actor: string; apifyRunId: string | null };
   /** Items the actor returned, attributed or not. */
   fetched: number;
+  /**
+   * What the source says matched each search (the LinkedIn actor's
+   * `SEARCH_TOTALS` record), untouched; null or absent when not reported.
+   */
+  searchTotals?: unknown;
   /** What Apify charged, or null when it did not report it. */
   costUsd: number | null;
   /** The run stopped at its charge cap, so results may be missing. */

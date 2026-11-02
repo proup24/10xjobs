@@ -5,8 +5,12 @@ import {
   type ValidationArguments,
   type ValidationOptions,
 } from 'class-validator';
-import { type Arrangement, ContactKind } from 'src/common/enums';
-import { CITY_REQUIRED, isLocatable } from 'src/modules/queries';
+import { ContactKind } from 'src/common/enums';
+import {
+  hasLocation,
+  type LocationsByArrangement,
+  LOCATIONS_REQUIRED,
+} from 'src/modules/queries';
 
 const E164 = /^\+[1-9]\d{6,14}$/;
 const URL_KINDS: ContactKind[] = [
@@ -112,36 +116,25 @@ export function UniqueBy(keys: string[], options?: ValidationOptions) {
 }
 
 /**
- * @description Requires a city when `arrangements` on the same object includes
- * onsite or hybrid: those searches are bound to the user's city. Skips the
- * check when `arrangements` is not an array, leaving it to its own validators.
+ * @description Requires at least one location across every arrangement.
+ * Skips the check when the value is not an object, leaving it to the nested
+ * validators.
  */
-export function IsLocatableCity(options?: ValidationOptions) {
+export function HasLocation(options?: ValidationOptions) {
   return (target: object, propertyName: string) =>
     registerDecorator({
-      name: 'isLocatableCity',
+      name: 'hasLocation',
       target: target.constructor,
       propertyName,
-      options: { message: CITY_REQUIRED, ...options },
+      options: { message: LOCATIONS_REQUIRED, ...options },
       validator: {
-        validate: (value: unknown, args: ValidationArguments) => {
-          const { arrangements } = args.object as { arrangements?: unknown };
-          if (!Array.isArray(arrangements)) return true;
-          return isLocatable(
-            arrangements as Arrangement[],
-            typeof value === 'string' ? value : null,
-          );
+        validate: (value: unknown) => {
+          if (typeof value !== 'object' || value === null) return true;
+          const lists = value as Partial<LocationsByArrangement>;
+          if (![lists.remote, lists.hybrid, lists.onsite].every(Array.isArray))
+            return true;
+          return hasLocation(lists as LocationsByArrangement);
         },
       },
     });
-}
-
-/** Runs `city` validators when a city is given, or when onsite/hybrid needs one. */
-export function cityNeedsValidation(object: object, value: unknown): boolean {
-  if (value !== null && value !== undefined) return true;
-  const { arrangements } = object as { arrangements?: unknown };
-  return (
-    Array.isArray(arrangements) &&
-    !isLocatable(arrangements as Arrangement[], null)
-  );
 }

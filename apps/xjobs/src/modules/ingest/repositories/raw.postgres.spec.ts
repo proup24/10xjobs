@@ -51,7 +51,7 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
   async function builder(): Promise<string> {
     const row = await db.orm.public.QuerySearchBuilder.create({
       channel: Channel.LINKEDIN_JOB_BOARD,
-      locationRegion: 'GLOBAL',
+      location: 'worldwide',
       experience: 'senior',
       technologies: [],
       domain: 'backend',
@@ -331,6 +331,7 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
       capped: false,
       truncatedQueryIds: [],
       perQuery: { [queryId]: { returned: 1 } },
+      searchTotals: null,
       error: null,
     });
     const batch = (
@@ -473,7 +474,11 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
       await markProcessed();
       const result = await save(ashby, t2, Channel.ASHBY);
 
-      expect(result.job).toMatchObject({ created: false, reopened: false });
+      expect(result.job).toMatchObject({
+        created: false,
+        reopened: false,
+        pending: false,
+      });
       const [only] = await jobs();
       expect(only).toMatchObject({
         processingStatus: 'processed',
@@ -488,7 +493,7 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
       expect((await jobs())[0]!.processingStatus).toBe('processed');
 
       const result = await save(liJob('4483900001'), at(41));
-      expect(result.job).toMatchObject({ reopened: true });
+      expect(result.job).toMatchObject({ reopened: true, pending: true });
       expect((await jobs())[0]).toMatchObject({
         processingStatus: 'pending',
         processingReason: 'reopened',
@@ -601,7 +606,12 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
       const once = { jobs: await jobs(), sources: await sources() };
       const again = await repo.saveItem(input(b, liJob('4483900001'), t1));
 
-      expect(again.job).toMatchObject({ created: false, reopened: false });
+      // Still waiting for Process: the replay nudges it again (harmless).
+      expect(again.job).toMatchObject({
+        created: false,
+        reopened: false,
+        pending: true,
+      });
       expect(await jobs()).toEqual(
         once.jobs.map((j) => ({ ...j, updatedAt: expect.any(Date) })),
       );
@@ -666,7 +676,10 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
         }),
         t1,
       );
-      expect(result).toMatchObject({ newItem: true, job: { created: true } });
+      expect(result).toMatchObject({
+        newItem: true,
+        job: { created: true, pending: true },
+      });
       expect((await jobs())[0]).toMatchObject({
         salaryText: 'VND 3,000,000,000/yr',
         salaryMin: null,

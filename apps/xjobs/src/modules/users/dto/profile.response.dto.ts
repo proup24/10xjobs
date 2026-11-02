@@ -1,14 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
-  Arrangement,
   Engagement,
   Language,
   Position,
   ProfileState,
-  Region,
   Seniority,
 } from 'src/common/enums';
 import type { ProfileView } from '../types';
+import { LocationsDto } from './locations.dto';
 import { SkillResponseDto } from './skill.response.dto';
 
 export class ResumeInfoResponseDto {
@@ -44,8 +43,8 @@ export class ProfileResponseDto implements ProfileView {
   @ApiProperty({ type: String, nullable: true })
   city!: string | null;
 
-  @ApiProperty({ enum: Region, enumName: 'Region', isArray: true })
-  regions!: Region[];
+  @ApiProperty({ type: LocationsDto })
+  locations!: LocationsDto;
 
   @ApiProperty()
   yearsOfExperience!: number;
@@ -62,11 +61,8 @@ export class ProfileResponseDto implements ProfileView {
   @ApiProperty({ enum: Engagement, enumName: 'Engagement', isArray: true })
   engagements!: Engagement[];
 
-  @ApiProperty({ enum: Arrangement, enumName: 'Arrangement', isArray: true })
-  arrangements!: Arrangement[];
-
-  @ApiProperty({ enum: Seniority, enumName: 'Seniority' })
-  seniority!: Seniority;
+  @ApiProperty({ enum: Seniority, enumName: 'Seniority', isArray: true })
+  seniorities!: Seniority[];
 
   @ApiProperty()
   noticePeriodDays!: number;

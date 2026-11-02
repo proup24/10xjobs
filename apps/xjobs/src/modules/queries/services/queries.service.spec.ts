@@ -2,24 +2,31 @@ import {
   Arrangement,
   Channel,
   Position,
-  Region,
   Seniority,
   SkillDomain,
   Technology,
 } from 'src/common/enums';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { CITY_REQUIRED, SKILLS_REQUIRED } from '../steps';
+import { LOCATIONS_REQUIRED, SKILLS_REQUIRED } from '../steps';
 import type { QuerySearchProfileInput, QuerySearchRecipe } from '../types';
 import { FakeQuerySearchRepository } from '../testing/fakes';
+import { MOCK_PROFILES } from '../testing/profiles.fixture';
 import { QuerySearchService } from './queries.service';
+
+// These specs cover every channel's builder, inactive ones included.
+vi.mock('src/common/enums', async (importOriginal) => {
+  const enums = await importOriginal<typeof import('src/common/enums')>();
+  return { ...enums, ACTIVE_CHANNELS: Object.values(enums.Channel) };
+});
 
 const profile: QuerySearchProfileInput = {
   position: Position.backend_engineer,
-  regions: [Region.EMEA, Region.MENA],
-  arrangements: [Arrangement.remote, Arrangement.onsite],
-  seniority: Seniority.senior,
-  country: 'MA',
-  city: 'Casablanca',
+  locations: {
+    remote: ['EMEA', 'MENA'],
+    hybrid: [],
+    onsite: ['Casablanca, Morocco'],
+  },
+  seniorities: [Seniority.senior],
   skills: [
     {
       technology: Technology.nestjs,
@@ -58,10 +65,10 @@ const hashes = (recipes: QuerySearchRecipe[]) =>
 
 describe('QuerySearchService', () => {
   describe('expand', () => {
-    it('expands remote by region and onsite by city only', async () => {
+    it('expands each arrangement by its own locations', async () => {
       const { service } = await setup();
       const recipes = service.expand(profile);
-      // remote: 4 channels x 2 regions x 2 sets; onsite: 4 channels x 2 sets
+      // remote: 4 channels x 2 locations x 2 sets; onsite: 4 channels x 1 location x 2 sets
       expect(recipes).toHaveLength(24);
       expect(new Set(hashes(recipes)).size).toBe(24);
       expect(recipes.filter((r) => r.type === Arrangement.onsite)).toHaveLength(
@@ -69,42 +76,34 @@ describe('QuerySearchService', () => {
       );
     });
 
-    it('maps unstated to remote', async () => {
+    it('creates only onsite recipes for an onsite-only profile', async () => {
+      const { service } = await setup();
+      const recipes = service.expand(MOCK_PROFILES.onsiteOnlyCasablanca);
+      expect(recipes.length).toBeGreaterThan(0);
+      for (const recipe of recipes) {
+        expect(recipe.type).toBe(Arrangement.onsite);
+        expect(recipe.location).toBe('casablanca, morocco');
+      }
+    });
+
+    it('searches an onsite region as given, with no city', async () => {
       const { service } = await setup();
       const recipes = service.expand({
         ...profile,
-        arrangements: [Arrangement.unstated],
+        locations: { remote: [], hybrid: [], onsite: ['Europe'] },
       });
-      expect(recipes).toHaveLength(16);
-      expect(recipes.every((r) => r.type === Arrangement.remote)).toBe(true);
+      expect(recipes.every((r) => r.location === 'europe')).toBe(true);
     });
 
-    it('adds remote when unstated sits next to onsite', async () => {
+    it('rejects a profile with no location', async () => {
       const { service } = await setup();
-      const recipes = service.expand({
-        ...profile,
-        arrangements: [Arrangement.onsite, Arrangement.unstated],
-      });
-      expect(recipes).toHaveLength(24);
-      expect(recipes.some((r) => r.type === Arrangement.unstated)).toBe(false);
-    });
-
-    it('shares onsite builders across regions', async () => {
-      const { service } = await setup();
-      const onsite = (regions: Region[]) =>
-        hashes(
-          service
-            .expand({ ...profile, regions })
-            .filter((recipe) => recipe.type === Arrangement.onsite),
-        );
-      expect(onsite([Region.EMEA])).toEqual(onsite([Region.EU, Region.UK]));
-    });
-
-    it('rejects onsite without a city', async () => {
-      const { service } = await setup();
-      const expand = () => service.expand({ ...profile, city: '   ' });
+      const expand = () =>
+        service.expand({
+          ...profile,
+          locations: { remote: [], hybrid: [], onsite: [] },
+        });
       expect(expand).toThrow(BadRequestException);
-      expect(expand).toThrow(CITY_REQUIRED);
+      expect(expand).toThrow(LOCATIONS_REQUIRED);
     });
 
     it('rejects a profile with no skill above importance 0', async () => {
@@ -118,34 +117,7 @@ describe('QuerySearchService', () => {
       expect(expand).toThrow(SKILLS_REQUIRED);
     });
 
-    it('defaults remote to GLOBAL', async () => {
-      const { service } = await setup();
-      const recipes = service.expand({ ...profile, regions: [] });
-      const remote = recipes.filter((r) => r.type === Arrangement.remote);
-      expect(remote).toHaveLength(8);
-      expect(remote.every((r) => r.locationRegion === Region.GLOBAL)).toBe(true);
-      expect(recipes.filter((r) => r.type === Arrangement.onsite)).toHaveLength(
-        8,
-      );
-    });
-
-    it('sets the location only for onsite and hybrid recipes', async () => {
-      const { service } = await setup();
-      const recipes = service.expand(profile);
-      for (const recipe of recipes) {
-        if (recipe.type === Arrangement.remote) {
-          expect(recipe.country).toBeNull();
-          expect(recipe.city).toBeNull();
-          expect(recipe.locationRegion).not.toBeNull();
-        } else {
-          expect(recipe.country).toBe('MA');
-          expect(recipe.city).toBe('Casablanca');
-          expect(recipe.locationRegion).toBeNull();
-        }
-      }
-    });
-
-    it('leaves remote hashes unchanged when only the city changes', async () => {
+    it('leaves remote hashes unchanged when only onsite locations change', async () => {
       const { service } = await setup();
       const remote = (input: QuerySearchProfileInput) =>
         hashes(
@@ -153,23 +125,40 @@ describe('QuerySearchService', () => {
             .expand(input)
             .filter((recipe) => recipe.type === Arrangement.remote),
         );
-      expect(remote({ ...profile, city: 'Rabat' })).toEqual(remote(profile));
+      expect(
+        remote({
+          ...profile,
+          locations: { ...profile.locations, onsite: ['Rabat, Morocco'] },
+        }),
+      ).toEqual(remote(profile));
     });
 
-    it('normalizes country and city formatting', async () => {
+    it('normalizes location formatting', async () => {
       const { service } = await setup();
       const messy = service.expand({
         ...profile,
-        country: ' ma ',
-        city: '  Casablanca ',
+        locations: {
+          remote: [' emea ', 'Mena'],
+          hybrid: [],
+          onsite: ['  CASABLANCA,   morocco'],
+        },
       });
       expect(hashes(messy)).toEqual(hashes(service.expand(profile)));
     });
 
-    it('orders channels first, in enum order', async () => {
+    it('orders arrangements first, then channels in enum order', async () => {
       const { service } = await setup();
+      const recipes = service.expand(profile);
+      expect([...new Set(recipes.map((r) => r.type))]).toEqual([
+        Arrangement.remote,
+        Arrangement.onsite,
+      ]);
       const channels = [
-        ...new Set(service.expand(profile).map((r) => r.channel)),
+        ...new Set(
+          recipes
+            .filter((r) => r.type === Arrangement.remote)
+            .map((r) => r.channel),
+        ),
       ];
       expect(channels).toEqual(Object.values(Channel));
     });

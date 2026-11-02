@@ -41,6 +41,7 @@ class FakeRepository extends RawStorageRepository {
       jobId: `job-${input.sourceKey}`,
       created: newItem,
       reopened: false,
+      pending: newItem,
     };
     return { newItem, newVersion: newItem, job };
   }
@@ -336,7 +337,12 @@ describe('BatchIngestService', () => {
   it('counts normalization outcomes and lists normalize errors by stage', async () => {
     await store(file());
     repo.outcomes.set('id:2', { invalid: 'normalize: title: required' });
-    repo.outcomes.set('id:3', { jobId: 'j3', created: false, reopened: true });
+    repo.outcomes.set('id:3', {
+      jobId: 'j3',
+      created: false,
+      reopened: true,
+      pending: true,
+    });
     const report = await service.ingestBatch('b1', { final: false });
 
     expect(report).toMatchObject({
@@ -355,5 +361,51 @@ describe('BatchIngestService', () => {
         reason: 'normalize: title: required',
       },
     ]);
+  });
+
+  it('hands the pending jobs to onPending once, after the batch is ingested', async () => {
+    await store(file());
+    repo.outcomes.set('id:2', {
+      jobId: 'j2',
+      created: false,
+      reopened: false,
+      pending: false,
+    });
+    const calls: { channel: Channel; jobIds: string[]; status: string }[] = [];
+    await service.ingestBatch('b1', {
+      final: false,
+      onPending: async (pending) => {
+        calls.push({ ...pending, status: repo.batches.get('b1')!.status });
+      },
+    });
+
+    expect(calls).toEqual([
+      {
+        channel: Channel.LINKEDIN_JOB_BOARD,
+        jobIds: ['job-id:1', 'job-id:3'],
+        status: 'ingested',
+      },
+    ]);
+  });
+
+  it('does not call onPending when no job is pending', async () => {
+    await store(file({ itemsByQuery: {}, unattributed: [] }));
+    const onPending = vi.fn(async () => undefined);
+    await service.ingestBatch('b1', { final: false, onPending });
+    expect(onPending).not.toHaveBeenCalled();
+  });
+
+  it('keeps an ingested batch ingested when onPending fails', async () => {
+    await store(file());
+    const report = await service.ingestBatch('b1', {
+      final: false,
+      onPending: async () => {
+        throw new Error('redis down');
+      },
+    });
+
+    expect(report).not.toBeNull();
+    expect(repo.batches.get('b1')!.status).toBe('ingested');
+    expect(repo.attemptFailures).toEqual([]);
   });
 });

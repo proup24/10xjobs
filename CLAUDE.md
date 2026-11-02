@@ -17,19 +17,23 @@ Precision over volume: prefer a tailored application over a fast one.
 - Nx 24 monorepo. NestJS engine in `apps/xjobs`, e2e tests in `apps/xjobs-e2e`.
 - TypeScript strict with nodenext. Tests use Vitest.
 - The Next.js web app and Supabase Postgres arrive in Phase 1.
-- Claude is called through the Anthropic API from the engine. It does not orchestrate the engine.
+- LLMs are called from the engine through OpenRouter; which model plays each role is configuration. Claude does not orchestrate the engine.
 - LinkedIn data comes only through Apify. Ashby and Greenhouse are read from their public APIs.
 
 ## Commands
 
 - `npx nx serve xjobs`: run the engine.
-- `npx nx worker-all xjobs`: run every worker in one process: infrastructure, ingest, and each enabled channel's scheduled collection.
+- `npx nx worker-all xjobs`: run every worker in one process: infrastructure, ingest, processor (when OPENROUTER_API_KEY is set), and each enabled channel's scheduled collection.
+- `npx nx worker-processor xjobs`: run the processor worker alone.
 - `npx nx worker-<channel> xjobs` (`linkedin-job-board`, `linkedin-posts`, `greenhouse`, `ashby`): run one channel's scheduled collection worker.
 - `npx nx run-many -t lint test build typecheck`: what CI runs.
 - `npx nx test xjobs`: unit tests for the engine.
 - `npx nx e2e xjobs-e2e`: e2e tests.
 - `pnpm --filter @xjobs/xjobs db:regenerate`: move published profiles to the current query recipe; run once after a recipe version bump.
 - `pnpm --filter @xjobs/xjobs db:renormalize`: rebuild normalized jobs from raw storage; run once after a `NORMALIZER_VERSION` bump.
+- `pnpm --filter @xjobs/xjobs db:reprocess -- <flags>`: send in-scope jobs back to the processor (`--null-status`, `--failed`, `--all-in-scope`, `--job <id>`); run after a prompt, schema or model change.
+- `pnpm --filter @xjobs/xjobs db:vocab -- <list> list|approve|reject|alias`: review terms the processor proposed (`cities` by id).
+- `pnpm --filter @xjobs/xjobs processor:eval`: run the processor against the golden set.
 - `npm run test:hooks`: tests for the `.claude/hooks` scripts.
 
 ## Conventions
