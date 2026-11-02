@@ -5,6 +5,8 @@
   "scripts": {
     "test:hooks": "node --test \".claude/hooks/*.test.mjs\"",
     "infra:redis": "docker compose up -d redis redis-cache",
+    "start": "node apps/xjobs/dist/main.js",
+    "start:dev": "pnpm --filter @xjobs/xjobs start:dev",
     "worker": "node apps/xjobs/dist/worker.js",
     "worker:dev": "pnpm --filter @xjobs/xjobs worker:dev",
     "worker:all": "WORKER_ROLE=all node apps/xjobs/dist/worker.js",

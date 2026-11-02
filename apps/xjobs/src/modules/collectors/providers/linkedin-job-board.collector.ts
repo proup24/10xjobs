@@ -89,7 +89,7 @@ function scrapingInfo(item: unknown): {
 @Injectable()
 export class LinkedinJobBoardCollector {
   readonly channel = Channel.LINKEDIN_JOB_BOARD;
-  constructor(private readonly actor: ApifyActorProvider) {}
+  constructor(private readonly actor: ApifyActorProvider) { }
 
   async collect(
     segment: SegmentSearch,

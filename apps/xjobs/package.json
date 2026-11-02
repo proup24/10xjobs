@@ -22,6 +22,8 @@
     "processor:eval": "tsx --tsconfig tsconfig.app.json src/scripts/processor-eval.ts",
     "processor:smoke": "tsx --tsconfig tsconfig.app.json src/scripts/processor-smoke.ts",
     "apify:probe-linkedin": "tsx --tsconfig tsconfig.app.json src/scripts/probe-linkedin-search.ts",
+    "start": "node dist/main.js",
+    "start:dev": "tsx watch --tsconfig tsconfig.app.json src/main.ts",
     "worker:dev": "tsx watch --tsconfig tsconfig.app.json src/worker.ts",
     "worker:all:dev": "WORKER_ROLE=all tsx watch --tsconfig tsconfig.app.json src/worker.ts",
     "worker:linkedin-job-board:dev": "WORKER_CHANNEL=LINKEDIN_JOB_BOARD tsx watch --tsconfig tsconfig.app.json src/worker.ts",
