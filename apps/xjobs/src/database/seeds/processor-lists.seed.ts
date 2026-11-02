@@ -18,11 +18,29 @@ import type {
 } from '../models';
 import type { DatabaseTransaction, Seed } from './seed.interface';
 
-/** The slice of a list table the seed touches; every list model has it. */
-interface ListTable {
-  where(filter: { code: string }): {
-    first(): Promise<{ aliases: string[] } | null | undefined>;
+/** One row of any list table, as the code reading every list sees it. */
+export interface ListTableRow {
+  code: string;
+  label: string;
+  aliases: string[];
+  status: string;
+  occurrences: number;
+}
+
+/**
+ * The slice of a list table the seed and the vocabulary repository use; every
+ * list model has it.
+ */
+export interface ListTable {
+  where(filter: { code: string } | { status: string }): {
+    first(): Promise<ListTableRow | null | undefined>;
+    all(): PromiseLike<ListTableRow[]>;
+    forNoKeyUpdate(): { first(): Promise<ListTableRow | null | undefined> };
     update(data: { aliases: string[] }): Promise<unknown>;
+    updateAll(data: {
+      occurrences?: number;
+      aliases?: string[];
+    }): PromiseLike<unknown[]>;
   };
   create(data: Record<string, unknown>): Promise<unknown>;
 }
@@ -57,8 +75,11 @@ export type ListRowsMatchSeed = AssertListRows<
   ]
 >;
 
-function listTables(tx: DatabaseTransaction): Record<ListName, ListTable> {
-  const orm = tx.orm.public;
+/** Each list's table, by list name. */
+export function listTables(
+  client: Pick<DatabaseTransaction, 'orm'>,
+): Record<ListName, ListTable> {
+  const orm = client.orm.public;
   return {
     techTags: orm.TechTag,
     regions: orm.RegionTerm,
