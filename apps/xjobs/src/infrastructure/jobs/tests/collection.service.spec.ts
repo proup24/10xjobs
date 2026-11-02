@@ -306,7 +306,7 @@ describe('CollectionService.collect', () => {
     expect(segments.collected).toHaveLength(1);
     expect(segments.collected[0]!.run).toMatchObject({
       channel: Channel.ASHBY,
-      segmentKey: 'ASHBY|backend|remote|EMEA',
+      segmentKey: 'ASHBY|backend|remote|emea',
       queryIds: rows.map((r) => r.id),
       status: 'succeeded',
       fetched: 5,
