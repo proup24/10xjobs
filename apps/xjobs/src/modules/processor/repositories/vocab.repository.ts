@@ -71,7 +71,8 @@ function tally<T>(
     .map(([k, [item, n]]) => [k, item, n]);
 }
 
-const cityKey = (c: { name: string; countryCode: string }) =>
+/** The key `upsertCities` maps each city to its id under. */
+export const cityKey = (c: { name: string; countryCode: string }) =>
   `${c.name}|${c.countryCode}`;
 
 @Injectable()

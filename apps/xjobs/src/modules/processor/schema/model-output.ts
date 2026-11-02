@@ -43,7 +43,7 @@ function buildModelOutput(options: ListOptions, fallback: DecisionQuestion[]) {
     z.strictObject({
       kind: z.literal('city'),
       name: z.string().min(1),
-      countryCode: z.string().nullable(),
+      countryCode: codeEnum('countries', options.countries).nullable(),
     }),
   ]);
   const opening = z.strictObject({

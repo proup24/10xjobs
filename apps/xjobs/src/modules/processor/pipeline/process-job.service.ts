@@ -27,6 +27,7 @@ import {
   type ReuseKey,
 } from '../repositories/processor.repository';
 import {
+  cityKey,
   VocabRepository,
   type Vocabulary,
 } from '../repositories/vocab.repository';
@@ -95,6 +96,11 @@ export class ProcessJobService {
     this.now = now ?? (() => new Date());
   }
 
+  /**
+   * The budget is checked before each claim against the spend already
+   * logged, so jobs in flight at the same time can overshoot the limit by up
+   * to `concurrency - 1` jobs.
+   */
   async process(jobId: string): Promise<ProcessOutcome> {
     const spent = await this.repo.spendSince(startOfUtcDay(this.now()));
     if (spent >= this.config.dailyBudgetUsd) {
@@ -111,8 +117,18 @@ export class ProcessJobService {
     try {
       return await this.run(claim, attempts);
     } catch (error) {
-      await this.repo.recordAttempts(attempts);
-      return this.fail(claim, error);
+      try {
+        await this.repo.recordAttempts(attempts);
+        return await this.fail(claim, error);
+      } catch (cleanup) {
+        // Recording the attempts or finishing the claim failed too: the job
+        // stays `processing`, and the stale sweep returns it to `pending`.
+        this.logger.error(
+          `Could not end the claim on ${claim.jobId}; the stale sweep will release it`,
+          cleanup instanceof Error ? cleanup.stack : String(cleanup),
+        );
+        throw cleanup;
+      }
     }
   }
 
@@ -162,39 +178,14 @@ export class ProcessJobService {
       input.evidence,
       this.config.decisionModel,
     );
-    const extracted = await this.extract(
+    const doc = await this.extractDocument(
       jobId,
       input,
       vocabulary,
+      decided,
       fallback,
       attempts,
     );
-    const lastExtraction = attempts[attempts.length - 1];
-
-    let doc: ExtractionDocument;
-    let quoteFailures: number;
-    try {
-      ({ doc, quoteFailures } = await this.buildDocument(
-        extracted.output,
-        decided.answers,
-        fallback,
-        input,
-        vocabulary,
-      ));
-    } catch (error) {
-      if (error instanceof ExtractionInvalidError) {
-        lastExtraction.outcome = 'invalid';
-        lastExtraction.error = error.message;
-      }
-      throw error;
-    }
-    lastExtraction.quoteFailures = quoteFailures;
-    doc.models = {
-      decision: decided.meta?.model ?? this.config.decisionModel,
-      extraction: extracted.meta.model,
-    };
-    doc = this.validDocument(doc);
-
     const extractionId = await this.repo.saveExtraction({
       ...key,
       ...deriveTypedColumns(doc, vocabulary.regionCountries),
@@ -204,8 +195,10 @@ export class ProcessJobService {
       costUsd: attempts.reduce((sum, a) => sum + a.costUsd, 0),
     });
     await this.repo.recordAttempts(
-      attempts.splice(0).map((a) => ({ ...a, extractionId })),
+      attempts.map((a) => ({ ...a, extractionId })),
     );
+    // Recorded: a later failure must not record them a second time.
+    attempts.length = 0;
     for (const [list, codes] of usedCodes(doc))
       await this.vocab.bumpOccurrences(list, codes);
     return this.end(claim, { status: 'processed', extractionId }, 'processed');
@@ -237,49 +230,103 @@ export class ProcessJobService {
     }
   }
 
-  /** Opus, with one schema-fix retry carrying the validation errors. */
-  private async extract(
+  /**
+   * Opus, then the merge and every check after it. Any failure that a better
+   * output could fix (schema, unparseable JSON, an unapproved code, the final
+   * document shape) takes the one schema-fix retry, with its errors.
+   */
+  private async extractDocument(
     jobId: string,
     input: PostingInput,
     vocabulary: Vocabulary,
+    decided: { answers: DecisionAnswer[]; meta: ModelCallMeta | null },
     fallback: DecisionQuestion[],
     attempts: NewAttempt[],
-  ): Promise<{ output: ModelOutput; meta: ModelCallMeta }> {
+  ): Promise<ExtractionDocument> {
     const schema = modelOutputSchema(vocabulary.options, fallback);
     const jsonSchema = modelOutputJsonSchema(vocabulary.options, fallback);
-    const model = this.config.extractionModel;
     let retryErrors: string[] | undefined;
 
     for (const step of ['extraction', 'extraction_retry'] as const) {
+      const call = await this.callExtraction(
+        jobId,
+        step,
+        input,
+        schema,
+        jsonSchema,
+        retryErrors,
+        attempts,
+      );
+      if ('errors' in call) {
+        retryErrors = call.errors;
+        continue;
+      }
+      const last = attempts[attempts.length - 1];
       try {
-        const { output, meta } = await this.extraction.extract(input, {
-          systemPrompt: systemPrompt(),
-          jsonSchema,
-          ...(retryErrors ? { retryErrors } : {}),
-        });
-        const parsed = schema.safeParse(output);
-        if (parsed.success) {
-          attempts.push(attempt(jobId, step, meta, model, 'ok', null));
-          return { output: parsed.data, meta };
-        }
-        retryErrors = zodErrors(parsed.error);
-        attempts.push(
-          attempt(jobId, step, meta, model, 'invalid', retryErrors.join('; ')),
+        const built = await this.buildDocument(
+          call.output,
+          decided.answers,
+          fallback,
+          input,
+          vocabulary,
         );
+        built.doc.models = {
+          decision: decided.meta?.model ?? this.config.decisionModel,
+          extraction: call.meta.model,
+        };
+        const doc = this.validDocument(built.doc);
+        last.quoteFailures = built.quoteFailures;
+        return doc;
       } catch (error) {
-        if (!(error instanceof ModelOutputError)) {
-          attempts.push(
-            attempt(jobId, step, errorMeta(error), model, 'error', error),
-          );
-          throw error;
-        }
-        retryErrors = [error.message];
-        attempts.push(
-          attempt(jobId, step, error.meta, model, 'invalid', error),
-        );
+        if (!(error instanceof ExtractionInvalidError)) throw error;
+        const message = invalidMessage(error);
+        last.outcome = 'invalid';
+        last.error = message;
+        retryErrors = [message];
       }
     }
     throw new ExtractionFailed(retryErrors ?? []);
+  }
+
+  /** One Opus call, recorded as an attempt; errors a retry can fix are returned. */
+  private async callExtraction(
+    jobId: string,
+    step: Step,
+    input: PostingInput,
+    schema: ReturnType<typeof modelOutputSchema>,
+    jsonSchema: object,
+    retryErrors: string[] | undefined,
+    attempts: NewAttempt[],
+  ): Promise<
+    { output: ModelOutput; meta: ModelCallMeta } | { errors: string[] }
+  > {
+    const model = this.config.extractionModel;
+    try {
+      const { output, meta } = await this.extraction.extract(input, {
+        systemPrompt: systemPrompt(),
+        jsonSchema,
+        ...(retryErrors ? { retryErrors } : {}),
+      });
+      const parsed = schema.safeParse(output);
+      if (parsed.success) {
+        attempts.push(attempt(jobId, step, meta, model, 'ok', null));
+        return { output: parsed.data, meta };
+      }
+      const errors = zodErrors(parsed.error);
+      attempts.push(
+        attempt(jobId, step, meta, model, 'invalid', errors.join('; ')),
+      );
+      return { errors };
+    } catch (error) {
+      if (!(error instanceof ModelOutputError)) {
+        attempts.push(
+          attempt(jobId, step, errorMeta(error), model, 'error', error),
+        );
+        throw error;
+      }
+      attempts.push(attempt(jobId, step, error.meta, model, 'invalid', error));
+      return { errors: [error.message] };
+    }
   }
 
   /** Resolution, quote and consistency checks, terms and cities. */
@@ -311,7 +358,9 @@ export class ProcessJobService {
       for (const place of opening.places)
         if (place.kind === 'city' && place.countryCode !== null)
           place.cityId =
-            cityIds.get(`${place.name}|${place.countryCode}`) ?? null;
+            cityIds.get(
+              cityKey({ name: place.name, countryCode: place.countryCode }),
+            ) ?? null;
     await this.vocab.propose(proposals);
     return { doc, quoteFailures: quoted.quoteFailures };
   }
@@ -329,9 +378,8 @@ export class ProcessJobService {
 
   private async fail(claim: Claim, error: unknown): Promise<ProcessOutcome> {
     const message =
-      error instanceof ExtractionInvalidError &&
-      !error.message.includes(error.path)
-        ? `${error.path}: ${error.message}`
+      error instanceof ExtractionInvalidError
+        ? invalidMessage(error)
         : error instanceof Error
           ? error.message
           : String(error);
@@ -358,6 +406,13 @@ export class ProcessJobService {
     const finished = await this.repo.finish(claim, outcome);
     return finished === 'superseded' ? 'superseded' : result;
   }
+}
+
+/** `path: message`; the final document check already puts paths in its message. */
+function invalidMessage(error: ExtractionInvalidError): string {
+  return error.message.startsWith(`${error.path}:`)
+    ? error.message
+    : `${error.path}: ${error.message}`;
 }
 
 function errorMeta(error: unknown): Partial<ModelCallMeta> | undefined {

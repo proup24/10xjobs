@@ -347,28 +347,127 @@ describe('ProcessJobService', () => {
     expect(repo.attempts.map((a) => a.outcome)).toEqual(['ok', 'error']);
   });
 
-  it('an unapproved code after the merge fails the job', async () => {
+  const cityOpening = (countryCode: string) => ({
+    openings: [
+      {
+        arrangements: ['remote'],
+        places: [{ kind: 'city', name: 'London', countryCode }],
+        placeStrictness: 'limit',
+        timezones: [],
+        quote: '',
+        confidence: 'sure',
+      },
+    ],
+  });
+  /** Passes the model schema but fails the document's own check. */
+  const badStrictness = {
+    openings: [
+      {
+        arrangements: ['remote'],
+        places: [{ kind: 'region', code: 'EMEA' }],
+        placeStrictness: 'unstated',
+        timezones: [],
+        quote: '',
+        confidence: 'sure',
+      },
+    ],
+  };
+
+  it('an unknown city country code is a schema error: retried, then processed', async () => {
+    let n = 0;
     extraction = new FakeExtractionModel(
-      (_, req) =>
-        opusOutput(req, {
-          openings: [
-            {
-              arrangements: ['remote'],
-              places: [{ kind: 'city', name: 'Atlantis', countryCode: 'XX' }],
-              placeStrictness: 'limit',
-              timezones: [],
-              quote: '',
-              confidence: 'sure',
-            },
-          ],
-        }),
+      (_, req) => opusOutput(req, cityOpening(n++ === 0 ? 'UK' : 'GB')),
+      EXT,
+    );
+    addJob();
+    await expect(service().process('job-1')).resolves.toBe('processed');
+    expect(extraction.calls[1].req.retryErrors?.join('\n')).toContain(
+      'openings.0.places.0.countryCode',
+    );
+    expect(repo.attempts.map((a) => [a.step, a.outcome])).toEqual([
+      ['decision', 'ok'],
+      ['extraction', 'invalid'],
+      ['extraction_retry', 'ok'],
+    ]);
+    expect(repo.extractions[0].countryCodes).toEqual(['GB']);
+  });
+
+  it('an unapproved code caught by resolveTerms takes the retry, then processes', async () => {
+    // A code the model schema offers but the matching forms do not approve.
+    const snapshot = vocab.snapshot.bind(vocab);
+    vocab.snapshot = async () => {
+      const v = await snapshot();
+      v.options.countries.push('XX');
+      return v;
+    };
+    let n = 0;
+    extraction = new FakeExtractionModel(
+      (_, req) => opusOutput(req, cityOpening(n++ === 0 ? 'XX' : 'GB')),
+      EXT,
+    );
+    addJob();
+    await expect(service().process('job-1')).resolves.toBe('processed');
+    expect(extraction.calls[1].req.retryErrors).toEqual([
+      'openings.0.places.0.countryCode: "XX" is not an approved countries code',
+    ]);
+    expect(repo.attempts.map((a) => [a.step, a.outcome])).toEqual([
+      ['decision', 'ok'],
+      ['extraction', 'invalid'],
+      ['extraction_retry', 'ok'],
+    ]);
+    expect(repo.attempts[1].error).toContain('openings.0.places.0.countryCode');
+  });
+
+  it('a final document check failure takes the retry, then processes', async () => {
+    let n = 0;
+    extraction = new FakeExtractionModel(
+      (_, req) => opusOutput(req, n++ === 0 ? badStrictness : {}),
+      EXT,
+    );
+    addJob();
+    await expect(service().process('job-1')).resolves.toBe('processed');
+    expect(extraction.calls[1].req.retryErrors?.join('\n')).toContain(
+      'openings.0.placeStrictness',
+    );
+    expect(repo.attempts.map((a) => a.outcome)).toEqual([
+      'ok',
+      'invalid',
+      'ok',
+    ]);
+  });
+
+  it('a post-merge error on the retry too: failed', async () => {
+    extraction = new FakeExtractionModel(
+      (_, req) => opusOutput(req, badStrictness),
       EXT,
     );
     addJob();
     await expect(service().process('job-1')).resolves.toBe('failed');
-    expect(job().processingError).toContain('openings.0.places.0.countryCode');
-    expect(repo.attempts.map((a) => a.outcome)).toEqual(['ok', 'invalid']);
+    expect(extraction.calls).toHaveLength(2);
+    expect(job().processingStatus).toBe('failed');
+    expect(job().processingError).toContain('openings.0.placeStrictness');
+    expect(repo.attempts.map((a) => [a.step, a.outcome])).toEqual([
+      ['decision', 'ok'],
+      ['extraction', 'invalid'],
+      ['extraction_retry', 'invalid'],
+    ]);
     expect(repo.extractions).toHaveLength(0);
+  });
+
+  it("a failed attempts write keeps the run's attempts for the failure path", async () => {
+    addJob();
+    const record = repo.recordAttempts.bind(repo);
+    let calls = 0;
+    repo.recordAttempts = async (rows) => {
+      if (calls++ === 0) throw new Error('db down');
+      return record(rows);
+    };
+    await expect(service().process('job-1')).resolves.toBe('retry');
+    expect(repo.attempts.map((a) => a.step)).toEqual([
+      'decision',
+      'extraction',
+    ]);
+    expect(job().processingStatus).toBe('pending');
   });
 
   it('over budget: no claim', async () => {
