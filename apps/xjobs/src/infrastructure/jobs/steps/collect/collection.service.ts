@@ -147,12 +147,34 @@ export class CollectionService {
     const startedAt = new Date();
     // The interval claimed: the segment's window over the cursors as listed.
     const claimed = segmentWindow(segment.members, until, config.window);
-    const claim = await this.segments.claim(
-      runId,
-      segment.members.map(({ id }) => id),
-      claimed,
-      config.claimLeaseMinutes * 60_000,
-    );
+    let claim: ClaimResult;
+    try {
+      claim = await this.segments.claim(
+        runId,
+        segment.members.map(({ id }) => id),
+        claimed,
+        config.claimLeaseMinutes * 60_000,
+      );
+    } catch (error) {
+      // The claim may have committed before the error: release whatever it holds.
+      this.logger.warn(
+        `Segment ${segment.key} could not be claimed: ${message(error)}`,
+      );
+      await this.segments
+        .releaseClaims(runId)
+        .catch((releaseError: unknown) =>
+          this.logger.error(
+            `Could not release claims of run ${runId}: ${message(releaseError)}; they expire with their lease`,
+          ),
+        );
+      return {
+        skipped: false,
+        queriesSkipped: 0,
+        stored: false,
+        collected: 0,
+        costUsd: 0,
+      };
+    }
     const queriesSkipped = claim.skipped.length;
     if (queriesSkipped > 0) this.logSkips(segment, claim.skipped);
     if (claim.claimed.length === 0)

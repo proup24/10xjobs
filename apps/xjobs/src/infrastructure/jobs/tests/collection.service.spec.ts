@@ -549,6 +549,31 @@ describe('CollectionService claims', () => {
     expect(segments.released).toContain(claim.mock.calls[0][0]);
   });
 
+  it('counts a segment whose claim fails as failed, releases it, and keeps going', async () => {
+    const rows = [
+      ...builders(1, { domain: SkillDomain.backend }),
+      ...builders(1, { domain: SkillDomain.frontend }),
+    ];
+    const { collection, collector, segments } = setup(rows);
+    const claim = segments.claim.bind(segments);
+    const spy = vi
+      .spyOn(segments, 'claim')
+      .mockRejectedValueOnce(new Error('db down'))
+      .mockImplementation(claim);
+    const release = vi.spyOn(segments, 'releaseClaims');
+
+    const summary = await collection.collect(Channel.ASHBY);
+
+    expect(collector.collect).toHaveBeenCalledTimes(1);
+    expect(release).toHaveBeenCalledWith(spy.mock.calls[0][0]);
+    expect(summary).toMatchObject({
+      segments: 2,
+      segmentsFailed: 1,
+      segmentsSkipped: 0,
+      batches: 1,
+    });
+  });
+
   it('releases claims when narrowing the segment throws', async () => {
     const rows = builders(2);
     const { collection, collector, segments } = setup(rows);
