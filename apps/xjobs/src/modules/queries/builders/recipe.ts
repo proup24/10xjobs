@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import type { QuerySearchCombination, QuerySearchRecipe } from '../types';
 import { CHANNEL_QUERY_BUILDERS } from '../channels';
 import { sortKeys } from '../utils';
-export const QUERY_SEARCH_RECIPE_VERSION = 5;
+export const QUERY_SEARCH_RECIPE_VERSION = 6;
 
 /** Hex SHA-256 of the recipe fields in a fixed key order; `params` keys are sorted recursively. */
 export function recipeHash(
@@ -11,9 +11,7 @@ export function recipeHash(
   const canonical = {
     version: recipe.version,
     channel: recipe.channel,
-    locationRegion: recipe.locationRegion,
-    country: recipe.country,
-    city: recipe.city,
+    location: recipe.location,
     experience: recipe.experience,
     technologies: recipe.technologies,
     domain: recipe.domain,

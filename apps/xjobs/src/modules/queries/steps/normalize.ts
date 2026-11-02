@@ -1,41 +1,36 @@
-import { Arrangement, Region } from 'src/common/enums';
-import type { QuerySearchProfileInput } from '../types';
+import type { LocationsByArrangement, QuerySearchProfileInput } from '../types';
+import { LOCATION_ARRANGEMENTS } from '../types';
 
-/** Where remote searches go when the profile names no region. */
-export const DEFAULT_REMOTE_REGION = Region.GLOBAL;
+/** A location as stored on the profile: trimmed, inner whitespace collapsed, case kept. */
+export function displayLocation(text: string): string {
+  return text.trim().replace(/\s+/g, ' ');
+}
 
-/** One spelling per city: inner whitespace collapsed, each word (and hyphenated part) title-cased. */
-export function canonicalCity(city: string | null | undefined): string | null {
-  const collapsed = city?.trim().replace(/\s+/g, ' ');
-  if (!collapsed) return null;
-  return collapsed
-    .toLowerCase()
-    .replace(
-      /(^|[\s-])(\p{L})/gu,
-      (_match, separator: string, letter: string) =>
-        separator + letter.toUpperCase(),
-    );
+/** One spelling per location: builders, hashes, segments and geoIds key on it. */
+export function locationKey(text: string): string {
+  return displayLocation(text).toLowerCase();
+}
+
+/** Display forms, deduped by key within each list; the first spelling wins. */
+export function normalizeLocations(
+  locations: LocationsByArrangement,
+): LocationsByArrangement {
+  const normalized = {} as LocationsByArrangement;
+  for (const arrangement of LOCATION_ARRANGEMENTS) {
+    const seen = new Map<string, string>();
+    for (const text of locations[arrangement]) {
+      const display = displayLocation(text);
+      const key = display.toLowerCase();
+      if (!seen.has(key)) seen.set(key, display);
+    }
+    normalized[arrangement] = [...seen.values()];
+  }
+  return normalized;
 }
 
 /** Formatting differences must not create duplicate permanent builders. */
 export function normalizeProfile(
   input: QuerySearchProfileInput,
 ): QuerySearchProfileInput {
-  const regions = [...new Set(input.regions)];
-  return {
-    ...input,
-    country: input.country.trim().toUpperCase(),
-    city: canonicalCity(input.city),
-    regions: regions.length > 0 ? regions : [DEFAULT_REMOTE_REGION],
-  };
-}
-
-/** `unstated` is always searched as remote; an empty list means remote. Deduped, first-seen order. */
-export function normalizeArrangements(
-  arrangements: Arrangement[],
-): Arrangement[] {
-  const mapped = arrangements.map((arrangement) =>
-    arrangement === Arrangement.unstated ? Arrangement.remote : arrangement,
-  );
-  return mapped.length > 0 ? [...new Set(mapped)] : [Arrangement.remote];
+  return { ...input, locations: normalizeLocations(input.locations) };
 }

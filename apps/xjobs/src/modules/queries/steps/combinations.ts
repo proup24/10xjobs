@@ -1,59 +1,29 @@
-import { Arrangement, Channel } from 'src/common/enums';
+import { Channel } from 'src/common/enums';
 import type {
   QuerySearchCombination,
   QuerySearchProfileInput,
   QuerySearchRecipe,
   TechnologySet,
 } from '../types';
-import { PLACE_BOUND } from './locatable';
-
-/** Remote: one combination per `channel × region × technology set`, with no city or country. */
-export function remoteCombinations(
-  profile: QuerySearchProfileInput,
-  arrangements: Arrangement[],
-  technologies: TechnologySet[],
-): QuerySearchCombination[] {
-  if (!arrangements.includes(Arrangement.remote)) return [];
-  return Object.values(Channel).flatMap((channel) =>
-    profile.regions.flatMap((locationRegion) =>
-      technologies.map(({ technologies: set, domain }) => ({
-        channel,
-        position: profile.position,
-        locationRegion,
-        country: null,
-        city: null,
-        experience: profile.seniority,
-        type: Arrangement.remote,
-        technologies: set,
-        domain,
-      })),
-    ),
-  );
-}
+import { LOCATION_ARRANGEMENTS } from '../types';
+import { locationKey } from './normalize';
 
 /**
- * Onsite and hybrid: one combination per `channel × arrangement × city × technology set`.
- * Never multiplied by region, so profiles in the same city share builders.
+ * One combination per `arrangement × channel × location × technology set`.
+ * The location is searched as given, whatever the arrangement, so profiles
+ * listing the same location share builders.
  */
-export function localCombinations(
+export function locationCombinations(
   profile: QuerySearchProfileInput,
-  arrangements: Arrangement[],
   technologies: TechnologySet[],
 ): QuerySearchCombination[] {
-  // One city for now; a list later only changes this source.
-  const cities = [profile.city];
-  const local = arrangements.filter((arrangement) =>
-    PLACE_BOUND.includes(arrangement),
-  );
-  return local.flatMap((type) =>
+  return LOCATION_ARRANGEMENTS.flatMap((type) =>
     Object.values(Channel).flatMap((channel) =>
-      cities.flatMap((city) =>
+      profile.locations[type].flatMap((text) =>
         technologies.map(({ technologies: set, domain }) => ({
           channel,
           position: profile.position,
-          locationRegion: null,
-          country: profile.country,
-          city,
+          location: locationKey(text),
           experience: profile.seniority,
           type,
           technologies: set,
