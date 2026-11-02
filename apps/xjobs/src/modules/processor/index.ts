@@ -5,9 +5,14 @@ export {
 } from './config/processor.config';
 export {
   PROCESSOR_CLOCK,
-  ProcessJobService,
+  ProcessorGuard,
+} from './services/processor-guard.service';
+export {
+  createProcessorService,
+  ProcessorBlockedError,
+  ProcessorService,
   type ProcessOutcome,
-} from './pipeline/process-job.service';
+} from './services/processor.service';
 export { ProcessorModule } from './processor.module';
 export {
   type Claim,

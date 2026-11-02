@@ -15,8 +15,10 @@ import { DecisionModel, ExtractionModel } from '../models/types';
 import {
   type Claim,
   type FinishOutcome,
+  type JobState,
   type NewAttempt,
   type NewExtraction,
+  type ProcessingCounts,
   ProcessorRepository,
   type ReprocessFilter,
   type ReuseKey,
@@ -386,6 +388,51 @@ export class MemoryProcessorRepository extends ProcessorRepository {
       n++;
     }
     return n;
+  }
+
+  async jobState(jobId: string): Promise<JobState | null> {
+    const job = this.jobs.get(jobId);
+    if (!job) return null;
+    const extraction = this.extractions.find(
+      (e) => e.id === job.currentExtractionId,
+    );
+    return {
+      id: job.id,
+      inScope: this.inScope(job),
+      status: job.status,
+      kind: job.kind,
+      closed: job.closed,
+      title: job.title,
+      companyName: job.companyName,
+      processingStatus: job.processingStatus,
+      processingReason: null,
+      processingRequestedAt: job.processingRequestedAt,
+      processingAttempts: job.processingAttempts,
+      processingError: job.processingError,
+      processedAt: job.processedAt,
+      extraction: extraction
+        ? {
+            id: extraction.id,
+            createdAt: extraction.createdAt,
+            needsReview: extraction.needsReview,
+            costUsd: extraction.costUsd,
+            data: extraction.data,
+          }
+        : null,
+    };
+  }
+
+  async processingCounts(): Promise<ProcessingCounts> {
+    const counts: ProcessingCounts = {
+      pending: 0,
+      processing: 0,
+      processed: 0,
+      failed: 0,
+      unset: 0,
+    };
+    for (const job of this.jobs.values())
+      if (this.inScope(job)) counts[job.processingStatus ?? 'unset'] += 1;
+    return counts;
   }
 }
 

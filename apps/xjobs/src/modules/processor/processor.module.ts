@@ -15,7 +15,6 @@ import {
 } from './models/client';
 import { ModelPricing } from './models/pricing';
 import { DecisionModel, ExtractionModel } from './models/types';
-import { ProcessJobService } from './pipeline/process-job.service';
 import {
   PrismaProcessorRepository,
   ProcessorRepository,
@@ -24,14 +23,33 @@ import {
   PrismaVocabRepository,
   VocabRepository,
 } from './repositories/vocab.repository';
+import { ProcessorController } from './controllers/processor.controller';
+import { DecisionService } from './services/decision.service';
+import { ExtractionPipeline } from './services/extraction-pipeline.service';
+import { ExtractionStore } from './services/extraction-store.service';
+import { ExtractionService } from './services/extraction.service';
+import { FactAssembler } from './services/fact-assembler.service';
+import { ProcessorGuard } from './services/processor-guard.service';
+import { ProcessorService } from './services/processor.service';
 
 type Env = ConfigService<WorkerProcessEnvironmentVariables, true>;
 
-/** Turns normalized jobs into validated extractions (spec: processor design). */
+/**
+ * Turns normalized jobs into validated extractions (spec: processor design).
+ * `ProcessorService` is the entry point; the worker and the HTTP controller
+ * both call it. The controller is served by the API app only.
+ */
 @Module({
   imports: [ConfigModule, DatabaseModule],
+  controllers: [ProcessorController],
   providers: [
-    ProcessJobService,
+    ProcessorService,
+    ProcessorGuard,
+    ExtractionPipeline,
+    DecisionService,
+    ExtractionService,
+    FactAssembler,
+    ExtractionStore,
     ModelPricing,
     { provide: ProcessorRepository, useClass: PrismaProcessorRepository },
     { provide: VocabRepository, useClass: PrismaVocabRepository },
@@ -84,7 +102,7 @@ type Env = ConfigService<WorkerProcessEnvironmentVariables, true>;
   ],
   exports: [
     OPENROUTER_CLIENT,
-    ProcessJobService,
+    ProcessorService,
     ProcessorRepository,
     PROCESSOR_CONFIG,
     ModelPricing,

@@ -10,7 +10,7 @@ import type {
   ModelCallMeta,
 } from '../models/types';
 import { PROCESSOR_CHANNEL } from '../config/processor.config';
-import type { TypedColumns } from '../pipeline/typed-columns';
+import type { TypedColumns } from '../rules/typed-columns';
 import type { ExtractionDocument } from '../schema';
 
 /** A job this worker holds: what `finish` checks the row against. */
@@ -62,6 +62,37 @@ export type ReprocessFilter = {
   jobIds?: string[];
 };
 
+/** One job's processing state and current extraction, for inspection. */
+export interface JobState {
+  id: string;
+  /** Active, a `job`, and has a LinkedIn job board source. */
+  inScope: boolean;
+  status: string;
+  kind: string;
+  closed: boolean;
+  title: string | null;
+  companyName: string | null;
+  processingStatus: string | null;
+  processingReason: string | null;
+  processingRequestedAt: Date | null;
+  processingAttempts: number;
+  processingError: string | null;
+  processedAt: Date | null;
+  extraction: {
+    id: string;
+    createdAt: Date;
+    needsReview: boolean;
+    costUsd: number;
+    data: ExtractionDocument;
+  } | null;
+}
+
+/** In-scope jobs per processing status; `unset` is a null status (never sent to the processor). */
+export type ProcessingCounts = Record<
+  'pending' | 'processing' | 'processed' | 'failed' | 'unset',
+  number
+>;
+
 /**
  * Every read and write the processor makes. A job is in scope when it is an
  * active `job` with at least one LinkedIn job board source; nothing here
@@ -95,6 +126,8 @@ export abstract class ProcessorRepository {
   abstract spendSince(since: Date): Promise<number>;
   /** Sets the matching in-scope jobs to `pending`; returns how many. */
   abstract markPending(filter: ReprocessFilter): Promise<number>;
+  abstract jobState(jobId: string): Promise<JobState | null>;
+  abstract processingCounts(): Promise<ProcessingCounts>;
 }
 
 type Raw = DatabaseTransaction['raw'];
@@ -306,6 +339,70 @@ export class PrismaProcessorRepository extends ProcessorRepository {
       .where((a) => a.createdAt.gte(since))
       .aggregate((a) => ({ total: a.sum('costUsd') }));
     return Number(result.total ?? 0);
+  }
+
+  async jobState(jobId: string): Promise<JobState | null> {
+    const { orm, raw } = this.db;
+    const job = await orm.public.NormalizedJob.where({ id: jobId }).first();
+    if (!job) return null;
+    const [scope] = await this.db.query(
+      raw.sql`SELECT ${jobId}::uuid IN (${linkedInJobIds(raw)}) AS "linkedIn"`
+        .returnsRow({ linkedIn: 'pg/bool@1' })
+        .build(),
+    );
+    const extraction = job.currentExtractionId
+      ? await orm.public.JobExtraction.where({
+          id: job.currentExtractionId,
+        }).first()
+      : null;
+    return {
+      id: job.id,
+      inScope:
+        job.status === 'active' && job.kind === 'job' && Boolean(scope?.linkedIn),
+      status: job.status,
+      kind: job.kind,
+      closed: job.closed,
+      title: job.title,
+      companyName: job.companyName,
+      processingStatus: job.processingStatus,
+      processingReason: job.processingReason,
+      processingRequestedAt: job.processingRequestedAt,
+      processingAttempts: job.processingAttempts,
+      processingError: job.processingError,
+      processedAt: job.processedAt,
+      extraction: extraction
+        ? {
+            id: extraction.id,
+            createdAt: extraction.createdAt,
+            needsReview: extraction.needsReview,
+            costUsd: Number(extraction.costUsd),
+            data: extraction.data as ExtractionDocument,
+          }
+        : null,
+    };
+  }
+
+  async processingCounts(): Promise<ProcessingCounts> {
+    const { raw } = this.db;
+    const rows = await this.db.query(
+      raw.sql`SELECT coalesce(j."processingStatus", 'unset') AS status, count(*)::int AS n
+        FROM normalized_jobs j
+        WHERE j.status = 'active' AND j.kind = 'job'
+          AND j.id IN (${linkedInJobIds(raw)})
+        GROUP BY 1`
+        .returnsRow({ status: 'pg/text@1', n: 'pg/int4@1' })
+        .build(),
+    );
+    const counts: ProcessingCounts = {
+      pending: 0,
+      processing: 0,
+      processed: 0,
+      failed: 0,
+      unset: 0,
+    };
+    for (const row of rows)
+      counts[row.status as keyof ProcessingCounts] = row.n as number;
+    return counts;
   }
 
   /**

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildDecisionQuestions } from '../pipeline/questions';
-import { seedOptions } from '../pipeline/options.testing';
+import { buildDecisionQuestions } from '../rules/questions';
+import { seedOptions } from '../rules/options.testing';
 import { modelOutputSchema } from '../schema';
 import { promptHash, systemPrompt } from './prompt';
 

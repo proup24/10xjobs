@@ -407,40 +407,8 @@ export function suggestThreshold(
 }
 
 export function summarize(scores: FactScores[]): EvalReport {
-  const facts = {} as Record<FactName, FactReport>;
-  let sure = 0;
-  let sureWrong = 0;
-  const wrongCases = new Set<string>();
-  for (const name of FACT_NAMES) {
-    const entries = scores.flatMap((s) => {
-      const e = s.facts[name];
-      return e ? [{ e, caseId: s.caseId }] : [];
-    });
-    const share = (by: DecidedBy) =>
-      ratio(
-        entries.filter(({ e }) => e.decidedBy === by).length,
-        entries.filter(({ e }) => e.decidedBy !== null).length,
-      );
-    facts[name] = {
-      scored: entries.length,
-      accuracy: ratio(
-        entries.reduce((n, { e }) => n + e.correct, 0),
-        entries.reduce((n, { e }) => n + e.total, 0),
-      ),
-      jevShare: share('jev'),
-      opusShare: share('opus'),
-      ingestShare: share('ingest'),
-    };
-    if (name === 'mainStack') continue; // a missed tag is not a contradiction
-    for (const { e, caseId } of entries) {
-      if (e.confidence !== 'sure') continue;
-      sure++;
-      if (e.correct < e.total) {
-        sureWrong++;
-        wrongCases.add(caseId);
-      }
-    }
-  }
+  const summary = summarizeFacts(scores);
+  const { facts, sure, sureWrong, wrongCases } = summary;
 
   const questions = {} as Record<JevQuestion, QuestionReport>;
   for (const q of Object.keys(JEV_QUESTIONS) as JevQuestion[]) {
@@ -487,6 +455,66 @@ export function summarize(scores: FactScores[]): EvalReport {
         : scores.reduce((n, s) => n + s.costUsd, 0) / scores.length,
     bars,
     pass: Object.values(bars).every(Boolean),
+  };
+}
+
+type ScoredEntry = { e: FactScore; caseId: string };
+
+function summarizeFacts(scores: FactScores[]): {
+  facts: Record<FactName, FactReport>;
+  sure: number;
+  sureWrong: number;
+  wrongCases: Set<string>;
+} {
+  const facts = {} as Record<FactName, FactReport>;
+  let sure = 0;
+  let sureWrong = 0;
+  const wrongCases = new Set<string>();
+
+  for (const name of FACT_NAMES) {
+    const entries = scores.flatMap((score): ScoredEntry[] => {
+      const fact = score.facts[name];
+      return fact ? [{ e: fact, caseId: score.caseId }] : [];
+    });
+    facts[name] = summarizeFact(entries);
+    if (name === 'mainStack') continue;
+
+    const contradictions = sureContradictions(entries);
+    sure += contradictions.total;
+    sureWrong += contradictions.wrong;
+    for (const caseId of contradictions.cases) wrongCases.add(caseId);
+  }
+
+  return { facts, sure, sureWrong, wrongCases };
+}
+
+function summarizeFact(entries: ScoredEntry[]): FactReport {
+  const decided = entries.filter(({ e }) => e.decidedBy !== null);
+  const share = (by: DecidedBy) =>
+    ratio(decided.filter(({ e }) => e.decidedBy === by).length, decided.length);
+  return {
+    scored: entries.length,
+    accuracy: ratio(
+      entries.reduce((total, { e }) => total + e.correct, 0),
+      entries.reduce((total, { e }) => total + e.total, 0),
+    ),
+    jevShare: share('jev'),
+    opusShare: share('opus'),
+    ingestShare: share('ingest'),
+  };
+}
+
+function sureContradictions(entries: ScoredEntry[]): {
+  total: number;
+  wrong: number;
+  cases: string[];
+} {
+  const sure = entries.filter(({ e }) => e.confidence === 'sure');
+  const wrong = sure.filter(({ e }) => e.correct < e.total);
+  return {
+    total: sure.length,
+    wrong: wrong.length,
+    cases: wrong.map(({ caseId }) => caseId),
   };
 }
 

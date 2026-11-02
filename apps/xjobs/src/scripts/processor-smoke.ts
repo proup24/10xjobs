@@ -19,7 +19,7 @@ import {
 } from 'src/modules/processor/models/client';
 import { ModelPricing } from 'src/modules/processor/models/pricing';
 import type { PostingInput } from 'src/modules/processor/models/types';
-import { buildDecisionQuestions } from 'src/modules/processor/pipeline/questions';
+import { buildDecisionQuestions } from 'src/modules/processor/rules/questions';
 import { systemPrompt } from 'src/modules/processor/prompts/prompt';
 import { modelOutputJsonSchema } from 'src/modules/processor/schema';
 import { SEED } from 'src/modules/processor/vocab/seed-data';
