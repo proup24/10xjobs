@@ -69,6 +69,13 @@ jobs:
           XJOBS_SKIP_ENV_FILES: '1'
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
 
+      # The only CI step that runs the engine's runtime client against a real database
+      - name: Seed the database
+        run: pnpm --filter @xjobs/xjobs db:seed
+        env:
+          XJOBS_SKIP_ENV_FILES: '1'
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+
       - name: Check the generated database types are current
         run: pnpm db:types && git diff --exit-code apps/web/src/lib/supabase/database.types.ts
 
