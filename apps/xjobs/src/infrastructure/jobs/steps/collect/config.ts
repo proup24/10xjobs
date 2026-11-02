@@ -35,17 +35,6 @@ const hourly = {
   window: { initialHours: 24, overlapMinutes: 15, maximumHours: 24 },
 } as const;
 
-
-const tenMinutes = {
-  enabled: true,
-  schedule: { pattern: '*/10 * * * *', timezone: 'UTC' },
-  concurrency: 1,
-  attempts: 1,
-  segmentSize: 10,
-  window: { initialHours: 24, overlapMinutes: 15, maximumHours: 24 },
-} as const;
-
-
 const twoMinutes = {
   enabled: true,
   schedule: { pattern: '*/2 * * * *', timezone: 'UTC' },

@@ -5,7 +5,7 @@ import {
   createDatabaseClient,
   type DatabaseClient,
 } from 'src/database/connection.source';
-import { processorListsSeed } from 'src/database/seeds/processor-lists.seed';
+import { processorListsSeed } from 'src/database/seeds/processor.seed';
 import type { TypedColumns } from '../rules/typed-columns';
 import { fixtureDocument } from '../schema/fixture.testing';
 import {

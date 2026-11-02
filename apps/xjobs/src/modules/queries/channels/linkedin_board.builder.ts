@@ -1,7 +1,7 @@
 import { Arrangement, Channel, Seniority, Technology } from 'src/common/enums';
 import type { ChannelQuery, QuerySearchCombination } from '../types';
 import type { ChannelQueryBuilder } from '../builders/channel.builder';
-import { POSITION_TITLES, TECHNOLOGY_TERMS } from '../builders/keywords';
+import { TECHNOLOGY_TERMS } from '../builders/keywords';
 import { LINKEDIN_GEO_IDS } from './linkedin_geo';
 
 /**
