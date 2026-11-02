@@ -117,7 +117,7 @@ export const workerProcessEnvironmentSchema = databaseEnvironmentSchema
     PROCESSOR_EXTRACTION_MODEL: z
       .string()
       .min(1)
-      .default('anthropic/claude-opus-5.5'),
+      .default('anthropic/claude-4.5-sonnet'),
     PROCESSOR_CONCURRENCY: z.coerce.number().int().positive().default(4),
     PROCESSOR_MAX_ATTEMPTS: z.coerce.number().int().positive().default(3),
     PROCESSOR_CLAIM_TIMEOUT_MS: z.coerce
