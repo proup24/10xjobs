@@ -47,8 +47,11 @@ export class ProcessQueue implements OnApplicationShutdown {
       defaultJobOptions: {
         attempts: config.maxAttempts,
         backoff: { type: 'exponential', delay: 30_000 },
-        removeOnComplete: { age: 86_400 },
-        removeOnFail: { age: 604_800 },
+        // The job row is the truth. A retained finished job would keep its id,
+        // and `add` with that id would be a no-op once the row went back to
+        // `pending` (not claimed, over budget, superseded, reprocessed).
+        removeOnComplete: true,
+        removeOnFail: true,
       },
     });
     this.queue.on('error', () =>
@@ -56,9 +59,16 @@ export class ProcessQueue implements OnApplicationShutdown {
     );
   }
 
-  /** The BullMQ job id is the job id, so a job is never queued twice at once. */
+  /**
+   * The BullMQ job id is the job id, so a job is never queued twice at once;
+   * a finished one is removed, so the same id can be queued again.
+   */
   async enqueue(jobId: string): Promise<void> {
-    await this.queue.add(PROCESS_JOB, { jobId }, { jobId });
+    await this.queue.add(
+      PROCESS_JOB,
+      { jobId },
+      { jobId, removeOnComplete: true, removeOnFail: true },
+    );
   }
 
   async onApplicationShutdown(): Promise<void> {
