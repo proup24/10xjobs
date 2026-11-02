@@ -47,11 +47,17 @@ export class ExtractionService {
   ): Promise<ExtractionCall> {
     const model = this.config.extractionModel;
     const schema = modelOutputSchema(vocabulary.options, fallback);
+    const jsonSchema = modelOutputJsonSchema(vocabulary.options, fallback);
+    log.calling(
+      step,
+      model,
+      `${kb(input.description)} posting${input.truncated ? ' (truncated)' : ''}, ${kb(JSON.stringify(jsonSchema))} schema, ${fallback.length} fallback questions${retryErrors ? `, retrying ${retryErrors.length} errors` : ''}`,
+    );
     let result: { output: unknown; meta: ModelCallMeta };
     try {
       result = await this.extraction.extract(input, {
         systemPrompt: systemPrompt(),
-        jsonSchema: modelOutputJsonSchema(vocabulary.options, fallback),
+        jsonSchema,
         ...(retryErrors ? { retryErrors } : {}),
       });
     } catch (error) {
@@ -72,6 +78,9 @@ export class ExtractionService {
     return { ok: true, output: parsed.data, meta: result.meta };
   }
 }
+
+const kb = (text: string): string =>
+  `${(Buffer.byteLength(text, 'utf8') / 1024).toFixed(1)} KB`;
 
 export const zodErrors = (error: z.ZodError): string[] =>
   error.issues.map((i) => `${i.path.join('.') || '(root)'}: ${i.message}`);

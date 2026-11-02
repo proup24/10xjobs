@@ -81,4 +81,15 @@ describe('contradictsEvidence', () => {
     ).toBe(false);
     expect(contradictsEvidence('seniority', 'junior', ev({}))).toBe(false);
   });
+
+  it('treats LinkedIn "Not Applicable" as no evidence, without a warning', () => {
+    expect(
+      contradictsEvidence(
+        'seniority',
+        'senior',
+        ev({ experienceLevel: 'Not Applicable' }),
+      ),
+    ).toBe(false);
+    expect(warn).not.toHaveBeenCalled();
+  });
 });

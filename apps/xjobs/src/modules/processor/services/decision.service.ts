@@ -45,6 +45,7 @@ export class DecisionService {
     const questions = buildDecisionQuestions(vocabulary.options);
     let answers: DecisionAnswer[] = [];
     let reported = model;
+    log.calling('decision', model, `${questions.length} questions`);
     try {
       const result = await this.decision.decide(input, questions);
       log.ok('decision', model, result.meta);
@@ -57,10 +58,12 @@ export class DecisionService {
       }
       log.invalid('decision', model, error.meta, error.message);
     }
-    return {
-      answers,
-      fallback: selectFallback(answers, questions, input.evidence, model),
-      model: reported,
-    };
+    const fallback = selectFallback(answers, questions, input.evidence, model);
+    log.debug(
+      fallback.length === 0
+        ? 'Jev answered every question confidently'
+        : `${fallback.length} of ${questions.length} questions go to the extraction model: ${fallback.map((q) => q.key).join(', ')}`,
+    );
+    return { answers, fallback, model: reported };
   }
 }

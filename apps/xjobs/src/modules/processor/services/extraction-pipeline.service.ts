@@ -67,6 +67,9 @@ export class ExtractionPipeline {
           vocabulary,
         );
         log.setLastQuoteFailures(assembled.quoteFailures);
+        log.debug(
+          `document assembled: ${assembled.doc.openings.length} openings, ${assembled.quoteFailures} unsupported quotes cleared, ${assembled.doc.conflicts.length} evidence conflicts, ${assembled.proposals.length} new terms, ${assembled.cities.length} cities`,
+        );
         return assembled;
       } catch (error) {
         if (!(error instanceof ExtractionInvalidError)) throw error;
@@ -75,6 +78,7 @@ export class ExtractionPipeline {
         retryErrors = [message];
       }
     }
+    log.warn('the extraction was invalid twice; giving up');
     throw new ExtractionFailed(retryErrors ?? []);
   }
 }

@@ -105,16 +105,28 @@ export class ProcessorService {
 
   async process(jobId: string): Promise<ProcessOutcome> {
     const blocked = await this.guard.check();
-    if (blocked) return blocked;
+    if (blocked) {
+      this.logger.debug(`[job ${jobId}] not started: ${blocked}`);
+      return blocked;
+    }
 
     const claim = await this.jobs.claim(jobId);
-    if (!claim) return 'not_claimed';
+    if (!claim) {
+      this.logger.debug(
+        `[job ${jobId}] not claimed: not pending, out of scope, or another worker has it`,
+      );
+      return 'not_claimed';
+    }
 
     const log = new AttemptLog(jobId);
+    const started = Date.now();
+    log.info(
+      `claimed (attempt ${claim.attempts} of ${this.config.maxAttempts})`,
+    );
     try {
-      return await this.run(claim, log);
+      return await this.run(claim, log, started);
     } catch (error) {
-      return this.fail(claim, error, log);
+      return this.fail(claim, error, log, started);
     }
   }
 
@@ -152,8 +164,15 @@ export class ProcessorService {
     });
     const vocabulary = await this.vocab.snapshot();
     const log = new AttemptLog(null);
+    const started = Date.now();
+    log.info(
+      `started (${input.description.length} characters${input.truncated ? ', truncated' : ''})`,
+    );
     try {
       const { doc } = await this.pipeline.run(input, vocabulary, log);
+      log.info(
+        `done in ${elapsed(started)} · ${usd(log.costUsd)} · needsReview ${needsReview(doc)}`,
+      );
       return {
         document: doc,
         typedColumns: deriveTypedColumns(doc, vocabulary.regionCountries),
@@ -169,6 +188,9 @@ export class ProcessorService {
         })),
       };
     } catch (error) {
+      log.warn(
+        `failed after ${elapsed(started)}: ${error instanceof Error ? error.message : String(error)}`,
+      );
       if (error instanceof ProviderUnavailableError)
         this.guard.pause(error.message);
       throw error;
@@ -198,31 +220,47 @@ export class ProcessorService {
     return this.guard.isPaused();
   }
 
-  private async run(claim: Claim, log: AttemptLog): Promise<ProcessOutcome> {
+  private async run(
+    claim: Claim,
+    log: AttemptLog,
+    started: number,
+  ): Promise<ProcessOutcome> {
     const job = await this.jobs.loadJob(claim.jobId);
-    if (!job)
+    if (!job) {
+      log.warn('the job no longer exists');
       return this.finish(
         claim,
         { status: 'failed', error: `job ${claim.jobId} not found` },
         'failed',
+        log,
       );
-    if (job.closed)
+    }
+    if (job.closed) {
+      log.info('closed posting: processed with no model call');
       return this.finish(
         claim,
         { status: 'processed', extractionId: null },
         'closed',
+        log,
       );
+    }
 
     const input = buildPostingInput(job);
+    log.debug(
+      `input: "${job.title ?? '(no title)'}" at ${job.companyName ?? '(no company)'}, ${input.description.length} characters${input.truncated ? ' (truncated)' : ''}, LinkedIn ${JSON.stringify(input.evidence)}`,
+    );
     const vocabulary = await this.vocab.snapshot();
     const key = this.store.reuseKey(input, vocabulary);
     const reused = await this.store.reuse(key, claim.jobId);
-    if (reused)
+    if (reused) {
+      log.info(`reused extraction ${reused}: same input, prompt and models`);
       return this.finish(
         claim,
         { status: 'processed', extractionId: reused },
         'reused',
+        log,
       );
+    }
 
     const assembled = await this.pipeline.run(input, vocabulary, log);
     const extractionId = await this.store.save(
@@ -232,10 +270,14 @@ export class ProcessorService {
       vocabulary,
       log,
     );
+    log.info(
+      `processed in ${elapsed(started)} · ${usd(log.costUsd)} · extraction ${extractionId}${needsReview(assembled.doc) ? ' · needs review' : ''}`,
+    );
     return this.finish(
       claim,
       { status: 'processed', extractionId },
       'processed',
+      log,
     );
   }
 
@@ -243,6 +285,7 @@ export class ProcessorService {
     claim: Claim,
     error: unknown,
     log: AttemptLog,
+    started: number,
   ): Promise<ProcessOutcome> {
     const decision = decideFailure(
       error,
@@ -256,9 +299,18 @@ export class ProcessorService {
       );
     if (error instanceof ProviderUnavailableError)
       this.guard.pause(error.message);
+    const next =
+      decision.outcome === 'retry'
+        ? `back to pending for a retry (attempt ${claim.attempts} of ${this.config.maxAttempts})`
+        : decision.outcome === 'provider_unavailable'
+          ? 'back to pending, attempt given back'
+          : 'failed for good';
+    log.warn(
+      `${next} after ${elapsed(started)} · ${usd(log.costUsd)}: ${decision.finish.status === 'processed' ? '' : decision.finish.error}`,
+    );
     try {
       await this.store.recordAttempts(log);
-      return await this.finish(claim, decision.finish, decision.outcome);
+      return await this.finish(claim, decision.finish, decision.outcome, log);
     } catch (cleanup) {
       this.logger.error(
         `Could not end the claim on ${claim.jobId}; the stale sweep will release it`,
@@ -272,11 +324,20 @@ export class ProcessorService {
     claim: Claim,
     outcome: FinishOutcome,
     result: ProcessOutcome,
+    log: AttemptLog,
   ): Promise<ProcessOutcome> {
     const finished = await this.jobs.finish(claim, outcome);
-    return finished === 'superseded' ? 'superseded' : result;
+    if (finished !== 'superseded') return result;
+    log.info(
+      'superseded: the job was reopened or reclaimed during the run; its new status stands',
+    );
+    return 'superseded';
   }
 }
+
+const elapsed = (started: number): string =>
+  `${((Date.now() - started) / 1000).toFixed(1)}s`;
+const usd = (n: number): string => `$${n.toFixed(6)}`;
 
 /** Everything the processor needs from outside: storage, models, config. */
 export interface ProcessorDependencies {

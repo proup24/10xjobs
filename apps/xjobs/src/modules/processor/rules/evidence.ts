@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common';
 import {
   EXPERIENCE_LEVEL_SENIORITY,
   LINKEDIN_CONTRACT_TYPES,
+  LINKEDIN_NO_EVIDENCE,
 } from '../config/evidence';
 import type { ClosedQuestionKey, Evidence } from '../models/types';
 
@@ -25,7 +26,11 @@ export function allowedCodes(
   key: ClosedQuestionKey,
   evidence: Evidence,
 ): string[] | null {
-  if (key === 'seniority' && evidence.experienceLevel !== null) {
+  if (
+    key === 'seniority' &&
+    evidence.experienceLevel !== null &&
+    !LINKEDIN_NO_EVIDENCE.has(evidence.experienceLevel)
+  ) {
     const allowed = EXPERIENCE_LEVEL_SENIORITY[evidence.experienceLevel];
     if (!allowed) warnOnce('experienceLevel', evidence.experienceLevel);
     return allowed ?? null;

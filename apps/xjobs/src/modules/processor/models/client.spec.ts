@@ -67,6 +67,25 @@ describe('toModelError', () => {
     expect(toModelError(httpError(s), 5)).toBeInstanceOf(ModelRequestError);
   });
 
+  it('treats a connection closed mid-response (undici "terminated") as transient', () => {
+    const terminated = new TypeError('terminated');
+    const mapped = toModelError(terminated, 120_000);
+    expect(mapped).toBeInstanceOf(TransientModelError);
+    expect(mapped.message).toBe('OpenRouter call failed: terminated');
+    expect((mapped as TransientModelError).meta).toEqual({
+      latencyMs: 120_000,
+    });
+  });
+
+  it('treats any other failure of the call itself as transient', () => {
+    expect(toModelError(new Error('fetch failed'), 5)).toBeInstanceOf(
+      TransientModelError,
+    );
+    expect(toModelError('socket hang up', 5)).toBeInstanceOf(
+      TransientModelError,
+    );
+  });
+
   it('treats network failures and timeouts as transient', () => {
     expect(toModelError(new ConnectionError('reset'), 5)).toBeInstanceOf(
       TransientModelError,

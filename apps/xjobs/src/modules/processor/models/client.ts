@@ -125,9 +125,11 @@ export function toModelError(error: unknown, latencyMs: number): Error {
       `OpenRouter call failed: ${error.message}`,
       meta,
     );
-  if (error instanceof Error) return error;
+  // Anything else came from the transport under the SDK: a connection closed
+  // mid-response (undici's `TypeError: terminated`), `fetch failed`, a reset.
+  // Worth a retry, never a bug in the job.
   return new TransientModelError(
-    `OpenRouter call failed: ${String(error)}`,
+    `OpenRouter call failed: ${error instanceof Error ? error.message : String(error)}`,
     meta,
   );
 }

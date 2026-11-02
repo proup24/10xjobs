@@ -680,6 +680,50 @@ describe('ProcessorService', () => {
     expect(job().processingStatus).toBe('processed');
   });
 
+  it('logs the run: claim, each model call, and the outcome with time and cost', async () => {
+    const lines: string[] = [];
+    vi.spyOn(Logger.prototype, 'log').mockImplementation((m: unknown) => {
+      lines.push(String(m));
+    });
+    addJob();
+    await service().process('job-1');
+
+    const run = lines.filter((l) => l.startsWith('[job job-1]'));
+    expect(run.map((l) => l.replace(/ \(.*$| ok in .*$| in .*$/, ''))).toEqual([
+      '[job job-1] claimed',
+      `[job job-1] decision → ${DEC}`,
+      '[job job-1] decision',
+      `[job job-1] extraction → ${EXT}`,
+      '[job job-1] extraction',
+      '[job job-1] processed',
+    ]);
+    expect(run.at(-1)).toMatch(
+      /processed in \d+\.\ds · \$\d+\.\d{6} · extraction /,
+    );
+  });
+
+  it('logs why a failed run stops, with the call that failed', async () => {
+    const warnings: string[] = [];
+    vi.spyOn(Logger.prototype, 'warn').mockImplementation((m: unknown) => {
+      warnings.push(String(m));
+    });
+    addJob();
+    extraction = new FakeExtractionModel(() => {
+      throw new ModelRequestError(
+        'chat completions (x): OpenRouter returned 422: bad schema',
+      );
+    }, EXT);
+    await expect(service().process('job-1')).resolves.toBe('failed');
+    expect(warnings).toEqual([
+      expect.stringMatching(
+        /^\[job job-1\] extraction failed after .*OpenRouter returned 422: bad schema$/,
+      ),
+      expect.stringMatching(
+        /^\[job job-1\] failed for good after .*OpenRouter returned 422: bad schema$/,
+      ),
+    ]);
+  });
+
   describe('preview', () => {
     const posting = {
       title: 'Senior Backend Engineer',
