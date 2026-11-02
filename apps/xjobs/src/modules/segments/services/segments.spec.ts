@@ -1,6 +1,6 @@
 import { Arrangement, Channel, SkillDomain } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
-import { buildSegments, segmentKey } from './segments';
+import { buildSegments, segmentHash, segmentKey } from './segments';
 import { segmentWindow } from './window';
 
 let n = 0;
@@ -176,5 +176,19 @@ describe('buildSegments', () => {
       maximumHours: 24,
     });
     expect(window.since).toEqual(new Date('2026-11-01T09:45:00Z'));
+  });
+});
+
+describe('segmentHash', () => {
+  it('matches the hash buildSegments assigns', () => {
+    const segments = buildSegments(many(13));
+    expect(segments.length).toBeGreaterThan(1);
+    for (const segment of segments)
+      expect(
+        segmentHash(
+          segment.key,
+          segment.members.map((member) => member.id),
+        ),
+      ).toBe(segment.hash);
   });
 });

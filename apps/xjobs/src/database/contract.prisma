@@ -315,9 +315,15 @@ model QuerySearchBuilder {
   isDeleted          Boolean               @default(false)
   // Collection cursor: everything posted before this was searched. Null until first collected.
   coveredUntil       TimestamptzJsDate(3)?
+  // Collection claim: the segment run collecting this query now, its interval and lease. All null when unclaimed.
+  claimRunId         Uuid?
+  claimWindowStart   TimestamptzJsDate(3)?
+  claimWindowEnd     TimestamptzJsDate(3)?
+  claimExpiresAt     TimestamptzJsDate(3)?
   +Timestamps
 
   @@check(expression: sql`"associatedProfiles" >= 0`, name: "query_search_builder_associated_profiles")
+  @@check(expression: sql`("claimRunId" IS NULL) = ("claimWindowStart" IS NULL) AND ("claimRunId" IS NULL) = ("claimWindowEnd" IS NULL) AND ("claimRunId" IS NULL) = ("claimExpiresAt" IS NULL)`, name: "query_search_builder_claim_complete")
   @@check(expression: sql`NOT ("isDeleted" AND "isActive")`, name: "query_search_builder_deleted_inactive")
   @@unique([hash])
   @@index([channel, isActive, isDeleted])

@@ -22,6 +22,8 @@ export interface ChannelJobConfig<R extends ActorRunConfig = ActorRunConfig> {
   segmentSize: number;
   /** The span each segment run searches. */
   window: WindowConfig;
+  /** How long a run holds its claim on a query; longer than the slowest segment run. */
+  claimLeaseMinutes: number;
   /** The channel's actor and its limits. */
   run: R;
 }
@@ -33,6 +35,7 @@ const hourly = {
   attempts: 1,
   segmentSize: 10,
   window: { initialHours: 24, overlapMinutes: 15, maximumHours: 24 },
+  claimLeaseMinutes: 30,
 } as const;
 
 /**

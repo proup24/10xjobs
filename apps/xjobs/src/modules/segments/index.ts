@@ -1,6 +1,9 @@
 export { SearchSegmentsModule } from './segments.module';
 export {
   SearchSegmentsRepository,
+  type ClaimResult,
+  type ClaimSkipReason,
+  type ClaimWindow,
   type NewCollectionBatch,
   type NewSegmentRun,
   type SegmentQueryOutcome,
@@ -9,6 +12,7 @@ export {
 export {
   SEGMENT_SIZE,
   buildSegments,
+  segmentHash,
   segmentKey,
   type SearchSegment,
 } from './services/segments';

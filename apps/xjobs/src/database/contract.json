@@ -3601,6 +3601,43 @@
                   "plane": "domain"
                 }
               },
+              "claimExpiresAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "claimRunId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "claimWindowEnd": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "claimWindowStart": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
               "coveredUntil": {
                 "nullable": true,
                 "type": {
@@ -3751,6 +3788,18 @@
                 },
                 "channel": {
                   "column": "channel"
+                },
+                "claimExpiresAt": {
+                  "column": "claimExpiresAt"
+                },
+                "claimRunId": {
+                  "column": "claimRunId"
+                },
+                "claimWindowEnd": {
+                  "column": "claimWindowEnd"
+                },
+                "claimWindowStart": {
+                  "column": "claimWindowStart"
                 },
                 "coveredUntil": {
                   "column": "coveredUntil"
@@ -7557,6 +7606,11 @@
                   "prefix": "query_search_builder_channel_check"
                 },
                 {
+                  "expression": "(\"claimRunId\" IS NULL) = (\"claimWindowStart\" IS NULL) AND (\"claimRunId\" IS NULL) = (\"claimWindowEnd\" IS NULL) AND (\"claimRunId\" IS NULL) = (\"claimExpiresAt\" IS NULL)",
+                  "name": "query_search_builder_claim_complete_98a85abe",
+                  "prefix": "query_search_builder_claim_complete"
+                },
+                {
                   "expression": "NOT (\"isDeleted\" AND \"isActive\")",
                   "name": "query_search_builder_deleted_inactive_11da4d0f",
                   "prefix": "query_search_builder_deleted_inactive"
@@ -7606,6 +7660,35 @@
                     "entityName": "Channel",
                     "namespaceId": "public",
                     "plane": "storage"
+                  }
+                },
+                "claimExpiresAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "claimRunId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "claimWindowEnd": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "claimWindowStart": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
                   }
                 },
                 "coveredUntil": {
@@ -8987,7 +9070,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "793fa85bf51730236dcd5b86ba17417fbc3a6d1cc782b40ef94b4f2dda9e58ba"
+    "storageHash": "eb0f366d51b0fedb19b470dde53b69cbbe1fc892bb3471c9bb95af7005385b57"
   },
   "execution": {
     "executionHash": "c6873c5a9f9e3698427d663f89066a9052d28a2625e473b43a449e049a00b87b",
