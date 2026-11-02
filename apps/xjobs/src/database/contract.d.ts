@@ -3824,7 +3824,15 @@ type ContractBase = Omit<
       readonly scalarList: true;
     };
   };
-  readonly extensions: {};
+  readonly extensions: {
+    readonly supabase: {
+      readonly familyId: 'sql';
+      readonly id: 'supabase';
+      readonly kind: 'extension';
+      readonly targetId: 'postgres';
+      readonly version: '8.0.0-rc.21';
+    };
+  };
   readonly execution: {
     readonly executionHash: ExecutionHash;
     readonly mutations: {
