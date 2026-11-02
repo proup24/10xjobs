@@ -57,17 +57,21 @@ export function redact(text: string): string {
 
 /**
  * Drops every `## Company page (...)` section and keeps the text under
- * `## LinkedIn posting` (without its heading): what production receives.
+ * `## LinkedIn posting` (without its heading): what production receives. A
+ * company page runs until the `## LinkedIn posting` heading, whatever other
+ * `## ` headings it holds.
  */
 export function stripCompanyPage(description: string): string {
-  const lines = description.split('\n');
   const kept: string[] = [];
   let dropping = false;
-  for (const line of lines) {
-    if (line.startsWith('## ')) {
-      dropping = line.startsWith('## Company page');
-      if (!dropping && /^## LinkedIn posting\b/.test(line)) continue;
-      if (dropping) continue;
+  for (const line of description.split('\n')) {
+    if (/^## LinkedIn posting\b/.test(line)) {
+      dropping = false;
+      continue;
+    }
+    if (line.startsWith('## Company page')) {
+      dropping = true;
+      continue;
     }
     if (!dropping) kept.push(line);
   }
