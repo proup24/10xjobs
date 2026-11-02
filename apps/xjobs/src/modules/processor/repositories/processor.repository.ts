@@ -358,7 +358,9 @@ export class PrismaProcessorRepository extends ProcessorRepository {
     return {
       id: job.id,
       inScope:
-        job.status === 'active' && job.kind === 'job' && Boolean(scope?.linkedIn),
+        job.status === 'active' &&
+        job.kind === 'job' &&
+        Boolean(scope?.linkedIn),
       status: job.status,
       kind: job.kind,
       closed: job.closed,

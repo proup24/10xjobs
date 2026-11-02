@@ -6,21 +6,50 @@ Design: `docs/superpowers/specs/2026-11-01-processor-design.md`.
 
 ## Flow
 
-Ingest sets a new or reopened job to `pending`. Once its batch is ingested, the ingest worker enqueues every job the batch left `pending` on the `process` queue, for LinkedIn job board batches only (`PROCESSOR_CHANNEL`); a failed enqueue is logged and never fails the batch, and the sweeper (every 60 s) covers any job a nudge missed. The processor worker (`npx nx worker-processor xjobs`, or `worker-all` with `PROCESSOR_ENABLED=true`) claims a job, then:
+1. **Trigger.** Ingest sets a new or reopened job to `pending`. Once its batch is ingested, the ingest worker enqueues every job the batch left `pending` on the `process` queue (LinkedIn job board batches only, `PROCESSOR_CHANNEL`). The processor's sweeper (every 60 s) re-enqueues any pending job a nudge missed and returns stale claims to `pending`.
+2. **One job.** The worker calls `ProcessorService.process(jobId)`, which reads top to bottom:
 
-1. A closed job is marked `processed` with no model call and no extraction.
-2. The reuse key `(inputHash, schemaVersion, promptHash, decisionModel, extractionModel)` is looked up; a hit reuses or copies the stored extraction at no cost.
-3. The decision model says whether the posting is a software engineering role. If not, the extraction records that and stops.
-4. The extraction model fills the schema. The output is validated against the posting text and the approved lists; invalid output takes one retry (`extraction_retry`), and a second failure marks the job `failed`.
-5. Unknown terms are upserted as `proposed`, the extraction is stored, and the job is marked `processed` with `currentExtractionId`.
+   | Step | Service                     | Does                                                                                                                                                                                                                                                                                  |
+   | ---- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+   | 1    | `ProcessorGuard`            | Refuses while today's spend reached the budget, or after the provider refused the key (10-minute pause).                                                                                                                                                                              |
+   | 2    | `ProcessorRepository.claim` | `pending` → `processing`, atomically; nothing if another worker has it.                                                                                                                                                                                                               |
+   | 3    | `ExtractionStore.reuse`     | A closed job needs no call; the same input, schema, prompt and models reuse a stored extraction.                                                                                                                                                                                      |
+   | 4    | `ExtractionPipeline.run`    | `DecisionService` (Jev answers the closed questions) → `ExtractionService` (Opus extracts the rest and the low-confidence answers) → `FactAssembler` (merge, quote and consistency checks, list codes, final shape). Output a better answer could fix gets one retry. Writes nothing. |
+   | 5    | `ExtractionStore.save`      | Cities, proposed terms, the extraction with its typed columns, its attempts, code usage.                                                                                                                                                                                              |
+   | 6    | `decideFailure` + `finish`  | `processed`, or per the failure table: provider refused → `pending` with the attempt given back; request error or output invalid twice → `failed`; anything else → `pending` until `PROCESSOR_MAX_ATTEMPTS`, then `failed`.                                                           |
 
-A sweeper returns stale claims to `pending` and re-enqueues pending jobs; finished BullMQ jobs are removed, so a job back in `pending` can always be queued again. Models are configuration (OpenRouter); a daily budget on non-eval `costUsd` stops new model calls (the warning is logged once per UTC day).
+   Every model call goes into an `AttemptLog` and is written once, whatever the outcome.
+
+## Code map
+
+- `services/`: the execution path above. `processor.service.ts` is the entry point; `createProcessorService` builds the same graph without Nest (tests, scripts).
+- `rules/`: pure functions the services call (input and hashes, Jev questions, fact resolution, evidence conflicts, validation, typed columns).
+- `models/`: the two model interfaces and their OpenRouter adapters (`client.ts`, `decision.model.ts`, `extraction.model.ts`).
+- `repositories/`: every database read and write. `schema/`, `vocab/`, `prompts/`: the document shape, the lists, the system prompt.
+- `controllers/`: the testing endpoints below (served by the API app only).
 
 ## Running it
 
-`WORKER_ROLE=processor` always runs the processor. `WORKER_ROLE=all` (`worker-all`) runs it only with `PROCESSOR_ENABLED=true`, because it spends money; otherwise it logs `processor disabled (PROCESSOR_ENABLED=false)`. `OPENROUTER_API_KEY` is required whenever the processor runs.
+`WORKER_ROLE=processor` (`npx nx worker-processor xjobs`, the `processor-worker` container) always runs the processor and needs `OPENROUTER_API_KEY`. `WORKER_ROLE=all` (`worker-all`) runs it whenever `OPENROUTER_API_KEY` is set; without the key it warns `processor not started` and jobs wait in the queue. The daily budget (`PROCESSOR_DAILY_BUDGET_USD`) caps spend either way.
 
-Both models are called through the official `@openrouter/sdk` (`models/openrouter.client.ts`): Jev through `alpha.decisions.create` (the Decisions API), the extraction model through `chat.send` with a strict JSON-schema response format. The SDK's own retries are off; `toModelError` maps its errors to the processor's classes (401/402/403 provider unavailable; 408, 429 and 5xx transient; other 4xx request errors; an unreadable response an output error), and messages never carry a response body.
+Jobs ingested before the processor existed have no processing status and are not processed automatically; send them once with `pnpm --filter @xjobs/xjobs db:reprocess -- --null-status`.
+
+## Testing endpoints
+
+Served by the API (`npx nx serve xjobs`), behind its basic auth, under `/processor`:
+
+| Endpoint                          | Does                                                                                                                                                                                                                                                                                                                 |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /processor/preview`         | Runs the extraction on a posting you send (`title`, `companyName`, `description`, `location`, `contractType`, `experienceLevel`). Returns the document, its typed columns, `needsReview`, the cost and every model call. Saves no extraction and no vocabulary; the calls are recorded and count against the budget. |
+| `POST /processor/jobs/:jobId/run` | Sends one in-scope job back to `pending` and processes it in the request, through the worker's path. Returns the outcome and the job state.                                                                                                                                                                          |
+| `GET /processor/jobs/:jobId`      | The job's processing status, attempts, error and current extraction.                                                                                                                                                                                                                                                 |
+| `GET /processor/status`           | In-scope jobs per status (`unset` = never sent), today's spend against the budget, the models, and whether this process is paused.                                                                                                                                                                                   |
+
+Preview and run answer 503 when the app has no `OPENROUTER_API_KEY`, 429 once the budget is spent, 502 on a provider error, and 422 when the output was invalid twice.
+
+## Models and cost
+
+Both models are called through the official `@openrouter/sdk` (`models/client.ts`): Jev through `alpha.decisions.create` (the Decisions API), the extraction model through `chat.send` with a strict JSON-schema response format. The SDK's own retries are off; `toModelError` maps its errors to the processor's classes (401/402/403 provider unavailable; 408, 429 and 5xx transient; other 4xx request errors; an unreadable response an output error), and messages never carry a response body.
 
 Before any worker starts, the processor checks that OpenRouter accepts the key (`apiKeys.getCurrentKeyMetadata`), and that the extraction model is listed, supports `structured_outputs`, and has a numeric prompt and completion price. The decision model is served by the Decisions API and need not be in the public model list; it is priced only when listed. Any failure stops startup; in `all` mode no other worker is left running. `pnpm --filter @xjobs/xjobs processor:smoke` runs the same checks plus one real call to each model.
 

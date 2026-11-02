@@ -222,21 +222,11 @@ describe('worker process configuration', () => {
     ).toThrow(/OPENROUTER_API_KEY/);
   });
 
-  it('requires the OpenRouter key in the all role only with the processor enabled', () => {
+  it('does not require the OpenRouter key in the all role: the processor then stays off', () => {
     const all = { ...worker, WORKER_ROLE: 'all', APIFY_TOKEN: 'apify-token' };
-    expect(validateWorkerProcessEnvironment(all)).toMatchObject({
-      PROCESSOR_ENABLED: false,
-    });
-    expect(() =>
-      validateWorkerProcessEnvironment({ ...all, PROCESSOR_ENABLED: 'true' }),
-    ).toThrow(/OPENROUTER_API_KEY/);
-    expect(
-      validateWorkerProcessEnvironment({
-        ...all,
-        PROCESSOR_ENABLED: 'true',
-        OPENROUTER_API_KEY: 'or-key',
-      }),
-    ).toMatchObject({ PROCESSOR_ENABLED: true });
+    expect(validateWorkerProcessEnvironment(all).OPENROUTER_API_KEY).toBe(
+      undefined,
+    );
   });
 
   it('parses the processor defaults when the key is set', () => {
@@ -248,12 +238,11 @@ describe('worker process configuration', () => {
       }),
     ).toMatchObject({
       PROCESSOR_DECISION_MODEL: 'typesafe/jev-1.14',
-      PROCESSOR_EXTRACTION_MODEL: 'anthropic/claude-opus-5.5',
+      PROCESSOR_EXTRACTION_MODEL: 'deepseek/deepseek-v4.1-flash-1017',
       PROCESSOR_CONCURRENCY: 4,
       PROCESSOR_MAX_ATTEMPTS: 3,
       PROCESSOR_CLAIM_TIMEOUT_MS: 900_000,
       PROCESSOR_DAILY_BUDGET_USD: 20,
-      PROCESSOR_ENABLED: false,
     });
   });
 });

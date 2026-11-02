@@ -38,9 +38,9 @@ import {
   type DecisionQuestion,
   type PostingInput,
 } from 'src/modules/processor/models/types';
-import { ProcessJobService } from 'src/modules/processor/pipeline/process-job.service';
 import type { NewAttempt } from 'src/modules/processor/repositories/processor.repository';
 import { extractionDocumentSchema } from 'src/modules/processor/schema';
+import { createProcessorService } from 'src/modules/processor/services/processor.service';
 import {
   MemoryProcessorRepository,
   MemoryVocabRepository,
@@ -138,13 +138,17 @@ async function main(): Promise<void> {
     new OpenRouterDecisionModel(client, config.decisionModel, pricing),
   );
   const repo = new EvalProcessorRepository();
-  const service = new ProcessJobService(
+  const service = createProcessorService({
     repo,
-    new MemoryVocabRepository(),
+    vocab: new MemoryVocabRepository(),
     decision,
-    new OpenRouterExtractionModel(client, config.extractionModel, pricing),
+    extraction: new OpenRouterExtractionModel(
+      client,
+      config.extractionModel,
+      pricing,
+    ),
     config,
-  );
+  });
 
   const cases = loadGolden();
   for (const c of cases)

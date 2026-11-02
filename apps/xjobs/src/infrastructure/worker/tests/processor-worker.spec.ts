@@ -55,7 +55,7 @@ const checks = vi.hoisted(() => ({
   ),
 }));
 vi.mock(
-  'src/modules/processor/models/openrouter.client',
+  'src/modules/processor/models/client',
   async (importOriginal) => ({
     ...(await importOriginal<object>()),
     ...checks,
@@ -63,7 +63,7 @@ vi.mock(
 );
 
 import { ModelPricing } from 'src/modules/processor';
-import { OPENROUTER_CLIENT } from 'src/modules/processor/models/openrouter.client';
+import { OPENROUTER_CLIENT } from 'src/modules/processor/models/client';
 import { WorkerModule } from '../worker.module';
 import { WorkerService } from '../worker.service';
 

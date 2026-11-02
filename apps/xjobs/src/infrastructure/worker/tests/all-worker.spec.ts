@@ -6,10 +6,10 @@ vi.hoisted(() => {
   process.env.SUPABASE_URL ??= 'http://127.0.0.1:1';
   process.env.SUPABASE_SERVICE_ROLE_KEY ??= 'service-key';
   process.env.APIFY_TOKEN ??= 'apify-token';
-  process.env.OPENROUTER_API_KEY ??= 'or-key';
+  // No OpenRouter key: `all` runs every worker except the processor.
+  delete process.env.OPENROUTER_API_KEY;
   process.env.WORKER_ROLE = 'all';
   delete process.env.WORKER_CHANNEL;
-  delete process.env.PROCESSOR_ENABLED;
 });
 
 const created = vi.hoisted(() => ({
@@ -65,7 +65,7 @@ const checks = vi.hoisted(() => ({
   checkModels: vi.fn(async () => new Map()),
 }));
 vi.mock(
-  'src/modules/processor/models/openrouter.client',
+  'src/modules/processor/models/client',
   async (importOriginal) => ({
     ...(await importOriginal<object>()),
     ...checks,
@@ -76,7 +76,7 @@ import { Logger } from '@nestjs/common';
 import { WorkerModule } from '../worker.module';
 import { WorkerService } from '../worker.service';
 
-// PROCESSOR_ENABLED is unset: the processor is off in `all`.
+// OPENROUTER_API_KEY is unset: the processor is off in `all`.
 const allWorkers = [
   'infrastructure',
   'ingest',
@@ -108,13 +108,13 @@ async function startAll() {
 }
 
 it('runs infrastructure, ingest and every channel collection, but not the processor, in one process', async () => {
-  const log = vi.spyOn(Logger.prototype, 'log');
+  const warn = vi.spyOn(Logger.prototype, 'warn');
   const { module, service } = await startAll();
   try {
     expect(service.active).toBe(true);
     expect(created.workers).toEqual(allWorkers);
-    expect(log).toHaveBeenCalledWith(
-      'processor disabled (PROCESSOR_ENABLED=false)',
+    expect(warn).toHaveBeenCalledWith(
+      'processor not started: OPENROUTER_API_KEY is not set, so new jobs wait in the process queue',
     );
     for (const check of Object.values(checks))
       expect(check).not.toHaveBeenCalled();

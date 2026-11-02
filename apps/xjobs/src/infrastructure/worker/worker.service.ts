@@ -20,8 +20,8 @@ export class WorkerService implements OnModuleInit, OnApplicationShutdown {
   private readonly logger = new Logger(WorkerService.name);
   private readonly channel?: Channel;
   private readonly role?: 'ingest' | 'processor' | 'all';
-  /** In `all`, whether the processor runs too; `processor` always runs it. */
-  private readonly processorEnabled: boolean;
+  /** In `all`, the processor runs whenever the OpenRouter key is set. */
+  private readonly hasProcessorKey: boolean;
   /** False once the channel turned out to be disabled; the process should exit. */
   active = true;
 
@@ -35,17 +35,18 @@ export class WorkerService implements OnModuleInit, OnApplicationShutdown {
   ) {
     this.role = config.get('WORKER_ROLE', { infer: true });
     this.channel = config.get('WORKER_CHANNEL', { infer: true });
-    this.processorEnabled = config.get('PROCESSOR_ENABLED', { infer: true });
+    this.hasProcessorKey = Boolean(
+      config.get('OPENROUTER_API_KEY', { infer: true }),
+    );
   }
 
   async onModuleInit(): Promise<void> {
-    const runsProcessor =
-      this.role === 'processor' ||
-      (this.role === 'all' && this.processorEnabled);
     // Before anything else starts, so a failed check leaves nothing running.
-    if (runsProcessor) await this.processor.checkStartup();
+    if (this.runsProcessor()) await this.processor.checkStartup();
     else if (this.role === 'all')
-      this.logger.log('processor disabled (PROCESSOR_ENABLED=false)');
+      this.logger.warn(
+        'processor not started: OPENROUTER_API_KEY is not set, so new jobs wait in the process queue',
+      );
 
     const connection = this.runtime.connect();
 
@@ -59,14 +60,20 @@ export class WorkerService implements OnModuleInit, OnApplicationShutdown {
     await this.runtime.waitUntilReady();
   }
 
+  private runsProcessor(): boolean {
+    return (
+      this.role === 'processor' || (this.role === 'all' && this.hasProcessorKey)
+    );
+  }
+
   /**
    * Every step in one process; a disabled channel is skipped, not fatal. The
-   * processor spends money, so it runs here only with `PROCESSOR_ENABLED`.
+   * processor runs when the OpenRouter key is set (its daily budget caps spend).
    */
   private async startAll(connection: Redis): Promise<void> {
     this.infrastructure.start(connection);
     await this.ingest.start(connection);
-    if (this.processorEnabled) await this.processor.start(connection);
+    if (this.hasProcessorKey) await this.processor.start(connection);
     for (const channel of Object.values(Channel))
       await this.collection.start(channel, connection);
   }

@@ -16,7 +16,8 @@ import {
   MemoryVocabRepository,
   sequence,
 } from '../testing/fakes';
-import { PROVIDER_PAUSE_MS, ProcessJobService } from './process-job.service';
+import { PROVIDER_PAUSE_MS } from './processor-guard.service';
+import { createProcessorService } from './processor.service';
 
 const DEC = 'typesafe/jev-1.14';
 const EXT = 'anthropic/claude-opus-5.5';
@@ -121,14 +122,14 @@ function opusOutput(req: Req, patch: Record<string, unknown> = {}) {
   };
 }
 
-describe('ProcessJobService', () => {
+describe('ProcessorService', () => {
   let repo: MemoryProcessorRepository;
   let vocab: MemoryVocabRepository;
   let decision: FakeDecisionModel;
   let extraction: FakeExtractionModel;
 
   const service = () =>
-    new ProcessJobService(repo, vocab, decision, extraction, config, now);
+    createProcessorService({ repo, vocab, decision, extraction, config, now });
   const addJob = (id = 'job-1', p = {}) =>
     repo.addJob({ id, descriptionText: DESCRIPTION, ...p });
   const job = (id = 'job-1') => {
@@ -460,6 +461,9 @@ describe('ProcessJobService', () => {
 
   it("a failed attempts write keeps the run's attempts for the failure path", async () => {
     addJob();
+    const error = vi
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
     const record = repo.recordAttempts.bind(repo);
     let calls = 0;
     repo.recordAttempts = async (rows) => {
@@ -472,6 +476,8 @@ describe('ProcessJobService', () => {
       'extraction',
     ]);
     expect(job().processingStatus).toBe('pending');
+    expect(error).toHaveBeenCalledTimes(1);
+    error.mockRestore();
   });
 
   it('over budget: no claim', async () => {
@@ -491,14 +497,14 @@ describe('ProcessJobService', () => {
     repo.addSpend(20, new Date('2026-11-02T00:00:01Z'));
     repo.addSpend(20, new Date('2026-11-03T00:00:01Z'));
     addJob();
-    const svc = new ProcessJobService(
+    const svc = createProcessorService({
       repo,
       vocab,
       decision,
       extraction,
       config,
-      () => at,
-    );
+      now: () => at,
+    });
     await svc.process('job-1');
     await svc.process('job-1');
     expect(warn).toHaveBeenCalledTimes(1);
@@ -521,14 +527,14 @@ describe('ProcessJobService', () => {
       addJob('job-1', { processingAttempts: 2 });
       addJob('job-2');
       let at = NOW;
-      const svc = new ProcessJobService(
+      const svc = createProcessorService({
         repo,
         vocab,
         decision,
         extraction,
         config,
-        () => at,
-      );
+        now: () => at,
+      });
 
       await expect(svc.process('job-1')).resolves.toBe('provider_unavailable');
       expect(job()).toMatchObject({
@@ -672,5 +678,97 @@ describe('ProcessJobService', () => {
     expect(doc.seniority.decidedBy).toBe('opus');
     expect(doc.arrangement.decidedBy).toBe('opus');
     expect(job().processingStatus).toBe('processed');
+  });
+
+  describe('preview', () => {
+    const posting = {
+      title: 'Senior Backend Engineer',
+      companyName: 'Acme',
+      description: DESCRIPTION,
+      evidence: { contractType: 'Full-time' },
+    };
+
+    it('returns the document, its columns and its calls, and saves no extraction', async () => {
+      const result = await service().preview(posting);
+
+      expect(extractionDocumentSchema.safeParse(result.document).success).toBe(
+        true,
+      );
+      expect(result.typedColumns.arrangement).toBe('remote');
+      expect(result.calls.map((c) => [c.step, c.outcome])).toEqual([
+        ['decision', 'ok'],
+        ['extraction', 'ok'],
+      ]);
+      expect(repo.extractions).toEqual([]);
+      expect(vocab.cities).toEqual([]);
+    });
+
+    it('records its calls with no job, so they count against the budget', async () => {
+      await service().preview(posting);
+      expect(repo.attempts.map((a) => [a.step, a.jobId, a.eval])).toEqual([
+        ['decision', null, false],
+        ['extraction', null, false],
+      ]);
+    });
+
+    it('refuses once the budget is spent', async () => {
+      repo.addSpend(20);
+      await expect(service().preview(posting)).rejects.toMatchObject({
+        name: 'ProcessorBlockedError',
+        reason: 'over_budget',
+      });
+      expect(decision.calls).toHaveLength(0);
+    });
+
+    it('pauses and still records the call when the provider refuses the key', async () => {
+      vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+      decision = new FakeDecisionModel(() => {
+        throw new ProviderUnavailableError('OpenRouter returned 401');
+      }, DEC);
+      const svc = service();
+      await expect(svc.preview(posting)).rejects.toBeInstanceOf(
+        ProviderUnavailableError,
+      );
+      expect(svc.isPaused()).toBe(true);
+      expect(repo.attempts.map((a) => a.outcome)).toEqual(['error']);
+    });
+  });
+
+  describe('processNow', () => {
+    it('sends a processed job back to pending and processes it again', async () => {
+      addJob();
+      const svc = service();
+      await svc.process('job-1');
+      // A new prompt or model would miss the reuse; here the same input is reused.
+      const { outcome, job: state } = await svc.processNow('job-1');
+      expect(outcome).toBe('reused');
+      expect(state?.processingStatus).toBe('processed');
+      expect(state?.extraction?.data.seniority.value).toBe('senior');
+    });
+
+    it('does not process an out-of-scope job', async () => {
+      addJob('post-1', { kind: 'post' });
+      const { outcome } = await service().processNow('post-1');
+      expect(outcome).toBe('not_claimed');
+      expect(decision.calls).toHaveLength(0);
+    });
+  });
+
+  describe('status', () => {
+    it('counts in-scope jobs per status and reports the spend', async () => {
+      addJob('a');
+      addJob('b', { processingStatus: 'processed' });
+      addJob('c', { processingStatus: null });
+      addJob('d', { linkedIn: false });
+      repo.addSpend(1.5);
+
+      expect(await service().status()).toEqual({
+        models: { decision: DEC, extraction: EXT },
+        jobs: { pending: 1, processing: 0, processed: 1, failed: 0, unset: 1 },
+        spentTodayUsd: 1.5,
+        dailyBudgetUsd: 20,
+        paused: false,
+      });
+    });
   });
 });

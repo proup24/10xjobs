@@ -8,7 +8,6 @@ vi.hoisted(() => {
   process.env.APIFY_TOKEN ??= 'apify-token';
   process.env.OPENROUTER_API_KEY ??= 'or-key';
   process.env.WORKER_ROLE = 'all';
-  process.env.PROCESSOR_ENABLED = 'true';
   delete process.env.WORKER_CHANNEL;
 });
 
@@ -48,7 +47,7 @@ const checks = vi.hoisted(() => ({
   checkModels: vi.fn(async () => new Map()),
 }));
 vi.mock(
-  'src/modules/processor/models/openrouter.client',
+  'src/modules/processor/models/client',
   async (importOriginal) => ({
     ...(await importOriginal<object>()),
     ...checks,
@@ -71,7 +70,6 @@ afterEach(() => vi.restoreAllMocks());
 // Other worker specs may share this process's environment.
 afterAll(() => {
   delete process.env.WORKER_ROLE;
-  delete process.env.PROCESSOR_ENABLED;
 });
 
 async function build() {
@@ -83,7 +81,7 @@ async function build() {
   return { module, connect, service: module.get(WorkerService) };
 }
 
-it('runs the processor with the others when PROCESSOR_ENABLED=true', async () => {
+it('runs the processor with the others when the OpenRouter key is set', async () => {
   const { module, service } = await build();
   try {
     await service.onModuleInit();

@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import type { WorkerProcessEnvironmentVariables } from 'src/config';
+import type { ProcessorEnvironmentVariables } from 'src/config';
 import { DatabaseModule } from 'src/database';
 import {
   PROCESSOR_CONFIG,
@@ -32,7 +32,7 @@ import { FactAssembler } from './services/fact-assembler.service';
 import { ProcessorGuard } from './services/processor-guard.service';
 import { ProcessorService } from './services/processor.service';
 
-type Env = ConfigService<WorkerProcessEnvironmentVariables, true>;
+type Env = ConfigService<ProcessorEnvironmentVariables, true>;
 
 /**
  * Turns normalized jobs into validated extractions (spec: processor design).

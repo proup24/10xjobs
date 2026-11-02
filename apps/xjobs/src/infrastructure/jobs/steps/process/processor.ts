@@ -1,7 +1,6 @@
 import { UnrecoverableError } from 'bullmq';
 import { z } from 'zod';
 import type {
-  ProcessJobService,
   ProcessorConfig,
   ProcessorRepository,
 } from 'src/modules/processor';
@@ -11,11 +10,12 @@ import {
   PROCESS_SWEEP_JOB,
   type ProcessQueue,
 } from './queue.service';
+import { ProcessorService } from 'src/modules/processor/services/processor.service';
 
 const jobPayload = z.object({ jobId: z.string().min(1) });
 
 export interface ProcessJobDeps {
-  service: Pick<ProcessJobService, 'process' | 'isPaused'>;
+  service: Pick<ProcessorService, 'process' | 'isPaused'>;
   repo: Pick<
     ProcessorRepository,
     'listPendingInScope' | 'releaseStale' | 'spendSince'

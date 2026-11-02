@@ -9,7 +9,7 @@ import {
 import {
   ModelPricing,
   PROCESSOR_CONFIG,
-  ProcessJobService,
+  ProcessorService,
   type ProcessorConfig,
   ProcessorRepository,
 } from 'src/modules/processor';
@@ -29,7 +29,7 @@ export class ProcessorWorkerService {
 
   constructor(
     private readonly runtime: WorkerRuntimeService,
-    private readonly service: ProcessJobService,
+    private readonly service: ProcessorService,
     private readonly repo: ProcessorRepository,
     private readonly processQueue: ProcessQueue,
     @Inject(PROCESSOR_CONFIG) private readonly config: ProcessorConfig,
