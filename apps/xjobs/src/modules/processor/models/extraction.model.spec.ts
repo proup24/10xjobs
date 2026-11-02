@@ -8,7 +8,10 @@ import {
   ProviderUnavailableError,
   TransientModelError,
 } from './errors';
-import { OpenRouterExtractionModel } from './extraction.model';
+import {
+  EXTRACTION_MAX_ATTEMPTS,
+  OpenRouterExtractionModel,
+} from './extraction.model';
 import type { OpenRouterClient } from './client';
 import { ModelPricing } from './pricing';
 import type { PostingInput } from './types';
@@ -31,7 +34,12 @@ const input: PostingInput = {
 
 const req = {
   systemPrompt: 'Extract the facts.',
-  jsonSchema: { type: 'object', additionalProperties: false },
+  jsonSchema: {
+    type: 'object',
+    properties: { ok: { type: 'boolean' } },
+    required: ['ok'],
+    additionalProperties: false,
+  },
 };
 
 function result(
@@ -72,8 +80,11 @@ function result(
   } as ChatResult;
 }
 
-function client(answer: ChatResult | Error) {
+/** Answers each call with the next item; the last one repeats. */
+function client(...answers: (ChatResult | Error)[]) {
+  let n = 0;
   const send = vi.fn(async (_req: SendChatCompletionRequestRequest) => {
+    const answer = answers[Math.min(n++, answers.length - 1)]!;
     if (answer instanceof Error) throw answer;
     return answer;
   });
@@ -163,26 +174,84 @@ describe('OpenRouterExtractionModel', () => {
     expect(last.content).toContain('- openings.0.places: required');
   });
 
-  it('throws an output error, with the call cost, when the answer was cut off', async () => {
-    const error = await new OpenRouterExtractionModel(
-      client(result({ finishReason: 'length' })).client,
+  it('retries a cut-off answer and throws, with the cost of every call, once attempts run out', async () => {
+    const fake = client(result({ finishReason: 'length' }));
+    const error = await new OpenRouterExtractionModel(fake.client, MODEL)
+      .extract(input, req)
+      .catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ModelOutputError);
+    expect(fake.send).toHaveBeenCalledTimes(EXTRACTION_MAX_ATTEMPTS);
+    expect((error as ModelOutputError).meta?.costUsd).toBeCloseTo(
+      0.0105 * EXTRACTION_MAX_ATTEMPTS,
+      10,
+    );
+    expect((error as Error).message).toContain('cut off (length)');
+  });
+
+  it('throws an output error on empty or unparseable content after every attempt', async () => {
+    for (const content of [null, '', '{not json']) {
+      const fake = client(result({ content }));
+      await expect(
+        new OpenRouterExtractionModel(fake.client, MODEL).extract(input, req),
+      ).rejects.toBeInstanceOf(ModelOutputError);
+      expect(fake.send).toHaveBeenCalledTimes(EXTRACTION_MAX_ATTEMPTS);
+    }
+  });
+
+  it('retries an off-schema answer with its errors and returns the fixed one', async () => {
+    const fake = client(
+      result({ content: '{"ok":"yes","extra":1}' }),
+      result({ content: '{not json' }),
+      result(),
+    );
+    const { output, meta } = await new OpenRouterExtractionModel(
+      fake.client,
       MODEL,
+    ).extract(input, req);
+
+    expect(output).toEqual({ ok: true });
+    expect(fake.send).toHaveBeenCalledTimes(3);
+    const lastMessage = (call: number) =>
+      fake.send.mock.calls[call]![0].chatRequest.messages.at(-1) as {
+        role: string;
+        content: string;
+      };
+    expect(lastMessage(1).content).toContain(
+      'Your previous answer was invalid',
+    );
+    expect(lastMessage(1).content).toContain('- ok:');
+    expect(lastMessage(2).content).toContain('- Extraction is not valid JSON');
+    // Tokens and cost add up over the three calls.
+    expect(meta.inputTokens).toBe(3600);
+    expect(meta.costUsd).toBeCloseTo(0.0315, 10);
+  });
+
+  it('stops at the configured number of attempts with the last schema errors', async () => {
+    const fake = client(result({ content: '{}' }));
+    const error = await new OpenRouterExtractionModel(
+      fake.client,
+      MODEL,
+      new ModelPricing(),
+      2,
     )
       .extract(input, req)
       .catch((e: unknown) => e);
     expect(error).toBeInstanceOf(ModelOutputError);
-    expect((error as ModelOutputError).meta?.costUsd).toBe(0.0105);
+    expect(fake.send).toHaveBeenCalledTimes(2);
+    expect((error as Error).message).toMatch(/after 2 attempts: ok:/);
   });
 
-  it('throws an output error on empty or unparseable content', async () => {
-    for (const content of [null, '', '{not json']) {
-      await expect(
-        new OpenRouterExtractionModel(
-          client(result({ content })).client,
-          MODEL,
-        ).extract(input, req),
-      ).rejects.toBeInstanceOf(ModelOutputError);
-    }
+  it('does not retry provider failures, but adds the cost of earlier attempts', async () => {
+    const fake = client(result({ content: '{}' }), httpError(529));
+    const error = await new OpenRouterExtractionModel(fake.client, MODEL)
+      .extract(input, req)
+      .catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(TransientModelError);
+    expect(fake.send).toHaveBeenCalledTimes(2);
+    expect((error as TransientModelError).meta?.costUsd).toBeCloseTo(
+      0.0105,
+      10,
+    );
   });
 
   it('throws a transient error on empty choices', async () => {

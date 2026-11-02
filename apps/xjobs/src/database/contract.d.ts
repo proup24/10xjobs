@@ -24,7 +24,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'4bdafacb4acf80aa9d8e3c49a0be2f74bdedea1ace7542a31a5bb09fa2376833'>;
+  StorageHashBase<'da432ef0b1859e5225c643c9537143faa94120043b84a291cdd171718f136238'>;
 export type ExecutionHash =
   ExecutionHashBase<'c6873c5a9f9e3698427d663f89066a9052d28a2625e473b43a449e049a00b87b'>;
 export type ProfileHash =
@@ -1458,6 +1458,10 @@ export namespace Models {
   export type public_QuerySearchBuilder = {
     associatedProfiles: FieldOutputTypes['public']['QuerySearchBuilder']['associatedProfiles'];
     channel: FieldOutputTypes['public']['QuerySearchBuilder']['channel'];
+    claimExpiresAt: FieldOutputTypes['public']['QuerySearchBuilder']['claimExpiresAt'];
+    claimRunId: FieldOutputTypes['public']['QuerySearchBuilder']['claimRunId'];
+    claimWindowEnd: FieldOutputTypes['public']['QuerySearchBuilder']['claimWindowEnd'];
+    claimWindowStart: FieldOutputTypes['public']['QuerySearchBuilder']['claimWindowStart'];
     coveredUntil: FieldOutputTypes['public']['QuerySearchBuilder']['coveredUntil'];
     createdAt: FieldOutputTypes['public']['QuerySearchBuilder']['createdAt'];
     domain: FieldOutputTypes['public']['QuerySearchBuilder']['domain'];
@@ -3545,6 +3549,33 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly claimExpiresAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly claimRunId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly claimWindowEnd: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly claimWindowStart: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
                   readonly many: false;
                 };
                 readonly coveredUntil: {
@@ -6378,6 +6409,34 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly claimExpiresAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly claimRunId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly claimWindowEnd: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly claimWindowStart: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
               readonly coveredUntil: {
                 readonly nullable: true;
                 readonly type: {
@@ -6459,6 +6518,10 @@ type ContractBase = Omit<
               readonly fields: {
                 readonly associatedProfiles: { readonly column: 'associatedProfiles' };
                 readonly channel: { readonly column: 'channel' };
+                readonly claimExpiresAt: { readonly column: 'claimExpiresAt' };
+                readonly claimRunId: { readonly column: 'claimRunId' };
+                readonly claimWindowEnd: { readonly column: 'claimWindowEnd' };
+                readonly claimWindowStart: { readonly column: 'claimWindowStart' };
                 readonly coveredUntil: { readonly column: 'coveredUntil' };
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly domain: { readonly column: 'domain' };
