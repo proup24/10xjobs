@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildDecisionQuestions } from '../pipeline/questions';
 import { seedOptions } from '../pipeline/options.testing';
+import { modelOutputSchema } from '../schema';
 import { promptHash, systemPrompt } from './prompt';
 
 describe('promptHash', () => {
@@ -15,6 +16,17 @@ describe('promptHash', () => {
       }),
     );
     expect(a).toBe(b);
+  });
+
+  it('changes when a junk flag is added', () => {
+    const a = promptHash(buildDecisionQuestions(options));
+    const b = promptHash(
+      buildDecisionQuestions({
+        ...options,
+        junkFlags: [...options.junkFlags, 'new_flag'],
+      }),
+    );
+    expect(b).not.toBe(a);
   });
 
   it('changes when an instruction changes', () => {
@@ -38,5 +50,25 @@ describe('systemPrompt', () => {
     expect(text).toContain('fromListing');
     expect(text).toContain('fallback');
     expect(text).toContain('verbatim');
+  });
+});
+
+describe('systemPrompt field paths', () => {
+  const text = systemPrompt();
+
+  it('mentions every top-level key of the model output', () => {
+    const shape = modelOutputSchema(seedOptions(), []).shape;
+    for (const key of Object.keys(shape)) expect(text).toContain(key);
+  });
+
+  it('mentions the nested names', () => {
+    for (const name of [
+      'mainStack',
+      'mustHaves',
+      'niceToHaves',
+      'anyOf',
+      'lang',
+    ])
+      expect(text).toContain(name);
   });
 });

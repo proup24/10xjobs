@@ -52,6 +52,32 @@ describe('buildPostingInput', () => {
     expect(input.truncated).toBe(true);
   });
 
+  it('keeps the last paragraph when the cap falls on a boundary', () => {
+    const text =
+      'a'.repeat(DESCRIPTION_CAP_BYTES - 5) + '\n\n' + 'b'.repeat(500);
+    // head of 30,000 bytes = 'a' * 29,995 + '\n\n' + 3 bytes; construct an exact boundary instead
+    const exact = 'a'.repeat(DESCRIPTION_CAP_BYTES) + '\n\n' + 'b'.repeat(500);
+    const input = buildPostingInput(job({ descriptionText: exact }));
+    expect(input.description).toBe('a'.repeat(DESCRIPTION_CAP_BYTES));
+    expect(input.truncated).toBe(true);
+    expect(buildPostingInput(job({ descriptionText: text })).description).toBe(
+      'a'.repeat(DESCRIPTION_CAP_BYTES - 5),
+    );
+  });
+
+  it('never splits a multi-byte character', () => {
+    for (const unit of ['é', '😀', 'a😀']) {
+      const input = buildPostingInput(
+        job({ descriptionText: unit.repeat(20_000) }),
+      );
+      expect(input.description).not.toContain('\uFFFD');
+      expect(Buffer.byteLength(input.description)).toBeLessThanOrEqual(
+        DESCRIPTION_CAP_BYTES,
+      );
+      expect(input.truncated).toBe(true);
+    }
+  });
+
   it('keeps a description under the cap whole', () => {
     const input = buildPostingInput(job({ descriptionText: 'x\n\ny' }));
     expect(input.description).toBe('x\n\ny');

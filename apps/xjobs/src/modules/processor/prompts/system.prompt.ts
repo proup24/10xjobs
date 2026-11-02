@@ -18,6 +18,21 @@ Most facts have the same shape: \`{ "value", "quote", "confidence" }\`.
 - \`quote\` holds short verbatim words from the posting (about 20 words at most) that support the value. Copy them exactly, as one contiguous piece of the posting. Every quote must be verbatim words from the posting, never a paraphrase and never taken from the listing metadata. Use \`""\` when the posting doesn't state the fact.
 - \`confidence\` is \`"unsure"\` when the posting's words support two readings, or when the title and the description disagree, or when two statements in the posting disagree about who can apply (for example a templated "based in <place>" intro and a later "open to candidates in the Americas or European time zones"). Mark the affected openings unsure. Otherwise it is \`"sure"\`. An unsure fact sends the job to a person who reads it, so keep it for a genuine toss-up: when one reading is clearly the plainer or likelier one, record it as \`"sure"\`.
 
+## Field paths
+
+The top-level keys are \`position\`, \`isSoftwareEngineeringRole\`, \`seniority\`, \`yearsRequired\`, \`arrangement\`, \`openings\`, \`contractType\`, \`engagement\`, \`contractMonths\`, \`salary\`, \`techStack\`, \`requiredLanguages\`, \`workAuthorization\`, \`junkFlags\` and \`fallback\`. Every one except \`openings\` and \`fallback\` is a \`{ value, quote, confidence }\` fact. Where the sections below say a field's name, this is its path:
+
+- \`position.value.{roleKind, title}\`
+- \`techStack.value.mainStack[].anyOf[]\`, each term \`{ text, code }\`
+- \`techStack.value.mustHaves[].{anyOf, min}\`
+- \`techStack.value.niceToHaves[]\`, each term \`{ text, code }\`
+- \`requiredLanguages.value[].{lang, level, quote}\`
+- \`workAuthorization.value.{requirements, sponsorship}\`, each requirement \`{ kind, place }\`
+- \`junkFlags.value[].{code, quote}\`
+- \`salary.value.{min, max, currency, period}\`
+- \`openings[].{arrangements, places, placeStrictness, timezones, quote, confidence, fromListing}\`, with no \`value\` wrapper
+- \`fallback.<key>.{value, quote, confidence}\`
+
 ## Fallback questions
 
 The \`fallback\` object has one entry per key in the schema. Each entry is a closed question that an earlier, cheaper pass answered with low confidence or in a way that contradicts the listing metadata. Answer each one afresh from the posting alone, choosing one of the allowed values: \`{ "value", "quote", "confidence" }\`, with the quote verbatim from the posting or \`""\` when the posting doesn't state it. Choose the \`unstated\` option (or \`no\` for a yes/no flag) when the posting says nothing, with \`confidence: "sure"\`. Do not copy the listing metadata into a fallback value unless the posting text says the same.
@@ -55,7 +70,7 @@ A city's country goes only in the city's \`countryCode\`, never as a separate co
 
 Limiting words win: "Location: Portugal only" is a \`limit\`.
 
-A sentence that only says where the job is, with no limiting words, is a \`label\`: "This job can be filled in Casablanca" -> \`{ ["unstated"], [city Casablanca, MA], label }\`. Pay ranges listed per country ("US employees (any location)", "Canadian employees (any location)") name the countries the company hires in: a \`limit\` on those countries, \`sure\`.
+A sentence that only says where the job is, with no limiting words, is a \`label\`: "This job can be filled in Lyon" -> \`{ ["unstated"], [city Lyon, FR], label }\`. Pay ranges listed per country ("US employees (any location)", "Canadian employees (any location)") name the countries the company hires in: a \`limit\` on those countries, \`sure\`.
 
 Naming where the people hired are is a \`limit\` too: "we're looking for engineers in Belo Horizonte", "engineers in Madrid and across Spain", "if you're an engineer in Lisbon". The words say where the person hired is, not where the company hires or works, so they are not a \`mention\`.
 
