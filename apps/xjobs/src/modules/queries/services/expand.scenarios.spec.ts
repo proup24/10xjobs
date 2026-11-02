@@ -45,8 +45,8 @@ describe('expand scenarios over mock profiles', () => {
       recipes.some((r) => r.technologies.includes(Technology.postgresql)),
     ).toBe(false);
     expect(keywords(recipes, Channel.LINKEDIN_JOB_BOARD)).toEqual([
-      'backend engineer nestjs',
-      'backend engineer typescript',
+      'nestjs',
+      'typescript',
     ]);
     expect(
       on(recipes, Channel.LINKEDIN_JOB_BOARD).map((r) => r.params),
@@ -77,11 +77,11 @@ describe('expand scenarios over mock profiles', () => {
       on(recipes, Channel.LINKEDIN_JOB_BOARD).map((r) => [r.keyword, r.params]),
     ).toEqual([
       [
-        'frontend engineer react',
+        'react',
         { location: 'paris, france', experienceLevel: '3,4', workType: '1' },
       ],
       [
-        'frontend engineer next js',
+        'next js',
         { location: 'paris, france', experienceLevel: '3,4', workType: '1' },
       ],
     ]);
@@ -112,8 +112,8 @@ describe('expand scenarios over mock profiles', () => {
       false,
     );
     expect(keywords(recipes, Channel.LINKEDIN_JOB_BOARD)).toEqual([
-      'devops engineer kubernetes',
-      'devops engineer terraform',
+      'kubernetes',
+      'terraform',
     ]);
     expect(
       on(hybrid, Channel.LINKEDIN_JOB_BOARD).every(
@@ -134,10 +134,10 @@ describe('expand scenarios over mock profiles', () => {
         "GREEN_HOUSE | devops | hybrid | austin, united states | ("devops engineer" OR "devops") terraform staff "austin, united states" | {"remote":false}",
         "GREEN_HOUSE | devops | remote | north america | ("devops engineer" OR "devops") kubernetes staff "remote" "north america" | {"remote":true}",
         "GREEN_HOUSE | devops | remote | north america | ("devops engineer" OR "devops") terraform staff "remote" "north america" | {"remote":true}",
-        "LINKEDIN_JOB_BOARD | devops | hybrid | austin, united states | devops engineer kubernetes | {"experienceLevel":"4,5","location":"austin, united states","workType":"3"}",
-        "LINKEDIN_JOB_BOARD | devops | hybrid | austin, united states | devops engineer terraform | {"experienceLevel":"4,5","location":"austin, united states","workType":"3"}",
-        "LINKEDIN_JOB_BOARD | devops | remote | north america | devops engineer kubernetes | {"experienceLevel":"4,5","location":"north america","workType":"2"}",
-        "LINKEDIN_JOB_BOARD | devops | remote | north america | devops engineer terraform | {"experienceLevel":"4,5","location":"north america","workType":"2"}",
+        "LINKEDIN_JOB_BOARD | devops | hybrid | austin, united states | kubernetes | {"experienceLevel":"4,5","location":"austin, united states","workType":"3"}",
+        "LINKEDIN_JOB_BOARD | devops | hybrid | austin, united states | terraform | {"experienceLevel":"4,5","location":"austin, united states","workType":"3"}",
+        "LINKEDIN_JOB_BOARD | devops | remote | north america | kubernetes | {"experienceLevel":"4,5","location":"north america","workType":"2"}",
+        "LINKEDIN_JOB_BOARD | devops | remote | north america | terraform | {"experienceLevel":"4,5","location":"north america","workType":"2"}",
         "LINKEDIN_POSTS | devops | hybrid | austin, united states | hiring ("devops engineer" OR "devops") kubernetes staff austin, united states | {}",
         "LINKEDIN_POSTS | devops | hybrid | austin, united states | hiring ("devops engineer" OR "devops") terraform staff austin, united states | {}",
         "LINKEDIN_POSTS | devops | remote | north america | hiring ("devops engineer" OR "devops") kubernetes staff remote north america | {}",
@@ -152,7 +152,7 @@ describe('expand scenarios over mock profiles', () => {
     expect(
       on(recipes, Channel.LINKEDIN_JOB_BOARD).map((r) => [r.keyword, r.params]),
     ).toEqual([
-      ['data engineer python', { location: 'asia pacific', workType: '2' }],
+      ['python', { location: 'asia pacific', workType: '2' }],
     ]);
     expect(keywords(recipes, Channel.LINKEDIN_POSTS)).toEqual([
       'hiring ("data engineer" OR "data platform engineer") python remote asia pacific',
@@ -282,7 +282,7 @@ describe('expand scenarios over mock profiles', () => {
     const recipes = expand(MOCK_PROFILES.leadTechLead);
     expect(recipes).toHaveLength(4);
     expect(keywords(recipes, Channel.LINKEDIN_JOB_BOARD)).toEqual([
-      'tech lead typescript',
+      'typescript',
     ]);
   });
 

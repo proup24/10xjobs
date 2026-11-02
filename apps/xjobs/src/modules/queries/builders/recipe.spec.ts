@@ -53,9 +53,9 @@ describe('recipe', () => {
     );
   });
 
-  it('is at recipe version 9', () => {
-    expect(QUERY_SEARCH_RECIPE_VERSION).toBe(9);
-    expect(toRecipe(base).version).toBe(9);
+  it('is at recipe version 10', () => {
+    expect(QUERY_SEARCH_RECIPE_VERSION).toBe(10);
+    expect(toRecipe(base).version).toBe(10);
   });
 
   it('keeps boolean operators uppercase in the stored keyword', () => {
@@ -78,23 +78,23 @@ describe('recipe', () => {
     expect(recipe.keyword).not.toContain('senior');
   });
 
-  // Rows are deduplicated by hash forever: these digests change only with QUERY_SEARCH_RECIPE_VERSION (v7).
+  // Rows are deduplicated by hash forever: these digests change only with QUERY_SEARCH_RECIPE_VERSION (v10).
   it.each<[Channel, string]>([
     [
       Channel.LINKEDIN_JOB_BOARD,
-      'a048ee96eeb61a5eefa8d97d20863f2a57231f619cf0c2a754878ddfd0af175b',
+      '8f277c0f5fd3da838c213317656900227cc6601a3d800a3678bb034ffa1ae736',
     ],
     [
       Channel.LINKEDIN_POSTS,
-      '9e4ac24ba0e8c7992078a4feaf9dab2c0f1ec91e080780fa22f724c0238860c0',
+      '37c6591648dafe59d7de63c534947f47d35a8bdb42411474bdb640d32c613bea',
     ],
     [
       Channel.GREEN_HOUSE,
-      '47781cc465836c2ddace5f37cdf2af3fc876c377d7dfcb68b9fd899f8d212346',
+      'df54b288f9698c48ced25837dce8f247e6ab1e4cab37c83c9116c5f9ff8125cc',
     ],
     [
       Channel.ASHBY,
-      'fc9faced2a430fbc798e610a2e5603735d07f48dee4327225886a36495017fac',
+      '74d918680eece79f2082ad489ac3e1404412bf68ecbad5b63c65468355842cbf',
     ],
   ])('pins the %s hash', (channel, digest) => {
     expect(toRecipe({ ...base, channel }).hash).toBe(digest);

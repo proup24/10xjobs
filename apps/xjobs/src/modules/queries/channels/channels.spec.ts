@@ -35,9 +35,9 @@ const TITLES =
 const onsite = { type: Arrangement.onsite, location: 'casablanca, morocco' };
 
 describe('LinkedIn job board builder', () => {
-  it('searches the main title and the technologies as plain words, seniority only as f_E', () => {
+  it('searches the technologies alone as plain words, seniority only as f_E', () => {
     const query = build(Channel.LINKEDIN_JOB_BOARD);
-    expect(query.keyword).toBe('backend engineer nestjs typescript');
+    expect(query.keyword).toBe('nestjs typescript');
     expect(query.keyword).not.toMatch(/["()]| AND | OR /);
     expect(query.keyword).not.toContain('senior');
     expect(query.params).toEqual({
@@ -97,13 +97,13 @@ describe('LinkedIn job board builder', () => {
   it('uses the short spelling LinkedIn posters write', () => {
     const keyword = (technologies: Technology[]) =>
       build(Channel.LINKEDIN_JOB_BOARD, { technologies }).keyword;
-    expect(keyword([Technology.nextjs])).toBe('backend engineer next js');
-    expect(keyword([Technology.nodejs])).toBe('backend engineer node js');
-    expect(keyword([Technology.spring])).toBe('backend engineer spring');
-    expect(keyword([Technology.dotnet])).toBe('backend engineer dotnet');
-    expect(keyword([Technology.csharp])).toBe('backend engineer csharp');
-    expect(keyword([Technology.cpp])).toBe('backend engineer cpp');
-    expect(keyword([Technology.go])).toBe('backend engineer golang');
+    expect(keyword([Technology.nextjs])).toBe('next js');
+    expect(keyword([Technology.nodejs])).toBe('node js');
+    expect(keyword([Technology.spring])).toBe('spring');
+    expect(keyword([Technology.dotnet])).toBe('dotnet');
+    expect(keyword([Technology.csharp])).toBe('csharp');
+    expect(keyword([Technology.cpp])).toBe('cpp');
+    expect(keyword([Technology.go])).toBe('golang');
   });
 
   it('keeps every LinkedIn term free of quotes and symbols', () => {
