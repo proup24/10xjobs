@@ -25,12 +25,12 @@ import {
   scoreCase,
   summarize,
 } from 'src/modules/processor/golden/score';
-import { OpenRouterDecisionModel } from 'src/modules/processor/models/openrouter-decision.model';
-import { OpenRouterExtractionModel } from 'src/modules/processor/models/openrouter-extraction.model';
+import { OpenRouterDecisionModel } from 'src/modules/processor/models/decision.model';
+import { OpenRouterExtractionModel } from 'src/modules/processor/models/extraction.model';
 import {
   checkModels,
   createOpenRouterClient,
-} from 'src/modules/processor/models/openrouter.client';
+} from 'src/modules/processor/models/client';
 import { ModelPricing } from 'src/modules/processor/models/pricing';
 import {
   type DecisionAnswer,

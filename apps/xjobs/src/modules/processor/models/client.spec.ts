@@ -17,7 +17,7 @@ import {
   type OpenRouterClient,
   timed,
   toModelError,
-} from './openrouter.client';
+} from './client';
 
 function httpError(status: number): OpenRouterError {
   return new OpenRouterError(`status ${status}`, {

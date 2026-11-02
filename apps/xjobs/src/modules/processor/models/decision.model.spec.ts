@@ -6,8 +6,8 @@ import {
   ProviderUnavailableError,
   TransientModelError,
 } from './errors';
-import { OpenRouterDecisionModel } from './openrouter-decision.model';
-import type { OpenRouterClient } from './openrouter.client';
+import { OpenRouterDecisionModel } from './decision.model';
+import type { OpenRouterClient } from './client';
 import { ModelPricing } from './pricing';
 import type { DecisionQuestion, PostingInput } from './types';
 

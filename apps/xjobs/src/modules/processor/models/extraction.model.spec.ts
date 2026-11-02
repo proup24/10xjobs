@@ -8,8 +8,8 @@ import {
   ProviderUnavailableError,
   TransientModelError,
 } from './errors';
-import { OpenRouterExtractionModel } from './openrouter-extraction.model';
-import type { OpenRouterClient } from './openrouter.client';
+import { OpenRouterExtractionModel } from './extraction.model';
+import type { OpenRouterClient } from './client';
 import { ModelPricing } from './pricing';
 import type { PostingInput } from './types';
 

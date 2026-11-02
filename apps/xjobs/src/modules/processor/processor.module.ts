@@ -6,13 +6,13 @@ import {
   PROCESSOR_CONFIG,
   type ProcessorConfig,
 } from './config/processor.config';
-import { OpenRouterDecisionModel } from './models/openrouter-decision.model';
-import { OpenRouterExtractionModel } from './models/openrouter-extraction.model';
+import { OpenRouterDecisionModel } from './models/decision.model';
+import { OpenRouterExtractionModel } from './models/extraction.model';
 import {
   createOpenRouterClient,
   OPENROUTER_CLIENT,
   type OpenRouterClient,
-} from './models/openrouter.client';
+} from './models/client';
 import { ModelPricing } from './models/pricing';
 import { DecisionModel, ExtractionModel } from './models/types';
 import { ProcessJobService } from './pipeline/process-job.service';

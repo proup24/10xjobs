@@ -114,24 +114,55 @@ export function scoreCase(
   c: GoldenCase,
   extra: { jevAnswers?: DecisionAnswer[]; costUsd?: number } = {},
 ): FactScores {
+  const golden = expectedFacts(c);
   const facts: FactScores['facts'] = {};
-  const golden: Partial<Record<string, unknown>> = {
+
+  scoreScalars(doc, golden, facts);
+  scoreRoleKind(doc, golden, facts);
+  scoreOpeningPlaces(doc, c, facts);
+  scoreMainStack(doc, c, facts);
+  scoreRequiredLanguages(doc, c, facts);
+  scoreSponsorship(doc, c, facts);
+  scoreSalary(doc, c, facts);
+  scoreJunkFlags(doc, c, facts);
+
+  return {
+    caseId: c.id,
+    facts,
+    jev: scoreJev(doc, golden, extra.jevAnswers),
+    costUsd: extra.costUsd ?? 0,
+  };
+}
+
+function expectedFacts(c: GoldenCase): Partial<Record<string, unknown>> {
+  return {
     ...c.expected,
     arrangement: reviewedLabel(c, 'arrangement'),
     contractType: reviewedLabel(c, 'contractType'),
     isSoftwareEngineeringRole: reviewedLabel(c, 'isSoftwareEngineeringRole'),
     engagement: reviewedLabel(c, 'engagement'),
   };
+}
 
-  const put = (name: FactName, ok: boolean, f: Envelope) => {
-    facts[name] = {
-      correct: ok ? 1 : 0,
-      total: 1,
-      decidedBy: f.decidedBy,
-      confidence: f.confidence,
-    };
+function put(
+  facts: FactScores['facts'],
+  name: FactName,
+  ok: boolean,
+  fact: Envelope,
+): void {
+  facts[name] = {
+    correct: ok ? 1 : 0,
+    total: 1,
+    decidedBy: fact.decidedBy,
+    confidence: fact.confidence,
   };
+}
 
+function scoreScalars(
+  doc: ExtractionDocument,
+  golden: Partial<Record<string, unknown>>,
+  facts: FactScores['facts'],
+): void {
   const scalars: [FactName, Envelope & { value: unknown }][] = [
     ['arrangement', doc.arrangement],
     ['contractType', doc.contractType],
@@ -141,90 +172,134 @@ export function scoreCase(
     ['yearsRequired', doc.yearsRequired],
     ['contractMonths', doc.contractMonths],
   ];
-  for (const [name, fact] of scalars)
-    if (golden[name] !== undefined)
-      put(name, sameScalar(fact.value, golden[name]), fact);
-
-  if (golden.roleKind !== undefined)
-    put(
-      'roleKind',
-      sameScalar(doc.position.value?.roleKind, golden.roleKind),
-      doc.position,
-    );
-
-  if (c.expected.openings) {
-    const want = placeKeys(c.expected.openings.flatMap((o) => o.places));
-    const got = placeKeys(doc.openings.flatMap((o) => o.places));
-    facts.openingPlaces = {
-      correct: sameSet(want, got) ? 1 : 0,
-      total: 1,
-      decidedBy: doc.openings[0]?.decidedBy ?? null,
-      // No openings at all is nothing to be sure of.
-      confidence:
-        doc.openings.length > 0 &&
-        doc.openings.every((o) => o.confidence === 'sure')
-          ? 'sure'
-          : 'unsure',
-    };
+  for (const [name, fact] of scalars) {
+    if (golden[name] === undefined) continue;
+    put(facts, name, sameScalar(fact.value, golden[name]), fact);
   }
+}
 
-  if (c.expected.mainStack) {
-    const want = c.expected.mainStack.flatMap((g) =>
-      g.anyOf.flatMap((t) => (t.code ? [t.code] : [])),
-    );
-    const got = new Set(
-      (doc.techStack.value?.mainStack ?? []).flatMap((g) =>
-        g.anyOf.flatMap((t) => (t.code ? [t.code] : [])),
-      ),
-    );
-    if (want.length > 0)
-      facts.mainStack = {
-        correct: want.filter((t) => got.has(t)).length,
-        total: want.length,
-        decidedBy: doc.techStack.decidedBy,
-        confidence: doc.techStack.confidence,
-      };
-  }
-
-  if (c.expected.requiredLanguages)
-    put(
-      'requiredLanguages',
-      sameSet(
-        c.expected.requiredLanguages.map((l) => l.lang),
-        (doc.requiredLanguages.value ?? []).map((l) => l.lang),
-      ),
-      doc.requiredLanguages,
-    );
-
-  if (c.expected.sponsorship !== undefined)
-    put(
-      'sponsorship',
-      sameScalar(
-        doc.workAuthorization.value?.sponsorship,
-        c.expected.sponsorship,
-      ),
-      doc.workAuthorization,
-    );
-
-  if (c.expected.salary !== undefined)
-    put('salary', sameSalary(doc.salary.value, c.expected.salary), doc.salary);
-
-  if (c.expected.junkFlags)
-    put(
-      'junkFlags',
-      sameSet(
-        c.expected.junkFlags,
-        (doc.junkFlags.value ?? []).map((f) => f.code),
-      ),
-      doc.junkFlags,
-    );
-
-  return {
-    caseId: c.id,
+function scoreRoleKind(
+  doc: ExtractionDocument,
+  golden: Partial<Record<string, unknown>>,
+  facts: FactScores['facts'],
+): void {
+  if (golden.roleKind === undefined) return;
+  put(
     facts,
-    jev: scoreJev(doc, golden, extra.jevAnswers),
-    costUsd: extra.costUsd ?? 0,
+    'roleKind',
+    sameScalar(doc.position.value?.roleKind, golden.roleKind),
+    doc.position,
+  );
+}
+
+function scoreOpeningPlaces(
+  doc: ExtractionDocument,
+  c: GoldenCase,
+  facts: FactScores['facts'],
+): void {
+  if (!c.expected.openings) return;
+  const want = placeKeys(
+    c.expected.openings.flatMap((opening) => opening.places),
+  );
+  const got = placeKeys(doc.openings.flatMap((opening) => opening.places));
+  facts.openingPlaces = {
+    correct: sameSet(want, got) ? 1 : 0,
+    total: 1,
+    decidedBy: doc.openings[0]?.decidedBy ?? null,
+    confidence:
+      doc.openings.length > 0 &&
+      doc.openings.every((opening) => opening.confidence === 'sure')
+        ? 'sure'
+        : 'unsure',
   };
+}
+
+function scoreMainStack(
+  doc: ExtractionDocument,
+  c: GoldenCase,
+  facts: FactScores['facts'],
+): void {
+  if (!c.expected.mainStack) return;
+  const want = c.expected.mainStack.flatMap((group) =>
+    group.anyOf.flatMap((term) => (term.code ? [term.code] : [])),
+  );
+  if (want.length === 0) return;
+  const got = new Set(
+    (doc.techStack.value?.mainStack ?? []).flatMap((group) =>
+      group.anyOf.flatMap((term) => (term.code ? [term.code] : [])),
+    ),
+  );
+  facts.mainStack = {
+    correct: want.filter((term) => got.has(term)).length,
+    total: want.length,
+    decidedBy: doc.techStack.decidedBy,
+    confidence: doc.techStack.confidence,
+  };
+}
+
+function scoreRequiredLanguages(
+  doc: ExtractionDocument,
+  c: GoldenCase,
+  facts: FactScores['facts'],
+): void {
+  if (!c.expected.requiredLanguages) return;
+  put(
+    facts,
+    'requiredLanguages',
+    sameSet(
+      c.expected.requiredLanguages.map((language) => language.lang),
+      (doc.requiredLanguages.value ?? []).map((language) => language.lang),
+    ),
+    doc.requiredLanguages,
+  );
+}
+
+function scoreSponsorship(
+  doc: ExtractionDocument,
+  c: GoldenCase,
+  facts: FactScores['facts'],
+): void {
+  if (c.expected.sponsorship === undefined) return;
+  put(
+    facts,
+    'sponsorship',
+    sameScalar(
+      doc.workAuthorization.value?.sponsorship,
+      c.expected.sponsorship,
+    ),
+    doc.workAuthorization,
+  );
+}
+
+function scoreSalary(
+  doc: ExtractionDocument,
+  c: GoldenCase,
+  facts: FactScores['facts'],
+): void {
+  if (c.expected.salary === undefined) return;
+  put(
+    facts,
+    'salary',
+    sameSalary(doc.salary.value, c.expected.salary),
+    doc.salary,
+  );
+}
+
+function scoreJunkFlags(
+  doc: ExtractionDocument,
+  c: GoldenCase,
+  facts: FactScores['facts'],
+): void {
+  if (!c.expected.junkFlags) return;
+  put(
+    facts,
+    'junkFlags',
+    sameSet(
+      c.expected.junkFlags,
+      (doc.junkFlags.value ?? []).map((flag) => flag.code),
+    ),
+    doc.junkFlags,
+  );
 }
 
 /** Jev's own answers (when given), else the ones that stood in the document. */

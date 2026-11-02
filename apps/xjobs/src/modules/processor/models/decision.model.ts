@@ -4,7 +4,7 @@ import type {
   DecisionsResponse,
 } from '@openrouter/sdk/models';
 import { ModelOutputError } from './errors';
-import { type OpenRouterClient, timed } from './openrouter.client';
+import { type OpenRouterClient, timed } from './client';
 import { ModelPricing } from './pricing';
 import type {
   DecisionAnswer,

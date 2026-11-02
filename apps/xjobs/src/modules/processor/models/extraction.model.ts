@@ -1,6 +1,6 @@
 import type { ChatMessages } from '@openrouter/sdk/models';
 import { ModelOutputError, TransientModelError } from './errors';
-import { type OpenRouterClient, timed } from './openrouter.client';
+import { type OpenRouterClient, timed } from './client';
 import { ModelPricing } from './pricing';
 import type { ModelCallMeta, PostingInput } from './types';
 import { ExtractionModel } from './types';
@@ -24,7 +24,6 @@ function messages(
   const list: ChatMessages[] = [
     {
       role: 'system',
-      // Only the system prompt is cached: it is the same for every posting.
       content: [
         {
           type: 'text',

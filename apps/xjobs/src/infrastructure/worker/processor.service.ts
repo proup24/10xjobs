@@ -18,7 +18,7 @@ import {
   checkModels,
   OPENROUTER_CLIENT,
   type OpenRouterClient,
-} from 'src/modules/processor/models/openrouter.client';
+} from 'src/modules/processor/models/client';
 import { WorkerRuntimeService } from './runtime.service';
 import { syncProcessSweepScheduler } from './scheduler';
 

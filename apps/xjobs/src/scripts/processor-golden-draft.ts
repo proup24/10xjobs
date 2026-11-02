@@ -16,8 +16,8 @@ import {
   GOLDEN_CASES_DIR,
   loadGolden,
 } from 'src/modules/processor/golden/golden';
-import { OpenRouterExtractionModel } from 'src/modules/processor/models/openrouter-extraction.model';
-import { createOpenRouterClient } from 'src/modules/processor/models/openrouter.client';
+import { OpenRouterExtractionModel } from 'src/modules/processor/models/extraction.model';
+import { createOpenRouterClient } from 'src/modules/processor/models/client';
 import type { PostingInput } from 'src/modules/processor/models/types';
 import { SEED } from 'src/modules/processor/vocab/seed-data';
 

@@ -10,13 +10,13 @@
  * Costs a few cents. Needs `OPENROUTER_API_KEY`; reads the PROCESSOR_* models.
  */
 import { loadEnvironmentFiles } from 'src/config/environment.loader';
-import { OpenRouterDecisionModel } from 'src/modules/processor/models/openrouter-decision.model';
-import { OpenRouterExtractionModel } from 'src/modules/processor/models/openrouter-extraction.model';
+import { OpenRouterDecisionModel } from 'src/modules/processor/models/decision.model';
+import { OpenRouterExtractionModel } from 'src/modules/processor/models/extraction.model';
 import {
   assertApiKey,
   checkModels,
   createOpenRouterClient,
-} from 'src/modules/processor/models/openrouter.client';
+} from 'src/modules/processor/models/client';
 import { ModelPricing } from 'src/modules/processor/models/pricing';
 import type { PostingInput } from 'src/modules/processor/models/types';
 import { buildDecisionQuestions } from 'src/modules/processor/pipeline/questions';
