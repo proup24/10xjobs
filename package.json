@@ -56,7 +56,7 @@
     "eslint-config-prettier": "^10.0.0",
     "nx": "24.0.2",
     "prettier": "~3.6.2",
-    "supabase": "3.0.0-next.27",
+    "supabase": "3.0.0",
     "tslib": "^2.3.0",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.58.0",
