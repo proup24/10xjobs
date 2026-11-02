@@ -215,28 +215,32 @@ export class CollectionService {
   }
 
   private fetch(segment: SegmentSearch): Promise<SegmentResult> {
-    switch (segment.channel) {
-      case Channel.ASHBY:
-        return this.ashby.collect(
-          segment,
-          channelJobsConfig[Channel.ASHBY].run,
-        );
-      case Channel.GREEN_HOUSE:
-        return this.greenhouse.collect(
-          segment,
-          channelJobsConfig[Channel.GREEN_HOUSE].run,
-        );
-      case Channel.LINKEDIN_JOB_BOARD:
-        return this.linkedinJobs.collect(
+     return this.linkedinJobs.collect(
           segment,
           channelJobsConfig[Channel.LINKEDIN_JOB_BOARD].run,
-        );
-      case Channel.LINKEDIN_POSTS:
-        return this.linkedinPosts.collect(
-          segment,
-          channelJobsConfig[Channel.LINKEDIN_POSTS].run,
-        );
-    }
+    );
+    // switch (segment.channel) {
+    //   case Channel.ASHBY:
+    //     return this.ashby.collect(
+    //       segment,
+    //       channelJobsConfig[Channel.ASHBY].run,
+    //     );
+    //   case Channel.GREEN_HOUSE:
+    //     return this.greenhouse.collect(
+    //       segment,
+    //       channelJobsConfig[Channel.GREEN_HOUSE].run,
+    //     );
+    //   case Channel.LINKEDIN_JOB_BOARD:
+    //     return this.linkedinJobs.collect(
+    //       segment,
+    //       channelJobsConfig[Channel.LINKEDIN_JOB_BOARD].run,
+    //     );
+    //   case Channel.LINKEDIN_POSTS:
+    //     return this.linkedinPosts.collect(
+    //       segment,
+    //       channelJobsConfig[Channel.LINKEDIN_POSTS].run,
+    //     );
+    // }
   }
 }
 
