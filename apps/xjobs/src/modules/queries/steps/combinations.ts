@@ -18,7 +18,7 @@ export function locationCombinations(
   technologies: TechnologySet[],
 ): QuerySearchCombination[] {
   return LOCATION_ARRANGEMENTS.flatMap((type) =>
-    Object.values(Channel).flatMap((channel) =>
+    Object.values(Channel).filter((c)=> c !== Channel.LINKEDIN_JOB_BOARD).flatMap((channel) =>
       profile.locations[type].flatMap((text) =>
         technologies.map(({ technologies: set, domain }) => ({
           channel,
