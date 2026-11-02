@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { TransientModelError } from './errors';
+import { ModelRequestError, TransientModelError } from './errors';
 import { OpenRouterClient } from './openrouter.client';
 import { OpenRouterDecisionModel } from './openrouter-decision.model';
 import type { DecisionQuestion, PostingInput } from './types';
@@ -98,6 +98,50 @@ describe('OpenRouterDecisionModel', () => {
     stubFetch(fixture('error-429.json'), 429);
     await expect(model().decide(input, questions)).rejects.toBeInstanceOf(
       TransientModelError,
+    );
+  });
+
+  it.each([
+    ['null', null],
+    ['string', 'senior'],
+  ])('treats a %s answer as missing', async (_name, bad) => {
+    stubFetch(
+      JSON.stringify({
+        answers: {
+          seniority: bad,
+          isSoftwareEngineeringRole: { type: 'noul', probability: 0.5 },
+        },
+        usage: { cost: 0.001 },
+      }),
+    );
+    const { answers } = await model().decide(input, questions);
+    expect(answers.map((a) => [a.value, a.score])).toEqual([
+      [null, 0],
+      [true, 0],
+    ]);
+  });
+
+  it('scores 0 when the option score is not a number', async () => {
+    stubFetch(
+      JSON.stringify({
+        answers: {
+          seniority: {
+            type: 'choice',
+            selected: 'mid',
+            probabilities: { mid: 'high' },
+            confidence: 'high',
+          },
+        },
+      }),
+    );
+    const { answers } = await model().decide(input, questions);
+    expect(answers[0]).toEqual({ key: 'seniority', value: 'mid', score: 0 });
+  });
+
+  it('throws a request error on a 200 with a 4xx error code', async () => {
+    stubFetch('{"error":{"code":401,"message":"no key"}}');
+    await expect(model().decide(input, questions)).rejects.toBeInstanceOf(
+      ModelRequestError,
     );
   });
 });

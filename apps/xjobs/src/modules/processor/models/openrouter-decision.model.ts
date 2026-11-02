@@ -18,6 +18,16 @@ interface MappedAnswer {
 const num = (v: unknown): number | null =>
   typeof v === 'number' && Number.isFinite(v) ? v : null;
 
+function finiteScores(value: unknown): Record<string, number> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const out: Record<string, number> = {};
+  for (const [k, v] of Object.entries(value)) {
+    const n = num(v);
+    if (n !== null) out[k] = n;
+  }
+  return out;
+}
+
 /**
  * The only place that reads Decisions API response fields.
  * Field names from the docs; confirm against the spike fixtures (models/SPIKE.md).
@@ -29,14 +39,16 @@ export function mapDecisionResponse(body: Record<string, unknown>): {
   cost: number;
 } {
   const usage = (body.usage ?? {}) as { cost?: unknown };
-  const rawAnswers = (body.answers ?? {}) as Record<
-    string,
-    Record<string, unknown>
-  >;
+  const rawAnswers =
+    body.answers && typeof body.answers === 'object'
+      ? (body.answers as Record<string, unknown>)
+      : {};
   const answers: Record<string, MappedAnswer> = {};
-  for (const [key, raw] of Object.entries(rawAnswers)) {
+  for (const [key, value] of Object.entries(rawAnswers)) {
+    // A non-object entry counts as a missing answer.
+    if (!value || typeof value !== 'object' || Array.isArray(value)) continue;
+    const raw = value as Record<string, unknown>;
     const selected = raw.selected;
-    const scores = raw.probabilities;
     answers[key] = {
       selected:
         typeof selected === 'string' || typeof selected === 'boolean'
@@ -44,10 +56,7 @@ export function mapDecisionResponse(body: Record<string, unknown>): {
           : null,
       probability: num(raw.probability),
       confidence: num(raw.confidence),
-      optionScores:
-        scores && typeof scores === 'object'
-          ? (scores as Record<string, number>)
-          : null,
+      optionScores: finiteScores(raw.probabilities),
     };
   }
   return {
