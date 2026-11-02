@@ -1,8 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import {
-  Arrangement,
   Position,
-  Region,
   Seniority,
   SkillDomain,
   Technology,
@@ -12,11 +10,8 @@ import { assertHasSkills, hasRankedSkill, SKILLS_REQUIRED } from './skills';
 
 const input: QuerySearchProfileInput = {
   position: Position.backend_engineer,
-  regions: [Region.EMEA],
-  arrangements: [Arrangement.remote],
+  locations: { remote: ['EMEA'], hybrid: [], onsite: [] },
   seniority: Seniority.senior,
-  country: 'MA',
-  city: null,
   skills: [],
 };
 const go = (importance: number) => ({

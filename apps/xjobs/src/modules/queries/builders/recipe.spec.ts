@@ -80,19 +80,19 @@ describe('recipe', () => {
   it.each<[Channel, string]>([
     [
       Channel.LINKEDIN_JOB_BOARD,
-      'b592e489d07e14b394af240f8fbe8c084d6c88a1326e36be7ba2b423bc929524',
+      '29b439fd695213fd706dabdec3ed4b52157f3a46e60f62e98f9900524bc787a2',
     ],
     [
       Channel.LINKEDIN_POSTS,
-      '700f7993163d6371980a4724f571154edc902c6cf642720088bcdfd9c339d2c8',
+      'cde1367966e288ddb5750e6be7abd58ec8414f2ae9686b8879b9f82e869e60cf',
     ],
     [
       Channel.GREEN_HOUSE,
-      '48753b90a644437505f4905b7e2aada9119306838195f980a28edde79f71301b',
+      'd3c539738f7bb0b389b1227d34b3f8bb15e7190c79a1a1c8e6f6137517ab7bb1',
     ],
     [
       Channel.ASHBY,
-      '821371d1cfe83c06bd36865dbcdbafe9c7cdba41df42b7982715bf144f5947d5',
+      'a5585e37e719d462f98e8b54c0aa80d21af6d8d4a4c239923757fdf24af5c9ba',
     ],
   ])('pins the %s hash', (channel, digest) => {
     expect(toRecipe({ ...base, channel }).hash).toBe(digest);

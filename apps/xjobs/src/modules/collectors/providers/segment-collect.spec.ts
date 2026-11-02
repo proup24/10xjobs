@@ -407,33 +407,25 @@ describe('job board segments on Google', () => {
     ]);
   });
 
-  it('localises an onsite segment to its country and searches whole days', async () => {
-    const onsite = (id: string, countryCode: string) => ({
+  it('never sets a Google country and searches whole days', async () => {
+    // A countryCode left on an older builder's params must not leak through.
+    const onsite = (id: string) => ({
       id,
-      keyword: `${titles} nestjs "casablanca"`,
-      params: { remote: false, countryCode },
+      keyword: `${titles} nestjs "casablanca, morocco"`,
+      params: { remote: false, countryCode: 'ma' },
     });
-    const long = {
-      channel: Channel.ASHBY,
-      since: new Date('2026-10-28T12:00:00Z'),
-      until,
-    };
     const shared = actor(() => []);
     await new GoogleJobsSearchProvider(shared.provider).search(
-      { ...long, queries: [onsite('qs-1', 'ma'), onsite('qs-2', 'ma')] },
+      {
+        channel: Channel.ASHBY,
+        since: new Date('2026-10-28T12:00:00Z'),
+        until,
+        queries: [onsite('qs-1'), onsite('qs-2')],
+      },
       ashby,
     );
-    expect(shared.run.mock.calls[0][1]).toMatchObject({
-      countryCode: 'ma',
-      quickDateRange: 'd3',
-    });
-
-    const mixed = actor(() => []);
-    await new GoogleJobsSearchProvider(mixed.provider).search(
-      { ...long, queries: [onsite('qs-1', 'ma'), onsite('qs-2', 'fr')] },
-      ashby,
-    );
-    expect(mixed.run.mock.calls[0][1]).not.toHaveProperty('countryCode');
+    expect(shared.run.mock.calls[0][1]).toMatchObject({ quickDateRange: 'd3' });
+    expect(shared.run.mock.calls[0][1]).not.toHaveProperty('countryCode');
   });
 
   it('marks a query truncated when its last allowed page has more', async () => {

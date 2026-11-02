@@ -2,28 +2,22 @@ import {
   Arrangement,
   Channel,
   Position,
-  Region,
   Seniority,
   SkillDomain,
   Technology,
 } from 'src/common/enums';
+import { locationKey } from '../steps/normalize';
 import type { QuerySearchCombination } from '../types';
 import { TECHNOLOGY_TERMS } from '../builders/keywords';
 import { AshbyQueryBuilder } from './ashbyhq.builder';
 import { GreenhouseQueryBuilder } from './greenhouse.builder';
 import { CHANNEL_QUERY_BUILDERS } from '.';
-import {
-  countryName,
-  LINKEDIN_CITY_GEO_IDS,
-  LINKEDIN_REGIONS,
-} from './linkedin_geo';
+import { isWorldwide, LINKEDIN_GEO_IDS } from './linkedin_geo';
 
 const base: QuerySearchCombination = {
   channel: Channel.LINKEDIN_JOB_BOARD,
   position: Position.backend_engineer,
-  locationRegion: Region.EMEA,
-  country: null,
-  city: null,
+  location: 'emea',
   experience: Seniority.senior,
   type: Arrangement.remote,
   technologies: [Technology.nestjs, Technology.typescript],
@@ -37,12 +31,7 @@ const build = (
 
 const TITLES =
   '("backend engineer" OR "backend developer" OR "backend software engineer")';
-const onsite = {
-  type: Arrangement.onsite,
-  locationRegion: null,
-  country: 'MA',
-  city: 'Casablanca',
-};
+const onsite = { type: Arrangement.onsite, location: 'casablanca, morocco' };
 
 describe('LinkedIn job board builder', () => {
   it('ANDs the title alternatives with the technologies, seniority only as f_E', () => {
@@ -52,59 +41,42 @@ describe('LinkedIn job board builder', () => {
     expect(query.params).toEqual({
       experienceLevel: '4',
       workType: '2',
-      location: 'EMEA',
+      location: 'emea',
     });
   });
 
-  it('searches remote regions by LinkedIn location, Worldwide for GLOBAL', () => {
+  it('searches an onsite region by its location text, with no geoId', () => {
     expect(
-      build(Channel.LINKEDIN_JOB_BOARD, { locationRegion: Region.GLOBAL })
-        .params.location,
-    ).toBe('Worldwide');
-    for (const region of Object.values(Region)) {
-      const params = build(Channel.LINKEDIN_JOB_BOARD, {
-        locationRegion: region,
-      }).params;
-      expect(params.location).toBe(LINKEDIN_REGIONS[region].location);
-      if (LINKEDIN_REGIONS[region].geoId)
-        expect(params.geoId).toBe(LINKEDIN_REGIONS[region].geoId);
-      else expect(params).not.toHaveProperty('geoId');
-    }
+      build(Channel.LINKEDIN_JOB_BOARD, {
+        type: Arrangement.onsite,
+        location: 'europe',
+      }).params,
+    ).toEqual({ experienceLevel: '4', workType: '1', location: 'europe' });
   });
 
-  it('names the country, never its ISO code, for onsite work', () => {
-    expect(build(Channel.LINKEDIN_JOB_BOARD, onsite).params).toEqual({
-      experienceLevel: '4',
-      workType: '1',
-      location: 'Casablanca, Morocco',
-    });
-  });
-
-  it('searches the country alone when there is no city', () => {
+  it('passes worldwide as the location', () => {
     expect(
-      build(Channel.LINKEDIN_JOB_BOARD, { ...onsite, city: null }).params
+      build(Channel.LINKEDIN_JOB_BOARD, { location: 'worldwide' }).params
         .location,
-    ).toBe('Morocco');
+    ).toBe('worldwide');
   });
 
-  it('pins a city by its verified geoId', () => {
-    LINKEDIN_CITY_GEO_IDS['MA|Casablanca'] = '123';
+  it('pins a location by its verified geoId', () => {
+    LINKEDIN_GEO_IDS['paris, france'] = '123';
     try {
-      expect(build(Channel.LINKEDIN_JOB_BOARD, onsite).params).toMatchObject({
-        location: 'Casablanca, Morocco',
+      expect(
+        build(Channel.LINKEDIN_JOB_BOARD, {
+          type: Arrangement.hybrid,
+          location: 'paris, france',
+        }).params,
+      ).toEqual({
+        experienceLevel: '4',
+        workType: '3',
+        location: 'paris, france',
         geoId: '123',
       });
     } finally {
-      delete LINKEDIN_CITY_GEO_IDS['MA|Casablanca'];
-    }
-  });
-
-  it('falls back to the code for a country it cannot name', () => {
-    for (const code of ['XK', 'ZZ', 'Q1']) {
-      const name = countryName(code);
-      expect(typeof name).toBe('string');
-      expect(name).not.toContain('undefined');
-      expect(name.length).toBeGreaterThan(0);
+      delete LINKEDIN_GEO_IDS['paris, france'];
     }
   });
 
@@ -119,23 +91,33 @@ describe('LinkedIn job board builder', () => {
 });
 
 describe('LinkedIn posts builder', () => {
-  it('puts seniority and remote in the query, the actor having no filters', () => {
-    const query = build(Channel.LINKEDIN_POSTS);
+  it('puts seniority, remote and the location in the query, the actor having no filters', () => {
+    const query = build(Channel.LINKEDIN_POSTS, { location: 'morocco' });
     expect(query.keyword).toBe(
-      `hiring ${TITLES} nestjs typescript senior remote`,
+      `hiring ${TITLES} nestjs typescript senior remote morocco`,
     );
     expect(query.params).toEqual({});
   });
 
-  it('searches onsite and hybrid posts by city, with no word for mid-level', () => {
+  it('leaves worldwide out of the query, in any case', () => {
+    for (const location of ['worldwide', locationKey('WorldWide')]) {
+      expect(build(Channel.LINKEDIN_POSTS, { location }).keyword).toBe(
+        `hiring ${TITLES} nestjs typescript senior remote`,
+      );
+    }
+  });
+
+  it('searches onsite and hybrid posts by location, with no word for mid-level', () => {
     expect(
       build(Channel.LINKEDIN_POSTS, { ...onsite, experience: Seniority.mid })
         .keyword,
-    ).toBe(`hiring ${TITLES} nestjs typescript casablanca`);
+    ).toBe(`hiring ${TITLES} nestjs typescript casablanca, morocco`);
     expect(
-      build(Channel.LINKEDIN_POSTS, { ...onsite, type: Arrangement.hybrid })
-        .keyword,
-    ).toBe(`hiring ${TITLES} nestjs typescript senior casablanca`);
+      build(Channel.LINKEDIN_POSTS, {
+        type: Arrangement.onsite,
+        location: 'europe',
+      }).keyword,
+    ).toBe(`hiring ${TITLES} nestjs typescript senior europe`);
   });
 
   it('stays within the actor limits of 500 characters and 5 operators', () => {
@@ -147,7 +129,7 @@ describe('LinkedIn posts builder', () => {
         ...onsite,
         position,
         technologies: [longest],
-        city: 'x'.repeat(40),
+        location: 'x'.repeat(100),
       });
       expect(keyword.length).toBeLessThanOrEqual(500);
       expect(keyword.match(/ (OR|AND|NOT) /g)?.length ?? 0).toBeLessThanOrEqual(
@@ -158,25 +140,38 @@ describe('LinkedIn posts builder', () => {
 });
 
 describe('Greenhouse and Ashby builders', () => {
-  it('search Google with titles, technologies, seniority and remote', () => {
+  it('search Google with titles, technologies, seniority, remote and the location', () => {
     for (const channel of [Channel.GREEN_HOUSE, Channel.ASHBY]) {
-      expect(build(channel)).toEqual({
-        keyword: `${TITLES} nestjs typescript senior "remote"`,
+      expect(build(channel, { location: 'morocco' })).toEqual({
+        keyword: `${TITLES} nestjs typescript senior "remote" "morocco"`,
         params: { remote: true },
       });
     }
   });
 
-  it('search onsite boards by city with the country for Google', () => {
+  it('search onsite boards by the quoted location, with no country code', () => {
     expect(build(Channel.GREEN_HOUSE, onsite)).toEqual({
-      keyword: `${TITLES} nestjs typescript senior "casablanca"`,
-      params: { remote: false, countryCode: 'ma' },
+      keyword: `${TITLES} nestjs typescript senior "casablanca, morocco"`,
+      params: { remote: false },
     });
   });
 
-  it('leave place out for an unstated arrangement', () => {
+  it('leave worldwide out of the query, in any case', () => {
+    for (const location of ['worldwide', locationKey('WorldWide')]) {
+      expect(build(Channel.ASHBY, { location }).keyword).toBe(
+        `${TITLES} nestjs typescript senior "remote"`,
+      );
+    }
+  });
+
+  it('knows worldwide whatever its spelling', () => {
+    expect(isWorldwide(' WorldWide ')).toBe(true);
+    expect(isWorldwide('world')).toBe(false);
+  });
+
+  it('leave remote out for an unstated arrangement', () => {
     expect(build(Channel.ASHBY, { type: Arrangement.unstated })).toEqual({
-      keyword: `${TITLES} nestjs typescript senior`,
+      keyword: `${TITLES} nestjs typescript senior "emea"`,
       params: { remote: null },
     });
   });

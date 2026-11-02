@@ -1,4 +1,5 @@
 import { Arrangement, Channel } from 'src/common/enums';
+import { isWorldwide } from './linkedin_geo';
 import type { ChannelQuery, QuerySearchCombination } from '../types';
 import {
   type ChannelQueryBuilder,
@@ -9,8 +10,8 @@ import {
 
 /**
  * Searches hiring posts. The actor has no seniority or location filter, so
- * both go in the query: the seniority word, then the city for onsite and
- * hybrid work or "remote" for remote work.
+ * both go in the query: the seniority word, "remote" for remote work, then
+ * the location unless it is worldwide.
  */
 export class LinkedinPostsBuilder implements ChannelQueryBuilder {
   readonly channel = Channel.LINKEDIN_POSTS;
@@ -21,7 +22,7 @@ export class LinkedinPostsBuilder implements ChannelQueryBuilder {
       titleClause(combination.position),
       technologyTerms(combination.technologies),
       seniorityWord(combination.experience, combination.position),
-      placeWord(combination),
+      ...placeWords(combination),
     ]
       .filter((part): part is string => !!part)
       .join(' ');
@@ -29,12 +30,9 @@ export class LinkedinPostsBuilder implements ChannelQueryBuilder {
   }
 }
 
-function placeWord(combination: QuerySearchCombination): string | null {
-  if (combination.type === Arrangement.remote) return 'remote';
-  if (
-    combination.type === Arrangement.onsite ||
-    combination.type === Arrangement.hybrid
-  )
-    return combination.city?.toLowerCase() ?? null;
-  return null;
+function placeWords(combination: QuerySearchCombination): string[] {
+  return [
+    ...(combination.type === Arrangement.remote ? ['remote'] : []),
+    ...(isWorldwide(combination.location) ? [] : [combination.location]),
+  ];
 }

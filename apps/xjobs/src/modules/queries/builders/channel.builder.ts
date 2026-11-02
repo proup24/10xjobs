@@ -2,10 +2,10 @@ import {
   Arrangement,
   type Channel,
   type Position,
-  Region,
   Seniority,
   type Technology,
 } from 'src/common/enums';
+import { isWorldwide } from '../channels/linkedin_geo';
 import type { ChannelQuery, QuerySearchCombination } from '../types';
 import { POSITION_TITLES, SENIORITY_WORDS, TECHNOLOGY_TERMS } from './keywords';
 
@@ -61,51 +61,30 @@ export function seniorityWord(
   return named ? null : word;
 }
 
-/** The region for remote work, otherwise `city, country` (or `country` when no city). */
-export function locationText(combination: QuerySearchCombination): string {
-  const placeBound =
-    combination.type === Arrangement.onsite ||
-    combination.type === Arrangement.hybrid;
-  // Remote always carries a region; GLOBAL only guards a malformed combination.
-  if (!placeBound || !combination.country)
-    return combination.locationRegion ?? Region.GLOBAL;
-  return combination.city
-    ? `${combination.city}, ${combination.country}`
-    : combination.country;
-}
-
 /**
  * Greenhouse and Ashby are discovered through Google, which has no seniority
- * or place filter: both go in the query. Onsite and hybrid add the quoted
- * city and pass the country to Google; remote adds `"remote"`.
+ * or place filter: both go in the query. Remote adds `"remote"`; the quoted
+ * location follows unless it is worldwide.
  */
 export function jobBoardQuery(
   combination: QuerySearchCombination,
 ): ChannelQuery {
-  const placeBound =
-    combination.type === Arrangement.onsite ||
-    combination.type === Arrangement.hybrid;
-  const place =
-    combination.type === Arrangement.remote
-      ? '"remote"'
-      : placeBound && combination.city
-        ? `"${combination.city.toLowerCase()}"`
-        : null;
   const keyword = [
     titleClause(combination.position),
     technologyTerms(combination.technologies),
     seniorityWord(combination.experience, combination.position),
-    place,
+    combination.type === Arrangement.remote ? '"remote"' : null,
+    isWorldwide(combination.location) ? null : `"${combination.location}"`,
   ]
     .filter((part): part is string => !!part)
     .join(' ');
-  const params: Record<string, unknown> = {
-    remote:
-      combination.type === Arrangement.unstated
-        ? null
-        : combination.type === Arrangement.remote,
+  return {
+    keyword,
+    params: {
+      remote:
+        combination.type === Arrangement.unstated
+          ? null
+          : combination.type === Arrangement.remote,
+    },
   };
-  if (placeBound && combination.country)
-    params.countryCode = combination.country.toLowerCase();
-  return { keyword, params };
 }

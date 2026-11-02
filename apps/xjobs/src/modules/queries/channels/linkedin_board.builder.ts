@@ -1,11 +1,11 @@
-import { Arrangement, Channel, Region, Seniority } from 'src/common/enums';
+import { Arrangement, Channel, Seniority } from 'src/common/enums';
 import type { ChannelQuery, QuerySearchCombination } from '../types';
 import {
   type ChannelQueryBuilder,
   technologyTerms,
   titleClause,
 } from '../builders/channel.builder';
-import { LINKEDIN_REGIONS, linkedinPlace } from './linkedin_geo';
+import { LINKEDIN_GEO_IDS } from './linkedin_geo';
 
 /** LinkedIn `f_E` codes: 2 entry, 3 associate, 4 mid-senior. */
 const EXPERIENCE_LEVELS: Record<Seniority, string | null> = {
@@ -28,7 +28,7 @@ const WORK_TYPES: Record<Arrangement, string | null> = {
 
 /**
  * Title alternatives ANDed with the technologies; seniority, work type and
- * place go in LinkedIn's own filters, never in the keyword.
+ * location go in LinkedIn's own filters, never in the keyword.
  */
 export class LinkedinJobBoardBuilder implements ChannelQueryBuilder {
   readonly channel = Channel.LINKEDIN_JOB_BOARD;
@@ -39,19 +39,9 @@ export class LinkedinJobBoardBuilder implements ChannelQueryBuilder {
     if (experienceLevel !== null) params.experienceLevel = experienceLevel;
     const workType = WORK_TYPES[combination.type];
     if (workType !== null) params.workType = workType;
-    const placeBound =
-      combination.type === Arrangement.onsite ||
-      combination.type === Arrangement.hybrid;
-    if (placeBound && combination.country) {
-      const place = linkedinPlace(combination.country, combination.city);
-      params.location = place.location;
-      if (place.geoId) params.geoId = place.geoId;
-    } else {
-      const region =
-        LINKEDIN_REGIONS[combination.locationRegion ?? Region.GLOBAL];
-      params.location = region.location;
-      if (region.geoId) params.geoId = region.geoId;
-    }
+    params.location = combination.location;
+    const geoId = LINKEDIN_GEO_IDS[combination.location];
+    if (geoId) params.geoId = geoId;
     return {
       keyword: `${titleClause(combination.position)} AND ${technologyTerms(combination.technologies)}`,
       params,
