@@ -42,27 +42,93 @@ vi.mock('bullmq', async (importOriginal) => {
   return { ...actual, Queue, Worker };
 });
 
-const assertStructuredOutputs = vi.hoisted(() => vi.fn(async () => undefined));
+const checks = vi.hoisted(() => ({
+  assertApiKey: vi.fn(async () => undefined),
+  assertStructuredOutputs: vi.fn(async () => undefined),
+  loadModelPricing: vi.fn(
+    async (models: string[]) =>
+      new Map(
+        models.map((m) => [m, { prompt: 0.000001, completion: 0.000002 }]),
+      ),
+  ),
+}));
 vi.mock(
   'src/modules/processor/models/openrouter.client',
   async (importOriginal) => ({
     ...(await importOriginal<object>()),
-    assertStructuredOutputs,
+    ...checks,
   }),
 );
 
+import { ModelPricing } from 'src/modules/processor';
 import { WorkerModule } from '../worker.module';
 import { WorkerService } from '../worker.service';
 
-it('runs only the processor queue with its sweeper after checking the model', async () => {
+beforeEach(() => {
+  for (const list of Object.values(created)) list.length = 0;
+  for (const check of Object.values(checks)) check.mockClear();
+});
+
+it('runs only the processor queue with its sweeper after the startup checks', async () => {
   const module = await Test.createTestingModule({
     imports: [WorkerModule],
   }).compile();
   try {
     await module.get(WorkerService).onModuleInit();
-    expect(assertStructuredOutputs).toHaveBeenCalledTimes(1);
+    expect(checks.assertApiKey).toHaveBeenCalledWith(
+      process.env.OPENROUTER_API_KEY,
+    );
+    expect(checks.assertStructuredOutputs).toHaveBeenCalledWith(
+      'anthropic/claude-opus-5.5',
+    );
+    expect(checks.loadModelPricing).toHaveBeenCalledWith([
+      'typesafe/jev-1.14',
+      'anthropic/claude-opus-5.5',
+    ]);
+    expect(module.get(ModelPricing).get('typesafe/jev-1.14')).toEqual({
+      prompt: 0.000001,
+      completion: 0.000002,
+    });
     expect(created.workers).toEqual(['process']);
     expect(created.schedulers.map(([id]) => id)).toEqual(['sweep']);
+  } finally {
+    await module.get(WorkerService).onApplicationShutdown();
+    await module.close();
+  }
+});
+
+it('refuses to start when a model has no pricing', async () => {
+  checks.loadModelPricing.mockRejectedValueOnce(
+    new Error(
+      'OpenRouter lists no numeric pricing for model typesafe/jev-1.14',
+    ),
+  );
+  const module = await Test.createTestingModule({
+    imports: [WorkerModule],
+  }).compile();
+  try {
+    await expect(module.get(WorkerService).onModuleInit()).rejects.toThrow(
+      /pricing/,
+    );
+    expect(created.workers).toEqual([]);
+  } finally {
+    await module.get(WorkerService).onApplicationShutdown();
+    await module.close();
+  }
+});
+
+it('refuses to start when the key is rejected', async () => {
+  checks.assertApiKey.mockRejectedValueOnce(
+    new Error('OpenRouter rejected OPENROUTER_API_KEY'),
+  );
+  const module = await Test.createTestingModule({
+    imports: [WorkerModule],
+  }).compile();
+  try {
+    await expect(module.get(WorkerService).onModuleInit()).rejects.toThrow(
+      /OPENROUTER_API_KEY/,
+    );
+    expect(created.workers).toEqual([]);
   } finally {
     await module.get(WorkerService).onApplicationShutdown();
     await module.close();

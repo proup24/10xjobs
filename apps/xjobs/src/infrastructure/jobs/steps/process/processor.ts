@@ -15,7 +15,7 @@ import {
 const jobPayload = z.object({ jobId: z.string().min(1) });
 
 export interface ProcessJobDeps {
-  service: Pick<ProcessJobService, 'process'>;
+  service: Pick<ProcessJobService, 'process' | 'isPaused'>;
   repo: Pick<
     ProcessorRepository,
     'listPendingInScope' | 'releaseStale' | 'spendSince'
@@ -46,6 +46,8 @@ export async function processProcessJob(
     const released = await deps.repo.releaseStale(
       new Date(now.getTime() - deps.config.claimTimeoutMs),
     );
+    // Paused after a key, credit or account error: jobs would only bounce.
+    if (deps.service.isPaused()) return { released, enqueued: 0 };
     const spent = await deps.repo.spendSince(startOfUtcDay(now));
     if (spent >= deps.config.dailyBudgetUsd) return { released, enqueued: 0 };
     const pending = await deps.repo.listPendingInScope(

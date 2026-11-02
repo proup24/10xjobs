@@ -50,7 +50,9 @@ export interface NewAttempt extends ModelCallMeta {
 
 export type FinishOutcome =
   | { status: 'processed'; extractionId: string | null }
-  | { status: 'pending' | 'failed'; error: string };
+  /** `refundAttempt`: the run was not the job's fault; the claim's attempt is given back. */
+  | { status: 'pending'; error: string; refundAttempt?: boolean }
+  | { status: 'failed'; error: string };
 
 /** Which in-scope jobs `markPending` sends back to the processor; selectors add up. */
 export type ReprocessFilter = {
@@ -268,6 +270,10 @@ export class PrismaProcessorRepository extends ProcessorRepository {
             processingStatus: outcome.status,
             processingError: outcome.error,
             processingStartedAt: null,
+            // The row still holds `claim.attempts`, so this is a decrement.
+            ...(outcome.status === 'pending' && outcome.refundAttempt
+              ? { processingAttempts: claim.attempts - 1 }
+              : {}),
           },
     );
     if (updated.length > 0) return 'finished';

@@ -222,6 +222,23 @@ describe('worker process configuration', () => {
     ).toThrow(/OPENROUTER_API_KEY/);
   });
 
+  it('requires the OpenRouter key in the all role only with the processor enabled', () => {
+    const all = { ...worker, WORKER_ROLE: 'all', APIFY_TOKEN: 'apify-token' };
+    expect(validateWorkerProcessEnvironment(all)).toMatchObject({
+      PROCESSOR_ENABLED: false,
+    });
+    expect(() =>
+      validateWorkerProcessEnvironment({ ...all, PROCESSOR_ENABLED: 'true' }),
+    ).toThrow(/OPENROUTER_API_KEY/);
+    expect(
+      validateWorkerProcessEnvironment({
+        ...all,
+        PROCESSOR_ENABLED: 'true',
+        OPENROUTER_API_KEY: 'or-key',
+      }),
+    ).toMatchObject({ PROCESSOR_ENABLED: true });
+  });
+
   it('parses the processor defaults when the key is set', () => {
     expect(
       validateWorkerProcessEnvironment({
@@ -236,6 +253,7 @@ describe('worker process configuration', () => {
       PROCESSOR_MAX_ATTEMPTS: 3,
       PROCESSOR_CLAIM_TIMEOUT_MS: 900_000,
       PROCESSOR_DAILY_BUDGET_USD: 20,
+      PROCESSOR_ENABLED: false,
     });
   });
 });

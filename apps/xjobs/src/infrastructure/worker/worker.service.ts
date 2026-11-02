@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   type OnApplicationShutdown,
   type OnModuleInit,
 } from '@nestjs/common';
@@ -16,8 +17,11 @@ import { WorkerRuntimeService } from './runtime.service';
 /** Selects the worker for this process and coordinates its lifecycle. */
 @Injectable()
 export class WorkerService implements OnModuleInit, OnApplicationShutdown {
+  private readonly logger = new Logger(WorkerService.name);
   private readonly channel?: Channel;
   private readonly role?: 'ingest' | 'processor' | 'all';
+  /** In `all`, whether the processor runs too; `processor` always runs it. */
+  private readonly processorEnabled: boolean;
   /** False once the channel turned out to be disabled; the process should exit. */
   active = true;
 
@@ -31,9 +35,18 @@ export class WorkerService implements OnModuleInit, OnApplicationShutdown {
   ) {
     this.role = config.get('WORKER_ROLE', { infer: true });
     this.channel = config.get('WORKER_CHANNEL', { infer: true });
+    this.processorEnabled = config.get('PROCESSOR_ENABLED', { infer: true });
   }
 
   async onModuleInit(): Promise<void> {
+    const runsProcessor =
+      this.role === 'processor' ||
+      (this.role === 'all' && this.processorEnabled);
+    // Before anything else starts, so a failed check leaves nothing running.
+    if (runsProcessor) await this.processor.checkStartup();
+    else if (this.role === 'all')
+      this.logger.log('processor disabled (PROCESSOR_ENABLED=false)');
+
     const connection = this.runtime.connect();
 
     if (this.role === 'all') await this.startAll(connection);
@@ -46,11 +59,14 @@ export class WorkerService implements OnModuleInit, OnApplicationShutdown {
     await this.runtime.waitUntilReady();
   }
 
-  /** Every step in one process; a disabled channel is skipped, not fatal. */
+  /**
+   * Every step in one process; a disabled channel is skipped, not fatal. The
+   * processor spends money, so it runs here only with `PROCESSOR_ENABLED`.
+   */
   private async startAll(connection: Redis): Promise<void> {
     this.infrastructure.start(connection);
     await this.ingest.start(connection);
-    await this.processor.start(connection);
+    if (this.processorEnabled) await this.processor.start(connection);
     for (const channel of Object.values(Channel))
       await this.collection.start(channel, connection);
   }

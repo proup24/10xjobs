@@ -1,5 +1,6 @@
 import { ModelOutputError, TransientModelError } from './errors';
 import { OpenRouterClient } from './openrouter.client';
+import { ModelPricing } from './pricing';
 import type { ModelCallMeta, PostingInput } from './types';
 import { ExtractionModel } from './types';
 
@@ -15,6 +16,8 @@ export function mapCompletionResponse(
   content: string | null;
   finishReason: string | null;
   hasChoices: boolean;
+  /** Null when the response carries no numeric `usage.cost`. */
+  cost: number | null;
   meta: ModelCallMeta;
 } {
   const choices = body.choices as
@@ -24,9 +27,14 @@ export function mapCompletionResponse(
     prompt_tokens?: number;
     completion_tokens?: number;
     prompt_tokens_details?: { cached_tokens?: number };
-    cost?: number;
+    cost?: unknown;
   };
+  const cost =
+    typeof usage.cost === 'number' && Number.isFinite(usage.cost)
+      ? usage.cost
+      : null;
   return {
+    cost,
     hasChoices: Array.isArray(choices) && choices.length > 0,
     content: choices?.[0]?.message?.content ?? null,
     finishReason: choices?.[0]?.finish_reason ?? null,
@@ -36,7 +44,7 @@ export function mapCompletionResponse(
       inputTokens: usage.prompt_tokens ?? 0,
       outputTokens: usage.completion_tokens ?? 0,
       cachedInputTokens: usage.prompt_tokens_details?.cached_tokens ?? 0,
-      costUsd: usage.cost ?? 0,
+      costUsd: cost ?? 0,
       latencyMs,
     },
   };
@@ -46,7 +54,7 @@ function postingText(input: PostingInput): string {
   return [
     input.title && `Title: ${input.title}`,
     input.companyName && `Company: ${input.companyName}`,
-    `Evidence: ${JSON.stringify(input.evidence)}`,
+    `Listing metadata (context only): ${JSON.stringify(input.evidence)}`,
     input.truncated && 'Note: the description was truncated.',
     input.description,
   ]
@@ -58,6 +66,7 @@ export class OpenRouterExtractionModel extends ExtractionModel {
   constructor(
     private readonly client: OpenRouterClient,
     private readonly model: string,
+    private readonly pricing: ModelPricing = new ModelPricing(),
   ) {
     super();
   }
@@ -99,13 +108,16 @@ export class OpenRouterExtractionModel extends ExtractionModel {
           },
         },
         provider: { require_parameters: true },
+        usage: { include: true },
       },
     );
-    const { content, finishReason, hasChoices, meta } = mapCompletionResponse(
-      body,
-      this.model,
-      latencyMs,
-    );
+    const { content, finishReason, hasChoices, cost, meta } =
+      mapCompletionResponse(body, this.model, latencyMs);
+    // Priced by the configured ID: the reported one may carry a date suffix.
+    meta.costUsd = this.pricing.costOf(this.model, cost, {
+      input: meta.inputTokens,
+      output: meta.outputTokens,
+    });
     if (!hasChoices)
       throw new TransientModelError('OpenRouter returned empty choices', meta);
     if (finishReason === 'length')

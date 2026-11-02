@@ -1,5 +1,6 @@
 import { ModelOutputError } from './errors';
 import { OpenRouterClient } from './openrouter.client';
+import { ModelPricing } from './pricing';
 import type {
   DecisionAnswer,
   DecisionQuestion,
@@ -36,9 +37,16 @@ export function mapDecisionResponse(body: Record<string, unknown>): {
   answers: Record<string, MappedAnswer>;
   requestId: string | null;
   model: string | null;
-  cost: number;
+  /** Null when the response carries no numeric `usage.cost`. */
+  cost: number | null;
+  /** Input tokens, when the response reports them. */
+  inputTokens: number | null;
 } {
-  const usage = (body.usage ?? {}) as { cost?: unknown };
+  const usage = (body.usage ?? {}) as {
+    cost?: unknown;
+    prompt_tokens?: unknown;
+    input_tokens?: unknown;
+  };
   const rawAnswers =
     body.answers && typeof body.answers === 'object'
       ? (body.answers as Record<string, unknown>)
@@ -63,7 +71,8 @@ export function mapDecisionResponse(body: Record<string, unknown>): {
     answers,
     requestId: typeof body.id === 'string' ? body.id : null,
     model: typeof body.model === 'string' ? body.model : null,
-    cost: num(usage.cost) ?? 0,
+    cost: num(usage.cost),
+    inputTokens: num(usage.prompt_tokens) ?? num(usage.input_tokens),
   };
 }
 
@@ -113,6 +122,7 @@ export class OpenRouterDecisionModel extends DecisionModel {
   constructor(
     private readonly client: OpenRouterClient,
     private readonly model: string,
+    private readonly pricing: ModelPricing = new ModelPricing(),
   ) {
     super();
   }
@@ -121,26 +131,34 @@ export class OpenRouterDecisionModel extends DecisionModel {
     input: PostingInput,
     questions: DecisionQuestion[],
   ): Promise<{ answers: DecisionAnswer[]; meta: ModelCallMeta }> {
+    // The Decisions API documents no usage-accounting request field; every
+    // response is expected to carry `usage.cost`.
+    const request = {
+      model: this.model,
+      state: statement(input),
+      questions: Object.fromEntries(
+        questions.map((q) => [q.key, buildQuestion(q)]),
+      ),
+    };
     const { body, latencyMs } = await this.client.postJson(
       '/api/alpha/decisions',
-      {
-        model: this.model,
-        state: statement(input),
-        questions: Object.fromEntries(
-          questions.map((q) => [q.key, buildQuestion(q)]),
-        ),
-      },
+      request,
     );
     const mapped = mapDecisionResponse(body);
     const meta: ModelCallMeta = {
       model: mapped.model ?? this.model,
       providerRequestId: mapped.requestId,
-      // Token counts are 0: the Decisions API bills input tokens only and
-      // reports cost directly (confirm with the spike).
-      inputTokens: 0,
+      // Output tokens are free on the Decisions API.
+      inputTokens: mapped.inputTokens ?? 0,
       outputTokens: 0,
       cachedInputTokens: 0,
-      costUsd: mapped.cost,
+      // Without a reported cost or token count, about four characters per
+      // input token: an estimate beats counting a paid call as free.
+      costUsd: this.pricing.costOf(this.model, mapped.cost, {
+        input:
+          mapped.inputTokens ?? Math.ceil(JSON.stringify(request).length / 4),
+        output: 0,
+      }),
       latencyMs,
     };
     if (Object.keys(mapped.answers).length === 0)

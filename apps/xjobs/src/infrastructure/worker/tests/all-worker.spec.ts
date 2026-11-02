@@ -9,6 +9,7 @@ vi.hoisted(() => {
   process.env.OPENROUTER_API_KEY ??= 'or-key';
   process.env.WORKER_ROLE = 'all';
   delete process.env.WORKER_CHANNEL;
+  delete process.env.PROCESSOR_ENABLED;
 });
 
 const created = vi.hoisted(() => ({
@@ -59,21 +60,27 @@ import {
 } from 'src/infrastructure/jobs/steps/collect';
 import { StorageService } from 'src/modules/storage';
 import { MemoryStorageService } from 'src/modules/storage/testing';
+const checks = vi.hoisted(() => ({
+  assertApiKey: vi.fn(async () => undefined),
+  assertStructuredOutputs: vi.fn(async () => undefined),
+  loadModelPricing: vi.fn(async () => new Map()),
+}));
 vi.mock(
   'src/modules/processor/models/openrouter.client',
   async (importOriginal) => ({
     ...(await importOriginal<object>()),
-    assertStructuredOutputs: vi.fn(async () => undefined),
+    ...checks,
   }),
 );
 
+import { Logger } from '@nestjs/common';
 import { WorkerModule } from '../worker.module';
 import { WorkerService } from '../worker.service';
 
+// PROCESSOR_ENABLED is unset: the processor is off in `all`.
 const allWorkers = [
   'infrastructure',
   'ingest',
-  'process',
   'collect-linkedin-job-board',
   'collect-linkedin-posts',
   'collect-greenhouse',
@@ -101,14 +108,19 @@ async function startAll() {
   return { module, service };
 }
 
-it('runs infrastructure, ingest, process and every channel collection in one process', async () => {
+it('runs infrastructure, ingest and every channel collection, but not the processor, in one process', async () => {
+  const log = vi.spyOn(Logger.prototype, 'log');
   const { module, service } = await startAll();
   try {
     expect(service.active).toBe(true);
     expect(created.workers).toEqual(allWorkers);
+    expect(log).toHaveBeenCalledWith(
+      'processor disabled (PROCESSOR_ENABLED=false)',
+    );
+    for (const check of Object.values(checks))
+      expect(check).not.toHaveBeenCalled();
     expect(created.schedulers).toEqual([
       'ingest:sweep',
-      'process:sweep',
       'collect-linkedin-job-board:collect',
       'collect-linkedin-posts:collect',
       'collect-greenhouse:collect',

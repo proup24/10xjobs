@@ -1,9 +1,15 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ModelRequestError, TransientModelError } from './errors';
+import { Logger } from '@nestjs/common';
+import {
+  ModelRequestError,
+  ProviderUnavailableError,
+  TransientModelError,
+} from './errors';
 import { OpenRouterClient } from './openrouter.client';
 import { OpenRouterDecisionModel } from './openrouter-decision.model';
+import { ModelPricing } from './pricing';
 import type { DecisionQuestion, PostingInput } from './types';
 
 const fixture = (name: string): string =>
@@ -47,7 +53,10 @@ const model = () =>
   new OpenRouterDecisionModel(new OpenRouterClient('key'), 'typesafe/jev-1.14');
 
 describe('OpenRouterDecisionModel', () => {
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
 
   it('maps answers and cost, and sends the pinned model', async () => {
     const fetchMock = stubFetch(fixture('decision-ok.json'));
@@ -139,9 +148,46 @@ describe('OpenRouterDecisionModel', () => {
   });
 
   it('throws a request error on a 200 with a 4xx error code', async () => {
-    stubFetch('{"error":{"code":401,"message":"no key"}}');
+    stubFetch('{"error":{"code":404,"message":"no model"}}');
     await expect(model().decide(input, questions)).rejects.toBeInstanceOf(
       ModelRequestError,
     );
+  });
+
+  it('throws provider-unavailable on a 200 with a 401 code', async () => {
+    stubFetch('{"error":{"code":401,"message":"no key"}}');
+    await expect(model().decide(input, questions)).rejects.toBeInstanceOf(
+      ProviderUnavailableError,
+    );
+  });
+
+  it('estimates a missing cost from the reported tokens and list prices', async () => {
+    const warn = vi
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
+    const pricing = new ModelPricing();
+    pricing.set(
+      new Map([['typesafe/jev-1.14', { prompt: 0.000001, completion: 0 }]]),
+    );
+    const priced = new OpenRouterDecisionModel(
+      new OpenRouterClient('key'),
+      'typesafe/jev-1.14',
+      pricing,
+    );
+    const body = (usage: unknown) =>
+      JSON.stringify({
+        answers: { seniority: { selected: 'mid', confidence: 0.9 } },
+        usage,
+      });
+    stubFetch(body({ prompt_tokens: 2000 }));
+    const { meta } = await priced.decide(input, questions);
+    expect(meta.inputTokens).toBe(2000);
+    expect(meta.costUsd).toBeCloseTo(0.002, 9);
+
+    // No tokens either: about four characters of request per token.
+    stubFetch(body({}));
+    const again = await priced.decide(input, questions);
+    expect(again.meta.costUsd).toBeGreaterThan(0);
+    expect(warn).toHaveBeenCalledTimes(1);
   });
 });

@@ -6,7 +6,7 @@ Design: `docs/superpowers/specs/2026-11-01-processor-design.md`.
 
 ## Flow
 
-Ingest sets a new or reopened in-scope job to `pending` and nudges the queue. The processor worker (`npx nx worker-processor xjobs`, or `worker-all`) claims a job, then:
+Ingest sets a new or reopened in-scope job to `pending` and nudges the queue. The processor worker (`npx nx worker-processor xjobs`, or `worker-all` with `PROCESSOR_ENABLED=true`) claims a job, then:
 
 1. A closed job is marked `processed` with no model call and no extraction.
 2. The reuse key `(inputHash, schemaVersion, promptHash, decisionModel, extractionModel)` is looked up; a hit reuses or copies the stored extraction at no cost.
@@ -14,7 +14,17 @@ Ingest sets a new or reopened in-scope job to `pending` and nudges the queue. Th
 4. The extraction model fills the schema. The output is validated against the posting text and the approved lists; invalid output takes one retry (`extraction_retry`), and a second failure marks the job `failed`.
 5. Unknown terms are upserted as `proposed`, the extraction is stored, and the job is marked `processed` with `currentExtractionId`.
 
-A sweeper returns stale claims to `pending`. Models are configuration (OpenRouter); a daily budget on non-eval `costUsd` stops new model calls.
+A sweeper returns stale claims to `pending` and re-enqueues pending jobs; finished BullMQ jobs are removed, so a job back in `pending` can always be queued again. Models are configuration (OpenRouter); a daily budget on non-eval `costUsd` stops new model calls (the warning is logged once per UTC day).
+
+## Running it
+
+`WORKER_ROLE=processor` always runs the processor. `WORKER_ROLE=all` (`worker-all`) runs it only with `PROCESSOR_ENABLED=true`, because it spends money; otherwise it logs `processor disabled (PROCESSOR_ENABLED=false)`. `OPENROUTER_API_KEY` is required whenever the processor runs.
+
+Before any worker starts, the processor checks that OpenRouter accepts the key (`GET /api/v1/key`), that the extraction model supports `structured_outputs`, and that both models are listed with a numeric prompt and completion price. Any failure stops startup; in `all` mode no other worker is left running.
+
+**Cost.** Chat completions ask for usage accounting (`usage: { include: true }`); the Decisions API reports `usage.cost` on its own. When a successful response has no numeric cost, the cost is estimated as `inputTokens × prompt + outputTokens × completion` from the list prices loaded at startup, with one warning per model. A Decisions response with no token count is estimated at about four characters of request per input token.
+
+**Provider unavailable.** A 401, 402 or 403 (also as a 200 error body) means the key, credit or account is the problem, not the job. The attempt is recorded, the job goes back to `pending` with its `processingAttempts` given back, and this process stops claiming (and the sweep stops enqueueing) for 10 minutes, logged once as an error.
 
 ## Scope
 

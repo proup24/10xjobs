@@ -1,13 +1,21 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { Logger } from '@nestjs/common';
 import {
   ModelOutputError,
   ModelRequestError,
+  ProviderUnavailableError,
   TransientModelError,
 } from './errors';
-import { assertStructuredOutputs, OpenRouterClient } from './openrouter.client';
+import {
+  assertApiKey,
+  assertStructuredOutputs,
+  loadModelPricing,
+  OpenRouterClient,
+} from './openrouter.client';
 import { OpenRouterExtractionModel } from './openrouter-extraction.model';
+import { ModelPricing } from './pricing';
 import type { PostingInput } from './types';
 
 const fixture = (name: string): string =>
@@ -41,7 +49,10 @@ const model = () =>
   );
 
 describe('OpenRouterExtractionModel', () => {
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
 
   it('returns the parsed output and call meta', async () => {
     stubFetch(fixture('extraction-ok.json'));
@@ -74,6 +85,10 @@ describe('OpenRouterExtractionModel', () => {
     expect(sent.response_format.json_schema.strict).toBe(true);
     expect(sent.provider.require_parameters).toBe(true);
     expect(sent.temperature).toBe(0);
+    expect(sent.usage).toEqual({ include: true });
+    expect(sent.messages[1].content).toContain(
+      'Listing metadata (context only): {',
+    );
     expect(sent.messages[0].role).toBe('system');
     expect(sent.messages[0].content[0].cache_control).toEqual({
       type: 'ephemeral',
@@ -117,9 +132,13 @@ describe('OpenRouterExtractionModel', () => {
   });
 
   it('classifies a 200 error body by its code', async () => {
-    stubFetch('{"error":{"code":401,"message":"no key"}}');
+    stubFetch('{"error":{"code":400,"message":"bad"}}');
     await expect(model().extract(input, req)).rejects.toBeInstanceOf(
       ModelRequestError,
+    );
+    stubFetch('{"error":{"code":402,"message":"no credit"}}');
+    await expect(model().extract(input, req)).rejects.toBeInstanceOf(
+      ProviderUnavailableError,
     );
     stubFetch('{"error":{"code":502,"message":"upstream"}}');
     await expect(model().extract(input, req)).rejects.toBeInstanceOf(
@@ -137,6 +156,50 @@ describe('OpenRouterExtractionModel', () => {
       .catch((e: unknown) => e)) as Error;
     expect(error.message).toContain('400');
     expect(error.message).not.toContain('SECRET-POSTING');
+  });
+
+  it.each([401, 402, 403])(
+    'throws provider-unavailable on HTTP %i, with meta',
+    async (status) => {
+      stubFetch('{"error":{"message":"no"}}', status);
+      const error = await model()
+        .extract(input, req)
+        .catch((e: unknown) => e);
+      expect(error).toBeInstanceOf(ProviderUnavailableError);
+      expect((error as ProviderUnavailableError).meta).toHaveProperty(
+        'latencyMs',
+      );
+    },
+  );
+
+  it('estimates a missing cost from tokens and list prices, warning once', async () => {
+    const warn = vi
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
+    const pricing = new ModelPricing();
+    pricing.set(
+      new Map([
+        ['anthropic/claude-opus-5.5', { prompt: 0.00001, completion: 0.00005 }],
+      ]),
+    );
+    const priced = new OpenRouterExtractionModel(
+      new OpenRouterClient('key'),
+      'anthropic/claude-opus-5.5',
+      pricing,
+    );
+    const noCost = JSON.parse(fixture('extraction-ok.json'));
+    delete noCost.usage.cost;
+    stubFetch(JSON.stringify(noCost));
+    const { meta } = await priced.extract(input, req);
+    // 1200 × 0.00001 + 40 × 0.00005
+    expect(meta.costUsd).toBeCloseTo(0.014, 9);
+    stubFetch(JSON.stringify(noCost));
+    await priced.extract(input, req);
+    expect(warn).toHaveBeenCalledTimes(1);
+
+    // A reported cost is used as is.
+    stubFetch(fixture('extraction-ok.json'));
+    expect((await priced.extract(input, req)).meta.costUsd).toBe(0.0153);
   });
 
   it('throws a transient error when the network fails', async () => {
@@ -181,5 +244,68 @@ describe('assertStructuredOutputs', () => {
   it('throws when the model is not listed', async () => {
     list([]);
     await expect(assertStructuredOutputs('m/x')).rejects.toThrow(/m\/x/);
+  });
+});
+
+describe('assertApiKey', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('sends the key to GET /api/v1/key and passes on 2xx', async () => {
+    const fetchMock = vi.fn(async () => new Response('{"data":{}}'));
+    vi.stubGlobal('fetch', fetchMock);
+    await expect(assertApiKey('k-1')).resolves.toBeUndefined();
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    expect(url).toBe('https://openrouter.ai/api/v1/key');
+    expect(init.method ?? 'GET').toBe('GET');
+    expect(init.headers).toEqual({ Authorization: 'Bearer k-1' });
+  });
+
+  it('throws a clear error on a non-2xx', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('{}', { status: 401 })),
+    );
+    await expect(assertApiKey('bad')).rejects.toThrow(
+      /OPENROUTER_API_KEY.*401/,
+    );
+  });
+});
+
+describe('loadModelPricing', () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const list = (data: unknown) =>
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify({ data }))),
+    );
+
+  it('reads the prompt and completion price of every model', async () => {
+    list([
+      { id: 'a/x', pricing: { prompt: '0.000015', completion: '0.000075' } },
+      { id: 'b/y', pricing: { prompt: '0.000001', completion: '0' } },
+    ]);
+    expect(await loadModelPricing(['a/x', 'b/y'])).toEqual(
+      new Map([
+        ['a/x', { prompt: 0.000015, completion: 0.000075 }],
+        ['b/y', { prompt: 0.000001, completion: 0 }],
+      ]),
+    );
+  });
+
+  it('refuses a model that is not listed', async () => {
+    list([{ id: 'a/x', pricing: { prompt: '0', completion: '0' } }]);
+    await expect(loadModelPricing(['a/x', 'b/y'])).rejects.toThrow(/b\/y/);
+  });
+
+  it.each([
+    ['missing', undefined],
+    ['non-numeric', { prompt: 'n/a', completion: '0.1' }],
+    ['empty', { prompt: '', completion: '0.1' }],
+  ])('refuses %s pricing', async (_name, pricing) => {
+    list([{ id: 'a/x', pricing }]);
+    await expect(loadModelPricing(['a/x'])).rejects.toThrow(/pricing.*a\/x/);
   });
 });

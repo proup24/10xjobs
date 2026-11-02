@@ -1,8 +1,10 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { Logger } from '@nestjs/common';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ProcessorConfig } from '../config/processor.config';
 import {
   ModelOutputError,
   ModelRequestError,
+  ProviderUnavailableError,
   TransientModelError,
 } from '../models/errors';
 import type { DecisionAnswer, DecisionQuestion } from '../models/types';
@@ -14,7 +16,7 @@ import {
   MemoryVocabRepository,
   sequence,
 } from '../testing/fakes';
-import { ProcessJobService } from './process-job.service';
+import { PROVIDER_PAUSE_MS, ProcessJobService } from './process-job.service';
 
 const DEC = 'typesafe/jev-1.14';
 const EXT = 'anthropic/claude-opus-5.5';
@@ -134,6 +136,8 @@ describe('ProcessJobService', () => {
     if (!found) throw new Error(`no job ${id}`);
     return found;
   };
+
+  afterEach(() => vi.restoreAllMocks());
 
   beforeEach(() => {
     repo = new MemoryProcessorRepository(now);
@@ -477,6 +481,96 @@ describe('ProcessJobService', () => {
     expect(repo.log).not.toContain('claim');
     expect(job().processingStatus).toBe('pending');
     expect(decision.calls).toHaveLength(0);
+  });
+
+  it('over budget: warns once per UTC day', async () => {
+    const warn = vi
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
+    let at = NOW;
+    repo.addSpend(20, new Date('2026-11-02T00:00:01Z'));
+    repo.addSpend(20, new Date('2026-11-03T00:00:01Z'));
+    addJob();
+    const svc = new ProcessJobService(
+      repo,
+      vocab,
+      decision,
+      extraction,
+      config,
+      () => at,
+    );
+    await svc.process('job-1');
+    await svc.process('job-1');
+    expect(warn).toHaveBeenCalledTimes(1);
+    at = new Date('2026-11-03T10:00:00Z');
+    await svc.process('job-1');
+    expect(warn).toHaveBeenCalledTimes(2);
+  });
+
+  describe('provider unavailable (401/402/403)', () => {
+    const refusing = () =>
+      new FakeExtractionModel(() => {
+        throw new ProviderUnavailableError('402 no credit', { latencyMs: 3 });
+      }, EXT);
+
+    it('returns the job to pending without using an attempt, and pauses', async () => {
+      const error = vi
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation(() => undefined);
+      extraction = refusing();
+      addJob('job-1', { processingAttempts: 2 });
+      addJob('job-2');
+      let at = NOW;
+      const svc = new ProcessJobService(
+        repo,
+        vocab,
+        decision,
+        extraction,
+        config,
+        () => at,
+      );
+
+      await expect(svc.process('job-1')).resolves.toBe('provider_unavailable');
+      expect(job()).toMatchObject({
+        processingStatus: 'pending',
+        processingAttempts: 2,
+        processingError: '402 no credit',
+      });
+      expect(repo.attempts.map((a) => [a.step, a.outcome])).toEqual([
+        ['decision', 'ok'],
+        ['extraction', 'error'],
+      ]);
+      expect(error).toHaveBeenCalledTimes(1);
+      expect(svc.isPaused()).toBe(true);
+
+      // Paused: nothing is claimed, not even the budget is read.
+      repo.log.length = 0;
+      await expect(svc.process('job-2')).resolves.toBe('paused');
+      expect(repo.log).toEqual([]);
+      expect(job('job-2').processingStatus).toBe('pending');
+
+      at = new Date(NOW.getTime() + PROVIDER_PAUSE_MS);
+      expect(svc.isPaused()).toBe(false);
+      await expect(svc.process('job-2')).resolves.toBe('provider_unavailable');
+      // A new pause, logged once more.
+      expect(error).toHaveBeenCalledTimes(2);
+    });
+
+    it('a 401 from Jev is handled the same way', async () => {
+      vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+      decision = new FakeDecisionModel(() => {
+        throw new ProviderUnavailableError('401 bad key');
+      }, DEC);
+      addJob();
+      await expect(service().process('job-1')).resolves.toBe(
+        'provider_unavailable',
+      );
+      expect(job()).toMatchObject({
+        processingStatus: 'pending',
+        processingAttempts: 0,
+      });
+      expect(extraction.calls).toHaveLength(0);
+    });
   });
 
   it("yesterday's spend does not count against today's budget", async () => {

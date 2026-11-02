@@ -95,7 +95,8 @@ function requireStorage(
  * A worker process. `WORKER_ROLE=ingest` runs the ingest worker,
  * `WORKER_ROLE=processor` runs the processor (needs `OPENROUTER_API_KEY`), and
  * `WORKER_ROLE=all` runs the infrastructure, ingest and every channel's
- * collection worker in one process. Otherwise `WORKER_CHANNEL` unset runs the
+ * collection worker in one process, plus the processor when
+ * `PROCESSOR_ENABLED=true` (it spends money, so it is opt-in there). Otherwise `WORKER_CHANNEL` unset runs the
  * infrastructure worker, and a channel runs that channel's collection job.
  * Collection needs an Apify token. An unknown role or
  * channel fails startup rather than falling back. Every worker needs Supabase
@@ -110,6 +111,8 @@ export const workerProcessEnvironmentSchema = databaseEnvironmentSchema
     WORKER_ROLE: z.enum(['ingest', 'processor', 'all']).optional(),
     /** One key for both processor model roles (Jev decisions and extraction). */
     OPENROUTER_API_KEY: z.string().min(1).optional(),
+    /** Runs the processor in `WORKER_ROLE=all`; `processor` always runs it. */
+    PROCESSOR_ENABLED: booleanFlag.default(false),
     PROCESSOR_DECISION_MODEL: z.string().min(1).default('typesafe/jev-1.14'),
     PROCESSOR_EXTRACTION_MODEL: z
       .string()
@@ -139,7 +142,8 @@ export const workerProcessEnvironmentSchema = databaseEnvironmentSchema
         message: 'Set APIFY_TOKEN to run channel collection workers',
       });
     if (
-      (env.WORKER_ROLE === 'processor' || env.WORKER_ROLE === 'all') &&
+      (env.WORKER_ROLE === 'processor' ||
+        (env.WORKER_ROLE === 'all' && env.PROCESSOR_ENABLED)) &&
       !env.OPENROUTER_API_KEY
     )
       ctx.addIssue({

@@ -1,7 +1,14 @@
-import { ModelRequestError, TransientModelError } from './errors';
+import {
+  ModelRequestError,
+  ProviderUnavailableError,
+  TransientModelError,
+} from './errors';
+import type { Price } from './pricing';
 
 const BASE_URL = 'https://openrouter.ai';
 const CALL_TIMEOUT_MS = 120_000;
+/** Key, credit or account problems: no job can succeed until a human acts. */
+const PROVIDER_UNAVAILABLE = new Set([401, 402, 403]);
 
 export interface PostResult {
   body: Record<string, unknown>;
@@ -57,6 +64,8 @@ export class OpenRouterClient {
     const status = response.status;
     if (!response.ok) {
       const message = `OpenRouter ${path} returned ${status}${describeError(parsed)}`;
+      if (PROVIDER_UNAVAILABLE.has(status))
+        throw new ProviderUnavailableError(message, { latencyMs });
       if (status === 408 || status === 429 || status >= 500)
         throw new TransientModelError(message, { latencyMs });
       throw new ModelRequestError(message, { latencyMs });
@@ -70,6 +79,8 @@ export class OpenRouterClient {
     if (record.error) {
       const message = `OpenRouter ${path} returned an error body${describeError(record)}`;
       const code = (record.error as { code?: unknown }).code;
+      if (typeof code === 'number' && PROVIDER_UNAVAILABLE.has(code))
+        throw new ProviderUnavailableError(message, { latencyMs });
       if (
         typeof code === 'number' &&
         code >= 400 &&
@@ -84,17 +95,66 @@ export class OpenRouterClient {
   }
 }
 
-/** Startup check: the extraction model must be listed with `structured_outputs`. */
-export async function assertStructuredOutputs(model: string): Promise<void> {
+interface ListedModel {
+  id: string;
+  supported_parameters?: string[];
+  pricing?: { prompt?: unknown; completion?: unknown };
+}
+
+async function listModels(): Promise<ListedModel[]> {
   const response = await fetch(`${BASE_URL}/api/v1/models`, {
     signal: AbortSignal.timeout(CALL_TIMEOUT_MS),
   });
   if (!response.ok)
     throw new Error(`Could not list OpenRouter models: ${response.status}`);
-  const body = (await response.json()) as {
-    data?: { id: string; supported_parameters?: string[] }[];
-  };
-  const entry = body.data?.find((m) => m.id === model);
+  const body = (await response.json()) as { data?: ListedModel[] };
+  return body.data ?? [];
+}
+
+/** Startup check: the key is accepted. A rejected key fails startup, not every job. */
+export async function assertApiKey(apiKey: string): Promise<void> {
+  const response = await fetch(`${BASE_URL}/api/v1/key`, {
+    headers: { Authorization: `Bearer ${apiKey}` },
+    signal: AbortSignal.timeout(CALL_TIMEOUT_MS),
+  });
+  if (!response.ok)
+    throw new Error(
+      `OpenRouter rejected OPENROUTER_API_KEY (GET /api/v1/key returned ${response.status})`,
+    );
+}
+
+/** USD per token from a listed price (OpenRouter sends decimal strings). */
+function perToken(value: unknown): number | null {
+  if (typeof value !== 'number' && typeof value !== 'string') return null;
+  if (typeof value === 'string' && value.trim() === '') return null;
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 ? n : null;
+}
+
+/**
+ * Startup check: every model is listed with a numeric prompt and completion
+ * price, kept to estimate a call's cost when a response does not report it.
+ */
+export async function loadModelPricing(
+  models: string[],
+): Promise<Map<string, Price>> {
+  const listed = await listModels();
+  const prices = new Map<string, Price>();
+  for (const model of new Set(models)) {
+    const entry = listed.find((m) => m.id === model);
+    if (!entry) throw new Error(`OpenRouter does not list model ${model}`);
+    const prompt = perToken(entry.pricing?.prompt);
+    const completion = perToken(entry.pricing?.completion);
+    if (prompt === null || completion === null)
+      throw new Error(`OpenRouter lists no numeric pricing for model ${model}`);
+    prices.set(model, { prompt, completion });
+  }
+  return prices;
+}
+
+/** Startup check: the extraction model must be listed with `structured_outputs`. */
+export async function assertStructuredOutputs(model: string): Promise<void> {
+  const entry = (await listModels()).find((m) => m.id === model);
   if (!entry) throw new Error(`OpenRouter does not list model ${model}`);
   if (!entry.supported_parameters?.includes('structured_outputs'))
     throw new Error(`Model ${model} does not support structured_outputs`);

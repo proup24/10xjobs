@@ -13,3 +13,4 @@ export {
   ProcessorRepository,
   type ReprocessFilter,
 } from './repositories/processor.repository';
+export { ModelPricing, type Price } from './models/pricing';

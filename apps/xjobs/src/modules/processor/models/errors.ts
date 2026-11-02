@@ -22,6 +22,21 @@ export class TransientModelError extends Error {
   }
 }
 
+/**
+ * 401, 402 or 403 (also as a 200 error body): the key, credit or account is
+ * the problem, not the job. The job goes back to `pending` without using an
+ * attempt, and this process pauses claiming.
+ */
+export class ProviderUnavailableError extends Error {
+  constructor(
+    message: string,
+    readonly meta?: Partial<ModelCallMeta>,
+  ) {
+    super(message);
+    this.name = 'ProviderUnavailableError';
+  }
+}
+
 /** Any other 4xx: the request itself is wrong. Not retried. */
 export class ModelRequestError extends Error {
   constructor(

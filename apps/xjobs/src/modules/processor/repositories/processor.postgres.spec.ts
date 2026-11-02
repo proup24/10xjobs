@@ -291,6 +291,20 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       expect(row.processingStartedAt).toBeInstanceOf(Date);
     });
 
+    it('stamps processingRequestedAt when a pending row has none', async () => {
+      const id = await job({ requestedAt: null });
+      const before = Date.now();
+      const claim = (await repo.claim(id))!;
+      expect(claim.requestedAt).toBeInstanceOf(Date);
+      // The database clock may differ a little from this one.
+      expect(Math.abs(claim.requestedAt.getTime() - before)).toBeLessThan(
+        minutes(1),
+      );
+      expect((await jobRow(id)).processingRequestedAt).toEqual(
+        claim.requestedAt,
+      );
+    });
+
     it('lets exactly one of two concurrent claims win', async () => {
       const id = await job();
       const results = await Promise.all([repo.claim(id), repo.claim(id)]);
@@ -403,6 +417,46 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       expect(await jobRow(failed)).toMatchObject({
         processingStatus: 'failed',
         processingError: 'bad',
+      });
+    });
+
+    it('gives the attempt back when the provider was unavailable', async () => {
+      const id = await job();
+      await repo.claim(id);
+      await repo.releaseStale(new Date(Date.now() + minutes(1)));
+      const claim = (await repo.claim(id))!;
+      expect(claim.attempts).toBe(2);
+      expect(
+        await repo.finish(claim, {
+          status: 'pending',
+          error: '401',
+          refundAttempt: true,
+        }),
+      ).toBe('finished');
+      expect(await jobRow(id)).toMatchObject({
+        processingStatus: 'pending',
+        processingError: '401',
+        processingAttempts: 1,
+        processingStartedAt: null,
+      });
+    });
+
+    it('does not move the extraction of a job a newer run already finished', async () => {
+      const id = await job();
+      const first = (await repo.claim(id))!;
+      await repo.releaseStale(new Date(Date.now() + minutes(1)));
+      const second = (await repo.claim(id))!;
+      const newer = await repo.saveExtraction(extraction(id));
+      expect(
+        await repo.finish(second, { status: 'processed', extractionId: newer }),
+      ).toBe('finished');
+      const older = await repo.saveExtraction(extraction(id));
+      expect(
+        await repo.finish(first, { status: 'processed', extractionId: older }),
+      ).toBe('superseded');
+      expect(await jobRow(id)).toMatchObject({
+        processingStatus: 'processed',
+        currentExtractionId: newer,
       });
     });
 
@@ -528,6 +582,28 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       expect(row.processingRequestedAt).toBeInstanceOf(Date);
       expect((await jobRow(ashby)).processingStatus).toBeNull();
       expect((await jobRow(processed)).processingStatus).toBe('processed');
+    });
+
+    it('with allInScope resets every in-scope job, whatever its status', async () => {
+      const processed = await job({ processingStatus: 'processed' });
+      const failed = await job({ processingStatus: 'failed' });
+      const never = await job({ processingStatus: null });
+      const ashby = await job({
+        processingStatus: 'processed',
+        channels: [Channel.ASHBY],
+      });
+      const post = await job({ kind: 'post', processingStatus: 'processed' });
+
+      expect(await repo.markPending({ allInScope: true })).toBe(3);
+      for (const id of [processed, failed, never])
+        expect(await jobRow(id)).toMatchObject({
+          processingStatus: 'pending',
+          processingReason: 'new',
+          processingAttempts: 0,
+          processingError: null,
+        });
+      expect((await jobRow(ashby)).processingStatus).toBe('processed');
+      expect((await jobRow(post)).processingStatus).toBe('processed');
     });
 
     it('with failed and jobIds resets those jobs once each', async () => {

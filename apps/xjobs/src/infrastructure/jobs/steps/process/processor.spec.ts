@@ -11,9 +11,12 @@ const config: ProcessorConfig = {
   dailyBudgetUsd: 10,
 };
 
-function deps(outcome = 'processed', spent = 0) {
+function deps(outcome = 'processed', spent = 0, paused = false) {
   return {
-    service: { process: vi.fn(async () => outcome) },
+    service: {
+      process: vi.fn(async () => outcome),
+      isPaused: vi.fn(() => paused),
+    },
     repo: {
       listPendingInScope: vi.fn(async () => ['j1', 'j2']),
       releaseStale: vi.fn(async () => 3),
@@ -75,6 +78,28 @@ describe('processProcessJob', () => {
     expect(d.repo.listPendingInScope).not.toHaveBeenCalled();
     expect(d.queue.enqueue).not.toHaveBeenCalled();
   });
+
+  it('sweeps while paused: releases but enqueues nothing', async () => {
+    const d = deps('processed', 0, true);
+    expect(await processProcessJob(job('sweep'), d as never)).toEqual({
+      released: 3,
+      enqueued: 0,
+    });
+    expect(d.repo.listPendingInScope).not.toHaveBeenCalled();
+    expect(d.queue.enqueue).not.toHaveBeenCalled();
+  });
+
+  it.each(['provider_unavailable', 'paused'])(
+    'returns a %s outcome without throwing',
+    async (outcome) => {
+      expect(
+        await processProcessJob(
+          job('process-job', { jobId: 'j1' }),
+          deps(outcome) as never,
+        ),
+      ).toEqual({ outcome });
+    },
+  );
 
   it('rejects an unknown job name', async () => {
     await expect(

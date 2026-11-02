@@ -328,6 +328,8 @@ export class MemoryProcessorRepository extends ProcessorRepository {
       } else {
         job.processingStatus = outcome.status;
         job.processingError = outcome.error;
+        if (outcome.status === 'pending' && outcome.refundAttempt)
+          job.processingAttempts -= 1;
       }
       return 'finished';
     }

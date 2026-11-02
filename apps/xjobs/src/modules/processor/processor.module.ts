@@ -9,6 +9,7 @@ import {
 import { OpenRouterDecisionModel } from './models/openrouter-decision.model';
 import { OpenRouterExtractionModel } from './models/openrouter-extraction.model';
 import { OpenRouterClient } from './models/openrouter.client';
+import { ModelPricing } from './models/pricing';
 import { DecisionModel, ExtractionModel } from './models/types';
 import { ProcessJobService } from './pipeline/process-job.service';
 import {
@@ -27,6 +28,7 @@ type Env = ConfigService<WorkerProcessEnvironmentVariables, true>;
   imports: [ConfigModule, DatabaseModule],
   providers: [
     ProcessJobService,
+    ModelPricing,
     { provide: ProcessorRepository, useClass: PrismaProcessorRepository },
     { provide: VocabRepository, useClass: PrismaVocabRepository },
     {
@@ -58,17 +60,29 @@ type Env = ConfigService<WorkerProcessEnvironmentVariables, true>;
     },
     {
       provide: DecisionModel,
-      inject: [OpenRouterClient, PROCESSOR_CONFIG],
-      useFactory: (client: OpenRouterClient, config: ProcessorConfig) =>
-        new OpenRouterDecisionModel(client, config.decisionModel),
+      inject: [OpenRouterClient, PROCESSOR_CONFIG, ModelPricing],
+      useFactory: (
+        client: OpenRouterClient,
+        config: ProcessorConfig,
+        pricing: ModelPricing,
+      ) => new OpenRouterDecisionModel(client, config.decisionModel, pricing),
     },
     {
       provide: ExtractionModel,
-      inject: [OpenRouterClient, PROCESSOR_CONFIG],
-      useFactory: (client: OpenRouterClient, config: ProcessorConfig) =>
-        new OpenRouterExtractionModel(client, config.extractionModel),
+      inject: [OpenRouterClient, PROCESSOR_CONFIG, ModelPricing],
+      useFactory: (
+        client: OpenRouterClient,
+        config: ProcessorConfig,
+        pricing: ModelPricing,
+      ) =>
+        new OpenRouterExtractionModel(client, config.extractionModel, pricing),
     },
   ],
-  exports: [ProcessJobService, ProcessorRepository, PROCESSOR_CONFIG],
+  exports: [
+    ProcessJobService,
+    ProcessorRepository,
+    PROCESSOR_CONFIG,
+    ModelPricing,
+  ],
 })
 export class ProcessorModule {}

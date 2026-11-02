@@ -26,7 +26,11 @@ import {
 } from 'src/modules/processor/golden/score';
 import { OpenRouterDecisionModel } from 'src/modules/processor/models/openrouter-decision.model';
 import { OpenRouterExtractionModel } from 'src/modules/processor/models/openrouter-extraction.model';
-import { OpenRouterClient } from 'src/modules/processor/models/openrouter.client';
+import {
+  loadModelPricing,
+  OpenRouterClient,
+} from 'src/modules/processor/models/openrouter.client';
+import { ModelPricing } from 'src/modules/processor/models/pricing';
 import {
   type DecisionAnswer,
   DecisionModel,
@@ -128,15 +132,20 @@ async function main(): Promise<void> {
   );
 
   const client = new OpenRouterClient(apiKey);
+  // Cost per job is a bar: a response without a cost is estimated, not 0.
+  const pricing = new ModelPricing();
+  pricing.set(
+    await loadModelPricing([config.decisionModel, config.extractionModel]),
+  );
   const decision = new RecordingDecisionModel(
-    new OpenRouterDecisionModel(client, config.decisionModel),
+    new OpenRouterDecisionModel(client, config.decisionModel, pricing),
   );
   const repo = new EvalProcessorRepository();
   const service = new ProcessJobService(
     repo,
     new MemoryVocabRepository(),
     decision,
-    new OpenRouterExtractionModel(client, config.extractionModel),
+    new OpenRouterExtractionModel(client, config.extractionModel, pricing),
     config,
   );
 

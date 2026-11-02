@@ -8,6 +8,7 @@ import {
   ExtractionInvalidError,
   ModelOutputError,
   ModelRequestError,
+  ProviderUnavailableError,
   TransientModelError,
 } from '../models/errors';
 import {
@@ -55,7 +56,12 @@ export type ProcessOutcome =
   | 'not_claimed'
   | 'over_budget'
   | 'retry'
-  | 'failed';
+  | 'failed'
+  | 'provider_unavailable'
+  | 'paused';
+
+/** How long this process stops claiming after a key, credit or account error. */
+export const PROVIDER_PAUSE_MS = 10 * 60_000;
 
 /** Injectable clock for the budget day; defaults to the system clock. */
 export const PROCESSOR_CLOCK = Symbol('PROCESSOR_CLOCK');
@@ -84,6 +90,10 @@ const zodErrors = (error: z.ZodError): string[] =>
 export class ProcessJobService {
   private readonly logger = new Logger(ProcessJobService.name);
   private readonly now: () => Date;
+  /** Claiming stops until then after the provider refused the key or account. */
+  private pausedUntil = 0;
+  /** The UTC day the over-budget warning was last logged. */
+  private budgetWarnedDay: number | null = null;
 
   constructor(
     private readonly repo: ProcessorRepository,
@@ -102,11 +112,17 @@ export class ProcessJobService {
    * to `concurrency - 1` jobs.
    */
   async process(jobId: string): Promise<ProcessOutcome> {
-    const spent = await this.repo.spendSince(startOfUtcDay(this.now()));
+    if (this.isPaused()) return 'paused';
+
+    const day = startOfUtcDay(this.now());
+    const spent = await this.repo.spendSince(day);
     if (spent >= this.config.dailyBudgetUsd) {
-      this.logger.warn(
-        `Daily budget reached (${spent.toFixed(2)} of ${this.config.dailyBudgetUsd} USD); not claiming ${jobId}`,
-      );
+      if (this.budgetWarnedDay !== day.getTime()) {
+        this.budgetWarnedDay = day.getTime();
+        this.logger.warn(
+          `Daily budget reached (${spent.toFixed(2)} of ${this.config.dailyBudgetUsd} USD); not claiming until the next UTC day`,
+        );
+      }
       return 'over_budget';
     }
 
@@ -119,6 +135,8 @@ export class ProcessJobService {
     } catch (error) {
       try {
         await this.repo.recordAttempts(attempts);
+        if (error instanceof ProviderUnavailableError)
+          return await this.providerUnavailable(claim, error);
         return await this.fail(claim, error);
       } catch (cleanup) {
         // Recording the attempts or finishing the claim failed too: the job
@@ -130,6 +148,33 @@ export class ProcessJobService {
         throw cleanup;
       }
     }
+  }
+
+  /** True while claiming is paused after a key, credit or account error. */
+  isPaused(): boolean {
+    return this.now().getTime() < this.pausedUntil;
+  }
+
+  /**
+   * The key, credit or account is the problem, not the job: the job goes back
+   * to `pending` with its attempt given back, and claiming pauses here.
+   */
+  private async providerUnavailable(
+    claim: Claim,
+    error: ProviderUnavailableError,
+  ): Promise<ProcessOutcome> {
+    const wasPaused = this.isPaused();
+    this.pausedUntil = this.now().getTime() + PROVIDER_PAUSE_MS;
+    if (!wasPaused)
+      this.logger.error(
+        `OpenRouter refused the request (${error.message}); pausing processing for ${PROVIDER_PAUSE_MS / 60_000} minutes. Check the key and the account's credit.`,
+      );
+    const finished = await this.repo.finish(claim, {
+      status: 'pending',
+      error: error.message,
+      refundAttempt: true,
+    });
+    return finished === 'superseded' ? 'superseded' : 'provider_unavailable';
   }
 
   private async run(
@@ -418,6 +463,7 @@ function invalidMessage(error: ExtractionInvalidError): string {
 function errorMeta(error: unknown): Partial<ModelCallMeta> | undefined {
   return error instanceof TransientModelError ||
     error instanceof ModelRequestError ||
+    error instanceof ProviderUnavailableError ||
     error instanceof ModelOutputError
     ? error.meta
     : undefined;

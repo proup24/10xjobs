@@ -23,7 +23,7 @@ Precision over volume: prefer a tailored application over a fast one.
 ## Commands
 
 - `npx nx serve xjobs`: run the engine.
-- `npx nx worker-all xjobs`: run every worker in one process: infrastructure, ingest, processor, and each enabled channel's scheduled collection.
+- `npx nx worker-all xjobs`: run every worker in one process: infrastructure, ingest, processor (when PROCESSOR_ENABLED=true), and each enabled channel's scheduled collection.
 - `npx nx worker-processor xjobs`: run the processor worker alone.
 - `npx nx worker-<channel> xjobs` (`linkedin-job-board`, `linkedin-posts`, `greenhouse`, `ashby`): run one channel's scheduled collection worker.
 - `npx nx run-many -t lint test build typecheck`: what CI runs.
