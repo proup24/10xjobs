@@ -222,6 +222,50 @@ describe('expand scenarios over mock profiles', () => {
       ).toBe(true);
     });
 
+    const searchKey = (r: QuerySearchRecipe) =>
+      JSON.stringify([
+        r.channel,
+        r.type,
+        r.location,
+        r.technologies,
+        r.domain,
+        r.keyword,
+        Object.entries(r.params).sort(),
+      ]);
+
+    it('levels that build the same search run it once, kept at the lowest level', () => {
+      const { lead, principal } = Seniority;
+      const recipes = expand({
+        ...base,
+        seniorities: [senior, staff, lead, principal],
+      });
+      const keys = recipes.map(searchKey);
+      expect(new Set(keys).size).toBe(keys.length);
+      // staff, lead and principal share f_E 4,5 and the title-free keyword.
+      expect(
+        on(recipes, Channel.LINKEDIN_JOB_BOARD).map((r) => r.experience),
+      ).not.toContain(lead);
+      expect(
+        on(recipes, Channel.LINKEDIN_JOB_BOARD).filter(
+          (r) => r.experience === staff,
+        ),
+      ).toHaveLength(4);
+      // The other channels name each level, so every level keeps its search.
+      expect(
+        on(recipes, Channel.LINKEDIN_POSTS).filter((r) => r.experience === lead),
+      ).toHaveLength(4);
+    });
+
+    it('mid and unstated build the same keyword search once', () => {
+      const { mid } = Seniority;
+      const recipes = expand({ ...base, seniorities: [mid, unstated] });
+      const keys = recipes.map(searchKey);
+      expect(new Set(keys).size).toBe(keys.length);
+      expect(
+        on(recipes, Channel.LINKEDIN_POSTS).map((r) => r.experience),
+      ).not.toContain(unstated);
+    });
+
     it('rejects an empty seniority set', () => {
       expect(() => expand({ ...base, seniorities: [] })).toThrow(
         new BadRequestException(SENIORITIES_REQUIRED),

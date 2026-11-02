@@ -14,5 +14,9 @@ export {
   normalizeSeniorities,
   SENIORITIES_REQUIRED,
 } from './seniorities';
-export { dedupeByHash, locationCombinations } from './combinations';
+export {
+  dedupeByHash,
+  dedupeBySearch,
+  locationCombinations,
+} from './combinations';
 export { assertHasSkills, hasRankedSkill, SKILLS_REQUIRED } from './skills';

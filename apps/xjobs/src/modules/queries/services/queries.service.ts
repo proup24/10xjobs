@@ -9,6 +9,7 @@ import {
   assertHasSeniorities,
   assertHasSkills,
   dedupeByHash,
+  dedupeBySearch,
   locationCombinations,
   normalizeProfile,
 } from '../steps';
@@ -33,7 +34,7 @@ export class QuerySearchService {
     assertHasSkills(profile);
     const technologies = technologySets(profile.skills);
     const combinations = locationCombinations(profile, technologies);
-    return dedupeByHash(combinations.map(toRecipe));
+    return dedupeBySearch(dedupeByHash(combinations.map(toRecipe)));
   }
 
   /**
