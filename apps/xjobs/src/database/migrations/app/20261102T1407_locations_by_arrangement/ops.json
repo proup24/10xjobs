@@ -1,0 +1,668 @@
+[
+  {
+    "id": "dropCheckConstraint.profiles.profiles_arrangements_check_7606728b",
+    "label": "Drop check constraint \"profiles_arrangements_check_7606728b\" on \"profiles\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "profiles_arrangements_check_7606728b",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"profiles_arrangements_check_7606728b\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_arrangements_check_7606728b",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "constraint \"profiles_arrangements_check_7606728b\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"profiles_arrangements_check_7606728b\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" DROP CONSTRAINT \"profiles_arrangements_check_7606728b\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"profiles_arrangements_check_7606728b\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_arrangements_check_7606728b",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"profiles_arrangements_check_7606728b\" on \"profiles\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "dropCheckConstraint.profiles.profiles_arrangements_elem_not_null_d7d34c79",
+    "label": "Drop check constraint \"profiles_arrangements_elem_not_null_d7d34c79\" on \"profiles\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "profiles_arrangements_elem_not_null_d7d34c79",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"profiles_arrangements_elem_not_null_d7d34c79\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_arrangements_elem_not_null_d7d34c79",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "constraint \"profiles_arrangements_elem_not_null_d7d34c79\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"profiles_arrangements_elem_not_null_d7d34c79\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" DROP CONSTRAINT \"profiles_arrangements_elem_not_null_d7d34c79\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"profiles_arrangements_elem_not_null_d7d34c79\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_arrangements_elem_not_null_d7d34c79",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"profiles_arrangements_elem_not_null_d7d34c79\" on \"profiles\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "dropCheckConstraint.profiles.profiles_regions_check_76fa66e0",
+    "label": "Drop check constraint \"profiles_regions_check_76fa66e0\" on \"profiles\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "profiles_regions_check_76fa66e0",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"profiles_regions_check_76fa66e0\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_regions_check_76fa66e0",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "constraint \"profiles_regions_check_76fa66e0\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"profiles_regions_check_76fa66e0\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" DROP CONSTRAINT \"profiles_regions_check_76fa66e0\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"profiles_regions_check_76fa66e0\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_regions_check_76fa66e0",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"profiles_regions_check_76fa66e0\" on \"profiles\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "dropCheckConstraint.profiles.profiles_regions_elem_not_null_0c7680bd",
+    "label": "Drop check constraint \"profiles_regions_elem_not_null_0c7680bd\" on \"profiles\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "profiles_regions_elem_not_null_0c7680bd",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"profiles_regions_elem_not_null_0c7680bd\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_regions_elem_not_null_0c7680bd",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "constraint \"profiles_regions_elem_not_null_0c7680bd\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"profiles_regions_elem_not_null_0c7680bd\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" DROP CONSTRAINT \"profiles_regions_elem_not_null_0c7680bd\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"profiles_regions_elem_not_null_0c7680bd\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_regions_elem_not_null_0c7680bd",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"profiles_regions_elem_not_null_0c7680bd\" on \"profiles\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "dropColumn.profiles.arrangements",
+    "label": "Drop column \"arrangements\" from \"profiles\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "arrangements",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"arrangements\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "arrangements"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"arrangements\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop column \"arrangements\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" DROP COLUMN \"arrangements\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"arrangements\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "arrangements"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"arrangements\" on \"profiles\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "dropColumn.profiles.regions",
+    "label": "Drop column \"regions\" from \"profiles\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "regions",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"regions\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "regions"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"regions\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop column \"regions\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" DROP COLUMN \"regions\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"regions\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "regions"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"regions\" on \"profiles\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "dropCheckConstraint.query_search_builder.query_search_builder_locationRegion_check_eb30a260",
+    "label": "Drop check constraint \"query_search_builder_locationRegion_check_eb30a260\" on \"query_search_builder\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "query_search_builder_locationRegion_check_eb30a260",
+        "table": "query_search_builder"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"query_search_builder_locationRegion_check_eb30a260\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "query_search_builder_locationRegion_check_eb30a260",
+          "public",
+          "\"public\".\"query_search_builder\""
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "constraint \"query_search_builder_locationRegion_check_eb30a260\" on \"query_search_builder\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"query_search_builder_locationRegion_check_eb30a260\"",
+        "sql": "ALTER TABLE \"public\".\"query_search_builder\" DROP CONSTRAINT \"query_search_builder_locationRegion_check_eb30a260\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"query_search_builder_locationRegion_check_eb30a260\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "query_search_builder_locationRegion_check_eb30a260",
+          "public",
+          "\"public\".\"query_search_builder\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"query_search_builder_locationRegion_check_eb30a260\" on \"query_search_builder\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "dropColumn.query_search_builder.city",
+    "label": "Drop column \"city\" from \"query_search_builder\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "city",
+        "table": "query_search_builder"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"city\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "query_search_builder",
+          "city"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"city\" on \"query_search_builder\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop column \"city\"",
+        "sql": "ALTER TABLE \"public\".\"query_search_builder\" DROP COLUMN \"city\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"city\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "query_search_builder",
+          "city"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"city\" on \"query_search_builder\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "dropColumn.query_search_builder.country",
+    "label": "Drop column \"country\" from \"query_search_builder\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "country",
+        "table": "query_search_builder"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"country\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "query_search_builder",
+          "country"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"country\" on \"query_search_builder\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop column \"country\"",
+        "sql": "ALTER TABLE \"public\".\"query_search_builder\" DROP COLUMN \"country\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"country\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "query_search_builder",
+          "country"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"country\" on \"query_search_builder\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "dropColumn.query_search_builder.locationRegion",
+    "label": "Drop column \"locationRegion\" from \"query_search_builder\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "locationRegion",
+        "table": "query_search_builder"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"locationRegion\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "query_search_builder",
+          "locationRegion"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"locationRegion\" on \"query_search_builder\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop column \"locationRegion\"",
+        "sql": "ALTER TABLE \"public\".\"query_search_builder\" DROP COLUMN \"locationRegion\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"locationRegion\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "query_search_builder",
+          "locationRegion"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"locationRegion\" on \"query_search_builder\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "column.profiles.locations",
+    "label": "Add column locations to profiles",
+    "summary": "Adds column locations to table profiles",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "profiles"
+      }
+    },
+    "operationClass": "additive",
+    "precheck": [
+      {
+        "description": "ensure column \"locations\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "locations"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"locations\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"locations\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ADD COLUMN \"locations\" jsonb DEFAULT ('{}'::jsonb) NOT NULL"
+      },
+      {
+        "description": "drop temporary default from column \"locations\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ALTER COLUMN \"locations\" DROP DEFAULT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"locations\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "locations"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"locations\" on \"profiles\""
+        }
+      },
+      {
+        "description": "verify column \"locations\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "locations",
+          "NO"
+        ]
+      },
+      {
+        "description": "verify column \"locations\" has no default after temporary default removal",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"column_default\" IS NOT NULL)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "locations"
+        ]
+      },
+      {
+        "description": "verify column \"locations\" has type \"jsonb\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "locations",
+          "jsonb"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.query_search_builder.location",
+    "label": "Add column location to query_search_builder",
+    "summary": "Adds column location to table query_search_builder",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "query_search_builder"
+      }
+    },
+    "operationClass": "additive",
+    "precheck": [
+      {
+        "description": "ensure column \"location\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "query_search_builder",
+          "location"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"location\" on \"query_search_builder\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"location\"",
+        "sql": "ALTER TABLE \"public\".\"query_search_builder\" ADD COLUMN \"location\" text DEFAULT ('') NOT NULL"
+      },
+      {
+        "description": "drop temporary default from column \"location\"",
+        "sql": "ALTER TABLE \"public\".\"query_search_builder\" ALTER COLUMN \"location\" DROP DEFAULT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"location\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "query_search_builder",
+          "location"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"location\" on \"query_search_builder\""
+        }
+      },
+      {
+        "description": "verify column \"location\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "query_search_builder",
+          "location",
+          "NO"
+        ]
+      },
+      {
+        "description": "verify column \"location\" has no default after temporary default removal",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"column_default\" IS NOT NULL)) AS \"result\"",
+        "params": [
+          "public",
+          "query_search_builder",
+          "location"
+        ]
+      },
+      {
+        "description": "verify column \"location\" has type \"text\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "query_search_builder",
+          "location",
+          "text"
+        ]
+      }
+    ]
+  }
+]

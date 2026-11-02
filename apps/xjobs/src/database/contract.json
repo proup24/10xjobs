@@ -3059,22 +3059,6 @@
           },
           "Profile": {
             "fields": {
-              "arrangements": {
-                "many": {
-                  "elementNullable": false
-                },
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                },
-                "valueSet": {
-                  "entityKind": "enum",
-                  "entityName": "Arrangement",
-                  "namespaceId": "public",
-                  "plane": "domain"
-                }
-              },
               "city": {
                 "nullable": true,
                 "type": {
@@ -3138,6 +3122,13 @@
                   "plane": "domain"
                 }
               },
+              "locations": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
+              },
               "noticePeriodDays": {
                 "nullable": false,
                 "type": {
@@ -3166,22 +3157,6 @@
                   "typeParams": {
                     "precision": 3
                   }
-                }
-              },
-              "regions": {
-                "many": {
-                  "elementNullable": false
-                },
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                },
-                "valueSet": {
-                  "entityKind": "enum",
-                  "entityName": "Region",
-                  "namespaceId": "public",
-                  "plane": "domain"
                 }
               },
               "resumeFilename": {
@@ -3314,9 +3289,6 @@
             },
             "storage": {
               "fields": {
-                "arrangements": {
-                  "column": "arrangements"
-                },
                 "city": {
                   "column": "city"
                 },
@@ -3335,6 +3307,9 @@
                 "languages": {
                   "column": "languages"
                 },
+                "locations": {
+                  "column": "locations"
+                },
                 "noticePeriodDays": {
                   "column": "noticePeriodDays"
                 },
@@ -3343,9 +3318,6 @@
                 },
                 "publishedAt": {
                   "column": "publishedAt"
-                },
-                "regions": {
-                  "column": "regions"
                 },
                 "resumeFilename": {
                   "column": "resumeFilename"
@@ -3626,20 +3598,6 @@
                   "plane": "domain"
                 }
               },
-              "city": {
-                "nullable": true,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "country": {
-                "nullable": true,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
               "coveredUntil": {
                 "nullable": true,
                 "type": {
@@ -3721,17 +3679,11 @@
                   "kind": "scalar"
                 }
               },
-              "locationRegion": {
-                "nullable": true,
+              "location": {
+                "nullable": false,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
-                },
-                "valueSet": {
-                  "entityKind": "enum",
-                  "entityName": "Region",
-                  "namespaceId": "public",
-                  "plane": "domain"
                 }
               },
               "params": {
@@ -3797,12 +3749,6 @@
                 "channel": {
                   "column": "channel"
                 },
-                "city": {
-                  "column": "city"
-                },
-                "country": {
-                  "column": "country"
-                },
                 "coveredUntil": {
                   "column": "coveredUntil"
                 },
@@ -3830,8 +3776,8 @@
                 "keyword": {
                   "column": "keyword"
                 },
-                "locationRegion": {
-                  "column": "locationRegion"
+                "location": {
+                  "column": "location"
                 },
                 "params": {
                   "column": "params"
@@ -7296,16 +7242,6 @@
             "profiles": {
               "checks": [
                 {
-                  "expression": "array_remove(\"arrangements\", NULL) <@ '{\"remote\",\"hybrid\",\"onsite\",\"unstated\"}'",
-                  "name": "profiles_arrangements_check_7606728b",
-                  "prefix": "profiles_arrangements_check"
-                },
-                {
-                  "expression": "array_position(\"arrangements\", NULL) IS NULL",
-                  "name": "profiles_arrangements_elem_not_null_d7d34c79",
-                  "prefix": "profiles_arrangements_elem_not_null"
-                },
-                {
                   "expression": "cardinality(\"arrangements\") > 0",
                   "name": "profiles_arrangements_nonempty_52fb6f2a",
                   "prefix": "profiles_arrangements_nonempty"
@@ -7351,16 +7287,6 @@
                   "prefix": "profiles_position_check"
                 },
                 {
-                  "expression": "array_remove(\"regions\", NULL) <@ '{\"EMEA\",\"MENA\",\"NORTH_AFRICA\",\"SUB_SAHARAN_AFRICA\",\"MIDDLE_EAST\",\"EUROPE\",\"EU\",\"UK\",\"NORTH_AMERICA\",\"LATAM\",\"APAC\",\"GLOBAL\"}'",
-                  "name": "profiles_regions_check_76fa66e0",
-                  "prefix": "profiles_regions_check"
-                },
-                {
-                  "expression": "array_position(\"regions\", NULL) IS NULL",
-                  "name": "profiles_regions_elem_not_null_0c7680bd",
-                  "prefix": "profiles_regions_elem_not_null"
-                },
-                {
                   "expression": "\"seniority\" IN ('junior', 'mid', 'senior', 'staff', 'lead', 'principal', 'unstated')",
                   "name": "profiles_seniority_check_2e7615f6",
                   "prefix": "profiles_seniority_check"
@@ -7382,20 +7308,6 @@
                 }
               ],
               "columns": {
-                "arrangements": {
-                  "codecId": "pg/text@1",
-                  "dataType": "pg/text",
-                  "many": {
-                    "elementNullable": false
-                  },
-                  "nullable": false,
-                  "valueSet": {
-                    "entityKind": "valueSet",
-                    "entityName": "Arrangement",
-                    "namespaceId": "public",
-                    "plane": "storage"
-                  }
-                },
                 "city": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -7451,6 +7363,11 @@
                     "plane": "storage"
                   }
                 },
+                "locations": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": false
+                },
                 "noticePeriodDays": {
                   "codecId": "pg/int4@1",
                   "dataType": "pg/int4",
@@ -7473,20 +7390,6 @@
                   "nullable": true,
                   "typeParams": {
                     "precision": 3
-                  }
-                },
-                "regions": {
-                  "codecId": "pg/text@1",
-                  "dataType": "pg/text",
-                  "many": {
-                    "elementNullable": false
-                  },
-                  "nullable": false,
-                  "valueSet": {
-                    "entityKind": "valueSet",
-                    "entityName": "Region",
-                    "namespaceId": "public",
-                    "plane": "storage"
                   }
                 },
                 "resumeFilename": {
@@ -7648,11 +7551,6 @@
                   "prefix": "query_search_builder_experience_check"
                 },
                 {
-                  "expression": "\"locationRegion\" IN ('EMEA', 'MENA', 'NORTH_AFRICA', 'SUB_SAHARAN_AFRICA', 'MIDDLE_EAST', 'EUROPE', 'EU', 'UK', 'NORTH_AMERICA', 'LATAM', 'APAC', 'GLOBAL')",
-                  "name": "query_search_builder_locationRegion_check_eb30a260",
-                  "prefix": "query_search_builder_locationRegion_check"
-                },
-                {
                   "expression": "array_remove(\"technologies\", NULL) <@ '{\"javascript\",\"typescript\",\"python\",\"java\",\"kotlin\",\"go\",\"rust\",\"csharp\",\"cpp\",\"php\",\"ruby\",\"scala\",\"elixir\",\"swift\",\"dart\",\"sql\",\"bash\",\"nodejs\",\"nestjs\",\"express\",\"fastify\",\"django\",\"fastapi\",\"flask\",\"spring\",\"dotnet\",\"laravel\",\"rails\",\"graphql\",\"grpc\",\"react\",\"nextjs\",\"vue\",\"nuxt\",\"angular\",\"svelte\",\"tailwindcss\",\"react_native\",\"flutter\",\"postgresql\",\"mysql\",\"mongodb\",\"redis\",\"elasticsearch\",\"kafka\",\"rabbitmq\",\"spark\",\"airflow\",\"dbt\",\"snowflake\",\"aws\",\"gcp\",\"azure\",\"docker\",\"kubernetes\",\"terraform\",\"ansible\",\"github_actions\",\"gitlab_ci\",\"linux\",\"nginx\",\"prometheus\",\"grafana\",\"pytorch\",\"tensorflow\",\"langchain\"}'",
                   "name": "query_search_builder_technologies_check_84960705",
                   "prefix": "query_search_builder_technologies_check"
@@ -7688,16 +7586,6 @@
                     "namespaceId": "public",
                     "plane": "storage"
                   }
-                },
-                "city": {
-                  "codecId": "pg/text@1",
-                  "dataType": "pg/text",
-                  "nullable": true
-                },
-                "country": {
-                  "codecId": "pg/text@1",
-                  "dataType": "pg/text",
-                  "nullable": true
                 },
                 "coveredUntil": {
                   "codecId": "pg/timestamptz-date@1",
@@ -7774,16 +7662,10 @@
                   "dataType": "pg/text",
                   "nullable": false
                 },
-                "locationRegion": {
+                "location": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
-                  "nullable": true,
-                  "valueSet": {
-                    "entityKind": "valueSet",
-                    "entityName": "Region",
-                    "namespaceId": "public",
-                    "plane": "storage"
-                  }
+                  "nullable": false
                 },
                 "params": {
                   "codecId": "pg/jsonb@1",
@@ -9084,7 +8966,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "944233e509d9126dc6f0d7e64cc2c8229c1661126b49d35a36427a3f75e7a262"
+    "storageHash": "cb5ffc79622d9999f4641fba8f159dfe7a4c8428bed7836808b6114bcf5030e1"
   },
   "execution": {
     "executionHash": "c6873c5a9f9e3698427d663f89066a9052d28a2625e473b43a449e049a00b87b",

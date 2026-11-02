@@ -24,7 +24,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'944233e509d9126dc6f0d7e64cc2c8229c1661126b49d35a36427a3f75e7a262'>;
+  StorageHashBase<'cb5ffc79622d9999f4641fba8f159dfe7a4c8428bed7836808b6114bcf5030e1'>;
 export type ExecutionHash =
   ExecutionHashBase<'c6873c5a9f9e3698427d663f89066a9052d28a2625e473b43a449e049a00b87b'>;
 export type ProfileHash =
@@ -318,10 +318,6 @@ type FieldTypeOverrides = {
         };
       };
       readonly Profile: {
-        readonly arrangements: {
-          readonly output: 'remote' | 'hybrid' | 'onsite' | 'unstated';
-          readonly input: 'remote' | 'hybrid' | 'onsite' | 'unstated';
-        };
         readonly engagements: {
           readonly output: 'employee' | 'contractor' | 'eor' | 'agency' | 'per_task';
           readonly input: 'employee' | 'contractor' | 'eor' | 'agency' | 'per_task';
@@ -367,34 +363,6 @@ type FieldTypeOverrides = {
             | 'software_architect'
             | 'tech_lead'
             | 'engineering_manager';
-        };
-        readonly regions: {
-          readonly output:
-            | 'EMEA'
-            | 'MENA'
-            | 'NORTH_AFRICA'
-            | 'SUB_SAHARAN_AFRICA'
-            | 'MIDDLE_EAST'
-            | 'EUROPE'
-            | 'EU'
-            | 'UK'
-            | 'NORTH_AMERICA'
-            | 'LATAM'
-            | 'APAC'
-            | 'GLOBAL';
-          readonly input:
-            | 'EMEA'
-            | 'MENA'
-            | 'NORTH_AFRICA'
-            | 'SUB_SAHARAN_AFRICA'
-            | 'MIDDLE_EAST'
-            | 'EUROPE'
-            | 'EU'
-            | 'UK'
-            | 'NORTH_AMERICA'
-            | 'LATAM'
-            | 'APAC'
-            | 'GLOBAL';
         };
         readonly seniority: {
           readonly output:
@@ -597,34 +565,6 @@ type FieldTypeOverrides = {
           readonly output:
             'junior' | 'mid' | 'senior' | 'staff' | 'lead' | 'principal' | 'unstated';
           readonly input: 'junior' | 'mid' | 'senior' | 'staff' | 'lead' | 'principal' | 'unstated';
-        };
-        readonly locationRegion: {
-          readonly output:
-            | 'EMEA'
-            | 'MENA'
-            | 'NORTH_AFRICA'
-            | 'SUB_SAHARAN_AFRICA'
-            | 'MIDDLE_EAST'
-            | 'EUROPE'
-            | 'EU'
-            | 'UK'
-            | 'NORTH_AMERICA'
-            | 'LATAM'
-            | 'APAC'
-            | 'GLOBAL';
-          readonly input:
-            | 'EMEA'
-            | 'MENA'
-            | 'NORTH_AFRICA'
-            | 'SUB_SAHARAN_AFRICA'
-            | 'MIDDLE_EAST'
-            | 'EUROPE'
-            | 'EU'
-            | 'UK'
-            | 'NORTH_AMERICA'
-            | 'LATAM'
-            | 'APAC'
-            | 'GLOBAL';
         };
         readonly technologies: {
           readonly output:
@@ -973,10 +913,6 @@ type ColumnTypeOverrides = {
       };
     };
     readonly profiles: {
-      readonly arrangements: {
-        readonly output: 'remote' | 'hybrid' | 'onsite' | 'unstated';
-        readonly input: 'remote' | 'hybrid' | 'onsite' | 'unstated';
-      };
       readonly engagements: {
         readonly output: 'employee' | 'contractor' | 'eor' | 'agency' | 'per_task';
         readonly input: 'employee' | 'contractor' | 'eor' | 'agency' | 'per_task';
@@ -1023,34 +959,6 @@ type ColumnTypeOverrides = {
           | 'tech_lead'
           | 'engineering_manager';
       };
-      readonly regions: {
-        readonly output:
-          | 'EMEA'
-          | 'MENA'
-          | 'NORTH_AFRICA'
-          | 'SUB_SAHARAN_AFRICA'
-          | 'MIDDLE_EAST'
-          | 'EUROPE'
-          | 'EU'
-          | 'UK'
-          | 'NORTH_AMERICA'
-          | 'LATAM'
-          | 'APAC'
-          | 'GLOBAL';
-        readonly input:
-          | 'EMEA'
-          | 'MENA'
-          | 'NORTH_AFRICA'
-          | 'SUB_SAHARAN_AFRICA'
-          | 'MIDDLE_EAST'
-          | 'EUROPE'
-          | 'EU'
-          | 'UK'
-          | 'NORTH_AMERICA'
-          | 'LATAM'
-          | 'APAC'
-          | 'GLOBAL';
-      };
       readonly seniority: {
         readonly output: 'junior' | 'mid' | 'senior' | 'staff' | 'lead' | 'principal' | 'unstated';
         readonly input: 'junior' | 'mid' | 'senior' | 'staff' | 'lead' | 'principal' | 'unstated';
@@ -1090,34 +998,6 @@ type ColumnTypeOverrides = {
       readonly experience: {
         readonly output: 'junior' | 'mid' | 'senior' | 'staff' | 'lead' | 'principal' | 'unstated';
         readonly input: 'junior' | 'mid' | 'senior' | 'staff' | 'lead' | 'principal' | 'unstated';
-      };
-      readonly locationRegion: {
-        readonly output:
-          | 'EMEA'
-          | 'MENA'
-          | 'NORTH_AFRICA'
-          | 'SUB_SAHARAN_AFRICA'
-          | 'MIDDLE_EAST'
-          | 'EUROPE'
-          | 'EU'
-          | 'UK'
-          | 'NORTH_AMERICA'
-          | 'LATAM'
-          | 'APAC'
-          | 'GLOBAL';
-        readonly input:
-          | 'EMEA'
-          | 'MENA'
-          | 'NORTH_AFRICA'
-          | 'SUB_SAHARAN_AFRICA'
-          | 'MIDDLE_EAST'
-          | 'EUROPE'
-          | 'EU'
-          | 'UK'
-          | 'NORTH_AMERICA'
-          | 'LATAM'
-          | 'APAC'
-          | 'GLOBAL';
       };
       readonly technologies: {
         readonly output:
@@ -1528,17 +1408,16 @@ export namespace Models {
     readonly [RelationKeys]?: 'extraction' | 'job';
   };
   export type public_Profile = {
-    arrangements: FieldOutputTypes['public']['Profile']['arrangements'];
     city: FieldOutputTypes['public']['Profile']['city'];
     country: FieldOutputTypes['public']['Profile']['country'];
     createdAt: FieldOutputTypes['public']['Profile']['createdAt'];
     engagements: FieldOutputTypes['public']['Profile']['engagements'];
     id: FieldOutputTypes['public']['Profile']['id'];
     languages: FieldOutputTypes['public']['Profile']['languages'];
+    locations: FieldOutputTypes['public']['Profile']['locations'];
     noticePeriodDays: FieldOutputTypes['public']['Profile']['noticePeriodDays'];
     position: FieldOutputTypes['public']['Profile']['position'];
     publishedAt: FieldOutputTypes['public']['Profile']['publishedAt'];
-    regions: FieldOutputTypes['public']['Profile']['regions'];
     resumeFilename: FieldOutputTypes['public']['Profile']['resumeFilename'];
     resumeKey: FieldOutputTypes['public']['Profile']['resumeKey'];
     resumeSha256: FieldOutputTypes['public']['Profile']['resumeSha256'];
@@ -1579,8 +1458,6 @@ export namespace Models {
   export type public_QuerySearchBuilder = {
     associatedProfiles: FieldOutputTypes['public']['QuerySearchBuilder']['associatedProfiles'];
     channel: FieldOutputTypes['public']['QuerySearchBuilder']['channel'];
-    city: FieldOutputTypes['public']['QuerySearchBuilder']['city'];
-    country: FieldOutputTypes['public']['QuerySearchBuilder']['country'];
     coveredUntil: FieldOutputTypes['public']['QuerySearchBuilder']['coveredUntil'];
     createdAt: FieldOutputTypes['public']['QuerySearchBuilder']['createdAt'];
     domain: FieldOutputTypes['public']['QuerySearchBuilder']['domain'];
@@ -1590,7 +1467,7 @@ export namespace Models {
     isActive: FieldOutputTypes['public']['QuerySearchBuilder']['isActive'];
     isDeleted: FieldOutputTypes['public']['QuerySearchBuilder']['isDeleted'];
     keyword: FieldOutputTypes['public']['QuerySearchBuilder']['keyword'];
-    locationRegion: FieldOutputTypes['public']['QuerySearchBuilder']['locationRegion'];
+    location: FieldOutputTypes['public']['QuerySearchBuilder']['location'];
     params: FieldOutputTypes['public']['QuerySearchBuilder']['params'];
     technologies: FieldOutputTypes['public']['QuerySearchBuilder']['technologies'];
     type: FieldOutputTypes['public']['QuerySearchBuilder']['type'];
@@ -3478,12 +3355,6 @@ type ContractBase = Omit<
             };
             readonly profiles: {
               columns: {
-                readonly arrangements: {
-                  readonly dataType: 'pg/text';
-                  readonly codecId: 'pg/text@1';
-                  readonly nullable: false;
-                  readonly many: { readonly elementNullable: false };
-                };
                 readonly city: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -3522,6 +3393,12 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly many: { readonly elementNullable: false };
                 };
+                readonly locations: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
                 readonly noticePeriodDays: {
                   readonly dataType: 'pg/int4';
                   readonly codecId: 'pg/int4@1';
@@ -3540,12 +3417,6 @@ type ContractBase = Omit<
                   readonly nullable: true;
                   readonly typeParams: { readonly precision: 3 };
                   readonly many: false;
-                };
-                readonly regions: {
-                  readonly dataType: 'pg/text';
-                  readonly codecId: 'pg/text@1';
-                  readonly nullable: false;
-                  readonly many: { readonly elementNullable: false };
                 };
                 readonly resumeFilename: {
                   readonly dataType: 'pg/text';
@@ -3676,18 +3547,6 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly many: false;
                 };
-                readonly city: {
-                  readonly dataType: 'pg/text';
-                  readonly codecId: 'pg/text@1';
-                  readonly nullable: true;
-                  readonly many: false;
-                };
-                readonly country: {
-                  readonly dataType: 'pg/text';
-                  readonly codecId: 'pg/text@1';
-                  readonly nullable: true;
-                  readonly many: false;
-                };
                 readonly coveredUntil: {
                   readonly dataType: 'pg/timestamptz';
                   readonly codecId: 'pg/timestamptz-date@1';
@@ -3753,10 +3612,10 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly many: false;
                 };
-                readonly locationRegion: {
+                readonly location: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
-                  readonly nullable: true;
+                  readonly nullable: false;
                   readonly many: false;
                 };
                 readonly params: {
@@ -6225,11 +6084,6 @@ type ContractBase = Omit<
           };
           readonly Profile: {
             readonly fields: {
-              readonly arrangements: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
-                readonly many: { readonly elementNullable: false };
-              };
               readonly city: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -6260,6 +6114,10 @@ type ContractBase = Omit<
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
                 readonly many: { readonly elementNullable: false };
               };
+              readonly locations: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
               readonly noticePeriodDays: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
@@ -6275,11 +6133,6 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/timestamptz-date@1';
                   readonly typeParams: { readonly precision: 3 };
                 };
-              };
-              readonly regions: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
-                readonly many: { readonly elementNullable: false };
               };
               readonly resumeFilename: {
                 readonly nullable: true;
@@ -6357,17 +6210,16 @@ type ContractBase = Omit<
               readonly table: 'profiles';
               readonly namespaceId: 'public';
               readonly fields: {
-                readonly arrangements: { readonly column: 'arrangements' };
                 readonly city: { readonly column: 'city' };
                 readonly country: { readonly column: 'country' };
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly engagements: { readonly column: 'engagements' };
                 readonly id: { readonly column: 'id' };
                 readonly languages: { readonly column: 'languages' };
+                readonly locations: { readonly column: 'locations' };
                 readonly noticePeriodDays: { readonly column: 'noticePeriodDays' };
                 readonly position: { readonly column: 'position' };
                 readonly publishedAt: { readonly column: 'publishedAt' };
-                readonly regions: { readonly column: 'regions' };
                 readonly resumeFilename: { readonly column: 'resumeFilename' };
                 readonly resumeKey: { readonly column: 'resumeKey' };
                 readonly resumeSha256: { readonly column: 'resumeSha256' };
@@ -6526,14 +6378,6 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
-              readonly city: {
-                readonly nullable: true;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
-              };
-              readonly country: {
-                readonly nullable: true;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
-              };
               readonly coveredUntil: {
                 readonly nullable: true;
                 readonly type: {
@@ -6578,8 +6422,8 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
-              readonly locationRegion: {
-                readonly nullable: true;
+              readonly location: {
+                readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly params: {
@@ -6615,8 +6459,6 @@ type ContractBase = Omit<
               readonly fields: {
                 readonly associatedProfiles: { readonly column: 'associatedProfiles' };
                 readonly channel: { readonly column: 'channel' };
-                readonly city: { readonly column: 'city' };
-                readonly country: { readonly column: 'country' };
                 readonly coveredUntil: { readonly column: 'coveredUntil' };
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly domain: { readonly column: 'domain' };
@@ -6626,7 +6468,7 @@ type ContractBase = Omit<
                 readonly isActive: { readonly column: 'isActive' };
                 readonly isDeleted: { readonly column: 'isDeleted' };
                 readonly keyword: { readonly column: 'keyword' };
-                readonly locationRegion: { readonly column: 'locationRegion' };
+                readonly location: { readonly column: 'location' };
                 readonly params: { readonly column: 'params' };
                 readonly technologies: { readonly column: 'technologies' };
                 readonly type: { readonly column: 'type' };

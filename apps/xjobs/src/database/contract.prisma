@@ -242,13 +242,13 @@ model Profile {
   languages         Language[]
   country           String
   city              String?
-  regions           Region[]
+  // { remote, hybrid, onsite } lists of location text in display form.
+  locations         Jsonb
   yearsOfExperience Int
   timezoneCurrent   Int
   timezoneMin       Int
   timezoneMax       Int
   engagements       Engagement[]
-  arrangements      Arrangement[]
   seniority         Seniority
   noticePeriodDays  Int
   resumeKey         String?
@@ -293,9 +293,8 @@ model ProfileSkill {
 model QuerySearchBuilder {
   id                 Uuid                  @id @onCreate(uuid(7))
   channel            Channel
-  locationRegion     Region?
-  country            String?
-  city               String?
+  // Canonical (lowercased) location text the channels search.
+  location           String
   experience         Seniority
   technologies       Technology[]
   // The skill domain the technologies came from; part of the hash.
