@@ -174,9 +174,20 @@ function perToken(value: string | undefined): number | null {
 }
 
 /**
+ * The OpenRouter parameters the extraction request sends. It routes with
+ * `requireParameters`, so the model must support every one or no provider
+ * serves the call.
+ */
+export const EXTRACTION_PARAMETERS = [
+  'response_format',
+  'structured_outputs',
+] as const;
+
+/**
  * Startup check of the configured models, returning their list prices.
  *
- * The extraction model must be listed, support `structured_outputs`, and have
+ * The extraction model must be listed, support every parameter in
+ * {@link EXTRACTION_PARAMETERS}, and have
  * numeric prices (to estimate a call whose response reports no cost). The
  * decision model is served by the Decisions API and may not be in the public
  * list; its responses report `usage.cost`, so it is priced only when listed.
@@ -199,9 +210,12 @@ export async function checkModels(
   const extraction = find(config.extractionModel);
   if (!extraction)
     throw new Error(`OpenRouter does not list model ${config.extractionModel}`);
-  if (!extraction.supportedParameters.includes('structured_outputs'))
+  const missing = EXTRACTION_PARAMETERS.filter(
+    (p) => !extraction.supportedParameters.includes(p),
+  );
+  if (missing.length > 0)
     throw new Error(
-      `Model ${config.extractionModel} does not support structured_outputs`,
+      `Model ${config.extractionModel} does not support ${missing.join(', ')}`,
     );
   const extractionPrice = price(config.extractionModel);
   if (!extractionPrice)

@@ -62,7 +62,9 @@ export class OpenRouterExtractionModel extends ExtractionModel {
           chatRequest: {
             model: this.model,
             stream: false,
-            temperature: 0,
+            // No `temperature`: Opus 5.5 does not take it, and with
+            // `requireParameters` any unsupported parameter leaves no provider
+            // (404). Every parameter sent must be in EXTRACTION_PARAMETERS.
             messages: messages(input, req),
             responseFormat: {
               type: 'json_schema',

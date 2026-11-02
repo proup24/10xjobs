@@ -255,6 +255,18 @@ describe('checkModels', () => {
     ).rejects.toThrow(/structured_outputs/);
   });
 
+  it('refuses an extraction model without response_format', async () => {
+    await expect(
+      checkModels(
+        listed([{ ...opus, supportedParameters: ['structured_outputs'] }]),
+        {
+          decisionModel: 'typesafe/jev-1.14',
+          extractionModel: opus.id,
+        },
+      ),
+    ).rejects.toThrow(/response_format/);
+  });
+
   it('refuses an extraction model without numeric pricing', async () => {
     await expect(
       checkModels(

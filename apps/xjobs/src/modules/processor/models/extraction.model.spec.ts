@@ -111,14 +111,13 @@ describe('OpenRouterExtractionModel', () => {
     });
   });
 
-  it('sends strict structured output, a cached system prompt, temperature 0 and no streaming', async () => {
+  it('sends strict structured output, a cached system prompt and no streaming', async () => {
     const fake = client(result());
     await new OpenRouterExtractionModel(fake.client, MODEL).extract(input, req);
 
     const { chatRequest } = fake.send.mock.calls[0]![0];
     expect(chatRequest).toMatchObject({
       model: MODEL,
-      temperature: 0,
       stream: false,
       provider: { requireParameters: true },
       responseFormat: {
@@ -130,6 +129,9 @@ describe('OpenRouterExtractionModel', () => {
         },
       },
     });
+    // Opus 5.5 takes no `temperature`; with `requireParameters` an unsupported
+    // parameter leaves no provider and OpenRouter answers 404.
+    expect(chatRequest).not.toHaveProperty('temperature');
     expect(chatRequest.messages[0]).toEqual({
       role: 'system',
       content: [

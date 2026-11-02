@@ -74,7 +74,7 @@ const daily = {
 export const channelJobsConfig = {
   [Channel.LINKEDIN_JOB_BOARD]: {
     queueName: 'collect-linkedin-job-board',
-    ...daily,
+    ...twoMinutes,
     run: {
       actor: 'bebity/linkedin-jobs-scraper',
       maxRunChargeUsd: 1,
