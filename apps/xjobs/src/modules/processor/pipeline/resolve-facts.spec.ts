@@ -193,6 +193,44 @@ describe('resolveFacts', () => {
     });
   });
 
+  it('falls back to the evidence when a confident Jev says unstated', () => {
+    const doc = resolveFacts({
+      output: output(),
+      answers: [ans('contractType', 'unstated', 0.95)],
+      fallback: [],
+      input: input(evidence({ contractType: 'Full-time' })),
+      models,
+    });
+    expect(doc.contractType).toEqual({
+      value: 'full_time',
+      decidedBy: 'ingest',
+      confidence: 'unsure',
+      score: null,
+      quote: '',
+      model: null,
+    });
+    expect(doc.conflicts).toEqual([]);
+  });
+
+  it('takes seniority from the evidence only when it maps to one code', () => {
+    const resolve = (experienceLevel: string) =>
+      resolveFacts({
+        output: output({ seniority: mf('unstated', 'sure') }),
+        answers: [ans('seniority', 'unstated', 0.95)],
+        fallback: [],
+        input: input(evidence({ experienceLevel })),
+        models,
+      }).seniority;
+    expect(resolve('Entry level')).toMatchObject({
+      decidedBy: 'ingest',
+      score: null,
+    });
+    expect(resolve('Mid-Senior level')).toMatchObject({
+      value: 'unstated',
+      decidedBy: 'jev',
+    });
+  });
+
   it('builds the open facts from Opus', () => {
     const doc = resolveFacts({
       output: output(),
@@ -274,6 +312,30 @@ describe('resolveFacts', () => {
         period: 'year',
       },
     });
+  });
+
+  it('records a salary conflict when only the period differs', () => {
+    const out = output();
+    out.salary = mf({
+      min: 50,
+      max: 60,
+      currency: 'EUR',
+      period: 'hour',
+    }) as never;
+    const salary = (period: string) =>
+      resolveFacts({
+        output: out,
+        answers: [],
+        fallback: [],
+        input: input(
+          evidence({
+            salary: { text: null, min: 50, max: 60, currency: 'EUR', period },
+          }),
+        ),
+        models,
+      }).conflicts.filter((c) => c.field === 'salary');
+    expect(salary('yearly')).toHaveLength(1);
+    expect(salary('HOURLY')).toEqual([]);
   });
 
   it('takes the evidence salary when the posting has none', () => {

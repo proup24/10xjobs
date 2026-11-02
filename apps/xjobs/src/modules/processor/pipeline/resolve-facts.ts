@@ -88,21 +88,30 @@ export function resolveFacts(args: {
     const jevContradicts =
       !!answer && contradictsEvidence(key, answer.value, evidence);
 
-    if (!fallbackKeys.has(key) && confidentJev && !jevContradicts) {
-      return {
-        value: answer.value as T,
-        confidence: 'sure',
-        decidedBy: 'jev',
-        score: answer.score,
-        quote: '',
-        model: models.decision,
-      };
-    }
-
+    const jevStands = !fallbackKeys.has(key) && confidentJev && !jevContradicts;
     const opus = (opusFallback[key] as ModelFact<T> | undefined) ?? topLevel;
     const score = answer?.score ?? null;
+    const standing: Fact<T> = jevStands
+      ? {
+          value: answer.value as T,
+          confidence: 'sure',
+          decidedBy: 'jev',
+          score: answer.score,
+          quote: '',
+          model: models.decision,
+        }
+      : {
+          value: opus.value,
+          confidence: opus.confidence,
+          decidedBy: 'opus',
+          score,
+          quote: opus.quote,
+          model: models.extraction,
+        };
 
-    if (opus.value === null || opus.value === 'unstated') {
+    // Evidence only: the posting says nothing, whoever decided that, and
+    // LinkedIn states a value.
+    if (standing.value === null || standing.value === 'unstated') {
       const ingestValue = ingestFallback(key, evidence);
       if (ingestValue !== null) {
         recordConflict(field, key, answer, confidentJev, ingestValue);
@@ -110,21 +119,15 @@ export function resolveFacts(args: {
           value: ingestValue as T,
           confidence: 'unsure',
           decidedBy: 'ingest',
-          score,
+          score: null,
           quote: '',
           model: null,
         };
       }
     }
-    recordConflict(field, key, answer, confidentJev, opus.value);
-    return {
-      value: opus.value,
-      confidence: opus.confidence,
-      decidedBy: 'opus',
-      score,
-      quote: opus.quote,
-      model: models.extraction,
-    };
+    if (!jevStands)
+      recordConflict(field, key, answer, confidentJev, standing.value);
+    return standing;
   };
 
   // Rule: an unconfident Jev answer that Opus overrode is not a conflict;
@@ -356,10 +359,15 @@ function resolveSalary(
   const ev = evidence.salary;
   if (!ev || (ev.min === null && ev.max === null)) return fact;
   if (fact.value !== null) {
+    const evPeriod =
+      ev.period === null
+        ? null
+        : (PERIODS[ev.period.toLowerCase()] ?? ev.period);
     const differs =
       (ev.min !== null && ev.min !== fact.value.min) ||
       (ev.max !== null && ev.max !== fact.value.max) ||
-      (ev.currency !== null && ev.currency !== fact.value.currency);
+      (ev.currency !== null && ev.currency !== fact.value.currency) ||
+      (evPeriod !== null && evPeriod !== fact.value.period);
     if (differs) {
       conflicts.push({
         field: 'salary',
