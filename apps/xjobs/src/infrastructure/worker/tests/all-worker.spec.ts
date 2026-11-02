@@ -77,13 +77,12 @@ import { WorkerModule } from '../worker.module';
 import { WorkerService } from '../worker.service';
 
 // OPENROUTER_API_KEY is unset: the processor is off in `all`.
-const allWorkers = [
-  'infrastructure',
-  'ingest',
-  'collect-linkedin-job-board',
-  'collect-linkedin-posts',
-  'collect-greenhouse',
-  'collect-ashby',
+// Only the job board is an active channel; the others remove their schedules.
+const allWorkers = ['infrastructure', 'ingest', 'collect-linkedin-job-board'];
+const inactiveSchedulers = [
+  'collect-linkedin-posts:collect',
+  'collect-greenhouse:collect',
+  'collect-ashby:collect',
 ];
 
 beforeEach(() => {
@@ -107,7 +106,7 @@ async function startAll() {
   return { module, service };
 }
 
-it('runs infrastructure, ingest and every channel collection, but not the processor, in one process', async () => {
+it('runs infrastructure, ingest and every active channel collection, but not the processor, in one process', async () => {
   const warn = vi.spyOn(Logger.prototype, 'warn');
   const { module, service } = await startAll();
   try {
@@ -121,10 +120,8 @@ it('runs infrastructure, ingest and every channel collection, but not the proces
     expect(created.schedulers).toEqual([
       'ingest:sweep',
       'collect-linkedin-job-board:collect',
-      'collect-linkedin-posts:collect',
-      'collect-greenhouse:collect',
-      'collect-ashby:collect',
     ]);
+    expect(created.removedSchedulers).toEqual(inactiveSchedulers);
   } finally {
     // Closing the module runs the shutdown hook.
     await module.close();
@@ -137,13 +134,16 @@ it('runs infrastructure, ingest and every channel collection, but not the proces
 });
 
 it('skips a disabled channel and keeps running the others', async () => {
-  const config: ChannelJobConfig = channelJobsConfig.ASHBY;
+  const config: ChannelJobConfig = channelJobsConfig.LINKEDIN_JOB_BOARD;
   vi.spyOn(config, 'enabled', 'get').mockReturnValue(false);
   const { module, service } = await startAll();
   try {
     expect(service.active).toBe(true);
     expect(created.workers).toEqual(allWorkers.slice(0, -1));
-    expect(created.removedSchedulers).toEqual(['collect-ashby:collect']);
+    expect(created.removedSchedulers).toEqual([
+      'collect-linkedin-job-board:collect',
+      ...inactiveSchedulers,
+    ]);
   } finally {
     // Closing the module runs the shutdown hook.
     await module.close();

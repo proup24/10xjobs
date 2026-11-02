@@ -1,4 +1,4 @@
-import { Channel } from 'src/common/enums';
+import { ACTIVE_CHANNELS, Channel } from 'src/common/enums';
 import type {
   ActorRunConfig,
   BoardSearchRunConfig,
@@ -75,6 +75,7 @@ export const channelJobsConfig = {
   [Channel.LINKEDIN_JOB_BOARD]: {
     queueName: 'collect-linkedin-job-board',
     ...twoMinutes,
+    enabled: ACTIVE_CHANNELS.includes(Channel.LINKEDIN_JOB_BOARD),
     run: {
       actor: 'bebity/linkedin-jobs-scraper',
       maxRunChargeUsd: 1,
@@ -84,6 +85,7 @@ export const channelJobsConfig = {
   [Channel.LINKEDIN_POSTS]: {
     queueName: 'collect-linkedin-posts',
     ...hourly,
+    enabled: ACTIVE_CHANNELS.includes(Channel.LINKEDIN_POSTS),
     run: {
       actor: 'harvestapi/linkedin-post-search',
       maxRunChargeUsd: 0.75,
@@ -93,6 +95,7 @@ export const channelJobsConfig = {
   [Channel.GREEN_HOUSE]: {
     queueName: 'collect-greenhouse',
     ...daily,
+    enabled: ACTIVE_CHANNELS.includes(Channel.GREEN_HOUSE),
     run: {
       actor: 'apify/google-search-scraper',
       maxRunChargeUsd: 0.5,
@@ -106,6 +109,7 @@ export const channelJobsConfig = {
   [Channel.ASHBY]: {
     queueName: 'collect-ashby',
     ...daily,
+    enabled: ACTIVE_CHANNELS.includes(Channel.ASHBY),
     run: {
       actor: 'apify/google-search-scraper',
       maxRunChargeUsd: 0.5,

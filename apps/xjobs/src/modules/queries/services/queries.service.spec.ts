@@ -13,6 +13,12 @@ import { FakeQuerySearchRepository } from '../testing/fakes';
 import { MOCK_PROFILES } from '../testing/profiles.fixture';
 import { QuerySearchService } from './queries.service';
 
+// These specs cover every channel's builder, inactive ones included.
+vi.mock('src/common/enums', async (importOriginal) => {
+  const enums = await importOriginal<typeof import('src/common/enums')>();
+  return { ...enums, ACTIVE_CHANNELS: Object.values(enums.Channel) };
+});
+
 const profile: QuerySearchProfileInput = {
   position: Position.backend_engineer,
   locations: {

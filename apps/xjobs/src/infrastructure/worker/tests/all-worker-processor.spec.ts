@@ -92,9 +92,6 @@ it('runs the processor with the others when the OpenRouter key is set', async ()
       'ingest',
       'process',
       'collect-linkedin-job-board',
-      'collect-linkedin-posts',
-      'collect-greenhouse',
-      'collect-ashby',
     ]);
     expect(created.schedulers).toContain('process:sweep');
   } finally {

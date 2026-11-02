@@ -1,4 +1,4 @@
-import { Channel } from 'src/common/enums';
+import { ACTIVE_CHANNELS } from 'src/common/enums';
 import type {
   QuerySearchCombination,
   QuerySearchProfileInput,
@@ -9,7 +9,7 @@ import { LOCATION_ARRANGEMENTS } from '../types';
 import { locationKey } from './normalize';
 
 /**
- * One combination per `arrangement × channel × location × technology set`.
+ * One combination per `arrangement × active channel × location × technology set`.
  * The location is searched as given, whatever the arrangement, so profiles
  * listing the same location share builders.
  */
@@ -18,7 +18,7 @@ export function locationCombinations(
   technologies: TechnologySet[],
 ): QuerySearchCombination[] {
   return LOCATION_ARRANGEMENTS.flatMap((type) =>
-    Object.values(Channel).filter((c)=> c !== Channel.LINKEDIN_JOB_BOARD).flatMap((channel) =>
+    ACTIVE_CHANNELS.flatMap((channel) =>
       profile.locations[type].flatMap((text) =>
         technologies.map(({ technologies: set, domain }) => ({
           channel,

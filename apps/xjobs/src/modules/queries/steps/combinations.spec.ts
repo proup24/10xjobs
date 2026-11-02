@@ -1,6 +1,6 @@
 import {
+  ACTIVE_CHANNELS,
   Arrangement,
-  Channel,
   Position,
   Seniority,
   SkillDomain,
@@ -20,10 +20,10 @@ const sets = [
   { technologies: [Technology.nestjs], domain: SkillDomain.backend },
   { technologies: [Technology.typescript], domain: SkillDomain.fullstack },
 ];
-const channels = Object.values(Channel).length;
+const channels = ACTIVE_CHANNELS.length;
 
 describe('locationCombinations', () => {
-  it('expands arrangement x channel x location x technology set', () => {
+  it('expands arrangement x active channel x location x technology set', () => {
     expect(locationCombinations(profile, sets)).toHaveLength(3 * channels * 2);
   });
 
@@ -49,7 +49,7 @@ describe('locationCombinations', () => {
     const [first, second] = locationCombinations(profile, sets);
     expect(first).toMatchObject({
       type: Arrangement.remote,
-      channel: Object.values(Channel)[0],
+      channel: ACTIVE_CHANNELS[0],
       location: 'europe',
       technologies: [Technology.nestjs],
       domain: SkillDomain.backend,
@@ -60,6 +60,13 @@ describe('locationCombinations', () => {
       technologies: [Technology.typescript],
       domain: SkillDomain.fullstack,
     });
+  });
+
+  it('builds no combination for an inactive channel', () => {
+    const built = new Set(
+      locationCombinations(profile, sets).map((c) => c.channel),
+    );
+    expect([...built]).toEqual([...ACTIVE_CHANNELS]);
   });
 
   it('skips an arrangement with no locations', () => {
