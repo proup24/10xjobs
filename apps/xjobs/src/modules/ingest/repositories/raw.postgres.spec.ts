@@ -51,7 +51,7 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
   async function builder(): Promise<string> {
     const row = await db.orm.public.QuerySearchBuilder.create({
       channel: Channel.LINKEDIN_JOB_BOARD,
-      locationRegion: 'GLOBAL',
+      location: 'worldwide',
       experience: 'senior',
       technologies: [],
       domain: 'backend',

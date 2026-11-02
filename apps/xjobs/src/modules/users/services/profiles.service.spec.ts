@@ -4,11 +4,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
-  Arrangement,
   Engagement,
   Language,
   Position,
-  Region,
   Seniority,
   SkillDomain,
   Technology,
@@ -17,6 +15,7 @@ import {
   PROFILE_PUBLISHED,
   ProfilesService,
   toProfileView,
+  toQuerySearchInput,
 } from './profiles.service';
 import {
   QUERY_SEARCH_RECIPE_VERSION,
@@ -33,13 +32,12 @@ const profileInput: ProfileInput = {
   languages: [Language.EN],
   country: 'MA',
   city: null,
-  regions: [Region.MENA],
+  locations: { remote: ['MENA'], hybrid: [], onsite: [] },
   yearsOfExperience: 6,
   timezoneCurrent: 60,
   timezoneMin: -240,
   timezoneMax: 240,
   engagements: [Engagement.employee],
-  arrangements: [Arrangement.remote],
   seniority: Seniority.senior,
   noticePeriodDays: 30,
 };
@@ -97,6 +95,49 @@ describe('ProfilesService', () => {
         importance: 5,
       },
     ]);
+  });
+
+  it('stores locations in display form, deduped by key', async () => {
+    const view = await service.create(userId, {
+      ...profileInput,
+      locations: {
+        remote: ['Europe', ' europe ', 'Morocco'],
+        hybrid: [],
+        onsite: ['  Paris,   France '],
+      },
+      techStack: [skill(Technology.nodejs, 8)],
+    });
+    expect(view.locations).toEqual({
+      remote: ['Europe', 'Morocco'],
+      hybrid: [],
+      onsite: ['Paris, France'],
+    });
+  });
+
+  it('normalizes locations on replace too', async () => {
+    const { id } = await create();
+    const view = await service.replace(userId, id, {
+      ...editable,
+      locations: { remote: [], hybrid: ['France', 'FRANCE'], onsite: [] },
+      techStack: [],
+    });
+    expect(view.locations).toEqual({
+      remote: [],
+      hybrid: ['France'],
+      onsite: [],
+    });
+  });
+
+  it('builds search input from locations only, not where the person lives', async () => {
+    const { id } = await service.create(userId, {
+      ...profileInput,
+      city: 'Rabat',
+      techStack: [skill(Technology.nodejs, 8)],
+    });
+    const input = toQuerySearchInput((await profiles.findById(userId, id))!);
+    expect(input.locations).toEqual({ remote: ['MENA'], hybrid: [], onsite: [] });
+    expect(input).not.toHaveProperty('country');
+    expect(input).not.toHaveProperty('city');
   });
 
   it('lets one user keep several independent profiles', async () => {

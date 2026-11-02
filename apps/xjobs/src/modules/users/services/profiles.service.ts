@@ -4,15 +4,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
-  Arrangement,
   Position,
   ProfileState,
-  Region,
   Seniority,
   SkillDomain,
   Technology,
 } from 'src/common/enums';
 import {
+  type LocationsByArrangement,
+  normalizeLocations,
   QuerySearchService,
   type QuerySearchProfileInput,
 } from 'src/modules/queries';
@@ -40,6 +40,8 @@ export function toProfileView(profile: ProfileWithSkills): ProfileView {
   } = profile;
   return {
     ...fields,
+    // A jsonb column: always written through normalizeLocations, in this shape.
+    locations: fields.locations as LocationsByArrangement,
     techStack: techStack
       .map(({ technology, domain, mastery, importance }) => ({
         technology,
@@ -67,11 +69,8 @@ export function toQuerySearchInput(
   // Rows carry plain string unions; the enums have the same values.
   return {
     position: profile.position as Position,
-    regions: [...profile.regions] as Region[],
-    arrangements: [...profile.arrangements] as Arrangement[],
+    locations: profile.locations as LocationsByArrangement,
     seniority: profile.seniority as Seniority,
-    country: profile.country,
-    city: profile.city,
     skills: profile.techStack.map(
       ({ technology, domain, importance, mastery }) => ({
         technology: technology as Technology,
@@ -190,7 +189,11 @@ export class ProfilesService {
     return toProfileView(
       await this.profiles.create(
         userId,
-        { ...fields, city: fields.city ?? null },
+        {
+          ...fields,
+          city: fields.city ?? null,
+          locations: normalizeLocations(fields.locations),
+        },
         toSkills(techStack),
       ),
     );
@@ -208,13 +211,12 @@ export class ProfilesService {
       languages: data.languages,
       country: data.country,
       city: data.city ?? null,
-      regions: data.regions,
+      locations: normalizeLocations(data.locations),
       yearsOfExperience: data.yearsOfExperience,
       timezoneCurrent: data.timezoneCurrent,
       timezoneMin: data.timezoneMin,
       timezoneMax: data.timezoneMax,
       engagements: data.engagements,
-      arrangements: data.arrangements,
       seniority: data.seniority,
       noticePeriodDays: data.noticePeriodDays,
     };

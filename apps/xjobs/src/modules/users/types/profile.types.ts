@@ -1,28 +1,28 @@
 import type {
-  Arrangement,
   Engagement,
   Language,
   Position,
-  Region,
   Seniority,
   SkillDomain,
   Technology,
 } from 'src/common/enums';
 import type { ProfileRow, ProfileSkillRow } from 'src/database';
-import type { QuerySearchAttachResult } from 'src/modules/queries';
+import type {
+  LocationsByArrangement,
+  QuerySearchAttachResult,
+} from 'src/modules/queries';
 
 export type ProfileInput = {
   position: Position;
   languages: Language[];
   country: string;
   city: string | null;
-  regions: Region[];
+  locations: LocationsByArrangement;
   yearsOfExperience: number;
   timezoneCurrent: number;
   timezoneMin: number;
   timezoneMax: number;
   engagements: Engagement[];
-  arrangements: Arrangement[];
   seniority: Seniority;
   noticePeriodDays: number;
 };
@@ -46,7 +46,9 @@ export type ProfileView = Omit<
   | 'resumeSizeBytes'
   | 'resumeSha256'
   | 'resumeUploadedAt'
+  | 'locations'
 > & {
+  locations: LocationsByArrangement;
   techStack: Pick<
     ProfileSkillRow,
     'technology' | 'domain' | 'mastery' | 'importance'

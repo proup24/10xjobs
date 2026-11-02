@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { Arrangement, Channel, Region, SkillDomain } from 'src/common/enums';
+import { Arrangement, Channel, SkillDomain } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
 import type {
   RawCollectedItem,
@@ -21,9 +21,7 @@ const builder = (overrides: Partial<QuerySearchBuilderRow> = {}) =>
     channel: Channel.ASHBY,
     domain: SkillDomain.backend,
     type: Arrangement.remote,
-    locationRegion: Region.EMEA,
-    country: null,
-    city: null,
+    location: 'emea',
     keyword: `kw ${n}`,
     params: { remote: true },
     coveredUntil: null,

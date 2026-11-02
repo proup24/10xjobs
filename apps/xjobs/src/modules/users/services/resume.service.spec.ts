@@ -7,7 +7,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
-  Arrangement,
   Engagement,
   Language,
   Position,
@@ -34,13 +33,12 @@ const profileInput: ProfileInput = {
   languages: [Language.EN],
   country: 'MA',
   city: null,
-  regions: [],
+  locations: { remote: ['Worldwide'], hybrid: [], onsite: [] },
   yearsOfExperience: 6,
   timezoneCurrent: 0,
   timezoneMin: 0,
   timezoneMax: 0,
   engagements: [Engagement.employee],
-  arrangements: [Arrangement.remote],
   seniority: Seniority.senior,
   noticePeriodDays: 0,
 };
