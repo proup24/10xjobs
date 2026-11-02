@@ -84,10 +84,10 @@ it('runs only the processor queue with its sweeper after the startup checks', as
       client,
       expect.objectContaining({
         decisionModel: 'typesafe/jev-1.14',
-        extractionModel: 'anthropic/claude-opus-5.5',
+        extractionModel: 'deepseek/deepseek-v4.1-flash-1017',
       }),
     );
-    expect(module.get(ModelPricing).get('anthropic/claude-opus-5.5')).toEqual({
+    expect(module.get(ModelPricing).get('deepseek/deepseek-v4.1-flash-1017')).toEqual({
       prompt: 0.000001,
       completion: 0.000002,
     });
