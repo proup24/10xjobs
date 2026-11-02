@@ -90,16 +90,18 @@ export class OpenRouterDecisionModel extends DecisionModel {
     input: PostingInput,
     questions: DecisionQuestion[],
   ): Promise<{ answers: DecisionAnswer[]; meta: ModelCallMeta }> {
-    const { value: res, latencyMs } = await timed(() =>
-      this.client.alpha.decisions.create({
-        decisionsRequest: {
-          model: this.model,
-          state: statement(input),
-          questions: Object.fromEntries(
-            questions.map((q) => [q.key, buildQuestion(q)]),
-          ),
-        },
-      }),
+    const { value: res, latencyMs } = await timed(
+      () =>
+        this.client.alpha.decisions.create({
+          decisionsRequest: {
+            model: this.model,
+            state: statement(input),
+            questions: Object.fromEntries(
+              questions.map((q) => [q.key, buildQuestion(q)]),
+            ),
+          },
+        }),
+      `Decisions API (${this.model})`,
     );
     const meta: ModelCallMeta = {
       model: res.model,

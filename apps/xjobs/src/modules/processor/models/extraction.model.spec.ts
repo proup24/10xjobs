@@ -214,7 +214,7 @@ describe('OpenRouterExtractionModel', () => {
     warn.mockRestore();
   });
 
-  it('maps provider failures without copying the response body', async () => {
+  it('maps provider failures and names the call with its reason', async () => {
     const unavailable = await new OpenRouterExtractionModel(
       client(httpError(401)).client,
       MODEL,
@@ -230,7 +230,9 @@ describe('OpenRouterExtractionModel', () => {
       .extract(input, req)
       .catch((e: unknown) => e);
     expect(bad).toBeInstanceOf(ModelRequestError);
-    expect((bad as Error).message).not.toContain('posting text');
+    expect((bad as Error).message).toBe(
+      `chat completions (${MODEL}): OpenRouter returned 400: posting text here`,
+    );
 
     await expect(
       new OpenRouterExtractionModel(

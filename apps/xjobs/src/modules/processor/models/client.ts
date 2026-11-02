@@ -44,9 +44,50 @@ export function createOpenRouterClient(apiKey: string): OpenRouterClient {
   });
 }
 
+const REASON_MAX = 250;
+
+const clip = (text: string): string =>
+  text.length > REASON_MAX ? `${text.slice(0, REASON_MAX)}…` : text;
+
 /**
- * Maps an SDK failure to the processor's error classes. Messages carry the
- * status only, never a response body, so posting text never reaches logs.
+ * OpenRouter's reason for a failed call, from its error body: the message,
+ * the provider, and the provider's own (`metadata.raw`) reason, which is
+ * where a rejected schema or parameter is named. Each part is clipped; a
+ * body that is not JSON gives no reason.
+ */
+function reasonOf(body: string): string {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(body);
+  } catch {
+    return '';
+  }
+  const error = (parsed as { error?: unknown })?.error;
+  if (!error || typeof error !== 'object') return '';
+  const { message, metadata } = error as {
+    message?: unknown;
+    metadata?: { provider_name?: unknown; raw?: unknown } | null;
+  };
+  const raw =
+    typeof metadata?.raw === 'string'
+      ? metadata.raw
+      : metadata?.raw === undefined
+        ? undefined
+        : JSON.stringify(metadata.raw);
+  const parts = [
+    typeof message === 'string' ? clip(message) : null,
+    typeof metadata?.provider_name === 'string'
+      ? `[${metadata.provider_name}]`
+      : null,
+    raw ? clip(raw) : null,
+  ].filter(Boolean);
+  return parts.length > 0 ? `: ${parts.join(' ')}` : '';
+}
+
+/**
+ * Maps an SDK failure to the processor's error classes. The message carries
+ * the status and OpenRouter's reason (clipped), which may quote part of the
+ * request; that is the price of being able to diagnose a rejected call.
  */
 export function toModelError(error: unknown, latencyMs: number): Error {
   const meta = { latencyMs };
@@ -59,7 +100,7 @@ export function toModelError(error: unknown, latencyMs: number): Error {
     );
   if (error instanceof OpenRouterError) {
     const status = error.statusCode;
-    const message = `OpenRouter returned ${status}`;
+    const message = `OpenRouter returned ${status}${reasonOf(error.body)}`;
     if (PROVIDER_UNAVAILABLE.has(status))
       return new ProviderUnavailableError(message, meta);
     if (status === 408 || status === 429 || status >= 500)
@@ -91,16 +132,24 @@ export function toModelError(error: unknown, latencyMs: number): Error {
   );
 }
 
-/** Runs one SDK call, measuring its latency and mapping its failure. */
+/**
+ * Runs one SDK call, measuring its latency and mapping its failure. `label`
+ * names the call in the error (`Decisions API (typesafe/jev-1.14): ...`), so a
+ * job's error says which model call failed.
+ */
 export async function timed<T>(
   call: () => Promise<T>,
+  label?: string,
 ): Promise<{ value: T; latencyMs: number }> {
   const started = Date.now();
   try {
     const value = await call();
     return { value, latencyMs: Date.now() - started };
   } catch (error) {
-    throw toModelError(error, Date.now() - started);
+    const mapped = toModelError(error, Date.now() - started);
+    if (label && mapped !== error)
+      mapped.message = `${label}: ${mapped.message}`;
+    throw mapped;
   }
 }
 

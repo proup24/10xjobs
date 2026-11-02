@@ -96,7 +96,7 @@ A time zone is never a place: "remote from anywhere within the European time zon
 - A list of terms per place -> one opening per term. "Costa Rica (Remote); Toronto, Ontario (Hybrid/Remote)" -> \`{ ["remote"], [country CR], limit }\` and \`{ ["hybrid", "remote"], [city Toronto, CA], limit }\`.
 - A choice of places on the same terms -> one opening, several places. "Remote within Canada or the US" -> \`{ ["remote"], [CA, US], limit }\`.
 - A time-zone condition belongs to the opening it qualifies; a posting-wide one goes on every opening. "Remote, within two hours of the UK time zone" -> \`{ ["remote"], [], unstated, [{ -2, 2, "within two hours of the UK time zone" }] }\`.
-- Listing metadata fallback. When the posting text says nothing about place or time zone, you may build the opening from the listing metadata's location. Then set \`fromListing: true\` on that opening, give the place \`placeStrictness: "label"\`, use \`quote: ""\` and \`confidence: "unsure"\`. When the posting text says anything about place or time zone, the listing location plays no part. Otherwise \`fromListing\` is \`false\` or omitted.
+- Listing metadata fallback. When the posting text says nothing about place or time zone, you may build the opening from the listing metadata's location. Then set \`fromListing: true\` on that opening, give the place \`placeStrictness: "label"\`, use \`quote: ""\` and \`confidence: "unsure"\`. When the posting text says anything about place or time zone, the listing location plays no part. Otherwise set \`fromListing: false\`; every opening carries it.
 
 ## Work authorization
 

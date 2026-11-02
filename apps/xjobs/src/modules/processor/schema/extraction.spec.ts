@@ -113,4 +113,62 @@ describe('modelOutputSchema', () => {
     };
     expect(json.additionalProperties).toBe(false);
   });
+
+  describe('strict structured output', () => {
+    /** Every object node of the schema, with its path. */
+    function objects(
+      node: unknown,
+      path = '$',
+    ): [string, Record<string, unknown>][] {
+      if (Array.isArray(node))
+        return node.flatMap((n, i) => objects(n, `${path}[${i}]`));
+      if (!node || typeof node !== 'object') return [];
+      const o = node as Record<string, unknown>;
+      return [
+        [path, o],
+        ...Object.entries(o).flatMap(([k, v]) => objects(v, `${path}.${k}`)),
+      ];
+    }
+    const nodes = objects(modelOutputJsonSchema(options, fallback));
+
+    it('requires every property of every object, and allows no others', () => {
+      for (const [path, o] of nodes) {
+        if (o.type !== 'object') continue;
+        const keys = Object.keys((o.properties ?? {}) as object);
+        expect([path, [...((o.required as string[]) ?? [])].sort()]).toEqual([
+          path,
+          [...keys].sort(),
+        ]);
+        expect([path, o.additionalProperties]).toEqual([path, false]);
+      }
+    });
+
+    it('uses only keywords strict mode accepts', () => {
+      const allowed = new Set([
+        'type',
+        'properties',
+        'required',
+        'additionalProperties',
+        'items',
+        'anyOf',
+        'enum',
+        'const',
+        'description',
+      ]);
+      const used = new Set(
+        nodes.flatMap(([path, o]) =>
+          // Keys under `properties` are field names, not keywords.
+          path.endsWith('.properties') ? [] : Object.keys(o),
+        ),
+      );
+      expect([...used].filter((k) => !allowed.has(k))).toEqual([]);
+    });
+
+    it('keeps the place union as anyOf, each branch tagged by kind', () => {
+      const places = nodes.find(([p]) =>
+        p.endsWith('.openings.items.properties.places.items'),
+      )?.[1];
+      expect(places?.anyOf).toHaveLength(4);
+    });
+  });
 });

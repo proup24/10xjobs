@@ -56,25 +56,27 @@ export class OpenRouterExtractionModel extends ExtractionModel {
     input: PostingInput,
     req: { systemPrompt: string; jsonSchema: object; retryErrors?: string[] },
   ): Promise<{ output: unknown; meta: ModelCallMeta }> {
-    const { value: res, latencyMs } = await timed(() =>
-      this.client.chat.send({
-        chatRequest: {
-          model: this.model,
-          stream: false,
-          temperature: 0,
-          messages: messages(input, req),
-          responseFormat: {
-            type: 'json_schema',
-            jsonSchema: {
-              name: 'extraction',
-              strict: true,
-              schema: req.jsonSchema as Record<string, unknown>,
+    const { value: res, latencyMs } = await timed(
+      () =>
+        this.client.chat.send({
+          chatRequest: {
+            model: this.model,
+            stream: false,
+            temperature: 0,
+            messages: messages(input, req),
+            responseFormat: {
+              type: 'json_schema',
+              jsonSchema: {
+                name: 'extraction',
+                strict: true,
+                schema: req.jsonSchema as Record<string, unknown>,
+              },
             },
+            // Never route to a provider that would ignore the schema.
+            provider: { requireParameters: true },
           },
-          // Never route to a provider that would ignore the schema.
-          provider: { requireParameters: true },
-        },
-      }),
+        }),
+      `chat completions (${this.model})`,
     );
     const usage = res.usage;
     const inputTokens = usage?.promptTokens ?? 0;

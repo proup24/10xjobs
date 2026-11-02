@@ -126,11 +126,57 @@ export function modelOutputSchema(
 }
 
 /**
- * OpenRouter strict mode may reject parts of the JSON Schema; `pnpm --filter @xjobs/xjobs processor:smoke` sends the real schema.
- * Identity until the spike says what must be flattened.
+ * Keywords strict structured output does not accept everywhere. They only
+ * constrain values, and the full zod schema still validates every answer
+ * locally, so dropping them from the sent schema loses no checking: a
+ * violation goes to the schema-fix retry instead of failing the call.
+ */
+const VALIDATION_ONLY = new Set([
+  '$schema',
+  'minimum',
+  'maximum',
+  'exclusiveMinimum',
+  'exclusiveMaximum',
+  'multipleOf',
+  'minLength',
+  'maxLength',
+  'pattern',
+  'format',
+  'minItems',
+  'maxItems',
+  'uniqueItems',
+  'default',
+]);
+
+/**
+ * Makes a zod-generated JSON Schema acceptable to strict structured output:
+ * every object lists all its properties as `required` and allows no others
+ * (an optional zod field is then always sent, which zod still accepts),
+ * `oneOf` becomes `anyOf`, and validation-only keywords are dropped.
  */
 export function flattenForStrict(schema: object): object {
-  return schema;
+  return strictNode(schema) as object;
+}
+
+function strictNode(node: unknown): unknown {
+  if (Array.isArray(node)) return node.map(strictNode);
+  if (!node || typeof node !== 'object') return node;
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(node)) {
+    if (VALIDATION_ONLY.has(key)) continue;
+    if (key === 'properties' && value && typeof value === 'object') {
+      out.properties = Object.fromEntries(
+        Object.entries(value).map(([name, prop]) => [name, strictNode(prop)]),
+      );
+      continue;
+    }
+    out[key === 'oneOf' ? 'anyOf' : key] = strictNode(value);
+  }
+  if (out.type === 'object' && out.properties) {
+    out.required = Object.keys(out.properties);
+    out.additionalProperties = false;
+  }
+  return out;
 }
 
 export function modelOutputJsonSchema(

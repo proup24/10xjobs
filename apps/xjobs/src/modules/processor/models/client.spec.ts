@@ -93,11 +93,57 @@ describe('toModelError', () => {
     expect(toModelError(error, 5)).toBeInstanceOf(ModelRequestError);
   });
 
-  it('keeps the latency and never copies the response body', () => {
+  it('keeps the latency', () => {
     const mapped = toModelError(httpError(400), 42) as ModelRequestError;
     expect(mapped.meta).toEqual({ latencyMs: 42 });
-    expect(mapped.message).toContain('400');
-    expect(mapped.message).not.toContain('nope');
+  });
+
+  it("carries OpenRouter's reason, so a rejected request can be diagnosed", () => {
+    const body = JSON.stringify({
+      error: {
+        code: 422,
+        message: 'Provider returned error',
+        metadata: {
+          provider_name: 'DeepInfra',
+          raw: 'response_format: unsupported keyword "pattern" at properties.salary',
+        },
+      },
+    });
+    const mapped = toModelError(
+      new OpenRouterError('status 422', {
+        response: new Response(body, { status: 422 }),
+        request: new Request('https://openrouter.ai/api/v1/chat/completions'),
+        body,
+      }),
+      5,
+    );
+    expect(mapped).toBeInstanceOf(ModelRequestError);
+    expect(mapped.message).toBe(
+      'OpenRouter returned 422: Provider returned error [DeepInfra] response_format: unsupported keyword "pattern" at properties.salary',
+    );
+  });
+
+  it('truncates a long reason and survives a body that is not JSON', () => {
+    const long = JSON.stringify({ error: { message: 'x'.repeat(2000) } });
+    const mapped = toModelError(
+      new OpenRouterError('status 400', {
+        response: new Response(long, { status: 400 }),
+        request: new Request('https://openrouter.ai/api/v1/chat/completions'),
+        body: long,
+      }),
+      5,
+    );
+    expect(mapped.message.length).toBeLessThanOrEqual(600);
+
+    const html = toModelError(
+      new OpenRouterError('status 502', {
+        response: new Response('<html>bad gateway</html>', { status: 502 }),
+        request: new Request('https://openrouter.ai/api/v1/chat/completions'),
+        body: '<html>bad gateway</html>',
+      }),
+      5,
+    );
+    expect(html.message).toBe('OpenRouter returned 502');
   });
 });
 
@@ -106,6 +152,16 @@ describe('timed', () => {
     const { value, latencyMs } = await timed(async () => 7);
     expect(value).toBe(7);
     expect(latencyMs).toBeGreaterThanOrEqual(0);
+  });
+
+  it('names the call that failed', async () => {
+    await expect(
+      timed(async () => {
+        throw httpError(422);
+      }, 'chat completions (deepseek/x)'),
+    ).rejects.toThrow(
+      /^chat completions \(deepseek\/x\): OpenRouter returned 422/,
+    );
   });
 
   it('maps a thrown SDK error', async () => {
