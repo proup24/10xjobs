@@ -6,7 +6,7 @@ export const ingestConfig = {
   /** Item errors kept in a batch report; `invalid` always has the full count. */
   maxReportErrors: 100,
   /** How often the ingest worker re-enqueues stranded pending batches. */
-  sweepEveryMs: 300,
+  sweepEveryMs: 300_000,
   /** A pending batch older than this is considered stranded. */
   staleAfterMs: 600_000,
   /** Greenhouse hosts whose posting URLs name a board and job id. */

@@ -35,15 +35,6 @@ const hourly = {
   window: { initialHours: 24, overlapMinutes: 15, maximumHours: 24 },
 } as const;
 
-const twoMinutes = {
-  enabled: true,
-  schedule: { pattern: '*/2 * * * *', timezone: 'UTC' },
-  concurrency: 1,
-  attempts: 1,
-  segmentSize: 10,
-  window: { initialHours: 24, overlapMinutes: 15, maximumHours: 24 },
-} as const;
-
 /**
  * Google indexes ATS pages hours to days after they are posted, so board
  * discovery runs daily over at least three days; ingest drops the overlap.
@@ -63,7 +54,7 @@ const daily = {
 export const channelJobsConfig = {
   [Channel.LINKEDIN_JOB_BOARD]: {
     queueName: 'collect-linkedin-job-board',
-    ...twoMinutes,
+    ...hourly,
     enabled: ACTIVE_CHANNELS.includes(Channel.LINKEDIN_JOB_BOARD),
     run: {
       actor: 'bebity/linkedin-jobs-scraper',
