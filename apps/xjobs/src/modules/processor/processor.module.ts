@@ -69,6 +69,6 @@ type Env = ConfigService<WorkerProcessEnvironmentVariables, true>;
         new OpenRouterExtractionModel(client, config.extractionModel),
     },
   ],
-  exports: [ProcessJobService, ProcessorRepository],
+  exports: [ProcessJobService, ProcessorRepository, PROCESSOR_CONFIG],
 })
 export class ProcessorModule {}

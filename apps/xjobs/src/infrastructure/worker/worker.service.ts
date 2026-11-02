@@ -10,13 +10,14 @@ import type { WorkerProcessEnvironmentVariables } from 'src/config';
 import { CollectionWorkerService } from './collection.service';
 import { InfrastructureWorkerService } from './infrastructure.service';
 import { IngestWorkerService } from './ingest.service';
+import { ProcessorWorkerService } from './processor.service';
 import { WorkerRuntimeService } from './runtime.service';
 
 /** Selects the worker for this process and coordinates its lifecycle. */
 @Injectable()
 export class WorkerService implements OnModuleInit, OnApplicationShutdown {
   private readonly channel?: Channel;
-  private readonly role?: 'ingest' | 'all';
+  private readonly role?: 'ingest' | 'processor' | 'all';
   /** False once the channel turned out to be disabled; the process should exit. */
   active = true;
 
@@ -25,6 +26,7 @@ export class WorkerService implements OnModuleInit, OnApplicationShutdown {
     private readonly runtime: WorkerRuntimeService,
     private readonly collection: CollectionWorkerService,
     private readonly ingest: IngestWorkerService,
+    private readonly processor: ProcessorWorkerService,
     private readonly infrastructure: InfrastructureWorkerService,
   ) {
     this.role = config.get('WORKER_ROLE', { infer: true });
@@ -36,6 +38,7 @@ export class WorkerService implements OnModuleInit, OnApplicationShutdown {
 
     if (this.role === 'all') await this.startAll(connection);
     else if (this.role === 'ingest') await this.ingest.start(connection);
+    else if (this.role === 'processor') await this.processor.start(connection);
     else if (this.channel)
       this.active = await this.collection.start(this.channel, connection);
     else this.infrastructure.start(connection);
@@ -47,6 +50,7 @@ export class WorkerService implements OnModuleInit, OnApplicationShutdown {
   private async startAll(connection: Redis): Promise<void> {
     this.infrastructure.start(connection);
     await this.ingest.start(connection);
+    await this.processor.start(connection);
     for (const channel of Object.values(Channel))
       await this.collection.start(channel, connection);
   }

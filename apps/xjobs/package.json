@@ -24,6 +24,7 @@
     "worker:greenhouse:dev": "WORKER_CHANNEL=GREEN_HOUSE tsx watch --tsconfig tsconfig.app.json src/worker.ts",
     "worker:ashby:dev": "WORKER_CHANNEL=ASHBY tsx watch --tsconfig tsconfig.app.json src/worker.ts",
     "worker:ingest:dev": "WORKER_ROLE=ingest tsx watch --tsconfig tsconfig.app.json src/worker.ts",
+    "worker:processor:dev": "WORKER_ROLE=processor tsx watch --tsconfig tsconfig.app.json src/worker.ts",
     "jobs:smoke": "JOBS_SMOKE=1 vitest run --config vitest.config.mts src/infrastructure/jobs/tests/smoke.spec.ts"
   },
   "nx": {
@@ -109,6 +110,17 @@
           "command": "node apps/xjobs/dist/worker.js",
           "env": {
             "WORKER_ROLE": "all"
+          }
+        }
+      },
+      "worker-processor": {
+        "continuous": true,
+        "executor": "nx:run-commands",
+        "dependsOn": ["build"],
+        "options": {
+          "command": "node apps/xjobs/dist/worker.js",
+          "env": {
+            "WORKER_ROLE": "processor"
           }
         }
       },

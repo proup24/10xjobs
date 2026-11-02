@@ -6,6 +6,7 @@ vi.hoisted(() => {
   process.env.SUPABASE_URL ??= 'http://127.0.0.1:1';
   process.env.SUPABASE_SERVICE_ROLE_KEY ??= 'service-key';
   process.env.APIFY_TOKEN ??= 'apify-token';
+  process.env.OPENROUTER_API_KEY ??= 'or-key';
   process.env.WORKER_ROLE = 'all';
   delete process.env.WORKER_CHANNEL;
 });
@@ -58,12 +59,21 @@ import {
 } from 'src/infrastructure/jobs/steps/collect';
 import { StorageService } from 'src/modules/storage';
 import { MemoryStorageService } from 'src/modules/storage/testing';
+vi.mock(
+  'src/modules/processor/models/openrouter.client',
+  async (importOriginal) => ({
+    ...(await importOriginal<object>()),
+    assertStructuredOutputs: vi.fn(async () => undefined),
+  }),
+);
+
 import { WorkerModule } from '../worker.module';
 import { WorkerService } from '../worker.service';
 
 const allWorkers = [
   'infrastructure',
   'ingest',
+  'process',
   'collect-linkedin-job-board',
   'collect-linkedin-posts',
   'collect-greenhouse',
@@ -91,13 +101,14 @@ async function startAll() {
   return { module, service };
 }
 
-it('runs infrastructure, ingest and every channel collection in one process', async () => {
+it('runs infrastructure, ingest, process and every channel collection in one process', async () => {
   const { module, service } = await startAll();
   try {
     expect(service.active).toBe(true);
     expect(created.workers).toEqual(allWorkers);
     expect(created.schedulers).toEqual([
       'ingest:sweep',
+      'process:sweep',
       'collect-linkedin-job-board:collect',
       'collect-linkedin-posts:collect',
       'collect-greenhouse:collect',

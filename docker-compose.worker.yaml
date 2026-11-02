@@ -1,7 +1,7 @@
 # Build the runtime files first: pnpm exec nx prune @xjobs/xjobs
 # Start all workers:
 # docker compose -f docker-compose.yaml -f docker-compose.worker.yaml up -d --build \
-#   worker ingest-worker ashby-worker greenhouse-worker \
+#   worker ingest-worker processor-worker ashby-worker greenhouse-worker \
 #   linkedin-job-board-worker linkedin-posts-worker redis-cache
 
 x-worker: &worker
@@ -45,6 +45,14 @@ services:
     environment:
       <<: *worker-environment
       WORKER_ROLE: ingest
+
+  # Extracts structured fields from normalized jobs; needs an OpenRouter key.
+  processor-worker:
+    <<: *worker
+    environment:
+      <<: *worker-environment
+      WORKER_ROLE: processor
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
 
   ashby-worker:
     <<: *collection-worker
