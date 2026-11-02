@@ -8,6 +8,7 @@ import type {
 } from 'src/modules/collectors';
 import { ingestConfig, parseBatchFile } from 'src/modules/ingest';
 import type { QuerySearchService } from 'src/modules/queries';
+import { segmentHash } from 'src/modules/segments';
 import { FakeSearchSegmentsRepository } from 'src/modules/segments/testing/fakes';
 import { MemoryStorageService } from 'src/modules/storage/testing';
 import { CollectionService, channelJobsConfig } from '../steps/collect';
@@ -69,6 +70,8 @@ function setup(
   );
   const collector = collectors[channel];
   const segments = new FakeSearchSegmentsRepository();
+  for (const row of rows)
+    if (row.coveredUntil) segments.cursors.set(row.id, row.coveredUntil);
   const storage = new MemoryStorageService();
   const order: string[] = [];
   const put = storage.put.bind(storage);
@@ -362,6 +365,8 @@ describe('CollectionService.collect', () => {
         builders: 11,
         segments: 2,
         segmentsFailed: 1,
+        segmentsSkipped: 0,
+        queriesSkipped: 0,
         batches: 1,
         collected: 2,
         costUsd: 0.5,
@@ -417,6 +422,158 @@ describe('CollectionService.collect', () => {
     expect(collector.collect).not.toHaveBeenCalled();
     expect(segments.runs).toEqual([]);
     expect(segments.collected).toEqual([]);
+  });
+});
+
+const HOUR = 3_600_000;
+const live = (runId = 'other') => ({
+  runId,
+  since: new Date(Date.now() - 24 * HOUR),
+  until: new Date(Date.now() + HOUR),
+  expiresAt: new Date(Date.now() + HOUR),
+});
+
+describe('CollectionService claims', () => {
+  it('skips a query another run holds and searches the rest', async () => {
+    const rows = builders(3);
+    const { collection, collector, segments } = setup(rows);
+    segments.claims.set(rows[0].id, live());
+
+    const summary = await collection.collect(Channel.ASHBY);
+
+    expect(collector.collect).toHaveBeenCalledTimes(1);
+    const [search] = collector.collect.mock.calls[0];
+    const searched = rows.slice(1).map((row) => row.id);
+    expect(search.queries.map((q) => q.id)).toEqual(searched);
+    const { run } = segments.collected[0]!;
+    expect(run.queryIds).toEqual(searched);
+    expect(run.segmentHash).toBe(segmentHash(run.segmentKey, searched));
+    expect(summary).toMatchObject({ queriesSkipped: 1, segmentsSkipped: 0 });
+  });
+
+  it('skips a segment whose queries are all held, without calling the collector or recording a run', async () => {
+    const rows = builders(2);
+    const { collection, collector, segments } = setup(rows);
+    for (const row of rows) segments.claims.set(row.id, live());
+
+    const summary = await collection.collect(Channel.ASHBY);
+
+    expect(collector.collect).not.toHaveBeenCalled();
+    expect(segments.runs).toEqual([]);
+    expect(segments.collected).toEqual([]);
+    expect(summary).toMatchObject({
+      segments: 1,
+      segmentsSkipped: 1,
+      segmentsFailed: 0,
+      queriesSkipped: 2,
+    });
+  });
+
+  it('skips a query already covered up to until', async () => {
+    const rows = builders(2);
+    const { collection, collector, segments } = setup(rows);
+    segments.cursors.set(rows[0].id, new Date(Date.now() + 60_000));
+
+    const summary = await collection.collect(Channel.ASHBY);
+
+    const [search] = collector.collect.mock.calls[0];
+    expect(search.queries.map((q) => q.id)).toEqual([rows[1].id]);
+    expect(summary).toMatchObject({ queriesSkipped: 1 });
+  });
+
+  it('recomputes the window from the cursor returned by the claim', async () => {
+    const rows = builders(2, { channel: Channel.LINKEDIN_POSTS });
+    const { collection, collector, segments } = setup(
+      rows,
+      undefined,
+      Channel.LINKEDIN_POSTS,
+    );
+    const fresh = new Date(Date.now() - HOUR);
+    for (const row of rows) segments.cursors.set(row.id, fresh);
+
+    await collection.collect(Channel.LINKEDIN_POSTS);
+
+    const [search] = collector.collect.mock.calls[0];
+    expect(search.since.getTime()).toBe(fresh.getTime() - 15 * 60_000);
+  });
+
+  it('releases claims and moves cursors on success', async () => {
+    const rows = builders(2);
+    const { collection, segments } = setup(rows);
+
+    await collection.collect(Channel.ASHBY);
+
+    const { run } = segments.collected[0]!;
+    expect(segments.claims.size).toBe(0);
+    for (const row of rows)
+      expect(segments.cursors.get(row.id)).toEqual(run.windowEnd);
+  });
+
+  it('releases claims without moving cursors on a capped run', async () => {
+    const { collection, segments } = setup(builders(2), async (s) =>
+      resultFor(s, undefined, { capped: true }),
+    );
+
+    await collection.collect(Channel.ASHBY);
+
+    expect(segments.claims.size).toBe(0);
+    expect(segments.cursors.size).toBe(0);
+  });
+
+  it('releases claims on a failed fetch', async () => {
+    const { collection, segments } = setup(builders(2), async () => {
+      throw new Error('down');
+    });
+    const claim = vi.spyOn(segments, 'claim');
+
+    await expect(collection.collect(Channel.ASHBY)).rejects.toThrow();
+
+    expect(segments.claims.size).toBe(0);
+    expect(segments.runs[0]).toMatchObject({
+      status: 'failed',
+      id: claim.mock.calls[0][0],
+    });
+    expect(segments.cursors.size).toBe(0);
+  });
+
+  it('releases claims even when recording the failure throws', async () => {
+    const { collection, segments } = setup(builders(2), async () => {
+      throw new Error('down');
+    });
+    segments.failRecordRun = true;
+    const claim = vi.spyOn(segments, 'claim');
+
+    await expect(collection.collect(Channel.ASHBY)).rejects.toThrow(/ASHBY/);
+
+    expect(segments.claims.size).toBe(0);
+    expect(segments.released).toContain(claim.mock.calls[0][0]);
+  });
+
+  it('releases claims when narrowing the segment throws', async () => {
+    const rows = builders(2);
+    const { collection, collector, segments } = setup(rows);
+    const claim = vi.spyOn(segments, 'claim').mockImplementation(
+      async (runId, ids, window, leaseMs) => {
+        await FakeSearchSegmentsRepository.prototype.claim.call(
+          segments,
+          runId,
+          ids,
+          window,
+          leaseMs,
+        );
+        return {
+          claimed: [{ id: 'not-a-member', coveredUntil: null }],
+          skipped: [],
+        };
+      },
+    );
+
+    await expect(collection.collect(Channel.ASHBY)).rejects.toThrow();
+
+    expect(collector.collect).not.toHaveBeenCalled();
+    expect(segments.released).toContain(claim.mock.calls[0][0]);
+    expect(segments.claims.size).toBe(0);
+    expect(segments.runs[0]).toMatchObject({ status: 'failed' });
   });
 });
 

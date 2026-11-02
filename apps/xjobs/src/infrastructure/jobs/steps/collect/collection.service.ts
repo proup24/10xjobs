@@ -17,12 +17,15 @@ import {
 } from 'src/modules/ingest';
 import { QuerySearchService } from 'src/modules/queries';
 import {
+  type ClaimResult,
+  type ClaimSkipReason,
   type NewSegmentRun,
   type SearchSegment,
   type SegmentWindow,
   SearchSegmentsRepository,
   type SegmentQueryOutcome,
   buildSegments,
+  segmentHash,
   segmentWindow,
 } from 'src/modules/segments';
 import { StorageService } from 'src/modules/storage';
@@ -38,6 +41,10 @@ export interface CollectionSummary {
   builders: number;
   segments: number;
   segmentsFailed: number;
+  /** Segments not searched: another run holds, or already covered, every member. */
+  segmentsSkipped: number;
+  /** Members dropped from their segment for the same reasons. */
+  queriesSkipped: number;
   /** Items returned, attributed or not. */
   collected: number;
   /** Batches stored for ingest. */
@@ -47,6 +54,9 @@ export interface CollectionSummary {
 
 /** Cost is retained even when the fetched results could not be stored. */
 interface SegmentOutcome {
+  /** True when no member could be claimed; nothing was searched. */
+  skipped: boolean;
+  queriesSkipped: number;
   stored: boolean;
   collected: number;
   costUsd: number;
@@ -89,6 +99,8 @@ export class CollectionService {
       builders: builders.length,
       segments: segments.length,
       segmentsFailed: 0,
+      segmentsSkipped: 0,
+      queriesSkipped: 0,
       collected: 0,
       batches: 0,
       costUsd: 0,
@@ -96,6 +108,11 @@ export class CollectionService {
 
     for (const segment of segments) {
       const outcome = await this.runSegment(channel, segment, until);
+      summary.queriesSkipped += outcome.queriesSkipped;
+      if (outcome.skipped) {
+        summary.segmentsSkipped += 1;
+        continue;
+      }
       summary.costUsd += outcome.costUsd;
       summary.collected += outcome.collected;
       if (outcome.stored) summary.batches += 1;
@@ -107,33 +124,61 @@ export class CollectionService {
         .map(([key, value]) => `${key}=${value}`)
         .join(' '),
     );
-    if (summary.segments > 0 && summary.segmentsFailed === summary.segments)
+    const attempted = summary.segments - summary.segmentsSkipped;
+    if (attempted > 0 && summary.segmentsFailed === attempted)
       throw new Error(
-        `${channel} collection failed for all ${summary.segments} segments`,
+        `${channel} collection failed for all ${attempted} segments`,
       );
     return summary;
   }
 
-  /** Fetch and store one segment, returning its contribution to the totals. */
+  /**
+   * Claim the segment's members, then fetch and store the claimed ones. Only
+   * the first run collects a query over an interval: members another run
+   * holds, or already covered up to `until`, are dropped from the search.
+   */
   private async runSegment(
     channel: Channel,
     segment: SearchSegment,
     until: Date,
   ): Promise<SegmentOutcome> {
     const config = channelJobsConfig[channel];
+    const runId = randomUUID();
     const startedAt = new Date();
-    const window = segmentWindow(segment.members, until, config.window);
-    if (window.clipped)
-      this.logger.warn(
-        `Segment ${segment.key} was not collected for longer than ${config.window.maximumHours}h; older postings are not caught up`,
-      );
-    const search = buildSearch(channel, segment, window);
-    const run = buildRun(segment, search, startedAt);
+    // The interval claimed: the segment's window over the cursors as listed.
+    const claimed = segmentWindow(segment.members, until, config.window);
+    const claim = await this.segments.claim(
+      runId,
+      segment.members.map(({ id }) => id),
+      claimed,
+      config.claimLeaseMinutes * 60_000,
+    );
+    const queriesSkipped = claim.skipped.length;
+    if (queriesSkipped > 0) this.logSkips(segment, claim.skipped);
+    if (claim.claimed.length === 0)
+      return {
+        skipped: true,
+        queriesSkipped,
+        stored: false,
+        collected: 0,
+        costUsd: 0,
+      };
+
+    let run: (NewSegmentRun & { id: string }) | undefined;
     let batch: BatchFile;
     let collected: number;
     let costUsd = 0;
 
     try {
+      const owned = narrow(segment, claim.claimed);
+      // Recomputed from the cursors the claim read, so a concurrent success is seen.
+      const window = segmentWindow(owned.members, until, config.window);
+      if (window.clipped)
+        this.logger.warn(
+          `Segment ${segment.key} was not collected for longer than ${config.window.maximumHours}h; older postings are not caught up`,
+        );
+      const search = buildSearch(channel, owned, window);
+      run = buildRun(runId, owned, search, startedAt);
       const result = await this.fetch(search);
       costUsd = result.costUsd ?? 0;
       Object.assign(run, {
@@ -151,23 +196,58 @@ export class CollectionService {
       collected = await this.saveBatch(batch, run);
     } catch (error) {
       this.logger.warn(`Segment ${segment.key} failed: ${message(error)}`);
-      await this.segments
-        .recordRun({
-          ...run,
-          finishedAt: new Date(),
-          status: 'failed',
-          error: message(error),
-        })
-        .catch((recordError: unknown) =>
-          this.logger.error(
-            `Could not record segment ${segment.hash}: ${message(recordError)}`,
+      await this.recordFailure(
+        run ??
+          buildRun(
+            runId,
+            segment,
+            buildSearch(channel, segment, claimed),
+            startedAt,
           ),
-        );
-      return { stored: false, collected: 0, costUsd };
+        error,
+      );
+      return { skipped: false, queriesSkipped, stored: false, collected: 0, costUsd };
     }
 
     await this.enqueueBatch(batch.batchId);
-    return { stored: true, collected, costUsd };
+    return { skipped: false, queriesSkipped, stored: true, collected, costUsd };
+  }
+
+  /** Records the failed run, which releases its claims; releases them anyway if that fails. */
+  private async recordFailure(
+    run: NewSegmentRun & { id: string },
+    error: unknown,
+  ): Promise<void> {
+    try {
+      await this.segments.recordRun({
+        ...run,
+        finishedAt: new Date(),
+        status: 'failed',
+        error: message(error),
+      });
+    } catch (recordError) {
+      this.logger.error(
+        `Could not record segment ${run.segmentHash}: ${message(recordError)}`,
+      );
+      await this.segments
+        .releaseClaims(run.id)
+        .catch((releaseError: unknown) =>
+          this.logger.error(
+            `Could not release claims of run ${run.id}: ${message(releaseError)}; they expire with their lease`,
+          ),
+        );
+    }
+  }
+
+  private logSkips(
+    segment: SearchSegment,
+    skipped: { reason: ClaimSkipReason }[],
+  ): void {
+    const count = (reason: ClaimSkipReason) =>
+      skipped.filter((skip) => skip.reason === reason).length;
+    this.logger.log(
+      `Segment ${segment.key} skipped: ${count('in-flight')} in-flight, ${count('already-covered')} already-covered`,
+    );
   }
 
   private async enqueueBatch(batchId: string): Promise<void> {
@@ -266,13 +346,32 @@ function buildSearch(
   };
 }
 
+/**
+ * The segment cut down to the members this run claimed, with the cursors the
+ * claim read, so its window and identity describe what is actually searched.
+ */
+function narrow(
+  segment: SearchSegment,
+  claimed: ClaimResult['claimed'],
+): SearchSegment {
+  const fresh = new Map(claimed.map(({ id, coveredUntil }) => [id, coveredUntil]));
+  const members = segment.members
+    .filter(({ id }) => fresh.has(id))
+    .map((member) => ({ ...member, coveredUntil: fresh.get(member.id) ?? null }));
+  if (members.length !== fresh.size)
+    throw new Error(`Segment ${segment.key} claimed a query that is not a member`);
+  const ids = members.map(({ id }) => id);
+  return { ...segment, members, hash: segmentHash(segment.key, ids) };
+}
+
 function buildRun(
+  id: string,
   segment: SearchSegment,
   search: SegmentSearch,
   startedAt: Date,
 ): NewSegmentRun & { id: string } {
   return {
-    id: randomUUID(),
+    id,
     channel: search.channel,
     segmentKey: segment.key,
     segmentHash: segment.hash,
