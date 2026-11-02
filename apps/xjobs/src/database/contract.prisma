@@ -265,7 +265,6 @@ model Profile {
   @@check(expression: sql`"timezoneCurrent" BETWEEN -720 AND 840 AND "timezoneMin" BETWEEN -720 AND 840 AND "timezoneMax" BETWEEN -720 AND 840 AND "timezoneMin" <= "timezoneMax"`, name: "profiles_tz_range")
   @@check(expression: sql`cardinality("languages") > 0`, name: "profiles_languages_nonempty")
   @@check(expression: sql`cardinality("engagements") > 0`, name: "profiles_engagements_nonempty")
-  @@check(expression: sql`cardinality("arrangements") > 0`, name: "profiles_arrangements_nonempty")
   @@index([userId])
   @@map("profiles")
 }

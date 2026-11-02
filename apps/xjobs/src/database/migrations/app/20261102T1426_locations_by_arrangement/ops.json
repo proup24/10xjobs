@@ -100,6 +100,56 @@
     ]
   },
   {
+    "id": "dropCheckConstraint.profiles.profiles_arrangements_nonempty_52fb6f2a",
+    "label": "Drop check constraint \"profiles_arrangements_nonempty_52fb6f2a\" on \"profiles\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "profiles_arrangements_nonempty_52fb6f2a",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"profiles_arrangements_nonempty_52fb6f2a\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_arrangements_nonempty_52fb6f2a",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "constraint \"profiles_arrangements_nonempty_52fb6f2a\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"profiles_arrangements_nonempty_52fb6f2a\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" DROP CONSTRAINT \"profiles_arrangements_nonempty_52fb6f2a\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"profiles_arrangements_nonempty_52fb6f2a\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_arrangements_nonempty_52fb6f2a",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"profiles_arrangements_nonempty_52fb6f2a\" on \"profiles\""
+        }
+      }
+    ]
+  },
+  {
     "id": "dropCheckConstraint.profiles.profiles_regions_check_76fa66e0",
     "label": "Drop check constraint \"profiles_regions_check_76fa66e0\" on \"profiles\"",
     "operationClass": "widening",
