@@ -5,7 +5,7 @@ import {
   SearchSegmentsRepository,
 } from './repositories/segments.repository';
 
-/** Search segments: run records and builder collection cursors. */
+/** Search segments: run records, builder collection cursors and claims. */
 @Module({
   imports: [DatabaseModule],
   providers: [
