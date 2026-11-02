@@ -1,0 +1,519 @@
+/**
+ * In-memory stand-ins for the processor's models and repositories. They follow
+ * the abstract contracts closely enough for unit tests and the golden-set eval.
+ */
+import { randomUUID } from 'node:crypto';
+import type { ListTableRow } from 'src/database/seeds/processor-lists.seed';
+import type {
+  DecisionAnswer,
+  DecisionQuestion,
+  JobForProcessing,
+  ModelCallMeta,
+  PostingInput,
+} from '../models/types';
+import { DecisionModel, ExtractionModel } from '../models/types';
+import {
+  type Claim,
+  type FinishOutcome,
+  type NewAttempt,
+  type NewExtraction,
+  ProcessorRepository,
+  type ReprocessFilter,
+  type ReuseKey,
+} from '../repositories/processor.repository';
+import {
+  matchingForms,
+  VocabRepository,
+  type Vocabulary,
+} from '../repositories/vocab.repository';
+import type { ListOptions } from '../schema';
+import { LIST_NAMES, type ListName } from '../vocab/lists';
+import { slugCode, type VocabSnapshot } from '../vocab/resolve';
+import { SEED, SEED_REGION_COUNTRIES, type SeedTerm } from '../vocab/seed-data';
+
+export const fakeMeta = (
+  model: string,
+  p: Partial<ModelCallMeta> = {},
+): ModelCallMeta => ({
+  model,
+  providerRequestId: 'req-1',
+  inputTokens: 100,
+  outputTokens: 50,
+  cachedInputTokens: 0,
+  costUsd: 0.01,
+  latencyMs: 10,
+  ...p,
+});
+
+/** Returns each item in turn (the last one repeats); an `Error` item is thrown. */
+export function sequence<T>(...items: (T | Error)[]): () => T {
+  let i = 0;
+  return () => {
+    const item = items[Math.min(i++, items.length - 1)];
+    if (item instanceof Error) throw item;
+    return item;
+  };
+}
+
+type DecisionResponder = (
+  input: PostingInput,
+  questions: DecisionQuestion[],
+) => DecisionAnswer[] | Promise<DecisionAnswer[]>;
+
+export class FakeDecisionModel extends DecisionModel {
+  readonly calls: { input: PostingInput; questions: DecisionQuestion[] }[] = [];
+
+  constructor(
+    private readonly respond: DecisionResponder,
+    private readonly model = 'typesafe/jev-1.14',
+    private readonly meta: Partial<ModelCallMeta> = {},
+  ) {
+    super();
+  }
+
+  async decide(
+    input: PostingInput,
+    questions: DecisionQuestion[],
+  ): Promise<{ answers: DecisionAnswer[]; meta: ModelCallMeta }> {
+    this.calls.push({ input, questions });
+    const answers = await this.respond(input, questions);
+    return { answers, meta: fakeMeta(this.model, this.meta) };
+  }
+}
+
+type ExtractionRequest = {
+  systemPrompt: string;
+  jsonSchema: object;
+  retryErrors?: string[];
+};
+
+type ExtractionResponder = (
+  input: PostingInput,
+  req: ExtractionRequest,
+) => unknown;
+
+export class FakeExtractionModel extends ExtractionModel {
+  readonly calls: { input: PostingInput; req: ExtractionRequest }[] = [];
+
+  constructor(
+    private readonly respond: ExtractionResponder,
+    private readonly model = 'anthropic/claude-opus-5.5',
+    private readonly meta: Partial<ModelCallMeta> = {},
+  ) {
+    super();
+  }
+
+  async extract(
+    input: PostingInput,
+    req: ExtractionRequest,
+  ): Promise<{ output: unknown; meta: ModelCallMeta }> {
+    this.calls.push({ input, req });
+    const output = await this.respond(input, req);
+    return { output, meta: fakeMeta(this.model, this.meta) };
+  }
+}
+
+export interface MemoryJob extends JobForProcessing {
+  status: 'active' | 'merged';
+  kind: 'job' | 'post';
+  /** Has a LinkedIn job board source. */
+  linkedIn: boolean;
+  processingStatus: 'pending' | 'processing' | 'processed' | 'failed' | null;
+  processingRequestedAt: Date | null;
+  processingStartedAt: Date | null;
+  processingAttempts: number;
+  processingError: string | null;
+  processedAt: Date | null;
+  currentExtractionId: string | null;
+}
+
+export interface MemoryExtraction extends NewExtraction {
+  id: string;
+  createdAt: Date;
+}
+
+export interface MemoryAttempt extends NewAttempt {
+  id: string;
+  createdAt: Date;
+}
+
+export class MemoryProcessorRepository extends ProcessorRepository {
+  readonly jobs = new Map<string, MemoryJob>();
+  readonly extractions: MemoryExtraction[] = [];
+  readonly attempts: MemoryAttempt[] = [];
+  /** Every method call, by name, in order. */
+  readonly log: string[] = [];
+
+  constructor(private readonly now: () => Date = () => new Date()) {
+    super();
+  }
+
+  /** Adds an in-scope `pending` job; `p` overrides any field. */
+  addJob(p: Partial<MemoryJob> & { id: string }): MemoryJob {
+    const job: MemoryJob = {
+      closed: false,
+      title: 'Backend Engineer',
+      companyName: 'Acme',
+      descriptionText: 'We hire.',
+      evidence: {
+        location: null,
+        contractType: null,
+        experienceLevel: null,
+        salary: null,
+      },
+      status: 'active',
+      kind: 'job',
+      linkedIn: true,
+      processingStatus: 'pending',
+      processingRequestedAt: this.now(),
+      processingStartedAt: null,
+      processingAttempts: 0,
+      processingError: null,
+      processedAt: null,
+      currentExtractionId: null,
+      ...p,
+    };
+    this.jobs.set(job.id, job);
+    return job;
+  }
+
+  /** What ingest does on a reopen: back to `pending` with a new request time. */
+  reopen(jobId: string): void {
+    const job = this.mustGet(jobId);
+    job.processingStatus = 'pending';
+    job.processingRequestedAt = new Date(
+      (job.processingRequestedAt?.getTime() ?? this.now().getTime()) + 1,
+    );
+    job.processingAttempts = 0;
+    job.processingError = null;
+    job.processingStartedAt = null;
+  }
+
+  /** Logs a non-eval attempt costing `costUsd` at `at`. */
+  addSpend(costUsd: number, at: Date = this.now()): void {
+    this.attempts.push({
+      ...attemptDefaults(),
+      costUsd,
+      id: randomUUID(),
+      createdAt: at,
+    });
+  }
+
+  private mustGet(jobId: string): MemoryJob {
+    const job = this.jobs.get(jobId);
+    if (!job) throw new Error(`job ${jobId} not found`);
+    return job;
+  }
+
+  private inScope(job: MemoryJob): boolean {
+    return job.status === 'active' && job.kind === 'job' && job.linkedIn;
+  }
+
+  async listPendingInScope(limit: number): Promise<string[]> {
+    this.log.push('listPendingInScope');
+    return [...this.jobs.values()]
+      .filter((j) => this.inScope(j) && j.processingStatus === 'pending')
+      .sort(
+        (a, b) =>
+          (a.processingRequestedAt?.getTime() ?? -Infinity) -
+            (b.processingRequestedAt?.getTime() ?? -Infinity) ||
+          (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+      )
+      .slice(0, limit)
+      .map((j) => j.id);
+  }
+
+  async claim(jobId: string): Promise<Claim | null> {
+    this.log.push('claim');
+    const job = this.jobs.get(jobId);
+    if (!job || !this.inScope(job) || job.processingStatus !== 'pending')
+      return null;
+    job.processingStatus = 'processing';
+    job.processingAttempts += 1;
+    job.processingStartedAt = this.now();
+    job.processingRequestedAt ??= this.now();
+    return {
+      jobId,
+      requestedAt: job.processingRequestedAt,
+      attempts: job.processingAttempts,
+    };
+  }
+
+  async loadJob(jobId: string): Promise<JobForProcessing | null> {
+    this.log.push('loadJob');
+    const job = this.jobs.get(jobId);
+    if (!job) return null;
+    return {
+      id: job.id,
+      closed: job.closed,
+      title: job.title,
+      companyName: job.companyName,
+      descriptionText: job.descriptionText,
+      evidence: structuredClone(job.evidence),
+    };
+  }
+
+  async findReusable(
+    key: ReuseKey,
+  ): Promise<{ id: string; jobId: string } | null> {
+    this.log.push('findReusable');
+    const hits = this.extractions.filter(
+      (e) =>
+        e.inputHash === key.inputHash &&
+        e.schemaVersion === key.schemaVersion &&
+        e.promptHash === key.promptHash &&
+        e.decisionModel === key.decisionModel &&
+        e.extractionModel === key.extractionModel,
+    );
+    const latest = hits.at(-1);
+    return latest ? { id: latest.id, jobId: latest.jobId } : null;
+  }
+
+  async copyExtraction(extractionId: string, jobId: string): Promise<string> {
+    this.log.push('copyExtraction');
+    const source = this.extractions.find((e) => e.id === extractionId);
+    if (!source) throw new Error(`job extraction ${extractionId} not found`);
+    const copy: MemoryExtraction = {
+      ...structuredClone(source),
+      id: randomUUID(),
+      createdAt: this.now(),
+      jobId,
+      costUsd: 0,
+    };
+    this.extractions.push(copy);
+    return copy.id;
+  }
+
+  async saveExtraction(row: NewExtraction): Promise<string> {
+    this.log.push('saveExtraction');
+    const id = randomUUID();
+    this.extractions.push({
+      ...structuredClone(row),
+      id,
+      createdAt: this.now(),
+    });
+    return id;
+  }
+
+  async recordAttempts(rows: NewAttempt[]): Promise<void> {
+    this.log.push('recordAttempts');
+    for (const row of rows)
+      this.attempts.push({
+        ...structuredClone(row),
+        id: randomUUID(),
+        createdAt: this.now(),
+      });
+  }
+
+  async finish(
+    claim: Claim,
+    outcome: FinishOutcome,
+  ): Promise<'finished' | 'superseded'> {
+    this.log.push('finish');
+    const job = this.mustGet(claim.jobId);
+    const held =
+      job.processingStatus === 'processing' &&
+      job.processingRequestedAt?.getTime() === claim.requestedAt.getTime() &&
+      job.processingAttempts === claim.attempts;
+    if (held) {
+      job.processingStartedAt = null;
+      if (outcome.status === 'processed') {
+        job.processingStatus = 'processed';
+        job.processingError = null;
+        job.processedAt = this.now();
+        if (outcome.extractionId !== null)
+          job.currentExtractionId = outcome.extractionId;
+      } else {
+        job.processingStatus = outcome.status;
+        job.processingError = outcome.error;
+      }
+      return 'finished';
+    }
+    if (
+      outcome.status === 'processed' &&
+      outcome.extractionId !== null &&
+      job.processingStatus !== 'processed'
+    )
+      job.currentExtractionId = outcome.extractionId;
+    return 'superseded';
+  }
+
+  async releaseStale(olderThan: Date): Promise<number> {
+    this.log.push('releaseStale');
+    let n = 0;
+    for (const job of this.jobs.values()) {
+      if (
+        job.processingStatus === 'processing' &&
+        job.processingStartedAt !== null &&
+        job.processingStartedAt < olderThan
+      ) {
+        job.processingStatus = 'pending';
+        job.processingStartedAt = null;
+        n++;
+      }
+    }
+    return n;
+  }
+
+  async spendSince(since: Date): Promise<number> {
+    this.log.push('spendSince');
+    return this.attempts
+      .filter((a) => !a.eval && a.createdAt >= since)
+      .reduce((sum, a) => sum + a.costUsd, 0);
+  }
+
+  async markPending(filter: ReprocessFilter): Promise<number> {
+    this.log.push('markPending');
+    const ids = new Set(filter.jobIds ?? []);
+    let n = 0;
+    for (const job of this.jobs.values()) {
+      if (!this.inScope(job)) continue;
+      const match =
+        filter.allInScope ||
+        (filter.nullStatus && job.processingStatus === null) ||
+        (filter.failed && job.processingStatus === 'failed') ||
+        ids.has(job.id);
+      if (!match) continue;
+      job.processingStatus = 'pending';
+      job.processingRequestedAt = this.now();
+      job.processingAttempts = 0;
+      job.processingError = null;
+      job.processingStartedAt = null;
+      n++;
+    }
+    return n;
+  }
+}
+
+function attemptDefaults(): NewAttempt {
+  return {
+    jobId: null,
+    extractionId: null,
+    eval: false,
+    step: 'decision',
+    outcome: 'ok',
+    error: null,
+    quoteFailures: 0,
+    model: 'm',
+    providerRequestId: null,
+    inputTokens: 0,
+    outputTokens: 0,
+    cachedInputTokens: 0,
+    costUsd: 0,
+    latencyMs: 0,
+  };
+}
+
+export interface MemoryCity {
+  id: string;
+  name: string;
+  countryCode: string;
+  status: 'approved' | 'proposed';
+  occurrences: number;
+}
+
+/** The list tables in memory, seeded as approved from `SEED` by default. */
+export class MemoryVocabRepository extends VocabRepository {
+  readonly lists: Record<ListName, ListTableRow[]>;
+  readonly cities: MemoryCity[] = [];
+  readonly regionCountries: Map<string, string[]>;
+
+  constructor(
+    seed: Record<ListName, SeedTerm[]> = SEED,
+    regionCountries: [string, string][] = SEED_REGION_COUNTRIES,
+  ) {
+    super();
+    this.lists = Object.fromEntries(
+      LIST_NAMES.map((list) => [
+        list,
+        seed[list].map((t) => ({
+          code: t.code,
+          label: t.label,
+          aliases: [...t.aliases],
+          status: 'approved',
+          occurrences: 0,
+        })),
+      ]),
+    ) as Record<ListName, ListTableRow[]>;
+    this.regionCountries = new Map();
+    for (const [region, country] of regionCountries) {
+      const list = this.regionCountries.get(region) ?? [];
+      list.push(country);
+      this.regionCountries.set(region, list);
+    }
+    for (const list of this.regionCountries.values()) list.sort();
+  }
+
+  row(list: ListName, code: string): ListTableRow | undefined {
+    return this.lists[list].find((r) => r.code === code);
+  }
+
+  async snapshot(): Promise<Vocabulary> {
+    const options = {} as ListOptions;
+    const approved = {} as VocabSnapshot['approved'];
+    for (const list of LIST_NAMES) {
+      const rows = this.lists[list].filter((r) => r.status === 'approved');
+      options[list] = rows.map((r) => r.code).sort();
+      approved[list] = matchingForms(rows);
+    }
+    const regionCountries = new Map(
+      [...this.regionCountries].map(([k, v]) => [k, [...v]]),
+    );
+    return { options, vocab: { approved }, regionCountries };
+  }
+
+  async propose(p: { list: ListName; text: string }[]): Promise<void> {
+    for (const { list, text } of p) {
+      const code = slugCode(text);
+      if (code === '') continue;
+      const alias = text.trim().toLowerCase();
+      const existing = this.row(list, code);
+      if (!existing) {
+        this.lists[list].push({
+          code,
+          label: text.trim(),
+          aliases: alias === code ? [] : [alias],
+          status: 'proposed',
+          occurrences: 1,
+        });
+      } else if (existing.status === 'proposed') {
+        existing.occurrences += 1;
+        if (alias !== code && !existing.aliases.includes(alias))
+          existing.aliases.push(alias);
+      }
+    }
+  }
+
+  async upsertCities(
+    c: { name: string; countryCode: string }[],
+  ): Promise<Map<string, string>> {
+    const ids = new Map<string, string>();
+    for (const city of c) {
+      let found = this.cities.find(
+        (x) =>
+          x.countryCode === city.countryCode &&
+          x.name.toLowerCase() === city.name.toLowerCase(),
+      );
+      if (found) found.occurrences += 1;
+      else {
+        found = {
+          id: randomUUID(),
+          name: city.name,
+          countryCode: city.countryCode,
+          status: 'proposed',
+          occurrences: 1,
+        };
+        this.cities.push(found);
+      }
+      ids.set(`${city.name}|${city.countryCode}`, found.id);
+    }
+    return ids;
+  }
+
+  async bumpOccurrences(list: ListName, codes: string[]): Promise<void> {
+    for (const code of codes) {
+      const row = this.row(list, code);
+      if (row) row.occurrences += 1;
+    }
+  }
+}
