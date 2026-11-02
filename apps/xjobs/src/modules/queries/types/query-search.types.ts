@@ -34,7 +34,7 @@ export type TechnologySet = {
 export type QuerySearchProfileInput = {
   position: Position;
   locations: LocationsByArrangement;
-  seniority: Seniority;
+  seniorities: Seniority[];
   skills: RankedSkill[];
 };
 

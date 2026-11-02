@@ -10,7 +10,7 @@ import {
 const empty = { remote: [], hybrid: [], onsite: [] };
 const input: QuerySearchProfileInput = {
   position: Position.backend_engineer,
-  seniority: Seniority.senior,
+  seniorities: [Seniority.senior],
   locations: { ...empty, remote: ['EMEA'] },
   skills: [],
 };
@@ -30,7 +30,10 @@ describe('locationKey', () => {
 describe('normalizeLocations', () => {
   it('dedupes by key within a list, keeping the first spelling', () => {
     expect(
-      normalizeLocations({ ...empty, remote: ['Europe', 'europe ', 'Morocco'] }),
+      normalizeLocations({
+        ...empty,
+        remote: ['Europe', 'europe ', 'Morocco'],
+      }),
     ).toEqual({ ...empty, remote: ['Europe', 'Morocco'] });
   });
 
@@ -50,9 +53,20 @@ describe('normalizeLocations', () => {
 describe('normalizeProfile', () => {
   it('normalizes the locations', () => {
     expect(
-      normalizeProfile({ ...input, locations: { ...empty, onsite: [' Rabat ,  Morocco'] } })
-        .locations,
+      normalizeProfile({
+        ...input,
+        locations: { ...empty, onsite: [' Rabat ,  Morocco'] },
+      }).locations,
     ).toEqual({ ...empty, onsite: ['Rabat , Morocco'] });
+  });
+
+  it('dedupes the seniorities in enum order', () => {
+    expect(
+      normalizeProfile({
+        ...input,
+        seniorities: [Seniority.staff, Seniority.senior, Seniority.staff],
+      }).seniorities,
+    ).toEqual([Seniority.senior, Seniority.staff]);
   });
 
   it('adds no default location when every list is empty', () => {

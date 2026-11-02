@@ -26,7 +26,7 @@ const profile: QuerySearchProfileInput = {
     hybrid: [],
     onsite: ['Casablanca, Morocco'],
   },
-  seniority: Seniority.senior,
+  seniorities: [Seniority.senior],
   skills: [
     {
       technology: Technology.nestjs,

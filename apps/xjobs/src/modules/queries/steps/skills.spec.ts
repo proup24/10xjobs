@@ -1,17 +1,12 @@
 import { BadRequestException } from '@nestjs/common';
-import {
-  Position,
-  Seniority,
-  SkillDomain,
-  Technology,
-} from 'src/common/enums';
+import { Position, Seniority, SkillDomain, Technology } from 'src/common/enums';
 import type { QuerySearchProfileInput } from '../types';
 import { assertHasSkills, hasRankedSkill, SKILLS_REQUIRED } from './skills';
 
 const input: QuerySearchProfileInput = {
   position: Position.backend_engineer,
   locations: { remote: ['EMEA'], hybrid: [], onsite: [] },
-  seniority: Seniority.senior,
+  seniorities: [Seniority.senior],
   skills: [],
 };
 const go = (importance: number) => ({

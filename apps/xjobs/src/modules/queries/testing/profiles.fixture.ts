@@ -1,9 +1,4 @@
-import {
-  Position,
-  Seniority,
-  SkillDomain,
-  Technology,
-} from 'src/common/enums';
+import { Position, Seniority, SkillDomain, Technology } from 'src/common/enums';
 import type {
   LocationsByArrangement,
   QuerySearchProfileInput,
@@ -21,11 +16,16 @@ const skill = (
 const { backend, frontend, fullstack, devops, data, ml, qa } = SkillDomain;
 const locations = (
   partial: Partial<LocationsByArrangement>,
-): LocationsByArrangement => ({ remote: [], hybrid: [], onsite: [], ...partial });
+): LocationsByArrangement => ({
+  remote: [],
+  hybrid: [],
+  onsite: [],
+  ...partial,
+});
 
 const remoteBackendMa: QuerySearchProfileInput = {
   position: Position.backend_engineer,
-  seniority: Seniority.senior,
+  seniorities: [Seniority.senior],
   locations: locations({ remote: ['EMEA', 'European Union'] }),
   skills: [
     skill(Technology.nestjs, backend, 9, 8),
@@ -36,7 +36,7 @@ const remoteBackendMa: QuerySearchProfileInput = {
 
 const onsiteFrontendParis: QuerySearchProfileInput = {
   position: Position.frontend_engineer,
-  seniority: Seniority.mid,
+  seniorities: [Seniority.mid],
   locations: locations({ onsite: ['Paris, France'] }),
   skills: [
     skill(Technology.react, frontend, 9, 8),
@@ -50,7 +50,7 @@ export const MOCK_PROFILES = {
   onsiteFrontendParis,
   hybridAndRemoteDevops: {
     position: Position.devops_engineer,
-    seniority: Seniority.staff,
+    seniorities: [Seniority.staff],
     locations: locations({
       hybrid: ['Austin, United States'],
       remote: ['North America'],
@@ -63,13 +63,13 @@ export const MOCK_PROFILES = {
   },
   unstatedSeniority: {
     position: Position.data_engineer,
-    seniority: Seniority.unstated,
+    seniorities: [Seniority.unstated],
     locations: locations({ remote: ['Asia Pacific'] }),
     skills: [skill(Technology.python, data, 7, 7)],
   },
   onsiteOnlyCasablanca: {
     position: Position.backend_engineer,
-    seniority: Seniority.junior,
+    seniorities: [Seniority.junior],
     locations: locations({ onsite: ['Casablanca, Morocco'] }),
     skills: [
       skill(Technology.go, backend, 8, 6),
@@ -78,7 +78,7 @@ export const MOCK_PROFILES = {
   },
   remoteWorldwide: {
     position: Position.ml_engineer,
-    seniority: Seniority.principal,
+    seniorities: [Seniority.principal],
     locations: locations({ remote: ['Worldwide'] }),
     skills: [
       skill(Technology.pytorch, ml, 9, 9),
@@ -88,19 +88,19 @@ export const MOCK_PROFILES = {
   /** Nothing to search: every builder needs a skill domain. */
   noRankedSkills: {
     position: Position.qa_engineer,
-    seniority: Seniority.senior,
+    seniorities: [Seniority.senior],
     locations: locations({ remote: ['Spain'], onsite: ['Madrid, Spain'] }),
     skills: [skill(Technology.python, qa, 0, 6)],
   },
   leadTechLead: {
     position: Position.tech_lead,
-    seniority: Seniority.lead,
+    seniorities: [Seniority.lead],
     locations: locations({ onsite: ['London, United Kingdom'] }),
     skills: [skill(Technology.typescript, fullstack, 9, 9)],
   },
   tiesAndDuplicates: {
     position: Position.backend_engineer,
-    seniority: Seniority.senior,
+    seniorities: [Seniority.senior],
     locations: locations({ remote: ['European Union', 'european union '] }),
     skills: [
       skill(Technology.go, devops, 5, 5),

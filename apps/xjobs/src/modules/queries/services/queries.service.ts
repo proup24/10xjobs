@@ -6,6 +6,7 @@ import { technologySets } from '../sets/technology';
 import { QuerySearchRepository } from '../repositories/queries.repository';
 import {
   assertHasLocations,
+  assertHasSeniorities,
   assertHasSkills,
   dedupeByHash,
   locationCombinations,
@@ -23,11 +24,12 @@ export class QuerySearchService {
 
   /**
    * Turns a profile into its search recipes: one per `arrangement × channel ×
-   * location × technology`. Each step is a pure function in `../steps`.
+   * location × technology × seniority`. Each step is a pure function in `../steps`.
    */
   expand(input: QuerySearchProfileInput): QuerySearchRecipe[] {
     const profile = normalizeProfile(input);
     assertHasLocations(profile);
+    assertHasSeniorities(profile);
     assertHasSkills(profile);
     const technologies = technologySets(profile.skills);
     const combinations = locationCombinations(profile, technologies);

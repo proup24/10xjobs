@@ -6,6 +6,7 @@ export {
   locationKey,
   LOCATIONS_REQUIRED,
   normalizeLocations,
+  normalizeSeniorities,
   SKILLS_REQUIRED,
 } from './steps';
 export { LOCATION_ARRANGEMENTS } from './types';

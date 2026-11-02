@@ -9,7 +9,8 @@ import { LOCATION_ARRANGEMENTS } from '../types';
 import { locationKey } from './normalize';
 
 /**
- * One combination per `arrangement × active channel × location × technology set`.
+ * One combination per `arrangement × active channel × location × technology set ×
+ * seniority`.
  * The location is searched as given, whatever the arrangement, so profiles
  * listing the same location share builders.
  */
@@ -20,15 +21,17 @@ export function locationCombinations(
   return LOCATION_ARRANGEMENTS.flatMap((type) =>
     ACTIVE_CHANNELS.flatMap((channel) =>
       profile.locations[type].flatMap((text) =>
-        technologies.map(({ technologies: set, domain }) => ({
-          channel,
-          position: profile.position,
-          location: locationKey(text),
-          experience: profile.seniority,
-          type,
-          technologies: set,
-          domain,
-        })),
+        technologies.flatMap(({ technologies: set, domain }) =>
+          profile.seniorities.map((experience) => ({
+            channel,
+            position: profile.position,
+            location: locationKey(text),
+            experience,
+            type,
+            technologies: set,
+            domain,
+          })),
+        ),
       ),
     ),
   );

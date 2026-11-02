@@ -1,3 +1,4 @@
+import { normalizeSeniorities } from './seniorities';
 import type { LocationsByArrangement, QuerySearchProfileInput } from '../types';
 import { LOCATION_ARRANGEMENTS } from '../types';
 
@@ -32,5 +33,9 @@ export function normalizeLocations(
 export function normalizeProfile(
   input: QuerySearchProfileInput,
 ): QuerySearchProfileInput {
-  return { ...input, locations: normalizeLocations(input.locations) };
+  return {
+    ...input,
+    locations: normalizeLocations(input.locations),
+    seniorities: normalizeSeniorities(input.seniorities),
+  };
 }

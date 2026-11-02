@@ -2,10 +2,15 @@ import { BadRequestException } from '@nestjs/common';
 import {
   Arrangement,
   Channel,
+  Seniority,
   SkillDomain,
   Technology,
 } from 'src/common/enums';
-import { LOCATIONS_REQUIRED, SKILLS_REQUIRED } from '../steps';
+import {
+  LOCATIONS_REQUIRED,
+  SENIORITIES_REQUIRED,
+  SKILLS_REQUIRED,
+} from '../steps';
 import { FakeQuerySearchRepository } from '../testing/fakes';
 import { MOCK_PROFILES, summarize } from '../testing/profiles.fixture';
 import type { QuerySearchProfileInput, QuerySearchRecipe } from '../types';
@@ -118,9 +123,8 @@ describe('expand scenarios over mock profiles', () => {
   });
 
   it('golden: hybrid + remote devops output', () => {
-    expect(
-      summarize(expand(MOCK_PROFILES.hybridAndRemoteDevops)),
-    ).toMatchInlineSnapshot(`
+    expect(summarize(expand(MOCK_PROFILES.hybridAndRemoteDevops)))
+      .toMatchInlineSnapshot(`
       [
         "ASHBY | devops | hybrid | austin, united states | ("devops engineer" OR "devops") kubernetes staff "austin, united states" | {"remote":false}",
         "ASHBY | devops | hybrid | austin, united states | ("devops engineer" OR "devops") terraform staff "austin, united states" | {"remote":false}",
@@ -148,14 +152,81 @@ describe('expand scenarios over mock profiles', () => {
     expect(
       on(recipes, Channel.LINKEDIN_JOB_BOARD).map((r) => [r.keyword, r.params]),
     ).toEqual([
-      [
-        'data engineer python',
-        { location: 'asia pacific', workType: '2' },
-      ],
+      ['data engineer python', { location: 'asia pacific', workType: '2' }],
     ]);
     expect(keywords(recipes, Channel.LINKEDIN_POSTS)).toEqual([
       'hiring ("data engineer" OR "data platform engineer") python remote asia pacific',
     ]);
+  });
+
+  describe('seniorities', () => {
+    const base = MOCK_PROFILES.remoteBackendMa;
+    const { senior, staff, unstated } = Seniority;
+    const levels = (recipes: QuerySearchRecipe[]) =>
+      on(recipes, Channel.LINKEDIN_JOB_BOARD).map(
+        (r) => r.params.experienceLevel,
+      );
+
+    it('one search per seniority, shared across profiles', () => {
+      const a = expand({ ...base, seniorities: [senior, staff] });
+      const b = expand({ ...base, seniorities: [staff] });
+      expect(a).toHaveLength(2 * b.length);
+      expect([...hashSet(b)].every((hash) => hashSet(a).has(hash))).toBe(true);
+      const counts = levels(a).reduce<Record<string, number>>(
+        (acc, level) => ({
+          ...acc,
+          [String(level)]: (acc[String(level)] ?? 0) + 1,
+        }),
+        {},
+      );
+      expect(counts).toEqual({ '4': 4, '4,5': 4 });
+    });
+
+    it('the same set in another order gives the same recipes', () => {
+      expect(
+        hashSet(expand({ ...base, seniorities: [staff, senior] })),
+      ).toEqual(hashSet(expand({ ...base, seniorities: [senior, staff] })));
+    });
+
+    it('duplicate seniorities do not duplicate recipes', () => {
+      expect(expand({ ...base, seniorities: [senior, senior] })).toHaveLength(
+        expand({ ...base, seniorities: [senior] }).length,
+      );
+    });
+
+    it('unstated alongside a level: only the unstated searches drop the level', () => {
+      const recipes = expand({ ...base, seniorities: [unstated, senior] });
+      const ofLevel = (level: Seniority) =>
+        recipes.filter((r) => r.experience === level);
+      expect(ofLevel(unstated)).toHaveLength(recipes.length / 2);
+      expect(ofLevel(senior)).toHaveLength(recipes.length / 2);
+      expect(
+        on(ofLevel(unstated), Channel.LINKEDIN_JOB_BOARD).every(
+          (r) => !('experienceLevel' in r.params),
+        ),
+      ).toBe(true);
+      expect(
+        keywords(ofLevel(unstated), Channel.LINKEDIN_POSTS).every(
+          (k) => !/\bsenior\b/.test(k),
+        ),
+      ).toBe(true);
+      expect(
+        on(ofLevel(senior), Channel.LINKEDIN_JOB_BOARD).every(
+          (r) => r.params.experienceLevel === '4',
+        ),
+      ).toBe(true);
+      expect(
+        keywords(ofLevel(senior), Channel.LINKEDIN_POSTS).every((k) =>
+          /\bsenior\b/.test(k),
+        ),
+      ).toBe(true);
+    });
+
+    it('rejects an empty seniority set', () => {
+      expect(() => expand({ ...base, seniorities: [] })).toThrow(
+        new BadRequestException(SENIORITIES_REQUIRED),
+      );
+    });
   });
 
   it('onsite only: only onsite builders, in that location', () => {
@@ -266,7 +337,9 @@ describe('expand scenarios over mock profiles', () => {
     it('same location typed differently: identical builders', () => {
       const paris = MOCK_PROFILES.onsiteFrontendParis;
       const at = (onsite: string) =>
-        hashSet(expand({ ...paris, locations: { ...empty, onsite: [onsite] } }));
+        hashSet(
+          expand({ ...paris, locations: { ...empty, onsite: [onsite] } }),
+        );
       expect(at('paris, france')).toEqual(at(' PARIS,  France '));
       expect(at('paris, france')).toEqual(hashSet(expand(paris)));
     });

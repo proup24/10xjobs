@@ -12,7 +12,7 @@ import { dedupeByHash, locationCombinations } from './combinations';
 
 const profile: QuerySearchProfileInput = {
   position: Position.backend_engineer,
-  seniority: Seniority.senior,
+  seniorities: [Seniority.senior],
   locations: { remote: ['Europe'], hybrid: ['France'], onsite: ['France'] },
   skills: [],
 };
@@ -67,6 +67,32 @@ describe('locationCombinations', () => {
       locationCombinations(profile, sets).map((c) => c.channel),
     );
     expect([...built]).toEqual([...ACTIVE_CHANNELS]);
+  });
+
+  it('expands one combination per seniority', () => {
+    const both = locationCombinations(
+      { ...profile, seniorities: [Seniority.senior, Seniority.staff] },
+      sets,
+    );
+    expect(both).toHaveLength(3 * channels * 2 * 2);
+    const tuple = (c: (typeof both)[number]) =>
+      [c.type, c.channel, c.location, c.technologies.join(',')].join('|');
+    const byTuple = new Map<string, Seniority[]>();
+    for (const c of both)
+      byTuple.set(tuple(c), [...(byTuple.get(tuple(c)) ?? []), c.experience]);
+    expect(byTuple.size).toBe(3 * channels * 2);
+    for (const levels of byTuple.values())
+      expect(levels).toEqual([Seniority.senior, Seniority.staff]);
+  });
+
+  it('puts seniority innermost, after the technology set', () => {
+    const [first, second] = locationCombinations(
+      { ...profile, seniorities: [Seniority.senior, Seniority.staff] },
+      sets,
+    );
+    expect(first?.experience).toBe(Seniority.senior);
+    expect(second?.experience).toBe(Seniority.staff);
+    expect(second?.technologies).toEqual(first?.technologies);
   });
 
   it('skips an arrangement with no locations', () => {

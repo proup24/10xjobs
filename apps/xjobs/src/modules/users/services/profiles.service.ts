@@ -70,7 +70,7 @@ export function toQuerySearchInput(
   return {
     position: profile.position as Position,
     locations: profile.locations as LocationsByArrangement,
-    seniority: profile.seniority as Seniority,
+    seniorities: [profile.seniority as Seniority],
     skills: profile.techStack.map(
       ({ technology, domain, importance, mastery }) => ({
         technology: technology as Technology,
