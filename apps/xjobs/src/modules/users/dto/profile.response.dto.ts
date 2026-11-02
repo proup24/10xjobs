@@ -61,8 +61,8 @@ export class ProfileResponseDto implements ProfileView {
   @ApiProperty({ enum: Engagement, enumName: 'Engagement', isArray: true })
   engagements!: Engagement[];
 
-  @ApiProperty({ enum: Seniority, enumName: 'Seniority' })
-  seniority!: Seniority;
+  @ApiProperty({ enum: Seniority, enumName: 'Seniority', isArray: true })
+  seniorities!: Seniority[];
 
   @ApiProperty()
   noticePeriodDays!: number;

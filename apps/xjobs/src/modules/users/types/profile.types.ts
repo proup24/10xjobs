@@ -23,7 +23,7 @@ export type ProfileInput = {
   timezoneMin: number;
   timezoneMax: number;
   engagements: Engagement[];
-  seniority: Seniority;
+  seniorities: Seniority[];
   noticePeriodDays: number;
 };
 

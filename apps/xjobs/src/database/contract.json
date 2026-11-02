@@ -3197,7 +3197,10 @@
                   }
                 }
               },
-              "seniority": {
+              "seniorities": {
+                "many": {
+                  "elementNullable": false
+                },
                 "nullable": false,
                 "type": {
                   "codecId": "pg/text@1",
@@ -3334,8 +3337,8 @@
                 "resumeUploadedAt": {
                   "column": "resumeUploadedAt"
                 },
-                "seniority": {
-                  "column": "seniority"
+                "seniorities": {
+                  "column": "seniorities"
                 },
                 "state": {
                   "column": "state"
@@ -7292,9 +7295,19 @@
                   "prefix": "profiles_position_check"
                 },
                 {
-                  "expression": "\"seniority\" IN ('junior', 'mid', 'senior', 'staff', 'lead', 'principal', 'unstated')",
-                  "name": "profiles_seniority_check_2e7615f6",
-                  "prefix": "profiles_seniority_check"
+                  "expression": "array_remove(\"seniorities\", NULL) <@ '{\"junior\",\"mid\",\"senior\",\"staff\",\"lead\",\"principal\",\"unstated\"}'",
+                  "name": "profiles_seniorities_check_c892abac",
+                  "prefix": "profiles_seniorities_check"
+                },
+                {
+                  "expression": "array_position(\"seniorities\", NULL) IS NULL",
+                  "name": "profiles_seniorities_elem_not_null_f6b227c2",
+                  "prefix": "profiles_seniorities_elem_not_null"
+                },
+                {
+                  "expression": "cardinality(\"seniorities\") > 0",
+                  "name": "profiles_seniorities_nonempty_798996d1",
+                  "prefix": "profiles_seniorities_nonempty"
                 },
                 {
                   "expression": "\"state\" IN ('draft', 'published')",
@@ -7425,9 +7438,12 @@
                     "precision": 3
                   }
                 },
-                "seniority": {
+                "seniorities": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
+                  "many": {
+                    "elementNullable": false
+                  },
                   "nullable": false,
                   "valueSet": {
                     "entityKind": "valueSet",
@@ -8971,7 +8987,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "4bdafacb4acf80aa9d8e3c49a0be2f74bdedea1ace7542a31a5bb09fa2376833"
+    "storageHash": "793fa85bf51730236dcd5b86ba17417fbc3a6d1cc782b40ef94b4f2dda9e58ba"
   },
   "execution": {
     "executionHash": "c6873c5a9f9e3698427d663f89066a9052d28a2625e473b43a449e049a00b87b",

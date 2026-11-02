@@ -39,7 +39,7 @@ const profileInput: ProfileInput = {
   timezoneMin: 0,
   timezoneMax: 0,
   engagements: [Engagement.employee],
-  seniority: Seniority.senior,
+  seniorities: [Seniority.senior],
   noticePeriodDays: 0,
 };
 

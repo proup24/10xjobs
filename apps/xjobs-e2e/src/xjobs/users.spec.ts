@@ -14,7 +14,7 @@ const profile = {
   timezoneMin: -240,
   timezoneMax: 240,
   engagements: ['employee', 'contractor'],
-  seniority: 'senior',
+  seniorities: ['senior'],
   noticePeriodDays: 30,
   techStack: [
     { technology: 'nodejs', domain: 'backend', mastery: 8, importance: 9 },

@@ -249,7 +249,7 @@ model Profile {
   timezoneMin       Int
   timezoneMax       Int
   engagements       Engagement[]
-  seniority         Seniority
+  seniorities       Seniority[]
   noticePeriodDays  Int
   resumeKey         String?
   resumeFilename    String?
@@ -265,6 +265,7 @@ model Profile {
   @@check(expression: sql`"timezoneCurrent" BETWEEN -720 AND 840 AND "timezoneMin" BETWEEN -720 AND 840 AND "timezoneMax" BETWEEN -720 AND 840 AND "timezoneMin" <= "timezoneMax"`, name: "profiles_tz_range")
   @@check(expression: sql`cardinality("languages") > 0`, name: "profiles_languages_nonempty")
   @@check(expression: sql`cardinality("engagements") > 0`, name: "profiles_engagements_nonempty")
+  @@check(expression: sql`cardinality("seniorities") > 0`, name: "profiles_seniorities_nonempty")
   // locations is exactly { remote, hybrid, onsite }: arrays of at most 20 strings, at least one location overall.
   @@check(expression: sql`jsonb_typeof("locations") = 'object' AND "locations" ?& ARRAY['remote', 'hybrid', 'onsite'] AND ("locations" - ARRAY['remote', 'hybrid', 'onsite']) = '{}'::jsonb AND CASE WHEN jsonb_typeof("locations" -> 'remote') = 'array' AND jsonb_typeof("locations" -> 'hybrid') = 'array' AND jsonb_typeof("locations" -> 'onsite') = 'array' THEN jsonb_array_length("locations" -> 'remote') <= 20 AND jsonb_array_length("locations" -> 'hybrid') <= 20 AND jsonb_array_length("locations" -> 'onsite') <= 20 AND NOT jsonb_path_exists("locations", '$.*[*] ? (@.type() != "string")') ELSE false END`, name: "profiles_locations_shape")
   @@check(expression: sql`jsonb_path_exists("locations", '$.*[*]')`, name: "profiles_locations_nonempty")

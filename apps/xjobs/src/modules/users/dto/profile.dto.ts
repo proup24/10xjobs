@@ -101,9 +101,12 @@ export class ProfileFieldsDto {
   @IsEnum(Engagement, { each: true })
   engagements!: Engagement[];
 
-  @ApiProperty({ enum: Seniority, enumName: 'Seniority' })
-  @IsEnum(Seniority)
-  seniority!: Seniority;
+  @ApiProperty({ enum: Seniority, enumName: 'Seniority', isArray: true })
+  @IsArray()
+  @ArrayNotEmpty()
+  @ArrayUnique()
+  @IsEnum(Seniority, { each: true })
+  seniorities!: Seniority[];
 
   @ApiProperty({ minimum: 0, maximum: 365 })
   @IsInt()

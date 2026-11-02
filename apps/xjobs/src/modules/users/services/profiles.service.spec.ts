@@ -38,7 +38,7 @@ const profileInput: ProfileInput = {
   timezoneMin: -240,
   timezoneMax: 240,
   engagements: [Engagement.employee],
-  seniority: Seniority.senior,
+  seniorities: [Seniority.senior],
   noticePeriodDays: 30,
 };
 
@@ -83,7 +83,7 @@ describe('ProfilesService', () => {
     const view = await create();
     expect(view).toMatchObject({
       userId,
-      seniority: 'senior',
+      seniorities: ['senior'],
       state: 'draft',
       publishedAt: null,
     });
@@ -95,6 +95,37 @@ describe('ProfilesService', () => {
         importance: 5,
       },
     ]);
+  });
+
+  it('stores seniorities deduped, in enum order', async () => {
+    const view = await service.create(userId, {
+      ...profileInput,
+      seniorities: [Seniority.staff, Seniority.senior, Seniority.staff],
+      techStack: [skill(Technology.nodejs, 8)],
+    });
+    expect(view.seniorities).toEqual([Seniority.senior, Seniority.staff]);
+    const row = await profiles.findById(userId, view.id);
+    expect(row?.seniorities).toEqual([Seniority.senior, Seniority.staff]);
+  });
+
+  it('replaces the seniority set rather than merging it', async () => {
+    const { id } = await create();
+    const view = await service.replace(userId, id, {
+      ...editable,
+      seniorities: [Seniority.lead],
+      techStack: [],
+    });
+    expect(view.seniorities).toEqual([Seniority.lead]);
+  });
+
+  it('passes the whole seniority set to query search', async () => {
+    const { id } = await service.create(userId, {
+      ...profileInput,
+      seniorities: [Seniority.senior, Seniority.staff],
+      techStack: [skill(Technology.nodejs, 8)],
+    });
+    const input = toQuerySearchInput((await profiles.findById(userId, id))!);
+    expect(input.seniorities).toEqual([Seniority.senior, Seniority.staff]);
   });
 
   it('stores locations in display form, deduped by key', async () => {
@@ -135,7 +166,11 @@ describe('ProfilesService', () => {
       techStack: [skill(Technology.nodejs, 8)],
     });
     const input = toQuerySearchInput((await profiles.findById(userId, id))!);
-    expect(input.locations).toEqual({ remote: ['MENA'], hybrid: [], onsite: [] });
+    expect(input.locations).toEqual({
+      remote: ['MENA'],
+      hybrid: [],
+      onsite: [],
+    });
     expect(input).not.toHaveProperty('country');
     expect(input).not.toHaveProperty('city');
   });

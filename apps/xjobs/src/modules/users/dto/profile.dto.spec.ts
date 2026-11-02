@@ -14,13 +14,17 @@ const validProfile = {
   languages: ['EN', 'FR'],
   country: 'MA',
   city: 'Rabat',
-  locations: { remote: ['MENA', 'North Africa', 'EMEA'], hybrid: [], onsite: [] },
+  locations: {
+    remote: ['MENA', 'North Africa', 'EMEA'],
+    hybrid: [],
+    onsite: [],
+  },
   yearsOfExperience: 6,
   timezoneCurrent: 60,
   timezoneMin: -240,
   timezoneMax: 240,
   engagements: ['employee', 'contractor'],
-  seniority: 'senior',
+  seniorities: ['senior'],
   noticePeriodDays: 30,
   techStack: [{ technology: 'nodejs', domain: 'backend', mastery: 8 }],
 };
@@ -142,6 +146,26 @@ describe('CreateProfileDto', () => {
   });
 });
 
+describe('profile seniorities', () => {
+  it('accepts several seniorities', async () => {
+    expect(await errorsFor({ seniorities: ['senior', 'staff'] })).toEqual([]);
+  });
+
+  it.each([
+    [[]],
+    [['senior', 'senior']],
+    [['wizard']],
+    ['senior'],
+    [undefined],
+  ])('rejects seniorities %j', async (seniorities) => {
+    expect(await errorsFor({ seniorities })).toEqual(['seniorities']);
+  });
+
+  it('rejects the old single seniority field', async () => {
+    expect(await errorsFor({ seniority: 'senior' })).toEqual(['seniority']);
+  });
+});
+
 describe('profile locations', () => {
   const none = { remote: [], hybrid: [], onsite: [] };
 
@@ -183,7 +207,9 @@ describe('profile locations', () => {
 
   it('rejects an unknown arrangement key', async () => {
     expect(
-      await errorsFor({ locations: { ...none, remote: ['Europe'], anywhere: [] } }),
+      await errorsFor({
+        locations: { ...none, remote: ['Europe'], anywhere: [] },
+      }),
     ).toEqual(['locations.anywhere']);
   });
 
@@ -205,12 +231,12 @@ describe('profile locations', () => {
     expect(await errorsFor({ locations: { ...none, onsite } })).toEqual([]);
   });
 
-  it.each([['arrangements', ['remote']], ['regions', ['EMEA']]])(
-    'rejects the removed %s field',
-    async (field, value) => {
-      expect(await errorsFor({ [field]: value })).toEqual([field]);
-    },
-  );
+  it.each([
+    ['arrangements', ['remote']],
+    ['regions', ['EMEA']],
+  ])('rejects the removed %s field', async (field, value) => {
+    expect(await errorsFor({ [field]: value })).toEqual([field]);
+  });
 
   it('accepts onsite with no city', async () => {
     expect(

@@ -24,7 +24,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'4bdafacb4acf80aa9d8e3c49a0be2f74bdedea1ace7542a31a5bb09fa2376833'>;
+  StorageHashBase<'793fa85bf51730236dcd5b86ba17417fbc3a6d1cc782b40ef94b4f2dda9e58ba'>;
 export type ExecutionHash =
   ExecutionHashBase<'c6873c5a9f9e3698427d663f89066a9052d28a2625e473b43a449e049a00b87b'>;
 export type ProfileHash =
@@ -364,7 +364,7 @@ type FieldTypeOverrides = {
             | 'tech_lead'
             | 'engineering_manager';
         };
-        readonly seniority: {
+        readonly seniorities: {
           readonly output:
             'junior' | 'mid' | 'senior' | 'staff' | 'lead' | 'principal' | 'unstated';
           readonly input: 'junior' | 'mid' | 'senior' | 'staff' | 'lead' | 'principal' | 'unstated';
@@ -959,7 +959,7 @@ type ColumnTypeOverrides = {
           | 'tech_lead'
           | 'engineering_manager';
       };
-      readonly seniority: {
+      readonly seniorities: {
         readonly output: 'junior' | 'mid' | 'senior' | 'staff' | 'lead' | 'principal' | 'unstated';
         readonly input: 'junior' | 'mid' | 'senior' | 'staff' | 'lead' | 'principal' | 'unstated';
       };
@@ -1423,7 +1423,7 @@ export namespace Models {
     resumeSha256: FieldOutputTypes['public']['Profile']['resumeSha256'];
     resumeSizeBytes: FieldOutputTypes['public']['Profile']['resumeSizeBytes'];
     resumeUploadedAt: FieldOutputTypes['public']['Profile']['resumeUploadedAt'];
-    seniority: FieldOutputTypes['public']['Profile']['seniority'];
+    seniorities: FieldOutputTypes['public']['Profile']['seniorities'];
     state: FieldOutputTypes['public']['Profile']['state'];
     timezoneCurrent: FieldOutputTypes['public']['Profile']['timezoneCurrent'];
     timezoneMax: FieldOutputTypes['public']['Profile']['timezoneMax'];
@@ -3449,11 +3449,11 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 3 };
                   readonly many: false;
                 };
-                readonly seniority: {
+                readonly seniorities: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: false;
-                  readonly many: false;
+                  readonly many: { readonly elementNullable: false };
                 };
                 readonly state: {
                   readonly dataType: 'pg/text';
@@ -6158,9 +6158,10 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 3 };
                 };
               };
-              readonly seniority: {
+              readonly seniorities: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+                readonly many: { readonly elementNullable: false };
               };
               readonly state: {
                 readonly nullable: false;
@@ -6225,7 +6226,7 @@ type ContractBase = Omit<
                 readonly resumeSha256: { readonly column: 'resumeSha256' };
                 readonly resumeSizeBytes: { readonly column: 'resumeSizeBytes' };
                 readonly resumeUploadedAt: { readonly column: 'resumeUploadedAt' };
-                readonly seniority: { readonly column: 'seniority' };
+                readonly seniorities: { readonly column: 'seniorities' };
                 readonly state: { readonly column: 'state' };
                 readonly timezoneCurrent: { readonly column: 'timezoneCurrent' };
                 readonly timezoneMax: { readonly column: 'timezoneMax' };

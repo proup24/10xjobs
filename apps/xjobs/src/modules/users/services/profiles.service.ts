@@ -13,6 +13,7 @@ import {
 import {
   type LocationsByArrangement,
   normalizeLocations,
+  normalizeSeniorities,
   QuerySearchService,
   type QuerySearchProfileInput,
 } from 'src/modules/queries';
@@ -70,7 +71,7 @@ export function toQuerySearchInput(
   return {
     position: profile.position as Position,
     locations: profile.locations as LocationsByArrangement,
-    seniorities: [profile.seniority as Seniority],
+    seniorities: profile.seniorities as Seniority[],
     skills: profile.techStack.map(
       ({ technology, domain, importance, mastery }) => ({
         technology: technology as Technology,
@@ -193,6 +194,7 @@ export class ProfilesService {
           ...fields,
           city: fields.city ?? null,
           locations: normalizeLocations(fields.locations),
+          seniorities: normalizeSeniorities(fields.seniorities),
         },
         toSkills(techStack),
       ),
@@ -217,7 +219,7 @@ export class ProfilesService {
       timezoneMin: data.timezoneMin,
       timezoneMax: data.timezoneMax,
       engagements: data.engagements,
-      seniority: data.seniority,
+      seniorities: normalizeSeniorities(data.seniorities),
       noticePeriodDays: data.noticePeriodDays,
     };
     const profile = await this.profiles.replace(
