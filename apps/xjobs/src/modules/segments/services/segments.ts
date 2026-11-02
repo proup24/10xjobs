@@ -40,6 +40,13 @@ export function segmentKey(builder: QuerySearchBuilderRow): string {
   );
 }
 
+/** sha256 of the key and the ordered member ids: a segment's identity. */
+export function segmentHash(key: string, memberIds: readonly string[]): string {
+  return createHash('sha256')
+    .update([key, ...memberIds].join('\n'))
+    .digest('hex');
+}
+
 /**
  * Groups builders by channel, domain, arrangement and place, orders each group
  * by builder hash and cuts it into segments of at most `size`. The same
@@ -63,9 +70,10 @@ export function buildSegments(
       const chunk = members.slice(start, start + size);
       segments.push({
         key,
-        hash: createHash('sha256')
-          .update([key, ...chunk.map((member) => member.id)].join('\n'))
-          .digest('hex'),
+        hash: segmentHash(
+          key,
+          chunk.map((member) => member.id),
+        ),
         channel: chunk[0].channel as Channel,
         members: chunk,
       });
