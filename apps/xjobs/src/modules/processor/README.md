@@ -6,7 +6,7 @@ Design: `docs/superpowers/specs/2026-11-01-processor-design.md`.
 
 ## Flow
 
-Ingest sets a new or reopened in-scope job to `pending` and nudges the queue. The processor worker (`npx nx worker-processor xjobs`, or `worker-all` with `PROCESSOR_ENABLED=true`) claims a job, then:
+Ingest sets a new or reopened job to `pending`. Once its batch is ingested, the ingest worker enqueues every job the batch left `pending` on the `process` queue, for LinkedIn job board batches only (`PROCESSOR_CHANNEL`); a failed enqueue is logged and never fails the batch, and the sweeper (every 60 s) covers any job a nudge missed. The processor worker (`npx nx worker-processor xjobs`, or `worker-all` with `PROCESSOR_ENABLED=true`) claims a job, then:
 
 1. A closed job is marked `processed` with no model call and no extraction.
 2. The reuse key `(inputHash, schemaVersion, promptHash, decisionModel, extractionModel)` is looked up; a hit reuses or copies the stored extraction at no cost.

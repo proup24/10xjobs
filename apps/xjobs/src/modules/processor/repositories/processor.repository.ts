@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { or } from '@prisma/orm-postgres/orm-client';
-import { Channel } from 'src/common/enums';
 import { DatabaseService, type NormalizedJobRow } from 'src/database';
 import type { JobExtractionRow } from 'src/database/models';
 import type { DatabaseTransaction } from 'src/database/seeds/seed.interface';
@@ -10,6 +9,7 @@ import type {
   JobForProcessing,
   ModelCallMeta,
 } from '../models/types';
+import { PROCESSOR_CHANNEL } from '../config/processor.config';
 import type { TypedColumns } from '../pipeline/typed-columns';
 import type { ExtractionDocument } from '../schema';
 
@@ -109,7 +109,7 @@ const UUID = 'pg/uuid@1';
  * itself, so a concurrent change to them is seen (see `claim`).
  */
 function linkedInJobIds(raw: Raw) {
-  return raw.sql`SELECT s."jobId" FROM normalized_job_sources s JOIN raw_items r ON r.id = s."rawItemId" WHERE r.channel = ${Channel.LINKEDIN_JOB_BOARD}`.returnsRow(
+  return raw.sql`SELECT s."jobId" FROM normalized_job_sources s JOIN raw_items r ON r.id = s."rawItemId" WHERE r.channel = ${PROCESSOR_CHANNEL}`.returnsRow(
     { jobId: UUID },
   );
 }

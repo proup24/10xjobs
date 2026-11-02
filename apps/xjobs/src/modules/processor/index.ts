@@ -1,4 +1,5 @@
 export {
+  PROCESSOR_CHANNEL,
   PROCESSOR_CONFIG,
   type ProcessorConfig,
 } from './config/processor.config';
