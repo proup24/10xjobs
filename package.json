@@ -8,6 +8,7 @@
     "db:stop": "supabase stop",
     "db:status": "supabase status",
     "db:test": "nx run @xjobs/db-tests:db-test",
+    "db:types": "supabase gen types typescript --schema public > apps/web/src/lib/supabase/database.types.ts && prettier --write apps/web/src/lib/supabase/database.types.ts",
     "db:reset": "supabase stop --no-backup && supabase start && XJOBS_SKIP_ENV_FILES=1 DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres pnpm --filter @xjobs/xjobs db:migrate && XJOBS_SKIP_ENV_FILES=1 DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres pnpm --filter @xjobs/xjobs db:seed",
     "infra:redis": "docker compose up -d redis redis-cache",
     "worker": "node apps/xjobs/dist/worker.js",
