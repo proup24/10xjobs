@@ -57,3 +57,7 @@ vitest.config.*.timestamp*
 
 
 .pnpm-store
+
+# Next.js
+.next
+out

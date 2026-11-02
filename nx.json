@@ -84,6 +84,17 @@
           "name": "docker:run"
         }
       }
+    },
+    {
+      "plugin": "@nx/next/plugin",
+      "options": {
+        "startTargetName": "start",
+        "buildTargetName": "build",
+        "devTargetName": "dev",
+        "serveStaticTargetName": "serve-static",
+        "buildDepsTargetName": "build-deps",
+        "watchDepsTargetName": "watch-deps"
+      }
     }
   ],
   "targetDefaults": {
@@ -102,5 +113,13 @@
       }
     ]
   },
-  "nxCloudId": "6ae34a14fb2ae7b3022caf5f"
+  "nxCloudId": "6ae34a14fb2ae7b3022caf5f",
+  "generators": {
+    "@nx/next": {
+      "application": {
+        "style": "css",
+        "linter": "eslint"
+      }
+    }
+  }
 }
