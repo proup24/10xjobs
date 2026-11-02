@@ -215,4 +215,27 @@ describe('worker process configuration', () => {
       validateWorkerProcessEnvironment({ ...worker, WORKER_CHANNEL: 'ASHBY' }),
     ).toThrow(/APIFY_TOKEN/);
   });
+
+  it('refuses the processor role without an OpenRouter key', () => {
+    expect(() =>
+      validateWorkerProcessEnvironment({ ...worker, WORKER_ROLE: 'processor' }),
+    ).toThrow(/OPENROUTER_API_KEY/);
+  });
+
+  it('parses the processor defaults when the key is set', () => {
+    expect(
+      validateWorkerProcessEnvironment({
+        ...worker,
+        WORKER_ROLE: 'processor',
+        OPENROUTER_API_KEY: 'or-key',
+      }),
+    ).toMatchObject({
+      PROCESSOR_DECISION_MODEL: 'typesafe/jev-1.14',
+      PROCESSOR_EXTRACTION_MODEL: 'anthropic/claude-opus-5.5',
+      PROCESSOR_CONCURRENCY: 4,
+      PROCESSOR_MAX_ATTEMPTS: 3,
+      PROCESSOR_CLAIM_TIMEOUT_MS: 900_000,
+      PROCESSOR_DAILY_BUDGET_USD: 20,
+    });
+  });
 });

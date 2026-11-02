@@ -92,7 +92,8 @@ function requireStorage(
 }
 
 /**
- * A worker process. `WORKER_ROLE=ingest` runs the ingest worker, and
+ * A worker process. `WORKER_ROLE=ingest` runs the ingest worker,
+ * `WORKER_ROLE=processor` runs the processor (needs `OPENROUTER_API_KEY`), and
  * `WORKER_ROLE=all` runs the infrastructure, ingest and every channel's
  * collection worker in one process. Otherwise `WORKER_CHANNEL` unset runs the
  * infrastructure worker, and a channel runs that channel's collection job.
@@ -106,7 +107,22 @@ export const workerProcessEnvironmentSchema = databaseEnvironmentSchema
     ...storageEnvironmentShape,
     APIFY_TOKEN: z.string().min(1).optional(),
     WORKER_CHANNEL: z.enum(Channel).optional(),
-    WORKER_ROLE: z.enum(['ingest', 'all']).optional(),
+    WORKER_ROLE: z.enum(['ingest', 'processor', 'all']).optional(),
+    /** One key for both processor model roles (Jev decisions and extraction). */
+    OPENROUTER_API_KEY: z.string().min(1).optional(),
+    PROCESSOR_DECISION_MODEL: z.string().min(1).default('typesafe/jev-1.14'),
+    PROCESSOR_EXTRACTION_MODEL: z
+      .string()
+      .min(1)
+      .default('anthropic/claude-opus-5.5'),
+    PROCESSOR_CONCURRENCY: z.coerce.number().int().positive().default(4),
+    PROCESSOR_MAX_ATTEMPTS: z.coerce.number().int().positive().default(3),
+    PROCESSOR_CLAIM_TIMEOUT_MS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(900_000),
+    PROCESSOR_DAILY_BUDGET_USD: z.coerce.number().positive().default(20),
   })
   .superRefine((env, ctx) => {
     requireStorage(env, ctx);
@@ -121,6 +137,15 @@ export const workerProcessEnvironmentSchema = databaseEnvironmentSchema
         code: 'custom',
         path: ['APIFY_TOKEN'],
         message: 'Set APIFY_TOKEN to run channel collection workers',
+      });
+    if (
+      (env.WORKER_ROLE === 'processor' || env.WORKER_ROLE === 'all') &&
+      !env.OPENROUTER_API_KEY
+    )
+      ctx.addIssue({
+        code: 'custom',
+        path: ['OPENROUTER_API_KEY'],
+        message: 'Set OPENROUTER_API_KEY to run the processor worker',
       });
   });
 

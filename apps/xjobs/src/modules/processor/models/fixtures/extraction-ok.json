@@ -1,0 +1,19 @@
+{
+  "id": "gen-hand-written-1",
+  "model": "anthropic/claude-opus-5.5-20261001",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "content": "{\"locations\":[{\"kind\":\"country\",\"code\":\"DE\"},{\"kind\":\"country\",\"code\":\"FR\"}]}"
+      }
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 1200,
+    "completion_tokens": 40,
+    "prompt_tokens_details": { "cached_tokens": 1000 },
+    "cost": 0.0153
+  }
+}

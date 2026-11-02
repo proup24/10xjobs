@@ -53,3 +53,29 @@ export interface JobForProcessing {
   descriptionText: string | null;
   evidence: Evidence;
 }
+
+export interface ModelCallMeta {
+  model: string;
+  providerRequestId: string | null;
+  inputTokens: number;
+  outputTokens: number;
+  cachedInputTokens: number;
+  costUsd: number;
+  latencyMs: number;
+}
+
+/** Closed questions, answered by the decision model (Jev). */
+export abstract class DecisionModel {
+  abstract decide(
+    input: PostingInput,
+    questions: DecisionQuestion[],
+  ): Promise<{ answers: DecisionAnswer[]; meta: ModelCallMeta }>;
+}
+
+/** Open-ended structured extraction (Opus). */
+export abstract class ExtractionModel {
+  abstract extract(
+    input: PostingInput,
+    req: { systemPrompt: string; jsonSchema: object; retryErrors?: string[] },
+  ): Promise<{ output: unknown; meta: ModelCallMeta }>;
+}
