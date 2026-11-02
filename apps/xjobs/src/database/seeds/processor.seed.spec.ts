@@ -2,7 +2,7 @@ import {
   SEED,
   SEED_REGION_COUNTRIES,
 } from 'src/modules/processor/vocab/seed-data';
-import { processorListsSeed } from './processor-lists.seed';
+import { processorListsSeed } from './processor.seed';
 import type { DatabaseTransaction } from './seed.interface';
 
 type Row = Record<string, unknown> & { aliases: string[] };

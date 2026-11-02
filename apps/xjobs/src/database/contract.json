@@ -7272,6 +7272,16 @@
                   "prefix": "profiles_languages_nonempty"
                 },
                 {
+                  "expression": "jsonb_path_exists(\"locations\", '$.*[*]')",
+                  "name": "profiles_locations_nonempty_dfbcb81c",
+                  "prefix": "profiles_locations_nonempty"
+                },
+                {
+                  "expression": "jsonb_typeof(\"locations\") = 'object' AND \"locations\" ?& ARRAY['remote', 'hybrid', 'onsite'] AND (\"locations\" - ARRAY['remote', 'hybrid', 'onsite']) = '{}'::jsonb AND CASE WHEN jsonb_typeof(\"locations\" -> 'remote') = 'array' AND jsonb_typeof(\"locations\" -> 'hybrid') = 'array' AND jsonb_typeof(\"locations\" -> 'onsite') = 'array' THEN jsonb_array_length(\"locations\" -> 'remote') <= 20 AND jsonb_array_length(\"locations\" -> 'hybrid') <= 20 AND jsonb_array_length(\"locations\" -> 'onsite') <= 20 AND NOT jsonb_path_exists(\"locations\", '$.*[*] ? (@.type() != \"string\")') ELSE false END",
+                  "name": "profiles_locations_shape_8e195cce",
+                  "prefix": "profiles_locations_shape"
+                },
+                {
                   "expression": "\"noticePeriodDays\" BETWEEN 0 AND 365",
                   "name": "profiles_notice_range_62c2438c",
                   "prefix": "profiles_notice_range"
@@ -8961,7 +8971,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "06f6a3c9df66daa597bce413868406741cef2abdbc83fb2b5167a6b4dc555e56"
+    "storageHash": "4bdafacb4acf80aa9d8e3c49a0be2f74bdedea1ace7542a31a5bb09fa2376833"
   },
   "execution": {
     "executionHash": "c6873c5a9f9e3698427d663f89066a9052d28a2625e473b43a449e049a00b87b",

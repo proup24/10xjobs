@@ -82,6 +82,18 @@ describe('LinkedIn job board builder', () => {
     }
   });
 
+  it('pins Gulf and European tech-market countries, whatever their casing', () => {
+    expect(
+      build(Channel.LINKEDIN_JOB_BOARD, { location: 'united arab emirates' })
+        .params.geoId,
+    ).toBe('104305776');
+    expect(
+      build(Channel.LINKEDIN_JOB_BOARD, { location: 'germany' }).params.geoId,
+    ).toBe('101282230');
+    for (const key of Object.keys(LINKEDIN_GEO_IDS))
+      expect(key).toBe(key.trim().toLowerCase());
+  });
+
   it('uses the short spelling LinkedIn posters write', () => {
     const keyword = (technologies: Technology[]) =>
       build(Channel.LINKEDIN_JOB_BOARD, { technologies }).keyword;

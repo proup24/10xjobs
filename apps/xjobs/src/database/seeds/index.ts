@@ -10,7 +10,7 @@ import { EnvironmentType } from 'src/common/enums';
 import { loadSeedEnvironment, toDatabaseConfig } from 'src/config';
 import { createDatabaseClient } from '../connection.source';
 import type { Seed } from './seed.interface';
-import { processorListsSeed } from './processor-lists.seed';
+import { processorListsSeed } from './processor.seed';
 import { usersSeed } from './users.seed';
 
 /** Order matters: seeds run sequentially, so list parents before children. */

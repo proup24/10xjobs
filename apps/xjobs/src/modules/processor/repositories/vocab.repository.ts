@@ -3,7 +3,7 @@ import { DatabaseService } from 'src/database';
 import {
   listTables,
   type ListTableRow,
-} from 'src/database/seeds/processor-lists.seed';
+} from 'src/database/seeds/processor.seed';
 import { inRetriedTransaction } from 'src/modules/ingest/repositories/raw.repository';
 import type { ListOptions } from '../schema';
 import { LIST_NAMES, type ListName } from '../vocab/lists';
