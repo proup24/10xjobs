@@ -42,6 +42,8 @@ export const BUCKETS = [
 
 /** Jev's accepted answers must be at least this share correct. */
 export const JEV_TARGET_ACCURACY = 0.98;
+/** Fewer accepted answers than this are too few to suggest a threshold from. */
+export const MIN_ACCEPTED_FOR_THRESHOLD = 10;
 
 /** Acceptance bars for v1 (spec section 8). */
 export const BARS = {
@@ -157,9 +159,12 @@ export function scoreCase(
       correct: sameSet(want, got) ? 1 : 0,
       total: 1,
       decidedBy: doc.openings[0]?.decidedBy ?? null,
-      confidence: doc.openings.every((o) => o.confidence === 'sure')
-        ? 'sure'
-        : 'unsure',
+      // No openings at all is nothing to be sure of.
+      confidence:
+        doc.openings.length > 0 &&
+        doc.openings.every((o) => o.confidence === 'sure')
+          ? 'sure'
+          : 'unsure',
     };
   }
 
@@ -280,7 +285,10 @@ export interface QuestionReport {
     correct: number;
     accuracy: number | null;
   }[];
-  /** Lowest score whose accepted Jev answers are >= 98% correct; null when none. */
+  /**
+   * Lowest score whose accepted Jev answers (at least
+   * `MIN_ACCEPTED_FOR_THRESHOLD`) are >= 98% correct; null when none.
+   */
   suggestedThreshold: number | null;
   /** Jev answers at or above the suggested threshold. */
   acceptedAtSuggested: number;
@@ -302,7 +310,10 @@ export interface EvalReport {
 const ratio = (num: number, den: number): number | null =>
   den === 0 ? null : num / den;
 
-/** The lowest score whose accepted answers (score at or above it) are 98% correct. */
+/**
+ * The lowest score whose accepted answers (score at or above it) are 98%
+ * correct, and at least `MIN_ACCEPTED_FOR_THRESHOLD` of them.
+ */
 export function suggestThreshold(
   answers: { score: number; correct: boolean }[],
 ): { threshold: number | null; accepted: number } {
@@ -311,6 +322,8 @@ export function suggestThreshold(
   );
   for (const t of candidates) {
     const accepted = answers.filter((a) => a.score >= t);
+    // Higher thresholds only accept fewer answers.
+    if (accepted.length < MIN_ACCEPTED_FOR_THRESHOLD) break;
     const right = accepted.filter((a) => a.correct).length;
     if (right / accepted.length >= JEV_TARGET_ACCURACY)
       return { threshold: t, accepted: accepted.length };
@@ -400,4 +413,12 @@ export function summarize(scores: FactScores[]): EvalReport {
     bars,
     pass: Object.values(bars).every(Boolean),
   };
+}
+
+/** One eval CLI line: a question's buckets, suggested threshold and accepted count. */
+export function questionLine(q: string, r: QuestionReport): string {
+  const buckets = r.buckets
+    .map((b) => `${b.range} ${b.correct}/${b.total}`)
+    .join('  ');
+  return `${q.padEnd(26)} ${buckets}  -> ${r.suggestedThreshold ?? 'none'} (accepted ${r.acceptedAtSuggested})`;
 }

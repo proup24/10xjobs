@@ -21,6 +21,7 @@ import {
   BARS,
   type EvalReport,
   type FactScores,
+  questionLine,
   scoreCase,
   summarize,
 } from 'src/modules/processor/golden/score';
@@ -86,12 +87,10 @@ function print(report: EvalReport, failed: string[]): void {
       `${name.padEnd(26)} ${String(f.scored).padStart(5)}  ${pct(f.accuracy)}  ${pct(f.jevShare)} ${pct(f.opusShare)} ${pct(f.ingestShare)}`,
     );
   console.log(
-    '\nJev accuracy by score bucket (correct/total), suggested threshold:',
+    '\nJev accuracy by score bucket (correct/total), suggested threshold (accepted answers):',
   );
   for (const [q, r] of Object.entries(report.questions))
-    console.log(
-      `${q.padEnd(26)} ${r.buckets.map((b) => `${b.range} ${b.correct}/${b.total}`).join('  ')}  -> ${r.suggestedThreshold ?? 'none'}`,
-    );
+    console.log(questionLine(q, r));
   console.log(
     `\nsure facts contradicted: ${pct(report.sureContradicted)} of ${report.sureFacts} (cases: ${report.casesWithSureContradiction})`,
   );

@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { fixtureDocument } from '../schema/fixture.testing';
 import type { GoldenCase } from './golden';
-import { type FactScores, scoreCase, summarize } from './score';
+import {
+  type FactScores,
+  questionLine,
+  scoreCase,
+  suggestThreshold,
+  summarize,
+} from './score';
 
 const reviewed = <T>(value: T) => ({ value, reviewed: true });
 
@@ -92,6 +98,23 @@ const withJev = (score: number, correct: boolean): FactScores => ({
   costUsd: 0,
 });
 
+describe('openingPlaces confidence', () => {
+  it('is unsure when there are no openings', () => {
+    const doc = fixtureDocument();
+    doc.openings = [];
+    const c = matchingCase();
+    c.expected.openings = [];
+    expect(scoreCase(doc, c).facts.openingPlaces?.confidence).toBe('unsure');
+  });
+
+  it('is sure when every opening is sure', () => {
+    expect(
+      scoreCase(fixtureDocument(), matchingCase()).facts.openingPlaces
+        ?.confidence,
+    ).toBe('sure');
+  });
+});
+
 describe('summarize', () => {
   it('passes when every bar holds', () => {
     const report = summarize([
@@ -123,11 +146,32 @@ describe('summarize', () => {
 
   it('suggests the lowest threshold whose accepted answers are 98% right', () => {
     const report = summarize([
-      withJev(0.95, true),
+      ...Array.from({ length: 5 }, () => withJev(0.95, true)),
       withJev(0.75, false),
-      withJev(0.85, true),
+      ...Array.from({ length: 5 }, () => withJev(0.85, true)),
     ]);
     expect(report.questions.seniority.suggestedThreshold).toBe(0.85);
+    expect(report.questions.seniority.acceptedAtSuggested).toBe(10);
+    expect(questionLine('seniority', report.questions.seniority)).toMatch(
+      /-> 0\.85 \(accepted 10\)$/,
+    );
+  });
+
+  it('suggests nothing from fewer than 10 accepted answers', () => {
+    const nine = Array.from({ length: 9 }, () => ({
+      score: 0.9,
+      correct: true,
+    }));
+    expect(suggestThreshold(nine)).toEqual({ threshold: null, accepted: 0 });
+    expect(suggestThreshold([...nine, { score: 0.5, correct: true }])).toEqual({
+      threshold: 0.5,
+      accepted: 10,
+    });
+    const report = summarize([withJev(0.95, true), withJev(0.85, true)]);
+    expect(report.questions.seniority.suggestedThreshold).toBeNull();
+    expect(questionLine('seniority', report.questions.seniority)).toMatch(
+      /-> none \(accepted 0\)$/,
+    );
   });
 
   it('buckets Jev accuracy by score', () => {
