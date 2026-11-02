@@ -70,10 +70,7 @@ export class LinkedinJobBoardBuilder implements ChannelQueryBuilder {
     params.location = combination.location;
     const geoId = LINKEDIN_GEO_IDS[combination.location];
     if (geoId) params.geoId = geoId;
-    const keyword = [
-      POSITION_TITLES[combination.position][0],
-      ...combination.technologies.map(linkedinTerm),
-    ].join(' ');
+    const keyword = combination.technologies.map(linkedinTerm).join(' ');
     return { keyword, params };
   }
 }
