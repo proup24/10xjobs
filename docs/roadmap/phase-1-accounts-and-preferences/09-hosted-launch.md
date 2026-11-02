@@ -24,7 +24,7 @@ The shared, hosted app runs in production and the phase's exit criteria are chec
 
 ## For the slice spec
 
-- How migrations reach production: a CI job on merge to `main`, or a manual command the maintainer runs.
+- How Prisma migrations reach the Supabase Cloud database: a CI job on merge to `main`, or a manual command the maintainer runs. Either way they connect through the session pooler or a direct connection, not the transaction pooler.
 - Staging, if slice 01 chose to have it.
 - Error monitoring in Phase 1, or deferred.
 

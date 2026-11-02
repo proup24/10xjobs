@@ -6,7 +6,7 @@ A first-time user goes from the invite email to a complete set of preferences, e
 
 ## In scope
 
-- A step-by-step setup that writes to the schemas from slices 04–06.
+- A step-by-step setup that creates the user's first profile and writes to the schemas from slices 04–06, directly through Supabase as the signed-in user.
 - Progress saved as the user goes, so leaving midway and coming back works.
 - Adding a missing tech to the shared catalog from the tech stack step.
 - Sending users with unfinished setup back to it.

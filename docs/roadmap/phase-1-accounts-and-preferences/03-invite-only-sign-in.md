@@ -33,4 +33,4 @@ Only invited people can get in, and they sign in by email with no password.
 
 ## Done when
 
-An invited email can sign in with either the link or the code and lands in their workspace. A non-invited email can't create an account, and signed-out requests can't reach app pages or data.
+An invited email can sign in with either the link or the code and lands in their account. A non-invited email can't create an account, and signed-out requests can't reach app pages or data.

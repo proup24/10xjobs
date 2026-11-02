@@ -12,7 +12,7 @@ After setup, a user can view and change any preference, their eligibility and th
 
 ## Out of scope
 
-- Workspace deletion.
+- Account deletion.
 - Suggestions to change preferences based on fit or reject feedback (the feedback loop, Phase 2 or later).
 
 ## Locked
