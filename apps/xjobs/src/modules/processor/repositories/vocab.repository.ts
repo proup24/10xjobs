@@ -32,6 +32,37 @@ export abstract class VocabRepository {
   ): Promise<Map<string, string>>;
   /** Counts one more sighting of each code (repeats count each time). */
   abstract bumpOccurrences(list: ListName, codes: string[]): Promise<void>;
+  /** Proposed terms, most sighted first. */
+  abstract listProposed(list: ListName): Promise<ProposedTerm[]>;
+  /** Makes a proposed term approved. An approved or missing row is left alone. */
+  abstract approve(list: ListName, code: string): Promise<void>;
+  /**
+   * Adds the proposed term's label (lower-case) to the approved target's
+   * aliases and deletes the proposed row. Throws when the source is not
+   * proposed or the target is not approved; nothing else changes.
+   */
+  abstract alias(list: ListName, code: string, to: string): Promise<void>;
+  /** Deletes a proposed term. An approved row is never deleted. */
+  abstract reject(list: ListName, code: string): Promise<void>;
+  /** Proposed cities, most sighted first. */
+  abstract listProposedCities(): Promise<ProposedCity[]>;
+  abstract approveCity(id: string): Promise<void>;
+  /** Deletes a proposed city; an approved one is left alone. */
+  abstract rejectCity(id: string): Promise<void>;
+}
+
+export interface ProposedTerm {
+  code: string;
+  label: string;
+  aliases: string[];
+  occurrences: number;
+}
+
+export interface ProposedCity {
+  id: string;
+  name: string;
+  countryCode: string;
+  occurrences: number;
 }
 
 /**
@@ -200,6 +231,92 @@ export class PrismaVocabRepository extends VocabRepository {
             .where({ code })
             .updateAll({ occurrences: row.occurrences + n });
       }
+    });
+  }
+
+  async listProposed(list: ListName): Promise<ProposedTerm[]> {
+    const rows = await listTables(this.database.db)
+      [list].where({ status: 'proposed' })
+      .all();
+    return rows
+      .map(({ code, label, aliases, occurrences }) => ({
+        code,
+        label,
+        aliases,
+        occurrences,
+      }))
+      .sort(
+        (a, b) => b.occurrences - a.occurrences || (a.code < b.code ? -1 : 1),
+      );
+  }
+
+  async approve(list: ListName, code: string): Promise<void> {
+    await inRetriedTransaction(this.database, async (tx) => {
+      const table = listTables(tx)[list];
+      const row = await table.where({ code }).forNoKeyUpdate().first();
+      if (row?.status !== 'proposed') return;
+      await table
+        .where({ code })
+        .updateAll({ status: 'approved', approvedAt: new Date() });
+    });
+  }
+
+  async alias(list: ListName, code: string, to: string): Promise<void> {
+    await inRetriedTransaction(this.database, async (tx) => {
+      const table = listTables(tx)[list];
+      const source = await table.where({ code }).forNoKeyUpdate().first();
+      if (source?.status !== 'proposed')
+        throw new Error(`${list}: ${code} is not a proposed term`);
+      const target = await table.where({ code: to }).forNoKeyUpdate().first();
+      if (target?.status !== 'approved')
+        throw new Error(`${list}: ${to} is not an approved term`);
+      const form = source.label.trim().toLowerCase();
+      if (form !== to && !target.aliases.includes(form))
+        await table
+          .where({ code: to })
+          .updateAll({ aliases: [...target.aliases, form] });
+      await table.where({ code }).deleteAll();
+    });
+  }
+
+  async reject(list: ListName, code: string): Promise<void> {
+    await inRetriedTransaction(this.database, async (tx) => {
+      const table = listTables(tx)[list];
+      const row = await table.where({ code }).forNoKeyUpdate().first();
+      if (row?.status === 'proposed') await table.where({ code }).deleteAll();
+    });
+  }
+
+  async listProposedCities(): Promise<ProposedCity[]> {
+    const rows = await this.database.db.orm.public.City.where({
+      status: 'proposed',
+    }).all();
+    return rows
+      .map(({ id, name, countryCode, occurrences }) => ({
+        id,
+        name,
+        countryCode,
+        occurrences,
+      }))
+      .sort((a, b) => b.occurrences - a.occurrences || (a.id < b.id ? -1 : 1));
+  }
+
+  async approveCity(id: string): Promise<void> {
+    await inRetriedTransaction(this.database, async (tx) => {
+      const city = tx.orm.public.City;
+      const row = await city.where({ id }).forNoKeyUpdate().first();
+      if (row?.status !== 'proposed') return;
+      await city
+        .where({ id })
+        .updateAll({ status: 'approved', approvedAt: new Date() });
+    });
+  }
+
+  async rejectCity(id: string): Promise<void> {
+    await inRetriedTransaction(this.database, async (tx) => {
+      const city = tx.orm.public.City;
+      const row = await city.where({ id }).forNoKeyUpdate().first();
+      if (row?.status === 'proposed') await city.where({ id }).deleteAll();
     });
   }
 }

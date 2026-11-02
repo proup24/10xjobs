@@ -613,5 +613,83 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       }).first();
       expect(after!.occurrences).toBe(before!.occurrences + 2);
     });
+
+    it('approves a proposed term so it is offered and matched', async () => {
+      await vocab.propose([{ list: 'techTags', text: 'Bun' }]);
+      await vocab.approve('techTags', 'bun');
+      const { options, vocab: snapshot } = await vocab.snapshot();
+      expect(options.techTags).toContain('bun');
+      expect(snapshot.approved.techTags.get('bun')).toBe('bun');
+      const row = await db.orm.public.TechTag.where({ code: 'bun' }).first();
+      expect(row?.status).toBe('approved');
+      expect(row?.approvedAt).not.toBeNull();
+    });
+
+    it('approve leaves an already approved row alone', async () => {
+      const before = await db.orm.public.TechTag.where({
+        code: 'react',
+      }).first();
+      await vocab.approve('techTags', 'react');
+      expect(
+        await db.orm.public.TechTag.where({ code: 'react' }).first(),
+      ).toEqual(before);
+    });
+
+    it('aliases a proposed term to an approved one and deletes the proposal', async () => {
+      await vocab.propose([{ list: 'techTags', text: 'Reactjs' }]);
+      await vocab.alias('techTags', 'reactjs', 'react');
+      expect(
+        await db.orm.public.TechTag.where({ code: 'reactjs' }).first(),
+      ).toBeNull();
+      const { vocab: snapshot } = await vocab.snapshot();
+      expect(snapshot.approved.techTags.get('reactjs')).toBe('react');
+    });
+
+    it('alias refuses a missing or unapproved target and an approved source', async () => {
+      await vocab.propose([
+        { list: 'techTags', text: 'Bun' },
+        { list: 'techTags', text: 'Deno' },
+      ]);
+      await expect(vocab.alias('techTags', 'bun', 'deno')).rejects.toThrow();
+      await expect(vocab.alias('techTags', 'bun', 'nope')).rejects.toThrow();
+      await expect(vocab.alias('techTags', 'react', 'bun')).rejects.toThrow();
+      expect(
+        await db.orm.public.TechTag.where({ code: 'bun' }).first(),
+      ).not.toBeNull();
+    });
+
+    it('rejects a proposed term but never deletes an approved one', async () => {
+      await vocab.propose([{ list: 'techTags', text: 'Bun' }]);
+      await vocab.reject('techTags', 'bun');
+      await vocab.reject('techTags', 'react');
+      expect(
+        await db.orm.public.TechTag.where({ code: 'bun' }).first(),
+      ).toBeNull();
+      expect(
+        await db.orm.public.TechTag.where({ code: 'react' }).first(),
+      ).not.toBeNull();
+    });
+
+    it('lists proposed terms and approves or rejects cities by id', async () => {
+      await vocab.propose([{ list: 'techTags', text: 'Bun' }]);
+      expect((await vocab.listProposed('techTags')).map((r) => r.code)).toEqual(
+        ['bun'],
+      );
+      const ids = await vocab.upsertCities([
+        { name: 'Berlin', countryCode: 'DE' },
+        { name: 'Paris', countryCode: 'FR' },
+      ]);
+      expect(await vocab.listProposedCities()).toHaveLength(2);
+      await vocab.approveCity(ids.get('Berlin|DE')!);
+      await vocab.rejectCity(ids.get('Paris|FR')!);
+      expect(await vocab.listProposedCities()).toHaveLength(0);
+      const berlin = await db.orm.public.City.where({
+        id: ids.get('Berlin|DE')!,
+      }).first();
+      expect(berlin?.status).toBe('approved');
+      expect(
+        await db.orm.public.City.where({ id: ids.get('Paris|FR')! }).first(),
+      ).toBeNull();
+    });
   });
 });

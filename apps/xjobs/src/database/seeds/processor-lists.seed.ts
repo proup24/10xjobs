@@ -40,7 +40,10 @@ export interface ListTable {
     updateAll(data: {
       occurrences?: number;
       aliases?: string[];
+      status?: string;
+      approvedAt?: Date;
     }): PromiseLike<unknown[]>;
+    deleteAll(): PromiseLike<unknown[]>;
   };
   create(data: Record<string, unknown>): Promise<unknown>;
 }

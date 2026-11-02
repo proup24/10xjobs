@@ -4,6 +4,18 @@ The processor is the third stage of the pipeline (Collect → Ingest → **Proce
 
 Design: `docs/superpowers/specs/2026-11-01-processor-design.md`.
 
+## Flow
+
+Ingest sets a new or reopened in-scope job to `pending` and nudges the queue. The processor worker (`npx nx worker-processor xjobs`, or `worker-all`) claims a job, then:
+
+1. A closed job is marked `processed` with no model call and no extraction.
+2. The reuse key `(inputHash, schemaVersion, promptHash, decisionModel, extractionModel)` is looked up; a hit reuses or copies the stored extraction at no cost.
+3. The decision model says whether the posting is a software engineering role. If not, the extraction records that and stops.
+4. The extraction model fills the schema. The output is validated against the posting text and the approved lists; invalid output takes one retry (`extraction_retry`), and a second failure marks the job `failed`.
+5. Unknown terms are upserted as `proposed`, the extraction is stored, and the job is marked `processed` with `currentExtractionId`.
+
+A sweeper returns stale claims to `pending`. Models are configuration (OpenRouter); a daily budget on non-eval `costUsd` stops new model calls.
+
 ## Scope
 
 A normalized job is in scope when it is `status='active'`, `kind='job'`, and at least one of its sources (`normalized_job_sources` → `raw_items`) has `channel='LINKEDIN_JOB_BOARD'`. A LinkedIn job merged with its Ashby or Greenhouse posting is in scope. Only in-scope jobs are listed, claimed or reprocessed; every other job is invisible to the processor. A closed in-scope job is claimed and marked `processed` with no model call and no extraction.
@@ -46,3 +58,39 @@ docker run --rm -d --name xjobs-processor-test -e POSTGRES_PASSWORD=test -e POST
 cd apps/xjobs && XJOBS_SKIP_ENV_FILES=1 DATABASE_URL=postgresql://postgres:test@127.0.0.1:55433/processor_test npx prisma db migrate --yes
 cd ../.. && PROCESSOR_TEST_DATABASE_URL=postgresql://postgres:test@127.0.0.1:55433/processor_test npx vitest run --config apps/xjobs/vitest.config.mts src/modules/processor/repositories
 ```
+
+## Approving terms
+
+Proposed terms are never offered to a model or matched. Review them:
+
+```sh
+pnpm --filter @xjobs/xjobs db:vocab -- techTags list
+pnpm --filter @xjobs/xjobs db:vocab -- techTags approve bun
+pnpm --filter @xjobs/xjobs db:vocab -- techTags alias reactjs --to react
+pnpm --filter @xjobs/xjobs db:vocab -- techTags reject some-noise
+pnpm --filter @xjobs/xjobs db:vocab -- cities list
+pnpm --filter @xjobs/xjobs db:vocab -- cities approve <city-id>
+```
+
+`list` shows the proposed rows, most sighted first. `approve` makes a proposed row approved. `alias` adds the proposed term's label (lower-case) to an approved target's aliases and deletes the proposed row; it fails if the source is not proposed or the target is not approved. `reject` deletes a proposed row. None of them changes an approved row other than the alias target, and approved rows are never deleted. Cities are reviewed by id with `list`, `approve` and `reject` only; `alias` is not supported for cities. Extractions made before a term was approved keep the unresolved form until they are reprocessed.
+
+## Reprocessing
+
+After a prompt, schema or model change (a new reuse key), or to retry failures, send jobs back to `pending`:
+
+```sh
+pnpm --filter @xjobs/xjobs db:reprocess -- --null-status
+pnpm --filter @xjobs/xjobs db:reprocess -- --failed
+pnpm --filter @xjobs/xjobs db:reprocess -- --all-in-scope
+pnpm --filter @xjobs/xjobs db:reprocess -- --job <id> --job <id>
+```
+
+At least one selector is required; selectors combine. Only in-scope jobs are touched. The script resets the status, attempts, error and `processingRequestedAt`; the worker then picks the jobs up. Rows whose reuse key still matches are reused without a model call.
+
+## Eval
+
+`pnpm --filter @xjobs/xjobs processor:eval` runs the decision and extraction models over the golden set in `golden/` (in memory, with the seed vocabulary, writing nothing to the database) and scores the results. The report is written to `golden/last-report.json`, which is git-ignored and regenerable. Run it after any prompt, schema or model change, before reprocessing.
+
+## The shared-tables exception
+
+Every other domain record is workspace-scoped. The processor tables (`job_extractions`, `processing_attempts`, the list tables, `cities`, `region_countries`) are shared across workspaces on purpose: they describe public postings and a public vocabulary and carry nothing about any person. A term approved once serves every workspace. Workspace scoping starts at qualify, where a workspace's profile is compared with these facts.

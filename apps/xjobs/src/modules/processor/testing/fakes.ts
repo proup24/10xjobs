@@ -24,6 +24,8 @@ import {
 import {
   matchingForms,
   VocabRepository,
+  type ProposedCity,
+  type ProposedTerm,
   type Vocabulary,
 } from '../repositories/vocab.repository';
 import type { ListOptions } from '../schema';
@@ -515,5 +517,64 @@ export class MemoryVocabRepository extends VocabRepository {
       const row = this.row(list, code);
       if (row) row.occurrences += 1;
     }
+  }
+
+  async listProposed(list: ListName): Promise<ProposedTerm[]> {
+    return this.lists[list]
+      .filter((r) => r.status === 'proposed')
+      .map(({ code, label, aliases, occurrences }) => ({
+        code,
+        label,
+        aliases: [...aliases],
+        occurrences,
+      }))
+      .sort((a, b) => b.occurrences - a.occurrences);
+  }
+
+  async approve(list: ListName, code: string): Promise<void> {
+    const row = this.row(list, code);
+    if (row?.status === 'proposed') row.status = 'approved';
+  }
+
+  async alias(list: ListName, code: string, to: string): Promise<void> {
+    const source = this.row(list, code);
+    if (source?.status !== 'proposed')
+      throw new Error(`${list}: ${code} is not a proposed term`);
+    const target = this.row(list, to);
+    if (target?.status !== 'approved')
+      throw new Error(`${list}: ${to} is not an approved term`);
+    const form = source.label.trim().toLowerCase();
+    if (form !== to && !target.aliases.includes(form))
+      target.aliases.push(form);
+    this.lists[list].splice(this.lists[list].indexOf(source), 1);
+  }
+
+  async reject(list: ListName, code: string): Promise<void> {
+    const row = this.row(list, code);
+    if (row?.status === 'proposed')
+      this.lists[list].splice(this.lists[list].indexOf(row), 1);
+  }
+
+  async listProposedCities(): Promise<ProposedCity[]> {
+    return this.cities
+      .filter((c) => c.status === 'proposed')
+      .map(({ id, name, countryCode, occurrences }) => ({
+        id,
+        name,
+        countryCode,
+        occurrences,
+      }));
+  }
+
+  async approveCity(id: string): Promise<void> {
+    const city = this.cities.find((c) => c.id === id);
+    if (city?.status === 'proposed') city.status = 'approved';
+  }
+
+  async rejectCity(id: string): Promise<void> {
+    const i = this.cities.findIndex(
+      (c) => c.id === id && c.status === 'proposed',
+    );
+    if (i >= 0) this.cities.splice(i, 1);
   }
 }
