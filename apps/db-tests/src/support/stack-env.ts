@@ -5,6 +5,20 @@ export type StackEnv = { url: string; anonKey: string; serviceRoleKey: string };
 const NOT_REACHABLE =
   'Supabase stack not reachable: run pnpm db:start (or set SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY)';
 
+let lastCliError: unknown;
+
+const LOCAL_HOSTS = new Set(['127.0.0.1', 'localhost']);
+
+/** The engine reads the same variable names, so a shell may hold hosted credentials. */
+function assertLocal(url: string): void {
+  const host = new URL(url).hostname;
+  if (LOCAL_HOSTS.has(host) || process.env.DB_TESTS_ALLOW_REMOTE === '1')
+    return;
+  throw new Error(
+    `Refusing to run db-tests against non-local host ${host}: the tests create users. Set DB_TESTS_ALLOW_REMOTE=1 to allow it.`,
+  );
+}
+
 function fromEnv(): StackEnv | undefined {
   const { SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY } =
     process.env;
@@ -36,13 +50,15 @@ function fromCli(): StackEnv | undefined {
       anonKey: ANON_KEY,
       serviceRoleKey: SERVICE_ROLE_KEY,
     };
-  } catch {
+  } catch (cause) {
+    lastCliError = cause;
     return undefined;
   }
 }
 
 export function loadStackEnv(): StackEnv {
   const env = fromEnv() ?? fromCli();
-  if (!env) throw new Error(NOT_REACHABLE);
+  if (!env) throw new Error(NOT_REACHABLE, { cause: lastCliError });
+  assertLocal(env.url);
   return env;
 }
