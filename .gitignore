@@ -68,3 +68,4 @@ vitest.config.*.timestamp*
 
 # Processor eval output (regenerable)
 apps/xjobs/src/modules/processor/golden/last-report.json
+.agents

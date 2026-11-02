@@ -13,6 +13,7 @@ import { AshbyQueryBuilder } from './ashbyhq.builder';
 import { GreenhouseQueryBuilder } from './greenhouse.builder';
 import { CHANNEL_QUERY_BUILDERS } from '.';
 import { isWorldwide, LINKEDIN_GEO_IDS } from './linkedin_geo';
+import { linkedinTerm } from './linkedin_board.builder';
 
 const base: QuerySearchCombination = {
   channel: Channel.LINKEDIN_JOB_BOARD,
@@ -34,9 +35,10 @@ const TITLES =
 const onsite = { type: Arrangement.onsite, location: 'casablanca, morocco' };
 
 describe('LinkedIn job board builder', () => {
-  it('ANDs the title alternatives with the technologies, seniority only as f_E', () => {
+  it('searches the main title and the technologies as plain words, seniority only as f_E', () => {
     const query = build(Channel.LINKEDIN_JOB_BOARD);
-    expect(query.keyword).toBe(`${TITLES} AND nestjs typescript`);
+    expect(query.keyword).toBe('backend engineer nestjs typescript');
+    expect(query.keyword).not.toMatch(/["()]| AND | OR /);
     expect(query.keyword).not.toContain('senior');
     expect(query.params).toEqual({
       experienceLevel: '4',
@@ -78,6 +80,34 @@ describe('LinkedIn job board builder', () => {
     } finally {
       delete LINKEDIN_GEO_IDS['paris, france'];
     }
+  });
+
+  it('uses the short spelling LinkedIn posters write', () => {
+    const keyword = (technologies: Technology[]) =>
+      build(Channel.LINKEDIN_JOB_BOARD, { technologies }).keyword;
+    expect(keyword([Technology.nextjs])).toBe('backend engineer next js');
+    expect(keyword([Technology.nodejs])).toBe('backend engineer node js');
+    expect(keyword([Technology.spring])).toBe('backend engineer spring');
+    expect(keyword([Technology.dotnet])).toBe('backend engineer dotnet');
+    expect(keyword([Technology.csharp])).toBe('backend engineer csharp');
+    expect(keyword([Technology.cpp])).toBe('backend engineer cpp');
+    expect(keyword([Technology.go])).toBe('backend engineer golang');
+  });
+
+  it('keeps every LinkedIn term free of quotes and symbols', () => {
+    for (const technology of Object.values(Technology))
+      expect(linkedinTerm(technology)).toMatch(/^[a-z0-9 ]+$/);
+  });
+
+  it('sends several f_E levels where posters tag a seniority loosely', () => {
+    const level = (experience: Seniority) =>
+      build(Channel.LINKEDIN_JOB_BOARD, { experience }).params.experienceLevel;
+    expect(level(Seniority.junior)).toBe('1,2');
+    expect(level(Seniority.mid)).toBe('3,4');
+    expect(level(Seniority.senior)).toBe('4');
+    expect(level(Seniority.staff)).toBe('4,5');
+    expect(level(Seniority.lead)).toBe('4,5');
+    expect(level(Seniority.principal)).toBe('4,5');
   });
 
   it('omits filters it has no value for', () => {

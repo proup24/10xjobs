@@ -34,8 +34,8 @@ describe('expand scenarios over mock profiles', () => {
       recipes.some((r) => r.technologies.includes(Technology.postgresql)),
     ).toBe(false);
     expect(keywords(recipes, Channel.LINKEDIN_JOB_BOARD)).toEqual([
-      '("backend engineer" OR "backend developer" OR "backend software engineer") AND nestjs',
-      '("backend engineer" OR "backend developer" OR "backend software engineer") AND typescript',
+      'backend engineer nestjs',
+      'backend engineer typescript',
     ]);
     expect(
       on(recipes, Channel.LINKEDIN_JOB_BOARD).map((r) => r.params),
@@ -66,12 +66,12 @@ describe('expand scenarios over mock profiles', () => {
       on(recipes, Channel.LINKEDIN_JOB_BOARD).map((r) => [r.keyword, r.params]),
     ).toEqual([
       [
-        '("frontend engineer" OR "frontend developer" OR "front end engineer") AND react',
-        { location: 'paris, france', experienceLevel: '3', workType: '1' },
+        'frontend engineer react',
+        { location: 'paris, france', experienceLevel: '3,4', workType: '1' },
       ],
       [
-        '("frontend engineer" OR "frontend developer" OR "front end engineer") AND "next.js"',
-        { location: 'paris, france', experienceLevel: '3', workType: '1' },
+        'frontend engineer next js',
+        { location: 'paris, france', experienceLevel: '3,4', workType: '1' },
       ],
     ]);
     expect(keywords(recipes, Channel.LINKEDIN_POSTS)).toEqual([
@@ -101,8 +101,8 @@ describe('expand scenarios over mock profiles', () => {
       false,
     );
     expect(keywords(recipes, Channel.LINKEDIN_JOB_BOARD)).toEqual([
-      '("devops engineer" OR "devops") AND kubernetes',
-      '("devops engineer" OR "devops") AND terraform',
+      'devops engineer kubernetes',
+      'devops engineer terraform',
     ]);
     expect(
       on(hybrid, Channel.LINKEDIN_JOB_BOARD).every(
@@ -124,10 +124,10 @@ describe('expand scenarios over mock profiles', () => {
         "GREEN_HOUSE | devops | hybrid | austin, united states | ("devops engineer" OR "devops") terraform staff "austin, united states" | {"remote":false}",
         "GREEN_HOUSE | devops | remote | north america | ("devops engineer" OR "devops") kubernetes staff "remote" "north america" | {"remote":true}",
         "GREEN_HOUSE | devops | remote | north america | ("devops engineer" OR "devops") terraform staff "remote" "north america" | {"remote":true}",
-        "LINKEDIN_JOB_BOARD | devops | hybrid | austin, united states | ("devops engineer" OR "devops") AND kubernetes | {"experienceLevel":"4","location":"austin, united states","workType":"3"}",
-        "LINKEDIN_JOB_BOARD | devops | hybrid | austin, united states | ("devops engineer" OR "devops") AND terraform | {"experienceLevel":"4","location":"austin, united states","workType":"3"}",
-        "LINKEDIN_JOB_BOARD | devops | remote | north america | ("devops engineer" OR "devops") AND kubernetes | {"experienceLevel":"4","location":"north america","workType":"2"}",
-        "LINKEDIN_JOB_BOARD | devops | remote | north america | ("devops engineer" OR "devops") AND terraform | {"experienceLevel":"4","location":"north america","workType":"2"}",
+        "LINKEDIN_JOB_BOARD | devops | hybrid | austin, united states | devops engineer kubernetes | {"experienceLevel":"4,5","location":"austin, united states","workType":"3"}",
+        "LINKEDIN_JOB_BOARD | devops | hybrid | austin, united states | devops engineer terraform | {"experienceLevel":"4,5","location":"austin, united states","workType":"3"}",
+        "LINKEDIN_JOB_BOARD | devops | remote | north america | devops engineer kubernetes | {"experienceLevel":"4,5","location":"north america","workType":"2"}",
+        "LINKEDIN_JOB_BOARD | devops | remote | north america | devops engineer terraform | {"experienceLevel":"4,5","location":"north america","workType":"2"}",
         "LINKEDIN_POSTS | devops | hybrid | austin, united states | hiring ("devops engineer" OR "devops") kubernetes staff austin, united states | {}",
         "LINKEDIN_POSTS | devops | hybrid | austin, united states | hiring ("devops engineer" OR "devops") terraform staff austin, united states | {}",
         "LINKEDIN_POSTS | devops | remote | north america | hiring ("devops engineer" OR "devops") kubernetes staff remote north america | {}",
@@ -143,7 +143,7 @@ describe('expand scenarios over mock profiles', () => {
       on(recipes, Channel.LINKEDIN_JOB_BOARD).map((r) => [r.keyword, r.params]),
     ).toEqual([
       [
-        '("data engineer" OR "data platform engineer") AND python',
+        'data engineer python',
         { location: 'asia pacific', workType: '2' },
       ],
     ]);
@@ -205,7 +205,7 @@ describe('expand scenarios over mock profiles', () => {
     const recipes = expand(MOCK_PROFILES.leadTechLead);
     expect(recipes).toHaveLength(4);
     expect(keywords(recipes, Channel.LINKEDIN_JOB_BOARD)).toEqual([
-      '("tech lead" OR "technical lead" OR "engineering lead") AND typescript',
+      'tech lead typescript',
     ]);
   });
 
