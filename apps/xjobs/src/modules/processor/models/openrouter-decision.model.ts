@@ -8,30 +8,53 @@ import type {
 } from './types';
 import { DecisionModel } from './types';
 
-interface RawAnswer {
-  type?: string;
-  selected?: unknown;
-  probabilities?: Record<string, number>;
-  probability?: number;
-  confidence?: number;
+interface MappedAnswer {
+  selected: string | boolean | null;
+  probability: number | null;
+  confidence: number | null;
+  optionScores: Record<string, number> | null;
 }
+
+const num = (v: unknown): number | null =>
+  typeof v === 'number' && Number.isFinite(v) ? v : null;
 
 /**
  * The only place that reads Decisions API response fields.
  * Field names from the docs; confirm against the spike fixtures (models/SPIKE.md).
  */
 export function mapDecisionResponse(body: Record<string, unknown>): {
-  answers: Record<string, RawAnswer>;
-  id: string | null;
+  answers: Record<string, MappedAnswer>;
+  requestId: string | null;
   model: string | null;
-  costUsd: number;
+  cost: number;
 } {
-  const usage = (body.usage ?? {}) as { cost?: number };
+  const usage = (body.usage ?? {}) as { cost?: unknown };
+  const rawAnswers = (body.answers ?? {}) as Record<
+    string,
+    Record<string, unknown>
+  >;
+  const answers: Record<string, MappedAnswer> = {};
+  for (const [key, raw] of Object.entries(rawAnswers)) {
+    const selected = raw.selected;
+    const scores = raw.probabilities;
+    answers[key] = {
+      selected:
+        typeof selected === 'string' || typeof selected === 'boolean'
+          ? selected
+          : null,
+      probability: num(raw.probability),
+      confidence: num(raw.confidence),
+      optionScores:
+        scores && typeof scores === 'object'
+          ? (scores as Record<string, number>)
+          : null,
+    };
+  }
   return {
-    answers: (body.answers ?? {}) as Record<string, RawAnswer>,
-    id: typeof body.id === 'string' ? body.id : null,
+    answers,
+    requestId: typeof body.id === 'string' ? body.id : null,
     model: typeof body.model === 'string' ? body.model : null,
-    costUsd: usage.cost ?? 0,
+    cost: num(usage.cost) ?? 0,
   };
 }
 
@@ -61,7 +84,7 @@ function buildQuestion(q: DecisionQuestion): unknown {
 
 function toAnswer(
   q: DecisionQuestion,
-  raw: RawAnswer | undefined,
+  raw: MappedAnswer | undefined,
 ): DecisionAnswer {
   const none: DecisionAnswer = { key: q.key, value: null, score: 0 };
   if (!raw) return none;
@@ -73,7 +96,7 @@ function toAnswer(
   const selected = raw.selected;
   if (typeof selected !== 'string' || !q.options.includes(selected))
     return none;
-  const score = raw.confidence ?? raw.probabilities?.[selected] ?? 0;
+  const score = raw.confidence ?? raw.optionScores?.[selected] ?? 0;
   return { key: q.key, value: selected, score };
 }
 
@@ -102,11 +125,13 @@ export class OpenRouterDecisionModel extends DecisionModel {
     const mapped = mapDecisionResponse(body);
     const meta: ModelCallMeta = {
       model: mapped.model ?? this.model,
-      providerRequestId: mapped.id,
+      providerRequestId: mapped.requestId,
+      // Token counts are 0: the Decisions API bills input tokens only and
+      // reports cost directly (confirm with the spike).
       inputTokens: 0,
       outputTokens: 0,
       cachedInputTokens: 0,
-      costUsd: mapped.costUsd,
+      costUsd: mapped.cost,
       latencyMs,
     };
     if (Object.keys(mapped.answers).length === 0)

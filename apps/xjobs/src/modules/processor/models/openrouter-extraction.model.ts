@@ -14,6 +14,7 @@ export function mapCompletionResponse(
 ): {
   content: string | null;
   finishReason: string | null;
+  hasChoices: boolean;
   meta: ModelCallMeta;
 } {
   const choices = body.choices as
@@ -26,6 +27,7 @@ export function mapCompletionResponse(
     cost?: number;
   };
   return {
+    hasChoices: Array.isArray(choices) && choices.length > 0,
     content: choices?.[0]?.message?.content ?? null,
     finishReason: choices?.[0]?.finish_reason ?? null,
     meta: {
@@ -99,12 +101,12 @@ export class OpenRouterExtractionModel extends ExtractionModel {
         provider: { require_parameters: true },
       },
     );
-    const { content, finishReason, meta } = mapCompletionResponse(
+    const { content, finishReason, hasChoices, meta } = mapCompletionResponse(
       body,
       this.model,
       latencyMs,
     );
-    if (!Array.isArray(body.choices) || body.choices.length === 0)
+    if (!hasChoices)
       throw new TransientModelError('OpenRouter returned empty choices', meta);
     if (finishReason === 'length')
       throw new ModelOutputError('Extraction was cut off (length)', meta);

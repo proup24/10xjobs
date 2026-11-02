@@ -116,6 +116,29 @@ describe('OpenRouterExtractionModel', () => {
     );
   });
 
+  it('classifies a 200 error body by its code', async () => {
+    stubFetch('{"error":{"code":401,"message":"no key"}}');
+    await expect(model().extract(input, req)).rejects.toBeInstanceOf(
+      ModelRequestError,
+    );
+    stubFetch('{"error":{"code":502,"message":"upstream"}}');
+    await expect(model().extract(input, req)).rejects.toBeInstanceOf(
+      TransientModelError,
+    );
+  });
+
+  it('keeps body excerpts out of error messages', async () => {
+    stubFetch(
+      '{"error":{"code":400,"message":"bad"},"echo":"SECRET-POSTING"}',
+      400,
+    );
+    const error = (await model()
+      .extract(input, req)
+      .catch((e: unknown) => e)) as Error;
+    expect(error.message).toContain('400');
+    expect(error.message).not.toContain('SECRET-POSTING');
+  });
+
   it('throws a transient error when the network fails', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('ECONNRESET')));
     await expect(model().extract(input, req)).rejects.toBeInstanceOf(

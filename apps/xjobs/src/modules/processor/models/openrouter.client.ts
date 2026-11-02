@@ -8,6 +8,17 @@ export interface PostResult {
   latencyMs: number;
 }
 
+/** Provider error code and message only (message truncated), never a body excerpt. */
+function describeError(parsed: unknown): string {
+  const error = (parsed as { error?: { code?: unknown; message?: unknown } })
+    ?.error;
+  if (!error || typeof error !== 'object') return '';
+  const code = error.code === undefined ? '' : ` code=${String(error.code)}`;
+  const message =
+    typeof error.message === 'string' ? ` ${error.message.slice(0, 200)}` : '';
+  return `:${code}${message}`;
+}
+
 /** Thin OpenRouter HTTP client: maps statuses to the model error classes. */
 export class OpenRouterClient {
   constructor(private readonly apiKey: string) {}
@@ -45,7 +56,7 @@ export class OpenRouterClient {
     }
     const status = response.status;
     if (!response.ok) {
-      const message = `OpenRouter ${path} returned ${status}: ${text.slice(0, 300)}`;
+      const message = `OpenRouter ${path} returned ${status}${describeError(parsed)}`;
       if (status === 408 || status === 429 || status >= 500)
         throw new TransientModelError(message, { latencyMs });
       throw new ModelRequestError(message, { latencyMs });
@@ -56,11 +67,19 @@ export class OpenRouterClient {
         { latencyMs },
       );
     const record = parsed as Record<string, unknown>;
-    if (record.error)
-      throw new TransientModelError(
-        `OpenRouter ${path} returned an error body: ${JSON.stringify(record.error).slice(0, 300)}`,
-        { latencyMs },
-      );
+    if (record.error) {
+      const message = `OpenRouter ${path} returned an error body${describeError(record)}`;
+      const code = (record.error as { code?: unknown }).code;
+      if (
+        typeof code === 'number' &&
+        code >= 400 &&
+        code < 500 &&
+        code !== 408 &&
+        code !== 429
+      )
+        throw new ModelRequestError(message, { latencyMs });
+      throw new TransientModelError(message, { latencyMs });
+    }
     return { body: record, latencyMs };
   }
 }
