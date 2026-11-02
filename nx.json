@@ -5,10 +5,7 @@
   },
   "analytics": true,
   "namedInputs": {
-    "default": [
-      "{projectRoot}/**/*",
-      "sharedGlobals"
-    ],
+    "default": ["{projectRoot}/**/*", "sharedGlobals"],
     "production": [
       "default",
       "!{projectRoot}/.eslintrc.json",
@@ -16,9 +13,7 @@
       "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)",
       "!{projectRoot}/tsconfig.spec.json"
     ],
-    "sharedGlobals": [
-      "{workspaceRoot}/.github/workflows/ci.yml"
-    ]
+    "sharedGlobals": ["{workspaceRoot}/.github/workflows/ci.yml"]
   },
   "plugins": [
     {
@@ -59,18 +54,23 @@
         "ciTargetName": "test-ci",
         "testMode": "watch"
       },
-      "exclude": [
-        "apps/xjobs-e2e/**/*"
-      ]
+      "exclude": ["apps/xjobs-e2e/**/*", "apps/db-tests/**/*"]
     },
     {
       "plugin": "@nx/vitest",
-      "include": [
-        "apps/xjobs-e2e/**/*"
-      ],
+      "include": ["apps/xjobs-e2e/**/*"],
       "options": {
         "testTargetName": "e2e",
         "ciTargetName": "e2e-ci",
+        "testMode": "run"
+      }
+    },
+    {
+      "plugin": "@nx/vitest",
+      "include": ["apps/db-tests/**/*"],
+      "options": {
+        "testTargetName": "db-test",
+        "ciTargetName": "db-test-ci",
         "testMode": "run"
       }
     },
@@ -84,27 +84,42 @@
           "name": "docker:run"
         }
       }
+    },
+    {
+      "plugin": "@nx/next/plugin",
+      "options": {
+        "startTargetName": "start",
+        "buildTargetName": "build",
+        "devTargetName": "dev",
+        "serveStaticTargetName": "serve-static",
+        "buildDepsTargetName": "build-deps",
+        "watchDepsTargetName": "watch-deps"
+      }
     }
   ],
   "targetDefaults": {
     "test": {
-      "dependsOn": [
-        "^build"
-      ]
+      "dependsOn": ["^build"]
+    },
+    "db-test-ci--**/**": {
+      "cache": false
     },
     "e2e-ci--**/**": [
       {
         "filter": {
-          "projects": [
-            "@xjobs/xjobs-e2e"
-          ]
+          "projects": ["@xjobs/xjobs-e2e"]
         },
-        "dependsOn": [
-          "@xjobs/xjobs:build",
-          "@xjobs/xjobs:serve"
-        ]
+        "dependsOn": ["@xjobs/xjobs:build", "@xjobs/xjobs:serve"]
       }
     ]
   },
-  "nxCloudId": "6ae34a14fb2ae7b3022caf5f"
+  "nxCloudId": "6ae34a14fb2ae7b3022caf5f",
+  "generators": {
+    "@nx/next": {
+      "application": {
+        "style": "css",
+        "linter": "eslint"
+      }
+    }
+  }
 }

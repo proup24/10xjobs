@@ -1,0 +1,18 @@
+{
+  "name": "@xjobs/db-tests",
+  "version": "0.0.1",
+  "private": true,
+  "dependencies": {
+    "@supabase/supabase-js": "^2.118.0"
+  },
+  "nx": {
+    "targets": {
+      "db-test": {
+        "cache": false
+      },
+      "db-test-ci": {
+        "cache": false
+      }
+    }
+  }
+}

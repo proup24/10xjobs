@@ -43,3 +43,49 @@ jobs:
       # Nx Cloud recommends fixes for failures to help you get CI green faster. Learn more: https://nx.dev/ci/features/self-healing-ci
       - run: pnpm exec nx fix-ci
         if: always()
+
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      XJOBS_SKIP_ENV_FILES: '1'
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+    steps:
+      - uses: actions/checkout@v7
+
+      # Installs the pnpm version pinned in package.json's packageManager field
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+
+      # Keeps kong, gotrue, postgrest, storage-api, mailpit and postgres-meta (needed by `supabase gen types`)
+      - name: Start the Supabase stack
+        run: pnpm exec supabase start -x studio,realtime,edge-runtime,imgproxy,logflare,vector
+
+      - name: Apply the Prisma migrations
+        run: pnpm --filter @xjobs/xjobs db:migrate
+
+      # The only CI step that runs the engine's runtime client against a real database
+      - name: Seed the database
+        run: pnpm --filter @xjobs/xjobs db:seed
+
+      - name: Check the generated database types are current
+        run: pnpm db:types && git diff --exit-code apps/web/src/lib/supabase/database.types.ts
+
+      - name: Run the database tests
+        run: pnpm db:test
+
+      - name: Show Supabase status and container logs
+        if: failure()
+        run: |
+          pnpm exec supabase status || true
+          for c in $(docker ps -a --filter name=supabase_ --format '{{.Names}}'); do
+            echo "::group::$c"
+            docker logs --tail 100 "$c" || true
+            echo "::endgroup::"
+          done

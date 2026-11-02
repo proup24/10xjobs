@@ -30,7 +30,8 @@ Precision over volume: prefer a tailored application over a fast one.
 
 ## Conventions
 
-- Every domain record is workspace-scoped, and workspaces are isolated from each other (the app is hosted and multi-tenant).
+- The app is hosted and multi-tenant, and the tenant is the Supabase Auth user (no workspaces). Every record a user owns carries `userId` and is isolated by RLS; engine-only tables have RLS on with no policies.
+- The Prisma contract (`apps/xjobs/src/database/contract.prisma`) is the only schema source, RLS policies included. The local stack is the Supabase CLI; production is Supabase Cloud.
 - Qualify decisions record a reason, so wrong rejections can be found and fixed.
 
 ## Workflow

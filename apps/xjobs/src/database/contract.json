@@ -4053,7 +4053,15 @@
       "scalarList": true
     }
   },
-  "extensions": {},
+  "extensions": {
+    "supabase": {
+      "familyId": "sql",
+      "id": "supabase",
+      "kind": "extension",
+      "targetId": "postgres",
+      "version": "8.0.0-rc.21"
+    }
+  },
   "meta": {},
   "_generated": {
     "warning": "⚠️  GENERATED FILE - DO NOT EDIT",
