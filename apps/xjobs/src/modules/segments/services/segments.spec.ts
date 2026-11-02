@@ -1,4 +1,4 @@
-import { Arrangement, Channel, Region, SkillDomain } from 'src/common/enums';
+import { Arrangement, Channel, SkillDomain } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
 import { buildSegments, segmentKey } from './segments';
 import { segmentWindow } from './window';
@@ -13,9 +13,7 @@ const builder = (
     channel: Channel.LINKEDIN_JOB_BOARD,
     domain: SkillDomain.backend,
     type: Arrangement.onsite,
-    country: 'MA',
-    city: 'Casablanca',
-    locationRegion: null,
+    location: 'casablanca, morocco',
     keyword: `kw ${n}`,
     params: {},
     ...overrides,
@@ -40,25 +38,33 @@ describe('buildSegments', () => {
     expect(segments).toHaveLength(2);
   });
 
-  it('keeps domains and cities apart', () => {
+  it('keeps domains and locations apart', () => {
     const segments = buildSegments([
       ...many(2),
       ...many(2, { domain: SkillDomain.frontend }),
-      ...many(2, { city: 'Rabat' }),
+      ...many(2, { location: 'rabat, morocco' }),
     ]);
     expect(segments).toHaveLength(3);
   });
 
-  it('groups remote builders by region, ignoring city, with GLOBAL for none', () => {
-    const remote = { type: Arrangement.remote, country: null, city: null };
+  it('groups onsite builders of one location, whatever kind of place it is', () => {
+    const segments = buildSegments(
+      many(3, { channel: Channel.GREEN_HOUSE, location: 'europe' }),
+    );
+    expect(segments).toHaveLength(1);
+    expect(segments[0].key).toBe(`${Channel.GREEN_HOUSE}|backend|onsite|europe`);
+  });
+
+  it('keeps one location apart across arrangements', () => {
     const segments = buildSegments([
-      ...many(2, { ...remote, locationRegion: Region.EMEA }),
-      ...many(1, { ...remote, locationRegion: Region.EMEA, city: 'Rabat' }),
-      ...many(2, { ...remote, locationRegion: null }),
+      ...many(2, { channel: Channel.ASHBY, location: 'france' }),
+      ...many(2, {
+        channel: Channel.ASHBY,
+        location: 'france',
+        type: Arrangement.hybrid,
+      }),
     ]);
-    expect(segments.map((s) => s.members.length).sort()).toEqual([2, 3]);
-    expect(segments.some((s) => s.key.endsWith('|GLOBAL'))).toBe(true);
-    expect(segments.some((s) => s.key.includes('null'))).toBe(false);
+    expect(segments).toHaveLength(2);
   });
 
   it('never mixes channels', () => {
@@ -90,17 +96,17 @@ describe('buildSegments', () => {
     );
   });
 
-  it('groups LinkedIn builders that search the same place, whatever their region', () => {
-    const remote = { type: Arrangement.remote, country: null, city: null };
+  it('groups LinkedIn builders that search the same place, whatever their location', () => {
+    const remote = { type: Arrangement.remote };
     const segments = buildSegments([
       builder({
         ...remote,
-        locationRegion: Region.EMEA,
+        location: 'emea',
         params: { location: 'EMEA' },
       }),
       builder({
         ...remote,
-        locationRegion: Region.MENA,
+        location: 'mena',
         params: { location: 'EMEA' },
       }),
     ]);
@@ -109,16 +115,16 @@ describe('buildSegments', () => {
   });
 
   it('groups LinkedIn builders by geoId before location text', () => {
-    const remote = { type: Arrangement.remote, country: null, city: null };
+    const remote = { type: Arrangement.remote };
     const segments = buildSegments([
       builder({
         ...remote,
-        locationRegion: Region.EMEA,
+        location: 'emea',
         params: { location: 'EMEA', geoId: '91000007' },
       }),
       builder({
         ...remote,
-        locationRegion: Region.MENA,
+        location: 'mena',
         params: {
           location: 'Europe, Middle East and Africa',
           geoId: '91000007',
@@ -128,31 +134,38 @@ describe('buildSegments', () => {
     expect(segments).toHaveLength(1);
   });
 
-  it('keeps the region key for channels other than the LinkedIn job board', () => {
+  it('keys channels other than the LinkedIn job board on the location', () => {
     const b = builder({
       channel: Channel.ASHBY,
       type: Arrangement.remote,
-      country: null,
-      city: null,
-      locationRegion: Region.MENA,
+      location: 'mena',
       params: { location: 'EMEA' },
     });
-    expect(segmentKey(b)).toBe(`${Channel.ASHBY}|backend|remote|MENA`);
+    expect(segmentKey(b)).toBe(`${Channel.ASHBY}|backend|remote|mena`);
+  });
+
+  it('keys a LinkedIn job board builder by geoId, else location text', () => {
+    expect(segmentKey(builder({ params: { location: 'emea' } }))).toBe(
+      `${Channel.LINKEDIN_JOB_BOARD}|backend|onsite|search:emea`,
+    );
+    expect(
+      segmentKey(builder({ params: { location: 'emea', geoId: '91000000' } })),
+    ).toBe(`${Channel.LINKEDIN_JOB_BOARD}|backend|onsite|search:91000000`);
   });
 
   it('keeps each member cursor when builders are regrouped', () => {
-    const remote = { type: Arrangement.remote, country: null, city: null };
+    const remote = { type: Arrangement.remote };
     const until = new Date('2026-11-01T12:00:00Z');
     const [merged] = buildSegments([
       builder({
         ...remote,
-        locationRegion: Region.EMEA,
+        location: 'emea',
         params: { location: 'EMEA' },
         coveredUntil: new Date('2026-11-01T11:00:00Z'),
       }),
       builder({
         ...remote,
-        locationRegion: Region.MENA,
+        location: 'mena',
         params: { location: 'EMEA' },
         coveredUntil: new Date('2026-11-01T10:00:00Z'),
       }),

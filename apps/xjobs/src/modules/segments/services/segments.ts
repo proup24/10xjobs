@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { Arrangement, Channel, Region } from 'src/common/enums';
+import { Channel } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
 
 /** Builders searched together in one Apify run. */
@@ -22,22 +22,16 @@ function linkedinSearchPlace(builder: QuerySearchBuilderRow): string | null {
 }
 
 /**
- * On-site and hybrid share a city; remote shares the selected region. LinkedIn
- * job board builders share the place they search, so builders of different
- * regions that search the same place (MENA and EMEA both search `EMEA`) meet
- * in one segment and run as one search.
+ * Builders share the location they search, whatever the arrangement (the
+ * arrangement is its own part of the key). LinkedIn job board builders share
+ * the place LinkedIn searches: its geoId, else its location text.
  */
 function placeOf(builder: QuerySearchBuilderRow): string {
   if (builder.channel === Channel.LINKEDIN_JOB_BOARD) {
     const place = linkedinSearchPlace(builder);
     if (place) return place;
   }
-  if (
-    builder.type === Arrangement.onsite ||
-    builder.type === Arrangement.hybrid
-  )
-    return `${builder.country ?? ''}|${builder.city ?? ''}`;
-  return builder.locationRegion ?? Region.GLOBAL;
+  return builder.location;
 }
 
 export function segmentKey(builder: QuerySearchBuilderRow): string {
