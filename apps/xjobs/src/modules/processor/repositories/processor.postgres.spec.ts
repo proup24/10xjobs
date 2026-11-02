@@ -616,7 +616,8 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
 
     it('approves a proposed term so it is offered and matched', async () => {
       await vocab.propose([{ list: 'techTags', text: 'Bun' }]);
-      await vocab.approve('techTags', 'bun');
+      expect(await vocab.approve('techTags', 'bun')).toBe(true);
+      expect(await vocab.approve('techTags', 'bun')).toBe(false);
       const { options, vocab: snapshot } = await vocab.snapshot();
       expect(options.techTags).toContain('bun');
       expect(snapshot.approved.techTags.get('bun')).toBe('bun');
@@ -660,8 +661,9 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
 
     it('rejects a proposed term but never deletes an approved one', async () => {
       await vocab.propose([{ list: 'techTags', text: 'Bun' }]);
-      await vocab.reject('techTags', 'bun');
-      await vocab.reject('techTags', 'react');
+      expect(await vocab.reject('techTags', 'bun')).toBe(true);
+      expect(await vocab.reject('techTags', 'react')).toBe(false);
+      expect(await vocab.reject('techTags', 'missing')).toBe(false);
       expect(
         await db.orm.public.TechTag.where({ code: 'bun' }).first(),
       ).toBeNull();
@@ -680,8 +682,9 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
         { name: 'Paris', countryCode: 'FR' },
       ]);
       expect(await vocab.listProposedCities()).toHaveLength(2);
-      await vocab.approveCity(ids.get('Berlin|DE')!);
-      await vocab.rejectCity(ids.get('Paris|FR')!);
+      expect(await vocab.approveCity(ids.get('Berlin|DE')!)).toBe(true);
+      expect(await vocab.rejectCity(ids.get('Berlin|DE')!)).toBe(false);
+      expect(await vocab.rejectCity(ids.get('Paris|FR')!)).toBe(true);
       expect(await vocab.listProposedCities()).toHaveLength(0);
       const berlin = await db.orm.public.City.where({
         id: ids.get('Berlin|DE')!,
@@ -690,6 +693,22 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       expect(
         await db.orm.public.City.where({ id: ids.get('Paris|FR')! }).first(),
       ).toBeNull();
+    });
+
+    it('refuses to reject a city an extraction still names', async () => {
+      const ids = await vocab.upsertCities([
+        { name: 'Lyon', countryCode: 'FR' },
+      ]);
+      const lyon = ids.get('Lyon|FR')!;
+      const jobId = await job();
+      await repo.saveExtraction({
+        ...extraction(jobId),
+        cityIds: [lyon],
+      });
+      expect(await vocab.rejectCity(lyon)).toBe(false);
+      expect(
+        await db.orm.public.City.where({ id: lyon }).first(),
+      ).not.toBeNull();
     });
   });
 });

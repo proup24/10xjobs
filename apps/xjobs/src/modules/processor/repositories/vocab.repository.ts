@@ -34,21 +34,24 @@ export abstract class VocabRepository {
   abstract bumpOccurrences(list: ListName, codes: string[]): Promise<void>;
   /** Proposed terms, most sighted first. */
   abstract listProposed(list: ListName): Promise<ProposedTerm[]>;
-  /** Makes a proposed term approved. An approved or missing row is left alone. */
-  abstract approve(list: ListName, code: string): Promise<void>;
+  /** Makes a proposed term approved; false (nothing changed) when it is missing or already approved. */
+  abstract approve(list: ListName, code: string): Promise<boolean>;
   /**
    * Adds the proposed term's label (lower-case) to the approved target's
    * aliases and deletes the proposed row. Throws when the source is not
    * proposed or the target is not approved; nothing else changes.
    */
   abstract alias(list: ListName, code: string, to: string): Promise<void>;
-  /** Deletes a proposed term. An approved row is never deleted. */
-  abstract reject(list: ListName, code: string): Promise<void>;
+  /** Deletes a proposed term; false when it is missing or approved (never deleted). */
+  abstract reject(list: ListName, code: string): Promise<boolean>;
   /** Proposed cities, most sighted first. */
   abstract listProposedCities(): Promise<ProposedCity[]>;
-  abstract approveCity(id: string): Promise<void>;
-  /** Deletes a proposed city; an approved one is left alone. */
-  abstract rejectCity(id: string): Promise<void>;
+  abstract approveCity(id: string): Promise<boolean>;
+  /**
+   * Deletes a proposed city; false when it is missing, approved, or an
+   * extraction's `cityIds` still names it.
+   */
+  abstract rejectCity(id: string): Promise<boolean>;
 }
 
 export interface ProposedTerm {
@@ -250,14 +253,15 @@ export class PrismaVocabRepository extends VocabRepository {
       );
   }
 
-  async approve(list: ListName, code: string): Promise<void> {
-    await inRetriedTransaction(this.database, async (tx) => {
+  async approve(list: ListName, code: string): Promise<boolean> {
+    return inRetriedTransaction(this.database, async (tx) => {
       const table = listTables(tx)[list];
       const row = await table.where({ code }).forNoKeyUpdate().first();
-      if (row?.status !== 'proposed') return;
+      if (row?.status !== 'proposed') return false;
       await table
         .where({ code })
         .updateAll({ status: 'approved', approvedAt: new Date() });
+      return true;
     });
   }
 
@@ -279,11 +283,13 @@ export class PrismaVocabRepository extends VocabRepository {
     });
   }
 
-  async reject(list: ListName, code: string): Promise<void> {
-    await inRetriedTransaction(this.database, async (tx) => {
+  async reject(list: ListName, code: string): Promise<boolean> {
+    return inRetriedTransaction(this.database, async (tx) => {
       const table = listTables(tx)[list];
       const row = await table.where({ code }).forNoKeyUpdate().first();
-      if (row?.status === 'proposed') await table.where({ code }).deleteAll();
+      if (row?.status !== 'proposed') return false;
+      await table.where({ code }).deleteAll();
+      return true;
     });
   }
 
@@ -301,22 +307,33 @@ export class PrismaVocabRepository extends VocabRepository {
       .sort((a, b) => b.occurrences - a.occurrences || (a.id < b.id ? -1 : 1));
   }
 
-  async approveCity(id: string): Promise<void> {
-    await inRetriedTransaction(this.database, async (tx) => {
+  async approveCity(id: string): Promise<boolean> {
+    return inRetriedTransaction(this.database, async (tx) => {
       const city = tx.orm.public.City;
       const row = await city.where({ id }).forNoKeyUpdate().first();
-      if (row?.status !== 'proposed') return;
+      if (row?.status !== 'proposed') return false;
       await city
         .where({ id })
         .updateAll({ status: 'approved', approvedAt: new Date() });
+      return true;
     });
   }
 
-  async rejectCity(id: string): Promise<void> {
-    await inRetriedTransaction(this.database, async (tx) => {
+  async rejectCity(id: string): Promise<boolean> {
+    return inRetriedTransaction(this.database, async (tx) => {
       const city = tx.orm.public.City;
       const row = await city.where({ id }).forNoKeyUpdate().first();
-      if (row?.status === 'proposed') await city.where({ id }).deleteAll();
+      if (row?.status !== 'proposed') return false;
+      // `cityIds` is a uuid array without a foreign key: refuse while it is in use.
+      const used = await tx.query(
+        tx.raw
+          .sql`SELECT e.id FROM job_extractions e WHERE ${id}::uuid = ANY(e."cityIds") LIMIT 1`
+          .returnsRow({ id: 'pg/uuid@1' })
+          .build(),
+      );
+      if (used.length > 0) return false;
+      await city.where({ id }).deleteAll();
+      return true;
     });
   }
 }

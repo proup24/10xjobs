@@ -2,7 +2,14 @@ import type { ReprocessFilter } from 'src/modules/processor/repositories/process
 import { LIST_NAMES, type ListName } from 'src/modules/processor/vocab/lists';
 
 /** Argument parsing for `db:reprocess` and `db:vocab`, kept apart so specs can import it. */
-export function parseReprocessArgs(argv: readonly string[]): ReprocessFilter {
+/** pnpm forwards the `--` of `pnpm run x -- args`; drop one. */
+const withoutLeadingSeparator = (argv: readonly string[]) =>
+  argv[0] === '--' ? argv.slice(1) : argv;
+
+export function parseReprocessArgs(
+  rawArgv: readonly string[],
+): ReprocessFilter {
+  const argv = withoutLeadingSeparator(rawArgv);
   const filter: ReprocessFilter = {};
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
@@ -33,14 +40,17 @@ export type VocabCommand =
   | { list: ListName | 'cities'; action: 'approve' | 'reject'; code: string }
   | { list: ListName; action: 'alias'; code: string; to: string };
 
-export function parseVocabArgs(argv: readonly string[]): VocabCommand {
-  const [list, action, code, ...rest] = argv;
+export function parseVocabArgs(rawArgv: readonly string[]): VocabCommand {
+  const [list, action, code, ...rest] = withoutLeadingSeparator(rawArgv);
   if (list !== 'cities' && !LIST_NAMES.includes(list as ListName))
     throw new Error(
       `unknown list: ${list ?? '(none)'}; use one of ${[...LIST_NAMES, 'cities'].join(', ')}`,
     );
   const named = list as ListName | 'cities';
-  if (action === 'list') return { list: named, action };
+  if (action === 'list') {
+    if (code !== undefined) throw new Error(`unexpected argument: ${code}`);
+    return { list: named, action };
+  }
   if (action === 'approve' || action === 'reject' || action === 'alias') {
     if (action === 'alias' && named === 'cities')
       throw new Error(
@@ -50,9 +60,13 @@ export function parseVocabArgs(argv: readonly string[]): VocabCommand {
       throw new Error(
         `${action} needs a ${named === 'cities' ? 'city id' : 'code'}`,
       );
-    if (action !== 'alias') return { list: named, action, code };
+    if (action !== 'alias') {
+      if (rest.length > 0) throw new Error(`unexpected argument: ${rest[0]}`);
+      return { list: named, action, code };
+    }
     if (rest[0] !== '--to' || rest[1] === undefined)
       throw new Error('alias needs --to <approved code>');
+    if (rest.length > 2) throw new Error(`unexpected argument: ${rest[2]}`);
     return { list: named as ListName, action, code, to: rest[1] };
   }
   throw new Error(

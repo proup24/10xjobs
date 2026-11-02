@@ -27,7 +27,31 @@ describe('parseReprocessArgs', () => {
   });
 });
 
+describe('a leading -- forwarded by pnpm', () => {
+  it('is dropped by both parsers', () => {
+    expect(parseReprocessArgs(['--', '--null-status'])).toEqual({
+      nullStatus: true,
+    });
+    expect(parseVocabArgs(['--', 'techTags', 'list'])).toEqual({
+      list: 'techTags',
+      action: 'list',
+    });
+  });
+});
+
 describe('parseVocabArgs', () => {
+  it('refuses leftover arguments', () => {
+    expect(() => parseVocabArgs(['techTags', 'list', 'x'])).toThrow(
+      'unexpected argument: x',
+    );
+    expect(() => parseVocabArgs(['techTags', 'approve', 'a', 'b'])).toThrow(
+      'unexpected argument: b',
+    );
+    expect(() =>
+      parseVocabArgs(['techTags', 'alias', 'a', '--to', 'b', 'c']),
+    ).toThrow('unexpected argument: c');
+  });
+
   it('parses list, approve, reject and alias', () => {
     expect(parseVocabArgs(['techTags', 'list'])).toEqual({
       list: 'techTags',

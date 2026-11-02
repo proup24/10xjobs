@@ -18,6 +18,13 @@ import { parseVocabArgs } from './processor-args';
 async function main(): Promise<void> {
   const logger = new Logger('Vocab');
   const command = parseVocabArgs(process.argv.slice(2));
+  const done = (changed: boolean, message: string, code: string) => {
+    if (changed) logger.log(message);
+    else {
+      logger.error(`not found or not proposed: ${code}`);
+      process.exitCode = 1;
+    }
+  };
   const db = createDatabaseClient(
     toDatabaseConfig(loadDatabaseEnvironment()),
     logger,
@@ -29,11 +36,17 @@ async function main(): Promise<void> {
         for (const c of await vocab.listProposedCities())
           console.log(`${c.id}\t${c.name}, ${c.countryCode}\t${c.occurrences}`);
       } else if (command.action === 'approve') {
-        await vocab.approveCity(command.code);
-        logger.log(`Approved city ${command.code}`);
+        done(
+          await vocab.approveCity(command.code),
+          `Approved city ${command.code}`,
+          command.code,
+        );
       } else if (command.action === 'reject') {
-        await vocab.rejectCity(command.code);
-        logger.log(`Rejected city ${command.code}`);
+        done(
+          await vocab.rejectCity(command.code),
+          `Rejected city ${command.code}`,
+          command.code,
+        );
       }
       return;
     }
@@ -44,11 +57,17 @@ async function main(): Promise<void> {
           `${t.code}\t${t.label}\t${t.occurrences}\t${t.aliases.join(', ')}`,
         );
     } else if (command.action === 'approve') {
-      await vocab.approve(list, command.code);
-      logger.log(`Approved ${list}/${command.code}`);
+      done(
+        await vocab.approve(list, command.code),
+        `Approved ${list}/${command.code}`,
+        command.code,
+      );
     } else if (command.action === 'reject') {
-      await vocab.reject(list, command.code);
-      logger.log(`Rejected ${list}/${command.code}`);
+      done(
+        await vocab.reject(list, command.code),
+        `Rejected ${list}/${command.code}`,
+        command.code,
+      );
     } else if (command.action === 'alias') {
       await vocab.alias(list, command.code, command.to);
       logger.log(`Aliased ${list}/${command.code} to ${command.to}`);

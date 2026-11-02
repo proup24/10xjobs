@@ -418,6 +418,8 @@ export interface MemoryCity {
 export class MemoryVocabRepository extends VocabRepository {
   readonly lists: Record<ListName, ListTableRow[]>;
   readonly cities: MemoryCity[] = [];
+  /** City ids an extraction names; a proposed city in it cannot be rejected. */
+  readonly citiesInUse = new Set<string>();
   readonly regionCountries: Map<string, string[]>;
 
   constructor(
@@ -531,9 +533,11 @@ export class MemoryVocabRepository extends VocabRepository {
       .sort((a, b) => b.occurrences - a.occurrences);
   }
 
-  async approve(list: ListName, code: string): Promise<void> {
+  async approve(list: ListName, code: string): Promise<boolean> {
     const row = this.row(list, code);
-    if (row?.status === 'proposed') row.status = 'approved';
+    if (row?.status !== 'proposed') return false;
+    row.status = 'approved';
+    return true;
   }
 
   async alias(list: ListName, code: string, to: string): Promise<void> {
@@ -549,10 +553,11 @@ export class MemoryVocabRepository extends VocabRepository {
     this.lists[list].splice(this.lists[list].indexOf(source), 1);
   }
 
-  async reject(list: ListName, code: string): Promise<void> {
+  async reject(list: ListName, code: string): Promise<boolean> {
     const row = this.row(list, code);
-    if (row?.status === 'proposed')
-      this.lists[list].splice(this.lists[list].indexOf(row), 1);
+    if (row?.status !== 'proposed') return false;
+    this.lists[list].splice(this.lists[list].indexOf(row), 1);
+    return true;
   }
 
   async listProposedCities(): Promise<ProposedCity[]> {
@@ -566,15 +571,19 @@ export class MemoryVocabRepository extends VocabRepository {
       }));
   }
 
-  async approveCity(id: string): Promise<void> {
+  async approveCity(id: string): Promise<boolean> {
     const city = this.cities.find((c) => c.id === id);
-    if (city?.status === 'proposed') city.status = 'approved';
+    if (city?.status !== 'proposed') return false;
+    city.status = 'approved';
+    return true;
   }
 
-  async rejectCity(id: string): Promise<void> {
+  async rejectCity(id: string): Promise<boolean> {
     const i = this.cities.findIndex(
       (c) => c.id === id && c.status === 'proposed',
     );
-    if (i >= 0) this.cities.splice(i, 1);
+    if (i < 0 || this.citiesInUse.has(id)) return false;
+    this.cities.splice(i, 1);
+    return true;
   }
 }
