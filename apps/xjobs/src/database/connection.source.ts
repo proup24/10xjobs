@@ -1,4 +1,5 @@
 import { Logger } from '@nestjs/common';
+import supabaseRuntimeDescriptor from '@prisma/orm-extension-supabase/runtime';
 import postgres from '@prisma/orm-postgres/runtime';
 import { contractFromJson } from '@prisma/orm-postgres/static';
 import type { DatabaseConfig } from 'src/config';
@@ -21,6 +22,7 @@ export function createDatabaseClient(
   return postgres({
     contract,
     url: config.url,
+    extensions: [supabaseRuntimeDescriptor],
     poolOptions: {
       connectionTimeoutMillis: config.connectionTimeoutMs,
       idleTimeoutMillis: config.idleTimeoutMs,
