@@ -8,7 +8,32 @@ import {
 } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
 
-export class QuerySearchBuilderResponseDto implements QuerySearchBuilderRow {
+/** Collection claim columns: engine-internal, never returned by the API. */
+export const CLAIM_COLUMNS = [
+  'claimRunId',
+  'claimWindowStart',
+  'claimWindowEnd',
+  'claimExpiresAt',
+] as const;
+
+/** A query search builder as the API returns it. */
+export type QueryBuilderView = Omit<
+  QuerySearchBuilderRow,
+  (typeof CLAIM_COLUMNS)[number]
+>;
+
+export function withoutClaim(row: QuerySearchBuilderRow): QueryBuilderView {
+  const {
+    claimRunId: _runId,
+    claimWindowStart: _start,
+    claimWindowEnd: _end,
+    claimExpiresAt: _expires,
+    ...view
+  } = row;
+  return view;
+}
+
+export class QuerySearchBuilderResponseDto implements QueryBuilderView {
   @ApiProperty({ format: 'uuid' })
   id!: string;
 

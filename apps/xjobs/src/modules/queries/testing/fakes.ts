@@ -31,6 +31,10 @@ export class FakeQuerySearchRepository extends QuerySearchRepository {
       isActive: false,
       isDeleted: false,
       coveredUntil: null,
+      claimRunId: null,
+      claimWindowStart: null,
+      claimWindowEnd: null,
+      claimExpiresAt: null,
       createdAt: now,
       updatedAt: now,
     } as QuerySearchBuilderRow;
