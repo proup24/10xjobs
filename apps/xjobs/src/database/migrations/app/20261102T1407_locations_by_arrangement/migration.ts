@@ -3,7 +3,7 @@ import type { Contract as Start } from '../../snapshots/944233e509d9126dc6f0d7e6
 import startContract from '../../snapshots/944233e509d9126dc6f0d7e64cc2c8229c1661126b49d35a36427a3f75e7a262/contract.json' with { type: 'json' };
 import type { Contract as End } from '../../snapshots/cb5ffc79622d9999f4641fba8f159dfe7a4c8428bed7836808b6114bcf5030e1/contract';
 import endContract from '../../snapshots/cb5ffc79622d9999f4641fba8f159dfe7a4c8428bed7836808b6114bcf5030e1/contract.json' with { type: 'json' };
-import { Migration, MigrationCLI, sql } from '@prisma/orm-postgres/migration';
+import { Migration, MigrationCLI } from '@prisma/orm-postgres/migration';
 
 export default class M extends Migration<Start, End> {
   override readonly startContractJson = startContract;
@@ -45,19 +45,18 @@ export default class M extends Migration<Start, End> {
         table: 'query_search_builder',
         column: 'locationRegion',
       }),
-      this.addColumnWithTemporaryDefault({
+      // No data conversion: the local DB is rebuilt, so refuse to run on rows.
+      this.addRequiredColumnToEmptyTable({
         schema: 'public',
         table: 'profiles',
         column: 'locations',
         type: 'jsonb',
-        temporaryDefault: sql`'{}'::jsonb`,
       }),
-      this.addColumnWithTemporaryDefault({
+      this.addRequiredColumnToEmptyTable({
         schema: 'public',
         table: 'query_search_builder',
         column: 'location',
         type: 'text',
-        temporaryDefault: sql`''`,
       }),
     ];
   }

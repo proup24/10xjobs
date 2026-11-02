@@ -503,15 +503,16 @@
     "id": "column.profiles.locations",
     "label": "Add column locations to profiles",
     "summary": "Adds column locations to table profiles",
+    "operationClass": "additive",
     "target": {
       "id": "postgres",
       "details": {
         "schema": "public",
-        "objectType": "table",
-        "name": "profiles"
+        "objectType": "column",
+        "name": "locations",
+        "table": "profiles"
       }
     },
-    "operationClass": "additive",
     "precheck": [
       {
         "description": "ensure column \"locations\" is missing",
@@ -525,16 +526,24 @@
           "expects": "absent",
           "object": "column \"locations\" on \"profiles\""
         }
+      },
+      {
+        "description": "ensure table \"profiles\" is empty before adding NOT NULL column without default",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"public\".\"profiles\" LIMIT 1) AS \"result\"",
+        "params": [],
+        "meta": {
+          "requiredColumn": {
+            "table": "profiles",
+            "column": "locations",
+            "reason": "newField"
+          }
+        }
       }
     ],
     "execute": [
       {
         "description": "add column \"locations\"",
-        "sql": "ALTER TABLE \"public\".\"profiles\" ADD COLUMN \"locations\" jsonb DEFAULT ('{}'::jsonb) NOT NULL"
-      },
-      {
-        "description": "drop temporary default from column \"locations\"",
-        "sql": "ALTER TABLE \"public\".\"profiles\" ALTER COLUMN \"locations\" DROP DEFAULT"
+        "sql": "ALTER TABLE \"public\".\"profiles\" ADD COLUMN \"locations\" jsonb NOT NULL"
       }
     ],
     "postcheck": [
@@ -562,15 +571,6 @@
         ]
       },
       {
-        "description": "verify column \"locations\" has no default after temporary default removal",
-        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"column_default\" IS NOT NULL)) AS \"result\"",
-        "params": [
-          "public",
-          "profiles",
-          "locations"
-        ]
-      },
-      {
         "description": "verify column \"locations\" has type \"jsonb\"",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
         "params": [
@@ -586,15 +586,16 @@
     "id": "column.query_search_builder.location",
     "label": "Add column location to query_search_builder",
     "summary": "Adds column location to table query_search_builder",
+    "operationClass": "additive",
     "target": {
       "id": "postgres",
       "details": {
         "schema": "public",
-        "objectType": "table",
-        "name": "query_search_builder"
+        "objectType": "column",
+        "name": "location",
+        "table": "query_search_builder"
       }
     },
-    "operationClass": "additive",
     "precheck": [
       {
         "description": "ensure column \"location\" is missing",
@@ -608,16 +609,24 @@
           "expects": "absent",
           "object": "column \"location\" on \"query_search_builder\""
         }
+      },
+      {
+        "description": "ensure table \"query_search_builder\" is empty before adding NOT NULL column without default",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"public\".\"query_search_builder\" LIMIT 1) AS \"result\"",
+        "params": [],
+        "meta": {
+          "requiredColumn": {
+            "table": "query_search_builder",
+            "column": "location",
+            "reason": "newField"
+          }
+        }
       }
     ],
     "execute": [
       {
         "description": "add column \"location\"",
-        "sql": "ALTER TABLE \"public\".\"query_search_builder\" ADD COLUMN \"location\" text DEFAULT ('') NOT NULL"
-      },
-      {
-        "description": "drop temporary default from column \"location\"",
-        "sql": "ALTER TABLE \"public\".\"query_search_builder\" ALTER COLUMN \"location\" DROP DEFAULT"
+        "sql": "ALTER TABLE \"public\".\"query_search_builder\" ADD COLUMN \"location\" text NOT NULL"
       }
     ],
     "postcheck": [
@@ -642,15 +651,6 @@
           "query_search_builder",
           "location",
           "NO"
-        ]
-      },
-      {
-        "description": "verify column \"location\" has no default after temporary default removal",
-        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"column_default\" IS NOT NULL)) AS \"result\"",
-        "params": [
-          "public",
-          "query_search_builder",
-          "location"
         ]
       },
       {
