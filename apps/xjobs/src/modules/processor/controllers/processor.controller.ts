@@ -25,7 +25,7 @@ import {
   ProcessorBlockedError,
   ProcessorService,
 } from '../services/processor.service';
-import { PreviewPostingDto } from './preview-posting.dto';
+import { PreviewPostingDto } from '../dtos/preview.dto';
 
 /**
  * Manual entry points to the processor, for testing and inspection. Behind
