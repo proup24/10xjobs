@@ -7,6 +7,9 @@
       "path": "./apps/xjobs-e2e"
     },
     {
+      "path": "./apps/db-tests"
+    },
+    {
       "path": "./apps/xjobs"
     }
   ]
