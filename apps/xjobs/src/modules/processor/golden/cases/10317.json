@@ -1,0 +1,67 @@
+{
+  "id": "10317",
+  "input": {
+    "title": "Senior Full Stack Engineer (Python/Node.js, React)",
+    "companyName": "Exadel",
+    "description": "Location: Poland\n\nWhy Join Exadel\n\nWe’re an AI-first global tech company with 25+ years of engineering leadership, 2,000+ team members, and 500+ active projects powering Fortune 500 clients, including HBO, Microsoft, Google, and Starbucks.\n\nFrom AI platforms to digital transformation, we partner with enterprise leaders to build what’s next.\n\nWhat powers it all? Our people are ambitious, collaborative, and constantly evolving.\n\nAbout The Client\n\nThe leading provider of vehicle lifecycle solutions, with headquarters in Chicago, enables the companies that build, insure, and replace vehicles to power the next generation of transportation. Its platform delivers advanced mobile, artificial intelligence, and car technologies. It connects a network of 350+ insurance companies, 24,000+ repair facilities, hundreds of parts suppliers, and dozens of third-party data and service providers. The customer's collective solutions enhance productivity and help clients deliver better experiences for end consumers.\n\nWhat You’ll Do\n\n\n * Design, build, and maintain full-stack web applications, ensuring high performance, scalability, and security\n * Implement new features and enhancements in a well-tested, maintainable, and efficient way\n * Collaborate with Product managers and UX designers to create intuitive, responsive, and accessible interfaces\n * Review, analyze, and implement technical solutions to meet business requirements, driving resolution of issues and bugs\n * Contribute to architectural decisions, API design, and system integrations\n * Provide technical leadership to the engineering team - guide design discussions, perform code reviews, and support continuous improvement\n * Participate in task estimation, prioritization, and planning in alignment with engineering processes\n   \n   \n\nWhat You Bring\n\n\n * Extensive professional expertise Python/Node.js and proven experience with modern frontend frameworks (React.js, Vue.js, or Next.js)\n * Ability to design and deliver scalable, high-performance applications with clean, maintainable code\n * Experience in contributing to the architecture and design (architecture, design patterns, reliability and scaling) of new and existing systems\n * Deep understanding of API development, microservices, and system integration\n * Experience building secure and user-focused web interfaces with attention to UX patterns and best practices\n * Hands-on knowledge of cloud services (preferably AWS) and database technologies (SQL/NoSQL)\n * Strong sense of ownership, leadership mindset, and ability to guide other engineers\n * A collaborative, proactive approach to problem-solving and communication in distributed teams\n   \n   \n\nEnglish Language\n\nUpper-Intermediate\n\nLegal & Hiring Information\n\n\n * Exadel is proud to be an Equal Opportunity Employer committed to inclusion across minority, gender identity, sexual orientation, disability, age, and more.\n * Reasonable accommodations are available to enable individuals with disabilities to perform essential functions.\n * Please note: this job description is not exhaustive. Duties and responsibilities may evolve based on business needs.\n * Compensation details are shared with candidates at the early stage of the recruitment process.\n * The offer is not binding until a signed contract is in place.\n   \n   \n\nYour Benefits at Exadel\n\nExadel benefits vary by location and contract type. Your recruiter will fill you in on the details.\n\n\n * International projects\n * In-office, hybrid, or remote flexibility\n * Medical healthcare\n * Recognition program\n * Ongoing learning & reimbursement\n * Well-being program\n * Team events & local benefits\n * Sports compensation\n * Referral bonuses\n * Top-tier equipment provision\n   \n   \n\nExadel Culture\n\nWe lead with trust, respect, and purpose. We believe in open dialogue, creative freedom, and mentorship that helps you grow, lead, and make a real difference. Ours is a culture where ideas are challenged, voices are heard, and your impact matters.",
+    "evidence": {
+      "location": "Poland",
+      "contractType": null,
+      "experienceLevel": null,
+      "salary": null
+    }
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["unstated"],
+        "places": [],
+        "placeStrictness": "unstated"
+      }
+    ],
+    "roleKind": "fullstack_engineer",
+    "seniority": "unstated",
+    "yearsRequired": null,
+    "contractMonths": null,
+    "mainStack": [
+      {
+        "anyOf": [
+          {
+            "text": "Python",
+            "code": "python"
+          },
+          {
+            "text": "Node.js",
+            "code": "nodejs"
+          }
+        ]
+      },
+      {
+        "anyOf": [
+          {
+            "text": "React.js",
+            "code": "react"
+          },
+          {
+            "text": "Vue.js",
+            "code": "vue"
+          },
+          {
+            "text": "Next.js",
+            "code": "nextjs"
+          }
+        ]
+      }
+    ],
+    "requiredLanguages": [
+      {
+        "lang": "en",
+        "level": "working"
+      }
+    ],
+    "sponsorship": "unstated",
+    "salary": null,
+    "junkFlags": []
+  },
+  "drafted": {}
+}

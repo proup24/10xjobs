@@ -1,0 +1,33 @@
+{
+  "id": "1182",
+  "input": {
+    "title": "Manual QA Engineer (Game Client)",
+    "companyName": "Playson",
+    "description": "Playson is a leading online gaming supplier, founded in 2012, which has developed worldwide recognition in the industry. We offer complete gaming solutions based on the latest technologies and detailed market analysis for the leading iGaming operators.\n\nWe are seeking a highly skilled Manual QA Engineer to join our Game Client squad with a robust understanding of QA theory and agile methodologies. The ideal candidate will have a background in iGaming or general game development, and will be responsible for ensuring the highest quality of our products.\n\nWhat will you be doing?:\n\n\n * Develop and execute comprehensive test plans, test cases, and test scripts;\n * Perform manual, functional, regression, mobile, and cross-browser testing to ensure a seamless user experience;\n * Document and track software defects, collaborating closely with developers to resolve issues;\n * Execute testing in a client/server architecture environment;\n * Maintain and improve established workflows and procedures within agile teams;\n * Integrate and utilize continuous integration (CI) tools such as Jenkins and GitHub Actions to streamline the testing process;\n * Collaborate closely with cross-functional team members (including mathematicians, sound producers, artists, designers, and animators) to identify, troubleshoot, and resolve issues.\n   \n   \n\nRequired Skills And Experience\n\n\n * 4+ years of experience in manual testing;\n * Strong knowledge of QA theory and agile methodologies;\n * Experience in iGaming development or game development in general;\n * Proficient in manual, functional, and regression testing methodologies;\n * Proven experience with mobile and cross-browser testing;\n * Excellent analytical skills with attention to detail and a strong overall vision;\n * Practical experience in writing detailed test documentation;\n * Familiarity with testing client/server architectures;\n * Experience working with tools like BrowserStack or similar services;\n * Hands-on experience with automation testing frameworks (e.g., Selenium, Playwright, Jest, Pytest);\n * Basic proficiency in Python and/or JavaScript;\n * Experience testing APIs using tools such as Postman or similar;\n * Experience with Zephyr and/or TestRail.\n   \n   \n\nWould Be Beneficial To Know\n\n\n * Familiarity with observability systems like DataDog and Grafana;\n * Experience working with Databases, including SQL, NoSQL, and analytical databases.\n   \n   \n\nWhat You Get In Return\n\n\n * Competitive Salary: We offer a competitive salary in EUR, subject to annual performance reviews;\n * Quarterly Bonuses: Benefit from a transparent and systematic quarterly bonus system;\n * Flexible Schedule: We offer a flexible work schedule to accommodate your needs;\n * Remote Work Option: Choose to work remotely, providing greater flexibility and comfort;\n * Medical Insurance: Receive comprehensive medical insurance for both you and a significant other;\n * Financial Support for Life Events: We provide financial support during special life events;\n * Unlimited Paid Vacation: Enjoy unlimited paid vacation leave;\n * Unlimited Paid Sick Leave: Take unlimited paid sick leave whenever necessary;\n * Professional Development: Get reimbursement for professional development courses and training.\n   \n   \n\nIf the job description rings a bell - take action and apply!\n\nLooking forward to welcoming you to the iGaming world!\n\nAmbitious goals request a quick ability to maneuver through changes in the world. Playson is all about that.\n\nJoin us today! 🙌",
+    "evidence": {
+      "location": "European Union",
+      "contractType": null,
+      "experienceLevel": null,
+      "salary": null
+    }
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["remote"],
+        "places": [],
+        "placeStrictness": "unstated"
+      }
+    ],
+    "roleKind": "qa_manual",
+    "seniority": "unstated",
+    "yearsRequired": 4,
+    "contractMonths": null,
+    "mainStack": [],
+    "requiredLanguages": [],
+    "sponsorship": "unstated",
+    "salary": null,
+    "junkFlags": []
+  },
+  "drafted": {}
+}

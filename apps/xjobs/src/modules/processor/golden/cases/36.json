@@ -1,0 +1,33 @@
+{
+  "id": "36",
+  "input": {
+    "title": "Full Stack Software Engineer | €65/hr | Remote",
+    "companyName": "The Ai Training Company",
+    "description": "Full-Stack Software Engineers, Backend & Frontend Developers. Remote AI Project\n\nWe are seeking experienced Full-Stack Software Engineers, Backend Engineers, Frontend Engineers, Application Developers, and Software Engineers to contribute to advanced AI training through realistic software development, debugging, architecture, and code-evaluation tasks.\n\nYou will work across complete application stacks, including browser applications, APIs, backend services, databases, authentication, integrations, infrastructure, and deployment, while reviewing and improving complex software solutions across multiple programming languages.\n\nWhat You’ll Do\n\nDevelop and modify frontend and backend application components\nBuild user-facing features and the APIs, services, and data models that support them\nDebug issues across browsers, frontend applications, backend services, databases, and external integrations\nTrace requests and data through complete application workflows\nWork inside unfamiliar repositories and quickly understand existing architecture\nDiagnose authentication, authorization, persistence, networking, state-management, and deployment issues\nReview and improve software written in multiple programming languages\nTranslate full software implementations from one programming language or technology stack into another\nPreserve functionality, behavior, architecture, and edge-case handling during code translation\nReview AI-generated code for correctness, completeness, performance, security, and maintainability\nIdentify bugs, missing functionality, architectural weaknesses, and implementation shortcuts\nRefactor existing code while maintaining expected application behavior\nCreate technically rigorous reference solutions and validation criteria\nDocument technical decisions, assumptions, tradeoffs, and implementation details\n\nWho Can Apply\n\nRelevant backgrounds include:\n\nFull-Stack Software Engineers, Senior Full-Stack Engineers, Staff Full-Stack Engineers, Principal Full-Stack Engineers, Full-Stack Developers, Senior Software Engineers, Software Developers, Application Engineers, Application Developers, Product Engineers, and Web Application Engineers.\n\nFrontend backgrounds may include:\n\nFrontend Engineers, Senior Frontend Engineers, React Engineers, React Developers, JavaScript Engineers, TypeScript Engineers, UI Engineers, Web Engineers, Angular Developers, Vue Developers, Next.js Developers, and Client-Side Application Engineers with meaningful backend experience.\n\nBackend backgrounds may include:\n\nBackend Engineers, Senior Backend Engineers, API Engineers, Server-Side Engineers, Node.js Engineers, Python Backend Engineers, Java Backend Engineers, .NET Engineers, Go Engineers, Rust Engineers, and Backend Application Developers with meaningful frontend experience.\n\nAdditional relevant backgrounds include:\n\nPlatform Engineers, Systems Engineers, Cloud Engineers, Distributed Systems Engineers, Software Architects, Technical Leads, Developer Tools Engineers, Integration Engineers, DevOps Engineers, Site Reliability Engineers, SREs, and Infrastructure Engineers who regularly work across application layers.\n\nLanguage-focused candidates may include:\n\nPython Engineers, Java Engineers, C# Developers, .NET Developers, C++ Engineers, Golang Engineers, Go Developers, Rust Engineers, TypeScript Developers, JavaScript Developers, Kotlin Engineers, PHP Developers, Ruby Developers, Scala Engineers, and Polyglot Software Engineers.\n\nRelevant Full-Stack Experience\n\nStrong candidates may have experience with:\n\nFrontend application development\nBackend service development\nREST APIs\nGraphQL APIs\nRPC and gRPC services\nBrowser applications\nServer-side applications\nAuthentication and authorization\nSession management\nApplication state\nDatabase design\nORM and query layers\nCaching\nFile storage\nBackground jobs\nMessage queues\nEvent-driven systems\nThird-party integrations\nWebhooks\nCloud deployment\nContainerized applications\nObservability\nLogging\nMonitoring\nCI/CD\nProduction debugging\n\nRequirements\n\nStrong professional experience building and shipping production full-stack applications\nMeaningful hands-on experience with both frontend and backend engineering\nProduction experience with multiple programming languages\nStrong understanding of browser applications, APIs, application state, databases, and service integrations\nExperience understanding and contributing to complete software architectures\nAbility to work effectively inside unfamiliar repositories\nStrong debugging and technical problem-solving skills\nAbility to trace failures across multiple application layers\nExperience reading and evaluating code written by other engineers\nAbility to reason about correctness, performance, security, and maintainability\nStrong written communication and technical documentation skills\nAbility to work independently on technically complex tasks\n\nPreferred Background\n\nSenior-level full-stack engineering experience\nExperience owning complete features from UI through database\nExperience working across multiple programming languages\nExperience translating or migrating software between languages or frameworks\nExperience modernizing legacy applications\nExperience working with large or mature production codebases\nExperience with distributed systems and cloud infrastructure\nExperience conducting rigorous code reviews\nExperience debugging production incidents\nExperience designing APIs and database schemas\nExperience building secure authentication and authorization systems\nExperience mentoring software engineers\nExperience writing technical design documents\n\nThis opportunity is ideal for experienced full stack engineers who enjoy building real products, learning unfamiliar systems quickly, working across multiple technologies, and testing the limits of next-generation AI models. We are a referral partner of the client",
+    "evidence": {
+      "location": "Germany",
+      "contractType": null,
+      "experienceLevel": null,
+      "salary": null
+    }
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["remote"],
+        "places": [],
+        "placeStrictness": "unstated"
+      }
+    ],
+    "roleKind": "ai_training",
+    "seniority": "unstated",
+    "yearsRequired": null,
+    "contractMonths": null,
+    "mainStack": [],
+    "requiredLanguages": [],
+    "sponsorship": "unstated",
+    "salary": null,
+    "junkFlags": []
+  },
+  "drafted": {}
+}

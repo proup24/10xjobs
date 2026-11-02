@@ -1,0 +1,63 @@
+{
+  "id": "24",
+  "input": {
+    "title": "Full-Stack Developer (m/w/d) Java & TypeScript",
+    "companyName": "Randstad Deutschland",
+    "description": "Projektdetails\n\nEinsatzzeitraum: 02.11.2026 - 31.12.2029\nProjektsprache Deutsch\nAuslastung: Gesamt PT 703; davon Onsite PT 64 \n\n2026: 43 PT, davon 4 PT onsite\n\n2027: 220 PT, davon 20 PT onsite\n\n2028: 220 PT, davon 20 PT onsite\n\n2029: 220 PT, davon 20 PT onsite\n\nFür dieses Projekt werden ausschließlich Bewerbungen von angestellten Mitarbeiter*innen (von Systemhäusern, IT - Dienstleistern, etc. ) akzeptiert. Freiberufler*innen können beim Kunden leider nicht vorgestellt werden. Bitte sehen Sie als Freiberufler*innen von Bewerbungen ab.\n\nLeistungserbringung gemäß den vereinbarten Standards und Vorgaben des Auftraggebers (Rahmenvertrag, Prozessmodell, Architektur- und Security-Richtlinien, Programmierstandards)\nSicherstellung der Qualität des entwickelten Softwarecodes\nProgrammierung, Implementierung und Customizing technischer Komponenten in Applikationen auf Basis der genutzten Technologien inkl. dazugehöriger Schnittstellen, Module und entsprechender Datenbanken unter Einhaltung der Standards des Auftraggebers (z. B. Nutzung der standardisierten Entwicklungsumgebungen und Programmierrichtlinien)\nBeheben von Fehlern aus den Testphasen in den Applikationen / Komponenten\nDesign und Dokumentation der technischen Komponenten\nStrukturierung und Erstellen von Systemdokumentationen\nOrganisation, Erstellung und Verwaltung von Lieferpaketen für die betreffenden Applikationen\nEinrichten und Pflege von Entwicklungsumgebungen incl. Continuous Integration\nDurchführen von Code-Reviews, Komponententests, Modultests, Modulgruppentests\nVorbereitung von Entscheidungsvorlagen zu sehr komplexen technischen Themen\nPräsentationen zu sehr komplexen technischen Themenstellungen\nErarbeitung und Präsentation von Aufwandsschätzungen für die technische Lösung im Team\nTeilnahme an allen fachlichen Projektterminen, Scrum-Events und Workshops\nTeilnahme an fachlich notwendigen Terminen am Erfüllungsort\nFachliche Unterstützung des Projekt-Controllings bei der Kapazitätsplanung\nMust-Have: Software-Entwicklung: Erfahrung und Kenntnisse in der Entwicklung von Web-Frontends mit TypeScript - Intermediate (> 3 Jahre Erfahrung)\nMust-Have: Software-Entwicklung: Erfahrung und Kenntnisse in der Entwicklung von Java Microservices auf Basis von Spring Boot für Kubernetes - Intermediate (> 3 Jahre Erfahrung)\nMust-Have: Software-Entwicklung: Erfahrung und Kenntnisse in der Entwicklung von Schnittstellen mit einer REST API - Intermediate (> 3 Jahre Erfahrung)\nMust-Have: Schwachstellenmanagement: Erfahrung in der Behebung von Sicherheitslücken im Anwendungscode mit Defect Dojo. - Junior (<= 3 Jahre Erfahrung)Must-Have: Software-Entwicklung: Erfahrung und Kenntnisse in der Entwicklung mit der Middleware FCM (Google Firebase Cloud Messaging) - Junior (<= 3 Jahre Erfahrung)\nCI/CD: Erfahrung in Continous Integration & Delivery unter Nutzung z.B. von Gradle, Gitlab CI, Renovate - Intermediate (> 3 Jahre Erfahrung)\nErfahrung in skalierter agiler Entwicklung - Intermediate (> 3 Jahre Erfahrung)\nSoftware-Entwicklung: Erfahrung und Kenntnisse in der Entwicklung mit der Middleware MQTT (Eclipse-Amlen) - Junior (<= 3 Jahre Erfahrung)\nPerformance-Optimierung: Erfahrung in der Durchführung von Performance-Optimierungen und Reverse Engineering - Intermediate (> 3 Jahre Erfahrung)\nSoftware-Entwicklung: Erfahrung in der KI gestützten Softwareentwicklung z.B. mit GitHub Copilot, Kiro oder Claude - Junior (<= 3 Jahre Erfahrung)\nAttraktive Möglichkeiten zur Verkürzung Ihres persönlichen Zahlungszieles\nKeine zeitraubende Rechnungserstellung mehr nötig\nSchnelle, zuverlässige Honorarzahlung\nProjektverträge mittels elektronischer Signatur abschließen",
+    "evidence": {
+      "location": "Frankfurt, Hesse, Germany",
+      "contractType": null,
+      "experienceLevel": null,
+      "salary": null
+    }
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["remote"],
+        "places": [],
+        "placeStrictness": "unstated"
+      }
+    ],
+    "roleKind": "unstated",
+    "seniority": "mid",
+    "yearsRequired": 3,
+    "contractMonths": 38,
+    "mainStack": [
+      {
+        "anyOf": [
+          {
+            "text": "TypeScript",
+            "code": "typescript"
+          }
+        ]
+      },
+      {
+        "anyOf": [
+          {
+            "text": "Java",
+            "code": "java"
+          }
+        ]
+      },
+      {
+        "anyOf": [
+          {
+            "text": "Spring Boot",
+            "code": "spring"
+          }
+        ]
+      }
+    ],
+    "requiredLanguages": [
+      {
+        "lang": "de",
+        "level": "fluent"
+      }
+    ],
+    "sponsorship": "unstated",
+    "salary": null,
+    "junkFlags": []
+  },
+  "drafted": {}
+}

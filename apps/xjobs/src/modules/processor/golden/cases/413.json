@@ -1,0 +1,76 @@
+{
+  "id": "413",
+  "input": {
+    "title": "Senior Full-Stack Engineer - LATAM",
+    "companyName": "Space Inch",
+    "description": "We are looking for a Senior Full-stack engineer (React/Node/.NET) for a client we've been collaborating with for 6+ years. Your main responsibility will be collaborating with an already established team of developers from Space Inch's side reworking the clients systems as they modernize their stack and add new features. The client is in the eCommerce industry, specifically dealing with customized gift cards.\n\nIf you're a full-stack engineer with solid knowledge of React / NextJS, Node / NestJS & .NET, and have previously worked on production-level platforms we'd love to talk!\n\nOur Mission, Vision, and Values\n\nAt Space Inch, we prioritize alignment with our clients and team, ensuring a deep understanding of their needs. We are committed to delivering exceptional work while supporting the personal and professional growth of our team members. Every team member has access to an executive coach as part of this commitment.\n\nAbout Working At Space Inch\n\nOur team (:60 people) is primarily based in Croatia, with members in South America, Serbia, and the US. While focus is on working remotely, we do have an office in Zagreb for those who prefer a hybrid approach and are located nearby\nWe work on end-to-end projects with long-term vision\nWe strongly support work/life balance for our team members\n\nRequirements\n\n7+ years of experience as a full-stack developer\nStrong experience working with Typescript using React / NextJS\nStrong experience in Node, specifically using NestJS\nStrong experience working with .NET, especially rewriting legacy code\nExperience with MySQL, PostgreSQL\nExperience with Git and GitHub\nProficiency in both spoken and written English\nExperience working with Fastify\nNice to have experience in:\nVite\nPrevious work with eCommerce space\nStrong problem-solving skills and attention to detail\nKey Responsibilities\n\nDesign and develop robust and scalable full-stack web applications using React / NextJS & Node / NestJS\nWork on developing robust and scalable .NET apps and rewriting legacy .NET code\nWrite clean, maintainable, and well-tested code\nContribute to code reviews and provide constructive feedback\n\nTypical Challenges You'll be Solving\n\nOptimizing applications for maximum speed and scalability\nDebugging and fixing reported issues in a timely manner\nBalancing delivery speed with technical excellence\nEnsuring accessibility, responsiveness, and high performance\n\nQualities for Success\n\nProactive, solutions-driven mindset\nStrong attention to detail and code quality\nComfortable making technical decisions independently\nPassion for learning and improving\nOwnership mentality — you care about the end product\n\nWhere You've Likely Developed These Skills\n\nDigital product agencies or consultancies\nCross-functional product teams building real-world eCommerce platforms\n\nThis Job is Right for You If\n\nYou thrive in collaborative yet autonomous environments\nYou enjoy shaping both frontend and backend architecture, keeping in mind best practices for both\nYou value quality and thoughtful delivery over rushing\n\nThis Job is not Right for You If\n\nIf you prefer solely frontend or backend development\nYou expect constant supervision or micromanagement\nYou prefer chaotic startup environments with unclear priorities\n\nBenefits\n\nWhat's In It for You\n\nReal influence on technical decisions and project direction\nDiverse projects with leading US clients\nProfessional development support (courses, coaching, mentorship)\nWork-life balance, transparency, and long-term relationships\n\nBenefits\n\nCompensations:$4.500,00 - $6.000/monthly for B2B engagement, based on experience and skills\nRemote-first setup\nHealth & Wellbeing: 23 days of PTO + 100% paid sick leave + annual health checkup budget\nStay active: Wellness subsidy\nContinuous Growth: An education budget specifically designed to fuel your learning and help you expand your knowledge base. \nExtra perks: Referral bonus",
+    "evidence": {
+      "location": "Peru",
+      "contractType": null,
+      "experienceLevel": null,
+      "salary": null
+    }
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["unstated"],
+        "places": [],
+        "placeStrictness": "unstated"
+      }
+    ],
+    "roleKind": "fullstack_engineer",
+    "seniority": "senior",
+    "yearsRequired": 7,
+    "contractMonths": null,
+    "mainStack": [
+      {
+        "anyOf": [
+          {
+            "text": "React",
+            "code": "react"
+          },
+          {
+            "text": "NextJS",
+            "code": "nextjs"
+          }
+        ]
+      },
+      {
+        "anyOf": [
+          {
+            "text": "Node",
+            "code": "nodejs"
+          },
+          {
+            "text": "NestJS",
+            "code": "nestjs"
+          }
+        ]
+      },
+      {
+        "anyOf": [
+          {
+            "text": ".NET",
+            "code": "dotnet"
+          }
+        ]
+      }
+    ],
+    "requiredLanguages": [
+      {
+        "lang": "en",
+        "level": "fluent"
+      }
+    ],
+    "sponsorship": "unstated",
+    "salary": {
+      "min": 4500,
+      "max": 6000,
+      "currency": "USD",
+      "period": "month"
+    },
+    "junkFlags": []
+  },
+  "drafted": {}
+}

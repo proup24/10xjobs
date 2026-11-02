@@ -1,0 +1,66 @@
+{
+  "id": "1537",
+  "input": {
+    "title": "Senior Full Stack Engineer, AI-Enabled Development",
+    "companyName": "CSC Generation",
+    "description": "CSC Generation is the AI-native holding company re-engineering omnichannel retail. We acquire iconic brands and transform them with Genesis, our operating platform combining a Data Fabric, Automation Engine, proprietary tools, and shared services to modernize operations, elevate customer experience, and expand margins. With $1B+ in revenue across 13 brands, our portfolio includes Sur La Table, Backcountry, One Kings Lane, and others that serve as real-world innovation labs.\n\nReports to: Chief Technology Officer\n\nLocation: Costa Rica (Remote); Toronto, Ontario (Hybrid/Remote)\n\nAbout The Role\n\nCSC engineers build the Retail Service Cloud - a shared platform of APIs, SDKs, and microservices that powers operations across Backcountry, Sur La Table, One Kings Lane, Competitive Cyclist, MotoSport, and other portfolio brands.\n\nThe stack is TypeScript-first, AWS serverless, React frontend. Engineers own services end-to-end: design, build, ship, monitor.\n\nWhat makes CSC engineering distinct: we treat AI as a first-class production concern, not a side project. Engineers here build systems where LLMs classify, generate, and decide at scale - with cost functions, confidence routing, and graduated autonomy. If you’ve never built production AI systems, that’s fine - but you should be excited to learn.\n\nWhat You'll Do\n\n\n * Develop well-designed, testable, and scalable web applications using React, TypeScript, and modern frameworks.\n * Explore and integrate AI tools to streamline development and improve user engagement.\n * Deliver new features and optimize existing experiences at speed and scale within an agile workflow.\n * Participate in code reviews, provide constructive feedback, and mentor junior engineers.\n * Write and maintain unit tests and automated test suites to ensure code quality and reliability.\n * Partner closely with product, design, and back-end engineering to ship cohesive end-to-end features.\n * Stay current with the latest trends in front-end engineering, design patterns, and AI-driven development.\n   \n   \n\nRequired Qualifications\n\n\n * 5+ years building complex, high-performing web applications.\n * Deep expertise in React and JavaScript ES6/TypeScript.\n * Solid understanding of web performance, accessibility, and security best practices.\n * Proven track record of writing clean, maintainable, and testable code.\n * Strong problem-solving, debugging, and analytical skills.\n * Excellent collaboration and communication abilities\n * Experience with AI technologies like Cursor AI, ChatGPT, Copilot, or similar tools to support Frontend development and user engagement strategies is a plus.\n   \n   \n\nPreferred Qualifications\n\n\n * UX/UI design sensibilities and experience collaborating closely with design teams.\n * Functional programming experience.\n   \n   \n\nWhy Join\n\nThe people who do best here are builders. They take ownership, move fast, and want to see the direct impact of their work.\n\n\n * What’s in it for you?Joining CSC Generation isn’tjust about having a seat at the table—it’s about helping redesign the table entirely. You’ll be challenged, stretched, and supported as you grow faster than you thought possible. In addition to competitive compensation, we offer:\n * Executive Access: Work directly with brand CEOs and senior leadership, solving real business problems and earning mentorship from top operators.\n * AI-First Skill Building:Get hands-on with the most advanced AI tools in the market. From automation to prompt engineering, you’ll build a modern tech stack that sets you apart in any industry.\n * Accelerated Career Path:High performers are quickly entrusted with greater responsibility, new challenges, and leadership opportunities across our portfolio of brands.\n * Competitive benefits: Paid time off policies, 401(k)/RRSP match, medical/dental/vision and a variety of supplemental policies, and employee discounts at our portfolio companies\n   \n   \n\nInterview Process\n\n\n * 📞 Step 1: If you align with our vision and meet the qualifications, we’ll reach out to schedule a conversation and introduce CSC.\n * 🧠 Step 2: You’ll complete a short AI or product-building challenge so we can understand how you approach problems and execution.\n * 💬 Step 3: Participate in deep-dive interviews with CSC leadership focused on your experience, product mindset, and operational thinking.\n * 📩 Step 4: Offer. We’ll move fast for the right candidate.\n   \n   \n\nInterview process is subject to change. Any updates will be communicated promptly and clearly.\n\nUS:\n\nCSC Generation is an equal opportunity employer. All qualified applicants will receive consideration without regard to any characteristic protected by law. If you need an accommodation during the application process, contact [email protected] .\n\nEmployment is contingent on a background check, including verification of prior employment dates.\n\nIt is unlawful in Massachusetts to require or administer a lie-detector test as a condition of employment or continued employment. An employer who violates this law shall be subject to criminal penalties and civil liability.\n\nCanadian candidates: This posting is for an existing vacancy. This position is not open to and cannot be filled by a B.C. Resident.\n\nWe may use artificial intelligence (AI) tools to support parts of the hiring process, such as reviewing applications, analyzing resumes, or assessing responses and identifying potential inconsistencies or verification signals in application materials based on available information. These tools assist our recruitment team but do not replace human judgment. Final hiring decisions are ultimately made by humans. If you would like more information about how your data is processed, please contact us.",
+    "evidence": {
+      "location": "Costa Rica",
+      "contractType": null,
+      "experienceLevel": null,
+      "salary": null
+    }
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["remote"],
+        "places": [
+          {
+            "kind": "country",
+            "code": "CR"
+          }
+        ],
+        "placeStrictness": "limit"
+      },
+      {
+        "arrangements": ["hybrid", "remote"],
+        "places": [
+          {
+            "kind": "city",
+            "name": "Toronto",
+            "countryCode": "CA"
+          }
+        ],
+        "placeStrictness": "limit"
+      }
+    ],
+    "roleKind": "fullstack_engineer",
+    "seniority": "unstated",
+    "yearsRequired": 5,
+    "contractMonths": null,
+    "mainStack": [
+      {
+        "anyOf": [
+          {
+            "text": "TypeScript",
+            "code": "typescript"
+          }
+        ]
+      },
+      {
+        "anyOf": [
+          {
+            "text": "React",
+            "code": "react"
+          }
+        ]
+      }
+    ],
+    "requiredLanguages": [],
+    "sponsorship": "unstated",
+    "salary": null,
+    "junkFlags": []
+  },
+  "drafted": {}
+}

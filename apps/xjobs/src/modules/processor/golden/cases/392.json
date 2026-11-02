@@ -1,0 +1,55 @@
+{
+  "id": "392",
+  "input": {
+    "title": "Staff Frontend Product Engineer (Prague/Brno/Remote EU)",
+    "companyName": "Productboard",
+    "description": "Only the best engineers are being built here.\n\nAt Productboard, we are defining AI-first Product Engineering. Not as a one-time achievement, but as a baseline we raise every time we reach it. We remove every bottleneck as it surfaces and rebuild how product teams work from first principles, not just adding AI to existing workflows.\n\nAI tools are everywhere now. Agents can write code. That’s today’s baseline.What we're building is the environment where the baseline makes you better: focused on outcomes, writing specs that agents build from, leveling up with every feature you ship.\n\nWe are defining what AI-native product development becomes. We're all in.\n\nWhat You Will Build\n\nMake our codebase AI-ready: define clear module boundaries, improve API contracts, add semantic context, and build the structured documentation that makes AI agents more effective across every repo.\nDesign and implement agent workflows that go beyond chat: multi-step reasoning, tool use, autonomous task execution, and human-gated checkpoints.\nRun experiments, validate with real users, and iterate based on evidence. We measure learning velocity, not just output\nCollaborate closely with product managers and designers to shape what we build, not just how we build it. We expect a product mindset, not just technical execution.\nAct as a knowledge multiplier, sharing what you learn across and beyond your team to raise the bar for everyone.\n\nThe opportunity\n\nThe first shift in our teams has already happened: agents write code. That’s the baseline everywhere. Now we’re building an AI-first Product Engineering organization where learning matters as much as shipping.\n\nOnly a few companies build a product that makes them better. What we’re building next is a single place where work lives. Specs, plans, and full product context live in Productboard. There’s a seamless loop between Spark, our AI agent, and the coding agents. Engineers can steer from anywhere and focus on directing the work instead of typing it all out.\n\nOur own teams run on Productboard and Spark, so the feedback loop isn't a survey next quarter. It's the next conversation you overhear.\n\nImagine you ship a feature before lunch and by the afternoon, half the floor is working with it. Not in a demo, not on a roadmap slide: in our real work, minutes after you merged.\n\nWe feel the gaps our customers feel, and we close them first. Every feature goes straight to real product teams solving real problems, starting with ours.\n\nWe are looking for a Staff Frontend Engineer who wants to build this from the inside.\n\nWhy this matters for your career\n\nEngineers own more. Not just the code: the outcome it drives.\n\nYou won't just use AI tools. You will shape the architecture that makes agents effective, define the workflows that make them reliable, and build the evaluation systems that make them trustworthy.\n\nThis is where you become a pure product engineer. Someone who owns the problem, the trade-offs, and the result, not just the implementation. Every maker has an orchestra. The craft is knowing what it should play. And we never outsource our thinking.\n\nThe skills you build here (designing codebases agents can work in confidently, writing specs that carry your judgment into every build, building evaluations that catch what AI misses) will define senior engineering for the next decade. What you learn here doesn't just make you faster today. It makes you more valuable for years to come.\n\nWhat You Will Do\n\nWe are looking for a Staff Frontend Engineer to help with our migration from the legacy design system to Spark UI — the component system behind Productboard Spark and Productboard Platform, built to be as legible to agents as to people. The goal is to finish it by the end of the year. You'd shape the primitives, contracts, and docs that let anyone — engineer, PM, or agent — assemble a production interface without reinventing it.\n\nEvery surface we ship runs through it. Done right, PMs and designers prototype in an afternoon, engineers stop rebuilding the same table, and quality stops being a thing we inspect for at the end. You don't make one team faster — you change how fast the whole org ships.\n\nAbout You\n\n6-10+ years of experience building web apps.\nExperience with single page applications built with JavaScript and React.\nExperience with our favorite approaches and frameworks is always welcome (TypeScript, Continuous and Progressive Delivery with Feature Flags).\nA solid understanding of functional programming principles.\nConfident designing frontend architecture and passionate about performance.\nExperience mentoring and helping teammates, doing code reviews and pair-programming.\nDrive to have the editor and tooling set up perfectly.\nThe initiative to fix something that's broken, rather than waiting for someone else to do it.\nAble to win a debate on tabs vs. spaces conducted entirely in English.\nBring product thinking to engineering work. You can articulate why something matters for users, not just how it works technically.\nEmbrace AI as a daily tool in your own workflow. You use AI coding assistants, iterate on prompts, and constantly look for ways to move faster.\nAre curious about what agent native architecture looks like: how to structure codebases, APIs, and documentation so AI agents can operate effectively at scale.\nStrong fit: Former founding engineer or founder. A 0-to-1 engineer who turns business insights into prototypes to validate ideas quickly. Someone who's built agentic systems in production, or done deep work with multi-step LLM workflows (tool use, memory, orchestration).\n\nOur tech stack\n\nAI layer: Python, Pydantic AI, Braintrust\nFrontend: TypeScript, React, Relay, GraphQL\nBackend: Kotlin, Ruby (legacy services we're modernizing), with new services built in Kotlin\nStorage: PostgreSQL, MongoDB, Elastic, Redis\nData pipeline: Python, Keboola, Looker, Snowflake\nInfrastructure: AWS, Cloudflare, Kubernetes, Terraform\n\nOur Compensation\n\nSalary range: 2,295,000–3,305,000 CZK annually\n\nWhere most of our L4s sit:\nQ1 (2.3M–2.55M)\n33%\nQ2 (2.55M–2.8M)\n27%\nQ3 (2.8M–3.05M)\n33%\nQ4 (3.05M–3.3M)\n7%\nOur Benefits Include\n\nStock options\nMacBook + 34″ monitor\nWork from home stipend to support your home office setup\n5 weeks of vacation + 9 sick days\nFlexible working hours and home office\nBudget for online courses, books, and conferences\n2 weeks of fully paid parental leave\nFertility & Family-Building Support with Carrot\nMental Wellness Program with Soulmio to support your well-being and self-care\n1 Volunteer Day per year to support causes close to your heart, plus donation matching from Productboard\nFree snacks, drinks, and yummy catered lunches from White Circus at the office every day\nFree MultiSport card\nOn-site bouldering wall, boxing bag, and workout mats\nTeam events, such as happy hours, off-sites, and retreats\nFree year-round access to Prague Zoo\n\nRelocation Opportunities\n\nIf joining us means making a move, we're here to help make that transition easier.\n\nCandidates must have the legal right to work in the EU. While we are unable to provide visa sponsorship for this role, we're happy to support relocation to Prague for candidates already authorized to work in the EU.\n\nRelocation Support\n\nWe offer a one-time relocation bonus ranging from $6,000 to $13,000 USD, depending on your personal situation, whether you're moving on your own or with a partner or family.\n\nThis bonus is intended to help offset moving expenses and support your transition into your new city. While it may not cover every cost, it provides meaningful financial support as you get settled.\n\nIf you're thinking about relocating and want to explore what this could look like for you, we'd be happy to have that conversation.\n\nAbout Productboard\n\nProductboard is the leading intelligent product management platform, used by 6,000+ companies including Salesforce, SAP, Autodesk, and Kroger. Headquartered in San Francisco, with engineering hubs in Prague and Brno. Backed by Index Ventures, Kleiner Perkins, Sequoia Capital, Bessemer, Tiger Global, and Dragoneer.\n\nWe've spent the last decade building the foundation for how product teams work. We're now in our 0-to-1 moment again, building Productboard Spark — the AI-first, agentic experience that turns raw feedback and signals into clear problems, strong specs, and faster execution. Spark is what powers everything you'd be working on.\n\nAre you building with us?\n\nIf the work above is what you want to spend the next chapter of your career on, apply below!\n\nEqual Opportunity \n\nProductboard is an equal opportunity employer. We are committed to an inclusive hiring process and consider all qualified applicants without discrimination based on characteristics protected by applicable law. If you require an accommodation during the hiring process, please contact [email].\n\nBy applying you agree to Productboard's Global Candidate Privacy Policy",
+    "evidence": {
+      "location": "Prague, Prague, Czechia",
+      "contractType": null,
+      "experienceLevel": null,
+      "salary": null
+    }
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["unstated"],
+        "places": [],
+        "placeStrictness": "unstated"
+      }
+    ],
+    "roleKind": "frontend_engineer",
+    "seniority": "unstated",
+    "yearsRequired": 6,
+    "contractMonths": null,
+    "mainStack": [
+      {
+        "anyOf": [
+          {
+            "text": "JavaScript",
+            "code": "javascript"
+          }
+        ]
+      },
+      {
+        "anyOf": [
+          {
+            "text": "React",
+            "code": "react"
+          }
+        ]
+      }
+    ],
+    "requiredLanguages": [],
+    "sponsorship": "no",
+    "salary": {
+      "min": 2295000,
+      "max": 3305000,
+      "currency": "CZK",
+      "period": "year"
+    },
+    "junkFlags": []
+  },
+  "drafted": {}
+}
