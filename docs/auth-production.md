@@ -14,6 +14,7 @@ Authentication, then the settings pages named below.
 | Minimum interval between emails to the same user | 60 seconds                              | `[auth.email] max_frequency`                |
 | Emails sent per hour                             | 30                                      | `[auth.rate_limit] email_sent`              |
 | Confirm email                                    | off                                     | `[auth.email] enable_confirmations = false` |
+| JWT expiry (access token lifetime)               | 3600 seconds (1 hour)                   | `[auth] jwt_expiry`                         |
 | Site URL                                         | `<production web URL, set in slice 09>` | `[auth] site_url`                           |
 | Redirect URLs                                    | `<production web URL, set in slice 09>` | `[auth] additional_redirect_urls`           |
 
@@ -158,7 +159,7 @@ pnpm --filter @xjobs/xjobs db:migrate
 unset DATABASE_URL
 ```
 
-Run it from a shell that has not loaded `.env` values for another database. Check the target before you confirm. Check with `select jobname, schedule from cron.job;`.
+Run it from a shell that has not loaded `.env` values for another database. Check the target before you confirm. Afterwards, check that the job exists with `select jobname, schedule from cron.job;`.
 
 On the Supabase Pro plan, you can instead set a session time-box under Authentication, Sessions: `timebox = "168h"` (the `[auth.sessions]` key in `config.toml`). Supabase then ends sessions itself, and the cron job becomes redundant. Keep the job unless you have confirmed the time-box is active.
 
