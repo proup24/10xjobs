@@ -4,6 +4,7 @@
   "license": "MIT",
   "scripts": {
     "test:hooks": "node --test \".claude/hooks/*.test.mjs\"",
+    "users": "pnpm --filter @xjobs/xjobs users",
     "db:start": "supabase start",
     "db:stop": "supabase stop",
     "db:status": "supabase status",

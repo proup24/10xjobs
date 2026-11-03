@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { findAuthUserByEmail } from '../../admin/auth-users';
 import type { Seed } from './seed.interface';
 
 const users = [
@@ -6,25 +7,6 @@ const users = [
   { email: 'recruiter@xjobs.local', name: 'Recruiter' },
   { email: 'candidate@xjobs.local', name: 'Candidate' },
 ];
-
-const LIST_PAGE_SIZE = 1000;
-
-/** The id of the auth user with `email`, or `undefined` when there is none. */
-async function findAuthUserId(
-  auth: SupabaseClient['auth']['admin'],
-  email: string,
-): Promise<string | undefined> {
-  for (let page = 1; ; page++) {
-    const { data, error } = await auth.listUsers({
-      page,
-      perPage: LIST_PAGE_SIZE,
-    });
-    if (error) throw new Error(`Could not list auth users: ${error.message}`);
-    const found = data.users.find((user) => user.email === email);
-    if (found) return found.id;
-    if (data.users.length < LIST_PAGE_SIZE) return undefined;
-  }
-}
 
 /** Creates the auth user (the sign-up trigger adds its users row) or finds the existing one. */
 async function ensureAuthUser(
@@ -39,7 +21,7 @@ async function ensureAuthUser(
   ) {
     throw new Error(`Could not create auth user ${email}: ${error.message}`);
   }
-  const id = await findAuthUserId(auth, email);
+  const id = (await findAuthUserByEmail(auth, email))?.id;
   if (!id)
     throw new Error(`Auth user ${email} is registered but was not listed`);
   return id;
