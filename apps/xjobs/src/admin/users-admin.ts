@@ -73,10 +73,10 @@ function statusOf(user: {
   email_confirmed_at?: string;
   banned_until?: string;
 }): 'pending' | 'active' | 'blocked' {
-  if (!user.email_confirmed_at) return 'pending';
   if (user.banned_until && new Date(user.banned_until) > new Date()) {
     return 'blocked';
   }
+  if (!user.email_confirmed_at) return 'pending';
   return 'active';
 }
 

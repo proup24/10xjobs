@@ -115,6 +115,11 @@ describe('users admin', () => {
       }),
       makeUser({ email: 'b@x.co', banned_until: future }),
       makeUser({ email: 'old@x.co', banned_until: past }),
+      makeUser({
+        email: 'bp@x.co',
+        email_confirmed_at: undefined,
+        banned_until: future,
+      }),
     ]);
     const r = await listAuthUsers(fake);
     expect(r.ok).toBe(true);
@@ -123,6 +128,7 @@ describe('users admin', () => {
       'a@x.co  active  2026-02-02T00:00:00.000Z',
       'b@x.co  blocked  never',
       'old@x.co  active  never',
+      'bp@x.co  blocked  never',
     ]);
   });
 });
