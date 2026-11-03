@@ -144,11 +144,21 @@ Authentication, Emails, SMTP Settings, enable custom SMTP.
    - Sender name: `10xjobs`
    - Sender address: the Gmail address
 
+Known gap: Gmail deliverability is unproven. If invite or sign-in emails land in spam or get throttled, switch to Resend or Postmark before or during slice 09; only the SMTP settings change.
+
 The credentials go only in the dashboard. They never go in git, in `config.toml`, or in any `.env*` file that is tracked. Local development uses Mailpit (http://127.0.0.1:54324) and sends nothing.
 
 ## Session length and pg_cron
 
-Sessions last 7 days from sign-in. A Prisma migration (`end_expired_sessions`) creates `public.end_expired_sessions()` and schedules the `end-expired-sessions` pg_cron job, hourly (`0 * * * *`). It deletes `auth.sessions` rows older than 7 days. The migration also runs `CREATE EXTENSION IF NOT EXISTS pg_cron`, so applying it to production enables pg_cron; nothing to switch on by hand. Check with `select jobname, schedule from cron.job;`.
+Sessions last 7 days from sign-in. A Prisma migration (`end_expired_sessions`) creates `public.end_expired_sessions()` and schedules the `end-expired-sessions` pg_cron job, hourly (`0 * * * *`). It deletes `auth.sessions` rows older than 7 days. The migration also runs `CREATE EXTENSION IF NOT EXISTS pg_cron`, so applying it to production enables pg_cron; nothing to switch on by hand. Apply the migrations to Cloud from your machine with the production connection string exported in the current shell only (never written to a file or to git):
+
+```sh
+read -rs DATABASE_URL && export DATABASE_URL   # paste the Cloud Postgres connection string
+pnpm --filter @xjobs/xjobs db:migrate
+unset DATABASE_URL
+```
+
+Run it from a shell that has not loaded `.env` values for another database. Check the target before you confirm. Check with `select jobname, schedule from cron.job;`.
 
 On the Supabase Pro plan, you can instead set a session time-box under Authentication, Sessions: `timebox = "168h"` (the `[auth.sessions]` key in `config.toml`). Supabase then ends sessions itself, and the cron job becomes redundant. Keep the job unless you have confirmed the time-box is active.
 
@@ -163,3 +173,19 @@ pnpm users list
 ```
 
 The CLI prints `Using <host>` before it does anything. Check that the host is the project you mean (`<project-ref>.supabase.co`, not `127.0.0.1`) before you continue. Open a fresh shell, or `unset` both variables, afterwards, so a later local command cannot hit production.
+
+Known gaps to keep in mind when you run it:
+
+- A block can take up to 1 hour to take effect: the user's current access token stays valid until `jwt_expiry` (3600 seconds).
+- Blocked users still receive sign-in emails, but the codes do not work.
+- Supabase Auth's API, when called directly, reveals whether an email is known. The sign-in page does not: it always answers with the same neutral message.
+- Invites expire after 24 hours, and only the admin can send a new one (`pnpm users invite <email>`).
+
+## Pre-launch checklist (slice 09)
+
+1. Run the migrations against Cloud (`db:migrate` above) and check `cron.job`.
+2. Set the Auth settings from the table above (sign-up off, OTP, frequency, rate limit, JWT expiry).
+3. Paste both templates and set their subjects.
+4. Set the Gmail SMTP settings.
+5. Set the Site URL and redirect URLs to the production web URL.
+6. Run a test invite with `pnpm users invite <your address>` and sign in with the code and with the link.
