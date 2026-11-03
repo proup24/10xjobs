@@ -2237,6 +2237,112 @@
               "using": "\"userId\" = auth.uid()",
               "withCheck": "\"userId\" = auth.uid()"
             },
+            "profile_skills_owner_delete": {
+              "kind": "policy",
+              "name": "profile_skills_owner_delete_e80e5c12",
+              "namespaceId": "public",
+              "operation": "delete",
+              "permissive": true,
+              "prefix": "profile_skills_owner_delete",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "profile_skills",
+              "using": "\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills.\"profileId\" AND p.\"userId\" = auth.uid() AND p.state = 'draft')"
+            },
+            "profile_skills_owner_insert": {
+              "kind": "policy",
+              "name": "profile_skills_owner_insert_87e871a7",
+              "namespaceId": "public",
+              "operation": "insert",
+              "permissive": true,
+              "prefix": "profile_skills_owner_insert",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "profile_skills",
+              "withCheck": "\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills.\"profileId\" AND p.\"userId\" = auth.uid() AND p.state = 'draft')"
+            },
+            "profile_skills_owner_read": {
+              "kind": "policy",
+              "name": "profile_skills_owner_read_ab58a1a7",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "profile_skills_owner_read",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "profile_skills",
+              "using": "\"userId\" = auth.uid()"
+            },
+            "profile_skills_owner_update": {
+              "kind": "policy",
+              "name": "profile_skills_owner_update_7fcd0c7f",
+              "namespaceId": "public",
+              "operation": "update",
+              "permissive": true,
+              "prefix": "profile_skills_owner_update",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "profile_skills",
+              "using": "\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills.\"profileId\" AND p.\"userId\" = auth.uid() AND p.state = 'draft')",
+              "withCheck": "\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills.\"profileId\" AND p.\"userId\" = auth.uid() AND p.state = 'draft')"
+            },
+            "profiles_owner_delete_draft": {
+              "kind": "policy",
+              "name": "profiles_owner_delete_draft_64d4802d",
+              "namespaceId": "public",
+              "operation": "delete",
+              "permissive": true,
+              "prefix": "profiles_owner_delete_draft",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "profiles",
+              "using": "\"userId\" = auth.uid() AND state = 'draft'"
+            },
+            "profiles_owner_insert": {
+              "kind": "policy",
+              "name": "profiles_owner_insert_e3abe3e0",
+              "namespaceId": "public",
+              "operation": "insert",
+              "permissive": true,
+              "prefix": "profiles_owner_insert",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "profiles",
+              "withCheck": "\"userId\" = auth.uid() AND state = 'draft' AND \"publishedAt\" IS NULL"
+            },
+            "profiles_owner_read": {
+              "kind": "policy",
+              "name": "profiles_owner_read_ab58a1a7",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "profiles_owner_read",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "profiles",
+              "using": "\"userId\" = auth.uid()"
+            },
+            "profiles_owner_update_draft": {
+              "kind": "policy",
+              "name": "profiles_owner_update_draft_b3dbbb7b",
+              "namespaceId": "public",
+              "operation": "update",
+              "permissive": true,
+              "prefix": "profiles_owner_update_draft",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "profiles",
+              "using": "\"userId\" = auth.uid() AND state = 'draft'",
+              "withCheck": "\"userId\" = auth.uid() AND state = 'draft' AND \"publishedAt\" IS NULL"
+            },
             "users_owner_read": {
               "kind": "policy",
               "name": "users_owner_read_b499dcb9",
@@ -2270,6 +2376,16 @@
               "kind": "rls",
               "namespaceId": "public",
               "tableName": "contacts"
+            },
+            "profile_skills": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "profile_skills"
+            },
+            "profiles": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "profiles"
             },
             "users": {
               "kind": "rls",
@@ -3977,7 +4093,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "5abaecd30a151d184a01049f4add8467af6f95efad9ecbe09dcee1374256ddf9"
+    "storageHash": "b15f577ff2907eb08f954e867e5e946bab9d5c0fd59ff7ea21b798f256047089"
   },
   "execution": {
     "executionHash": "e15038faea60bf798f055cc039b1f18977e258097ce6fbf325017f72c0846066",

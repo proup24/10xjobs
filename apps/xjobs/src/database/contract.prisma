@@ -295,6 +295,7 @@ model Profile {
   @@unique([id, userId])
   @@index([userId])
   @@map("profiles")
+  @@rls
 }
 
 // One row per technology and domain in a profile's tech stack.
@@ -316,6 +317,61 @@ model ProfileSkill {
   @@unique([profileId, technology, domain])
   @@index([userId])
   @@map("profile_skills")
+  @@rls
+}
+
+// Owners read their profiles at any state but create, edit and delete only drafts. The
+// engine publishes: state and publishedAt are not writable by users (column grants too).
+policy_select profiles_owner_read {
+  target = Profile
+  roles  = [authenticated]
+  using  = sql`"userId" = auth.uid()`
+}
+
+policy_insert profiles_owner_insert {
+  target    = Profile
+  roles     = [authenticated]
+  withCheck = sql`"userId" = auth.uid() AND state = 'draft' AND "publishedAt" IS NULL`
+}
+
+policy_update profiles_owner_update_draft {
+  target    = Profile
+  roles     = [authenticated]
+  using     = sql`"userId" = auth.uid() AND state = 'draft'`
+  withCheck = sql`"userId" = auth.uid() AND state = 'draft' AND "publishedAt" IS NULL`
+}
+
+policy_delete profiles_owner_delete_draft {
+  target = Profile
+  roles  = [authenticated]
+  using  = sql`"userId" = auth.uid() AND state = 'draft'`
+}
+
+// Skills follow their profile: writable only while the user's own profile is a draft.
+// The outer column is qualified; a bare "userId" in the subquery would resolve to p."userId".
+policy_select profile_skills_owner_read {
+  target = ProfileSkill
+  roles  = [authenticated]
+  using  = sql`"userId" = auth.uid()`
+}
+
+policy_insert profile_skills_owner_insert {
+  target    = ProfileSkill
+  roles     = [authenticated]
+  withCheck = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills."profileId" AND p."userId" = auth.uid() AND p.state = 'draft')`
+}
+
+policy_update profile_skills_owner_update {
+  target    = ProfileSkill
+  roles     = [authenticated]
+  using     = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills."profileId" AND p."userId" = auth.uid() AND p.state = 'draft')`
+  withCheck = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills."profileId" AND p."userId" = auth.uid() AND p.state = 'draft')`
+}
+
+policy_delete profile_skills_owner_delete {
+  target = ProfileSkill
+  roles  = [authenticated]
+  using  = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills."profileId" AND p."userId" = auth.uid() AND p.state = 'draft')`
 }
 
 // A shared, immutable search recipe for one channel, deduplicated by hash across every

@@ -1,5 +1,10 @@
 import { randomUUID } from 'node:crypto';
-import { seedContact } from './fixtures.js';
+import {
+  profileFields,
+  seedContact,
+  seedProfile,
+  seedSkill,
+} from './fixtures.js';
 
 export type OwnedTable = {
   table: string;
@@ -35,6 +40,33 @@ export const ownedTables: OwnedTable[] = [
       value: `${randomUUID()}@xjobs.test`,
     }),
     patch: { label: 'work' },
+    canDelete: true,
+  },
+  {
+    table: 'profiles',
+    ownerColumn: 'userId',
+    seed: seedProfile,
+    insertPayload: async (userId) => ({
+      id: randomUUID(),
+      userId,
+      ...profileFields(),
+    }),
+    patch: { noticePeriodDays: 60 },
+    canDelete: true,
+  },
+  {
+    table: 'profile_skills',
+    ownerColumn: 'userId',
+    seed: async (userId) => seedSkill(userId, await seedProfile(userId)),
+    insertPayload: async (userId) => ({
+      id: randomUUID(),
+      userId,
+      profileId: await seedProfile(userId),
+      technology: 'rust',
+      domain: 'backend',
+      mastery: 5,
+    }),
+    patch: { mastery: 6 },
     canDelete: true,
   },
 ];

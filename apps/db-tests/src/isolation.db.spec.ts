@@ -1,6 +1,8 @@
+import { randomUUID } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { admin, stack } from './support/admin.js';
+import { profileFields, seedProfile } from './support/fixtures.js';
 import { ownedTables } from './support/registry.js';
 import {
   cleanupTestUsers,
@@ -120,5 +122,59 @@ describe.each(ownedTables)('isolation: $table', (t) => {
     });
     const { data } = await anon.from(t.table).select('*');
     expect(data ?? []).toEqual([]);
+  });
+});
+
+describe('profiles and skills', () => {
+  let a: TestUser;
+  let b: TestUser;
+
+  beforeAll(async () => {
+    a = await createTestUser();
+    b = await createTestUser();
+  });
+
+  it("cannot attach a skill to another user's draft profile", async () => {
+    const bProfile = await seedProfile(b.id);
+    const id = randomUUID();
+    const { error } = await a.client.from('profile_skills').insert({
+      id,
+      userId: a.id,
+      profileId: bProfile,
+      technology: 'rust',
+      domain: 'backend',
+      mastery: 5,
+    });
+    expect(error).not.toBeNull();
+    const { data } = await admin()
+      .from('profile_skills')
+      .select('id')
+      .eq('id', id);
+    expect(data).toEqual([]);
+  });
+
+  it("rejects a skill whose userId is not its profile's owner", async () => {
+    const bProfile = await seedProfile(b.id);
+    const { error } = await admin().from('profile_skills').insert({
+      id: randomUUID(),
+      userId: a.id,
+      profileId: bProfile,
+      technology: 'rust',
+      domain: 'backend',
+      mastery: 5,
+    });
+    expect(error).not.toBeNull();
+  });
+
+  it('returns the whole draft row from insert().select()', async () => {
+    const payload = { id: randomUUID(), userId: a.id, ...profileFields() };
+    const { data, error } = await a.client
+      .from('profiles')
+      .insert(payload)
+      .select()
+      .single();
+    expect(error).toBeNull();
+    expect(data?.id).toBe(payload.id);
+    expect(data?.state).toBe('draft');
   });
 });
