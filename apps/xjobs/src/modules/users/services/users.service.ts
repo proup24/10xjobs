@@ -22,9 +22,4 @@ export class UsersService {
     if (!user) throw new NotFoundException('User not found');
     return user;
   }
-
-  async delete(userId: string): Promise<void> {
-    if (!(await this.users.delete(userId)))
-      throw new NotFoundException('User not found');
-  }
 }

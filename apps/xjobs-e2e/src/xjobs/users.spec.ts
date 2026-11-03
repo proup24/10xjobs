@@ -46,9 +46,15 @@ describe('users, profiles and resume', () => {
 
   afterAll(async () => {
     for (const id of [userId, otherUserId].filter(Boolean)) {
-      await axios.delete(`${base()}/${id}`, ok);
       await deleteAuthUser(id);
     }
+  });
+
+  it('answers DELETE /users/:id with 410 and leaves the user in place', async () => {
+    const res = await axios.delete(`${base()}/${otherUserId}`, ok);
+    expect(res.status).toBe(410);
+    const user = await axios.get(`${base()}/${otherUserId}`, ok);
+    expect(user.status).toBe(200);
   });
 
   it('reads back the name and address set through the engine', async () => {

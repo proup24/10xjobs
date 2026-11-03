@@ -4,31 +4,24 @@ import {
   Delete,
   Get,
   GoneException,
-  HttpCode,
   HttpStatus,
   Param,
   ParseUUIDPipe,
   Patch,
   Post,
 } from '@nestjs/common';
-import { ApiNoContentResponse, ApiTags } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 import { ApiErrorResponses, ApiSuccessResponse } from 'src/common/decorators';
 import type { UserRow } from 'src/database';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { UserResponseDto } from '../dto/user.response.dto';
-import { ProfilesService } from '../services/profiles.service';
-import { ResumeService } from '../services/resume.service';
 import { UsersService } from '../services/users.service';
 
 @ApiTags('users')
 @ApiErrorResponses(HttpStatus.UNAUTHORIZED, HttpStatus.INTERNAL_SERVER_ERROR)
 @Controller('users')
 export class UsersController {
-  constructor(
-    private readonly users: UsersService,
-    private readonly profiles: ProfilesService,
-    private readonly resume: ResumeService,
-  ) {}
+  constructor(private readonly users: UsersService) {}
 
   /** Kept until the CRUD endpoints go, so old callers get a clear answer. */
   @ApiErrorResponses(HttpStatus.GONE)
@@ -61,17 +54,12 @@ export class UsersController {
     return this.users.update(userId, body);
   }
 
-  @ApiNoContentResponse({
-    description: 'Deleted, with every profile and resume file',
-  })
-  @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
+  /** Kept until the CRUD endpoints go: deleting only the users row would leave a broken account. */
+  @ApiErrorResponses(HttpStatus.GONE)
   @Delete(':userId')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async delete(@Param('userId', ParseUUIDPipe) userId: string): Promise<void> {
-    await this.users.getOrThrow(userId);
-    // The rows cascade; the shared builder counters and resume files do not.
-    await this.profiles.releaseAll(userId);
-    await this.resume.removeAllFor(userId);
-    await this.users.delete(userId);
+  remove(): never {
+    throw new GoneException(
+      'Users are removed by deleting the Supabase Auth user',
+    );
   }
 }

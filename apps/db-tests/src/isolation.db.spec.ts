@@ -53,8 +53,7 @@ describe.each(ownedTables)('isolation: $table', (t) => {
     expect(await adminRow(bRow)).toEqual(before);
   });
 
-  it.skipIf(!t.canDelete)("does not delete another user's row", async () => {
-    if (!t.canDelete) return;
+  it("does not delete another user's row", async () => {
     const bRow = await t.seed(b.id);
     await a.client.from(t.table).delete().eq('id', bRow);
     expect(await adminRow(bRow)).toHaveLength(1);
@@ -69,7 +68,7 @@ describe.each(ownedTables)('isolation: $table', (t) => {
         [t.ownerColumn]: b.id,
       };
       const { error } = await a.client.from(t.table).insert(payload);
-      expect(error).not.toBeNull();
+      expect(error?.code).toBe('42501');
       expect(await adminRow(payload['id'] as string)).toEqual([]);
     },
   );
@@ -80,7 +79,7 @@ describe.each(ownedTables)('isolation: $table', (t) => {
       .from(t.table)
       .update({ [t.ownerColumn]: b.id })
       .eq('id', aRow);
-    expect(error).not.toBeNull();
+    expect(error?.code).toBe('42501');
     const rows = await adminRow(aRow);
     expect(rows).toHaveLength(1);
     expect(rows[0]?.[t.ownerColumn]).toBe(a.id);
@@ -145,7 +144,7 @@ describe('profiles and skills', () => {
       domain: 'backend',
       mastery: 5,
     });
-    expect(error).not.toBeNull();
+    expect(error?.code).toBe('42501');
     const { data } = await admin()
       .from('profile_skills')
       .select('id')

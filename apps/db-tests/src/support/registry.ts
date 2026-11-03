@@ -15,6 +15,7 @@ export type OwnedTable = {
   insertPayload: ((userId: string) => Promise<Record<string, unknown>>) | null;
   /** A harmless update the owner is allowed to make. */
   patch: Record<string, unknown>;
+  /** The owner may delete their own row. The cross-user delete case runs for every table regardless. */
   canDelete: boolean;
 };
 

@@ -79,40 +79,7 @@ describe('published profiles are frozen for their owner', () => {
     expect(await row('profile_skills', id)).toEqual([]);
   });
 
-  it('does not insert a profile as published', async () => {
-    const id = randomUUID();
-    const { error } = await a.client
-      .from('profiles')
-      .insert({ id, ...profileFields(), userId: a.id, state: 'published' });
-    expect(error?.code).toBe(PRIVILEGE);
-    expect(await row('profiles', id)).toEqual([]);
-  });
-
-  it('does not insert a profile with publishedAt', async () => {
-    const id = randomUUID();
-    const { error } = await a.client.from('profiles').insert({
-      id,
-      ...profileFields(),
-      userId: a.id,
-      publishedAt: new Date().toISOString(),
-    });
-    expect(error?.code).toBe(PRIVILEGE);
-    expect(await row('profiles', id)).toEqual([]);
-  });
-
-  it('does not insert a profile with a resumeKey', async () => {
-    const id = randomUUID();
-    const { error } = await a.client.from('profiles').insert({
-      id,
-      ...profileFields(),
-      userId: a.id,
-      resumeKey: 'x/resume.pdf',
-    });
-    expect(error?.code).toBe(PRIVILEGE);
-    expect(await row('profiles', id)).toEqual([]);
-  });
-
-  it.each([
+  const lockedColumns: [string, unknown][] = [
     ['state', 'published'],
     ['publishedAt', new Date().toISOString()],
     ['resumeKey', 'x/resume.pdf'],
@@ -122,15 +89,32 @@ describe('published profiles are frozen for their owner', () => {
     ['resumeUploadedAt', new Date().toISOString()],
     ['createdAt', '2000-01-01T00:00:00.000Z'],
     ['updatedAt', '2000-01-01T00:00:00.000Z'],
-  ])('rejects a user patch of only %s on a draft', async (column, value) => {
-    const before = await row('profiles', draft);
-    const { error } = await a.client
-      .from('profiles')
-      .update({ [column]: value })
-      .eq('id', draft);
-    expect(error?.code).toBe(PRIVILEGE);
-    expect(await row('profiles', draft)).toEqual(before);
-  });
+  ];
+
+  it.each(lockedColumns)(
+    'rejects a user insert of a draft with %s',
+    async (column, value) => {
+      const id = randomUUID();
+      const { error } = await a.client
+        .from('profiles')
+        .insert({ id, ...profileFields(), userId: a.id, [column]: value });
+      expect(error?.code).toBe(PRIVILEGE);
+      expect(await row('profiles', id)).toEqual([]);
+    },
+  );
+
+  it.each(lockedColumns)(
+    'rejects a user patch of only %s on a draft',
+    async (column, value) => {
+      const before = await row('profiles', draft);
+      const { error } = await a.client
+        .from('profiles')
+        .update({ [column]: value })
+        .eq('id', draft);
+      expect(error?.code).toBe(PRIVILEGE);
+      expect(await row('profiles', draft)).toEqual(before);
+    },
+  );
 
   it('keeps the draft a draft after the rejected publish attempts', async () => {
     const [r] = await row('profiles', draft);

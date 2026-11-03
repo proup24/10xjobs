@@ -45,12 +45,6 @@ export class FakeUsersRepository extends UsersRepository {
     Object.assign(row, data);
     return row;
   }
-
-  async delete(userId: string): Promise<boolean> {
-    const before = this.rows.length;
-    this.rows = this.rows.filter((row) => row.id !== userId);
-    return this.rows.length < before;
-  }
 }
 
 export class FakeContactsRepository extends ContactsRepository {

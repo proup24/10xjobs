@@ -99,7 +99,7 @@ describe('accounts', () => {
     const a = await createTestUser();
     const stray = randomUUID();
     const inserted = await a.client.from('users').insert({ id: stray });
-    expect(inserted.error).not.toBeNull();
+    expect(inserted.error?.code).toBe('42501');
     expect(await countWhere('users', 'id', stray)).toBe(0);
 
     await a.client.from('users').delete().eq('id', a.id);
