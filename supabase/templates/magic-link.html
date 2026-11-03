@@ -1,0 +1,49 @@
+<div
+  style="
+    font-family:
+      -apple-system,
+      Segoe UI,
+      Helvetica,
+      Arial,
+      sans-serif;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 24px;
+    color: #111;
+  "
+>
+  <p style="font-size: 16px">Your 10xjobs sign-in code.</p>
+  <p style="font-size: 14px; margin-bottom: 4px">Your code:</p>
+  <p
+    style="
+      font-size: 36px;
+      font-weight: 700;
+      letter-spacing: 6px;
+      font-family: monospace;
+      margin: 0 0 24px;
+    "
+  >
+    {{ .Token }}
+  </p>
+  <p>
+    <a
+      href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email"
+      style="
+        display: inline-block;
+        background: #111;
+        color: #fff;
+        padding: 12px 20px;
+        border-radius: 6px;
+        text-decoration: none;
+      "
+      >Sign in to 10xjobs</a
+    >
+  </p>
+  <p style="font-size: 14px; color: #444">
+    The link and the code expire in 24 hours and work once.
+  </p>
+  <p style="font-size: 14px; color: #444">
+    If you weren't expecting this email, you can ignore it.
+  </p>
+  <p style="font-size: 14px; color: #444">10xjobs</p>
+</div>
