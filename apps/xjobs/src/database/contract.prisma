@@ -215,6 +215,22 @@ model User {
   +Timestamps
 
   @@map("users")
+  @@rls
+}
+
+// Users read and update only their own row. No insert (the sign-up trigger does it) and
+// no delete (removing the Auth user cascades).
+policy_select users_owner_read {
+  target = User
+  roles  = [authenticated]
+  using  = sql`id = auth.uid()`
+}
+
+policy_update users_owner_update {
+  target    = User
+  roles     = [authenticated]
+  using     = sql`id = auth.uid()`
+  withCheck = sql`id = auth.uid()`
 }
 
 // The user's own contact channels, the ones that go on applications.
@@ -231,6 +247,14 @@ model Contact {
   @@unique([userId, kind, value])
   @@index([userId])
   @@map("contacts")
+  @@rls
+}
+
+policy_all contacts_owner {
+  target    = Contact
+  roles     = [authenticated]
+  using     = sql`"userId" = auth.uid()`
+  withCheck = sql`"userId" = auth.uid()`
 }
 
 // A user may maintain multiple independent job-seeker profiles, one per target position.

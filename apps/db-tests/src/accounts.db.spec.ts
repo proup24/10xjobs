@@ -95,9 +95,16 @@ describe('accounts', () => {
     expect(await countWhere('profile_skills', 'profileId', profileId)).toBe(0);
   });
 
-  // Enabled by Task 2's policies: a.client inserting { id: randomUUID() } into
-  // users errors, and a.client deleting its own users row leaves it in place.
-  it.todo('a user cannot insert a second users row or delete their own');
+  it('a user cannot insert a second users row or delete their own', async () => {
+    const a = await createTestUser();
+    const stray = randomUUID();
+    const inserted = await a.client.from('users').insert({ id: stray });
+    expect(inserted.error).not.toBeNull();
+    expect(await countWhere('users', 'id', stray)).toBe(0);
+
+    await a.client.from('users').delete().eq('id', a.id);
+    expect(await countWhere('users', 'id', a.id)).toBe(1);
+  });
 
   it('users has no email column', async () => {
     const { error } = await admin().from('users').select('email').limit(1);

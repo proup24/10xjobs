@@ -2222,6 +2222,61 @@
     "namespaces": {
       "public": {
         "entries": {
+          "policy": {
+            "contacts_owner": {
+              "kind": "policy",
+              "name": "contacts_owner_6ea08fe5",
+              "namespaceId": "public",
+              "operation": "all",
+              "permissive": true,
+              "prefix": "contacts_owner",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "contacts",
+              "using": "\"userId\" = auth.uid()",
+              "withCheck": "\"userId\" = auth.uid()"
+            },
+            "users_owner_read": {
+              "kind": "policy",
+              "name": "users_owner_read_b499dcb9",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "users_owner_read",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "users",
+              "using": "id = auth.uid()"
+            },
+            "users_owner_update": {
+              "kind": "policy",
+              "name": "users_owner_update_988f7d40",
+              "namespaceId": "public",
+              "operation": "update",
+              "permissive": true,
+              "prefix": "users_owner_update",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "users",
+              "using": "id = auth.uid()",
+              "withCheck": "id = auth.uid()"
+            }
+          },
+          "rls": {
+            "contacts": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "contacts"
+            },
+            "users": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "users"
+            }
+          },
           "table": {
             "ats_posting_identities": {
               "checks": [
@@ -3922,7 +3977,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "a582d0832b036c7567fb59a6d6e00992e81a0d9cac9686812856b35084f4175d"
+    "storageHash": "5abaecd30a151d184a01049f4add8467af6f95efad9ecbe09dcee1374256ddf9"
   },
   "execution": {
     "executionHash": "e15038faea60bf798f055cc039b1f18977e258097ce6fbf325017f72c0846066",
