@@ -38,7 +38,7 @@ export async function requestCode(
       email,
       options: { shouldCreateUser: false },
     });
-    log(error?.code ?? 'sent');
+    log(error ? (error.code ?? (error.name || 'unknown_error')) : 'sent');
   } catch {
     log('request_failed');
   }

@@ -3,7 +3,10 @@ import { describe, expect, it, vi, type Mock } from 'vitest';
 import { NEUTRAL_SENT } from './copy';
 import { MIN_RESPONSE_MS, requestCode } from './request-code';
 
-type Reply = { data: object; error: { code: string } | null };
+type Reply = {
+  data: object;
+  error: { code?: string; name?: string } | null;
+};
 
 function fakeAuth(reply: Reply | Error) {
   return {
@@ -110,5 +113,27 @@ describe('requestCode', () => {
     );
     expect(deps.log).toHaveBeenCalledWith('otp_disabled');
     expect(JSON.stringify(deps.log.mock.calls)).not.toContain('example.com');
+  });
+
+  it('logs the error name when the error has no code, and stays neutral', async () => {
+    const deps = makeDeps();
+    const result = await requestCode(
+      fakeAuth({ data: {}, error: { name: 'AuthRetryableFetchError' } }),
+      'me@example.com',
+      deps,
+    );
+    expect(result).toEqual({ status: 'sent', message: NEUTRAL_SENT });
+    expect(deps.log).toHaveBeenCalledWith('AuthRetryableFetchError');
+    expect(deps.log).not.toHaveBeenCalledWith('sent');
+  });
+
+  it('logs unknown_error when the error has neither code nor name', async () => {
+    const deps = makeDeps();
+    await requestCode(
+      fakeAuth({ data: {}, error: {} }),
+      'me@example.com',
+      deps,
+    );
+    expect(deps.log).toHaveBeenCalledWith('unknown_error');
   });
 });
