@@ -19,12 +19,14 @@ Supabase runs locally through the Supabase CLI (Docker required); Compose only r
 
 1. `pnpm db:start` starts Supabase (API 54321, Postgres 54322, Studio 54323, Mailpit 54324).
 2. Copy `.env.example` to `.env` and fill `SUPABASE_SERVICE_ROLE_KEY` from `pnpm db:status`.
-3. `pnpm --filter @xjobs/xjobs db:migrate`, then `pnpm --filter @xjobs/xjobs db:seed`.
+3. `pnpm --filter @xjobs/xjobs db:migrate`, then `eval "$(scripts/supabase-env.sh)"` and `pnpm --filter @xjobs/xjobs db:seed`. The seed needs `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` because it creates `admin@`, `recruiter@` and `candidate@xjobs.local` as Supabase Auth users; a sign-up trigger adds their `public.users` rows.
 4. `pnpm infra:redis` starts Redis.
 5. `npx nx serve xjobs` runs the engine.
 6. For the web app, copy `apps/web/.env.example` to `apps/web/.env.local` and fill `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` from `pnpm db:status`. Then `npx nx dev web` serves on http://localhost:3001.
 
-`pnpm db:stop` stops the stack, and `pnpm db:reset` wipes it and re-applies migrations and the seed. The old self-hosted Compose stack is retired: its data and your old `.env` are not carried over, so build a fresh `.env` from `.env.example`.
+`pnpm db:stop` stops the stack, and `pnpm db:reset` wipes it and re-applies migrations and the seed (it loads those two variables itself). The old self-hosted Compose stack is retired: its data and your old `.env` are not carried over, so build a fresh `.env` from `.env.example`.
+
+Users are created through Supabase Auth; `POST /api/users` returns 410. The e2e suite needs the same two variables, so run `eval "$(scripts/supabase-env.sh)"` before `npx nx e2e xjobs-e2e`.
 
 ## Debugging xjobs
 

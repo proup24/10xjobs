@@ -8,6 +8,7 @@ const ERROR_DESCRIPTIONS: Partial<Record<HttpStatus, string>> = {
   [HttpStatus.UNAUTHORIZED]: 'Missing or wrong Basic auth credentials',
   [HttpStatus.NOT_FOUND]: 'Not found',
   [HttpStatus.CONFLICT]: 'Conflicts with an existing record',
+  [HttpStatus.GONE]: 'No longer available',
   [HttpStatus.PAYLOAD_TOO_LARGE]: 'Upload over the size limit',
   [HttpStatus.INTERNAL_SERVER_ERROR]: 'Unexpected error; quote the trace_id',
   [HttpStatus.SERVICE_UNAVAILABLE]:

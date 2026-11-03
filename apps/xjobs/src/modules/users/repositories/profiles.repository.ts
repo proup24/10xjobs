@@ -76,6 +76,7 @@ export class PrismaProfilesRepository extends ProfilesRepository {
 
   private static async writeSkills(
     tx: DatabaseTransaction,
+    userId: string,
     profileId: string,
     skills: SkillInput[],
   ): Promise<ProfileSkillRow[]> {
@@ -83,7 +84,11 @@ export class PrismaProfilesRepository extends ProfilesRepository {
     const techStack: ProfileSkillRow[] = [];
     for (const skill of skills) {
       techStack.push(
-        await tx.orm.public.ProfileSkill.create({ ...skill, profileId }),
+        await tx.orm.public.ProfileSkill.create({
+          ...skill,
+          userId,
+          profileId,
+        }),
       );
     }
     return techStack;
@@ -116,6 +121,7 @@ export class PrismaProfilesRepository extends ProfilesRepository {
       const profile = await tx.orm.public.Profile.create({ ...data, userId });
       const techStack = await PrismaProfilesRepository.writeSkills(
         tx,
+        userId,
         profile.id,
         skills,
       );
@@ -139,6 +145,7 @@ export class PrismaProfilesRepository extends ProfilesRepository {
       if (!profile) return null;
       const techStack = await PrismaProfilesRepository.writeSkills(
         tx,
+        userId,
         profile.id,
         skills,
       );

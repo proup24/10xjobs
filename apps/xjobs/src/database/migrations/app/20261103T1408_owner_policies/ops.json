@@ -1,0 +1,230 @@
+[
+  {
+    "id": "rowLevelSecurity.public.contacts",
+    "label": "Enable row-level security on \"contacts\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "contacts"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"contacts\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "contacts"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"contacts\"",
+        "sql": "ALTER TABLE \"public\".\"contacts\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"contacts\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "contacts"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.users",
+    "label": "Enable row-level security on \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"users\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "users"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"users\"",
+        "sql": "ALTER TABLE \"public\".\"users\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"users\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "users"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.contacts.contacts_owner_6ea08fe5",
+    "label": "Create RLS policy \"contacts_owner_6ea08fe5\" on \"contacts\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "contacts_owner_6ea08fe5",
+        "table": "contacts"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"contacts_owner_6ea08fe5\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "contacts",
+          "contacts_owner_6ea08fe5"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"contacts_owner_6ea08fe5\" on \"contacts\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"contacts_owner_6ea08fe5\"",
+        "sql": "CREATE POLICY \"contacts_owner_6ea08fe5\" ON \"public\".\"contacts\" AS PERMISSIVE FOR ALL TO authenticated USING (\"userId\" = auth.uid()) WITH CHECK (\"userId\" = auth.uid())",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"contacts_owner_6ea08fe5\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "contacts",
+          "contacts_owner_6ea08fe5",
+          "ALL",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.users.users_owner_read_b499dcb9",
+    "label": "Create RLS policy \"users_owner_read_b499dcb9\" on \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "users_owner_read_b499dcb9",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"users_owner_read_b499dcb9\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "users_owner_read_b499dcb9"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"users_owner_read_b499dcb9\" on \"users\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"users_owner_read_b499dcb9\"",
+        "sql": "CREATE POLICY \"users_owner_read_b499dcb9\" ON \"public\".\"users\" AS PERMISSIVE FOR SELECT TO authenticated USING (id = auth.uid())",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"users_owner_read_b499dcb9\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "users_owner_read_b499dcb9",
+          "SELECT",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.users.users_owner_update_988f7d40",
+    "label": "Create RLS policy \"users_owner_update_988f7d40\" on \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "users_owner_update_988f7d40",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"users_owner_update_988f7d40\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "users_owner_update_988f7d40"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"users_owner_update_988f7d40\" on \"users\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"users_owner_update_988f7d40\"",
+        "sql": "CREATE POLICY \"users_owner_update_988f7d40\" ON \"public\".\"users\" AS PERMISSIVE FOR UPDATE TO authenticated USING (id = auth.uid()) WITH CHECK (id = auth.uid())",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"users_owner_update_988f7d40\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "users_owner_update_988f7d40",
+          "UPDATE",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  }
+]

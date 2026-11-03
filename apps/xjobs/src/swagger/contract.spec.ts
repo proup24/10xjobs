@@ -126,6 +126,11 @@ describe('API contract', () => {
       const successes = Object.entries(operation.responses).filter(([status]) =>
         status.startsWith('2'),
       );
+      // Kept only to answer 410: users are created and removed through Supabase Auth.
+      if (name === 'POST /api/users' || name === 'DELETE /api/users/{userId}') {
+        expect(Object.keys(operation.responses), name).toContain('410');
+        continue;
+      }
       expect(successes, name).not.toHaveLength(0);
       for (const [status, response] of successes) {
         if (status === '204') {

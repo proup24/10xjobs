@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { createAuthUser, deleteAuthUser } from '../support/auth-users';
 
 const run = Date.now().toString(36);
 const ok = { validateStatus: () => true };
@@ -34,40 +35,45 @@ describe('users, profiles and resume', () => {
   const profiles = () => `${base()}/${userId}/profiles`;
 
   beforeAll(async () => {
-    userId = (
-      await axios.post(base(), {
-        name: 'E2E User',
-        email: `E2E-${run}@Example.com`,
-        address: { line1: '1 Rue X', city: 'Rabat', country: 'MA' },
-      })
-    ).data.data.id;
-    otherUserId = (
-      await axios.post(base(), {
-        name: 'Other',
-        email: `e2e-other-${run}@example.com`,
-      })
-    ).data.data.id;
+    userId = await createAuthUser('E2E User');
+    otherUserId = await createAuthUser('Other');
+    await axios.patch(`${base()}/${userId}`, {
+      name: 'E2E User',
+      address: { line1: '1 Rue X', city: 'Rabat', country: 'MA' },
+    });
+    await axios.patch(`${base()}/${otherUserId}`, { name: 'Other' });
   });
 
   afterAll(async () => {
-    await axios.delete(`${base()}/${userId}`, ok);
-    await axios.delete(`${base()}/${otherUserId}`, ok);
+    for (const id of [userId, otherUserId].filter(Boolean)) {
+      await deleteAuthUser(id);
+    }
   });
 
-  it('stores the email lowercased and 409s a duplicate', async () => {
+  it('answers DELETE /users/:id with 410 and leaves the user in place', async () => {
+    const res = await axios.delete(`${base()}/${otherUserId}`, ok);
+    expect(res.status).toBe(410);
+    const user = await axios.get(`${base()}/${otherUserId}`, ok);
+    expect(user.status).toBe(200);
+  });
+
+  it('reads back the name and address set through the engine', async () => {
     const user = await axios.get(`${base()}/${userId}`);
-    expect(user.data.data.email).toBe(`e2e-${run}@example.com`);
-    const duplicate = await axios.post(
-      base(),
-      { name: 'Again', email: `e2e-${run}@example.com` },
-      ok,
-    );
-    expect(duplicate.status).toBe(409);
-    expect(duplicate.data).toMatchObject({
+    expect(user.data.data).toMatchObject({
+      id: userId,
+      name: 'E2E User',
+      address: { line1: '1 Rue X', city: 'Rabat', country: 'MA' },
+    });
+    expect(user.data.data).not.toHaveProperty('email');
+  });
+
+  it('answers POST /api/users with 410: users are created through Supabase Auth', async () => {
+    const res = await axios.post(base(), { name: 'Nope' }, ok);
+    expect(res.status).toBe(410);
+    expect(res.data).toMatchObject({
       status: 'error',
-      version: '1.0',
-      code: 'CONFLICT',
-      trace_id: duplicate.headers['x-trace-id'],
+      message: 'Users are created through Supabase Auth',
+      trace_id: res.headers['x-trace-id'],
     });
   });
 
@@ -86,12 +92,14 @@ describe('users, profiles and resume', () => {
   });
 
   it('lists validation failures in details', async () => {
-    const res = await axios.post(base(), { name: '', email: 'nope' }, ok);
+    const res = await axios.patch(`${base()}/${userId}`, { name: '' }, ok);
     expect(res.status).toBe(400);
     expect(res.data).toMatchObject({ code: 'VALIDATION_FAILED' });
     expect(res.data.details).toEqual(
-      expect.arrayContaining([expect.stringContaining('email')]),
+      expect.arrayContaining([expect.stringContaining('name')]),
     );
+    const user = await axios.get(`${base()}/${userId}`);
+    expect(user.data.data.name).toBe('E2E User');
   });
 
   it('adds a primary GitHub contact', async () => {

@@ -205,16 +205,32 @@ type Address {
   country    String
 }
 
+// One row per Supabase Auth user, created by the on_auth_user_created trigger.
+// The email lives only in Auth.
 model User {
-  id          Uuid      @id @onCreate(uuid(7))
-  // Stored lowercased.
-  email       String
-  name        String
+  id          Uuid      @id
+  authUser    supabase:auth.AuthUser @relation(fields: [id], references: [id], onDelete: Cascade)
+  name        String?
   address     Address?
   +Timestamps
 
-  @@unique([email])
   @@map("users")
+  @@rls
+}
+
+// Users read and update only their own row. No insert (the sign-up trigger does it) and
+// no delete (removing the Auth user cascades).
+policy_select users_owner_read {
+  target = User
+  roles  = [authenticated]
+  using  = sql`id = auth.uid()`
+}
+
+policy_update users_owner_update {
+  target    = User
+  roles     = [authenticated]
+  using     = sql`id = auth.uid()`
+  withCheck = sql`id = auth.uid()`
 }
 
 // The user's own contact channels, the ones that go on applications.
@@ -231,6 +247,14 @@ model Contact {
   @@unique([userId, kind, value])
   @@index([userId])
   @@map("contacts")
+  @@rls
+}
+
+policy_all contacts_owner {
+  target    = Contact
+  roles     = [authenticated]
+  using     = sql`"userId" = auth.uid()`
+  withCheck = sql`"userId" = auth.uid()`
 }
 
 // A user may maintain multiple independent job-seeker profiles, one per target position.
@@ -267,15 +291,21 @@ model Profile {
   @@check(expression: sql`cardinality("languages") > 0`, name: "profiles_languages_nonempty")
   @@check(expression: sql`cardinality("engagements") > 0`, name: "profiles_engagements_nonempty")
   @@check(expression: sql`cardinality("arrangements") > 0`, name: "profiles_arrangements_nonempty")
+  // Target of profile_skills' (profileId, userId) foreign key.
+  @@unique([id, userId])
   @@index([userId])
   @@map("profiles")
+  @@rls
 }
 
 // One row per technology and domain in a profile's tech stack.
+// userId always equals the profile's userId: the (profileId, userId) foreign key enforces it.
 model ProfileSkill {
   id          Uuid        @id @onCreate(uuid(7))
+  userId      Uuid
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   profileId   Uuid
-  profile     Profile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profile     Profile     @relation(fields: [profileId, userId], references: [id, userId], onDelete: Cascade)
   technology  Technology
   domain      SkillDomain
   mastery     Int
@@ -285,7 +315,63 @@ model ProfileSkill {
   @@check(expression: sql`mastery BETWEEN 0 AND 10`, name: "profile_skills_mastery_range")
   @@check(expression: sql`importance BETWEEN 0 AND 10`, name: "profile_skills_importance_range")
   @@unique([profileId, technology, domain])
+  @@index([userId])
   @@map("profile_skills")
+  @@rls
+}
+
+// Owners read their profiles at any state but create, edit and delete only drafts. The
+// engine publishes: state and publishedAt are not writable by users (column grants too).
+policy_select profiles_owner_read {
+  target = Profile
+  roles  = [authenticated]
+  using  = sql`"userId" = auth.uid()`
+}
+
+policy_insert profiles_owner_insert {
+  target    = Profile
+  roles     = [authenticated]
+  withCheck = sql`"userId" = auth.uid() AND state = 'draft' AND "publishedAt" IS NULL`
+}
+
+policy_update profiles_owner_update_draft {
+  target    = Profile
+  roles     = [authenticated]
+  using     = sql`"userId" = auth.uid() AND state = 'draft'`
+  withCheck = sql`"userId" = auth.uid() AND state = 'draft' AND "publishedAt" IS NULL`
+}
+
+policy_delete profiles_owner_delete_draft {
+  target = Profile
+  roles  = [authenticated]
+  using  = sql`"userId" = auth.uid() AND state = 'draft'`
+}
+
+// Skills follow their profile: writable only while the user's own profile is a draft.
+// The outer column is qualified; a bare "userId" in the subquery would resolve to p."userId".
+policy_select profile_skills_owner_read {
+  target = ProfileSkill
+  roles  = [authenticated]
+  using  = sql`"userId" = auth.uid()`
+}
+
+policy_insert profile_skills_owner_insert {
+  target    = ProfileSkill
+  roles     = [authenticated]
+  withCheck = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills."profileId" AND p."userId" = auth.uid() AND p.state = 'draft')`
+}
+
+policy_update profile_skills_owner_update {
+  target    = ProfileSkill
+  roles     = [authenticated]
+  using     = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills."profileId" AND p."userId" = auth.uid() AND p.state = 'draft')`
+  withCheck = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills."profileId" AND p."userId" = auth.uid() AND p.state = 'draft')`
+}
+
+policy_delete profile_skills_owner_delete {
+  target = ProfileSkill
+  roles  = [authenticated]
+  using  = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills."profileId" AND p."userId" = auth.uid() AND p.state = 'draft')`
 }
 
 // A shared, immutable search recipe for one channel, deduplicated by hash across every
@@ -317,6 +403,7 @@ model QuerySearchBuilder {
   @@unique([hash])
   @@index([channel, isActive, isDeleted])
   @@map("query_search_builder")
+  @@rls
 }
 
 // Which published profiles use which shared query search builder.
@@ -331,6 +418,7 @@ model ProfileQuerySearchBuilder {
   @@unique([profileId, queryId])
   @@index([queryId])
   @@map("profile_query_search_builders")
+  @@rls
 }
 
 // Shared source observations. Ownership belongs to lookup attribution, not jobs.
@@ -364,6 +452,7 @@ model RawJob {
   @@check(expression: sql`length(trim(description)) > 0 AND length(trim(url)) > 0`, name: "raw_jobs_content")
   @@index([channel, lastSeenAt])
   @@map("raw_jobs")
+  @@rls
 }
 
 // Aliases permit URL-only observations to acquire source IDs atomically.
@@ -379,6 +468,7 @@ model RawJobIdentity {
   @@check(expression: sql`length(trim("identityValue")) > 0`, name: "raw_job_identity_value")
   @@unique([channel, identityType, identityValue])
   @@map("raw_job_identities")
+  @@rls
 }
 
 model RawJobQueryHit {
@@ -396,6 +486,7 @@ model RawJobQueryHit {
   @@check(expression: sql`rank IS NULL OR rank > 0`, name: "raw_job_query_hits_rank")
   @@unique([queryId, rawJobId])
   @@map("raw_job_query_hits")
+  @@rls
 }
 
 // Association only: observations from different channels remain separate.
@@ -408,4 +499,5 @@ model AtsPostingIdentity {
   @@check(expression: sql`provider IN ('ashby', 'greenhouse')`, name: "ats_posting_identity_provider")
   @@unique([provider, tenantKey, postingId])
   @@map("ats_posting_identities")
+  @@rls
 }

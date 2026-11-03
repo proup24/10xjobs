@@ -1,3 +1,6 @@
+// INGEST_TEST_DATABASE_URL must name a disposable `ingest_test` database on
+// 127.0.0.1 that holds a migrated Supabase Postgres (the auth schema plus every
+// app migration): users rows come from the sign-up trigger on auth.users.
 import { randomUUID } from 'node:crypto';
 import { Channel } from 'src/common/enums';
 import {
@@ -59,17 +62,21 @@ describe.skipIf(!url)('ingest PostgreSQL transactions', () => {
   beforeEach(async () => {
     await db.execute(
       db.raw
-        .sql`TRUNCATE raw_jobs, ats_posting_identities, query_search_builder, users CASCADE`
+        .sql`TRUNCATE raw_jobs, ats_posting_identities, query_search_builder, users, auth.users CASCADE`
         .affectedCount()
         .build(),
     );
     async function query() {
-      const user = await db.orm.public.User.create({
-        email: `${randomUUID()}@test.invalid`,
-        name: 'Test',
-      });
+      // The on_auth_user_created trigger creates the users row.
+      const userId = randomUUID();
+      await db.execute(
+        db.raw
+          .sql`INSERT INTO auth.users (id, email) VALUES (${userId}::uuid, ${`${userId}@test.invalid`})`
+          .affectedCount()
+          .build(),
+      );
       const profile = await db.orm.public.Profile.create({
-        userId: user.id,
+        userId,
         position: 'backend_engineer',
         languages: ['EN'],
         country: 'MA',

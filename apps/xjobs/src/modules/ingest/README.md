@@ -45,4 +45,4 @@ pnpm exec vitest run --config apps/xjobs/vitest.config.mts src/modules/ingest
 pnpm exec tsc -p apps/xjobs/tsconfig.app.json --noEmit
 ```
 
-PostgreSQL tests additionally require `INGEST_TEST_DATABASE_URL` pointing to a disposable database named `ingest_test` at `127.0.0.1`, already initialized/migrated to the current contract. These tests **truncate test tables and users**. They skip when the variable is absent, and reject other host/database names. Tests never call paid collectors.
+PostgreSQL tests additionally require `INGEST_TEST_DATABASE_URL` pointing to a disposable database named `ingest_test` at `127.0.0.1` holding a migrated Supabase Postgres (the `auth` schema and every app migration, since users come from the sign-up trigger on `auth.users`). These tests **truncate test tables and users**. They skip when the variable is absent, and reject other host/database names. Tests never call paid collectors.
