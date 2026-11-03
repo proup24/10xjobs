@@ -10,7 +10,7 @@ let lastCliError: unknown;
 const LOCAL_HOSTS = new Set(['127.0.0.1', 'localhost']);
 
 /** The engine reads the same variable names, so a shell may hold hosted credentials. */
-function assertLocal(url: string): void {
+export function assertLocal(url: string): void {
   const host = new URL(url).hostname;
   if (LOCAL_HOSTS.has(host) || process.env.DB_TESTS_ALLOW_REMOTE === '1')
     return;

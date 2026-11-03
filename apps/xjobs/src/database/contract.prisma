@@ -403,6 +403,7 @@ model QuerySearchBuilder {
   @@unique([hash])
   @@index([channel, isActive, isDeleted])
   @@map("query_search_builder")
+  @@rls
 }
 
 // Which published profiles use which shared query search builder.
@@ -417,6 +418,7 @@ model ProfileQuerySearchBuilder {
   @@unique([profileId, queryId])
   @@index([queryId])
   @@map("profile_query_search_builders")
+  @@rls
 }
 
 // Shared source observations. Ownership belongs to lookup attribution, not jobs.
@@ -450,6 +452,7 @@ model RawJob {
   @@check(expression: sql`length(trim(description)) > 0 AND length(trim(url)) > 0`, name: "raw_jobs_content")
   @@index([channel, lastSeenAt])
   @@map("raw_jobs")
+  @@rls
 }
 
 // Aliases permit URL-only observations to acquire source IDs atomically.
@@ -465,6 +468,7 @@ model RawJobIdentity {
   @@check(expression: sql`length(trim("identityValue")) > 0`, name: "raw_job_identity_value")
   @@unique([channel, identityType, identityValue])
   @@map("raw_job_identities")
+  @@rls
 }
 
 model RawJobQueryHit {
@@ -482,6 +486,7 @@ model RawJobQueryHit {
   @@check(expression: sql`rank IS NULL OR rank > 0`, name: "raw_job_query_hits_rank")
   @@unique([queryId, rawJobId])
   @@map("raw_job_query_hits")
+  @@rls
 }
 
 // Association only: observations from different channels remain separate.
@@ -494,4 +499,5 @@ model AtsPostingIdentity {
   @@check(expression: sql`provider IN ('ashby', 'greenhouse')`, name: "ats_posting_identity_provider")
   @@unique([provider, tenantKey, postingId])
   @@map("ats_posting_identities")
+  @@rls
 }

@@ -2372,10 +2372,20 @@
             }
           },
           "rls": {
+            "ats_posting_identities": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "ats_posting_identities"
+            },
             "contacts": {
               "kind": "rls",
               "namespaceId": "public",
               "tableName": "contacts"
+            },
+            "profile_query_search_builders": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "profile_query_search_builders"
             },
             "profile_skills": {
               "kind": "rls",
@@ -2386,6 +2396,26 @@
               "kind": "rls",
               "namespaceId": "public",
               "tableName": "profiles"
+            },
+            "query_search_builder": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "query_search_builder"
+            },
+            "raw_job_identities": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "raw_job_identities"
+            },
+            "raw_job_query_hits": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "raw_job_query_hits"
+            },
+            "raw_jobs": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "raw_jobs"
             },
             "users": {
               "kind": "rls",
@@ -4093,7 +4123,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "b15f577ff2907eb08f954e867e5e946bab9d5c0fd59ff7ea21b798f256047089"
+    "storageHash": "2ef1383476902d44bfefe23fa388f4d5030f76523f77f7306ccd598d6fe8330a"
   },
   "execution": {
     "executionHash": "e15038faea60bf798f055cc039b1f18977e258097ce6fbf325017f72c0846066",

@@ -1,0 +1,236 @@
+[
+  {
+    "id": "rowLevelSecurity.public.ats_posting_identities",
+    "label": "Enable row-level security on \"ats_posting_identities\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "ats_posting_identities"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"ats_posting_identities\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "ats_posting_identities"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"ats_posting_identities\"",
+        "sql": "ALTER TABLE \"public\".\"ats_posting_identities\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"ats_posting_identities\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "ats_posting_identities"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.profile_query_search_builders",
+    "label": "Enable row-level security on \"profile_query_search_builders\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "profile_query_search_builders"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"profile_query_search_builders\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "profile_query_search_builders"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"profile_query_search_builders\"",
+        "sql": "ALTER TABLE \"public\".\"profile_query_search_builders\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"profile_query_search_builders\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "profile_query_search_builders"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.query_search_builder",
+    "label": "Enable row-level security on \"query_search_builder\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "query_search_builder"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"query_search_builder\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "query_search_builder"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"query_search_builder\"",
+        "sql": "ALTER TABLE \"public\".\"query_search_builder\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"query_search_builder\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "query_search_builder"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.raw_job_identities",
+    "label": "Enable row-level security on \"raw_job_identities\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "raw_job_identities"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"raw_job_identities\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "raw_job_identities"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"raw_job_identities\"",
+        "sql": "ALTER TABLE \"public\".\"raw_job_identities\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"raw_job_identities\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "raw_job_identities"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.raw_job_query_hits",
+    "label": "Enable row-level security on \"raw_job_query_hits\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "raw_job_query_hits"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"raw_job_query_hits\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "raw_job_query_hits"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"raw_job_query_hits\"",
+        "sql": "ALTER TABLE \"public\".\"raw_job_query_hits\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"raw_job_query_hits\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "raw_job_query_hits"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.raw_jobs",
+    "label": "Enable row-level security on \"raw_jobs\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "raw_jobs"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"raw_jobs\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "raw_jobs"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"raw_jobs\"",
+        "sql": "ALTER TABLE \"public\".\"raw_jobs\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"raw_jobs\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "raw_jobs"
+        ]
+      }
+    ]
+  }
+]
