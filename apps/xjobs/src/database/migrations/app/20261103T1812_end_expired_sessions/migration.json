@@ -1,0 +1,9 @@
+{
+  "from": "2ef1383476902d44bfefe23fa388f4d5030f76523f77f7306ccd598d6fe8330a",
+  "to": "2ef1383476902d44bfefe23fa388f4d5030f76523f77f7306ccd598d6fe8330a",
+  "providedInvariants": [
+    "end-expired-sessions"
+  ],
+  "createdAt": "2026-11-03T18:12:06.419Z",
+  "migrationHash": "eb562579259129a402fb12edd78a9672037f405e87397e0281204d6d1183dca8"
+}

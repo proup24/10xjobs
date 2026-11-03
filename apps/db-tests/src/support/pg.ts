@@ -4,7 +4,8 @@ import { assertLocal } from './stack-env.js';
 const DEFAULT_URL = 'postgresql://postgres:postgres@127.0.0.1:54322/postgres';
 
 /**
- * Runs `fn` with a direct Postgres connection. For catalog reads only: the
+ * Runs `fn` with a direct Postgres connection. For setup, read-back, catalog
+ * reads and running the cleanup function the way cron would: the
  * operation under test always goes through supabase-js.
  */
 export async function withCatalog<T>(
