@@ -28,6 +28,10 @@ Supabase runs locally through the Supabase CLI (Docker required); Compose only r
 
 Users are created through Supabase Auth; `POST /api/users` returns 410. The e2e suite needs the same two variables, so run `eval "$(scripts/supabase-env.sh)"` before `npx nx e2e xjobs-e2e`.
 
+### Signing in locally
+
+Public sign-up is off, so invite yourself: `eval "$(scripts/supabase-env.sh)" && pnpm users invite you@xjobs.test`. Read the email at http://127.0.0.1:54324 (Mailpit), then open the link or type the 6-digit code on http://localhost:3001/sign-in. The seeded users (`admin@`, `recruiter@` and `candidate@xjobs.local`) can sign in by requesting a code there. Production setup is in [docs/auth-production.md](docs/auth-production.md).
+
 ## Debugging xjobs
 
 In VS Code, set a breakpoint in `apps/xjobs/src`, select **Debug @xjobs/xjobs with Nx** in Run and Debug, and press **F5**.
@@ -43,6 +47,7 @@ Then select **Attach to xjobs (9229)** in VS Code and press **F5**. Use `--inspe
 ## Documentation
 
 - [Redis, caching, pub/sub, and background workers](docs/redis-jobs.md)
+- [Auth setup for production](docs/auth-production.md)
 - [Roadmap](docs/roadmap/README.md)
 - [CLAUDE.md](CLAUDE.md): conventions and workflow for working in this repo with Claude Code
 
