@@ -9,9 +9,10 @@
     "db:init": "prisma db init",
     "db:migration:plan": "prisma contract emit && prisma migration plan",
     "db:migration:status": "prisma migration status",
-    "db:migrate": "prisma db migrate",
+    "db:migrate": "prisma db migrate --to db",
     "db:migrate:show": "prisma db migrate --show",
     "db:verify": "prisma db verify",
+    "users": "tsx --tsconfig tsconfig.app.json src/admin/users-cli.ts",
     "db:seed": "tsx --tsconfig tsconfig.app.json src/database/seeds/index.ts",
     "worker:dev": "tsx watch --tsconfig tsconfig.app.json src/worker.ts",
     "jobs:smoke": "JOBS_SMOKE=1 vitest run --config vitest.config.mts src/infrastructure/jobs/tests/smoke.spec.ts"

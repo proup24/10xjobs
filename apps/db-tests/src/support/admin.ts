@@ -21,3 +21,9 @@ export function admin(): SupabaseClient {
   const { url, serviceRoleKey } = stack();
   return createClient(url, serviceRoleKey, noSession);
 }
+
+/** A publishable-key client with no session, for the operation under test. */
+export function anon(): SupabaseClient {
+  const { url, anonKey } = stack();
+  return createClient(url, anonKey, noSession);
+}
