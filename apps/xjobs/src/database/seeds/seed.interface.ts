@@ -1,3 +1,4 @@
+import type { SeedEnvironmentVariables } from 'src/config';
 import type { DatabaseClient } from '../connection.source';
 
 /** The `tx` handed to a `db.transaction(...)` callback. */
@@ -11,5 +12,5 @@ export type DatabaseTransaction = Parameters<
  */
 export interface Seed {
   name: string;
-  run(tx: DatabaseTransaction): Promise<void>;
+  run(tx: DatabaseTransaction, env: SeedEnvironmentVariables): Promise<void>;
 }

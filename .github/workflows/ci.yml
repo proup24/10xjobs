@@ -70,6 +70,13 @@ jobs:
       - name: Apply the Prisma migrations
         run: pnpm --filter @xjobs/xjobs db:migrate
 
+      # The users seed creates auth users through the admin API
+      - name: Export the Supabase admin credentials
+        run: |
+          eval "$(scripts/supabase-env.sh)"
+          echo "SUPABASE_URL=$SUPABASE_URL" >> "$GITHUB_ENV"
+          echo "SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
+
       # The only CI step that runs the engine's runtime client against a real database
       - name: Seed the database
         run: pnpm --filter @xjobs/xjobs db:seed

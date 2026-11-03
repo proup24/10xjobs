@@ -120,6 +120,7 @@ export type Database = {
           profileId: string;
           technology: string;
           updatedAt: string;
+          userId: string;
         };
         ComputedFields: never;
         Insert: {
@@ -131,6 +132,7 @@ export type Database = {
           profileId: string;
           technology: string;
           updatedAt?: string;
+          userId: string;
         };
         Update: {
           createdAt?: string;
@@ -141,13 +143,21 @@ export type Database = {
           profileId?: string;
           technology?: string;
           updatedAt?: string;
+          userId?: string;
         };
         Relationships: [
           {
-            foreignKeyName: 'profile_skills_profileId_fkey';
-            columns: ['profileId'];
+            foreignKeyName: 'profile_skills_profileId_userId_fkey';
+            columns: ['profileId', 'userId'];
             isOneToOne: false;
             referencedRelation: 'profiles';
+            referencedColumns: ['id', 'userId'];
+          },
+          {
+            foreignKeyName: 'profile_skills_userId_fkey';
+            columns: ['userId'];
+            isOneToOne: false;
+            referencedRelation: 'users';
             referencedColumns: ['id'];
           },
         ];
@@ -467,26 +477,23 @@ export type Database = {
         Row: {
           address: Json | null;
           createdAt: string;
-          email: string;
           id: string;
-          name: string;
+          name: string | null;
           updatedAt: string;
         };
         ComputedFields: never;
         Insert: {
           address?: Json | null;
           createdAt?: string;
-          email: string;
           id: string;
-          name: string;
+          name?: string | null;
           updatedAt?: string;
         };
         Update: {
           address?: Json | null;
           createdAt?: string;
-          email?: string;
           id?: string;
-          name?: string;
+          name?: string | null;
           updatedAt?: string;
         };
         Relationships: [];

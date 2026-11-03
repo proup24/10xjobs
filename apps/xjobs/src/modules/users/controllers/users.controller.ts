@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  GoneException,
   HttpCode,
   HttpStatus,
   Param,
@@ -13,7 +14,6 @@ import {
 import { ApiNoContentResponse, ApiTags } from '@nestjs/swagger';
 import { ApiErrorResponses, ApiSuccessResponse } from 'src/common/decorators';
 import type { UserRow } from 'src/database';
-import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { UserResponseDto } from '../dto/user.response.dto';
 import { ProfilesService } from '../services/profiles.service';
@@ -30,15 +30,11 @@ export class UsersController {
     private readonly resume: ResumeService,
   ) {}
 
-  @ApiSuccessResponse(UserResponseDto, { status: HttpStatus.CREATED })
-  @ApiErrorResponses(
-    HttpStatus.BAD_REQUEST,
-    HttpStatus.NOT_FOUND,
-    HttpStatus.CONFLICT,
-  )
+  /** Kept until the CRUD endpoints go, so old callers get a clear answer. */
+  @ApiErrorResponses(HttpStatus.GONE)
   @Post()
-  async create(@Body() body: CreateUserDto): Promise<UserRow> {
-    return this.users.create(body);
+  create(): never {
+    throw new GoneException('Users are created through Supabase Auth');
   }
 
   @ApiSuccessResponse(UserResponseDto, { isArray: true })
@@ -56,11 +52,7 @@ export class UsersController {
   }
 
   @ApiSuccessResponse(UserResponseDto)
-  @ApiErrorResponses(
-    HttpStatus.BAD_REQUEST,
-    HttpStatus.NOT_FOUND,
-    HttpStatus.CONFLICT,
-  )
+  @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
   @Patch(':userId')
   async update(
     @Param('userId', ParseUUIDPipe) userId: string,

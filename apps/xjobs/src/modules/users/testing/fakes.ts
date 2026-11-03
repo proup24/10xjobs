@@ -1,6 +1,6 @@
 /** In-memory repositories for unit tests; not part of the application build. */
 import { ProfileState } from 'src/common/enums';
-import { toStoredAddress, type ContactRow, type UserRow } from 'src/database';
+import type { ContactRow, UserRow } from 'src/database';
 import { ContactsRepository } from '../repositories/contacts.repository';
 import { ProfilesRepository } from '../repositories/profiles.repository';
 import { UsersRepository } from '../repositories/users.repository';
@@ -17,16 +17,13 @@ import type {
 export class FakeUsersRepository extends UsersRepository {
   rows: UserRow[] = [];
 
-  async create(data: UserInput): Promise<UserRow> {
-    if (this.rows.some((row) => row.email === data.email)) {
-      throw { sqlState: '23505' };
-    }
+  /** Stands in for the sign-up trigger, which creates real rows. */
+  add(name: string | null = null): UserRow {
     const now = new Date();
     const row: UserRow = {
       id: `user-${this.rows.length + 1}`,
-      name: data.name,
-      email: data.email,
-      address: data.address ? toStoredAddress(data.address) : null,
+      name,
+      address: null,
       createdAt: now,
       updatedAt: now,
     };
@@ -42,7 +39,7 @@ export class FakeUsersRepository extends UsersRepository {
     return this.rows.find((row) => row.id === userId) ?? null;
   }
 
-  async update(userId: string, data: Partial<UserInput>) {
+  async update(userId: string, data: UserInput) {
     const row = await this.findById(userId);
     if (!row) return null;
     Object.assign(row, data);
@@ -127,11 +124,16 @@ export class FakeProfilesRepository extends ProfilesRepository {
   rows: ProfileWithSkills[] = [];
   private nextId = 1;
 
-  private static techStack(profileId: string, skills: SkillInput[]) {
+  private static techStack(
+    userId: string,
+    profileId: string,
+    skills: SkillInput[],
+  ) {
     const now = new Date();
     return skills.map((skill, index) => ({
       ...skill,
       id: `${profileId}-skill-${index}`,
+      userId,
       profileId,
       createdAt: now,
       updatedAt: now,
@@ -170,7 +172,7 @@ export class FakeProfilesRepository extends ProfilesRepository {
       publishedAt: null,
       createdAt: now,
       updatedAt: now,
-      techStack: FakeProfilesRepository.techStack(id, skills),
+      techStack: FakeProfilesRepository.techStack(userId, id, skills),
     };
     this.rows.push(profile);
     return profile;
@@ -185,7 +187,7 @@ export class FakeProfilesRepository extends ProfilesRepository {
     const profile = await this.findById(userId, profileId);
     if (profile?.state !== ProfileState.draft) return null;
     return Object.assign(profile, data, {
-      techStack: FakeProfilesRepository.techStack(profileId, skills),
+      techStack: FakeProfilesRepository.techStack(userId, profileId, skills),
     });
   }
 

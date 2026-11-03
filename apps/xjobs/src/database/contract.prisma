@@ -205,15 +205,15 @@ type Address {
   country    String
 }
 
+// One row per Supabase Auth user, created by the on_auth_user_created trigger.
+// The email lives only in Auth.
 model User {
-  id          Uuid      @id @onCreate(uuid(7))
-  // Stored lowercased.
-  email       String
-  name        String
+  id          Uuid      @id
+  authUser    supabase:auth.AuthUser @relation(fields: [id], references: [id], onDelete: Cascade)
+  name        String?
   address     Address?
   +Timestamps
 
-  @@unique([email])
   @@map("users")
 }
 
@@ -267,15 +267,20 @@ model Profile {
   @@check(expression: sql`cardinality("languages") > 0`, name: "profiles_languages_nonempty")
   @@check(expression: sql`cardinality("engagements") > 0`, name: "profiles_engagements_nonempty")
   @@check(expression: sql`cardinality("arrangements") > 0`, name: "profiles_arrangements_nonempty")
+  // Target of profile_skills' (profileId, userId) foreign key.
+  @@unique([id, userId])
   @@index([userId])
   @@map("profiles")
 }
 
 // One row per technology and domain in a profile's tech stack.
+// userId always equals the profile's userId: the (profileId, userId) foreign key enforces it.
 model ProfileSkill {
   id          Uuid        @id @onCreate(uuid(7))
+  userId      Uuid
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   profileId   Uuid
-  profile     Profile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profile     Profile     @relation(fields: [profileId, userId], references: [id, userId], onDelete: Cascade)
   technology  Technology
   domain      SkillDomain
   mastery     Int
@@ -285,6 +290,7 @@ model ProfileSkill {
   @@check(expression: sql`mastery BETWEEN 0 AND 10`, name: "profile_skills_mastery_range")
   @@check(expression: sql`importance BETWEEN 0 AND 10`, name: "profile_skills_importance_range")
   @@unique([profileId, technology, domain])
+  @@index([userId])
   @@map("profile_skills")
 }
 

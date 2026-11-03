@@ -1325,6 +1325,13 @@
                     "precision": 3
                   }
                 }
+              },
+              "userId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
               }
             },
             "relations": {
@@ -1333,14 +1340,32 @@
                 "nullable": false,
                 "on": {
                   "localFields": [
-                    "profileId"
+                    "profileId",
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id",
+                    "userId"
+                  ]
+                },
+                "to": {
+                  "model": "Profile",
+                  "namespace": "public"
+                }
+              },
+              "user": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "userId"
                   ],
                   "targetFields": [
                     "id"
                   ]
                 },
                 "to": {
-                  "model": "Profile",
+                  "model": "User",
                   "namespace": "public"
                 }
               }
@@ -1370,6 +1395,9 @@
                 },
                 "updatedAt": {
                   "column": "updatedAt"
+                },
+                "userId": {
+                  "column": "userId"
                 }
               },
               "namespaceId": "public",
@@ -2072,13 +2100,6 @@
                   }
                 }
               },
-              "email": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
               "id": {
                 "nullable": false,
                 "type": {
@@ -2087,7 +2108,7 @@
                 }
               },
               "name": {
-                "nullable": false,
+                "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
@@ -2104,7 +2125,25 @@
                 }
               }
             },
-            "relations": {},
+            "relations": {
+              "authUser": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "AuthUser",
+                  "namespace": "auth",
+                  "space": "supabase"
+                }
+              }
+            },
             "storage": {
               "fields": {
                 "address": {
@@ -2112,9 +2151,6 @@
                 },
                 "createdAt": {
                   "column": "createdAt"
-                },
-                "email": {
-                  "column": "email"
                 },
                 "id": {
                   "column": "id"
@@ -2552,17 +2588,22 @@
                   "typeParams": {
                     "precision": 3
                   }
+                },
+                "userId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
                 }
               },
               "foreignKeys": [
                 {
                   "index": {
-                    "name": "profile_skills_profileId_idx_d9cdfcaf"
+                    "name": "profile_skills_userId_idx_a489d58a"
                   },
                   "onDelete": "cascade",
                   "source": {
                     "columns": [
-                      "profileId"
+                      "userId"
                     ],
                     "namespaceId": "public",
                     "tableName": "profile_skills"
@@ -2572,6 +2613,28 @@
                       "id"
                     ],
                     "namespaceId": "public",
+                    "tableName": "users"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "profile_skills_profileId_userId_idx_2d3ae1fb"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "profileId",
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "profile_skills"
+                  },
+                  "target": {
+                    "columns": [
+                      "id",
+                      "userId"
+                    ],
+                    "namespaceId": "public",
                     "tableName": "profiles"
                   }
                 }
@@ -2579,10 +2642,19 @@
               "indexes": [
                 {
                   "columns": [
-                    "profileId"
+                    "profileId",
+                    "userId"
                   ],
-                  "name": "profile_skills_profileId_idx_d9cdfcaf",
-                  "prefix": "profile_skills_profileId_idx",
+                  "name": "profile_skills_profileId_userId_idx_2d3ae1fb",
+                  "prefix": "profile_skills_profileId_userId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "userId"
+                  ],
+                  "name": "profile_skills_userId_idx_a489d58a",
+                  "prefix": "profile_skills_userId_idx",
                   "unique": false
                 }
               ],
@@ -2926,7 +2998,14 @@
                   "id"
                 ]
               },
-              "uniques": []
+              "uniques": [
+                {
+                  "columns": [
+                    "id",
+                    "userId"
+                  ]
+                }
+              ]
             },
             "query_search_builder": {
               "checks": [
@@ -3588,11 +3667,6 @@
                     "precision": 3
                   }
                 },
-                "email": {
-                  "codecId": "pg/text@1",
-                  "dataType": "pg/text",
-                  "nullable": false
-                },
                 "id": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
@@ -3601,7 +3675,7 @@
                 "name": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
-                  "nullable": false
+                  "nullable": true
                 },
                 "updatedAt": {
                   "codecId": "pg/timestamptz-date@1",
@@ -3616,20 +3690,36 @@
                   }
                 }
               },
-              "foreignKeys": [],
+              "foreignKeys": [
+                {
+                  "index": {
+                    "primaryKey": true
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "users"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "auth",
+                    "spaceId": "supabase",
+                    "tableName": "users"
+                  }
+                }
+              ],
               "indexes": [],
               "primaryKey": {
                 "columns": [
                   "id"
                 ]
               },
-              "uniques": [
-                {
-                  "columns": [
-                    "email"
-                  ]
-                }
-              ]
+              "uniques": []
             }
           },
           "valueSet": {
@@ -3832,10 +3922,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "c51c7914f0f544daa1a0e22a4d406646bccf81ca2d88613e66422c47fd69fb1d"
+    "storageHash": "a582d0832b036c7567fb59a6d6e00992e81a0d9cac9686812856b35084f4175d"
   },
   "execution": {
-    "executionHash": "4a9e258933018fc487b8d987b217a9b93dccd535dfc21b0f53b0cbefd690f4ff",
+    "executionHash": "e15038faea60bf798f055cc039b1f18977e258097ce6fbf325017f72c0846066",
     "mutations": {
       "defaults": [
         {
@@ -3993,17 +4083,6 @@
           },
           "ref": {
             "entry": "raw_jobs",
-            "field": "id",
-            "namespace": "public"
-          }
-        },
-        {
-          "onCreate": {
-            "id": "uuidv7",
-            "kind": "generator"
-          },
-          "ref": {
-            "entry": "users",
             "field": "id",
             "namespace": "public"
           }

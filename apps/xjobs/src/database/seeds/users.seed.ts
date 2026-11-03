@@ -1,3 +1,4 @@
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Seed } from './seed.interface';
 
 const users = [
@@ -6,20 +7,60 @@ const users = [
   { email: 'candidate@xjobs.local', name: 'Candidate' },
 ];
 
+const LIST_PAGE_SIZE = 1000;
+
+/** The id of the auth user with `email`, or `undefined` when there is none. */
+async function findAuthUserId(
+  auth: SupabaseClient['auth']['admin'],
+  email: string,
+): Promise<string | undefined> {
+  for (let page = 1; ; page++) {
+    const { data, error } = await auth.listUsers({
+      page,
+      perPage: LIST_PAGE_SIZE,
+    });
+    if (error) throw new Error(`Could not list auth users: ${error.message}`);
+    const found = data.users.find((user) => user.email === email);
+    if (found) return found.id;
+    if (data.users.length < LIST_PAGE_SIZE) return undefined;
+  }
+}
+
+/** Creates the auth user (the sign-up trigger adds its users row) or finds the existing one. */
+async function ensureAuthUser(
+  auth: SupabaseClient['auth']['admin'],
+  email: string,
+): Promise<string> {
+  const { data, error } = await auth.createUser({ email, email_confirm: true });
+  if (!error) return data.user.id;
+  if (
+    error.code !== 'email_exists' &&
+    !/already been registered/i.test(error.message)
+  ) {
+    throw new Error(`Could not create auth user ${email}: ${error.message}`);
+  }
+  const id = await findAuthUserId(auth, email);
+  if (!id)
+    throw new Error(`Auth user ${email} is registered but was not listed`);
+  return id;
+}
+
 export const usersSeed: Seed = {
   name: 'users',
-  async run(tx) {
+  async run(tx, env) {
+    const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = env;
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      throw new Error(
+        'The users seed creates auth users: set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (locally: eval "$(scripts/supabase-env.sh)").',
+      );
+    }
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
     for (const user of users) {
-      const existing = await tx.orm.public.User.where({
-        email: user.email,
-      }).first();
-      if (existing) {
-        await tx.orm.public.User.where({
-          email: user.email,
-        }).update({ name: user.name });
-      } else {
-        await tx.orm.public.User.create(user);
-      }
+      const id = await ensureAuthUser(supabase.auth.admin, user.email);
+      await tx.orm.public.User.where({ id }).update({ name: user.name });
     }
   },
 };

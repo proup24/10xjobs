@@ -1,31 +1,17 @@
 import { randomUUID } from 'node:crypto';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { loadStackEnv, type StackEnv } from './stack-env.js';
+import { admin, noSession, stack } from './admin.js';
 
 export type TestUser = { id: string; email: string; client: SupabaseClient };
 
-const noSession = { auth: { persistSession: false, autoRefreshToken: false } };
 const createdIds = new Set<string>();
-
-let stackEnv: StackEnv | undefined;
-// The CLI lookup spawns a process, so resolve it once per test process.
-function stack(): StackEnv {
-  stackEnv ??= loadStackEnv();
-  return stackEnv;
-}
-
-// Module-private: the service role only creates and deletes users, never reads data.
-function adminClient(): SupabaseClient {
-  const { url, serviceRoleKey } = stack();
-  return createClient(url, serviceRoleKey, noSession);
-}
 
 export async function createTestUser(): Promise<TestUser> {
   const { url, anonKey } = stack();
   const email = `db-test-${randomUUID()}@xjobs.test`;
   const password = randomUUID();
 
-  const { data, error } = await adminClient().auth.admin.createUser({
+  const { data, error } = await admin().auth.admin.createUser({
     email,
     password,
     email_confirm: true,
@@ -41,11 +27,20 @@ export async function createTestUser(): Promise<TestUser> {
   return { id: data.user.id, email, client };
 }
 
+/** Invites a fresh address through the admin API, the path slice 03's invite script takes. */
+export async function inviteTestUser(): Promise<{ id: string }> {
+  const email = `db-test-${randomUUID()}@xjobs.test`;
+  const { data, error } = await admin().auth.admin.inviteUserByEmail(email);
+  if (error) throw new Error(`Could not invite test user: ${error.message}`);
+  createdIds.add(data.user.id);
+  return { id: data.user.id };
+}
+
 export async function cleanupTestUsers(): Promise<void> {
   if (createdIds.size === 0) return;
-  const admin = adminClient();
+  const client = admin();
   for (const id of [...createdIds]) {
-    const { error } = await admin.auth.admin.deleteUser(id);
+    const { error } = await client.auth.admin.deleteUser(id);
     if (error && !/not found/i.test(error.message)) {
       throw new Error(`Could not delete test user ${id}: ${error.message}`);
     }

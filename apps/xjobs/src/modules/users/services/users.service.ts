@@ -1,25 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { rethrowConflict, type UserRow } from 'src/database';
+import type { UserRow } from 'src/database';
 import { UsersRepository } from '../repositories/users.repository';
 import type { UserInput } from '../types';
-
-const EMAIL_TAKEN = 'A user with this email already exists';
-
-function normalize<T extends Partial<UserInput>>(data: T): T {
-  return data.email === undefined
-    ? data
-    : { ...data, email: data.email.trim().toLowerCase() };
-}
 
 @Injectable()
 export class UsersService {
   constructor(private readonly users: UsersRepository) {}
-
-  create(data: UserInput): Promise<UserRow> {
-    return this.users
-      .create(normalize(data))
-      .catch((error: unknown) => rethrowConflict(error, EMAIL_TAKEN));
-  }
 
   list(): Promise<UserRow[]> {
     return this.users.list();
@@ -31,10 +17,8 @@ export class UsersService {
     return user;
   }
 
-  async update(userId: string, data: Partial<UserInput>): Promise<UserRow> {
-    const user = await this.users
-      .update(userId, normalize(data))
-      .catch((error: unknown) => rethrowConflict(error, EMAIL_TAKEN));
+  async update(userId: string, data: UserInput): Promise<UserRow> {
+    const user = await this.users.update(userId, data);
     if (!user) throw new NotFoundException('User not found');
     return user;
   }
