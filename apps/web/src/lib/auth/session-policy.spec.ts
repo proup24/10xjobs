@@ -111,3 +111,13 @@ describe('signedInAt', () => {
 
   it('is null without amr', () => expect(signedInAt({ sub: 'u' })).toBeNull());
 });
+
+describe('malformed amr timestamps', () => {
+  it('treats a non-finite sign-in time as expired', () => {
+    const bad = { sub: 'u', amr: [{ method: 'otp', timestamp: 'x' as never }] };
+    expect(signedInAt(bad)).toBeNull();
+    expect(
+      decideRoute({ pathname: '/', claims: bad, nowSeconds: now }),
+    ).toEqual(expired);
+  });
+});

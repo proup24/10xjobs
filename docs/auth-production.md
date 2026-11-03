@@ -159,7 +159,7 @@ pnpm --filter @xjobs/xjobs db:migrate
 unset DATABASE_URL
 ```
 
-Run it from a shell that has not loaded `.env` values for another database. Check the target before you confirm. Afterwards, check that the job exists with `select jobname, schedule from cron.job;`.
+Run it from a shell that has not loaded `.env` values for another database. Check the target before you confirm. Afterwards, check that the job exists with `select jobname, schedule from cron.job;`. If you ever run `prisma migration ref set` or advance the `db` ref, re-add `"end-expired-sessions"` to `invariants` in `refs/db.json` first, or new databases skip the cron job.
 
 On the Supabase Pro plan, you can instead set a session time-box under Authentication, Sessions: `timebox = "168h"` (the `[auth.sessions]` key in `config.toml`). Supabase then ends sessions itself, and the cron job becomes redundant. Keep the job unless you have confirmed the time-box is active.
 
@@ -184,7 +184,7 @@ Known gaps to keep in mind when you run it:
 
 ## Pre-launch checklist (slice 09)
 
-1. Run the migrations against Cloud (`db:migrate` above) and check `cron.job`.
+1. Run the migrations against Cloud (`db:migrate` above) and check `cron.job`. Then verify the cleanup runs: execute `select public.end_expired_sessions();` once as postgres in the SQL editor (it returns a count), or check `cron.job_run_details` after an hour.
 2. Set the Auth settings from the table above (sign-up off, OTP, frequency, rate limit, JWT expiry).
 3. Paste both templates and set their subjects.
 4. Set the Gmail SMTP settings.

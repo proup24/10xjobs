@@ -24,6 +24,8 @@ Supabase runs locally through the Supabase CLI (Docker required); Compose only r
 5. `npx nx serve xjobs` runs the engine.
 6. For the web app, copy `apps/web/.env.example` to `apps/web/.env.local` and fill `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` from `pnpm db:status`. Then `npx nx dev web` serves on http://localhost:3001.
 
+Migration refs: after `prisma migration ref set` or advancing the `db` ref in `apps/xjobs/src/database/migrations/app/refs/db.json`, re-add `"end-expired-sessions"` to its `invariants`. Prisma writes `invariants: []`, and fresh databases would then skip the session-cleanup cron job.
+
 `pnpm db:stop` stops the stack, and `pnpm db:reset` wipes it and re-applies migrations and the seed (it loads those two variables itself). The old self-hosted Compose stack is retired: its data and your old `.env` are not carried over, so build a fresh `.env` from `.env.example`.
 
 Users are created through Supabase Auth; `POST /api/users` returns 410. The e2e suite needs the same two variables, so run `eval "$(scripts/supabase-env.sh)"` before `npx nx e2e xjobs-e2e`.

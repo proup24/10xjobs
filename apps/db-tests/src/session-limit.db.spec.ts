@@ -36,7 +36,11 @@ describe('session limit', () => {
 
   it('cannot be called by a signed-in user or anon', async () => {
     const a = await createTestUser();
-    expect((await a.client.rpc('end_expired_sessions')).error).not.toBeNull();
-    expect((await anon().rpc('end_expired_sessions')).error).not.toBeNull();
+    expect((await a.client.rpc('end_expired_sessions')).error?.code).toBe(
+      '42501',
+    );
+    expect((await anon().rpc('end_expired_sessions')).error?.code).toBe(
+      '42501',
+    );
   });
 });

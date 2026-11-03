@@ -1,10 +1,5 @@
-import { LINK_FAILED, SESSION_EXPIRED } from '@/lib/auth/copy';
+import { reasonMessage } from '@/lib/auth/reason-message';
 import { SignInForm } from './sign-in-form';
-
-const REASONS: Record<string, string> = {
-  expired: SESSION_EXPIRED,
-  link: LINK_FAILED,
-};
 
 export default async function SignInPage({
   searchParams,
@@ -12,7 +7,7 @@ export default async function SignInPage({
   searchParams: Promise<{ reason?: string | string[] }>;
 }) {
   const { reason } = await searchParams;
-  const notice = typeof reason === 'string' ? REASONS[reason] : undefined;
+  const notice = reasonMessage(reason);
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-4">

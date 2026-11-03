@@ -11,6 +11,11 @@ import {
   rawSql,
 } from '@prisma/orm-postgres/migration';
 
+// NOTE: the `end-expired-sessions` invariant in ../refs/db.json decides whether
+// this migration is applied on a fresh database. `prisma migration ref set` and
+// advancing the `db` ref write `invariants: []`; re-add "end-expired-sessions"
+// afterwards, or fresh databases (CI, db:reset, a new Cloud project) skip the
+// cron job.
 export default class M extends Migration<Start, End> {
   override readonly startContractJson = startContract;
   override readonly endContractJson = endContract;

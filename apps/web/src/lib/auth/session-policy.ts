@@ -13,7 +13,8 @@ export type RouteDecision =
 /** Newest authentication time across all amr entries, in epoch seconds. */
 export function signedInAt(claims: SessionClaims): number | null {
   if (!claims.amr?.length) return null;
-  return Math.max(...claims.amr.map((entry) => entry.timestamp));
+  const at = Math.max(...claims.amr.map((entry) => Number(entry.timestamp)));
+  return Number.isFinite(at) ? at : null;
 }
 
 function isPublic(pathname: string): boolean {
