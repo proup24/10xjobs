@@ -20,7 +20,7 @@ describe('runUsersCli', () => {
       await runUsersCli(['list'], { SUPABASE_URL: 'https://a.co' }, { print }),
     ).toBe(1);
     expect(lines[0]).toBe(
-      'Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (locally: eval "$(scripts/supabase-env.sh)").',
+      'Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env (locally: eval "$(scripts/supabase-env.sh)").',
     );
   });
 

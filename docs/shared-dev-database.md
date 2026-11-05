@@ -11,19 +11,19 @@ One hosted Supabase project, `10xjobs-dev`, is the shared dev database. Use it w
    - `DEV_DATABASE_URL`: the **session pooler** URL (port 5432), `postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres`. Not the transaction pooler (6543).
    - `DEV_SUPABASE_URL`: `https://<ref>.supabase.co`.
    - `DEV_SUPABASE_SERVICE_ROLE_KEY`: the service-role key from Project Settings, API.
-5. Merge `.github/workflows/dev-database.yml` to `main`. A `workflow_run` workflow only takes effect once it is on `main`. Then re-run the latest `CI` run on `main` (or merge anything) to trigger the first migrate and seed.
+
+   Then restrict the environment: Deployment branches and tags, Selected branches, `main` only. No other branch's workflow can then read the secrets.
+5. Merge `.github/workflows/dev-database.yml` to `main`. A `workflow_run` workflow only takes effect once it is on `main`. Add the secrets before merging; the merge's CI run triggers the first migrate and seed. To re-run later, re-run the latest CI run on `main`.
 
 The workflow (`.github/workflows/dev-database.yml`) runs after `CI` succeeds on a push to `main`: it migrates, then seeds.
 
 ## Daily work
 
-Point your env at the shared project. In the root `.env`, replace the local values with the commented shared-dev block from `.env.example`: `DATABASE_URL` (session pooler), `DIRECT_DATABASE_URL` (the same URL), `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. In `apps/web/.env.local`, set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` from the dev project's API settings. Then run `npx nx serve xjobs` and `npx nx dev web` as usual.
+Point your env at the shared project. In the root `.env`, replace the local values with the commented shared-dev block from `.env.example`: `DATABASE_URL` (session pooler), `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. In `apps/web/.env.local`, set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` from the dev project's API settings. Then run `npx nx serve xjobs` and `npx nx dev web` as usual.
 
-Print a sign-in link instead of waiting for an email. The users CLI reads `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from the shell, so export them first (the dev project's values, in the current shell only):
+Print a sign-in link instead of waiting for an email. The users CLI reads `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from the root `.env` (shell values win):
 
 ```sh
-export SUPABASE_URL=https://<ref>.supabase.co
-read -rs SUPABASE_SERVICE_ROLE_KEY && export SUPABASE_SERVICE_ROLE_KEY
 pnpm users link you@example.com
 ```
 
@@ -33,13 +33,13 @@ It prints a sign-in link through `/auth/confirm` and sends nothing. The link poi
 
 Schema changes go through the local stack, never the shared project:
 
-1. Comment out the shared values in `.env` (`DATABASE_URL`, `DIRECT_DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) and restore the local ones. The `db:reset` env loader does not honour `XJOBS_SKIP_ENV_FILES`, so a leftover `DIRECT_DATABASE_URL` pointing at the shared database makes `pnpm db:reset` refuse to run.
+1. Comment out the shared values in `.env` (`DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) and restore the local ones, in `apps/web/.env.local` too. Leftover shared values point local commands at the shared project.
 2. `pnpm db:start`, then `pnpm db:reset`.
-3. Edit the contract, run `pnpm db:migrate`, `pnpm db:types` and `pnpm db:test`.
+3. Edit the contract, run `pnpm --filter @xjobs/database db:migration:plan`, then `pnpm db:migrate`, `pnpm db:types` and `pnpm db:test`.
 
 Merging to `main` applies the migration to the dev project.
 
-`db:migrate`, `db:update`, `db:init` and `db:seed` refuse any non-local `DATABASE_URL`, `DIRECT_DATABASE_URL` or `SUPABASE_URL` unless `XJOBS_ALLOW_REMOTE_DB=1` is set. The guard reads the flag only from the shell or CI environment, not from `.env`, so pass it inline and never put it in `.env`. Never run it from your own machine against the dev project; CI does that.
+`db:migrate`, `db:update`, `db:init` and `db:seed` refuse any non-local `DATABASE_URL`, `DIRECT_DATABASE_URL` or `SUPABASE_URL` unless `XJOBS_ALLOW_REMOTE_DB=1` is set. The documented `pnpm` commands read the flag only from the shell or CI environment, not from `.env` (Nx loads `.env` into task env, so it could take effect through `nx run`). Pass it inline and never put it in `.env`. Never run it from your own machine against the dev project; CI does that.
 
 ## Recovery
 

@@ -534,7 +534,11 @@ importers:
         specifier: ^4.23.15
         version: 4.23.15
 
-  apps/xjobs-e2e: {}
+  apps/xjobs-e2e:
+    devDependencies:
+      '@xjobs/database':
+        specifier: workspace:*
+        version: link:../../libs/database
 
   libs/database:
     dependencies:
