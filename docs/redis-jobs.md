@@ -12,6 +12,8 @@ pnpm worker
 
 Run the API in another terminal with `pnpm exec nx serve @xjobs/xjobs`. For worker development with restart on changes, use `pnpm worker:dev`. `pnpm exec nx worker @xjobs/xjobs` builds and launches the worker as an Nx target.
 
+To run the whole pipeline in one process (infrastructure, ingest with its sweeper, and every enabled channel's scheduled collection), use `npx nx worker-all xjobs`, or `pnpm worker:all:dev` to restart on changes. It sets `WORKER_ROLE=all` and needs `APIFY_TOKEN`. A disabled channel is skipped and the others keep running. The per-role workers (`pnpm worker:ingest`, `npx nx worker-<channel> xjobs`) remain for scaling roles separately.
+
 With a worker running, `pnpm jobs:smoke` enqueues a ping and verifies its result. The only initial processor is this infrastructure ping. Add business processors explicitly as workflows are implemented.
 
 ## Configuration

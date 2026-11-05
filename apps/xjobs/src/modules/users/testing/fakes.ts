@@ -138,6 +138,10 @@ export class FakeProfilesRepository extends ProfilesRepository {
     return this.rows.filter((row) => row.userId === userId);
   }
 
+  async listPublished() {
+    return this.rows.filter((row) => row.state === ProfileState.published);
+  }
+
   async findById(userId: string, profileId: string) {
     return (
       this.rows.find((row) => row.userId === userId && row.id === profileId) ??

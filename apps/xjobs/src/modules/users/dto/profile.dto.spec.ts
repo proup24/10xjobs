@@ -5,7 +5,7 @@ import {
   POSITION_IMMUTABLE,
   ReplaceProfileDto,
 } from './profile.dto';
-import { CITY_REQUIRED } from 'src/modules/queries';
+import { LOCATIONS_REQUIRED } from 'src/modules/queries';
 
 const options = { whitelist: true, forbidNonWhitelisted: true };
 
@@ -14,14 +14,17 @@ const validProfile = {
   languages: ['EN', 'FR'],
   country: 'MA',
   city: 'Rabat',
-  regions: ['MENA', 'NORTH_AFRICA', 'EMEA'],
+  locations: {
+    remote: ['MENA', 'North Africa', 'EMEA'],
+    hybrid: [],
+    onsite: [],
+  },
   yearsOfExperience: 6,
   timezoneCurrent: 60,
   timezoneMin: -240,
   timezoneMax: 240,
   engagements: ['employee', 'contractor'],
-  arrangements: ['remote'],
-  seniority: 'senior',
+  seniorities: ['senior'],
   noticePeriodDays: 30,
   techStack: [{ technology: 'nodejs', domain: 'backend', mastery: 8 }],
 };
@@ -69,7 +72,7 @@ describe('CreateProfileDto', () => {
     expect(await errorsFor({})).toEqual([]);
   });
 
-  it.each(['languages', 'engagements', 'arrangements'])(
+  it.each(['languages', 'engagements'])(
     'rejects an empty %s list',
     async (field) => {
       expect(await errorsFor({ [field]: [] })).toEqual([field]);
@@ -143,42 +146,104 @@ describe('CreateProfileDto', () => {
   });
 });
 
-describe('profile city rule', () => {
-  it.each([
-    [{ arrangements: ['onsite'], city: null }],
-    [{ arrangements: ['hybrid'], city: undefined }],
-    [{ arrangements: ['remote', 'hybrid'], city: '   ' }],
-  ])('requires a city for onsite or hybrid: %j', async (changes) => {
-    expect(await errorsFor(changes)).toEqual(['city']);
+describe('profile seniorities', () => {
+  it('accepts several seniorities', async () => {
+    expect(await errorsFor({ seniorities: ['senior', 'staff'] })).toEqual([]);
   });
 
-  it('says why the city is required', async () => {
+  it.each([
+    [[]],
+    [['senior', 'senior']],
+    [['wizard']],
+    ['senior'],
+    [undefined],
+  ])('rejects seniorities %j', async (seniorities) => {
+    expect(await errorsFor({ seniorities })).toEqual(['seniorities']);
+  });
+
+  it('rejects the old single seniority field', async () => {
+    expect(await errorsFor({ seniority: 'senior' })).toEqual(['seniority']);
+  });
+});
+
+describe('profile locations', () => {
+  const none = { remote: [], hybrid: [], onsite: [] };
+
+  async function messagesFor(changes: object) {
     const dto = plainToInstance(CreateProfileDto, {
       ...validProfile,
-      arrangements: ['onsite'],
-      city: null,
+      ...changes,
     });
-    const errors = await validate(dto, options);
-    expect(
-      errors.flatMap((error) => Object.values(error.constraints ?? {})),
-    ).toContain(CITY_REQUIRED);
-  });
+    const flatten = (errors: ValidationError[]): string[] =>
+      errors.flatMap((error) => [
+        ...Object.values(error.constraints ?? {}),
+        ...flatten(error.children ?? []),
+      ]);
+    return flatten(await validate(dto, options));
+  }
 
-  it('accepts onsite with a city', async () => {
+  it('accepts locations in a single arrangement', async () => {
     expect(
-      await errorsFor({ arrangements: ['onsite'], city: 'Rabat' }),
+      await errorsFor({ locations: { ...none, remote: ['Europe'] } }),
     ).toEqual([]);
   });
 
-  it('accepts remote without a city', async () => {
-    expect(await errorsFor({ arrangements: ['remote'], city: null })).toEqual(
-      [],
+  it('rejects a profile with no location, saying why', async () => {
+    expect(await errorsFor({ locations: none })).toEqual(['locations']);
+    expect(await messagesFor({ locations: none })).toContain(
+      LOCATIONS_REQUIRED,
     );
   });
 
-  it('accepts unstated with no regions (remote defaults to GLOBAL)', async () => {
+  it('requires locations', async () => {
+    expect(await errorsFor({ locations: undefined })).toEqual(['locations']);
+  });
+
+  it('requires every arrangement list', async () => {
     expect(
-      await errorsFor({ arrangements: ['unstated'], regions: [] }),
+      await errorsFor({ locations: { remote: ['Europe'], hybrid: [] } }),
+    ).toEqual(['locations.onsite']);
+  });
+
+  it('rejects an unknown arrangement key', async () => {
+    expect(
+      await errorsFor({
+        locations: { ...none, remote: ['Europe'], anywhere: [] },
+      }),
+    ).toEqual(['locations.anywhere']);
+  });
+
+  it.each([
+    ['a non-string', [42]],
+    ['a blank entry', ['   ']],
+    ['an entry over 100 characters', ['x'.repeat(101)]],
+    ['more than 20 entries', Array.from({ length: 21 }, (_, i) => `City ${i}`)],
+  ])('rejects %s', async (_name, onsite) => {
+    expect(await errorsFor({ locations: { ...none, onsite } })).toEqual([
+      'locations.onsite',
+    ]);
+  });
+
+  it('accepts 20 entries of 100 characters', async () => {
+    const onsite = Array.from({ length: 20 }, (_, i) =>
+      `${i}`.padEnd(100, 'x'),
+    );
+    expect(await errorsFor({ locations: { ...none, onsite } })).toEqual([]);
+  });
+
+  it.each([
+    ['arrangements', ['remote']],
+    ['regions', ['EMEA']],
+  ])('rejects the removed %s field', async (field, value) => {
+    expect(await errorsFor({ [field]: value })).toEqual([field]);
+  });
+
+  it('accepts onsite with no city', async () => {
+    expect(
+      await errorsFor({
+        locations: { ...none, onsite: ['Paris, France'] },
+        city: null,
+      }),
     ).toEqual([]);
   });
 
@@ -186,9 +251,8 @@ describe('profile city rule', () => {
     const dto = plainToInstance(ReplaceProfileDto, {
       ...validProfile,
       position: undefined,
-      arrangements: ['hybrid'],
-      city: null,
+      locations: none,
     });
-    expect(paths(await validate(dto, options))).toEqual(['city']);
+    expect(paths(await validate(dto, options))).toEqual(['locations']);
   });
 });

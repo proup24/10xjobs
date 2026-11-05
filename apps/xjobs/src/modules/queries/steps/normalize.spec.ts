@@ -1,92 +1,77 @@
-import {
-  Arrangement,
-  Position,
-  Region,
-  Seniority,
-} from 'src/common/enums';
+import { Position, Seniority } from 'src/common/enums';
 import type { QuerySearchProfileInput } from '../types';
-import { normalizeArrangements, normalizeProfile } from './normalize';
+import {
+  displayLocation,
+  locationKey,
+  normalizeLocations,
+  normalizeProfile,
+} from './normalize';
 
+const empty = { remote: [], hybrid: [], onsite: [] };
 const input: QuerySearchProfileInput = {
   position: Position.backend_engineer,
-  regions: [Region.EMEA],
-  arrangements: [Arrangement.remote],
-  seniority: Seniority.senior,
-  country: 'MA',
-  city: 'Casablanca',
+  seniorities: [Seniority.senior],
+  locations: { ...empty, remote: ['EMEA'] },
   skills: [],
 };
 
-describe('normalizeProfile', () => {
-  it('trims and uppercases the country', () => {
-    expect(normalizeProfile({ ...input, country: ' ma ' }).country).toBe('MA');
-  });
-
-  it('trims the city', () => {
-    expect(normalizeProfile({ ...input, city: '  Casablanca ' }).city).toBe(
-      'Casablanca',
-    );
-  });
-
-  it.each([
-    ['paris', 'Paris'],
-    ['PARIS', 'Paris'],
-    ['New  York', 'New York'],
-    ['saint-étienne', 'Saint-Étienne'],
-  ])('canonicalises city %j as %j', (city, expected) => {
-    expect(normalizeProfile({ ...input, city }).city).toBe(expected);
-  });
-
-  it('turns a blank city into null', () => {
-    expect(normalizeProfile({ ...input, city: '   ' }).city).toBeNull();
-  });
-
-  it('dedupes regions in first-seen order', () => {
-    expect(
-      normalizeProfile({
-        ...input,
-        regions: [Region.EMEA, Region.EMEA, Region.MENA],
-      }).regions,
-    ).toEqual([Region.EMEA, Region.MENA]);
-  });
-
-  it('defaults empty regions to GLOBAL', () => {
-    expect(normalizeProfile({ ...input, regions: [] }).regions).toEqual([
-      Region.GLOBAL,
-    ]);
-  });
-
-  it('does not mutate its input', () => {
-    const regions = [Region.EMEA, Region.EMEA];
-    normalizeProfile({ ...input, regions });
-    expect(regions).toEqual([Region.EMEA, Region.EMEA]);
+describe('displayLocation', () => {
+  it('trims and collapses inner whitespace, keeping case', () => {
+    expect(displayLocation('  Paris,   France ')).toBe('Paris, France');
   });
 });
 
-describe('normalizeArrangements', () => {
-  it('treats unstated as remote', () => {
-    expect(normalizeArrangements([Arrangement.unstated])).toEqual([
-      Arrangement.remote,
-    ]);
+describe('locationKey', () => {
+  it('is the display form lowercased', () => {
+    expect(locationKey(' Paris,  FRANCE')).toBe('paris, france');
   });
+});
 
-  it('treats an empty list as remote', () => {
-    expect(normalizeArrangements([])).toEqual([Arrangement.remote]);
-  });
-
-  it('treats unstated as remote next to other arrangements, deduped', () => {
+describe('normalizeLocations', () => {
+  it('dedupes by key within a list, keeping the first spelling', () => {
     expect(
-      normalizeArrangements([
-        Arrangement.onsite,
-        Arrangement.unstated,
-        Arrangement.remote,
-      ]),
-    ).toEqual([Arrangement.onsite, Arrangement.remote]);
+      normalizeLocations({
+        ...empty,
+        remote: ['Europe', 'europe ', 'Morocco'],
+      }),
+    ).toEqual({ ...empty, remote: ['Europe', 'Morocco'] });
   });
 
-  it('keeps hybrid as is', () => {
-    expect(normalizeArrangements([Arrangement.hybrid])).toEqual([
-      Arrangement.hybrid,
-    ]);
+  it('keeps the same location in two arrangements', () => {
+    expect(
+      normalizeLocations({ ...empty, hybrid: ['France'], onsite: ['france'] }),
+    ).toEqual({ ...empty, hybrid: ['France'], onsite: ['france'] });
+  });
+
+  it('does not mutate its input', () => {
+    const remote = ['Europe', 'europe'];
+    normalizeLocations({ ...empty, remote });
+    expect(remote).toEqual(['Europe', 'europe']);
+  });
+});
+
+describe('normalizeProfile', () => {
+  it('normalizes the locations', () => {
+    expect(
+      normalizeProfile({
+        ...input,
+        locations: { ...empty, onsite: [' Rabat ,  Morocco'] },
+      }).locations,
+    ).toEqual({ ...empty, onsite: ['Rabat , Morocco'] });
+  });
+
+  it('dedupes the seniorities in enum order', () => {
+    expect(
+      normalizeProfile({
+        ...input,
+        seniorities: [Seniority.staff, Seniority.senior, Seniority.staff],
+      }).seniorities,
+    ).toEqual([Seniority.senior, Seniority.staff]);
+  });
+
+  it('adds no default location when every list is empty', () => {
+    expect(normalizeProfile({ ...input, locations: empty }).locations).toEqual(
+      empty,
+    );
   });
 });

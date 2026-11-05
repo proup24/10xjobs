@@ -9,29 +9,19 @@ import {
   IsEnum,
   IsInt,
   IsISO31661Alpha2,
+  IsObject,
+  IsOptional,
   IsString,
   Matches,
   Max,
   MaxLength,
   Min,
-  ValidateIf,
   ValidateNested,
 } from 'class-validator';
-import {
-  Arrangement,
-  Engagement,
-  Language,
-  Position,
-  Region,
-  Seniority,
-} from 'src/common/enums';
+import { Engagement, Language, Position, Seniority } from 'src/common/enums';
+import { LocationsDto } from './locations.dto';
 import { SkillDto } from './skill.dto';
-import {
-  cityNeedsValidation,
-  IsGreaterOrEqual,
-  IsLocatableCity,
-  UniqueBy,
-} from './validators';
+import { HasLocation, IsGreaterOrEqual, UniqueBy } from './validators';
 
 /** UTC offsets in minutes: UTC-12:00 to UTC+14:00. */
 const MIN_OFFSET = -720;
@@ -55,21 +45,23 @@ export class ProfileFieldsDto {
   country!: string;
 
   @ApiPropertyOptional({
-    description: 'Required when arrangements include onsite or hybrid',
+    description: 'Where the person lives; does not affect search',
   })
-  @ValidateIf((object: object, value: unknown) =>
-    cityNeedsValidation(object, value),
-  )
-  @IsLocatableCity()
+  @IsOptional()
   @IsString()
   @MaxLength(100)
   city?: string | null;
 
-  @ApiProperty({ enum: Region, enumName: 'Region', isArray: true })
-  @IsArray()
-  @ArrayUnique()
-  @IsEnum(Region, { each: true })
-  regions!: Region[];
+  @ApiProperty({
+    type: LocationsDto,
+    description:
+      'Where to search, per arrangement. An empty list means that arrangement is not wanted; at least one location is required.',
+  })
+  @IsObject()
+  @ValidateNested()
+  @Type(() => LocationsDto)
+  @HasLocation()
+  locations!: LocationsDto;
 
   @ApiProperty({ minimum: 0, maximum: 60 })
   @IsInt()
@@ -109,16 +101,12 @@ export class ProfileFieldsDto {
   @IsEnum(Engagement, { each: true })
   engagements!: Engagement[];
 
-  @ApiProperty({ enum: Arrangement, enumName: 'Arrangement', isArray: true })
+  @ApiProperty({ enum: Seniority, enumName: 'Seniority', isArray: true })
   @IsArray()
   @ArrayNotEmpty()
   @ArrayUnique()
-  @IsEnum(Arrangement, { each: true })
-  arrangements!: Arrangement[];
-
-  @ApiProperty({ enum: Seniority, enumName: 'Seniority' })
-  @IsEnum(Seniority)
-  seniority!: Seniority;
+  @IsEnum(Seniority, { each: true })
+  seniorities!: Seniority[];
 
   @ApiProperty({ minimum: 0, maximum: 365 })
   @IsInt()

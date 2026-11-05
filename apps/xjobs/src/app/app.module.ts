@@ -12,10 +12,11 @@ import {
 import { DatabaseModule } from 'src/database';
 import { RedisModule } from 'src/infrastructure/redis/redis.module';
 import { JobsModule } from 'src/infrastructure/jobs/jobs.module';
+import { ProcessorModule } from 'src/modules/processor';
 import { QuerySearchModule } from 'src/modules/queries';
 import { UsersModule } from 'src/modules/users';
-import { HealthController } from './health.controller';
-import { HealthService } from './health.service';
+import { HealthController } from './controllers/health.controller';
+import { HealthService } from './services/health.service';
 
 @Module({
   imports: [
@@ -31,11 +32,13 @@ import { HealthService } from './health.service';
     JobsModule,
     UsersModule,
     QuerySearchModule,
+    // The processor's HTTP routes only. The workers run in their own process
+    // (src/worker.ts), so the API never consumes jobs.
+    ProcessorModule,
   ],
   controllers: [HealthController],
   providers: [
     HealthService,
-    // Every route needs HTTP Basic auth unless it is marked @Public().
     {
       provide: BASIC_AUTH_CREDENTIALS,
       inject: [ConfigService],
@@ -43,7 +46,6 @@ import { HealthService } from './health.service';
         getBasicAuthConfig(config),
     },
     { provide: APP_GUARD, useClass: BasicAuthGuard },
-    // Every response uses the success or error envelope from src/common/dtos.
     { provide: APP_INTERCEPTOR, useClass: ResponseInterceptor },
     { provide: APP_FILTER, useClass: HttpExceptionFilter },
   ],

@@ -24,7 +24,6 @@ import { safeFilename } from 'src/utils';
 export const MAX_RESUME_BYTES = 5 * 1024 * 1024;
 const PDF_MAGIC = Buffer.from('%PDF-');
 
-
 /** Injection token for the name of the bucket that holds resumes. */
 export const RESUMES_BUCKET = Symbol('RESUMES_BUCKET');
 

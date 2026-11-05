@@ -12,26 +12,25 @@ model mixin Timestamps {
 
 // Each enum below has a TypeScript twin in src/common/enums/<name>.enum.ts;
 // src/common/enums/enums.spec.ts fails when they drift.
-
 enum Position {
   @@type("pg/text@1")
-  backend_engineer          = "backend_engineer"
-  frontend_engineer         = "frontend_engineer"
-  fullstack_engineer        = "fullstack_engineer"
-  mobile_engineer           = "mobile_engineer"
-  devops_engineer           = "devops_engineer"
+  backend_engineer = "backend_engineer"
+  frontend_engineer = "frontend_engineer"
+  fullstack_engineer = "fullstack_engineer"
+  mobile_engineer = "mobile_engineer"
+  devops_engineer = "devops_engineer"
   site_reliability_engineer = "site_reliability_engineer"
-  platform_engineer         = "platform_engineer"
-  cloud_engineer            = "cloud_engineer"
-  security_engineer         = "security_engineer"
-  data_engineer             = "data_engineer"
-  ml_engineer               = "ml_engineer"
-  ai_engineer               = "ai_engineer"
-  qa_engineer               = "qa_engineer"
-  embedded_engineer         = "embedded_engineer"
-  software_architect        = "software_architect"
-  tech_lead                 = "tech_lead"
-  engineering_manager       = "engineering_manager"
+  platform_engineer = "platform_engineer"
+  cloud_engineer = "cloud_engineer"
+  security_engineer = "security_engineer"
+  data_engineer = "data_engineer"
+  ml_engineer = "ml_engineer"
+  ai_engineer = "ai_engineer"
+  qa_engineer = "qa_engineer"
+  embedded_engineer = "embedded_engineer"
+  software_architect = "software_architect"
+  tech_lead = "tech_lead"
+  engineering_manager = "engineering_manager"
 }
 
 enum Language {
@@ -44,154 +43,154 @@ enum Language {
 
 enum Region {
   @@type("pg/text@1")
-  EMEA               = "EMEA"
-  MENA               = "MENA"
-  NORTH_AFRICA       = "NORTH_AFRICA"
+  EMEA = "EMEA"
+  MENA = "MENA"
+  NORTH_AFRICA = "NORTH_AFRICA"
   SUB_SAHARAN_AFRICA = "SUB_SAHARAN_AFRICA"
-  MIDDLE_EAST        = "MIDDLE_EAST"
-  EUROPE             = "EUROPE"
-  EU                 = "EU"
-  UK                 = "UK"
-  NORTH_AMERICA      = "NORTH_AMERICA"
-  LATAM              = "LATAM"
-  APAC               = "APAC"
-  GLOBAL             = "GLOBAL"
+  MIDDLE_EAST = "MIDDLE_EAST"
+  EUROPE = "EUROPE"
+  EU = "EU"
+  UK = "UK"
+  NORTH_AMERICA = "NORTH_AMERICA"
+  LATAM = "LATAM"
+  APAC = "APAC"
+  GLOBAL = "GLOBAL"
 }
 
 enum Engagement {
   @@type("pg/text@1")
-  employee   = "employee"
+  employee = "employee"
   contractor = "contractor"
-  eor        = "eor"
-  agency     = "agency"
-  per_task   = "per_task"
+  eor = "eor"
+  agency = "agency"
+  per_task = "per_task"
 }
 
 enum Arrangement {
   @@type("pg/text@1")
-  remote   = "remote"
-  hybrid   = "hybrid"
-  onsite   = "onsite"
+  remote = "remote"
+  hybrid = "hybrid"
+  onsite = "onsite"
   unstated = "unstated"
 }
 
 enum Seniority {
   @@type("pg/text@1")
-  junior    = "junior"
-  mid       = "mid"
-  senior    = "senior"
-  staff     = "staff"
-  lead      = "lead"
+  junior = "junior"
+  mid = "mid"
+  senior = "senior"
+  staff = "staff"
+  lead = "lead"
   principal = "principal"
-  unstated  = "unstated"
+  unstated = "unstated"
 }
 
 enum ContactKind {
   @@type("pg/text@1")
-  phone     = "phone"
-  email     = "email"
-  linkedin  = "linkedin"
-  github    = "github"
-  gitlab    = "gitlab"
+  phone = "phone"
+  email = "email"
+  linkedin = "linkedin"
+  github = "github"
+  gitlab = "gitlab"
   portfolio = "portfolio"
-  website   = "website"
-  other     = "other"
+  website = "website"
+  other = "other"
 }
 
 enum SkillDomain {
   @@type("pg/text@1")
-  backend   = "backend"
-  frontend  = "frontend"
+  backend = "backend"
+  frontend = "frontend"
   fullstack = "fullstack"
-  mobile    = "mobile"
-  devops    = "devops"
-  data      = "data"
-  ml        = "ml"
-  security  = "security"
-  qa        = "qa"
+  mobile = "mobile"
+  devops = "devops"
+  data = "data"
+  ml = "ml"
+  security = "security"
+  qa = "qa"
 }
 
 enum Technology {
   @@type("pg/text@1")
-  javascript     = "javascript"
-  typescript     = "typescript"
-  python         = "python"
-  java           = "java"
-  kotlin         = "kotlin"
-  go             = "go"
-  rust           = "rust"
-  csharp         = "csharp"
-  cpp            = "cpp"
-  php            = "php"
-  ruby           = "ruby"
-  scala          = "scala"
-  elixir         = "elixir"
-  swift          = "swift"
-  dart           = "dart"
-  sql            = "sql"
-  bash           = "bash"
-  nodejs         = "nodejs"
-  nestjs         = "nestjs"
-  express        = "express"
-  fastify        = "fastify"
-  django         = "django"
-  fastapi        = "fastapi"
-  flask          = "flask"
-  spring         = "spring"
-  dotnet         = "dotnet"
-  laravel        = "laravel"
-  rails          = "rails"
-  graphql        = "graphql"
-  grpc           = "grpc"
-  react          = "react"
-  nextjs         = "nextjs"
-  vue            = "vue"
-  nuxt           = "nuxt"
-  angular        = "angular"
-  svelte         = "svelte"
-  tailwindcss    = "tailwindcss"
-  react_native   = "react_native"
-  flutter        = "flutter"
-  postgresql     = "postgresql"
-  mysql          = "mysql"
-  mongodb        = "mongodb"
-  redis          = "redis"
-  elasticsearch  = "elasticsearch"
-  kafka          = "kafka"
-  rabbitmq       = "rabbitmq"
-  spark          = "spark"
-  airflow        = "airflow"
-  dbt            = "dbt"
-  snowflake      = "snowflake"
-  aws            = "aws"
-  gcp            = "gcp"
-  azure          = "azure"
-  docker         = "docker"
-  kubernetes     = "kubernetes"
-  terraform      = "terraform"
-  ansible        = "ansible"
+  javascript = "javascript"
+  typescript = "typescript"
+  python = "python"
+  java = "java"
+  kotlin = "kotlin"
+  go = "go"
+  rust = "rust"
+  csharp = "csharp"
+  cpp = "cpp"
+  php = "php"
+  ruby = "ruby"
+  scala = "scala"
+  elixir = "elixir"
+  swift = "swift"
+  dart = "dart"
+  sql = "sql"
+  bash = "bash"
+  nodejs = "nodejs"
+  nestjs = "nestjs"
+  express = "express"
+  fastify = "fastify"
+  django = "django"
+  fastapi = "fastapi"
+  flask = "flask"
+  spring = "spring"
+  dotnet = "dotnet"
+  laravel = "laravel"
+  rails = "rails"
+  graphql = "graphql"
+  grpc = "grpc"
+  react = "react"
+  nextjs = "nextjs"
+  vue = "vue"
+  nuxt = "nuxt"
+  angular = "angular"
+  svelte = "svelte"
+  tailwindcss = "tailwindcss"
+  react_native = "react_native"
+  flutter = "flutter"
+  postgresql = "postgresql"
+  mysql = "mysql"
+  mongodb = "mongodb"
+  redis = "redis"
+  elasticsearch = "elasticsearch"
+  kafka = "kafka"
+  rabbitmq = "rabbitmq"
+  spark = "spark"
+  airflow = "airflow"
+  dbt = "dbt"
+  snowflake = "snowflake"
+  aws = "aws"
+  gcp = "gcp"
+  azure = "azure"
+  docker = "docker"
+  kubernetes = "kubernetes"
+  terraform = "terraform"
+  ansible = "ansible"
   github_actions = "github_actions"
-  gitlab_ci      = "gitlab_ci"
-  linux          = "linux"
-  nginx          = "nginx"
-  prometheus     = "prometheus"
-  grafana        = "grafana"
-  pytorch        = "pytorch"
-  tensorflow     = "tensorflow"
-  langchain      = "langchain"
+  gitlab_ci = "gitlab_ci"
+  linux = "linux"
+  nginx = "nginx"
+  prometheus = "prometheus"
+  grafana = "grafana"
+  pytorch = "pytorch"
+  tensorflow = "tensorflow"
+  langchain = "langchain"
 }
 
 enum Channel {
   @@type("pg/text@1")
   LINKEDIN_JOB_BOARD = "LINKEDIN_JOB_BOARD"
-  LINKEDIN_POSTS     = "LINKEDIN_POSTS"
-  GREEN_HOUSE        = "GREEN_HOUSE"
-  ASHBY              = "ASHBY"
+  LINKEDIN_POSTS = "LINKEDIN_POSTS"
+  GREEN_HOUSE = "GREEN_HOUSE"
+  ASHBY = "ASHBY"
 }
 
 enum ProfileState {
   @@type("pg/text@1")
-  draft     = "draft"
+  draft = "draft"
   published = "published"
 }
 
@@ -208,10 +207,10 @@ type Address {
 // One row per Supabase Auth user, created by the on_auth_user_created trigger.
 // The email lives only in Auth.
 model User {
-  id          Uuid      @id
-  authUser    supabase:auth.AuthUser @relation(fields: [id], references: [id], onDelete: Cascade)
-  name        String?
-  address     Address?
+  id       Uuid                   @id
+  authUser supabase:auth.AuthUser @relation(fields: [id], references: [id], onDelete: Cascade)
+  name     String?
+  address  Address?
   +Timestamps
 
   @@map("users")
@@ -222,26 +221,26 @@ model User {
 // no delete (removing the Auth user cascades).
 policy_select users_owner_read {
   target = User
-  roles  = [authenticated]
-  using  = sql`id = auth.uid()`
+  roles = [authenticated]
+  using = sql`id = auth.uid()`
 }
 
 policy_update users_owner_update {
-  target    = User
-  roles     = [authenticated]
-  using     = sql`id = auth.uid()`
+  target = User
+  roles = [authenticated]
+  using = sql`id = auth.uid()`
   withCheck = sql`id = auth.uid()`
 }
 
 // The user's own contact channels, the ones that go on applications.
 model Contact {
-  id          Uuid        @id @onCreate(uuid(7))
-  userId      Uuid
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  kind        ContactKind
-  value       String
-  label       String?
-  isPrimary   Boolean     @default(false)
+  id        Uuid        @id @onCreate(uuid(7))
+  userId    Uuid
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      ContactKind
+  value     String
+  label     String?
+  isPrimary Boolean     @default(false)
   +Timestamps
 
   @@unique([userId, kind, value])
@@ -251,37 +250,37 @@ model Contact {
 }
 
 policy_all contacts_owner {
-  target    = Contact
-  roles     = [authenticated]
-  using     = sql`"userId" = auth.uid()`
+  target = Contact
+  roles = [authenticated]
+  using = sql`"userId" = auth.uid()`
   withCheck = sql`"userId" = auth.uid()`
 }
 
 // A user may maintain multiple independent job-seeker profiles, one per target position.
 // Timezone offsets are minutes from UTC.
 model Profile {
-  id                Uuid          @id @onCreate(uuid(7))
+  id                Uuid                  @id @onCreate(uuid(7))
   userId            Uuid
-  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   position          Position
   languages         Language[]
   country           String
   city              String?
-  regions           Region[]
+  // { remote, hybrid, onsite } lists of location text in display form.
+  locations         Jsonb
   yearsOfExperience Int
   timezoneCurrent   Int
   timezoneMin       Int
   timezoneMax       Int
   engagements       Engagement[]
-  arrangements      Arrangement[]
-  seniority         Seniority
+  seniorities       Seniority[]
   noticePeriodDays  Int
   resumeKey         String?
   resumeFilename    String?
   resumeSizeBytes   Int?
   resumeSha256      String?
   resumeUploadedAt  TimestamptzJsDate(3)?
-  state             ProfileState  @default(draft)
+  state             ProfileState          @default(draft)
   publishedAt       TimestamptzJsDate(3)?
   +Timestamps
 
@@ -290,7 +289,10 @@ model Profile {
   @@check(expression: sql`"timezoneCurrent" BETWEEN -720 AND 840 AND "timezoneMin" BETWEEN -720 AND 840 AND "timezoneMax" BETWEEN -720 AND 840 AND "timezoneMin" <= "timezoneMax"`, name: "profiles_tz_range")
   @@check(expression: sql`cardinality("languages") > 0`, name: "profiles_languages_nonempty")
   @@check(expression: sql`cardinality("engagements") > 0`, name: "profiles_engagements_nonempty")
-  @@check(expression: sql`cardinality("arrangements") > 0`, name: "profiles_arrangements_nonempty")
+  @@check(expression: sql`cardinality("seniorities") > 0`, name: "profiles_seniorities_nonempty")
+  // locations is exactly { remote, hybrid, onsite }: arrays of at most 20 strings, at least one location overall.
+  @@check(expression: sql`jsonb_typeof("locations") = 'object' AND "locations" ?& ARRAY['remote', 'hybrid', 'onsite'] AND ("locations" - ARRAY['remote', 'hybrid', 'onsite']) = '{}'::jsonb AND CASE WHEN jsonb_typeof("locations" -> 'remote') = 'array' AND jsonb_typeof("locations" -> 'hybrid') = 'array' AND jsonb_typeof("locations" -> 'onsite') = 'array' THEN jsonb_array_length("locations" -> 'remote') <= 20 AND jsonb_array_length("locations" -> 'hybrid') <= 20 AND jsonb_array_length("locations" -> 'onsite') <= 20 AND NOT jsonb_path_exists("locations", '$.*[*] ? (@.type() != "string")') ELSE false END`, name: "profiles_locations_shape")
+  @@check(expression: sql`jsonb_path_exists("locations", '$.*[*]')`, name: "profiles_locations_nonempty")
   // Target of profile_skills' (profileId, userId) foreign key.
   @@unique([id, userId])
   @@index([userId])
@@ -301,15 +303,15 @@ model Profile {
 // One row per technology and domain in a profile's tech stack.
 // userId always equals the profile's userId: the (profileId, userId) foreign key enforces it.
 model ProfileSkill {
-  id          Uuid        @id @onCreate(uuid(7))
-  userId      Uuid
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  profileId   Uuid
-  profile     Profile     @relation(fields: [profileId, userId], references: [id, userId], onDelete: Cascade)
-  technology  Technology
-  domain      SkillDomain
-  mastery     Int
-  importance  Int         @default(5)
+  id         Uuid        @id @onCreate(uuid(7))
+  userId     Uuid
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profileId  Uuid
+  profile    Profile     @relation(fields: [profileId, userId], references: [id, userId], onDelete: Cascade)
+  technology Technology
+  domain     SkillDomain
+  mastery    Int
+  importance Int         @default(5)
   +Timestamps
 
   @@check(expression: sql`mastery BETWEEN 0 AND 10`, name: "profile_skills_mastery_range")
@@ -324,81 +326,90 @@ model ProfileSkill {
 // engine publishes: state and publishedAt are not writable by users (column grants too).
 policy_select profiles_owner_read {
   target = Profile
-  roles  = [authenticated]
-  using  = sql`"userId" = auth.uid()`
+  roles = [authenticated]
+  using = sql`"userId" = auth.uid()`
 }
 
 policy_insert profiles_owner_insert {
-  target    = Profile
-  roles     = [authenticated]
+  target = Profile
+  roles = [authenticated]
   withCheck = sql`"userId" = auth.uid() AND state = 'draft' AND "publishedAt" IS NULL`
 }
 
 policy_update profiles_owner_update_draft {
-  target    = Profile
-  roles     = [authenticated]
-  using     = sql`"userId" = auth.uid() AND state = 'draft'`
+  target = Profile
+  roles = [authenticated]
+  using = sql`"userId" = auth.uid() AND state = 'draft'`
   withCheck = sql`"userId" = auth.uid() AND state = 'draft' AND "publishedAt" IS NULL`
 }
 
 policy_delete profiles_owner_delete_draft {
   target = Profile
-  roles  = [authenticated]
-  using  = sql`"userId" = auth.uid() AND state = 'draft'`
+  roles = [authenticated]
+  using = sql`"userId" = auth.uid() AND state = 'draft'`
 }
 
 // Skills follow their profile: writable only while the user's own profile is a draft.
 // The outer column is qualified; a bare "userId" in the subquery would resolve to p."userId".
 policy_select profile_skills_owner_read {
   target = ProfileSkill
-  roles  = [authenticated]
-  using  = sql`"userId" = auth.uid()`
+  roles = [authenticated]
+  using = sql`"userId" = auth.uid()`
 }
 
 policy_insert profile_skills_owner_insert {
-  target    = ProfileSkill
-  roles     = [authenticated]
+  target = ProfileSkill
+  roles = [authenticated]
   withCheck = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills."profileId" AND p."userId" = auth.uid() AND p.state = 'draft')`
 }
 
 policy_update profile_skills_owner_update {
-  target    = ProfileSkill
-  roles     = [authenticated]
-  using     = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills."profileId" AND p."userId" = auth.uid() AND p.state = 'draft')`
+  target = ProfileSkill
+  roles = [authenticated]
+  using = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills."profileId" AND p."userId" = auth.uid() AND p.state = 'draft')`
   withCheck = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills."profileId" AND p."userId" = auth.uid() AND p.state = 'draft')`
 }
 
 policy_delete profile_skills_owner_delete {
   target = ProfileSkill
-  roles  = [authenticated]
-  using  = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills."profileId" AND p."userId" = auth.uid() AND p.state = 'draft')`
+  roles = [authenticated]
+  using = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills."profileId" AND p."userId" = auth.uid() AND p.state = 'draft')`
 }
 
 // A shared, immutable search recipe for one channel, deduplicated by hash across every
 // profile. Profiles use it through ProfileQuerySearchBuilder; rows are never hard-deleted,
 // because raw job hits are attributed to them.
 model QuerySearchBuilder {
-  id                 Uuid         @id @onCreate(uuid(7))
+  id                 Uuid                  @id @onCreate(uuid(7))
   channel            Channel
-  locationRegion     Region?
-  country            String?
-  city               String?
+  // Canonical (lowercased) location text the channels search.
+  location           String
   experience         Seniority
   technologies       Technology[]
+  // The skill domain the technologies came from; part of the hash.
+  domain             SkillDomain
   type               Arrangement
   keyword            String
   version            Int
   params             Jsonb
   hash               String
   // Number of ProfileQuerySearchBuilder rows; kept in step under a row lock.
-  associatedProfiles Int          @default(0)
+  associatedProfiles Int                   @default(0)
   // Collected only while active: at least one published profile uses it.
-  isActive           Boolean      @default(false)
+  isActive           Boolean               @default(false)
   // Soft delete: retired recipes are never collected, linked or listed again.
-  isDeleted          Boolean      @default(false)
+  isDeleted          Boolean               @default(false)
+  // Collection cursor: everything posted before this was searched. Null until first collected.
+  coveredUntil       TimestamptzJsDate(3)?
+  // Collection claim: the segment run collecting this query now, its interval and lease. All null when unclaimed.
+  claimRunId         Uuid?
+  claimWindowStart   TimestamptzJsDate(3)?
+  claimWindowEnd     TimestamptzJsDate(3)?
+  claimExpiresAt     TimestamptzJsDate(3)?
   +Timestamps
 
   @@check(expression: sql`"associatedProfiles" >= 0`, name: "query_search_builder_associated_profiles")
+  @@check(expression: sql`("claimRunId" IS NULL) = ("claimWindowStart" IS NULL) AND ("claimRunId" IS NULL) = ("claimWindowEnd" IS NULL) AND ("claimRunId" IS NULL) = ("claimExpiresAt" IS NULL)`, name: "query_search_builder_claim_complete")
   @@check(expression: sql`NOT ("isDeleted" AND "isActive")`, name: "query_search_builder_deleted_inactive")
   @@unique([hash])
   @@index([channel, isActive, isDeleted])
@@ -408,11 +419,11 @@ model QuerySearchBuilder {
 
 // Which published profiles use which shared query search builder.
 model ProfileQuerySearchBuilder {
-  id        Uuid               @id @onCreate(uuid(7))
+  id        Uuid                 @id @onCreate(uuid(7))
   profileId Uuid
-  profile   Profile            @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profile   Profile              @relation(fields: [profileId], references: [id], onDelete: Cascade)
   queryId   Uuid
-  query     QuerySearchBuilder @relation(fields: [queryId], references: [id], onDelete: Cascade)
+  query     QuerySearchBuilder   @relation(fields: [queryId], references: [id], onDelete: Cascade)
   createdAt TimestamptzJsDate(3) @default(now())
 
   @@unique([profileId, queryId])
@@ -421,83 +432,486 @@ model ProfileQuerySearchBuilder {
   @@rls
 }
 
-// Shared source observations. Ownership belongs to lookup attribution, not jobs.
-model RawJob {
-  id                   Uuid @id @onCreate(uuid(7))
-  channel              Channel
-  kind                 String
-  externalId           String?
-  url                  String
-  applyUrl             String?
-  title                String?
-  company              String?
-  location             String?
-  description          String
-  postedAt             TimestamptzJsDate(3)?
-  postedAtPrecision    String?
-  authorName           String?
-  authorUrl            String?
-  contactName          String?
-  contactUrl           String?
-  raw                  Jsonb
-  normalizationVersion Int
-  firstSeenAt          TimestamptzJsDate(3)
-  lastSeenAt           TimestamptzJsDate(3)
-  atsPostingId         Uuid?
-  atsPosting           AtsPostingIdentity? @relation(fields: [atsPostingId], references: [id], onDelete: SetNull)
+// One Apify run over one search segment: up to 10 builders of a channel sharing
+// domain, arrangement and place. Segments are recomputed per run, saved only here.
+model SearchSegmentRun {
+  id                Uuid                 @id @onCreate(uuid(7))
+  channel           Channel
+  segmentKey        String
+  segmentHash       String
+  queryIds          Uuid[]
+  windowStart       TimestamptzJsDate(3)
+  windowEnd         TimestamptzJsDate(3)
+  startedAt         TimestamptzJsDate(3)
+  finishedAt        TimestamptzJsDate(3)
+  status            String
+  fetched           Int
+  costMicroUsd      Int?
+  capped            Boolean
+  truncatedQueryIds Uuid[]
+  perQuery          Jsonb
+  // What the source said matched each search (LinkedIn's SEARCH_TOTALS), untouched.
+  searchTotals      Jsonb?
+  error             String?
 
-  @@check(expression: sql`kind IN ('job', 'post')`, name: "raw_jobs_kind")
-  @@check(expression: sql`"postedAtPrecision" IN ('hour', 'day')`, name: "raw_jobs_precision")
-  @@check(expression: sql`"firstSeenAt" <= "lastSeenAt"`, name: "raw_jobs_seen_order")
-  @@check(expression: sql`length(trim(description)) > 0 AND length(trim(url)) > 0`, name: "raw_jobs_content")
-  @@index([channel, lastSeenAt])
-  @@map("raw_jobs")
+  @@check(expression: sql`status IN ('succeeded', 'partial', 'failed')`, name: "search_segment_runs_status")
+  @@check(expression: sql`"windowStart" < "windowEnd"`, name: "search_segment_runs_window")
+  @@index([channel, startedAt])
+  @@map("search_segment_runs")
   @@rls
 }
 
-// Aliases permit URL-only observations to acquire source IDs atomically.
-model RawJobIdentity {
-  id            Uuid @id @onCreate(uuid(7))
+// One segment run's untouched results, stored as a file; ingest consumes it.
+// The row is the source of truth for whether it was ingested.
+model CollectionBatch {
+  id            Uuid                  @id @onCreate(uuid(7))
   channel       Channel
-  identityType  String
-  identityValue String
-  rawJobId      Uuid
-  rawJob        RawJob @relation(fields: [rawJobId], references: [id], onDelete: Cascade)
+  segmentRunId  Uuid                  @unique
+  segmentRun    SearchSegmentRun      @relation(fields: [segmentRunId], references: [id], onDelete: Restrict)
+  storageKey    String
+  formatVersion Int
+  observedAt    TimestamptzJsDate(3)
+  itemCount     Int
+  actor         String
+  apifyRunId    String?
+  status        String
+  attempts      Int                   @default(0)
+  lastError     String?
+  ingestedAt    TimestamptzJsDate(3)?
+  report        Jsonb?
+  createdAt     TimestamptzJsDate(3)  @default(now())
 
-  @@check(expression: sql`"identityType" IN ('source_id', 'url')`, name: "raw_job_identity_type")
-  @@check(expression: sql`length(trim("identityValue")) > 0`, name: "raw_job_identity_value")
-  @@unique([channel, identityType, identityValue])
-  @@map("raw_job_identities")
+  @@check(expression: sql`status IN ('pending', 'ingested', 'failed')`, name: "collection_batches_status")
+  @@check(expression: sql`attempts >= 0`, name: "collection_batches_attempts")
+  @@index([status, createdAt])
+  @@map("collection_batches")
   @@rls
 }
 
-model RawJobQueryHit {
-  id          Uuid @id @onCreate(uuid(7))
-  queryId     Uuid
-  query       QuerySearchBuilder @relation(fields: [queryId], references: [id], onDelete: Cascade)
-  rawJobId    Uuid
-  rawJob      RawJob @relation(fields: [rawJobId], references: [id], onDelete: Cascade)
-  firstSeenAt TimestamptzJsDate(3)
-  lastSeenAt  TimestamptzJsDate(3)
-  observedUrl String
+// One source posting or post per channel, identified by its source key. Shared, not workspace-scoped.
+model RawItem {
+  id              Uuid                 @id @onCreate(uuid(7))
+  channel         Channel
+  sourceKey       String
+  kind            String
+  firstSeenAt     TimestamptzJsDate(3)
+  lastSeenAt      TimestamptzJsDate(3)
+  // The version with the greatest lastSeenAt; no FK, to avoid a cycle with versions.
+  latestVersionId Uuid?
+
+  @@check(expression: sql`kind IN ('job', 'post')`, name: "raw_items_kind")
+  @@check(expression: sql`"firstSeenAt" <= "lastSeenAt"`, name: "raw_items_seen_order")
+  @@unique([channel, sourceKey])
+  @@map("raw_items")
+  @@rls
+}
+
+// One distinct content of a raw item, untouched. Append-only: Process consumes these.
+model RawItemVersion {
+  id           Uuid                 @id @onCreate(uuid(7))
+  rawItemId    Uuid
+  rawItem      RawItem              @relation(fields: [rawItemId], references: [id], onDelete: Cascade)
+  contentHash  String
+  payload      Jsonb
+  firstBatchId Uuid
+  firstBatch   CollectionBatch      @relation(fields: [firstBatchId], references: [id], onDelete: Restrict)
+  firstSeenAt  TimestamptzJsDate(3)
+  lastSeenAt   TimestamptzJsDate(3)
+  createdAt    TimestamptzJsDate(3) @default(now())
+
+  @@check(expression: sql`"firstSeenAt" <= "lastSeenAt"`, name: "raw_item_versions_seen_order")
+  @@unique([rawItemId, contentHash])
+  @@index([createdAt])
+  @@map("raw_item_versions")
+  @@rls
+}
+
+// Which query saw which raw item in which batch. `attribution` is the query id, or
+// 'none' for an item no member query claimed, so uniqueness also holds for those.
+model RawItemSighting {
+  id          Uuid                 @id @onCreate(uuid(7))
+  batchId     Uuid
+  batch       CollectionBatch      @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  rawItemId   Uuid
+  rawItem     RawItem              @relation(fields: [rawItemId], references: [id], onDelete: Cascade)
+  versionId   Uuid
+  version     RawItemVersion       @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  queryId     Uuid?
+  attribution String
+  query       QuerySearchBuilder?  @relation(fields: [queryId], references: [id], onDelete: Restrict)
   rank        Int?
+  observedAt  TimestamptzJsDate(3)
 
-  @@check(expression: sql`"firstSeenAt" <= "lastSeenAt"`, name: "raw_job_query_hits_seen_order")
-  @@check(expression: sql`rank IS NULL OR rank > 0`, name: "raw_job_query_hits_rank")
-  @@unique([queryId, rawJobId])
-  @@map("raw_job_query_hits")
+  @@check(expression: sql`rank IS NULL OR rank > 0`, name: "raw_item_sightings_rank")
+  @@check(expression: sql`attribution = COALESCE("queryId"::text, 'none')`, name: "raw_item_sightings_attribution")
+  @@unique([batchId, rawItemId, attribution])
+  @@index([rawItemId])
+  @@map("raw_item_sightings")
   @@rls
 }
 
-// Association only: observations from different channels remain separate.
-model AtsPostingIdentity {
-  id        Uuid @id @onCreate(uuid(7))
-  provider  String
-  tenantKey String
-  postingId String
+// One raw version mapped to the unified job format by a given normalizer version.
+// Deterministic: rebuilt from the raw version whenever the normalizer changes.
+model NormalizedVersion {
+  id                Uuid                 @id @onCreate(uuid(7))
+  rawVersionId      Uuid
+  rawVersion        RawItemVersion       @relation(fields: [rawVersionId], references: [id], onDelete: Cascade)
+  normalizerVersion Int
+  status            String
+  reason            String?
+  record            Jsonb?
+  jobKey            String?
+  createdAt         TimestamptzJsDate(3) @default(now())
 
-  @@check(expression: sql`provider IN ('ashby', 'greenhouse')`, name: "ats_posting_identity_provider")
-  @@unique([provider, tenantKey, postingId])
-  @@map("ats_posting_identities")
+  @@check(expression: sql`status IN ('valid', 'invalid')`, name: "normalized_versions_status")
+  @@check(expression: sql`(status = 'valid') = (record IS NOT NULL AND "jobKey" IS NOT NULL)`, name: "normalized_versions_valid_record")
+  @@unique([rawVersionId, normalizerVersion])
+  @@map("normalized_versions")
+  @@rls
+}
+
+// One job, unified from every raw item whose job key (its canonical apply URL)
+// matches. Fields are merged with the employer's ATS posting winning. Process
+// reads these rows; ingest only ever sets processingStatus to 'pending'.
+// Shared, not workspace-scoped, like the raw tables it is derived from.
+model NormalizedJob {
+  id                    Uuid                  @id @onCreate(uuid(7))
+  jobKey                String
+  kind                  String
+  status                String
+  // Set when the job lost its last source to another job; never deleted.
+  mergedIntoId          Uuid?
+  mergedInto            NormalizedJob?        @relation(fields: [mergedIntoId], references: [id], onDelete: Restrict)
+  title                 String?
+  companyName           String?
+  companyUrl            String?
+  location              String?
+  contractType          String?
+  experienceLevel       String?
+  sector                String?
+  salaryText            String?
+  // Whole currency units.
+  salaryMin             Int?
+  salaryMax             Int?
+  salaryCurrency        String?
+  salaryPeriod          String?
+  // YYYY-MM-DD.
+  publishedAt           String?
+  descriptionHtml       String?
+  descriptionText       String?
+  applyUrl              String?
+  postingUrl            String
+  posterName            String?
+  posterProfileUrl      String?
+  posterType            String?
+  closed                Boolean
+  // Which raw item each field came from.
+  fieldSources          Jsonb
+  firstSeenAt           TimestamptzJsDate(3)
+  lastSeenAt            TimestamptzJsDate(3)
+  processingStatus      String?
+  processingReason      String?
+  processingRequestedAt TimestamptzJsDate(3)?
+  processingAttempts    Int                   @default(0)
+  processingError       String?
+  processedAt           TimestamptzJsDate(3)?
+  // The extraction qualify reads; set by the processor.
+  currentExtractionId   Uuid?
+  currentExtraction     JobExtraction?        @relation("CurrentExtraction", fields: [currentExtractionId], references: [id], onDelete: SetNull)
+  // Claim time while processingStatus is 'processing'; the sweeper reads it.
+  processingStartedAt   TimestamptzJsDate(3)?
+  normalizerVersion     Int
+  extractions           JobExtraction[]       @relation("JobExtractions")
+  attempts              ProcessingAttempt[]
+  +Timestamps
+
+  @@check(expression: sql`kind IN ('job', 'post')`, name: "normalized_jobs_kind")
+  @@check(expression: sql`status IN ('active', 'merged')`, name: "normalized_jobs_status")
+  @@check(expression: sql`(status = 'merged') = ("mergedIntoId" IS NOT NULL)`, name: "normalized_jobs_merged_into")
+  @@check(expression: sql`"processingStatus" IS NULL OR "processingStatus" IN ('pending', 'processing', 'processed', 'failed')`, name: "normalized_jobs_processing_status")
+  @@check(expression: sql`"processingReason" IS NULL OR "processingReason" IN ('new', 'reopened')`, name: "normalized_jobs_processing_reason")
+  @@check(expression: sql`"processingAttempts" >= 0`, name: "normalized_jobs_processing_attempts")
+  @@check(expression: sql`"firstSeenAt" <= "lastSeenAt"`, name: "normalized_jobs_seen_order")
+  @@unique([jobKey])
+  @@index([processingStatus, processingRequestedAt], map: "normalized_jobs_processing_queue")
+  @@map("normalized_jobs")
+  @@rls
+}
+
+// Which job a raw item belongs to (exactly one), decided by its latest version.
+model NormalizedJobSource {
+  id                  Uuid                 @id @onCreate(uuid(7))
+  jobId               Uuid
+  job                 NormalizedJob        @relation(fields: [jobId], references: [id], onDelete: Restrict)
+  rawItemId           Uuid
+  rawItem             RawItem              @relation(fields: [rawItemId], references: [id], onDelete: Cascade)
+  normalizedVersionId Uuid
+  normalizedVersion   NormalizedVersion    @relation(fields: [normalizedVersionId], references: [id], onDelete: Cascade)
+  linkedAt            TimestamptzJsDate(3)
+
+  @@unique([rawItemId])
+  @@index([jobId])
+  @@map("normalized_job_sources")
+  @@rls
+}
+
+// TechTag list: a closed vocabulary of codes; unknown terms enter as 'proposed'.
+model TechTag {
+  code        String                @id
+  label       String
+  aliases     String[]
+  status      String
+  occurrences Int                   @default(0)
+  firstSeenAt TimestamptzJsDate(3)
+  approvedAt  TimestamptzJsDate(3)?
+  family      String?
+  implies     String[]
+
+  @@check(expression: sql`status IN ('approved', 'proposed')`, name: "tech_tags_status")
+  @@map("tech_tags")
+  @@rls
+}
+
+// RegionTerm list: a closed vocabulary of codes; unknown terms enter as 'proposed'.
+model RegionTerm {
+  code        String                @id
+  label       String
+  aliases     String[]
+  status      String
+  occurrences Int                   @default(0)
+  firstSeenAt TimestamptzJsDate(3)
+  approvedAt  TimestamptzJsDate(3)?
+  countries   RegionCountry[]
+
+  @@check(expression: sql`status IN ('approved', 'proposed')`, name: "regions_status")
+  @@map("regions")
+  @@rls
+}
+
+// Country list: a closed vocabulary of codes; unknown terms enter as 'proposed'.
+model Country {
+  code        String                @id
+  label       String
+  aliases     String[]
+  status      String
+  occurrences Int                   @default(0)
+  firstSeenAt TimestamptzJsDate(3)
+  approvedAt  TimestamptzJsDate(3)?
+  regions     RegionCountry[]
+  cities      City[]
+
+  @@check(expression: sql`status IN ('approved', 'proposed')`, name: "countries_status")
+  @@map("countries")
+  @@rls
+}
+
+// RoleKind list: a closed vocabulary of codes; unknown terms enter as 'proposed'.
+model RoleKind {
+  code        String                @id
+  label       String
+  aliases     String[]
+  status      String
+  occurrences Int                   @default(0)
+  firstSeenAt TimestamptzJsDate(3)
+  approvedAt  TimestamptzJsDate(3)?
+  extractions JobExtraction[]
+
+  @@check(expression: sql`status IN ('approved', 'proposed')`, name: "role_kinds_status")
+  @@map("role_kinds")
+  @@rls
+}
+
+// SeniorityTerm list: a closed vocabulary of codes; unknown terms enter as 'proposed'.
+model SeniorityTerm {
+  code        String                @id
+  label       String
+  aliases     String[]
+  status      String
+  occurrences Int                   @default(0)
+  firstSeenAt TimestamptzJsDate(3)
+  approvedAt  TimestamptzJsDate(3)?
+  extractions JobExtraction[]
+
+  @@check(expression: sql`status IN ('approved', 'proposed')`, name: "seniorities_status")
+  @@map("seniorities")
+  @@rls
+}
+
+// ArrangementTerm list: a closed vocabulary of codes; unknown terms enter as 'proposed'.
+model ArrangementTerm {
+  code        String                @id
+  label       String
+  aliases     String[]
+  status      String
+  occurrences Int                   @default(0)
+  firstSeenAt TimestamptzJsDate(3)
+  approvedAt  TimestamptzJsDate(3)?
+  extractions JobExtraction[]
+
+  @@check(expression: sql`status IN ('approved', 'proposed')`, name: "arrangements_status")
+  @@map("arrangements")
+  @@rls
+}
+
+// ContractType list: a closed vocabulary of codes; unknown terms enter as 'proposed'.
+model ContractType {
+  code        String                @id
+  label       String
+  aliases     String[]
+  status      String
+  occurrences Int                   @default(0)
+  firstSeenAt TimestamptzJsDate(3)
+  approvedAt  TimestamptzJsDate(3)?
+  extractions JobExtraction[]
+
+  @@check(expression: sql`status IN ('approved', 'proposed')`, name: "contract_types_status")
+  @@map("contract_types")
+  @@rls
+}
+
+// EngagementTerm list: a closed vocabulary of codes; unknown terms enter as 'proposed'.
+model EngagementTerm {
+  code        String                @id
+  label       String
+  aliases     String[]
+  status      String
+  occurrences Int                   @default(0)
+  firstSeenAt TimestamptzJsDate(3)
+  approvedAt  TimestamptzJsDate(3)?
+  extractions JobExtraction[]
+
+  @@check(expression: sql`status IN ('approved', 'proposed')`, name: "engagements_status")
+  @@map("engagements")
+  @@rls
+}
+
+// JunkFlag list: a closed vocabulary of codes; unknown terms enter as 'proposed'.
+model JunkFlag {
+  code        String                @id
+  label       String
+  aliases     String[]
+  status      String
+  occurrences Int                   @default(0)
+  firstSeenAt TimestamptzJsDate(3)
+  approvedAt  TimestamptzJsDate(3)?
+
+  @@check(expression: sql`status IN ('approved', 'proposed')`, name: "junk_flags_status")
+  @@map("junk_flags")
+  @@rls
+}
+
+// Which countries a region contains; lets a country filter match "EMEA remote" jobs.
+model RegionCountry {
+  regionCode  String
+  region      RegionTerm @relation(fields: [regionCode], references: [code], onDelete: Cascade)
+  countryCode String
+  country     Country    @relation(fields: [countryCode], references: [code], onDelete: Cascade)
+
+  @@id([regionCode, countryCode])
+  @@index([countryCode])
+  @@map("region_countries")
+  @@rls
+}
+
+// A city named by postings; created as they appear, not pre-seeded. Unique per
+// country by lower-cased name (nameKey), because the contract has no functional index.
+model City {
+  id          Uuid                  @id @onCreate(uuid(7))
+  name        String
+  nameKey     String
+  countryCode String
+  country     Country               @relation(fields: [countryCode], references: [code], onDelete: Restrict)
+  geonamesId  Int?
+  aliases     String[]
+  status      String
+  occurrences Int                   @default(0)
+  firstSeenAt TimestamptzJsDate(3)
+  approvedAt  TimestamptzJsDate(3)?
+
+  @@check(expression: sql`status IN ('approved', 'proposed')`, name: "cities_status")
+  @@unique([nameKey, countryCode])
+  @@map("cities")
+  @@rls
+}
+
+// One completed extraction run for a job. Append-only; typed columns are copies
+// of the validated document in data, kept for filtering. Shared, not workspace-scoped.
+model JobExtraction {
+  id                        Uuid                 @id @onCreate(uuid(7))
+  jobId                     Uuid
+  job                       NormalizedJob        @relation("JobExtractions", fields: [jobId], references: [id], onDelete: Restrict)
+  inputHash                 String
+  schemaVersion             Int
+  promptHash                String
+  decisionModel             String
+  extractionModel           String
+  data                      Jsonb
+  needsReview               Boolean
+  arrangement               String?
+  arrangementTerm           ArrangementTerm?     @relation(fields: [arrangement], references: [code], onDelete: Restrict)
+  seniority                 String?
+  seniorityTerm             SeniorityTerm?       @relation(fields: [seniority], references: [code], onDelete: Restrict)
+  roleKind                  String?
+  roleKindTerm              RoleKind?            @relation(fields: [roleKind], references: [code], onDelete: Restrict)
+  contractType              String?
+  contractTypeTerm          ContractType?        @relation(fields: [contractType], references: [code], onDelete: Restrict)
+  engagement                String?
+  engagementTerm            EngagementTerm?      @relation(fields: [engagement], references: [code], onDelete: Restrict)
+  isSoftwareEngineeringRole Boolean?
+  worldwide                 Boolean
+  regionCodes               String[]
+  countryCodes              String[]
+  cityIds                   Uuid[]
+  techTags                  String[]
+  mainStackTags             String[]
+  salaryMin                 Int?
+  salaryMax                 Int?
+  salaryCurrency            String?
+  salaryPeriod              String?
+  costUsd                   Decimal
+  createdAt                 TimestamptzJsDate(3) @default(now())
+  currentFor                NormalizedJob[]      @relation("CurrentExtraction")
+  attempts                  ProcessingAttempt[]
+
+  @@index([jobId, createdAt], map: "job_extractions_job_created")
+  @@index([inputHash, schemaVersion, promptHash, decisionModel, extractionModel], map: "job_extractions_reuse")
+  @@index([arrangement])
+  @@index([seniority])
+  @@index([roleKind])
+  @@index([regionCodes], type: "gin", name: "job_extractions_regionCodes_gin")
+  @@index([countryCodes], type: "gin", name: "job_extractions_countryCodes_gin")
+  @@index([cityIds], type: "gin", name: "job_extractions_cityIds_gin")
+  @@index([techTags], type: "gin", name: "job_extractions_techTags_gin")
+  @@index([mainStackTags], type: "gin", name: "job_extractions_mainStackTags_gin")
+  @@map("job_extractions")
+  @@rls
+}
+
+// One model call made while processing a job. Append-only; feeds the daily budget.
+// jobId is null for golden-set eval rows.
+model ProcessingAttempt {
+  id                Uuid                 @id @onCreate(uuid(7))
+  jobId             Uuid?
+  job               NormalizedJob?       @relation(fields: [jobId], references: [id], onDelete: Restrict)
+  extractionId      Uuid?
+  extraction        JobExtraction?       @relation(fields: [extractionId], references: [id], onDelete: SetNull)
+  eval              Boolean              @default(false)
+  step              String
+  model             String
+  providerRequestId String?
+  inputTokens       Int
+  outputTokens      Int
+  cachedInputTokens Int
+  costUsd           Decimal
+  latencyMs         Int
+  outcome           String
+  error             String?
+  quoteFailures     Int                  @default(0)
+  createdAt         TimestamptzJsDate(3) @default(now())
+
+  @@check(expression: sql`step IN ('decision', 'extraction', 'extraction_retry')`, name: "processing_attempts_step")
+  @@check(expression: sql`outcome IN ('ok', 'error', 'invalid')`, name: "processing_attempts_outcome")
+  @@index([createdAt], where: sql`NOT eval`, name: "processing_attempts_created_noneval")
+  @@map("processing_attempts")
   @@rls
 }

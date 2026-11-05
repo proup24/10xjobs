@@ -12,18 +12,25 @@ const now = '2026-11-03T00:00:00Z';
 type Fixture = { table: string; row: () => Record<string, unknown> };
 
 const queryId = randomUUID();
-const rawJobId = randomUUID();
-const atsId = randomUUID();
+const segmentRunId = randomUUID();
+const batchId = randomUUID();
+const rawItemId = randomUUID();
+const versionId = randomUUID();
+// Set in beforeAll, before any row() that needs it runs.
+let profileId = '';
 
 // Each row is minimal but valid, so a failed user insert can only be RLS or privileges.
+// Listed parents first: beforeAll inserts in this order and cleanup runs in reverse.
 const fixtures: Fixture[] = [
   {
     table: 'query_search_builder',
     row: () => ({
-      id: randomUUID(),
+      id: queryId,
       channel: 'ASHBY',
+      location: 'remote',
       experience: 'senior',
       technologies: [],
+      domain: 'backend',
       type: 'remote',
       keyword: 'engineer',
       version: 1,
@@ -31,37 +38,82 @@ const fixtures: Fixture[] = [
       hash: randomUUID(),
     }),
   },
-  { table: 'profile_query_search_builders', row: () => ({}) },
   {
-    table: 'raw_jobs',
+    table: 'profile_query_search_builders',
+    row: () => ({ id: randomUUID(), profileId, queryId }),
+  },
+  {
+    table: 'search_segment_runs',
     row: () => ({
-      id: randomUUID(),
+      id: segmentRunId,
       channel: 'ASHBY',
+      segmentKey: 'backend|remote|remote',
+      segmentHash: randomUUID(),
+      queryIds: [queryId],
+      windowStart: '2026-11-02T00:00:00Z',
+      windowEnd: now,
+      startedAt: now,
+      finishedAt: now,
+      status: 'succeeded',
+      fetched: 1,
+      capped: false,
+      truncatedQueryIds: [],
+      perQuery: {},
+    }),
+  },
+  {
+    table: 'collection_batches',
+    row: () => ({
+      id: batchId,
+      channel: 'ASHBY',
+      segmentRunId,
+      storageKey: `batches/${batchId}.json`,
+      formatVersion: 1,
+      observedAt: now,
+      itemCount: 1,
+      actor: 'test',
+      status: 'pending',
+    }),
+  },
+  {
+    table: 'raw_items',
+    row: () => ({
+      id: rawItemId,
+      channel: 'ASHBY',
+      sourceKey: randomUUID(),
       kind: 'job',
-      url: `https://example.test/${randomUUID()}`,
-      description: 'A job',
-      raw: {},
-      normalizationVersion: 1,
       firstSeenAt: now,
       lastSeenAt: now,
     }),
   },
-  { table: 'raw_job_identities', row: () => ({}) },
-  { table: 'raw_job_query_hits', row: () => ({}) },
   {
-    table: 'ats_posting_identities',
+    table: 'raw_item_versions',
+    row: () => ({
+      id: versionId,
+      rawItemId,
+      contentHash: randomUUID(),
+      payload: {},
+      firstBatchId: batchId,
+      firstSeenAt: now,
+      lastSeenAt: now,
+    }),
+  },
+  {
+    table: 'raw_item_sightings',
     row: () => ({
       id: randomUUID(),
-      provider: 'ashby',
-      tenantKey: randomUUID(),
-      postingId: randomUUID(),
+      batchId,
+      rawItemId,
+      versionId,
+      queryId,
+      attribution: queryId,
+      observedAt: now,
     }),
   },
 ];
 
 describe('engine-only tables are hidden from users', () => {
   let user: TestUser;
-  let profileId: string;
   const rows = new Map<string, Record<string, unknown>>();
   const cleanup: Array<[string, string]> = [];
 
@@ -81,55 +133,23 @@ describe('engine-only tables are hidden from users', () => {
       languages: ['EN'],
       country: 'MA',
       city: 'Rabat',
-      regions: ['MENA'],
+      locations: { remote: ['MENA'], hybrid: [], onsite: [] },
       yearsOfExperience: 6,
       timezoneCurrent: 60,
       timezoneMin: -240,
       timezoneMax: 240,
       engagements: ['employee'],
-      arrangements: ['remote'],
-      seniority: 'senior',
+      seniorities: ['senior'],
       noticePeriodDays: 30,
     };
     await adminInsert('profiles', profile);
     profileId = profile.id;
 
-    const [qsb, pqsb, raw, ident, hit, ats] = fixtures;
-    const qRow = { ...qsb.row(), id: queryId };
-    const aRow = { ...ats.row(), id: atsId };
-    const rRow = { ...raw.row(), id: rawJobId, atsPostingId: atsId };
-    const pRow = {
-      id: randomUUID(),
-      profileId,
-      queryId,
-    };
-    const iRow = {
-      id: randomUUID(),
-      channel: 'ASHBY',
-      identityType: 'url',
-      identityValue: `https://example.test/${randomUUID()}`,
-      rawJobId,
-    };
-    const hRow = {
-      id: randomUUID(),
-      queryId,
-      rawJobId,
-      firstSeenAt: now,
-      lastSeenAt: now,
-      observedUrl: 'https://example.test/x',
-    };
-    await adminInsert(qsb.table, qRow);
-    await adminInsert(ats.table, aRow);
-    await adminInsert(raw.table, rRow);
-    await adminInsert(pqsb.table, pRow);
-    await adminInsert(ident.table, iRow);
-    await adminInsert(hit.table, hRow);
-    rows.set(qsb.table, qRow);
-    rows.set(ats.table, aRow);
-    rows.set(raw.table, rRow);
-    rows.set(pqsb.table, pRow);
-    rows.set(ident.table, iRow);
-    rows.set(hit.table, hRow);
+    for (const fixture of fixtures) {
+      const row = fixture.row();
+      await adminInsert(fixture.table, row);
+      rows.set(fixture.table, row);
+    }
   });
 
   afterAll(async () => {

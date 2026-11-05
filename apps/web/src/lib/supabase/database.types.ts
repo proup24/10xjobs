@@ -9,27 +9,147 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      ats_posting_identities: {
+      arrangements: {
         Row: {
-          id: string;
-          postingId: string;
-          provider: string;
-          tenantKey: string;
+          aliases: string[];
+          approvedAt: string | null;
+          code: string;
+          firstSeenAt: string;
+          label: string;
+          occurrences: number;
+          status: string;
         };
         ComputedFields: never;
         Insert: {
-          id: string;
-          postingId: string;
-          provider: string;
-          tenantKey: string;
+          aliases: string[];
+          approvedAt?: string | null;
+          code: string;
+          firstSeenAt: string;
+          label: string;
+          occurrences?: number;
+          status: string;
         };
         Update: {
-          id?: string;
-          postingId?: string;
-          provider?: string;
-          tenantKey?: string;
+          aliases?: string[];
+          approvedAt?: string | null;
+          code?: string;
+          firstSeenAt?: string;
+          label?: string;
+          occurrences?: number;
+          status?: string;
         };
         Relationships: [];
+      };
+      cities: {
+        Row: {
+          aliases: string[];
+          approvedAt: string | null;
+          countryCode: string;
+          firstSeenAt: string;
+          geonamesId: number | null;
+          id: string;
+          name: string;
+          nameKey: string;
+          occurrences: number;
+          status: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          aliases: string[];
+          approvedAt?: string | null;
+          countryCode: string;
+          firstSeenAt: string;
+          geonamesId?: number | null;
+          id: string;
+          name: string;
+          nameKey: string;
+          occurrences?: number;
+          status: string;
+        };
+        Update: {
+          aliases?: string[];
+          approvedAt?: string | null;
+          countryCode?: string;
+          firstSeenAt?: string;
+          geonamesId?: number | null;
+          id?: string;
+          name?: string;
+          nameKey?: string;
+          occurrences?: number;
+          status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'cities_countryCode_fkey';
+            columns: ['countryCode'];
+            isOneToOne: false;
+            referencedRelation: 'countries';
+            referencedColumns: ['code'];
+          },
+        ];
+      };
+      collection_batches: {
+        Row: {
+          actor: string;
+          apifyRunId: string | null;
+          attempts: number;
+          channel: string;
+          createdAt: string;
+          formatVersion: number;
+          id: string;
+          ingestedAt: string | null;
+          itemCount: number;
+          lastError: string | null;
+          observedAt: string;
+          report: Json | null;
+          segmentRunId: string;
+          status: string;
+          storageKey: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          actor: string;
+          apifyRunId?: string | null;
+          attempts?: number;
+          channel: string;
+          createdAt?: string;
+          formatVersion: number;
+          id: string;
+          ingestedAt?: string | null;
+          itemCount: number;
+          lastError?: string | null;
+          observedAt: string;
+          report?: Json | null;
+          segmentRunId: string;
+          status: string;
+          storageKey: string;
+        };
+        Update: {
+          actor?: string;
+          apifyRunId?: string | null;
+          attempts?: number;
+          channel?: string;
+          createdAt?: string;
+          formatVersion?: number;
+          id?: string;
+          ingestedAt?: string | null;
+          itemCount?: number;
+          lastError?: string | null;
+          observedAt?: string;
+          report?: Json | null;
+          segmentRunId?: string;
+          status?: string;
+          storageKey?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'collection_batches_segmentRunId_fkey';
+            columns: ['segmentRunId'];
+            isOneToOne: true;
+            referencedRelation: 'search_segment_runs';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       contacts: {
         Row: {
@@ -69,6 +189,571 @@ export type Database = {
             columns: ['userId'];
             isOneToOne: false;
             referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      contract_types: {
+        Row: {
+          aliases: string[];
+          approvedAt: string | null;
+          code: string;
+          firstSeenAt: string;
+          label: string;
+          occurrences: number;
+          status: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          aliases: string[];
+          approvedAt?: string | null;
+          code: string;
+          firstSeenAt: string;
+          label: string;
+          occurrences?: number;
+          status: string;
+        };
+        Update: {
+          aliases?: string[];
+          approvedAt?: string | null;
+          code?: string;
+          firstSeenAt?: string;
+          label?: string;
+          occurrences?: number;
+          status?: string;
+        };
+        Relationships: [];
+      };
+      countries: {
+        Row: {
+          aliases: string[];
+          approvedAt: string | null;
+          code: string;
+          firstSeenAt: string;
+          label: string;
+          occurrences: number;
+          status: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          aliases: string[];
+          approvedAt?: string | null;
+          code: string;
+          firstSeenAt: string;
+          label: string;
+          occurrences?: number;
+          status: string;
+        };
+        Update: {
+          aliases?: string[];
+          approvedAt?: string | null;
+          code?: string;
+          firstSeenAt?: string;
+          label?: string;
+          occurrences?: number;
+          status?: string;
+        };
+        Relationships: [];
+      };
+      engagements: {
+        Row: {
+          aliases: string[];
+          approvedAt: string | null;
+          code: string;
+          firstSeenAt: string;
+          label: string;
+          occurrences: number;
+          status: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          aliases: string[];
+          approvedAt?: string | null;
+          code: string;
+          firstSeenAt: string;
+          label: string;
+          occurrences?: number;
+          status: string;
+        };
+        Update: {
+          aliases?: string[];
+          approvedAt?: string | null;
+          code?: string;
+          firstSeenAt?: string;
+          label?: string;
+          occurrences?: number;
+          status?: string;
+        };
+        Relationships: [];
+      };
+      job_extractions: {
+        Row: {
+          arrangement: string | null;
+          cityIds: string[];
+          contractType: string | null;
+          costUsd: number;
+          countryCodes: string[];
+          createdAt: string;
+          data: NonNullable<Json>;
+          decisionModel: string;
+          engagement: string | null;
+          extractionModel: string;
+          id: string;
+          inputHash: string;
+          isSoftwareEngineeringRole: boolean | null;
+          jobId: string;
+          mainStackTags: string[];
+          needsReview: boolean;
+          promptHash: string;
+          regionCodes: string[];
+          roleKind: string | null;
+          salaryCurrency: string | null;
+          salaryMax: number | null;
+          salaryMin: number | null;
+          salaryPeriod: string | null;
+          schemaVersion: number;
+          seniority: string | null;
+          techTags: string[];
+          worldwide: boolean;
+        };
+        ComputedFields: never;
+        Insert: {
+          arrangement?: string | null;
+          cityIds: string[];
+          contractType?: string | null;
+          costUsd: number;
+          countryCodes: string[];
+          createdAt?: string;
+          data: NonNullable<Json>;
+          decisionModel: string;
+          engagement?: string | null;
+          extractionModel: string;
+          id: string;
+          inputHash: string;
+          isSoftwareEngineeringRole?: boolean | null;
+          jobId: string;
+          mainStackTags: string[];
+          needsReview: boolean;
+          promptHash: string;
+          regionCodes: string[];
+          roleKind?: string | null;
+          salaryCurrency?: string | null;
+          salaryMax?: number | null;
+          salaryMin?: number | null;
+          salaryPeriod?: string | null;
+          schemaVersion: number;
+          seniority?: string | null;
+          techTags: string[];
+          worldwide: boolean;
+        };
+        Update: {
+          arrangement?: string | null;
+          cityIds?: string[];
+          contractType?: string | null;
+          costUsd?: number;
+          countryCodes?: string[];
+          createdAt?: string;
+          data?: NonNullable<Json>;
+          decisionModel?: string;
+          engagement?: string | null;
+          extractionModel?: string;
+          id?: string;
+          inputHash?: string;
+          isSoftwareEngineeringRole?: boolean | null;
+          jobId?: string;
+          mainStackTags?: string[];
+          needsReview?: boolean;
+          promptHash?: string;
+          regionCodes?: string[];
+          roleKind?: string | null;
+          salaryCurrency?: string | null;
+          salaryMax?: number | null;
+          salaryMin?: number | null;
+          salaryPeriod?: string | null;
+          schemaVersion?: number;
+          seniority?: string | null;
+          techTags?: string[];
+          worldwide?: boolean;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'job_extractions_arrangement_fkey';
+            columns: ['arrangement'];
+            isOneToOne: false;
+            referencedRelation: 'arrangements';
+            referencedColumns: ['code'];
+          },
+          {
+            foreignKeyName: 'job_extractions_contractType_fkey';
+            columns: ['contractType'];
+            isOneToOne: false;
+            referencedRelation: 'contract_types';
+            referencedColumns: ['code'];
+          },
+          {
+            foreignKeyName: 'job_extractions_engagement_fkey';
+            columns: ['engagement'];
+            isOneToOne: false;
+            referencedRelation: 'engagements';
+            referencedColumns: ['code'];
+          },
+          {
+            foreignKeyName: 'job_extractions_jobId_fkey';
+            columns: ['jobId'];
+            isOneToOne: false;
+            referencedRelation: 'normalized_jobs';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'job_extractions_roleKind_fkey';
+            columns: ['roleKind'];
+            isOneToOne: false;
+            referencedRelation: 'role_kinds';
+            referencedColumns: ['code'];
+          },
+          {
+            foreignKeyName: 'job_extractions_seniority_fkey';
+            columns: ['seniority'];
+            isOneToOne: false;
+            referencedRelation: 'seniorities';
+            referencedColumns: ['code'];
+          },
+        ];
+      };
+      junk_flags: {
+        Row: {
+          aliases: string[];
+          approvedAt: string | null;
+          code: string;
+          firstSeenAt: string;
+          label: string;
+          occurrences: number;
+          status: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          aliases: string[];
+          approvedAt?: string | null;
+          code: string;
+          firstSeenAt: string;
+          label: string;
+          occurrences?: number;
+          status: string;
+        };
+        Update: {
+          aliases?: string[];
+          approvedAt?: string | null;
+          code?: string;
+          firstSeenAt?: string;
+          label?: string;
+          occurrences?: number;
+          status?: string;
+        };
+        Relationships: [];
+      };
+      normalized_job_sources: {
+        Row: {
+          id: string;
+          jobId: string;
+          linkedAt: string;
+          normalizedVersionId: string;
+          rawItemId: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          id: string;
+          jobId: string;
+          linkedAt: string;
+          normalizedVersionId: string;
+          rawItemId: string;
+        };
+        Update: {
+          id?: string;
+          jobId?: string;
+          linkedAt?: string;
+          normalizedVersionId?: string;
+          rawItemId?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'normalized_job_sources_jobId_fkey';
+            columns: ['jobId'];
+            isOneToOne: false;
+            referencedRelation: 'normalized_jobs';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'normalized_job_sources_normalizedVersionId_fkey';
+            columns: ['normalizedVersionId'];
+            isOneToOne: false;
+            referencedRelation: 'normalized_versions';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'normalized_job_sources_rawItemId_fkey';
+            columns: ['rawItemId'];
+            isOneToOne: true;
+            referencedRelation: 'raw_items';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      normalized_jobs: {
+        Row: {
+          applyUrl: string | null;
+          closed: boolean;
+          companyName: string | null;
+          companyUrl: string | null;
+          contractType: string | null;
+          createdAt: string;
+          currentExtractionId: string | null;
+          descriptionHtml: string | null;
+          descriptionText: string | null;
+          experienceLevel: string | null;
+          fieldSources: NonNullable<Json>;
+          firstSeenAt: string;
+          id: string;
+          jobKey: string;
+          kind: string;
+          lastSeenAt: string;
+          location: string | null;
+          mergedIntoId: string | null;
+          normalizerVersion: number;
+          posterName: string | null;
+          posterProfileUrl: string | null;
+          posterType: string | null;
+          postingUrl: string;
+          processedAt: string | null;
+          processingAttempts: number;
+          processingError: string | null;
+          processingReason: string | null;
+          processingRequestedAt: string | null;
+          processingStartedAt: string | null;
+          processingStatus: string | null;
+          publishedAt: string | null;
+          salaryCurrency: string | null;
+          salaryMax: number | null;
+          salaryMin: number | null;
+          salaryPeriod: string | null;
+          salaryText: string | null;
+          sector: string | null;
+          status: string;
+          title: string | null;
+          updatedAt: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          applyUrl?: string | null;
+          closed: boolean;
+          companyName?: string | null;
+          companyUrl?: string | null;
+          contractType?: string | null;
+          createdAt?: string;
+          currentExtractionId?: string | null;
+          descriptionHtml?: string | null;
+          descriptionText?: string | null;
+          experienceLevel?: string | null;
+          fieldSources: NonNullable<Json>;
+          firstSeenAt: string;
+          id: string;
+          jobKey: string;
+          kind: string;
+          lastSeenAt: string;
+          location?: string | null;
+          mergedIntoId?: string | null;
+          normalizerVersion: number;
+          posterName?: string | null;
+          posterProfileUrl?: string | null;
+          posterType?: string | null;
+          postingUrl: string;
+          processedAt?: string | null;
+          processingAttempts?: number;
+          processingError?: string | null;
+          processingReason?: string | null;
+          processingRequestedAt?: string | null;
+          processingStartedAt?: string | null;
+          processingStatus?: string | null;
+          publishedAt?: string | null;
+          salaryCurrency?: string | null;
+          salaryMax?: number | null;
+          salaryMin?: number | null;
+          salaryPeriod?: string | null;
+          salaryText?: string | null;
+          sector?: string | null;
+          status: string;
+          title?: string | null;
+          updatedAt?: string;
+        };
+        Update: {
+          applyUrl?: string | null;
+          closed?: boolean;
+          companyName?: string | null;
+          companyUrl?: string | null;
+          contractType?: string | null;
+          createdAt?: string;
+          currentExtractionId?: string | null;
+          descriptionHtml?: string | null;
+          descriptionText?: string | null;
+          experienceLevel?: string | null;
+          fieldSources?: NonNullable<Json>;
+          firstSeenAt?: string;
+          id?: string;
+          jobKey?: string;
+          kind?: string;
+          lastSeenAt?: string;
+          location?: string | null;
+          mergedIntoId?: string | null;
+          normalizerVersion?: number;
+          posterName?: string | null;
+          posterProfileUrl?: string | null;
+          posterType?: string | null;
+          postingUrl?: string;
+          processedAt?: string | null;
+          processingAttempts?: number;
+          processingError?: string | null;
+          processingReason?: string | null;
+          processingRequestedAt?: string | null;
+          processingStartedAt?: string | null;
+          processingStatus?: string | null;
+          publishedAt?: string | null;
+          salaryCurrency?: string | null;
+          salaryMax?: number | null;
+          salaryMin?: number | null;
+          salaryPeriod?: string | null;
+          salaryText?: string | null;
+          sector?: string | null;
+          status?: string;
+          title?: string | null;
+          updatedAt?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'normalized_jobs_currentExtractionId_fkey';
+            columns: ['currentExtractionId'];
+            isOneToOne: false;
+            referencedRelation: 'job_extractions';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'normalized_jobs_mergedIntoId_fkey';
+            columns: ['mergedIntoId'];
+            isOneToOne: false;
+            referencedRelation: 'normalized_jobs';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      normalized_versions: {
+        Row: {
+          createdAt: string;
+          id: string;
+          jobKey: string | null;
+          normalizerVersion: number;
+          rawVersionId: string;
+          reason: string | null;
+          record: Json | null;
+          status: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          createdAt?: string;
+          id: string;
+          jobKey?: string | null;
+          normalizerVersion: number;
+          rawVersionId: string;
+          reason?: string | null;
+          record?: Json | null;
+          status: string;
+        };
+        Update: {
+          createdAt?: string;
+          id?: string;
+          jobKey?: string | null;
+          normalizerVersion?: number;
+          rawVersionId?: string;
+          reason?: string | null;
+          record?: Json | null;
+          status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'normalized_versions_rawVersionId_fkey';
+            columns: ['rawVersionId'];
+            isOneToOne: false;
+            referencedRelation: 'raw_item_versions';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      processing_attempts: {
+        Row: {
+          cachedInputTokens: number;
+          costUsd: number;
+          createdAt: string;
+          error: string | null;
+          eval: boolean;
+          extractionId: string | null;
+          id: string;
+          inputTokens: number;
+          jobId: string | null;
+          latencyMs: number;
+          model: string;
+          outcome: string;
+          outputTokens: number;
+          providerRequestId: string | null;
+          quoteFailures: number;
+          step: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          cachedInputTokens: number;
+          costUsd: number;
+          createdAt?: string;
+          error?: string | null;
+          eval?: boolean;
+          extractionId?: string | null;
+          id: string;
+          inputTokens: number;
+          jobId?: string | null;
+          latencyMs: number;
+          model: string;
+          outcome: string;
+          outputTokens: number;
+          providerRequestId?: string | null;
+          quoteFailures?: number;
+          step: string;
+        };
+        Update: {
+          cachedInputTokens?: number;
+          costUsd?: number;
+          createdAt?: string;
+          error?: string | null;
+          eval?: boolean;
+          extractionId?: string | null;
+          id?: string;
+          inputTokens?: number;
+          jobId?: string | null;
+          latencyMs?: number;
+          model?: string;
+          outcome?: string;
+          outputTokens?: number;
+          providerRequestId?: string | null;
+          quoteFailures?: number;
+          step?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'processing_attempts_extractionId_fkey';
+            columns: ['extractionId'];
+            isOneToOne: false;
+            referencedRelation: 'job_extractions';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'processing_attempts_jobId_fkey';
+            columns: ['jobId'];
+            isOneToOne: false;
+            referencedRelation: 'normalized_jobs';
             referencedColumns: ['id'];
           },
         ];
@@ -164,23 +849,22 @@ export type Database = {
       };
       profiles: {
         Row: {
-          arrangements: string[];
           city: string | null;
           country: string;
           createdAt: string;
           engagements: string[];
           id: string;
           languages: string[];
+          locations: NonNullable<Json>;
           noticePeriodDays: number;
           position: string;
           publishedAt: string | null;
-          regions: string[];
           resumeFilename: string | null;
           resumeKey: string | null;
           resumeSha256: string | null;
           resumeSizeBytes: number | null;
           resumeUploadedAt: string | null;
-          seniority: string;
+          seniorities: string[];
           state: string;
           timezoneCurrent: number;
           timezoneMax: number;
@@ -191,23 +875,22 @@ export type Database = {
         };
         ComputedFields: never;
         Insert: {
-          arrangements: string[];
           city?: string | null;
           country: string;
           createdAt?: string;
           engagements: string[];
           id: string;
           languages: string[];
+          locations: NonNullable<Json>;
           noticePeriodDays: number;
           position: string;
           publishedAt?: string | null;
-          regions: string[];
           resumeFilename?: string | null;
           resumeKey?: string | null;
           resumeSha256?: string | null;
           resumeSizeBytes?: number | null;
           resumeUploadedAt?: string | null;
-          seniority: string;
+          seniorities: string[];
           state?: string;
           timezoneCurrent: number;
           timezoneMax: number;
@@ -217,23 +900,22 @@ export type Database = {
           yearsOfExperience: number;
         };
         Update: {
-          arrangements?: string[];
           city?: string | null;
           country?: string;
           createdAt?: string;
           engagements?: string[];
           id?: string;
           languages?: string[];
+          locations?: NonNullable<Json>;
           noticePeriodDays?: number;
           position?: string;
           publishedAt?: string | null;
-          regions?: string[];
           resumeFilename?: string | null;
           resumeKey?: string | null;
           resumeSha256?: string | null;
           resumeSizeBytes?: number | null;
           resumeUploadedAt?: string | null;
-          seniority?: string;
+          seniorities?: string[];
           state?: string;
           timezoneCurrent?: number;
           timezoneMax?: number;
@@ -256,16 +938,20 @@ export type Database = {
         Row: {
           associatedProfiles: number;
           channel: string;
-          city: string | null;
-          country: string | null;
+          claimExpiresAt: string | null;
+          claimRunId: string | null;
+          claimWindowEnd: string | null;
+          claimWindowStart: string | null;
+          coveredUntil: string | null;
           createdAt: string;
+          domain: string;
           experience: string;
           hash: string;
           id: string;
           isActive: boolean;
           isDeleted: boolean;
           keyword: string;
-          locationRegion: string | null;
+          location: string;
           params: NonNullable<Json>;
           technologies: string[];
           type: string;
@@ -276,16 +962,20 @@ export type Database = {
         Insert: {
           associatedProfiles?: number;
           channel: string;
-          city?: string | null;
-          country?: string | null;
+          claimExpiresAt?: string | null;
+          claimRunId?: string | null;
+          claimWindowEnd?: string | null;
+          claimWindowStart?: string | null;
+          coveredUntil?: string | null;
           createdAt?: string;
+          domain: string;
           experience: string;
           hash: string;
           id: string;
           isActive?: boolean;
           isDeleted?: boolean;
           keyword: string;
-          locationRegion?: string | null;
+          location: string;
           params: NonNullable<Json>;
           technologies: string[];
           type: string;
@@ -295,16 +985,20 @@ export type Database = {
         Update: {
           associatedProfiles?: number;
           channel?: string;
-          city?: string | null;
-          country?: string | null;
+          claimExpiresAt?: string | null;
+          claimRunId?: string | null;
+          claimWindowEnd?: string | null;
+          claimWindowStart?: string | null;
+          coveredUntil?: string | null;
           createdAt?: string;
+          domain?: string;
           experience?: string;
           hash?: string;
           id?: string;
           isActive?: boolean;
           isDeleted?: boolean;
           keyword?: string;
-          locationRegion?: string | null;
+          location?: string;
           params?: NonNullable<Json>;
           technologies?: string[];
           type?: string;
@@ -313,165 +1007,370 @@ export type Database = {
         };
         Relationships: [];
       };
-      raw_job_identities: {
+      raw_item_sightings: {
         Row: {
-          channel: string;
+          attribution: string;
+          batchId: string;
           id: string;
-          identityType: string;
-          identityValue: string;
-          rawJobId: string;
+          observedAt: string;
+          queryId: string | null;
+          rank: number | null;
+          rawItemId: string;
+          versionId: string;
         };
         ComputedFields: never;
         Insert: {
-          channel: string;
+          attribution: string;
+          batchId: string;
           id: string;
-          identityType: string;
-          identityValue: string;
-          rawJobId: string;
+          observedAt: string;
+          queryId?: string | null;
+          rank?: number | null;
+          rawItemId: string;
+          versionId: string;
         };
         Update: {
-          channel?: string;
+          attribution?: string;
+          batchId?: string;
           id?: string;
-          identityType?: string;
-          identityValue?: string;
-          rawJobId?: string;
+          observedAt?: string;
+          queryId?: string | null;
+          rank?: number | null;
+          rawItemId?: string;
+          versionId?: string;
         };
         Relationships: [
           {
-            foreignKeyName: 'raw_job_identities_rawJobId_fkey';
-            columns: ['rawJobId'];
+            foreignKeyName: 'raw_item_sightings_batchId_fkey';
+            columns: ['batchId'];
             isOneToOne: false;
-            referencedRelation: 'raw_jobs';
+            referencedRelation: 'collection_batches';
             referencedColumns: ['id'];
           },
-        ];
-      };
-      raw_job_query_hits: {
-        Row: {
-          firstSeenAt: string;
-          id: string;
-          lastSeenAt: string;
-          observedUrl: string;
-          queryId: string;
-          rank: number | null;
-          rawJobId: string;
-        };
-        ComputedFields: never;
-        Insert: {
-          firstSeenAt: string;
-          id: string;
-          lastSeenAt: string;
-          observedUrl: string;
-          queryId: string;
-          rank?: number | null;
-          rawJobId: string;
-        };
-        Update: {
-          firstSeenAt?: string;
-          id?: string;
-          lastSeenAt?: string;
-          observedUrl?: string;
-          queryId?: string;
-          rank?: number | null;
-          rawJobId?: string;
-        };
-        Relationships: [
           {
-            foreignKeyName: 'raw_job_query_hits_queryId_fkey';
+            foreignKeyName: 'raw_item_sightings_queryId_fkey';
             columns: ['queryId'];
             isOneToOne: false;
             referencedRelation: 'query_search_builder';
             referencedColumns: ['id'];
           },
           {
-            foreignKeyName: 'raw_job_query_hits_rawJobId_fkey';
-            columns: ['rawJobId'];
+            foreignKeyName: 'raw_item_sightings_rawItemId_fkey';
+            columns: ['rawItemId'];
             isOneToOne: false;
-            referencedRelation: 'raw_jobs';
+            referencedRelation: 'raw_items';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'raw_item_sightings_versionId_fkey';
+            columns: ['versionId'];
+            isOneToOne: false;
+            referencedRelation: 'raw_item_versions';
             referencedColumns: ['id'];
           },
         ];
       };
-      raw_jobs: {
+      raw_item_versions: {
         Row: {
-          applyUrl: string | null;
-          atsPostingId: string | null;
-          authorName: string | null;
-          authorUrl: string | null;
-          channel: string;
-          company: string | null;
-          contactName: string | null;
-          contactUrl: string | null;
-          description: string;
-          externalId: string | null;
+          contentHash: string;
+          createdAt: string;
+          firstBatchId: string;
           firstSeenAt: string;
           id: string;
-          kind: string;
           lastSeenAt: string;
-          location: string | null;
-          normalizationVersion: number;
-          postedAt: string | null;
-          postedAtPrecision: string | null;
-          raw: NonNullable<Json>;
-          title: string | null;
-          url: string;
+          payload: NonNullable<Json>;
+          rawItemId: string;
         };
         ComputedFields: never;
         Insert: {
-          applyUrl?: string | null;
-          atsPostingId?: string | null;
-          authorName?: string | null;
-          authorUrl?: string | null;
+          contentHash: string;
+          createdAt?: string;
+          firstBatchId: string;
+          firstSeenAt: string;
+          id: string;
+          lastSeenAt: string;
+          payload: NonNullable<Json>;
+          rawItemId: string;
+        };
+        Update: {
+          contentHash?: string;
+          createdAt?: string;
+          firstBatchId?: string;
+          firstSeenAt?: string;
+          id?: string;
+          lastSeenAt?: string;
+          payload?: NonNullable<Json>;
+          rawItemId?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'raw_item_versions_firstBatchId_fkey';
+            columns: ['firstBatchId'];
+            isOneToOne: false;
+            referencedRelation: 'collection_batches';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'raw_item_versions_rawItemId_fkey';
+            columns: ['rawItemId'];
+            isOneToOne: false;
+            referencedRelation: 'raw_items';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      raw_items: {
+        Row: {
           channel: string;
-          company?: string | null;
-          contactName?: string | null;
-          contactUrl?: string | null;
-          description: string;
-          externalId?: string | null;
           firstSeenAt: string;
           id: string;
           kind: string;
           lastSeenAt: string;
-          location?: string | null;
-          normalizationVersion: number;
-          postedAt?: string | null;
-          postedAtPrecision?: string | null;
-          raw: NonNullable<Json>;
-          title?: string | null;
-          url: string;
+          latestVersionId: string | null;
+          sourceKey: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          channel: string;
+          firstSeenAt: string;
+          id: string;
+          kind: string;
+          lastSeenAt: string;
+          latestVersionId?: string | null;
+          sourceKey: string;
         };
         Update: {
-          applyUrl?: string | null;
-          atsPostingId?: string | null;
-          authorName?: string | null;
-          authorUrl?: string | null;
           channel?: string;
-          company?: string | null;
-          contactName?: string | null;
-          contactUrl?: string | null;
-          description?: string;
-          externalId?: string | null;
           firstSeenAt?: string;
           id?: string;
           kind?: string;
           lastSeenAt?: string;
-          location?: string | null;
-          normalizationVersion?: number;
-          postedAt?: string | null;
-          postedAtPrecision?: string | null;
-          raw?: NonNullable<Json>;
-          title?: string | null;
-          url?: string;
+          latestVersionId?: string | null;
+          sourceKey?: string;
+        };
+        Relationships: [];
+      };
+      region_countries: {
+        Row: {
+          countryCode: string;
+          regionCode: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          countryCode: string;
+          regionCode: string;
+        };
+        Update: {
+          countryCode?: string;
+          regionCode?: string;
         };
         Relationships: [
           {
-            foreignKeyName: 'raw_jobs_atsPostingId_fkey';
-            columns: ['atsPostingId'];
+            foreignKeyName: 'region_countries_countryCode_fkey';
+            columns: ['countryCode'];
             isOneToOne: false;
-            referencedRelation: 'ats_posting_identities';
-            referencedColumns: ['id'];
+            referencedRelation: 'countries';
+            referencedColumns: ['code'];
+          },
+          {
+            foreignKeyName: 'region_countries_regionCode_fkey';
+            columns: ['regionCode'];
+            isOneToOne: false;
+            referencedRelation: 'regions';
+            referencedColumns: ['code'];
           },
         ];
+      };
+      regions: {
+        Row: {
+          aliases: string[];
+          approvedAt: string | null;
+          code: string;
+          firstSeenAt: string;
+          label: string;
+          occurrences: number;
+          status: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          aliases: string[];
+          approvedAt?: string | null;
+          code: string;
+          firstSeenAt: string;
+          label: string;
+          occurrences?: number;
+          status: string;
+        };
+        Update: {
+          aliases?: string[];
+          approvedAt?: string | null;
+          code?: string;
+          firstSeenAt?: string;
+          label?: string;
+          occurrences?: number;
+          status?: string;
+        };
+        Relationships: [];
+      };
+      role_kinds: {
+        Row: {
+          aliases: string[];
+          approvedAt: string | null;
+          code: string;
+          firstSeenAt: string;
+          label: string;
+          occurrences: number;
+          status: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          aliases: string[];
+          approvedAt?: string | null;
+          code: string;
+          firstSeenAt: string;
+          label: string;
+          occurrences?: number;
+          status: string;
+        };
+        Update: {
+          aliases?: string[];
+          approvedAt?: string | null;
+          code?: string;
+          firstSeenAt?: string;
+          label?: string;
+          occurrences?: number;
+          status?: string;
+        };
+        Relationships: [];
+      };
+      search_segment_runs: {
+        Row: {
+          capped: boolean;
+          channel: string;
+          costMicroUsd: number | null;
+          error: string | null;
+          fetched: number;
+          finishedAt: string;
+          id: string;
+          perQuery: NonNullable<Json>;
+          queryIds: string[];
+          searchTotals: Json | null;
+          segmentHash: string;
+          segmentKey: string;
+          startedAt: string;
+          status: string;
+          truncatedQueryIds: string[];
+          windowEnd: string;
+          windowStart: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          capped: boolean;
+          channel: string;
+          costMicroUsd?: number | null;
+          error?: string | null;
+          fetched: number;
+          finishedAt: string;
+          id: string;
+          perQuery: NonNullable<Json>;
+          queryIds: string[];
+          searchTotals?: Json | null;
+          segmentHash: string;
+          segmentKey: string;
+          startedAt: string;
+          status: string;
+          truncatedQueryIds: string[];
+          windowEnd: string;
+          windowStart: string;
+        };
+        Update: {
+          capped?: boolean;
+          channel?: string;
+          costMicroUsd?: number | null;
+          error?: string | null;
+          fetched?: number;
+          finishedAt?: string;
+          id?: string;
+          perQuery?: NonNullable<Json>;
+          queryIds?: string[];
+          searchTotals?: Json | null;
+          segmentHash?: string;
+          segmentKey?: string;
+          startedAt?: string;
+          status?: string;
+          truncatedQueryIds?: string[];
+          windowEnd?: string;
+          windowStart?: string;
+        };
+        Relationships: [];
+      };
+      seniorities: {
+        Row: {
+          aliases: string[];
+          approvedAt: string | null;
+          code: string;
+          firstSeenAt: string;
+          label: string;
+          occurrences: number;
+          status: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          aliases: string[];
+          approvedAt?: string | null;
+          code: string;
+          firstSeenAt: string;
+          label: string;
+          occurrences?: number;
+          status: string;
+        };
+        Update: {
+          aliases?: string[];
+          approvedAt?: string | null;
+          code?: string;
+          firstSeenAt?: string;
+          label?: string;
+          occurrences?: number;
+          status?: string;
+        };
+        Relationships: [];
+      };
+      tech_tags: {
+        Row: {
+          aliases: string[];
+          approvedAt: string | null;
+          code: string;
+          family: string | null;
+          firstSeenAt: string;
+          implies: string[];
+          label: string;
+          occurrences: number;
+          status: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          aliases: string[];
+          approvedAt?: string | null;
+          code: string;
+          family?: string | null;
+          firstSeenAt: string;
+          implies: string[];
+          label: string;
+          occurrences?: number;
+          status: string;
+        };
+        Update: {
+          aliases?: string[];
+          approvedAt?: string | null;
+          code?: string;
+          family?: string | null;
+          firstSeenAt?: string;
+          implies?: string[];
+          label?: string;
+          occurrences?: number;
+          status?: string;
+        };
+        Relationships: [];
       };
       users: {
         Row: {

@@ -1,0 +1,63 @@
+{
+  "id": "266",
+  "input": {
+    "title": "Senior Fullstack Engineer (TypeScript, Node.js and Effect.js)",
+    "companyName": "Appfire",
+    "description": "At Appfire, we believe that great work happens when people get to choose how they work. After 20 years of creating software that empowers teams to break silos and collaborate seamlessly, we've learned that one size does not fit all. We're a team of 800+ employees, working remotely across 28 countries. Our flagship products include: JXL, Comala Document Management, 7Pace Time Tracker, Jira Misc Workflow Extensions, and BigPicture.\n\nHere you can read some of our customer stories: https://appfire.com/resources/resource-library/customer-stories\n\nAbout the role:\n\nAre you passionate about building awesome products? Do you get excited about being part of a team that really cares? Can't resist suggesting user experience improvements, whether it's about performance optimizations or UI tweaks? Then you've landed on the right page. The Astroneers are the team you've been looking for: highly engaged and extra-supportive teammates dealing with exciting technical challenges in a transparent environment, and much more.\n\nThe team primarily focuses on the Jira Misc Workflow Extensions (JMWE) and Jira Misc Custom Fields (JMCF) products while regularly embarking on side adventures like helping other teams, experimenting with Slack integration, or exploring AI capabilities. You'll be involved in every stage of the product lifecycle: ideation, design, development, release, and maintenance. Our products are used by thousands of companies from various industries to make their Workflow & Automation processes a piece of art, and we will count on your experience and intuition to push them further.\n\nWhat you'll do:\n\nJoin a self-organizing, cross-functional product team and cooperate closely with other Software Engineers, Product Manager, Team Leader, and with other specialists like Product Marketeers or Support Engineers.\nDesign, build, and maintain efficient and scalable applications written mainly in Effect-TS and Node.js.\nFollow and establish the best engineering practices: automated testing, code review, pair programming, YBIYRI (you built it you run it).\nAutomate cloud services and configuration management to ensure scalability, operational efficiency and cost optimization.\nShare your thoughts openly and honestly on what would be the best for our customers and the business: you will be part of discussions about the future of our products and Appfire.\nBe the change you seek - champion improvements within the team and products, adopting a proactive stance on innovation and process enhancement.\nBenefit from the seamless access to the Support team, quick feedback and direct communication with our customers.\n\nWhat we would like to see:\n\nProven record (5+ years) of delivery of multiple scalable, high volume traffic cloud applications.\nProficiency in full-stack JavaScript or TypeScript applications. Knowledge of Effect.js and Express.js is highly beneficial, and experience with using different AI models and tools like Cursor would be advantageous.\nProduct-oriented mindset. Our teams shape the products they own and we expect you to influence product-related decisions.\nTruly engineering approach to solving problems. Good theoretical foundations of computer science (e.g. algorithms and computational complexity, OOP) are super practical in the ever-changing landscape of technologies.\nGood understanding of modern Cloud architectures, and practical experience implementing them.\nDeep architectural understanding of web applications, including performance, quality and security aspects.\nDesire and ability to mentor other team members and shape the team's culture.\nCommand of English at level B2 or higher.\n\nNice to have:\n\nExperience with Atlassian Forge applications.\nGood understanding of Jira and/or Jira Service Management.\nKnowing how to play Bang! (we really need a new champion 😄)\n\nBenefits & Perks\n\nEquity: every Appfire team member is eligible for company equity, fostering a true sense of ownership and connection to our growth.\n\nTime Off & Wellbeing\n\n26 paid vacation days annually, regardless of tenure\nWellness Days - one fully paid day off each month for an unplanned emergency, rest, or recovery needs available on an ad-hoc basis (not carried over month-to-month)\n24 hours of paid volunteer time to support meaningful causes outside of work\n3 fully paid volunteering days each year through Appfire Town, our Corporate Social Responsibility (CSR) program supporting local communities\n\nLearning & Development: grow with Appfire University — our custom, on-demand learning platform designed to support continuous learning and professional development.\n\nHealth & Insurance\n\nFully covered Luxmed private healthcare plan\nOption to extend coverage to your partner or add personalized upgrades\nUNUM life insurance, fully paid by Appfire\n\nLifestyle & Benefits\n\nMyBenefit Platform with 150 PLN per month to spend on: a Multisport card, shopping, restaurants, entertainment experiences\nLunch Card with 300 PLN monthly for groceries or dining out via a virtual prepaid Pluxee card (Google Pay or Apple Wallet supported)\n\nRemote Work Support: receive 200 PLN net per month as a home office allowance to help cover electricity and internet costs while working remotely.\n\nMarket recognition\n\nAppfire has been consistently recognized for company growth, culture, corporate social responsibility, and product excellence and has been included among the Deloitte Technology Fast 500, Inc. Best Workplaces, BuiltIn Best Places to Work, and Inc. 5000. Learn more about our accomplishments, which would not be possible without our team members, partners, and customers: https://appfire.com/awards.\n\nEqual Employer Opportunity (EEO) \n\nAppfire is an equal opportunity employer and does not discriminate based on race, color, religion, sex (including pregnancy), sexual orientation, gender identity or expression, national origin, age, disability, genetic information, marital status, veteran status, or any other protected characteristic as defined by applicable law. Our commitment extends to all employment practices, including recruitment, hiring, training, promotion, compensation, benefits, and termination.",
+    "evidence": {
+      "location": "Warsaw, Mazowieckie, Poland",
+      "contractType": null,
+      "experienceLevel": null,
+      "salary": null
+    }
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["remote"],
+        "places": [],
+        "placeStrictness": "unstated"
+      }
+    ],
+    "roleKind": "fullstack_engineer",
+    "seniority": "unstated",
+    "yearsRequired": 5,
+    "contractMonths": null,
+    "mainStack": [
+      {
+        "anyOf": [
+          {
+            "text": "TypeScript",
+            "code": "typescript"
+          }
+        ]
+      },
+      {
+        "anyOf": [
+          {
+            "text": "Node.js",
+            "code": "nodejs"
+          }
+        ]
+      },
+      {
+        "anyOf": [
+          {
+            "text": "Effect-TS",
+            "code": null
+          }
+        ]
+      }
+    ],
+    "requiredLanguages": [
+      {
+        "lang": "en",
+        "level": "working"
+      }
+    ],
+    "sponsorship": "unstated",
+    "salary": null,
+    "junkFlags": []
+  },
+  "drafted": {}
+}

@@ -1,38 +1,53 @@
-import type {
+import {
   Arrangement,
-  Channel,
-  Position,
-  Region,
-  Seniority,
-  Technology,
+  type Channel,
+  type Position,
+  type Seniority,
+  type SkillDomain,
+  type Technology,
 } from 'src/common/enums';
+
+/** The arrangements a profile lists locations for, in expansion order. */
+export const LOCATION_ARRANGEMENTS = [
+  Arrangement.remote,
+  Arrangement.hybrid,
+  Arrangement.onsite,
+] as const;
+export type LocationArrangement = (typeof LOCATION_ARRANGEMENTS)[number];
+
+/** Per arrangement, the location texts to search in ("Europe", "Paris, France"). An empty list means that arrangement is not wanted. */
+export type LocationsByArrangement = Record<LocationArrangement, string[]>;
 
 export type RankedSkill = {
   technology: Technology;
+  domain: SkillDomain;
   importance: number;
   mastery: number;
 };
 
+/** The technologies one search uses and the skill domain they came from. */
+export type TechnologySet = {
+  technologies: Technology[];
+  domain: SkillDomain;
+};
+
 export type QuerySearchProfileInput = {
   position: Position;
-  regions: Region[];
-  arrangements: Arrangement[];
-  seniority: Seniority;
-  country: string;
-  city: string | null;
+  locations: LocationsByArrangement;
+  seniorities: Seniority[];
   skills: RankedSkill[];
 };
 
 export type QuerySearchCombination = {
   channel: Channel;
   position: Position;
-  /** Null for onsite and hybrid: those are bound to the city, not a region. */
-  locationRegion: Region | null;
-  country: string | null;
-  city: string | null;
+  /** Canonical (lowercased) location text, whatever the arrangement. */
+  location: string;
   experience: Seniority;
   type: Arrangement;
   technologies: Technology[];
+  /** The domain of the skill the technologies came from; part of the hash. */
+  domain: SkillDomain;
 };
 
 export type ChannelQuery = {

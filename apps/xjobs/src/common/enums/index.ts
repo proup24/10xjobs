@@ -1,6 +1,6 @@
 export { EnvironmentType } from './environment.enum';
 export { Arrangement } from './arrangement.enum';
-export { Channel } from './channel.enum';
+export { ACTIVE_CHANNELS, Channel } from './channel.enum';
 export { ContactKind } from './contact-kind.enum';
 export { Engagement } from './engagement.enum';
 export { ErrorCode } from './error-code.enum';

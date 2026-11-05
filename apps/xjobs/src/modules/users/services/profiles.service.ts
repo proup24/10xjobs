@@ -4,14 +4,16 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
-  Arrangement,
   Position,
   ProfileState,
-  Region,
   Seniority,
+  SkillDomain,
   Technology,
 } from 'src/common/enums';
 import {
+  type LocationsByArrangement,
+  normalizeLocations,
+  normalizeSeniorities,
   QuerySearchService,
   type QuerySearchProfileInput,
 } from 'src/modules/queries';
@@ -39,6 +41,8 @@ export function toProfileView(profile: ProfileWithSkills): ProfileView {
   } = profile;
   return {
     ...fields,
+    // A jsonb column: always written through normalizeLocations, in this shape.
+    locations: fields.locations as LocationsByArrangement,
     techStack: techStack
       .map(({ technology, domain, mastery, importance }) => ({
         technology,
@@ -66,16 +70,16 @@ export function toQuerySearchInput(
   // Rows carry plain string unions; the enums have the same values.
   return {
     position: profile.position as Position,
-    regions: [...profile.regions] as Region[],
-    arrangements: [...profile.arrangements] as Arrangement[],
-    seniority: profile.seniority as Seniority,
-    country: profile.country,
-    city: profile.city,
-    skills: profile.techStack.map(({ technology, importance, mastery }) => ({
-      technology: technology as Technology,
-      importance,
-      mastery,
-    })),
+    locations: profile.locations as LocationsByArrangement,
+    seniorities: profile.seniorities as Seniority[],
+    skills: profile.techStack.map(
+      ({ technology, domain, importance, mastery }) => ({
+        technology: technology as Technology,
+        domain: domain as SkillDomain,
+        importance,
+        mastery,
+      }),
+    ),
   };
 }
 
@@ -100,6 +104,37 @@ function toSkills(techStack: ProfileReplaceWrite['techStack']): SkillInput[] {
 const PROFILE_NOT_FOUND = 'Profile not found';
 export const PROFILE_PUBLISHED =
   'A published profile cannot be changed; delete it and create a new one';
+
+/** What regenerating published profiles needs. */
+export interface RegenerateDeps {
+  profiles: Pick<ProfilesRepository, 'listPublished'>;
+  querySearch: Pick<
+    QuerySearchService,
+    'detach' | 'generate' | 'retireOutdated'
+  >;
+}
+
+/**
+ * Moves every published profile to the query search builders of the current
+ * recipe, then retires the builders no profile uses any more. A plain
+ * function, so scripts can run it without Nest injection.
+ */
+export async function regeneratePublished(
+  deps: RegenerateDeps,
+  toInput: (
+    profile: ProfileWithSkills,
+  ) => QuerySearchProfileInput = toQuerySearchInput,
+): Promise<{ profiles: number; retired: number }> {
+  const published = await deps.profiles.listPublished();
+  for (const profile of published) {
+    await deps.querySearch.detach(profile.id);
+    await deps.querySearch.generate(profile.id, toInput(profile));
+  }
+  return {
+    profiles: published.length,
+    retired: await deps.querySearch.retireOutdated(),
+  };
+}
 
 /** A user owns many profiles; every operation takes `(userId, profileId)` and checks ownership. */
 @Injectable()
@@ -155,7 +190,12 @@ export class ProfilesService {
     return toProfileView(
       await this.profiles.create(
         userId,
-        { ...fields, city: fields.city ?? null },
+        {
+          ...fields,
+          city: fields.city ?? null,
+          locations: normalizeLocations(fields.locations),
+          seniorities: normalizeSeniorities(fields.seniorities),
+        },
         toSkills(techStack),
       ),
     );
@@ -173,14 +213,13 @@ export class ProfilesService {
       languages: data.languages,
       country: data.country,
       city: data.city ?? null,
-      regions: data.regions,
+      locations: normalizeLocations(data.locations),
       yearsOfExperience: data.yearsOfExperience,
       timezoneCurrent: data.timezoneCurrent,
       timezoneMin: data.timezoneMin,
       timezoneMax: data.timezoneMax,
       engagements: data.engagements,
-      arrangements: data.arrangements,
-      seniority: data.seniority,
+      seniorities: normalizeSeniorities(data.seniorities),
       noticePeriodDays: data.noticePeriodDays,
     };
     const profile = await this.profiles.replace(
@@ -213,6 +252,18 @@ export class ProfilesService {
     for (const profile of await this.profiles.list(userId)) {
       await this.querySearch.detach(profile.id);
     }
+  }
+
+  /**
+   * Re-attaches every published profile to the builders of the current recipe,
+   * then retires the outdated builders nothing uses any more. Run once after a
+   * recipe version bump; running it again changes nothing.
+   */
+  async regeneratePublished(): Promise<{ profiles: number; retired: number }> {
+    return regeneratePublished({
+      profiles: this.profiles,
+      querySearch: this.querySearch,
+    });
   }
 
   /**

@@ -1,3 +1,21 @@
+export { channelIngestConfig, ingestConfig } from './config';
 export { IngestModule } from './ingest.module';
-export { IngestService } from './services/ingest.service';
-export type { CollectedJob, IngestBatch, IngestReport } from './types';
+export {
+  type BatchRecord,
+  RawStorageRepository,
+  type SaveItemInput,
+} from './repositories/raw.repository';
+export { BatchIngestService } from './services/batch.service';
+export { RenormalizeService } from './services/renormalize.service';
+export type {
+  BatchFile,
+  BatchReport,
+  BatchStatus,
+  RawCollectedItem,
+} from './types';
+export {
+  BatchFileError,
+  batchStorageKey,
+  parseBatchFile,
+  serializeBatchFile,
+} from './utils/batch-file';

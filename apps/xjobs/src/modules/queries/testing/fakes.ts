@@ -30,6 +30,11 @@ export class FakeQuerySearchRepository extends QuerySearchRepository {
       associatedProfiles: 0,
       isActive: false,
       isDeleted: false,
+      coveredUntil: null,
+      claimRunId: null,
+      claimWindowStart: null,
+      claimWindowEnd: null,
+      claimExpiresAt: null,
       createdAt: now,
       updatedAt: now,
     } as QuerySearchBuilderRow;
@@ -88,6 +93,26 @@ export class FakeQuerySearchRepository extends QuerySearchRepository {
         !row.isDeleted &&
         (!channel || row.channel === channel),
     );
+  }
+
+  async listActive(channel: Channel): Promise<QuerySearchBuilderRow[]> {
+    return this.rows
+      .filter(
+        (row) => row.channel === channel && row.isActive && !row.isDeleted,
+      )
+      .sort(
+        (a, b) =>
+          a.createdAt.getTime() - b.createdAt.getTime() ||
+          (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+      );
+  }
+
+  async retireOutdated(version: number): Promise<number> {
+    const outdated = this.rows.filter(
+      (row) => row.version < version && !row.isActive && !row.isDeleted,
+    );
+    for (const row of outdated) row.isDeleted = true;
+    return outdated.length;
   }
 
   async softDelete(queryId: string): Promise<QuerySearchBuilderRow | null> {

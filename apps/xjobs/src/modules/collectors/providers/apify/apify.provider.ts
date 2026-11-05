@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Scope } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   ApifyApiError,
@@ -23,6 +23,17 @@ export interface ApifyStartOptions {
 export interface ApifyRunOptions extends ApifyStartOptions {
   /** How long to wait for the run before aborting it, in seconds. */
   waitSecs?: number;
+}
+
+/** A finished run's dataset and what Apify charged for it. */
+export interface ApifyRunResult {
+  items: unknown[];
+  /** `usageTotalUsd`, or null when Apify did not report it. */
+  costUsd: number | null;
+  /** The Apify run id. */
+  runId: string;
+  /** The run's default key-value store, where actors put side records. */
+  keyValueStoreId: string | null;
 }
 
 export interface ApifyListRunsOptions {
@@ -50,8 +61,9 @@ function isNotFound(error: unknown): boolean {
 /**
  * Thin wrapper over the official Apify client. The token comes from the config
  * service and the client is built on first use, so the API boots without one.
+ * Transient: every Apify trigger that injects it gets its own client.
  */
-@Injectable()
+@Injectable({ scope: Scope.TRANSIENT })
 export class ApifyActorProvider {
   private readonly logger = new Logger(ApifyActorProvider.name);
   private apify?: ApifyClient;
@@ -66,14 +78,15 @@ export class ApifyActorProvider {
   }
 
   /**
-   * Runs an actor to completion and returns every item of its default dataset.
-   * A run still going after `waitSecs` is aborted so it stops spending.
+   * Runs an actor to completion and returns every item of its default dataset
+   * with the run's cost. A run still going after `waitSecs` is aborted so it
+   * stops spending.
    */
   async run(
     actor: string,
     input: Record<string, unknown>,
     options: ApifyRunOptions,
-  ): Promise<unknown[]> {
+  ): Promise<ApifyRunResult> {
     const run = await this.client.actor(actor).call(input, {
       ...this.startOptions(options),
       waitSecs: options.waitSecs ?? DEFAULT_WAIT_SECS,
@@ -89,7 +102,12 @@ export class ApifyActorProvider {
         `Apify actor ${actor} run ${run.id} ended ${run.status}${run.statusMessage ? `: ${run.statusMessage}` : ''}`,
       );
     }
-    return this.items(run.defaultDatasetId);
+    return {
+      items: await this.items(run.defaultDatasetId),
+      costUsd: typeof run.usageTotalUsd === 'number' ? run.usageTotalUsd : null,
+      runId: run.id,
+      keyValueStoreId: run.defaultKeyValueStoreId ?? null,
+    };
   }
 
   /** Starts an actor run without waiting for it. */
@@ -132,6 +150,17 @@ export class ApifyActorProvider {
     } catch (error) {
       if (isNotFound(error)) return null;
       this.logger.warn(`Could not abort Apify run ${runId}`);
+      throw error;
+    }
+  }
+
+  /** A key-value store record's value, or null when there is none. */
+  async record(storeId: string, key: string): Promise<unknown> {
+    try {
+      const found = await this.client.keyValueStore(storeId).getRecord(key);
+      return found?.value ?? null;
+    } catch (error) {
+      if (isNotFound(error)) return null;
       throw error;
     }
   }

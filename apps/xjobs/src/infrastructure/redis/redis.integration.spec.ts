@@ -7,7 +7,7 @@ import { Redis } from 'ioredis';
 import { ConfigService } from '@nestjs/config';
 import { getRedisConfig, validateWorkerEnvironment } from 'src/config';
 import { RedisConnections } from './connections';
-import { CacheService } from './cache.service'; 
+import { CacheService } from './cache.service';
 import { PubSubService } from './pubsub.service';
 import { JobsService } from '../jobs/jobs.service';
 

@@ -1,6 +1,6 @@
 # Lookup-query job ingestion
 
-Status: approved by the user and implemented. Verification and migration prerequisite are recorded in the implementation plan and module README.
+Status: **superseded** by `2026-10-31-ingest-raw-storage-design.md` (ingest stores untouched batches; the normalized `raw_jobs` storage below was removed). Originally approved by the user and implemented. Verification and migration prerequisite are recorded in the implementation plan and module README.
 
 ## Intent and ownership
 

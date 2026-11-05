@@ -1,0 +1,50 @@
+{
+  "id": "873",
+  "input": {
+    "title": "Full Stack Developer (Python + React)",
+    "companyName": "Lorven Technologies Inc.",
+    "description": "Hi\n\n\n\n\nOur client is looking for a Full Stack Developer (Python + React) project in Remote below is the detailed requirement.\n\n\n\n\nJob positing Title: Full Stack Developer (Python + React)\n\nLocation: Remote\n\n\n\n\nRequired Skills: Python, React JS, SQL Database, REST API\n\n\n\n\nJob description:\n\n * Bachelor’s degree in computer science, Information Technology, or a related field\n * Design, develop, test, and maintain scalable web applications using Python and React JS.\n * Develop backend services, business logic, and RESTful APIs.\n * Build responsive and user-friendly frontend interfaces using React JS.\n * Design, develop, and optimize SQL database schemas, queries, and data models.\n * Integrate frontend components with backend APIs and database services.\n * Troubleshoot application issues and improve performance, scalability, and security.\n * Collaborate with cross-functional teams throughout the software development lifecycle.\n * Follow coding standards, conduct code reviews, and maintain technical documentation.",
+    "evidence": {
+      "location": "United States",
+      "contractType": null,
+      "experienceLevel": null,
+      "salary": null
+    }
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["remote"],
+        "places": [],
+        "placeStrictness": "unstated"
+      }
+    ],
+    "roleKind": "fullstack_engineer",
+    "seniority": "unstated",
+    "yearsRequired": null,
+    "contractMonths": null,
+    "mainStack": [
+      {
+        "anyOf": [
+          {
+            "text": "Python",
+            "code": "python"
+          }
+        ]
+      },
+      {
+        "anyOf": [
+          {
+            "text": "React JS",
+            "code": "react"
+          }
+        ]
+      }
+    ],
+    "requiredLanguages": [],
+    "sponsorship": "unstated",
+    "salary": null,
+    "junkFlags": []
+  },
+  "drafted": {}
+}

@@ -1,0 +1,68 @@
+{
+  "id": "128",
+  "input": {
+    "title": "Senior Software Engineer (Golang/TypeScript/React) - Independent Contractor",
+    "companyName": "Jobgether",
+    "description": "This position is listed on behalf of a partner company, who manages all applications and next steps. Our partner is looking for a Senior Software Engineer (Golang/TypeScript/React) - Independent Contractor based in Netherlands.\n\nThis is a senior engineering opportunity focused on building and evolving a data-intensive platform used by major global organizations and financial institutions.\n\nYou will work across backend microservices and modern frontend applications, combining Golang, TypeScript, and React to deliver reliable and performant products.\n\nThe role offers meaningful ownership, with engineers expected to take features from initial ideas through production and ongoing improvement.\n\nYou will contribute to technical strategy, architectural decisions, engineering standards, and the modernization of existing systems.\n\nThe engineering environment emphasizes observability, automation, performance, clean code, and continuous improvement.\n\nYou will collaborate within a distributed technical organization while engaging with Product and stakeholders across the wider business.\n\nThe position is fully remote and requires working US Eastern Time hours to maintain strong collaboration with the broader team.\n\nAccountabilities\n\nDesign, develop, test, maintain, and enhance Golang microservices and frontend applications, ensuring they remain reliable, scalable, maintainable, and aligned with product needs.\nBuild polished, performant, component-based user interfaces in React and TypeScript, following established design system principles and delivering a strong customer experience.\nTake end-to-end ownership of features, from ideation and technical design through implementation, testing, deployment, and continuous improvement in production.\nContribute to technical strategy by evaluating architectural options, balancing existing systems with new technologies, and clearly communicating technical decisions and trade-offs.\nImprove the performance, reliability, and observability of services and applications through effective engineering practices and appropriate monitoring solutions.\nRaise engineering quality standards through clean-code practices, thoughtful code reviews, automation, process improvements, and the adoption of technologies that improve team productivity.\nCollaborate closely with engineers, Product Managers, and stakeholders across the business to understand requirements, communicate complex technical topics, and deliver solutions that create meaningful business impact.\n\nRequirements\n\nStrong professional experience developing backend services and web applications with Golang, including deploying services in Docker containers.\nStrong experience building modern, componentized frontend applications using React and TypeScript, with a focus on performance, usability, and maintainability.\nAbility to write performant SQL and work effectively with data-intensive applications and relational databases.\nStrong understanding of clean-code principles and idiomatic TypeScript and Go, with the ability to apply these principles during development, code reviews, and engineering standards.\nAbility to quickly understand a new business domain and product, learn independently, and apply that knowledge to technical and product decisions.\nStrong communication skills, including the ability to explain complex technical concepts clearly to both technical and non-technical stakeholders.\nDemonstrated commitment to continuous learning and improving technical skills, engineering practices, and ways of working.\nExperience with concurrent application logic, such as Go goroutines, is beneficial but not essential.\nExperience building CI/CD pipelines, particularly with GitLab CI, is a plus.\nFamiliarity with observability tools such as Prometheus and Grafana, as well as experience with AI tools used to improve engineering productivity or productionized AI solutions, is advantageous.\nAdditional experience with MaterialUI, Airflow, Python, or Terraform is welcome.\nExperience with technologies such as Golang, TypeScript, React, MaterialUI, MariaDB, ClickHouse, GitLab, AWS, and SQL is valuable.\n\nBenefits\n\nCompensation of USD 5,000–6,500 per month as an independent contractor.\nFully remote working environment with location flexibility.\nUS Eastern Time working hours, typically aligned with approximately 2:00 PM–10:00 PM CET or 1:00 PM–9:00 PM BST.\nOpportunity to work on a data-intensive platform serving major international organizations and financial institutions.\nSignificant ownership over features, technical decisions, architecture, and engineering improvements.\nExposure to large-scale financial data collection, processing, validation, analytics, and data-driven products.\nCollaboration within a technical organization of approximately 30 technologists, working in small, cross-functional teams alongside Product Managers and business stakeholders.\nOpportunity to contribute to engineering standards, automation, observability, performance, and adoption of modern technologies including AI-enabled tooling.\nFully remote collaboration within an international, technology-focused environment.\n\nHow Jobgether Works\n\nWe use an AI-powered matching process to ensure your application is reviewed quickly, objectively, and fairly against the role's core requirements. Our system identifies the top-fitting candidates, and this shortlist is then shared directly with the hiring company. The final decision and next steps (interviews, assessments) are managed by their internal team.\n\nWe appreciate your interest and wish you the best!\n\nWhy Apply Through Jobgether?\n\nData Privacy Notice: By submitting your application, you acknowledge that Jobgether will process your personal data to evaluate your candidacy and share relevant information with the hiring employer. This processing is based on legitimate interest and pre-contractual measures under applicable data protection laws (including GDPR). You may exercise your rights (access, rectification, erasure, objection) at any time.\n\nWe may use artificial intelligence (AI) tools to support parts of the hiring process, such as reviewing applications, analyzing resumes, or assessing responses and identifying potential inconsistencies or verification signals in application materials based on available information. These tools assist our recruitment team but do not replace human judgment. Final hiring decisions are ultimately made by humans. If you would like more information about how your data is processed, please contact us.",
+    "evidence": {
+      "location": "Netherlands",
+      "contractType": null,
+      "experienceLevel": null,
+      "salary": null
+    }
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["remote"],
+        "places": [
+          {
+            "kind": "country",
+            "code": "NL"
+          }
+        ],
+        "placeStrictness": "limit"
+      }
+    ],
+    "roleKind": "fullstack_engineer",
+    "seniority": "senior",
+    "yearsRequired": null,
+    "contractMonths": null,
+    "mainStack": [
+      {
+        "anyOf": [
+          {
+            "text": "Golang",
+            "code": "go"
+          }
+        ]
+      },
+      {
+        "anyOf": [
+          {
+            "text": "TypeScript",
+            "code": "typescript"
+          }
+        ]
+      },
+      {
+        "anyOf": [
+          {
+            "text": "React",
+            "code": "react"
+          }
+        ]
+      }
+    ],
+    "requiredLanguages": [],
+    "sponsorship": "unstated",
+    "salary": {
+      "min": 5000,
+      "max": 6500,
+      "currency": "USD",
+      "period": "month"
+    },
+    "junkFlags": []
+  },
+  "drafted": {}
+}

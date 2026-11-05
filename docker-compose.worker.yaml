@@ -1,20 +1,83 @@
 # Build the runtime files first: pnpm exec nx prune @xjobs/xjobs
-# Start: docker compose -f docker-compose.yaml -f docker-compose.worker.yaml up -d --build worker redis-cache
+# Start all workers:
+# docker compose -f docker-compose.yaml -f docker-compose.worker.yaml up -d --build \
+#   worker ingest-worker processor-worker ashby-worker greenhouse-worker \
+#   linkedin-job-board-worker linkedin-posts-worker redis-cache
+
+x-worker: &worker
+  build:
+    context: ./apps/xjobs
+    dockerfile: Dockerfile
+  command: ['node', 'worker.js']
+  restart: unless-stopped
+  stop_grace_period: 60s
+  environment: &worker-environment
+    NODE_ENV: production
+    XJOBS_SKIP_ENV_FILES: '1'
+    REDIS_URL: redis://redis:6379
+    REDIS_PREFIX: ${REDIS_PREFIX:-xjobs}
+    JOBS_CONCURRENCY: ${JOBS_CONCURRENCY:-5}
+    REDIS_COMMAND_TIMEOUT_MS: ${REDIS_COMMAND_TIMEOUT_MS:-3000}
+    # Inside a container 127.0.0.1 is the container itself: against the local
+    # Supabase CLI stack, point these at host.docker.internal (54322 and 54321).
+    DATABASE_URL: ${DATABASE_URL:-}
+    # Worker startup validates the shared Supabase Storage credentials.
+    SUPABASE_URL: ${SUPABASE_URL:-}
+    SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+  extra_hosts:
+    - 'host.docker.internal:host-gateway'
+  depends_on:
+    redis:
+      condition: service_healthy
+
+x-collection-worker: &collection-worker
+  <<: *worker
+  # Disabled channels remove their schedule and exit successfully.
+  restart: on-failure
+  environment: &collection-environment
+    <<: *worker-environment
+    APIFY_TOKEN: ${APIFY_TOKEN:-}
+
 services:
+  # Infrastructure jobs only; collection and ingest run in separate processes.
   worker:
-    build:
-      context: ./apps/xjobs
-      dockerfile: Dockerfile
-    command: ['node', 'worker.js']
-    restart: unless-stopped
-    stop_grace_period: 60s
+    <<: *worker
+
+  # Consumes stored collection batches; needs no Apify token.
+  ingest-worker:
+    <<: *worker
     environment:
-      NODE_ENV: production
-      XJOBS_SKIP_ENV_FILES: '1'
-      REDIS_URL: redis://redis:6379
-      REDIS_PREFIX: ${REDIS_PREFIX:-xjobs}
-      JOBS_CONCURRENCY: ${JOBS_CONCURRENCY:-5}
-      REDIS_COMMAND_TIMEOUT_MS: ${REDIS_COMMAND_TIMEOUT_MS:-3000}
-    depends_on:
-      redis:
-        condition: service_healthy
+      <<: *worker-environment
+      WORKER_ROLE: ingest
+
+  # Extracts structured fields from normalized jobs; needs an OpenRouter key.
+  processor-worker:
+    <<: *worker
+    environment:
+      <<: *worker-environment
+      WORKER_ROLE: processor
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+
+  ashby-worker:
+    <<: *collection-worker
+    environment:
+      <<: *collection-environment
+      WORKER_CHANNEL: ASHBY
+
+  greenhouse-worker:
+    <<: *collection-worker
+    environment:
+      <<: *collection-environment
+      WORKER_CHANNEL: GREEN_HOUSE
+
+  linkedin-job-board-worker:
+    <<: *collection-worker
+    environment:
+      <<: *collection-environment
+      WORKER_CHANNEL: LINKEDIN_JOB_BOARD
+
+  linkedin-posts-worker:
+    <<: *collection-worker
+    environment:
+      <<: *collection-environment
+      WORKER_CHANNEL: LINKEDIN_POSTS

@@ -1,0 +1,38 @@
+{
+  "id": "1452",
+  "input": {
+    "title": "Technical SEO Expert",
+    "companyName": "SeatPick",
+    "description": "SeatPick is a profitable, bootstrapped B2C startup\n\nRedefining how fans discover and buy tickets to live events. Think of us as “the Skyscanner for live events” – the world’s #1 ticket search engine and the leading platform for football tickets in the UK and US.\n\nWith millions of users annually and growing fast, we’re a product-first, tech-driven team on a mission to disrupt the $300B global ticketing industry. Transparency, simplicity, and trust are at the core of our user experience.\n\nOur advanced SEO systems drive massive, programmatic-scale traffic, and we’re building an AI-first platform to outcompete legacy monopolies using cutting-edge tools.\n\nAs we scale, we’re seeking a highly skilled Technical SEO professional to drive growth across hundreds of locales and millions of pages.\n\nWhat You’ll Be Doing:\n\n\n * Perform ongoing technical SEO QA audits across large-scale platforms, identifying and resolving issues before they impact search performance\n * Collaborate closely with development and QA teams to define pre-development SEO requirements, implement fixes, and validate SEO-critical releases\n * Test and validate locale-specific implementations, including hreflang, localized content, URL structures, and region-specific SEO settings\n * Leverage automation tools, scripts, and AI to scale SEO research, reporting, and issue detection\n * Analyze large and diverse datasets to identify trends, gaps, and growth opportunities\n * Conduct technical testing across structured data and schema, site architecture, crawlability, indexability, and site performance\n * Build and maintain scalable reporting frameworks that enable efficient monitoring and action on SEO performance\n * Stay up to date with search engine algorithms, industry trends, and emerging technologies, and recommend innovative technical SEO strategies\n   \n   \n\nYou’re a Fit If You Have:\n\n\n * Proven experience in technical SEO, preferably working on large-scale or programmatic websites\n * Hands-on experience crawling large sites and analyzing log files\n * Strong experience conducting technical SEO audits and QA processes across multiple teams\n * Experience ensuring consistent SEO performance and functionality across multiple locales and markets\n * Deep familiarity with SEO tools and data sources such as Google Search Console, Screaming Frog, JetOctopus, Ahrefs, SEMrush, DataforSEO, SQL, and similar platforms\n * Experience integrating AI tools and LLMs (such as ChatGPT, Claude, or similar) into SEO research, audits, and reporting, and translating insights into actionable plans\n * Working knowledge of HTML, CSS, JavaScript, and modern website architecture\n * Strong analytical and problem-solving skills with high attention to detail\n * Proven experience collaborating with development, product, content, and QA teams\n * Excellent communication skills, with the ability to translate technical findings into clear and actionable recommendations\n * Highly organized, detail-oriented, and able to manage multiple SEO QA tasks and releases in parallel while maintaining speed and accuracy\n * Strong English communication skills\n   \n   \n\nWhy You’ll Love Working With Us:\n\n\n * Opportunity to shape the technical SEO strategy of a high-growth, large-scale global platform\n * Close collaboration with SEO, development, product, and content teams\n * Access to advanced tools, large datasets, and AI-driven workflows to support innovation\n * Competitive salary, benefits, and long-term career growth opportunities",
+    "evidence": {
+      "location": "Serbia",
+      "contractType": null,
+      "experienceLevel": null,
+      "salary": null
+    }
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["unstated"],
+        "places": [],
+        "placeStrictness": "unstated"
+      }
+    ],
+    "roleKind": "seo_marketing_web",
+    "seniority": "unstated",
+    "yearsRequired": null,
+    "contractMonths": null,
+    "mainStack": [],
+    "requiredLanguages": [
+      {
+        "lang": "en",
+        "level": "fluent"
+      }
+    ],
+    "sponsorship": "unstated",
+    "salary": null,
+    "junkFlags": []
+  },
+  "drafted": {}
+}

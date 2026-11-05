@@ -1,0 +1,55 @@
+{
+  "id": "283",
+  "input": {
+    "title": "Back-End Engineer (4DEF128)",
+    "companyName": "Referment",
+    "description": "Referment is working with a financial technology business whose software helps institutional investment firms and corporate treasury teams manage currency risk and cash investments. Its platform brings together trading and operational workflows, making reliable back-end services central to the product.\n\nYou'll help improve and extend an existing platform, balancing new functionality with maintainability and reliability. Working within a cross-functional product team, you'll collaborate with senior engineers, product managers, designers, QA and financial domain specialists, contributing to architecture as well as delivering code.\n\nAI tools are part of the development workflow here. The role suits someone who uses them thoughtfully, shares useful techniques and remains accountable for the quality of the resulting software. Candidates need to be based within two hours of the UK time zone.\n\nThe Role\n\nBuild and maintain back-end web application services that support the platform's products and operational workflows.\nContribute to architecture decisions, identifying gaps and weighing delivery speed against reliability and long-term maintainability.\nEvaluate and integrate new technologies where they address a product or engineering need.\nSupport the existing codebase and work with colleagues to improve engineering practices.\nUse AI-assisted development tools and share practical approaches that help the team work effectively.\n\nWhat We're Looking For\n\nAt least five years of professional back-end engineering experience, with strong Node.js and TypeScript skills.\nA sound understanding of APIs, service design, application architecture and security.\nExperience with event-driven microservices and distributed messaging technologies such as SQS, RabbitMQ or Kafka.\nThe ability to learn unfamiliar frameworks independently and discuss technical decisions clearly with colleagues.\nComfort using AI tools in development, alongside good written and spoken English.\n\nUseful Additional Experience\n\nAWS cloud-native development, infrastructure as code, coding agents and context engineering would be useful. Experience building FX, cash management or interest-rate systems is welcome, but is not essential.\n\nThis could suit an experienced Node.js engineer who enjoys both hands-on delivery and architectural discussion, whether your background is in financial software or another service-based product environment.\n\n#Referment",
+    "evidence": {
+      "location": "London, England, United Kingdom",
+      "contractType": null,
+      "experienceLevel": null,
+      "salary": null
+    }
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["unstated"],
+        "places": [],
+        "placeStrictness": "unstated"
+      }
+    ],
+    "roleKind": "backend_engineer",
+    "seniority": "unstated",
+    "yearsRequired": 5,
+    "contractMonths": null,
+    "mainStack": [
+      {
+        "anyOf": [
+          {
+            "text": "Node.js",
+            "code": "nodejs"
+          }
+        ]
+      },
+      {
+        "anyOf": [
+          {
+            "text": "TypeScript",
+            "code": "typescript"
+          }
+        ]
+      }
+    ],
+    "requiredLanguages": [
+      {
+        "lang": "en",
+        "level": "working"
+      }
+    ],
+    "sponsorship": "unstated",
+    "salary": null,
+    "junkFlags": []
+  },
+  "drafted": {}
+}

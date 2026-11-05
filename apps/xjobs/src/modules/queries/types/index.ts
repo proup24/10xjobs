@@ -1,1 +1,1 @@
-export type * from './query-search.types';
+export * from './query-search.types';

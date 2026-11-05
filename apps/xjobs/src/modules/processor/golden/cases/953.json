@@ -1,0 +1,58 @@
+{
+  "id": "953",
+  "input": {
+    "title": "Senior Node.js Developer (Poland)",
+    "companyName": "Flosum",
+    "description": "Who We Are\n\nFlosum is a bootstrapped, profitable B2B SaaS company building the leading Salesforce-native DevSecOps, Data Protection, and Security platform. Our solutions are trusted by Fortune 500 enterprises in the most heavily regulated industries on the planet — financial services, healthcare, government, and insurance.\n\nWe're not a startup burning cash and chasing vanity metrics. We're a proven, scaling business that reached profitability on our own terms. As a Salesforce Summit Partner and Innovation Award winner, we've earned our seat at the table alongside the biggest names in enterprise software.\n\nBuilt 100% on the Salesforce platform. Serving enterprises that demand zero compromise on security, compliance, and reliability.\n\nWhy This Role Exists\n\nWe are entering an aggressive growth phase — expanding our product surface, deepening our platform capabilities, and accelerating our delivery velocity. We need senior-caliber Node.js developers who can own significant parts of our architecture and ship production code that enterprise customers depend on daily.\n\nThis is not a staff augmentation seat. You will work directly with engineering leadership, product managers, and the CEO. Your decisions will have real consequences, your opinions will be heard, and your craftsmanship will be visible to the customers who rely on our platform.\n\nWhat You'll Build\n\n\n * High-performance backend services and APIs powering enterprise-grade SaaS applications\n * Scalable, secure Node.js micro services and integrations within the Salesforce ecosystem\n * Modern front-end experiences using Vue.js and TypeScript that serve demanding enterprise users\n * CI/CD pipeline tooling, automation frameworks, and developer productivity infrastructure\n * Real-time data processing and event-driven architectures handling sensitive enterprise data at scale\n   \n   \n\nRequirements\n\nRead this section carefully. We are specific about what we need because we are serious about who we hire.\n\nNon-Negotiable Technical Requirements\n\n\n * 5+ years of professional Node.js development in production environments — not tutorials, not side projects, not bootcamp exercises. Real production systems serving real users at scale\n * Expert-level understanding of asynchronous programming, event loops, streams, and the Node.js runtime. You should be able to explain backpressure, the differences between setImmediate and process.nextTick, and why unhandled promise rejections are dangerous — without Googling it\n * Deep experience with TypeScript in production codebases. We write typed code, and we expect you to understand why\n * Strong command of RESTful API design, authentication patterns (OAuth 2.0, JWT), and API security best practices for enterprise environments\n * Proven experience with SQL and NoSQL databases, query optimization, data modeling, and understanding the performance implications of schema decisions at scale\n * Proficiency with Git workflows, code review practices, automated testing (unit, integration, and end-to-end), and CI/CD pipelines\n * Solid understanding of containerization (Docker), cloud services (AWS/GCP/Azure), and infrastructure-as-code principles\n   \n   \n\nHighly Preferred (These Will Set You Apart)\n\n\n * Salesforce development experience: Apex, Lightning Web Components (LWC), Visualforce, or Salesforce API integrations. If you know both Node.js and Salesforce, you are a rare and extremely valuable candidate to us\n * Experience building or contributing to Salesforce ISV (AppExchange) products\n * Vue.js front-end development experience, particularly with Vue 3 Composition API and state management\n * Experience working in B2B SaaS companies serving enterprise customers with strict compliance requirements (SOC 2, HIPAA, FedRAMP, GDPR)\n * Familiarity with DevOps/DevSecOps toolchains and practices in the Salesforce ecosystem\n   \n   \n\nThe Kind of Person We're Looking For\n\nSkills get you in the door. Mindset determines whether you thrive here:\n\nMissionary, Not Mercenary\n\nYou care about what you're building and why. You take ownership not because someone assigned it to you, but because that's who you are. When something is broken at 2 AM, you don't check whether it's \"your responsibility\" — you fix it.\n\nBuilder, Not a Bystander\n\nYou don't wait for perfect specifications. You dig in, ask hard questions, propose solutions, and ship. You would rather have a working prototype by Friday than a polished slide deck by next quarter.\n\nCraftsperson Under Pressure\n\nEnterprise customers depend on our uptime and data integrity. You write code that doesn't just work — it survives. You understand that in regulated industries, your code is your reputation.\n\nDirect Communicator\n\nYou say what you think, respectfully and clearly. If a technical decision is wrong, you speak up — regardless of who made it. We value candor over politeness-at-the-expense-of-quality.\n\nThis Is a Long-Term Commitment\n\nLet us be direct: we are not looking for contractors who jump between projects every few months. We are building a world-class engineering team, and we invest heavily in the people who join us. In return, we expect commitment.\n\nThis role is designed as a long-term, full-time engagement. You will grow with us. You will own systems end-to-end. You will see the direct impact of your work in how Fortune 500 companies build, protect, and deploy on Salesforce.\n\nIf you're looking for a short-term gig while you wait for something else, this isn't the role. If you want to build something that matters and be part of a team that's scaling from strong to dominant, keep reading.\n\nBenefits\n\nWhat We Offer\n\n\n * Competitive compensation commensurate with your experience and impact\n * Direct collaboration with the founding team and engineering leadership — your voice will carry weight from day one\n * A profitable, stable company with aggressive growth plans — no funding anxiety, no runway clock\n * The opportunity to work on enterprise-grade products used by some of the largest organizations in the world\n * Meaningful technical challenges: security, compliance, scale, and reliability at the intersection of Node.js and Salesforce\n * A culture that rewards ownership, speed, and craftsmanship over politics and hierarchy\n * Remote-first flexibility with a results-oriented work environment",
+    "evidence": {
+      "location": "Poland",
+      "contractType": null,
+      "experienceLevel": null,
+      "salary": null
+    }
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["unstated"],
+        "places": [],
+        "placeStrictness": "unstated"
+      }
+    ],
+    "roleKind": "backend_engineer",
+    "seniority": "unstated",
+    "yearsRequired": 5,
+    "contractMonths": null,
+    "mainStack": [
+      {
+        "anyOf": [
+          {
+            "text": "Node.js",
+            "code": "nodejs"
+          }
+        ]
+      },
+      {
+        "anyOf": [
+          {
+            "text": "TypeScript",
+            "code": "typescript"
+          }
+        ]
+      },
+      {
+        "anyOf": [
+          {
+            "text": "Vue.js",
+            "code": "vue"
+          }
+        ]
+      }
+    ],
+    "requiredLanguages": [],
+    "sponsorship": "unstated",
+    "salary": null,
+    "junkFlags": []
+  },
+  "drafted": {}
+}

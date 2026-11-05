@@ -1,17 +1,25 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from 'src/database';
+import { StorageModule } from 'src/modules/storage';
 import {
-  IngestRepository,
-  PrismaIngestRepository,
-} from './repositories/ingest.repository';
-import { IngestService } from './services/ingest.service';
+  PrismaRawStorageRepository,
+  RawStorageRepository,
+} from './repositories/raw.repository';
+import { BatchFileReaderService } from './services/batch-file-reader.service';
+import { BatchItemWriterService } from './services/batch-item-writer.service';
+import { BatchIngestService } from './services/batch.service';
+import { RenormalizeService } from './services/renormalize.service';
 
+/** Ingests stored collection batches into raw storage and normalized jobs. */
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, StorageModule],
   providers: [
-    IngestService,
-    { provide: IngestRepository, useClass: PrismaIngestRepository },
+    BatchIngestService,
+    BatchFileReaderService,
+    BatchItemWriterService,
+    RenormalizeService,
+    { provide: RawStorageRepository, useClass: PrismaRawStorageRepository },
   ],
-  exports: [IngestService],
+  exports: [BatchIngestService, RawStorageRepository, RenormalizeService],
 })
 export class IngestModule {}

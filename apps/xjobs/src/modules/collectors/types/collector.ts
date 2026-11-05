@@ -1,56 +1,70 @@
 import { Channel } from 'src/common/enums';
 
-export interface CollectorSearch {
+/** One item exactly as the source returned it, with where its query ranked it. */
+export interface RawCollectedItem {
+  /** 1-based position the source reported; null when it reports none. */
+  rank: number | null;
+  /** Untouched source payload. */
+  payload: unknown;
+}
+
+/** One member builder of a search segment, as a collector searches it. */
+export interface SegmentQuery {
+  /** The builder id; results are attributed and ingested against it. */
   id: string;
-  userId: string;
-  profileId: string;
-  channel: Channel;
-  keywords: string[];
+  keyword: string;
   params: Record<string, unknown>;
 }
 
-/** Wire name of the source a collected job came from. */
-export type JobSource =
-  | 'linkedin-jobs'
-  | 'linkedin-posts'
-  | 'ashby'
-  | 'greenhouse';
-
-export const channelSource = {
-  [Channel.LINKEDIN_JOB_BOARD]: 'linkedin-jobs',
-  [Channel.LINKEDIN_POSTS]: 'linkedin-posts',
-  [Channel.ASHBY]: 'ashby',
-  [Channel.GREEN_HOUSE]: 'greenhouse',
-} as const satisfies Record<Channel, JobSource>;
-
-/** The record every channel provider emits, and the item shape ingest accepts. */
-export interface CollectedJob {
-  source: JobSource;
-  sourceJobId: string;
-  /** Canonical posting URL. */
-  url: string;
-  applyUrl: string | null;
-  title: string;
-  company: string;
-  location: string | null;
-  /** ISO 8601 UTC. */
-  postedAt: string | null;
-  postedAtPrecision: 'hour' | 'day';
-  /** Plain text. */
-  description: string;
-  contact: { name: string; url: string } | null;
-  /** Query that found it. */
-  search: string;
-  raw: unknown;
+/** Up to ten builders searched together in one Apify run, over one window. */
+export interface SegmentSearch {
+  channel: Channel;
+  since: Date;
+  until: Date;
+  queries: SegmentQuery[];
 }
 
-export interface CollectionResult {
-  jobs: CollectedJob[];
-  complete: boolean;
-  truncated: boolean;
+/** What one segment run collected, per member builder, untouched. */
+export interface SegmentResult {
+  /** Every member id is a key, with an empty list when nothing matched it. */
+  itemsByQuery: Map<string, RawCollectedItem[]>;
+  /** Items the run returned that no member query claims; kept, never dropped. */
+  unattributed: RawCollectedItem[];
+  /** The actor that ran and its Apify run, for tracing a batch back to its source. */
+  source: { actor: string; apifyRunId: string | null };
+  /** Items the actor returned, attributed or not. */
+  fetched: number;
+  /**
+   * What the source says matched each search (the LinkedIn actor's
+   * `SEARCH_TOTALS` record), untouched; null or absent when not reported.
+   */
+  searchTotals?: unknown;
+  /** What Apify charged, or null when it did not report it. */
+  costUsd: number | null;
+  /** The run stopped at its charge cap, so results may be missing. */
+  capped: boolean;
+  /** Members whose search reached its row limit. */
+  truncatedQueryIds: string[];
 }
 
-export abstract class Collector {
-  abstract readonly channel: Channel;
-  abstract collect(search: CollectorSearch): Promise<CollectionResult>;
+/** How a channel's actor runs; the values live in the channel's job config. */
+export interface ActorRunConfig {
+  actor: string;
+  /** Spend cap of one segment run, in USD. */
+  maxRunChargeUsd: number;
+}
+
+export interface LinkedinJobBoardRunConfig extends ActorRunConfig {
+  maxRowsPerUrl: number;
+}
+
+export interface LinkedinPostsRunConfig extends ActorRunConfig {
+  maxPostsPerQuery: number;
+}
+
+/** Greenhouse and Ashby postings are discovered through Google. */
+export interface BoardSearchRunConfig extends ActorRunConfig {
+  site: string;
+  suffix: string;
+  maxPagesPerQuery: number;
 }

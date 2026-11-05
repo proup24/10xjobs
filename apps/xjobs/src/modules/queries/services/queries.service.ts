@@ -1,16 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type { Channel } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
-import { toRecipe } from '../builders';
+import { QUERY_SEARCH_RECIPE_VERSION, toRecipe } from '../builders';
 import { technologySets } from '../sets/technology';
 import { QuerySearchRepository } from '../repositories/queries.repository';
 import {
-  assertLocatable,
+  assertHasLocations,
+  assertHasSeniorities,
+  assertHasSkills,
   dedupeByHash,
-  localCombinations,
-  normalizeArrangements,
+  dedupeBySearch,
+  locationCombinations,
   normalizeProfile,
-  remoteCombinations,
 } from '../steps';
 import type {
   QuerySearchProfileInput,
@@ -23,20 +24,17 @@ export class QuerySearchService {
   constructor(private readonly builders: QuerySearchRepository) {}
 
   /**
-   * Turns a profile into its search recipes: remote per `channel × region ×
-   * technology`, onsite/hybrid per `channel × technology` in the city.
-   * Each step is a pure function in `../steps`.
+   * Turns a profile into its search recipes: one per `arrangement × channel ×
+   * location × technology × seniority`. Each step is a pure function in `../steps`.
    */
   expand(input: QuerySearchProfileInput): QuerySearchRecipe[] {
     const profile = normalizeProfile(input);
-    assertLocatable(profile);
+    assertHasLocations(profile);
+    assertHasSeniorities(profile);
+    assertHasSkills(profile);
     const technologies = technologySets(profile.skills);
-    const arrangements = normalizeArrangements(profile.arrangements);
-    const combinations = [
-      ...remoteCombinations(profile, arrangements, technologies),
-      ...localCombinations(profile, arrangements, technologies),
-    ];
-    return dedupeByHash(combinations.map(toRecipe));
+    const combinations = locationCombinations(profile, technologies);
+    return dedupeBySearch(dedupeByHash(combinations.map(toRecipe)));
   }
 
   /**
@@ -47,7 +45,8 @@ export class QuerySearchService {
     profileId: string,
     input: QuerySearchProfileInput,
   ): Promise<QuerySearchAttachResult> {
-    return this.builders.attach(profileId, this.expand(input));
+    const queries = this.expand(input);
+    return this.builders.attach(profileId, queries);
   }
 
   /** Releases every builder the profile uses: each loses one associated profile, inactive at 0. */
@@ -64,6 +63,19 @@ export class QuerySearchService {
     const rows = await this.builders.list(userId, profileId, channel);
     if (!rows) throw new NotFoundException('Profile not found');
     return rows;
+  }
+
+  /** A channel's active, non-deleted builders across every profile, oldest first. */
+  listActive(channel: Channel): Promise<QuerySearchBuilderRow[]> {
+    return this.builders.listActive(channel);
+  }
+
+  /**
+   * Soft-deletes builders of an older recipe that no profile uses any more:
+   * after regeneration, these are the outdated ones.
+   */
+  retireOutdated(): Promise<number> {
+    return this.builders.retireOutdated(QUERY_SEARCH_RECIPE_VERSION);
   }
 
   /** Retires a builder for good: it is unlinked from every profile and never collected again. */

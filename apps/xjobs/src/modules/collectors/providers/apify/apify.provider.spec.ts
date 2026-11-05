@@ -11,12 +11,14 @@ const sdk = vi.hoisted(() => {
   const run = { get: vi.fn(), abort: vi.fn(), waitForFinish: vi.fn() };
   const runs = { list: vi.fn() };
   const dataset = { listItems: vi.fn() };
+  const keyValueStore = { getRecord: vi.fn() };
   const ApifyClient = vi.fn(function (this: object, options: unknown) {
     Object.assign(this, {
       options,
       actor: vi.fn(() => actor),
       run: vi.fn(() => run),
       dataset: vi.fn(() => dataset),
+      keyValueStore: vi.fn(() => keyValueStore),
     });
   });
   class ApifyApiError extends Error {
@@ -25,7 +27,15 @@ const sdk = vi.hoisted(() => {
     }
   }
   actor.runs.mockReturnValue(runs);
-  return { ApifyClient, ApifyApiError, actor, run, runs, dataset };
+  return {
+    ApifyClient,
+    ApifyApiError,
+    actor,
+    run,
+    runs,
+    dataset,
+    keyValueStore,
+  };
 });
 
 vi.mock('apify-client', () => ({
@@ -96,7 +106,12 @@ describe('ApifyActorProvider', () => {
       { queries: 'q' },
       { maxChargeUsd: 0.5 },
     );
-    expect(items).toEqual([{ id: 1 }, { id: 2 }]);
+    expect(items).toEqual({
+      items: [{ id: 1 }, { id: 2 }],
+      costUsd: null,
+      runId: 'run-1',
+      keyValueStoreId: null,
+    });
     expect(sdk.actor.call).toHaveBeenCalledWith(
       { queries: 'q' },
       expect.objectContaining({ maxTotalChargeUsd: 0.5, waitSecs: 300 }),
@@ -165,5 +180,30 @@ describe('ApifyActorProvider', () => {
     expect(await provider.abortRun('gone')).toBeNull();
     sdk.run.abort.mockRejectedValue(new sdk.ApifyApiError(500));
     await expect(provider.abortRun('run-1')).rejects.toThrow('HTTP 500');
+  });
+
+  it("returns the run's key-value store id", async () => {
+    sdk.actor.call.mockResolvedValue(
+      run('SUCCEEDED', { defaultKeyValueStoreId: 'kv-1' }),
+    );
+    sdk.dataset.listItems.mockReturnValue(listing([]));
+    const result = await provider.run('a/b', {}, { maxChargeUsd: 1 });
+    expect(result.keyValueStoreId).toBe('kv-1');
+  });
+
+  it('reads a key-value record, null when it is absent', async () => {
+    sdk.keyValueStore.getRecord.mockResolvedValueOnce({
+      key: 'SEARCH_TOTALS',
+      value: { total: 3 },
+    });
+    expect(await provider.record('kv-1', 'SEARCH_TOTALS')).toEqual({
+      total: 3,
+    });
+    sdk.keyValueStore.getRecord.mockResolvedValueOnce(undefined);
+    expect(await provider.record('kv-1', 'SEARCH_TOTALS')).toBeNull();
+    sdk.keyValueStore.getRecord.mockRejectedValueOnce(
+      new sdk.ApifyApiError(404),
+    );
+    expect(await provider.record('kv-1', 'SEARCH_TOTALS')).toBeNull();
   });
 });

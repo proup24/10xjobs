@@ -1,0 +1,58 @@
+{
+  "id": "5524",
+  "input": {
+    "title": "Staff Software Engineer, Frontend",
+    "companyName": "hims & hers",
+    "description": "Location: United States\n\nHims & Hers is the leading health and wellness platform, on a mission to help the world feel great through the power of better health. We are redefining healthcare by putting the customer first and delivering access to care that is affordable, accessible, and personal, from diagnosis to treatment to delivery. No two people are the same, so we provide access to personalized care designed for results. By normalizing health & wellness challenges and innovating on their solutions, we’re making better health outcomes easier to achieve.\n\nHims & Hers is a public company, traded on the NYSE under the ticker symbol “HIMS.” To learn more about the brand and offerings, you can visit hims.com/about and hims.com/how-it-works . For information on the company’s outstanding benefits, culture, and its talent-first flexible/remote work approach, see below and visit www.hims.com/careers-professionals.\n\nAbout The Role\n\nHims & Hers is seeking an experienced, self-motivated, and results-driven Staff Engineer to build, test, deploy and support our self-service platform used for pharmacy operations and customer order fulfillment.\n\nAs a leading technical voice within the Fulfillment and Pharmacy Engineering Front End team, you will collaborate with other engineers, product managers, designers, and Engineering leaders to deliver solutions for our Fulfillment and Pharmacy Operations teams. Your contributions will help ensure the resulting platform is safe, reliable, scalable, and adaptable to our growing business needs.\n\nYou Will\n\n\n * Lead the architecture of scalable, maintainable, and performant front end solutions aligned with product requirements\n * Work with other technical leaders to identify and drive adoption of common frameworks, patterns, and practices\n * Establish and foster consistent best practices, design patterns, and coding standards across the Front End team\n * Shape responsible adoption of AI across our software development process, raising team output while holding the bar for patient safety, quality, and maintainability\n * Guide the technical growth of Front End engineers through pair programming, mentorship opportunities, maintaining thorough technical documentation, and other avenues\n * Initiate efforts to reduce technical debt and enhance workflow efficiency\n * Implement tools and processes for monitoring, incident response, and performance optimization\n * Define a multi-quarter front end architecture roadmap for Pharmacy & Fulfillment and break it into work other engineers can pick up\n * Collaborate with designers for intuitive and engaging user experiences\n * Conduct design & code reviews and facilitate knowledge-sharing initiatives\n * Stay informed of industry trends and standards to propose innovative enhancements\n   \n   \n\nYou Have\n\n\n * 10+ years of software engineering experience, with a track record of setting front end technical direction across multiple teams\n * Proven experience in building scalable web applications and services, preferably in a cloud environment\n * Proficiency in front-end technologies such as HTML, CSS, and JavaScript frameworks (React, React Native, NextJs, TypeScript) and back-end technologies (Node.js, Docker, Kubernetes, Redis)\n * Experience with monitoring and CI/CD technologies (Datadog, Github actions, Circle CI, etc…)\n * Hands-on experience using AI tools in real engineering workflows, with good judgment about where they help and where they don't\n * Excellent problem-solving skills and the ability to think critically and strategically\n * Strong communication and collaboration skills, with the ability to work effectively across teams\n * Capable of prioritizing multiple projects in order to meet goals without management oversight\n   \n   \n\nPreferred Experience\n\n\n * Identifies clarity in ambiguous situations, acting as a stabilizing influence during uncertainty.\n * Fosters trust and collaboration across diverse teams\n * Balances confidence with humility, constructively addressing conflicts and resistance.\n * Provides empathetic feedback and promotes transparency\n * Strategically drives execution of initiatives, maintaining urgency and focus on critical priorities\n * Champions customer-centric design and ensures customer priorities are reflected\n * Demonstrates accountability, owning outcomes and the long-term success of technical systems\n * Proactively identifies and addresses risks and gaps without awaiting direction.\n * Promotes curiosity, continuous improvement, and innovation\n * Influences decisions through well-reasoned arguments and supports alignment post-decision\n   \n   \n\nOur Benefits (there are more but here are some highlights):\n\n\n * Competitive salary & equity compensation for full-time roles\n * Unlimited PTO, company holidays, and quarterly mental health days\n * Comprehensive health benefits including medical, dental & vision, and parental leave\n * Employee Stock Purchase Program (ESPP)\n * 401k benefits with employer matching contribution\n * Offsite team retreats\n   \n   \n\nWe are committed to building a workforce that reflects diverse perspectives and prioritizes ethics, wellness, and a strong sense of belonging. If you're excited about this role, we encourage you to apply—even if you're not sure if your background or experience is a perfect match.\n\nHims considers all qualified applicants for employment, including applicants with arrest or conviction records, in accordance with the San Francisco Fair Chance Ordinance, the Los Angeles County Fair Chance Ordinance, the California Fair Chance Act, and any similar state or local fair chance laws.\n\nIt is unlawful in Massachusetts to require or administer a lie detector test as a condition of employment or continued employment. An employer who violates this law shall be subject to criminal penalties and civil liability.\n\nHims & Hers is committed to providing reasonable accommodations for qualified individuals with disabilities and disabled veterans in our job application procedures. If you need assistance or an accommodation due to a disability, please contact us at [contact email] and describe the needed accommodation. Your privacy is important to us, and any information you share will only be used for the legitimate purpose of considering your request for accommodation. Hims & Hers gives consideration to all qualified applicants without regard to any protected status, including disability. Please do not send resumes to this email address.\n\nTo learn more about how we collect, use, retain, and disclose Personal Information, please visit our Global Candidate Privacy Statement.",
+    "evidence": {
+      "location": "United States",
+      "contractType": null,
+      "experienceLevel": null,
+      "salary": null
+    }
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["unstated"],
+        "places": [],
+        "placeStrictness": "unstated"
+      }
+    ],
+    "roleKind": "frontend_engineer",
+    "seniority": "unstated",
+    "yearsRequired": 10,
+    "contractMonths": null,
+    "mainStack": [
+      {
+        "anyOf": [
+          {
+            "text": "React",
+            "code": "react"
+          }
+        ]
+      },
+      {
+        "anyOf": [
+          {
+            "text": "TypeScript",
+            "code": "typescript"
+          }
+        ]
+      },
+      {
+        "anyOf": [
+          {
+            "text": "NextJs",
+            "code": "nextjs"
+          }
+        ]
+      }
+    ],
+    "requiredLanguages": [],
+    "sponsorship": "unstated",
+    "salary": null,
+    "junkFlags": []
+  },
+  "drafted": {}
+}

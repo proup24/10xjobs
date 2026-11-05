@@ -23,16 +23,21 @@ export {
   databaseEnvironmentSchema,
   environmentSchema,
   parseEnvironment,
+  processorEnvironmentSchema,
   validateEnvironment,
   redisEnvironmentSchema,
   seedEnvironmentSchema,
   validateWorkerEnvironment,
+  validateWorkerProcessEnvironment,
+  workerProcessEnvironmentSchema,
 } from './environment.validation';
 export type {
   DatabaseEnvironmentVariables,
   EnvironmentVariables,
+  ProcessorEnvironmentVariables,
   RedisEnvironmentVariables,
   SeedEnvironmentVariables,
+  WorkerProcessEnvironmentVariables,
 } from './environment.validation';
 
 type AppConfigService = ConfigService<EnvironmentVariables, true>;

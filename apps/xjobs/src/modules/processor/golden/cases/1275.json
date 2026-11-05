@@ -1,0 +1,58 @@
+{
+  "id": "1275",
+  "input": {
+    "title": "Tauri Rust Developer",
+    "companyName": "Lorven Technologies Inc.",
+    "description": "Hi\n\n\n\n\nOur client is looking for a Tauri Rust Developer project in Remote below is the detailed requirement.\n\n\n\n\nJob positing Title: Tauri Rust Developer (Healthcare Domain)\n\nLocation: Remote\n\n\n\n\nRequired Skills : Rust, Tauri and Healthcare\n\n\n\n\nJob description:\n\n• Bachelor’s degree in related field\n\n• Strong experience with Rust and Tauri\n\n• Proficiency in TypeScript/JavaScript\n\n• Experience with React, Vue, or Svelte\n\n• Knowledge of REST APIs, SQLite/PostgreSQL, and Git\n\n• Strong debugging, performance optimization, and security practices\n\n\n\n\nNice to Have:\n\n• Electron-to-Tauri migration experience\n\n• CI/CD, Docker, and cloud platform knowledge",
+    "evidence": {
+      "location": "United States",
+      "contractType": null,
+      "experienceLevel": null,
+      "salary": null
+    }
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["remote"],
+        "places": [],
+        "placeStrictness": "unstated"
+      }
+    ],
+    "roleKind": "other",
+    "seniority": "unstated",
+    "yearsRequired": null,
+    "contractMonths": null,
+    "mainStack": [
+      {
+        "anyOf": [
+          {
+            "text": "Rust",
+            "code": "rust"
+          }
+        ]
+      },
+      {
+        "anyOf": [
+          {
+            "text": "Tauri",
+            "code": null
+          }
+        ]
+      },
+      {
+        "anyOf": [
+          {
+            "text": "TypeScript/JavaScript",
+            "code": "typescript"
+          }
+        ]
+      }
+    ],
+    "requiredLanguages": [],
+    "sponsorship": "unstated",
+    "salary": null,
+    "junkFlags": []
+  },
+  "drafted": {}
+}

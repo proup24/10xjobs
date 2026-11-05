@@ -21,6 +21,8 @@ import type {
  */
 export abstract class ProfilesRepository {
   abstract list(userId: string): Promise<ProfileWithSkills[]>;
+  /** Every published profile, of every user. */
+  abstract listPublished(): Promise<ProfileWithSkills[]>;
   abstract findById(
     userId: string,
     profileId: string,
@@ -96,6 +98,15 @@ export class PrismaProfilesRepository extends ProfilesRepository {
 
   async list(userId: string): Promise<ProfileWithSkills[]> {
     const profiles = await this.orm.Profile.where({ userId })
+      .orderBy((p) => p.createdAt.asc())
+      .all();
+    return Promise.all(profiles.map((profile) => this.withSkills(profile)));
+  }
+
+  async listPublished(): Promise<ProfileWithSkills[]> {
+    const profiles = await this.orm.Profile.where({
+      state: ProfileState.published,
+    })
       .orderBy((p) => p.createdAt.asc())
       .all();
     return Promise.all(profiles.map((profile) => this.withSkills(profile)));

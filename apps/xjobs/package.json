@@ -14,7 +14,25 @@
     "db:verify": "prisma db verify",
     "users": "tsx --tsconfig tsconfig.app.json src/admin/users-cli.ts",
     "db:seed": "tsx --tsconfig tsconfig.app.json src/database/seeds/index.ts",
+    "db:regenerate": "tsx --tsconfig tsconfig.app.json src/scripts/regenerate-query-search.ts",
+    "db:renormalize": "tsx --tsconfig tsconfig.app.json src/scripts/renormalize-jobs.ts",
+    "db:reprocess": "tsx --tsconfig tsconfig.app.json src/scripts/reprocess-jobs.ts",
+    "db:vocab": "tsx --tsconfig tsconfig.app.json src/scripts/vocab.ts",
+    "processor:golden-import": "tsx --tsconfig tsconfig.app.json src/scripts/processor-golden-import.ts",
+    "processor:golden-draft": "tsx --tsconfig tsconfig.app.json src/scripts/processor-golden-draft.ts",
+    "processor:eval": "tsx --tsconfig tsconfig.app.json src/scripts/processor-eval.ts",
+    "processor:smoke": "tsx --tsconfig tsconfig.app.json src/scripts/processor-smoke.ts",
+    "apify:probe-linkedin": "tsx --tsconfig tsconfig.app.json src/scripts/probe-linkedin-search.ts",
+    "start": "node dist/main.js",
+    "start:dev": "tsx watch --tsconfig tsconfig.app.json src/main.ts",
     "worker:dev": "tsx watch --tsconfig tsconfig.app.json src/worker.ts",
+    "worker:all:dev": "WORKER_ROLE=all tsx watch --tsconfig tsconfig.app.json src/worker.ts",
+    "worker:linkedin-job-board:dev": "WORKER_CHANNEL=LINKEDIN_JOB_BOARD tsx watch --tsconfig tsconfig.app.json src/worker.ts",
+    "worker:linkedin-posts:dev": "WORKER_CHANNEL=LINKEDIN_POSTS tsx watch --tsconfig tsconfig.app.json src/worker.ts",
+    "worker:greenhouse:dev": "WORKER_CHANNEL=GREEN_HOUSE tsx watch --tsconfig tsconfig.app.json src/worker.ts",
+    "worker:ashby:dev": "WORKER_CHANNEL=ASHBY tsx watch --tsconfig tsconfig.app.json src/worker.ts",
+    "worker:ingest:dev": "WORKER_ROLE=ingest tsx watch --tsconfig tsconfig.app.json src/worker.ts",
+    "worker:processor:dev": "WORKER_ROLE=processor tsx watch --tsconfig tsconfig.app.json src/worker.ts",
     "jobs:smoke": "JOBS_SMOKE=1 vitest run --config vitest.config.mts src/infrastructure/jobs/tests/smoke.spec.ts"
   },
   "nx": {
@@ -91,6 +109,84 @@
         "options": {
           "command": "node apps/xjobs/dist/worker.js"
         }
+      },
+      "worker-all": {
+        "continuous": true,
+        "executor": "nx:run-commands",
+        "dependsOn": [
+          "build"
+        ],
+        "options": {
+          "command": "node apps/xjobs/dist/worker.js",
+          "env": {
+            "WORKER_ROLE": "all"
+          }
+        }
+      },
+      "worker-processor": {
+        "continuous": true,
+        "executor": "nx:run-commands",
+        "dependsOn": [
+          "build"
+        ],
+        "options": {
+          "command": "node apps/xjobs/dist/worker.js",
+          "env": {
+            "WORKER_ROLE": "processor"
+          }
+        }
+      },
+      "worker-linkedin-job-board": {
+        "continuous": true,
+        "executor": "nx:run-commands",
+        "dependsOn": [
+          "build"
+        ],
+        "options": {
+          "command": "node apps/xjobs/dist/worker.js",
+          "env": {
+            "WORKER_CHANNEL": "LINKEDIN_JOB_BOARD"
+          }
+        }
+      },
+      "worker-linkedin-posts": {
+        "continuous": true,
+        "executor": "nx:run-commands",
+        "dependsOn": [
+          "build"
+        ],
+        "options": {
+          "command": "node apps/xjobs/dist/worker.js",
+          "env": {
+            "WORKER_CHANNEL": "LINKEDIN_POSTS"
+          }
+        }
+      },
+      "worker-greenhouse": {
+        "continuous": true,
+        "executor": "nx:run-commands",
+        "dependsOn": [
+          "build"
+        ],
+        "options": {
+          "command": "node apps/xjobs/dist/worker.js",
+          "env": {
+            "WORKER_CHANNEL": "GREEN_HOUSE"
+          }
+        }
+      },
+      "worker-ashby": {
+        "continuous": true,
+        "executor": "nx:run-commands",
+        "dependsOn": [
+          "build"
+        ],
+        "options": {
+          "command": "node apps/xjobs/dist/worker.js",
+          "env": {
+            "WORKER_CHANNEL": "ASHBY"
+          }
+        }
       }
     }
   },
@@ -100,6 +196,7 @@
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
     "@nestjs/swagger": "^12.0.5",
+    "@openrouter/sdk": "1.5.33",
     "@prisma/orm-extension-supabase": "8.0.0-rc.21",
     "@prisma/orm-postgres": "8.0.0-rc.21",
     "@sentry/node": "^11.9.0",

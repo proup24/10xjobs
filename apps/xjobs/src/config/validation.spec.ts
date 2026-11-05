@@ -4,6 +4,7 @@ import {
   getBasicAuthConfig,
   getStorageConfig,
   validateEnvironment,
+  validateWorkerProcessEnvironment,
 } from './index';
 
 const minimal = {
@@ -113,5 +114,135 @@ describe('collector and tooling configuration', () => {
       getAppConfig(configFor({ NX_READY_SIGNAL_SOCKET: '/tmp/nx.sock' }))
         .readySignalSocket,
     ).toBe('/tmp/nx.sock');
+  });
+});
+
+describe('worker process configuration', () => {
+  const worker = {
+    DATABASE_URL: 'postgresql://u:p@localhost:5432/db',
+    SUPABASE_URL: 'http://localhost:8000',
+    SUPABASE_SERVICE_ROLE_KEY: 'service-key',
+  };
+
+  it('refuses any worker without Supabase storage, which batches are written to', () => {
+    const { SUPABASE_URL: _url, ...noUrl } = worker;
+    expect(() => validateWorkerProcessEnvironment(noUrl)).toThrow(
+      'Set SUPABASE_URL (or SUPABASE_PUBLIC_URL)',
+    );
+    const { SUPABASE_SERVICE_ROLE_KEY: _key, ...noKey } = worker;
+    expect(() =>
+      validateWorkerProcessEnvironment({
+        ...noKey,
+        WORKER_CHANNEL: 'ASHBY',
+        APIFY_TOKEN: 'apify-token',
+      }),
+    ).toThrow('Set SUPABASE_SERVICE_ROLE_KEY (or SERVICE_ROLE_KEY)');
+  });
+
+  it("accepts the Supabase stack's own storage variables", () => {
+    expect(() =>
+      validateWorkerProcessEnvironment({
+        DATABASE_URL: worker.DATABASE_URL,
+        SUPABASE_PUBLIC_URL: 'http://localhost:8000',
+        SERVICE_ROLE_KEY: 'service-key',
+      }),
+    ).not.toThrow();
+  });
+
+  it('runs the infrastructure worker without a channel or Apify token', () => {
+    expect(validateWorkerProcessEnvironment(worker)).toMatchObject({
+      REDIS_PREFIX: 'xjobs',
+    });
+    expect(
+      validateWorkerProcessEnvironment(worker).WORKER_CHANNEL,
+    ).toBeUndefined();
+  });
+
+  it('accepts a channel with an Apify token', () => {
+    expect(
+      validateWorkerProcessEnvironment({
+        ...worker,
+        WORKER_CHANNEL: 'ASHBY',
+        APIFY_TOKEN: 'apify-token',
+      }),
+    ).toMatchObject({ WORKER_CHANNEL: 'ASHBY' });
+  });
+
+  it('refuses an unknown channel', () => {
+    expect(() =>
+      validateWorkerProcessEnvironment({
+        ...worker,
+        WORKER_CHANNEL: 'ASHBYY',
+        APIFY_TOKEN: 'apify-token',
+      }),
+    ).toThrow(/WORKER_CHANNEL/);
+  });
+
+  it('runs the ingest worker without an Apify token', () => {
+    expect(
+      validateWorkerProcessEnvironment({ ...worker, WORKER_ROLE: 'ingest' }),
+    ).toMatchObject({ WORKER_ROLE: 'ingest' });
+  });
+
+  it('refuses an unknown worker role', () => {
+    expect(() =>
+      validateWorkerProcessEnvironment({ ...worker, WORKER_ROLE: 'other' }),
+    ).toThrow(/WORKER_ROLE/);
+  });
+
+  it('refuses a worker role together with a channel', () => {
+    expect(() =>
+      validateWorkerProcessEnvironment({
+        ...worker,
+        WORKER_ROLE: 'ingest',
+        WORKER_CHANNEL: 'ASHBY',
+        APIFY_TOKEN: 'apify-token',
+      }),
+    ).toThrow(/WORKER_ROLE/);
+  });
+
+  it('refuses the ingest worker without Supabase storage', () => {
+    expect(() =>
+      validateWorkerProcessEnvironment({
+        DATABASE_URL: worker.DATABASE_URL,
+        WORKER_ROLE: 'ingest',
+      }),
+    ).toThrow('Set SUPABASE_URL (or SUPABASE_PUBLIC_URL)');
+  });
+
+  it('refuses a channel without an Apify token', () => {
+    expect(() =>
+      validateWorkerProcessEnvironment({ ...worker, WORKER_CHANNEL: 'ASHBY' }),
+    ).toThrow(/APIFY_TOKEN/);
+  });
+
+  it('refuses the processor role without an OpenRouter key', () => {
+    expect(() =>
+      validateWorkerProcessEnvironment({ ...worker, WORKER_ROLE: 'processor' }),
+    ).toThrow(/OPENROUTER_API_KEY/);
+  });
+
+  it('does not require the OpenRouter key in the all role: the processor then stays off', () => {
+    const all = { ...worker, WORKER_ROLE: 'all', APIFY_TOKEN: 'apify-token' };
+    expect(validateWorkerProcessEnvironment(all).OPENROUTER_API_KEY).toBe(
+      undefined,
+    );
+  });
+
+  it('parses the processor defaults when the key is set', () => {
+    expect(
+      validateWorkerProcessEnvironment({
+        ...worker,
+        WORKER_ROLE: 'processor',
+        OPENROUTER_API_KEY: 'or-key',
+      }),
+    ).toMatchObject({
+      PROCESSOR_DECISION_MODEL: 'typesafe/jev-1.14',
+      PROCESSOR_EXTRACTION_MODEL: 'deepseek/deepseek-v4.1-flash-1017',
+      PROCESSOR_CONCURRENCY: 4,
+      PROCESSOR_MAX_ATTEMPTS: 3,
+      PROCESSOR_CLAIM_TIMEOUT_MS: 900_000,
+      PROCESSOR_DAILY_BUDGET_USD: 20,
+    });
   });
 });
