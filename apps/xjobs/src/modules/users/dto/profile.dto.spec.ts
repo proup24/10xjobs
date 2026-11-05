@@ -155,6 +155,7 @@ describe('profile seniorities', () => {
     [[]],
     [['senior', 'senior']],
     [['wizard']],
+    [['unstated']],
     ['senior'],
     [undefined],
   ])('rejects seniorities %j', async (seniorities) => {

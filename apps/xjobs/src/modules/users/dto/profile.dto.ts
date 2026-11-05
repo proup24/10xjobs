@@ -7,6 +7,7 @@ import {
   IsArray,
   IsEmpty,
   IsEnum,
+  IsIn,
   IsInt,
   IsISO31661Alpha2,
   IsObject,
@@ -26,6 +27,11 @@ import { HasLocation, IsGreaterOrEqual, UniqueBy } from './validators';
 /** UTC offsets in minutes: UTC-12:00 to UTC+14:00. */
 const MIN_OFFSET = -720;
 const MAX_OFFSET = 840;
+
+/** `unstated` describes a job that names no seniority; a profile always names one. */
+export const PROFILE_SENIORITIES = Object.values(Seniority).filter(
+  (s) => s !== Seniority.unstated,
+);
 
 export const POSITION_IMMUTABLE =
   'position cannot be changed; delete this profile and create one for the new position';
@@ -101,11 +107,15 @@ export class ProfileFieldsDto {
   @IsEnum(Engagement, { each: true })
   engagements!: Engagement[];
 
-  @ApiProperty({ enum: Seniority, enumName: 'Seniority', isArray: true })
+  @ApiProperty({
+    enum: PROFILE_SENIORITIES,
+    enumName: 'ProfileSeniority',
+    isArray: true,
+  })
   @IsArray()
   @ArrayNotEmpty()
   @ArrayUnique()
-  @IsEnum(Seniority, { each: true })
+  @IsIn(PROFILE_SENIORITIES, { each: true })
   seniorities!: Seniority[];
 
   @ApiProperty({ minimum: 0, maximum: 365 })
