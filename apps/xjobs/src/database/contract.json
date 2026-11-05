@@ -5105,6 +5105,292 @@
     "namespaces": {
       "public": {
         "entries": {
+          "policy": {
+            "contacts_owner": {
+              "kind": "policy",
+              "name": "contacts_owner_6ea08fe5",
+              "namespaceId": "public",
+              "operation": "all",
+              "permissive": true,
+              "prefix": "contacts_owner",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "contacts",
+              "using": "\"userId\" = auth.uid()",
+              "withCheck": "\"userId\" = auth.uid()"
+            },
+            "profile_skills_owner_delete": {
+              "kind": "policy",
+              "name": "profile_skills_owner_delete_e80e5c12",
+              "namespaceId": "public",
+              "operation": "delete",
+              "permissive": true,
+              "prefix": "profile_skills_owner_delete",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "profile_skills",
+              "using": "\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills.\"profileId\" AND p.\"userId\" = auth.uid() AND p.state = 'draft')"
+            },
+            "profile_skills_owner_insert": {
+              "kind": "policy",
+              "name": "profile_skills_owner_insert_87e871a7",
+              "namespaceId": "public",
+              "operation": "insert",
+              "permissive": true,
+              "prefix": "profile_skills_owner_insert",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "profile_skills",
+              "withCheck": "\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills.\"profileId\" AND p.\"userId\" = auth.uid() AND p.state = 'draft')"
+            },
+            "profile_skills_owner_read": {
+              "kind": "policy",
+              "name": "profile_skills_owner_read_ab58a1a7",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "profile_skills_owner_read",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "profile_skills",
+              "using": "\"userId\" = auth.uid()"
+            },
+            "profile_skills_owner_update": {
+              "kind": "policy",
+              "name": "profile_skills_owner_update_7fcd0c7f",
+              "namespaceId": "public",
+              "operation": "update",
+              "permissive": true,
+              "prefix": "profile_skills_owner_update",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "profile_skills",
+              "using": "\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills.\"profileId\" AND p.\"userId\" = auth.uid() AND p.state = 'draft')",
+              "withCheck": "\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills.\"profileId\" AND p.\"userId\" = auth.uid() AND p.state = 'draft')"
+            },
+            "profiles_owner_delete_draft": {
+              "kind": "policy",
+              "name": "profiles_owner_delete_draft_64d4802d",
+              "namespaceId": "public",
+              "operation": "delete",
+              "permissive": true,
+              "prefix": "profiles_owner_delete_draft",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "profiles",
+              "using": "\"userId\" = auth.uid() AND state = 'draft'"
+            },
+            "profiles_owner_insert": {
+              "kind": "policy",
+              "name": "profiles_owner_insert_e3abe3e0",
+              "namespaceId": "public",
+              "operation": "insert",
+              "permissive": true,
+              "prefix": "profiles_owner_insert",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "profiles",
+              "withCheck": "\"userId\" = auth.uid() AND state = 'draft' AND \"publishedAt\" IS NULL"
+            },
+            "profiles_owner_read": {
+              "kind": "policy",
+              "name": "profiles_owner_read_ab58a1a7",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "profiles_owner_read",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "profiles",
+              "using": "\"userId\" = auth.uid()"
+            },
+            "profiles_owner_update_draft": {
+              "kind": "policy",
+              "name": "profiles_owner_update_draft_b3dbbb7b",
+              "namespaceId": "public",
+              "operation": "update",
+              "permissive": true,
+              "prefix": "profiles_owner_update_draft",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "profiles",
+              "using": "\"userId\" = auth.uid() AND state = 'draft'",
+              "withCheck": "\"userId\" = auth.uid() AND state = 'draft' AND \"publishedAt\" IS NULL"
+            },
+            "users_owner_read": {
+              "kind": "policy",
+              "name": "users_owner_read_b499dcb9",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "users_owner_read",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "users",
+              "using": "id = auth.uid()"
+            },
+            "users_owner_update": {
+              "kind": "policy",
+              "name": "users_owner_update_988f7d40",
+              "namespaceId": "public",
+              "operation": "update",
+              "permissive": true,
+              "prefix": "users_owner_update",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "users",
+              "using": "id = auth.uid()",
+              "withCheck": "id = auth.uid()"
+            }
+          },
+          "rls": {
+            "arrangements": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "arrangements"
+            },
+            "cities": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "cities"
+            },
+            "collection_batches": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "collection_batches"
+            },
+            "contacts": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "contacts"
+            },
+            "contract_types": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "contract_types"
+            },
+            "countries": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "countries"
+            },
+            "engagements": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "engagements"
+            },
+            "job_extractions": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "job_extractions"
+            },
+            "junk_flags": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "junk_flags"
+            },
+            "normalized_job_sources": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "normalized_job_sources"
+            },
+            "normalized_jobs": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "normalized_jobs"
+            },
+            "normalized_versions": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "normalized_versions"
+            },
+            "processing_attempts": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "processing_attempts"
+            },
+            "profile_query_search_builders": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "profile_query_search_builders"
+            },
+            "profile_skills": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "profile_skills"
+            },
+            "profiles": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "profiles"
+            },
+            "query_search_builder": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "query_search_builder"
+            },
+            "raw_item_sightings": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "raw_item_sightings"
+            },
+            "raw_item_versions": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "raw_item_versions"
+            },
+            "raw_items": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "raw_items"
+            },
+            "region_countries": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "region_countries"
+            },
+            "regions": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "regions"
+            },
+            "role_kinds": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "role_kinds"
+            },
+            "search_segment_runs": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "search_segment_runs"
+            },
+            "seniorities": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "seniorities"
+            },
+            "tech_tags": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "tech_tags"
+            },
+            "users": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "users"
+            }
+          },
           "table": {
             "arrangements": {
               "checks": [
@@ -9160,10 +9446,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "eb0f366d51b0fedb19b470dde53b69cbbe1fc892bb3471c9bb95af7005385b57"
+    "storageHash": "8f1715e4755f3ef514f24cf2090ce086ef24f4c0a113dc0bdbbe76cc5e6accd3"
   },
   "execution": {
-    "executionHash": "c6873c5a9f9e3698427d663f89066a9052d28a2625e473b43a449e049a00b87b",
+    "executionHash": "10d5f7e842b2fb12c71ccb0e6509e21ba86faca411f9434c879cf5f293577cb4",
     "mutations": {
       "defaults": [
         {
@@ -9413,17 +9699,6 @@
           },
           "ref": {
             "entry": "search_segment_runs",
-            "field": "id",
-            "namespace": "public"
-          }
-        },
-        {
-          "onCreate": {
-            "id": "uuidv7",
-            "kind": "generator"
-          },
-          "ref": {
-            "entry": "users",
             "field": "id",
             "namespace": "public"
           }

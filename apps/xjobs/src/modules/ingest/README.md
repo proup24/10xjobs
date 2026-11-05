@@ -73,11 +73,4 @@ Channel workers need the same Supabase variables, because they write the batch f
 npx vitest run --config apps/xjobs/vitest.config.mts src/modules/ingest src/modules/segments
 ```
 
-The PostgreSQL tests need `INGEST_TEST_DATABASE_URL`, pointing at a disposable database named `ingest_test` on `127.0.0.1` and migrated to the current contract. They **truncate** their tables, skip when the variable is absent, and refuse any other host or database name. One way to get such a database:
-
-```sh
-docker run --rm -d --name xjobs-ingest-test -e POSTGRES_PASSWORD=test -e POSTGRES_DB=ingest_test -p 127.0.0.1:55432:5432 postgres:17
-cd apps/xjobs && XJOBS_SKIP_ENV_FILES=1 DATABASE_URL=postgresql://postgres:test@127.0.0.1:55432/ingest_test npx prisma db migrate --yes
-```
-
-PostgreSQL tests additionally require `INGEST_TEST_DATABASE_URL` pointing to a disposable database named `ingest_test` at `127.0.0.1` holding a migrated Supabase Postgres (the `auth` schema and every app migration, since users come from the sign-up trigger on `auth.users`). These tests **truncate test tables and users**. They skip when the variable is absent, and reject other host/database names. Tests never call paid collectors.
+The PostgreSQL tests need `INGEST_TEST_DATABASE_URL`, pointing at a disposable database named `ingest_test` on `127.0.0.1` that holds a migrated Supabase Postgres: the migrations need the `auth` schema (`auth.users`, `auth.uid()`) and the `authenticated` role, so a plain `postgres` image does not work. They **truncate** their tables, skip when the variable is absent, and refuse any other host or database name. Tests never call paid collectors.

@@ -92,12 +92,10 @@ All of these are shared across workspaces: they describe public postings and car
 npx vitest run --config apps/xjobs/vitest.config.mts src/modules/processor
 ```
 
-The PostgreSQL tests (`repositories/processor.postgres.spec.ts`) need `PROCESSOR_TEST_DATABASE_URL`, pointing at a disposable database named `processor_test` on `127.0.0.1` and migrated to the current contract. They **truncate** their tables, seed the list tables, skip when the variable is absent, and refuse any other host or database name. One way to get such a database:
+The PostgreSQL tests (`repositories/processor.postgres.spec.ts`) need `PROCESSOR_TEST_DATABASE_URL`, pointing at a disposable database named `processor_test` on `127.0.0.1` and migrated to the current contract. The migrations need Supabase's `auth` schema and roles, so the database must come from a Supabase Postgres image, not a plain `postgres` one. They **truncate** their tables, seed the list tables, skip when the variable is absent, and refuse any other host or database name. Once you have one, run:
 
 ```sh
-docker run --rm -d --name xjobs-processor-test -e POSTGRES_PASSWORD=test -e POSTGRES_DB=processor_test -p 127.0.0.1:55433:5432 postgres:17
-cd apps/xjobs && XJOBS_SKIP_ENV_FILES=1 DATABASE_URL=postgresql://postgres:test@127.0.0.1:55433/processor_test npx prisma db migrate --yes
-cd ../.. && PROCESSOR_TEST_DATABASE_URL=postgresql://postgres:test@127.0.0.1:55433/processor_test npx vitest run --config apps/xjobs/vitest.config.mts src/modules/processor/repositories
+PROCESSOR_TEST_DATABASE_URL=postgresql://postgres:<password>@127.0.0.1:<port>/processor_test npx vitest run --config apps/xjobs/vitest.config.mts src/modules/processor/repositories
 ```
 
 ## Approving terms

@@ -105,7 +105,6 @@ const PROFILE_NOT_FOUND = 'Profile not found';
 export const PROFILE_PUBLISHED =
   'A published profile cannot be changed; delete it and create a new one';
 
-/** A user owns many profiles; every operation takes `(userId, profileId)` and checks ownership. */
 /** What regenerating published profiles needs. */
 export interface RegenerateDeps {
   profiles: Pick<ProfilesRepository, 'listPublished'>;
@@ -137,6 +136,7 @@ export async function regeneratePublished(
   };
 }
 
+/** A user owns many profiles; every operation takes `(userId, profileId)` and checks ownership. */
 @Injectable()
 export class ProfilesService {
   constructor(

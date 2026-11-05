@@ -4,6 +4,10 @@ import {
 } from 'src/modules/processor/vocab/seed-data';
 import { processorListsSeed } from './processor.seed';
 import type { DatabaseTransaction } from './seed.interface';
+import type { SeedEnvironmentVariables } from 'src/config';
+
+/** The processor seed reads no environment. */
+const env = {} as SeedEnvironmentVariables;
 
 type Row = Record<string, unknown> & { aliases: string[] };
 
@@ -61,7 +65,7 @@ const totalWrites = (pub: Record<string, FakeTable>) =>
 describe('processorListsSeed', () => {
   it('seeds every term as approved', async () => {
     const { tx, pub } = makeTx();
-    await processorListsSeed.run(tx);
+    await processorListsSeed.run(tx, env);
     expect(pub['Country'].rows).toHaveLength(SEED.countries.length);
     expect(pub['TechTag'].rows.every((r) => r['status'] === 'approved')).toBe(
       true,
@@ -73,10 +77,10 @@ describe('processorListsSeed', () => {
 
   it('writes nothing on a second run and does not duplicate region_countries', async () => {
     const { tx, pub } = makeTx();
-    await processorListsSeed.run(tx);
+    await processorListsSeed.run(tx, env);
     const rowCounts = Object.values(pub).map((t) => t.rows.length);
     for (const t of Object.values(pub)) t.writes = 0;
-    await processorListsSeed.run(tx);
+    await processorListsSeed.run(tx, env);
     expect(totalWrites(pub)).toBe(0);
     expect(Object.values(pub).map((t) => t.rows.length)).toEqual(rowCounts);
   });
@@ -92,7 +96,7 @@ describe('processorListsSeed', () => {
       status: 'proposed',
       occurrences: 7,
     });
-    await processorListsSeed.run(tx);
+    await processorListsSeed.run(tx, env);
     const row = pub['TechTag'].rows.find(
       (r) => r['code'] === 'typescript',
     ) as Row;
