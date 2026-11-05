@@ -34,6 +34,11 @@ Users are created through Supabase Auth; `POST /api/users` returns 410. The e2e 
 
 Public sign-up is off, so invite yourself: `eval "$(scripts/supabase-env.sh)" && pnpm users invite you@xjobs.test`. Read the email at http://127.0.0.1:54324 (Mailpit), then open the link or type the 6-digit code on http://localhost:3001/sign-in. The seeded users (`admin@`, `recruiter@` and `candidate@xjobs.local`) can sign in by requesting a code there. Production setup is in [docs/auth-production.md](docs/auth-production.md).
 
+### Two database modes
+
+- **Local stack** (above): your own Supabase in Docker. Use it for schema work. `pnpm db:reset` wipes and rebuilds it.
+- **Shared dev database**: one hosted Supabase project that CI migrates and seeds after every merge to `main`. Use it for engine and web work that needs no schema change. Setup and daily use are in [docs/shared-dev-database.md](docs/shared-dev-database.md).
+
 ## Debugging xjobs
 
 In VS Code, set a breakpoint in `apps/xjobs/src`, select **Debug @xjobs/xjobs with Nx** in Run and Debug, and press **F5**.
@@ -50,6 +55,7 @@ Then select **Attach to xjobs (9229)** in VS Code and press **F5**. Use `--inspe
 
 - [Redis, caching, pub/sub, and background workers](docs/redis-jobs.md)
 - [Auth setup for production](docs/auth-production.md)
+- [Shared dev database](docs/shared-dev-database.md)
 - [Roadmap](docs/roadmap/README.md)
 - [CLAUDE.md](CLAUDE.md): conventions and workflow for working in this repo with Claude Code
 

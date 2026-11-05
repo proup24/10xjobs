@@ -1,0 +1,48 @@
+name: Dev database
+
+# Migrates and seeds the shared dev database (Supabase Cloud) once CI has
+# passed on main. Never runs for pull requests.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: dev
+    concurrency:
+      group: dev-database
+      cancel-in-progress: false
+    env:
+      XJOBS_SKIP_ENV_FILES: '1'
+      XJOBS_ALLOW_REMOTE_DB: '1'
+      DATABASE_URL: ${{ secrets.DEV_DATABASE_URL }}
+      SUPABASE_URL: ${{ secrets.DEV_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.DEV_SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      # Installs the pnpm version pinned in package.json's packageManager field
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Apply the Prisma migrations
+        run: pnpm --filter @xjobs/database db:migrate
+
+      - name: Seed the database
+        run: pnpm --filter @xjobs/database db:seed

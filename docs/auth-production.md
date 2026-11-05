@@ -155,9 +155,11 @@ Sessions last 7 days from sign-in. A Prisma migration (`end_expired_sessions`) c
 
 ```sh
 read -rs DATABASE_URL && export DATABASE_URL   # paste the Cloud Postgres connection string
-pnpm --filter @xjobs/database db:migrate
+XJOBS_ALLOW_REMOTE_DB=1 pnpm --filter @xjobs/database db:migrate
 unset DATABASE_URL
 ```
+
+`XJOBS_ALLOW_REMOTE_DB=1` is the opt-in that lets the migrate run against a non-local database; without it the command refuses. Pass it inline, as shown. The documented `pnpm` commands ignore it in a `.env` file; never put it there. Shell values beat `.env` for every command.
 
 Run it from a shell that has not loaded `.env` values for another database. Check the target before you confirm. Afterwards, check that the job exists with `select jobname, schedule from cron.job;`. If you ever run `prisma migration ref set` or advance the `db` ref, re-add `"end-expired-sessions"` to `invariants` in `refs/db.json` first, or new databases skip the cron job.
 

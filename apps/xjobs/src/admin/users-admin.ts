@@ -69,15 +69,47 @@ export function unblockUser(auth: AdminAuth, email: string) {
   return setBan(auth, email, 'none', (e) => `Unblocked ${e}.`);
 }
 
+function isBlocked(user: { banned_until?: string }): boolean {
+  return !!user.banned_until && new Date(user.banned_until) > new Date();
+}
+
 function statusOf(user: {
   email_confirmed_at?: string;
   banned_until?: string;
 }): 'pending' | 'active' | 'blocked' {
-  if (user.banned_until && new Date(user.banned_until) > new Date()) {
-    return 'blocked';
-  }
+  if (isBlocked(user)) return 'blocked';
   if (!user.email_confirmed_at) return 'pending';
   return 'active';
+}
+
+/** A sign-in link through the web app's /auth/confirm route; nothing is emailed. */
+export async function signInLink(
+  auth: AdminAuth,
+  raw: string,
+  webUrl: string,
+): Promise<CommandResult> {
+  const email = normalizeEmail(raw);
+  const user = await findAuthUserByEmail(auth, email);
+  if (!user) return { ok: false, message: `No user with email ${email}.` };
+  if (isBlocked(user)) {
+    return { ok: false, message: `${email} is blocked; unblock them first.` };
+  }
+  const { data, error } = await auth.generateLink({
+    type: 'magiclink',
+    email,
+  });
+  const hash = data?.properties?.hashed_token;
+  if (error || !hash) {
+    return {
+      ok: false,
+      message: `Could not create a sign-in link for ${email}: ${error?.message ?? 'no token returned'}`,
+    };
+  }
+  const base = webUrl.replace(/\/+$/, '');
+  return {
+    ok: true,
+    message: `${base}/auth/confirm?token_hash=${encodeURIComponent(hash)}&type=email`,
+  };
 }
 
 export async function listAuthUsers(auth: AdminAuth): Promise<CommandResult> {

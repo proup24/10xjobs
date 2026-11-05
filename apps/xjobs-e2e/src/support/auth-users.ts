@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { isLocalUrl } from '@xjobs/database/env';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 // Users come from Supabase Auth: the sign-up trigger creates their users row.
@@ -7,6 +8,11 @@ function admin(): SupabaseClient {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     throw new Error(
       'The e2e tests create auth users: set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (locally: eval "$(scripts/supabase-env.sh)").',
+    );
+  }
+  if (!isLocalUrl(SUPABASE_URL)) {
+    throw new Error(
+      `The e2e tests create and delete auth users: refusing non-local SUPABASE_URL ${new URL(SUPABASE_URL).hostname}.`,
     );
   }
   return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {

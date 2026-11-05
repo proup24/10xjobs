@@ -5,10 +5,20 @@
  *   pnpm db:seed --only users        run the named seeds
  *   pnpm db:seed --only users,processor-lists
  *   pnpm db:seed --allow-production required when NODE_ENV=production
+ *
+ * Every seed must be idempotent: CI re-runs all of them on the shared dev
+ * database after each merge.
  */
 import { createDatabaseClient } from '../client/connection.source';
 import { consoleLogger } from '../client/database-logger';
-import { EnvironmentType, loadSeedEnvironment, toDatabaseConfig } from '../env';
+import {
+  assertLocalDatabase,
+  captureRemoteOptIn,
+  EnvironmentType,
+  loadSeedEnvironment,
+  toDatabaseConfig,
+} from '../env';
+import type { SeedEnvironmentVariables } from '../env';
 import type { Seed } from './seed.interface';
 import { processorListsSeed } from './processor.seed';
 import { usersSeed } from './users.seed';
@@ -25,9 +35,27 @@ function parseArgs(argv: string[]) {
   return { only, allowProduction: argv.includes('--allow-production') };
 }
 
+/**
+ * @description Refuses to seed unless both the database and the Supabase API
+ * (the users seed creates auth users there) are local, so the two cannot
+ * point at different stacks. `processEnv` must be the opt-in snapshot taken
+ * before env files load. `XJOBS_ALLOW_REMOTE_DB=1` opts out.
+ */
+export function assertSeedTargets(
+  env: SeedEnvironmentVariables,
+  processEnv: NodeJS.ProcessEnv,
+): void {
+  assertLocalDatabase(
+    { DATABASE_URL: env.DATABASE_URL, SUPABASE_URL: env.SUPABASE_URL },
+    processEnv,
+  );
+}
+
 async function main(): Promise<void> {
   const logger = consoleLogger('Seed');
   const { only, allowProduction } = parseArgs(process.argv.slice(2));
+  // Snapshot the opt-in before loadSeedEnvironment() reads any .env file.
+  const optIn = captureRemoteOptIn(process.env);
   const env = loadSeedEnvironment();
 
   if (env.NODE_ENV === EnvironmentType.production && !allowProduction) {
@@ -35,6 +63,8 @@ async function main(): Promise<void> {
       'Refusing to seed with NODE_ENV=production; pass --allow-production.',
     );
   }
+
+  assertSeedTargets(env, optIn);
 
   const unknown = only?.filter(
     (name) => !seeds.some((seed) => seed.name === name),
@@ -59,7 +89,9 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error: unknown) => {
-  consoleLogger('Seed').error(error instanceof Error ? error.message : error);
-  process.exitCode = 1;
-});
+if (require.main === module) {
+  main().catch((error: unknown) => {
+    consoleLogger('Seed').error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  });
+}

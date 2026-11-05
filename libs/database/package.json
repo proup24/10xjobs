@@ -38,11 +38,11 @@
   "scripts": {
     "db:emit": "prisma contract emit",
     "db:format": "prisma contract format",
-    "db:update": "prisma db update",
-    "db:init": "prisma db init",
+    "db:update": "tsx src/env/assert-local.cli.ts && prisma db update",
+    "db:init": "tsx src/env/assert-local.cli.ts && prisma db init",
     "db:migration:plan": "prisma contract emit && prisma migration plan",
     "db:migration:status": "prisma migration status",
-    "db:migrate": "prisma db migrate --to db",
+    "db:migrate": "tsx src/env/assert-local.cli.ts && prisma db migrate --to db",
     "db:migrate:show": "prisma db migrate --show",
     "db:verify": "prisma db verify",
     "db:seed": "tsx src/seeds/index.ts"

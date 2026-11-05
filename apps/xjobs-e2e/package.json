@@ -14,5 +14,8 @@
         ]
       }
     }
+  },
+  "devDependencies": {
+    "@xjobs/database": "workspace:*"
   }
 }
