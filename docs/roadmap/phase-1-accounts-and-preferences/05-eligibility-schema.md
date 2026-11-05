@@ -9,7 +9,7 @@ Record where a user is legally able to work and where they live, so Phase 2 can 
 ## In scope
 
 - Eligibility for each user:
-  - **Authorized to work in:** a list of ISO country codes.
+  - **Authorized to work in:** a list of `{ kind, place }`. `kind` is one of `work-permit`, `citizenship`, `residency` or `clearance`, and `place` is a country or region code.
   - **Country of residence:** an ISO country code. This is separate from authorization because many remote jobs require residence in a region whatever the work permit says.
   - **Needs visa sponsorship:** one yes/no, `acceptsSponsorship` ("I would take a job that sponsors my visa").
 - RLS, and the table or columns added to the isolation harness.
