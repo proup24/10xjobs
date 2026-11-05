@@ -11,7 +11,7 @@
  */
 import { Logger } from '@nestjs/common';
 import { loadDatabaseEnvironment, toDatabaseConfig } from 'src/config';
-import { createDatabaseClient } from 'src/database/connection.source';
+import { createDatabaseClient } from 'src/database';
 import { renormalizeJobs } from 'src/modules/ingest/services/renormalize.service';
 
 async function main(): Promise<void> {

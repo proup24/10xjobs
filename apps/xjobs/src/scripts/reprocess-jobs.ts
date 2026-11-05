@@ -10,8 +10,7 @@
  */
 import { Logger } from '@nestjs/common';
 import { loadDatabaseEnvironment, toDatabaseConfig } from 'src/config';
-import { createDatabaseClient } from 'src/database/connection.source';
-import { DatabaseService } from 'src/database';
+import { createDatabaseClient, DatabaseService } from 'src/database';
 import { PrismaProcessorRepository } from 'src/modules/processor/repositories/processor.repository';
 import { parseReprocessArgs } from './processor-args';
 

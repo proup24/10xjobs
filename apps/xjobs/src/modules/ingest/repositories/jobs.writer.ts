@@ -1,6 +1,6 @@
 import type { Channel } from 'src/common/enums';
 import type { NormalizedJobRow, RawItemVersionRow } from 'src/database';
-import type { DatabaseTransaction } from 'src/database/seeds/seed.interface';
+import type { DatabaseTransaction } from '@xjobs/database';
 import {
   isStrongJobKey,
   jobKey,

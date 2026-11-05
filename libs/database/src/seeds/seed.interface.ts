@@ -1,5 +1,5 @@
-import type { SeedEnvironmentVariables } from 'src/config';
-import type { DatabaseClient } from '../connection.source';
+import type { DatabaseClient } from '../client/connection.source';
+import type { SeedEnvironmentVariables } from '../env';
 
 /** The `tx` handed to a `db.transaction(...)` callback. */
 export type DatabaseTransaction = Parameters<

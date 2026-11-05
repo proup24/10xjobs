@@ -8,7 +8,7 @@ const WORKSPACE_MARKER = 'pnpm-workspace.yaml';
 /**
  * @description Walks up from `start` to the workspace root and returns the
  * env files found on the way, nearest first. The app is started from the
- * workspace root by Nx, while the Prisma CLI and seeds run from `apps/xjobs`,
+ * workspace root by Nx, while the Prisma CLI and seeds run from `libs/database`,
  * so both must resolve the same root `.env`.
  */
 function findEnvFiles(start: string): string[] {

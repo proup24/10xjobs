@@ -1,9 +1,10 @@
 import type { User } from '@supabase/supabase-js';
-import type { AdminAuth } from './auth-users';
+import type { AdminAuth } from '@xjobs/database/auth';
 
 export type FakeAuth = AdminAuth & {
   calls: {
     invite: string[];
+    generateLink: { type: string; email: string }[];
     update: { id: string; attrs: Record<string, unknown> }[];
   };
 };
@@ -20,9 +21,12 @@ export function makeUser(over: Partial<User> & { email: string }): User {
 /** A recording stand-in for the Supabase admin auth API. */
 export function fakeAuth(
   users: User[] = [],
-  opts: { inviteError?: { code: string; message: string } } = {},
+  opts: {
+    inviteError?: { code: string; message: string };
+    linkError?: { message: string };
+  } = {},
 ): FakeAuth {
-  const calls: FakeAuth['calls'] = { invite: [], update: [] };
+  const calls: FakeAuth['calls'] = { invite: [], generateLink: [], update: [] };
   return {
     calls,
     listUsers: async () => ({
@@ -35,6 +39,16 @@ export function fakeAuth(
         return { data: { user: null }, error: opts.inviteError };
       }
       return { data: { user: makeUser({ email }) }, error: null };
+    },
+    generateLink: async (params: { type: string; email: string }) => {
+      calls.generateLink.push({ type: params.type, email: params.email });
+      if (opts.linkError) {
+        return { data: { properties: null }, error: opts.linkError };
+      }
+      return {
+        data: { properties: { hashed_token: 'hash-1' } },
+        error: null,
+      };
     },
     updateUserById: async (id: string, attrs: Record<string, unknown>) => {
       calls.update.push({ id, attrs });

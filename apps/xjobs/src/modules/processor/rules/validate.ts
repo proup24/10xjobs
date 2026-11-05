@@ -1,4 +1,4 @@
-import { Position } from '../../../common/enums/position.enum';
+import { Position } from '../../../common/enums';
 import type { PostingInput } from '../models/types';
 import type { ExtractionDocument } from '../schema';
 

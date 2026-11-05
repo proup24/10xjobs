@@ -10,9 +10,8 @@
  */
 import { Logger } from '@nestjs/common';
 import { loadDatabaseEnvironment, toDatabaseConfig } from 'src/config';
-import { createDatabaseClient } from 'src/database/connection.source';
+import { createDatabaseClient, type DatabaseService } from 'src/database';
 import { PrismaVocabRepository } from 'src/modules/processor/repositories/vocab.repository';
-import type { DatabaseService } from 'src/database';
 import { parseVocabArgs } from './processor-args';
 
 async function main(): Promise<void> {

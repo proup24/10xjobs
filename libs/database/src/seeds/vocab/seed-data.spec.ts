@@ -5,7 +5,7 @@ import {
   Region,
   Seniority,
   Technology,
-} from 'src/common/enums';
+} from '../../enums';
 import { SEED, SEED_REGION_COUNTRIES, SEED_TECH_EXTRAS } from './seed-data';
 import { LIST_NAMES } from './lists';
 

@@ -10,8 +10,7 @@
  */
 import { Logger } from '@nestjs/common';
 import { loadDatabaseEnvironment, toDatabaseConfig } from 'src/config';
-import type { DatabaseService } from 'src/database';
-import { createDatabaseClient } from 'src/database/connection.source';
+import { createDatabaseClient, type DatabaseService } from 'src/database';
 import { QuerySearchService } from 'src/modules/queries';
 import { PrismaQuerySearchRepository } from 'src/modules/queries/repositories/queries.repository';
 import { PrismaProfilesRepository } from 'src/modules/users/repositories/profiles.repository';

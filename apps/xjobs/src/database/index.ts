@@ -1,6 +1,6 @@
 export { DatabaseService } from './connection.service';
-export { contract, createDatabaseClient } from './connection.source';
-export type { DatabaseClient } from './connection.source';
+export { contract, createDatabaseClient } from '@xjobs/database';
+export type { DatabaseClient } from '@xjobs/database';
 export { DatabaseModule } from './database.module';
 export {
   isRetryableTransactionError,
@@ -23,5 +23,5 @@ export type {
   ProfileQuerySearchBuilderRow,
   SearchSegmentRunRow,
   UserRow,
-} from './models';
-export { toStoredAddress } from './models';
+} from '@xjobs/database';
+export { toStoredAddress } from '@xjobs/database';

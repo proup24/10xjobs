@@ -5,6 +5,7 @@ import {
   inviteUser,
   listAuthUsers,
   normalizeEmail,
+  signInLink,
   unblockUser,
 } from './users-admin';
 
@@ -130,5 +131,61 @@ describe('users admin', () => {
       'old@x.co  active  never',
       'bp@x.co  blocked  never',
     ]);
+  });
+
+  describe('signInLink', () => {
+    it('prints a confirm link for a known user', async () => {
+      const auth = fakeAuth([makeUser({ email: 'admin@xjobs.local' })]);
+      expect(
+        await signInLink(auth, ' Admin@xjobs.local ', 'http://localhost:3001'),
+      ).toEqual({
+        ok: true,
+        message:
+          'http://localhost:3001/auth/confirm?token_hash=hash-1&type=email',
+      });
+      expect(auth.calls.generateLink).toEqual([
+        { type: 'magiclink', email: 'admin@xjobs.local' },
+      ]);
+    });
+
+    it('refuses an unknown email without generating a link', async () => {
+      const auth = fakeAuth([]);
+      expect(
+        await signInLink(auth, 'nobody@xjobs.local', 'http://localhost:3001'),
+      ).toEqual({
+        ok: false,
+        message: 'No user with email nobody@xjobs.local.',
+      });
+      expect(auth.calls.generateLink).toEqual([]);
+    });
+
+    it('refuses a blocked user', async () => {
+      const auth = fakeAuth([
+        makeUser({
+          email: 'b@xjobs.local',
+          banned_until: '2126-01-01T00:00:00Z',
+        }),
+      ]);
+      expect(
+        await signInLink(auth, 'b@xjobs.local', 'http://localhost:3001'),
+      ).toEqual({
+        ok: false,
+        message: 'b@xjobs.local is blocked; unblock them first.',
+      });
+      expect(auth.calls.generateLink).toEqual([]);
+    });
+
+    it('reports a generateLink error', async () => {
+      const auth = fakeAuth([makeUser({ email: 'a@xjobs.local' })], {
+        linkError: { message: 'boom' },
+      });
+      const r = await signInLink(
+        auth,
+        'a@xjobs.local',
+        'http://localhost:3001',
+      );
+      expect(r.ok).toBe(false);
+      expect(r.message).toMatch(/^Could not create a sign-in link for/);
+    });
   });
 });

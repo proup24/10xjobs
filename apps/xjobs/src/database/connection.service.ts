@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EnvironmentVariables, getDatabaseConfig } from 'src/config';
-import { DatabaseClient, createDatabaseClient } from './connection.source';
+import { type DatabaseClient, createDatabaseClient } from '@xjobs/database';
 
 /**
  * @description Owns the single Prisma 8 client for the application. Inject it

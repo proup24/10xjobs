@@ -1,17 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
-import type { AdminAuth } from './auth-users';
+import type { AdminAuth } from '@xjobs/database/auth';
+import { loadApplicationEnvironment } from '@xjobs/database/env';
 import {
   blockUser,
   inviteUser,
   listAuthUsers,
+  signInLink,
   unblockUser,
   type CommandResult,
 } from './users-admin';
 
 const USAGE =
-  'Usage: pnpm users <invite|block|unblock> <email> | pnpm users list';
+  'Usage: pnpm users <invite|block|unblock|link> <email> | pnpm users list';
 const MISSING_ENV =
-  'Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (locally: eval "$(scripts/supabase-env.sh)").';
+  'Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env (locally: eval "$(scripts/supabase-env.sh)").';
 
 export type UsersCliDeps = {
   createAuth?: (url: string, key: string) => AdminAuth;
@@ -51,6 +53,8 @@ export async function runUsersCli(
     run = blockUser(auth, email);
   else if (email && rest.length === 0 && command === 'unblock')
     run = unblockUser(auth, email);
+  else if (email && rest.length === 0 && command === 'link')
+    run = signInLink(auth, email, env.WEB_URL ?? 'http://localhost:3001');
   else {
     print(USAGE);
     return 1;
@@ -67,6 +71,8 @@ export async function runUsersCli(
 }
 
 if (require.main === module) {
+  // Shell values win over the root .env; the loader never overrides them.
+  loadApplicationEnvironment();
   void runUsersCli(process.argv.slice(2), process.env).then((code) => {
     process.exitCode = code;
   });

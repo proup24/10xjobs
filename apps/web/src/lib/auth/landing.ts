@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@/lib/supabase/database.types';
+import type { Database } from '@xjobs/database/types';
 
 /** RLS limits `profiles` to the signed-in user's own rows. */
 export async function landingPath(

@@ -29,6 +29,9 @@ Precision over volume: prefer a tailored application over a fast one.
 - `npx nx run-many -t lint test build typecheck`: what CI runs.
 - `npx nx test xjobs`: unit tests for the engine.
 - `npx nx e2e xjobs-e2e`: e2e tests.
+- `pnpm db:migrate`: apply migrations (local only unless `XJOBS_ALLOW_REMOTE_DB=1`).
+- `pnpm db:seed`: seed the database (same guard).
+- `pnpm users link <email>`: print a sign-in link without sending email.
 - `pnpm --filter @xjobs/xjobs db:regenerate`: move published profiles to the current query recipe; run once after a recipe version bump.
 - `pnpm --filter @xjobs/xjobs db:renormalize`: rebuild normalized jobs from raw storage; run once after a `NORMALIZER_VERSION` bump.
 - `pnpm --filter @xjobs/xjobs db:reprocess -- <flags>`: send in-scope jobs back to the processor (`--null-status`, `--failed`, `--all-in-scope`, `--job <id>`); run after a prompt, schema or model change.
@@ -39,7 +42,7 @@ Precision over volume: prefer a tailored application over a fast one.
 ## Conventions
 
 - The app is hosted and multi-tenant, and the tenant is the Supabase Auth user (no workspaces). Every record a user owns carries `userId` and is isolated by RLS; engine-only tables have RLS on with no policies.
-- The Prisma contract (`apps/xjobs/src/database/contract.prisma`) is the only schema source, RLS policies included. The local stack is the Supabase CLI; production is Supabase Cloud.
+- The Prisma contract (`libs/database/src/contract/contract.prisma`) is the only schema source, RLS policies included. The local stack is the Supabase CLI; production is Supabase Cloud.
 - Qualify decisions record a reason, so wrong rejections can be found and fixed.
 
 ## Workflow

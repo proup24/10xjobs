@@ -9,7 +9,7 @@
  * a sample posting, and prints the answers, the output and each call's cost.
  * Costs a few cents. Needs `OPENROUTER_API_KEY`; reads the PROCESSOR_* models.
  */
-import { loadEnvironmentFiles } from 'src/config/environment.loader';
+import { loadEnvironmentFiles } from '@xjobs/database/env';
 import { OpenRouterDecisionModel } from 'src/modules/processor/models/decision.model';
 import { OpenRouterExtractionModel } from 'src/modules/processor/models/extraction.model';
 import {

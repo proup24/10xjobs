@@ -59,7 +59,7 @@ Slices 04, 05 and 06 are independent of each other. Slice 09's production setup 
 
 **Data and schema**
 
-- **One schema source:** the Prisma contract in `apps/xjobs/src/database/contract.prisma`, migrated with Prisma. This includes RLS: models use `@@rls` and `policy_*` blocks from Prisma's Supabase extension pack, and `public.users.id` is a foreign key to `auth.users.id`.
+- **One schema source:** the Prisma contract in `libs/database/src/contract/contract.prisma`, migrated with Prisma. This includes RLS: models use `@@rls` and `policy_*` blocks from Prisma's Supabase extension pack, and `public.users.id` is a foreign key to `auth.users.id`.
 - SQL the contract can't express (the sign-up trigger, helper functions) goes in hand-written Prisma migrations. There is no `supabase/migrations` folder.
 - The web app gets its database types from `supabase gen types`, run against the migrated database.
 - **Ownership:** every table a user owns carries its own `userId` column, child tables included (`contacts`, `profiles`, `profile_skills` and later ones), so every policy is `"userId" = auth.uid()` with no joins.
