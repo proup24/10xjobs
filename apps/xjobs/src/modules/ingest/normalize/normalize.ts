@@ -1,6 +1,7 @@
 import { Channel } from 'src/common/enums';
 import { mapAshby, mapGreenhouse } from './ats';
-import { mapLinkedinJob, mapLinkedinPost } from './linkedin';
+import { mapLinkedinPost } from './linkedin';
+import { mapLinkedinJob } from './mappers/linkedin-job.mapper';
 import {
   type NormalizedRecord,
   type NormalizeResult,

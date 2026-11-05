@@ -2,6 +2,7 @@ import { Channel } from 'src/common/enums';
 import ashbyFailed from './fixtures/ashby-failed.json';
 import ashby from './fixtures/ashby.json';
 import linkedinJob from './fixtures/linkedin-job.json';
+import cheapJob from './fixtures/linkedin-job-cheap.json';
 import linkedinPost from './fixtures/linkedin-post.json';
 import { contentHash } from './content-hash';
 
@@ -35,6 +36,17 @@ describe('contentHash', () => {
     };
     expect(contentHash(Channel.LINKEDIN_JOB_BOARD, later)).toBe(
       contentHash(Channel.LINKEDIN_JOB_BOARD, linkedinJob),
+    );
+  });
+
+  it('ignores the search a cheap_scraper job was found by', () => {
+    const later = {
+      ...cheapJob,
+      searchString: 'typescript - Germany',
+      postedTime: '9 hours ago',
+    };
+    expect(contentHash(Channel.LINKEDIN_JOB_BOARD, later)).toBe(
+      contentHash(Channel.LINKEDIN_JOB_BOARD, cheapJob),
     );
   });
 

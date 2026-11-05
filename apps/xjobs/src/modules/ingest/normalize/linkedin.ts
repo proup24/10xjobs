@@ -1,17 +1,16 @@
 import { emptyRecord, type NormalizedRecord } from './record';
-import {
-  cleanNumber,
-  cleanText,
-  datePart,
-  htmlToPlainText,
-  objectAt,
-} from './text';
+import { cleanNumber, cleanText, datePart, objectAt } from './text';
+
+/*
+ * Field helpers shared by the LinkedIn mappers. A LinkedIn job board item is
+ * mapped by its actor's mapper in `mappers/`; posts are mapped here.
+ */
 
 /** The largest salary bound the job columns hold (PostgreSQL `integer`). */
 const MAX_SALARY = 2_147_483_647;
 
 /** A salary bound that can be stored; anything larger is not kept. */
-function salaryBound(value: unknown): number | null {
+export function salaryBound(value: unknown): number | null {
   const n = cleanNumber(value);
   return n !== null && Math.abs(n) <= MAX_SALARY ? n : null;
 }
@@ -34,61 +33,46 @@ export function isLinkedinHost(url: URL): boolean {
 }
 
 /** The URL without LinkedIn's `trk*` tracking parameters. */
-function withoutTrk(url: URL | null): string | null {
+export function withoutTrk(url: URL | null): string | null {
   if (!url) return null;
   for (const key of [...url.searchParams.keys()])
     if (/^trk/i.test(key)) url.searchParams.delete(key);
   return url.toString();
 }
 
-/** `https://www.linkedin.com/jobs/view/<id>` from the item id or its job URL. */
-function linkedinJobUrl(p: Record<string, unknown>): string | null {
-  const id =
-    cleanText(p.id) ??
-    cleanText(p.jobId) ??
-    (cleanText(p.jobUrl) ?? '').match(/\/jobs\/view\/(?:[^/?#]*-)?(\d+)/)?.[1];
-  return id ? `https://www.linkedin.com/jobs/view/${id}` : null;
+/**
+ * `https://www.linkedin.com/jobs/view/<id>` from the item's id, else the id in
+ * its (regional, slugged) job URL.
+ */
+export function linkedinJobUrl(id: unknown, jobUrl: unknown): string | null {
+  const found =
+    cleanText(id) ??
+    (cleanText(jobUrl) ?? '').match(/\/jobs\/view\/(?:[^/?#]*-)?(\d+)/)?.[1];
+  return found ? `https://www.linkedin.com/jobs/view/${found}` : null;
 }
 
-export function mapLinkedinJob(p: Record<string, unknown>): NormalizedRecord {
-  const descriptionHtml = cleanText(p.descriptionHtml);
-  const salaryText = cleanText(p.salary);
-  const salaryMin = salaryBound(p.salaryMin);
-  const salaryMax = salaryBound(p.salaryMax);
-  const apply = p.applyType === 'EXTERNAL' ? httpUrl(p.applyUrl) : null;
-  const posterName = cleanText(p.posterFullName);
-  const posterUrl = httpUrl(p.posterProfileUrl)?.toString() ?? null;
-  return emptyRecord({
-    kind: 'job',
-    title: cleanText(p.title),
-    companyName: cleanText(p.companyName),
-    companyUrl: withoutTrk(httpUrl(p.companyUrl)),
-    location: cleanText(p.location),
-    contractType: cleanText(p.contractType),
-    experienceLevel: cleanText(p.experienceLevel),
-    sector: cleanText(p.sector),
-    salary:
-      salaryText || salaryMin !== null || salaryMax !== null
-        ? {
-            text: salaryText,
-            min: salaryMin,
-            max: salaryMax,
-            currency: cleanText(p.salaryCurrency),
-            period: cleanText(p.salaryPeriod),
-          }
-        : null,
-    publishedAt: datePart(p.publishedAt),
-    descriptionHtml,
-    descriptionText:
-      cleanText(p.description) ??
-      (descriptionHtml ? cleanText(htmlToPlainText(descriptionHtml)) : null),
-    applyUrl: apply && !isLinkedinHost(apply) ? cleanText(p.applyUrl) : null,
-    postingUrl: linkedinJobUrl(p) as string,
-    poster:
-      posterName || posterUrl
-        ? { name: posterName, profileUrl: posterUrl, type: 'person' }
-        : null,
-  });
+/**
+ * An external job's apply URL, unchanged; null for Easy Apply and for a link
+ * back to LinkedIn, which names no employer page.
+ */
+export function externalApplyUrl(
+  applyType: unknown,
+  applyUrl: unknown,
+): string | null {
+  const url = applyType === 'EXTERNAL' ? httpUrl(applyUrl) : null;
+  return url && !isLinkedinHost(url) ? cleanText(applyUrl) : null;
+}
+
+/** The person LinkedIn shows on a job, or null when it shows none. */
+export function jobPoster(
+  name: unknown,
+  profileUrl: unknown,
+): NormalizedRecord['poster'] {
+  const posterName = cleanText(name);
+  const posterUrl = httpUrl(profileUrl)?.toString() ?? null;
+  return posterName || posterUrl
+    ? { name: posterName, profileUrl: posterUrl, type: 'person' }
+    : null;
 }
 
 /**

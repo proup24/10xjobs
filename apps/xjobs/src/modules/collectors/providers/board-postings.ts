@@ -5,10 +5,8 @@ import {
   isGoogleRedirect,
   resolveGoogleRedirect,
 } from '../utils/google-redirect';
-import type {
-  DiscoveryHit,
-  SegmentDiscovery,
-} from './apify/google-search.provider';
+import type { SegmentDiscovery } from './apify/google-search.provider';
+import type { DiscoveryHit } from './mappers/google-search.mapper';
 
 /** Postings fetched at once from the board's public API. */
 const POSTING_CONCURRENCY = 4;

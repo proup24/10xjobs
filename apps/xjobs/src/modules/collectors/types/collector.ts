@@ -8,6 +8,14 @@ export interface RawCollectedItem {
   payload: unknown;
 }
 
+/** Where an actor says one of its items came from, read by a channel mapper. */
+export interface ItemOrigin {
+  /** The search the item echoes, comparable to a member's search; null when none. */
+  search: string | null;
+  /** 1-based position in that search; null when the actor reports none. */
+  rank: number | null;
+}
+
 /** One member builder of a search segment, as a collector searches it. */
 export interface SegmentQuery {
   /** The builder id; results are attributed and ingested against it. */
@@ -55,6 +63,10 @@ export interface ActorRunConfig {
 }
 
 export interface LinkedinJobBoardRunConfig extends ActorRunConfig {
+  /**
+   * Rows from which a search counts as truncated. Not sent: cheap_scraper has
+   * no per-URL limit, so the charge cap is what bounds a run.
+   */
   maxRowsPerUrl: number;
 }
 
