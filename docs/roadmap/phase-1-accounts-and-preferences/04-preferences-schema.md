@@ -21,7 +21,7 @@ Make each profile's job preferences complete enough that Phase 2 can check a job
 
 There are no `regions` or `arrangements` columns; the arrangement keys live inside `locations`.
 
-The spec adds the new fields next to the old ones (`contractTypes`, `places`, `spokenLanguages`, `salaryMin`/`salaryCurrency`/`salaryPeriod`, `acceptsAnyCurrency`/`acceptedCurrencies`), in three steps. Step 1 (add, PR A) is on branch `feat/preferences-add`; step 2 (switch the engine) and step 3 (remove) are pending. The old columns and enums go, and `places` and `spokenLanguages` are renamed to `locations` and `languages` in step 3 (PR C), once the engine has switched.
+The spec adds the new fields next to the old ones (`contractTypes`, `places`, `spokenLanguages`, `salaryMin`/`salaryCurrency`/`salaryPeriod`, `acceptsAnyCurrency`/`acceptedCurrencies`), in three steps. Step 1 (PR A) adds them; step 2 (switch the engine) and step 3 (remove) are pending. The old columns and enums go, and `places` and `spokenLanguages` are renamed to `locations` and `languages` in step 3 (PR C), once the engine has switched.
 
 `ProfileSkill`, the tech stack: `technology` (a fixed enum), `domain`, `mastery` (0–10) and `importance` (0–10). Query generation searches the top technologies by importance.
 

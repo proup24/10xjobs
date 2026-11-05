@@ -963,7 +963,6 @@ export const SEED: Record<ListName, SeedTerm[]> = {
   ],
 };
 
-/** Which countries each region contains. GLOBAL has none: it matches everywhere. */
 /** Role kinds that are software-engineering work; they get `isEngineering = true`. */
 export const ENGINEERING_ROLE_KINDS: readonly string[] = [
   'backend_engineer',
@@ -985,6 +984,7 @@ export const ENGINEERING_ROLE_KINDS: readonly string[] = [
   'engineering_manager',
 ];
 
+/** Which countries each region contains. GLOBAL has none: it matches everywhere. */
 export const SEED_REGION_COUNTRIES: [region: string, country: string][] = [
   ['EMEA', 'AD'],
   ['EMEA', 'AE'],
