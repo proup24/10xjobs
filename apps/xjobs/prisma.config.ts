@@ -1,4 +1,4 @@
-import { definePrismaConfig } from 'prisma/config'; 
+import { definePrismaConfig } from '@prisma/cli-engine';
 import { defineConfig as ormConfig } from '@prisma/orm-postgres/config';
 import supabasePack from '@prisma/orm-extension-supabase/pack';
 import { loadDatabaseEnvironment } from './src/config';
@@ -11,7 +11,7 @@ export default definePrismaConfig({
     extensions: [supabasePack],
     migrations: { dir: 'src/database/migrations' },
     db: {
-      connection: env.DATABASE_URL,
+      connection: env.DIRECT_DATABASE_URL ?? env.DATABASE_URL,
     },
   }),
 });
