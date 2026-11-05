@@ -2,7 +2,7 @@ import type { SupabaseClient, User } from '@supabase/supabase-js';
 
 export type AdminAuth = Pick<
   SupabaseClient['auth']['admin'],
-  'inviteUserByEmail' | 'listUsers' | 'updateUserById'
+  'generateLink' | 'inviteUserByEmail' | 'listUsers' | 'updateUserById'
 >;
 
 const LIST_PAGE_SIZE = 1000;

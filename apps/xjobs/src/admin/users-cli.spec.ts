@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fakeAuth } from './fake-auth';
+import { fakeAuth, makeUser } from './fake-auth';
 import { runUsersCli } from './users-cli';
 
 const env = {
@@ -49,7 +49,37 @@ describe('runUsersCli', () => {
     expect(await runUsersCli(['nope'], env, deps)).toBe(1);
     expect(await runUsersCli(['invite'], env, deps)).toBe(1);
     expect(lines).toContain(
-      'Usage: pnpm users <invite|block|unblock> <email> | pnpm users list',
+      'Usage: pnpm users <invite|block|unblock|link> <email> | pnpm users list',
+    );
+  });
+
+  it('prints a sign-in link for link <email>', async () => {
+    const { lines, print } = setup();
+    const fake = fakeAuth([makeUser({ email: 'a@xjobs.local' })]);
+    const deps = { createAuth: () => fake, print };
+    expect(await runUsersCli(['link', 'a@xjobs.local'], env, deps)).toBe(0);
+    expect(lines).toContain(
+      'http://localhost:3001/auth/confirm?token_hash=hash-1&type=email',
+    );
+  });
+
+  it('uses WEB_URL for the link when set', async () => {
+    const { lines, print } = setup();
+    const fake = fakeAuth([makeUser({ email: 'a@xjobs.local' })]);
+    const deps = { createAuth: () => fake, print };
+    const withUrl = { ...env, WEB_URL: 'https://dev.example.com' };
+    expect(await runUsersCli(['link', 'a@xjobs.local'], withUrl, deps)).toBe(0);
+    expect(lines).toContain(
+      'https://dev.example.com/auth/confirm?token_hash=hash-1&type=email',
+    );
+  });
+
+  it('prints usage for link without an email', async () => {
+    const { lines, print } = setup();
+    const deps = { createAuth: () => fakeAuth(), print };
+    expect(await runUsersCli(['link'], env, deps)).toBe(1);
+    expect(lines).toContain(
+      'Usage: pnpm users <invite|block|unblock|link> <email> | pnpm users list',
     );
   });
 });

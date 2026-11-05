@@ -4,12 +4,13 @@ import {
   blockUser,
   inviteUser,
   listAuthUsers,
+  signInLink,
   unblockUser,
   type CommandResult,
 } from './users-admin';
 
 const USAGE =
-  'Usage: pnpm users <invite|block|unblock> <email> | pnpm users list';
+  'Usage: pnpm users <invite|block|unblock|link> <email> | pnpm users list';
 const MISSING_ENV =
   'Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (locally: eval "$(scripts/supabase-env.sh)").';
 
@@ -51,6 +52,8 @@ export async function runUsersCli(
     run = blockUser(auth, email);
   else if (email && rest.length === 0 && command === 'unblock')
     run = unblockUser(auth, email);
+  else if (email && rest.length === 0 && command === 'link')
+    run = signInLink(auth, email, env.WEB_URL ?? 'http://localhost:3001');
   else {
     print(USAGE);
     return 1;
