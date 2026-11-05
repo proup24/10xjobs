@@ -18,10 +18,14 @@ x-worker: &worker
     REDIS_PREFIX: ${REDIS_PREFIX:-xjobs}
     JOBS_CONCURRENCY: ${JOBS_CONCURRENCY:-5}
     REDIS_COMMAND_TIMEOUT_MS: ${REDIS_COMMAND_TIMEOUT_MS:-3000}
+    # Inside a container 127.0.0.1 is the container itself: against the local
+    # Supabase CLI stack, point these at host.docker.internal (54322 and 54321).
     DATABASE_URL: ${DATABASE_URL:-}
     # Worker startup validates the shared Supabase Storage credentials.
-    SUPABASE_URL: ${SUPABASE_URL:-${SUPABASE_PUBLIC_URL:-}}
-    SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-${SERVICE_ROLE_KEY:-}}
+    SUPABASE_URL: ${SUPABASE_URL:-}
+    SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+  extra_hosts:
+    - 'host.docker.internal:host-gateway'
   depends_on:
     redis:
       condition: service_healthy

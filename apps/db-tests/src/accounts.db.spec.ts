@@ -14,14 +14,13 @@ const draftProfile = (userId: string) => ({
   position: 'backend_engineer',
   languages: ['EN'],
   country: 'MA',
-  regions: ['EMEA'],
+  locations: { remote: ['EMEA'], hybrid: [], onsite: [] },
   yearsOfExperience: 5,
   timezoneCurrent: 60,
   timezoneMin: 0,
   timezoneMax: 120,
   engagements: ['employee'],
-  arrangements: ['remote'],
-  seniority: 'senior',
+  seniorities: ['senior'],
   noticePeriodDays: 30,
 });
 

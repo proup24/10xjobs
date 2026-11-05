@@ -207,10 +207,10 @@ type Address {
 // One row per Supabase Auth user, created by the on_auth_user_created trigger.
 // The email lives only in Auth.
 model User {
-  id          Uuid      @id
-  authUser    supabase:auth.AuthUser @relation(fields: [id], references: [id], onDelete: Cascade)
-  name        String?
-  address     Address?
+  id       Uuid                   @id
+  authUser supabase:auth.AuthUser @relation(fields: [id], references: [id], onDelete: Cascade)
+  name     String?
+  address  Address?
   +Timestamps
 
   @@map("users")
@@ -221,14 +221,14 @@ model User {
 // no delete (removing the Auth user cascades).
 policy_select users_owner_read {
   target = User
-  roles  = [authenticated]
-  using  = sql`id = auth.uid()`
+  roles = [authenticated]
+  using = sql`id = auth.uid()`
 }
 
 policy_update users_owner_update {
-  target    = User
-  roles     = [authenticated]
-  using     = sql`id = auth.uid()`
+  target = User
+  roles = [authenticated]
+  using = sql`id = auth.uid()`
   withCheck = sql`id = auth.uid()`
 }
 
@@ -250,9 +250,9 @@ model Contact {
 }
 
 policy_all contacts_owner {
-  target    = Contact
-  roles     = [authenticated]
-  using     = sql`"userId" = auth.uid()`
+  target = Contact
+  roles = [authenticated]
+  using = sql`"userId" = auth.uid()`
   withCheck = sql`"userId" = auth.uid()`
 }
 
@@ -303,15 +303,15 @@ model Profile {
 // One row per technology and domain in a profile's tech stack.
 // userId always equals the profile's userId: the (profileId, userId) foreign key enforces it.
 model ProfileSkill {
-  id          Uuid        @id @onCreate(uuid(7))
-  userId      Uuid
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  profileId   Uuid
-  profile     Profile     @relation(fields: [profileId, userId], references: [id, userId], onDelete: Cascade)
-  technology  Technology
-  domain      SkillDomain
-  mastery     Int
-  importance  Int         @default(5)
+  id         Uuid        @id @onCreate(uuid(7))
+  userId     Uuid
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profileId  Uuid
+  profile    Profile     @relation(fields: [profileId, userId], references: [id, userId], onDelete: Cascade)
+  technology Technology
+  domain     SkillDomain
+  mastery    Int
+  importance Int         @default(5)
   +Timestamps
 
   @@check(expression: sql`mastery BETWEEN 0 AND 10`, name: "profile_skills_mastery_range")
@@ -326,54 +326,54 @@ model ProfileSkill {
 // engine publishes: state and publishedAt are not writable by users (column grants too).
 policy_select profiles_owner_read {
   target = Profile
-  roles  = [authenticated]
-  using  = sql`"userId" = auth.uid()`
+  roles = [authenticated]
+  using = sql`"userId" = auth.uid()`
 }
 
 policy_insert profiles_owner_insert {
-  target    = Profile
-  roles     = [authenticated]
+  target = Profile
+  roles = [authenticated]
   withCheck = sql`"userId" = auth.uid() AND state = 'draft' AND "publishedAt" IS NULL`
 }
 
 policy_update profiles_owner_update_draft {
-  target    = Profile
-  roles     = [authenticated]
-  using     = sql`"userId" = auth.uid() AND state = 'draft'`
+  target = Profile
+  roles = [authenticated]
+  using = sql`"userId" = auth.uid() AND state = 'draft'`
   withCheck = sql`"userId" = auth.uid() AND state = 'draft' AND "publishedAt" IS NULL`
 }
 
 policy_delete profiles_owner_delete_draft {
   target = Profile
-  roles  = [authenticated]
-  using  = sql`"userId" = auth.uid() AND state = 'draft'`
+  roles = [authenticated]
+  using = sql`"userId" = auth.uid() AND state = 'draft'`
 }
 
 // Skills follow their profile: writable only while the user's own profile is a draft.
 // The outer column is qualified; a bare "userId" in the subquery would resolve to p."userId".
 policy_select profile_skills_owner_read {
   target = ProfileSkill
-  roles  = [authenticated]
-  using  = sql`"userId" = auth.uid()`
+  roles = [authenticated]
+  using = sql`"userId" = auth.uid()`
 }
 
 policy_insert profile_skills_owner_insert {
-  target    = ProfileSkill
-  roles     = [authenticated]
+  target = ProfileSkill
+  roles = [authenticated]
   withCheck = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills."profileId" AND p."userId" = auth.uid() AND p.state = 'draft')`
 }
 
 policy_update profile_skills_owner_update {
-  target    = ProfileSkill
-  roles     = [authenticated]
-  using     = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills."profileId" AND p."userId" = auth.uid() AND p.state = 'draft')`
+  target = ProfileSkill
+  roles = [authenticated]
+  using = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills."profileId" AND p."userId" = auth.uid() AND p.state = 'draft')`
   withCheck = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills."profileId" AND p."userId" = auth.uid() AND p.state = 'draft')`
 }
 
 policy_delete profile_skills_owner_delete {
   target = ProfileSkill
-  roles  = [authenticated]
-  using  = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills."profileId" AND p."userId" = auth.uid() AND p.state = 'draft')`
+  roles = [authenticated]
+  using = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills."profileId" AND p."userId" = auth.uid() AND p.state = 'draft')`
 }
 
 // A shared, immutable search recipe for one channel, deduplicated by hash across every
@@ -458,12 +458,6 @@ model SearchSegmentRun {
   @@check(expression: sql`"windowStart" < "windowEnd"`, name: "search_segment_runs_window")
   @@index([channel, startedAt])
   @@map("search_segment_runs")
-  @@check(expression: sql`kind IN ('job', 'post')`, name: "raw_jobs_kind")
-  @@check(expression: sql`"postedAtPrecision" IN ('hour', 'day')`, name: "raw_jobs_precision")
-  @@check(expression: sql`"firstSeenAt" <= "lastSeenAt"`, name: "raw_jobs_seen_order")
-  @@check(expression: sql`length(trim(description)) > 0 AND length(trim(url)) > 0`, name: "raw_jobs_content")
-  @@index([channel, lastSeenAt])
-  @@map("raw_jobs")
   @@rls
 }
 
@@ -491,10 +485,6 @@ model CollectionBatch {
   @@check(expression: sql`attempts >= 0`, name: "collection_batches_attempts")
   @@index([status, createdAt])
   @@map("collection_batches")
-  @@check(expression: sql`"identityType" IN ('source_id', 'url')`, name: "raw_job_identity_type")
-  @@check(expression: sql`length(trim("identityValue")) > 0`, name: "raw_job_identity_value")
-  @@unique([channel, identityType, identityValue])
-  @@map("raw_job_identities")
   @@rls
 }
 
@@ -513,6 +503,7 @@ model RawItem {
   @@check(expression: sql`"firstSeenAt" <= "lastSeenAt"`, name: "raw_items_seen_order")
   @@unique([channel, sourceKey])
   @@map("raw_items")
+  @@rls
 }
 
 // One distinct content of a raw item, untouched. Append-only: Process consumes these.
@@ -532,6 +523,7 @@ model RawItemVersion {
   @@unique([rawItemId, contentHash])
   @@index([createdAt])
   @@map("raw_item_versions")
+  @@rls
 }
 
 // Which query saw which raw item in which batch. `attribution` is the query id, or
@@ -555,10 +547,6 @@ model RawItemSighting {
   @@unique([batchId, rawItemId, attribution])
   @@index([rawItemId])
   @@map("raw_item_sightings")
-  @@check(expression: sql`"firstSeenAt" <= "lastSeenAt"`, name: "raw_job_query_hits_seen_order")
-  @@check(expression: sql`rank IS NULL OR rank > 0`, name: "raw_job_query_hits_rank")
-  @@unique([queryId, rawJobId])
-  @@map("raw_job_query_hits")
   @@rls
 }
 
@@ -579,6 +567,7 @@ model NormalizedVersion {
   @@check(expression: sql`(status = 'valid') = (record IS NOT NULL AND "jobKey" IS NOT NULL)`, name: "normalized_versions_valid_record")
   @@unique([rawVersionId, normalizerVersion])
   @@map("normalized_versions")
+  @@rls
 }
 
 // One job, unified from every raw item whose job key (its canonical apply URL)
@@ -646,6 +635,7 @@ model NormalizedJob {
   @@unique([jobKey])
   @@index([processingStatus, processingRequestedAt], map: "normalized_jobs_processing_queue")
   @@map("normalized_jobs")
+  @@rls
 }
 
 // Which job a raw item belongs to (exactly one), decided by its latest version.
@@ -662,6 +652,7 @@ model NormalizedJobSource {
   @@unique([rawItemId])
   @@index([jobId])
   @@map("normalized_job_sources")
+  @@rls
 }
 
 // TechTag list: a closed vocabulary of codes; unknown terms enter as 'proposed'.
@@ -678,6 +669,7 @@ model TechTag {
 
   @@check(expression: sql`status IN ('approved', 'proposed')`, name: "tech_tags_status")
   @@map("tech_tags")
+  @@rls
 }
 
 // RegionTerm list: a closed vocabulary of codes; unknown terms enter as 'proposed'.
@@ -693,6 +685,7 @@ model RegionTerm {
 
   @@check(expression: sql`status IN ('approved', 'proposed')`, name: "regions_status")
   @@map("regions")
+  @@rls
 }
 
 // Country list: a closed vocabulary of codes; unknown terms enter as 'proposed'.
@@ -709,6 +702,7 @@ model Country {
 
   @@check(expression: sql`status IN ('approved', 'proposed')`, name: "countries_status")
   @@map("countries")
+  @@rls
 }
 
 // RoleKind list: a closed vocabulary of codes; unknown terms enter as 'proposed'.
@@ -724,6 +718,7 @@ model RoleKind {
 
   @@check(expression: sql`status IN ('approved', 'proposed')`, name: "role_kinds_status")
   @@map("role_kinds")
+  @@rls
 }
 
 // SeniorityTerm list: a closed vocabulary of codes; unknown terms enter as 'proposed'.
@@ -739,6 +734,7 @@ model SeniorityTerm {
 
   @@check(expression: sql`status IN ('approved', 'proposed')`, name: "seniorities_status")
   @@map("seniorities")
+  @@rls
 }
 
 // ArrangementTerm list: a closed vocabulary of codes; unknown terms enter as 'proposed'.
@@ -754,6 +750,7 @@ model ArrangementTerm {
 
   @@check(expression: sql`status IN ('approved', 'proposed')`, name: "arrangements_status")
   @@map("arrangements")
+  @@rls
 }
 
 // ContractType list: a closed vocabulary of codes; unknown terms enter as 'proposed'.
@@ -769,6 +766,7 @@ model ContractType {
 
   @@check(expression: sql`status IN ('approved', 'proposed')`, name: "contract_types_status")
   @@map("contract_types")
+  @@rls
 }
 
 // EngagementTerm list: a closed vocabulary of codes; unknown terms enter as 'proposed'.
@@ -784,6 +782,7 @@ model EngagementTerm {
 
   @@check(expression: sql`status IN ('approved', 'proposed')`, name: "engagements_status")
   @@map("engagements")
+  @@rls
 }
 
 // JunkFlag list: a closed vocabulary of codes; unknown terms enter as 'proposed'.
@@ -798,6 +797,7 @@ model JunkFlag {
 
   @@check(expression: sql`status IN ('approved', 'proposed')`, name: "junk_flags_status")
   @@map("junk_flags")
+  @@rls
 }
 
 // Which countries a region contains; lets a country filter match "EMEA remote" jobs.
@@ -810,6 +810,7 @@ model RegionCountry {
   @@id([regionCode, countryCode])
   @@index([countryCode])
   @@map("region_countries")
+  @@rls
 }
 
 // A city named by postings; created as they appear, not pre-seeded. Unique per
@@ -830,6 +831,7 @@ model City {
   @@check(expression: sql`status IN ('approved', 'proposed')`, name: "cities_status")
   @@unique([nameKey, countryCode])
   @@map("cities")
+  @@rls
 }
 
 // One completed extraction run for a job. Append-only; typed columns are copies
@@ -882,6 +884,7 @@ model JobExtraction {
   @@index([techTags], type: "gin", name: "job_extractions_techTags_gin")
   @@index([mainStackTags], type: "gin", name: "job_extractions_mainStackTags_gin")
   @@map("job_extractions")
+  @@rls
 }
 
 // One model call made while processing a job. Append-only; feeds the daily budget.
@@ -910,8 +913,5 @@ model ProcessingAttempt {
   @@check(expression: sql`outcome IN ('ok', 'error', 'invalid')`, name: "processing_attempts_outcome")
   @@index([createdAt], where: sql`NOT eval`, name: "processing_attempts_created_noneval")
   @@map("processing_attempts")
-  @@check(expression: sql`provider IN ('ashby', 'greenhouse')`, name: "ats_posting_identity_provider")
-  @@unique([provider, tenantKey, postingId])
-  @@map("ats_posting_identities")
   @@rls
 }

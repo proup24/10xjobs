@@ -15,6 +15,7 @@ import {
   type ReuseKey,
 } from './processor.repository';
 import { PrismaVocabRepository } from './vocab.repository';
+import type { SeedEnvironmentVariables } from 'src/config';
 
 /**
  * Needs PROCESSOR_TEST_DATABASE_URL: a disposable `processor_test` database on
@@ -232,7 +233,9 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
     vocab = new PrismaVocabRepository(database);
     await sql`TRUNCATE processing_attempts, job_extractions, cities, region_countries, tech_tags, regions, countries, role_kinds, seniorities, arrangements, contract_types, engagements, junk_flags CASCADE`;
     // About two thousand rows, one statement each: longer than the default hook timeout.
-    await db.transaction((tx) => processorListsSeed.run(tx));
+    await db.transaction((tx) =>
+      processorListsSeed.run(tx, {} as SeedEnvironmentVariables),
+    );
   }, 120_000);
   afterAll(async () => {
     await db?.close();

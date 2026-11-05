@@ -7,14 +7,17 @@ export const profileFields = () => ({
   languages: ['EN', 'FR'],
   country: 'MA',
   city: 'Rabat',
-  regions: ['MENA', 'NORTH_AFRICA', 'EMEA'],
+  locations: {
+    remote: ['MENA', 'North Africa', 'EMEA'],
+    hybrid: [],
+    onsite: [],
+  },
   yearsOfExperience: 6,
   timezoneCurrent: 60,
   timezoneMin: -240,
   timezoneMax: 240,
   engagements: ['employee', 'contractor'],
-  arrangements: ['remote'],
-  seniority: 'senior',
+  seniorities: ['senior'],
   noticePeriodDays: 30,
 });
 
