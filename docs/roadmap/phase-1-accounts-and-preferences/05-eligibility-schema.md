@@ -1,8 +1,10 @@
 # 05: Eligibility schema
 
+Spec: [Preferences and eligibility schema](../../superpowers/specs/2026-11-05-preferences-and-eligibility-design.md), shared with slice 04.
+
 ## Goal
 
-Record where a user is legally able to work and where they live, so Phase 2 can reject jobs they can't take, with a clear reason. None of this exists in the engine yet; `Profile` has only `country`, `city` and `regions`.
+Record where a user is legally able to work and where they live, so Phase 2 can reject jobs they can't take, with a clear reason. None of this exists in the engine yet; `Profile` has only `country` and `city`, which the spec replaces with residence on the user.
 
 ## In scope
 

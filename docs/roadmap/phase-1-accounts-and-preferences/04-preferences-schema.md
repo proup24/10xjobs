@@ -1,5 +1,7 @@
 # 04: Preferences schema
 
+Spec: [Preferences and eligibility schema](../../superpowers/specs/2026-11-05-preferences-and-eligibility-design.md), shared with slice 05.
+
 ## Goal
 
 Make each profile's job preferences complete enough that Phase 2 can check a job against them and name the rule when it rejects one. The engine's `Profile` and `ProfileSkill` models are the starting point; this slice changes them rather than building a new schema.
@@ -8,13 +10,18 @@ Make each profile's job preferences complete enough that Phase 2 can check a job
 
 `Profile`, one per target position, many per user:
 
-- `position` (enum), `seniority` (enum), `yearsOfExperience`.
+- `position` (enum), `seniorities` (a set of enum values), `yearsOfExperience`.
 - `languages` (enum: AR, FR, EN, ES).
-- `country` (ISO code), `city`, `regions` (regions the user belongs to, for example Morocco → MENA, NORTH_AFRICA, EMEA).
+- `locations`: `{ remote, hybrid, onsite }`, each a list of location text. An empty list means that arrangement isn't wanted.
+- `country` and `city`, which the spec moves to the user as residence.
 - Timezone as UTC offsets in minutes: `timezoneCurrent`, `timezoneMin`, `timezoneMax`.
-- `engagements` (employee, contractor, eor, agency, per_task) and `arrangements` (remote, hybrid, onsite, unstated).
+- `engagements` (employee, contractor, eor, agency, per_task).
 - `noticePeriodDays`.
 - `state` (draft or published), and resume columns (slice 06).
+
+There are no `regions` or `arrangements` columns; the arrangement keys live inside `locations`.
+
+The spec adds the new fields next to the old ones (`contractTypes`, `places`, `spokenLanguages`, `salaryMin`/`salaryCurrency`/`salaryPeriod`, `acceptsAnyCurrency`/`acceptedCurrencies`), in three steps. The old columns and enums go, and `places` and `spokenLanguages` are renamed to `locations` and `languages`, once the engine has switched.
 
 `ProfileSkill`, the tech stack: `technology` (a fixed enum), `domain`, `mastery` (0–10) and `importance` (0–10). Query generation searches the top technologies by importance.
 
