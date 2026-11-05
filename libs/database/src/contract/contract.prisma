@@ -982,3 +982,71 @@ model ProcessingAttempt {
   @@map("processing_attempts")
   @@rls
 }
+
+// Users read the value lists through the pickers and never write them. Column grants
+// (see the value_lists_read_only migration) hide status, occurrences and the timestamps.
+policy_select tech_tags_read_approved {
+  target = TechTag
+  roles = [authenticated]
+  using = sql`status = 'approved'`
+}
+
+policy_select role_kinds_read_approved {
+  target = RoleKind
+  roles = [authenticated]
+  using = sql`status = 'approved'`
+}
+
+policy_select seniorities_read_approved {
+  target = SeniorityTerm
+  roles = [authenticated]
+  using = sql`status = 'approved'`
+}
+
+policy_select contract_types_read_approved {
+  target = ContractType
+  roles = [authenticated]
+  using = sql`status = 'approved'`
+}
+
+policy_select engagements_read_approved {
+  target = EngagementTerm
+  roles = [authenticated]
+  using = sql`status = 'approved'`
+}
+
+policy_select regions_read_approved {
+  target = RegionTerm
+  roles = [authenticated]
+  using = sql`status = 'approved'`
+}
+
+policy_select countries_read_approved {
+  target = Country
+  roles = [authenticated]
+  using = sql`status = 'approved'`
+}
+
+policy_select cities_read_approved {
+  target = City
+  roles = [authenticated]
+  using = sql`status = 'approved'`
+}
+
+policy_select region_countries_read_approved {
+  target = RegionCountry
+  roles = [authenticated]
+  using = sql`true`
+}
+
+policy_select iso_languages_read_approved {
+  target = IsoLanguage
+  roles = [authenticated]
+  using = sql`true`
+}
+
+policy_select iso_currencies_read_approved {
+  target = IsoCurrency
+  roles = [authenticated]
+  using = sql`true`
+}

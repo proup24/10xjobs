@@ -5390,6 +5390,19 @@
       "public": {
         "entries": {
           "policy": {
+            "cities_read_approved": {
+              "kind": "policy",
+              "name": "cities_read_approved_d2529ebe",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "cities_read_approved",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "cities",
+              "using": "status = 'approved'"
+            },
             "contacts_owner": {
               "kind": "policy",
               "name": "contacts_owner_6ea08fe5",
@@ -5403,6 +5416,71 @@
               "tableName": "contacts",
               "using": "\"userId\" = auth.uid()",
               "withCheck": "\"userId\" = auth.uid()"
+            },
+            "contract_types_read_approved": {
+              "kind": "policy",
+              "name": "contract_types_read_approved_d2529ebe",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "contract_types_read_approved",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "contract_types",
+              "using": "status = 'approved'"
+            },
+            "countries_read_approved": {
+              "kind": "policy",
+              "name": "countries_read_approved_d2529ebe",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "countries_read_approved",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "countries",
+              "using": "status = 'approved'"
+            },
+            "engagements_read_approved": {
+              "kind": "policy",
+              "name": "engagements_read_approved_d2529ebe",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "engagements_read_approved",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "engagements",
+              "using": "status = 'approved'"
+            },
+            "iso_currencies_read_approved": {
+              "kind": "policy",
+              "name": "iso_currencies_read_approved_aede9d92",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "iso_currencies_read_approved",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "iso_currencies",
+              "using": "true"
+            },
+            "iso_languages_read_approved": {
+              "kind": "policy",
+              "name": "iso_languages_read_approved_aede9d92",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "iso_languages_read_approved",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "iso_languages",
+              "using": "true"
             },
             "profile_skills_owner_delete": {
               "kind": "policy",
@@ -5509,6 +5587,71 @@
               "tableName": "profiles",
               "using": "\"userId\" = auth.uid() AND state = 'draft'",
               "withCheck": "\"userId\" = auth.uid() AND state = 'draft' AND \"publishedAt\" IS NULL"
+            },
+            "region_countries_read_approved": {
+              "kind": "policy",
+              "name": "region_countries_read_approved_aede9d92",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "region_countries_read_approved",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "region_countries",
+              "using": "true"
+            },
+            "regions_read_approved": {
+              "kind": "policy",
+              "name": "regions_read_approved_d2529ebe",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "regions_read_approved",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "regions",
+              "using": "status = 'approved'"
+            },
+            "role_kinds_read_approved": {
+              "kind": "policy",
+              "name": "role_kinds_read_approved_d2529ebe",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "role_kinds_read_approved",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "role_kinds",
+              "using": "status = 'approved'"
+            },
+            "seniorities_read_approved": {
+              "kind": "policy",
+              "name": "seniorities_read_approved_d2529ebe",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "seniorities_read_approved",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "seniorities",
+              "using": "status = 'approved'"
+            },
+            "tech_tags_read_approved": {
+              "kind": "policy",
+              "name": "tech_tags_read_approved_d2529ebe",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "tech_tags_read_approved",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "tech_tags",
+              "using": "status = 'approved'"
             },
             "users_owner_read": {
               "kind": "policy",
@@ -10012,7 +10155,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "e9fcc42378de0b782a733a81a74ade71b11183f32391d3e9cbec5fb36ef2c85c"
+    "storageHash": "1cfd25e269628885ca3ef263392ec32a0390667dcf7f74a7eabfc9c04de0cdd6"
   },
   "execution": {
     "executionHash": "5c00fc523089c5aa487c5b6b1a909049f24c10b050d4df6321de29c1c9800a76",

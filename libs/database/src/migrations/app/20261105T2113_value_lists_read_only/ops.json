@@ -1,0 +1,783 @@
+[
+  {
+    "id": "rlsPolicy.public.cities.cities_read_approved_d2529ebe",
+    "label": "Create RLS policy \"cities_read_approved_d2529ebe\" on \"cities\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "cities_read_approved_d2529ebe",
+        "table": "cities"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"cities_read_approved_d2529ebe\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "cities",
+          "cities_read_approved_d2529ebe"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"cities_read_approved_d2529ebe\" on \"cities\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"cities_read_approved_d2529ebe\"",
+        "sql": "CREATE POLICY \"cities_read_approved_d2529ebe\" ON \"public\".\"cities\" AS PERMISSIVE FOR SELECT TO authenticated USING (status = 'approved')",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"cities_read_approved_d2529ebe\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "cities",
+          "cities_read_approved_d2529ebe",
+          "SELECT",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.contract_types.contract_types_read_approved_d2529ebe",
+    "label": "Create RLS policy \"contract_types_read_approved_d2529ebe\" on \"contract_types\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "contract_types_read_approved_d2529ebe",
+        "table": "contract_types"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"contract_types_read_approved_d2529ebe\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "contract_types",
+          "contract_types_read_approved_d2529ebe"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"contract_types_read_approved_d2529ebe\" on \"contract_types\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"contract_types_read_approved_d2529ebe\"",
+        "sql": "CREATE POLICY \"contract_types_read_approved_d2529ebe\" ON \"public\".\"contract_types\" AS PERMISSIVE FOR SELECT TO authenticated USING (status = 'approved')",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"contract_types_read_approved_d2529ebe\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "contract_types",
+          "contract_types_read_approved_d2529ebe",
+          "SELECT",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.countries.countries_read_approved_d2529ebe",
+    "label": "Create RLS policy \"countries_read_approved_d2529ebe\" on \"countries\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "countries_read_approved_d2529ebe",
+        "table": "countries"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"countries_read_approved_d2529ebe\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "countries",
+          "countries_read_approved_d2529ebe"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"countries_read_approved_d2529ebe\" on \"countries\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"countries_read_approved_d2529ebe\"",
+        "sql": "CREATE POLICY \"countries_read_approved_d2529ebe\" ON \"public\".\"countries\" AS PERMISSIVE FOR SELECT TO authenticated USING (status = 'approved')",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"countries_read_approved_d2529ebe\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "countries",
+          "countries_read_approved_d2529ebe",
+          "SELECT",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.engagements.engagements_read_approved_d2529ebe",
+    "label": "Create RLS policy \"engagements_read_approved_d2529ebe\" on \"engagements\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "engagements_read_approved_d2529ebe",
+        "table": "engagements"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"engagements_read_approved_d2529ebe\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "engagements",
+          "engagements_read_approved_d2529ebe"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"engagements_read_approved_d2529ebe\" on \"engagements\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"engagements_read_approved_d2529ebe\"",
+        "sql": "CREATE POLICY \"engagements_read_approved_d2529ebe\" ON \"public\".\"engagements\" AS PERMISSIVE FOR SELECT TO authenticated USING (status = 'approved')",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"engagements_read_approved_d2529ebe\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "engagements",
+          "engagements_read_approved_d2529ebe",
+          "SELECT",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.iso_currencies.iso_currencies_read_approved_aede9d92",
+    "label": "Create RLS policy \"iso_currencies_read_approved_aede9d92\" on \"iso_currencies\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "iso_currencies_read_approved_aede9d92",
+        "table": "iso_currencies"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"iso_currencies_read_approved_aede9d92\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "iso_currencies",
+          "iso_currencies_read_approved_aede9d92"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"iso_currencies_read_approved_aede9d92\" on \"iso_currencies\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"iso_currencies_read_approved_aede9d92\"",
+        "sql": "CREATE POLICY \"iso_currencies_read_approved_aede9d92\" ON \"public\".\"iso_currencies\" AS PERMISSIVE FOR SELECT TO authenticated USING (true)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"iso_currencies_read_approved_aede9d92\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "iso_currencies",
+          "iso_currencies_read_approved_aede9d92",
+          "SELECT",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.iso_languages.iso_languages_read_approved_aede9d92",
+    "label": "Create RLS policy \"iso_languages_read_approved_aede9d92\" on \"iso_languages\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "iso_languages_read_approved_aede9d92",
+        "table": "iso_languages"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"iso_languages_read_approved_aede9d92\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "iso_languages",
+          "iso_languages_read_approved_aede9d92"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"iso_languages_read_approved_aede9d92\" on \"iso_languages\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"iso_languages_read_approved_aede9d92\"",
+        "sql": "CREATE POLICY \"iso_languages_read_approved_aede9d92\" ON \"public\".\"iso_languages\" AS PERMISSIVE FOR SELECT TO authenticated USING (true)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"iso_languages_read_approved_aede9d92\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "iso_languages",
+          "iso_languages_read_approved_aede9d92",
+          "SELECT",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.region_countries.region_countries_read_approved_aede9d92",
+    "label": "Create RLS policy \"region_countries_read_approved_aede9d92\" on \"region_countries\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "region_countries_read_approved_aede9d92",
+        "table": "region_countries"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"region_countries_read_approved_aede9d92\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "region_countries",
+          "region_countries_read_approved_aede9d92"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"region_countries_read_approved_aede9d92\" on \"region_countries\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"region_countries_read_approved_aede9d92\"",
+        "sql": "CREATE POLICY \"region_countries_read_approved_aede9d92\" ON \"public\".\"region_countries\" AS PERMISSIVE FOR SELECT TO authenticated USING (true)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"region_countries_read_approved_aede9d92\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "region_countries",
+          "region_countries_read_approved_aede9d92",
+          "SELECT",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.regions.regions_read_approved_d2529ebe",
+    "label": "Create RLS policy \"regions_read_approved_d2529ebe\" on \"regions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "regions_read_approved_d2529ebe",
+        "table": "regions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"regions_read_approved_d2529ebe\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "regions",
+          "regions_read_approved_d2529ebe"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"regions_read_approved_d2529ebe\" on \"regions\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"regions_read_approved_d2529ebe\"",
+        "sql": "CREATE POLICY \"regions_read_approved_d2529ebe\" ON \"public\".\"regions\" AS PERMISSIVE FOR SELECT TO authenticated USING (status = 'approved')",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"regions_read_approved_d2529ebe\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "regions",
+          "regions_read_approved_d2529ebe",
+          "SELECT",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.role_kinds.role_kinds_read_approved_d2529ebe",
+    "label": "Create RLS policy \"role_kinds_read_approved_d2529ebe\" on \"role_kinds\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "role_kinds_read_approved_d2529ebe",
+        "table": "role_kinds"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"role_kinds_read_approved_d2529ebe\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "role_kinds",
+          "role_kinds_read_approved_d2529ebe"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"role_kinds_read_approved_d2529ebe\" on \"role_kinds\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"role_kinds_read_approved_d2529ebe\"",
+        "sql": "CREATE POLICY \"role_kinds_read_approved_d2529ebe\" ON \"public\".\"role_kinds\" AS PERMISSIVE FOR SELECT TO authenticated USING (status = 'approved')",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"role_kinds_read_approved_d2529ebe\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "role_kinds",
+          "role_kinds_read_approved_d2529ebe",
+          "SELECT",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.seniorities.seniorities_read_approved_d2529ebe",
+    "label": "Create RLS policy \"seniorities_read_approved_d2529ebe\" on \"seniorities\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "seniorities_read_approved_d2529ebe",
+        "table": "seniorities"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"seniorities_read_approved_d2529ebe\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "seniorities",
+          "seniorities_read_approved_d2529ebe"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"seniorities_read_approved_d2529ebe\" on \"seniorities\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"seniorities_read_approved_d2529ebe\"",
+        "sql": "CREATE POLICY \"seniorities_read_approved_d2529ebe\" ON \"public\".\"seniorities\" AS PERMISSIVE FOR SELECT TO authenticated USING (status = 'approved')",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"seniorities_read_approved_d2529ebe\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "seniorities",
+          "seniorities_read_approved_d2529ebe",
+          "SELECT",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.tech_tags.tech_tags_read_approved_d2529ebe",
+    "label": "Create RLS policy \"tech_tags_read_approved_d2529ebe\" on \"tech_tags\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "tech_tags_read_approved_d2529ebe",
+        "table": "tech_tags"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"tech_tags_read_approved_d2529ebe\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "tech_tags",
+          "tech_tags_read_approved_d2529ebe"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"tech_tags_read_approved_d2529ebe\" on \"tech_tags\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"tech_tags_read_approved_d2529ebe\"",
+        "sql": "CREATE POLICY \"tech_tags_read_approved_d2529ebe\" ON \"public\".\"tech_tags\" AS PERMISSIVE FOR SELECT TO authenticated USING (status = 'approved')",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"tech_tags_read_approved_d2529ebe\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "tech_tags",
+          "tech_tags_read_approved_d2529ebe",
+          "SELECT",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "grants.tech_tags_read_only",
+    "label": "Limit authenticated to reading the picker columns of tech_tags",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "tech_tags"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "revoke every grant from anon and authenticated, grant SELECT on the picker columns",
+        "sql": "REVOKE ALL ON public.tech_tags FROM anon, authenticated;\nGRANT SELECT (code, label, aliases) ON public.tech_tags TO authenticated;"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "grants.role_kinds_read_only",
+    "label": "Limit authenticated to reading the picker columns of role_kinds",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "role_kinds"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "revoke every grant from anon and authenticated, grant SELECT on the picker columns",
+        "sql": "REVOKE ALL ON public.role_kinds FROM anon, authenticated;\nGRANT SELECT (code, label, aliases, \"isEngineering\") ON public.role_kinds TO authenticated;"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "grants.seniorities_read_only",
+    "label": "Limit authenticated to reading the picker columns of seniorities",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "seniorities"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "revoke every grant from anon and authenticated, grant SELECT on the picker columns",
+        "sql": "REVOKE ALL ON public.seniorities FROM anon, authenticated;\nGRANT SELECT (code, label, aliases) ON public.seniorities TO authenticated;"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "grants.contract_types_read_only",
+    "label": "Limit authenticated to reading the picker columns of contract_types",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "contract_types"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "revoke every grant from anon and authenticated, grant SELECT on the picker columns",
+        "sql": "REVOKE ALL ON public.contract_types FROM anon, authenticated;\nGRANT SELECT (code, label, aliases) ON public.contract_types TO authenticated;"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "grants.engagements_read_only",
+    "label": "Limit authenticated to reading the picker columns of engagements",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "engagements"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "revoke every grant from anon and authenticated, grant SELECT on the picker columns",
+        "sql": "REVOKE ALL ON public.engagements FROM anon, authenticated;\nGRANT SELECT (code, label, aliases) ON public.engagements TO authenticated;"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "grants.regions_read_only",
+    "label": "Limit authenticated to reading the picker columns of regions",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "regions"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "revoke every grant from anon and authenticated, grant SELECT on the picker columns",
+        "sql": "REVOKE ALL ON public.regions FROM anon, authenticated;\nGRANT SELECT (code, label, aliases) ON public.regions TO authenticated;"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "grants.countries_read_only",
+    "label": "Limit authenticated to reading the picker columns of countries",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "countries"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "revoke every grant from anon and authenticated, grant SELECT on the picker columns",
+        "sql": "REVOKE ALL ON public.countries FROM anon, authenticated;\nGRANT SELECT (code, label, aliases) ON public.countries TO authenticated;"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "grants.cities_read_only",
+    "label": "Limit authenticated to reading the picker columns of cities",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "cities"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "revoke every grant from anon and authenticated, grant SELECT on the picker columns",
+        "sql": "REVOKE ALL ON public.cities FROM anon, authenticated;\nGRANT SELECT (id, name, \"countryCode\", aliases) ON public.cities TO authenticated;"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "grants.region_countries_read_only",
+    "label": "Limit authenticated to reading the picker columns of region_countries",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "region_countries"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "revoke every grant from anon and authenticated, grant SELECT on the picker columns",
+        "sql": "REVOKE ALL ON public.region_countries FROM anon, authenticated;\nGRANT SELECT (\"regionCode\", \"countryCode\") ON public.region_countries TO authenticated;"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "grants.iso_languages_read_only",
+    "label": "Limit authenticated to reading the picker columns of iso_languages",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "iso_languages"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "revoke every grant from anon and authenticated, grant SELECT on the picker columns",
+        "sql": "REVOKE ALL ON public.iso_languages FROM anon, authenticated;\nGRANT SELECT (code, label) ON public.iso_languages TO authenticated;"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "grants.iso_currencies_read_only",
+    "label": "Limit authenticated to reading the picker columns of iso_currencies",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "iso_currencies"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "revoke every grant from anon and authenticated, grant SELECT on the picker columns",
+        "sql": "REVOKE ALL ON public.iso_currencies FROM anon, authenticated;\nGRANT SELECT (code, label) ON public.iso_currencies TO authenticated;"
+      }
+    ],
+    "postcheck": []
+  }
+]
