@@ -5,6 +5,9 @@
  *   pnpm db:seed --only users        run the named seeds
  *   pnpm db:seed --only users,processor-lists
  *   pnpm db:seed --allow-production required when NODE_ENV=production
+ *
+ * Every seed must be idempotent: CI re-runs all of them on the shared dev
+ * database after each merge.
  */
 import { createDatabaseClient } from '../client/connection.source';
 import { consoleLogger } from '../client/database-logger';
