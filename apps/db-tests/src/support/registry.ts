@@ -52,7 +52,7 @@ export const ownedTables: OwnedTable[] = [
       userId,
       ...profileFields(),
     }),
-    patch: { noticePeriodDays: 60 },
+    patch: { noticePeriodDays: 60, contractTypes: ['full_time', 'part_time'] },
     canDelete: true,
   },
   {

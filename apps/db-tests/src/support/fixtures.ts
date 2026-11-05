@@ -12,6 +12,19 @@ export const profileFields = () => ({
     hybrid: [],
     onsite: [],
   },
+  contractTypes: ['full_time'],
+  places: {
+    remote: [
+      { kind: 'region', code: 'MENA' },
+      { kind: 'country', code: 'MA' },
+    ],
+    hybrid: [],
+    onsite: [],
+  },
+  spokenLanguages: [
+    { lang: 'en', level: 'fluent' },
+    { lang: 'fr', level: 'native' },
+  ],
   yearsOfExperience: 6,
   timezoneCurrent: 60,
   timezoneMin: -240,
