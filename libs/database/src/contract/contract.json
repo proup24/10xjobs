@@ -32,6 +32,14 @@
       "model": "EngagementTerm",
       "namespace": "public"
     },
+    "iso_currencies": {
+      "model": "IsoCurrency",
+      "namespace": "public"
+    },
+    "iso_languages": {
+      "model": "IsoLanguage",
+      "namespace": "public"
+    },
     "job_extractions": {
       "model": "JobExtraction",
       "namespace": "public"
@@ -1613,6 +1621,68 @@
               },
               "namespaceId": "public",
               "table": "engagements"
+            }
+          },
+          "IsoCurrency": {
+            "fields": {
+              "code": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "label": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "code": {
+                  "column": "code"
+                },
+                "label": {
+                  "column": "label"
+                }
+              },
+              "namespaceId": "public",
+              "table": "iso_currencies"
+            }
+          },
+          "IsoLanguage": {
+            "fields": {
+              "code": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "label": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "code": {
+                  "column": "code"
+                },
+                "label": {
+                  "column": "label"
+                }
+              },
+              "namespaceId": "public",
+              "table": "iso_languages"
             }
           },
           "JobExtraction": {
@@ -4473,6 +4543,13 @@
                   }
                 }
               },
+              "isEngineering": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "label": {
                 "nullable": false,
                 "type": {
@@ -4525,6 +4602,9 @@
                 },
                 "firstSeenAt": {
                   "column": "firstSeenAt"
+                },
+                "isEngineering": {
+                  "column": "isEngineering"
                 },
                 "label": {
                   "column": "label"
@@ -5289,6 +5369,16 @@
               "kind": "rls",
               "namespaceId": "public",
               "tableName": "engagements"
+            },
+            "iso_currencies": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "iso_currencies"
+            },
+            "iso_languages": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "iso_languages"
             },
             "job_extractions": {
               "kind": "rls",
@@ -6077,6 +6167,50 @@
                   "nullable": false
                 },
                 "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "code"
+                ]
+              },
+              "uniques": []
+            },
+            "iso_currencies": {
+              "columns": {
+                "code": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "label": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "code"
+                ]
+              },
+              "uniques": []
+            },
+            "iso_languages": {
+              "columns": {
+                "code": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "label": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
                   "nullable": false
@@ -8823,6 +8957,15 @@
                     "precision": 3
                   }
                 },
+                "isEngineering": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
                 "label": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -9446,7 +9589,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "8f1715e4755f3ef514f24cf2090ce086ef24f4c0a113dc0bdbbe76cc5e6accd3"
+    "storageHash": "3c41b71f8adc0ec4e812059c1a4d627b2bbc7d9eb5b36c4c557ac4c8478620e3"
   },
   "execution": {
     "executionHash": "10d5f7e842b2fb12c71ccb0e6509e21ba86faca411f9434c879cf5f293577cb4",

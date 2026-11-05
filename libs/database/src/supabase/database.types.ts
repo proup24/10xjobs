@@ -286,6 +286,38 @@ export type Database = {
         };
         Relationships: [];
       };
+      iso_currencies: {
+        Row: {
+          code: string;
+          label: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          code: string;
+          label: string;
+        };
+        Update: {
+          code?: string;
+          label?: string;
+        };
+        Relationships: [];
+      };
+      iso_languages: {
+        Row: {
+          code: string;
+          label: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          code: string;
+          label: string;
+        };
+        Update: {
+          code?: string;
+          label?: string;
+        };
+        Relationships: [];
+      };
       job_extractions: {
         Row: {
           arrangement: string | null;
@@ -1218,6 +1250,7 @@ export type Database = {
           approvedAt: string | null;
           code: string;
           firstSeenAt: string;
+          isEngineering: boolean;
           label: string;
           occurrences: number;
           status: string;
@@ -1228,6 +1261,7 @@ export type Database = {
           approvedAt?: string | null;
           code: string;
           firstSeenAt: string;
+          isEngineering?: boolean;
           label: string;
           occurrences?: number;
           status: string;
@@ -1237,6 +1271,7 @@ export type Database = {
           approvedAt?: string | null;
           code?: string;
           firstSeenAt?: string;
+          isEngineering?: boolean;
           label?: string;
           occurrences?: number;
           status?: string;

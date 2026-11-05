@@ -24,7 +24,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'8f1715e4755f3ef514f24cf2090ce086ef24f4c0a113dc0bdbbe76cc5e6accd3'>;
+  StorageHashBase<'3c41b71f8adc0ec4e812059c1a4d627b2bbc7d9eb5b36c4c557ac4c8478620e3'>;
 export type ExecutionHash =
   ExecutionHashBase<'10d5f7e842b2fb12c71ccb0e6509e21ba86faca411f9434c879cf5f293577cb4'>;
 export type ProfileHash =
@@ -1260,6 +1260,16 @@ export namespace Models {
     extractions: public_JobExtraction[];
     readonly [RelationKeys]?: 'extractions';
   };
+  export type public_IsoCurrency = {
+    code: FieldOutputTypes['public']['IsoCurrency']['code'];
+    label: FieldOutputTypes['public']['IsoCurrency']['label'];
+    readonly [RelationKeys]?: never;
+  };
+  export type public_IsoLanguage = {
+    code: FieldOutputTypes['public']['IsoLanguage']['code'];
+    label: FieldOutputTypes['public']['IsoLanguage']['label'];
+    readonly [RelationKeys]?: never;
+  };
   export type public_JobExtraction = {
     arrangement: FieldOutputTypes['public']['JobExtraction']['arrangement'];
     cityIds: FieldOutputTypes['public']['JobExtraction']['cityIds'];
@@ -1542,6 +1552,7 @@ export namespace Models {
     approvedAt: FieldOutputTypes['public']['RoleKind']['approvedAt'];
     code: FieldOutputTypes['public']['RoleKind']['code'];
     firstSeenAt: FieldOutputTypes['public']['RoleKind']['firstSeenAt'];
+    isEngineering: FieldOutputTypes['public']['RoleKind']['isEngineering'];
     label: FieldOutputTypes['public']['RoleKind']['label'];
     occurrences: FieldOutputTypes['public']['RoleKind']['occurrences'];
     status: FieldOutputTypes['public']['RoleKind']['status'];
@@ -1610,6 +1621,8 @@ export declare const models: {
     ContractType: Models.public_ContractType;
     Country: Models.public_Country;
     EngagementTerm: Models.public_EngagementTerm;
+    IsoCurrency: Models.public_IsoCurrency;
+    IsoLanguage: Models.public_IsoLanguage;
     JobExtraction: Models.public_JobExtraction;
     JunkFlag: Models.public_JunkFlag;
     NormalizedJob: Models.public_NormalizedJob;
@@ -2168,6 +2181,46 @@ type ContractBase = Omit<
                   readonly many: false;
                 };
                 readonly status: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['code'] };
+              uniques: readonly [];
+              indexes: readonly [];
+              foreignKeys: readonly [];
+            };
+            readonly iso_currencies: {
+              columns: {
+                readonly code: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly label: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['code'] };
+              uniques: readonly [];
+              indexes: readonly [];
+              foreignKeys: readonly [];
+            };
+            readonly iso_languages: {
+              columns: {
+                readonly code: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly label: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: false;
@@ -4150,6 +4203,16 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 3 };
                   readonly many: false;
                 };
+                readonly isEngineering: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
                 readonly label: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -4683,6 +4746,14 @@ type ContractBase = Omit<
     readonly engagements: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'EngagementTerm';
+    };
+    readonly iso_currencies: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'IsoCurrency';
+    };
+    readonly iso_languages: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'IsoLanguage';
     };
     readonly job_extractions: {
       readonly namespace: 'public' & NamespaceId;
@@ -5284,6 +5355,48 @@ type ContractBase = Omit<
                 readonly label: { readonly column: 'label' };
                 readonly occurrences: { readonly column: 'occurrences' };
                 readonly status: { readonly column: 'status' };
+              };
+            };
+          };
+          readonly IsoCurrency: {
+            readonly fields: {
+              readonly code: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly label: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'iso_currencies';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly code: { readonly column: 'code' };
+                readonly label: { readonly column: 'label' };
+              };
+            };
+          };
+          readonly IsoLanguage: {
+            readonly fields: {
+              readonly code: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly label: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'iso_languages';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly code: { readonly column: 'code' };
+                readonly label: { readonly column: 'label' };
               };
             };
           };
@@ -6973,6 +7086,10 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 3 };
                 };
               };
+              readonly isEngineering: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
               readonly label: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -7007,6 +7124,7 @@ type ContractBase = Omit<
                 readonly approvedAt: { readonly column: 'approvedAt' };
                 readonly code: { readonly column: 'code' };
                 readonly firstSeenAt: { readonly column: 'firstSeenAt' };
+                readonly isEngineering: { readonly column: 'isEngineering' };
                 readonly label: { readonly column: 'label' };
                 readonly occurrences: { readonly column: 'occurrences' };
                 readonly status: { readonly column: 'status' };

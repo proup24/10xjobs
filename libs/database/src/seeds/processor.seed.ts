@@ -1,4 +1,5 @@
 import {
+  ENGINEERING_ROLE_KINDS,
   SEED,
   SEED_REGION_COUNTRIES,
   SEED_TECH_EXTRAS,
@@ -149,7 +150,9 @@ export const processorListsSeed: Seed = {
         const extras =
           list === 'techTags'
             ? (SEED_TECH_EXTRAS[term.code] ?? { family: null, implies: [] })
-            : {};
+            : list === 'roleKinds'
+              ? { isEngineering: ENGINEERING_ROLE_KINDS.includes(term.code) }
+              : {};
         await upsertTerm(tables[list], term, extras);
       }
     }

@@ -206,6 +206,23 @@ type Address {
   country    String
 }
 
+// ISO 639-1 languages and ISO 4217 currencies, seeded; reference data for profile preferences.
+model IsoLanguage {
+  code  String @id
+  label String
+
+  @@map("iso_languages")
+  @@rls
+}
+
+model IsoCurrency {
+  code  String @id
+  label String
+
+  @@map("iso_currencies")
+  @@rls
+}
+
 // One row per Supabase Auth user, created by the on_auth_user_created trigger.
 // The email lives only in Auth.
 model User {
@@ -716,6 +733,8 @@ model RoleKind {
   occurrences Int                   @default(0)
   firstSeenAt TimestamptzJsDate(3)
   approvedAt  TimestamptzJsDate(3)?
+  // True for software-engineering role kinds; eligibility filters read it.
+  isEngineering Boolean             @default(false)
   extractions JobExtraction[]
 
   @@check(expression: sql`status IN ('approved', 'proposed')`, name: "role_kinds_status")
