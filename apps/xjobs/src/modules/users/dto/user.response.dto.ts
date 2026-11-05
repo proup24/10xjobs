@@ -25,11 +25,13 @@ export class UserResponseDto implements UserRow {
   @ApiProperty({ format: 'uuid' })
   id!: string;
 
-  @ApiProperty()
-  name!: string;
-
-  @ApiProperty({ example: 'me@example.com' })
-  email!: string;
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description:
+      'null until the user sets it; the email lives in Supabase Auth',
+  })
+  name!: string | null;
 
   @ApiProperty({ type: AddressResponseDto, nullable: true })
   address!: AddressResponseDto | null;

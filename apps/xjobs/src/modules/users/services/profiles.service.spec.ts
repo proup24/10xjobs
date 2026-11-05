@@ -64,7 +64,8 @@ describe('ProfilesService', () => {
   let otherUserId: string;
 
   beforeEach(async () => {
-    const users = new UsersService(new FakeUsersRepository());
+    const userRows = new FakeUsersRepository();
+    const users = new UsersService(userRows);
     profiles = new FakeProfilesRepository();
     querySearches = new FakeQuerySearchRepository();
     service = new ProfilesService(
@@ -72,8 +73,8 @@ describe('ProfilesService', () => {
       profiles,
       new QuerySearchService(querySearches),
     );
-    userId = (await users.create({ name: 'A', email: 'a@x.com' })).id;
-    otherUserId = (await users.create({ name: 'B', email: 'b@x.com' })).id;
+    userId = userRows.add('A').id;
+    otherUserId = userRows.add('B').id;
   });
 
   const create = (techStack = [skill(Technology.nodejs, 8)]) =>

@@ -52,7 +52,8 @@ describe('ResumeService', () => {
   let profileId: string;
 
   beforeEach(async () => {
-    const users = new UsersService(new FakeUsersRepository());
+    const userRows = new FakeUsersRepository();
+    const users = new UsersService(userRows);
     profiles = new FakeProfilesRepository();
     storage = new MemoryStorageService();
     service = new ResumeService(
@@ -65,8 +66,8 @@ describe('ResumeService', () => {
       storage,
       'resumes',
     );
-    userId = (await users.create({ name: 'A', email: 'a@x.com' })).id;
-    otherUserId = (await users.create({ name: 'B', email: 'b@x.com' })).id;
+    userId = userRows.add('A').id;
+    otherUserId = userRows.add('B').id;
     profileId = (await profiles.create(userId, profileInput, [])).id;
   });
 

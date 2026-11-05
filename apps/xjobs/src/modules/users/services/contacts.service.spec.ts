@@ -15,11 +15,12 @@ describe('ContactsService', () => {
   let userB: string;
 
   beforeEach(async () => {
-    const users = new UsersService(new FakeUsersRepository());
+    const userRows = new FakeUsersRepository();
+    const users = new UsersService(userRows);
     contacts = new FakeContactsRepository();
     service = new ContactsService(users, contacts);
-    userA = (await users.create({ name: 'A', email: 'a@x.com' })).id;
-    userB = (await users.create({ name: 'B', email: 'b@x.com' })).id;
+    userA = userRows.add('A').id;
+    userB = userRows.add('B').id;
   });
 
   const primaryEmails = (userId: string) =>

@@ -41,6 +41,9 @@ export const databaseEnvironmentSchema = z.object({
 /** What standalone scripts (the seed runner) read: the database plus the environment type. */
 export const seedEnvironmentSchema = databaseEnvironmentSchema.extend({
   NODE_ENV: z.enum(EnvironmentType).default(EnvironmentType.development),
+  /** The users seed creates auth users through the Supabase admin API. */
+  SUPABASE_URL: z.url().optional(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
 });
 
 /** Shared by the HTTP API and the standalone queue worker. */

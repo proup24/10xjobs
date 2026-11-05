@@ -49,7 +49,7 @@ async function main(): Promise<void> {
   try {
     for (const seed of selected) {
       const startedAt = Date.now();
-      await db.transaction((tx) => seed.run(tx));
+      await db.transaction((tx) => seed.run(tx, env));
       logger.log(`${seed.name} seeded in ${Date.now() - startedAt}ms`);
     }
   } finally {

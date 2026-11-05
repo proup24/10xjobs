@@ -79,3 +79,5 @@ The PostgreSQL tests need `INGEST_TEST_DATABASE_URL`, pointing at a disposable d
 docker run --rm -d --name xjobs-ingest-test -e POSTGRES_PASSWORD=test -e POSTGRES_DB=ingest_test -p 127.0.0.1:55432:5432 postgres:17
 cd apps/xjobs && XJOBS_SKIP_ENV_FILES=1 DATABASE_URL=postgresql://postgres:test@127.0.0.1:55432/ingest_test npx prisma db migrate --yes
 ```
+
+PostgreSQL tests additionally require `INGEST_TEST_DATABASE_URL` pointing to a disposable database named `ingest_test` at `127.0.0.1` holding a migrated Supabase Postgres (the `auth` schema and every app migration, since users come from the sign-up trigger on `auth.users`). These tests **truncate test tables and users**. They skip when the variable is absent, and reject other host/database names. Tests never call paid collectors.

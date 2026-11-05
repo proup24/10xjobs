@@ -1,0 +1,501 @@
+[
+  {
+    "id": "rowLevelSecurity.public.profile_skills",
+    "label": "Enable row-level security on \"profile_skills\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "profile_skills"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"profile_skills\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "profile_skills"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"profile_skills\"",
+        "sql": "ALTER TABLE \"public\".\"profile_skills\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"profile_skills\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "profile_skills"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.profiles",
+    "label": "Enable row-level security on \"profiles\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"profiles\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "profiles"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"profiles\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"profiles\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "profiles"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.profile_skills.profile_skills_owner_delete_e80e5c12",
+    "label": "Create RLS policy \"profile_skills_owner_delete_e80e5c12\" on \"profile_skills\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "profile_skills_owner_delete_e80e5c12",
+        "table": "profile_skills"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"profile_skills_owner_delete_e80e5c12\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profile_skills",
+          "profile_skills_owner_delete_e80e5c12"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"profile_skills_owner_delete_e80e5c12\" on \"profile_skills\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"profile_skills_owner_delete_e80e5c12\"",
+        "sql": "CREATE POLICY \"profile_skills_owner_delete_e80e5c12\" ON \"public\".\"profile_skills\" AS PERMISSIVE FOR DELETE TO authenticated USING (\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills.\"profileId\" AND p.\"userId\" = auth.uid() AND p.state = 'draft'))",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"profile_skills_owner_delete_e80e5c12\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "profile_skills",
+          "profile_skills_owner_delete_e80e5c12",
+          "DELETE",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.profile_skills.profile_skills_owner_insert_87e871a7",
+    "label": "Create RLS policy \"profile_skills_owner_insert_87e871a7\" on \"profile_skills\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "profile_skills_owner_insert_87e871a7",
+        "table": "profile_skills"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"profile_skills_owner_insert_87e871a7\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profile_skills",
+          "profile_skills_owner_insert_87e871a7"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"profile_skills_owner_insert_87e871a7\" on \"profile_skills\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"profile_skills_owner_insert_87e871a7\"",
+        "sql": "CREATE POLICY \"profile_skills_owner_insert_87e871a7\" ON \"public\".\"profile_skills\" AS PERMISSIVE FOR INSERT TO authenticated WITH CHECK (\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills.\"profileId\" AND p.\"userId\" = auth.uid() AND p.state = 'draft'))",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"profile_skills_owner_insert_87e871a7\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "profile_skills",
+          "profile_skills_owner_insert_87e871a7",
+          "INSERT",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.profile_skills.profile_skills_owner_read_ab58a1a7",
+    "label": "Create RLS policy \"profile_skills_owner_read_ab58a1a7\" on \"profile_skills\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "profile_skills_owner_read_ab58a1a7",
+        "table": "profile_skills"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"profile_skills_owner_read_ab58a1a7\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profile_skills",
+          "profile_skills_owner_read_ab58a1a7"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"profile_skills_owner_read_ab58a1a7\" on \"profile_skills\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"profile_skills_owner_read_ab58a1a7\"",
+        "sql": "CREATE POLICY \"profile_skills_owner_read_ab58a1a7\" ON \"public\".\"profile_skills\" AS PERMISSIVE FOR SELECT TO authenticated USING (\"userId\" = auth.uid())",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"profile_skills_owner_read_ab58a1a7\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "profile_skills",
+          "profile_skills_owner_read_ab58a1a7",
+          "SELECT",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.profile_skills.profile_skills_owner_update_7fcd0c7f",
+    "label": "Create RLS policy \"profile_skills_owner_update_7fcd0c7f\" on \"profile_skills\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "profile_skills_owner_update_7fcd0c7f",
+        "table": "profile_skills"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"profile_skills_owner_update_7fcd0c7f\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profile_skills",
+          "profile_skills_owner_update_7fcd0c7f"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"profile_skills_owner_update_7fcd0c7f\" on \"profile_skills\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"profile_skills_owner_update_7fcd0c7f\"",
+        "sql": "CREATE POLICY \"profile_skills_owner_update_7fcd0c7f\" ON \"public\".\"profile_skills\" AS PERMISSIVE FOR UPDATE TO authenticated USING (\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills.\"profileId\" AND p.\"userId\" = auth.uid() AND p.state = 'draft')) WITH CHECK (\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills.\"profileId\" AND p.\"userId\" = auth.uid() AND p.state = 'draft'))",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"profile_skills_owner_update_7fcd0c7f\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "profile_skills",
+          "profile_skills_owner_update_7fcd0c7f",
+          "UPDATE",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.profiles.profiles_owner_delete_draft_64d4802d",
+    "label": "Create RLS policy \"profiles_owner_delete_draft_64d4802d\" on \"profiles\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "profiles_owner_delete_draft_64d4802d",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"profiles_owner_delete_draft_64d4802d\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "profiles_owner_delete_draft_64d4802d"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"profiles_owner_delete_draft_64d4802d\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"profiles_owner_delete_draft_64d4802d\"",
+        "sql": "CREATE POLICY \"profiles_owner_delete_draft_64d4802d\" ON \"public\".\"profiles\" AS PERMISSIVE FOR DELETE TO authenticated USING (\"userId\" = auth.uid() AND state = 'draft')",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"profiles_owner_delete_draft_64d4802d\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "profiles_owner_delete_draft_64d4802d",
+          "DELETE",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.profiles.profiles_owner_insert_e3abe3e0",
+    "label": "Create RLS policy \"profiles_owner_insert_e3abe3e0\" on \"profiles\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "profiles_owner_insert_e3abe3e0",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"profiles_owner_insert_e3abe3e0\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "profiles_owner_insert_e3abe3e0"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"profiles_owner_insert_e3abe3e0\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"profiles_owner_insert_e3abe3e0\"",
+        "sql": "CREATE POLICY \"profiles_owner_insert_e3abe3e0\" ON \"public\".\"profiles\" AS PERMISSIVE FOR INSERT TO authenticated WITH CHECK (\"userId\" = auth.uid() AND state = 'draft' AND \"publishedAt\" IS NULL)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"profiles_owner_insert_e3abe3e0\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "profiles_owner_insert_e3abe3e0",
+          "INSERT",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.profiles.profiles_owner_read_ab58a1a7",
+    "label": "Create RLS policy \"profiles_owner_read_ab58a1a7\" on \"profiles\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "profiles_owner_read_ab58a1a7",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"profiles_owner_read_ab58a1a7\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "profiles_owner_read_ab58a1a7"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"profiles_owner_read_ab58a1a7\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"profiles_owner_read_ab58a1a7\"",
+        "sql": "CREATE POLICY \"profiles_owner_read_ab58a1a7\" ON \"public\".\"profiles\" AS PERMISSIVE FOR SELECT TO authenticated USING (\"userId\" = auth.uid())",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"profiles_owner_read_ab58a1a7\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "profiles_owner_read_ab58a1a7",
+          "SELECT",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.profiles.profiles_owner_update_draft_b3dbbb7b",
+    "label": "Create RLS policy \"profiles_owner_update_draft_b3dbbb7b\" on \"profiles\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "profiles_owner_update_draft_b3dbbb7b",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"profiles_owner_update_draft_b3dbbb7b\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "profiles_owner_update_draft_b3dbbb7b"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"profiles_owner_update_draft_b3dbbb7b\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"profiles_owner_update_draft_b3dbbb7b\"",
+        "sql": "CREATE POLICY \"profiles_owner_update_draft_b3dbbb7b\" ON \"public\".\"profiles\" AS PERMISSIVE FOR UPDATE TO authenticated USING (\"userId\" = auth.uid() AND state = 'draft') WITH CHECK (\"userId\" = auth.uid() AND state = 'draft' AND \"publishedAt\" IS NULL)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"profiles_owner_update_draft_b3dbbb7b\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "profiles_owner_update_draft_b3dbbb7b",
+          "UPDATE",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "grants.profiles_user_columns",
+    "label": "Limit authenticated writes on profiles to the questionnaire columns",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "profiles"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "revoke table-level writes, grant the user-editable columns",
+        "sql": "REVOKE INSERT, UPDATE ON public.profiles FROM anon, authenticated;\nGRANT INSERT (\"id\", \"userId\", \"position\", \"languages\", \"country\", \"city\", \"regions\", \"yearsOfExperience\", \"timezoneCurrent\", \"timezoneMin\", \"timezoneMax\", \"engagements\", \"arrangements\", \"seniority\", \"noticePeriodDays\") ON public.profiles TO authenticated;\nGRANT UPDATE (\"position\", \"languages\", \"country\", \"city\", \"regions\", \"yearsOfExperience\", \"timezoneCurrent\", \"timezoneMin\", \"timezoneMax\", \"engagements\", \"arrangements\", \"seniority\", \"noticePeriodDays\") ON public.profiles TO authenticated;"
+      }
+    ],
+    "postcheck": []
+  }
+]
