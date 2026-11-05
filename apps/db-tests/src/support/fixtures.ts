@@ -68,3 +68,9 @@ export const seedContact = (userId: string) =>
     kind: 'email',
     value: `${randomUUID()}@xjobs.test`,
   });
+
+export const seedWorkAuthorization = (
+  userId: string,
+  kind: string,
+  place: string,
+) => insertOne('work_authorizations', { userId, kind, place });

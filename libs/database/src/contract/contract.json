@@ -119,6 +119,10 @@
     "users": {
       "model": "User",
       "namespace": "public"
+    },
+    "work_authorizations": {
+      "model": "WorkAuthorization",
+      "namespace": "public"
     }
   },
   "domain": {
@@ -5132,6 +5136,13 @@
           },
           "User": {
             "fields": {
+              "acceptsSponsorship": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "address": {
                 "nullable": true,
                 "type": {
@@ -5157,6 +5168,13 @@
                 }
               },
               "name": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "residenceCountry": {
                 "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
@@ -5195,6 +5213,9 @@
             },
             "storage": {
               "fields": {
+                "acceptsSponsorship": {
+                  "column": "acceptsSponsorship"
+                },
                 "address": {
                   "column": "address"
                 },
@@ -5207,12 +5228,109 @@
                 "name": {
                   "column": "name"
                 },
+                "residenceCountry": {
+                  "column": "residenceCountry"
+                },
                 "updatedAt": {
                   "column": "updatedAt"
                 }
               },
               "namespaceId": "public",
               "table": "users"
+            }
+          },
+          "WorkAuthorization": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "kind": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "place": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "userId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "user": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "kind": {
+                  "column": "kind"
+                },
+                "place": {
+                  "column": "place"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                },
+                "userId": {
+                  "column": "userId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "work_authorizations"
             }
           }
         },
@@ -5418,6 +5536,20 @@
               "tableName": "users",
               "using": "id = auth.uid()",
               "withCheck": "id = auth.uid()"
+            },
+            "work_authorizations_owner": {
+              "kind": "policy",
+              "name": "work_authorizations_owner_6ea08fe5",
+              "namespaceId": "public",
+              "operation": "all",
+              "permissive": true,
+              "prefix": "work_authorizations_owner",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "work_authorizations",
+              "using": "\"userId\" = auth.uid()",
+              "withCheck": "\"userId\" = auth.uid()"
             }
           },
           "rls": {
@@ -5565,6 +5697,11 @@
               "kind": "rls",
               "namespaceId": "public",
               "tableName": "users"
+            },
+            "work_authorizations": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "work_authorizations"
             }
           },
           "table": {
@@ -9492,6 +9629,11 @@
             },
             "users": {
               "columns": {
+                "acceptsSponsorship": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "nullable": true
+                },
                 "address": {
                   "codecId": "pg/jsonb@1",
                   "dataType": "pg/jsonb",
@@ -9515,6 +9657,11 @@
                   "nullable": false
                 },
                 "name": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "residenceCountry": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
                   "nullable": true
@@ -9562,6 +9709,107 @@
                 ]
               },
               "uniques": []
+            },
+            "work_authorizations": {
+              "checks": [
+                {
+                  "expression": "kind IN ('work-permit','citizenship','residency','clearance')",
+                  "name": "work_authorizations_kind_f83cbcae",
+                  "prefix": "work_authorizations_kind"
+                }
+              ],
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "kind": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "place": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "userId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "work_authorizations_userId_idx_a489d58a"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "work_authorizations"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "users"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "userId"
+                  ],
+                  "name": "work_authorizations_userId_idx_a489d58a",
+                  "prefix": "work_authorizations_userId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "userId",
+                    "kind",
+                    "place"
+                  ]
+                }
+              ]
             }
           },
           "valueSet": {
@@ -9764,10 +10012,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "d98f2850be8e35f00800f50fbfc7a8296a77a8de3e92bee38c209fdeb472e2ef"
+    "storageHash": "e9fcc42378de0b782a733a81a74ade71b11183f32391d3e9cbec5fb36ef2c85c"
   },
   "execution": {
-    "executionHash": "10d5f7e842b2fb12c71ccb0e6509e21ba86faca411f9434c879cf5f293577cb4",
+    "executionHash": "5c00fc523089c5aa487c5b6b1a909049f24c10b050d4df6321de29c1c9800a76",
     "mutations": {
       "defaults": [
         {
@@ -10032,6 +10280,32 @@
           },
           "ref": {
             "entry": "users",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv7",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "work_authorizations",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "work_authorizations",
             "field": "updatedAt",
             "namespace": "public"
           }

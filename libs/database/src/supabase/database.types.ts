@@ -1433,28 +1433,70 @@ export type Database = {
       };
       users: {
         Row: {
+          acceptsSponsorship: boolean | null;
           address: Json | null;
           createdAt: string;
           id: string;
           name: string | null;
+          residenceCountry: string | null;
           updatedAt: string;
         };
         ComputedFields: never;
         Insert: {
+          acceptsSponsorship?: boolean | null;
           address?: Json | null;
           createdAt?: string;
           id: string;
           name?: string | null;
+          residenceCountry?: string | null;
           updatedAt?: string;
         };
         Update: {
+          acceptsSponsorship?: boolean | null;
           address?: Json | null;
           createdAt?: string;
           id?: string;
           name?: string | null;
+          residenceCountry?: string | null;
           updatedAt?: string;
         };
         Relationships: [];
+      };
+      work_authorizations: {
+        Row: {
+          createdAt: string;
+          id: string;
+          kind: string;
+          place: string;
+          updatedAt: string;
+          userId: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          createdAt?: string;
+          id: string;
+          kind: string;
+          place: string;
+          updatedAt?: string;
+          userId: string;
+        };
+        Update: {
+          createdAt?: string;
+          id?: string;
+          kind?: string;
+          place?: string;
+          updatedAt?: string;
+          userId?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'work_authorizations_userId_fkey';
+            columns: ['userId'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
       };
     };
     Views: {

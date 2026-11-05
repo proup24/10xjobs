@@ -226,10 +226,13 @@ model IsoCurrency {
 // One row per Supabase Auth user, created by the on_auth_user_created trigger.
 // The email lives only in Auth.
 model User {
-  id       Uuid                   @id
-  authUser supabase:auth.AuthUser @relation(fields: [id], references: [id], onDelete: Cascade)
-  name     String?
-  address  Address?
+  id                 Uuid                   @id
+  authUser           supabase:auth.AuthUser @relation(fields: [id], references: [id], onDelete: Cascade)
+  name               String?
+  address            Address?
+  // ISO 3166-1 alpha-2 code from countries; null until the user answers.
+  residenceCountry   String?
+  acceptsSponsorship Boolean?
   +Timestamps
 
   @@map("users")
@@ -270,6 +273,29 @@ model Contact {
 
 policy_all contacts_owner {
   target = Contact
+  roles = [authenticated]
+  using = sql`"userId" = auth.uid()`
+  withCheck = sql`"userId" = auth.uid()`
+}
+
+// Where the user may work, and on what basis. A place is a country or region code.
+model WorkAuthorization {
+  id     Uuid   @id @onCreate(uuid(7))
+  userId Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind   String
+  place  String
+  +Timestamps
+
+  @@check(expression: sql`kind IN ('work-permit','citizenship','residency','clearance')`, name: "work_authorizations_kind")
+  @@unique([userId, kind, place])
+  @@index([userId])
+  @@map("work_authorizations")
+  @@rls
+}
+
+policy_all work_authorizations_owner {
+  target = WorkAuthorization
   roles = [authenticated]
   using = sql`"userId" = auth.uid()`
   withCheck = sql`"userId" = auth.uid()`

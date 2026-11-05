@@ -1,10 +1,28 @@
 import { randomUUID } from 'node:crypto';
+import { admin } from './admin.js';
 import {
   profileFields,
   seedContact,
   seedProfile,
   seedSkill,
+  seedWorkAuthorization,
 } from './fixtures.js';
+
+const usedCountries = new Set<string>(['MA']);
+async function freshCountry(): Promise<string> {
+  const { data, error } = await admin()
+    .from('countries')
+    .select('code')
+    .eq('status', 'approved')
+    .order('code');
+  if (error) throw new Error(error.message);
+  const code = data
+    .map((c) => c.code as string)
+    .find((c) => !usedCountries.has(c));
+  if (!code) throw new Error('No approved country left to seed');
+  usedCountries.add(code);
+  return code;
+}
 
 export type OwnedTable = {
   table: string;
@@ -27,7 +45,11 @@ export const ownedTables: OwnedTable[] = [
     // The sign-up trigger already created the row.
     seed: async (userId) => userId,
     insertPayload: null,
-    patch: { name: 'Renamed' },
+    patch: {
+      name: 'Renamed',
+      residenceCountry: 'MA',
+      acceptsSponsorship: false,
+    },
     canDelete: false,
   },
   {
@@ -68,6 +90,22 @@ export const ownedTables: OwnedTable[] = [
       mastery: 5,
     }),
     patch: { mastery: 6 },
+    canDelete: true,
+  },
+  {
+    table: 'work_authorizations',
+    ownerColumn: 'userId',
+    // (userId, kind, place) is unique and the suite seeds the same user more than once,
+    // so every seed takes a fresh approved country (never MA, which insertPayload uses).
+    seed: async (userId) =>
+      seedWorkAuthorization(userId, 'work-permit', await freshCountry()),
+    insertPayload: async (userId) => ({
+      id: randomUUID(),
+      userId,
+      kind: 'citizenship',
+      place: 'MA',
+    }),
+    patch: { kind: 'residency' },
     canDelete: true,
   },
 ];

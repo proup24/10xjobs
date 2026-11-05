@@ -1,0 +1,450 @@
+[
+  {
+    "id": "table.work_authorizations",
+    "label": "Create table \"work_authorizations\"",
+    "summary": "Creates table \"work_authorizations\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "work_authorizations"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"work_authorizations\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"work_authorizations\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"work_authorizations\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"work_authorizations\"",
+        "sql": "CREATE TABLE \"public\".\"work_authorizations\" (\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"id\" uuid NOT NULL,\n  \"kind\" text NOT NULL,\n  \"place\" text NOT NULL,\n  \"updatedAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"userId\" uuid NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"work_authorizations_kind_f83cbcae\" CHECK (kind IN ('work-permit','citizenship','residency','clearance'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"work_authorizations\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"work_authorizations\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"work_authorizations\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "column.public.users.acceptsSponsorship",
+    "label": "Add column \"acceptsSponsorship\" to \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "acceptsSponsorship",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"acceptsSponsorship\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "acceptsSponsorship"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"acceptsSponsorship\" on \"users\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"acceptsSponsorship\"",
+        "sql": "ALTER TABLE \"public\".\"users\" ADD COLUMN \"acceptsSponsorship\" bool"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"acceptsSponsorship\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "acceptsSponsorship"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"acceptsSponsorship\" on \"users\""
+        }
+      },
+      {
+        "description": "verify column \"acceptsSponsorship\" has type \"boolean\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "acceptsSponsorship",
+          "boolean"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.users.residenceCountry",
+    "label": "Add column \"residenceCountry\" to \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "residenceCountry",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"residenceCountry\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "residenceCountry"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"residenceCountry\" on \"users\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"residenceCountry\"",
+        "sql": "ALTER TABLE \"public\".\"users\" ADD COLUMN \"residenceCountry\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"residenceCountry\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "residenceCountry"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"residenceCountry\" on \"users\""
+        }
+      },
+      {
+        "description": "verify column \"residenceCountry\" has type \"text\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "residenceCountry",
+          "text"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.work_authorizations.work_authorizations_userId_kind_place_key",
+    "label": "Add unique constraint on \"work_authorizations\" (userId, kind, place)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "work_authorizations_userId_kind_place_key",
+        "table": "work_authorizations"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"work_authorizations_userId_kind_place_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "work_authorizations_userId_kind_place_key",
+          "public",
+          "\"public\".\"work_authorizations\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"work_authorizations_userId_kind_place_key\" on \"work_authorizations\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"work_authorizations_userId_kind_place_key\"",
+        "sql": "ALTER TABLE \"public\".\"work_authorizations\" ADD CONSTRAINT \"work_authorizations_userId_kind_place_key\" UNIQUE (\"userId\", \"kind\", \"place\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"work_authorizations_userId_kind_place_key\" exists on (userId, kind, place)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "work_authorizations_userId_kind_place_key",
+          "public",
+          "\"public\".\"work_authorizations\"",
+          "u",
+          "[\"userId\",\"kind\",\"place\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.work_authorizations.work_authorizations_userId_idx_a489d58a",
+    "label": "Create index \"work_authorizations_userId_idx_a489d58a\" on \"work_authorizations\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "work_authorizations_userId_idx_a489d58a",
+        "table": "work_authorizations"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"work_authorizations_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"work_authorizations_userId_idx_a489d58a\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"work_authorizations_userId_idx_a489d58a\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"work_authorizations_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"work_authorizations_userId_idx_a489d58a\" ON \"public\".\"work_authorizations\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"work_authorizations_userId_idx_a489d58a\" exists on \"work_authorizations\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"work_authorizations_userId_idx_a489d58a\"",
+          "i",
+          "I",
+          "\"public\".\"work_authorizations\"",
+          "btree",
+          "[\"userId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.work_authorizations.work_authorizations_userId_fkey",
+    "label": "Add foreign key \"work_authorizations_userId_fkey\" on \"work_authorizations\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "work_authorizations_userId_fkey",
+        "table": "work_authorizations"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"work_authorizations_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "work_authorizations_userId_fkey",
+          "public",
+          "\"public\".\"work_authorizations\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"work_authorizations_userId_fkey\" on \"work_authorizations\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"work_authorizations_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"work_authorizations\"\nADD CONSTRAINT \"work_authorizations_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"users\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"work_authorizations_userId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "work_authorizations_userId_fkey",
+          "public",
+          "\"public\".\"work_authorizations\"",
+          "f",
+          "[\"userId\"]",
+          "\"public\".\"users\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.work_authorizations",
+    "label": "Enable row-level security on \"work_authorizations\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "work_authorizations"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"work_authorizations\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "work_authorizations"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"work_authorizations\"",
+        "sql": "ALTER TABLE \"public\".\"work_authorizations\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"work_authorizations\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "work_authorizations"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.work_authorizations.work_authorizations_owner_6ea08fe5",
+    "label": "Create RLS policy \"work_authorizations_owner_6ea08fe5\" on \"work_authorizations\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "work_authorizations_owner_6ea08fe5",
+        "table": "work_authorizations"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"work_authorizations_owner_6ea08fe5\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "work_authorizations",
+          "work_authorizations_owner_6ea08fe5"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"work_authorizations_owner_6ea08fe5\" on \"work_authorizations\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"work_authorizations_owner_6ea08fe5\"",
+        "sql": "CREATE POLICY \"work_authorizations_owner_6ea08fe5\" ON \"public\".\"work_authorizations\" AS PERMISSIVE FOR ALL TO authenticated USING (\"userId\" = auth.uid()) WITH CHECK (\"userId\" = auth.uid())",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"work_authorizations_owner_6ea08fe5\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "work_authorizations",
+          "work_authorizations_owner_6ea08fe5",
+          "ALL",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "trigger.users_check_codes",
+    "label": "Check the residence country against the countries list",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "users"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create users_check_codes() and its BEFORE INSERT OR UPDATE trigger",
+        "sql": "CREATE FUNCTION public.users_check_codes() RETURNS trigger\n  LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$\nBEGIN\n  -- The sign-up trigger inserts empty rows, so null passes. On update, only a changed value is checked.\n  IF NEW.\"residenceCountry\" IS NOT NULL\n     AND (TG_OP = 'INSERT' OR NEW.\"residenceCountry\" IS DISTINCT FROM OLD.\"residenceCountry\") THEN\n    PERFORM public.assert_codes('users.residenceCountry', 'countries', ARRAY[NEW.\"residenceCountry\"]);\n  END IF;\n  RETURN NEW;\nEND $$;\nREVOKE EXECUTE ON FUNCTION public.users_check_codes() FROM PUBLIC, anon, authenticated;\nCREATE TRIGGER users_check_codes BEFORE INSERT OR UPDATE ON public.users\n  FOR EACH ROW EXECUTE FUNCTION public.users_check_codes();"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "trigger.work_authorizations_check_codes",
+    "label": "Check work authorization places against the countries and regions lists",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "work_authorizations"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create work_authorizations_check_codes() and its BEFORE INSERT OR UPDATE trigger",
+        "sql": "CREATE FUNCTION public.work_authorizations_check_codes() RETURNS trigger\n  LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$\nBEGIN\n  IF TG_OP = 'INSERT' OR NEW.place IS DISTINCT FROM OLD.place THEN\n    -- GLOBAL is an approved region for jobs, but a place of authorization is a real country or region.\n    IF NEW.place = 'GLOBAL' THEN\n      RAISE EXCEPTION USING ERRCODE = 'check_violation',\n        MESSAGE = format('work_authorizations.place: %L is not an approved regions code', NEW.place);\n    END IF;\n    IF EXISTS (SELECT 1 FROM public.countries c WHERE c.code = NEW.place AND c.status = 'approved') THEN\n      RETURN NEW;\n    END IF;\n    PERFORM public.assert_codes('work_authorizations.place', 'regions', ARRAY[NEW.place]);\n  END IF;\n  RETURN NEW;\nEND $$;\nREVOKE EXECUTE ON FUNCTION public.work_authorizations_check_codes() FROM PUBLIC, anon, authenticated;\nCREATE TRIGGER work_authorizations_check_codes BEFORE INSERT OR UPDATE ON public.work_authorizations\n  FOR EACH ROW EXECUTE FUNCTION public.work_authorizations_check_codes();"
+      }
+    ],
+    "postcheck": []
+  }
+]
