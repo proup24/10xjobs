@@ -196,11 +196,8 @@
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
     "@nestjs/swagger": "^12.0.5",
-<<<<<<< HEAD
     "@openrouter/sdk": "1.5.33",
-=======
     "@prisma/orm-extension-supabase": "8.0.0-rc.21",
->>>>>>> origin/main
     "@prisma/orm-postgres": "8.0.0-rc.21",
     "@sentry/node": "^11.9.0",
     "@supabase/supabase-js": "^2.118.0",
