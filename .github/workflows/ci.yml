@@ -68,7 +68,7 @@ jobs:
         run: pnpm exec supabase start -x studio,realtime,edge-runtime,imgproxy,logflare,vector
 
       - name: Apply the Prisma migrations
-        run: pnpm --filter @xjobs/xjobs db:migrate
+        run: pnpm --filter @xjobs/database db:migrate
 
       # The users seed creates auth users through the admin API
       - name: Export the Supabase admin credentials
@@ -79,7 +79,7 @@ jobs:
 
       # The only CI step that runs the engine's runtime client against a real database
       - name: Seed the database
-        run: pnpm --filter @xjobs/xjobs db:seed
+        run: pnpm --filter @xjobs/database db:seed
 
       - name: Check the generated database types are current
         run: pnpm db:types && git diff --exit-code apps/web/src/lib/supabase/database.types.ts
