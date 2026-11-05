@@ -20,17 +20,17 @@ An invited user can sign up on the hosted app and can create and edit their prof
 
 ## Slices, in order
 
-| #   | Slice                                                  | Depends on |
-| --- | ------------------------------------------------------ | ---------- |
-| 01  | [Foundation](01-foundation.md)                         | none       |
-| 02  | [Accounts and isolation](02-accounts-and-isolation.md) | 01         |
-| 03  | [Invite-only sign-in](03-invite-only-sign-in.md)       | 02         |
-| 04  | [Preferences schema](04-preferences-schema.md)         | 02         |
-| 05  | [Eligibility schema](05-eligibility-schema.md)         | 02         |
-| 06  | [Resume storage](06-resume-storage.md)                 | 02         |
-| 07  | [Guided setup UI](07-guided-setup-ui.md)               | 03–06      |
-| 08  | [Edit preferences UI](08-edit-preferences-ui.md)       | 07         |
-| 09  | [Hosted launch](09-hosted-launch.md)                   | 01–08      |
+| #   | Slice                                                             | Depends on |
+| --- | ----------------------------------------------------------------- | ---------- |
+| 01  | [Foundation](01-foundation.md)                                    | none       |
+| 02  | [Accounts and isolation](02-accounts-and-isolation.md)            | 01         |
+| 03  | [Invite-only sign-in](03-invite-only-sign-in.md)                  | 02         |
+| 04  | [Preferences schema](04-preferences-schema.md) (one spec with 05) | 02         |
+| 05  | [Eligibility schema](05-eligibility-schema.md) (one spec with 04) | 02         |
+| 06  | [Resume storage](06-resume-storage.md)                            | 02         |
+| 07  | [Guided setup UI](07-guided-setup-ui.md)                          | 03–06      |
+| 08  | [Edit preferences UI](08-edit-preferences-ui.md)                  | 07         |
+| 09  | [Hosted launch](09-hosted-launch.md)                              | 01–08      |
 
 Slices 04 and 05 share one spec, [Preferences and eligibility schema](../../superpowers/specs/2026-11-05-preferences-and-eligibility-design.md), because they use the same value lists and change the same contract. Slices 04, 05 and 06 are independent of each other. Slice 09's production setup can start early, but the launch check runs last.
 
@@ -63,7 +63,7 @@ Slices 04 and 05 share one spec, [Preferences and eligibility schema](../../supe
 - SQL the contract can't express (the sign-up trigger, helper functions) goes in hand-written Prisma migrations. There is no `supabase/migrations` folder.
 - The web app gets its database types from `supabase gen types`, run against the migrated database.
 - **Ownership:** every table a user owns carries its own `userId` column, child tables included (`contacts`, `profiles`, `profile_skills` and later ones), so every policy is `"userId" = auth.uid()` with no joins.
-- **Shared tables:** search queries (`query_search_builder`, `profile_query_search_builders`) and raw jobs (`raw_jobs` and its identity and hit tables) are shared across users on purpose, so the same search runs once. They have RLS on with no user policies, so users can't see them. The processor's value lists (techs, roles, seniorities, contract types, engagements, regions, countries, cities, languages and currencies) are shared tables that users can read, read-only and for approved rows only, so the web app's pickers can load them. Only an admin changes them.
+- **Shared tables:** search queries (`query_search_builder`, `profile_query_search_builders`) and raw jobs (`raw_jobs` and its identity and hit tables) are shared across users on purpose, so the same search runs once. They have RLS on with no user policies, so users can't see them. The processor's value lists (techs, roles, seniorities, contract types, engagements, regions, countries, cities, `region_countries`, languages and currencies) are shared tables that users can read, read-only and for approved rows only, so the web app's pickers can load them. Only an admin changes them.
 - **Every table has RLS enabled**, which makes a "table without RLS" check in CI simple.
 - **Published profiles are frozen.** RLS lets a user update and delete only their `draft` profiles, and never set `state` themselves. Only the engine publishes.
 
