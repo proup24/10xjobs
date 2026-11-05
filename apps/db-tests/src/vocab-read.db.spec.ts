@@ -107,6 +107,15 @@ describe('value lists, read-only for users', () => {
     expect(data).toEqual([]);
   });
 
+  it('cities: reads the approved row', async () => {
+    const { data, error } = await user.client
+      .from('cities')
+      .select('name')
+      .eq('name', approvedCityKey);
+    expect(error).toBeNull();
+    expect(data).toEqual([{ name: approvedCityKey }]);
+  });
+
   it('cities: hides the proposed row', async () => {
     const { data, error } = await user.client
       .from('cities')
