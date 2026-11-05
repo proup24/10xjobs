@@ -22,6 +22,9 @@
           "cwd": "apps/web"
         },
         "cache": true,
+        "dependsOn": [
+          "^typecheck"
+        ],
         "inputs": [
           "default",
           "^production"

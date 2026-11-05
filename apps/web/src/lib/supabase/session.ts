@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
-import type { Database } from './database.types';
+import type { Database } from '@xjobs/database/types';
 import { decideRoute, type SessionClaims } from '../auth/session-policy';
 import { readPublicSupabaseEnv } from './env';
 

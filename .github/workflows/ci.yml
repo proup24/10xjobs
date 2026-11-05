@@ -82,7 +82,7 @@ jobs:
         run: pnpm --filter @xjobs/database db:seed
 
       - name: Check the generated database types are current
-        run: pnpm db:types && git diff --exit-code apps/web/src/lib/supabase/database.types.ts
+        run: pnpm db:types && git diff --exit-code libs/database/src/supabase/database.types.ts
 
       - name: Run the database tests
         run: pnpm db:test

@@ -26,6 +26,11 @@
       "types": "./dist/auth/index.d.ts",
       "default": "./dist/auth/index.js"
     },
+    "./types": {
+      "@xjobs/source": "./src/types.ts",
+      "types": "./dist/types.d.ts",
+      "default": "./dist/types.js"
+    },
     "./contract": {
       "types": "./src/contract/contract.d.ts"
     }

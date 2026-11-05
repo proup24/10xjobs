@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { describe, expect, it, vi } from 'vitest';
-import type { Database } from '@/lib/supabase/database.types';
+import type { Database } from '@xjobs/database/types';
 import { landingPath } from './landing';
 
 function fakeClient(rows: { id: string }[]) {
