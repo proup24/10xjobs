@@ -1,7 +1,6 @@
 import { Channel } from 'src/common/enums';
 import type {
   BoardSearchRunConfig,
-  LinkedinPostsRunConfig,
   SegmentSearch,
 } from '../types/collector';
 import type { ApifyActorProvider } from './apify/apify.provider';
@@ -38,11 +37,7 @@ const segment = (
 ): SegmentSearch => ({ channel, since, until, queries });
 
 const board = LinkedinJobBoardCollector.config;
-const posts: LinkedinPostsRunConfig = {
-  actor: 'harvestapi/linkedin-post-search',
-  maxRunChargeUsd: 1,
-  maxPostsPerQuery: 2,
-};
+const posts = LinkedinPostsCollector.config;
 const ashby: BoardSearchRunConfig = {
   actor: 'apify/google-search-scraper',
   maxRunChargeUsd: 1,
@@ -285,32 +280,33 @@ describe('LinkedIn posts segment', () => {
       postedAt: { date: '2026-10-31T11:00:00Z' },
       query: { search },
     });
+    // qs-2 fills its post limit, so it is reported truncated.
+    const full = Array.from({ length: posts.maxPostsPerQuery }, (_, i) =>
+      post(String(100 + i), queries[1].keyword),
+    );
     const { run, provider } = actor(() => [
-      post('7', queries[1].keyword),
-      post('8', queries[1].keyword),
+      ...full,
       post('9', 'unknown query'),
     ]);
     const result = await new LinkedinPostsCollector(provider).collect(
       segment(Channel.LINKEDIN_POSTS, queries),
-      posts,
     );
     expect(run).toHaveBeenCalledTimes(1);
     expect(run.mock.calls[0][1]).toMatchObject({
       searchQueries: queries.map((q) => q.keyword),
-      maxPosts: 2,
+      maxPosts: posts.maxPostsPerQuery,
       postedLimitDate: since.toISOString(),
       sortBy: 'date',
     });
-    expect(result.itemsByQuery.get('qs-2')).toEqual([
-      { rank: null, payload: post('7', queries[1].keyword) },
-      { rank: null, payload: post('8', queries[1].keyword) },
-    ]);
+    expect(result.itemsByQuery.get('qs-2')).toEqual(
+      full.map((payload) => ({ rank: null, payload })),
+    );
     expect(result.itemsByQuery.get('qs-1')).toEqual([]);
     expect(result.unattributed).toEqual([
       { rank: null, payload: post('9', 'unknown query') },
     ]);
     expect(result.truncatedQueryIds).toEqual(['qs-2']);
-    expect(result.fetched).toBe(3);
+    expect(result.fetched).toBe(posts.maxPostsPerQuery + 1);
     expect(result.source).toEqual({ actor: posts.actor, apifyRunId: 'run-1' });
   });
 });
@@ -447,7 +443,7 @@ describe('job board segments on Google', () => {
 
   it('keeps postings it cannot fetch, with the fetch error, instead of failing the segment', async () => {
     const queries = [{ id: 'qs-1', keyword: `${titles} nestjs`, params: {} }];
-    const line = boardQuery(queries[0].keyword, ashby);
+    const line = boardQuery(queries[0].keyword, AshbyCollector.config);
     const { provider } = actor(() => [
       {
         searchQuery: { term: line },
@@ -466,7 +462,7 @@ describe('job board segments on Google', () => {
     const result = await new AshbyCollector(
       new GoogleJobsSearchProvider(provider),
       postings,
-    ).collect(segment(Channel.ASHBY, queries), ashby);
+    ).collect(segment(Channel.ASHBY, queries));
     expect(result.itemsByQuery.get('qs-1')).toEqual([
       {
         rank: 1,
@@ -487,12 +483,15 @@ describe('job board segments on Google', () => {
         },
       },
     ]);
-    expect(result.source).toEqual({ actor: ashby.actor, apifyRunId: 'run-1' });
+    expect(result.source).toEqual({
+      actor: AshbyCollector.config.actor,
+      apifyRunId: 'run-1',
+    });
   });
 
   it('follows Google redirect links to the posting, keeping the hit untouched', async () => {
     const queries = [{ id: 'qs-1', keyword: `${titles} nestjs`, params: {} }];
-    const line = boardQuery(queries[0].keyword, ashby);
+    const line = boardQuery(queries[0].keyword, AshbyCollector.config);
     const goto = 'https://www.google.com/goto?url=CAES123';
     const lost = 'https://www.google.com/goto?url=CAESlost';
     const real =
@@ -519,7 +518,7 @@ describe('job board segments on Google', () => {
       const result = await new AshbyCollector(
         new GoogleJobsSearchProvider(provider),
         postings,
-      ).collect(segment(Channel.ASHBY, queries), ashby);
+      ).collect(segment(Channel.ASHBY, queries));
 
       expect(http).toHaveBeenCalledWith(
         goto,

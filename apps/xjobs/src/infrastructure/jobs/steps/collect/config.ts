@@ -4,7 +4,10 @@ import {
   type BoardSearchRunConfig,
   type LinkedinJobBoardRunConfig,
   type LinkedinPostsRunConfig,
+  AshbyCollector,
+  GreenhouseCollector,
   LinkedinJobBoardCollector,
+  LinkedinPostsCollector,
 } from 'src/modules/collectors';
 import type { WindowConfig } from 'src/modules/segments';
 
@@ -54,53 +57,31 @@ const daily = {
   },
 } as const;
 
-/** One dedicated config per channel job; actors and caps carried over from career-hub. */
+/** One dedicated config per channel job; each `run` is its collector's static actor config. */
 export const channelJobsConfig = {
   [Channel.LINKEDIN_JOB_BOARD]: {
     queueName: 'collect-linkedin-job-board',
     ...hourly,
     enabled: ACTIVE_CHANNELS.includes(Channel.LINKEDIN_JOB_BOARD),
-    // The collector owns its actor config; it is exposed here for reporting.
     run: LinkedinJobBoardCollector.config,
   },
   [Channel.LINKEDIN_POSTS]: {
     queueName: 'collect-linkedin-posts',
     ...hourly,
     enabled: ACTIVE_CHANNELS.includes(Channel.LINKEDIN_POSTS),
-    run: {
-      actor: 'harvestapi/linkedin-post-search',
-      maxRunChargeUsd: 0.75,
-      maxPostsPerQuery: 100,
-    },
+    run: LinkedinPostsCollector.config,
   },
   [Channel.GREEN_HOUSE]: {
     queueName: 'collect-greenhouse',
     ...daily,
     enabled: ACTIVE_CHANNELS.includes(Channel.GREEN_HOUSE),
-    run: {
-      actor: 'apify/google-search-scraper',
-      maxRunChargeUsd: 0.5,
-      site: 'job-boards.greenhouse.io',
-      suffix: '',
-      // Google serves 10 results per page (no `num=100` since Sept 2025);
-      // at 3 pages every query was truncated.
-      maxPagesPerQuery: 10,
-    },
+    run: GreenhouseCollector.config,
   },
   [Channel.ASHBY]: {
     queueName: 'collect-ashby',
     ...daily,
     enabled: ACTIVE_CHANNELS.includes(Channel.ASHBY),
-    run: {
-      actor: 'apify/google-search-scraper',
-      maxRunChargeUsd: 0.5,
-      site: 'jobs.ashbyhq.com',
-      suffix:
-        '(intitle:engineer OR intitle:developer OR intitle:lead) -intitle:manager -intitle:director -intitle:intern -intitle:recruiter',
-      // Google serves 10 results per page (no `num=100` since Sept 2025);
-      // at 3 pages every query was truncated.
-      maxPagesPerQuery: 10,
-    },
+    run: AshbyCollector.config,
   },
 } satisfies {
   [Channel.LINKEDIN_JOB_BOARD]: ChannelJobConfig<LinkedinJobBoardRunConfig>;

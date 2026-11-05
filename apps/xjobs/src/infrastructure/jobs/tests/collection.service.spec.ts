@@ -135,15 +135,10 @@ describe('channel selection', () => {
       expect(queries.listActive).toHaveBeenCalledWith(channel);
       for (const other of Object.values(Channel)) {
         if (other === channel) {
-          // The LinkedIn job board collector carries its own static config.
-          const expected =
-            channel === Channel.LINKEDIN_JOB_BOARD
-              ? [expect.objectContaining({ channel })]
-              : [
-                  expect.objectContaining({ channel }),
-                  channelJobsConfig[channel].run,
-                ];
-          expect(collectors[other].collect).toHaveBeenCalledWith(...expected);
+          // Each collector carries its own static config.
+          expect(collectors[other].collect).toHaveBeenCalledWith(
+            expect.objectContaining({ channel }),
+          );
         } else expect(collectors[other].collect).not.toHaveBeenCalled();
       }
     },
@@ -180,9 +175,7 @@ describe('CollectionService.collect', () => {
     expect(first.until.getTime() - first.since.getTime()).toBe(
       channelJobsConfig[Channel.ASHBY].window.initialHours * 3_600_000,
     );
-    expect(collector.collect.mock.calls[0][1]).toBe(
-      channelJobsConfig[Channel.ASHBY].run,
-    );
+    expect(collector.collect.mock.calls[0]).toHaveLength(1);
     expect(summary).toMatchObject({
       builders: 12,
       segments: 2,

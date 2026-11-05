@@ -298,22 +298,13 @@ export class CollectionService {
   private fetch(segment: SegmentSearch): Promise<SegmentResult> {
     switch (segment.channel) {
       case Channel.ASHBY:
-        return this.ashby.collect(
-          segment,
-          channelJobsConfig[Channel.ASHBY].run,
-        );
+        return this.ashby.collect(segment);
       case Channel.GREEN_HOUSE:
-        return this.greenhouse.collect(
-          segment,
-          channelJobsConfig[Channel.GREEN_HOUSE].run,
-        );
+        return this.greenhouse.collect(segment);
       case Channel.LINKEDIN_JOB_BOARD:
         return this.linkedinJobs.collect(segment);
       case Channel.LINKEDIN_POSTS:
-        return this.linkedinPosts.collect(
-          segment,
-          channelJobsConfig[Channel.LINKEDIN_POSTS].run,
-        );
+        return this.linkedinPosts.collect(segment);
     }
   }
 }

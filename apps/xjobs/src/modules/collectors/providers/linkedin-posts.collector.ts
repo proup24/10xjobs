@@ -22,13 +22,18 @@ function querySearch(item: unknown): string | null {
 /** Apify trigger for LinkedIn posts: one actor run per search segment. */
 @Injectable()
 export class LinkedinPostsCollector {
+  /** The actor and its limits; fixed for every run of this collector. */
+  static readonly config: Readonly<LinkedinPostsRunConfig> = {
+    actor: 'harvestapi/linkedin-post-search',
+    maxRunChargeUsd: 0.75,
+    maxPostsPerQuery: 100,
+  };
+
   readonly channel = Channel.LINKEDIN_POSTS;
   constructor(private readonly actor: ApifyActorProvider) {}
 
-  async collect(
-    segment: SegmentSearch,
-    config: LinkedinPostsRunConfig,
-  ): Promise<SegmentResult> {
+  async collect(segment: SegmentSearch): Promise<SegmentResult> {
+    const config = LinkedinPostsCollector.config;
     const searches = segment.queries.map((query) => ({
       id: query.id,
       search: query.keyword,
