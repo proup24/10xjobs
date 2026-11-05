@@ -3129,6 +3129,23 @@
           },
           "Profile": {
             "fields": {
+              "acceptedCurrencies": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "acceptsAnyCurrency": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "city": {
                 "nullable": true,
                 "type": {
@@ -3136,8 +3153,18 @@
                   "kind": "scalar"
                 }
               },
+              "contractTypes": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "country": {
-                "nullable": false,
+                "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
@@ -3180,7 +3207,7 @@
                 "many": {
                   "elementNullable": false
                 },
-                "nullable": false,
+                "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
@@ -3193,7 +3220,7 @@
                 }
               },
               "locations": {
-                "nullable": false,
+                "nullable": true,
                 "type": {
                   "codecId": "pg/jsonb@1",
                   "kind": "scalar"
@@ -3203,6 +3230,13 @@
                 "nullable": false,
                 "type": {
                   "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "places": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/jsonb@1",
                   "kind": "scalar"
                 }
               },
@@ -3267,6 +3301,27 @@
                   }
                 }
               },
+              "salaryCurrency": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "salaryMin": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "salaryPeriod": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "seniorities": {
                 "many": {
                   "elementNullable": false
@@ -3281,6 +3336,13 @@
                   "entityName": "Seniority",
                   "namespaceId": "public",
                   "plane": "domain"
+                }
+              },
+              "spokenLanguages": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
                 }
               },
               "state": {
@@ -3362,8 +3424,17 @@
             },
             "storage": {
               "fields": {
+                "acceptedCurrencies": {
+                  "column": "acceptedCurrencies"
+                },
+                "acceptsAnyCurrency": {
+                  "column": "acceptsAnyCurrency"
+                },
                 "city": {
                   "column": "city"
+                },
+                "contractTypes": {
+                  "column": "contractTypes"
                 },
                 "country": {
                   "column": "country"
@@ -3386,6 +3457,9 @@
                 "noticePeriodDays": {
                   "column": "noticePeriodDays"
                 },
+                "places": {
+                  "column": "places"
+                },
                 "position": {
                   "column": "position"
                 },
@@ -3407,8 +3481,20 @@
                 "resumeUploadedAt": {
                   "column": "resumeUploadedAt"
                 },
+                "salaryCurrency": {
+                  "column": "salaryCurrency"
+                },
+                "salaryMin": {
+                  "column": "salaryMin"
+                },
+                "salaryPeriod": {
+                  "column": "salaryPeriod"
+                },
                 "seniorities": {
                   "column": "seniorities"
+                },
+                "spokenLanguages": {
+                  "column": "spokenLanguages"
                 },
                 "state": {
                   "column": "state"
@@ -7786,6 +7872,26 @@
             "profiles": {
               "checks": [
                 {
+                  "expression": "array_position(\"acceptedCurrencies\", NULL) IS NULL",
+                  "name": "profiles_acceptedCurrencies_elem_not_null_12cd7376",
+                  "prefix": "profiles_acceptedCurrencies_elem_not_null"
+                },
+                {
+                  "expression": "array_position(\"contractTypes\", NULL) IS NULL",
+                  "name": "profiles_contractTypes_elem_not_null_d79621a2",
+                  "prefix": "profiles_contractTypes_elem_not_null"
+                },
+                {
+                  "expression": "\"contractTypes\" IS NULL OR cardinality(\"contractTypes\") > 0",
+                  "name": "profiles_contract_types_nonempty_2e2f0c84",
+                  "prefix": "profiles_contract_types_nonempty"
+                },
+                {
+                  "expression": "(\"acceptsAnyCurrency\" AND cardinality(\"acceptedCurrencies\") = 0) OR (NOT \"acceptsAnyCurrency\" AND cardinality(\"acceptedCurrencies\") > 0)",
+                  "name": "profiles_currencies_any_xor_list_3169ca89",
+                  "prefix": "profiles_currencies_any_xor_list"
+                },
+                {
                   "expression": "array_remove(\"engagements\", NULL) <@ '{\"employee\",\"contractor\",\"eor\",\"agency\",\"per_task\"}'",
                   "name": "profiles_engagements_check_8a34079e",
                   "prefix": "profiles_engagements_check"
@@ -7836,6 +7942,21 @@
                   "prefix": "profiles_position_check"
                 },
                 {
+                  "expression": "(\"salaryMin\" IS NULL) = (\"salaryCurrency\" IS NULL) AND (\"salaryMin\" IS NULL) = (\"salaryPeriod\" IS NULL)",
+                  "name": "profiles_salary_all_or_none_e3d82cd7",
+                  "prefix": "profiles_salary_all_or_none"
+                },
+                {
+                  "expression": "\"salaryMin\" > 0",
+                  "name": "profiles_salary_min_positive_e1d9f874",
+                  "prefix": "profiles_salary_min_positive"
+                },
+                {
+                  "expression": "\"salaryPeriod\" IN ('hour','day','month','year')",
+                  "name": "profiles_salary_period_fe0be813",
+                  "prefix": "profiles_salary_period"
+                },
+                {
                   "expression": "array_remove(\"seniorities\", NULL) <@ '{\"junior\",\"mid\",\"senior\",\"staff\",\"lead\",\"principal\",\"unstated\"}'",
                   "name": "profiles_seniorities_check_c892abac",
                   "prefix": "profiles_seniorities_check"
@@ -7867,15 +7988,44 @@
                 }
               ],
               "columns": {
+                "acceptedCurrencies": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": []
+                  },
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": false
+                },
+                "acceptsAnyCurrency": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": true
+                  },
+                  "nullable": false
+                },
                 "city": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
                   "nullable": true
                 },
+                "contractTypes": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": true
+                },
                 "country": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
-                  "nullable": false
+                  "nullable": true
                 },
                 "createdAt": {
                   "codecId": "pg/timestamptz-date@1",
@@ -7914,7 +8064,7 @@
                   "many": {
                     "elementNullable": false
                   },
-                  "nullable": false,
+                  "nullable": true,
                   "valueSet": {
                     "entityKind": "valueSet",
                     "entityName": "Language",
@@ -7925,12 +8075,17 @@
                 "locations": {
                   "codecId": "pg/jsonb@1",
                   "dataType": "pg/jsonb",
-                  "nullable": false
+                  "nullable": true
                 },
                 "noticePeriodDays": {
                   "codecId": "pg/int4@1",
                   "dataType": "pg/int4",
                   "nullable": false
+                },
+                "places": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": true
                 },
                 "position": {
                   "codecId": "pg/text@1",
@@ -7979,6 +8134,21 @@
                     "precision": 3
                   }
                 },
+                "salaryCurrency": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "salaryMin": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "salaryPeriod": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
                 "seniorities": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -7992,6 +8162,11 @@
                     "namespaceId": "public",
                     "plane": "storage"
                   }
+                },
+                "spokenLanguages": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": true
                 },
                 "state": {
                   "codecId": "pg/text@1",
@@ -9589,7 +9764,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "3c41b71f8adc0ec4e812059c1a4d627b2bbc7d9eb5b36c4c557ac4c8478620e3"
+    "storageHash": "d98f2850be8e35f00800f50fbfc7a8296a77a8de3e92bee38c209fdeb472e2ef"
   },
   "execution": {
     "executionHash": "10d5f7e842b2fb12c71ccb0e6509e21ba86faca411f9434c879cf5f293577cb4",

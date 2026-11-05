@@ -20,6 +20,7 @@ import {
 import { ProfilesRepository } from '../repositories/profiles.repository';
 import { UsersService } from './users.service';
 import type {
+  PreferenceColumns,
   ProfileFields,
   ProfileInput,
   ProfileView,
@@ -27,6 +28,17 @@ import type {
   PublishedProfileView,
   SkillInput,
 } from '../types';
+
+const PREFERENCE_COLUMNS = [
+  'contractTypes',
+  'places',
+  'spokenLanguages',
+  'salaryMin',
+  'salaryCurrency',
+  'salaryPeriod',
+  'acceptsAnyCurrency',
+  'acceptedCurrencies',
+] as const satisfies readonly PreferenceColumns[];
 
 /** The API shape of a profile: no storage key, stack ordered by importance, then what the user wants most. */
 export function toProfileView(profile: ProfileWithSkills): ProfileView {
@@ -37,10 +49,12 @@ export function toProfileView(profile: ProfileWithSkills): ProfileView {
     resumeSizeBytes,
     resumeSha256,
     resumeUploadedAt,
-    ...fields
+    ...row
   } = profile;
+  const fields: Partial<typeof row> = { ...row };
+  for (const column of PREFERENCE_COLUMNS) delete fields[column];
   return {
-    ...fields,
+    ...(fields as Omit<typeof row, PreferenceColumns>),
     // A jsonb column: always written through normalizeLocations, in this shape.
     locations: fields.locations as LocationsByArrangement,
     techStack: techStack

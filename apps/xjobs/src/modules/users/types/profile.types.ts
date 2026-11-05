@@ -39,6 +39,17 @@ export type SkillInput = {
 
 export type ProfileWithSkills = ProfileRow & { techStack: ProfileSkillRow[] };
 
+/** Preference columns the questionnaire does not write yet; the API leaves them out until it does. */
+export type PreferenceColumns =
+  | 'contractTypes'
+  | 'places'
+  | 'spokenLanguages'
+  | 'salaryMin'
+  | 'salaryCurrency'
+  | 'salaryPeriod'
+  | 'acceptsAnyCurrency'
+  | 'acceptedCurrencies';
+
 export type ProfileView = Omit<
   ProfileRow,
   | 'resumeKey'
@@ -47,6 +58,7 @@ export type ProfileView = Omit<
   | 'resumeSha256'
   | 'resumeUploadedAt'
   | 'locations'
+  | PreferenceColumns
 > & {
   locations: LocationsByArrangement;
   techStack: Pick<
