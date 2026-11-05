@@ -5,7 +5,7 @@ import {
   type ProfileRow,
   type ProfileSkillRow,
 } from 'src/database';
-import type { DatabaseTransaction } from 'src/database/seeds/seed.interface';
+import type { DatabaseTransaction } from '@xjobs/database';
 import type {
   ProfileFields,
   ProfileInput,

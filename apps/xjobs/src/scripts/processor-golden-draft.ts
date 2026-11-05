@@ -10,7 +10,7 @@
  */
 import { readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { loadEnvironmentFiles } from 'src/config/environment.loader';
+import { loadEnvironmentFiles } from '@xjobs/database/env';
 import {
   type DraftedKey,
   GOLDEN_CASES_DIR,

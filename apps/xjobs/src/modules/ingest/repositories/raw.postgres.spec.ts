@@ -1,10 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Channel } from 'src/common/enums';
 import type { DatabaseService } from 'src/database';
-import {
-  createDatabaseClient,
-  type DatabaseClient,
-} from 'src/database/connection.source';
+import { createDatabaseClient, type DatabaseClient } from '@xjobs/database';
 import {
   type NewCollectionBatch,
   type NewSegmentRun,

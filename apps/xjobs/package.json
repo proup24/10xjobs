@@ -3,17 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "db:emit": "prisma contract emit",
-    "db:format": "prisma contract format",
-    "db:update": "prisma db update",
-    "db:init": "prisma db init",
-    "db:migration:plan": "prisma contract emit && prisma migration plan",
-    "db:migration:status": "prisma migration status",
-    "db:migrate": "prisma db migrate --to db",
-    "db:migrate:show": "prisma db migrate --show",
-    "db:verify": "prisma db verify",
     "users": "tsx --tsconfig tsconfig.app.json src/admin/users-cli.ts",
-    "db:seed": "tsx --tsconfig tsconfig.app.json src/database/seeds/index.ts",
     "db:regenerate": "tsx --tsconfig tsconfig.app.json src/scripts/regenerate-query-search.ts",
     "db:renormalize": "tsx --tsconfig tsconfig.app.json src/scripts/renormalize-jobs.ts",
     "db:reprocess": "tsx --tsconfig tsconfig.app.json src/scripts/reprocess-jobs.ts",
@@ -198,7 +188,6 @@
     "@nestjs/platform-express": "^11.0.0",
     "@nestjs/swagger": "^12.0.5",
     "@openrouter/sdk": "1.5.33",
-    "@prisma/orm-extension-supabase": "8.0.0-rc.21",
     "@prisma/orm-postgres": "8.0.0-rc.21",
     "@sentry/node": "^11.9.0",
     "@supabase/supabase-js": "^2.118.0",
@@ -206,7 +195,6 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "cookie-parser": "^1.4.7",
-    "dotenv": "^18.0.9",
     "html-to-text": "9.0.5",
     "ioredis": "^5.11.1",
     "reflect-metadata": "^0.2.0",
@@ -216,11 +204,9 @@
   },
   "devDependencies": {
     "@nestjs/testing": "^11.0.0",
-    "@prisma/cli-engine": "0.9.0",
     "@types/cookie-parser": "^1.4.10",
     "@types/express": "^4.17.25",
     "@types/html-to-text": "9.0.4",
-    "prisma": "8.0.0-rc.28",
     "tsx": "^4.23.15"
   }
 }

@@ -3,8 +3,8 @@ import {
   SEED_REGION_COUNTRIES,
   SEED_TECH_EXTRAS,
   type SeedTerm,
-} from 'src/modules/processor/vocab/seed-data';
-import type { ListName } from 'src/modules/processor/vocab/lists';
+} from './vocab/seed-data';
+import type { ListName } from './vocab/lists';
 import type {
   ArrangementTermRow,
   ContractTypeRow,
@@ -15,7 +15,7 @@ import type {
   RoleKindRow,
   SeniorityTermRow,
   TechTagRow,
-} from '../models';
+} from '../client/models';
 import type { DatabaseTransaction, Seed } from './seed.interface';
 
 /** One row of any list table, as the code reading every list sees it. */

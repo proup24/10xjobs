@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import type { AdminAuth } from './auth-users';
+import type { AdminAuth } from '@xjobs/database/auth';
 import {
   blockUser,
   inviteUser,

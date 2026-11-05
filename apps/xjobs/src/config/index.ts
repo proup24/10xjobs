@@ -1,24 +1,20 @@
 import { ConfigService } from '@nestjs/config';
-// Prisma's config loader also imports this module and does not resolve TS aliases.
+import { toDatabaseConfig, type DatabaseConfig } from '@xjobs/database/env';
 import { EnvironmentType } from '../common/enums';
-import { loadEnvironmentFiles } from './environment.loader';
-import {
-  databaseEnvironmentSchema,
-  parseEnvironment,
-  seedEnvironmentSchema,
-} from './environment.validation';
 
 import type {
-  DatabaseEnvironmentVariables,
   EnvironmentVariables,
   RedisEnvironmentVariables,
-  SeedEnvironmentVariables,
 } from './environment.validation';
 
 export {
   loadApplicationEnvironment,
+  loadDatabaseEnvironment,
   loadEnvironmentFiles,
-} from './environment.loader';
+  loadSeedEnvironment,
+  toDatabaseConfig,
+} from '@xjobs/database/env';
+export type { DatabaseConfig } from '@xjobs/database/env';
 export {
   databaseEnvironmentSchema,
   environmentSchema,
@@ -55,14 +51,6 @@ export interface CookieConfig {
   domain?: string;
   secure: boolean;
   sameSite: 'lax' | 'strict' | 'none';
-}
-
-export interface DatabaseConfig {
-  url: string;
-  connectionTimeoutMs: number;
-  idleTimeoutMs: number;
-  slowQueryMs: number;
-  logQueries: boolean;
 }
 
 export interface RedisConfig {
@@ -152,18 +140,6 @@ export function getCookieConfig(config: AppConfigService): CookieConfig {
   };
 }
 
-export function toDatabaseConfig(
-  env: DatabaseEnvironmentVariables,
-): DatabaseConfig {
-  return {
-    url: env.DATABASE_URL,
-    connectionTimeoutMs: env.DATABASE_CONNECTION_TIMEOUT_MS,
-    idleTimeoutMs: env.DATABASE_IDLE_TIMEOUT_MS,
-    slowQueryMs: env.DATABASE_SLOW_QUERY_MS,
-    logQueries: env.DATABASE_LOG_QUERIES,
-  };
-}
-
 export function getDatabaseConfig(config: AppConfigService): DatabaseConfig {
   return toDatabaseConfig({
     DATABASE_URL: config.get('DATABASE_URL', { infer: true }),
@@ -180,22 +156,4 @@ export function getDatabaseConfig(config: AppConfigService): DatabaseConfig {
     }),
     DATABASE_LOG_QUERIES: config.get('DATABASE_LOG_QUERIES', { infer: true }),
   });
-}
-
-/**
- * @description For code running outside Nest (seeds, scripts): loads the env
- * files and validates only the database variables.
- */
-export function loadDatabaseEnvironment(): DatabaseEnvironmentVariables {
-  loadEnvironmentFiles();
-  return parseEnvironment(databaseEnvironmentSchema, process.env);
-}
-
-/**
- * @description For the seed runner: loads the env files and validates the
- * database variables plus `NODE_ENV`.
- */
-export function loadSeedEnvironment(): SeedEnvironmentVariables {
-  loadEnvironmentFiles();
-  return parseEnvironment(seedEnvironmentSchema, process.env);
 }

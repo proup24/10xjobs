@@ -1,5 +1,6 @@
 import type { Scalars } from '@prisma/orm-postgres/family-contract/types';
-import type { AddressInput, Models } from './contract.d';
+// Generated types are never emitted to dist; this entry resolves to the source.
+import type { AddressInput, Models } from '@xjobs/database/contract';
 
 /** Drops the contract's internal symbol keys so rows are plain, nameable data. */
 type Row<M> = {

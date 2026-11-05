@@ -1,10 +1,7 @@
-import {
-  SEED,
-  SEED_REGION_COUNTRIES,
-} from 'src/modules/processor/vocab/seed-data';
+import type { SeedEnvironmentVariables } from '../env';
 import { processorListsSeed } from './processor.seed';
 import type { DatabaseTransaction } from './seed.interface';
-import type { SeedEnvironmentVariables } from 'src/config';
+import { SEED, SEED_REGION_COUNTRIES } from './vocab/seed-data';
 
 /** The processor seed reads no environment. */
 const env = {} as SeedEnvironmentVariables;
