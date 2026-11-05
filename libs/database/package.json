@@ -1,0 +1,27 @@
+{
+  "name": "@xjobs/database",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    "./enums": {
+      "@xjobs/source": "./src/enums/index.ts",
+      "types": "./dist/enums/index.d.ts",
+      "default": "./dist/enums/index.js"
+    },
+    "./env": {
+      "@xjobs/source": "./src/env/index.ts",
+      "types": "./dist/env/index.d.ts",
+      "default": "./dist/env/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "!**/*.tsbuildinfo"
+  ],
+  "dependencies": {
+    "tslib": "^2.3.0"
+  }
+}
