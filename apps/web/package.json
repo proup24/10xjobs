@@ -22,6 +22,9 @@
           "cwd": "apps/web"
         },
         "cache": true,
+        "dependsOn": [
+          "^typecheck"
+        ],
         "inputs": [
           "default",
           "^production"
@@ -30,6 +33,7 @@
     }
   },
   "dependencies": {
+    "@xjobs/database": "workspace:*",
     "@base-ui/react": "^1.9.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.118.0",

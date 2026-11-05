@@ -6,7 +6,7 @@ import {
   isRetryableTransactionError,
   type RawItemVersionRow,
 } from 'src/database';
-import type { DatabaseTransaction } from 'src/database/seeds/seed.interface';
+import type { DatabaseTransaction } from '@xjobs/database';
 import type { BatchReport, BatchStatus } from '../types';
 import { type LinkJobInput, type LinkOutcome, linkJob } from './jobs.writer';
 

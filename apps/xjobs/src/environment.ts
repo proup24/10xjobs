@@ -1,3 +1,3 @@
-import { loadApplicationEnvironment } from 'src/config/environment.loader';
+import { loadApplicationEnvironment } from '@xjobs/database/env';
 
 loadApplicationEnvironment();

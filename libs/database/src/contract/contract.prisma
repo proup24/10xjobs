@@ -1,7 +1,9 @@
 // use prisma-8
 //
-// Data contract for xjobs. After editing, run `pnpm db:emit` to regenerate
-// contract.json / contract.d.ts, then `pnpm db:migration:plan --name <slug>`.
+// Data contract for xjobs. After editing, run
+// `pnpm --filter @xjobs/database db:emit` to regenerate contract.json /
+// contract.d.ts, then
+// `pnpm --filter @xjobs/database db:migration:plan --name <slug>`.
 
 // `JsDate` columns read and write JavaScript `Date` values; the `Temporal`
 // variants need a global `Temporal`, which Node 24 does not ship.
@@ -10,8 +12,8 @@ model mixin Timestamps {
   updatedAt TimestamptzJsDate(3) @default(now()) @onCreate(now()) @onUpdate(now())
 }
 
-// Each enum below has a TypeScript twin in src/common/enums/<name>.enum.ts;
-// src/common/enums/enums.spec.ts fails when they drift.
+// Each enum below has a TypeScript twin in libs/database/src/enums/<name>.enum.ts;
+// libs/database/src/enums/enums.spec.ts fails when they drift.
 enum Position {
   @@type("pg/text@1")
   backend_engineer = "backend_engineer"

@@ -6,10 +6,9 @@
  *   pnpm db:seed --only users,processor-lists
  *   pnpm db:seed --allow-production required when NODE_ENV=production
  */
-import { Logger } from '@nestjs/common';
-import { EnvironmentType } from 'src/common/enums';
-import { loadSeedEnvironment, toDatabaseConfig } from 'src/config';
-import { createDatabaseClient } from '../connection.source';
+import { createDatabaseClient } from '../client/connection.source';
+import { consoleLogger } from '../client/database-logger';
+import { EnvironmentType, loadSeedEnvironment, toDatabaseConfig } from '../env';
 import type { Seed } from './seed.interface';
 import { processorListsSeed } from './processor.seed';
 import { usersSeed } from './users.seed';
@@ -27,7 +26,7 @@ function parseArgs(argv: string[]) {
 }
 
 async function main(): Promise<void> {
-  const logger = new Logger('Seed');
+  const logger = consoleLogger('Seed');
   const { only, allowProduction } = parseArgs(process.argv.slice(2));
   const env = loadSeedEnvironment();
 
@@ -61,6 +60,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((error: unknown) => {
-  new Logger('Seed').error(error instanceof Error ? error.message : error);
+  consoleLogger('Seed').error(error instanceof Error ? error.message : error);
   process.exitCode = 1;
 });

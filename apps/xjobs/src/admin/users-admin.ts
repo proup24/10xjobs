@@ -1,4 +1,4 @@
-import { findAuthUserByEmail, type AdminAuth } from './auth-users';
+import { findAuthUserByEmail, type AdminAuth } from '@xjobs/database/auth';
 
 export type { AdminAuth };
 export type CommandResult = { ok: boolean; message: string };

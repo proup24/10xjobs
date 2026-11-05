@@ -1,4 +1,4 @@
-import contractJson from 'src/database/contract.json';
+import contractJson from '../contract/contract.json';
 import {
   Arrangement,
   Channel,

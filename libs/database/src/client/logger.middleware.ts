@@ -1,5 +1,5 @@
-import { Logger } from '@nestjs/common';
 import type { SqlMiddleware } from '@prisma/orm-postgres/family-runtime';
+import { consoleLogger, type DatabaseLogger } from './database-logger';
 
 const statementSql = Symbol('query-logger.sql');
 
@@ -12,11 +12,11 @@ export interface QueryLoggerOptions {
 
 /**
  * @description Prisma 8 middleware that routes statement timings through the
- * Nest logger: every query at debug level when enabled, slow ones as warnings.
+ * given logger: every query at debug level when enabled, slow ones as warnings.
  */
 export function queryLogger(
   { slowQueryMs, logQueries }: QueryLoggerOptions,
-  logger = new Logger('Database'),
+  logger: DatabaseLogger = consoleLogger(),
 ): SqlMiddleware {
   return {
     name: 'query-logger',

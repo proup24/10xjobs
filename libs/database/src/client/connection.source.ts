@@ -1,10 +1,11 @@
-import { Logger } from '@nestjs/common';
 import supabaseRuntimeDescriptor from '@prisma/orm-extension-supabase/runtime';
-import postgres from '@prisma/orm-postgres/runtime';
+import postgres, { type PostgresClient } from '@prisma/orm-postgres/runtime';
 import { contractFromJson } from '@prisma/orm-postgres/static';
-import type { DatabaseConfig } from 'src/config';
-import type { Contract } from './contract.d';
-import contractJson from './contract.json';
+import type { DatabaseConfig } from '../env';
+// Generated types are never emitted to dist; this entry resolves to the source.
+import type { Contract } from '@xjobs/database/contract';
+import contractJson from '../contract/contract.json';
+import { consoleLogger, type DatabaseLogger } from './database-logger';
 import { queryLogger } from './logger.middleware';
 
 export const contract = contractFromJson<Contract>(contractJson);
@@ -17,8 +18,8 @@ export const contract = contractFromJson<Contract>(contractJson);
  */
 export function createDatabaseClient(
   config: DatabaseConfig,
-  logger = new Logger('Database'),
-) {
+  logger: DatabaseLogger = consoleLogger(),
+): PostgresClient<Contract> {
   return postgres({
     contract,
     url: config.url,

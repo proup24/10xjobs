@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { or } from '@prisma/orm-postgres/orm-client';
 import { DatabaseService, type NormalizedJobRow } from 'src/database';
-import type { JobExtractionRow } from 'src/database/models';
-import type { DatabaseTransaction } from 'src/database/seeds/seed.interface';
+import type { DatabaseTransaction, JobExtractionRow } from '@xjobs/database';
 import { inRetriedTransaction } from 'src/modules/ingest/repositories/raw.repository';
 import type {
   Evidence,

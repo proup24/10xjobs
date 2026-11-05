@@ -7,6 +7,22 @@ export default [
   ...nx.configs['flat/react-typescript'],
   ...baseConfig,
   {
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              regex: '^@xjobs/database(?!/(enums|types)$)',
+              message:
+                'web may import only @xjobs/database/enums and @xjobs/database/types.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     ignores: ['.next/**/*', '**/out-tsc'],
   },
 ];

@@ -1,14 +1,17 @@
-export { EnvironmentType } from './environment.enum';
-export { Arrangement } from './arrangement.enum';
-export { ACTIVE_CHANNELS, Channel } from './channel.enum';
-export { ContactKind } from './contact-kind.enum';
-export { Engagement } from './engagement.enum';
+export {
+  ACTIVE_CHANNELS,
+  Arrangement,
+  Channel,
+  ContactKind,
+  Engagement,
+  Language,
+  Position,
+  ProfileState,
+  Region,
+  Seniority,
+  SkillDomain,
+  Technology,
+} from '@xjobs/database/enums';
+export { EnvironmentType } from '@xjobs/database/env';
 export { ErrorCode } from './error-code.enum';
-export { Language } from './language.enum';
-export { Position } from './position.enum';
-export { ProfileState } from './profile-state.enum';
-export { Region } from './region.enum';
 export { ResponseStatus } from './response-status.enum';
-export { Seniority } from './seniority.enum';
-export { SkillDomain } from './skill-domain.enum';
-export { Technology } from './technology.enum';

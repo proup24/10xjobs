@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { findAuthUserByEmail } from '../../admin/auth-users';
+import { findAuthUserByEmail } from '../auth';
 import type { Seed } from './seed.interface';
 
 const users = [

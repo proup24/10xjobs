@@ -3,7 +3,7 @@
  * the abstract contracts closely enough for unit tests and the golden-set eval.
  */
 import { randomUUID } from 'node:crypto';
-import type { ListTableRow } from 'src/database/seeds/processor.seed';
+import type { ListTableRow } from '@xjobs/database';
 import type {
   DecisionAnswer,
   DecisionQuestion,

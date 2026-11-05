@@ -155,7 +155,7 @@ Sessions last 7 days from sign-in. A Prisma migration (`end_expired_sessions`) c
 
 ```sh
 read -rs DATABASE_URL && export DATABASE_URL   # paste the Cloud Postgres connection string
-pnpm --filter @xjobs/xjobs db:migrate
+pnpm --filter @xjobs/database db:migrate
 unset DATABASE_URL
 ```
 

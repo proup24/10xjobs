@@ -1,0 +1,67 @@
+{
+  "name": "@xjobs/database",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "@xjobs/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./enums": {
+      "@xjobs/source": "./src/enums/index.ts",
+      "types": "./dist/enums/index.d.ts",
+      "default": "./dist/enums/index.js"
+    },
+    "./env": {
+      "@xjobs/source": "./src/env/index.ts",
+      "types": "./dist/env/index.d.ts",
+      "default": "./dist/env/index.js"
+    },
+    "./auth": {
+      "@xjobs/source": "./src/auth/index.ts",
+      "types": "./dist/auth/index.d.ts",
+      "default": "./dist/auth/index.js"
+    },
+    "./types": {
+      "@xjobs/source": "./src/types.ts",
+      "types": "./dist/types.d.ts",
+      "default": "./dist/types.js"
+    },
+    "./contract": {
+      "types": "./src/contract/contract.d.ts"
+    }
+  },
+  "scripts": {
+    "db:emit": "prisma contract emit",
+    "db:format": "prisma contract format",
+    "db:update": "prisma db update",
+    "db:init": "prisma db init",
+    "db:migration:plan": "prisma contract emit && prisma migration plan",
+    "db:migration:status": "prisma migration status",
+    "db:migrate": "prisma db migrate --to db",
+    "db:migrate:show": "prisma db migrate --show",
+    "db:verify": "prisma db verify",
+    "db:seed": "tsx src/seeds/index.ts"
+  },
+  "files": [
+    "dist",
+    "!**/*.tsbuildinfo"
+  ],
+  "dependencies": {
+    "@prisma/orm-extension-supabase": "8.0.0-rc.21",
+    "@prisma/orm-postgres": "8.0.0-rc.21",
+    "@supabase/supabase-js": "^2.118.0",
+    "dotenv": "^18.0.9",
+    "tslib": "^2.3.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@prisma/cli-engine": "0.9.0",
+    "prisma": "8.0.0-rc.28",
+    "tsx": "^4.23.15"
+  }
+}
