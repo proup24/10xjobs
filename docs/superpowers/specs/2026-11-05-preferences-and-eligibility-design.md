@@ -6,7 +6,7 @@ Phase 1, slices 04 and 05, written as one spec. Date: 2026-11-05.
 
 Each profile has to hold every reason its owner would turn a job down, in a form Phase 2's qualify step can compare directly against what the processor extracts from each posting. Then a rejection can name the rule and both values ("posting requires a US work permit; you hold none for US").
 
-The processor already writes each job's facts as codes from its own value lists (the vocabulary tables: `tech_tags`, `role_kinds`, `seniority_terms`, `contract_types`, `engagements`, `regions`, `countries`, `cities`, `region_countries`). The profile today keeps its own copies of some of those lists as enums (`Technology`, `Position`, `Region`, `Language`…), and free text for locations. Copies drift, and free text can't be compared to codes reliably. A drifted copy produces wrong rejections, which is one of the project's anti-goals.
+The processor already writes each job's facts as codes from its own value lists (the vocabulary tables: `tech_tags`, `role_kinds`, `seniorities`, `contract_types`, `engagements`, `regions`, `countries`, `cities`, `region_countries`). The profile today keeps its own copies of some of those lists as enums (`Technology`, `Position`, `Region`, `Language`…), and free text for locations. Copies drift, and free text can't be compared to codes reliably. A drifted copy produces wrong rejections, which is one of the project's anti-goals.
 
 **The core decision (user's):** the profile and eligibility use the processor's value lists as their only source. There is one list per kind of value, and the profile stores codes from it.
 
@@ -49,24 +49,24 @@ Slices 04 and 05 are merged into this one spec because they share these lists an
 
 ## Value lists
 
-| List (table)              | Used by                                        | Allowed in profile or eligibility                       |
-| ------------------------- | ---------------------------------------------- | ------------------------------------------------------- |
-| `role_kinds`              | `Profile.position`                             | approved and marked engineering (see below)             |
-| `seniority_terms`         | `Profile.seniorities`                          | approved, except `unstated`                             |
-| `contract_types`          | `Profile.contractTypes`                        | approved, except `unstated`                             |
-| `engagements`             | `Profile.engagements`                          | approved, except `unstated`                             |
-| `tech_tags`               | `ProfileSkill.technology`                      | approved                                                |
-| `regions`                 | location places, work authorization places     | approved                                                |
-| `countries`               | location places, work authorization, residence | approved                                                |
-| `cities`                  | location places                                | approved                                                |
-| ISO 639-1 (code constant) | `Profile.languages`                            | two lowercase letters, as the processor's schema uses   |
-| ISO 4217 (code constant)  | salary currency, accepted currencies           | three uppercase letters, as the processor's schema uses |
+| List (table)           | Used by                                        | Allowed in profile or eligibility                       |
+| ---------------------- | ---------------------------------------------- | ------------------------------------------------------- |
+| `role_kinds`           | `Profile.position`                             | approved and marked engineering (see below)             |
+| `seniorities`          | `Profile.seniorities`                          | approved, except `unstated`                             |
+| `contract_types`       | `Profile.contractTypes`                        | approved, except `unstated`                             |
+| `engagements`          | `Profile.engagements`                          | approved, except `unstated`                             |
+| `tech_tags`            | `ProfileSkill.technology`                      | approved                                                |
+| `regions`              | location places, work authorization places     | approved                                                |
+| `countries`            | location places, work authorization, residence | approved                                                |
+| `cities`               | location places                                | approved                                                |
+| `iso_languages` (new)  | `Profile.languages`                            | two lowercase letters, as the processor's schema uses   |
+| `iso_currencies` (new) | salary currency, accepted currencies           | three uppercase letters, as the processor's schema uses |
 
 - **Engineering role kinds** _(my call)_. `role_kinds` gets a boolean column, `isEngineering`. It is seeded `true` for exactly the 17 codes in today's `Position` enum and `false` for the rest (`support`, `qa_manual`, `devrel`, `ux_engineering`, `ai_training`, `seo_marketing_web`, `other`, `unstated`). A profile may target only an approved, engineering role kind, so users can target what they can today and nothing new. The processor's `rules/validate.ts` builds `ENGINEERING_CODES` from the `Position` enum today; it switches to this column.
 - **Search wording is not a value list** _(my call)_. The query-generation maps `POSITION_TITLES`, `TECHNOLOGY_TERMS` and `SENIORITY_WORDS` (in `modules/queries/builders/keywords.ts`), and `LINKEDIN_TERMS` and `EXPERIENCE_LEVELS` (in `channels/linkedin_board.builder.ts`), hold search phrasing such as `go` → "golang" and three title variants per role. They stay, re-keyed from enums to code strings, and become partial maps. Replacing them with table labels would make searches worse.
 - **Which techs get searched** _(my call)_. A profile's tech stack may hold any approved tech tag, including concepts such as `saas` or `microservices`, because the stack is a ceiling for qualify. Query generation picks its top technologies only among the profile's techs that have an entry in `TECHNOLOGY_TERMS`, so a concept is never sent as a search keyword. Adding search wording for a new tag is a code change in the engine.
 - Approved terms are never deleted (`VocabRepository.reject` deletes only `proposed` ones), so a stored code stays valid.
-- Languages and currencies have no vocabulary table today. Validate them against one shared constant list each, not just a regex _(my call)_.
+- Languages and currencies have no vocabulary table today. Each gets a small seeded reference table (`code`, `label`) from one checked-in constant list, because the database has to reject a bad code on a direct insert and the picker needs labels _(my call)_.
 - **How** the database enforces "approved entry of list X" for arrays (child tables with foreign keys, a trigger, or a check function) is left to the builder. The requirement is that a direct `supabase-js` insert with a bad code fails, because the web app writes these rows itself through RLS.
 - The TypeScript enums `Technology`, `Position`, `Region` and `Language`, and their twins in `apps/xjobs/src/common/enums`, are removed. Code that needs the values reads them from the tables. Where a type is useful, use `string` or a branded string, not a hand-kept union. `SkillDomain`, `ProfileState`, `Channel`, `ContactKind` and the arrangement keys (`remote`, `hybrid`, `onsite`) are not processor lists and stay as they are. Whether `Seniority` and `Engagement` stay as TypeScript unions mirroring their tables is the builder's call, as long as a test fails when the two disagree.
 
@@ -77,7 +77,7 @@ Changes to `Profile` as it is on `main` today:
 | Field                                           | Change      | Shape                                                                                                                                                    |
 | ----------------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `position`                                      | changed     | one `role_kinds` code                                                                                                                                    |
-| `seniorities`                                   | changed     | non-empty set of `seniority_terms` codes                                                                                                                 |
+| `seniorities`                                   | changed     | non-empty set of `seniorities` codes                                                                                                                     |
 | `locations`                                     | changed     | `{ remote: Place[], hybrid: Place[], onsite: Place[] }`, see below                                                                                       |
 | `contractTypes`                                 | **new**     | non-empty set of `contract_types` codes (full time, part time, contract, temporary, internship, freelance, volunteer…)                                   |
 | `engagements`                                   | changed     | non-empty set of `engagements` codes (hired as: employee, contractor, eor, agency, per_task)                                                             |
