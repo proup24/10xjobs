@@ -11,7 +11,9 @@ Collection fetches source results and saves a batch for ingestion.
 5. `saveBatch()` writes the result file, then in one database transaction records the run and pending batch, moves the search cursors, and releases the run's claims.
 6. The coordinator enqueues the batch for ingestion.
 
-Start reading at `infrastructure/jobs/steps/collect/collection.service.ts`. Each channel's source-specific logic lives in `providers/<channel>.collector.ts`. The Apify client, Google discovery, and posting fetchers are shared helpers; there are no collector base classes or per-channel job subclasses.
+Start reading at `infrastructure/jobs/steps/collect/collection.service.ts`. Each channel's source-specific logic lives in `providers/<channel>.collector.ts`.
+
+An actor's formats live in `providers/mappers/<channel>.mapper.ts`: how a segment becomes the actor's input, and where each returned item came from (its search and rank). To change a channel's actor, rewrite its mapper and the actor id in its collector's `config`; `providers/segment-result.ts` attributes the items the same way for every Apify channel. What an item means as a job is ingest's mapper for the same actor (`ingest/normalize/mappers/`). The Apify client, Google discovery, and posting fetchers are shared helpers; there are no collector base classes or per-channel job subclasses.
 
 The segment workflow uses local `buildSearch`, `buildRun`, and `buildBatch` functions to keep data construction out of the main flow. Each segment returns `{ skipped, queriesSkipped, stored, collected, costUsd }`; only `collect()` updates the overall summary. A failed save contributes its known collection cost but contributes zero stored items and batches.
 

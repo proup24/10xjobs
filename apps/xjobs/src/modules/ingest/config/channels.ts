@@ -16,7 +16,9 @@ export const channelIngestConfig: Record<Channel, ChannelIngestConfig> = {
   [Channel.LINKEDIN_JOB_BOARD]: {
     kind: 'job',
     volatileKeys: [
+      // bebity's search echo; cheap_scraper's is `searchString`.
       'scrapingInfo',
+      'searchString',
       'postedTime',
       'applicationsCount',
       'companyLogo',

@@ -1,0 +1,30 @@
+{
+  "jobId": "4354494117",
+  "jobTitle": "Full-Stack Software Engineer, Inference",
+  "location": "Montreal, Quebec, Canada",
+  "salaryInfo": ["$69100.00", "$129200.00"],
+  "postedTime": "6 hours ago",
+  "publishedAt": "2026-11-04T00:00:00.000Z",
+  "searchString": "fullstack node - Worldwide",
+  "jobUrl": "https://ca.linkedin.com/jobs/view/full-stack-software-engineer-inference-at-acme-4354494117?trk=public_jobs_topcard-title",
+  "companyName": "Acme",
+  "companyUrl": "https://ca.linkedin.com/company/acme?trk=public_jobs_topcard-org-name",
+  "companyLogo": "https://media.licdn.com/dms/image/v2/X/company-logo_200_200/Y/0/1/acme_logo?e=2147483647&v=beta&t=sig1",
+  "companyId": "24024765",
+  "jobDescription": "Build APIs.\nShow more Show less",
+  "applicationsCount": "Over 200 applicants",
+  "contractType": "Full-time",
+  "experienceLevel": "Not Applicable",
+  "yearsOfExperience": [
+    { "years": "5+", "context": "writing clean backend code", "lang": "en" }
+  ],
+  "workType": "",
+  "sector": "Software Development",
+  "posterFullName": "Poster Name 1",
+  "posterProfileUrl": "https://www.linkedin.com/in/poster-1",
+  "applyUrl": "https://ca.linkedin.com/jobs/view/full-stack-software-engineer-inference-at-acme-4354494117?trk=public_jobs_topcard-title",
+  "applyType": "EXTERNAL",
+  "dynamicFilterMatch": true,
+  "aiStatus": "skipped",
+  "aiAnswers": []
+}

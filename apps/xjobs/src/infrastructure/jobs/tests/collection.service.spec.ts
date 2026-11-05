@@ -135,9 +135,9 @@ describe('channel selection', () => {
       expect(queries.listActive).toHaveBeenCalledWith(channel);
       for (const other of Object.values(Channel)) {
         if (other === channel) {
+          // Each collector carries its own static config.
           expect(collectors[other].collect).toHaveBeenCalledWith(
             expect.objectContaining({ channel }),
-            channelJobsConfig[channel].run,
           );
         } else expect(collectors[other].collect).not.toHaveBeenCalled();
       }
@@ -175,9 +175,7 @@ describe('CollectionService.collect', () => {
     expect(first.until.getTime() - first.since.getTime()).toBe(
       channelJobsConfig[Channel.ASHBY].window.initialHours * 3_600_000,
     );
-    expect(collector.collect.mock.calls[0][1]).toBe(
-      channelJobsConfig[Channel.ASHBY].run,
-    );
+    expect(collector.collect.mock.calls[0]).toHaveLength(1);
     expect(summary).toMatchObject({
       builders: 12,
       segments: 2,

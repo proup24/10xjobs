@@ -1,8 +1,8 @@
 /**
  * Runs the LinkedIn job board actor once over the given search URLs and prints
- * what we need to tune collection: what LinkedIn says matched each URL
- * (`SEARCH_TOTALS`), the fields of a sample job and its company profile, and
- * the cost. A paid run (capped at $0.05); run it by hand:
+ * what we need to tune collection: the `searchString` each search's items
+ * carry (what attribution matches on), the fields of a sample job and its
+ * company profile, and the cost. A paid run (capped at $0.05); run it by hand:
  *
  *   pnpm apify:probe-linkedin -- --url '<search url>' [--url …] [--rows 5] [--company-profile]
  *
@@ -14,6 +14,7 @@ import { parseArgs } from 'node:util';
 import { ApifyClient } from 'apify-client';
 import { channelJobsConfig } from 'src/infrastructure/jobs/steps/collect/config';
 import { Channel } from 'src/common/enums';
+import { toLinkedinJobBoardInput } from 'src/modules/collectors/providers/mappers/linkedin-job-board.mapper';
 
 const MAX_CHARGE_USD = 0.05;
 
@@ -45,10 +46,10 @@ async function main(): Promise<void> {
   const client = new ApifyClient({ token });
   const run = await client.actor(actor).call(
     {
-      startUrls: urls.map((url) => ({ url })),
-      maxRowsPerUrl: rows,
-      companyProfile: values['company-profile'],
-      enrichCompany: false,
+      ...toLinkedinJobBoardInput(urls),
+      // The actor's only row limit is over the whole run.
+      maxItems: rows * urls.length,
+      enrichCompanyData: values['company-profile'],
     },
     { maxTotalChargeUsd: MAX_CHARGE_USD, waitSecs: 300 },
   );
@@ -57,10 +58,10 @@ async function main(): Promise<void> {
     .keyValueStore(run.defaultKeyValueStoreId)
     .getRecord('SEARCH_TOTALS');
   const sample = record(items[0]);
-  const perUrl: Record<string, number> = {};
+  const perSearch: Record<string, number> = {};
   for (const item of items) {
-    const url = String(record(record(item).scrapingInfo).inputUrl ?? '?');
-    perUrl[url] = (perUrl[url] ?? 0) + 1;
+    const search = String(record(item).searchString ?? '?');
+    perSearch[search] = (perSearch[search] ?? 0) + 1;
   }
 
   console.log(
@@ -70,7 +71,7 @@ async function main(): Promise<void> {
         status: run.status,
         costUsd: run.usageTotalUsd ?? null,
         searchTotals: totals?.value ?? null,
-        itemsPerUrl: perUrl,
+        itemsPerSearchString: perSearch,
         sampleItemKeys: Object.keys(sample).sort(),
         sampleCompany: Object.fromEntries(
           Object.entries(sample).filter(([key]) => /^company/i.test(key)),

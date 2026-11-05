@@ -31,36 +31,9 @@ import {
 import { StorageService } from 'src/modules/storage';
 import { channelJobsConfig } from './config';
 import { IngestQueue } from '../ingest';
-
+import { CollectionSummary, SegmentOutcome } from './types';
 /** Scheduler id and job name of a channel's recurring collect job. */
 export const COLLECT_JOB = 'collect';
-
-/** What one collect job did across the channel's segments. */
-export interface CollectionSummary {
-  channel: Channel;
-  builders: number;
-  segments: number;
-  segmentsFailed: number;
-  /** Segments not searched: another run holds, or already covered, every member. */
-  segmentsSkipped: number;
-  /** Members dropped from their segment for the same reasons. */
-  queriesSkipped: number;
-  /** Items returned, attributed or not. */
-  collected: number;
-  /** Batches stored for ingest. */
-  batches: number;
-  costUsd: number;
-}
-
-/** Cost is retained even when the fetched results could not be stored. */
-interface SegmentOutcome {
-  /** True when no member could be claimed; nothing was searched. */
-  skipped: boolean;
-  queriesSkipped: number;
-  stored: boolean;
-  collected: number;
-  costUsd: number;
-}
 
 const message = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
@@ -228,7 +201,13 @@ export class CollectionService {
           ),
         error,
       );
-      return { skipped: false, queriesSkipped, stored: false, collected: 0, costUsd };
+      return {
+        skipped: false,
+        queriesSkipped,
+        stored: false,
+        collected: 0,
+        costUsd,
+      };
     }
 
     await this.enqueueBatch(batch.batchId);
@@ -319,25 +298,13 @@ export class CollectionService {
   private fetch(segment: SegmentSearch): Promise<SegmentResult> {
     switch (segment.channel) {
       case Channel.ASHBY:
-        return this.ashby.collect(
-          segment,
-          channelJobsConfig[Channel.ASHBY].run,
-        );
+        return this.ashby.collect(segment);
       case Channel.GREEN_HOUSE:
-        return this.greenhouse.collect(
-          segment,
-          channelJobsConfig[Channel.GREEN_HOUSE].run,
-        );
+        return this.greenhouse.collect(segment);
       case Channel.LINKEDIN_JOB_BOARD:
-        return this.linkedinJobs.collect(
-          segment,
-          channelJobsConfig[Channel.LINKEDIN_JOB_BOARD].run,
-        );
+        return this.linkedinJobs.collect(segment);
       case Channel.LINKEDIN_POSTS:
-        return this.linkedinPosts.collect(
-          segment,
-          channelJobsConfig[Channel.LINKEDIN_POSTS].run,
-        );
+        return this.linkedinPosts.collect(segment);
     }
   }
 }
@@ -376,12 +343,19 @@ function narrow(
   segment: SearchSegment,
   claimed: ClaimResult['claimed'],
 ): SearchSegment {
-  const fresh = new Map(claimed.map(({ id, coveredUntil }) => [id, coveredUntil]));
+  const fresh = new Map(
+    claimed.map(({ id, coveredUntil }) => [id, coveredUntil]),
+  );
   const members = segment.members
     .filter(({ id }) => fresh.has(id))
-    .map((member) => ({ ...member, coveredUntil: fresh.get(member.id) ?? null }));
+    .map((member) => ({
+      ...member,
+      coveredUntil: fresh.get(member.id) ?? null,
+    }));
   if (members.length !== fresh.size)
-    throw new Error(`Segment ${segment.key} claimed a query that is not a member`);
+    throw new Error(
+      `Segment ${segment.key} claimed a query that is not a member`,
+    );
   const ids = members.map(({ id }) => id);
   return { ...segment, members, hash: segmentHash(segment.key, ids) };
 }

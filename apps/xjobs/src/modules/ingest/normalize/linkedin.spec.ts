@@ -1,5 +1,6 @@
 import { Channel } from 'src/common/enums';
 import linkedinJob from '../utils/fixtures/linkedin-job.json';
+import cheapJob from '../utils/fixtures/linkedin-job-cheap.json';
 import linkedinPost from '../utils/fixtures/linkedin-post.json';
 import { normalize, type NormalizedRecord } from '.';
 
@@ -124,6 +125,82 @@ describe('normalize LinkedIn job board', () => {
     expect(
       JSON.stringify(normalize(Channel.LINKEDIN_JOB_BOARD, shuffled)),
     ).toBe(JSON.stringify(job()));
+  });
+});
+
+describe('normalize LinkedIn job board, cheap_scraper items', () => {
+  const cheap = (overrides: Record<string, unknown> = {}) =>
+    record(
+      normalize(Channel.LINKEDIN_JOB_BOARD, { ...cheapJob, ...overrides }),
+    );
+
+  it('maps the cheap_scraper field names', () => {
+    expect(cheap()).toMatchObject({
+      kind: 'job',
+      title: 'Full-Stack Software Engineer, Inference',
+      companyName: 'Acme',
+      companyUrl: 'https://ca.linkedin.com/company/acme',
+      location: 'Montreal, Quebec, Canada',
+      contractType: 'Full-time',
+      experienceLevel: 'Not Applicable',
+      sector: 'Software Development',
+      publishedAt: '2026-11-04',
+      postingUrl: 'https://www.linkedin.com/jobs/view/4354494117',
+      poster: {
+        name: 'Poster Name 1',
+        profileUrl: 'https://www.linkedin.com/in/poster-1',
+        type: 'person',
+      },
+    });
+  });
+
+  it("drops the description's Show more Show less trailer", () => {
+    expect(cheap().descriptionText).toBe('Build APIs.');
+  });
+
+  it('keeps salaryInfo as the stated text, with no bounds or currency', () => {
+    expect(cheap().salary).toEqual({
+      text: '$69100.00 - $129200.00',
+      min: null,
+      max: null,
+      currency: null,
+      period: null,
+    });
+    expect(cheap({ salaryInfo: [] }).salary).toBeNull();
+  });
+
+  it('has no apply URL: an external job links to its LinkedIn page', () => {
+    expect(cheap().applyUrl).toBeNull();
+  });
+
+  it('keeps an apply URL off LinkedIn', () => {
+    const applyUrl = 'https://jobs.ashbyhq.com/acme/0b1c2d3e';
+    expect(cheap({ applyUrl }).applyUrl).toBe(applyUrl);
+  });
+
+  it('is invalid without a title and a description', () => {
+    const result = normalize(Channel.LINKEDIN_JOB_BOARD, {
+      ...cheapJob,
+      jobTitle: '',
+      jobDescription: 'Show more Show less',
+    });
+    expect('invalid' in result && result.invalid).toMatch(/^normalize:/);
+  });
+});
+
+describe('normalize LinkedIn job board, item format', () => {
+  it('is invalid when the item has no known actor format', () => {
+    expect(
+      normalize(Channel.LINKEDIN_JOB_BOARD, {
+        jobUrl: 'https://www.linkedin.com/jobs/view/1',
+      }),
+    ).toEqual({ invalid: 'normalize: unknown LinkedIn job item format' });
+  });
+
+  it('maps a bebity item by bebity names even when it carries a jobId', () => {
+    const r = record(job({ jobId: '999' }));
+    expect(r.postingUrl).toBe('https://www.linkedin.com/jobs/view/4012345678');
+    expect(r.title).toBe('Senior Backend Engineer');
   });
 });
 
