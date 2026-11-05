@@ -88,13 +88,18 @@ function scrapingInfo(item: unknown): {
 /** Apify trigger for the LinkedIn job board: one actor run per search segment. */
 @Injectable()
 export class LinkedinJobBoardCollector {
-  readonly channel = Channel.LINKEDIN_JOB_BOARD;
-  constructor(private readonly actor: ApifyActorProvider) { }
+  /** The actor and its limits; fixed for every run of this collector. */
+  static readonly config: Readonly<LinkedinJobBoardRunConfig> = {
+    actor: 'bebity/linkedin-jobs-scraper',
+    maxRunChargeUsd: 1,
+    maxRowsPerUrl: 100,
+  };
 
-  async collect(
-    segment: SegmentSearch,
-    config: LinkedinJobBoardRunConfig,
-  ): Promise<SegmentResult> {
+  readonly channel = Channel.LINKEDIN_JOB_BOARD;
+  constructor(private readonly actor: ApifyActorProvider) {}
+
+  async collect(segment: SegmentSearch): Promise<SegmentResult> {
+    const config = LinkedinJobBoardCollector.config;
     const seconds = Math.max(
       1,
       Math.round((segment.until.getTime() - segment.since.getTime()) / 1000),

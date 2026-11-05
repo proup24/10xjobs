@@ -135,10 +135,15 @@ describe('channel selection', () => {
       expect(queries.listActive).toHaveBeenCalledWith(channel);
       for (const other of Object.values(Channel)) {
         if (other === channel) {
-          expect(collectors[other].collect).toHaveBeenCalledWith(
-            expect.objectContaining({ channel }),
-            channelJobsConfig[channel].run,
-          );
+          // The LinkedIn job board collector carries its own static config.
+          const expected =
+            channel === Channel.LINKEDIN_JOB_BOARD
+              ? [expect.objectContaining({ channel })]
+              : [
+                  expect.objectContaining({ channel }),
+                  channelJobsConfig[channel].run,
+                ];
+          expect(collectors[other].collect).toHaveBeenCalledWith(...expected);
         } else expect(collectors[other].collect).not.toHaveBeenCalled();
       }
     },

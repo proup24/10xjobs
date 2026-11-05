@@ -1,7 +1,6 @@
 import { Channel } from 'src/common/enums';
 import type {
   BoardSearchRunConfig,
-  LinkedinJobBoardRunConfig,
   LinkedinPostsRunConfig,
   SegmentSearch,
 } from '../types/collector';
@@ -38,11 +37,7 @@ const segment = (
   queries: SegmentSearch['queries'],
 ): SegmentSearch => ({ channel, since, until, queries });
 
-const board: LinkedinJobBoardRunConfig = {
-  actor: 'bebity/linkedin-jobs-scraper',
-  maxRunChargeUsd: 1,
-  maxRowsPerUrl: 2,
-};
+const board = LinkedinJobBoardCollector.config;
 const posts: LinkedinPostsRunConfig = {
   actor: 'harvestapi/linkedin-post-search',
   maxRunChargeUsd: 1,
@@ -123,24 +118,26 @@ describe('LinkedIn job board segment', () => {
   it('runs once over every member and attributes each job to its query', async () => {
     const { run, provider } = actor(() => [
       item(1, urlOf(0), 1),
-      item(2, urlOf(0), 2),
+      item(2, urlOf(0), board.maxRowsPerUrl),
       item(3, urlOf(2), 1),
       item(4, 'https://www.linkedin.com/jobs/search/?redirected', 1),
     ]);
     const result = await new LinkedinJobBoardCollector(provider).collect(
       segment(Channel.LINKEDIN_JOB_BOARD, queries),
-      board,
     );
 
     expect(run).toHaveBeenCalledTimes(1);
     expect(run.mock.calls[0][0]).toBe(board.actor);
     expect(run.mock.calls[0][1]).toMatchObject({
       startUrls: [0, 1, 2].map((i) => ({ url: urlOf(i) })),
-      maxRowsPerUrl: 2,
+      maxRowsPerUrl: board.maxRowsPerUrl,
     });
     expect(result.itemsByQuery.get('qs-1')).toEqual([
       { rank: 1, payload: item(1, urlOf(0), 1) },
-      { rank: 2, payload: item(2, urlOf(0), 2) },
+      {
+        rank: board.maxRowsPerUrl,
+        payload: item(2, urlOf(0), board.maxRowsPerUrl),
+      },
     ]);
     expect(result.itemsByQuery.get('qs-2')).toEqual([]);
     expect(result.itemsByQuery.get('qs-3')).toEqual([
@@ -171,11 +168,10 @@ describe('LinkedIn job board segment', () => {
     const { run, provider } = actor(() => [
       item(1, shared, 1),
       item(2, shared, 2),
-      item(3, shared, 3),
+      item(3, shared, board.maxRowsPerUrl),
     ]);
     const result = await new LinkedinJobBoardCollector(provider).collect(
       segment(Channel.LINKEDIN_JOB_BOARD, twins),
-      board,
     );
 
     expect(run.mock.calls[0][1]).toMatchObject({
@@ -200,7 +196,6 @@ describe('LinkedIn job board segment', () => {
       record,
     } as unknown as ApifyActorProvider).collect(
       segment(Channel.LINKEDIN_JOB_BOARD, queries),
-      board,
     );
     expect(record).toHaveBeenCalledWith('kv-1', 'SEARCH_TOTALS');
     expect(result.searchTotals).toEqual(totals);
@@ -223,7 +218,6 @@ describe('LinkedIn job board segment', () => {
         record,
       } as unknown as ApifyActorProvider).collect(
         segment(Channel.LINKEDIN_JOB_BOARD, queries),
-        board,
       );
       expect(result.searchTotals).toBeNull();
     }
@@ -241,7 +235,6 @@ describe('LinkedIn job board segment', () => {
     const { provider } = actor(() => [item(1, echoed, 1)]);
     const result = await new LinkedinJobBoardCollector(provider).collect(
       segment(Channel.LINKEDIN_JOB_BOARD, queries),
-      board,
     );
     expect(
       result.itemsByQuery
@@ -256,7 +249,6 @@ describe('LinkedIn job board segment', () => {
     ]);
     const result = await new LinkedinJobBoardCollector(provider).collect(
       segment(Channel.LINKEDIN_JOB_BOARD, queries),
-      board,
     );
     expect(result.itemsByQuery.get('qs-1')?.[0]?.rank).toBeNull();
   });
@@ -264,12 +256,12 @@ describe('LinkedIn job board segment', () => {
   it('reports the cost and whether the charge cap was reached', async () => {
     const capped = await new LinkedinJobBoardCollector(
       actor(() => [], 0.96).provider,
-    ).collect(segment(Channel.LINKEDIN_JOB_BOARD, queries), board);
+    ).collect(segment(Channel.LINKEDIN_JOB_BOARD, queries));
     expect(capped).toMatchObject({ costUsd: 0.96, capped: true });
 
     const unknown = await new LinkedinJobBoardCollector(
       actor(() => [], null).provider,
-    ).collect(segment(Channel.LINKEDIN_JOB_BOARD, queries), board);
+    ).collect(segment(Channel.LINKEDIN_JOB_BOARD, queries));
     expect(unknown).toMatchObject({ costUsd: null, capped: false });
   });
 });

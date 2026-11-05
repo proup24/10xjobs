@@ -1,9 +1,10 @@
 import { ACTIVE_CHANNELS, Channel } from 'src/common/enums';
-import type {
-  ActorRunConfig,
-  BoardSearchRunConfig,
-  LinkedinJobBoardRunConfig,
-  LinkedinPostsRunConfig,
+import {
+  type ActorRunConfig,
+  type BoardSearchRunConfig,
+  type LinkedinJobBoardRunConfig,
+  type LinkedinPostsRunConfig,
+  LinkedinJobBoardCollector,
 } from 'src/modules/collectors';
 import type { WindowConfig } from 'src/modules/segments';
 
@@ -59,11 +60,8 @@ export const channelJobsConfig = {
     queueName: 'collect-linkedin-job-board',
     ...hourly,
     enabled: ACTIVE_CHANNELS.includes(Channel.LINKEDIN_JOB_BOARD),
-    run: {
-      actor: 'bebity/linkedin-jobs-scraper',
-      maxRunChargeUsd: 1,
-      maxRowsPerUrl: 100,
-    },
+    // The collector owns its actor config; it is exposed here for reporting.
+    run: LinkedinJobBoardCollector.config,
   },
   [Channel.LINKEDIN_POSTS]: {
     queueName: 'collect-linkedin-posts',
