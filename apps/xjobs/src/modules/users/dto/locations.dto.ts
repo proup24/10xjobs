@@ -27,7 +27,10 @@ function LocationList(example: string[]) {
     ArrayMaxSize(MAX_LOCATIONS),
     IsString({ each: true }),
     MaxLength(MAX_LOCATION_LENGTH, { each: true }),
-    Matches(/\S/, { each: true, message: '$property entries must not be blank' }),
+    Matches(/\S/, {
+      each: true,
+      message: '$property entries must not be blank',
+    }),
   ];
   return (target: object, propertyName: string) => {
     for (const decorate of decorators) decorate(target, propertyName);

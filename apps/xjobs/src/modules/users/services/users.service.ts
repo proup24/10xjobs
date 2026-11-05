@@ -1,7 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type { UserRow } from 'src/database';
 import { UsersRepository } from '../repositories/users.repository';
-import type { UserInput } from '../types';
+import type { UserInput, UserView } from '../types';
+
+/** The API shape of a user: the eligibility columns stay out until the API exposes them. */
+export function toUserView(user: UserRow): UserView {
+  const { residenceCountry, acceptsSponsorship, ...view } = user;
+  return view;
+}
 
 @Injectable()
 export class UsersService {

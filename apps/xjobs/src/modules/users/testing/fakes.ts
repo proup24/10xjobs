@@ -24,6 +24,8 @@ export class FakeUsersRepository extends UsersRepository {
       id: `user-${this.rows.length + 1}`,
       name,
       address: null,
+      residenceCountry: null,
+      acceptsSponsorship: null,
       createdAt: now,
       updatedAt: now,
     };
