@@ -81,6 +81,9 @@ describe('eligibility', () => {
   it.each(['ZZ', 'GLOBAL'])('refuses the place %s', async (place) => {
     const { error } = await insertAuthorization('residency', place);
     expectCheckViolation(error, 'work_authorizations.place');
+    expect(error?.message).toBe(
+      `work_authorizations.place: '${place}' is not an approved countries or regions code`,
+    );
   });
 
   it('refuses a duplicate pair', async () => {

@@ -40,6 +40,8 @@ describe('profile codes are checked against the value lists', () => {
   let a: TestUser;
   let proposedTech: string;
   let countryPlaces: { kind: 'country'; code: string }[];
+  const approvedCityId = randomUUID();
+  const approvedCityKey = `db-test-city-${randomUUID()}`;
 
   const insertProfile = (overrides: Record<string, unknown>) =>
     a.client
@@ -72,10 +74,25 @@ describe('profile codes are checked against the value lists', () => {
       code: code as string,
     }));
     expect(countryPlaces).toHaveLength(21);
+
+    // Cities are not pre-seeded: seed one approved city for the city-place cases.
+    const city = await admin()
+      .from('cities')
+      .insert({
+        id: approvedCityId,
+        name: approvedCityKey,
+        nameKey: approvedCityKey,
+        countryCode: 'MA',
+        aliases: [],
+        status: 'approved',
+        firstSeenAt: new Date().toISOString(),
+      });
+    if (city.error) throw new Error(city.error.message);
   });
 
   afterAll(async () => {
     await admin().from('tech_tags').delete().eq('code', proposedTech);
+    await admin().from('cities').delete().eq('id', approvedCityId);
   });
 
   it('accepts a full valid profile and reads it back unchanged', async () => {
@@ -213,6 +230,16 @@ describe('profile codes are checked against the value lists', () => {
       'profiles.places',
     ],
     [
+      'scalar place',
+      () => ({ places: { remote: ['MA'], hybrid: [], onsite: [] } }),
+      'profiles.places',
+    ],
+    [
+      'null place',
+      () => ({ places: { remote: [null], hybrid: [], onsite: [] } }),
+      'profiles.places',
+    ],
+    [
       'unknown place kind',
       () => ({
         places: { remote: [{ kind: 'planet' }], hybrid: [], onsite: [] },
@@ -275,6 +302,60 @@ describe('profile codes are checked against the value lists', () => {
     );
   });
 
+  it('says a profile uses worldwide instead of the GLOBAL region', async () => {
+    const { error } = await insertProfile({
+      places: {
+        remote: [{ kind: 'region', code: 'GLOBAL' }],
+        hybrid: [],
+        onsite: [],
+      },
+    });
+    expectCheckViolation(error, "profiles.places: 'GLOBAL'");
+    expect(error?.message).toBe(
+      "profiles.places: 'GLOBAL' is not allowed in a profile; use { kind: worldwide }",
+    );
+  });
+
+  it('accepts an approved city, its id in any case', async () => {
+    const { error } = await insertProfile({
+      places: {
+        remote: [],
+        hybrid: [],
+        onsite: [{ kind: 'city', id: approvedCityId.toUpperCase() }],
+      },
+    });
+    expect(error).toBeNull();
+  });
+
+  it('refuses the same city twice when its id differs only in case', async () => {
+    const { error } = await insertProfile({
+      places: {
+        remote: [],
+        hybrid: [],
+        onsite: [
+          { kind: 'city', id: approvedCityId },
+          { kind: 'city', id: approvedCityId.toUpperCase() },
+        ],
+      },
+    });
+    expectCheckViolation(error, 'profiles.places');
+    expect(error?.message).toContain('more than once');
+  });
+
+  it.each<[string, Record<string, unknown>]>([
+    ['assert_codes', { field: 'x', list: 'countries', codes: ['MA'] }],
+    [
+      'assert_places',
+      { field: 'x', places: { remote: [], hybrid: [], onsite: [] } },
+    ],
+  ])('refuses a user calling %s directly', async (fn, args) => {
+    const { error } = await a.client.rpc(fn as never, args as never);
+    // EXECUTE is revoked from authenticated, so PostgREST's call fails in
+    // Postgres with 42501 (permission denied for function).
+    expect(error?.code).toBe('42501');
+    expect(error?.message).toContain(fn);
+  });
+
   it('checks codes on update too', async () => {
     const id = randomUUID();
     expect((await insertProfile({ id })).error).toBeNull();
@@ -292,6 +373,9 @@ describe('profile codes are checked against the value lists', () => {
       salaryPeriod: 'month',
     });
     expect(error?.code).toBe(CHECK_VIOLATION);
+    // PostgREST passes Postgres's message through: 'new row for relation
+    // "profiles" violates check constraint "<name>_<hash>"'.
+    expect(error?.message).toContain('profiles_salary_all_or_none');
   });
 
   it('refuses currency "any" with a list', async () => {
@@ -300,6 +384,7 @@ describe('profile codes are checked against the value lists', () => {
       acceptedCurrencies: ['EUR'],
     });
     expect(error?.code).toBe(CHECK_VIOLATION);
+    expect(error?.message).toContain('profiles_currencies_any_xor_list');
   });
 
   it('refuses currency "not any" with an empty list', async () => {
@@ -308,6 +393,7 @@ describe('profile codes are checked against the value lists', () => {
       acceptedCurrencies: [],
     });
     expect(error?.code).toBe(CHECK_VIOLATION);
+    expect(error?.message).toContain('profiles_currencies_any_xor_list');
   });
 
   it('accepts a profile written the old way, without the new columns', async () => {
