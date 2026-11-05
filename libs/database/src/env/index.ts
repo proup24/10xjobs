@@ -17,4 +17,8 @@ export type {
   DatabaseEnvironmentVariables,
   SeedEnvironmentVariables,
 } from './database-environment';
-export { assertLocalDatabase, isLocalUrl } from './local-guard';
+export {
+  assertLocalDatabase,
+  captureRemoteOptIn,
+  isLocalUrl,
+} from './local-guard';

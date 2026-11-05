@@ -10,6 +10,7 @@ import { createDatabaseClient } from '../client/connection.source';
 import { consoleLogger } from '../client/database-logger';
 import {
   assertLocalDatabase,
+  captureRemoteOptIn,
   EnvironmentType,
   loadSeedEnvironment,
   toDatabaseConfig,
@@ -34,7 +35,8 @@ function parseArgs(argv: string[]) {
 /**
  * @description Refuses to seed unless both the database and the Supabase API
  * (the users seed creates auth users there) are local, so the two cannot
- * point at different stacks. `XJOBS_ALLOW_REMOTE_DB=1` opts out.
+ * point at different stacks. `processEnv` must be the opt-in snapshot taken
+ * before env files load. `XJOBS_ALLOW_REMOTE_DB=1` opts out.
  */
 export function assertSeedTargets(
   env: SeedEnvironmentVariables,
@@ -49,6 +51,8 @@ export function assertSeedTargets(
 async function main(): Promise<void> {
   const logger = consoleLogger('Seed');
   const { only, allowProduction } = parseArgs(process.argv.slice(2));
+  // Snapshot the opt-in before loadSeedEnvironment() reads any .env file.
+  const optIn = captureRemoteOptIn(process.env);
   const env = loadSeedEnvironment();
 
   if (env.NODE_ENV === EnvironmentType.production && !allowProduction) {
@@ -57,7 +61,7 @@ async function main(): Promise<void> {
     );
   }
 
-  assertSeedTargets(env, process.env);
+  assertSeedTargets(env, optIn);
 
   const unknown = only?.filter(
     (name) => !seeds.some((seed) => seed.name === name),

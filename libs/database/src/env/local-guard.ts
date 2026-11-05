@@ -2,24 +2,42 @@
 const LOCAL_HOSTS = new Set(['127.0.0.1', 'localhost', '::1']);
 
 /**
- * @description Returns the hostname of `url` with IPv6 brackets stripped, or
- * undefined when it does not parse.
+ * @description Returns the first non-local host `url` would connect to, or
+ * undefined when every host is local. Besides the authority, pg-connection-string
+ * and libpq let `host` and `hostaddr` query parameters override it, so those
+ * count too (socket paths included). Unparseable URLs yield `<unparseable>`.
  */
-function hostOf(url: string): string | undefined {
+function remoteHostOf(url: string): string | undefined {
+  let parsed: URL;
   try {
-    return new URL(url).hostname.replace(/^\[|\]$/g, '');
+    parsed = new URL(url);
   } catch {
-    return undefined;
+    return '<unparseable>';
   }
+  const hosts = [parsed.hostname.replace(/^\[|\]$/g, '')];
+  for (const key of ['host', 'hostaddr']) {
+    for (const value of parsed.searchParams.getAll(key)) {
+      hosts.push(...value.split(','));
+    }
+  }
+  return hosts.find((host) => !LOCAL_HOSTS.has(host));
 }
 
 /**
- * @description True when `url` points at the local Supabase stack
- * (`127.0.0.1`, `localhost` or `::1`). Unparseable URLs are not local.
+ * @description True when every host `url` connects to is the local Supabase
+ * stack (`127.0.0.1`, `localhost` or `::1`). Unparseable URLs are not local.
  */
 export function isLocalUrl(url: string): boolean {
-  const host = hostOf(url);
-  return host !== undefined && LOCAL_HOSTS.has(host);
+  return remoteHostOf(url) === undefined;
+}
+
+/**
+ * @description Copies the remote opt-in out of `env`. Call it before any env
+ * file is loaded, so `XJOBS_ALLOW_REMOTE_DB=1` in a `.env` cannot disable the
+ * guard; only the shell, CI or an inline assignment can.
+ */
+export function captureRemoteOptIn(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  return { XJOBS_ALLOW_REMOTE_DB: env.XJOBS_ALLOW_REMOTE_DB };
 }
 
 /**
@@ -33,9 +51,11 @@ export function assertLocalDatabase(
 ): void {
   if (env.XJOBS_ALLOW_REMOTE_DB === '1') return;
   for (const [name, url] of Object.entries(urls)) {
-    if (url === undefined || isLocalUrl(url)) continue;
+    if (url === undefined) continue;
+    const host = remoteHostOf(url);
+    if (host === undefined) continue;
     throw new Error(
-      `Refusing to use ${name} at non-local host ${hostOf(url) ?? '<unparseable>'}. Set XJOBS_ALLOW_REMOTE_DB=1 to allow it.`,
+      `Refusing to use ${name} at non-local host ${host}. Set XJOBS_ALLOW_REMOTE_DB=1 to allow it.`,
     );
   }
 }
