@@ -8,7 +8,13 @@
  */
 import { createDatabaseClient } from '../client/connection.source';
 import { consoleLogger } from '../client/database-logger';
-import { EnvironmentType, loadSeedEnvironment, toDatabaseConfig } from '../env';
+import {
+  assertLocalDatabase,
+  EnvironmentType,
+  loadSeedEnvironment,
+  toDatabaseConfig,
+} from '../env';
+import type { SeedEnvironmentVariables } from '../env';
 import type { Seed } from './seed.interface';
 import { processorListsSeed } from './processor.seed';
 import { usersSeed } from './users.seed';
@@ -25,6 +31,21 @@ function parseArgs(argv: string[]) {
   return { only, allowProduction: argv.includes('--allow-production') };
 }
 
+/**
+ * @description Refuses to seed unless both the database and the Supabase API
+ * (the users seed creates auth users there) are local, so the two cannot
+ * point at different stacks. `XJOBS_ALLOW_REMOTE_DB=1` opts out.
+ */
+export function assertSeedTargets(
+  env: SeedEnvironmentVariables,
+  processEnv: NodeJS.ProcessEnv,
+): void {
+  assertLocalDatabase(
+    { DATABASE_URL: env.DATABASE_URL, SUPABASE_URL: env.SUPABASE_URL },
+    processEnv,
+  );
+}
+
 async function main(): Promise<void> {
   const logger = consoleLogger('Seed');
   const { only, allowProduction } = parseArgs(process.argv.slice(2));
@@ -35,6 +56,8 @@ async function main(): Promise<void> {
       'Refusing to seed with NODE_ENV=production; pass --allow-production.',
     );
   }
+
+  assertSeedTargets(env, process.env);
 
   const unknown = only?.filter(
     (name) => !seeds.some((seed) => seed.name === name),
@@ -59,7 +82,9 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error: unknown) => {
-  consoleLogger('Seed').error(error instanceof Error ? error.message : error);
-  process.exitCode = 1;
-});
+if (require.main === module) {
+  main().catch((error: unknown) => {
+    consoleLogger('Seed').error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  });
+}
