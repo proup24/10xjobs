@@ -32,6 +32,14 @@
       "model": "EngagementTerm",
       "namespace": "public"
     },
+    "iso_currencies": {
+      "model": "IsoCurrency",
+      "namespace": "public"
+    },
+    "iso_languages": {
+      "model": "IsoLanguage",
+      "namespace": "public"
+    },
     "job_extractions": {
       "model": "JobExtraction",
       "namespace": "public"
@@ -110,6 +118,10 @@
     },
     "users": {
       "model": "User",
+      "namespace": "public"
+    },
+    "work_authorizations": {
+      "model": "WorkAuthorization",
       "namespace": "public"
     }
   },
@@ -1615,6 +1627,68 @@
               "table": "engagements"
             }
           },
+          "IsoCurrency": {
+            "fields": {
+              "code": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "label": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "code": {
+                  "column": "code"
+                },
+                "label": {
+                  "column": "label"
+                }
+              },
+              "namespaceId": "public",
+              "table": "iso_currencies"
+            }
+          },
+          "IsoLanguage": {
+            "fields": {
+              "code": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "label": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "code": {
+                  "column": "code"
+                },
+                "label": {
+                  "column": "label"
+                }
+              },
+              "namespaceId": "public",
+              "table": "iso_languages"
+            }
+          },
           "JobExtraction": {
             "fields": {
               "arrangement": {
@@ -3059,6 +3133,23 @@
           },
           "Profile": {
             "fields": {
+              "acceptedCurrencies": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "acceptsAnyCurrency": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "city": {
                 "nullable": true,
                 "type": {
@@ -3066,8 +3157,18 @@
                   "kind": "scalar"
                 }
               },
+              "contractTypes": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "country": {
-                "nullable": false,
+                "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
@@ -3110,7 +3211,7 @@
                 "many": {
                   "elementNullable": false
                 },
-                "nullable": false,
+                "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
@@ -3123,7 +3224,7 @@
                 }
               },
               "locations": {
-                "nullable": false,
+                "nullable": true,
                 "type": {
                   "codecId": "pg/jsonb@1",
                   "kind": "scalar"
@@ -3133,6 +3234,13 @@
                 "nullable": false,
                 "type": {
                   "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "places": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/jsonb@1",
                   "kind": "scalar"
                 }
               },
@@ -3197,6 +3305,27 @@
                   }
                 }
               },
+              "salaryCurrency": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "salaryMin": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "salaryPeriod": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "seniorities": {
                 "many": {
                   "elementNullable": false
@@ -3211,6 +3340,13 @@
                   "entityName": "Seniority",
                   "namespaceId": "public",
                   "plane": "domain"
+                }
+              },
+              "spokenLanguages": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
                 }
               },
               "state": {
@@ -3292,8 +3428,17 @@
             },
             "storage": {
               "fields": {
+                "acceptedCurrencies": {
+                  "column": "acceptedCurrencies"
+                },
+                "acceptsAnyCurrency": {
+                  "column": "acceptsAnyCurrency"
+                },
                 "city": {
                   "column": "city"
+                },
+                "contractTypes": {
+                  "column": "contractTypes"
                 },
                 "country": {
                   "column": "country"
@@ -3316,6 +3461,9 @@
                 "noticePeriodDays": {
                   "column": "noticePeriodDays"
                 },
+                "places": {
+                  "column": "places"
+                },
                 "position": {
                   "column": "position"
                 },
@@ -3337,8 +3485,20 @@
                 "resumeUploadedAt": {
                   "column": "resumeUploadedAt"
                 },
+                "salaryCurrency": {
+                  "column": "salaryCurrency"
+                },
+                "salaryMin": {
+                  "column": "salaryMin"
+                },
+                "salaryPeriod": {
+                  "column": "salaryPeriod"
+                },
                 "seniorities": {
                   "column": "seniorities"
+                },
+                "spokenLanguages": {
+                  "column": "spokenLanguages"
                 },
                 "state": {
                   "column": "state"
@@ -4473,6 +4633,13 @@
                   }
                 }
               },
+              "isEngineering": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "label": {
                 "nullable": false,
                 "type": {
@@ -4525,6 +4692,9 @@
                 },
                 "firstSeenAt": {
                   "column": "firstSeenAt"
+                },
+                "isEngineering": {
+                  "column": "isEngineering"
                 },
                 "label": {
                   "column": "label"
@@ -4966,6 +5136,13 @@
           },
           "User": {
             "fields": {
+              "acceptsSponsorship": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "address": {
                 "nullable": true,
                 "type": {
@@ -4991,6 +5168,13 @@
                 }
               },
               "name": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "residenceCountry": {
                 "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
@@ -5029,6 +5213,9 @@
             },
             "storage": {
               "fields": {
+                "acceptsSponsorship": {
+                  "column": "acceptsSponsorship"
+                },
                 "address": {
                   "column": "address"
                 },
@@ -5041,12 +5228,109 @@
                 "name": {
                   "column": "name"
                 },
+                "residenceCountry": {
+                  "column": "residenceCountry"
+                },
                 "updatedAt": {
                   "column": "updatedAt"
                 }
               },
               "namespaceId": "public",
               "table": "users"
+            }
+          },
+          "WorkAuthorization": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "kind": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "place": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "userId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "user": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "kind": {
+                  "column": "kind"
+                },
+                "place": {
+                  "column": "place"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                },
+                "userId": {
+                  "column": "userId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "work_authorizations"
             }
           }
         },
@@ -5106,6 +5390,19 @@
       "public": {
         "entries": {
           "policy": {
+            "cities_read_approved": {
+              "kind": "policy",
+              "name": "cities_read_approved_d2529ebe",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "cities_read_approved",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "cities",
+              "using": "status = 'approved'"
+            },
             "contacts_owner": {
               "kind": "policy",
               "name": "contacts_owner_6ea08fe5",
@@ -5119,6 +5416,71 @@
               "tableName": "contacts",
               "using": "\"userId\" = auth.uid()",
               "withCheck": "\"userId\" = auth.uid()"
+            },
+            "contract_types_read_approved": {
+              "kind": "policy",
+              "name": "contract_types_read_approved_d2529ebe",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "contract_types_read_approved",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "contract_types",
+              "using": "status = 'approved'"
+            },
+            "countries_read_approved": {
+              "kind": "policy",
+              "name": "countries_read_approved_d2529ebe",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "countries_read_approved",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "countries",
+              "using": "status = 'approved'"
+            },
+            "engagements_read_approved": {
+              "kind": "policy",
+              "name": "engagements_read_approved_d2529ebe",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "engagements_read_approved",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "engagements",
+              "using": "status = 'approved'"
+            },
+            "iso_currencies_read_approved": {
+              "kind": "policy",
+              "name": "iso_currencies_read_approved_aede9d92",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "iso_currencies_read_approved",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "iso_currencies",
+              "using": "true"
+            },
+            "iso_languages_read_approved": {
+              "kind": "policy",
+              "name": "iso_languages_read_approved_aede9d92",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "iso_languages_read_approved",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "iso_languages",
+              "using": "true"
             },
             "profile_skills_owner_delete": {
               "kind": "policy",
@@ -5226,6 +5588,71 @@
               "using": "\"userId\" = auth.uid() AND state = 'draft'",
               "withCheck": "\"userId\" = auth.uid() AND state = 'draft' AND \"publishedAt\" IS NULL"
             },
+            "region_countries_read_approved": {
+              "kind": "policy",
+              "name": "region_countries_read_approved_aede9d92",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "region_countries_read_approved",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "region_countries",
+              "using": "true"
+            },
+            "regions_read_approved": {
+              "kind": "policy",
+              "name": "regions_read_approved_d2529ebe",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "regions_read_approved",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "regions",
+              "using": "status = 'approved'"
+            },
+            "role_kinds_read_approved": {
+              "kind": "policy",
+              "name": "role_kinds_read_approved_d2529ebe",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "role_kinds_read_approved",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "role_kinds",
+              "using": "status = 'approved'"
+            },
+            "seniorities_read_approved": {
+              "kind": "policy",
+              "name": "seniorities_read_approved_d2529ebe",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "seniorities_read_approved",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "seniorities",
+              "using": "status = 'approved'"
+            },
+            "tech_tags_read_approved": {
+              "kind": "policy",
+              "name": "tech_tags_read_approved_d2529ebe",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "tech_tags_read_approved",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "tech_tags",
+              "using": "status = 'approved'"
+            },
             "users_owner_read": {
               "kind": "policy",
               "name": "users_owner_read_b499dcb9",
@@ -5252,6 +5679,20 @@
               "tableName": "users",
               "using": "id = auth.uid()",
               "withCheck": "id = auth.uid()"
+            },
+            "work_authorizations_owner": {
+              "kind": "policy",
+              "name": "work_authorizations_owner_6ea08fe5",
+              "namespaceId": "public",
+              "operation": "all",
+              "permissive": true,
+              "prefix": "work_authorizations_owner",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "work_authorizations",
+              "using": "\"userId\" = auth.uid()",
+              "withCheck": "\"userId\" = auth.uid()"
             }
           },
           "rls": {
@@ -5289,6 +5730,16 @@
               "kind": "rls",
               "namespaceId": "public",
               "tableName": "engagements"
+            },
+            "iso_currencies": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "iso_currencies"
+            },
+            "iso_languages": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "iso_languages"
             },
             "job_extractions": {
               "kind": "rls",
@@ -5389,6 +5840,11 @@
               "kind": "rls",
               "namespaceId": "public",
               "tableName": "users"
+            },
+            "work_authorizations": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "work_authorizations"
             }
           },
           "table": {
@@ -6077,6 +6533,50 @@
                   "nullable": false
                 },
                 "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "code"
+                ]
+              },
+              "uniques": []
+            },
+            "iso_currencies": {
+              "columns": {
+                "code": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "label": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "code"
+                ]
+              },
+              "uniques": []
+            },
+            "iso_languages": {
+              "columns": {
+                "code": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "label": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
                   "nullable": false
@@ -7652,6 +8152,26 @@
             "profiles": {
               "checks": [
                 {
+                  "expression": "array_position(\"acceptedCurrencies\", NULL) IS NULL",
+                  "name": "profiles_acceptedCurrencies_elem_not_null_12cd7376",
+                  "prefix": "profiles_acceptedCurrencies_elem_not_null"
+                },
+                {
+                  "expression": "array_position(\"contractTypes\", NULL) IS NULL",
+                  "name": "profiles_contractTypes_elem_not_null_d79621a2",
+                  "prefix": "profiles_contractTypes_elem_not_null"
+                },
+                {
+                  "expression": "\"contractTypes\" IS NULL OR cardinality(\"contractTypes\") > 0",
+                  "name": "profiles_contract_types_nonempty_2e2f0c84",
+                  "prefix": "profiles_contract_types_nonempty"
+                },
+                {
+                  "expression": "(\"acceptsAnyCurrency\" AND cardinality(\"acceptedCurrencies\") = 0) OR (NOT \"acceptsAnyCurrency\" AND cardinality(\"acceptedCurrencies\") > 0)",
+                  "name": "profiles_currencies_any_xor_list_3169ca89",
+                  "prefix": "profiles_currencies_any_xor_list"
+                },
+                {
                   "expression": "array_remove(\"engagements\", NULL) <@ '{\"employee\",\"contractor\",\"eor\",\"agency\",\"per_task\"}'",
                   "name": "profiles_engagements_check_8a34079e",
                   "prefix": "profiles_engagements_check"
@@ -7702,6 +8222,21 @@
                   "prefix": "profiles_position_check"
                 },
                 {
+                  "expression": "(\"salaryMin\" IS NULL) = (\"salaryCurrency\" IS NULL) AND (\"salaryMin\" IS NULL) = (\"salaryPeriod\" IS NULL)",
+                  "name": "profiles_salary_all_or_none_e3d82cd7",
+                  "prefix": "profiles_salary_all_or_none"
+                },
+                {
+                  "expression": "\"salaryMin\" > 0",
+                  "name": "profiles_salary_min_positive_e1d9f874",
+                  "prefix": "profiles_salary_min_positive"
+                },
+                {
+                  "expression": "\"salaryPeriod\" IN ('hour','day','month','year')",
+                  "name": "profiles_salary_period_fe0be813",
+                  "prefix": "profiles_salary_period"
+                },
+                {
                   "expression": "array_remove(\"seniorities\", NULL) <@ '{\"junior\",\"mid\",\"senior\",\"staff\",\"lead\",\"principal\",\"unstated\"}'",
                   "name": "profiles_seniorities_check_c892abac",
                   "prefix": "profiles_seniorities_check"
@@ -7733,15 +8268,44 @@
                 }
               ],
               "columns": {
+                "acceptedCurrencies": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": []
+                  },
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": false
+                },
+                "acceptsAnyCurrency": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": true
+                  },
+                  "nullable": false
+                },
                 "city": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
                   "nullable": true
                 },
+                "contractTypes": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": true
+                },
                 "country": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
-                  "nullable": false
+                  "nullable": true
                 },
                 "createdAt": {
                   "codecId": "pg/timestamptz-date@1",
@@ -7780,7 +8344,7 @@
                   "many": {
                     "elementNullable": false
                   },
-                  "nullable": false,
+                  "nullable": true,
                   "valueSet": {
                     "entityKind": "valueSet",
                     "entityName": "Language",
@@ -7791,12 +8355,17 @@
                 "locations": {
                   "codecId": "pg/jsonb@1",
                   "dataType": "pg/jsonb",
-                  "nullable": false
+                  "nullable": true
                 },
                 "noticePeriodDays": {
                   "codecId": "pg/int4@1",
                   "dataType": "pg/int4",
                   "nullable": false
+                },
+                "places": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": true
                 },
                 "position": {
                   "codecId": "pg/text@1",
@@ -7845,6 +8414,21 @@
                     "precision": 3
                   }
                 },
+                "salaryCurrency": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "salaryMin": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "salaryPeriod": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
                 "seniorities": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -7858,6 +8442,11 @@
                     "namespaceId": "public",
                     "plane": "storage"
                   }
+                },
+                "spokenLanguages": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": true
                 },
                 "state": {
                   "codecId": "pg/text@1",
@@ -8823,6 +9412,15 @@
                     "precision": 3
                   }
                 },
+                "isEngineering": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
                 "label": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -9174,6 +9772,11 @@
             },
             "users": {
               "columns": {
+                "acceptsSponsorship": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "nullable": true
+                },
                 "address": {
                   "codecId": "pg/jsonb@1",
                   "dataType": "pg/jsonb",
@@ -9197,6 +9800,11 @@
                   "nullable": false
                 },
                 "name": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "residenceCountry": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
                   "nullable": true
@@ -9244,6 +9852,107 @@
                 ]
               },
               "uniques": []
+            },
+            "work_authorizations": {
+              "checks": [
+                {
+                  "expression": "kind IN ('work-permit','citizenship','residency','clearance')",
+                  "name": "work_authorizations_kind_f83cbcae",
+                  "prefix": "work_authorizations_kind"
+                }
+              ],
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "kind": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "place": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "userId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "work_authorizations_userId_idx_a489d58a"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "work_authorizations"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "users"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "userId"
+                  ],
+                  "name": "work_authorizations_userId_idx_a489d58a",
+                  "prefix": "work_authorizations_userId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "userId",
+                    "kind",
+                    "place"
+                  ]
+                }
+              ]
             }
           },
           "valueSet": {
@@ -9446,10 +10155,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "8f1715e4755f3ef514f24cf2090ce086ef24f4c0a113dc0bdbbe76cc5e6accd3"
+    "storageHash": "1cfd25e269628885ca3ef263392ec32a0390667dcf7f74a7eabfc9c04de0cdd6"
   },
   "execution": {
-    "executionHash": "10d5f7e842b2fb12c71ccb0e6509e21ba86faca411f9434c879cf5f293577cb4",
+    "executionHash": "5c00fc523089c5aa487c5b6b1a909049f24c10b050d4df6321de29c1c9800a76",
     "mutations": {
       "defaults": [
         {
@@ -9714,6 +10423,32 @@
           },
           "ref": {
             "entry": "users",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv7",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "work_authorizations",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "work_authorizations",
             "field": "updatedAt",
             "namespace": "public"
           }

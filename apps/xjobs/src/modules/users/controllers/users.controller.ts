@@ -12,10 +12,10 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { ApiErrorResponses, ApiSuccessResponse } from 'src/common/decorators';
-import type { UserRow } from 'src/database';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { UserResponseDto } from '../dto/user.response.dto';
-import { UsersService } from '../services/users.service';
+import { toUserView, UsersService } from '../services/users.service';
+import type { UserView } from '../types';
 
 @ApiTags('users')
 @ApiErrorResponses(HttpStatus.UNAUTHORIZED, HttpStatus.INTERNAL_SERVER_ERROR)
@@ -33,15 +33,15 @@ export class UsersController {
   @ApiSuccessResponse(UserResponseDto, { isArray: true })
   @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
   @Get()
-  async list(): Promise<UserRow[]> {
-    return this.users.list();
+  async list(): Promise<UserView[]> {
+    return (await this.users.list()).map(toUserView);
   }
 
   @ApiSuccessResponse(UserResponseDto)
   @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
   @Get(':userId')
-  async get(@Param('userId', ParseUUIDPipe) userId: string): Promise<UserRow> {
-    return this.users.getOrThrow(userId);
+  async get(@Param('userId', ParseUUIDPipe) userId: string): Promise<UserView> {
+    return toUserView(await this.users.getOrThrow(userId));
   }
 
   @ApiSuccessResponse(UserResponseDto)
@@ -50,8 +50,8 @@ export class UsersController {
   async update(
     @Param('userId', ParseUUIDPipe) userId: string,
     @Body() body: UpdateUserDto,
-  ): Promise<UserRow> {
-    return this.users.update(userId, body);
+  ): Promise<UserView> {
+    return toUserView(await this.users.update(userId, body));
   }
 
   /** Kept until the CRUD endpoints go: deleting only the users row would leave a broken account. */

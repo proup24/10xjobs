@@ -206,13 +206,33 @@ type Address {
   country    String
 }
 
+// ISO 639-1 languages and ISO 4217 currencies, seeded; reference data for profile preferences.
+model IsoLanguage {
+  code  String @id
+  label String
+
+  @@map("iso_languages")
+  @@rls
+}
+
+model IsoCurrency {
+  code  String @id
+  label String
+
+  @@map("iso_currencies")
+  @@rls
+}
+
 // One row per Supabase Auth user, created by the on_auth_user_created trigger.
 // The email lives only in Auth.
 model User {
-  id       Uuid                   @id
-  authUser supabase:auth.AuthUser @relation(fields: [id], references: [id], onDelete: Cascade)
-  name     String?
-  address  Address?
+  id                 Uuid                   @id
+  authUser           supabase:auth.AuthUser @relation(fields: [id], references: [id], onDelete: Cascade)
+  name               String?
+  address            Address?
+  // ISO 3166-1 alpha-2 code from countries; null until the user answers.
+  residenceCountry   String?
+  acceptsSponsorship Boolean?
   +Timestamps
 
   @@map("users")
@@ -258,32 +278,69 @@ policy_all contacts_owner {
   withCheck = sql`"userId" = auth.uid()`
 }
 
+// Where the user may work, and on what basis. A place is a country or region code.
+model WorkAuthorization {
+  id     Uuid   @id @onCreate(uuid(7))
+  userId Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind   String
+  place  String
+  +Timestamps
+
+  @@check(expression: sql`kind IN ('work-permit','citizenship','residency','clearance')`, name: "work_authorizations_kind")
+  @@unique([userId, kind, place])
+  @@index([userId])
+  @@map("work_authorizations")
+  @@rls
+}
+
+policy_all work_authorizations_owner {
+  target = WorkAuthorization
+  roles = [authenticated]
+  using = sql`"userId" = auth.uid()`
+  withCheck = sql`"userId" = auth.uid()`
+}
+
 // A user may maintain multiple independent job-seeker profiles, one per target position.
 // Timezone offsets are minutes from UTC.
 model Profile {
-  id                Uuid                  @id @onCreate(uuid(7))
-  userId            Uuid
-  user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  position          Position
-  languages         Language[]
-  country           String
-  city              String?
+  id                 Uuid                  @id @onCreate(uuid(7))
+  userId             Uuid
+  user               User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  position           Position
+  // languages, country and locations are the old shape, nullable until the engine stops writing them.
+  languages          Language[]?
+  country            String?
+  city               String?
   // { remote, hybrid, onsite } lists of location text in display form.
-  locations         Jsonb
-  yearsOfExperience Int
-  timezoneCurrent   Int
-  timezoneMin       Int
-  timezoneMax       Int
-  engagements       Engagement[]
-  seniorities       Seniority[]
-  noticePeriodDays  Int
-  resumeKey         String?
-  resumeFilename    String?
-  resumeSizeBytes   Int?
-  resumeSha256      String?
-  resumeUploadedAt  TimestamptzJsDate(3)?
-  state             ProfileState          @default(draft)
-  publishedAt       TimestamptzJsDate(3)?
+  locations          Jsonb?
+  yearsOfExperience  Int
+  timezoneCurrent    Int
+  timezoneMin        Int
+  timezoneMax        Int
+  engagements        Engagement[]
+  seniorities        Seniority[]
+  noticePeriodDays   Int
+  // Codes from contract_types; null until the user answers.
+  contractTypes      String[]?
+  // { remote, hybrid, onsite } arrays of { kind: worldwide | region | country | city } places.
+  places             Jsonb?
+  // [{ lang: ISO 639-1 code, level: native | fluent | working }].
+  spokenLanguages    Jsonb?
+  // Minimum salary: all three set, or none.
+  salaryMin          Int?
+  salaryCurrency     String?
+  salaryPeriod       String?
+  // Either any currency, or a non-empty list of ISO 4217 codes.
+  acceptsAnyCurrency Boolean               @default(true)
+  acceptedCurrencies String[]              @default([])
+  resumeKey          String?
+  resumeFilename     String?
+  resumeSizeBytes    Int?
+  resumeSha256       String?
+  resumeUploadedAt   TimestamptzJsDate(3)?
+  state              ProfileState          @default(draft)
+  publishedAt        TimestamptzJsDate(3)?
   +Timestamps
 
   @@check(expression: sql`"yearsOfExperience" BETWEEN 0 AND 60`, name: "profiles_years_range")
@@ -295,6 +352,12 @@ model Profile {
   // locations is exactly { remote, hybrid, onsite }: arrays of at most 20 strings, at least one location overall.
   @@check(expression: sql`jsonb_typeof("locations") = 'object' AND "locations" ?& ARRAY['remote', 'hybrid', 'onsite'] AND ("locations" - ARRAY['remote', 'hybrid', 'onsite']) = '{}'::jsonb AND CASE WHEN jsonb_typeof("locations" -> 'remote') = 'array' AND jsonb_typeof("locations" -> 'hybrid') = 'array' AND jsonb_typeof("locations" -> 'onsite') = 'array' THEN jsonb_array_length("locations" -> 'remote') <= 20 AND jsonb_array_length("locations" -> 'hybrid') <= 20 AND jsonb_array_length("locations" -> 'onsite') <= 20 AND NOT jsonb_path_exists("locations", '$.*[*] ? (@.type() != "string")') ELSE false END`, name: "profiles_locations_shape")
   @@check(expression: sql`jsonb_path_exists("locations", '$.*[*]')`, name: "profiles_locations_nonempty")
+  @@check(expression: sql`("salaryMin" IS NULL) = ("salaryCurrency" IS NULL) AND ("salaryMin" IS NULL) = ("salaryPeriod" IS NULL)`, name: "profiles_salary_all_or_none")
+  @@check(expression: sql`"salaryMin" > 0`, name: "profiles_salary_min_positive")
+  @@check(expression: sql`"salaryPeriod" IN ('hour','day','month','year')`, name: "profiles_salary_period")
+  @@check(expression: sql`("acceptsAnyCurrency" AND cardinality("acceptedCurrencies") = 0) OR (NOT "acceptsAnyCurrency" AND cardinality("acceptedCurrencies") > 0)`, name: "profiles_currencies_any_xor_list")
+  @@check(expression: sql`"contractTypes" IS NULL OR cardinality("contractTypes") > 0`, name: "profiles_contract_types_nonempty")
+  // Value-list codes are checked by the profiles_check_codes trigger (assert_codes, assert_places, assert_languages).
   // Target of profile_skills' (profileId, userId) foreign key.
   @@unique([id, userId])
   @@index([userId])
@@ -709,14 +772,16 @@ model Country {
 
 // RoleKind list: a closed vocabulary of codes; unknown terms enter as 'proposed'.
 model RoleKind {
-  code        String                @id
-  label       String
-  aliases     String[]
-  status      String
-  occurrences Int                   @default(0)
-  firstSeenAt TimestamptzJsDate(3)
-  approvedAt  TimestamptzJsDate(3)?
-  extractions JobExtraction[]
+  code          String                @id
+  label         String
+  aliases       String[]
+  status        String
+  occurrences   Int                   @default(0)
+  firstSeenAt   TimestamptzJsDate(3)
+  approvedAt    TimestamptzJsDate(3)?
+  // True for software-engineering role kinds; eligibility filters read it.
+  isEngineering Boolean               @default(false)
+  extractions   JobExtraction[]
 
   @@check(expression: sql`status IN ('approved', 'proposed')`, name: "role_kinds_status")
   @@map("role_kinds")
@@ -916,4 +981,72 @@ model ProcessingAttempt {
   @@index([createdAt], where: sql`NOT eval`, name: "processing_attempts_created_noneval")
   @@map("processing_attempts")
   @@rls
+}
+
+// Users read the value lists through the pickers and never write them. Column grants
+// (see the value_lists_read_only migration) hide status, occurrences and the timestamps.
+policy_select tech_tags_read_approved {
+  target = TechTag
+  roles = [authenticated]
+  using = sql`status = 'approved'`
+}
+
+policy_select role_kinds_read_approved {
+  target = RoleKind
+  roles = [authenticated]
+  using = sql`status = 'approved'`
+}
+
+policy_select seniorities_read_approved {
+  target = SeniorityTerm
+  roles = [authenticated]
+  using = sql`status = 'approved'`
+}
+
+policy_select contract_types_read_approved {
+  target = ContractType
+  roles = [authenticated]
+  using = sql`status = 'approved'`
+}
+
+policy_select engagements_read_approved {
+  target = EngagementTerm
+  roles = [authenticated]
+  using = sql`status = 'approved'`
+}
+
+policy_select regions_read_approved {
+  target = RegionTerm
+  roles = [authenticated]
+  using = sql`status = 'approved'`
+}
+
+policy_select countries_read_approved {
+  target = Country
+  roles = [authenticated]
+  using = sql`status = 'approved'`
+}
+
+policy_select cities_read_approved {
+  target = City
+  roles = [authenticated]
+  using = sql`status = 'approved'`
+}
+
+policy_select region_countries_read_approved {
+  target = RegionCountry
+  roles = [authenticated]
+  using = sql`true`
+}
+
+policy_select iso_languages_read_approved {
+  target = IsoLanguage
+  roles = [authenticated]
+  using = sql`true`
+}
+
+policy_select iso_currencies_read_approved {
+  target = IsoCurrency
+  roles = [authenticated]
+  using = sql`true`
 }

@@ -1,0 +1,1064 @@
+[
+  {
+    "id": "column.public.profiles.acceptedCurrencies",
+    "label": "Add column \"acceptedCurrencies\" to \"profiles\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "acceptedCurrencies",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"acceptedCurrencies\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "acceptedCurrencies"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"acceptedCurrencies\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"acceptedCurrencies\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ADD COLUMN \"acceptedCurrencies\" text[] DEFAULT '{}' NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"acceptedCurrencies\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "acceptedCurrencies"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"acceptedCurrencies\" on \"profiles\""
+        }
+      },
+      {
+        "description": "verify column \"acceptedCurrencies\" has type \"text[]\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "acceptedCurrencies",
+          "text[]"
+        ]
+      },
+      {
+        "description": "verify column \"acceptedCurrencies\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "acceptedCurrencies",
+          "NO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.profiles.acceptsAnyCurrency",
+    "label": "Add column \"acceptsAnyCurrency\" to \"profiles\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "acceptsAnyCurrency",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"acceptsAnyCurrency\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "acceptsAnyCurrency"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"acceptsAnyCurrency\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"acceptsAnyCurrency\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ADD COLUMN \"acceptsAnyCurrency\" bool DEFAULT true NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"acceptsAnyCurrency\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "acceptsAnyCurrency"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"acceptsAnyCurrency\" on \"profiles\""
+        }
+      },
+      {
+        "description": "verify column \"acceptsAnyCurrency\" has type \"boolean\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "acceptsAnyCurrency",
+          "boolean"
+        ]
+      },
+      {
+        "description": "verify column \"acceptsAnyCurrency\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "acceptsAnyCurrency",
+          "NO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.profiles.contractTypes",
+    "label": "Add column \"contractTypes\" to \"profiles\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "contractTypes",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"contractTypes\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "contractTypes"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"contractTypes\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"contractTypes\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ADD COLUMN \"contractTypes\" text[]"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"contractTypes\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "contractTypes"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"contractTypes\" on \"profiles\""
+        }
+      },
+      {
+        "description": "verify column \"contractTypes\" has type \"text[]\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "contractTypes",
+          "text[]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.profiles.places",
+    "label": "Add column \"places\" to \"profiles\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "places",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"places\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "places"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"places\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"places\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ADD COLUMN \"places\" jsonb"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"places\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "places"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"places\" on \"profiles\""
+        }
+      },
+      {
+        "description": "verify column \"places\" has type \"jsonb\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "places",
+          "jsonb"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.profiles.salaryCurrency",
+    "label": "Add column \"salaryCurrency\" to \"profiles\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "salaryCurrency",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"salaryCurrency\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "salaryCurrency"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"salaryCurrency\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"salaryCurrency\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ADD COLUMN \"salaryCurrency\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"salaryCurrency\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "salaryCurrency"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"salaryCurrency\" on \"profiles\""
+        }
+      },
+      {
+        "description": "verify column \"salaryCurrency\" has type \"text\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "salaryCurrency",
+          "text"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.profiles.salaryMin",
+    "label": "Add column \"salaryMin\" to \"profiles\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "salaryMin",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"salaryMin\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "salaryMin"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"salaryMin\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"salaryMin\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ADD COLUMN \"salaryMin\" int4"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"salaryMin\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "salaryMin"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"salaryMin\" on \"profiles\""
+        }
+      },
+      {
+        "description": "verify column \"salaryMin\" has type \"integer\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "salaryMin",
+          "integer"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.profiles.salaryPeriod",
+    "label": "Add column \"salaryPeriod\" to \"profiles\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "salaryPeriod",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"salaryPeriod\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "salaryPeriod"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"salaryPeriod\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"salaryPeriod\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ADD COLUMN \"salaryPeriod\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"salaryPeriod\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "salaryPeriod"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"salaryPeriod\" on \"profiles\""
+        }
+      },
+      {
+        "description": "verify column \"salaryPeriod\" has type \"text\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "salaryPeriod",
+          "text"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.profiles.spokenLanguages",
+    "label": "Add column \"spokenLanguages\" to \"profiles\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "spokenLanguages",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"spokenLanguages\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "spokenLanguages"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"spokenLanguages\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"spokenLanguages\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ADD COLUMN \"spokenLanguages\" jsonb"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"spokenLanguages\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "spokenLanguages"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"spokenLanguages\" on \"profiles\""
+        }
+      },
+      {
+        "description": "verify column \"spokenLanguages\" has type \"jsonb\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "spokenLanguages",
+          "jsonb"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "alterNullability.dropNotNull.profiles.country",
+    "label": "Drop NOT NULL on \"profiles\".\"country\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "country",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"country\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "country"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"country\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop NOT NULL on \"country\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ALTER COLUMN \"country\" DROP NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"country\" is nullable",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "country",
+          "YES"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "alterNullability.dropNotNull.profiles.languages",
+    "label": "Drop NOT NULL on \"profiles\".\"languages\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "languages",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"languages\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "languages"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"languages\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop NOT NULL on \"languages\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ALTER COLUMN \"languages\" DROP NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"languages\" is nullable",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "languages",
+          "YES"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "alterNullability.dropNotNull.profiles.locations",
+    "label": "Drop NOT NULL on \"profiles\".\"locations\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "locations",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"locations\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "locations"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"locations\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop NOT NULL on \"locations\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ALTER COLUMN \"locations\" DROP NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"locations\" is nullable",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "locations",
+          "YES"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.profiles.profiles_acceptedCurrencies_elem_not_null_12cd7376",
+    "label": "Add check constraint \"profiles_acceptedCurrencies_elem_not_null_12cd7376\" on \"profiles\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "profiles_acceptedCurrencies_elem_not_null_12cd7376",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"profiles_acceptedCurrencies_elem_not_null_12cd7376\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_acceptedCurrencies_elem_not_null_12cd7376",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"profiles_acceptedCurrencies_elem_not_null_12cd7376\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"profiles_acceptedCurrencies_elem_not_null_12cd7376\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ADD CONSTRAINT \"profiles_acceptedCurrencies_elem_not_null_12cd7376\" CHECK (array_position(\"acceptedCurrencies\", NULL) IS NULL)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify check constraint \"profiles_acceptedCurrencies_elem_not_null_12cd7376\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4)) AS \"result\"",
+        "params": [
+          "profiles_acceptedCurrencies_elem_not_null_12cd7376",
+          "public",
+          "\"public\".\"profiles\"",
+          "c"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.profiles.profiles_contractTypes_elem_not_null_d79621a2",
+    "label": "Add check constraint \"profiles_contractTypes_elem_not_null_d79621a2\" on \"profiles\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "profiles_contractTypes_elem_not_null_d79621a2",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"profiles_contractTypes_elem_not_null_d79621a2\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_contractTypes_elem_not_null_d79621a2",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"profiles_contractTypes_elem_not_null_d79621a2\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"profiles_contractTypes_elem_not_null_d79621a2\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ADD CONSTRAINT \"profiles_contractTypes_elem_not_null_d79621a2\" CHECK (array_position(\"contractTypes\", NULL) IS NULL)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify check constraint \"profiles_contractTypes_elem_not_null_d79621a2\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4)) AS \"result\"",
+        "params": [
+          "profiles_contractTypes_elem_not_null_d79621a2",
+          "public",
+          "\"public\".\"profiles\"",
+          "c"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.profiles.profiles_contract_types_nonempty_2e2f0c84",
+    "label": "Add check constraint \"profiles_contract_types_nonempty_2e2f0c84\" on \"profiles\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "profiles_contract_types_nonempty_2e2f0c84",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"profiles_contract_types_nonempty_2e2f0c84\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_contract_types_nonempty_2e2f0c84",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"profiles_contract_types_nonempty_2e2f0c84\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"profiles_contract_types_nonempty_2e2f0c84\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ADD CONSTRAINT \"profiles_contract_types_nonempty_2e2f0c84\" CHECK (\"contractTypes\" IS NULL OR cardinality(\"contractTypes\") > 0)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify check constraint \"profiles_contract_types_nonempty_2e2f0c84\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4)) AS \"result\"",
+        "params": [
+          "profiles_contract_types_nonempty_2e2f0c84",
+          "public",
+          "\"public\".\"profiles\"",
+          "c"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.profiles.profiles_currencies_any_xor_list_3169ca89",
+    "label": "Add check constraint \"profiles_currencies_any_xor_list_3169ca89\" on \"profiles\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "profiles_currencies_any_xor_list_3169ca89",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"profiles_currencies_any_xor_list_3169ca89\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_currencies_any_xor_list_3169ca89",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"profiles_currencies_any_xor_list_3169ca89\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"profiles_currencies_any_xor_list_3169ca89\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ADD CONSTRAINT \"profiles_currencies_any_xor_list_3169ca89\" CHECK ((\"acceptsAnyCurrency\" AND cardinality(\"acceptedCurrencies\") = 0) OR (NOT \"acceptsAnyCurrency\" AND cardinality(\"acceptedCurrencies\") > 0))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify check constraint \"profiles_currencies_any_xor_list_3169ca89\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4)) AS \"result\"",
+        "params": [
+          "profiles_currencies_any_xor_list_3169ca89",
+          "public",
+          "\"public\".\"profiles\"",
+          "c"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.profiles.profiles_salary_all_or_none_e3d82cd7",
+    "label": "Add check constraint \"profiles_salary_all_or_none_e3d82cd7\" on \"profiles\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "profiles_salary_all_or_none_e3d82cd7",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"profiles_salary_all_or_none_e3d82cd7\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_salary_all_or_none_e3d82cd7",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"profiles_salary_all_or_none_e3d82cd7\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"profiles_salary_all_or_none_e3d82cd7\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ADD CONSTRAINT \"profiles_salary_all_or_none_e3d82cd7\" CHECK ((\"salaryMin\" IS NULL) = (\"salaryCurrency\" IS NULL) AND (\"salaryMin\" IS NULL) = (\"salaryPeriod\" IS NULL))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify check constraint \"profiles_salary_all_or_none_e3d82cd7\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4)) AS \"result\"",
+        "params": [
+          "profiles_salary_all_or_none_e3d82cd7",
+          "public",
+          "\"public\".\"profiles\"",
+          "c"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.profiles.profiles_salary_min_positive_e1d9f874",
+    "label": "Add check constraint \"profiles_salary_min_positive_e1d9f874\" on \"profiles\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "profiles_salary_min_positive_e1d9f874",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"profiles_salary_min_positive_e1d9f874\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_salary_min_positive_e1d9f874",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"profiles_salary_min_positive_e1d9f874\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"profiles_salary_min_positive_e1d9f874\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ADD CONSTRAINT \"profiles_salary_min_positive_e1d9f874\" CHECK (\"salaryMin\" > 0)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify check constraint \"profiles_salary_min_positive_e1d9f874\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4)) AS \"result\"",
+        "params": [
+          "profiles_salary_min_positive_e1d9f874",
+          "public",
+          "\"public\".\"profiles\"",
+          "c"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.profiles.profiles_salary_period_fe0be813",
+    "label": "Add check constraint \"profiles_salary_period_fe0be813\" on \"profiles\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "profiles_salary_period_fe0be813",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"profiles_salary_period_fe0be813\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_salary_period_fe0be813",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"profiles_salary_period_fe0be813\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"profiles_salary_period_fe0be813\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ADD CONSTRAINT \"profiles_salary_period_fe0be813\" CHECK (\"salaryPeriod\" IN ('hour','day','month','year'))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify check constraint \"profiles_salary_period_fe0be813\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4)) AS \"result\"",
+        "params": [
+          "profiles_salary_period_fe0be813",
+          "public",
+          "\"public\".\"profiles\"",
+          "c"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "functions.vocab_code_asserts",
+    "label": "Create assert_codes, assert_places and assert_languages for value-list codes",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "profiles"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create assert_codes(field, list, codes)",
+        "sql": "CREATE FUNCTION public.assert_codes(field text, list text, codes text[]) RETURNS void\n  LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = '' AS $$\nDECLARE\n  bad text;\nBEGIN\n  IF codes IS NULL OR cardinality(codes) = 0 THEN\n    RETURN;\n  END IF;\n  CASE list\n    WHEN 'tech_tags' THEN\n      SELECT u.c INTO bad FROM unnest(codes) WITH ORDINALITY AS u(c, n)\n        WHERE NOT EXISTS (SELECT 1 FROM public.tech_tags t WHERE t.code = u.c AND t.status = 'approved')\n        ORDER BY u.n LIMIT 1;\n    WHEN 'role_kinds' THEN\n      SELECT u.c INTO bad FROM unnest(codes) WITH ORDINALITY AS u(c, n)\n        WHERE NOT EXISTS (SELECT 1 FROM public.role_kinds t WHERE t.code = u.c AND t.status = 'approved' AND t.\"isEngineering\")\n        ORDER BY u.n LIMIT 1;\n    WHEN 'seniorities' THEN\n      SELECT u.c INTO bad FROM unnest(codes) WITH ORDINALITY AS u(c, n)\n        WHERE NOT EXISTS (SELECT 1 FROM public.seniorities t WHERE t.code = u.c AND t.status = 'approved' AND t.code <> 'unstated')\n        ORDER BY u.n LIMIT 1;\n    WHEN 'contract_types' THEN\n      SELECT u.c INTO bad FROM unnest(codes) WITH ORDINALITY AS u(c, n)\n        WHERE NOT EXISTS (SELECT 1 FROM public.contract_types t WHERE t.code = u.c AND t.status = 'approved' AND t.code <> 'unstated')\n        ORDER BY u.n LIMIT 1;\n    WHEN 'engagements' THEN\n      SELECT u.c INTO bad FROM unnest(codes) WITH ORDINALITY AS u(c, n)\n        WHERE NOT EXISTS (SELECT 1 FROM public.engagements t WHERE t.code = u.c AND t.status = 'approved' AND t.code <> 'unstated')\n        ORDER BY u.n LIMIT 1;\n    WHEN 'regions' THEN\n      SELECT u.c INTO bad FROM unnest(codes) WITH ORDINALITY AS u(c, n)\n        WHERE NOT EXISTS (SELECT 1 FROM public.regions t WHERE t.code = u.c AND t.status = 'approved')\n        ORDER BY u.n LIMIT 1;\n    WHEN 'countries' THEN\n      SELECT u.c INTO bad FROM unnest(codes) WITH ORDINALITY AS u(c, n)\n        WHERE NOT EXISTS (SELECT 1 FROM public.countries t WHERE t.code = u.c AND t.status = 'approved')\n        ORDER BY u.n LIMIT 1;\n    WHEN 'iso_languages' THEN\n      SELECT u.c INTO bad FROM unnest(codes) WITH ORDINALITY AS u(c, n)\n        WHERE NOT EXISTS (SELECT 1 FROM public.iso_languages t WHERE t.code = u.c)\n        ORDER BY u.n LIMIT 1;\n    WHEN 'iso_currencies' THEN\n      SELECT u.c INTO bad FROM unnest(codes) WITH ORDINALITY AS u(c, n)\n        WHERE NOT EXISTS (SELECT 1 FROM public.iso_currencies t WHERE t.code = u.c)\n        ORDER BY u.n LIMIT 1;\n    ELSE\n      RAISE EXCEPTION 'assert_codes: unknown list %', list USING ERRCODE = 'invalid_parameter_value';\n  END CASE;\n  IF FOUND THEN\n    RAISE EXCEPTION USING ERRCODE = 'check_violation',\n      MESSAGE = format('%s: %L is not an approved %s code', field, bad, list);\n  END IF;\nEND $$;\nREVOKE EXECUTE ON FUNCTION public.assert_codes(text, text, text[]) FROM PUBLIC, anon, authenticated;"
+      },
+      {
+        "description": "create assert_places(field, places)",
+        "sql": "CREATE FUNCTION public.assert_places(field text, places jsonb) RETURNS void\n  LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = '' AS $$\nDECLARE\n  arrangement text;\n  list jsonb;\n  place jsonb;\n  city_id text;\nBEGIN\n  IF places IS NULL THEN\n    RETURN;\n  END IF;\n  IF jsonb_typeof(places) <> 'object'\n     OR NOT places ?& ARRAY['remote', 'hybrid', 'onsite']\n     OR (places - ARRAY['remote', 'hybrid', 'onsite']) <> '{}'::jsonb THEN\n    RAISE EXCEPTION USING ERRCODE = 'check_violation',\n      MESSAGE = format('%s: must be an object with exactly remote, hybrid and onsite', field);\n  END IF;\n  FOREACH arrangement IN ARRAY ARRAY['remote', 'hybrid', 'onsite'] LOOP\n    list := places -> arrangement;\n    IF jsonb_typeof(list) <> 'array' THEN\n      RAISE EXCEPTION USING ERRCODE = 'check_violation',\n        MESSAGE = format('%s: %s must be an array', field, arrangement);\n    END IF;\n    IF jsonb_array_length(list) > 20 THEN\n      RAISE EXCEPTION USING ERRCODE = 'check_violation',\n        MESSAGE = format('%s: %s has more than 20 places', field, arrangement);\n    END IF;\n    IF (SELECT count(DISTINCT e) <> count(*) FROM jsonb_array_elements(list) AS e) THEN\n      RAISE EXCEPTION USING ERRCODE = 'check_violation',\n        MESSAGE = format('%s: %s lists a place more than once', field, arrangement);\n    END IF;\n    FOR place IN SELECT e FROM jsonb_array_elements(list) AS e LOOP\n      IF NOT (\n        place = '{\"kind\": \"worldwide\"}'::jsonb\n        OR (place ->> 'kind' IN ('region', 'country')\n            AND (place - ARRAY['kind', 'code']) = '{}'::jsonb\n            AND jsonb_typeof(place -> 'code') = 'string')\n        OR (place ->> 'kind' = 'city'\n            AND (place - ARRAY['kind', 'id']) = '{}'::jsonb\n            AND jsonb_typeof(place -> 'id') = 'string')\n      ) THEN\n        RAISE EXCEPTION USING ERRCODE = 'check_violation',\n          MESSAGE = format('%s: %s is not a worldwide, region, country or city place', field, place);\n      END IF;\n    END LOOP;\n  END LOOP;\n\n  -- GLOBAL is an approved region for jobs, but a profile says worldwide instead.\n  IF jsonb_path_exists(places, '$.*[*] ? (@.kind == \"region\" && @.code == \"GLOBAL\")') THEN\n    RAISE EXCEPTION USING ERRCODE = 'check_violation',\n      MESSAGE = format('%s: %L is not an approved regions code', field, 'GLOBAL');\n  END IF;\n  PERFORM public.assert_codes(field, 'regions', ARRAY(\n    SELECT p ->> 'code' FROM jsonb_path_query(places, '$.*[*] ? (@.kind == \"region\")') AS p));\n  PERFORM public.assert_codes(field, 'countries', ARRAY(\n    SELECT p ->> 'code' FROM jsonb_path_query(places, '$.*[*] ? (@.kind == \"country\")') AS p));\n\n  -- Check the uuid format first so a malformed id is a check_violation, not invalid_text_representation.\n  FOR city_id IN SELECT p ->> 'id' FROM jsonb_path_query(places, '$.*[*] ? (@.kind == \"city\")') AS p LOOP\n    IF city_id !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'\n       OR NOT EXISTS (SELECT 1 FROM public.cities c WHERE c.id = city_id::uuid AND c.status = 'approved') THEN\n      RAISE EXCEPTION USING ERRCODE = 'check_violation',\n        MESSAGE = format('%s: %L is not an approved cities code', field, city_id);\n    END IF;\n  END LOOP;\nEND $$;\nREVOKE EXECUTE ON FUNCTION public.assert_places(text, jsonb) FROM PUBLIC, anon, authenticated;"
+      },
+      {
+        "description": "create assert_languages(field, langs)",
+        "sql": "CREATE FUNCTION public.assert_languages(field text, langs jsonb) RETURNS void\n  LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = '' AS $$\nDECLARE\n  entry jsonb;\nBEGIN\n  IF langs IS NULL THEN\n    RETURN;\n  END IF;\n  IF jsonb_typeof(langs) <> 'array' OR jsonb_array_length(langs) = 0 THEN\n    RAISE EXCEPTION USING ERRCODE = 'check_violation',\n      MESSAGE = format('%s: must be a non-empty array of { lang, level }', field);\n  END IF;\n  FOR entry IN SELECT e FROM jsonb_array_elements(langs) AS e LOOP\n    IF jsonb_typeof(entry) <> 'object'\n       OR NOT entry ?& ARRAY['lang', 'level']\n       OR (entry - ARRAY['lang', 'level']) <> '{}'::jsonb\n       OR jsonb_typeof(entry -> 'lang') <> 'string' THEN\n      RAISE EXCEPTION USING ERRCODE = 'check_violation',\n        MESSAGE = format('%s: %s is not a { lang, level } entry', field, entry);\n    END IF;\n    IF jsonb_typeof(entry -> 'level') <> 'string' OR entry ->> 'level' NOT IN ('native', 'fluent', 'working') THEN\n      RAISE EXCEPTION USING ERRCODE = 'check_violation',\n        MESSAGE = format('%s: %s is not a language level (native, fluent, working)', field, entry -> 'level');\n    END IF;\n  END LOOP;\n  IF (SELECT count(DISTINCT e ->> 'lang') <> count(*) FROM jsonb_array_elements(langs) AS e) THEN\n    RAISE EXCEPTION USING ERRCODE = 'check_violation',\n      MESSAGE = format('%s: lists a language more than once', field);\n  END IF;\n  PERFORM public.assert_codes(field, 'iso_languages', ARRAY(\n    SELECT e ->> 'lang' FROM jsonb_array_elements(langs) AS e));\nEND $$;\nREVOKE EXECUTE ON FUNCTION public.assert_languages(text, jsonb) FROM PUBLIC, anon, authenticated;"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "trigger.profiles_check_codes",
+    "label": "Check profile codes against the value lists",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "profiles"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create profiles_check_codes() and its BEFORE INSERT OR UPDATE trigger",
+        "sql": "CREATE FUNCTION public.profiles_check_codes() RETURNS trigger\n  LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$\nDECLARE\n  ins boolean := TG_OP = 'INSERT';\nBEGIN\n  IF NEW.position IS NOT NULL AND (ins OR NEW.position IS DISTINCT FROM OLD.position) THEN\n    PERFORM public.assert_codes('profiles.position', 'role_kinds', ARRAY[NEW.position::text]);\n  END IF;\n  IF ins OR NEW.seniorities IS DISTINCT FROM OLD.seniorities THEN\n    PERFORM public.assert_codes('profiles.seniorities', 'seniorities', NEW.seniorities::text[]);\n  END IF;\n  IF ins OR NEW.engagements IS DISTINCT FROM OLD.engagements THEN\n    PERFORM public.assert_codes('profiles.engagements', 'engagements', NEW.engagements::text[]);\n  END IF;\n  IF ins OR NEW.\"contractTypes\" IS DISTINCT FROM OLD.\"contractTypes\" THEN\n    PERFORM public.assert_codes('profiles.contractTypes', 'contract_types', NEW.\"contractTypes\");\n  END IF;\n  IF ins OR NEW.places IS DISTINCT FROM OLD.places THEN\n    PERFORM public.assert_places('profiles.places', NEW.places);\n  END IF;\n  IF ins OR NEW.\"spokenLanguages\" IS DISTINCT FROM OLD.\"spokenLanguages\" THEN\n    PERFORM public.assert_languages('profiles.spokenLanguages', NEW.\"spokenLanguages\");\n  END IF;\n  IF NEW.\"salaryCurrency\" IS NOT NULL AND (ins OR NEW.\"salaryCurrency\" IS DISTINCT FROM OLD.\"salaryCurrency\") THEN\n    PERFORM public.assert_codes('profiles.salaryCurrency', 'iso_currencies', ARRAY[NEW.\"salaryCurrency\"]);\n  END IF;\n  IF ins OR NEW.\"acceptedCurrencies\" IS DISTINCT FROM OLD.\"acceptedCurrencies\" THEN\n    PERFORM public.assert_codes('profiles.acceptedCurrencies', 'iso_currencies', NEW.\"acceptedCurrencies\");\n  END IF;\n  RETURN NEW;\nEND $$;\nREVOKE EXECUTE ON FUNCTION public.profiles_check_codes() FROM PUBLIC, anon, authenticated;\nCREATE TRIGGER profiles_check_codes BEFORE INSERT OR UPDATE ON public.profiles\n  FOR EACH ROW EXECUTE FUNCTION public.profiles_check_codes();"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "trigger.profile_skills_check_codes",
+    "label": "Check skill technologies against tech_tags",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "profile_skills"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create profile_skills_check_codes() and its BEFORE INSERT OR UPDATE trigger",
+        "sql": "CREATE FUNCTION public.profile_skills_check_codes() RETURNS trigger\n  LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$\nBEGIN\n  IF NEW.technology IS NOT NULL AND (TG_OP = 'INSERT' OR NEW.technology IS DISTINCT FROM OLD.technology) THEN\n    PERFORM public.assert_codes('profile_skills.technology', 'tech_tags', ARRAY[NEW.technology::text]);\n  END IF;\n  RETURN NEW;\nEND $$;\nREVOKE EXECUTE ON FUNCTION public.profile_skills_check_codes() FROM PUBLIC, anon, authenticated;\nCREATE TRIGGER profile_skills_check_codes BEFORE INSERT OR UPDATE ON public.profile_skills\n  FOR EACH ROW EXECUTE FUNCTION public.profile_skills_check_codes();"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "grants.profiles_user_columns_preferences",
+    "label": "Limit authenticated writes on profiles to the questionnaire columns, preferences included",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "profiles"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "revoke table-level writes, grant the user-editable columns",
+        "sql": "REVOKE INSERT, UPDATE ON public.profiles FROM anon, authenticated;\nGRANT INSERT (\"id\", \"userId\", \"position\", \"languages\", \"country\", \"city\", \"locations\", \"yearsOfExperience\", \"timezoneCurrent\", \"timezoneMin\", \"timezoneMax\", \"engagements\", \"seniorities\", \"noticePeriodDays\", \"contractTypes\", \"places\", \"spokenLanguages\", \"salaryMin\", \"salaryCurrency\", \"salaryPeriod\", \"acceptsAnyCurrency\", \"acceptedCurrencies\") ON public.profiles TO authenticated;\nGRANT UPDATE (\"position\", \"languages\", \"country\", \"city\", \"locations\", \"yearsOfExperience\", \"timezoneCurrent\", \"timezoneMin\", \"timezoneMax\", \"engagements\", \"seniorities\", \"noticePeriodDays\", \"contractTypes\", \"places\", \"spokenLanguages\", \"salaryMin\", \"salaryCurrency\", \"salaryPeriod\", \"acceptsAnyCurrency\", \"acceptedCurrencies\") ON public.profiles TO authenticated;"
+      }
+    ],
+    "postcheck": []
+  }
+]

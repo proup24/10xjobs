@@ -1,0 +1,269 @@
+[
+  {
+    "id": "table.iso_currencies",
+    "label": "Create table \"iso_currencies\"",
+    "summary": "Creates table \"iso_currencies\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "iso_currencies"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"iso_currencies\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"iso_currencies\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"iso_currencies\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"iso_currencies\"",
+        "sql": "CREATE TABLE \"public\".\"iso_currencies\" (\n  \"code\" text NOT NULL,\n  \"label\" text NOT NULL,\n  PRIMARY KEY (\"code\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"iso_currencies\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"iso_currencies\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"iso_currencies\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.iso_languages",
+    "label": "Create table \"iso_languages\"",
+    "summary": "Creates table \"iso_languages\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "iso_languages"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"iso_languages\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"iso_languages\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"iso_languages\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"iso_languages\"",
+        "sql": "CREATE TABLE \"public\".\"iso_languages\" (\n  \"code\" text NOT NULL,\n  \"label\" text NOT NULL,\n  PRIMARY KEY (\"code\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"iso_languages\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"iso_languages\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"iso_languages\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "column.public.role_kinds.isEngineering",
+    "label": "Add column \"isEngineering\" to \"role_kinds\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "isEngineering",
+        "table": "role_kinds"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"isEngineering\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "role_kinds",
+          "isEngineering"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"isEngineering\" on \"role_kinds\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"isEngineering\"",
+        "sql": "ALTER TABLE \"public\".\"role_kinds\" ADD COLUMN \"isEngineering\" bool DEFAULT false NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"isEngineering\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "role_kinds",
+          "isEngineering"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"isEngineering\" on \"role_kinds\""
+        }
+      },
+      {
+        "description": "verify column \"isEngineering\" has type \"boolean\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "role_kinds",
+          "isEngineering",
+          "boolean"
+        ]
+      },
+      {
+        "description": "verify column \"isEngineering\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "role_kinds",
+          "isEngineering",
+          "NO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.iso_currencies",
+    "label": "Enable row-level security on \"iso_currencies\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "iso_currencies"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"iso_currencies\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "iso_currencies"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"iso_currencies\"",
+        "sql": "ALTER TABLE \"public\".\"iso_currencies\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"iso_currencies\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "iso_currencies"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.iso_languages",
+    "label": "Enable row-level security on \"iso_languages\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "iso_languages"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"iso_languages\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "iso_languages"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"iso_languages\"",
+        "sql": "ALTER TABLE \"public\".\"iso_languages\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"iso_languages\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "iso_languages"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "data.role_kinds_is_engineering",
+    "label": "Mark the 17 engineering role kinds",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "role_kinds"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "set isEngineering on the engineering role kinds",
+        "sql": "UPDATE public.role_kinds SET \"isEngineering\" = true WHERE code = ANY(ARRAY['backend_engineer', 'frontend_engineer', 'fullstack_engineer', 'mobile_engineer', 'devops_engineer', 'site_reliability_engineer', 'platform_engineer', 'cloud_engineer', 'security_engineer', 'data_engineer', 'ml_engineer', 'ai_engineer', 'qa_engineer', 'embedded_engineer', 'software_architect', 'tech_lead', 'engineering_manager'])"
+      }
+    ],
+    "postcheck": []
+  }
+]

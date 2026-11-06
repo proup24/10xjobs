@@ -286,6 +286,38 @@ export type Database = {
         };
         Relationships: [];
       };
+      iso_currencies: {
+        Row: {
+          code: string;
+          label: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          code: string;
+          label: string;
+        };
+        Update: {
+          code?: string;
+          label?: string;
+        };
+        Relationships: [];
+      };
+      iso_languages: {
+        Row: {
+          code: string;
+          label: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          code: string;
+          label: string;
+        };
+        Update: {
+          code?: string;
+          label?: string;
+        };
+        Relationships: [];
+      };
       job_extractions: {
         Row: {
           arrangement: string | null;
@@ -849,14 +881,18 @@ export type Database = {
       };
       profiles: {
         Row: {
+          acceptedCurrencies: string[];
+          acceptsAnyCurrency: boolean;
           city: string | null;
-          country: string;
+          contractTypes: string[] | null;
+          country: string | null;
           createdAt: string;
           engagements: string[];
           id: string;
-          languages: string[];
-          locations: NonNullable<Json>;
+          languages: string[] | null;
+          locations: Json | null;
           noticePeriodDays: number;
+          places: Json | null;
           position: string;
           publishedAt: string | null;
           resumeFilename: string | null;
@@ -864,7 +900,11 @@ export type Database = {
           resumeSha256: string | null;
           resumeSizeBytes: number | null;
           resumeUploadedAt: string | null;
+          salaryCurrency: string | null;
+          salaryMin: number | null;
+          salaryPeriod: string | null;
           seniorities: string[];
+          spokenLanguages: Json | null;
           state: string;
           timezoneCurrent: number;
           timezoneMax: number;
@@ -875,14 +915,18 @@ export type Database = {
         };
         ComputedFields: never;
         Insert: {
+          acceptedCurrencies?: string[];
+          acceptsAnyCurrency?: boolean;
           city?: string | null;
-          country: string;
+          contractTypes?: string[] | null;
+          country?: string | null;
           createdAt?: string;
           engagements: string[];
           id: string;
-          languages: string[];
-          locations: NonNullable<Json>;
+          languages?: string[] | null;
+          locations?: Json | null;
           noticePeriodDays: number;
+          places?: Json | null;
           position: string;
           publishedAt?: string | null;
           resumeFilename?: string | null;
@@ -890,7 +934,11 @@ export type Database = {
           resumeSha256?: string | null;
           resumeSizeBytes?: number | null;
           resumeUploadedAt?: string | null;
+          salaryCurrency?: string | null;
+          salaryMin?: number | null;
+          salaryPeriod?: string | null;
           seniorities: string[];
+          spokenLanguages?: Json | null;
           state?: string;
           timezoneCurrent: number;
           timezoneMax: number;
@@ -900,14 +948,18 @@ export type Database = {
           yearsOfExperience: number;
         };
         Update: {
+          acceptedCurrencies?: string[];
+          acceptsAnyCurrency?: boolean;
           city?: string | null;
-          country?: string;
+          contractTypes?: string[] | null;
+          country?: string | null;
           createdAt?: string;
           engagements?: string[];
           id?: string;
-          languages?: string[];
-          locations?: NonNullable<Json>;
+          languages?: string[] | null;
+          locations?: Json | null;
           noticePeriodDays?: number;
+          places?: Json | null;
           position?: string;
           publishedAt?: string | null;
           resumeFilename?: string | null;
@@ -915,7 +967,11 @@ export type Database = {
           resumeSha256?: string | null;
           resumeSizeBytes?: number | null;
           resumeUploadedAt?: string | null;
+          salaryCurrency?: string | null;
+          salaryMin?: number | null;
+          salaryPeriod?: string | null;
           seniorities?: string[];
+          spokenLanguages?: Json | null;
           state?: string;
           timezoneCurrent?: number;
           timezoneMax?: number;
@@ -1218,6 +1274,7 @@ export type Database = {
           approvedAt: string | null;
           code: string;
           firstSeenAt: string;
+          isEngineering: boolean;
           label: string;
           occurrences: number;
           status: string;
@@ -1228,6 +1285,7 @@ export type Database = {
           approvedAt?: string | null;
           code: string;
           firstSeenAt: string;
+          isEngineering?: boolean;
           label: string;
           occurrences?: number;
           status: string;
@@ -1237,6 +1295,7 @@ export type Database = {
           approvedAt?: string | null;
           code?: string;
           firstSeenAt?: string;
+          isEngineering?: boolean;
           label?: string;
           occurrences?: number;
           status?: string;
@@ -1374,34 +1433,88 @@ export type Database = {
       };
       users: {
         Row: {
+          acceptsSponsorship: boolean | null;
           address: Json | null;
           createdAt: string;
           id: string;
           name: string | null;
+          residenceCountry: string | null;
           updatedAt: string;
         };
         ComputedFields: never;
         Insert: {
+          acceptsSponsorship?: boolean | null;
           address?: Json | null;
           createdAt?: string;
           id: string;
           name?: string | null;
+          residenceCountry?: string | null;
           updatedAt?: string;
         };
         Update: {
+          acceptsSponsorship?: boolean | null;
           address?: Json | null;
           createdAt?: string;
           id?: string;
           name?: string | null;
+          residenceCountry?: string | null;
           updatedAt?: string;
         };
         Relationships: [];
+      };
+      work_authorizations: {
+        Row: {
+          createdAt: string;
+          id: string;
+          kind: string;
+          place: string;
+          updatedAt: string;
+          userId: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          createdAt?: string;
+          id: string;
+          kind: string;
+          place: string;
+          updatedAt?: string;
+          userId: string;
+        };
+        Update: {
+          createdAt?: string;
+          id?: string;
+          kind?: string;
+          place?: string;
+          updatedAt?: string;
+          userId?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'work_authorizations_userId_fkey';
+            columns: ['userId'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
       };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
+      assert_codes: {
+        Args: { codes: string[]; field: string; list: string };
+        Returns: undefined;
+      };
+      assert_languages: {
+        Args: { field: string; langs: Json };
+        Returns: undefined;
+      };
+      assert_places: {
+        Args: { field: string; places: Json };
+        Returns: undefined;
+      };
       end_expired_sessions: {
         Args: Record<PropertyKey, never>;
         Returns: number;

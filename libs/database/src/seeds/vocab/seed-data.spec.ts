@@ -6,7 +6,12 @@ import {
   Seniority,
   Technology,
 } from '../../enums';
-import { SEED, SEED_REGION_COUNTRIES, SEED_TECH_EXTRAS } from './seed-data';
+import {
+  ENGINEERING_ROLE_KINDS,
+  SEED,
+  SEED_REGION_COUNTRIES,
+  SEED_TECH_EXTRAS,
+} from './seed-data';
 import { LIST_NAMES } from './lists';
 
 const codes = (list: keyof typeof SEED) => SEED[list].map((t) => t.code);
@@ -73,5 +78,13 @@ describe('processor seed data', () => {
 
   it('GLOBAL has no region_countries rows', () => {
     expect(SEED_REGION_COUNTRIES.filter(([r]) => r === 'GLOBAL')).toEqual([]);
+  });
+
+  it('marks exactly the 17 engineering role kinds, all seeded', () => {
+    expect(ENGINEERING_ROLE_KINDS).toHaveLength(17);
+    expect(codes('roleKinds')).toEqual(
+      expect.arrayContaining([...ENGINEERING_ROLE_KINDS]),
+    );
+    expect(ENGINEERING_ROLE_KINDS).not.toContain('support');
   });
 });

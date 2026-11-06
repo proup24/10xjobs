@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import type { UserRow } from 'src/database';
+import type { UserView } from '../types';
 
 export class AddressResponseDto {
   @ApiProperty()
@@ -21,7 +21,7 @@ export class AddressResponseDto {
   country!: string;
 }
 
-export class UserResponseDto implements UserRow {
+export class UserResponseDto implements UserView {
   @ApiProperty({ format: 'uuid' })
   id!: string;
 

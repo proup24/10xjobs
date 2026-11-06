@@ -8,7 +8,9 @@ A first-time user goes from the invite email to a complete set of preferences, e
 
 - A step-by-step setup that creates the user's first profile and writes to the schemas from slices 04–06, directly through Supabase as the signed-in user.
 - Progress saved as the user goes, so leaving midway and coming back works.
-- Adding a missing tech to the shared catalog from the tech stack step.
+- Pickers that load the approved entries of each value list (techs, roles, seniorities, contract types, engagements, regions, countries, cities, languages, currencies). They are read-only, so a missing entry is added by an admin, not by the user.
+- An eligibility step: country of residence, work authorizations and visa sponsorship.
+- A location picker that offers places (worldwide, region, country, city), not free text.
 - Sending users with unfinished setup back to it.
 
 ## Out of scope
