@@ -118,7 +118,7 @@ enabled = true
 # The maximum file size allowed (e.g. "5MB", "500KB").
 file_size_limit = "50MiB"
 
-# Resume PDFs; the engine reads and writes with the service-role key.
+# Resume PDFs; users write under their own folder through Storage policies, and the engine reads with the service role.
 [storage.buckets.resumes]
 public = false
 file_size_limit = "5MiB"
