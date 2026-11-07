@@ -102,6 +102,87 @@ GRANT EXECUTE ON FUNCTION public.resume_key_is_own(text) TO authenticated;`,
         ],
         postcheck: [],
       }),
+      rawSql({
+        id: 'public.set_profile_resume',
+        // No invariantId: a migration may declare each invariant only once,
+        // and `resume-storage` is on the bucket op above.
+        label: 'set_profile_resume, the only writer of a profile resume',
+        operationClass: 'data',
+        target: {
+          id: 'postgres',
+          details: { schema: 'public', objectType: 'table', name: 'profiles' },
+        },
+        precheck: [],
+        execute: [
+          {
+            description:
+              'set_profile_resume(): validate, read the size from Storage, swap the columns, return the previous key',
+            sql: `CREATE FUNCTION public.set_profile_resume(profile_id uuid, key text, filename text, sha256 text)
+  RETURNS text
+  LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
+DECLARE
+  uid uuid := auth.uid();
+  previous text;
+  object_size bigint;
+  clean text;
+BEGIN
+  IF uid IS NULL THEN
+    RAISE EXCEPTION 'set_profile_resume: not signed in' USING ERRCODE = '42501';
+  END IF;
+
+  SELECT p."resumeKey" INTO previous
+  FROM public.profiles p
+  WHERE p.id = set_profile_resume.profile_id AND p."userId" = uid
+  FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'set_profile_resume: profile not found' USING ERRCODE = '42501';
+  END IF;
+
+  IF key IS NULL OR NOT public.resume_key_is_own(key) THEN
+    RAISE EXCEPTION 'set_profile_resume: key is not a resume key in your folder'
+      USING ERRCODE = '23514';
+  END IF;
+  IF split_part(key, '/', 2) <> set_profile_resume.profile_id::text THEN
+    RAISE EXCEPTION 'set_profile_resume: key belongs to another profile'
+      USING ERRCODE = '23514';
+  END IF;
+  IF sha256 IS NULL OR sha256 !~ '^[0-9a-f]{64}$' THEN
+    RAISE EXCEPTION 'set_profile_resume: sha256 must be 64 lowercase hex characters'
+      USING ERRCODE = '23514';
+  END IF;
+
+  SELECT (o.metadata->>'size')::bigint INTO object_size
+  FROM storage.objects o
+  WHERE o.bucket_id = 'resumes' AND o.name = key;
+  IF NOT FOUND OR object_size IS NULL THEN
+    RAISE EXCEPTION 'set_profile_resume: no uploaded file at key'
+      USING ERRCODE = '23514';
+  END IF;
+
+  clean := regexp_replace(coalesce(filename, ''), '^.*[/\\\\]', '');
+  clean := regexp_replace(clean, '[^A-Za-z0-9_. -]', '_', 'g');
+  clean := btrim(left(clean, 200));
+  IF clean = '' THEN
+    clean := 'resume.pdf';
+  END IF;
+
+  UPDATE public.profiles p
+  SET "resumeKey" = key,
+      "resumeFilename" = clean,
+      "resumeSizeBytes" = object_size::int,
+      "resumeSha256" = sha256,
+      "resumeUploadedAt" = now()
+  WHERE p.id = set_profile_resume.profile_id;
+
+  RETURN previous;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.set_profile_resume(uuid, text, text, text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.set_profile_resume(uuid, text, text, text) TO authenticated;`,
+          },
+        ],
+        postcheck: [],
+      }),
     ];
   }
 }

@@ -40,5 +40,26 @@
       }
     ],
     "postcheck": []
+  },
+  {
+    "id": "public.set_profile_resume",
+    "label": "set_profile_resume, the only writer of a profile resume",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "profiles"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "set_profile_resume(): validate, read the size from Storage, swap the columns, return the previous key",
+        "sql": "CREATE FUNCTION public.set_profile_resume(profile_id uuid, key text, filename text, sha256 text)\n  RETURNS text\n  LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$\nDECLARE\n  uid uuid := auth.uid();\n  previous text;\n  object_size bigint;\n  clean text;\nBEGIN\n  IF uid IS NULL THEN\n    RAISE EXCEPTION 'set_profile_resume: not signed in' USING ERRCODE = '42501';\n  END IF;\n\n  SELECT p.\"resumeKey\" INTO previous\n  FROM public.profiles p\n  WHERE p.id = set_profile_resume.profile_id AND p.\"userId\" = uid\n  FOR UPDATE;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'set_profile_resume: profile not found' USING ERRCODE = '42501';\n  END IF;\n\n  IF key IS NULL OR NOT public.resume_key_is_own(key) THEN\n    RAISE EXCEPTION 'set_profile_resume: key is not a resume key in your folder'\n      USING ERRCODE = '23514';\n  END IF;\n  IF split_part(key, '/', 2) <> set_profile_resume.profile_id::text THEN\n    RAISE EXCEPTION 'set_profile_resume: key belongs to another profile'\n      USING ERRCODE = '23514';\n  END IF;\n  IF sha256 IS NULL OR sha256 !~ '^[0-9a-f]{64}$' THEN\n    RAISE EXCEPTION 'set_profile_resume: sha256 must be 64 lowercase hex characters'\n      USING ERRCODE = '23514';\n  END IF;\n\n  SELECT (o.metadata->>'size')::bigint INTO object_size\n  FROM storage.objects o\n  WHERE o.bucket_id = 'resumes' AND o.name = key;\n  IF NOT FOUND OR object_size IS NULL THEN\n    RAISE EXCEPTION 'set_profile_resume: no uploaded file at key'\n      USING ERRCODE = '23514';\n  END IF;\n\n  clean := regexp_replace(coalesce(filename, ''), '^.*[/\\\\]', '');\n  clean := regexp_replace(clean, '[^A-Za-z0-9_. -]', '_', 'g');\n  clean := btrim(left(clean, 200));\n  IF clean = '' THEN\n    clean := 'resume.pdf';\n  END IF;\n\n  UPDATE public.profiles p\n  SET \"resumeKey\" = key,\n      \"resumeFilename\" = clean,\n      \"resumeSizeBytes\" = object_size::int,\n      \"resumeSha256\" = sha256,\n      \"resumeUploadedAt\" = now()\n  WHERE p.id = set_profile_resume.profile_id;\n\n  RETURN previous;\nEND;\n$$;\nREVOKE ALL ON FUNCTION public.set_profile_resume(uuid, text, text, text) FROM PUBLIC, anon;\nGRANT EXECUTE ON FUNCTION public.set_profile_resume(uuid, text, text, text) TO authenticated;"
+      }
+    ],
+    "postcheck": []
   }
 ]
