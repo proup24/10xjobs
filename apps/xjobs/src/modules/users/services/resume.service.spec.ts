@@ -8,7 +8,6 @@ import {
 } from '@nestjs/common';
 import {
   Engagement,
-  Language,
   Position,
   ProfileState,
   Seniority,
@@ -30,16 +29,18 @@ const pdf = (buffer = pdfBytes, mimetype = 'application/pdf'): UploadedPdf => ({
 
 const profileInput: ProfileInput = {
   position: Position.backend_engineer,
-  languages: [Language.EN],
-  country: 'MA',
-  city: null,
-  locations: { remote: ['Worldwide'], hybrid: [], onsite: [] },
+  languages: [{ lang: 'en', level: 'fluent' }],
+  locations: { remote: [{ kind: 'worldwide' }], hybrid: [], onsite: [] },
   yearsOfExperience: 6,
   timezoneCurrent: 0,
   timezoneMin: 0,
   timezoneMax: 0,
   engagements: [Engagement.employee],
   seniorities: [Seniority.senior],
+  contractTypes: ['full_time'],
+  salary: null,
+  acceptsAnyCurrency: true,
+  acceptedCurrencies: [],
   noticePeriodDays: 0,
 };
 

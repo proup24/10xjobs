@@ -2,7 +2,10 @@
 import { ProfileState } from 'src/common/enums';
 import type { ContactRow, UserRow } from 'src/database';
 import { ContactsRepository } from '../repositories/contacts.repository';
-import { ProfilesRepository } from '../repositories/profiles.repository';
+import {
+  ProfilesRepository,
+  toProfileColumns,
+} from '../repositories/profiles.repository';
 import { UsersRepository } from '../repositories/users.repository';
 import type {
   ContactInput,
@@ -162,15 +165,13 @@ export class FakeProfilesRepository extends ProfilesRepository {
     const profile: ProfileWithSkills = {
       id,
       userId,
-      ...data,
-      contractTypes: null,
-      places: null,
-      spokenLanguages: null,
-      salaryMin: null,
-      salaryCurrency: null,
-      salaryPeriod: null,
-      acceptsAnyCurrency: true,
-      acceptedCurrencies: [],
+      position: data.position,
+      ...toProfileColumns(data),
+      // The old shape: no longer written.
+      languages: null,
+      country: null,
+      city: null,
+      locations: null,
       resumeKey: null,
       resumeFilename: null,
       resumeSizeBytes: null,
@@ -194,7 +195,7 @@ export class FakeProfilesRepository extends ProfilesRepository {
   ) {
     const profile = await this.findById(userId, profileId);
     if (profile?.state !== ProfileState.draft) return null;
-    return Object.assign(profile, data, {
+    return Object.assign(profile, toProfileColumns(data), {
       techStack: FakeProfilesRepository.techStack(userId, profileId, skills),
     });
   }

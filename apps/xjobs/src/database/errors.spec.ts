@@ -1,5 +1,9 @@
 import { ConflictException } from '@nestjs/common';
-import { isUniqueViolation, rethrowConflict } from './errors';
+import {
+  isCheckViolation,
+  isUniqueViolation,
+  rethrowConflict,
+} from './errors';
 
 describe('isUniqueViolation', () => {
   it('is true for a SQLSTATE 23505 error', () => {
@@ -17,6 +21,25 @@ describe('isUniqueViolation', () => {
 
   it('is false for null', () => {
     expect(isUniqueViolation(null)).toBe(false);
+  });
+});
+
+describe('isCheckViolation', () => {
+  it('is true for a SQLSTATE 23514 error', () => {
+    expect(isCheckViolation({ sqlState: '23514' })).toBe(true);
+  });
+
+  it('is false for a unique violation', () => {
+    expect(isCheckViolation({ sqlState: '23505' })).toBe(false);
+  });
+
+  it('is true when the violation is a cause further down the chain', () => {
+    const error = new Error('x', { cause: { sqlState: '23514' } });
+    expect(isCheckViolation(error)).toBe(true);
+  });
+
+  it('is false for null', () => {
+    expect(isCheckViolation(null)).toBe(false);
   });
 });
 

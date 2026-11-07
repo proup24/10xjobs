@@ -3,6 +3,8 @@ export { contract, createDatabaseClient } from '@xjobs/database';
 export type { DatabaseClient } from '@xjobs/database';
 export { DatabaseModule } from './database.module';
 export {
+  checkViolationMessage,
+  isCheckViolation,
   isRetryableTransactionError,
   isUniqueViolation,
   rethrowConflict,

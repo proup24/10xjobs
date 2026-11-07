@@ -1,8 +1,10 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { checkViolationMessage, type ProfileRow } from 'src/database';
 import {
   Position,
   ProfileState,
@@ -12,7 +14,6 @@ import {
 } from 'src/common/enums';
 import {
   type LocationsByArrangement,
-  normalizeLocations,
   normalizeSeniorities,
   QuerySearchService,
   type QuerySearchProfileInput,
@@ -20,27 +21,27 @@ import {
 import { ProfilesRepository } from '../repositories/profiles.repository';
 import { UsersService } from './users.service';
 import type {
-  PreferenceColumns,
+  PlacesByArrangement,
   ProfileFields,
   ProfileInput,
   ProfileView,
   ProfileWithSkills,
   PublishedProfileView,
+  Salary,
   SkillInput,
+  SpokenLanguage,
 } from '../types';
 
-const PREFERENCE_COLUMNS = [
-  'contractTypes',
-  'places',
-  'spokenLanguages',
-  'salaryMin',
-  'salaryCurrency',
-  'salaryPeriod',
-  'acceptsAnyCurrency',
-  'acceptedCurrencies',
-] as const satisfies readonly PreferenceColumns[];
+/** The old shape: no longer written, and left out of the API. */
+const OLD_SHAPE_COLUMNS = [
+  'languages',
+  'country',
+  'city',
+  'locations',
+] as const satisfies readonly (keyof ProfileRow)[];
+type OldShapeColumn = (typeof OLD_SHAPE_COLUMNS)[number];
 
-/** The API shape of a profile: no storage key, stack ordered by importance, then what the user wants most. */
+/** The API shape of a profile: no storage key or old-shape columns, stack ordered by importance, then mastery. */
 export function toProfileView(profile: ProfileWithSkills): ProfileView {
   const {
     techStack,
@@ -49,14 +50,32 @@ export function toProfileView(profile: ProfileWithSkills): ProfileView {
     resumeSizeBytes,
     resumeSha256,
     resumeUploadedAt,
-    ...row
+    places,
+    spokenLanguages,
+    contractTypes,
+    salaryMin,
+    salaryCurrency,
+    salaryPeriod,
+    ...columns
   } = profile;
-  const fields: Partial<typeof row> = { ...row };
-  for (const column of PREFERENCE_COLUMNS) delete fields[column];
+  const row: Partial<typeof columns> = { ...columns };
+  for (const column of OLD_SHAPE_COLUMNS) delete row[column];
   return {
-    ...(fields as Omit<typeof row, PreferenceColumns>),
-    // A jsonb column: always written through normalizeLocations, in this shape.
-    locations: fields.locations as LocationsByArrangement,
+    ...(row as Omit<typeof columns, OldShapeColumn>),
+    // jsonb columns the database checks into these shapes (assert_places, assert_languages).
+    locations: places as PlacesByArrangement,
+    languages: spokenLanguages as SpokenLanguage[],
+    // Non-null for every profile since the dev-profile cleanup; [] only guards the type.
+    contractTypes: [...(contractTypes ?? [])],
+    // All three or none (profiles_salary_all_or_none).
+    salary:
+      salaryMin !== null && salaryCurrency !== null && salaryPeriod !== null
+        ? {
+            min: salaryMin,
+            currency: salaryCurrency,
+            period: salaryPeriod as Salary['period'],
+          }
+        : null,
     techStack: techStack
       .map(({ technology, domain, mastery, importance }) => ({
         technology,
@@ -81,9 +100,11 @@ export function toProfileView(profile: ProfileWithSkills): ProfileView {
 export function toQuerySearchInput(
   profile: ProfileWithSkills,
 ): QuerySearchProfileInput {
-  // Rows carry plain string unions; the enums have the same values.
+  // Rows carry plain strings; the enums have the same values.
   return {
     position: profile.position as Position,
+    // TODO: still the old `locations` text column, which profile writes now leave
+    // null. Query generation moves to `places` with their labels next.
     locations: profile.locations as LocationsByArrangement,
     seniorities: profile.seniorities as Seniority[],
     skills: profile.techStack.map(
@@ -97,14 +118,33 @@ export function toQuerySearchInput(
   };
 }
 
-/** A profile write as the API sends it: importance may be left out and defaults to 5. */
-export type ProfileWrite = Omit<ProfileInput, 'city'> & {
-  city?: string | null;
+/** A profile write as the API sends it: salary may be left out, and importance defaults to 5. */
+export type ProfileWrite = Omit<ProfileInput, 'salary'> & {
+  salary?: Salary | null;
   techStack: (Omit<SkillInput, 'importance'> & { importance?: number })[];
 };
 
 /** A replacement as the API sends it: the position is fixed at creation and cannot be sent. */
 export type ProfileReplaceWrite = Omit<ProfileWrite, 'position'>;
+
+/** The editable fields of a write, built field by field so a stray `position` can never reach a replace. */
+function toFields(data: ProfileReplaceWrite): ProfileFields {
+  return {
+    locations: data.locations,
+    languages: data.languages,
+    yearsOfExperience: data.yearsOfExperience,
+    timezoneCurrent: data.timezoneCurrent,
+    timezoneMin: data.timezoneMin,
+    timezoneMax: data.timezoneMax,
+    engagements: data.engagements,
+    seniorities: orderSeniorities(data.seniorities),
+    contractTypes: data.contractTypes,
+    salary: data.salary ?? null,
+    acceptsAnyCurrency: data.acceptsAnyCurrency,
+    acceptedCurrencies: data.acceptedCurrencies,
+    noticePeriodDays: data.noticePeriodDays,
+  };
+}
 
 function toSkills(techStack: ProfileReplaceWrite['techStack']): SkillInput[] {
   return techStack.map(({ technology, domain, mastery, importance }) => ({
@@ -113,6 +153,33 @@ function toSkills(techStack: ProfileReplaceWrite['techStack']): SkillInput[] {
     mastery,
     importance: importance ?? 5,
   }));
+}
+
+/**
+ * Dedupes seniorities into Seniority enum order. A code the enum does not know
+ * is kept, after the known ones, so the database refuses it with a 400 rather
+ * than it being dropped silently.
+ */
+function orderSeniorities(seniorities: string[]): string[] {
+  const known = new Set<string>(Object.values(Seniority));
+  const unique = [...new Set(seniorities)];
+  return [
+    ...normalizeSeniorities(
+      unique.filter((code) => known.has(code)) as Seniority[],
+    ),
+    ...unique.filter((code) => !known.has(code)),
+  ];
+}
+
+/** Turns a database check violation (a bad code, a bad shape) into a 400 with its message; rethrows anything else. */
+async function badRequestOnCheck<T>(write: Promise<T>): Promise<T> {
+  try {
+    return await write;
+  } catch (error) {
+    const message = checkViolationMessage(error);
+    if (message !== null) throw new BadRequestException(message);
+    throw error;
+  }
 }
 
 const PROFILE_NOT_FOUND = 'Profile not found';
@@ -200,17 +267,13 @@ export class ProfilesService {
   /** New profiles start as unpublished drafts. */
   async create(userId: string, data: ProfileWrite): Promise<ProfileView> {
     await this.users.getOrThrow(userId);
-    const { techStack, ...fields } = data;
     return toProfileView(
-      await this.profiles.create(
-        userId,
-        {
-          ...fields,
-          city: fields.city ?? null,
-          locations: normalizeLocations(fields.locations),
-          seniorities: normalizeSeniorities(fields.seniorities),
-        },
-        toSkills(techStack),
+      await badRequestOnCheck(
+        this.profiles.create(
+          userId,
+          { position: data.position, ...toFields(data) },
+          toSkills(data.techStack),
+        ),
       ),
     );
   }
@@ -222,25 +285,13 @@ export class ProfilesService {
     data: ProfileReplaceWrite,
   ): Promise<ProfileView> {
     await this.getDraftOrThrow(userId, profileId);
-    // Built field by field so a stray `position` can never reach the update.
-    const fields: ProfileFields = {
-      languages: data.languages,
-      country: data.country,
-      city: data.city ?? null,
-      locations: normalizeLocations(data.locations),
-      yearsOfExperience: data.yearsOfExperience,
-      timezoneCurrent: data.timezoneCurrent,
-      timezoneMin: data.timezoneMin,
-      timezoneMax: data.timezoneMax,
-      engagements: data.engagements,
-      seniorities: normalizeSeniorities(data.seniorities),
-      noticePeriodDays: data.noticePeriodDays,
-    };
-    const profile = await this.profiles.replace(
-      userId,
-      profileId,
-      fields,
-      toSkills(data.techStack),
+    const profile = await badRequestOnCheck(
+      this.profiles.replace(
+        userId,
+        profileId,
+        toFields(data),
+        toSkills(data.techStack),
+      ),
     );
     if (!profile) return this.rejectWrite(userId, profileId);
     return toProfileView(profile);

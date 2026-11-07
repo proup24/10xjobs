@@ -1,16 +1,82 @@
 import {
   isEmail,
   isURL,
+  isUUID,
   registerDecorator,
   type ValidationArguments,
   type ValidationOptions,
 } from 'class-validator';
 import { ContactKind } from 'src/common/enums';
-import {
-  hasLocation,
-  type LocationsByArrangement,
-  LOCATIONS_REQUIRED,
-} from 'src/modules/queries';
+import { LOCATION_ARRANGEMENTS, LOCATIONS_REQUIRED } from 'src/modules/queries';
+import type { PlacesByArrangement } from '../types';
+
+/** A value-list code: lowercase letters, digits and underscores (`backend_engineer`, `per_task`). */
+export const CODE = /^[a-z0-9_]+$/;
+/** A regions code (`EMEA`, `NORTH_AFRICA`). */
+export const REGION_CODE = /^[A-Z][A-Z0-9_]*$/;
+/** An ISO 3166-1 alpha-2 country code. */
+export const COUNTRY_CODE = /^[A-Z]{2}$/;
+/** An ISO 639-1 language code. */
+export const LANGUAGE_CODE = /^[a-z]{2}$/;
+/** An ISO 4217 currency code. */
+export const CURRENCY_CODE = /^[A-Z]{3}$/;
+
+/** True when `value` has exactly the keys `keys`. */
+function hasExactKeys(value: object, keys: string[]): boolean {
+  const own = Object.keys(value);
+  return own.length === keys.length && keys.every((key) => own.includes(key));
+}
+
+/**
+ * True when `value` is a place in shape: `{ kind: 'worldwide' }`, a region or
+ * country by code, or a city by uuid. Whether the code is approved is the
+ * database's call.
+ */
+export function isPlace(value: unknown): boolean {
+  if (typeof value !== 'object' || value === null || Array.isArray(value))
+    return false;
+  const place = value as Record<string, unknown>;
+  switch (place.kind) {
+    case 'worldwide':
+      return hasExactKeys(place, ['kind']);
+    case 'region':
+      return (
+        hasExactKeys(place, ['kind', 'code']) &&
+        typeof place.code === 'string' &&
+        place.code.length <= 64 &&
+        REGION_CODE.test(place.code)
+      );
+    case 'country':
+      return (
+        hasExactKeys(place, ['kind', 'code']) &&
+        typeof place.code === 'string' &&
+        COUNTRY_CODE.test(place.code)
+      );
+    case 'city':
+      return (
+        hasExactKeys(place, ['kind', 'id']) &&
+        typeof place.id === 'string' &&
+        isUUID(place.id)
+      );
+    default:
+      return false;
+  }
+}
+
+/** Validates each entry with {@link isPlace}. */
+export function IsPlace(options?: ValidationOptions) {
+  return (target: object, propertyName: string) =>
+    registerDecorator({
+      name: 'isPlace',
+      target: target.constructor,
+      propertyName,
+      options: {
+        message: `${propertyName} entries must be { kind: 'worldwide' }, { kind: 'region' | 'country', code } or { kind: 'city', id }`,
+        ...options,
+      },
+      validator: { validate: (value: unknown) => isPlace(value) },
+    });
+}
 
 const E164 = /^\+[1-9]\d{6,14}$/;
 const URL_KINDS: ContactKind[] = [
@@ -130,10 +196,12 @@ export function HasLocation(options?: ValidationOptions) {
       validator: {
         validate: (value: unknown) => {
           if (typeof value !== 'object' || value === null) return true;
-          const lists = value as Partial<LocationsByArrangement>;
+          const lists = value as Partial<PlacesByArrangement>;
           if (![lists.remote, lists.hybrid, lists.onsite].every(Array.isArray))
             return true;
-          return hasLocation(lists as LocationsByArrangement);
+          return LOCATION_ARRANGEMENTS.some(
+            (arrangement) => (lists[arrangement]?.length ?? 0) > 0,
+          );
         },
       },
     });

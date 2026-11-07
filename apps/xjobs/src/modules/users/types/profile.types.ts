@@ -1,29 +1,34 @@
-import type {
-  Engagement,
-  Language,
-  Position,
-  Seniority,
-  SkillDomain,
-  Technology,
-} from 'src/common/enums';
+import type { SkillDomain } from 'src/common/enums';
 import type { ProfileRow, ProfileSkillRow } from 'src/database';
-import type {
-  LocationsByArrangement,
-  QuerySearchAttachResult,
-} from 'src/modules/queries';
+import type { QuerySearchAttachResult } from 'src/modules/queries';
+import type { PlacesByArrangement, Salary, SpokenLanguage } from './place.types';
 
+/**
+ * A profile as the engine writes it. Codes are plain strings: the database's
+ * code-check triggers decide which ones are approved.
+ */
 export type ProfileInput = {
-  position: Position;
-  languages: Language[];
-  country: string;
-  city: string | null;
-  locations: LocationsByArrangement;
+  /** A role_kinds code. */
+  position: string;
+  /** Written to the `places` column. */
+  locations: PlacesByArrangement;
+  /** Written to the `spokenLanguages` column. */
+  languages: SpokenLanguage[];
   yearsOfExperience: number;
   timezoneCurrent: number;
   timezoneMin: number;
   timezoneMax: number;
-  engagements: Engagement[];
-  seniorities: Seniority[];
+  /** engagements codes. */
+  engagements: string[];
+  /** seniorities codes. */
+  seniorities: string[];
+  /** contract_types codes. */
+  contractTypes: string[];
+  /** Written to `salaryMin`, `salaryCurrency` and `salaryPeriod`; null for no salary rule. */
+  salary: Salary | null;
+  acceptsAnyCurrency: boolean;
+  /** ISO 4217 codes; empty exactly when any currency is accepted. */
+  acceptedCurrencies: string[];
   noticePeriodDays: number;
 };
 
@@ -31,7 +36,8 @@ export type ProfileInput = {
 export type ProfileFields = Omit<ProfileInput, 'position'>;
 
 export type SkillInput = {
-  technology: Technology;
+  /** A tech_tags code. */
+  technology: string;
   domain: SkillDomain;
   mastery: number;
   importance: number;
@@ -39,28 +45,31 @@ export type SkillInput = {
 
 export type ProfileWithSkills = ProfileRow & { techStack: ProfileSkillRow[] };
 
-/** Preference columns the questionnaire does not write yet; the API leaves them out until it does. */
-export type PreferenceColumns =
-  | 'contractTypes'
-  | 'places'
-  | 'spokenLanguages'
-  | 'salaryMin'
-  | 'salaryCurrency'
-  | 'salaryPeriod'
-  | 'acceptsAnyCurrency'
-  | 'acceptedCurrencies';
-
-export type ProfileView = Omit<
-  ProfileRow,
+/** Columns the API does not show as stored: the old shape, and the new fields it renames or groups. */
+export type HiddenProfileColumns =
   | 'resumeKey'
   | 'resumeFilename'
   | 'resumeSizeBytes'
   | 'resumeSha256'
   | 'resumeUploadedAt'
+  | 'languages'
+  | 'country'
+  | 'city'
   | 'locations'
-  | PreferenceColumns
-> & {
-  locations: LocationsByArrangement;
+  | 'places'
+  | 'spokenLanguages'
+  | 'contractTypes'
+  | 'salaryMin'
+  | 'salaryCurrency'
+  | 'salaryPeriod';
+
+export type ProfileView = Omit<ProfileRow, HiddenProfileColumns> & {
+  /** The `places` column. */
+  locations: PlacesByArrangement;
+  /** The `spokenLanguages` column. */
+  languages: SpokenLanguage[];
+  contractTypes: string[];
+  salary: Salary | null;
   techStack: Pick<
     ProfileSkillRow,
     'technology' | 'domain' | 'mastery' | 'importance'

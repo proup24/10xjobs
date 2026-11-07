@@ -3192,12 +3192,6 @@
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
-                },
-                "valueSet": {
-                  "entityKind": "enum",
-                  "entityName": "Engagement",
-                  "namespaceId": "public",
-                  "plane": "domain"
                 }
               },
               "id": {
@@ -3249,12 +3243,6 @@
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
-                },
-                "valueSet": {
-                  "entityKind": "enum",
-                  "entityName": "Position",
-                  "namespaceId": "public",
-                  "plane": "domain"
                 }
               },
               "publishedAt": {
@@ -3334,12 +3322,6 @@
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
-                },
-                "valueSet": {
-                  "entityKind": "enum",
-                  "entityName": "Seniority",
-                  "namespaceId": "public",
-                  "plane": "domain"
                 }
               },
               "spokenLanguages": {
@@ -3671,12 +3653,6 @@
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
-                },
-                "valueSet": {
-                  "entityKind": "enum",
-                  "entityName": "Technology",
-                  "namespaceId": "public",
-                  "plane": "domain"
                 }
               },
               "updatedAt": {
@@ -3929,12 +3905,6 @@
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
-                },
-                "valueSet": {
-                  "entityKind": "enum",
-                  "entityName": "Technology",
-                  "namespaceId": "public",
-                  "plane": "domain"
                 }
               },
               "type": {
@@ -7987,11 +7957,6 @@
                   "expression": "mastery BETWEEN 0 AND 10",
                   "name": "profile_skills_mastery_range_06062a09",
                   "prefix": "profile_skills_mastery_range"
-                },
-                {
-                  "expression": "\"technology\" IN ('javascript', 'typescript', 'python', 'java', 'kotlin', 'go', 'rust', 'csharp', 'cpp', 'php', 'ruby', 'scala', 'elixir', 'swift', 'dart', 'sql', 'bash', 'nodejs', 'nestjs', 'express', 'fastify', 'django', 'fastapi', 'flask', 'spring', 'dotnet', 'laravel', 'rails', 'graphql', 'grpc', 'react', 'nextjs', 'vue', 'nuxt', 'angular', 'svelte', 'tailwindcss', 'react_native', 'flutter', 'postgresql', 'mysql', 'mongodb', 'redis', 'elasticsearch', 'kafka', 'rabbitmq', 'spark', 'airflow', 'dbt', 'snowflake', 'aws', 'gcp', 'azure', 'docker', 'kubernetes', 'terraform', 'ansible', 'github_actions', 'gitlab_ci', 'linux', 'nginx', 'prometheus', 'grafana', 'pytorch', 'tensorflow', 'langchain')",
-                  "name": "profile_skills_technology_check_415c1e16",
-                  "prefix": "profile_skills_technology_check"
                 }
               ],
               "columns": {
@@ -8045,13 +8010,7 @@
                 "technology": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
-                  "nullable": false,
-                  "valueSet": {
-                    "entityKind": "valueSet",
-                    "entityName": "Technology",
-                    "namespaceId": "public",
-                    "plane": "storage"
-                  }
+                  "nullable": false
                 },
                 "updatedAt": {
                   "codecId": "pg/timestamptz-date@1",
@@ -8172,11 +8131,6 @@
                   "prefix": "profiles_currencies_any_xor_list"
                 },
                 {
-                  "expression": "array_remove(\"engagements\", NULL) <@ '{\"employee\",\"contractor\",\"eor\",\"agency\",\"per_task\"}'",
-                  "name": "profiles_engagements_check_8a34079e",
-                  "prefix": "profiles_engagements_check"
-                },
-                {
                   "expression": "array_position(\"engagements\", NULL) IS NULL",
                   "name": "profiles_engagements_elem_not_null_49d9c5b3",
                   "prefix": "profiles_engagements_elem_not_null"
@@ -8207,19 +8161,14 @@
                   "prefix": "profiles_locations_nonempty"
                 },
                 {
-                  "expression": "jsonb_typeof(\"locations\") = 'object' AND \"locations\" ?& ARRAY['remote', 'hybrid', 'onsite'] AND (\"locations\" - ARRAY['remote', 'hybrid', 'onsite']) = '{}'::jsonb AND CASE WHEN jsonb_typeof(\"locations\" -> 'remote') = 'array' AND jsonb_typeof(\"locations\" -> 'hybrid') = 'array' AND jsonb_typeof(\"locations\" -> 'onsite') = 'array' THEN jsonb_array_length(\"locations\" -> 'remote') <= 20 AND jsonb_array_length(\"locations\" -> 'hybrid') <= 20 AND jsonb_array_length(\"locations\" -> 'onsite') <= 20 AND NOT jsonb_path_exists(\"locations\", '$.*[*] ? (@.type() != \"string\")') ELSE false END",
-                  "name": "profiles_locations_shape_8e195cce",
+                  "expression": "\"locations\" IS NULL OR (jsonb_typeof(\"locations\") = 'object' AND \"locations\" ?& ARRAY['remote', 'hybrid', 'onsite'] AND (\"locations\" - ARRAY['remote', 'hybrid', 'onsite']) = '{}'::jsonb AND CASE WHEN jsonb_typeof(\"locations\" -> 'remote') = 'array' AND jsonb_typeof(\"locations\" -> 'hybrid') = 'array' AND jsonb_typeof(\"locations\" -> 'onsite') = 'array' THEN jsonb_array_length(\"locations\" -> 'remote') <= 20 AND jsonb_array_length(\"locations\" -> 'hybrid') <= 20 AND jsonb_array_length(\"locations\" -> 'onsite') <= 20 AND NOT jsonb_path_exists(\"locations\", '$.*[*] ? (@.type() != \"string\")') ELSE false END)",
+                  "name": "profiles_locations_shape_c8b4dcae",
                   "prefix": "profiles_locations_shape"
                 },
                 {
                   "expression": "\"noticePeriodDays\" BETWEEN 0 AND 365",
                   "name": "profiles_notice_range_62c2438c",
                   "prefix": "profiles_notice_range"
-                },
-                {
-                  "expression": "\"position\" IN ('backend_engineer', 'frontend_engineer', 'fullstack_engineer', 'mobile_engineer', 'devops_engineer', 'site_reliability_engineer', 'platform_engineer', 'cloud_engineer', 'security_engineer', 'data_engineer', 'ml_engineer', 'ai_engineer', 'qa_engineer', 'embedded_engineer', 'software_architect', 'tech_lead', 'engineering_manager')",
-                  "name": "profiles_position_check_af0c0d09",
-                  "prefix": "profiles_position_check"
                 },
                 {
                   "expression": "(\"salaryMin\" IS NULL) = (\"salaryCurrency\" IS NULL) AND (\"salaryMin\" IS NULL) = (\"salaryPeriod\" IS NULL)",
@@ -8235,11 +8184,6 @@
                   "expression": "\"salaryPeriod\" IN ('hour','day','month','year')",
                   "name": "profiles_salary_period_fe0be813",
                   "prefix": "profiles_salary_period"
-                },
-                {
-                  "expression": "array_remove(\"seniorities\", NULL) <@ '{\"junior\",\"mid\",\"senior\",\"staff\",\"lead\",\"principal\",\"unstated\"}'",
-                  "name": "profiles_seniorities_check_c892abac",
-                  "prefix": "profiles_seniorities_check"
                 },
                 {
                   "expression": "array_position(\"seniorities\", NULL) IS NULL",
@@ -8325,13 +8269,7 @@
                   "many": {
                     "elementNullable": false
                   },
-                  "nullable": false,
-                  "valueSet": {
-                    "entityKind": "valueSet",
-                    "entityName": "Engagement",
-                    "namespaceId": "public",
-                    "plane": "storage"
-                  }
+                  "nullable": false
                 },
                 "id": {
                   "codecId": "pg/uuid@1",
@@ -8370,13 +8308,7 @@
                 "position": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
-                  "nullable": false,
-                  "valueSet": {
-                    "entityKind": "valueSet",
-                    "entityName": "Position",
-                    "namespaceId": "public",
-                    "plane": "storage"
-                  }
+                  "nullable": false
                 },
                 "publishedAt": {
                   "codecId": "pg/timestamptz-date@1",
@@ -8435,13 +8367,7 @@
                   "many": {
                     "elementNullable": false
                   },
-                  "nullable": false,
-                  "valueSet": {
-                    "entityKind": "valueSet",
-                    "entityName": "Seniority",
-                    "namespaceId": "public",
-                    "plane": "storage"
-                  }
+                  "nullable": false
                 },
                 "spokenLanguages": {
                   "codecId": "pg/jsonb@1",
@@ -8578,11 +8504,6 @@
                   "expression": "\"experience\" IN ('junior', 'mid', 'senior', 'staff', 'lead', 'principal', 'unstated')",
                   "name": "query_search_builder_experience_check_da85d416",
                   "prefix": "query_search_builder_experience_check"
-                },
-                {
-                  "expression": "array_remove(\"technologies\", NULL) <@ '{\"javascript\",\"typescript\",\"python\",\"java\",\"kotlin\",\"go\",\"rust\",\"csharp\",\"cpp\",\"php\",\"ruby\",\"scala\",\"elixir\",\"swift\",\"dart\",\"sql\",\"bash\",\"nodejs\",\"nestjs\",\"express\",\"fastify\",\"django\",\"fastapi\",\"flask\",\"spring\",\"dotnet\",\"laravel\",\"rails\",\"graphql\",\"grpc\",\"react\",\"nextjs\",\"vue\",\"nuxt\",\"angular\",\"svelte\",\"tailwindcss\",\"react_native\",\"flutter\",\"postgresql\",\"mysql\",\"mongodb\",\"redis\",\"elasticsearch\",\"kafka\",\"rabbitmq\",\"spark\",\"airflow\",\"dbt\",\"snowflake\",\"aws\",\"gcp\",\"azure\",\"docker\",\"kubernetes\",\"terraform\",\"ansible\",\"github_actions\",\"gitlab_ci\",\"linux\",\"nginx\",\"prometheus\",\"grafana\",\"pytorch\",\"tensorflow\",\"langchain\"}'",
-                  "name": "query_search_builder_technologies_check_84960705",
-                  "prefix": "query_search_builder_technologies_check"
                 },
                 {
                   "expression": "array_position(\"technologies\", NULL) IS NULL",
@@ -8736,13 +8657,7 @@
                   "many": {
                     "elementNullable": false
                   },
-                  "nullable": false,
-                  "valueSet": {
-                    "entityKind": "valueSet",
-                    "entityName": "Technology",
-                    "namespaceId": "public",
-                    "plane": "storage"
-                  }
+                  "nullable": false
                 },
                 "type": {
                   "codecId": "pg/text@1",
@@ -10155,7 +10070,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "1cfd25e269628885ca3ef263392ec32a0390667dcf7f74a7eabfc9c04de0cdd6"
+    "storageHash": "5c5ebc05508c65605769bbcd77d4eb71adc71b016b5cf9fc5cf54cf2cc573806"
   },
   "execution": {
     "executionHash": "5c00fc523089c5aa487c5b6b1a909049f24c10b050d4df6321de29c1c9800a76",

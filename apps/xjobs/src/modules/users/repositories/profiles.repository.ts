@@ -59,6 +59,31 @@ export abstract class ProfilesRepository {
   ): Promise<boolean>;
 }
 
+/**
+ * The columns a profile's editable fields are stored in. The old `languages`,
+ * `country`, `city` and `locations` columns are no longer written.
+ */
+export function toProfileColumns(fields: ProfileFields) {
+  // Field by field, so nothing outside the editable fields reaches a write.
+  return {
+    places: fields.locations,
+    spokenLanguages: fields.languages,
+    yearsOfExperience: fields.yearsOfExperience,
+    timezoneCurrent: fields.timezoneCurrent,
+    timezoneMin: fields.timezoneMin,
+    timezoneMax: fields.timezoneMax,
+    engagements: fields.engagements,
+    seniorities: fields.seniorities,
+    contractTypes: fields.contractTypes,
+    salaryMin: fields.salary?.min ?? null,
+    salaryCurrency: fields.salary?.currency ?? null,
+    salaryPeriod: fields.salary?.period ?? null,
+    acceptsAnyCurrency: fields.acceptsAnyCurrency,
+    acceptedCurrencies: fields.acceptedCurrencies,
+    noticePeriodDays: fields.noticePeriodDays,
+  };
+}
+
 @Injectable()
 export class PrismaProfilesRepository extends ProfilesRepository {
   constructor(private readonly database: DatabaseService) {
@@ -129,7 +154,12 @@ export class PrismaProfilesRepository extends ProfilesRepository {
     skills: SkillInput[],
   ): Promise<ProfileWithSkills> {
     return this.database.db.transaction(async (tx) => {
-      const profile = await tx.orm.public.Profile.create({ ...data, userId });
+      const { position, ...fields } = data;
+      const profile = await tx.orm.public.Profile.create({
+        ...toProfileColumns(fields),
+        position,
+        userId,
+      });
       const techStack = await PrismaProfilesRepository.writeSkills(
         tx,
         userId,
@@ -152,7 +182,7 @@ export class PrismaProfilesRepository extends ProfilesRepository {
         id: profileId,
         userId,
         state: ProfileState.draft,
-      }).update(data);
+      }).update(toProfileColumns(data));
       if (!profile) return null;
       const techStack = await PrismaProfilesRepository.writeSkills(
         tx,

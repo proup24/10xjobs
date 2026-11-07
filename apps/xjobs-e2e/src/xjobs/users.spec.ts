@@ -6,16 +6,28 @@ const ok = { validateStatus: () => true };
 
 const profile = {
   position: 'backend_engineer',
-  languages: ['EN', 'FR'],
-  country: 'MA',
-  city: 'Rabat',
-  locations: { remote: ['EMEA', 'North Africa'], hybrid: [], onsite: [] },
+  languages: [
+    { lang: 'en', level: 'fluent' },
+    { lang: 'fr', level: 'native' },
+  ],
+  locations: {
+    remote: [
+      { kind: 'region', code: 'EMEA' },
+      { kind: 'region', code: 'NORTH_AFRICA' },
+    ],
+    hybrid: [{ kind: 'country', code: 'MA' }],
+    onsite: [],
+  },
   yearsOfExperience: 6,
   timezoneCurrent: 60,
   timezoneMin: -240,
   timezoneMax: 240,
   engagements: ['employee', 'contractor'],
   seniorities: ['senior'],
+  contractTypes: ['full_time', 'contract'],
+  salary: { min: 4000, currency: 'EUR', period: 'month' },
+  acceptsAnyCurrency: false,
+  acceptedCurrencies: ['EUR', 'MAD'],
   noticePeriodDays: 30,
   techStack: [
     { technology: 'nodejs', domain: 'backend', mastery: 8, importance: 9 },
@@ -177,18 +189,87 @@ describe('users, profiles and resume', () => {
     expect((await axios.delete(`${profiles()}/${id}`)).status).toBe(204);
   });
 
-  it('accepts onsite in a location with no city of residence, and returns it as sent', async () => {
-    const locations = { remote: [], hybrid: [], onsite: ['Paris, France'] };
+  it('echoes locations as the places it was sent', async () => {
+    const res = await axios.post(profiles(), profile, ok);
+    expect(res.status).toBe(201);
+    expect(res.data.data.locations).toEqual(profile.locations);
+    expect(res.data.data.languages).toEqual(profile.languages);
+    for (const hidden of ['country', 'city', 'places', 'spokenLanguages']) {
+      expect(res.data.data).not.toHaveProperty(hidden);
+    }
+    await axios.delete(`${profiles()}/${res.data.data.id}`);
+  });
+
+  it.each([
+    [
+      'a position that is not an engineering role',
+      { position: 'support' },
+      "profiles.position: 'support' is not an approved role_kinds code",
+    ],
+    [
+      'an unstated seniority',
+      { seniorities: ['unstated'] },
+      "profiles.seniorities: 'unstated' is not an approved seniorities code",
+    ],
+    [
+      'an unknown seniority',
+      { seniorities: ['wizard'] },
+      "profiles.seniorities: 'wizard' is not an approved seniorities code",
+    ],
+    [
+      'an unknown contract type',
+      { contractTypes: ['gig'] },
+      "profiles.contractTypes: 'gig' is not an approved contract_types code",
+    ],
+    [
+      'an unknown country',
+      {
+        locations: {
+          remote: [{ kind: 'country', code: 'ZZ' }],
+          hybrid: [],
+          onsite: [],
+        },
+      },
+      "profiles.places: 'ZZ' is not an approved countries code",
+    ],
+    [
+      'an unknown language',
+      { languages: [{ lang: 'xx', level: 'fluent' }] },
+      "profiles.spokenLanguages: 'xx' is not an approved iso_languages code",
+    ],
+  ])('refuses %s with a 400 naming the field', async (_name, change, message) => {
+    const res = await axios.post(profiles(), { ...profile, ...change }, ok);
+    expect(res.status).toBe(400);
+    expect(res.data).toMatchObject({ code: 'BAD_REQUEST', message });
+  });
+
+  it('refuses an unknown technology with a 400 and stores nothing', async () => {
+    const before = (await axios.get(profiles())).data.data.length;
     const res = await axios.post(
       profiles(),
-      { ...profile, city: null, locations },
+      {
+        ...profile,
+        techStack: [{ technology: 'cobolscript', domain: 'backend', mastery: 5 }],
+      },
       ok,
     );
-    expect(res.status).toBe(201);
-    expect(res.data.data.locations).toEqual(locations);
-    expect(res.data.data).not.toHaveProperty('regions');
-    expect(res.data.data).not.toHaveProperty('arrangements');
-    await axios.delete(`${profiles()}/${res.data.data.id}`);
+    expect(res.status).toBe(400);
+    expect(res.data.message).toBe(
+      "profile_skills.technology: 'cobolscript' is not an approved tech_tags code",
+    );
+    expect((await axios.get(profiles())).data.data).toHaveLength(before);
+  });
+
+  it('refuses a bad code on replace too, leaving the profile as it was', async () => {
+    const res = await axios.put(
+      `${profiles()}/${profileId}`,
+      { ...editable, contractTypes: ['gig'] },
+      ok,
+    );
+    expect(res.status).toBe(400);
+    expect(res.data.message).toContain('profiles.contractTypes');
+    const get = await axios.get(`${profiles()}/${profileId}`);
+    expect(get.data.data.contractTypes).toEqual(profile.contractTypes);
   });
 
   it('rejects a profile with no location, saying why', async () => {

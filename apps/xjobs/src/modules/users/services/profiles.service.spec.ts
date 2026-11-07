@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 import {
   Engagement,
-  Language,
   Position,
   Seniority,
   SkillDomain,
@@ -29,18 +28,31 @@ import type { ProfileInput, SkillInput } from '../types';
 
 const profileInput: ProfileInput = {
   position: Position.backend_engineer,
-  languages: [Language.EN],
-  country: 'MA',
-  city: null,
-  locations: { remote: ['MENA'], hybrid: [], onsite: [] },
+  languages: [{ lang: 'en', level: 'fluent' }],
+  locations: {
+    remote: [{ kind: 'region', code: 'MENA' }],
+    hybrid: [],
+    onsite: [],
+  },
   yearsOfExperience: 6,
   timezoneCurrent: 60,
   timezoneMin: -240,
   timezoneMax: 240,
   engagements: [Engagement.employee],
   seniorities: [Seniority.senior],
+  contractTypes: ['full_time'],
+  salary: { min: 4000, currency: 'EUR', period: 'month' },
+  acceptsAnyCurrency: false,
+  acceptedCurrencies: ['EUR'],
   noticePeriodDays: 30,
 };
+
+/** What the code-check trigger raises for a code outside its value list. */
+const checkViolation = () =>
+  Object.assign(
+    new Error("profiles.position: 'support' is not an approved role_kinds code"),
+    { sqlState: '23514' },
+  );
 
 /** What a replacement may send: everything but the position. */
 const { position: _position, ...editable } = profileInput;
@@ -129,51 +141,117 @@ describe('ProfilesService', () => {
     expect(input.seniorities).toEqual([Seniority.senior, Seniority.staff]);
   });
 
-  it('stores locations in display form, deduped by key', async () => {
+  it('stores places, spoken languages, contract types, salary and currencies, and returns them in the API shape', async () => {
+    const view = await create();
+    expect(view).toMatchObject({
+      locations: profileInput.locations,
+      languages: profileInput.languages,
+      contractTypes: ['full_time'],
+      salary: { min: 4000, currency: 'EUR', period: 'month' },
+      acceptsAnyCurrency: false,
+      acceptedCurrencies: ['EUR'],
+    });
+    const row = await profiles.findById(userId, view.id);
+    expect(row).toMatchObject({
+      places: profileInput.locations,
+      spokenLanguages: profileInput.languages,
+      contractTypes: ['full_time'],
+      salaryMin: 4000,
+      salaryCurrency: 'EUR',
+      salaryPeriod: 'month',
+      acceptsAnyCurrency: false,
+      acceptedCurrencies: ['EUR'],
+    });
+    for (const hidden of [
+      'country',
+      'city',
+      'places',
+      'spokenLanguages',
+      'salaryMin',
+      'salaryCurrency',
+      'salaryPeriod',
+    ]) {
+      expect(view).not.toHaveProperty(hidden);
+    }
+  });
+
+  it('stores no salary when the write leaves it out', async () => {
     const view = await service.create(userId, {
       ...profileInput,
-      locations: {
-        remote: ['Europe', ' europe ', 'Morocco'],
-        hybrid: [],
-        onsite: ['  Paris,   France '],
-      },
-      techStack: [skill(Technology.nodejs, 8)],
+      salary: undefined,
+      techStack: [],
     });
-    expect(view.locations).toEqual({
-      remote: ['Europe', 'Morocco'],
-      hybrid: [],
-      onsite: ['Paris, France'],
+    expect(view.salary).toBeNull();
+    const row = await profiles.findById(userId, view.id);
+    expect(row).toMatchObject({
+      salaryMin: null,
+      salaryCurrency: null,
+      salaryPeriod: null,
     });
   });
 
-  it('normalizes locations on replace too', async () => {
+  it('replaces the new fields too', async () => {
     const { id } = await create();
     const view = await service.replace(userId, id, {
       ...editable,
-      locations: { remote: [], hybrid: ['France', 'FRANCE'], onsite: [] },
+      locations: { remote: [], hybrid: [], onsite: [{ kind: 'worldwide' }] },
+      languages: [{ lang: 'ar', level: 'native' }],
+      contractTypes: ['freelance'],
+      salary: null,
+      acceptsAnyCurrency: true,
+      acceptedCurrencies: [],
       techStack: [],
     });
-    expect(view.locations).toEqual({
-      remote: [],
-      hybrid: ['France'],
-      onsite: [],
+    expect(view).toMatchObject({
+      locations: { remote: [], hybrid: [], onsite: [{ kind: 'worldwide' }] },
+      languages: [{ lang: 'ar', level: 'native' }],
+      contractTypes: ['freelance'],
+      salary: null,
+      acceptsAnyCurrency: true,
+      acceptedCurrencies: [],
     });
   });
 
-  it('builds search input from locations only, not where the person lives', async () => {
-    const { id } = await service.create(userId, {
+  it('keeps seniority codes it does not know, for the database to refuse', async () => {
+    const view = await service.create(userId, {
       ...profileInput,
-      city: 'Rabat',
-      techStack: [skill(Technology.nodejs, 8)],
+      seniorities: ['wizard', Seniority.staff, Seniority.senior],
+      techStack: [],
     });
-    const input = toQuerySearchInput((await profiles.findById(userId, id))!);
-    expect(input.locations).toEqual({
-      remote: ['MENA'],
-      hybrid: [],
-      onsite: [],
-    });
-    expect(input).not.toHaveProperty('country');
-    expect(input).not.toHaveProperty('city');
+    expect(view.seniorities).toEqual([
+      Seniority.senior,
+      Seniority.staff,
+      'wizard',
+    ]);
+  });
+
+  it('turns a database code check into a 400 with its message on create', async () => {
+    vi.spyOn(profiles, 'create').mockRejectedValue(checkViolation());
+    await expect(create()).rejects.toThrow(
+      new BadRequestException(
+        "profiles.position: 'support' is not an approved role_kinds code",
+      ),
+    );
+  });
+
+  it('turns a database code check into a 400 with its message on replace', async () => {
+    const { id } = await create();
+    vi.spyOn(profiles, 'replace').mockRejectedValue(
+      new Error('query failed', { cause: checkViolation() }),
+    );
+    await expect(
+      service.replace(userId, id, { ...editable, techStack: [] }),
+    ).rejects.toThrow(
+      new BadRequestException(
+        "profiles.position: 'support' is not an approved role_kinds code",
+      ),
+    );
+  });
+
+  it('lets other database errors through unchanged', async () => {
+    const error = Object.assign(new Error('fk'), { sqlState: '23503' });
+    vi.spyOn(profiles, 'create').mockRejectedValue(error);
+    await expect(create()).rejects.toBe(error);
   });
 
   it('lets one user keep several independent profiles', async () => {
