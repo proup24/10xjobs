@@ -7,7 +7,8 @@ After setup, a user can view and change any preference, their eligibility and th
 ## In scope
 
 - A settings area covering every category from slices 04–06.
-- Replacing the resume file.
+- Replacing the resume file, on drafts and published profiles, using slice 06's actions.
+- Deleting a draft only through slice 06's `deleteDraftProfile`.
 - Possibly the admin invite page, if slice 03 started with a script. The slice spec decides.
 
 ## Out of scope
@@ -18,6 +19,7 @@ After setup, a user can view and change any preference, their eligibility and th
 ## Locked
 
 - Every preference type set during setup is editable afterwards.
+- Same start condition as slice 07: after steps 2 and 3 of the preferences and eligibility plan.
 
 ## For the slice spec
 

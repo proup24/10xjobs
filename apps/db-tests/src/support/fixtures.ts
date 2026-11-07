@@ -74,3 +74,24 @@ export const seedWorkAuthorization = (
   kind: string,
   place: string,
 ) => insertOne('work_authorizations', { userId, kind, place });
+
+/** A fresh key in the agreed layout: <userId>/<profileId>/<uuid>.pdf. */
+export const resumeKeyFor = (userId: string, profileId: string): string =>
+  `${userId}/${profileId}/${randomUUID()}.pdf`;
+
+/** PDF-looking bytes: the header, padded with spaces to `size`. */
+export function pdfBytes(size = 1024): Uint8Array {
+  const bytes = new Uint8Array(size).fill(0x20);
+  bytes.set(new TextEncoder().encode('%PDF-1.7\n'));
+  return bytes;
+}
+
+/** Publishes a draft through the service role, the way the engine does. */
+export async function publishProfile(profileId: string): Promise<void> {
+  const { error } = await admin()
+    .from('profiles')
+    .update({ state: 'published', publishedAt: new Date().toISOString() })
+    .eq('id', profileId);
+  if (error)
+    throw new Error(`Could not publish ${profileId}: ${error.message}`);
+}
