@@ -11,6 +11,8 @@ A first-time user goes from the invite email to a complete set of preferences, e
 - Pickers that load the approved entries of each value list (techs, roles, seniorities, contract types, engagements, regions, countries, cities, languages, currencies). They are read-only, so a missing entry is added by an admin, not by the user.
 - An eligibility step: country of residence, work authorizations and visa sponsorship.
 - A location picker that offers places (worldwide, region, country, city), not free text.
+- A resume upload step, using slice 06's upload and confirm actions.
+- Deleting a draft only through slice 06's `deleteDraftProfile`, so its resume file goes too.
 - Sending users with unfinished setup back to it.
 
 ## Out of scope
@@ -22,6 +24,7 @@ A first-time user goes from the invite email to a complete set of preferences, e
 
 - Short, guided, one step at a time.
 - The UI is shaped once slices 01–06 have landed. Backend and schema take priority.
+- Starts after steps 2 and 3 of the preferences and eligibility plan, which switch the engine and give the new columns their final names (`places` → `locations`, `spokenLanguages` → `languages`).
 
 ## For the slice spec
 

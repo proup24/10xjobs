@@ -1519,6 +1519,17 @@ export type Database = {
         Args: Record<PropertyKey, never>;
         Returns: number;
       };
+      resume_folder_is_own: { Args: { object_name: string }; Returns: boolean };
+      resume_key_is_own: { Args: { object_name: string }; Returns: boolean };
+      set_profile_resume: {
+        Args: {
+          filename: string;
+          key: string;
+          profile_id: string;
+          sha256: string;
+        };
+        Returns: string;
+      };
     };
     Enums: {
       [_ in never]: never;
