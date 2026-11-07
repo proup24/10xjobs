@@ -3,9 +3,9 @@ import type { RankedSkill } from '../types';
 import { technologySets, topTechnologies } from './technology';
 
 const skill = (
-  technology: Technology,
+  technology: string,
   importance: number,
-  mastery: number,
+  mastery = 5,
   domain: SkillDomain = SkillDomain.backend,
 ): RankedSkill => ({ technology, importance, mastery, domain });
 
@@ -46,6 +46,23 @@ describe('topTechnologies', () => {
         skill(Technology.go, 8, 1),
       ]),
     ).toEqual([Technology.go, Technology.rust]);
+  });
+
+  it('searches only techs with search wording, never a concept tag such as saas', () => {
+    expect(
+      topTechnologies([
+        skill('saas', 10, 10),
+        skill('go', 8),
+        skill('microservices', 9),
+        skill('nodejs', 7),
+      ]),
+    ).toEqual(['go', 'nodejs']);
+  });
+
+  it('gives a profile whose techs all lack search wording the same top technologies as no skills', () => {
+    expect(
+      topTechnologies([skill('saas', 10), skill('microservices', 9)]),
+    ).toEqual(topTechnologies([]));
   });
 
   it('keeps only the top 2 of 5', () => {

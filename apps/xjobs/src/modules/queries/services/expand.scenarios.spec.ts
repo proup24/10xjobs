@@ -6,8 +6,12 @@ import {
   SkillDomain,
   Technology,
 } from 'src/common/enums';
+import { toRecipe } from '../builders';
+import { technologySets } from '../sets/technology';
 import {
   LOCATIONS_REQUIRED,
+  locationCombinations,
+  normalizeProfile,
   SENIORITIES_REQUIRED,
   SKILLS_REQUIRED,
 } from '../steps';
@@ -151,9 +155,7 @@ describe('expand scenarios over mock profiles', () => {
     expect(recipes).toHaveLength(4);
     expect(
       on(recipes, Channel.LINKEDIN_JOB_BOARD).map((r) => [r.keyword, r.params]),
-    ).toEqual([
-      ['python', { location: 'asia pacific', workType: '2' }],
-    ]);
+    ).toEqual([['python', { location: 'asia pacific', workType: '2' }]]);
     expect(keywords(recipes, Channel.LINKEDIN_POSTS)).toEqual([
       'hiring ("data engineer" OR "data platform engineer") python remote asia pacific',
     ]);
@@ -252,7 +254,9 @@ describe('expand scenarios over mock profiles', () => {
       ).toHaveLength(4);
       // The other channels name each level, so every level keeps its search.
       expect(
-        on(recipes, Channel.LINKEDIN_POSTS).filter((r) => r.experience === lead),
+        on(recipes, Channel.LINKEDIN_POSTS).filter(
+          (r) => r.experience === lead,
+        ),
       ).toHaveLength(4);
     });
 
@@ -309,6 +313,20 @@ describe('expand scenarios over mock profiles', () => {
     const run = () => expand(MOCK_PROFILES.noRankedSkills);
     expect(run).toThrow(BadRequestException);
     expect(run).toThrow(SKILLS_REQUIRED);
+  });
+
+  it('techs without search wording only (saas, microservices): the combinations of no skills, without throwing', () => {
+    const profile = MOCK_PROFILES.conceptTagsOnly;
+    // What a profile with no skills combines into, past the publish guard.
+    const noSkills = normalizeProfile({ ...profile, skills: [] });
+    const withoutSkills = locationCombinations(
+      noSkills,
+      technologySets(noSkills.skills),
+    ).map(toRecipe);
+    expect(() => expand(profile)).not.toThrow();
+    expect(expand(profile)).toEqual(withoutSkills);
+    for (const recipe of expand(profile))
+      expect(recipe.keyword.toLowerCase()).not.toMatch(/saas|microservices/);
   });
 
   it('every recipe carries the domain of its technology', () => {

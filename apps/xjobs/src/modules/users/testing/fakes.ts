@@ -9,6 +9,8 @@ import {
 import { UsersRepository } from '../repositories/users.repository';
 import type {
   ContactInput,
+  Place,
+  PlaceLabels,
   ProfileFields,
   ProfileInput,
   ProfileWithSkills,
@@ -122,6 +124,18 @@ export class FakeContactsRepository extends ContactsRepository {
 export class FakeProfilesRepository extends ProfilesRepository {
   rows: ProfileWithSkills[] = [];
   private nextId = 1;
+  /** The vocabulary labels `placeLabels` answers from, whatever it is asked. */
+  labels: PlaceLabels = {
+    regions: new Map([
+      ['EMEA', 'EMEA'],
+      ['MENA', 'MENA'],
+    ]),
+    countries: new Map([
+      ['FR', 'France'],
+      ['MA', 'Morocco'],
+    ]),
+    cities: new Map(),
+  };
 
   private static techStack(
     userId: string,
@@ -230,5 +244,27 @@ export class FakeProfilesRepository extends ProfilesRepository {
       resumeUploadedAt: meta?.uploadedAt ?? null,
     });
     return true;
+  }
+
+  /** The labels of `labels` the places name, a city's country included; unknown ones are left out. */
+  async placeLabels(places: Place[]): Promise<PlaceLabels> {
+    const named = new Set(
+      places.map((place) =>
+        place.kind === 'city'
+          ? place.id
+          : place.kind === 'worldwide'
+            ? ''
+            : place.code,
+      ),
+    );
+    const pick = <T>(map: Map<string, T>, keys: Set<string>) =>
+      new Map([...map].filter(([key]) => keys.has(key)));
+    const cities = pick(this.labels.cities, named);
+    for (const city of cities.values()) named.add(city.countryCode);
+    return {
+      regions: pick(this.labels.regions, named),
+      countries: pick(this.labels.countries, named),
+      cities,
+    };
   }
 }

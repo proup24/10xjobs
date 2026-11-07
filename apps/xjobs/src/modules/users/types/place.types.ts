@@ -21,3 +21,10 @@ export type SalaryPeriod = (typeof SALARY_PERIODS)[number];
 
 /** The lowest salary wanted, in whole units of an ISO 4217 currency per period. */
 export type Salary = { min: number; currency: string; period: SalaryPeriod };
+
+/** The labels of the places a profile lists: regions and countries by code, cities by id. */
+export type PlaceLabels = {
+  regions: Map<string, string>;
+  countries: Map<string, string>;
+  cities: Map<string, { name: string; countryCode: string }>;
+};

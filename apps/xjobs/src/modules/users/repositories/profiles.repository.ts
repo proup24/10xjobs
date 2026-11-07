@@ -7,6 +7,8 @@ import {
 } from 'src/database';
 import type { DatabaseTransaction } from '@xjobs/database';
 import type {
+  Place,
+  PlaceLabels,
   ProfileFields,
   ProfileInput,
   ProfileWithSkills,
@@ -57,6 +59,25 @@ export abstract class ProfilesRepository {
     profileId: string,
     meta: ResumeMeta | null,
   ): Promise<boolean>;
+  /** The labels of the regions, countries and cities given, a city's country included. */
+  abstract placeLabels(places: Place[]): Promise<PlaceLabels>;
+}
+
+/** The region codes, country codes and city ids the places name, each once. */
+function placeKeys(places: Place[]) {
+  const regions = new Set<string>();
+  const countries = new Set<string>();
+  const cities = new Set<string>();
+  for (const place of places) {
+    if (place.kind === 'region') regions.add(place.code);
+    else if (place.kind === 'country') countries.add(place.code);
+    else if (place.kind === 'city') cities.add(place.id);
+  }
+  return {
+    regions: [...regions],
+    countries: [...countries],
+    cities: [...cities],
+  };
 }
 
 /**
@@ -232,5 +253,32 @@ export class PrismaProfilesRepository extends ProfilesRepository {
       resumeUploadedAt: meta?.uploadedAt ?? null,
     });
     return profile !== null;
+  }
+
+  async placeLabels(places: Place[]): Promise<PlaceLabels> {
+    const keys = placeKeys(places);
+    const cities = keys.cities.length
+      ? await this.orm.City.where((city) => city.id.in(keys.cities)).all()
+      : [];
+    const countryCodes = [
+      ...new Set([...keys.countries, ...cities.map((c) => c.countryCode)]),
+    ];
+    const countries = countryCodes.length
+      ? await this.orm.Country.where((country) =>
+          country.code.in(countryCodes),
+        ).all()
+      : [];
+    const regions = keys.regions.length
+      ? await this.orm.RegionTerm.where((region) =>
+          region.code.in(keys.regions),
+        ).all()
+      : [];
+    return {
+      regions: new Map(regions.map((r) => [r.code, r.label])),
+      countries: new Map(countries.map((c) => [c.code, c.label])),
+      cities: new Map(
+        cities.map((c) => [c.id, { name: c.name, countryCode: c.countryCode }]),
+      ),
+    };
   }
 }

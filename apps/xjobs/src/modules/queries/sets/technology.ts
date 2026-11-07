@@ -1,4 +1,4 @@
-import type { Technology } from 'src/common/enums';
+import { TECHNOLOGY_TERMS } from '../builders/keywords';
 import type { RankedSkill, TechnologySet } from '../types';
 
 export const QUERY_SEARCH_TOP_TECHNOLOGIES = 2;
@@ -9,18 +9,26 @@ const compareSkills = (a: RankedSkill, b: RankedSkill): number =>
   b.mastery - a.mastery ||
   a.technology.localeCompare(b.technology);
 
-/** The user's best skills: importance 0 dropped, each technology kept once at its best-ranked entry. */
+/** True when the technology has search wording; a concept tag such as `saas` has none. */
+const hasSearchWording = (technology: string): boolean =>
+  Object.hasOwn(TECHNOLOGY_TERMS, technology);
+
+/**
+ * The user's best searchable skills: importance 0 and techs without search
+ * wording dropped, each technology kept once at its best-ranked entry.
+ */
 export function topSkills(skills: RankedSkill[]): RankedSkill[] {
-  const best = new Map<Technology, RankedSkill>();
+  const best = new Map<string, RankedSkill>();
   for (const skill of skills
     .filter((skill) => skill.importance > 0)
+    .filter((skill) => hasSearchWording(skill.technology))
     .sort(compareSkills))
     if (!best.has(skill.technology)) best.set(skill.technology, skill);
   return [...best.values()].slice(0, QUERY_SEARCH_TOP_TECHNOLOGIES);
 }
 
 /** The user's best technologies; see {@link topSkills}. */
-export function topTechnologies(skills: RankedSkill[]): Technology[] {
+export function topTechnologies(skills: RankedSkill[]): string[] {
   return topSkills(skills).map((skill) => skill.technology);
 }
 

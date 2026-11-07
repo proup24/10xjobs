@@ -17,11 +17,11 @@ import { linkedinTerm } from './linkedin_board.builder';
 
 const base: QuerySearchCombination = {
   channel: Channel.LINKEDIN_JOB_BOARD,
-  position: Position.backend_engineer,
+  position: 'backend_engineer',
   location: 'emea',
-  experience: Seniority.senior,
+  experience: 'senior',
   type: Arrangement.remote,
-  technologies: [Technology.nestjs, Technology.typescript],
+  technologies: ['nestjs', 'typescript'],
   domain: SkillDomain.backend,
 };
 
@@ -92,6 +92,32 @@ describe('LinkedIn job board builder', () => {
     ).toBe('101282230');
     for (const key of Object.keys(LINKEDIN_GEO_IDS))
       expect(key).toBe(key.trim().toLowerCase());
+  });
+
+  it('keeps the verified geoId of a country label', () => {
+    expect(
+      build(Channel.LINKEDIN_JOB_BOARD, {
+        location: locationKey('United Kingdom'),
+      }).params,
+    ).toEqual({
+      experienceLevel: '4',
+      workType: '2',
+      location: 'united kingdom',
+      geoId: '101165590',
+    });
+  });
+
+  it('searches a city label with no geoId by its lowercased text, not dropping it', () => {
+    expect(
+      build(Channel.LINKEDIN_JOB_BOARD, {
+        ...onsite,
+        location: locationKey('Rabat, Morocco'),
+      }).params,
+    ).toEqual({
+      experienceLevel: '4',
+      workType: '1',
+      location: 'rabat, morocco',
+    });
   });
 
   it('uses the short spelling LinkedIn posters write', () => {

@@ -1,7 +1,7 @@
 import { Arrangement, Position, Seniority, Technology } from 'src/common/enums';
 
 /** Search phrases per position: 1-3 lowercase phrases, the canonical title first. */
-export const POSITION_TITLES: Record<Position, readonly string[]> = {
+export const POSITION_TITLES: Readonly<Record<string, readonly string[]>> = {
   [Position.backend_engineer]: [
     'backend engineer',
     'backend developer',
@@ -66,7 +66,7 @@ export const POSITION_TITLES: Record<Position, readonly string[]> = {
 };
 
 /** Seniority word added to a title query; `unstated` adds nothing. */
-export const SENIORITY_WORDS: Record<Seniority, string | null> = {
+export const SENIORITY_WORDS: Readonly<Record<string, string | null>> = {
   [Seniority.junior]: 'junior',
   [Seniority.mid]: 'mid-level',
   [Seniority.senior]: 'senior',
@@ -84,8 +84,11 @@ export const ARRANGEMENT_WORDS: Record<Arrangement, string | null> = {
   [Arrangement.unstated]: null,
 };
 
-/** The term people actually write for each technology. */
-export const TECHNOLOGY_TERMS: Record<Technology, string> = {
+/**
+ * The term people actually write for each technology: its search wording. A
+ * tech tag with no entry here (a concept such as `saas`) is never searched.
+ */
+export const TECHNOLOGY_TERMS: Readonly<Record<string, string>> = {
   [Technology.javascript]: 'javascript',
   [Technology.typescript]: 'typescript',
   [Technology.python]: 'python',

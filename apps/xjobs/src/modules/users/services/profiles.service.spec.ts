@@ -16,6 +16,7 @@ import {
   toProfileView,
   toQuerySearchInput,
 } from './profiles.service';
+import { allPlaces } from './place-labels';
 import {
   QUERY_SEARCH_RECIPE_VERSION,
   QuerySearchService,
@@ -50,7 +51,9 @@ const profileInput: ProfileInput = {
 /** What the code-check trigger raises for a code outside its value list. */
 const checkViolation = () =>
   Object.assign(
-    new Error("profiles.position: 'support' is not an approved role_kinds code"),
+    new Error(
+      "profiles.position: 'support' is not an approved role_kinds code",
+    ),
     { sqlState: '23514' },
   );
 
@@ -137,8 +140,35 @@ describe('ProfilesService', () => {
       seniorities: [Seniority.senior, Seniority.staff],
       techStack: [skill(Technology.nodejs, 8)],
     });
-    const input = toQuerySearchInput((await profiles.findById(userId, id))!);
+    const profile = (await profiles.findById(userId, id))!;
+    const input = toQuerySearchInput(
+      profile,
+      await profiles.placeLabels(allPlaces(toProfileView(profile).locations)),
+    );
     expect(input.seniorities).toEqual([Seniority.senior, Seniority.staff]);
+  });
+
+  it('passes the places to query search as their label texts', async () => {
+    await service.create(userId, {
+      ...profileInput,
+      locations: {
+        remote: [{ kind: 'region', code: 'MENA' }],
+        hybrid: [],
+        onsite: [{ kind: 'country', code: 'MA' }],
+      },
+      techStack: [skill(Technology.nodejs, 8)],
+    });
+    const [profile] = await profiles.list(userId);
+    const input = toQuerySearchInput(profile, {
+      regions: new Map([['MENA', 'Middle East and North Africa']]),
+      countries: new Map([['MA', 'Morocco']]),
+      cities: new Map(),
+    });
+    expect(input.locations).toEqual({
+      remote: ['Middle East and North Africa'],
+      hybrid: [],
+      onsite: ['Morocco'],
+    });
   });
 
   it('stores places, spoken languages, contract types, salary and currencies, and returns them in the API shape', async () => {

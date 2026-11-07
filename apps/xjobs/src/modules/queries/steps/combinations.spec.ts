@@ -77,7 +77,7 @@ describe('locationCombinations', () => {
     expect(both).toHaveLength(3 * channels * 2 * 2);
     const tuple = (c: (typeof both)[number]) =>
       [c.type, c.channel, c.location, c.technologies.join(',')].join('|');
-    const byTuple = new Map<string, Seniority[]>();
+    const byTuple = new Map<string, string[]>();
     for (const c of both)
       byTuple.set(tuple(c), [...(byTuple.get(tuple(c)) ?? []), c.experience]);
     expect(byTuple.size).toBe(3 * channels * 2);

@@ -1,4 +1,4 @@
-import { Position, Seniority, SkillDomain, Technology } from 'src/common/enums';
+import { SkillDomain } from 'src/common/enums';
 import type {
   LocationsByArrangement,
   QuerySearchProfileInput,
@@ -8,7 +8,7 @@ import type {
 import { sortKeys } from '../utils';
 
 const skill = (
-  technology: Technology,
+  technology: string,
   domain: SkillDomain,
   importance: number,
   mastery: number,
@@ -24,24 +24,21 @@ const locations = (
 });
 
 const remoteBackendMa: QuerySearchProfileInput = {
-  position: Position.backend_engineer,
-  seniorities: [Seniority.senior],
+  position: 'backend_engineer',
+  seniorities: ['senior'],
   locations: locations({ remote: ['EMEA', 'European Union'] }),
   skills: [
-    skill(Technology.nestjs, backend, 9, 8),
-    skill(Technology.typescript, fullstack, 9, 7),
-    skill(Technology.postgresql, backend, 6, 9),
+    skill('nestjs', backend, 9, 8),
+    skill('typescript', fullstack, 9, 7),
+    skill('postgresql', backend, 6, 9),
   ],
 };
 
 const onsiteFrontendParis: QuerySearchProfileInput = {
-  position: Position.frontend_engineer,
-  seniorities: [Seniority.mid],
+  position: 'frontend_engineer',
+  seniorities: ['mid'],
   locations: locations({ onsite: ['Paris, France'] }),
-  skills: [
-    skill(Technology.react, frontend, 9, 8),
-    skill(Technology.nextjs, frontend, 8, 7),
-  ],
+  skills: [skill('react', frontend, 9, 8), skill('nextjs', frontend, 8, 7)],
 };
 
 /** Realistic mock profiles for the generation scenarios. */
@@ -49,65 +46,69 @@ export const MOCK_PROFILES = {
   remoteBackendMa,
   onsiteFrontendParis,
   hybridAndRemoteDevops: {
-    position: Position.devops_engineer,
-    seniorities: [Seniority.staff],
+    position: 'devops_engineer',
+    seniorities: ['staff'],
     locations: locations({
       hybrid: ['Austin, United States'],
       remote: ['North America'],
     }),
     skills: [
-      skill(Technology.kubernetes, devops, 9, 9),
-      skill(Technology.terraform, devops, 9, 9),
-      skill(Technology.aws, devops, 9, 8),
+      skill('kubernetes', devops, 9, 9),
+      skill('terraform', devops, 9, 9),
+      skill('aws', devops, 9, 8),
     ],
   },
   unstatedSeniority: {
-    position: Position.data_engineer,
-    seniorities: [Seniority.unstated],
+    position: 'data_engineer',
+    seniorities: ['unstated'],
     locations: locations({ remote: ['Asia Pacific'] }),
-    skills: [skill(Technology.python, data, 7, 7)],
+    skills: [skill('python', data, 7, 7)],
   },
   onsiteOnlyCasablanca: {
-    position: Position.backend_engineer,
-    seniorities: [Seniority.junior],
+    position: 'backend_engineer',
+    seniorities: ['junior'],
     locations: locations({ onsite: ['Casablanca, Morocco'] }),
-    skills: [
-      skill(Technology.go, backend, 8, 6),
-      skill(Technology.nodejs, backend, 5, 5),
-    ],
+    skills: [skill('go', backend, 8, 6), skill('nodejs', backend, 5, 5)],
   },
   remoteWorldwide: {
-    position: Position.ml_engineer,
-    seniorities: [Seniority.principal],
+    position: 'ml_engineer',
+    seniorities: ['principal'],
     locations: locations({ remote: ['Worldwide'] }),
-    skills: [
-      skill(Technology.pytorch, ml, 9, 9),
-      skill(Technology.python, ml, 8, 9),
-    ],
+    skills: [skill('pytorch', ml, 9, 9), skill('python', ml, 8, 9)],
   },
   /** Nothing to search: every builder needs a skill domain. */
   noRankedSkills: {
-    position: Position.qa_engineer,
-    seniorities: [Seniority.senior],
+    position: 'qa_engineer',
+    seniorities: ['senior'],
     locations: locations({ remote: ['Spain'], onsite: ['Madrid, Spain'] }),
-    skills: [skill(Technology.python, qa, 0, 6)],
+    skills: [skill('python', qa, 0, 6)],
+  },
+  /** Concept tags only: no tech with search wording, so nothing is searched. */
+  conceptTagsOnly: {
+    position: 'backend_engineer',
+    seniorities: ['senior'],
+    locations: locations({ remote: ['EMEA'] }),
+    skills: [
+      skill('saas', backend, 10, 9),
+      skill('microservices', backend, 9, 9),
+    ],
   },
   leadTechLead: {
-    position: Position.tech_lead,
-    seniorities: [Seniority.lead],
+    position: 'tech_lead',
+    seniorities: ['lead'],
     locations: locations({ onsite: ['London, United Kingdom'] }),
-    skills: [skill(Technology.typescript, fullstack, 9, 9)],
+    skills: [skill('typescript', fullstack, 9, 9)],
   },
   tiesAndDuplicates: {
-    position: Position.backend_engineer,
-    seniorities: [Seniority.senior],
+    position: 'backend_engineer',
+    seniorities: ['senior'],
     locations: locations({ remote: ['European Union', 'european union '] }),
     skills: [
-      skill(Technology.go, devops, 5, 5),
-      skill(Technology.rust, backend, 5, 5),
+      skill('go', devops, 5, 5),
+      skill('rust', backend, 5, 5),
       // The same technology under a second domain, ranked higher: backend wins.
-      skill(Technology.go, backend, 8, 1),
-      skill(Technology.java, backend, 0, 9),
+      skill('go', backend, 8, 1),
+      skill('java', backend, 0, 9),
     ],
   },
   messyLocation: {

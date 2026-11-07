@@ -5,22 +5,17 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { checkViolationMessage, type ProfileRow } from 'src/database';
+import { ProfileState, Seniority, SkillDomain } from 'src/common/enums';
 import {
-  Position,
-  ProfileState,
-  Seniority,
-  SkillDomain,
-  Technology,
-} from 'src/common/enums';
-import {
-  type LocationsByArrangement,
   normalizeSeniorities,
   QuerySearchService,
   type QuerySearchProfileInput,
 } from 'src/modules/queries';
 import { ProfilesRepository } from '../repositories/profiles.repository';
 import { UsersService } from './users.service';
+import { allPlaces, placeTexts } from './place-labels';
 import type {
+  PlaceLabels,
   PlacesByArrangement,
   ProfileFields,
   ProfileInput,
@@ -96,26 +91,41 @@ export function toProfileView(profile: ProfileWithSkills): ProfileView {
   };
 }
 
-/** What query search builders are generated from; importance 0 skills stay in so the builders can drop them. */
+/**
+ * What query search builders are generated from: the codes as stored, and the
+ * places as the texts their labels give. Importance 0 skills stay in so the
+ * builders can drop them.
+ */
 export function toQuerySearchInput(
   profile: ProfileWithSkills,
+  labels: PlaceLabels,
 ): QuerySearchProfileInput {
-  // Rows carry plain strings; the enums have the same values.
   return {
-    position: profile.position as Position,
-    // TODO: still the old `locations` text column, which profile writes now leave
-    // null. Query generation moves to `places` with their labels next.
-    locations: profile.locations as LocationsByArrangement,
-    seniorities: profile.seniorities as Seniority[],
+    position: profile.position,
+    locations: placeTexts(profilePlaces(profile), labels),
+    seniorities: [...profile.seniorities],
     skills: profile.techStack.map(
       ({ technology, domain, importance, mastery }) => ({
-        technology: technology as Technology,
+        technology,
         domain: domain as SkillDomain,
         importance,
         mastery,
       }),
     ),
   };
+}
+
+/** The jsonb `places` column, which the database checks into this shape (assert_places). */
+function profilePlaces(profile: ProfileWithSkills): PlacesByArrangement {
+  return profile.places as PlacesByArrangement;
+}
+
+/** The labels of every place the profile lists. */
+function labelsFor(
+  profiles: Pick<ProfilesRepository, 'placeLabels'>,
+  profile: ProfileWithSkills,
+): Promise<PlaceLabels> {
+  return profiles.placeLabels(allPlaces(profilePlaces(profile)));
 }
 
 /** A profile write as the API sends it: salary may be left out, and importance defaults to 5. */
@@ -164,9 +174,7 @@ function orderSeniorities(seniorities: string[]): string[] {
   const known = new Set<string>(Object.values(Seniority));
   const unique = [...new Set(seniorities)];
   return [
-    ...normalizeSeniorities(
-      unique.filter((code) => known.has(code)) as Seniority[],
-    ),
+    ...normalizeSeniorities(unique.filter((code) => known.has(code))),
     ...unique.filter((code) => !known.has(code)),
   ];
 }
@@ -188,7 +196,7 @@ export const PROFILE_PUBLISHED =
 
 /** What regenerating published profiles needs. */
 export interface RegenerateDeps {
-  profiles: Pick<ProfilesRepository, 'listPublished'>;
+  profiles: Pick<ProfilesRepository, 'listPublished' | 'placeLabels'>;
   querySearch: Pick<
     QuerySearchService,
     'detach' | 'generate' | 'retireOutdated'
@@ -204,12 +212,15 @@ export async function regeneratePublished(
   deps: RegenerateDeps,
   toInput: (
     profile: ProfileWithSkills,
+    labels: PlaceLabels,
   ) => QuerySearchProfileInput = toQuerySearchInput,
 ): Promise<{ profiles: number; retired: number }> {
   const published = await deps.profiles.listPublished();
   for (const profile of published) {
+    // Labels first: a missing one throws before the profile loses its builders.
+    const labels = await labelsFor(deps.profiles, profile);
     await deps.querySearch.detach(profile.id);
-    await deps.querySearch.generate(profile.id, toInput(profile));
+    await deps.querySearch.generate(profile.id, toInput(profile, labels));
   }
   return {
     profiles: published.length,
@@ -342,7 +353,7 @@ export class ProfilesService {
     const profile = await this.getDraftOrThrow(userId, profileId);
     const querySearches = await this.querySearch.generate(
       profile.id,
-      toQuerySearchInput(profile),
+      toQuerySearchInput(profile, await labelsFor(this.profiles, profile)),
     );
     const published = await this.profiles.publish(
       userId,
