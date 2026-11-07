@@ -11,6 +11,7 @@ import {
   Technology,
 } from 'src/common/enums';
 import {
+  ELIGIBILITY_REQUIRED,
   PROFILE_PUBLISHED,
   ProfilesService,
   toProfileView,
@@ -72,6 +73,7 @@ const skill = (
 });
 
 describe('ProfilesService', () => {
+  let userRows: FakeUsersRepository;
   let profiles: FakeProfilesRepository;
   let querySearches: FakeQuerySearchRepository;
   let service: ProfilesService;
@@ -79,7 +81,7 @@ describe('ProfilesService', () => {
   let otherUserId: string;
 
   beforeEach(async () => {
-    const userRows = new FakeUsersRepository();
+    userRows = new FakeUsersRepository();
     const users = new UsersService(userRows);
     profiles = new FakeProfilesRepository();
     querySearches = new FakeQuerySearchRepository();
@@ -90,6 +92,11 @@ describe('ProfilesService', () => {
     );
     userId = userRows.add('A').id;
     otherUserId = userRows.add('B').id;
+    for (const id of [userId, otherUserId])
+      await userRows.update(id, {
+        residenceCountry: 'MA',
+        acceptsSponsorship: false,
+      });
   });
 
   const create = (techStack = [skill(Technology.nodejs, 8)]) =>
@@ -445,6 +452,39 @@ describe('ProfilesService', () => {
 
   describe('publishing', () => {
     const stack = [skill(Technology.nodejs, 8), skill(Technology.go, 5)];
+
+    it.each([
+      [null, false],
+      ['MA', null],
+      [null, null],
+    ])(
+      'refuses to publish with residence %s and sponsorship %s, writing nothing',
+      async (residenceCountry, acceptsSponsorship) => {
+        const { id } = await create(stack);
+        await userRows.update(userId, { residenceCountry, acceptsSponsorship });
+        const publish = vi.spyOn(profiles, 'publish');
+        await expect(service.publish(userId, id)).rejects.toThrow(
+          new ConflictException(ELIGIBILITY_REQUIRED),
+        );
+        expect(ELIGIBILITY_REQUIRED).toBe(
+          'set your country of residence and answer the visa sponsorship question before publishing',
+        );
+        expect(publish).not.toHaveBeenCalled();
+        expect(querySearches.links).toHaveLength(0);
+        expect((await profiles.findById(userId, id))?.state).toBe('draft');
+      },
+    );
+
+    it('publishes once eligibility is set, even when sponsorship is false', async () => {
+      const { id } = await create(stack);
+      await userRows.update(userId, {
+        residenceCountry: 'MA',
+        acceptsSponsorship: false,
+      });
+      await expect(service.publish(userId, id)).resolves.toMatchObject({
+        state: 'published',
+      });
+    });
 
     it('publishes once, attaching its query search builders', async () => {
       const { id } = await create(stack);

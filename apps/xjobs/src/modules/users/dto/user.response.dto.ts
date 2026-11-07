@@ -36,6 +36,21 @@ export class UserResponseDto implements UserView {
   @ApiProperty({ type: AddressResponseDto, nullable: true })
   address!: AddressResponseDto | null;
 
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    example: 'MA',
+    description: 'ISO alpha-2 country of residence; null until set',
+  })
+  residenceCountry!: string | null;
+
+  @ApiProperty({
+    type: Boolean,
+    nullable: true,
+    description: 'null until answered; publishing needs an answer',
+  })
+  acceptsSponsorship!: boolean | null;
+
   @ApiProperty({ format: 'date-time' })
   createdAt!: Date;
 

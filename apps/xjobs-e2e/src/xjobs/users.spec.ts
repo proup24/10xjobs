@@ -51,6 +51,8 @@ describe('users, profiles and resume', () => {
     await axios.patch(`${base()}/${userId}`, {
       name: 'E2E User',
       address: { line1: '1 Rue X', city: 'Rabat', country: 'MA' },
+      residenceCountry: 'MA',
+      acceptsSponsorship: false,
     });
     await axios.patch(`${base()}/${otherUserId}`, { name: 'Other' });
   });
@@ -169,6 +171,50 @@ describe('users, profiles and resume', () => {
     expect(get.data.data.position).toBe('backend_engineer');
   });
 
+  it('reads and writes the eligibility answers, and refuses a bad country', async () => {
+    const user = await axios.get(`${base()}/${userId}`);
+    expect(user.data.data).toMatchObject({
+      residenceCountry: 'MA',
+      acceptsSponsorship: false,
+    });
+    const bad = await axios.patch(
+      `${base()}/${otherUserId}`,
+      { residenceCountry: 'ZZ' },
+      ok,
+    );
+    expect(bad.status).toBe(400);
+    expect(bad.data.message).toBe(
+      "users.residenceCountry: 'ZZ' is not an approved countries code",
+    );
+    const shape = await axios.patch(
+      `${base()}/${otherUserId}`,
+      { residenceCountry: 'morocco', acceptsSponsorship: 'yes' },
+      ok,
+    );
+    expect(shape.status).toBe(400);
+    expect(shape.data.code).toBe('VALIDATION_FAILED');
+  });
+
+  it('refuses to publish until the country and the sponsorship answer are set', async () => {
+    const plans = `${base()}/${otherUserId}/profiles`;
+    const id = (await axios.post(plans, profile)).data.data.id;
+    const message =
+      'set your country of residence and answer the visa sponsorship question before publishing';
+    const first = await axios.post(`${plans}/${id}/publish`, {}, ok);
+    expect(first.status).toBe(409);
+    expect(first.data.message).toBe(message);
+    await axios.patch(`${base()}/${otherUserId}`, { residenceCountry: 'MA' });
+    const half = await axios.post(`${plans}/${id}/publish`, {}, ok);
+    expect(half.status).toBe(409);
+    expect(half.data.message).toBe(message);
+    expect((await axios.get(`${plans}/${id}`)).data.data.state).toBe('draft');
+    await axios.patch(`${base()}/${otherUserId}`, { acceptsSponsorship: true });
+    const done = await axios.post(`${plans}/${id}/publish`, {}, ok);
+    expect(done.status).toBe(200);
+    expect(done.data.data.state).toBe('published');
+    expect((await axios.delete(`${plans}/${id}`)).status).toBe(204);
+  });
+
   it('freezes a profile once published; it can only be deleted', async () => {
     const id = (await axios.post(profiles(), profile)).data.data.id;
     const published = await axios.post(`${profiles()}/${id}/publish`);
@@ -263,11 +309,14 @@ describe('users, profiles and resume', () => {
       { languages: [{ lang: 'xx', level: 'fluent' }] },
       "profiles.spokenLanguages: 'xx' is not an approved iso_languages code",
     ],
-  ])('refuses %s with a 400 naming the field', async (_name, change, message) => {
-    const res = await axios.post(profiles(), { ...profile, ...change }, ok);
-    expect(res.status).toBe(400);
-    expect(res.data).toMatchObject({ code: 'BAD_REQUEST', message });
-  });
+  ])(
+    'refuses %s with a 400 naming the field',
+    async (_name, change, message) => {
+      const res = await axios.post(profiles(), { ...profile, ...change }, ok);
+      expect(res.status).toBe(400);
+      expect(res.data).toMatchObject({ code: 'BAD_REQUEST', message });
+    },
+  );
 
   it('refuses an unknown technology with a 400 and stores nothing', async () => {
     const before = (await axios.get(profiles())).data.data.length;
@@ -275,7 +324,9 @@ describe('users, profiles and resume', () => {
       profiles(),
       {
         ...profile,
-        techStack: [{ technology: 'cobolscript', domain: 'backend', mastery: 5 }],
+        techStack: [
+          { technology: 'cobolscript', domain: 'backend', mastery: 5 },
+        ],
       },
       ok,
     );

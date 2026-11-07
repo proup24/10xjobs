@@ -190,6 +190,9 @@ async function badRequestOnCheck<T>(write: Promise<T>): Promise<T> {
   }
 }
 
+export const ELIGIBILITY_REQUIRED =
+  'set your country of residence and answer the visa sponsorship question before publishing';
+
 const PROFILE_NOT_FOUND = 'Profile not found';
 export const PROFILE_PUBLISHED =
   'A published profile cannot be changed; delete it and create a new one';
@@ -351,6 +354,10 @@ export class ProfilesService {
     profileId: string,
   ): Promise<PublishedProfileView> {
     const profile = await this.getDraftOrThrow(userId, profileId);
+    const { residenceCountry, acceptsSponsorship } =
+      await this.users.eligibility(userId);
+    if (residenceCountry === null || acceptsSponsorship === null)
+      throw new ConflictException(ELIGIBILITY_REQUIRED);
     const querySearches = await this.querySearch.generate(
       profile.id,
       toQuerySearchInput(profile, await labelsFor(this.profiles, profile)),

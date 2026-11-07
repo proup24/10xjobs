@@ -46,6 +46,16 @@ export class FakeUsersRepository extends UsersRepository {
     return this.rows.find((row) => row.id === userId) ?? null;
   }
 
+  async eligibility(userId: string) {
+    const row = await this.findById(userId);
+    return row
+      ? {
+          residenceCountry: row.residenceCountry,
+          acceptsSponsorship: row.acceptsSponsorship,
+        }
+      : null;
+  }
+
   async update(userId: string, data: UserInput) {
     const row = await this.findById(userId);
     if (!row) return null;
