@@ -1815,6 +1815,16 @@
                   "kind": "scalar"
                 }
               },
+              "niceTags": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "promptHash": {
                 "nullable": false,
                 "type": {
@@ -1823,6 +1833,16 @@
                 }
               },
               "regionCodes": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "requiredTags": {
                 "many": {
                   "elementNullable": false
                 },
@@ -2077,11 +2097,17 @@
                 "needsReview": {
                   "column": "needsReview"
                 },
+                "niceTags": {
+                  "column": "niceTags"
+                },
                 "promptHash": {
                   "column": "promptHash"
                 },
                 "regionCodes": {
                   "column": "regionCodes"
+                },
+                "requiredTags": {
+                  "column": "requiredTags"
                 },
                 "roleKind": {
                   "column": "roleKind"
@@ -6609,9 +6635,19 @@
                   "prefix": "job_extractions_mainStackTags_elem_not_null"
                 },
                 {
+                  "expression": "array_position(\"niceTags\", NULL) IS NULL",
+                  "name": "job_extractions_niceTags_elem_not_null_3cdb81fc",
+                  "prefix": "job_extractions_niceTags_elem_not_null"
+                },
+                {
                   "expression": "array_position(\"regionCodes\", NULL) IS NULL",
                   "name": "job_extractions_regionCodes_elem_not_null_65a1cb26",
                   "prefix": "job_extractions_regionCodes_elem_not_null"
+                },
+                {
+                  "expression": "array_position(\"requiredTags\", NULL) IS NULL",
+                  "name": "job_extractions_requiredTags_elem_not_null_26d3f93d",
+                  "prefix": "job_extractions_requiredTags_elem_not_null"
                 },
                 {
                   "expression": "array_position(\"techTags\", NULL) IS NULL",
@@ -6716,6 +6752,18 @@
                   "dataType": "pg/bool",
                   "nullable": false
                 },
+                "niceTags": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": []
+                  },
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": false
+                },
                 "promptHash": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -6724,6 +6772,18 @@
                 "regionCodes": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": false
+                },
+                "requiredTags": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": []
+                  },
                   "many": {
                     "elementNullable": false
                   },
@@ -6970,10 +7030,28 @@
                 },
                 {
                   "columns": [
+                    "niceTags"
+                  ],
+                  "name": "job_extractions_niceTags_gin_f00ca684",
+                  "prefix": "job_extractions_niceTags_gin",
+                  "type": "gin",
+                  "unique": false
+                },
+                {
+                  "columns": [
                     "regionCodes"
                   ],
                   "name": "job_extractions_regionCodes_gin_2489d722",
                   "prefix": "job_extractions_regionCodes_gin",
+                  "type": "gin",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "requiredTags"
+                  ],
+                  "name": "job_extractions_requiredTags_gin_187039b5",
+                  "prefix": "job_extractions_requiredTags_gin",
                   "type": "gin",
                   "unique": false
                 },
@@ -7689,8 +7767,8 @@
                   "prefix": "processing_attempts_outcome"
                 },
                 {
-                  "expression": "step IN ('decision', 'extraction', 'extraction_retry')",
-                  "name": "processing_attempts_step_0068b0ea",
+                  "expression": "step IN ('decision', 'extraction', 'extraction_retry', 'generation', 'generation_retry', 'verification')",
+                  "name": "processing_attempts_step_906f76b1",
                   "prefix": "processing_attempts_step"
                 }
               ],
@@ -10155,7 +10233,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "1cfd25e269628885ca3ef263392ec32a0390667dcf7f74a7eabfc9c04de0cdd6"
+    "storageHash": "f0cc0fd69200d4f6c688e5196bdf9dc0b7329d25b475071cbeaffe8aa88a7396"
   },
   "execution": {
     "executionHash": "5c00fc523089c5aa487c5b6b1a909049f24c10b050d4df6321de29c1c9800a76",

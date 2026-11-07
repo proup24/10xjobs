@@ -931,6 +931,8 @@ model JobExtraction {
   cityIds                   Uuid[]
   techTags                  String[]
   mainStackTags             String[]
+  requiredTags              String[]             @default([])
+  niceTags                  String[]             @default([])
   salaryMin                 Int?
   salaryMax                 Int?
   salaryCurrency            String?
@@ -950,6 +952,8 @@ model JobExtraction {
   @@index([cityIds], type: "gin", name: "job_extractions_cityIds_gin")
   @@index([techTags], type: "gin", name: "job_extractions_techTags_gin")
   @@index([mainStackTags], type: "gin", name: "job_extractions_mainStackTags_gin")
+  @@index([requiredTags], type: "gin", name: "job_extractions_requiredTags_gin")
+  @@index([niceTags], type: "gin", name: "job_extractions_niceTags_gin")
   @@map("job_extractions")
   @@rls
 }
@@ -976,7 +980,7 @@ model ProcessingAttempt {
   quoteFailures     Int                  @default(0)
   createdAt         TimestamptzJsDate(3) @default(now())
 
-  @@check(expression: sql`step IN ('decision', 'extraction', 'extraction_retry')`, name: "processing_attempts_step")
+  @@check(expression: sql`step IN ('decision', 'extraction', 'extraction_retry', 'generation', 'generation_retry', 'verification')`, name: "processing_attempts_step")
   @@check(expression: sql`outcome IN ('ok', 'error', 'invalid')`, name: "processing_attempts_outcome")
   @@index([createdAt], where: sql`NOT eval`, name: "processing_attempts_created_noneval")
   @@map("processing_attempts")

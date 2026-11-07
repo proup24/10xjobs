@@ -336,8 +336,10 @@ export type Database = {
           jobId: string;
           mainStackTags: string[];
           needsReview: boolean;
+          niceTags: string[];
           promptHash: string;
           regionCodes: string[];
+          requiredTags: string[];
           roleKind: string | null;
           salaryCurrency: string | null;
           salaryMax: number | null;
@@ -366,8 +368,10 @@ export type Database = {
           jobId: string;
           mainStackTags: string[];
           needsReview: boolean;
+          niceTags?: string[];
           promptHash: string;
           regionCodes: string[];
+          requiredTags?: string[];
           roleKind?: string | null;
           salaryCurrency?: string | null;
           salaryMax?: number | null;
@@ -395,8 +399,10 @@ export type Database = {
           jobId?: string;
           mainStackTags?: string[];
           needsReview?: boolean;
+          niceTags?: string[];
           promptHash?: string;
           regionCodes?: string[];
+          requiredTags?: string[];
           roleKind?: string | null;
           salaryCurrency?: string | null;
           salaryMax?: number | null;
