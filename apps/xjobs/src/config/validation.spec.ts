@@ -243,6 +243,38 @@ describe('worker process configuration', () => {
       PROCESSOR_MAX_ATTEMPTS: 3,
       PROCESSOR_CLAIM_TIMEOUT_MS: 900_000,
       PROCESSOR_DAILY_BUDGET_USD: 20,
+      PROCESSOR_MAX_REGENERATIONS: 2,
+      PROCESSOR_GENERATION_TRIES: 3,
     });
+  });
+
+  it('allows zero regenerations but needs at least one generation try', () => {
+    const processor = {
+      ...worker,
+      WORKER_ROLE: 'processor',
+      OPENROUTER_API_KEY: 'or-key',
+    };
+    expect(
+      validateWorkerProcessEnvironment({
+        ...processor,
+        PROCESSOR_MAX_REGENERATIONS: '0',
+        PROCESSOR_GENERATION_TRIES: '1',
+      }),
+    ).toMatchObject({
+      PROCESSOR_MAX_REGENERATIONS: 0,
+      PROCESSOR_GENERATION_TRIES: 1,
+    });
+    expect(() =>
+      validateWorkerProcessEnvironment({
+        ...processor,
+        PROCESSOR_MAX_REGENERATIONS: '-1',
+      }),
+    ).toThrow(/PROCESSOR_MAX_REGENERATIONS/);
+    expect(() =>
+      validateWorkerProcessEnvironment({
+        ...processor,
+        PROCESSOR_GENERATION_TRIES: '0',
+      }),
+    ).toThrow(/PROCESSOR_GENERATION_TRIES/);
   });
 });

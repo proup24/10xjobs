@@ -1,14 +1,25 @@
-import type { ChatMessages } from '@openrouter/sdk/models';
-import { z } from 'zod';
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import {
-  ModelOutputError,
-  ModelRequestError,
-  ProviderUnavailableError,
-  TransientModelError,
-} from './errors';
-import { type OpenRouterClient, timed } from './client';
+  generateText,
+  jsonSchema,
+  type LanguageModel,
+  type LanguageModelUsage,
+  type ModelMessage,
+  NoObjectGeneratedError,
+  NoOutputGeneratedError,
+  Output,
+  type Schema,
+  type SystemModelMessage,
+} from 'ai';
+import { z } from 'zod';
+import { instructionsFor } from '../rules/questions';
+import type { FieldVerdict } from '../rules/verify';
+import { zodErrors } from '../schema/errors';
+import { flattenForStrict } from '../schema/model-output';
+import { CALL_TIMEOUT_MS, toModelError } from './client';
+import { ModelOutputError } from './errors';
 import { ModelPricing } from './pricing';
-import type { ModelCallMeta, PostingInput } from './types';
+import type { GenerateRequest, ModelCallMeta, PostingInput } from './types';
 import { ExtractionModel } from './types';
 
 function postingText(input: PostingInput): string {
@@ -23,23 +34,54 @@ function postingText(input: PostingInput): string {
     .join('\n\n');
 }
 
-function messages(
-  input: PostingInput,
-  req: { systemPrompt: string; retryErrors?: string[] },
-): ChatMessages[] {
-  const list: ChatMessages[] = [
-    {
-      role: 'system',
-      content: [
-        {
-          type: 'text',
-          text: req.systemPrompt,
-          cacheControl: { type: 'ephemeral' },
-        },
-      ],
-    },
-    { role: 'user', content: postingText(input) },
-  ];
+/** Where each verified field lives in the document, for the feedback message. */
+function fieldName(key: FieldVerdict['key']): string {
+  if (key.startsWith('junk:'))
+    return `junkFlags (the flag ${key.slice('junk:'.length)})`;
+  switch (key) {
+    case 'roleKind':
+      return 'position.value.roleKind';
+    case 'sponsorshipOffered':
+      return 'workAuthorization.value.sponsorship';
+    default:
+      return `${key}.value`;
+  }
+}
+
+const score = (s: number | null): string =>
+  s === null ? 'no score' : `score ${s.toFixed(2)}`;
+
+/**
+ * The regeneration feedback (spec §2): per field the reviewer rejected, its
+ * question, the generator's last value, the reviewer's own reading and its
+ * score. It asks for a fresh reading of the posting, never for the reviewer's
+ * reading: the reviewer judges, it does not write values.
+ */
+export function feedbackMessage(feedback: FieldVerdict[]): string {
+  const lines = feedback.map(
+    (v) =>
+      `- ${fieldName(v.key)}. Question: "${instructionsFor(v.key)}" Your answer: "${v.generatorValue}". The reviewer's reading: "${v.jevPick ?? 'none'}" (${score(v.score)}).`,
+  );
+  return [
+    'An independent reviewer read the same posting and disagreed with some of your answers. The reviewer can be wrong too.',
+    'For each field below, re-read the posting and answer it again from the posting text alone, with a verbatim quote. Keep your answer when the posting supports it. When the posting does not state the fact, `unstated` (or null) is a valid answer.',
+    '',
+    ...lines,
+  ].join('\n');
+}
+
+/** The system prompt, cached (it is the same for every posting). */
+const instructions = (systemPrompt: string): SystemModelMessage => ({
+  role: 'system',
+  content: systemPrompt,
+  providerOptions: { openrouter: { cacheControl: { type: 'ephemeral' } } },
+});
+
+/** The posting, then the regeneration feedback and the retry errors, each its own message. */
+function messages(input: PostingInput, req: GenerateRequest): ModelMessage[] {
+  const list: ModelMessage[] = [{ role: 'user', content: postingText(input) }];
+  if (req.feedback?.length)
+    list.push({ role: 'user', content: feedbackMessage(req.feedback) });
   if (req.retryErrors?.length)
     list.push({
       role: 'user',
@@ -48,188 +90,171 @@ function messages(
   return list;
 }
 
-/** Calls per `extract`: the first answer and up to two schema-fix retries. */
-export const EXTRACTION_MAX_ATTEMPTS = 3;
+/** What the SDK sends and validates, kept for as long as the Zod schema lives. */
+const sendable = new WeakMap<z.ZodType, Schema<unknown>>();
 
-type ExtractRequest = {
-  systemPrompt: string;
-  jsonSchema: object;
-  retryErrors?: string[];
-};
-
-/** Validators built from a JSON Schema, kept for as long as the schema object lives. */
-const validators = new WeakMap<object, z.ZodType>();
-
-function validatorFor(jsonSchema: object): z.ZodType {
-  let validator = validators.get(jsonSchema);
-  if (!validator) {
-    validator = z.fromJSONSchema(
-      jsonSchema as Parameters<typeof z.fromJSONSchema>[0],
+/**
+ * The JSON Schema made acceptable to strict structured output
+ * (`flattenForStrict`), validated locally with the full Zod schema, so a
+ * dropped keyword still fails the answer, as a `NoObjectGeneratedError`.
+ */
+function schemaFor(schema: z.ZodType): Schema<unknown> {
+  let out = sendable.get(schema);
+  if (!out) {
+    out = jsonSchema(
+      flattenForStrict(z.toJSONSchema(schema)) as Parameters<
+        typeof jsonSchema
+      >[0],
+      {
+        validate: (value) => {
+          const parsed = schema.safeParse(value);
+          return parsed.success
+            ? { success: true, value: parsed.data }
+            : { success: false, error: parsed.error };
+        },
+      },
     );
-    validators.set(jsonSchema, validator);
+    sendable.set(schema, out);
   }
-  return validator;
+  return out;
 }
 
-const schemaErrors = (error: z.ZodError): string[] =>
-  error.issues.map((i) => `${i.path.join('.') || '(root)'}: ${i.message}`);
-
-/** Adds up the calls of one `extract`: tokens, cost and time are what they all spent. */
-function sumMeta(
-  total: ModelCallMeta | undefined,
-  next: ModelCallMeta,
-): ModelCallMeta {
-  if (!total) return next;
-  return {
-    model: next.model,
-    providerRequestId: next.providerRequestId,
-    inputTokens: total.inputTokens + next.inputTokens,
-    outputTokens: total.outputTokens + next.outputTokens,
-    cachedInputTokens: total.cachedInputTokens + next.cachedInputTokens,
-    costUsd: total.costUsd + next.costUsd,
-    latencyMs: total.latencyMs + next.latencyMs,
-  };
+/**
+ * The OpenRouter chat model the generator calls: usage accounting on (the
+ * response then reports its cost), and routing only to providers that
+ * support every parameter sent, so no route ignores the schema.
+ */
+export function openRouterLanguageModel(
+  apiKey: string,
+  model: string,
+  fetch?: typeof globalThis.fetch,
+): LanguageModel {
+  return createOpenRouter({
+    apiKey,
+    appName: 'xjobs',
+    compatibility: 'strict',
+    ...(fetch ? { fetch } : {}),
+  }).chat(model, {
+    usage: { include: true },
+    provider: { require_parameters: true },
+  });
 }
 
-/** Rethrows a provider or request failure with the cost of the earlier attempts added. */
-function withSpent(error: unknown, spent: ModelCallMeta | undefined): unknown {
-  if (!spent) return error;
-  for (const Kind of [
-    TransientModelError,
-    ProviderUnavailableError,
-    ModelRequestError,
-  ]) {
-    if (error instanceof Kind) {
-      const own = error.meta ?? {};
-      const merged = sumMeta(spent, {
-        model: own.model ?? spent.model,
-        providerRequestId: own.providerRequestId ?? null,
-        inputTokens: own.inputTokens ?? 0,
-        outputTokens: own.outputTokens ?? 0,
-        cachedInputTokens: own.cachedInputTokens ?? 0,
-        costUsd: own.costUsd ?? 0,
-        latencyMs: own.latencyMs ?? 0,
-      });
-      const wrapped = new Kind(error.message, merged);
-      wrapped.stack = error.stack;
-      return wrapped;
-    }
-  }
-  return error;
+function zodIssues(error: unknown): string[] | null {
+  for (let e = error; e instanceof Error; e = e.cause)
+    if (e instanceof z.ZodError) return zodErrors(e);
+  return null;
 }
 
-/** An extraction model (Opus by default) through OpenRouter chat completions. */
-export class OpenRouterExtractionModel extends ExtractionModel {
+/** The generator (Opus or DeepSeek) through the AI SDK and OpenRouter. */
+export class AiSdkExtractionModel extends ExtractionModel {
+  private readonly languageModel: LanguageModel;
+
+  /** `languageModel` replaces the OpenRouter model, for tests. */
   constructor(
-    private readonly client: OpenRouterClient,
+    apiKey: string,
     private readonly model: string,
     private readonly pricing: ModelPricing = new ModelPricing(),
-    private readonly maxAttempts: number = EXTRACTION_MAX_ATTEMPTS,
+    languageModel?: LanguageModel,
   ) {
     super();
-    if (!Number.isInteger(maxAttempts) || maxAttempts < 1)
-      throw new Error(
-        `maxAttempts must be a positive integer, got ${maxAttempts}`,
-      );
+    this.languageModel =
+      languageModel ?? openRouterLanguageModel(apiKey, model);
   }
 
   /**
-   * Returns output that matches `req.jsonSchema`. An answer that is cut off,
-   * empty, not JSON or off-schema is sent back with its errors, up to
-   * `maxAttempts` calls in all; after that a `ModelOutputError` is thrown.
-   * The returned (or thrown) meta adds up every call made.
+   * One structured-output call. Transport retries are off: the processor's
+   * failure policy owns them, and a hidden retry would spend outside the log.
+   * Unparseable, cut-off or schema-invalid output throws `ModelOutputError`
+   * with the call's meta.
    */
-  async extract(
+  async generate(
     input: PostingInput,
-    req: ExtractRequest,
+    req: GenerateRequest,
   ): Promise<{ output: unknown; meta: ModelCallMeta }> {
-    const validator = validatorFor(req.jsonSchema);
-    let retryErrors = req.retryErrors;
-    let spent: ModelCallMeta | undefined;
-    let lastErrors: string[] = [];
-    for (let attempt = 1; attempt <= this.maxAttempts; attempt++) {
-      let call: { output: unknown; meta: ModelCallMeta };
-      try {
-        call = await this.callOnce(input, {
-          ...req,
-          ...(retryErrors ? { retryErrors } : {}),
-        });
-      } catch (error) {
-        if (!(error instanceof ModelOutputError)) throw withSpent(error, spent);
-        spent = sumMeta(spent, error.meta as ModelCallMeta);
-        lastErrors = [error.message];
-        retryErrors = lastErrors;
-        continue;
-      }
-      spent = sumMeta(spent, call.meta);
-      const parsed = validator.safeParse(call.output);
-      if (parsed.success) return { output: call.output, meta: spent };
-      lastErrors = schemaErrors(parsed.error);
-      retryErrors = lastErrors;
+    const started = Date.now();
+    const label = `generation (${this.model})`;
+    let result: Awaited<ReturnType<typeof generateText>>;
+    try {
+      result = await generateText({
+        model: this.languageModel,
+        // No `temperature`: Opus 5.5 does not take it, and with
+        // `require_parameters` any unsupported parameter leaves no provider
+        // (404). Every parameter sent must be in EXTRACTION_PARAMETERS.
+        maxRetries: 0,
+        timeout: CALL_TIMEOUT_MS,
+        instructions: instructions(req.systemPrompt),
+        messages: messages(input, req),
+        output: Output.object({
+          name: 'extraction',
+          schema: schemaFor(req.schema),
+        }),
+      });
+    } catch (error) {
+      const latencyMs = Date.now() - started;
+      if (NoObjectGeneratedError.isInstance(error))
+        throw new ModelOutputError(
+          outputProblem(error),
+          this.meta(error.usage, error.response, null, latencyMs),
+        );
+      const mapped = toModelError(error, latencyMs);
+      mapped.message = `${label}: ${mapped.message}`;
+      throw mapped;
     }
-    throw new ModelOutputError(
-      `Extraction did not match the schema after ${this.maxAttempts} attempts: ${lastErrors.join('; ')}`,
-      spent,
+    const meta = this.meta(
+      result.usage,
+      result.response,
+      reportedCost(result.providerMetadata),
+      Date.now() - started,
     );
+    try {
+      return { output: result.output, meta };
+    } catch (error) {
+      if (!NoOutputGeneratedError.isInstance(error)) throw error;
+      throw new ModelOutputError(
+        `Extraction was empty or cut off (${result.finishReason})`,
+        meta,
+      );
+    }
   }
 
-  /** One chat completion: parsed JSON, or a `ModelOutputError` carrying the call meta. */
-  private async callOnce(
-    input: PostingInput,
-    req: ExtractRequest,
-  ): Promise<{ output: unknown; meta: ModelCallMeta }> {
-    const { value: res, latencyMs } = await timed(
-      () =>
-        this.client.chat.send({
-          chatRequest: {
-            model: this.model,
-            stream: false,
-            // No `temperature`: Opus 5.5 does not take it, and with
-            // `requireParameters` any unsupported parameter leaves no provider
-            // (404). Every parameter sent must be in EXTRACTION_PARAMETERS.
-            messages: messages(input, req),
-            responseFormat: {
-              type: 'json_schema',
-              jsonSchema: {
-                name: 'extraction',
-                strict: true,
-                schema: req.jsonSchema as Record<string, unknown>,
-              },
-            },
-            // Never route to a provider that would ignore the schema.
-            provider: { requireParameters: true },
-          },
-        }),
-      `chat completions (${this.model})`,
-    );
-    const usage = res.usage;
-    const inputTokens = usage?.promptTokens ?? 0;
-    const outputTokens = usage?.completionTokens ?? 0;
-    const meta: ModelCallMeta = {
-      model: res.model,
-      providerRequestId: res.id,
+  private meta(
+    usage: LanguageModelUsage | undefined,
+    response: { id?: string; modelId?: string } | undefined,
+    cost: number | null,
+    latencyMs: number,
+  ): ModelCallMeta {
+    const inputTokens = usage?.inputTokens ?? 0;
+    const outputTokens = usage?.outputTokens ?? 0;
+    return {
+      model: response?.modelId ?? this.model,
+      providerRequestId: response?.id ?? null,
       inputTokens,
       outputTokens,
-      cachedInputTokens: usage?.promptTokensDetails?.cachedTokens ?? 0,
+      cachedInputTokens: usage?.inputTokenDetails?.cacheReadTokens ?? 0,
       // Priced by the configured ID: the reported one may carry a date suffix.
-      costUsd: this.pricing.costOf(this.model, usage?.cost ?? null, {
+      costUsd: this.pricing.costOf(this.model, cost, {
         input: inputTokens,
         output: outputTokens,
       }),
       latencyMs,
     };
-    const choice = res.choices[0];
-    if (!choice)
-      throw new TransientModelError('OpenRouter returned empty choices', meta);
-    if (choice.finishReason === 'length')
-      throw new ModelOutputError('Extraction was cut off (length)', meta);
-    const content = choice.message.content;
-    if (typeof content !== 'string' || content === '')
-      throw new ModelOutputError('Extraction was empty', meta);
-    try {
-      return { output: JSON.parse(content) as unknown, meta };
-    } catch {
-      throw new ModelOutputError('Extraction is not valid JSON', meta);
-    }
   }
+}
+
+/** OpenRouter's cost, from usage accounting; null when it is not a number. */
+function reportedCost(metadata: unknown): number | null {
+  const cost = (
+    metadata as { openrouter?: { usage?: { cost?: unknown } } } | undefined
+  )?.openrouter?.usage?.cost;
+  return typeof cost === 'number' && Number.isFinite(cost) ? cost : null;
+}
+
+function outputProblem(error: NoObjectGeneratedError): string {
+  if (error.finishReason === 'length') return 'Extraction was cut off (length)';
+  const issues = zodIssues(error);
+  if (issues)
+    return `Extraction did not match the schema: ${issues.join('; ')}`;
+  if (!error.text) return 'Extraction was empty';
+  return 'Extraction is not valid JSON';
 }

@@ -26,7 +26,7 @@ import {
   summarize,
 } from 'src/modules/processor/golden/score';
 import { OpenRouterDecisionModel } from 'src/modules/processor/models/decision.model';
-import { OpenRouterExtractionModel } from 'src/modules/processor/models/extraction.model';
+import { AiSdkExtractionModel } from 'src/modules/processor/models/extraction.model';
 import {
   checkModels,
   createOpenRouterClient,
@@ -125,6 +125,8 @@ async function main(): Promise<void> {
     maxAttempts: MAX_TRIES,
     claimTimeoutMs: 900_000,
     dailyBudgetUsd: Number.MAX_SAFE_INTEGER,
+    maxRegenerations: 2,
+    generationTries: 3,
   };
   console.log(
     `decision ${config.decisionModel}, extraction ${config.extractionModel}`,
@@ -142,8 +144,8 @@ async function main(): Promise<void> {
     repo,
     vocab: new MemoryVocabRepository(),
     decision,
-    extraction: new OpenRouterExtractionModel(
-      client,
+    extraction: new AiSdkExtractionModel(
+      apiKey,
       config.extractionModel,
       pricing,
     ),

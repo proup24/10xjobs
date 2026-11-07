@@ -19,11 +19,12 @@ import { needsReview } from '../rules/validate';
 import type { ExtractionDocument } from '../schema';
 import { AttemptLog } from './attempt-log';
 import { ExtractionPipeline } from './extraction-pipeline.service';
-import { ExtractionService } from './extraction.service';
 import { ExtractionStore } from './extraction-store.service';
 import { FactAssembler } from './fact-assembler.service';
+import { GenerationService } from './generation.service';
 import { decideFailure, type FailureOutcome } from './failure-policy';
 import { type GuardBlock, ProcessorGuard } from './processor-guard.service';
+import { VerificationService } from './verification.service';
 
 export type ProcessOutcome =
   | 'processed'
@@ -85,7 +86,7 @@ export class ProcessorBlockedError extends Error {
  *   1. ProcessorGuard        may model calls start? (budget, provider pause)
  *   2. claim                 pending → processing, or someone else has it
  *   3. load + reuse          a closed job, or the same input seen before, needs no call
- *   4. ExtractionPipeline    generator → checks, into one document
+ *   4. ExtractionPipeline    generate → check → Jev verifies → regenerate on rejection
  *   5. ExtractionStore       save the extraction, its attempts and vocabulary
  *   6. finish                processed / pending (retry) / failed, per decideFailure
  */
@@ -358,8 +359,9 @@ export function createProcessorService(
     repo,
     vocab,
     new ExtractionPipeline(
-      new ExtractionService(deps.extraction, config),
-      new FactAssembler(),
+      new GenerationService(deps.extraction, new FactAssembler(), config),
+      new VerificationService(deps.decision, config),
+      config,
     ),
     new ExtractionStore(repo, vocab, config),
     config,

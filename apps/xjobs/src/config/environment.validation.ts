@@ -85,6 +85,10 @@ const processorEnvironmentShape = {
     .positive()
     .default(900_000),
   PROCESSOR_DAILY_BUDGET_USD: z.coerce.number().positive().default(20),
+  /** Regenerations after the first generation when Jev rejects a field. */
+  PROCESSOR_MAX_REGENERATIONS: z.coerce.number().int().min(0).default(2),
+  /** Schema tries per generation. */
+  PROCESSOR_GENERATION_TRIES: z.coerce.number().int().min(1).default(3),
 };
 
 export const processorEnvironmentSchema = z.object(processorEnvironmentShape);

@@ -11,7 +11,7 @@ import {
   type ModelOutput,
 } from '../schema';
 import { resolveTerms, type TermResolution } from '../vocab/resolve';
-import { zodErrors } from './extraction.service';
+import { zodErrors } from '../schema/errors';
 
 /** A validated document, plus the vocabulary it would add; nothing is written yet. */
 export interface AssembledDocument {

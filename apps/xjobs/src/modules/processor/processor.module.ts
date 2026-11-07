@@ -7,7 +7,7 @@ import {
   type ProcessorConfig,
 } from './config/processor.config';
 import { OpenRouterDecisionModel } from './models/decision.model';
-import { OpenRouterExtractionModel } from './models/extraction.model';
+import { AiSdkExtractionModel } from './models/extraction.model';
 import {
   createOpenRouterClient,
   OPENROUTER_CLIENT,
@@ -26,10 +26,11 @@ import {
 import { ProcessorController } from './controllers/processor.controller';
 import { ExtractionPipeline } from './services/extraction-pipeline.service';
 import { ExtractionStore } from './services/extraction-store.service';
-import { ExtractionService } from './services/extraction.service';
 import { FactAssembler } from './services/fact-assembler.service';
+import { GenerationService } from './services/generation.service';
 import { ProcessorGuard } from './services/processor-guard.service';
 import { ProcessorService } from './services/processor.service';
+import { VerificationService } from './services/verification.service';
 
 type Env = ConfigService<ProcessorEnvironmentVariables, true>;
 
@@ -45,7 +46,8 @@ type Env = ConfigService<ProcessorEnvironmentVariables, true>;
     ProcessorService,
     ProcessorGuard,
     ExtractionPipeline,
-    ExtractionService,
+    GenerationService,
+    VerificationService,
     FactAssembler,
     ExtractionStore,
     ModelPricing,
@@ -65,6 +67,12 @@ type Env = ConfigService<ProcessorEnvironmentVariables, true>;
           infer: true,
         }),
         dailyBudgetUsd: config.get('PROCESSOR_DAILY_BUDGET_USD', {
+          infer: true,
+        }),
+        maxRegenerations: config.get('PROCESSOR_MAX_REGENERATIONS', {
+          infer: true,
+        }),
+        generationTries: config.get('PROCESSOR_GENERATION_TRIES', {
           infer: true,
         }),
       }),
@@ -89,13 +97,19 @@ type Env = ConfigService<ProcessorEnvironmentVariables, true>;
     },
     {
       provide: ExtractionModel,
-      inject: [OPENROUTER_CLIENT, PROCESSOR_CONFIG, ModelPricing],
+      inject: [ConfigService, PROCESSOR_CONFIG, ModelPricing],
+      // The generator goes through the AI SDK; Jev and the startup checks
+      // stay on the OpenRouter SDK client.
       useFactory: (
-        client: OpenRouterClient,
+        env: Env,
         config: ProcessorConfig,
         pricing: ModelPricing,
       ) =>
-        new OpenRouterExtractionModel(client, config.extractionModel, pricing),
+        new AiSdkExtractionModel(
+          env.get('OPENROUTER_API_KEY', { infer: true }) ?? '',
+          config.extractionModel,
+          pricing,
+        ),
     },
   ],
   exports: [

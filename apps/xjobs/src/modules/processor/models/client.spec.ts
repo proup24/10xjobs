@@ -5,6 +5,7 @@ import {
   ResponseValidationError,
   SDKValidationError,
 } from '@openrouter/sdk/models/errors';
+import { APICallError, InvalidPromptError } from 'ai';
 import {
   ModelOutputError,
   ModelRequestError,
@@ -65,6 +66,31 @@ describe('toModelError', () => {
 
   it.each([400, 404, 413, 422])('%i is a request error', (s) => {
     expect(toModelError(httpError(s), 5)).toBeInstanceOf(ModelRequestError);
+  });
+
+  it('maps the AI SDK APICallError by status, with the reason', () => {
+    const sdk = (statusCode?: number) =>
+      new APICallError({
+        message: 'failed',
+        url: 'https://openrouter.ai/api/v1/chat/completions',
+        requestBodyValues: {},
+        statusCode,
+        responseBody: '{"error":{"message":"nope"}}',
+      });
+    expect(toModelError(sdk(402), 5)).toBeInstanceOf(ProviderUnavailableError);
+    expect(toModelError(sdk(503), 5)).toBeInstanceOf(TransientModelError);
+    const bad = toModelError(sdk(422), 5);
+    expect(bad).toBeInstanceOf(ModelRequestError);
+    expect(bad.message).toBe('OpenRouter returned 422: nope');
+    // No status: the request never got an answer.
+    expect(toModelError(sdk(undefined), 5)).toBeInstanceOf(
+      TransientModelError,
+    );
+  });
+
+  it('treats a prompt the AI SDK refuses to send as a request error', () => {
+    const error = new InvalidPromptError({ prompt: {}, message: 'bad' });
+    expect(toModelError(error, 5)).toBeInstanceOf(ModelRequestError);
   });
 
   it('treats a connection closed mid-response (undici "terminated") as transient', () => {

@@ -20,7 +20,7 @@ Most facts have the same shape: \`{ "value", "quote", "confidence" }\`.
 
 ## Field paths
 
-The top-level keys are \`position\`, \`isSoftwareEngineeringRole\`, \`seniority\`, \`yearsRequired\`, \`arrangement\`, \`openings\`, \`contractType\`, \`engagement\`, \`contractMonths\`, \`salary\`, \`techStack\`, \`requiredLanguages\`, \`workAuthorization\`, \`junkFlags\` and \`fallback\`. Every one except \`openings\` and \`fallback\` is a \`{ value, quote, confidence }\` fact. Where the sections below say a field's name, this is its path:
+The top-level keys are \`position\`, \`isSoftwareEngineeringRole\`, \`seniority\`, \`yearsRequired\`, \`arrangement\`, \`openings\`, \`contractType\`, \`engagement\`, \`contractMonths\`, \`salary\`, \`techStack\`, \`requiredLanguages\`, \`workAuthorization\` and \`junkFlags\`. Every one except \`openings\` is a \`{ value, quote, confidence }\` fact. Where the sections below say a field's name, this is its path:
 
 - \`position.value.{roleKind, title}\`
 - \`techStack.value.requirements[].{technology, kind, importance, domain, years, quote, confidence, group}\`, with \`technology\` a term \`{ text, code }\` and \`years\` \`{ min, max }\` or \`null\`
@@ -31,11 +31,6 @@ The top-level keys are \`position\`, \`isSoftwareEngineeringRole\`, \`seniority\
 - \`junkFlags.value[].{code, quote}\`
 - \`salary.value.{min, max, currency, period}\`
 - \`openings[].{arrangements, places, placeStrictness, timezones, quote, confidence, fromListing}\`, with no \`value\` wrapper
-- \`fallback.<key>.{value, quote, confidence}\`
-
-## Fallback questions
-
-The \`fallback\` object has one entry per key in the schema. Each entry is a closed question that an earlier, cheaper pass answered with low confidence or in a way that contradicts the listing metadata. Answer each one afresh from the posting alone, choosing one of the allowed values: \`{ "value", "quote", "confidence" }\`, with the quote verbatim from the posting or \`""\` when the posting doesn't state it. Choose the \`unstated\` option (or \`no\` for a yes/no flag) when the posting says nothing, with \`confidence: "sure"\`. Do not copy the listing metadata into a fallback value unless the posting text says the same.
 
 ## Who can apply: \`openings\`
 
@@ -96,7 +91,7 @@ A time zone is never a place: "remote from anywhere within the European time zon
 - A list of terms per place -> one opening per term. "Costa Rica (Remote); Toronto, Ontario (Hybrid/Remote)" -> \`{ ["remote"], [country CR], limit }\` and \`{ ["hybrid", "remote"], [city Toronto, CA], limit }\`.
 - A choice of places on the same terms -> one opening, several places. "Remote within Canada or the US" -> \`{ ["remote"], [CA, US], limit }\`.
 - A time-zone condition belongs to the opening it qualifies; a posting-wide one goes on every opening. "Remote, within two hours of the UK time zone" -> \`{ ["remote"], [], unstated, [{ -2, 2, "within two hours of the UK time zone" }] }\`.
-- Listing metadata fallback. When the posting text says nothing about place or time zone, you may build the opening from the listing metadata's location. Then set \`fromListing: true\` on that opening, give the place \`placeStrictness: "label"\`, use \`quote: ""\` and \`confidence: "unsure"\`. When the posting text says anything about place or time zone, the listing location plays no part. Otherwise set \`fromListing: false\`; every opening carries it.
+- Listing metadata as a last resort. When the posting text says nothing about place or time zone, you may build the opening from the listing metadata's location. Then set \`fromListing: true\` on that opening, give the place \`placeStrictness: "label"\`, use \`quote: ""\` and \`confidence: "unsure"\`. When the posting text says anything about place or time zone, the listing location plays no part. Otherwise set \`fromListing: false\`; every opening carries it.
 
 ## Work authorization
 
@@ -149,7 +144,7 @@ The main programming languages or frameworks the role is mostly written in, neve
 
 ### \`kind: "must"\` and \`kind: "nice"\`
 
-\`must\`: every other required skill. Alternatives are separate requirements that share a group: "Python, TypeScript or Go" is three requirements in one group with \`min: 1\`; "two of Python, TypeScript and Go" has \`min: 2\`. Skills required together are separate requirements, each with \`group: null\`.
+\`must\`: every other required skill. Alternatives are separate requirements that share a group: "PostgreSQL or MySQL" is two requirements in one group with \`min: 1\`; "two of AWS, GCP and Azure" is three requirements in one group with \`min: 2\`. Skills required together are separate requirements, each with \`group: null\`.
 
 \`nice\`: skills listed as a plus, bonus or nice to have.
 

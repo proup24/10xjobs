@@ -1,3 +1,6 @@
+import type { z } from 'zod';
+import type { FieldVerdict } from '../rules/verify';
+
 export type ClosedQuestionKey =
   | 'arrangement'
   | 'seniority'
@@ -72,10 +75,25 @@ export abstract class DecisionModel {
   ): Promise<{ answers: DecisionAnswer[]; meta: ModelCallMeta }>;
 }
 
-/** Open-ended structured extraction (Opus). */
+/** One generation request: the whole document, closed fields included. */
+export interface GenerateRequest {
+  systemPrompt: string;
+  /** The model output schema, built from the approved list rows. */
+  schema: z.ZodType;
+  /** The previous try's validation errors, to fix. */
+  retryErrors?: string[];
+  /** The fields Jev rejected in the previous round, to re-read. */
+  feedback?: FieldVerdict[];
+}
+
+/** The generator (Opus or DeepSeek): writes the whole structured document. */
 export abstract class ExtractionModel {
-  abstract extract(
+  /**
+   * One model call, never retried here. Output that does not match
+   * `req.schema` throws `ModelOutputError` listing the issues.
+   */
+  abstract generate(
     input: PostingInput,
-    req: { systemPrompt: string; jsonSchema: object; retryErrors?: string[] },
+    req: GenerateRequest,
   ): Promise<{ output: unknown; meta: ModelCallMeta }>;
 }

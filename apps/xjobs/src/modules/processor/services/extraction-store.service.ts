@@ -15,7 +15,7 @@ import {
   type Vocabulary,
 } from '../repositories/vocab.repository';
 import { inputHash } from '../rules/input';
-import { buildDecisionQuestions } from '../rules/questions';
+import { buildVerificationQuestions } from '../rules/questions';
 import { deriveTypedColumns } from '../rules/typed-columns';
 import { needsReview } from '../rules/validate';
 import { EXTRACTION_SCHEMA_VERSION, type ExtractionDocument } from '../schema';
@@ -37,7 +37,7 @@ export class ExtractionStore {
     return {
       inputHash: inputHash(input),
       schemaVersion: EXTRACTION_SCHEMA_VERSION,
-      promptHash: promptHash(buildDecisionQuestions(vocabulary.options)),
+      promptHash: promptHash(buildVerificationQuestions(vocabulary.options)),
       decisionModel: this.config.decisionModel,
       extractionModel: this.config.extractionModel,
     };

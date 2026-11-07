@@ -1,16 +1,18 @@
-import { Injectable } from '@nestjs/common';
-import { ExtractionInvalidError } from '../models/errors';
+import { Inject, Injectable } from '@nestjs/common';
+import {
+  PROCESSOR_CONFIG,
+  type ProcessorConfig,
+} from '../config/processor.config';
 import type { PostingInput } from '../models/types';
 import type { Vocabulary } from '../repositories/vocab.repository';
+import { applyVerdicts, carryVerdicts } from '../rules/finalize';
+import { type FieldVerdict, generatorAnswers } from '../rules/verify';
 import type { AttemptLog } from './attempt-log';
-import { ExtractionService } from './extraction.service';
-import {
-  type AssembledDocument,
-  FactAssembler,
-  invalidMessage,
-} from './fact-assembler.service';
+import type { AssembledDocument } from './fact-assembler.service';
+import { GenerationService } from './generation.service';
+import { VerificationService } from './verification.service';
 
-/** The extraction failed twice: the job fails with these errors. */
+/** The first generation never produced a valid document: the job fails with these errors. */
 export class ExtractionFailed extends Error {
   constructor(readonly errors: string[]) {
     super(errors.join('; '));
@@ -19,23 +21,22 @@ export class ExtractionFailed extends Error {
 }
 
 /**
- * A posting in, a validated document out:
+ * A posting in, a verified document out (spec §1):
  *
- *   1. ExtractionService   the generator extracts every fact
- *   2. FactAssembler       resolve with the ingest evidence, check, map terms to the lists
+ *   1. GenerationService     the generator writes the whole document; the assembler checks it
+ *   2. VerificationService   Jev verifies the closed fields
+ *   3. a field Jev rejects   regenerate with feedback, verify again
+ *                            (at most `maxRegenerations` times)
+ *   4. applyVerdicts         confirmed sure, unconfirmed unsure, rejected after the last round dropped
  *
- * Interim, generator only: Jev's verification arrives with the
- * generate-then-verify pipeline.
- *
- * Anything a better generator output could fix (bad JSON, schema errors, an
- * unapproved code, an invalid document) gets one retry with its errors.
  * Writes nothing: the caller decides whether to save.
  */
 @Injectable()
 export class ExtractionPipeline {
   constructor(
-    private readonly extraction: ExtractionService,
-    private readonly assembler: FactAssembler,
+    private readonly generation: GenerationService,
+    private readonly verification: VerificationService,
+    @Inject(PROCESSOR_CONFIG) private readonly config: ProcessorConfig,
   ) {}
 
   async run(
@@ -43,39 +44,91 @@ export class ExtractionPipeline {
     vocabulary: Vocabulary,
     log: AttemptLog,
   ): Promise<AssembledDocument> {
-    let retryErrors: string[] | undefined;
-    for (const step of ['extraction', 'extraction_retry'] as const) {
-      const call = await this.extraction.call(
-        step,
+    const options = vocabulary.options;
+    const first = await this.generation.generate(
+      input,
+      vocabulary,
+      undefined,
+      'generation',
+      log,
+    );
+    if (!first.ok) {
+      log.warn('the first generation never produced a valid document');
+      throw new ExtractionFailed(first.errors);
+    }
+    let current = first.assembled;
+    let answers = generatorAnswers(current.doc, options);
+    let verdicts = await this.verification.verify(
+      current.doc,
+      input,
+      vocabulary,
+      undefined,
+      log,
+    );
+
+    for (let round = 1; ; round++) {
+      const rejected = verdicts.filter((v) => v.verdict === 'rejected');
+      if (rejected.length === 0)
+        return this.finalize(current, verdicts, round, false, log);
+      if (round > this.config.maxRegenerations) {
+        log.info(
+          `Jev still rejects ${keys(rejected)} after ${round} rounds; dropped`,
+        );
+        return this.finalize(current, verdicts, round, false, log);
+      }
+      log.info(`Jev rejects ${keys(rejected)}; regenerating`);
+      const next = await this.generation.generate(
         input,
         vocabulary,
-        retryErrors,
+        rejected,
+        'generation',
         log,
       );
-      if (!call.ok) {
-        retryErrors = call.errors;
-        continue;
-      }
-      try {
-        const assembled = this.assembler.assemble(
-          call.output,
-          call.meta,
-          input,
-          vocabulary,
+      if (!next.ok) {
+        log.warn(
+          `the regeneration was invalid; keeping round ${round}'s document, with ${keys(rejected)} dropped`,
         );
-        log.setLastQuoteFailures(assembled.quoteFailures);
-        log.debug(
-          `document assembled: ${assembled.doc.openings.length} openings, ${assembled.quoteFailures} unsupported quotes cleared, ${assembled.doc.conflicts.length} evidence conflicts, ${assembled.proposals.length} new terms, ${assembled.cities.length} cities`,
-        );
-        return assembled;
-      } catch (error) {
-        if (!(error instanceof ExtractionInvalidError)) throw error;
-        const message = invalidMessage(error);
-        log.markLastInvalid(message);
-        retryErrors = [message];
+        return this.finalize(current, verdicts, round, true, log);
       }
+      const nextAnswers = generatorAnswers(next.assembled.doc, options);
+      const { kept, toAsk } = carryVerdicts(verdicts, answers, nextAnswers);
+      const fresh = await this.verification.verify(
+        next.assembled.doc,
+        input,
+        vocabulary,
+        toAsk,
+        log,
+      );
+      current = next.assembled;
+      answers = nextAnswers;
+      verdicts = [...kept, ...fresh];
     }
-    log.warn('the extraction was invalid twice; giving up');
-    throw new ExtractionFailed(retryErrors ?? []);
+  }
+
+  /**
+   * Applies the round's verdicts to the document generated in that round
+   * (never to an already finalized one). Every exit is final: a field still
+   * rejected here is dropped.
+   */
+  private finalize(
+    assembled: AssembledDocument,
+    verdicts: FieldVerdict[],
+    round: number,
+    regenerationInvalid: boolean,
+    log: AttemptLog,
+  ): AssembledDocument {
+    const doc = applyVerdicts(assembled.doc, verdicts, {
+      round,
+      final: true,
+      regenerationInvalid,
+    });
+    doc.models.verifier = this.config.decisionModel;
+    log.debug(
+      `verified in ${round} round${round === 1 ? '' : 's'}${doc.verification.dropped.length ? `, dropped ${doc.verification.dropped.map((d) => d.field).join(', ')}` : ''}`,
+    );
+    return { ...assembled, doc };
   }
 }
+
+const keys = (verdicts: FieldVerdict[]): string =>
+  verdicts.map((v) => v.key).join(', ');
