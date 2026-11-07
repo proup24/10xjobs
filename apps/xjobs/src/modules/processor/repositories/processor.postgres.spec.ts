@@ -39,6 +39,8 @@ const noColumns: TypedColumns = {
   cityIds: [],
   techTags: [],
   mainStackTags: [],
+  requiredTags: [],
+  niceTags: [],
   salaryMin: null,
   salaryMax: null,
   salaryCurrency: null,

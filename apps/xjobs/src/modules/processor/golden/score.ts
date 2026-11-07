@@ -169,7 +169,11 @@ function scoreScalars(
     ['isSoftwareEngineeringRole', doc.isSoftwareEngineeringRole],
     ['engagement', doc.engagement],
     ['seniority', doc.seniority],
-    ['yearsRequired', doc.yearsRequired],
+    // Golden years are still a minimum (Task 8 converts them to ranges).
+    [
+      'yearsRequired',
+      { ...doc.yearsRequired, value: doc.yearsRequired.value?.min ?? null },
+    ],
     ['contractMonths', doc.contractMonths],
   ];
   for (const [name, fact] of scalars) {
@@ -224,9 +228,10 @@ function scoreMainStack(
     group.anyOf.flatMap((term) => (term.code ? [term.code] : [])),
   );
   if (want.length === 0) return;
+  // `main` requirements read as the old anyOf groups; only their codes count.
   const got = new Set(
-    (doc.techStack.value?.mainStack ?? []).flatMap((group) =>
-      group.anyOf.flatMap((term) => (term.code ? [term.code] : [])),
+    (doc.techStack.value?.requirements ?? []).flatMap((r) =>
+      r.kind === 'main' && r.technology.code ? [r.technology.code] : [],
     ),
   );
   facts.mainStack = {

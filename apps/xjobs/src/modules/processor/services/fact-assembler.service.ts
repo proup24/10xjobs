@@ -7,6 +7,7 @@ import { ExtractionInvalidError } from '../models/errors';
 import type { ModelCallMeta, PostingInput } from '../models/types';
 import type { Vocabulary } from '../repositories/vocab.repository';
 import { resolveFacts } from '../rules/resolve-facts';
+import { stackIssues } from '../rules/stack';
 import { checkConsistency, checkQuotes } from '../rules/validate';
 import {
   type ExtractionDocument,
@@ -67,6 +68,7 @@ export class FactAssembler {
       decision: decisions.model,
       extraction: extractionMeta.model,
     };
+    checkStack(terms.doc);
     return {
       doc: validDocument(terms.doc),
       quoteFailures: quoted.quoteFailures,
@@ -74,6 +76,21 @@ export class FactAssembler {
       cities: terms.cities,
     };
   }
+}
+
+/** The tech stack rules (spec §5a), after term codes are resolved; a failure goes to the schema retry. */
+function checkStack(doc: ExtractionDocument): void {
+  const stack = doc.techStack.value;
+  if (!stack) return;
+  const errors = stackIssues(stack).map((i) => ({
+    path: `techStack.value.${i.path.join('.')}`,
+    message: i.message,
+  }));
+  if (errors.length === 0) return;
+  throw new ExtractionInvalidError(
+    errors[0].path,
+    errors.map((e) => `${e.path}: ${e.message}`).join('; '),
+  );
 }
 
 /** The final shape check; a failure is reported with its path. */

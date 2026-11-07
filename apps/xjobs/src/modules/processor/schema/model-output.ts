@@ -4,11 +4,10 @@ import type { ListName } from '../vocab/lists';
 import { confidenceSchema } from './fact';
 import {
   PLACE_STRICTNESS,
-  groupSchema,
   languageSchema,
-  mustHaveSchema,
+  rangeSchema,
   salarySchema,
-  termSchema,
+  techStackSchema,
   utcOffset,
   workAuthorizationSchema,
 } from './shared';
@@ -86,7 +85,7 @@ function buildModelOutput(options: ListOptions, fallback: DecisionQuestion[]) {
     ),
     isSoftwareEngineeringRole: modelFact(z.boolean()),
     seniority: modelFact(codeEnum('seniorities', options.seniorities)),
-    yearsRequired: modelFact(z.number().nonnegative()),
+    yearsRequired: modelFact(rangeSchema),
     arrangement: modelFact(codeEnum('arrangements', options.arrangements)),
     openings: z.array(opening).min(1),
     contractType: modelFact(codeEnum('contractTypes', options.contractTypes)),
@@ -94,13 +93,7 @@ function buildModelOutput(options: ListOptions, fallback: DecisionQuestion[]) {
     contractMonths: modelFact(z.number().positive()),
     salary: modelFact(salarySchema),
     // Term codes stay free strings: unmatched terms are resolved to approved codes afterwards (Task 5).
-    techStack: modelFact(
-      z.strictObject({
-        mainStack: z.array(groupSchema),
-        mustHaves: z.array(mustHaveSchema),
-        niceToHaves: z.array(termSchema),
-      }),
-    ),
+    techStack: modelFact(techStackSchema),
     requiredLanguages: modelFact(z.array(languageSchema)),
     workAuthorization: modelFact(workAuthorizationSchema),
     junkFlags: modelFact(

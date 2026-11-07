@@ -9,12 +9,27 @@ const fact = <T>(value: T | null) => ({
   model: 'm',
 });
 
+const requirement = (
+  technology: { text: string; code: string | null },
+  kind: 'main' | 'must' | 'nice',
+  importance: number,
+) => ({
+  technology,
+  kind,
+  importance,
+  domain: null,
+  years: null,
+  quote: '',
+  confidence: 'sure' as const,
+  group: null,
+});
+
 export function fixtureDocument(): ExtractionDocument {
   return {
     position: fact({ roleKind: 'backend', title: 'Backend Engineer' }),
     isSoftwareEngineeringRole: fact(true),
     seniority: fact('senior'),
-    yearsRequired: fact(5),
+    yearsRequired: fact({ min: 5, max: null }),
     arrangement: fact('remote'),
     openings: [
       {
@@ -32,9 +47,12 @@ export function fixtureDocument(): ExtractionDocument {
     contractMonths: fact(null),
     salary: fact({ min: 80000, max: 100000, currency: 'EUR', period: 'year' }),
     techStack: fact({
-      mainStack: [{ anyOf: [{ text: 'Node', code: 'nodejs' }] }],
-      mustHaves: [{ anyOf: [{ text: 'SQL', code: 'sql' }], min: 1 }],
-      niceToHaves: [{ text: 'Rust', code: 'rust' }],
+      requirements: [
+        requirement({ text: 'Node', code: 'nodejs' }, 'main', 9),
+        requirement({ text: 'SQL', code: 'sql' }, 'must', 6),
+        requirement({ text: 'Rust', code: 'rust' }, 'nice', 2),
+      ],
+      groups: [],
     }),
     requiredLanguages: fact([
       { lang: 'en', level: 'fluent', quote: 'fluent English' },

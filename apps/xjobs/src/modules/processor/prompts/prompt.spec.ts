@@ -63,10 +63,11 @@ describe('systemPrompt field paths', () => {
 
   it('mentions the nested names', () => {
     for (const name of [
-      'mainStack',
-      'mustHaves',
-      'niceToHaves',
-      'anyOf',
+      'requirements',
+      'technology',
+      'importance',
+      'domain',
+      'groups',
       'lang',
     ])
       expect(text).toContain(name);

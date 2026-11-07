@@ -104,6 +104,41 @@ describe('checkQuotes without a quote', () => {
   });
 });
 
+const requirement = (
+  code: string,
+  kind: 'main' | 'must' | 'nice',
+  importance: number,
+  quote = '',
+  confidence: 'sure' | 'unsure' = 'sure',
+) => ({
+  technology: { text: code, code },
+  kind,
+  importance,
+  domain: null,
+  years: null,
+  quote,
+  confidence,
+  group: null,
+});
+
+describe('checkQuotes per requirement', () => {
+  it('clears only the requirement whose quote is not in the posting', () => {
+    const doc = quietDocument();
+    doc.techStack.value = {
+      requirements: [
+        requirement('python', 'main', 9, 'strong Python'),
+        requirement('go', 'must', 6, 'made-up Go'),
+      ],
+      groups: [],
+    };
+    const r = checkQuotes(doc, input('We want strong Python skills'));
+    expect(r.quoteFailures).toBe(1);
+    const [python, go] = r.doc.techStack.value!.requirements;
+    expect(python).toEqual(doc.techStack.value.requirements[0]);
+    expect(go).toMatchObject({ quote: '', confidence: 'unsure' });
+  });
+});
+
 describe('schema rules the validation relies on', () => {
   it('rejects fromUtc > toUtc', () => {
     const doc = fixtureDocument();
@@ -191,5 +226,24 @@ describe('needsReview', () => {
   });
   it('is false otherwise', () => {
     expect(needsReview(fixtureDocument())).toBe(false);
+  });
+  it('is true for an unsure main requirement', () => {
+    const doc = fixtureDocument();
+    doc.techStack.value = {
+      requirements: [requirement('python', 'main', 9, '', 'unsure')],
+      groups: [],
+    };
+    expect(needsReview(doc)).toBe(true);
+  });
+  it('is false when only a nice requirement is unsure', () => {
+    const doc = fixtureDocument();
+    doc.techStack.value = {
+      requirements: [
+        requirement('python', 'main', 9),
+        requirement('docker', 'nice', 2, '', 'unsure'),
+      ],
+      groups: [],
+    };
+    expect(needsReview(doc)).toBe(false);
   });
 });

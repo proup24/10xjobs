@@ -48,6 +48,38 @@ describe('extractionDocumentSchema', () => {
   });
 });
 
+describe('document tech stack and years', () => {
+  it('rejects a stack the assembler rules reject, at its path', () => {
+    const doc = fixtureDocument();
+    const nice = doc.techStack.value!.requirements.find(
+      (r) => r.kind === 'nice',
+    )!;
+    nice.importance = 6;
+    const parsed = extractionDocumentSchema.safeParse(doc);
+    expect(parsed.success).toBe(false);
+    expect(parsed.error?.issues[0].path.slice(0, 3)).toEqual([
+      'techStack',
+      'value',
+      'requirements',
+    ]);
+  });
+
+  it('rejects an unknown skill domain', () => {
+    const doc = fixtureDocument();
+    (doc.techStack.value!.requirements[0] as { domain: string }).domain =
+      'cooking';
+    expect(extractionDocumentSchema.safeParse(doc).success).toBe(false);
+  });
+
+  it('takes yearsRequired as a range and rejects max below min', () => {
+    const doc = fixtureDocument();
+    doc.yearsRequired.value = { min: 3, max: 5 };
+    expect(extractionDocumentSchema.safeParse(doc).success).toBe(true);
+    doc.yearsRequired.value = { min: 5, max: 3 };
+    expect(extractionDocumentSchema.safeParse(doc).success).toBe(false);
+  });
+});
+
 describe('document salary and unmatched', () => {
   it('rejects a bad currency and a non-integer salary', () => {
     const doc = fixtureDocument();

@@ -68,7 +68,7 @@ function output(
     engagement: mf('employee'),
     contractMonths: mf(null),
     salary: mf(null),
-    techStack: mf({ mainStack: [], mustHaves: [], niceToHaves: [] }),
+    techStack: mf({ requirements: [], groups: [] }),
     requiredLanguages: mf([]),
     workAuthorization: mf({ requirements: [], sponsorship: 'unstated' }),
     junkFlags: mf([]),

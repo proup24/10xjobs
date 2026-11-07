@@ -14,6 +14,7 @@ function vocab(): VocabSnapshot {
   add('techTags', 'nodejs', 'Node.js');
   add('techTags', 'sql');
   add('techTags', 'rust');
+  add('techTags', 'react', 'React', 'ReactJS');
   add('seniorities', 'senior');
   add('arrangements', 'remote');
   add('roleKinds', 'backend');
@@ -27,34 +28,48 @@ function vocab(): VocabSnapshot {
 describe('resolveTerms', () => {
   it('alias-matches raw text', () => {
     const doc = fixtureDocument();
-    doc.techStack.value!.niceToHaves = [{ text: 'Postgres', code: null }];
+    doc.techStack.value!.requirements[0].technology = {
+      text: 'ReactJS',
+      code: null,
+    };
     const r = resolveTerms(doc, vocab());
-    expect(r.doc.techStack.value!.niceToHaves[0].code).toBe('postgresql');
+    expect(r.doc.techStack.value!.requirements[0].technology.code).toBe(
+      'react',
+    );
     expect(r.proposals).toEqual([]);
   });
 
   it('treats an unapproved code like raw text', () => {
     const doc = fixtureDocument();
-    doc.techStack.value!.niceToHaves = [{ text: 'whatever', code: 'postgres' }];
+    doc.techStack.value!.requirements[0].technology = {
+      text: 'whatever',
+      code: 'postgres',
+    };
     expect(
-      resolveTerms(doc, vocab()).doc.techStack.value!.niceToHaves[0].code,
+      resolveTerms(doc, vocab()).doc.techStack.value!.requirements[0].technology
+        .code,
     ).toBe('postgresql');
   });
 
-  it('proposes an unknown term and records it unmatched', () => {
+  it('proposes an unknown term once and records each use unmatched', () => {
     const doc = fixtureDocument();
-    doc.techStack.value!.mainStack = [
-      {
-        anyOf: [
-          { text: 'Node', code: 'nodejs' },
-          { text: 'Bun', code: null },
-        ],
-      },
-    ];
+    const reqs = doc.techStack.value!.requirements;
+    reqs[0].technology = { text: 'Bun', code: null };
+    reqs[1].technology = { text: 'Bun', code: null };
+    reqs[1].domain = 'frontend';
     const r = resolveTerms(doc, vocab());
-    expect(r.doc.techStack.value!.mainStack[0].anyOf[1].code).toBeNull();
+    expect(r.doc.techStack.value!.requirements[0].technology.code).toBeNull();
     expect(r.doc.unmatched).toEqual([
-      { list: 'techTags', text: 'Bun', at: 'techStack.mainStack.0.anyOf.1' },
+      {
+        list: 'techTags',
+        text: 'Bun',
+        at: 'techStack.requirements.0.technology',
+      },
+      {
+        list: 'techTags',
+        text: 'Bun',
+        at: 'techStack.requirements.1.technology',
+      },
     ]);
     expect(r.proposals).toEqual([{ list: 'techTags', text: 'Bun' }]);
   });
@@ -90,9 +105,12 @@ describe('resolveTerms', () => {
 
   it('does not mutate its input', () => {
     const doc = fixtureDocument();
-    doc.techStack.value!.niceToHaves = [{ text: 'Postgres', code: null }];
+    doc.techStack.value!.requirements[0].technology = {
+      text: 'Postgres',
+      code: null,
+    };
     resolveTerms(doc, vocab());
-    expect(doc.techStack.value!.niceToHaves[0].code).toBeNull();
+    expect(doc.techStack.value!.requirements[0].technology.code).toBeNull();
   });
 });
 

@@ -34,9 +34,6 @@ export interface NewExtraction extends ReuseKey, TypedColumns {
   data: ExtractionDocument;
   needsReview: boolean;
   costUsd: number;
-  /** Until `TypedColumns` carries them (it will), saved as `[]` when absent. */
-  requiredTags?: string[];
-  niceTags?: string[];
 }
 
 export interface NewAttempt extends ModelCallMeta {
@@ -263,8 +260,6 @@ export class PrismaProcessorRepository extends ProcessorRepository {
   async saveExtraction(row: NewExtraction): Promise<string> {
     const created = await this.db.orm.public.JobExtraction.create({
       ...row,
-      requiredTags: row.requiredTags ?? [],
-      niceTags: row.niceTags ?? [],
       data: row.data as unknown as Json,
       costUsd: toDecimal(row.costUsd),
     });

@@ -1,12 +1,13 @@
 import { z } from 'zod';
+import { stackIssues } from '../rules/stack';
 import { LIST_NAMES } from '../vocab/lists';
 import { confidenceSchema, decidedBySchema, factSchema } from './fact';
 import {
   PLACE_STRICTNESS,
-  groupSchema,
   languageSchema,
-  mustHaveSchema,
+  rangeSchema,
   salarySchema,
+  techStackSchema,
   termSchema,
   timezoneSchema,
   workAuthorizationSchema,
@@ -43,12 +44,6 @@ const unmatchedSchema = z.strictObject({
   at: z.string(),
 });
 
-const techStackSchema = z.strictObject({
-  mainStack: z.array(groupSchema),
-  mustHaves: z.array(mustHaveSchema),
-  niceToHaves: z.array(termSchema),
-});
-
 export const extractionDocumentSchema = z
   .strictObject({
     position: factSchema(
@@ -56,7 +51,7 @@ export const extractionDocumentSchema = z
     ),
     isSoftwareEngineeringRole: factSchema(z.boolean()),
     seniority: factSchema(z.string().min(1)),
-    yearsRequired: factSchema(z.number().nonnegative()),
+    yearsRequired: factSchema(rangeSchema),
     arrangement: factSchema(z.string().min(1)),
     openings: z.array(openingSchema).min(1),
     contractType: factSchema(z.string().min(1)),
@@ -84,6 +79,23 @@ export const extractionDocumentSchema = z
     }),
   })
   .superRefine((doc, ctx) => {
+    const years = doc.yearsRequired.value;
+    if (years?.min != null && years.max != null && years.max < years.min) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['yearsRequired', 'value', 'max'],
+        message: 'max must be >= min',
+      });
+    }
+    if (doc.techStack.value) {
+      for (const issue of stackIssues(doc.techStack.value)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['techStack', 'value', ...issue.path],
+          message: issue.message,
+        });
+      }
+    }
     doc.openings.forEach((o, i) => {
       if ((o.placeStrictness === 'unstated') !== (o.places.length === 0)) {
         ctx.addIssue({
@@ -108,4 +120,5 @@ export type ExtractionDocument = z.infer<typeof extractionDocumentSchema>;
 export type Place = z.infer<typeof placeSchema>;
 export type Opening = z.infer<typeof openingSchema>;
 export type Term = z.infer<typeof termSchema>;
+export type { Requirement, RequirementGroup, TechStack } from './shared';
 export type UnmatchedTerm = z.infer<typeof unmatchedSchema>;

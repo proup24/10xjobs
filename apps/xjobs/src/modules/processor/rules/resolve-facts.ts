@@ -224,7 +224,8 @@ export function resolveFacts(args: {
     engagement: closed('engagement', 'engagement', output.engagement),
     contractMonths: openFact(output.contractMonths),
     salary: resolveSalary(openFact(output.salary), evidence, conflicts),
-    techStack: openFact(output.techStack),
+    // The stack is quoted per requirement; its envelope quote is unused.
+    techStack: { ...openFact(output.techStack), quote: '' },
     requiredLanguages: openFact(output.requiredLanguages),
     workAuthorization,
     junkFlags,

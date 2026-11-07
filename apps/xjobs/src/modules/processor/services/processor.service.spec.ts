@@ -106,14 +106,31 @@ function opusOutput(req: Req, patch: Record<string, unknown> = {}) {
     engagement: mf('employee', 'employee'),
     contractMonths: mf(null),
     salary: mf(null),
-    techStack: mf(
-      {
-        mainStack: [{ anyOf: [{ text: 'Node.js', code: null }] }],
-        mustHaves: [],
-        niceToHaves: [{ text: 'PostgreSQL', code: 'postgresql' }],
-      },
-      'We use Node.js and PostgreSQL',
-    ),
+    techStack: mf({
+      requirements: [
+        {
+          technology: { text: 'Node.js', code: null },
+          kind: 'main',
+          importance: 9,
+          domain: null,
+          years: null,
+          quote: 'Node.js',
+          confidence: 'sure',
+          group: null,
+        },
+        {
+          technology: { text: 'PostgreSQL', code: 'postgresql' },
+          kind: 'nice',
+          importance: 2,
+          domain: null,
+          years: null,
+          quote: 'PostgreSQL',
+          confidence: 'sure',
+          group: null,
+        },
+      ],
+      groups: [],
+    }),
     requiredLanguages: mf([]),
     workAuthorization: mf({ requirements: [], sponsorship: 'unstated' }),
     junkFlags: mf([]),
@@ -596,9 +613,29 @@ describe('ProcessorService', () => {
       (_, req) =>
         opusOutput(req, {
           techStack: mf({
-            mainStack: [{ anyOf: [{ text: 'Node.js', code: null }] }],
-            mustHaves: [],
-            niceToHaves: [{ text: 'Frobnicator', code: null }],
+            requirements: [
+              {
+                technology: { text: 'Node.js', code: null },
+                kind: 'main',
+                importance: 9,
+                domain: null,
+                years: null,
+                quote: 'Node.js',
+                confidence: 'sure',
+                group: null,
+              },
+              {
+                technology: { text: 'Frobnicator', code: null },
+                kind: 'nice',
+                importance: 2,
+                domain: null,
+                years: null,
+                quote: '',
+                confidence: 'sure',
+                group: null,
+              },
+            ],
+            groups: [],
           }),
         }),
       EXT,
@@ -610,7 +647,7 @@ describe('ProcessorService', () => {
     expect(saved.data.unmatched).toContainEqual({
       list: 'techTags',
       text: 'Frobnicator',
-      at: 'techStack.niceToHaves.0',
+      at: 'techStack.requirements.1.technology',
     });
     expect(saved.techTags).toEqual(['nodejs']);
   });

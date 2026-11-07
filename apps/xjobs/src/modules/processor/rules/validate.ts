@@ -27,10 +27,6 @@ function isEstablished(name: string, value: unknown): boolean {
     const w = value as { requirements: unknown[]; sponsorship: string };
     return w.requirements.length > 0 || w.sponsorship !== 'unstated';
   }
-  if (name === 'techStack') {
-    const t = value as Record<string, unknown[]>;
-    return Object.values(t).some((l) => l.length > 0);
-  }
   return true;
 }
 
@@ -66,7 +62,7 @@ export function checkQuotes(
     engagement: out.engagement,
     contractMonths: out.contractMonths,
     salary: out.salary,
-    techStack: out.techStack,
+    // techStack is checked per requirement below: its envelope quote is unused.
     requiredLanguages: out.requiredLanguages,
     workAuthorization: out.workAuthorization,
     junkFlags: out.junkFlags,
@@ -98,6 +94,20 @@ export function checkQuotes(
       opening.places.length > 0
     ) {
       opening.confidence = 'unsure';
+    }
+  }
+  for (const req of out.techStack.value?.requirements ?? []) {
+    if (bad(req.quote)) {
+      req.quote = '';
+      req.confidence = 'unsure';
+      quoteFailures++;
+    } else if (
+      req.quote === '' &&
+      req.confidence === 'sure' &&
+      out.techStack.decidedBy === 'opus'
+    ) {
+      // A requirement with no quote from the posting is not supported.
+      req.confidence = 'unsure';
     }
   }
   for (const lang of out.requiredLanguages.value ?? []) {
@@ -158,6 +168,8 @@ export function needsReview(doc: ExtractionDocument): boolean {
     doc.seniority.confidence === 'unsure' ||
     doc.position.confidence === 'unsure' ||
     doc.contractType.confidence === 'unsure' ||
-    doc.techStack.confidence === 'unsure'
+    (doc.techStack.value?.requirements ?? []).some(
+      (r) => r.kind === 'main' && r.confidence === 'unsure',
+    )
   );
 }
