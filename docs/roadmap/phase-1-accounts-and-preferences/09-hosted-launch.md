@@ -28,7 +28,7 @@ The shared, hosted app runs in production and the phase's exit criteria are chec
 
 ## For the slice spec
 
-All settled in the [spec](../../superpowers/specs/2026-11-07-hosted-launch-design.md); the runbook is [production.md](../../production.md).
+Production isn't set up yet: for now the cloud database is `10xjobs-dev` only, and the production CI job was removed until production is wanted (see [production.md](../../production.md)). All settled in the [spec](../../superpowers/specs/2026-11-07-hosted-launch-design.md); the runbook is [production.md](../../production.md).
 
 - How Prisma migrations reach the Supabase Cloud database: settled. A CI job on merge to `main`, behind a required-reviewer approval, over the session pooler ([spec](../../superpowers/specs/2026-11-07-hosted-launch-design.md#decisions)).
 - Staging: settled. None; previews use `10xjobs-dev` ([spec](../../superpowers/specs/2026-11-07-hosted-launch-design.md#decisions)).
