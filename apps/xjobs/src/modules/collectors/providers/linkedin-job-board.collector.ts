@@ -9,20 +9,24 @@ import { reachedChargeCap } from '../utils/collected-job';
 import { ApifyActorProvider } from './apify/apify.provider';
 import {
   linkedinJobSearchUrl,
-  linkedinSearchKey,
-  linkedinSearchString,
   toLinkedinJobBoardInput,
-  toLinkedinJobOrigins,
 } from './mappers/linkedin-job-board.mapper';
-import { attributeItems } from './segment-result';
 
-/** Apify trigger for the LinkedIn job board: one actor run per search segment. */
+/**
+ * Apify trigger for the LinkedIn job board: one actor run per search. Segments
+ * group builders by their exact search (`linkedinSearch`), so every member of
+ * a segment shares one start URL and every item the run returns is theirs.
+ * Nothing is matched by text, and the run's `maxItems` and charge cap bound
+ * that one search alone.
+ */
 @Injectable()
 export class LinkedinJobBoardCollector {
   /** The actor and its limits; fixed for every run of this collector. */
   static readonly config: Readonly<LinkedinJobBoardRunConfig> = {
     actor: 'cheap_scraper/linkedin-job-scraper',
-    maxRunChargeUsd: 1,
+    // 100 rows cost about $0.07, plus the start fee; the cap only stops a
+    // runaway run.
+    maxRunChargeUsd: 0.25,
     maxRowsPerUrl: 100,
   };
 
@@ -35,27 +39,32 @@ export class LinkedinJobBoardCollector {
       1,
       Math.round((segment.until.getTime() - segment.since.getTime()) / 1000),
     );
-    const searches = segment.queries.map(({ id, keyword, params }) => ({
-      id,
-      url: linkedinJobSearchUrl(keyword, params, seconds),
-      search:
-        linkedinSearchKey(linkedinSearchString(keyword, params)) ?? keyword,
-    }));
-    // Members with identical searches share one start URL; attribution gives
-    // every one of them its items.
+    const urls = new Set(
+      segment.queries.map(({ keyword, params }) =>
+        linkedinJobSearchUrl(keyword, params, seconds),
+      ),
+    );
+    if (urls.size !== 1)
+      throw new Error(
+        `A LinkedIn job board segment runs one search; this one has ${urls.size}`,
+      );
+    const [url] = urls;
     const { items, costUsd, runId, keyValueStoreId } = await this.actor.run(
       config.actor,
-      toLinkedinJobBoardInput(searches.map(({ url }) => url)),
+      toLinkedinJobBoardInput(url, config.maxRowsPerUrl),
       { maxChargeUsd: config.maxRunChargeUsd },
     );
 
+    // The actor reports no position; dataset order is newest first.
+    const found = items.map((payload, i) => ({ rank: i + 1, payload }));
     return {
-      ...attributeItems(
-        items,
-        toLinkedinJobOrigins(items),
-        searches,
-        config.maxRowsPerUrl,
-      ),
+      itemsByQuery: new Map(segment.queries.map(({ id }) => [id, [...found]])),
+      unattributed: [],
+      truncatedQueryIds:
+        items.length >= config.maxRowsPerUrl
+          ? segment.queries.map(({ id }) => id)
+          : [],
+      fetched: items.length,
       searchTotals: await this.searchTotals(keyValueStoreId),
       costUsd,
       capped: reachedChargeCap(costUsd, config.maxRunChargeUsd),
@@ -64,7 +73,7 @@ export class LinkedinJobBoardCollector {
   }
 
   /**
-   * What LinkedIn said matched each start URL, if the actor stored it. A
+   * What LinkedIn said matched the start URL, if the actor stored it. A
    * missing or unreadable record is null: the paid results never depend on it.
    */
   private async searchTotals(storeId: string | null): Promise<unknown> {

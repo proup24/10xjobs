@@ -14,7 +14,7 @@ const builder = (
     domain: SkillDomain.backend,
     type: Arrangement.onsite,
     location: 'casablanca, morocco',
-    keyword: `kw ${n}`,
+    keyword: 'backend',
     params: {},
     ...overrides,
   }) as QuerySearchBuilderRow;
