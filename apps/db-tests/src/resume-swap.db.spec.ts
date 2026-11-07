@@ -131,41 +131,64 @@ describe('set_profile_resume', () => {
   });
 
   describe('bad input leaves the row unchanged', () => {
+    // Objects are real, so only the check under test can refuse the key.
+    const adminUpload = async (key: string) => {
+      const { error } = await admin()
+        .storage.from('resumes')
+        .upload(key, pdfBytes(), PDF);
+      if (error) throw new Error(error.message);
+      return key;
+    };
     const cases: [
       string,
-      () => Promise<{ error: { code?: string } | null }>,
+      () => Promise<{ error: { code?: string; message: string } | null }>,
+      RegExp,
     ][] = [
       [
-        "a key in B's folder",
-        async () => swap(a, aDraft, resumeKeyFor(b.id, bDraft)),
+        "B's real file in B's folder",
+        async () => swap(a, aDraft, await upload(b, bDraft)),
+        /your folder/,
+      ],
+      [
+        "a key in B's folder with A's profile id",
+        async () =>
+          swap(a, aDraft, await adminUpload(resumeKeyFor(b.id, aDraft))),
+        /your folder/,
       ],
       [
         "a key for another of A's profiles",
         async () => swap(a, aDraft, await upload(a, aOther)),
+        /another profile/,
       ],
       [
         'a key with the wrong layout',
-        async () => swap(a, aDraft, `${a.id}/${aDraft}/cv.pdf`),
+        async () =>
+          swap(a, aDraft, await adminUpload(`${a.id}/${aDraft}/cv.pdf`)),
+        /your folder/,
       ],
       [
         'a key with no object',
         async () => swap(a, aDraft, resumeKeyFor(a.id, aDraft)),
+        /no uploaded file/,
       ],
       [
         'a bad sha256',
         async () =>
           swap(a, aDraft, await upload(a, aDraft), 'cv.pdf', 'A'.repeat(64)),
+        /sha256/,
       ],
       [
         'a short sha256',
         async () => swap(a, aDraft, await upload(a, aDraft), 'cv.pdf', 'ab'),
+        /sha256/,
       ],
     ];
-    for (const [name, run] of cases) {
+    for (const [name, run, message] of cases) {
       it(`refuses ${name}`, async () => {
         const before = await row(aDraft);
         const { error } = await run();
         expect(error?.code).toBe('23514');
+        expect(error?.message).toMatch(message);
         expect(await row(aDraft)).toEqual(before);
       });
     }
