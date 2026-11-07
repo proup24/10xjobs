@@ -61,6 +61,26 @@ describe('document salary and unmatched', () => {
   });
 });
 
+describe('work authorization requirements', () => {
+  const withRequirement = (kind: string) => {
+    const doc = fixtureDocument();
+    doc.workAuthorization.value = {
+      requirements: [{ kind, place: 'US' }] as never,
+      sponsorship: 'unstated',
+    };
+    return extractionDocumentSchema.safeParse(doc).success;
+  };
+
+  it('accepts the four kinds', () => {
+    for (const kind of ['work-permit', 'citizenship', 'residency', 'clearance'])
+      expect(withRequirement(kind)).toBe(true);
+  });
+
+  it('rejects any other kind', () => {
+    expect(withRequirement('visa')).toBe(false);
+  });
+});
+
 describe('modelOutputSchema', () => {
   it('rejects a seniority outside the options', () => {
     const valid = (s: string) => ({

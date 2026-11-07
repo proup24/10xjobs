@@ -40,6 +40,7 @@ export type { ListTable, ListTableRow } from './seeds/processor.seed';
 export { LIST_NAMES } from './seeds/vocab/lists';
 export type { ListName } from './seeds/vocab/lists';
 export {
+  ENGINEERING_ROLE_KINDS,
   SEED,
   SEED_REGION_COUNTRIES,
   SEED_TECH_EXTRAS,

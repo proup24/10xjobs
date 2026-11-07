@@ -115,12 +115,14 @@ describe('schema rules the validation relies on', () => {
   });
 });
 
+const ENGINEERING = new Set(['backend_engineer']);
+
 describe('checkConsistency', () => {
   it('downgrades arrangement and openings when they disagree', () => {
     const doc = fixtureDocument();
     doc.arrangement.value = 'remote';
     doc.openings[0].arrangements = ['hybrid'];
-    const out = checkConsistency(doc);
+    const out = checkConsistency(doc, ENGINEERING);
     expect(out.arrangement.confidence).toBe('unsure');
     expect(out.openings[0].confidence).toBe('unsure');
   });
@@ -129,14 +131,16 @@ describe('checkConsistency', () => {
     const doc = fixtureDocument();
     doc.arrangement.value = 'unstated';
     doc.openings[0].arrangements = ['hybrid'];
-    expect(checkConsistency(doc).arrangement.confidence).toBe('sure');
+    expect(checkConsistency(doc, ENGINEERING).arrangement.confidence).toBe(
+      'sure',
+    );
   });
 
   it('downgrades a non-engineering flag with an engineering role kind', () => {
     const doc = fixtureDocument();
     doc.isSoftwareEngineeringRole.value = false;
     doc.position.value = { roleKind: 'backend_engineer', title: 't' };
-    const out = checkConsistency(doc);
+    const out = checkConsistency(doc, ENGINEERING);
     expect(out.isSoftwareEngineeringRole.confidence).toBe('unsure');
     expect(out.position.confidence).toBe('unsure');
   });
@@ -144,9 +148,27 @@ describe('checkConsistency', () => {
   it('downgrades an engineering flag with a non-engineering role kind', () => {
     const doc = fixtureDocument();
     doc.position.value = { roleKind: 'support', title: 't' };
-    const out = checkConsistency(doc);
+    const out = checkConsistency(doc, ENGINEERING);
     expect(out.isSoftwareEngineeringRole.confidence).toBe('unsure');
     expect(out.position.confidence).toBe('unsure');
+  });
+
+  it('reads engineering role kinds from the set it is given', () => {
+    const doc = fixtureDocument();
+    doc.isSoftwareEngineeringRole.value = true;
+    doc.position.value = { roleKind: 'backend_engineer', title: 't' };
+    const out = checkConsistency(doc, new Set());
+    expect(out.isSoftwareEngineeringRole.confidence).toBe('unsure');
+    expect(out.position.confidence).toBe('unsure');
+  });
+
+  it('keeps an engineering flag with a role kind in the set', () => {
+    const doc = fixtureDocument();
+    doc.isSoftwareEngineeringRole.value = true;
+    doc.position.value = { roleKind: 'backend_engineer', title: 't' };
+    const out = checkConsistency(doc, ENGINEERING);
+    expect(out.isSoftwareEngineeringRole.confidence).toBe('sure');
+    expect(out.position.confidence).toBe('sure');
   });
 });
 

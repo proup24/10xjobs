@@ -58,7 +58,10 @@ export class FactAssembler {
       },
     });
     const quoted = checkQuotes(resolved, input);
-    const consistent = checkConsistency(quoted.doc);
+    const consistent = checkConsistency(
+      quoted.doc,
+      vocabulary.engineeringRoleKinds,
+    );
     const terms = resolveTerms(consistent, vocabulary.vocab);
     terms.doc.models = {
       decision: decisions.model,
