@@ -1,4 +1,4 @@
 {
   "hash": "f0cc0fd69200d4f6c688e5196bdf9dc0b7329d25b475071cbeaffe8aa88a7396",
-  "invariants": []
+  "invariants": ["end-expired-sessions", "code-check-fixes", "resume-storage"]
 }
