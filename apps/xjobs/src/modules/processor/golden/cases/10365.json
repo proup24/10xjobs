@@ -53,7 +53,7 @@
     "seniority": "mid",
     "yearsRequired": {
       "min": 1,
-      "max": null
+      "max": 4
     },
     "contractMonths": null,
     "requirements": [

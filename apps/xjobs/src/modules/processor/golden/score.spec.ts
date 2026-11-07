@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { fixtureDocument } from '../schema/fixture.testing';
+import type { FieldVerdict } from '../rules/verify';
 import type { Verdict, Verification } from '../schema/fact';
 import type { GoldenCase, GoldenRequirement } from './golden';
 import {
@@ -138,8 +139,10 @@ const withJev = (
   caseId: String(score),
   facts: {},
   jev: { seniority: { score, correct, agrees } },
+  junkAnswers: [],
   verdicts: {},
   rejections: [],
+  rejectionsAllRounds: [],
   requirements: null,
   rounds: 1,
   generatorCalls: 1,
@@ -400,5 +403,70 @@ describe('reportFileName', () => {
     expect(reportFileName('deepseek/deepseek-v4.1-flash-1017')).toBe(
       'last-report.deepseek-deepseek-v4-1-flash-1017.json',
     );
+  });
+});
+
+/** One round's verdict as `VerificationService.verify` returns it. */
+const round = (
+  key: FieldVerdict['key'],
+  verdict: Verdict,
+  generatorValue: string,
+  jevPick: string,
+  score = 0.9,
+): FieldVerdict => ({ key, verdict, score, jevPick, generatorValue });
+
+describe('verdicts from every round', () => {
+  it('measures rejection precision over every round, apart from the final one', () => {
+    const c = matchingCase();
+    c.expected.junkFlags = [];
+    const rounds = [
+      // Round 1: a right rejection (golden is senior) and a wrong one (golden is remote).
+      [
+        round('seniority', 'rejected', 'junior', 'senior'),
+        round('arrangement', 'rejected', 'remote', 'onsite'),
+      ],
+      // Round 2: the regenerated seniority confirmed; a junk flag rightly rejected.
+      [
+        round('seniority', 'confirmed', 'senior', 'senior'),
+        round('junk:vague', 'rejected', 'yes', 'no'),
+      ],
+    ];
+    const scores = scoreCase(fixtureDocument(), c, { roundVerdicts: rounds });
+    expect(scores.rejectionsAllRounds).toEqual([
+      { field: 'seniority', wrong: true },
+      { field: 'arrangement', wrong: false },
+      { field: 'junk:vague', wrong: true },
+    ]);
+    const report = summarize([scores]);
+    expect(report.rejectionsAllRounds).toBe(3);
+    expect(report.rejectionPrecisionAllRounds).toBeCloseTo(2 / 3);
+    // The final document dropped nothing.
+    expect(report.rejectionPrecision).toBeNull();
+  });
+
+  it('suggests a junk threshold from the junk answers of every round', () => {
+    const c = matchingCase();
+    c.expected.junkFlags = ['vague'];
+    const scores = Array.from({ length: 10 }, (_, i) =>
+      scoreCase(
+        fixtureDocument(),
+        { ...c, id: String(i) },
+        {
+          roundVerdicts: [
+            [
+              round('junk:vague', 'confirmed', 'yes', 'yes', 0.85),
+              round('junk:multi_city_template', 'unconfirmed', 'no', 'no', 0.7),
+            ],
+          ],
+        },
+      ),
+    );
+    expect(scores[0].junkAnswers).toEqual([
+      { score: 0.85, correct: true, agrees: true },
+      { score: 0.7, correct: true, agrees: true },
+    ]);
+    const junk = summarize(scores).questions.junk;
+    expect(junk.suggestedThreshold).toBe(0.7);
+    expect(junk.acceptedAtSuggested).toBe(20);
   });
 });

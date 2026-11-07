@@ -347,6 +347,8 @@ export interface ProcessorDependencies {
   extraction: ExtractionModel;
   config: ProcessorConfig;
   now?: () => Date;
+  /** Replaces the verification built from `decision` (the eval records its verdicts). */
+  verification?: VerificationService;
 }
 
 /** The service graph without Nest, for tests and scripts. */
@@ -360,7 +362,7 @@ export function createProcessorService(
     vocab,
     new ExtractionPipeline(
       new GenerationService(deps.extraction, new FactAssembler(), config),
-      new VerificationService(deps.decision, config),
+      deps.verification ?? new VerificationService(deps.decision, config),
       config,
     ),
     new ExtractionStore(repo, vocab, config),

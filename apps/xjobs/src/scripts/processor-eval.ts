@@ -40,6 +40,8 @@ import {
 import { ModelPricing } from 'src/modules/processor/models/pricing';
 import type { NewAttempt } from 'src/modules/processor/repositories/processor.repository';
 import { extractionDocumentSchema } from 'src/modules/processor/schema';
+import type { FieldVerdict } from 'src/modules/processor/rules/verify';
+import { VerificationService } from 'src/modules/processor/services/verification.service';
 import { createProcessorService } from 'src/modules/processor/services/processor.service';
 import {
   MemoryProcessorRepository,
@@ -48,6 +50,19 @@ import {
 
 const CONCURRENCY = 4;
 const MAX_TRIES = 3;
+
+/** Keeps what every verification round returned, per job, for the all-rounds scores. */
+class RecordingVerificationService extends VerificationService {
+  readonly rounds = new Map<string, FieldVerdict[][]>();
+  override async verify(
+    ...args: Parameters<VerificationService['verify']>
+  ): Promise<FieldVerdict[]> {
+    const verdicts = await super.verify(...args);
+    const jobId = args[1].jobId;
+    this.rounds.set(jobId, [...(this.rounds.get(jobId) ?? []), verdicts]);
+    return verdicts;
+  }
+}
 
 /** Every attempt this run records is an eval attempt. */
 class EvalProcessorRepository extends MemoryProcessorRepository {
@@ -81,7 +96,7 @@ function print(report: EvalReport, failed: string[]): void {
       `${name.padEnd(26)} ${String(v.verified).padStart(8)}  ${pct(v.confirmed)}    ${pct(v.unconfirmed)}   ${pct(v.rejected)}`,
     );
   console.log(
-    `\nJev rejection precision: ${pct(report.rejectionPrecision)} of ${report.rejections} final rejections were wrong generator values`,
+    `\nJev rejection precision: ${pct(report.rejectionPrecision)} of ${report.rejections} final rejections, ${pct(report.rejectionPrecisionAllRounds)} of ${report.rejectionsAllRounds} rejections in every round, were wrong generator values`,
   );
   const r = report.requirements;
   console.log(
@@ -142,11 +157,13 @@ async function main(): Promise<void> {
     config.decisionModel,
     pricing,
   );
+  const verification = new RecordingVerificationService(decision, config);
   const repo = new EvalProcessorRepository();
   const service = createProcessorService({
     repo,
     vocab: new MemoryVocabRepository(),
     decision,
+    verification,
     extraction: new AiSdkExtractionModel(
       apiKey,
       config.extractionModel,
@@ -170,9 +187,14 @@ async function main(): Promise<void> {
   const queue = [...cases];
   const worker = async (): Promise<void> => {
     for (let c = queue.shift(); c; c = queue.shift()) {
-      let outcome = await service.process(c.id);
+      // Only the rounds of the try that produced the stored document count.
+      const run = () => {
+        verification.rounds.delete(c.id);
+        return service.process(c.id);
+      };
+      let outcome = await run();
       for (let i = 1; outcome === 'retry' && i < MAX_TRIES; i++)
-        outcome = await service.process(c.id);
+        outcome = await run();
       const job = repo.jobs.get(c.id);
       const stored = repo.extractions.find(
         (e) => e.id === job?.currentExtractionId,
@@ -186,7 +208,12 @@ async function main(): Promise<void> {
       }
       // Every try of the job counts toward its calls and cost.
       const calls = callStats(repo.attempts.filter((a) => a.jobId === c.id));
-      scores.push(scoreCase(parsed.data, c, calls));
+      scores.push(
+        scoreCase(parsed.data, c, {
+          ...calls,
+          roundVerdicts: verification.rounds.get(c.id),
+        }),
+      );
       console.log(`  ${c.id}: ${outcome}`);
     }
   };

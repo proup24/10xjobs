@@ -28,7 +28,7 @@
     "seniority": "senior",
     "yearsRequired": {
       "min": 1,
-      "max": null
+      "max": 5
     },
     "contractMonths": null,
     "requirements": [
