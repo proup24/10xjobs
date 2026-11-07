@@ -20,17 +20,18 @@ An invited user can sign up on the hosted app and can create and edit their prof
 
 ## Slices, in order
 
-| #   | Slice                                                             | Depends on |
-| --- | ----------------------------------------------------------------- | ---------- |
-| 01  | [Foundation](01-foundation.md)                                    | none       |
-| 02  | [Accounts and isolation](02-accounts-and-isolation.md)            | 01         |
-| 03  | [Invite-only sign-in](03-invite-only-sign-in.md)                  | 02         |
-| 04  | [Preferences schema](04-preferences-schema.md) (one spec with 05) | 02         |
-| 05  | [Eligibility schema](05-eligibility-schema.md) (one spec with 04) | 02         |
-| 06  | [Resume storage](06-resume-storage.md)                            | 02         |
-| 07  | [Guided setup UI](07-guided-setup-ui.md)                          | 03–06      |
-| 08  | [Edit preferences UI](08-edit-preferences-ui.md)                  | 07         |
-| 09  | [Hosted launch](09-hosted-launch.md)                              | 01–08      |
+| #   | Slice                                                                                                            | Depends on |
+| --- | ---------------------------------------------------------------------------------------------------------------- | ---------- |
+| 01  | [Foundation](01-foundation.md)                                                                                   | none       |
+| 02  | [Accounts and isolation](02-accounts-and-isolation.md)                                                           | 01         |
+| 03  | [Invite-only sign-in](03-invite-only-sign-in.md)                                                                 | 02         |
+| 04  | [Preferences schema](04-preferences-schema.md) (one spec with 05)                                                | 02         |
+| 05  | [Eligibility schema](05-eligibility-schema.md) (one spec with 04)                                                | 02         |
+| 06  | [Resume storage](06-resume-storage.md)                                                                           | 02         |
+| 06a | [Preferences switch and final names](../../superpowers/specs/2026-11-07-preferences-switch-and-remove-design.md) | 04–06      |
+| 07  | [Guided setup UI](07-guided-setup-ui.md)                                                                         | 03–06, 06a |
+| 08  | [Edit preferences UI](08-edit-preferences-ui.md)                                                                 | 07         |
+| 09  | [Hosted launch](09-hosted-launch.md)                                                                             | 01–08      |
 
 Slices 04 and 05 share one spec, [Preferences and eligibility schema](../../superpowers/specs/2026-11-05-preferences-and-eligibility-design.md), because they use the same value lists and change the same contract. Slices 04, 05 and 06 are independent of each other. Slice 09's production setup can start early, but the launch check runs last.
 
