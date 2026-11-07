@@ -18,7 +18,7 @@ describe('syncCollectionScheduler', () => {
     ).toBe('scheduled');
     expect(q.upsertJobScheduler).toHaveBeenCalledWith(
       'collect',
-      { pattern: '0 * * * *', tz: 'UTC' },
+      { pattern: '0 8-22 * * 1-5', tz: 'UTC' },
       { name: 'collect', opts: { attempts: 1 } },
     );
     expect(q.removeJobScheduler).not.toHaveBeenCalled();

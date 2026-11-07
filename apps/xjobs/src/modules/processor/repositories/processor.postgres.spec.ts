@@ -661,6 +661,13 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       expect(regionCountries.get('EMEA')).toContain('DE');
     });
 
+    it('snapshot holds the 17 seeded engineering role kinds', async () => {
+      const { engineeringRoleKinds } = await vocab.snapshot();
+      expect(engineeringRoleKinds.size).toBe(17);
+      expect(engineeringRoleKinds.has('backend_engineer')).toBe(true);
+      expect(engineeringRoleKinds.has('other')).toBe(false);
+    });
+
     it('upserts cities by lower-cased name and country', async () => {
       const first = await vocab.upsertCities([
         { name: 'Berlin', countryCode: 'DE' },

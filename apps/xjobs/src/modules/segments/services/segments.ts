@@ -1,10 +1,14 @@
 import { createHash } from 'node:crypto';
 import { Channel } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
+import { linkedinSearch } from 'src/modules/collectors/providers/mappers/linkedin-job-board.mapper';
 
 /** Builders searched together in one Apify run. */
 export interface SearchSegment {
-  /** `channel|domain|type|place`: what every member shares. */
+  /**
+   * `channel|domain|type|place`: what every member shares. For the LinkedIn
+   * job board, `place` is the whole search.
+   */
   key: string;
   /** sha256 of the key and the ordered member ids: the segment's identity. */
   hash: string;
@@ -14,24 +18,25 @@ export interface SearchSegment {
 
 export const SEGMENT_SIZE = 10;
 
-/** The place a LinkedIn job board builder searches: its geoId, else its location text. */
-function linkedinSearchPlace(builder: QuerySearchBuilderRow): string | null {
+/**
+ * The exact search a LinkedIn job board builder runs (`linkedinSearch`): one
+ * segment is one search, so the actor's results belong to every member and a
+ * search's row limit and charge cap are its own.
+ */
+function linkedinJobBoardSearch(builder: QuerySearchBuilderRow): string {
   const params = (builder.params ?? {}) as Record<string, unknown>;
-  const place = params.geoId ?? params.location;
-  return typeof place === 'string' && place ? `search:${place}` : null;
+  return `search:${linkedinSearch(builder.keyword, params)}`;
 }
 
 /**
  * Builders share the location they search, whatever the arrangement (the
  * arrangement is its own part of the key). LinkedIn job board builders share
- * the place LinkedIn searches: its geoId, else its location text.
+ * their whole search instead: keyword, place and filters.
  */
 function placeOf(builder: QuerySearchBuilderRow): string {
-  if (builder.channel === Channel.LINKEDIN_JOB_BOARD) {
-    const place = linkedinSearchPlace(builder);
-    if (place) return place;
-  }
-  return builder.location;
+  return builder.channel === Channel.LINKEDIN_JOB_BOARD
+    ? linkedinJobBoardSearch(builder)
+    : builder.location;
 }
 
 export function segmentKey(builder: QuerySearchBuilderRow): string {

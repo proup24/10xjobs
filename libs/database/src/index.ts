@@ -41,6 +41,7 @@ export { cityNameKey } from './seeds/vocab/city-key';
 export { LIST_NAMES } from './seeds/vocab/lists';
 export type { ListName } from './seeds/vocab/lists';
 export {
+  ENGINEERING_ROLE_KINDS,
   SEED,
   SEED_REGION_COUNTRIES,
   SEED_TECH_EXTRAS,

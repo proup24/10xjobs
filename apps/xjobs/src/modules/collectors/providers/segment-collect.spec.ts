@@ -6,7 +6,7 @@ import { LinkedinJobBoardCollector } from './linkedin-job-board.collector';
 import { boardQuery } from './mappers/google-search.mapper';
 import {
   linkedinJobSearchUrl,
-  linkedinSearchString,
+  linkedinSearch,
 } from './mappers/linkedin-job-board.mapper';
 import { LinkedinPostsCollector } from './linkedin-posts.collector';
 import { AshbyCollector } from './ashby.collector';
@@ -94,29 +94,39 @@ describe('linkedinJobSearchUrl', () => {
   });
 });
 
-describe('linkedinSearchString', () => {
-  it("is cheap_scraper's `<keyword> - <location>`, with GLOBAL as Worldwide", () => {
-    expect(linkedinSearchString('backend go', { location: 'Germany' })).toBe(
-      'backend go - Germany',
+describe('linkedinSearch', () => {
+  it('is the keyword, the geoId before the location text, and the filters', () => {
+    expect(linkedinSearch('backend go', { location: 'Germany' })).toBe(
+      'keywords=backend+go&location=Germany',
     );
-    expect(linkedinSearchString('x', { location: 'GLOBAL' })).toBe(
-      'x - Worldwide',
+    expect(linkedinSearch('x', { location: 'GLOBAL' })).toBe(
+      'keywords=x&location=Worldwide',
     );
-    expect(linkedinSearchString('x', {})).toBe('x');
+    expect(
+      linkedinSearch('x', {
+        location: 'uae',
+        geoId: '104305776',
+        experienceLevel: '4',
+        workType: '2',
+      }),
+    ).toBe(
+      linkedinSearch('x', {
+        location: 'united arab emirates',
+        geoId: '104305776',
+        experienceLevel: '4',
+        workType: '2',
+      }),
+    );
   });
 });
 
 describe('LinkedIn job board segment', () => {
   const queries = [
     { id: 'qs-1', keyword: 'backend nestjs', params: { location: 'Germany' } },
-    { id: 'qs-2', keyword: 'backend go', params: { location: 'Germany' } },
-    { id: 'qs-3', keyword: 'backend java', params: { location: 'Germany' } },
+    { id: 'qs-2', keyword: 'backend nestjs', params: { location: 'Germany' } },
   ];
-  const urlOf = (i: number) =>
-    linkedinJobSearchUrl(queries[i].keyword, queries[i].params, 7200);
-  const keyOf = (i: number) =>
-    linkedinSearchString(queries[i].keyword, queries[i].params);
-  const item = (jobId: number, searchString: string | undefined) => ({
+  const url = linkedinJobSearchUrl(queries[0].keyword, queries[0].params, 7200);
+  const item = (jobId: number, searchString?: string) => ({
     jobId: String(jobId),
     jobUrl: `https://www.linkedin.com/jobs/view/${jobId}`,
     jobTitle: 'Engineer',
@@ -126,12 +136,11 @@ describe('LinkedIn job board segment', () => {
     searchString,
   });
 
-  it('runs once over every member and attributes each job to its search', async () => {
+  it('runs its one search and gives every member every item, in dataset order', async () => {
+    // The echoed search is never read: LinkedIn may rewrite the location.
     const { run, provider } = actor(() => [
-      item(1, keyOf(0)),
-      item(2, keyOf(2)),
-      item(3, keyOf(0)),
-      item(4, 'something else - Nowhere'),
+      item(1, 'backend nestjs - Deutschland'),
+      item(2),
     ]);
     const result = await new LinkedinJobBoardCollector(provider).collect(
       segment(Channel.LINKEDIN_JOB_BOARD, queries),
@@ -140,27 +149,22 @@ describe('LinkedIn job board segment', () => {
     expect(run).toHaveBeenCalledTimes(1);
     expect(run.mock.calls[0][0]).toBe('cheap_scraper/linkedin-job-scraper');
     expect(run.mock.calls[0][1]).toEqual({
-      startUrls: [0, 1, 2].map((i) => ({ url: urlOf(i) })),
+      startUrls: [{ url }],
+      maxItems: board.maxRowsPerUrl,
       saveOnlyUniqueItems: false,
       enrichCompanyData: false,
     });
     expect(run.mock.calls[0][2]).toEqual({
       maxChargeUsd: board.maxRunChargeUsd,
     });
-    // Positions count within each search, in dataset order.
-    expect(result.itemsByQuery.get('qs-1')).toEqual([
-      { rank: 1, payload: item(1, keyOf(0)) },
-      { rank: 2, payload: item(3, keyOf(0)) },
-    ]);
-    expect(result.itemsByQuery.get('qs-2')).toEqual([]);
-    expect(result.itemsByQuery.get('qs-3')).toEqual([
-      { rank: 1, payload: item(2, keyOf(2)) },
-    ]);
-    // The item naming no member search is kept, untouched.
-    expect(result.unattributed).toEqual([
-      { rank: 1, payload: item(4, 'something else - Nowhere') },
-    ]);
-    expect(result.fetched).toBe(4);
+    const expected = [
+      { rank: 1, payload: item(1, 'backend nestjs - Deutschland') },
+      { rank: 2, payload: item(2) },
+    ];
+    expect(result.itemsByQuery.get('qs-1')).toEqual(expected);
+    expect(result.itemsByQuery.get('qs-2')).toEqual(expected);
+    expect(result.unattributed).toEqual([]);
+    expect(result.fetched).toBe(2);
     expect(result.truncatedQueryIds).toEqual([]);
     expect(result.source).toEqual({
       actor: 'cheap_scraper/linkedin-job-scraper',
@@ -168,68 +172,68 @@ describe('LinkedIn job board segment', () => {
     });
   });
 
-  it('counts a search that returned its row limit as truncated', async () => {
-    const full = Array.from({ length: board.maxRowsPerUrl }, (_, i) =>
-      item(100 + i, keyOf(1)),
-    );
-    const result = await new LinkedinJobBoardCollector(
-      actor(() => full).provider,
-    ).collect(segment(Channel.LINKEDIN_JOB_BOARD, queries));
-    expect(result.truncatedQueryIds).toEqual(['qs-2']);
-    expect(result.itemsByQuery.get('qs-2')?.at(-1)?.rank).toBe(
-      board.maxRowsPerUrl,
-    );
-  });
-
-  it('searches a URL shared by several members once and gives each its items', async () => {
-    const twins = [
-      { id: 'qs-a', keyword: 'backend nestjs', params: { location: 'EMEA' } },
-      { id: 'qs-b', keyword: 'backend nestjs', params: { location: 'EMEA' } },
-    ];
-    const shared = linkedinJobSearchUrl(
-      twins[0].keyword,
-      twins[0].params,
-      7200,
-    );
-    const key = linkedinSearchString(twins[0].keyword, twins[0].params);
-    const { run, provider } = actor(() => [item(1, key), item(2, key)]);
-    const result = await new LinkedinJobBoardCollector(provider).collect(
-      segment(Channel.LINKEDIN_JOB_BOARD, twins),
-    );
-
-    expect(run.mock.calls[0][1]).toMatchObject({
-      startUrls: [{ url: shared }],
-    });
-    expect(result.itemsByQuery.get('qs-a')).toHaveLength(2);
-    expect(result.itemsByQuery.get('qs-b')).toHaveLength(2);
-  });
-
-  it('gives members that differ only in other filters each all the items of their keyword and location', async () => {
-    const siblings = [
+  it('runs members that spell a geoId-pinned place differently as one search', async () => {
+    const pinned = [
       {
         id: 'qs-a',
         keyword: 'go',
-        params: { location: 'EMEA', workType: '2' },
+        params: { location: 'uae', geoId: '104305776' },
       },
       {
         id: 'qs-b',
         keyword: 'go',
-        params: { location: 'EMEA', workType: '3' },
+        params: { location: 'united arab emirates', geoId: '104305776' },
       },
     ];
-    const { run, provider } = actor(() => [item(1, 'go - EMEA')]);
+    const { run, provider } = actor(() => [item(1)]);
     const result = await new LinkedinJobBoardCollector(provider).collect(
-      segment(Channel.LINKEDIN_JOB_BOARD, siblings),
+      segment(Channel.LINKEDIN_JOB_BOARD, pinned),
     );
+    expect(run).toHaveBeenCalledTimes(1);
     expect(
       (run.mock.calls[0][1] as { startUrls: unknown[] }).startUrls,
-    ).toHaveLength(2);
+    ).toHaveLength(1);
     expect(result.itemsByQuery.get('qs-a')).toHaveLength(1);
     expect(result.itemsByQuery.get('qs-b')).toHaveLength(1);
   });
 
+  it('refuses a segment whose members run different searches', async () => {
+    const { run, provider } = actor(() => [item(1)]);
+    await expect(
+      new LinkedinJobBoardCollector(provider).collect(
+        segment(Channel.LINKEDIN_JOB_BOARD, [
+          { id: 'qs-a', keyword: 'go', params: { location: 'EMEA' } },
+          {
+            id: 'qs-b',
+            keyword: 'go',
+            params: { location: 'EMEA', workType: '2' },
+          },
+        ]),
+      ),
+    ).rejects.toThrow(/one search/);
+    expect(run).not.toHaveBeenCalled();
+  });
+
+  it('counts the search as truncated when it returned its row limit', async () => {
+    const full = Array.from({ length: board.maxRowsPerUrl }, (_, i) =>
+      item(100 + i),
+    );
+    const result = await new LinkedinJobBoardCollector(
+      actor(() => full).provider,
+    ).collect(segment(Channel.LINKEDIN_JOB_BOARD, queries));
+    expect(result.truncatedQueryIds).toEqual(['qs-1', 'qs-2']);
+    expect(result.itemsByQuery.get('qs-1')?.at(-1)?.rank).toBe(
+      board.maxRowsPerUrl,
+    );
+
+    const short = await new LinkedinJobBoardCollector(
+      actor(() => full.slice(1)).provider,
+    ).collect(segment(Channel.LINKEDIN_JOB_BOARD, queries));
+    expect(short.truncatedQueryIds).toEqual([]);
+  });
+
   it("keeps the run's search totals, untouched", async () => {
-    const totals = { [urlOf(0)]: 41 };
+    const totals = { [url]: 41 };
     const record = vi.fn(async () => totals);
     const run = vi.fn(async () => ({
       items: [],
@@ -269,42 +273,12 @@ describe('LinkedIn job board segment', () => {
     }
   });
 
-  it('matches the echoed search whatever its case, spacing or trailing separator', async () => {
-    const located = [
-      {
-        id: 'qs-1',
-        keyword: 'Backend  NestJS',
-        params: { location: 'Germany' },
-      },
-      { id: 'qs-2', keyword: 'anywhere', params: {} },
-    ];
-    const { provider } = actor(() => [
-      item(1, ' backend nestjs -  germany '),
-      item(2, 'anywhere - '),
-    ]);
-    const result = await new LinkedinJobBoardCollector(provider).collect(
-      segment(Channel.LINKEDIN_JOB_BOARD, located),
-    );
-    expect(result.itemsByQuery.get('qs-1')).toHaveLength(1);
-    expect(result.itemsByQuery.get('qs-2')).toHaveLength(1);
-    expect(result.unattributed).toEqual([]);
-  });
-
-  it('has no rank and no member when the item names no search', async () => {
-    const { provider } = actor(() => [item(1, undefined)]);
-    const result = await new LinkedinJobBoardCollector(provider).collect(
-      segment(Channel.LINKEDIN_JOB_BOARD, queries),
-    );
-    expect(result.unattributed).toEqual([
-      { rank: null, payload: item(1, undefined) },
-    ]);
-  });
-
   it('reports the cost and whether the charge cap was reached', async () => {
+    const atCap = board.maxRunChargeUsd * 0.96;
     const capped = await new LinkedinJobBoardCollector(
-      actor(() => [], 0.96).provider,
+      actor(() => [], atCap).provider,
     ).collect(segment(Channel.LINKEDIN_JOB_BOARD, queries));
-    expect(capped).toMatchObject({ costUsd: 0.96, capped: true });
+    expect(capped).toMatchObject({ costUsd: atCap, capped: true });
 
     const unknown = await new LinkedinJobBoardCollector(
       actor(() => [], null).provider,

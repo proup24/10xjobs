@@ -36,8 +36,8 @@ function messageOf(exception: HttpException): string | string[] {
 
 /**
  * @description Formats every error as the error envelope. Unexpected errors
- * become a generic 500 so driver or stack details never reach the client;
- * they are logged with the trace id instead.
+ * become a generic 500 so driver or stack details never reach the client or
+ * logs; the trace id links the event to request-level diagnostics.
  */
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -49,9 +49,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const response = http.getResponse<Response>();
 
     if (!(exception instanceof HttpException)) {
-      this.logger.error(
-        `[${traceId}] ${exception instanceof Error ? (exception.stack ?? exception.message) : String(exception)}`,
-      );
+      this.logger.error(`[${traceId}] Unexpected non-HTTP exception`);
       response
         .status(HttpStatus.INTERNAL_SERVER_ERROR)
         .json(

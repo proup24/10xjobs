@@ -43,7 +43,10 @@ export const salarySchema = z.strictObject({
 
 export const workAuthorizationSchema = z.strictObject({
   requirements: z.array(
-    z.strictObject({ kind: z.string().min(1), place: z.string().min(1) }),
+    z.strictObject({
+      kind: z.enum(['work-permit', 'citizenship', 'residency', 'clearance']),
+      place: z.string().min(1),
+    }),
   ),
   sponsorship: z.enum(['yes', 'no', 'unstated']),
 });
