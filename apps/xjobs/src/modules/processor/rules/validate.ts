@@ -168,6 +168,10 @@ export function needsReview(doc: ExtractionDocument): boolean {
     doc.seniority.confidence === 'unsure' ||
     doc.position.confidence === 'unsure' ||
     doc.contractType.confidence === 'unsure' ||
+    doc.engagement.confidence === 'unsure' ||
+    doc.isSoftwareEngineeringRole.confidence === 'unsure' ||
+    doc.verification.dropped.length > 0 ||
+    doc.verification.missedJunkFlags.length > 0 ||
     (doc.techStack.value?.requirements ?? []).some(
       (r) => r.kind === 'main' && r.confidence === 'unsure',
     )

@@ -244,4 +244,26 @@ describe('needsReview', () => {
     };
     expect(needsReview(doc)).toBe(false);
   });
+  it('is true for a dropped field', () => {
+    const doc = fixtureDocument();
+    doc.verification.dropped.push({
+      field: 'arrangement',
+      generatorValue: 'remote',
+      jevPick: 'onsite',
+    });
+    expect(needsReview(doc)).toBe(true);
+  });
+  it('is true for a missed junk flag', () => {
+    const doc = fixtureDocument();
+    doc.verification.missedJunkFlags.push('spam');
+    expect(needsReview(doc)).toBe(true);
+  });
+  it('is true for unsure engagement or isSoftwareEngineeringRole', () => {
+    const a = fixtureDocument();
+    a.engagement.confidence = 'unsure';
+    expect(needsReview(a)).toBe(true);
+    const b = fixtureDocument();
+    b.isSoftwareEngineeringRole.confidence = 'unsure';
+    expect(needsReview(b)).toBe(true);
+  });
 });
