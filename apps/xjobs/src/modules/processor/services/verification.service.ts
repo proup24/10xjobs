@@ -12,14 +12,20 @@ import {
 } from '../models/types';
 import type { Vocabulary } from '../repositories/vocab.repository';
 import { buildVerificationQuestions } from '../rules/questions';
-import { type FieldVerdict, generatorAnswers, judge } from '../rules/verify';
+import {
+  type FieldVerdict,
+  generatorAnswers,
+  generatorDecidedBy,
+  judge,
+} from '../rules/verify';
 import type { ExtractionDocument } from '../schema';
 import type { AttemptLog } from './attempt-log';
 
 /**
  * One verification round (spec §3): Jev answers the closed questions on its
  * own, and each answer is compared with the generator's value. With `keys`,
- * only those fields are asked.
+ * only those fields are asked. Each verdict records `round`, the generation
+ * round it is given in.
  */
 @Injectable()
 export class VerificationService {
@@ -38,6 +44,7 @@ export class VerificationService {
     input: PostingInput,
     vocabulary: Vocabulary,
     keys: Set<ClosedQuestionKey> | undefined,
+    round: number,
     log: AttemptLog,
   ): Promise<FieldVerdict[]> {
     const model = this.config.decisionModel;
@@ -77,7 +84,10 @@ export class VerificationService {
       log.invalid('verification', model, error.meta, error.message);
     }
 
-    const verdicts = judge(generator, answers, model);
+    const verdicts = judge(generator, answers, model, {
+      round,
+      decidedBy: generatorDecidedBy(doc, vocabulary.options),
+    });
     const count = (v: FieldVerdict['verdict']) =>
       verdicts.filter((x) => x.verdict === v).length;
     const rejected = verdicts.filter((v) => v.verdict === 'rejected');

@@ -154,6 +154,8 @@ describe('ExtractionPipeline', () => {
         score: 0.95,
         jevPick: 'mid',
         generatorValue: 'senior',
+        decidedBy: 'generator',
+        round: 1,
       },
     ]);
     expect(decision.calls).toHaveLength(2);
@@ -173,6 +175,7 @@ describe('ExtractionPipeline', () => {
     // A confirmed, unchanged field keeps its round-1 verdict.
     expect(doc.arrangement.verification).toMatchObject({
       verdict: 'confirmed',
+      rounds: 1,
     });
     expect(doc.verification).toMatchObject({ rounds: 2, dropped: [] });
   });
@@ -401,5 +404,130 @@ describe('ExtractionPipeline', () => {
     expect(doc.verification.rounds).toBe(1);
     expect(doc.verification.dropped.map((d) => d.field)).toEqual(['seniority']);
     expect(doc.seniority.value).toBe('unstated');
+  });
+
+  it('Jev unstated on a junk flag the generator omitted → confirmed, no regeneration', async () => {
+    decision = new FakeDecisionModel(
+      jevAnswers({ 'junk:vague': { value: 'unstated', score: 0.9 } }),
+      DEC,
+    );
+
+    const { doc } = await run();
+
+    expect(extraction.calls).toHaveLength(1);
+    expect(doc.junkFlags).toMatchObject({
+      value: [],
+      confidence: 'sure',
+      verification: { verdict: 'confirmed' },
+    });
+    expect(doc.verification.missedJunkFlags).toEqual([]);
+    expect(needsReview(doc)).toBe(false);
+  });
+
+  it('Jev unstated on a junk flag the generator raised → removed at the end, not a missed flag', async () => {
+    extraction = new FakeExtractionModel(
+      () =>
+        generatorOutput({
+          junkFlags: mf([{ code: 'vague', quote: '' }]),
+        }),
+      EXT,
+    );
+    decision = new FakeDecisionModel(
+      jevAnswers({ 'junk:vague': { value: 'unstated', score: 0.9 } }),
+      DEC,
+    );
+
+    const { doc } = await run();
+
+    expect(extraction.calls).toHaveLength(3);
+    expect(doc.junkFlags.value).toEqual([]);
+    expect(doc.verification.dropped.map((d) => d.field)).toEqual([
+      'junk:vague',
+    ]);
+    expect(doc.verification.missedJunkFlags).toEqual([]);
+  });
+
+  it('roleKind and isSoftwareEngineeringRole both confirmed but inconsistent → both unsure, needsReview', async () => {
+    extraction = new FakeExtractionModel(
+      () =>
+        generatorOutput({
+          position: mf(
+            { roleKind: 'support', title: 'Backend Engineer' },
+            'Senior Backend Engineer',
+          ),
+        }),
+      EXT,
+    );
+    decision = new FakeDecisionModel(
+      jevAnswers({ roleKind: { value: 'support' } }),
+      DEC,
+    );
+
+    const { doc } = await run();
+
+    expect(extraction.calls).toHaveLength(1);
+    expect(doc.position.verification?.verdict).toBe('confirmed');
+    expect(doc.isSoftwareEngineeringRole.verification?.verdict).toBe(
+      'confirmed',
+    );
+    expect(doc.position.confidence).toBe('unsure');
+    expect(doc.isSoftwareEngineeringRole.confidence).toBe('unsure');
+    expect(needsReview(doc)).toBe(true);
+  });
+
+  describe('a rejected ingest-filled field', () => {
+    const fromIngest: PostingInput = {
+      ...input,
+      evidence: { ...input.evidence, experienceLevel: 'Entry level' },
+    };
+    const unstatedSeniority = () =>
+      generatorOutput({ seniority: mf('unstated') });
+
+    it('is dropped without a regeneration', async () => {
+      extraction = new FakeExtractionModel(unstatedSeniority, EXT);
+      decision = new FakeDecisionModel(
+        jevAnswers({ seniority: { value: 'senior' } }),
+        DEC,
+      );
+
+      const { doc } = await pipeline().run(fromIngest, vocabulary, log);
+
+      expect(extraction.calls).toHaveLength(1);
+      expect(decision.calls).toHaveLength(1);
+      expect(doc.verification.rounds).toBe(1);
+      expect(doc.verification.dropped).toEqual([
+        { field: 'seniority', generatorValue: 'junior', jevPick: 'senior' },
+      ]);
+      expect(doc.seniority).toMatchObject({
+        value: 'unstated',
+        confidence: 'unsure',
+      });
+      expect(needsReview(doc)).toBe(true);
+    });
+
+    it('is left out of the feedback when another field is regenerated', async () => {
+      extraction = new FakeExtractionModel(unstatedSeniority, EXT);
+      decision = new FakeDecisionModel(
+        rounds(
+          jevAnswers({
+            seniority: { value: 'senior' },
+            engagement: { value: 'contractor' },
+          }),
+          jevAnswers({ seniority: { value: 'senior' } }),
+        ),
+        DEC,
+      );
+
+      const { doc } = await pipeline().run(fromIngest, vocabulary, log);
+
+      expect(extraction.calls).toHaveLength(2);
+      expect(extraction.calls[1].req.feedback?.map((f) => f.key)).toEqual([
+        'engagement',
+      ]);
+      expect(doc.verification.rounds).toBe(2);
+      expect(doc.verification.dropped.map((d) => d.field)).toEqual([
+        'seniority',
+      ]);
+    });
   });
 });

@@ -6,6 +6,7 @@ import {
 import type { PostingInput } from '../models/types';
 import type { Vocabulary } from '../repositories/vocab.repository';
 import { applyVerdicts, carryVerdicts } from '../rules/finalize';
+import { checkConsistency } from '../rules/validate';
 import { type FieldVerdict, generatorAnswers } from '../rules/verify';
 import type { AttemptLog } from './attempt-log';
 import type { AssembledDocument } from './fact-assembler.service';
@@ -26,8 +27,10 @@ export class ExtractionFailed extends Error {
  *   1. GenerationService     the generator writes the whole document; the assembler checks it
  *   2. VerificationService   Jev verifies the closed fields
  *   3. a field Jev rejects   regenerate with feedback, verify again
- *                            (at most `maxRegenerations` times)
+ *                            (at most `maxRegenerations` times); a rejected
+ *                            ingest-filled field is not regenerated, only dropped
  *   4. applyVerdicts         confirmed sure, unconfirmed unsure, rejected after the last round dropped
+ *   5. checkConsistency      again, so a confirmation cannot erase a cross-fact downgrade
  *
  * Writes nothing: the caller decides whether to save.
  */
@@ -63,18 +66,23 @@ export class ExtractionPipeline {
       input,
       vocabulary,
       undefined,
+      1,
       log,
     );
 
     for (let round = 1; ; round++) {
-      const rejected = verdicts.filter((v) => v.verdict === 'rejected');
+      // A rejected ingest value is not the generator's: regenerating cannot
+      // fix it and its feedback would be false. It is dropped at finalize.
+      const rejected = verdicts.filter(
+        (v) => v.verdict === 'rejected' && v.decidedBy !== 'ingest',
+      );
       if (rejected.length === 0)
-        return this.finalize(current, verdicts, round, false, log);
+        return this.finalize(current, verdicts, round, false, vocabulary, log);
       if (round > this.config.maxRegenerations) {
         log.info(
           `Jev still rejects ${keys(rejected)} after ${round} rounds; dropped`,
         );
-        return this.finalize(current, verdicts, round, false, log);
+        return this.finalize(current, verdicts, round, false, vocabulary, log);
       }
       log.info(`Jev rejects ${keys(rejected)}; regenerating`);
       const next = await this.generation.generate(
@@ -89,7 +97,14 @@ export class ExtractionPipeline {
           `the regeneration was invalid; keeping round ${round}'s document, with ${keys(rejected)} dropped`,
         );
         // `rounds` counts the generation rounds spent, the invalid one included.
-        return this.finalize(current, verdicts, round + 1, true, log);
+        return this.finalize(
+          current,
+          verdicts,
+          round + 1,
+          true,
+          vocabulary,
+          log,
+        );
       }
       const nextAnswers = generatorAnswers(next.assembled.doc, options);
       const { kept, toAsk } = carryVerdicts(verdicts, answers, nextAnswers);
@@ -98,6 +113,7 @@ export class ExtractionPipeline {
         input,
         vocabulary,
         toAsk,
+        round + 1,
         log,
       );
       current = next.assembled;
@@ -109,20 +125,25 @@ export class ExtractionPipeline {
   /**
    * Applies the round's verdicts to the document generated in that round
    * (never to an already finalized one). Every exit is final: a field still
-   * rejected here is dropped.
+   * rejected here is dropped. The cross-fact rules run again on the result,
+   * so a pair Jev confirmed but that contradicts itself ends `unsure`.
    */
   private finalize(
     assembled: AssembledDocument,
     verdicts: FieldVerdict[],
     round: number,
     regenerationInvalid: boolean,
+    vocabulary: Vocabulary,
     log: AttemptLog,
   ): AssembledDocument {
-    const doc = applyVerdicts(assembled.doc, verdicts, {
-      round,
-      final: true,
-      regenerationInvalid,
-    });
+    const doc = checkConsistency(
+      applyVerdicts(assembled.doc, verdicts, {
+        round,
+        final: true,
+        regenerationInvalid,
+      }),
+      vocabulary.engineeringRoleKinds,
+    );
     doc.models.verifier = this.config.decisionModel;
     log.debug(
       `verified in ${round} round${round === 1 ? '' : 's'}${doc.verification.dropped.length ? `, dropped ${doc.verification.dropped.map((d) => d.field).join(', ')}` : ''}`,

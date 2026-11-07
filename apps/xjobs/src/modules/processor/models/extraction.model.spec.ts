@@ -218,6 +218,8 @@ describe('AiSdkExtractionModel', () => {
         score: 0.91,
         jevPick: 'junior',
         generatorValue: 'senior',
+        decidedBy: 'generator',
+        round: 1,
       },
     ];
     await model(lm).generate(input, {
@@ -247,6 +249,8 @@ describe('feedbackMessage', () => {
       score: 0.91,
       jevPick: 'mid',
       generatorValue: 'senior',
+      decidedBy: 'generator',
+      round: 1,
     },
     {
       key: 'junk:vague',
@@ -254,6 +258,8 @@ describe('feedbackMessage', () => {
       score: 0.85,
       jevPick: 'yes',
       generatorValue: 'no',
+      decidedBy: 'generator',
+      round: 1,
     },
   ];
 

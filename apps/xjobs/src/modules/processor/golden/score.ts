@@ -1,5 +1,5 @@
 import type { NewAttempt } from '../repositories/processor.repository';
-import type { FieldVerdict } from '../rules/verify';
+import { comparablePick, type FieldVerdict } from '../rules/verify';
 import type { Confidence, DecidedBy, ExtractionDocument } from '../schema';
 import type { Verdict, Verification } from '../schema/fact';
 import type {
@@ -569,11 +569,13 @@ function scoreJunkAnswers(
       v.jevPick === null
     )
       return [];
+    // Compared as the pipeline compares it: `unstated` on a flag is `no`.
+    const pick = comparablePick(v.key, v.jevPick);
     return [
       {
         score: v.score,
-        correct: sameScalar(v.jevPick, want),
-        agrees: v.jevPick === v.generatorValue,
+        correct: sameScalar(pick, want),
+        agrees: pick === v.generatorValue,
       },
     ];
   });

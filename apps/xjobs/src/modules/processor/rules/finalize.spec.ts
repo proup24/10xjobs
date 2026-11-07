@@ -9,8 +9,17 @@ const v = (
   generatorValue: string,
   jevPick: string | null,
   score: number | null = 0.9,
+  round = 2,
 ): FieldVerdict =>
-  ({ key, verdict, score, jevPick, generatorValue }) as FieldVerdict;
+  ({
+    key,
+    verdict,
+    score,
+    jevPick,
+    generatorValue,
+    decidedBy: 'generator',
+    round,
+  }) as FieldVerdict;
 const FINAL = { round: 2, final: true, regenerationInvalid: false };
 
 describe('applyVerdicts', () => {
@@ -87,6 +96,51 @@ describe('applyVerdicts', () => {
     expect(out.junkFlags.value).toEqual([]);
     expect(out.verification.missedJunkFlags).toEqual(['spam']);
     expect(out.junkFlags.verification?.verdict).toBe('rejected');
+  });
+
+  it('Jev unstated on an included flag: rejected, removed at the end, not a missed flag', () => {
+    const doc = fixtureDocument();
+    doc.junkFlags.value = [{ code: 'vague', quote: '' }];
+    const out = applyVerdicts(
+      doc,
+      [v('junk:vague', 'rejected', 'yes', 'unstated')],
+      FINAL,
+    );
+    expect(out.junkFlags.value).toEqual([]);
+    expect(out.verification.dropped.map((d) => d.field)).toEqual([
+      'junk:vague',
+    ]);
+    expect(out.verification.missedJunkFlags).toEqual([]);
+  });
+
+  it('a rejected omitted flag is a missed flag only when Jev picked yes', () => {
+    const out = applyVerdicts(
+      fixtureDocument(),
+      [
+        v('junk:vague', 'rejected', 'no', 'unstated'),
+        v('junk:spam', 'rejected', 'no', 'yes'),
+      ],
+      FINAL,
+    );
+    expect(out.verification.missedJunkFlags).toEqual(['spam']);
+  });
+
+  it('a carried verdict keeps the round it was given in', () => {
+    const out = applyVerdicts(
+      fixtureDocument(),
+      [
+        v('arrangement', 'confirmed', 'remote', 'remote', 0.9, 1),
+        v('seniority', 'confirmed', 'senior', 'senior', 0.9, 2),
+        v('junk:vague', 'confirmed', 'no', 'no', 0.9, 1),
+        v('junk:spam', 'confirmed', 'no', 'no', 0.9, 2),
+      ],
+      FINAL,
+    );
+    expect(out.arrangement.verification?.rounds).toBe(1);
+    expect(out.seniority.verification?.rounds).toBe(2);
+    // The junk envelope was settled when its last flag was judged.
+    expect(out.junkFlags.verification?.rounds).toBe(2);
+    expect(out.verification.rounds).toBe(2);
   });
 
   it('final rejections of roleKind, engineering and sponsorship use the mapped nulls', () => {

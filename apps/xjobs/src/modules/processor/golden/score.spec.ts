@@ -413,7 +413,15 @@ const round = (
   generatorValue: string,
   jevPick: string,
   score = 0.9,
-): FieldVerdict => ({ key, verdict, score, jevPick, generatorValue });
+): FieldVerdict => ({
+  key,
+  verdict,
+  score,
+  jevPick,
+  generatorValue,
+  decidedBy: 'generator',
+  round: 1,
+});
 
 describe('verdicts from every round', () => {
   it('measures rejection precision over every round, apart from the final one', () => {
@@ -468,5 +476,18 @@ describe('verdicts from every round', () => {
     const junk = summarize(scores).questions.junk;
     expect(junk.suggestedThreshold).toBe(0.7);
     expect(junk.acceptedAtSuggested).toBe(20);
+  });
+
+  it('scores a junk unstated as no, as the pipeline compares it', () => {
+    const c = matchingCase();
+    c.expected.junkFlags = [];
+    const scores = scoreCase(fixtureDocument(), c, {
+      roundVerdicts: [
+        [round('junk:vague', 'confirmed', 'no', 'unstated', 0.9)],
+      ],
+    });
+    expect(scores.junkAnswers).toEqual([
+      { score: 0.9, correct: true, agrees: true },
+    ]);
   });
 });

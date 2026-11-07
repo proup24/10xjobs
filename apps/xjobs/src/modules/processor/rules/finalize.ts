@@ -25,7 +25,8 @@ type Envelope = {
 
 /**
  * Applies Jev's verdicts to the generated document (spec §4).
- * Confirmed -> sure; unconfirmed -> unsure; rejected on the final round -> dropped.
+ * Confirmed -> sure; unconfirmed -> unsure; rejected on the final round -> dropped
+ * (an ingest-filled value too: the pipeline never regenerates it).
  * A rejection before the final round only records the verdict.
  * Nothing is ever refilled from ingest evidence here.
  */
@@ -44,15 +45,16 @@ export function applyVerdicts(
         jevPick: v.jevPick,
       });
   };
+  /** `rounds` is the round the verdict was given in: a carried verdict keeps its own. */
   const record = (
     fact: Envelope,
-    v: Pick<FieldVerdict, 'verdict' | 'score' | 'jevPick'>,
+    v: Pick<FieldVerdict, 'verdict' | 'score' | 'jevPick' | 'round'>,
   ): void => {
     fact.verification = {
       verdict: v.verdict,
       score: v.score,
       jevPick: v.jevPick,
-      rounds: opts.round,
+      rounds: v.round,
     };
   };
   const settle = (fact: Envelope, v: FieldVerdict): boolean => {
@@ -134,6 +136,8 @@ export function applyVerdicts(
       verdict: worst.verdict,
       score: scores.length ? Math.min(...scores) : null,
       jevPick: worst.jevPick,
+      // The envelope is settled when its last flag was judged.
+      round: Math.max(...junk.map((j) => j.round)),
     });
     fact.confidence = worst.verdict === 'confirmed' ? 'sure' : 'unsure';
     fact.score = fact.verification?.score ?? null;
@@ -145,7 +149,12 @@ export function applyVerdicts(
         if (flags.some((f) => f.code === code)) {
           fact.value = flags.filter((f) => f.code !== code);
           drop(v);
-        } else if (!out.verification.missedJunkFlags.includes(code)) {
+        } else if (
+          // Jev's `unstated` confirms an omitted flag (verify.ts), so only a
+          // `yes` is a flag the generator missed.
+          v.jevPick === 'yes' &&
+          !out.verification.missedJunkFlags.includes(code)
+        ) {
           out.verification.missedJunkFlags.push(code);
         }
       }
