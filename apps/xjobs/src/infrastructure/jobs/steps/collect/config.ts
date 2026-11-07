@@ -34,7 +34,7 @@ export interface ChannelJobConfig<R extends ActorRunConfig = ActorRunConfig> {
 
 const hourly = {
   enabled: true,
-  schedule: { pattern: '0 * * * *', timezone: 'UTC' },
+  schedule: { pattern: '0 8-22 * * 1-5', timezone: 'UTC' },
   concurrency: 1,
   attempts: 1,
   segmentSize: 10,
