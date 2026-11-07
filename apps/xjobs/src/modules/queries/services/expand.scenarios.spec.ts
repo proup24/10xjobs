@@ -6,12 +6,8 @@ import {
   SkillDomain,
   Technology,
 } from 'src/common/enums';
-import { toRecipe } from '../builders';
-import { technologySets } from '../sets/technology';
 import {
   LOCATIONS_REQUIRED,
-  locationCombinations,
-  normalizeProfile,
   SENIORITIES_REQUIRED,
   SKILLS_REQUIRED,
 } from '../steps';
@@ -315,18 +311,10 @@ describe('expand scenarios over mock profiles', () => {
     expect(run).toThrow(SKILLS_REQUIRED);
   });
 
-  it('techs without search wording only (saas, microservices): the combinations of no skills, without throwing', () => {
-    const profile = MOCK_PROFILES.conceptTagsOnly;
-    // What a profile with no skills combines into, past the publish guard.
-    const noSkills = normalizeProfile({ ...profile, skills: [] });
-    const withoutSkills = locationCombinations(
-      noSkills,
-      technologySets(noSkills.skills),
-    ).map(toRecipe);
-    expect(() => expand(profile)).not.toThrow();
-    expect(expand(profile)).toEqual(withoutSkills);
-    for (const recipe of expand(profile))
-      expect(recipe.keyword.toLowerCase()).not.toMatch(/saas|microservices/);
+  it('techs without search wording only (saas, microservices): rejected like no skills, nothing generated', () => {
+    const run = () => expand(MOCK_PROFILES.conceptTagsOnly);
+    expect(run).toThrow(BadRequestException);
+    expect(run).toThrow(SKILLS_REQUIRED);
   });
 
   it('every recipe carries the domain of its technology', () => {

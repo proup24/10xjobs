@@ -189,6 +189,32 @@ describe('users, profiles and resume', () => {
     expect((await axios.delete(`${profiles()}/${id}`)).status).toBe(204);
   });
 
+  it('refuses to publish a profile whose only skills are concept tags, leaving it a draft', async () => {
+    const id = (
+      await axios.post(profiles(), {
+        ...profile,
+        techStack: [
+          { technology: 'saas', domain: 'backend', mastery: 9, importance: 10 },
+          {
+            technology: 'microservices',
+            domain: 'backend',
+            mastery: 8,
+            importance: 9,
+          },
+        ],
+      })
+    ).data.data.id;
+    const res = await axios.post(`${profiles()}/${id}/publish`, {}, ok);
+    expect(res.status).toBe(400);
+    expect(res.data.message).toBe(
+      'at least one skill with importance above 0 is required to publish',
+    );
+    expect((await axios.get(`${profiles()}/${id}`)).data.data.state).toBe(
+      'draft',
+    );
+    expect((await axios.delete(`${profiles()}/${id}`)).status).toBe(204);
+  });
+
   it('echoes locations as the places it was sent', async () => {
     const res = await axios.post(profiles(), profile, ok);
     expect(res.status).toBe(201);

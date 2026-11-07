@@ -10,7 +10,7 @@ const compareSkills = (a: RankedSkill, b: RankedSkill): number =>
   a.technology.localeCompare(b.technology);
 
 /** True when the technology has search wording; a concept tag such as `saas` has none. */
-const hasSearchWording = (technology: string): boolean =>
+export const hasSearchWording = (technology: string): boolean =>
   Object.hasOwn(TECHNOLOGY_TERMS, technology);
 
 /**
