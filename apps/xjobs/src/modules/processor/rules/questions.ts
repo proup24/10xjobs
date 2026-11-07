@@ -1,4 +1,4 @@
-import type { DecisionQuestion } from '../models/types';
+import type { ClosedQuestionKey, DecisionQuestion } from '../models/types';
 import type { ListOptions } from '../schema';
 
 const JUNK_INSTRUCTIONS: Record<string, string> = {
@@ -12,63 +12,81 @@ const JUNK_INSTRUCTIONS: Record<string, string> = {
     'Is the posting too vague to tell what the job is, with little about duties or requirements?',
 };
 
-/** The closed questions Jev answers, in the order of the spec; options come from the approved lists. */
-export function buildDecisionQuestions(
-  options: ListOptions,
-): DecisionQuestion[] {
-  return [
-    {
-      key: 'arrangement',
-      kind: 'choice',
-      options: options.arrangements,
-      instructions:
-        'Where does the posting say the work is done: remote, hybrid or on site?',
-    },
-    {
-      key: 'seniority',
-      kind: 'choice',
-      options: options.seniorities,
-      instructions: 'What seniority level does the posting ask for?',
-    },
-    {
-      key: 'roleKind',
-      kind: 'choice',
-      options: options.roleKinds,
-      instructions:
-        'What kind of work is the job mostly, judged by its duties rather than its title?',
-    },
-    {
-      key: 'contractType',
-      kind: 'choice',
-      options: options.contractTypes,
-      instructions: 'What contract type does the posting offer?',
-    },
-    {
-      key: 'engagement',
-      kind: 'choice',
-      options: options.engagements,
-      instructions:
-        'How is the person engaged: as an employee, a contractor or another way?',
-    },
-    {
-      key: 'isSoftwareEngineeringRole',
-      kind: 'yesno',
-      instructions: 'Is the job mainly about building or running software?',
-    },
-    ...options.junkFlags.map(
-      (code): DecisionQuestion => ({
-        key: `junk:${code}`,
-        kind: 'yesno',
-        instructions:
-          JUNK_INSTRUCTIONS[code] ??
-          `Does the posting show the flag "${code.replace(/_/g, ' ')}"?`,
-      }),
-    ),
-    {
-      key: 'sponsorshipOffered',
-      kind: 'choice',
-      options: ['yes', 'no', 'unstated'],
-      instructions: 'Does the posting offer visa sponsorship?',
-    },
-  ];
+const YES_NO_UNSTATED = ['yes', 'no', 'unstated'];
+
+/** The approved codes plus `unstated` (once), since a posting may say nothing. */
+function withUnstated(codes: string[]): string[] {
+  return codes.includes('unstated') ? [...codes] : [...codes, 'unstated'];
 }
+
+/**
+ * The closed questions Jev answers when it verifies a generated document, in
+ * the order of the spec. Every question is a choice among the list's approved
+ * codes plus `unstated`; booleans, junk flags and sponsorship are yes/no/unstated.
+ * With `keys`, only those questions are built.
+ */
+export function buildVerificationQuestions(
+  options: ListOptions,
+  keys?: ReadonlySet<ClosedQuestionKey>,
+): DecisionQuestion[] {
+  const choice = (
+    key: ClosedQuestionKey,
+    choices: string[],
+    instructions: string,
+  ): DecisionQuestion => ({
+    key,
+    kind: 'choice',
+    options: choices,
+    instructions,
+  });
+
+  const all: DecisionQuestion[] = [
+    choice(
+      'arrangement',
+      withUnstated(options.arrangements),
+      'Where does the posting say the work is done: remote, hybrid or on site?',
+    ),
+    choice(
+      'seniority',
+      withUnstated(options.seniorities),
+      'What seniority level does the posting ask for?',
+    ),
+    choice(
+      'roleKind',
+      withUnstated(options.roleKinds),
+      'What kind of work is the job mostly, judged by its duties rather than its title?',
+    ),
+    choice(
+      'contractType',
+      withUnstated(options.contractTypes),
+      'What contract type does the posting offer?',
+    ),
+    choice(
+      'engagement',
+      withUnstated(options.engagements),
+      'How is the person engaged: as an employee, a contractor or another way?',
+    ),
+    choice(
+      'isSoftwareEngineeringRole',
+      [...YES_NO_UNSTATED],
+      'Is the job mainly about building or running software?',
+    ),
+    ...options.junkFlags.map((code) =>
+      choice(
+        `junk:${code}`,
+        [...YES_NO_UNSTATED],
+        JUNK_INSTRUCTIONS[code] ??
+          `Does the posting show the flag "${code.replace(/_/g, ' ')}"?`,
+      ),
+    ),
+    choice(
+      'sponsorshipOffered',
+      [...YES_NO_UNSTATED],
+      'Does the posting offer visa sponsorship?',
+    ),
+  ];
+  return keys ? all.filter((q) => keys.has(q.key)) : all;
+}
+
+/** @deprecated Old name, kept for callers that only hash or print the questions. */
+export const buildDecisionQuestions = buildVerificationQuestions;
