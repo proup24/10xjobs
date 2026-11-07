@@ -325,8 +325,9 @@ describe('ExtractionPipeline', () => {
       ['generation_retry', 'invalid'],
       ['generation_retry', 'invalid'],
     ]);
+    // Two generation rounds were spent: the first, and the invalid regeneration.
     expect(doc.verification).toMatchObject({
-      rounds: 1,
+      rounds: 2,
       regenerationInvalid: true,
       dropped: [
         { field: 'seniority', generatorValue: 'senior', jevPick: 'mid' },

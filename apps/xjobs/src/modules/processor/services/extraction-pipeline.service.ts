@@ -88,7 +88,8 @@ export class ExtractionPipeline {
         log.warn(
           `the regeneration was invalid; keeping round ${round}'s document, with ${keys(rejected)} dropped`,
         );
-        return this.finalize(current, verdicts, round, true, log);
+        // `rounds` counts the generation rounds spent, the invalid one included.
+        return this.finalize(current, verdicts, round + 1, true, log);
       }
       const nextAnswers = generatorAnswers(next.assembled.doc, options);
       const { kept, toAsk } = carryVerdicts(verdicts, answers, nextAnswers);
