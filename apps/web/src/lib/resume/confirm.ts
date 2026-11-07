@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@xjobs/database/types';
+import { errorCode } from './errors';
 import { isResumeKeyFor, profileFolder, RESUMES_BUCKET } from './key';
 import { checkPdf } from './pdf';
 
@@ -13,15 +14,19 @@ export type ConfirmResult =
 
 type Input = { profileId: string; key: string; filename: string };
 
+// Objects younger than this may be uploads still in flight in another tab.
+export const STALE_UPLOAD_MS = 15 * 60 * 1000;
+
 // Log lines carry the profile id and an error code only: never the filename,
 // the key, or file bytes.
 export async function confirmResume(
   supabase: SupabaseClient<Database>,
   userId: string,
   input: Input,
-  deps: { log?: (line: string) => void } = {},
+  deps: { log?: (line: string) => void; now?: () => number } = {},
 ): Promise<ConfirmResult> {
   const log = deps.log ?? ((line: string) => console.warn(line));
+  const now = deps.now ?? Date.now;
   const { profileId, key, filename } = input;
   if (!isResumeKeyFor(key, userId, profileId)) {
     return { status: 'invalid', reason: 'bad-key' };
@@ -75,22 +80,31 @@ export async function confirmResume(
   }
 
   const folder = profileFolder(userId, profileId);
+  const previous = typeof rpc.data === 'string' ? rpc.data : null;
+  const doomed = new Set<string>();
+  if (previous && previous !== row.resumeKey) doomed.add(previous);
   const listed = await bucket.list(folder);
   if (listed.error) {
     log(
       `resume confirm: cleanup list failed profile=${profileId} code=${errorCode(listed.error)}`,
     );
   } else {
-    const stale = (listed.data ?? [])
-      .map((file) => `${folder}/${file.name}`)
-      .filter((path) => path !== row.resumeKey);
-    if (stale.length > 0) {
-      const removed = await bucket.remove(stale);
-      if (removed.error) {
-        log(
-          `resume confirm: cleanup failed profile=${profileId} code=${errorCode(removed.error)}`,
-        );
+    for (const file of listed.data ?? []) {
+      const path = `${folder}/${file.name}`;
+      if (path === row.resumeKey) continue;
+      const created = Date.parse(file.created_at ?? '');
+      // An unreadable age counts as young: never delete what we cannot date.
+      if (Number.isFinite(created) && now() - created > STALE_UPLOAD_MS) {
+        doomed.add(path);
       }
+    }
+  }
+  if (doomed.size > 0) {
+    const removed = await bucket.remove([...doomed]);
+    if (removed.error) {
+      log(
+        `resume confirm: cleanup failed profile=${profileId} code=${errorCode(removed.error)}`,
+      );
     }
   }
 
@@ -102,14 +116,4 @@ export async function confirmResume(
       uploadedAt: row.resumeUploadedAt ?? '',
     },
   };
-}
-
-function errorCode(error: unknown): string {
-  if (error && typeof error === 'object') {
-    const e = error as { code?: unknown; statusCode?: unknown; name?: unknown };
-    for (const v of [e.code, e.statusCode, e.name]) {
-      if (typeof v === 'string' && v) return v;
-    }
-  }
-  return 'unknown_error';
 }

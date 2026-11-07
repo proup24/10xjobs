@@ -191,4 +191,13 @@ describe('resume storage policies', () => {
     expect(listed.data ?? []).toEqual([]);
     expect(await adminList(`${b.id}/${bDraft}`)).toHaveLength(1);
   });
+
+  it('anon cannot execute the policy helper functions', async () => {
+    for (const fn of ['resume_folder_is_own', 'resume_key_is_own']) {
+      const { error } = await anon().rpc(fn as 'resume_folder_is_own', {
+        object_name: resumeKeyFor(a.id, aDraft),
+      });
+      expect(error).not.toBeNull();
+    }
+  });
 });

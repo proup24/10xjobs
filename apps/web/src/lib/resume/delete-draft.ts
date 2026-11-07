@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@xjobs/database/types';
+import { errorCode } from './errors';
 import { profileFolder, RESUMES_BUCKET } from './key';
 
 // Log lines carry the profile id and an error code only.
@@ -19,14 +20,15 @@ export async function deleteDraftProfile(
 
   const read = await supabase
     .from('profiles')
-    .select('state')
+    .select('id, state')
     .eq('id', profileId)
     .maybeSingle();
   if (read.error || !read.data) return fail('state read failed', read.error);
   if (read.data.state !== 'draft') return 'not-draft';
 
   const bucket = supabase.storage.from(RESUMES_BUCKET);
-  const folder = profileFolder(userId, profileId);
+  const id = read.data.id;
+  const folder = profileFolder(userId, id);
   const listed = await bucket.list(folder);
   if (listed.error) return fail('list failed', listed.error);
   const paths = (listed.data ?? []).map((file) => `${folder}/${file.name}`);
@@ -38,21 +40,11 @@ export async function deleteDraftProfile(
   const deleted = await supabase
     .from('profiles')
     .delete()
-    .eq('id', profileId)
+    .eq('id', id)
     .eq('state', 'draft')
     .select('id');
   if (deleted.error || !deleted.data || deleted.data.length === 0) {
     return fail('row delete failed', deleted.error);
   }
   return 'deleted';
-}
-
-function errorCode(error: unknown): string {
-  if (error && typeof error === 'object') {
-    const e = error as { code?: unknown; statusCode?: unknown; name?: unknown };
-    for (const v of [e.code, e.statusCode, e.name]) {
-      if (typeof v === 'string' && v) return v;
-    }
-  }
-  return 'unknown_error';
 }

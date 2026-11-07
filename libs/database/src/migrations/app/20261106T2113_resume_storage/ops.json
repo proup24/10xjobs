@@ -20,11 +20,11 @@
       },
       {
         "description": "resume_folder_is_own(): the folder is the caller and the profile is theirs",
-        "sql": "CREATE FUNCTION public.resume_folder_is_own(object_name text) RETURNS boolean\n  LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$\n  SELECT (storage.foldername(object_name))[1] = auth.uid()::text\n    AND EXISTS (\n      SELECT 1 FROM public.profiles p\n      WHERE p.id::text = (storage.foldername(object_name))[2]\n        AND p.\"userId\" = auth.uid()\n    );\n$$;\nREVOKE ALL ON FUNCTION public.resume_folder_is_own(text) FROM PUBLIC;\nGRANT EXECUTE ON FUNCTION public.resume_folder_is_own(text) TO authenticated;"
+        "sql": "CREATE FUNCTION public.resume_folder_is_own(object_name text) RETURNS boolean\n  LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$\n  SELECT (storage.foldername(object_name))[1] = auth.uid()::text\n    AND EXISTS (\n      SELECT 1 FROM public.profiles p\n      WHERE p.id::text = (storage.foldername(object_name))[2]\n        AND p.\"userId\" = auth.uid()\n    );\n$$;\nREVOKE ALL ON FUNCTION public.resume_folder_is_own(text) FROM PUBLIC, anon;\nGRANT EXECUTE ON FUNCTION public.resume_folder_is_own(text) TO authenticated;"
       },
       {
         "description": "resume_key_is_own(): the key has the agreed layout and the folder is own",
-        "sql": "CREATE FUNCTION public.resume_key_is_own(object_name text) RETURNS boolean\n  LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$\n  SELECT object_name ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.pdf$'\n    AND public.resume_folder_is_own(object_name);\n$$;\nREVOKE ALL ON FUNCTION public.resume_key_is_own(text) FROM PUBLIC;\nGRANT EXECUTE ON FUNCTION public.resume_key_is_own(text) TO authenticated;"
+        "sql": "CREATE FUNCTION public.resume_key_is_own(object_name text) RETURNS boolean\n  LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$\n  SELECT object_name ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.pdf$'\n    AND public.resume_folder_is_own(object_name);\n$$;\nREVOKE ALL ON FUNCTION public.resume_key_is_own(text) FROM PUBLIC, anon;\nGRANT EXECUTE ON FUNCTION public.resume_key_is_own(text) TO authenticated;"
       },
       {
         "description": "users read and list their own profile folders",

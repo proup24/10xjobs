@@ -18,12 +18,16 @@ const blobOf = (text: string) =>
   }) as unknown as Blob;
 const PDF = blobOf('%PDF-1.7 body');
 const uploadedAt = '2026-11-07T10:00:00Z';
+const NOW = Date.parse('2026-11-07T12:00:00Z');
+const OLD_AT = '2026-11-07T10:00:00Z';
+const YOUNG_AT = '2026-11-07T11:50:00Z';
+const clock = { log: () => undefined, now: () => NOW };
 
 type Opts = {
   download?: { data: Blob | null; error: { code?: string } | null };
-  rpc?: { error: { code?: string } | null };
+  rpc?: { data?: string | null; error: { code?: string } | null };
   row?: { data: object | null; error: { code?: string } | null };
-  list?: string[];
+  list?: Array<string | { name: string; created_at: string }>;
   removeError?: { code?: string } | null;
 };
 
@@ -41,7 +45,9 @@ function fake(o: Opts = {}) {
     download: vi.fn(async () => o.download ?? { data: PDF, error: null }),
     remove: vi.fn(async () => ({ data: null, error: o.removeError ?? null })),
     list: vi.fn(async () => ({
-      data: (o.list ?? [`${NEW}.pdf`]).map((name) => ({ name })),
+      data: (o.list ?? [`${NEW}.pdf`]).map((f) =>
+        typeof f === 'string' ? { name: f, created_at: OLD_AT } : f,
+      ),
       error: null,
     })),
   };
@@ -50,7 +56,7 @@ function fake(o: Opts = {}) {
   const select = vi.fn(() => ({ eq }));
   const supabase = {
     storage: { from: vi.fn(() => bucket) },
-    rpc: vi.fn(async () => o.rpc ?? { error: null }),
+    rpc: vi.fn(async () => o.rpc ?? { data: null, error: null }),
     from: vi.fn(() => ({ select })),
   };
   return {
@@ -96,7 +102,7 @@ describe('confirmResume', () => {
 
   it('saves, then removes every other file in the folder', async () => {
     const f = fake({ list: [`${OLD}.pdf`, 'stray.txt', `${NEW}.pdf`] });
-    const result = await confirmResume(f.supabase, U, input);
+    const result = await confirmResume(f.supabase, U, input, clock);
     expect(result).toEqual({
       status: 'saved',
       resume: {
@@ -131,8 +137,55 @@ describe('confirmResume', () => {
         error: null,
       },
     });
-    await confirmResume(f.supabase, U, input);
+    await confirmResume(f.supabase, U, input, clock);
     expect(f.bucket.remove).toHaveBeenCalledWith([key(OLD), key(NEW)]);
+    expect(f.bucket.remove).not.toHaveBeenCalledWith(
+      expect.arrayContaining([key(OTHER)]),
+    );
+  });
+
+  it('keeps a young non-current object', async () => {
+    const f = fake({
+      list: [
+        { name: `${OTHER}.pdf`, created_at: YOUNG_AT },
+        { name: `${NEW}.pdf`, created_at: OLD_AT },
+      ],
+    });
+    await confirmResume(f.supabase, U, input, clock);
+    expect(f.bucket.remove).not.toHaveBeenCalled();
+  });
+
+  it('removes an old stray but keeps a young one', async () => {
+    const f = fake({
+      list: [
+        { name: 'stray.txt', created_at: OLD_AT },
+        { name: `${OTHER}.pdf`, created_at: YOUNG_AT },
+        { name: `${NEW}.pdf`, created_at: OLD_AT },
+      ],
+    });
+    await confirmResume(f.supabase, U, input, clock);
+    expect(f.bucket.remove).toHaveBeenCalledWith([`${U}/${P}/stray.txt`]);
+  });
+
+  it('removes the rpc previous key even if young', async () => {
+    const f = fake({
+      rpc: { data: key(OLD), error: null },
+      list: [
+        { name: `${OLD}.pdf`, created_at: YOUNG_AT },
+        { name: `${NEW}.pdf`, created_at: YOUNG_AT },
+      ],
+    });
+    await confirmResume(f.supabase, U, input, clock);
+    expect(f.bucket.remove).toHaveBeenCalledWith([key(OLD)]);
+  });
+
+  it('never removes the current key, even as the rpc previous', async () => {
+    const f = fake({
+      rpc: { data: key(NEW), error: null },
+      list: [{ name: `${NEW}.pdf`, created_at: OLD_AT }],
+    });
+    await confirmResume(f.supabase, U, input, clock);
+    expect(f.bucket.remove).not.toHaveBeenCalled();
   });
 
   it('a failed cleanup still returns saved and logs the profile id only', async () => {
@@ -141,7 +194,10 @@ describe('confirmResume', () => {
       list: [`${OLD}.pdf`, `${NEW}.pdf`],
       removeError: { code: 'boom' },
     });
-    const result = await confirmResume(f.supabase, U, input, { log });
+    const result = await confirmResume(f.supabase, U, input, {
+      log,
+      now: clock.now,
+    });
     expect(result.status).toBe('saved');
     expect(log).toHaveBeenCalled();
     const logged = JSON.stringify(log.mock.calls);

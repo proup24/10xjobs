@@ -30,7 +30,7 @@ function fake(o: Opts = {}) {
     }),
   };
   const maybeSingle = vi.fn(
-    async () => o.state ?? { data: { state: 'draft' }, error: null },
+    async () => o.state ?? { data: { id: P, state: 'draft' }, error: null },
   );
   const select1 = vi.fn(() => ({ eq: vi.fn(() => ({ maybeSingle })) }));
   const select2 = vi.fn(async () => {
@@ -38,7 +38,7 @@ function fake(o: Opts = {}) {
     return o.deleted ?? { data: [{ id: P }], error: null };
   });
   const eq2 = vi.fn(() => ({ select: select2 }));
-  const eq1 = vi.fn(() => ({ eq: eq2 }));
+  const eq1 = vi.fn((..._args: unknown[]) => ({ eq: eq2 }));
   const del = vi.fn(() => ({ eq: eq1 }));
   const raw = {
     storage: { from: vi.fn(() => bucket) },
@@ -48,6 +48,7 @@ function fake(o: Opts = {}) {
     supabase: raw as unknown as SupabaseClient<Database>,
     bucket,
     del,
+    eqDelete: eq1,
     calls,
   };
 }
@@ -55,6 +56,23 @@ function fake(o: Opts = {}) {
 const quiet = { log: () => undefined };
 
 describe('deleteDraftProfile', () => {
+  it('uses the stored canonical id for the folder and the row delete', async () => {
+    const f = fake();
+    const result = await deleteDraftProfile(
+      f.supabase,
+      U,
+      P.toUpperCase(),
+      quiet,
+    );
+    expect(result).toBe('deleted');
+    expect(f.bucket.list).toHaveBeenCalledWith(`${U}/${P}`);
+    expect(f.bucket.remove).toHaveBeenCalledWith([
+      `${U}/${P}/a.pdf`,
+      `${U}/${P}/b.pdf`,
+    ]);
+    expect(f.eqDelete).toHaveBeenCalledWith('id', P);
+  });
+
   it('returns not-draft and touches nothing for a published profile', async () => {
     const f = fake({ state: { data: { state: 'published' }, error: null } });
     expect(await deleteDraftProfile(f.supabase, U, P, quiet)).toBe('not-draft');

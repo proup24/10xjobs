@@ -20,7 +20,7 @@ Resumes are personal data. The failure that matters most is one user's resume re
 - The web app, as the signed-in user and without the service-role key, can upload a profile's resume, replace it and download it.
 - A profile can only ever point at a file in its owner's own folder for that profile.
 - No user can read, list, write, overwrite or delete another user's files, and the two-user harness proves it.
-- Replacing a resume leaves exactly one file in the profile's folder, even after failed attempts.
+- Replacing a resume leaves exactly one file in the profile's folder, even after failed attempts. Files younger than 15 minutes, which may be uploads still in flight, are left for the next upload's cleanup. _(my call)_
 
 ## Non-goals
 
@@ -137,7 +137,7 @@ Until this lands, the engine's endpoints still work, and the two paths don't con
 
 ## Notes for later phases
 
-- **Phase 3:** before sending, the engine re-checks that the file starts with `%PDF-`, computes its SHA-256 at send time, and records that hash and the filename with each application. Users can replace resumes on published profiles, and old files aren't kept, so the hash is the record of what went out.
+- **Phase 3:** before sending, the engine re-checks that the file starts with `%PDF-`, computes its SHA-256 at send time, and records that hash and the filename with each application. Users can replace resumes on published profiles, and old files aren't kept, so the hash is the record of what went out. A missing file at send time fails closed: the application is not sent.
 - **Multiple resumes per role (after the MVP):** the per-profile folder layout already allows several files under one profile. The change would be in what points at them.
 
 ## Roadmap docs to update in the same PR

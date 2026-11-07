@@ -58,7 +58,7 @@ ON CONFLICT (id) DO UPDATE SET
         AND p."userId" = auth.uid()
     );
 $$;
-REVOKE ALL ON FUNCTION public.resume_folder_is_own(text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.resume_folder_is_own(text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.resume_folder_is_own(text) TO authenticated;`,
           },
           {
@@ -69,7 +69,7 @@ GRANT EXECUTE ON FUNCTION public.resume_folder_is_own(text) TO authenticated;`,
   SELECT object_name ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.pdf$'
     AND public.resume_folder_is_own(object_name);
 $$;
-REVOKE ALL ON FUNCTION public.resume_key_is_own(text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.resume_key_is_own(text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.resume_key_is_own(text) TO authenticated;`,
           },
           {
