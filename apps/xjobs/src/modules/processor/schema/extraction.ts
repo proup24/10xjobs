@@ -13,7 +13,7 @@ import {
 } from './shared';
 
 /** Bump on any change to the document shape. Stored with each extraction. */
-export const EXTRACTION_SCHEMA_VERSION = 1;
+export const EXTRACTION_SCHEMA_VERSION = 2;
 
 const placeSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('worldwide') }),

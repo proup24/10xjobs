@@ -61,6 +61,26 @@ describe('document salary and unmatched', () => {
   });
 });
 
+describe('work authorization requirements', () => {
+  const withRequirement = (kind: string) => {
+    const doc = fixtureDocument();
+    doc.workAuthorization.value = {
+      requirements: [{ kind, place: 'US' }] as never,
+      sponsorship: 'unstated',
+    };
+    return extractionDocumentSchema.safeParse(doc).success;
+  };
+
+  it('accepts the four kinds', () => {
+    for (const kind of ['work-permit', 'citizenship', 'residency', 'clearance'])
+      expect(withRequirement(kind)).toBe(true);
+  });
+
+  it('rejects any other kind', () => {
+    expect(withRequirement('visa')).toBe(false);
+  });
+});
+
 describe('modelOutputSchema', () => {
   it('rejects a seniority outside the options', () => {
     const valid = (s: string) => ({
@@ -171,29 +191,4 @@ describe('modelOutputSchema', () => {
       expect(places?.anyOf).toHaveLength(4);
     });
   });
-});
-
-describe('work authorization requirement kinds', () => {
-  const withKind = (kind: string) => {
-    const doc = fixtureDocument();
-    doc.workAuthorization.value = {
-      // `kind` is deliberately unchecked here, so the schema is what refuses it.
-      requirements: [{ kind: kind as never, place: 'US' }],
-      sponsorship: 'unstated',
-    };
-    return doc;
-  };
-  it('refuses a kind outside the four', () => {
-    expect(extractionDocumentSchema.safeParse(withKind('visa')).success).toBe(
-      false,
-    );
-  });
-  it.each(['work-permit', 'citizenship', 'residency', 'clearance'])(
-    'accepts %s',
-    (kind) => {
-      expect(extractionDocumentSchema.safeParse(withKind(kind)).success).toBe(
-        true,
-      );
-    },
-  );
 });

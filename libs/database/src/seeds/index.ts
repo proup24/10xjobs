@@ -20,12 +20,13 @@ import {
 } from '../env';
 import type { SeedEnvironmentVariables } from '../env';
 import type { Seed } from './seed.interface';
+import { citiesSeed } from './cities.seed';
 import { isoSeed } from './iso.seed';
 import { processorListsSeed } from './processor.seed';
 import { usersSeed } from './users.seed';
 
 /** Order matters: seeds run sequentially, so list parents before children. */
-const seeds: Seed[] = [usersSeed, processorListsSeed, isoSeed];
+const seeds: Seed[] = [usersSeed, processorListsSeed, isoSeed, citiesSeed];
 
 function parseArgs(argv: string[]) {
   const onlyIndex = argv.indexOf('--only');

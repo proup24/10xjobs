@@ -64,8 +64,8 @@ export interface ActorRunConfig {
 
 export interface LinkedinJobBoardRunConfig extends ActorRunConfig {
   /**
-   * Rows from which a search counts as truncated. Not sent: cheap_scraper has
-   * no per-URL limit, so the charge cap is what bounds a run.
+   * Rows one search may return, sent as the run's `maxItems` (a run carries
+   * one start URL); a search that returns this many counts as truncated.
    */
   maxRowsPerUrl: number;
 }

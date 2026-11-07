@@ -117,7 +117,10 @@ export function checkQuotes(
   return { doc: out, quoteFailures };
 }
 
-/** Cross-fact rules; a disagreement downgrades both sides to unsure. */
+/**
+ * Cross-fact rules; a disagreement downgrades both sides to unsure.
+ * `engineeringRoleKinds` are the approved `role_kinds` marked `isEngineering`.
+ */
 export function checkConsistency(
   doc: ExtractionDocument,
   engineeringRoleKinds: ReadonlySet<string>,

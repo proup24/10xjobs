@@ -475,6 +475,8 @@ export class MemoryVocabRepository extends VocabRepository {
   /** City ids an extraction names; a proposed city in it cannot be rejected. */
   readonly citiesInUse = new Set<string>();
   readonly regionCountries: Map<string, string[]>;
+  /** Role kinds marked `isEngineering`; the snapshot keeps the approved ones. */
+  readonly engineeringRoleKinds = new Set<string>(ENGINEERING_ROLE_KINDS);
 
   constructor(
     seed: Record<ListName, SeedTerm[]> = SEED,
@@ -521,7 +523,7 @@ export class MemoryVocabRepository extends VocabRepository {
       this.lists.roleKinds
         .filter(
           (r) =>
-            r.status === 'approved' && ENGINEERING_ROLE_KINDS.includes(r.code),
+            r.status === 'approved' && this.engineeringRoleKinds.has(r.code),
         )
         .map((r) => r.code),
     );

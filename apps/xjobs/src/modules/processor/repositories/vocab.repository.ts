@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from 'src/database';
-import { listTables, type ListTableRow } from '@xjobs/database';
+import { cityNameKey, listTables, type ListTableRow } from '@xjobs/database';
 import { inRetriedTransaction } from 'src/modules/ingest/repositories/raw.repository';
 import type { ListOptions } from '../schema';
 import { LIST_NAMES, type ListName } from '../vocab/lists';
@@ -12,7 +12,7 @@ export interface Vocabulary {
   vocab: VocabSnapshot;
   /** Region code to the country codes it contains. */
   regionCountries: Map<string, string[]>;
-  /** Approved role kinds flagged `isEngineering`. */
+  /** Approved `role_kinds` codes marked `isEngineering`. */
   engineeringRoleKinds: ReadonlySet<string>;
 }
 
@@ -130,14 +130,11 @@ export class PrismaVocabRepository extends VocabRepository {
       regionCountries.set(link.regionCode, countries);
     }
     for (const countries of regionCountries.values()) countries.sort();
-    const engineeringRoleKinds = new Set(
-      (
-        await this.database.db.orm.public.RoleKind.where({
-          status: 'approved',
-          isEngineering: true,
-        }).all()
-      ).map((r) => r.code),
-    );
+    const engineering = await this.database.db.orm.public.RoleKind.where({
+      status: 'approved',
+      isEngineering: true,
+    }).all();
+    const engineeringRoleKinds = new Set(engineering.map((r) => r.code));
     return {
       options,
       vocab: { approved },
@@ -192,13 +189,13 @@ export class PrismaVocabRepository extends VocabRepository {
     if (c.length === 0) return ids;
     const cities = tally(
       c,
-      (city) => `${city.countryCode}|${city.name.toLowerCase()}`,
+      (city) => `${city.countryCode}|${cityNameKey(city.name)}`,
     );
     const byKey = await inRetriedTransaction(this.database, async (tx) => {
       const found = new Map<string, string>();
       const now = new Date();
       for (const [k, { name, countryCode }, n] of cities) {
-        const nameKey = name.toLowerCase();
+        const nameKey = cityNameKey(name);
         const existing = await tx.orm.public.City.where({
           nameKey,
           countryCode,
@@ -228,7 +225,7 @@ export class PrismaVocabRepository extends VocabRepository {
       return found;
     });
     for (const city of c) {
-      const id = byKey.get(`${city.countryCode}|${city.name.toLowerCase()}`);
+      const id = byKey.get(`${city.countryCode}|${cityNameKey(city.name)}`);
       if (id) ids.set(cityKey(city), id);
     }
     return ids;

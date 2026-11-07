@@ -1,5 +1,15 @@
 import { MemoryVocabRepository } from './fakes';
 
+describe('MemoryVocabRepository snapshot', () => {
+  it('holds the 17 seeded engineering role kinds', async () => {
+    const { engineeringRoleKinds } =
+      await new MemoryVocabRepository().snapshot();
+    expect(engineeringRoleKinds.size).toBe(17);
+    expect(engineeringRoleKinds.has('backend_engineer')).toBe(true);
+    expect(engineeringRoleKinds.has('support')).toBe(false);
+  });
+});
+
 describe('MemoryVocabRepository approve and reject', () => {
   it('report whether anything changed', async () => {
     const vocab = new MemoryVocabRepository();
@@ -29,15 +39,5 @@ describe('MemoryVocabRepository approve and reject', () => {
     expect(await vocab.rejectCity('missing')).toBe(false);
     vocab.citiesInUse.clear();
     expect(await vocab.rejectCity(paris)).toBe(true);
-  });
-});
-
-describe('MemoryVocabRepository engineering role kinds', () => {
-  it('snapshot holds the 17 engineering codes', async () => {
-    const { engineeringRoleKinds } =
-      await new MemoryVocabRepository().snapshot();
-    expect(engineeringRoleKinds.size).toBe(17);
-    expect(engineeringRoleKinds.has('backend_engineer')).toBe(true);
-    expect(engineeringRoleKinds.has('support')).toBe(false);
   });
 });

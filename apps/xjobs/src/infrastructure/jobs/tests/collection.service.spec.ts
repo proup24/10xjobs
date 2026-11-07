@@ -607,7 +607,7 @@ describe('channelJobsConfig', () => {
       Channel.LINKEDIN_POSTS,
     ]) {
       expect(channelJobsConfig[channel]).toMatchObject({
-        schedule: { pattern: '0 * * * *', timezone: 'UTC' },
+        schedule: { pattern: '0 8-22 * * 1-5', timezone: 'UTC' },
         window: { initialHours: 24, overlapMinutes: 15, maximumHours: 24 },
       });
       expect(channelJobsConfig[channel].window).not.toHaveProperty(

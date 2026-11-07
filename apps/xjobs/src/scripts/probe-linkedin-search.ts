@@ -1,8 +1,8 @@
 /**
  * Runs the LinkedIn job board actor once over the given search URLs and prints
  * what we need to tune collection: the `searchString` each search's items
- * carry (what attribution matches on), the fields of a sample job and its
- * company profile, and the cost. A paid run (capped at $0.05); run it by hand:
+ * carry (collection no longer reads it; LinkedIn may rewrite it), the fields
+ * of a sample job and its company profile, and the cost. A paid run (capped at $0.05); run it by hand:
  *
  *   pnpm apify:probe-linkedin -- --url '<search url>' [--url …] [--rows 5] [--company-profile]
  *
@@ -46,9 +46,10 @@ async function main(): Promise<void> {
   const client = new ApifyClient({ token });
   const run = await client.actor(actor).call(
     {
-      ...toLinkedinJobBoardInput(urls),
-      // The actor's only row limit is over the whole run.
-      maxItems: rows * urls.length,
+      ...toLinkedinJobBoardInput(urls[0], rows * urls.length),
+      // Collection runs one URL per run; the probe may compare several, and
+      // the actor's only row limit is over the whole run.
+      startUrls: urls.map((url) => ({ url })),
       enrichCompanyData: values['company-profile'],
     },
     { maxTotalChargeUsd: MAX_CHARGE_USD, waitSecs: 300 },

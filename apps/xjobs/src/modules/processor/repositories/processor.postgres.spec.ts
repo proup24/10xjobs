@@ -647,13 +647,6 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       expect(after?.status).toBe('approved');
     });
 
-    it('snapshot lists the 17 engineering role kinds', async () => {
-      const { engineeringRoleKinds } = await vocab.snapshot();
-      expect(engineeringRoleKinds.size).toBe(17);
-      expect(engineeringRoleKinds.has('backend_engineer')).toBe(true);
-      expect(engineeringRoleKinds.has('support')).toBe(false);
-    });
-
     it('snapshot leaves proposed terms out of the options and the vocabulary', async () => {
       await vocab.propose([{ list: 'techTags', text: 'Bun' }]);
       const {
@@ -666,6 +659,13 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       expect(snapshot.approved.techTags.get('react')).toBe('react');
       expect(snapshot.approved.techTags.has('bun')).toBe(false);
       expect(regionCountries.get('EMEA')).toContain('DE');
+    });
+
+    it('snapshot holds the 17 seeded engineering role kinds', async () => {
+      const { engineeringRoleKinds } = await vocab.snapshot();
+      expect(engineeringRoleKinds.size).toBe(17);
+      expect(engineeringRoleKinds.has('backend_engineer')).toBe(true);
+      expect(engineeringRoleKinds.has('other')).toBe(false);
     });
 
     it('upserts cities by lower-cased name and country', async () => {
