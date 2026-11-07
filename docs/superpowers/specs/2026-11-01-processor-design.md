@@ -1,3 +1,5 @@
+> Extraction flow superseded by 2026-11-07-generate-then-verify-design.md
+
 # Processor: typed job facts from LinkedIn job board postings
 
 ## Intent

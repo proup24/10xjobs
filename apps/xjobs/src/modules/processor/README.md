@@ -49,11 +49,13 @@ Preview and run answer 503 when the app has no `OPENROUTER_API_KEY`, 429 once th
 
 ## Models and cost
 
-Both models are called through the official `@openrouter/sdk` (`models/client.ts`): Jev through `alpha.decisions.create` (the Decisions API), the extraction model through `chat.send` with a strict JSON-schema response format. The SDK's own retries are off; `toModelError` maps its errors to the processor's classes (401/402/403 provider unavailable; 408, 429 and 5xx transient; other 4xx request errors; an unreadable response an output error), and messages never carry a response body.
+Jev (the verifier) is called through the official `@openrouter/sdk` (`models/client.ts`) on `alpha.decisions.create` (the Decisions API); every question is a choice that includes `unstated`, and a verdict is confirmed, unconfirmed or rejected. The generator is called through the Vercel AI SDK (`ai`) with `@openrouter/ai-sdk-provider`: `generateText` with `Output.object` and a strict JSON schema, `maxRetries: 0` (`models/extraction.model.ts`). Neither SDK retries on its own; the processor's own tries (`PROCESSOR_GENERATION_TRIES` per generation) and regenerations (`PROCESSOR_MAX_REGENERATIONS`) are the only retries.
+
+`toModelError` maps SDK errors to the processor's classes (401/402/403 provider unavailable; 408, 429 and 5xx transient; other 4xx request errors; an unreadable response an output error), and messages never carry a response body.
 
 Before any worker starts, the processor checks that OpenRouter accepts the key (`apiKeys.getCurrentKeyMetadata`), and that the extraction model is listed, supports every parameter the extraction request sends (`response_format`, `structured_outputs`; the request routes with `requireParameters`, so one unsupported parameter means no provider), and has a numeric prompt and completion price. The decision model is served by the Decisions API and need not be in the public model list; it is priced only when listed. Any failure stops startup; in `all` mode no other worker is left running. `pnpm --filter @xjobs/xjobs processor:smoke` runs the same checks plus one real call to each model.
 
-**Cost.** Both APIs report `usage.cost` and token counts. When a successful response has no numeric cost, the cost is estimated as `inputTokens × prompt + outputTokens × completion` from the list prices loaded at startup, with one warning per model; a model with no loaded price (an unlisted decision model) is then counted as 0, with that warning.
+**Cost.** Both calls report `usage.cost` and token counts. When a successful response has no numeric cost, the cost is estimated as `inputTokens × prompt + outputTokens × completion` from the list prices loaded at startup, with one warning per model; a model with no loaded price (an unlisted decision model) is then counted as 0, with that warning.
 
 **Provider unavailable.** A 401, 402 or 403 (also as a 200 error body) means the key, credit or account is the problem, not the job. The attempt is recorded, the job goes back to `pending` with its `processingAttempts` given back, and this process stops claiming (and the sweep stops enqueueing) for 10 minutes, logged once as an error.
 
@@ -81,8 +83,8 @@ On `normalized_jobs` the processor writes only `processingStatus`, `processingAt
 
 All of these are shared across workspaces: they describe public postings and carry nothing about any person. Workspace scoping starts at qualify.
 
-- `job_extractions`: one row per completed run, append-only. `data` holds the validated document; the typed columns (`arrangement`, `seniority`, `roleKind`, `contractType`, `engagement`, `isSoftwareEngineeringRole`, `worldwide`, `regionCodes`, `countryCodes`, `cityIds`, `techTags`, `mainStackTags`, `requiredTags`, `niceTags`, salary) are copies for filtering. `(inputHash, schemaVersion, promptHash, decisionModel, extractionModel)` is the reuse key: a run with the same key reuses the row (or copies it, at no cost, for another job) instead of calling a model.
-- `processing_attempts`: one row per model call (`decision`, `extraction`, `extraction_retry`), with tokens, `costUsd`, latency, outcome and error. Eval runs are tagged `eval = true` with a null `jobId`; the daily budget sums `costUsd` of non-eval rows only.
+- `job_extractions`: one row per completed run, append-only. `data` holds the validated document; the typed columns (`arrangement`, `seniority`, `roleKind`, `contractType`, `engagement`, `isSoftwareEngineeringRole`, `worldwide`, `regionCodes`, `countryCodes`, `cityIds`, `techTags`, `mainStackTags`, `requiredTags`, `niceTags`, salary) are copies for filtering. The tech stack is one list of requirements (spec section 5a): `requiredTags` and `niceTags` hold the tags the posting requires and merely prefers, `techTags` is every tag it names. A job whose rejected fields were dropped after the last regeneration carries `needsReview`. `(inputHash, schemaVersion, promptHash, decisionModel, extractionModel)` is the reuse key: a run with the same key reuses the row (or copies it, at no cost, for another job) instead of calling a model.
+- `processing_attempts`: one row per model call (`generation`, `generation_retry`, `verification`; `decision`, `extraction` and `extraction_retry` only on rows from before generate-then-verify), with tokens, `costUsd`, latency, outcome and error. Eval runs are tagged `eval = true` with a null `jobId`; the daily budget sums `costUsd` of non-eval rows only.
 - List tables `tech_tags`, `regions`, `countries`, `role_kinds`, `seniorities`, `arrangements`, `contract_types`, `engagements`, `junk_flags`: `code`, `label`, `aliases`, `status` (`approved` | `proposed`), `occurrences`. Only approved rows are offered to the models or matched. An unknown term is upserted as `proposed` under the slug of its text; an approved row with that code is never touched. `tech_tags` adds `family` and `implies`; `region_countries` lists each region's countries.
 - `cities`: created as postings name them, `proposed`, unique per `(nameKey, countryCode)` where `nameKey` is the lower-cased name.
 
@@ -128,7 +130,18 @@ At least one selector is required; selectors combine. Only in-scope jobs are tou
 
 ## Eval
 
-`pnpm --filter @xjobs/xjobs processor:eval` runs the decision and extraction models over the golden set in `golden/` (in memory, with the seed vocabulary, writing nothing to the database) and scores the results. The report is written to `golden/last-report.json`, which is git-ignored and regenerable. Run it after any prompt, schema or model change, before reprocessing.
+```sh
+pnpm --filter @xjobs/xjobs processor:eval -- --generator <modelId> [--decision-model <modelId>]
+```
+
+Runs generate, verify and regenerate over the golden set in `golden/` (in memory, with the seed vocabulary, writing nothing to the database; attempts are tagged `eval`) and scores the results. `--generator` defaults to `PROCESSOR_EXTRACTION_MODEL`; run it once per candidate (for example Opus and DeepSeek) to compare them. It calls paid APIs and never runs in CI. The report is written to `golden/last-report.<generator slug>.json` (git-ignored, regenerable) and holds:
+
+- fact scores, and the share of confirmed, unconfirmed and rejected verdicts per field;
+- `rejectionPrecision` (final rejections that were wrong generator values) and `rejectionPrecisionAllRounds` (the same over rejections in every round);
+- rounds, generator calls, Jev calls and cost per job;
+- suggested thresholds for every question, junk included, from Jev's accuracy per score bucket.
+
+The run only suggests thresholds. Set `config/thresholds.ts` by hand from the reports, and exit code 1 means a bar failed. Run it after any prompt, schema or model change, before reprocessing. `processor:smoke` (startup checks plus one real call to each model) has not been run against this flow yet.
 
 ## The shared-tables exception
 
