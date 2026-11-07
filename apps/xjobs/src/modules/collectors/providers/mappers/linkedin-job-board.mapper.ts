@@ -12,15 +12,35 @@ function linkedinLocation(value: unknown): string | null {
 }
 
 /**
- * What one builder searches, as LinkedIn query parameters: its keyword,
- * location (pinned by `geoId` when the builder has one), `f_E` (experience)
- * and `f_WT` (work type) when it has them, newest first (`sortBy=DD`, so a
- * search that reaches its row limit loses its oldest jobs). Builders with the
- * same value run the same search; segments group them by it.
+ * What one builder searches, comparable across builders: its keyword, its
+ * place (the `geoId` when it has one, which LinkedIn searches whatever the
+ * location text, else that text) and its `f_E` and `f_WT` filters. Builders
+ * with the same value run the same search; segments group them by it.
  */
 export function linkedinSearch(
   keyword: string,
   params: Record<string, unknown>,
+): string {
+  const query = new URLSearchParams({ keywords: keyword });
+  const location = linkedinLocation(params.location);
+  if (typeof params.geoId === 'string') query.set('geoId', params.geoId);
+  else if (location) query.set('location', location);
+  if (typeof params.experienceLevel === 'string')
+    query.set('f_E', params.experienceLevel);
+  if (typeof params.workType === 'string') query.set('f_WT', params.workType);
+  return query.toString();
+}
+
+/**
+ * The job search URL of one builder: its keyword, location (pinned by `geoId`
+ * when the builder has one), `f_E` (experience) and `f_WT` (work type) when it
+ * has them, newest first (`sortBy=DD`, so a search that reaches its row limit
+ * loses its oldest jobs), posted within the last `seconds` (`f_TPR`).
+ */
+export function linkedinJobSearchUrl(
+  keyword: string,
+  params: Record<string, unknown>,
+  seconds: number,
 ): string {
   const query = new URLSearchParams({ keywords: keyword });
   const location = linkedinLocation(params.location);
@@ -30,16 +50,6 @@ export function linkedinSearch(
     query.set('f_E', params.experienceLevel);
   if (typeof params.workType === 'string') query.set('f_WT', params.workType);
   query.set('sortBy', 'DD');
-  return query.toString();
-}
-
-/** The job search URL of one builder, posted within the last `seconds` (`f_TPR`). */
-export function linkedinJobSearchUrl(
-  keyword: string,
-  params: Record<string, unknown>,
-  seconds: number,
-): string {
-  const query = new URLSearchParams(linkedinSearch(keyword, params));
   query.set('f_TPR', `r${seconds}`);
   return `https://www.linkedin.com/jobs/search/?${query.toString()}`;
 }

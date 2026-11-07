@@ -42,7 +42,7 @@ describe('buildSegments', () => {
     const segments = buildSegments([
       ...many(2),
       ...many(2, { domain: SkillDomain.frontend }),
-      ...many(2, { location: 'rabat, morocco' }),
+      ...many(2, { channel: Channel.ASHBY, location: 'rabat, morocco' }),
     ]);
     expect(segments).toHaveLength(3);
   });
@@ -144,13 +144,36 @@ describe('buildSegments', () => {
     expect(segmentKey(b)).toBe(`${Channel.ASHBY}|backend|remote|mena`);
   });
 
-  it('keys a LinkedIn job board builder by geoId, else location text', () => {
+  it('keys a LinkedIn job board builder by its search, with the geoId before location text', () => {
     expect(segmentKey(builder({ params: { location: 'emea' } }))).toBe(
-      `${Channel.LINKEDIN_JOB_BOARD}|backend|onsite|search:emea`,
+      `${Channel.LINKEDIN_JOB_BOARD}|backend|onsite|search:keywords=backend&location=emea`,
     );
     expect(
-      segmentKey(builder({ params: { location: 'emea', geoId: '91000000' } })),
-    ).toBe(`${Channel.LINKEDIN_JOB_BOARD}|backend|onsite|search:91000000`);
+      segmentKey(
+        builder({
+          params: {
+            location: 'emea',
+            geoId: '91000000',
+            experienceLevel: '4',
+            workType: '2',
+          },
+        }),
+      ),
+    ).toBe(
+      `${Channel.LINKEDIN_JOB_BOARD}|backend|onsite|search:keywords=backend&geoId=91000000&f_E=4&f_WT=2`,
+    );
+  });
+
+  it('keeps LinkedIn job board builders apart when any part of their search differs', () => {
+    const base = { location: 'Germany' };
+    const segments = buildSegments([
+      builder({ params: base }),
+      builder({ keyword: 'frontend', params: base }),
+      builder({ params: { ...base, experienceLevel: '4' } }),
+      builder({ params: { ...base, workType: '2' } }),
+      builder({ params: { location: 'France' } }),
+    ]);
+    expect(segments).toHaveLength(5);
   });
 
   it('keeps each member cursor when builders are regrouped', () => {
