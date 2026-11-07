@@ -172,3 +172,27 @@ describe('modelOutputSchema', () => {
     });
   });
 });
+
+describe('work authorization requirement kinds', () => {
+  const withKind = (kind: string) => {
+    const doc = fixtureDocument();
+    doc.workAuthorization.value = {
+      requirements: [{ kind, place: 'US' }],
+      sponsorship: 'unstated',
+    };
+    return doc;
+  };
+  it('refuses a kind outside the four', () => {
+    expect(extractionDocumentSchema.safeParse(withKind('visa')).success).toBe(
+      false,
+    );
+  });
+  it.each(['work-permit', 'citizenship', 'residency', 'clearance'])(
+    'accepts %s',
+    (kind) => {
+      expect(extractionDocumentSchema.safeParse(withKind(kind)).success).toBe(
+        true,
+      );
+    },
+  );
+});

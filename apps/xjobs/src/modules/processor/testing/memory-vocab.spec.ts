@@ -31,3 +31,13 @@ describe('MemoryVocabRepository approve and reject', () => {
     expect(await vocab.rejectCity(paris)).toBe(true);
   });
 });
+
+describe('MemoryVocabRepository engineering role kinds', () => {
+  it('snapshot holds the 17 engineering codes', async () => {
+    const { engineeringRoleKinds } =
+      await new MemoryVocabRepository().snapshot();
+    expect(engineeringRoleKinds.size).toBe(17);
+    expect(engineeringRoleKinds.has('backend_engineer')).toBe(true);
+    expect(engineeringRoleKinds.has('support')).toBe(false);
+  });
+});

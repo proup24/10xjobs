@@ -33,7 +33,12 @@ import {
 import type { ListOptions } from '../schema';
 import { LIST_NAMES, type ListName } from '../vocab/lists';
 import { slugCode, type VocabSnapshot } from '../vocab/resolve';
-import { SEED, SEED_REGION_COUNTRIES, type SeedTerm } from '../vocab/seed-data';
+import {
+  ENGINEERING_ROLE_KINDS,
+  SEED,
+  SEED_REGION_COUNTRIES,
+  type SeedTerm,
+} from '../vocab/seed-data';
 
 export const fakeMeta = (
   model: string,
@@ -512,7 +517,20 @@ export class MemoryVocabRepository extends VocabRepository {
     const regionCountries = new Map(
       [...this.regionCountries].map(([k, v]) => [k, [...v]]),
     );
-    return { options, vocab: { approved }, regionCountries };
+    const engineeringRoleKinds = new Set(
+      this.lists.roleKinds
+        .filter(
+          (r) =>
+            r.status === 'approved' && ENGINEERING_ROLE_KINDS.includes(r.code),
+        )
+        .map((r) => r.code),
+    );
+    return {
+      options,
+      vocab: { approved },
+      regionCountries,
+      engineeringRoleKinds,
+    };
   }
 
   async propose(p: { list: ListName; text: string }[]): Promise<void> {

@@ -1,8 +1,5 @@
-import { Position } from '../../../common/enums';
 import type { PostingInput } from '../models/types';
 import type { ExtractionDocument } from '../schema';
-
-const ENGINEERING_CODES = new Set<string>(Object.values(Position));
 
 // Soft hyphen, zero-width space/non-joiner/joiner, word joiner, BOM.
 const INVISIBLES = new RegExp('[\\u00AD\\u200B-\\u200D\\u2060\\uFEFF]', 'g');
@@ -121,7 +118,10 @@ export function checkQuotes(
 }
 
 /** Cross-fact rules; a disagreement downgrades both sides to unsure. */
-export function checkConsistency(doc: ExtractionDocument): ExtractionDocument {
+export function checkConsistency(
+  doc: ExtractionDocument,
+  engineeringRoleKinds: ReadonlySet<string>,
+): ExtractionDocument {
   const out = structuredClone(doc);
 
   const arrangement = out.arrangement.value;
@@ -141,7 +141,7 @@ export function checkConsistency(doc: ExtractionDocument): ExtractionDocument {
     roleKind !== undefined &&
     roleKind !== 'unstated'
   ) {
-    if (isEngineering !== ENGINEERING_CODES.has(roleKind)) {
+    if (isEngineering !== engineeringRoleKinds.has(roleKind)) {
       out.isSoftwareEngineeringRole.confidence = 'unsure';
       out.position.confidence = 'unsure';
     }

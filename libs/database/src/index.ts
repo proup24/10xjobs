@@ -43,5 +43,6 @@ export {
   SEED,
   SEED_REGION_COUNTRIES,
   SEED_TECH_EXTRAS,
+  ENGINEERING_ROLE_KINDS,
 } from './seeds/vocab/seed-data';
 export type { SeedTerm } from './seeds/vocab/seed-data';

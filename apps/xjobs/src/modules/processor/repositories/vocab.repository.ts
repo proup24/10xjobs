@@ -12,6 +12,8 @@ export interface Vocabulary {
   vocab: VocabSnapshot;
   /** Region code to the country codes it contains. */
   regionCountries: Map<string, string[]>;
+  /** Approved role kinds flagged `isEngineering`. */
+  engineeringRoleKinds: ReadonlySet<string>;
 }
 
 /** The list tables and cities, as the processor reads and grows them. */
@@ -128,7 +130,20 @@ export class PrismaVocabRepository extends VocabRepository {
       regionCountries.set(link.regionCode, countries);
     }
     for (const countries of regionCountries.values()) countries.sort();
-    return { options, vocab: { approved }, regionCountries };
+    const engineeringRoleKinds = new Set(
+      (
+        await this.database.db.orm.public.RoleKind.where({
+          status: 'approved',
+          isEngineering: true,
+        }).all()
+      ).map((r) => r.code),
+    );
+    return {
+      options,
+      vocab: { approved },
+      regionCountries,
+      engineeringRoleKinds,
+    };
   }
 
   async propose(p: { list: ListName; text: string }[]): Promise<void> {
