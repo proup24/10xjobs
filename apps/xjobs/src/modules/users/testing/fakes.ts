@@ -14,7 +14,6 @@ import type {
   ProfileFields,
   ProfileInput,
   ProfileWithSkills,
-  ResumeMeta,
   SkillInput,
   UserInput,
 } from '../types';
@@ -239,29 +238,12 @@ export class FakeProfilesRepository extends ProfilesRepository {
     });
   }
 
-  async setResume(
-    userId: string,
-    profileId: string,
-    meta: ResumeMeta | null,
-  ): Promise<boolean> {
-    const profile = await this.findById(userId, profileId);
-    if (profile?.state !== ProfileState.draft) return false;
-    Object.assign(profile, {
-      resumeKey: meta?.key ?? null,
-      resumeFilename: meta?.filename ?? null,
-      resumeSizeBytes: meta?.sizeBytes ?? null,
-      resumeSha256: meta?.sha256 ?? null,
-      resumeUploadedAt: meta?.uploadedAt ?? null,
-    });
-    return true;
-  }
-
   /** The labels of `labels` the places name, a city's country included; unknown ones are left out. */
   async placeLabels(places: Place[]): Promise<PlaceLabels> {
     const named = new Set(
       places.map((place) =>
         place.kind === 'city'
-          ? place.id
+          ? place.id.toLowerCase()
           : place.kind === 'worldwide'
             ? ''
             : place.code,

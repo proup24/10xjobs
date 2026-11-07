@@ -31,6 +31,23 @@ describe('placeTexts', () => {
     });
   });
 
+  it('finds a city stored with an upper-case id under its lower-case label key', () => {
+    const id = '0190f3c2-7a1b-7c3d-8e4f-5a6b7c8d9e0f';
+    expect(
+      placeTexts(
+        {
+          remote: [],
+          hybrid: [],
+          onsite: [{ kind: 'city', id: id.toUpperCase() }],
+        },
+        labels({
+          countries: new Map([['FR', 'France']]),
+          cities: new Map([[id, { name: 'Paris', countryCode: 'FR' }]]),
+        }),
+      ),
+    ).toEqual({ remote: [], hybrid: [], onsite: ['Paris, France'] });
+  });
+
   it('turns a country into its label', () => {
     expect(
       placeTexts(

@@ -291,6 +291,34 @@ describe('profile locations', () => {
     ]);
   });
 
+  it('lower-cases a city id, so it is stored as Postgres prints it', async () => {
+    const upper = '0190F3C2-7A1B-7C3D-8E4F-5A6B7C8D9E0F';
+    const dto = plainToInstance(CreateProfileDto, {
+      ...validProfile,
+      locations: {
+        ...none,
+        remote: [{ kind: 'country', code: 'MA' }],
+        onsite: [{ kind: 'city', id: upper }],
+      },
+    });
+    expect(await validate(dto, options)).toEqual([]);
+    expect(dto.locations.onsite).toEqual([
+      { kind: 'city', id: upper.toLowerCase() },
+    ]);
+    expect(dto.locations.remote).toEqual([{ kind: 'country', code: 'MA' }]);
+  });
+
+  it('rejects the same city twice in different cases', async () => {
+    expect(
+      await errorsFor({
+        locations: {
+          ...none,
+          onsite: [city, { kind: 'city', id: city.id.toUpperCase() }],
+        },
+      }),
+    ).toEqual(['locations.onsite']);
+  });
+
   it('accepts 20 places in one arrangement', async () => {
     const remote = Array.from({ length: 20 }, (_, i) => ({
       kind: 'country',
@@ -364,10 +392,22 @@ describe('profile salary and currencies', () => {
     ['a lowercase currency', { min: 10, currency: 'eur', period: 'hour' }],
     ['an unknown period', { min: 10, currency: 'EUR', period: 'week' }],
     ['a missing currency', { min: 10, period: 'hour' }],
+    [
+      'a minimum above int4',
+      { min: 2_147_483_648, currency: 'EUR', period: 'year' },
+    ],
   ])('rejects a salary with %s', async (_name, salary) => {
     const errors = await errorsFor({ salary });
     expect(errors.length).toBeGreaterThan(0);
     expect(errors.every((path) => path.startsWith('salary'))).toBe(true);
+  });
+
+  it('accepts the largest int4 minimum', async () => {
+    expect(
+      await errorsFor({
+        salary: { min: 2_147_483_647, currency: 'EUR', period: 'year' },
+      }),
+    ).toEqual([]);
   });
 
   it.each(['hour', 'day', 'month', 'year'])(

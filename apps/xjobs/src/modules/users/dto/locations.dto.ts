@@ -1,7 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { ArrayMaxSize, IsArray } from 'class-validator';
 import type { Place, PlacesByArrangement } from '../types';
-import { IsPlace, UniqueBy } from './validators';
+import { IsPlace, lowerCityId, UniqueBy } from './validators';
 
 /** Most places one arrangement may list: each one multiplies the searches. */
 export const MAX_LOCATIONS = 20;
@@ -41,6 +42,9 @@ function PlaceList(example: Place[]) {
       description:
         'Places by code: a regions code, an ISO 3166-1 alpha-2 countries code, or a cities id; empty when the arrangement is not wanted',
     }),
+    Transform(({ value }: { value: unknown }) =>
+      Array.isArray(value) ? value.map(lowerCityId) : value,
+    ),
     IsArray(),
     ArrayMaxSize(MAX_LOCATIONS),
     IsPlace({ each: true }),

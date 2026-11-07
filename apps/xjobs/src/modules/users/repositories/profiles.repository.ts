@@ -12,7 +12,6 @@ import type {
   ProfileFields,
   ProfileInput,
   ProfileWithSkills,
-  ResumeMeta,
   SkillInput,
 } from '../types';
 
@@ -53,17 +52,14 @@ export abstract class ProfilesRepository {
     profileId: string,
     publishedAt: Date,
   ): Promise<ProfileWithSkills | null>;
-  /** Sets or clears a draft's resume; false when not the user's or published. */
-  abstract setResume(
-    userId: string,
-    profileId: string,
-    meta: ResumeMeta | null,
-  ): Promise<boolean>;
   /** The labels of the regions, countries and cities given, a city's country included. */
   abstract placeLabels(places: Place[]): Promise<PlaceLabels>;
 }
 
-/** The region codes, country codes and city ids the places name, each once. */
+/**
+ * The region codes, country codes and city ids the places name, each once.
+ * City ids are lower-cased, as Postgres prints a uuid.
+ */
 function placeKeys(places: Place[]) {
   const regions = new Set<string>();
   const countries = new Set<string>();
@@ -71,7 +67,7 @@ function placeKeys(places: Place[]) {
   for (const place of places) {
     if (place.kind === 'region') regions.add(place.code);
     else if (place.kind === 'country') countries.add(place.code);
-    else if (place.kind === 'city') cities.add(place.id);
+    else if (place.kind === 'city') cities.add(place.id.toLowerCase());
   }
   return {
     regions: [...regions],
@@ -236,25 +232,6 @@ export class PrismaProfilesRepository extends ProfilesRepository {
     return profile ? this.withSkills(profile) : null;
   }
 
-  async setResume(
-    userId: string,
-    profileId: string,
-    meta: ResumeMeta | null,
-  ): Promise<boolean> {
-    const profile = await this.orm.Profile.where({
-      id: profileId,
-      userId,
-      state: ProfileState.draft,
-    }).update({
-      resumeKey: meta?.key ?? null,
-      resumeFilename: meta?.filename ?? null,
-      resumeSizeBytes: meta?.sizeBytes ?? null,
-      resumeSha256: meta?.sha256 ?? null,
-      resumeUploadedAt: meta?.uploadedAt ?? null,
-    });
-    return profile !== null;
-  }
-
   async placeLabels(places: Place[]): Promise<PlaceLabels> {
     const keys = placeKeys(places);
     const cities = keys.cities.length
@@ -277,7 +254,10 @@ export class PrismaProfilesRepository extends ProfilesRepository {
       regions: new Map(regions.map((r) => [r.code, r.label])),
       countries: new Map(countries.map((c) => [c.code, c.label])),
       cities: new Map(
-        cities.map((c) => [c.id, { name: c.name, countryCode: c.countryCode }]),
+        cities.map((c) => [
+          c.id.toLowerCase(),
+          { name: c.name, countryCode: c.countryCode },
+        ]),
       ),
     };
   }

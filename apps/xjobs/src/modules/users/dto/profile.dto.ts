@@ -40,6 +40,9 @@ import {
 const MIN_OFFSET = -720;
 const MAX_OFFSET = 840;
 
+/** The largest salary minimum: `salaryMin` is an int4 column. */
+const MAX_SALARY = 2_147_483_647;
+
 export const POSITION_IMMUTABLE =
   'position cannot be changed; delete this profile and create one for the new position';
 
@@ -79,9 +82,14 @@ export class SpokenLanguageDto implements SpokenLanguage {
 }
 
 export class SalaryDto {
-  @ApiProperty({ minimum: 1, description: 'Whole currency units' })
+  @ApiProperty({
+    minimum: 1,
+    maximum: MAX_SALARY,
+    description: 'Whole currency units',
+  })
   @IsInt()
   @Min(1)
+  @Max(MAX_SALARY)
   min!: number;
 
   @ApiProperty({ example: 'EUR', description: 'ISO 4217, uppercase' })

@@ -1,4 +1,9 @@
 {
   "hash": "5c5ebc05508c65605769bbcd77d4eb71adc71b016b5cf9fc5cf54cf2cc573806",
-  "invariants": ["end-expired-sessions", "code-check-fixes", "resume-storage"]
+  "invariants": [
+    "end-expired-sessions",
+    "code-check-fixes",
+    "resume-storage",
+    "builder-recount"
+  ]
 }

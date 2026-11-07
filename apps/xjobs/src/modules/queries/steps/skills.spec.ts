@@ -45,6 +45,12 @@ describe('assertHasSkills', () => {
     expect(() => assertHasSkills(input)).toThrow(SKILLS_REQUIRED);
   });
 
+  it('says a searchable technology is what publishing needs', () => {
+    expect(SKILLS_REQUIRED).toBe(
+      'at least one searchable technology with importance above 0 is required to publish',
+    );
+  });
+
   it('throws a 400 when the only skills are concept tags (saas, microservices)', () => {
     const conceptsOnly = {
       ...input,

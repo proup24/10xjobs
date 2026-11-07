@@ -63,6 +63,19 @@ export function isPlace(value: unknown): boolean {
   }
 }
 
+/**
+ * A city place with its uuid lower-cased, as Postgres prints a uuid, so the
+ * stored id matches the `cities` row it names. Anything else is returned as is.
+ */
+export function lowerCityId(value: unknown): unknown {
+  if (typeof value !== 'object' || value === null || Array.isArray(value))
+    return value;
+  const place = value as Record<string, unknown>;
+  return place.kind === 'city' && typeof place.id === 'string'
+    ? { ...place, id: place.id.toLowerCase() }
+    : value;
+}
+
 /** Validates each entry with {@link isPlace}. */
 export function IsPlace(options?: ValidationOptions) {
   return (target: object, propertyName: string) =>

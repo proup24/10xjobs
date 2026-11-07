@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { createAuthUser, deleteAuthUser } from '../support/auth-users';
+import { createApprovedCity, deleteCity } from '../support/cities';
 
 const run = Date.now().toString(36);
 const ok = { validateStatus: () => true };
@@ -235,6 +236,34 @@ describe('users, profiles and resume', () => {
     expect((await axios.delete(`${profiles()}/${id}`)).status).toBe(204);
   });
 
+  it('stores a city id sent in upper case as lower case, and publishes the profile', async () => {
+    const cityId = await createApprovedCity(`E2E City ${run}`);
+    try {
+      const created = await axios.post(
+        profiles(),
+        {
+          ...profile,
+          locations: {
+            ...profile.locations,
+            onsite: [{ kind: 'city', id: cityId.toUpperCase() }],
+          },
+        },
+        ok,
+      );
+      expect(created.status).toBe(201);
+      const id = created.data.data.id;
+      expect(created.data.data.locations.onsite).toEqual([
+        { kind: 'city', id: cityId },
+      ]);
+      const published = await axios.post(`${profiles()}/${id}/publish`, {}, ok);
+      expect(published.status).toBe(200);
+      expect(published.data.data.state).toBe('published');
+      expect((await axios.delete(`${profiles()}/${id}`)).status).toBe(204);
+    } finally {
+      await deleteCity(cityId);
+    }
+  });
+
   it('refuses to publish a profile whose only skills are concept tags, leaving it a draft', async () => {
     const id = (
       await axios.post(profiles(), {
@@ -253,7 +282,7 @@ describe('users, profiles and resume', () => {
     const res = await axios.post(`${profiles()}/${id}/publish`, {}, ok);
     expect(res.status).toBe(400);
     expect(res.data.message).toBe(
-      'at least one skill with importance above 0 is required to publish',
+      'at least one searchable technology with importance above 0 is required to publish',
     );
     expect((await axios.get(`${profiles()}/${id}`)).data.data.state).toBe(
       'draft',

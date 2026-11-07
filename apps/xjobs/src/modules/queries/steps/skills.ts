@@ -3,7 +3,7 @@ import { hasSearchWording } from '../sets/technology';
 import type { QuerySearchProfileInput, RankedSkill } from '../types';
 
 export const SKILLS_REQUIRED =
-  'at least one skill with importance above 0 is required to publish';
+  'at least one searchable technology with importance above 0 is required to publish';
 
 /**
  * True when at least one skill can be searched: importance above 0 and a

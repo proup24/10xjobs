@@ -21,7 +21,8 @@ function placeText(place: Place, labels: PlaceLabels): string {
     case 'country':
       return label(labels.countries, place.code, 'country');
     case 'city': {
-      const city = labels.cities.get(place.id);
+      // Keyed by the lower-case id Postgres prints; an older row may hold it upper-case.
+      const city = labels.cities.get(place.id.toLowerCase());
       if (city === undefined)
         throw new Error(`No label for city '${place.id}'`);
       return `${city.name}, ${label(labels.countries, city.countryCode, 'country')}`;
