@@ -6,17 +6,17 @@ The local stack reads these values from `supabase/config.toml`. Supabase Cloud d
 
 Authentication, then the settings pages named below.
 
-| Setting                                          | Value                                   | `config.toml` key                           |
-| ------------------------------------------------ | --------------------------------------- | ------------------------------------------- |
-| Allow new users to sign up                       | off                                     | `[auth] enable_signup = false`              |
-| Email OTP length                                 | 6                                       | `[auth.email] otp_length`                   |
-| Email OTP expiration                             | 86400 seconds (24 hours)                | `[auth.email] otp_expiry`                   |
-| Minimum interval between emails to the same user | 60 seconds                              | `[auth.email] max_frequency`                |
-| Emails sent per hour                             | 30                                      | `[auth.rate_limit] email_sent`              |
-| Confirm email                                    | off                                     | `[auth.email] enable_confirmations = false` |
-| JWT expiry (access token lifetime)               | 3600 seconds (1 hour)                   | `[auth] jwt_expiry`                         |
-| Site URL                                         | `<production web URL, set in slice 09>` | `[auth] site_url`                           |
-| Redirect URLs                                    | `<production web URL, set in slice 09>` | `[auth] additional_redirect_urls`           |
+| Setting                                          | Value                                              | `config.toml` key                           |
+| ------------------------------------------------ | -------------------------------------------------- | ------------------------------------------- |
+| Allow new users to sign up                       | off                                                | `[auth] enable_signup = false`              |
+| Email OTP length                                 | 6                                                  | `[auth.email] otp_length`                   |
+| Email OTP expiration                             | 86400 seconds (24 hours)                           | `[auth.email] otp_expiry`                   |
+| Minimum interval between emails to the same user | 60 seconds                                         | `[auth.email] max_frequency`                |
+| Emails sent per hour                             | 30                                                 | `[auth.rate_limit] email_sent`              |
+| Confirm email                                    | off                                                | `[auth.email] enable_confirmations = false` |
+| JWT expiry (access token lifetime)               | 3600 seconds (1 hour)                              | `[auth] jwt_expiry`                         |
+| Site URL                                         | the Vercel production URL (`<project>.vercel.app`) | `[auth] site_url`                           |
+| Redirect URLs                                    | the Vercel production URL (`<project>.vercel.app`) | `[auth] additional_redirect_urls`           |
 
 Anonymous sign-ins stay off. The Site URL matters: the email templates build their links from `{{ .SiteURL }}`, so a wrong value sends users to the wrong host.
 
@@ -151,17 +151,7 @@ The credentials go only in the dashboard. They never go in git, in `config.toml`
 
 ## Session length and pg_cron
 
-Sessions last 7 days from sign-in. A Prisma migration (`end_expired_sessions`) creates `public.end_expired_sessions()` and schedules the `end-expired-sessions` pg_cron job, hourly (`0 * * * *`). It deletes `auth.sessions` rows older than 7 days. The migration also runs `CREATE EXTENSION IF NOT EXISTS pg_cron`, so applying it to production enables pg_cron; nothing to switch on by hand. Apply the migrations to Cloud from your machine with the production connection string exported in the current shell only (never written to a file or to git):
-
-```sh
-read -rs DATABASE_URL && export DATABASE_URL   # paste the Cloud Postgres connection string
-XJOBS_ALLOW_REMOTE_DB=1 pnpm --filter @xjobs/database db:migrate
-unset DATABASE_URL
-```
-
-`XJOBS_ALLOW_REMOTE_DB=1` is the opt-in that lets the migrate run against a non-local database; without it the command refuses. Pass it inline, as shown. The documented `pnpm` commands ignore it in a `.env` file; never put it there. Shell values beat `.env` for every command.
-
-Run it from a shell that has not loaded `.env` values for another database. Check the target before you confirm. Afterwards, check that the job exists with `select jobname, schedule from cron.job;`. If you ever run `prisma migration ref set` or advance the `db` ref, re-add `"end-expired-sessions"` to `invariants` in `refs/db.json` first, or new databases skip the cron job.
+Sessions last 7 days from sign-in. A Prisma migration (`end_expired_sessions`) creates `public.end_expired_sessions()` and schedules the `end-expired-sessions` pg_cron job, hourly (`0 * * * *`). It deletes `auth.sessions` rows older than 7 days. The migration also runs `CREATE EXTENSION IF NOT EXISTS pg_cron`, so applying it to production enables pg_cron; nothing to switch on by hand. Production migrates from CI, not from a machine; see [production.md](production.md). After the first production migrate, check that the job exists with `select jobname, schedule from cron.job;`. Then verify the cleanup runs: execute `select public.end_expired_sessions();` once as postgres in the SQL editor (it returns a count), or check `cron.job_run_details` after an hour. If you ever run `prisma migration ref set` or advance the `db` ref, re-add `"end-expired-sessions"` to `invariants` in `refs/db.json` first, or new databases skip the cron job.
 
 On the Supabase Pro plan, you can instead set a session time-box under Authentication, Sessions: `timebox = "168h"` (the `[auth.sessions]` key in `config.toml`). Supabase then ends sessions itself, and the cron job becomes redundant. Keep the job unless you have confirmed the time-box is active.
 
@@ -184,11 +174,6 @@ Known gaps to keep in mind when you run it:
 - Supabase Auth's API, when called directly, reveals whether an email is known. The sign-in page does not: it always answers with the same neutral message.
 - Invites expire after 24 hours, and only the admin can send a new one (`pnpm users invite <email>`).
 
-## Pre-launch checklist (slice 09)
+## Pre-launch checklist
 
-1. Run the migrations against Cloud (`db:migrate` above) and check `cron.job`. Then verify the cleanup runs: execute `select public.end_expired_sessions();` once as postgres in the SQL editor (it returns a count), or check `cron.job_run_details` after an hour.
-2. Set the Auth settings from the table above (sign-up off, OTP, frequency, rate limit, JWT expiry).
-3. Paste both templates and set their subjects.
-4. Set the Gmail SMTP settings.
-5. Set the Site URL and redirect URLs to the production web URL.
-6. Run a test invite with `pnpm users invite <your address>` and sign in with the code and with the link.
+See [production.md](production.md).

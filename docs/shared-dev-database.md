@@ -13,13 +13,16 @@ One hosted Supabase project, `10xjobs-dev`, is the shared dev database. Use it w
    - `DEV_SUPABASE_SERVICE_ROLE_KEY`: the service-role key from Project Settings, API.
 
    Then restrict the environment: Deployment branches and tags, Selected branches, `main` only. No other branch's workflow can then read the secrets.
+
 5. Merge `.github/workflows/dev-database.yml` to `main`. A `workflow_run` workflow only takes effect once it is on `main`. Add the secrets before merging; the merge's CI run triggers the first migrate and seed. To re-run later, re-run the latest CI run on `main`.
 
-The workflow (`.github/workflows/dev-database.yml`) runs after `CI` succeeds on a push to `main`: it migrates, then seeds.
+The workflow (`.github/workflows/dev-database.yml`) runs after `CI` succeeds on a push to `main`: it migrates, then seeds. The same workflow also has a `production` job that waits for approval ([production.md](production.md)), so re-running CI on `main` queues a production run waiting for approval. Reject it if you don't want it.
 
 ## Daily work
 
 Point your env at the shared project. In the root `.env`, replace the local values with the commented shared-dev block from `.env.example`: `DATABASE_URL` (session pooler), `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. In `apps/web/.env.local`, set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` from the dev project's API settings. Then run `npx nx serve xjobs` and `npx nx dev web` as usual.
+
+Vercel previews use `10xjobs-dev`, so resetting dev also resets what previews see.
 
 Print a sign-in link instead of waiting for an email. The users CLI reads `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from the root `.env` (shell values win):
 
@@ -43,4 +46,4 @@ Merging to `main` applies the migration to the dev project.
 
 ## Recovery
 
-If the dev database drifts from the migrations (a manual change, a failed migration), reset it in the dashboard and re-run the latest `CI` run on `main` from the Actions tab. The `Dev database` workflow then migrates and seeds from scratch.
+If the dev database drifts from the migrations (a manual change, a failed migration), reset it in the dashboard and re-run the latest `CI` run on `main` from the Actions tab (this queues a production run too; reject it). The `Dev database` workflow then migrates and seeds from scratch.
