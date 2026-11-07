@@ -374,36 +374,6 @@ describe('users, profiles and resume', () => {
     expect(res.status).toBe(400);
   });
 
-  it('uploads and downloads a resume PDF', async () => {
-    const form = new FormData();
-    form.append(
-      'file',
-      new Blob([Buffer.from('%PDF-1.4\n%%EOF')], { type: 'application/pdf' }),
-      'cv.pdf',
-    );
-    const upload = await axios.post(`${profiles()}/${profileId}/resume`, form);
-    expect(upload.status).toBe(201);
-    expect(upload.data.data.resume.filename).toBe('cv.pdf');
-
-    const download = await axios.get(`${profiles()}/${profileId}/resume`, {
-      responseType: 'arraybuffer',
-    });
-    expect(download.status).toBe(200);
-    expect(download.headers['content-type']).toContain('application/pdf');
-    expect(Buffer.from(download.data).toString()).toBe('%PDF-1.4\n%%EOF');
-  });
-
-  it('rejects a file that is not a PDF', async () => {
-    const form = new FormData();
-    form.append(
-      'file',
-      new Blob(['hello'], { type: 'application/pdf' }),
-      'cv.pdf',
-    );
-    const res = await axios.post(`${profiles()}/${profileId}/resume`, form, ok);
-    expect(res.status).toBe(400);
-  });
-
   it('404s a profile reached through another user', async () => {
     const res = await axios.get(
       `${base()}/${otherUserId}/profiles/${profileId}`,

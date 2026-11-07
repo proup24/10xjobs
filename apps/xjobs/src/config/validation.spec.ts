@@ -44,10 +44,16 @@ describe('storage configuration', () => {
     });
   });
 
-  it('keeps an explicit bucket name', () => {
+  it('accepts the resumes bucket set explicitly', () => {
     expect(
-      storageConfigFor({ ...minimal, STORAGE_RESUMES_BUCKET: 'cv' }),
-    ).toMatchObject({ resumesBucket: 'cv' });
+      storageConfigFor({ ...minimal, STORAGE_RESUMES_BUCKET: 'resumes' }),
+    ).toMatchObject({ resumesBucket: 'resumes' });
+  });
+
+  it('refuses any other bucket, since the migration, policies and web app fix the name', () => {
+    expect(() =>
+      validateEnvironment({ ...minimal, STORAGE_RESUMES_BUCKET: 'cv' }),
+    ).toThrow(/STORAGE_RESUMES_BUCKET/);
   });
 
   it('fails without any Supabase URL or key', () => {

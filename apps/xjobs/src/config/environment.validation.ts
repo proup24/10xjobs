@@ -148,11 +148,11 @@ export const environmentSchema = databaseEnvironmentSchema
       .string()
       .min(12, 'BASIC_AUTH_PASSWORD must be at least 12 characters'),
     ...storageEnvironmentShape,
-    /** Private bucket that holds resume PDFs. */
-    STORAGE_RESUMES_BUCKET: z
-      .string()
-      .regex(/^[a-z0-9][a-z0-9._-]{1,62}$/)
-      .default('resumes'),
+    /**
+     * Private bucket that holds resume PDFs. Pinned: the migration, the
+     * storage policies and the web app all fix the name `resumes`.
+     */
+    STORAGE_RESUMES_BUCKET: z.literal('resumes').default('resumes'),
     /** Apify API token for the collectors. Optional so the API boots without collection. */
     APIFY_TOKEN: z.string().min(1).optional(),
     ...processorEnvironmentShape,

@@ -1,31 +1,20 @@
 import { QuerySearchService } from 'src/modules/queries';
 import { FakeQuerySearchRepository } from 'src/modules/queries/testing/fakes';
-import { createHash } from 'node:crypto';
-import {
-  BadRequestException,
-  ConflictException,
-  NotFoundException,
-} from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import {
   Engagement,
   Position,
   ProfileState,
   Seniority,
 } from 'src/common/enums';
-import { PROFILE_PUBLISHED, ProfilesService } from './profiles.service';
+import { ProfilesService } from './profiles.service';
 import { ResumeService } from './resume.service';
 import { MemoryStorageService } from 'src/modules/storage/testing';
 import { FakeProfilesRepository, FakeUsersRepository } from '../testing/fakes';
 import { UsersService } from './users.service';
-import type { ProfileInput, UploadedPdf } from '../types';
+import type { ProfileInput } from '../types';
 
 const pdfBytes = Buffer.from('%PDF-1.7\n%%EOF');
-const pdf = (buffer = pdfBytes, mimetype = 'application/pdf'): UploadedPdf => ({
-  originalname: 'cv.pdf',
-  mimetype,
-  buffer,
-  size: buffer.length,
-});
 
 const profileInput: ProfileInput = {
   position: Position.backend_engineer,
@@ -63,7 +52,6 @@ describe('ResumeService', () => {
         profiles,
         new QuerySearchService(new FakeQuerySearchRepository()),
       ),
-      profiles,
       storage,
       'resumes',
     );
@@ -72,148 +60,103 @@ describe('ResumeService', () => {
     profileId = (await profiles.create(userId, profileInput, [])).id;
   });
 
-  it('stores a PDF under the user and profile and reports its SHA-256', async () => {
-    const view = await service.save(userId, profileId, pdf());
-    expect(view.resume?.sha256).toBe(
-      createHash('sha256').update(pdfBytes).digest('hex'),
-    );
-    expect(view.resume?.filename).toBe('cv.pdf');
-    expect(storage.keys('resumes')).toEqual([
-      expect.stringMatching(new RegExp(`^${userId}/${profileId}/.+\\.pdf$`)),
-    ]);
-  });
-
-  it('keeps one resume per profile', async () => {
-    const second = (await profiles.create(userId, profileInput, [])).id;
-    await service.save(userId, profileId, pdf());
-    await service.save(userId, second, pdf(Buffer.from('%PDF-1.4 second')));
-    expect(storage.keys('resumes')).toHaveLength(2);
-    expect((await service.get(userId, second)).data.toString()).toBe(
-      '%PDF-1.4 second',
-    );
-  });
-
-  it('refuses to change the resume of a published profile, but still serves it', async () => {
-    await service.save(userId, profileId, pdf());
-    profiles.rows[0].state = ProfileState.published;
-    await expect(
-      service.save(userId, profileId, pdf(Buffer.from('%PDF-1.4 new'))),
-    ).rejects.toThrow(new ConflictException(PROFILE_PUBLISHED));
-    await expect(service.delete(userId, profileId)).rejects.toBeInstanceOf(
-      ConflictException,
-    );
-    expect(storage.keys('resumes')).toHaveLength(1);
-    expect((await service.get(userId, profileId)).data).toEqual(pdfBytes);
-  });
+  /** Stands in for the web app's upload: a file in the profile's folder, pointed at by the row. */
+  const upload = async (owner: string, profile: string, name: string) => {
+    const key = `${owner}/${profile}/${name}`;
+    await storage.put('resumes', key, pdfBytes);
+    const row = profiles.rows.find((r) => r.id === profile);
+    if (row) row.resumeKey = key;
+    return key;
+  };
 
   it('deletes a published profile with its resume file', async () => {
-    await service.save(userId, profileId, pdf());
+    await upload(userId, profileId, 'first.pdf');
     profiles.rows[0].state = ProfileState.published;
     await service.deleteProfile(userId, profileId);
     expect(profiles.rows).toHaveLength(0);
     expect(storage.keys('resumes')).toHaveLength(0);
   });
 
-  it("404s another user's profile and stores nothing", async () => {
-    await expect(
-      service.save(otherUserId, profileId, pdf()),
-    ).rejects.toBeInstanceOf(NotFoundException);
-    await expect(service.get(otherUserId, profileId)).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
-    expect(storage.keys('resumes')).toHaveLength(0);
-  });
-
-  it('rejects a PDF sent with another mime type', async () => {
-    await expect(
-      service.save(userId, profileId, pdf(pdfBytes, 'text/plain')),
-    ).rejects.toBeInstanceOf(BadRequestException);
-  });
-
-  it('rejects a file that claims to be a PDF but is not', async () => {
-    await expect(
-      service.save(userId, profileId, pdf(Buffer.from('hello'))),
-    ).rejects.toBeInstanceOf(BadRequestException);
-  });
-
-  it('rejects a missing file', async () => {
-    await expect(service.save(userId, profileId, undefined)).rejects.toThrow(
-      new BadRequestException('A PDF file is required'),
-    );
-  });
-
-  it('deletes the old file only after the new one is stored', async () => {
-    await service.save(userId, profileId, pdf());
-    const [oldKey] = storage.keys('resumes');
-    await service.save(userId, profileId, pdf(Buffer.from('%PDF-1.4 second')));
-    expect(storage.keys('resumes')).not.toContain(oldKey);
-    expect(storage.keys('resumes')).toHaveLength(1);
-  });
-
-  it('keeps the old resume when storing the new one fails', async () => {
-    const first = await service.save(userId, profileId, pdf());
-    const [oldKey] = storage.keys('resumes');
-    storage.failNextPut = true;
-    await expect(service.save(userId, profileId, pdf())).rejects.toThrow();
-    expect(storage.keys('resumes')).toContain(oldKey);
-    expect((await service.view(userId, profileId)).resume).toEqual(
-      first.resume,
-    );
-  });
-
-  it('404s a download when there is no resume', async () => {
-    await expect(service.get(userId, profileId)).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
-  });
-
-  it('deleteProfile removes the profile and its file', async () => {
-    await service.save(userId, profileId, pdf());
+  it("deleteProfile removes every file in the profile's folder, not only resumeKey", async () => {
+    await upload(userId, profileId, 'first.pdf');
+    await upload(userId, profileId, 'second.pdf');
     await service.deleteProfile(userId, profileId);
     expect(profiles.rows).toHaveLength(0);
-    expect(storage.keys('resumes')).toHaveLength(0);
+    expect(storage.keys('resumes')).toEqual([]);
+  });
+
+  it("deleteProfile leaves the user's other profiles and other users alone", async () => {
+    const second = (await profiles.create(userId, profileInput, [])).id;
+    const theirs = (await profiles.create(otherUserId, profileInput, [])).id;
+    await upload(userId, profileId, 'first.pdf');
+    const kept = await upload(userId, second, 'cv.pdf');
+    const other = await upload(otherUserId, theirs, 'cv.pdf');
+    await service.deleteProfile(userId, profileId);
+    expect(storage.keys('resumes').sort()).toEqual([kept, other].sort());
+  });
+
+  it('deleteProfile removes the folder of a profile without a resumeKey', async () => {
+    await storage.put('resumes', `${userId}/${profileId}/draft.pdf`, pdfBytes);
+    await service.deleteProfile(userId, profileId);
+    expect(storage.keys('resumes')).toEqual([]);
   });
 
   it("deleteProfile 404s another user's profile", async () => {
+    const key = await upload(userId, profileId, 'first.pdf');
     await expect(
       service.deleteProfile(otherUserId, profileId),
     ).rejects.toBeInstanceOf(NotFoundException);
     expect(profiles.rows).toHaveLength(1);
+    expect(storage.keys('resumes')).toEqual([key]);
   });
 
-  it('removeAllFor deletes the files of every profile the user owns', async () => {
+  it('deleteProfile stands when removing the files fails', async () => {
+    await upload(userId, profileId, 'first.pdf');
+    storage.failNextDelete = true;
+    await expect(
+      service.deleteProfile(userId, profileId),
+    ).resolves.toBeUndefined();
+    expect(profiles.rows).toHaveLength(0);
+  });
+
+  it("removeAllFor clears everything under the user's prefix", async () => {
     const second = (await profiles.create(userId, profileInput, [])).id;
-    await service.save(userId, profileId, pdf());
-    await service.save(userId, second, pdf());
+    await upload(userId, profileId, 'first.pdf');
+    await upload(userId, profileId, 'second.pdf');
+    await upload(userId, second, 'cv.pdf');
     await service.removeAllFor(userId);
-    expect(storage.keys('resumes')).toHaveLength(0);
+    expect(storage.keys('resumes')).toEqual([]);
   });
 
-  it('removeAllFor is a no-op for a user without profiles', async () => {
+  it('removeAllFor removes files under a folder with no profile row', async () => {
+    await storage.put('resumes', `${userId}/unknown-profile/x.pdf`, pdfBytes);
+    await service.removeAllFor(userId);
+    expect(storage.keys('resumes')).toEqual([]);
+  });
+
+  it("removeAllFor leaves other users' files alone", async () => {
+    const theirs = (await profiles.create(otherUserId, profileInput, [])).id;
+    await upload(userId, profileId, 'first.pdf');
+    const other = await upload(otherUserId, theirs, 'cv.pdf');
+    await service.removeAllFor(userId);
+    expect(storage.keys('resumes')).toEqual([other]);
+  });
+
+  it('removeAllFor stops at the folder boundary of the user id', async () => {
+    const sibling = `${userId}0/p/x.pdf`;
+    await storage.put('resumes', sibling, pdfBytes);
+    await upload(userId, profileId, 'first.pdf');
+    await service.removeAllFor(userId);
+    expect(storage.keys('resumes')).toEqual([sibling]);
+  });
+
+  it('removeAllFor is a no-op for a user without files', async () => {
     await expect(service.removeAllFor('nobody')).resolves.toBeUndefined();
   });
 
-  it('a successful upload stands when removing the old file fails', async () => {
-    await service.save(userId, profileId, pdf());
+  it('removeAllFor does not throw when removing the files fails', async () => {
+    await upload(userId, profileId, 'first.pdf');
     storage.failNextDelete = true;
-    const view = await service.save(
-      userId,
-      profileId,
-      pdf(Buffer.from('%PDF-1.4 b')),
-    );
-    expect(view.resume?.sizeBytes).toBe(Buffer.from('%PDF-1.4 b').length);
-  });
-
-  it('404s a download whose stored object is gone', async () => {
-    await service.save(userId, profileId, pdf());
-    storage.objects.clear();
-    await expect(service.get(userId, profileId)).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
-  });
-
-  it('ensures its bucket on startup', async () => {
-    await service.onModuleInit();
-    expect(storage.buckets).toContain('resumes');
+    await expect(service.removeAllFor(userId)).resolves.toBeUndefined();
   });
 });

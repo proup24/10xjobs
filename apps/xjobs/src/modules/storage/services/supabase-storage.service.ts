@@ -19,6 +19,9 @@ function isAlreadyExists(error: StorageFailure): boolean {
   );
 }
 
+/** Supabase Storage's default and our page size for `list`. */
+const LIST_PAGE = 100;
+
 /** `StorageService` on Supabase Storage, called with the service-role key. */
 export class SupabaseStorageService extends StorageService {
   constructor(private readonly client: StorageClient) {
@@ -58,6 +61,44 @@ export class SupabaseStorageService extends StorageService {
       throw new Error(
         `Storage removal of ${bucket}/${key} failed: ${error.message}`,
       );
+    }
+  }
+
+  async deletePrefix(bucket: string, prefix: string): Promise<void> {
+    if (!prefix)
+      throw new Error(`Refusing to delete ${bucket} under an empty prefix`);
+    const keys = await this.listKeys(bucket, prefix);
+    for (let i = 0; i < keys.length; i += LIST_PAGE) {
+      const batch = keys.slice(i, i + LIST_PAGE);
+      const { error } = await this.client.from(bucket).remove(batch);
+      if (error && !isNotFound(error)) {
+        throw new Error(
+          `Storage removal under ${bucket}/${prefix}/ failed: ${error.message}`,
+        );
+      }
+    }
+  }
+
+  /** Every file key under `folder/`, collected before anything is removed so paging stays stable. */
+  private async listKeys(bucket: string, folder: string): Promise<string[]> {
+    const keys: string[] = [];
+    for (let offset = 0; ; offset += LIST_PAGE) {
+      const { data, error } = await this.client
+        .from(bucket)
+        .list(folder, { limit: LIST_PAGE, offset });
+      if (error) {
+        if (isNotFound(error)) return keys;
+        throw new Error(
+          `Storage listing of ${bucket}/${folder}/ failed: ${error.message}`,
+        );
+      }
+      for (const entry of data) {
+        const key = `${folder}/${entry.name}`;
+        // Folders come back with no id.
+        if (entry.id == null) keys.push(...(await this.listKeys(bucket, key)));
+        else keys.push(key);
+      }
+      if (data.length < LIST_PAGE) return keys;
     }
   }
 

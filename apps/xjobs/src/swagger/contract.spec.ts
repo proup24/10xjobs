@@ -9,7 +9,6 @@ import { HealthController } from 'src/app/controllers/health.controller';
 import { QuerySearchController } from 'src/modules/queries/controllers/query-search.controller';
 import { ContactsController } from 'src/modules/users/controllers/contacts.controller';
 import { ProfilesController } from 'src/modules/users/controllers/profiles.controller';
-import { ResumeController } from 'src/modules/users/controllers/resume.controller';
 import { UsersController } from 'src/modules/users/controllers/users.controller';
 
 type Schema = {
@@ -35,7 +34,6 @@ async function buildDocument(): Promise<OpenAPIObject> {
       UsersController,
       ContactsController,
       ProfilesController,
-      ResumeController,
       QuerySearchController,
     ],
   })
@@ -89,10 +87,12 @@ describe('API contract', () => {
   });
 
   it('documents profile locations per arrangement, without regions or arrangements', () => {
-    const profile = document.components?.schemas?.['ProfileResponseDto'] as
-      Schema & { properties: Record<string, unknown> };
-    const locations = document.components?.schemas?.['LocationsDto'] as
-      Schema & { properties: Record<string, unknown> };
+    const profile = document.components?.schemas?.[
+      'ProfileResponseDto'
+    ] as Schema & { properties: Record<string, unknown> };
+    const locations = document.components?.schemas?.[
+      'LocationsDto'
+    ] as Schema & { properties: Record<string, unknown> };
     expect(profile.properties).toHaveProperty('locations');
     expect(profile.properties).not.toHaveProperty('regions');
     expect(profile.properties).not.toHaveProperty('arrangements');
@@ -112,7 +112,6 @@ describe('API contract', () => {
       'DELETE /api/users/{userId}',
       'DELETE /api/users/{userId}/contacts/{contactId}',
       'DELETE /api/users/{userId}/profiles/{profileId}',
-      'DELETE /api/users/{userId}/profiles/{profileId}/resume',
       'GET /api/health',
       'GET /api/users',
       'GET /api/users/{userId}',
@@ -120,14 +119,12 @@ describe('API contract', () => {
       'GET /api/users/{userId}/profiles',
       'GET /api/users/{userId}/profiles/{profileId}',
       'GET /api/users/{userId}/profiles/{profileId}/query-search',
-      'GET /api/users/{userId}/profiles/{profileId}/resume',
       'PATCH /api/users/{userId}',
       'PATCH /api/users/{userId}/contacts/{contactId}',
       'POST /api/users',
       'POST /api/users/{userId}/contacts',
       'POST /api/users/{userId}/profiles',
       'POST /api/users/{userId}/profiles/{profileId}/publish',
-      'POST /api/users/{userId}/profiles/{profileId}/resume',
       'PUT /api/users/{userId}/profiles/{profileId}',
     ]);
   });
@@ -190,15 +187,5 @@ describe('API contract', () => {
       }
       if (operation.requestBody) expect(statuses, name).toContain('400');
     }
-  });
-
-  it('documents the resume upload limit and the PDF download', () => {
-    const resume = document.paths[
-      '/api/users/{userId}/profiles/{profileId}/resume'
-    ] as Record<string, Operation>;
-    expect(Object.keys(resume['post'].responses)).toContain('413');
-    expect(resume['get'].responses['200'].content).toHaveProperty(
-      'application/pdf',
-    );
   });
 });

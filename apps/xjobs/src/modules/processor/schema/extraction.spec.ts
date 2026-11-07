@@ -177,7 +177,8 @@ describe('work authorization requirement kinds', () => {
   const withKind = (kind: string) => {
     const doc = fixtureDocument();
     doc.workAuthorization.value = {
-      requirements: [{ kind, place: 'US' }],
+      // `kind` is deliberately unchecked here, so the schema is what refuses it.
+      requirements: [{ kind: kind as never, place: 'US' }],
       sponsorship: 'unstated',
     };
     return doc;
