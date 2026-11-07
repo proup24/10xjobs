@@ -17,7 +17,6 @@ import { QuerySearchModule } from 'src/modules/queries';
 import { UsersModule } from 'src/modules/users';
 import { HealthController } from './controllers/health.controller';
 import { HealthService } from './services/health.service';
-import { WorkerModule } from 'src/infrastructure/worker/worker.module';
 
 @Module({
   imports: [
@@ -36,7 +35,6 @@ import { WorkerModule } from 'src/infrastructure/worker/worker.module';
     // The processor's HTTP routes only. The workers run in their own process
     // (src/worker.ts), so the API never consumes jobs.
     ProcessorModule,
-    WorkerModule,
   ],
   controllers: [HealthController],
   providers: [
