@@ -1,15 +1,38 @@
 import { describe, expect, it } from 'vitest';
 import { fixtureDocument } from '../schema/fixture.testing';
-import type { GoldenCase } from './golden';
+import type { Verdict, Verification } from '../schema/fact';
+import type { GoldenCase, GoldenRequirement } from './golden';
 import {
+  callStats,
   type FactScores,
   questionLine,
+  reportFileName,
   scoreCase,
   suggestThreshold,
   summarize,
 } from './score';
 
 const reviewed = <T>(value: T) => ({ value, reviewed: true });
+
+const req = (
+  text: string,
+  code: string,
+  kind: GoldenRequirement['kind'],
+  group: string | null = null,
+): GoldenRequirement => ({
+  text,
+  code,
+  kind,
+  domain: null,
+  years: null,
+  group,
+});
+
+const verified = (
+  verdict: Verdict,
+  jevPick: string,
+  score = 0.9,
+): Verification => ({ verdict, score, jevPick, rounds: 1 });
 
 /** A case whose golden values equal `fixtureDocument()`. */
 function matchingCase(id = 'c1'): GoldenCase {
@@ -29,7 +52,7 @@ function matchingCase(id = 'c1'): GoldenCase {
     expected: {
       roleKind: 'backend',
       seniority: 'senior',
-      yearsRequired: 5,
+      yearsRequired: { min: 5, max: null },
       contractMonths: null,
       openings: [
         {
@@ -38,7 +61,12 @@ function matchingCase(id = 'c1'): GoldenCase {
           placeStrictness: 'limit',
         },
       ],
-      mainStack: [{ anyOf: [{ text: 'Node', code: 'nodejs' }] }],
+      requirements: [
+        req('Node', 'nodejs', 'main'),
+        req('SQL', 'sql', 'must'),
+        req('Rust', 'rust', 'nice'),
+      ],
+      groups: [],
       requiredLanguages: [{ lang: 'en', level: 'fluent' }],
       sponsorship: 'unstated',
       salary: { min: 80000, max: 100000, currency: 'EUR', period: 'year' },
@@ -79,21 +107,43 @@ describe('scoreCase', () => {
     });
   });
 
-  it('takes Jev answers from the document when none are passed', () => {
+  it("reads Jev's answers from the facts' verification", () => {
     const doc = fixtureDocument();
-    doc.seniority.score = 0.9;
-    expect(scoreCase(doc, matchingCase()).jev.seniority).toEqual({
-      score: 0.9,
-      correct: true,
+    doc.seniority.verification = verified('confirmed', 'senior');
+    doc.arrangement.verification = verified('unconfirmed', 'onsite', 0.5);
+    const jev = scoreCase(doc, matchingCase()).jev;
+    expect(jev.seniority).toEqual({ score: 0.9, correct: true, agrees: true });
+    expect(jev.arrangement).toEqual({
+      score: 0.5,
+      correct: false,
+      agrees: false,
+    });
+  });
+
+  it('scores yearsRequired as a range', () => {
+    const doc = fixtureDocument();
+    doc.yearsRequired.value = { min: 5, max: 8 };
+    expect(scoreCase(doc, matchingCase()).facts.yearsRequired).toMatchObject({
+      correct: 0,
     });
   });
 });
 
 /** Scores for one case carrying one Jev answer to `seniority`. */
-const withJev = (score: number, correct: boolean): FactScores => ({
+const withJev = (
+  score: number,
+  correct: boolean,
+  agrees = true,
+): FactScores => ({
   caseId: String(score),
   facts: {},
-  jev: { seniority: { score, correct } },
+  jev: { seniority: { score, correct, agrees } },
+  verdicts: {},
+  rejections: [],
+  requirements: null,
+  rounds: 1,
+  generatorCalls: 1,
+  verifierCalls: 1,
   costUsd: 0,
 });
 
@@ -189,11 +239,166 @@ describe('summarize', () => {
     expect(byRange['0.9–1']).toMatchObject({ total: 1, correct: 1 });
   });
 
-  it('averages cost per job', () => {
+  it('averages cost, rounds and calls per job', () => {
     const report = summarize([
-      { ...withJev(0.9, true), costUsd: 0.1 },
-      { ...withJev(0.9, true), costUsd: 0.3 },
+      { ...withJev(0.9, true), costUsd: 0.1, rounds: 1, generatorCalls: 1 },
+      {
+        ...withJev(0.9, true),
+        costUsd: 0.3,
+        rounds: 2,
+        generatorCalls: 3,
+        verifierCalls: 2,
+      },
     ]);
     expect(report.costPerJob).toBeCloseTo(0.2);
+    expect(report.roundsPerJob).toBe(1.5);
+    expect(report.generatorCallsPerJob).toBe(2);
+    expect(report.verifierCallsPerJob).toBe(1.5);
+  });
+
+  it('suggests a threshold from confirmations only', () => {
+    const report = summarize([
+      ...Array.from({ length: 10 }, () => withJev(0.9, true)),
+      // A disagreement is not a confirmation, whatever its score.
+      ...Array.from({ length: 5 }, () => withJev(0.6, false, false)),
+    ]);
+    expect(report.questions.seniority.suggestedThreshold).toBe(0.9);
+    expect(report.questions.seniority.buckets[1]).toMatchObject({ total: 5 });
+  });
+});
+
+describe('verification report', () => {
+  it('shares each closed field among confirmed, unconfirmed and rejected', () => {
+    const docs = (
+      ['confirmed', 'confirmed', 'unconfirmed', 'rejected'] as const
+    ).map((verdict) => {
+      const doc = fixtureDocument();
+      doc.seniority.verification = verified(verdict, 'senior');
+      return scoreCase(doc, matchingCase());
+    });
+    expect(summarize(docs).verdicts.seniority).toEqual({
+      verified: 4,
+      confirmed: 0.5,
+      unconfirmed: 0.25,
+      rejected: 0.25,
+    });
+  });
+
+  it('measures rejection precision against the golden values', () => {
+    const right = fixtureDocument();
+    right.verification.dropped = [
+      { field: 'arrangement', generatorValue: 'remote', jevPick: 'onsite' },
+    ];
+    const wrong = fixtureDocument();
+    wrong.verification.dropped = [
+      { field: 'seniority', generatorValue: 'junior', jevPick: 'senior' },
+    ];
+    const report = summarize([
+      scoreCase(right, matchingCase('a')),
+      scoreCase(wrong, matchingCase('b')),
+    ]);
+    expect(report.rejections).toBe(2);
+    expect(report.rejectionPrecision).toBe(0.5);
+  });
+
+  it('counts a missed junk flag as a rejection of "no"', () => {
+    const doc = fixtureDocument();
+    doc.verification.missedJunkFlags = ['vague'];
+    const c = matchingCase();
+    c.expected.junkFlags = ['vague'];
+    expect(scoreCase(doc, c).rejections).toEqual([
+      { field: 'junk:vague', wrong: true },
+    ]);
+  });
+
+  it('counts generator and verifier calls from the attempt rows', () => {
+    expect(
+      callStats([
+        { step: 'generation', costUsd: 0.1 },
+        { step: 'generation_retry', costUsd: 0.05 },
+        { step: 'verification', costUsd: 0.01 },
+        { step: 'generation', costUsd: 0.1 },
+      ]),
+    ).toEqual({ generatorCalls: 3, verifierCalls: 1, costUsd: 0.26 });
+  });
+});
+
+describe('requirement scores', () => {
+  it('counts a grouped golden option the generator missed against recall only', () => {
+    const doc = fixtureDocument();
+    doc.techStack.value = {
+      requirements: [
+        {
+          technology: { text: 'Python', code: 'python' },
+          kind: 'main',
+          importance: 9,
+          domain: null,
+          years: null,
+          quote: '',
+          confidence: 'sure',
+          group: null,
+        },
+      ],
+      groups: [],
+    };
+    const c = matchingCase();
+    c.expected.requirements = [
+      req('Python', 'python', 'main', 'g1'),
+      req('Go', 'go', 'main', 'g1'),
+    ];
+    c.expected.groups = [{ id: 'g1', min: 1 }];
+    const r = summarize([scoreCase(doc, c)]).requirements;
+    expect(r.requiredRecall).toBe(0.5);
+    expect(r.requiredPrecision).toBe(1);
+    expect(r.kindAccuracy).toBe(1);
+  });
+
+  it('scores nice requirements apart and reads kind', () => {
+    const doc = fixtureDocument();
+    const c = matchingCase();
+    c.expected.requirements = [
+      req('Node', 'nodejs', 'main'),
+      req('SQL', 'sql', 'nice'),
+      req('Rust', 'rust', 'nice'),
+    ];
+    const r = summarize([scoreCase(doc, c)]).requirements;
+    expect(r.requiredRecall).toBe(1);
+    expect(r.requiredPrecision).toBe(0.5);
+    expect(r.niceRecall).toBe(0.5);
+    expect(r.nicePrecision).toBe(1);
+    expect(r.kindAccuracy).toBeCloseTo(2 / 3);
+  });
+
+  it('skips domain and years until a human labels them', () => {
+    const doc = fixtureDocument();
+    const c = matchingCase();
+    c.expected.requirements = [
+      {
+        ...req('Node', 'nodejs', 'main'),
+        domain: 'backend',
+        years: { min: 3, max: null },
+      },
+    ];
+    c.drafted.requirements = { value: null, reviewed: false };
+    expect(summarize([scoreCase(doc, c)]).requirements).toMatchObject({
+      domainAccuracy: null,
+      yearsAccuracy: null,
+    });
+    c.drafted.requirements = { value: null, reviewed: true };
+    expect(summarize([scoreCase(doc, c)]).requirements).toMatchObject({
+      domainAccuracy: 0,
+      yearsAccuracy: 0,
+    });
+  });
+});
+
+describe('reportFileName', () => {
+  it('names the report after the generator model', () => {
+    expect(reportFileName('anthropic/claude-opus-5.5')).toBe(
+      'last-report.anthropic-claude-opus-5-5.json',
+    );
+    expect(reportFileName('deepseek/deepseek-v4.1-flash-1017')).toBe(
+      'last-report.deepseek-deepseek-v4-1-flash-1017.json',
+    );
   });
 });

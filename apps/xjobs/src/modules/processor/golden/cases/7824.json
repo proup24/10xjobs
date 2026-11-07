@@ -21,9 +21,13 @@
     ],
     "roleKind": "security_engineer",
     "seniority": "unstated",
-    "yearsRequired": 2,
+    "yearsRequired": {
+      "min": 2,
+      "max": null
+    },
     "contractMonths": null,
-    "mainStack": [],
+    "requirements": [],
+    "groups": [],
     "requiredLanguages": [
       {
         "lang": "fr",
@@ -38,5 +42,10 @@
     "salary": null,
     "junkFlags": []
   },
-  "drafted": {}
+  "drafted": {
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
 }

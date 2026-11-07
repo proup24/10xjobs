@@ -37,32 +37,53 @@
     ],
     "roleKind": "fullstack_engineer",
     "seniority": "senior",
-    "yearsRequired": 5,
+    "yearsRequired": {
+      "min": 5,
+      "max": null
+    },
     "contractMonths": null,
-    "mainStack": [
+    "requirements": [
       {
-        "anyOf": [
-          {
-            "text": "React / Next.js",
-            "code": "react"
-          },
-          {
-            "text": "Next.js",
-            "code": "nextjs"
-          }
-        ]
+        "text": "React / Next.js",
+        "code": "react",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g1"
       },
       {
-        "anyOf": [
-          {
-            "text": "Node.js",
-            "code": "nodejs"
-          },
-          {
-            "text": "NestJS",
-            "code": "nestjs"
-          }
-        ]
+        "text": "Next.js",
+        "code": "nextjs",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "Node.js",
+        "code": "nodejs",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      },
+      {
+        "text": "NestJS",
+        "code": "nestjs",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      }
+    ],
+    "groups": [
+      {
+        "id": "g1",
+        "min": 1
+      },
+      {
+        "id": "g2",
+        "min": 1
       }
     ],
     "requiredLanguages": [],
@@ -70,5 +91,10 @@
     "salary": null,
     "junkFlags": []
   },
-  "drafted": {}
+  "drafted": {
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
 }

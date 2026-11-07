@@ -21,40 +21,61 @@
     ],
     "roleKind": "fullstack_engineer",
     "seniority": "senior",
-    "yearsRequired": 7,
+    "yearsRequired": {
+      "min": 7,
+      "max": null
+    },
     "contractMonths": null,
-    "mainStack": [
+    "requirements": [
       {
-        "anyOf": [
-          {
-            "text": "React",
-            "code": "react"
-          },
-          {
-            "text": "NextJS",
-            "code": "nextjs"
-          }
-        ]
+        "text": "React",
+        "code": "react",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g1"
       },
       {
-        "anyOf": [
-          {
-            "text": "Node",
-            "code": "nodejs"
-          },
-          {
-            "text": "NestJS",
-            "code": "nestjs"
-          }
-        ]
+        "text": "NextJS",
+        "code": "nextjs",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g1"
       },
       {
-        "anyOf": [
-          {
-            "text": ".NET",
-            "code": "dotnet"
-          }
-        ]
+        "text": "Node",
+        "code": "nodejs",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      },
+      {
+        "text": "NestJS",
+        "code": "nestjs",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      },
+      {
+        "text": ".NET",
+        "code": "dotnet",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
+      }
+    ],
+    "groups": [
+      {
+        "id": "g1",
+        "min": 1
+      },
+      {
+        "id": "g2",
+        "min": 1
       }
     ],
     "requiredLanguages": [
@@ -72,5 +93,10 @@
     },
     "junkFlags": []
   },
-  "drafted": {}
+  "drafted": {
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
 }

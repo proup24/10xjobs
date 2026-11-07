@@ -26,34 +26,38 @@
     ],
     "roleKind": "backend_engineer",
     "seniority": "unstated",
-    "yearsRequired": 5,
+    "yearsRequired": {
+      "min": 5,
+      "max": null
+    },
     "contractMonths": null,
-    "mainStack": [
+    "requirements": [
       {
-        "anyOf": [
-          {
-            "text": "Node.js",
-            "code": "nodejs"
-          }
-        ]
+        "text": "Node.js",
+        "code": "nodejs",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
       },
       {
-        "anyOf": [
-          {
-            "text": "TypeScript",
-            "code": "typescript"
-          }
-        ]
+        "text": "TypeScript",
+        "code": "typescript",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
       },
       {
-        "anyOf": [
-          {
-            "text": "React",
-            "code": "react"
-          }
-        ]
+        "text": "React",
+        "code": "react",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
+    "groups": [],
     "requiredLanguages": [
       {
         "lang": "en",
@@ -69,5 +73,10 @@
     },
     "junkFlags": []
   },
-  "drafted": {}
+  "drafted": {
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
 }

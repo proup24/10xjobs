@@ -21,26 +21,30 @@
     ],
     "roleKind": "backend_engineer",
     "seniority": "unstated",
-    "yearsRequired": 6,
+    "yearsRequired": {
+      "min": 6,
+      "max": null
+    },
     "contractMonths": null,
-    "mainStack": [
+    "requirements": [
       {
-        "anyOf": [
-          {
-            "text": ".NET 6+",
-            "code": "dotnet"
-          }
-        ]
+        "text": ".NET 6+",
+        "code": "dotnet",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
       },
       {
-        "anyOf": [
-          {
-            "text": "C#",
-            "code": "csharp"
-          }
-        ]
+        "text": "C#",
+        "code": "csharp",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
+    "groups": [],
     "requiredLanguages": [],
     "sponsorship": "unstated",
     "salary": {
@@ -51,5 +55,10 @@
     },
     "junkFlags": []
   },
-  "drafted": {}
+  "drafted": {
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
 }

@@ -25,34 +25,38 @@
     ],
     "roleKind": "unstated",
     "seniority": "senior",
-    "yearsRequired": 5,
+    "yearsRequired": {
+      "min": 5,
+      "max": null
+    },
     "contractMonths": null,
-    "mainStack": [
+    "requirements": [
       {
-        "anyOf": [
-          {
-            "text": "Node",
-            "code": "nodejs"
-          }
-        ]
+        "text": "Node",
+        "code": "nodejs",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
       },
       {
-        "anyOf": [
-          {
-            "text": "Nest.js",
-            "code": "nestjs"
-          }
-        ]
+        "text": "Nest.js",
+        "code": "nestjs",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
       },
       {
-        "anyOf": [
-          {
-            "text": "React",
-            "code": "react"
-          }
-        ]
+        "text": "React",
+        "code": "react",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
+    "groups": [],
     "requiredLanguages": [
       {
         "lang": "en",
@@ -63,5 +67,10 @@
     "salary": null,
     "junkFlags": []
   },
-  "drafted": {}
+  "drafted": {
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
 }

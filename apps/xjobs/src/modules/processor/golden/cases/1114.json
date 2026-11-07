@@ -27,18 +27,22 @@
     ],
     "roleKind": "ai_engineer",
     "seniority": "unstated",
-    "yearsRequired": 3,
+    "yearsRequired": {
+      "min": 3,
+      "max": null
+    },
     "contractMonths": null,
-    "mainStack": [
+    "requirements": [
       {
-        "anyOf": [
-          {
-            "text": "Python",
-            "code": "python"
-          }
-        ]
+        "text": "Python",
+        "code": "python",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
+    "groups": [],
     "requiredLanguages": [],
     "sponsorship": "no",
     "salary": {
@@ -49,5 +53,10 @@
     },
     "junkFlags": []
   },
-  "drafted": {}
+  "drafted": {
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
 }

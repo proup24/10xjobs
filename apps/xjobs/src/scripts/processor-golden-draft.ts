@@ -12,7 +12,7 @@ import { readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadEnvironmentFiles } from '@xjobs/database/env';
 import {
-  type DraftedKey,
+  type LabelKey,
   GOLDEN_CASES_DIR,
   loadGolden,
 } from 'src/modules/processor/golden/golden';
@@ -21,7 +21,7 @@ import { AiSdkExtractionModel } from 'src/modules/processor/models/extraction.mo
 import type { PostingInput } from 'src/modules/processor/models/types';
 import { SEED } from 'src/modules/processor/vocab/seed-data';
 
-const KEYS: DraftedKey[] = [
+const KEYS: LabelKey[] = [
   'arrangement',
   'contractType',
   'isSoftwareEngineeringRole',
@@ -70,7 +70,7 @@ async function main(): Promise<void> {
       schema: SCHEMA,
     });
     cost += meta.costUsd;
-    const answer = output as Record<DraftedKey, unknown>;
+    const answer = output as Record<LabelKey, unknown>;
     for (const key of KEYS)
       c.drafted[key] = { value: answer[key], reviewed: false };
     const file = readdirSync(GOLDEN_CASES_DIR).find(

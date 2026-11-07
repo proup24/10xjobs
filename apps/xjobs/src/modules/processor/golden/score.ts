@@ -1,6 +1,12 @@
-import type { DecisionAnswer } from '../models/types';
+import type { NewAttempt } from '../repositories/processor.repository';
 import type { Confidence, DecidedBy, ExtractionDocument } from '../schema';
-import type { GoldenCase, GoldenFacts, GoldenPlace } from './golden';
+import type { Verdict, Verification } from '../schema/fact';
+import type {
+  GoldenCase,
+  GoldenFacts,
+  GoldenPlace,
+  GoldenRange,
+} from './golden';
 
 export const FACT_NAMES = [
   'arrangement',
@@ -40,6 +46,13 @@ export const BUCKETS = [
   { range: '0.9–1', from: 0.9, to: Infinity },
 ] as const;
 
+/** The closed fields Jev verifies: its questions, and the junk flags. */
+export const VERIFIED_FIELDS = [
+  ...(Object.keys(JEV_QUESTIONS) as JevQuestion[]),
+  'junkFlags',
+] as const;
+export type VerifiedField = (typeof VERIFIED_FIELDS)[number];
+
 /** Jev's accepted answers must be at least this share correct. */
 export const JEV_TARGET_ACCURACY = 0.98;
 /** Fewer accepted answers than this are too few to suggest a threshold from. */
@@ -61,15 +74,69 @@ interface FactScore {
   confidence: Confidence | null;
 }
 
+/** One answer of Jev's: its score, whether golden agrees, and whether it confirmed the generator. */
+export interface JevAnswerScore {
+  score: number;
+  correct: boolean;
+  agrees: boolean;
+}
+
+/** Per-case counts behind the requirement scores; summed over the run. */
+export interface RequirementCounts {
+  requiredHit: number;
+  requiredWant: number;
+  requiredGot: number;
+  niceHit: number;
+  niceWant: number;
+  niceGot: number;
+  kindRight: number;
+  kindTotal: number;
+  domainRight: number;
+  domainTotal: number;
+  yearsRight: number;
+  yearsTotal: number;
+}
+
 export interface FactScores {
   caseId: string;
   facts: Partial<Record<FactName, FactScore>>;
-  jev: Partial<Record<JevQuestion, { score: number; correct: boolean }>>;
+  jev: Partial<Record<JevQuestion, JevAnswerScore>>;
+  /** Jev's final verdict per closed field it verified. */
+  verdicts: Partial<Record<VerifiedField, Verdict>>;
+  /** Each final rejection with a golden value: was the generator's value wrong? */
+  rejections: { field: string; wrong: boolean }[];
+  requirements: RequirementCounts | null;
+  rounds: number;
+  generatorCalls: number;
+  verifierCalls: number;
   costUsd: number;
 }
 
+/** What one job's attempt rows add up to. */
+export interface CallStats {
+  generatorCalls: number;
+  verifierCalls: number;
+  costUsd: number;
+}
+
+const GENERATOR_STEPS: ReadonlySet<NewAttempt['step']> = new Set([
+  'generation',
+  'generation_retry',
+]);
+
+/** Generator and Jev calls, and their cost, from a job's attempt rows. */
+export function callStats(
+  rows: readonly Pick<NewAttempt, 'step' | 'costUsd'>[],
+): CallStats {
+  return {
+    generatorCalls: rows.filter((r) => GENERATOR_STEPS.has(r.step)).length,
+    verifierCalls: rows.filter((r) => r.step === 'verification').length,
+    costUsd: rows.reduce((sum, r) => sum + r.costUsd, 0),
+  };
+}
+
 type Envelope = { decidedBy: DecidedBy; confidence: Confidence };
-type DocFact = Envelope & { score: number | null };
+type Verified = { verification: Verification | null };
 
 const isUnstated = (v: unknown): boolean =>
   v === null || v === undefined || v === 'unstated';
@@ -92,6 +159,20 @@ function placeKeys(places: readonly GoldenPlace[]): string[] {
   });
 }
 
+/** A range with neither bound reads as no range. */
+const sameRange = (
+  a: GoldenRange | null | undefined,
+  b: GoldenRange | null | undefined,
+): boolean => {
+  const norm = (r: GoldenRange | null | undefined) =>
+    r && (r.min !== null || r.max !== null) ? r : null;
+  const x = norm(a);
+  const y = norm(b);
+  return x === null || y === null
+    ? x === y
+    : x.min === y.min && x.max === y.max;
+};
+
 const sameSalary = (
   a: GoldenFacts['salary'],
   b: GoldenFacts['salary'],
@@ -112,7 +193,7 @@ function reviewedLabel(c: GoldenCase, key: keyof GoldenCase['drafted']) {
 export function scoreCase(
   doc: ExtractionDocument,
   c: GoldenCase,
-  extra: { jevAnswers?: DecisionAnswer[]; costUsd?: number } = {},
+  extra: Partial<CallStats> = {},
 ): FactScores {
   const golden = expectedFacts(c);
   const facts: FactScores['facts'] = {};
@@ -129,7 +210,13 @@ export function scoreCase(
   return {
     caseId: c.id,
     facts,
-    jev: scoreJev(doc, golden, extra.jevAnswers),
+    jev: scoreJev(doc, golden),
+    verdicts: verdictsOf(doc),
+    rejections: scoreRejections(doc, golden),
+    requirements: scoreRequirements(doc, c),
+    rounds: doc.verification.rounds,
+    generatorCalls: extra.generatorCalls ?? 0,
+    verifierCalls: extra.verifierCalls ?? 0,
     costUsd: extra.costUsd ?? 0,
   };
 }
@@ -169,17 +256,22 @@ function scoreScalars(
     ['isSoftwareEngineeringRole', doc.isSoftwareEngineeringRole],
     ['engagement', doc.engagement],
     ['seniority', doc.seniority],
-    // Golden years are still a minimum (Task 8 converts them to ranges).
-    [
-      'yearsRequired',
-      { ...doc.yearsRequired, value: doc.yearsRequired.value?.min ?? null },
-    ],
     ['contractMonths', doc.contractMonths],
   ];
   for (const [name, fact] of scalars) {
     if (golden[name] === undefined) continue;
     put(facts, name, sameScalar(fact.value, golden[name]), fact);
   }
+  if (golden.yearsRequired !== undefined)
+    put(
+      facts,
+      'yearsRequired',
+      sameRange(
+        doc.yearsRequired.value,
+        golden.yearsRequired as GoldenRange | null,
+      ),
+      doc.yearsRequired,
+    );
 }
 
 function scoreRoleKind(
@@ -218,28 +310,100 @@ function scoreOpeningPlaces(
   };
 }
 
+/** Golden `main` technologies the document also lists as `main`. */
 function scoreMainStack(
   doc: ExtractionDocument,
   c: GoldenCase,
   facts: FactScores['facts'],
 ): void {
-  if (!c.expected.mainStack) return;
-  const want = c.expected.mainStack.flatMap((group) =>
-    group.anyOf.flatMap((term) => (term.code ? [term.code] : [])),
-  );
-  if (want.length === 0) return;
-  // `main` requirements read as the old anyOf groups; only their codes count.
-  const got = new Set(
-    (doc.techStack.value?.requirements ?? []).flatMap((r) =>
-      r.kind === 'main' && r.technology.code ? [r.technology.code] : [],
-    ),
-  );
+  if (!c.expected.requirements) return;
+  const want = codesOf(c.expected.requirements, ['main']);
+  if (want.size === 0) return;
+  const got = codesOf(docRequirements(doc), ['main']);
   facts.mainStack = {
-    correct: want.filter((term) => got.has(term)).length,
-    total: want.length,
+    correct: [...want].filter((code) => got.has(code)).length,
+    total: want.size,
     decidedBy: doc.techStack.decidedBy,
     confidence: doc.techStack.confidence,
   };
+}
+
+type Kind = 'main' | 'must' | 'nice';
+type CodedRequirement = {
+  code: string | null;
+  kind: Kind;
+  domain: string | null;
+  years: GoldenRange | null;
+};
+
+const docRequirements = (doc: ExtractionDocument): CodedRequirement[] =>
+  (doc.techStack.value?.requirements ?? []).map((r) => ({
+    code: r.technology.code,
+    kind: r.kind,
+    domain: r.domain,
+    years: r.years,
+  }));
+
+const codesOf = (
+  requirements: readonly CodedRequirement[],
+  kinds: readonly Kind[],
+): Set<string> =>
+  new Set(
+    requirements.flatMap((r) =>
+      r.code !== null && kinds.includes(r.kind) ? [r.code] : [],
+    ),
+  );
+
+const overlap = (a: Set<string>, b: Set<string>): number =>
+  [...a].filter((code) => b.has(code)).length;
+
+/**
+ * Technology recall and precision on required (main + must) and on nice, by
+ * code; kind on the technologies both list; domain and years only once a
+ * human has labeled them (`drafted.requirements` reviewed).
+ */
+function scoreRequirements(
+  doc: ExtractionDocument,
+  c: GoldenCase,
+): RequirementCounts | null {
+  const golden = c.expected.requirements;
+  if (!golden) return null;
+  const got = docRequirements(doc);
+  const required: Kind[] = ['main', 'must'];
+  const wantRequired = codesOf(golden, required);
+  const gotRequired = codesOf(got, required);
+  const wantNice = codesOf(golden, ['nice']);
+  const gotNice = codesOf(got, ['nice']);
+  const labeled = c.drafted.requirements?.reviewed ?? true;
+  const counts: RequirementCounts = {
+    requiredHit: overlap(wantRequired, gotRequired),
+    requiredWant: wantRequired.size,
+    requiredGot: gotRequired.size,
+    niceHit: overlap(wantNice, gotNice),
+    niceWant: wantNice.size,
+    niceGot: gotNice.size,
+    kindRight: 0,
+    kindTotal: 0,
+    domainRight: 0,
+    domainTotal: 0,
+    yearsRight: 0,
+    yearsTotal: 0,
+  };
+  const seen = new Set<string>();
+  for (const want of golden) {
+    if (want.code === null || seen.has(want.code)) continue;
+    seen.add(want.code);
+    const match = got.filter((r) => r.code === want.code);
+    if (match.length === 0) continue;
+    counts.kindTotal++;
+    if (match.some((r) => r.kind === want.kind)) counts.kindRight++;
+    if (!labeled) continue;
+    counts.domainTotal++;
+    if (match.some((r) => r.domain === want.domain)) counts.domainRight++;
+    counts.yearsTotal++;
+    if (match.some((r) => sameRange(r.years, want.years))) counts.yearsRight++;
+  }
+  return counts;
 }
 
 function scoreRequiredLanguages(
@@ -307,46 +471,110 @@ function scoreJunkFlags(
   );
 }
 
-/** Jev's own answers (when given), else the ones that stood in the document. */
-function scoreJev(
+const yesNo = (v: unknown): unknown =>
+  typeof v === 'boolean' ? (v ? 'yes' : 'no') : v;
+
+/** Each verified fact's envelope, and the generator's value as a Jev option. */
+function verifiedFacts(
   doc: ExtractionDocument,
-  golden: Partial<Record<string, unknown>>,
-  answers: DecisionAnswer[] | undefined,
-): FactScores['jev'] {
-  const fromDoc: Record<JevQuestion, { value: unknown; f: DocFact }> = {
-    arrangement: { value: doc.arrangement.value, f: doc.arrangement },
-    seniority: { value: doc.seniority.value, f: doc.seniority },
-    roleKind: { value: doc.position.value?.roleKind, f: doc.position },
-    contractType: { value: doc.contractType.value, f: doc.contractType },
-    engagement: { value: doc.engagement.value, f: doc.engagement },
+): Record<JevQuestion, { pick: unknown; f: Verified }> {
+  return {
+    arrangement: { pick: doc.arrangement.value, f: doc.arrangement },
+    seniority: { pick: doc.seniority.value, f: doc.seniority },
+    roleKind: { pick: doc.position.value?.roleKind, f: doc.position },
+    contractType: { pick: doc.contractType.value, f: doc.contractType },
+    engagement: { pick: doc.engagement.value, f: doc.engagement },
     isSoftwareEngineeringRole: {
-      value: doc.isSoftwareEngineeringRole.value,
+      pick: yesNo(doc.isSoftwareEngineeringRole.value),
       f: doc.isSoftwareEngineeringRole,
     },
     sponsorshipOffered: {
-      value: doc.workAuthorization.value?.sponsorship,
+      pick: doc.workAuthorization.value?.sponsorship,
       f: doc.workAuthorization,
     },
   };
+}
+
+/** The golden value of a verified field, as a Jev option; undefined when unlabeled. */
+function goldenPick(
+  golden: Partial<Record<string, unknown>>,
+  field: string,
+): unknown {
+  if (field.startsWith('junk:')) {
+    const flags = golden.junkFlags as string[] | undefined;
+    return (
+      flags && (flags.includes(field.slice('junk:'.length)) ? 'yes' : 'no')
+    );
+  }
+  const fact = JEV_QUESTIONS[field as JevQuestion];
+  return fact === undefined ? undefined : yesNo(golden[fact]);
+}
+
+/**
+ * Jev's final answer per question, from each fact's verification. An answer
+ * `agrees` when it confirmed the generator's value (or would have, at a
+ * lower threshold): the answers a threshold is set from.
+ */
+function scoreJev(
+  doc: ExtractionDocument,
+  golden: Partial<Record<string, unknown>>,
+): FactScores['jev'] {
   const out: FactScores['jev'] = {};
-  for (const q of Object.keys(JEV_QUESTIONS) as JevQuestion[]) {
-    const want = golden[JEV_QUESTIONS[q]];
-    if (want === undefined) continue;
-    if (answers) {
-      const answer = answers.find((a) => a.key === q);
-      if (answer && answer.value !== null)
-        out[q] = {
-          score: answer.score,
-          correct: sameScalar(answer.value, want),
-        };
-    } else {
-      const { value, f } = fromDoc[q];
-      // Only Jev's verification sets a fact's score.
-      if (f.score !== null)
-        out[q] = { score: f.score, correct: sameScalar(value, want) };
-    }
+  for (const [q, { pick, f }] of Object.entries(verifiedFacts(doc)) as [
+    JevQuestion,
+    { pick: unknown; f: Verified },
+  ][]) {
+    const want = goldenPick(golden, q);
+    const v = f.verification;
+    if (want === undefined || !v || v.score === null || v.jevPick === null)
+      continue;
+    out[q] = {
+      score: v.score,
+      correct: sameScalar(v.jevPick, want),
+      agrees:
+        v.verdict === 'confirmed' ||
+        (v.verdict === 'unconfirmed' && sameScalar(v.jevPick, pick)),
+    };
   }
   return out;
+}
+
+function verdictsOf(doc: ExtractionDocument): FactScores['verdicts'] {
+  const out: FactScores['verdicts'] = {};
+  for (const [q, { f }] of Object.entries(verifiedFacts(doc)) as [
+    JevQuestion,
+    { f: Verified },
+  ][])
+    if (f.verification) out[q] = f.verification.verdict;
+  if (doc.junkFlags.verification)
+    out.junkFlags = doc.junkFlags.verification.verdict;
+  return out;
+}
+
+/**
+ * The generator values Jev finally rejected (the dropped fields, and junk
+ * flags Jev saw that the generator did not), judged against golden.
+ */
+function scoreRejections(
+  doc: ExtractionDocument,
+  golden: Partial<Record<string, unknown>>,
+): FactScores['rejections'] {
+  const rejected = [
+    ...doc.verification.dropped.map((d) => ({
+      field: d.field,
+      value: d.generatorValue,
+    })),
+    ...doc.verification.missedJunkFlags.map((code) => ({
+      field: `junk:${code}`,
+      value: 'no',
+    })),
+  ];
+  return rejected.flatMap(({ field, value }) => {
+    const want = goldenPick(golden, field);
+    return want === undefined
+      ? []
+      : [{ field, wrong: !sameScalar(yesNo(value), want) }];
+  });
 }
 
 export interface FactReport {
@@ -354,9 +582,28 @@ export interface FactReport {
   scored: number;
   /** Null when no case is scored. */
   accuracy: number | null;
-  jevShare: number | null;
-  opusShare: number | null;
+  /** Shares of the decided values set by the generator and by ingest evidence. */
+  generatorShare: number | null;
   ingestShare: number | null;
+}
+
+/** Jev's final verdicts on one closed field, as shares of the `verified` cases. */
+export interface VerdictReport {
+  verified: number;
+  confirmed: number | null;
+  unconfirmed: number | null;
+  rejected: number | null;
+}
+
+/** Null where nothing was there to count. */
+export interface RequirementReport {
+  requiredRecall: number | null;
+  requiredPrecision: number | null;
+  niceRecall: number | null;
+  nicePrecision: number | null;
+  kindAccuracy: number | null;
+  domainAccuracy: number | null;
+  yearsAccuracy: number | null;
 }
 
 export interface QuestionReport {
@@ -367,11 +614,11 @@ export interface QuestionReport {
     accuracy: number | null;
   }[];
   /**
-   * Lowest score whose accepted Jev answers (at least
-   * `MIN_ACCEPTED_FOR_THRESHOLD`) are >= 98% correct; null when none.
+   * Lowest score whose confirmations (at least `MIN_ACCEPTED_FOR_THRESHOLD`)
+   * are >= 98% correct; null when none.
    */
   suggestedThreshold: number | null;
-  /** Jev answers at or above the suggested threshold. */
+  /** Confirmations at or above the suggested threshold. */
   acceptedAtSuggested: number;
 }
 
@@ -379,10 +626,19 @@ export interface EvalReport {
   cases: number;
   facts: Record<FactName, FactReport>;
   questions: Record<JevQuestion, QuestionReport>;
+  verdicts: Record<VerifiedField, VerdictReport>;
+  /** Final rejections with a golden value. */
+  rejections: number;
+  /** Of those, the share whose generator value golden says was wrong. */
+  rejectionPrecision: number | null;
+  requirements: RequirementReport;
   /** Share of `sure` facts (mainStack aside) the golden value contradicts. */
   sureContradicted: number;
   sureFacts: number;
   casesWithSureContradiction: number;
+  roundsPerJob: number;
+  generatorCallsPerJob: number;
+  verifierCallsPerJob: number;
   costPerJob: number;
   bars: Record<keyof typeof BARS, boolean>;
   pass: boolean;
@@ -422,7 +678,9 @@ export function summarize(scores: FactScores[]): EvalReport {
       const a = s.jev[q];
       return a ? [a] : [];
     });
-    const { threshold, accepted } = suggestThreshold(answers);
+    const { threshold, accepted } = suggestThreshold(
+      answers.filter((a) => a.agrees),
+    );
     questions[q] = {
       buckets: BUCKETS.map((b) => {
         const inBucket = answers.filter(
@@ -448,19 +706,66 @@ export function summarize(scores: FactScores[]): EvalReport {
     mainStack: (facts.mainStack.accuracy ?? 0) >= BARS.mainStack,
     sureContradicted: sureContradicted <= BARS.sureContradicted,
   };
+  const rejections = scores.flatMap((s) => s.rejections);
+  const perJob = (pick: (s: FactScores) => number): number =>
+    scores.length === 0
+      ? 0
+      : scores.reduce((n, s) => n + pick(s), 0) / scores.length;
   return {
     cases: scores.length,
     facts,
     questions,
+    verdicts: summarizeVerdicts(scores),
+    rejections: rejections.length,
+    rejectionPrecision: ratio(
+      rejections.filter((r) => r.wrong).length,
+      rejections.length,
+    ),
+    requirements: summarizeRequirements(scores),
     sureContradicted,
     sureFacts: sure,
     casesWithSureContradiction: wrongCases.size,
-    costPerJob:
-      scores.length === 0
-        ? 0
-        : scores.reduce((n, s) => n + s.costUsd, 0) / scores.length,
+    roundsPerJob: perJob((s) => s.rounds),
+    generatorCallsPerJob: perJob((s) => s.generatorCalls),
+    verifierCallsPerJob: perJob((s) => s.verifierCalls),
+    costPerJob: perJob((s) => s.costUsd),
     bars,
     pass: Object.values(bars).every(Boolean),
+  };
+}
+
+function summarizeVerdicts(
+  scores: FactScores[],
+): Record<VerifiedField, VerdictReport> {
+  const out = {} as Record<VerifiedField, VerdictReport>;
+  for (const field of VERIFIED_FIELDS) {
+    const verdicts = scores.flatMap((s) => {
+      const v = s.verdicts[field];
+      return v ? [v] : [];
+    });
+    const share = (v: Verdict) =>
+      ratio(verdicts.filter((x) => x === v).length, verdicts.length);
+    out[field] = {
+      verified: verdicts.length,
+      confirmed: share('confirmed'),
+      unconfirmed: share('unconfirmed'),
+      rejected: share('rejected'),
+    };
+  }
+  return out;
+}
+
+function summarizeRequirements(scores: FactScores[]): RequirementReport {
+  const sum = (key: keyof RequirementCounts): number =>
+    scores.reduce((n, s) => n + (s.requirements?.[key] ?? 0), 0);
+  return {
+    requiredRecall: ratio(sum('requiredHit'), sum('requiredWant')),
+    requiredPrecision: ratio(sum('requiredHit'), sum('requiredGot')),
+    niceRecall: ratio(sum('niceHit'), sum('niceWant')),
+    nicePrecision: ratio(sum('niceHit'), sum('niceGot')),
+    kindAccuracy: ratio(sum('kindRight'), sum('kindTotal')),
+    domainAccuracy: ratio(sum('domainRight'), sum('domainTotal')),
+    yearsAccuracy: ratio(sum('yearsRight'), sum('yearsTotal')),
   };
 }
 
@@ -496,8 +801,7 @@ function summarizeFacts(scores: FactScores[]): {
 
 function summarizeFact(entries: ScoredEntry[]): FactReport {
   const decided = entries.filter(({ e }) => e.decidedBy !== null);
-  // 'jev' no longer decides a value; its share stays for the report (Task 8).
-  const share = (by: DecidedBy | 'jev') =>
+  const share = (by: DecidedBy) =>
     ratio(decided.filter(({ e }) => e.decidedBy === by).length, decided.length);
   return {
     scored: entries.length,
@@ -505,8 +809,7 @@ function summarizeFact(entries: ScoredEntry[]): FactReport {
       entries.reduce((total, { e }) => total + e.correct, 0),
       entries.reduce((total, { e }) => total + e.total, 0),
     ),
-    jevShare: share('jev'),
-    opusShare: share('generator'),
+    generatorShare: share('generator'),
     ingestShare: share('ingest'),
   };
 }
@@ -525,10 +828,19 @@ function sureContradictions(entries: ScoredEntry[]): {
   };
 }
 
-/** One eval CLI line: a question's buckets, suggested threshold and accepted count. */
+/** One eval CLI line: a question's buckets, suggested threshold and confirmations accepted. */
 export function questionLine(q: string, r: QuestionReport): string {
   const buckets = r.buckets
     .map((b) => `${b.range} ${b.correct}/${b.total}`)
     .join('  ');
   return `${q.padEnd(26)} ${buckets}  -> ${r.suggestedThreshold ?? 'none'} (accepted ${r.acceptedAtSuggested})`;
+}
+
+/** Where `processor:eval` writes the report of a run with `generator`, next to `cases/`. */
+export function reportFileName(generator: string): string {
+  const slug = generator
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+  return `last-report.${slug}.json`;
 }

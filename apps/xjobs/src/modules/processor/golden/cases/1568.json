@@ -26,24 +26,41 @@
     ],
     "roleKind": "fullstack_engineer",
     "seniority": "senior",
-    "yearsRequired": 1,
+    "yearsRequired": {
+      "min": 1,
+      "max": null
+    },
     "contractMonths": null,
-    "mainStack": [
+    "requirements": [
       {
-        "anyOf": [
-          {
-            "text": "JavaScript",
-            "code": "javascript"
-          },
-          {
-            "text": "Python",
-            "code": "python"
-          },
-          {
-            "text": "Java",
-            "code": "java"
-          }
-        ]
+        "text": "JavaScript",
+        "code": "javascript",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "Python",
+        "code": "python",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "Java",
+        "code": "java",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      }
+    ],
+    "groups": [
+      {
+        "id": "g1",
+        "min": 1
       }
     ],
     "requiredLanguages": [],
@@ -51,5 +68,10 @@
     "salary": null,
     "junkFlags": []
   },
-  "drafted": {}
+  "drafted": {
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
 }

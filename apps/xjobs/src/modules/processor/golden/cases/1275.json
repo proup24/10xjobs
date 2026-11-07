@@ -23,36 +23,42 @@
     "seniority": "unstated",
     "yearsRequired": null,
     "contractMonths": null,
-    "mainStack": [
+    "requirements": [
       {
-        "anyOf": [
-          {
-            "text": "Rust",
-            "code": "rust"
-          }
-        ]
+        "text": "Rust",
+        "code": "rust",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
       },
       {
-        "anyOf": [
-          {
-            "text": "Tauri",
-            "code": null
-          }
-        ]
+        "text": "Tauri",
+        "code": null,
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
       },
       {
-        "anyOf": [
-          {
-            "text": "TypeScript/JavaScript",
-            "code": "typescript"
-          }
-        ]
+        "text": "TypeScript/JavaScript",
+        "code": "typescript",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
+    "groups": [],
     "requiredLanguages": [],
     "sponsorship": "unstated",
     "salary": null,
     "junkFlags": []
   },
-  "drafted": {}
+  "drafted": {
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
 }

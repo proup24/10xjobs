@@ -32,9 +32,13 @@
     ],
     "roleKind": "other",
     "seniority": "unstated",
-    "yearsRequired": 3,
+    "yearsRequired": {
+      "min": 3,
+      "max": null
+    },
     "contractMonths": null,
-    "mainStack": [],
+    "requirements": [],
+    "groups": [],
     "requiredLanguages": [
       {
         "lang": "en",
@@ -45,5 +49,10 @@
     "salary": null,
     "junkFlags": []
   },
-  "drafted": {}
+  "drafted": {
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
 }

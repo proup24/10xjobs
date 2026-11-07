@@ -21,34 +21,38 @@
     ],
     "roleKind": "unstated",
     "seniority": "mid",
-    "yearsRequired": 3,
+    "yearsRequired": {
+      "min": 3,
+      "max": null
+    },
     "contractMonths": 38,
-    "mainStack": [
+    "requirements": [
       {
-        "anyOf": [
-          {
-            "text": "TypeScript",
-            "code": "typescript"
-          }
-        ]
+        "text": "TypeScript",
+        "code": "typescript",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
       },
       {
-        "anyOf": [
-          {
-            "text": "Java",
-            "code": "java"
-          }
-        ]
+        "text": "Java",
+        "code": "java",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
       },
       {
-        "anyOf": [
-          {
-            "text": "Spring Boot",
-            "code": "spring"
-          }
-        ]
+        "text": "Spring Boot",
+        "code": "spring",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
+    "groups": [],
     "requiredLanguages": [
       {
         "lang": "de",
@@ -59,5 +63,10 @@
     "salary": null,
     "junkFlags": []
   },
-  "drafted": {}
+  "drafted": {
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
 }

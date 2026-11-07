@@ -28,34 +28,44 @@
     "seniority": "unstated",
     "yearsRequired": null,
     "contractMonths": null,
-    "mainStack": [
+    "requirements": [
       {
-        "anyOf": [
-          {
-            "text": "Node.js",
-            "code": "nodejs"
-          }
-        ]
+        "text": "Node.js",
+        "code": "nodejs",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
       },
       {
-        "anyOf": [
-          {
-            "text": "JavaScript",
-            "code": "javascript"
-          },
-          {
-            "text": "TypeScript",
-            "code": "typescript"
-          }
-        ]
+        "text": "JavaScript",
+        "code": "javascript",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g1"
       },
       {
-        "anyOf": [
-          {
-            "text": "React",
-            "code": "react"
-          }
-        ]
+        "text": "TypeScript",
+        "code": "typescript",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "React",
+        "code": "react",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
+      }
+    ],
+    "groups": [
+      {
+        "id": "g1",
+        "min": 1
       }
     ],
     "requiredLanguages": [],
@@ -68,5 +78,10 @@
     },
     "junkFlags": []
   },
-  "drafted": {}
+  "drafted": {
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
 }

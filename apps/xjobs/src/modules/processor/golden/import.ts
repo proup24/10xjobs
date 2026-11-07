@@ -8,11 +8,13 @@
  */
 import type { ListName } from '../vocab/lists';
 import type { SeedTerm } from '../vocab/seed-data';
-import type {
-  GoldenCase,
-  GoldenFacts,
-  GoldenPlace,
-  GoldenTerm,
+import {
+  type GoldenCase,
+  type GoldenFacts,
+  type GoldenPlace,
+  type GoldenTerm,
+  requirementsFromGroups,
+  yearsRange,
 } from './golden';
 
 type Seed = Record<ListName, SeedTerm[]>;
@@ -203,17 +205,22 @@ export function translateCase(raw: Json, seed: Seed): ImportResult {
     expected.seniority = quoted(sen.quote, text) ? sen.value : 'unstated';
   const years = e.yearsRequired;
   if (years)
-    expected.yearsRequired = quoted(years.quote, text)
-      ? (years.value ?? null)
-      : null;
+    expected.yearsRequired = yearsRange(
+      quoted(years.quote, text) ? (years.value ?? null) : null,
+    );
   const months = e.contractMonths;
   expected.contractMonths =
     typeof months === 'number' ? months : (months?.value ?? null);
 
   const groups: Json[] = e.mainStack?.groups ?? [];
-  expected.mainStack = quoted(e.mainStack?.quote, text)
-    ? groups.map((g) => ({ anyOf: (g.anyOf as Json[]).map(term) }))
-    : [];
+  Object.assign(
+    expected,
+    requirementsFromGroups({
+      main: quoted(e.mainStack?.quote, text)
+        ? groups.map((g) => ({ anyOf: (g.anyOf as Json[]).map(term) }))
+        : [],
+    }),
+  );
 
   expected.requiredLanguages = ((e.requiredLanguages ?? []) as Json[])
     .filter((l) => quoted(l.quote, text))
@@ -253,7 +260,8 @@ export function translateCase(raw: Json, seed: Seed): ImportResult {
         },
       },
       expected,
-      drafted: {},
+      // Requirement domains and years are labeled by hand.
+      drafted: { requirements: { value: null, reviewed: false } },
     },
   };
 }

@@ -27,34 +27,38 @@
     ],
     "roleKind": "fullstack_engineer",
     "seniority": "unstated",
-    "yearsRequired": 3,
+    "yearsRequired": {
+      "min": 3,
+      "max": null
+    },
     "contractMonths": null,
-    "mainStack": [
+    "requirements": [
       {
-        "anyOf": [
-          {
-            "text": "TypeScript",
-            "code": "typescript"
-          }
-        ]
+        "text": "TypeScript",
+        "code": "typescript",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
       },
       {
-        "anyOf": [
-          {
-            "text": "HTML",
-            "code": "html"
-          }
-        ]
+        "text": "HTML",
+        "code": "html",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
       },
       {
-        "anyOf": [
-          {
-            "text": "CSS",
-            "code": "css"
-          }
-        ]
+        "text": "CSS",
+        "code": "css",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
+    "groups": [],
     "requiredLanguages": [],
     "sponsorship": "unstated",
     "salary": {
@@ -65,5 +69,10 @@
     },
     "junkFlags": []
   },
-  "drafted": {}
+  "drafted": {
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
 }

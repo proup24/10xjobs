@@ -21,26 +21,30 @@
     ],
     "roleKind": "frontend_engineer",
     "seniority": "unstated",
-    "yearsRequired": 6,
+    "yearsRequired": {
+      "min": 6,
+      "max": null
+    },
     "contractMonths": null,
-    "mainStack": [
+    "requirements": [
       {
-        "anyOf": [
-          {
-            "text": "JavaScript",
-            "code": "javascript"
-          }
-        ]
+        "text": "JavaScript",
+        "code": "javascript",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
       },
       {
-        "anyOf": [
-          {
-            "text": "React",
-            "code": "react"
-          }
-        ]
+        "text": "React",
+        "code": "react",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
+    "groups": [],
     "requiredLanguages": [],
     "sponsorship": "no",
     "salary": {
@@ -51,5 +55,10 @@
     },
     "junkFlags": []
   },
-  "drafted": {}
+  "drafted": {
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
 }

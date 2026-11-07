@@ -51,26 +51,30 @@
     ],
     "roleKind": "devrel",
     "seniority": "unstated",
-    "yearsRequired": 5,
+    "yearsRequired": {
+      "min": 5,
+      "max": null
+    },
     "contractMonths": null,
-    "mainStack": [
+    "requirements": [
       {
-        "anyOf": [
-          {
-            "text": "TypeScript",
-            "code": "typescript"
-          }
-        ]
+        "text": "TypeScript",
+        "code": "typescript",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
       },
       {
-        "anyOf": [
-          {
-            "text": "Next.js",
-            "code": "nextjs"
-          }
-        ]
+        "text": "Next.js",
+        "code": "nextjs",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
+    "groups": [],
     "requiredLanguages": [],
     "sponsorship": "unstated",
     "salary": {
@@ -81,5 +85,10 @@
     },
     "junkFlags": []
   },
-  "drafted": {}
+  "drafted": {
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
 }

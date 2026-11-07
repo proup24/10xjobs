@@ -21,22 +21,31 @@
     ],
     "roleKind": "backend_engineer",
     "seniority": "staff",
-    "yearsRequired": 8,
+    "yearsRequired": {
+      "min": 8,
+      "max": null
+    },
     "contractMonths": null,
-    "mainStack": [
+    "requirements": [
       {
-        "anyOf": [
-          {
-            "text": "Java",
-            "code": "java"
-          }
-        ]
+        "text": "Java",
+        "code": "java",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
+    "groups": [],
     "requiredLanguages": [],
     "sponsorship": "unstated",
     "salary": null,
     "junkFlags": []
   },
-  "drafted": {}
+  "drafted": {
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
 }

@@ -21,40 +21,57 @@
     ],
     "roleKind": "fullstack_engineer",
     "seniority": "unstated",
-    "yearsRequired": 6,
+    "yearsRequired": {
+      "min": 6,
+      "max": null
+    },
     "contractMonths": null,
-    "mainStack": [
+    "requirements": [
       {
-        "anyOf": [
-          {
-            "text": "C#",
-            "code": "csharp"
-          }
-        ]
+        "text": "C#",
+        "code": "csharp",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
       },
       {
-        "anyOf": [
-          {
-            "text": ".NET Core",
-            "code": "dotnet"
-          }
-        ]
+        "text": ".NET Core",
+        "code": "dotnet",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
       },
       {
-        "anyOf": [
-          {
-            "text": "React",
-            "code": "react"
-          },
-          {
-            "text": "Angular",
-            "code": "angular"
-          },
-          {
-            "text": "Vue.js",
-            "code": "vue"
-          }
-        ]
+        "text": "React",
+        "code": "react",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "Angular",
+        "code": "angular",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "Vue.js",
+        "code": "vue",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      }
+    ],
+    "groups": [
+      {
+        "id": "g1",
+        "min": 1
       }
     ],
     "requiredLanguages": [],
@@ -62,5 +79,10 @@
     "salary": null,
     "junkFlags": []
   },
-  "drafted": {}
+  "drafted": {
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
 }

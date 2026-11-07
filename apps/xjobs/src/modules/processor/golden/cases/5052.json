@@ -21,26 +21,30 @@
     ],
     "roleKind": "mobile_engineer",
     "seniority": "unstated",
-    "yearsRequired": 3,
+    "yearsRequired": {
+      "min": 3,
+      "max": null
+    },
     "contractMonths": null,
-    "mainStack": [
+    "requirements": [
       {
-        "anyOf": [
-          {
-            "text": "React Native",
-            "code": "react_native"
-          }
-        ]
+        "text": "React Native",
+        "code": "react_native",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
       },
       {
-        "anyOf": [
-          {
-            "text": "TypeScript",
-            "code": "typescript"
-          }
-        ]
+        "text": "TypeScript",
+        "code": "typescript",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
+    "groups": [],
     "requiredLanguages": [
       {
         "lang": "en",
@@ -51,5 +55,10 @@
     "salary": null,
     "junkFlags": []
   },
-  "drafted": {}
+  "drafted": {
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
 }

@@ -26,34 +26,38 @@
     ],
     "roleKind": "fullstack_engineer",
     "seniority": "mid",
-    "yearsRequired": 4,
+    "yearsRequired": {
+      "min": 4,
+      "max": null
+    },
     "contractMonths": null,
-    "mainStack": [
+    "requirements": [
       {
-        "anyOf": [
-          {
-            "text": "C#",
-            "code": "csharp"
-          }
-        ]
+        "text": "C#",
+        "code": "csharp",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
       },
       {
-        "anyOf": [
-          {
-            "text": ".Net",
-            "code": "dotnet"
-          }
-        ]
+        "text": ".Net",
+        "code": "dotnet",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
       },
       {
-        "anyOf": [
-          {
-            "text": "Angular",
-            "code": "angular"
-          }
-        ]
+        "text": "Angular",
+        "code": "angular",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
+    "groups": [],
     "requiredLanguages": [
       {
         "lang": "en",
@@ -64,5 +68,10 @@
     "salary": null,
     "junkFlags": []
   },
-  "drafted": {}
+  "drafted": {
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
 }
