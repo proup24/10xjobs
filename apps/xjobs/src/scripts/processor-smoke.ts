@@ -87,7 +87,7 @@ async function main(): Promise<void> {
     pricing,
   ).extract(POSTING, {
     systemPrompt: systemPrompt(),
-    jsonSchema: modelOutputJsonSchema(options, []),
+    jsonSchema: modelOutputJsonSchema(options),
   });
   console.log(
     `\n${config.extractionModel}: $${extraction.meta.costUsd.toFixed(6)}, ${extraction.meta.inputTokens} in (${extraction.meta.cachedInputTokens} cached), ${extraction.meta.outputTokens} out`,

@@ -18,7 +18,6 @@ import { deriveTypedColumns, type TypedColumns } from '../rules/typed-columns';
 import { needsReview } from '../rules/validate';
 import type { ExtractionDocument } from '../schema';
 import { AttemptLog } from './attempt-log';
-import { DecisionService } from './decision.service';
 import { ExtractionPipeline } from './extraction-pipeline.service';
 import { ExtractionService } from './extraction.service';
 import { ExtractionStore } from './extraction-store.service';
@@ -86,7 +85,7 @@ export class ProcessorBlockedError extends Error {
  *   1. ProcessorGuard        may model calls start? (budget, provider pause)
  *   2. claim                 pending → processing, or someone else has it
  *   3. load + reuse          a closed job, or the same input seen before, needs no call
- *   4. ExtractionPipeline    Jev → Opus → checks, into one document
+ *   4. ExtractionPipeline    generator → checks, into one document
  *   5. ExtractionStore       save the extraction, its attempts and vocabulary
  *   6. finish                processed / pending (retry) / failed, per decideFailure
  */
@@ -359,9 +358,8 @@ export function createProcessorService(
     repo,
     vocab,
     new ExtractionPipeline(
-      new DecisionService(deps.decision, config),
       new ExtractionService(deps.extraction, config),
-      new FactAssembler(config),
+      new FactAssembler(),
     ),
     new ExtractionStore(repo, vocab, config),
     config,

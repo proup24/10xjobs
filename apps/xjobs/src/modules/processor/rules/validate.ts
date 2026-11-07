@@ -75,10 +75,10 @@ export function checkQuotes(
     } else if (
       fact.quote === '' &&
       fact.confidence === 'sure' &&
-      fact.decidedBy === 'opus' &&
+      fact.decidedBy === 'generator' &&
       isEstablished(name, fact.value)
     ) {
-      // Opus established a value without quoting the posting: not supported.
+      // The generator established a value without quoting the posting: not supported.
       fact.confidence = 'unsure';
     }
   }
@@ -90,7 +90,7 @@ export function checkQuotes(
     } else if (
       opening.quote === '' &&
       opening.confidence === 'sure' &&
-      opening.decidedBy === 'opus' &&
+      opening.decidedBy === 'generator' &&
       opening.places.length > 0
     ) {
       opening.confidence = 'unsure';
@@ -104,7 +104,7 @@ export function checkQuotes(
     } else if (
       req.quote === '' &&
       req.confidence === 'sure' &&
-      out.techStack.decidedBy === 'opus'
+      out.techStack.decidedBy === 'generator'
     ) {
       // A requirement with no quote from the posting is not supported.
       req.confidence = 'unsure';

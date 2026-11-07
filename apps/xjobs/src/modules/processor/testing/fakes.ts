@@ -20,6 +20,7 @@ import {
   type NewExtraction,
   type ProcessingCounts,
   ProcessorRepository,
+  readStoredData,
   type ReprocessFilter,
   type ReuseKey,
 } from '../repositories/processor.repository';
@@ -421,7 +422,7 @@ export class MemoryProcessorRepository extends ProcessorRepository {
             createdAt: extraction.createdAt,
             needsReview: extraction.needsReview,
             costUsd: extraction.costUsd,
-            data: extraction.data,
+            ...readStoredData(extraction.data),
           }
         : null,
     };

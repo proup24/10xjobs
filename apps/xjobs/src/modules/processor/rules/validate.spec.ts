@@ -85,12 +85,10 @@ describe('checkQuotes without a quote', () => {
     expect(r.doc.seniority.confidence).toBe('unsure');
   });
 
-  it('leaves Jev and ingest facts alone', () => {
+  it('leaves ingest facts alone', () => {
     const doc = quietDocument();
-    doc.seniority.decidedBy = 'jev';
     doc.contractType.decidedBy = 'ingest';
     const r = checkQuotes(doc, input('x'));
-    expect(r.doc.seniority.confidence).toBe('sure');
     expect(r.doc.contractType.confidence).toBe('sure');
   });
 

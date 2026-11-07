@@ -1,44 +1,14 @@
-import { thresholdFor } from '../config/thresholds';
-import type {
-  DecisionAnswer,
-  DecisionQuestion,
-  Evidence,
-  PostingInput,
-} from '../models/types';
+import type { Evidence, PostingInput } from '../models/types';
 import type { ExtractionDocument, Fact, ModelOutput } from '../schema';
 import { allowedCodes, contradictsEvidence } from './evidence';
 
 type Conflict = ExtractionDocument['conflicts'][number];
-type Answer = string | boolean | null;
+type IngestKey = 'seniority' | 'contractType';
 
-const INGEST_FIELD = {
-  seniority: (e: Evidence) => e.experienceLevel,
-  contractType: (e: Evidence) => e.contractType,
-} as const;
-
-function jevStands(
-  answer: DecisionAnswer | undefined,
-  decisionModel: string,
-  evidence: Evidence,
-): boolean {
-  if (!answer || answer.value === null) return false;
-  const threshold = thresholdFor(decisionModel, answer.key);
-  if (threshold === null || answer.score < threshold) return false;
-  return !contradictsEvidence(answer.key, answer.value, evidence);
-}
-
-/** Closed questions Opus must answer: low Jev confidence, no answer, or a contradiction. */
-export function selectFallback(
-  answers: DecisionAnswer[],
-  questions: DecisionQuestion[],
-  evidence: Evidence,
-  decisionModel: string,
-): DecisionQuestion[] {
-  const byKey = new Map(answers.map((a) => [a.key, a]));
-  return questions.filter(
-    (q) => !jevStands(byKey.get(q.key), decisionModel, evidence),
-  );
-}
+const INGEST_FIELD: Record<IngestKey, (e: Evidence) => string | null> = {
+  seniority: (e) => e.experienceLevel,
+  contractType: (e) => e.contractType,
+};
 
 interface ModelFact<T> {
   value: T | null;
@@ -46,215 +16,122 @@ interface ModelFact<T> {
   confidence: 'sure' | 'unsure';
 }
 
+/**
+ * The generator's output as an extraction document, before verification:
+ * every fact is the generator's, unverified, except where the LinkedIn
+ * evidence fills a gap (`seniority`/`contractType` the posting leaves
+ * unstated, a salary the posting omits, an opening from the listing).
+ * A generator value the evidence contradicts is kept and recorded as a
+ * conflict.
+ */
 export function resolveFacts(args: {
   output: ModelOutput;
-  answers: DecisionAnswer[];
-  fallback: DecisionQuestion[];
   input: PostingInput;
-  models: { decision: string; extraction: string };
+  generatorModel: string;
 }): ExtractionDocument {
-  const { output, answers, input, models } = args;
+  const { output, input, generatorModel } = args;
   const evidence = input.evidence;
-  const answerByKey = new Map(answers.map((a) => [a.key, a]));
-  const fallbackKeys = new Set(args.fallback.map((q) => q.key));
   const conflicts: Conflict[] = [];
-  const opusFallback = output.fallback as Record<
-    string,
-    ModelFact<string | boolean> | undefined
-  >;
 
-  const openFact = <T>(f: ModelFact<T>): Fact<T> => ({
+  const generated = <T>(f: ModelFact<T>): Fact<T> => ({
     value: f.value,
     confidence: f.confidence,
-    decidedBy: 'opus',
+    decidedBy: 'generator',
     score: null,
     quote: f.quote,
-    model: models.extraction,
+    model: generatorModel,
+    verification: null,
   });
 
-  /** One closed fact: Jev if he stands, else Opus, else the ingest evidence. */
-  const closed = <T extends Answer>(
-    key: DecisionQuestion['key'],
-    field: string,
-    topLevel: ModelFact<T>,
-  ): Fact<T> => {
-    const answer = answerByKey.get(key);
-    const threshold = thresholdFor(models.decision, key);
-    const confidentJev =
-      !!answer &&
-      answer.value !== null &&
-      threshold !== null &&
-      answer.score >= threshold;
-    const jevContradicts =
-      !!answer && contradictsEvidence(key, answer.value, evidence);
-
-    const jevStands = !fallbackKeys.has(key) && confidentJev && !jevContradicts;
-    const opus = (opusFallback[key] as ModelFact<T> | undefined) ?? topLevel;
-    const score = answer?.score ?? null;
-    const standing: Fact<T> = jevStands
-      ? {
-          value: answer.value as T,
-          confidence: 'sure',
-          decidedBy: 'jev',
-          score: answer.score,
-          quote: '',
-          model: models.decision,
-        }
-      : {
-          value: opus.value,
-          confidence: opus.confidence,
-          decidedBy: 'opus',
-          score,
-          quote: opus.quote,
-          model: models.extraction,
-        };
-
-    // Evidence only: the posting says nothing, whoever decided that, and
-    // LinkedIn states a value.
-    if (standing.value === null || standing.value === 'unstated') {
+  /** The generator's value; the evidence when the posting leaves it unstated. */
+  const withIngest = (key: IngestKey, f: ModelFact<string>): Fact<string> => {
+    if (f.value === null || f.value === 'unstated') {
       const ingestValue = ingestFallback(key, evidence);
-      if (ingestValue !== null) {
-        recordConflict(field, key, answer, confidentJev, ingestValue);
+      if (ingestValue !== null)
         return {
-          value: ingestValue as T,
+          value: ingestValue,
           confidence: 'unsure',
           decidedBy: 'ingest',
           score: null,
           quote: '',
           model: null,
+          verification: null,
         };
-      }
-    }
-    if (!jevStands)
-      recordConflict(field, key, answer, confidentJev, standing.value);
-    return standing;
-  };
-
-  // Rule: an unconfident Jev answer that Opus overrode is not a conflict;
-  // the standing answer (Opus's, or the ingest fallback) is what gets compared.
-  const recordConflict = (
-    field: string,
-    key: DecisionQuestion['key'],
-    answer: DecisionAnswer | undefined,
-    confidentJev: boolean,
-    finalValue: unknown,
-  ): void => {
-    const ingest =
-      key === 'seniority' || key === 'contractType'
-        ? INGEST_FIELD[key](evidence)
-        : null;
-    if (ingest === null) return;
-    if (
-      answer &&
-      confidentJev &&
-      contradictsEvidence(key, answer.value, evidence)
-    ) {
+    } else if (contradictsEvidence(key, f.value, evidence)) {
       conflicts.push({
-        field,
-        ingestValue: ingest,
-        extractedValue: answer.value,
-      });
-    } else if (contradictsEvidence(key, finalValue, evidence)) {
-      conflicts.push({
-        field,
-        ingestValue: ingest,
-        extractedValue: finalValue,
+        field: key,
+        ingestValue: INGEST_FIELD[key](evidence),
+        extractedValue: f.value,
       });
     }
+    return generated(f);
   };
 
-  const roleKind = closed<string | null>('roleKind', 'roleKind', {
-    ...output.position,
-    value: output.position.value?.roleKind ?? null,
-  } as ModelFact<string | null>);
-  const position: Fact<{ roleKind: string; title: string }> = {
-    ...roleKind,
-    value:
-      roleKind.value === null
-        ? output.position.value
-        : {
-            roleKind: roleKind.value,
-            title: output.position.value?.title ?? '',
-          },
-    confidence:
-      roleKind.confidence === 'unsure' ||
-      output.position.confidence === 'unsure'
-        ? 'unsure'
-        : 'sure',
-    quote: roleKind.quote || output.position.quote,
-  };
-
-  const junkFlags = resolveJunk(
-    output,
-    answerByKey,
-    fallbackKeys,
-    opusFallback,
-    models,
-  );
-  const workAuthorization = resolveSponsorship(
-    openFact(output.workAuthorization),
-    closed<string | null>('sponsorshipOffered', 'sponsorshipOffered', {
-      value: null,
-      quote: '',
-      confidence: 'sure',
-    }),
-    answerByKey.has('sponsorshipOffered') ||
-      fallbackKeys.has('sponsorshipOffered'),
-  );
+  const seniority = withIngest('seniority', output.seniority);
+  const contractType = withIngest('contractType', output.contractType);
 
   return {
-    position,
-    isSoftwareEngineeringRole: closed<boolean | null>(
-      'isSoftwareEngineeringRole',
-      'isSoftwareEngineeringRole',
-      output.isSoftwareEngineeringRole,
-    ),
-    seniority: closed('seniority', 'seniority', output.seniority),
-    yearsRequired: openFact(output.yearsRequired),
-    arrangement: closed('arrangement', 'arrangement', output.arrangement),
+    position: generated(output.position),
+    isSoftwareEngineeringRole: generated(output.isSoftwareEngineeringRole),
+    seniority,
+    yearsRequired: generated(output.yearsRequired),
+    arrangement: generated(output.arrangement),
     openings: output.openings.map(({ fromListing, ...o }) => ({
       ...o,
       places: o.places.map((p) =>
         p.kind === 'city' ? { ...p, cityId: null } : p,
       ),
       confidence: fromListing ? ('unsure' as const) : o.confidence,
-      decidedBy: fromListing ? ('ingest' as const) : ('opus' as const),
+      decidedBy: fromListing ? ('ingest' as const) : ('generator' as const),
     })),
-    contractType: closed('contractType', 'contractType', output.contractType),
-    engagement: closed('engagement', 'engagement', output.engagement),
-    contractMonths: openFact(output.contractMonths),
-    salary: resolveSalary(openFact(output.salary), evidence, conflicts),
+    contractType,
+    engagement: generated(output.engagement),
+    contractMonths: generated(output.contractMonths),
+    salary: resolveSalary(generated(output.salary), evidence, conflicts),
     // The stack is quoted per requirement; its envelope quote is unused.
-    techStack: { ...openFact(output.techStack), quote: '' },
-    requiredLanguages: openFact(output.requiredLanguages),
-    workAuthorization,
-    junkFlags,
+    techStack: { ...generated(output.techStack), quote: '' },
+    requiredLanguages: generated(output.requiredLanguages),
+    workAuthorization: resolveSponsorship(
+      generated(output.workAuthorization),
+      null,
+    ),
+    junkFlags: resolveJunk(output, generatorModel),
     conflicts,
     unmatched: [],
     truncated: input.truncated,
-    models: { decision: models.decision, extraction: models.extraction },
-  } as ExtractionDocument;
+    verification: {
+      rounds: 1,
+      regenerationInvalid: false,
+      dropped: [],
+      missedJunkFlags: [],
+    },
+    models: { verifier: null, generator: generatorModel },
+  };
 }
 
 /** The evidence value when it maps to exactly one code (contractType: its first code). */
-function ingestFallback(
-  key: DecisionQuestion['key'],
-  evidence: Evidence,
-): string | null {
-  if (key !== 'seniority' && key !== 'contractType') return null;
+function ingestFallback(key: IngestKey, evidence: Evidence): string | null {
   const allowed = allowedCodes(key, evidence);
   if (!allowed || allowed.length === 0) return null;
   if (key === 'seniority' && allowed.length !== 1) return null;
   return allowed[0];
 }
 
+/**
+ * The posting's work authorization, with a separately decided sponsorship
+ * answer merged in when there is one. The generator states sponsorship inside
+ * `workAuthorization`, so until verification supplies its own answer the
+ * generator's stands.
+ */
 function resolveSponsorship(
   open: Fact<ExtractionDocument['workAuthorization']['value'] & object>,
-  sponsorship: Fact<string | null>,
-  asked: boolean,
+  sponsorship: Fact<string | null> | null,
 ): ExtractionDocument['workAuthorization'] {
-  const wanted = sponsorship.value;
-  if (!asked || (wanted !== 'yes' && wanted !== 'no' && wanted !== 'unstated'))
+  const wanted = sponsorship?.value;
+  if (
+    !sponsorship ||
+    (wanted !== 'yes' && wanted !== 'no' && wanted !== 'unstated')
+  )
     return open;
   return {
     ...open,
@@ -269,72 +146,23 @@ function resolveSponsorship(
     decidedBy: sponsorship.decidedBy,
     score: sponsorship.score,
     model: sponsorship.model,
+    verification: sponsorship.verification,
   };
 }
 
+/** The junk flags the generator raised, each with its quote. */
 function resolveJunk(
   output: ModelOutput,
-  answerByKey: Map<DecisionAnswer['key'], DecisionAnswer>,
-  fallbackKeys: Set<DecisionQuestion['key']>,
-  opusFallback: Record<string, ModelFact<string | boolean> | undefined>,
-  models: { decision: string; extraction: string },
-): ExtractionDocument['junkFlags'] {
-  const flags = new Map(
-    (output.junkFlags.value ?? []).map((f) => [f.code, f] as const),
-  );
-  const keys = new Set<string>([
-    ...[...answerByKey.keys()].filter((k) => k.startsWith('junk:')),
-    ...[...fallbackKeys].filter((k) => k.startsWith('junk:')),
-  ]);
-  let downgraded = false;
-  for (const key of keys) {
-    const code = key.slice('junk:'.length);
-    const answer = answerByKey.get(key as DecisionAnswer['key']);
-    const threshold = thresholdFor(
-      models.decision,
-      key as DecisionAnswer['key'],
-    );
-    const jevStands =
-      !fallbackKeys.has(key as DecisionQuestion['key']) &&
-      !!answer &&
-      typeof answer.value === 'boolean' &&
-      threshold !== null &&
-      answer.score >= threshold;
-    const value = jevStands
-      ? (answer.value as boolean)
-      : (opusFallback[key]?.value ?? flags.has(code));
-    const unsureOpus = !jevStands && opusFallback[key]?.confidence === 'unsure';
-    if (value === true && !flags.has(code)) {
-      downgraded ||= unsureOpus;
-      flags.set(code, {
-        code,
-        quote: jevStands ? '' : (opusFallback[key]?.quote ?? ''),
-      });
-    } else if (value === false) {
-      downgraded ||= unsureOpus && flags.has(code);
-      flags.delete(code);
-    }
-  }
-  return {
-    ...openJunk(output, models.extraction),
-    confidence:
-      downgraded || output.junkFlags.confidence === 'unsure'
-        ? 'unsure'
-        : 'sure',
-    value: [...flags.values()],
-  };
-}
-
-function openJunk(
-  output: ModelOutput,
   model: string,
-): Omit<ExtractionDocument['junkFlags'], 'value'> {
+): ExtractionDocument['junkFlags'] {
   return {
+    value: output.junkFlags.value,
     confidence: output.junkFlags.confidence,
-    decidedBy: 'opus',
+    decidedBy: 'generator',
     score: null,
     quote: output.junkFlags.quote,
     model,
+    verification: null,
   };
 }
 
@@ -400,5 +228,6 @@ function resolveSalary(
     score: null,
     quote: '',
     model: null,
+    verification: null,
   };
 }

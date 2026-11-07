@@ -81,7 +81,6 @@ describe('scoreCase', () => {
 
   it('takes Jev answers from the document when none are passed', () => {
     const doc = fixtureDocument();
-    doc.seniority.decidedBy = 'jev';
     doc.seniority.score = 0.9;
     expect(scoreCase(doc, matchingCase()).jev.seniority).toEqual({
       score: 0.9,

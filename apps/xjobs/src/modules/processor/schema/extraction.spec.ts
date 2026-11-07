@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
 import { LIST_NAMES } from '../vocab/lists';
-import type { DecisionQuestion } from '../models/types';
-import { extractionDocumentSchema } from './extraction';
+import {
+  EXTRACTION_SCHEMA_VERSION,
+  extractionDocumentSchema,
+  parseStoredDocument,
+} from './extraction';
+import { extractionDocumentV1Schema } from './extraction-v1';
+import { factSchema } from './fact';
 import { fixtureDocument } from './fixture.testing';
+import { fixtureDocumentV1 } from './fixture-v1.testing';
 import {
   modelOutputJsonSchema,
   modelOutputSchema,
@@ -13,14 +20,6 @@ const options = Object.fromEntries(
   LIST_NAMES.map((n) => [n, ['a', 'b']]),
 ) as ListOptions;
 options.seniorities = ['junior', 'senior'];
-const fallback: DecisionQuestion[] = [
-  {
-    key: 'seniority',
-    kind: 'choice',
-    options: ['junior', 'senior'],
-    instructions: 'x',
-  },
-];
 
 describe('extractionDocumentSchema', () => {
   it('parses a full valid document', () => {
@@ -45,6 +44,112 @@ describe('extractionDocumentSchema', () => {
     const doc = fixtureDocument();
     doc.openings[0].arrangements = [];
     expect(extractionDocumentSchema.safeParse(doc).success).toBe(false);
+  });
+
+  it('is schema version 2', () => {
+    expect(EXTRACTION_SCHEMA_VERSION).toBe(2);
+  });
+
+  it('takes a document verification summary and the verifier and generator models', () => {
+    const doc = fixtureDocument();
+    doc.verification = {
+      rounds: 2,
+      regenerationInvalid: true,
+      dropped: [{ field: 'seniority', generatorValue: 'senior', jevPick: 'mid' }],
+      missedJunkFlags: ['spam'],
+    };
+    doc.models = { verifier: 'typesafe/jev-1.14', generator: 'm' };
+    expect(extractionDocumentSchema.safeParse(doc).success).toBe(true);
+    doc.verification.rounds = 0;
+    expect(extractionDocumentSchema.safeParse(doc).success).toBe(false);
+  });
+
+  it('rejects a v1 document', () => {
+    expect(extractionDocumentSchema.safeParse(fixtureDocumentV1()).success).toBe(
+      false,
+    );
+  });
+});
+
+describe('fact envelope', () => {
+  const schema = factSchema(z.string());
+  const fact = {
+    value: 'senior',
+    confidence: 'sure',
+    decidedBy: 'generator',
+    score: null,
+    quote: '',
+    model: 'm',
+    verification: null,
+  };
+
+  it('is decided by the generator or the ingest evidence only', () => {
+    expect(schema.safeParse(fact).success).toBe(true);
+    expect(schema.safeParse({ ...fact, decidedBy: 'ingest' }).success).toBe(
+      true,
+    );
+    expect(schema.safeParse({ ...fact, decidedBy: 'jev' }).success).toBe(false);
+    expect(schema.safeParse({ ...fact, decidedBy: 'opus' }).success).toBe(
+      false,
+    );
+  });
+
+  it("carries Jev's verification, checked", () => {
+    const verification = {
+      verdict: 'confirmed',
+      score: 0.9,
+      jevPick: 'senior',
+      rounds: 1,
+    };
+    expect(schema.safeParse({ ...fact, verification }).success).toBe(true);
+    expect(
+      schema.safeParse({
+        ...fact,
+        verification: { ...verification, verdict: 'maybe' },
+      }).success,
+    ).toBe(false);
+    expect(
+      schema.safeParse({ ...fact, verification: { ...verification, score: 2 } })
+        .success,
+    ).toBe(false);
+    expect(
+      schema.safeParse({ ...fact, verification: { ...verification, rounds: 0 } })
+        .success,
+    ).toBe(false);
+  });
+});
+
+describe('extractionDocumentV1Schema', () => {
+  it('parses a document stored before version 2', () => {
+    expect(
+      extractionDocumentV1Schema.safeParse(fixtureDocumentV1()).success,
+    ).toBe(true);
+  });
+
+  it('rejects a v2 document', () => {
+    expect(extractionDocumentV1Schema.safeParse(fixtureDocument()).success).toBe(
+      false,
+    );
+  });
+});
+
+describe('parseStoredDocument', () => {
+  it('reads a v2 document as version 2', () => {
+    expect(parseStoredDocument(fixtureDocument())).toEqual({
+      version: 2,
+      document: fixtureDocument(),
+    });
+  });
+
+  it('falls back to v1 for an old row', () => {
+    expect(parseStoredDocument(fixtureDocumentV1())).toEqual({
+      version: 1,
+      document: fixtureDocumentV1(),
+    });
+  });
+
+  it('is null for data neither version reads', () => {
+    expect(parseStoredDocument({ nope: true })).toBeNull();
   });
 });
 
@@ -124,23 +229,30 @@ describe('modelOutputSchema', () => {
       requiredLanguages: { value: null, quote: '', confidence: 'sure' },
       workAuthorization: { value: null, quote: '', confidence: 'sure' },
       junkFlags: { value: null, quote: '', confidence: 'sure' },
-      fallback: { seniority: valid('junior') },
     };
-    const schema = modelOutputSchema(options, fallback);
+    const schema = modelOutputSchema(options);
     expect(schema.safeParse(base).success).toBe(false);
     expect(
       schema.safeParse({ ...base, seniority: valid('senior') }).success,
     ).toBe(true);
+    // No Jev fallback any more: the generator answers every field at top level.
+    expect(
+      schema.safeParse({
+        ...base,
+        seniority: valid('senior'),
+        fallback: { seniority: valid('junior') },
+      }).success,
+    ).toBe(false);
   });
 
   it('throws when a list has no approved options', () => {
     expect(() =>
-      modelOutputSchema({ ...options, regions: [] }, fallback),
+      modelOutputSchema({ ...options, regions: [] }),
     ).toThrow('no approved options for regions');
   });
 
   it('produces a JSON schema with additionalProperties false at the root', () => {
-    const json = modelOutputJsonSchema(options, fallback) as {
+    const json = modelOutputJsonSchema(options) as {
       additionalProperties?: boolean;
     };
     expect(json.additionalProperties).toBe(false);
@@ -161,7 +273,7 @@ describe('modelOutputSchema', () => {
         ...Object.entries(o).flatMap(([k, v]) => objects(v, `${path}.${k}`)),
       ];
     }
-    const nodes = objects(modelOutputJsonSchema(options, fallback));
+    const nodes = objects(modelOutputJsonSchema(options));
 
     it('requires every property of every object, and allows no others', () => {
       for (const [path, o] of nodes) {

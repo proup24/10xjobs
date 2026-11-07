@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import type { DecisionQuestion } from '../models/types';
 import type { ListName } from '../vocab/lists';
 import { confidenceSchema } from './fact';
 import {
@@ -28,7 +27,7 @@ const modelFact = <T extends z.ZodType>(value: T) =>
     confidence: confidenceSchema,
   });
 
-function buildModelOutput(options: ListOptions, fallback: DecisionQuestion[]) {
+function buildModelOutput(options: ListOptions) {
   const place = z.discriminatedUnion('kind', [
     z.strictObject({ kind: z.literal('worldwide') }),
     z.strictObject({
@@ -64,18 +63,6 @@ function buildModelOutput(options: ListOptions, fallback: DecisionQuestion[]) {
     fromListing: z.boolean().optional(),
   });
 
-  const fallbackShape: Record<
-    string,
-    ReturnType<typeof modelFact<z.ZodType<string | boolean>>>
-  > = {};
-  for (const q of fallback) {
-    fallbackShape[q.key] = modelFact(
-      q.kind === 'choice'
-        ? codeEnum(`fallback ${q.key}`, q.options)
-        : z.boolean(),
-    );
-  }
-
   return z.strictObject({
     position: modelFact(
       z.strictObject({
@@ -104,18 +91,14 @@ function buildModelOutput(options: ListOptions, fallback: DecisionQuestion[]) {
         }),
       ),
     ),
-    fallback: z.strictObject(fallbackShape),
   });
 }
 
-/** What Opus returns; structurally checked here, codes are enums of the approved options. */
+/** What the generator returns; structurally checked here, codes are enums of the approved options. */
 export type ModelOutput = z.infer<ReturnType<typeof buildModelOutput>>;
 
-export function modelOutputSchema(
-  options: ListOptions,
-  fallback: DecisionQuestion[],
-) {
-  return buildModelOutput(options, fallback);
+export function modelOutputSchema(options: ListOptions) {
+  return buildModelOutput(options);
 }
 
 /**
@@ -172,9 +155,6 @@ function strictNode(node: unknown): unknown {
   return out;
 }
 
-export function modelOutputJsonSchema(
-  options: ListOptions,
-  fallback: DecisionQuestion[],
-): object {
-  return flattenForStrict(z.toJSONSchema(modelOutputSchema(options, fallback)));
+export function modelOutputJsonSchema(options: ListOptions): object {
+  return flattenForStrict(z.toJSONSchema(modelOutputSchema(options)));
 }

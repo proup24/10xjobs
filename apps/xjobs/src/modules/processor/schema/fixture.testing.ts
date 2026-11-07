@@ -3,10 +3,11 @@ import type { ExtractionDocument } from './extraction';
 const fact = <T>(value: T | null) => ({
   value,
   confidence: 'sure' as const,
-  decidedBy: 'opus' as const,
+  decidedBy: 'generator' as const,
   score: null,
   quote: '',
   model: 'm',
+  verification: null,
 });
 
 const requirement = (
@@ -39,7 +40,7 @@ export function fixtureDocument(): ExtractionDocument {
         timezones: [{ fromUtc: 0, toUtc: 3, label: 'CET' }],
         quote: 'Remote in EMEA',
         confidence: 'sure',
-        decidedBy: 'opus',
+        decidedBy: 'generator',
       },
     ],
     contractType: fact('full_time'),
@@ -62,6 +63,12 @@ export function fixtureDocument(): ExtractionDocument {
     conflicts: [],
     unmatched: [],
     truncated: false,
-    models: { decision: null, extraction: 'm' },
+    verification: {
+      rounds: 1,
+      regenerationInvalid: false,
+      dropped: [],
+      missedJunkFlags: [],
+    },
+    models: { verifier: null, generator: 'm' },
   };
 }

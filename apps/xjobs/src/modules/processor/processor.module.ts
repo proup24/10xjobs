@@ -24,7 +24,6 @@ import {
   VocabRepository,
 } from './repositories/vocab.repository';
 import { ProcessorController } from './controllers/processor.controller';
-import { DecisionService } from './services/decision.service';
 import { ExtractionPipeline } from './services/extraction-pipeline.service';
 import { ExtractionStore } from './services/extraction-store.service';
 import { ExtractionService } from './services/extraction.service';
@@ -46,7 +45,6 @@ type Env = ConfigService<ProcessorEnvironmentVariables, true>;
     ProcessorService,
     ProcessorGuard,
     ExtractionPipeline,
-    DecisionService,
     ExtractionService,
     FactAssembler,
     ExtractionStore,

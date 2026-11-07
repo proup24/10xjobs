@@ -57,7 +57,7 @@ describe('systemPrompt field paths', () => {
   const text = systemPrompt();
 
   it('mentions every top-level key of the model output', () => {
-    const shape = modelOutputSchema(seedOptions(), []).shape;
+    const shape = modelOutputSchema(seedOptions()).shape;
     for (const key of Object.keys(shape)) expect(text).toContain(key);
   });
 

@@ -43,7 +43,7 @@ export class ProcessorController {
   @ApiOperation({
     summary: 'Extract the facts of a posting, storing nothing',
     description:
-      'Runs Jev, Opus and every check on the posting. Saves no extraction and no vocabulary; the model calls are recorded and count against the daily budget.',
+      'Runs the generator and every check on the posting. Saves no extraction and no vocabulary; the model calls are recorded and count against the daily budget.',
   })
   @ApiResponse({
     status: HttpStatus.OK,

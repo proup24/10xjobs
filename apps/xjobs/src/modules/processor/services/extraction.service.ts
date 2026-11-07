@@ -6,7 +6,6 @@ import {
 } from '../config/processor.config';
 import { ModelOutputError } from '../models/errors';
 import {
-  type DecisionQuestion,
   ExtractionModel,
   type ModelCallMeta,
   type PostingInput,
@@ -41,17 +40,16 @@ export class ExtractionService {
     step: AttemptStep,
     input: PostingInput,
     vocabulary: Vocabulary,
-    fallback: DecisionQuestion[],
     retryErrors: string[] | undefined,
     log: AttemptLog,
   ): Promise<ExtractionCall> {
     const model = this.config.extractionModel;
-    const schema = modelOutputSchema(vocabulary.options, fallback);
-    const jsonSchema = modelOutputJsonSchema(vocabulary.options, fallback);
+    const schema = modelOutputSchema(vocabulary.options);
+    const jsonSchema = modelOutputJsonSchema(vocabulary.options);
     log.calling(
       step,
       model,
-      `${kb(input.description)} posting${input.truncated ? ' (truncated)' : ''}, ${kb(JSON.stringify(jsonSchema))} schema, ${fallback.length} fallback questions${retryErrors ? `, retrying ${retryErrors.length} errors` : ''}`,
+      `${kb(input.description)} posting${input.truncated ? ' (truncated)' : ''}, ${kb(JSON.stringify(jsonSchema))} schema${retryErrors ? `, retrying ${retryErrors.length} errors` : ''}`,
     );
     let result: { output: unknown; meta: ModelCallMeta };
     try {

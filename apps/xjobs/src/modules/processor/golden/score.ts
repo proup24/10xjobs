@@ -341,7 +341,8 @@ function scoreJev(
         };
     } else {
       const { value, f } = fromDoc[q];
-      if (f.decidedBy === 'jev' && f.score !== null)
+      // Only Jev's verification sets a fact's score.
+      if (f.score !== null)
         out[q] = { score: f.score, correct: sameScalar(value, want) };
     }
   }
@@ -495,7 +496,8 @@ function summarizeFacts(scores: FactScores[]): {
 
 function summarizeFact(entries: ScoredEntry[]): FactReport {
   const decided = entries.filter(({ e }) => e.decidedBy !== null);
-  const share = (by: DecidedBy) =>
+  // 'jev' no longer decides a value; its share stays for the report (Task 8).
+  const share = (by: DecidedBy | 'jev') =>
     ratio(decided.filter(({ e }) => e.decidedBy === by).length, decided.length);
   return {
     scored: entries.length,
@@ -504,7 +506,7 @@ function summarizeFact(entries: ScoredEntry[]): FactReport {
       entries.reduce((total, { e }) => total + e.total, 0),
     ),
     jevShare: share('jev'),
-    opusShare: share('opus'),
+    opusShare: share('generator'),
     ingestShare: share('ingest'),
   };
 }
