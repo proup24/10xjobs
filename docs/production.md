@@ -115,7 +115,7 @@ Run in this order, after the first production migrate and before anyone is invit
    read -rs SUPABASE_ANON_KEY && export SUPABASE_ANON_KEY
    read -rs SUPABASE_SERVICE_ROLE_KEY && export SUPABASE_SERVICE_ROLE_KEY
    export DB_TESTS_ALLOW_REMOTE=1
-   pnpm vitest run apps/db-tests/src/resume-storage.db.spec.ts   # or the db-tests command in package.json
+   pnpm db:test -- resume-storage   # the filter runs only that spec
    unset DATABASE_URL SUPABASE_URL SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY DB_TESTS_ALLOW_REMOTE
    ```
 
