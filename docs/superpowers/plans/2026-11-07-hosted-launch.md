@@ -59,7 +59,7 @@
   Run: `npx nx test @xjobs/database -- cities.seed`
   Expected: FAIL, cannot resolve `./cities.seed`.
 
-- [ ] **Step 3: Implement** `city-key.ts`, `seed-cities.ts` (`SEED_CITIES = []` plus a header comment: exported from approved cities on `10xjobs-dev`, edit by hand; the seed promotes and adds but never removes), and `cities.seed.ts`. For each city: look it up with `where({ nameKey: cityNameKey(name), countryCode }).first()`. If it's missing, `create` it as in Step 1. If it exists, `update` only the fields that change: `status` to `'approved'`, `approvedAt` if null, `geonamesId` if null, and aliases that are missing. Skip the update when nothing changes, so a second run writes nothing. Then wire it into `index.ts` and the lib export.
+- [ ] **Step 3: Implement** `city-key.ts`, `seed-cities.ts` (`SEED_CITIES = []` plus a header comment: a curated starter list of software-hiring hubs, edit by hand; the seed promotes and adds but never removes), and `cities.seed.ts`. For each city: look it up with `where({ nameKey: cityNameKey(name), countryCode }).first()`. If it's missing, `create` it as in Step 1. If it exists, `update` only the fields that change: `status` to `'approved'`, `approvedAt` if null, `geonamesId` if null, and aliases that are missing. Skip the update when nothing changes, so a second run writes nothing. Then wire it into `index.ts` and the lib export.
 
 - [ ] **Step 4: Run to verify it passes**
 

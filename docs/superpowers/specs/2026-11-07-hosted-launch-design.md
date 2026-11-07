@@ -73,7 +73,7 @@ The first production migrate runs on the first merge after the environment and s
 ## Cities seed
 
 - A seed named `cities`, run after `processor-lists` (cities reference countries), with its data in a committed file beside the other value lists in `libs/database/src/seeds/vocab/`.
-- Initial content: the cities currently approved on `10xjobs-dev`, exported once (name, country code, aliases, GeoNames id), then reviewed by the maintainer before it's committed. City names aren't personal data. _(my call)_
+- Initial content: a curated starter list of major software-hiring cities (name, country code, aliases; GeoNames id left empty), reviewed by the maintainer before it's committed, because `10xjobs-dev` had no cities to export. City names aren't personal data. _(my call)_
 - Idempotent upsert on (`nameKey`, `countryCode`), with `nameKey` built by the same normalizer the processor uses. It sets `status = 'approved'` and `approvedAt` if empty, merges aliases, and never touches `occurrences` or other cities. On dev it promotes a matching `proposed` city and leaves the rest alone. _(my call)_
 - Later approvals on dev reach production only by adding them to this file. A `db:vocab` export helper is left to the builder.
 
