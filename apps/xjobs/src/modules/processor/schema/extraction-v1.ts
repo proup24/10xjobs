@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { LIST_NAMES } from '../vocab/lists';
 import { confidenceSchema } from './fact';
 import {
   PLACE_STRICTNESS,
@@ -49,8 +48,22 @@ const openingSchema = z.strictObject({
   decidedBy: decidedByV1Schema,
 });
 
+/** The list names v1 rows were written with, frozen: the live lists may change. */
+const V1_LIST_NAMES = [
+  'techTags',
+  'regions',
+  'countries',
+  'roleKinds',
+  'seniorities',
+  'arrangements',
+  'contractTypes',
+  'engagements',
+  'junkFlags',
+  'cities',
+] as const;
+
 const unmatchedSchema = z.strictObject({
-  list: z.enum([...LIST_NAMES, 'cities']),
+  list: z.enum(V1_LIST_NAMES),
   text: z.string(),
   at: z.string(),
 });

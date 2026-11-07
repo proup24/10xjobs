@@ -277,4 +277,34 @@ describe('worker process configuration', () => {
       }),
     ).toThrow(/PROCESSOR_GENERATION_TRIES/);
   });
+
+  it('caps regenerations and generation tries at 5', () => {
+    const processor = {
+      ...worker,
+      WORKER_ROLE: 'processor',
+      OPENROUTER_API_KEY: 'or-key',
+    };
+    expect(
+      validateWorkerProcessEnvironment({
+        ...processor,
+        PROCESSOR_MAX_REGENERATIONS: '5',
+        PROCESSOR_GENERATION_TRIES: '5',
+      }),
+    ).toMatchObject({
+      PROCESSOR_MAX_REGENERATIONS: 5,
+      PROCESSOR_GENERATION_TRIES: 5,
+    });
+    expect(() =>
+      validateWorkerProcessEnvironment({
+        ...processor,
+        PROCESSOR_MAX_REGENERATIONS: '6',
+      }),
+    ).toThrow(/PROCESSOR_MAX_REGENERATIONS/);
+    expect(() =>
+      validateWorkerProcessEnvironment({
+        ...processor,
+        PROCESSOR_GENERATION_TRIES: '6',
+      }),
+    ).toThrow(/PROCESSOR_GENERATION_TRIES/);
+  });
 });
