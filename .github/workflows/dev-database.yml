@@ -1,7 +1,8 @@
 name: Dev database
 
 # Migrates and seeds the shared dev database (Supabase Cloud) once CI has
-# passed on main. Never runs for pull requests.
+# passed on main, then production once the maintainer approves. Never runs
+# for pull requests.
 on:
   workflow_run:
     workflows: [CI]
@@ -46,3 +47,41 @@ jobs:
 
       - name: Seed the database
         run: pnpm --filter @xjobs/database db:seed
+
+  production:
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Waits for the maintainer's approval on this environment before it runs.
+    environment: production-database
+    # GitHub keeps at most one running and one pending job per concurrency
+    # group, and a newer pending job cancels an older pending one, so the
+    # newest run is the one left waiting for approval. One migrate applies
+    # everything pending.
+    concurrency:
+      group: production-database
+      cancel-in-progress: false
+    env:
+      XJOBS_SKIP_ENV_FILES: '1'
+      XJOBS_ALLOW_REMOTE_DB: '1'
+      DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      # Installs the pnpm version pinned in package.json's packageManager field
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Apply the Prisma migrations
+        run: pnpm --filter @xjobs/database db:migrate
+
+      - name: Seed the list data
+        run: pnpm --filter @xjobs/database db:seed --only processor-lists,iso,cities
