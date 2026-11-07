@@ -1,0 +1,65 @@
+[
+  {
+    "id": "storage.resumes_bucket_and_policies",
+    "invariantId": "resume-storage",
+    "label": "resumes bucket and per-user Storage policies",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "profiles"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create or update the private resumes bucket",
+        "sql": "INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)\nVALUES ('resumes', 'resumes', false, 5242880, '{application/pdf}')\nON CONFLICT (id) DO UPDATE SET\n  name = excluded.name,\n  public = excluded.public,\n  file_size_limit = excluded.file_size_limit,\n  allowed_mime_types = excluded.allowed_mime_types;"
+      },
+      {
+        "description": "resume_folder_is_own(): the folder is the caller and the profile is theirs",
+        "sql": "CREATE FUNCTION public.resume_folder_is_own(object_name text) RETURNS boolean\n  LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$\n  SELECT (storage.foldername(object_name))[1] = auth.uid()::text\n    AND EXISTS (\n      SELECT 1 FROM public.profiles p\n      WHERE p.id::text = (storage.foldername(object_name))[2]\n        AND p.\"userId\" = auth.uid()\n    );\n$$;\nREVOKE ALL ON FUNCTION public.resume_folder_is_own(text) FROM PUBLIC, anon;\nGRANT EXECUTE ON FUNCTION public.resume_folder_is_own(text) TO authenticated;"
+      },
+      {
+        "description": "resume_key_is_own(): the key has the agreed layout and the folder is own",
+        "sql": "CREATE FUNCTION public.resume_key_is_own(object_name text) RETURNS boolean\n  LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$\n  SELECT object_name ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.pdf$'\n    AND public.resume_folder_is_own(object_name);\n$$;\nREVOKE ALL ON FUNCTION public.resume_key_is_own(text) FROM PUBLIC, anon;\nGRANT EXECUTE ON FUNCTION public.resume_key_is_own(text) TO authenticated;"
+      },
+      {
+        "description": "users read and list their own profile folders",
+        "sql": "CREATE POLICY resumes_select_own ON storage.objects\n  FOR SELECT TO authenticated\n  USING (bucket_id = 'resumes' AND public.resume_folder_is_own(name));"
+      },
+      {
+        "description": "users upload only well-formed keys in their own folders",
+        "sql": "CREATE POLICY resumes_insert_own ON storage.objects\n  FOR INSERT TO authenticated\n  WITH CHECK (bucket_id = 'resumes' AND public.resume_key_is_own(name));"
+      },
+      {
+        "description": "users delete their own files, except the live file of a published profile",
+        "sql": "CREATE POLICY resumes_delete_own ON storage.objects\n  FOR DELETE TO authenticated\n  USING (\n    bucket_id = 'resumes'\n    AND public.resume_folder_is_own(name)\n    AND NOT EXISTS (\n      SELECT 1 FROM public.profiles p\n      WHERE p.\"resumeKey\" = objects.name AND p.state = 'published'\n    )\n  );"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "public.set_profile_resume",
+    "label": "set_profile_resume, the only writer of a profile resume",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "profiles"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "set_profile_resume(): validate, read the size from Storage, swap the columns, return the previous key",
+        "sql": "CREATE FUNCTION public.set_profile_resume(profile_id uuid, key text, filename text, sha256 text)\n  RETURNS text\n  LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$\nDECLARE\n  uid uuid := auth.uid();\n  previous text;\n  object_size bigint;\n  clean text;\nBEGIN\n  IF uid IS NULL THEN\n    RAISE EXCEPTION 'set_profile_resume: not signed in' USING ERRCODE = '42501';\n  END IF;\n\n  SELECT p.\"resumeKey\" INTO previous\n  FROM public.profiles p\n  WHERE p.id = set_profile_resume.profile_id AND p.\"userId\" = uid\n  FOR UPDATE;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'set_profile_resume: profile not found' USING ERRCODE = '42501';\n  END IF;\n\n  IF key IS NULL OR NOT public.resume_key_is_own(key) THEN\n    RAISE EXCEPTION 'set_profile_resume: key is not a resume key in your folder'\n      USING ERRCODE = '23514';\n  END IF;\n  IF split_part(key, '/', 2) <> set_profile_resume.profile_id::text THEN\n    RAISE EXCEPTION 'set_profile_resume: key belongs to another profile'\n      USING ERRCODE = '23514';\n  END IF;\n  IF sha256 IS NULL OR sha256 !~ '^[0-9a-f]{64}$' THEN\n    RAISE EXCEPTION 'set_profile_resume: sha256 must be 64 lowercase hex characters'\n      USING ERRCODE = '23514';\n  END IF;\n\n  SELECT (o.metadata->>'size')::bigint INTO object_size\n  FROM storage.objects o\n  WHERE o.bucket_id = 'resumes' AND o.name = key;\n  IF NOT FOUND OR object_size IS NULL THEN\n    RAISE EXCEPTION 'set_profile_resume: no uploaded file at key'\n      USING ERRCODE = '23514';\n  END IF;\n\n  clean := regexp_replace(coalesce(filename, ''), '^.*[/\\\\]', '');\n  clean := regexp_replace(clean, '[^A-Za-z0-9_. -]', '_', 'g');\n  clean := btrim(left(clean, 200));\n  IF clean = '' THEN\n    clean := 'resume.pdf';\n  END IF;\n\n  UPDATE public.profiles p\n  SET \"resumeKey\" = key,\n      \"resumeFilename\" = clean,\n      \"resumeSizeBytes\" = object_size::int,\n      \"resumeSha256\" = sha256,\n      \"resumeUploadedAt\" = now()\n  WHERE p.id = set_profile_resume.profile_id;\n\n  RETURN previous;\nEND;\n$$;\nREVOKE ALL ON FUNCTION public.set_profile_resume(uuid, text, text, text) FROM PUBLIC, anon;\nGRANT EXECUTE ON FUNCTION public.set_profile_resume(uuid, text, text, text) TO authenticated;"
+      }
+    ],
+    "postcheck": []
+  }
+]

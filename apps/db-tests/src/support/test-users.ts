@@ -45,10 +45,32 @@ export function inviteTestUser(): Promise<{ id: string }> {
   return inviteTestUserAt(`db-test-${randomUUID()}@xjobs.test`);
 }
 
+/** Removes every object under `resumes/<prefix>`, recursing into folders. */
+async function emptyResumeFolder(prefix: string): Promise<void> {
+  const bucket = admin().storage.from('resumes');
+  const { data, error } = await bucket.list(prefix, { limit: 1000 });
+  if (error)
+    throw new Error(`Could not list resumes/${prefix}: ${error.message}`);
+  const files: string[] = [];
+  for (const entry of data) {
+    // Folders come back without an id.
+    if (entry.id) files.push(`${prefix}/${entry.name}`);
+    else await emptyResumeFolder(`${prefix}/${entry.name}`);
+  }
+  if (files.length > 0) {
+    const removed = await bucket.remove(files);
+    if (removed.error)
+      throw new Error(
+        `Could not remove resumes/${prefix}: ${removed.error.message}`,
+      );
+  }
+}
+
 export async function cleanupTestUsers(): Promise<void> {
   if (createdIds.size === 0) return;
   const client = admin();
   for (const id of [...createdIds]) {
+    await emptyResumeFolder(id);
     const { error } = await client.auth.admin.deleteUser(id);
     if (error && !/not found/i.test(error.message)) {
       throw new Error(`Could not delete test user ${id}: ${error.message}`);

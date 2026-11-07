@@ -19,7 +19,7 @@ Done by hand, once, in this order. None of it goes in git.
 1. Create the production project on the Free plan, in the same region as `10xjobs-dev`. A Free organization allows two active projects; with `10xjobs-dev` this makes two.
 2. Auth: set every setting in the [auth-production.md](auth-production.md) table, paste both email templates with their subjects, and set the Gmail SMTP sender.
 3. Set the Site URL and the redirect URLs to the Vercel production URL (`<project>.vercel.app`), not a per-deployment URL.
-4. Do not create the `resumes` bucket by hand: the resume storage migration creates it. That migration is not on `main` yet, so until the resume storage work is merged no bucket exists.
+4. Do not create the `resumes` bucket by hand: the resume storage migration creates it.
 
 **GitHub**
 
@@ -93,7 +93,7 @@ Run in this order, after the first production migrate and before anyone is invit
    select count(*) from public.users;                             -- 0
    ```
 
-3. **Bucket.** Only once the resume storage work is merged; until then expect no rows, and skip this step. After that it returns `false`, `5242880`, `{application/pdf}`:
+3. **Bucket.** It returns `false`, `5242880`, `{application/pdf}`:
 
    ```sql
    select public, file_size_limit, allowed_mime_types from storage.buckets where id = 'resumes';
@@ -107,7 +107,7 @@ Run in this order, after the first production migrate and before anyone is invit
 
 5. **Auth settings.** Compare the dashboard against the [auth-production.md](auth-production.md) table, line by line. Nothing in the repo can check these.
 
-6. **Storage policies on Cloud.** This needs the resume storage work merged to `main` first. Run `apps/db-tests/src/resume-storage.db.spec.ts` once against production from the maintainer's machine, with the values exported in that shell only:
+6. **Storage policies on Cloud.** Run `apps/db-tests/src/resume-storage.db.spec.ts` once against production from the maintainer's machine, with the values exported in that shell only:
 
    ```sh
    read -rs DATABASE_URL && export DATABASE_URL   # session pooler URL (port 5432)

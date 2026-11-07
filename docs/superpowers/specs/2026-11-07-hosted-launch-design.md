@@ -86,7 +86,7 @@ Done by hand, once. None of it goes in git.
 1. Create the production project on the Free plan, in the same region as `10xjobs-dev`. A Free organization allows two active projects; with `10xjobs-dev` this makes two.
 2. Auth: every setting in the [auth-production.md](../../auth-production.md) table, both email templates with their subjects, and the Gmail SMTP sender.
 3. Site URL and redirect URLs: the Vercel production URL (`<project>.vercel.app`), not a per-deployment URL.
-4. Don't create the `resumes` bucket by hand: the resume storage migration creates it. That migration is not on `main` yet, so until the resume storage work is merged no bucket exists.
+4. Don't create the `resumes` bucket by hand: the resume storage migration creates it.
 
 **GitHub**
 
@@ -112,10 +112,10 @@ Run in this order, after the first production migrate and before anyone is invit
 
 1. **Migrations applied.** The production job's log shows the migrate finishing with nothing left pending. Running `db:migrate:show` against production with the session pooler URL in the shell only reports nothing pending.
 2. **Seed tables filled.** The tables the two seeds write (countries, regions, `region_countries`, techs, roles, seniorities, arrangements, contract types, engagements, junk flags, languages, currencies, cities) each have rows, and every city is `approved`. `auth.users` and `public.users` are empty: the test accounts weren't seeded.
-3. **Bucket.** Only once the resume storage work is merged; until then expect no rows and skip this step. After that, `select public, file_size_limit, allowed_mime_types from storage.buckets where id = 'resumes'` returns `false`, `5242880`, `{application/pdf}`.
+3. **Bucket.** `select public, file_size_limit, allowed_mime_types from storage.buckets where id = 'resumes'` returns `false`, `5242880`, `{application/pdf}`.
 4. **pg_cron.** `select jobname, schedule from cron.job` lists `end-expired-sessions` at `0 * * * *`.
 5. **Auth settings.** Compare the dashboard against the auth-production.md table, line by line. Nothing in the repo can check these.
-6. **Storage policies on Cloud.** Run `apps/db-tests/src/resume-storage.db.spec.ts` once against production from the maintainer's machine, with `DB_TESTS_ALLOW_REMOTE=1`, `DATABASE_URL` (session pooler), `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` exported in that shell only, then `unset`. Afterwards, check that no `db-test-*@xjobs.test` users and no objects in `resumes` are left. This needs the resume storage work merged to `main` first.
+6. **Storage policies on Cloud.** Run `apps/db-tests/src/resume-storage.db.spec.ts` once against production from the maintainer's machine, with `DB_TESTS_ALLOW_REMOTE=1`, `DATABASE_URL` (session pooler), `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` exported in that shell only, then `unset`. Afterwards, check that no `db-test-*@xjobs.test` users and no objects in `resumes` are left.
 7. **Sign-in.** `pnpm users invite <maintainer's address>` against production (as in auth-production.md), then sign in with the code and with the link. Then block or keep that account as the maintainer prefers.
 
 ## Known gaps

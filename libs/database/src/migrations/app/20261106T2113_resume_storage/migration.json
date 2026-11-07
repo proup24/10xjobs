@@ -1,0 +1,9 @@
+{
+  "from": "1cfd25e269628885ca3ef263392ec32a0390667dcf7f74a7eabfc9c04de0cdd6",
+  "to": "1cfd25e269628885ca3ef263392ec32a0390667dcf7f74a7eabfc9c04de0cdd6",
+  "providedInvariants": [
+    "resume-storage"
+  ],
+  "createdAt": "2026-11-06T21:13:49.694Z",
+  "migrationHash": "1f3717d8a3a72cdc669cba2cbda0bd85608095fde5fb052d9e804dd051301223"
+}
