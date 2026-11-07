@@ -19,7 +19,7 @@ Done by hand, once, in this order. None of it goes in git.
 1. Create the production project on the Free plan, in the same region as `10xjobs-dev`. A Free organization allows two active projects; with `10xjobs-dev` this makes two.
 2. Auth: set every setting in the [auth-production.md](auth-production.md) table, paste both email templates with their subjects, and set the Gmail SMTP sender.
 3. Set the Site URL and the redirect URLs to the Vercel production URL (`<project>.vercel.app`), not a per-deployment URL.
-4. Do not create the `resumes` bucket by hand: the migration creates it.
+4. Do not create the `resumes` bucket by hand: the resume storage migration creates it. That migration is not on `main` yet, so until the resume storage work is merged no bucket exists.
 
 **GitHub**
 
@@ -45,15 +45,15 @@ The `Dev database` workflow (`.github/workflows/dev-database.yml`) has two jobs.
 
 A migration that breaks on Cloud therefore breaks on dev first, and nothing reaches production without the maintainer's approval.
 
-**Approving.** In the Actions tab, open the `Dev database` run and review the pending deployment to `production-database`. GitHub keeps at most one running and one pending job per concurrency group (`production-database`, with `cancel-in-progress: false`), and a newer pending run cancels an older pending one. Approve the newest waiting run: one migrate applies everything pending. Older waiting runs can be rejected.
+**Approving.** In the Actions tab, open the `Dev database` run and review the pending deployment to `production-database`. The `production-database` concurrency group (`cancel-in-progress: false`) may leave more than one run waiting, and which one waits can vary. Before approving, check that the run's commit is the latest on `main`. If it isn't, reject it, and the next run takes its place. One migrate applies everything pending, and migrations only go forward, so approving an older run is harmless but needs a second approval.
 
-**The gate depends on the environment rule.** The approval step exists only if the `production-database` environment has the required reviewer set. If the rule is missing, the job runs unapproved. Re-check the environment settings after any change to it.
+**The gate depends on the environment rule.** Set up the `production-database` environment (required reviewer, `main`-only deployment branches) and the `PROD_DATABASE_URL` secret before this PR merges. If the environment already exists, GitHub auto-created it with no protection rules, so add them. The approval step exists only if the environment has the required reviewer set. If the rule is missing, the job runs unapproved. Re-check the environment settings after any change to it.
 
 **The first run.** The first production migrate runs on the first merge to `main` after the environment and secret exist, or by re-running the latest `CI` run on `main` (dev re-runs too, which is harmless; the seeds are idempotent). Re-running CI on `main` at any later time queues another production run waiting for approval. Reject it if you don't want it.
 
 **Vercel deploys before approval.** Vercel deploys `main` as soon as it merges, before the migration is approved. Before launch that doesn't matter. After launch, approve promptly, and keep schema changes compatible with the code already live: add first, drop later (add the new column or table and ship code that uses it, then drop the old one in a later change). There is no Vercel token in GitHub.
 
-**Cities.** Production gets cities only from the committed `cities` seed data in `libs/database/src/seeds/vocab/`. A city approved later on dev reaches production by adding it to that file.
+**Cities.** Production gets cities only from the committed `cities` seed data in `libs/database/src/seeds/vocab/seed-cities.ts`. A city approved later on dev reaches production by adding it to that file.
 
 ## Verification before any UI
 
@@ -63,7 +63,7 @@ Run in this order, after the first production migrate and before anyone is invit
 
    ```sh
    read -rs DATABASE_URL && export DATABASE_URL   # paste the session pooler URL (port 5432)
-   XJOBS_ALLOW_REMOTE_DB=1 pnpm --filter @xjobs/database db:migrate:show
+   pnpm --filter @xjobs/database db:migrate:show
    unset DATABASE_URL
    ```
 
@@ -93,7 +93,7 @@ Run in this order, after the first production migrate and before anyone is invit
    select count(*) from public.users;                             -- 0
    ```
 
-3. **Bucket.** This returns `false`, `5242880`, `{application/pdf}`:
+3. **Bucket.** Only once the resume storage work is merged; until then expect no rows, and skip this step. After that it returns `false`, `5242880`, `{application/pdf}`:
 
    ```sql
    select public, file_size_limit, allowed_mime_types from storage.buckets where id = 'resumes';
