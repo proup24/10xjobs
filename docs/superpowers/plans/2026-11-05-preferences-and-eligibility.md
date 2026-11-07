@@ -22,9 +22,9 @@ Code validation lives in `SECURITY DEFINER` trigger functions, so engine writes,
 
 - PR A `feat/preferences-add` (Tasks 1–6, the user's), carrying the spec and this plan.
 - PR B `feat/preferences-engine-switch` (Tasks 7–11, the user's), branched from `main` after PR A merges.
+- PR C `feat/preferences-remove-legacy` (Tasks 12–13, the user's), branched from `main` after PR B merges.
 
 Steps 2 and 3 are carried out by `docs/superpowers/plans/2026-11-07-preferences-switch-and-remove.md`, which supersedes the Step 2 and Step 3 tasks below where they differ.
-- PR C `feat/preferences-remove-legacy` (Tasks 12–13, the user's), branched from `main` after PR B merges.
 
 ## Global Constraints
 
