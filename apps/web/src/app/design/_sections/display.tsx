@@ -28,8 +28,16 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Steps } from '@/components/ui/steps';
 import { Code, Mark, TextLink } from '@/components/ui/text';
 import { Block } from './block';
+
+const setupSteps = [
+  { id: 'profile', label: 'Profile' },
+  { id: 'roles', label: 'Roles' },
+  { id: 'places', label: 'Places' },
+  { id: 'review', label: 'Review' },
+];
 
 export function DisplaySection() {
   return (
@@ -124,6 +132,13 @@ export function DisplaySection() {
             </EmptyDescription>
           </EmptyHeader>
         </Empty>
+      </Block>
+      <Block title="Steps">
+        <div className="flex w-full flex-col gap-6">
+          <Steps steps={setupSteps} current={0} />
+          <Steps steps={setupSteps} current={1} />
+          <Steps steps={setupSteps} current={3} />
+        </div>
       </Block>
       <Block title="Kbd">
         <KbdGroup>
