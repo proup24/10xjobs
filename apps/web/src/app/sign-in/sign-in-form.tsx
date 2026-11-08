@@ -8,7 +8,7 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from '@/components/ui/input-otp';
-import { Label } from '@/components/ui/label';
+import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { EXPIRED_INVITE_HINT } from '@/lib/auth/copy';
 import { requestCodeAction, verifyCodeAction } from './actions';
 
@@ -61,16 +61,18 @@ export function SignInForm() {
           request();
         }}
       >
-        <Label htmlFor="email">Email</Label>
-        <Input
-          id="email"
-          type="email"
-          autoComplete="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        {error ? <p role="alert" className="text-destructive">{error}</p> : null}
+        <Field invalid={error !== null}>
+          <FieldLabel htmlFor="email">Email</FieldLabel>
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <FieldError>{error}</FieldError>
+        </Field>
         <Button type="submit" disabled={pending}>
           Send code
         </Button>
@@ -82,22 +84,24 @@ export function SignInForm() {
     <div className="flex flex-col gap-3">
       <p role="status">{sentMessage}</p>
       <p className="text-xs text-muted-foreground">{EXPIRED_INVITE_HINT}</p>
-      <Label htmlFor="code">6-digit code</Label>
-      <InputOTP
-        id="code"
-        maxLength={6}
-        value={code}
-        onChange={setCode}
-        onComplete={verify}
-        disabled={pending}
-      >
-        <InputOTPGroup>
-          {[0, 1, 2, 3, 4, 5].map((i) => (
-            <InputOTPSlot key={i} index={i} />
-          ))}
-        </InputOTPGroup>
-      </InputOTP>
-      {error ? <p role="alert" className="text-destructive">{error}</p> : null}
+      <Field invalid={error !== null}>
+        <FieldLabel htmlFor="code">6-digit code</FieldLabel>
+        <InputOTP
+          id="code"
+          maxLength={6}
+          value={code}
+          onChange={setCode}
+          onComplete={verify}
+          disabled={pending}
+        >
+          <InputOTPGroup>
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+              <InputOTPSlot key={i} index={i} />
+            ))}
+          </InputOTPGroup>
+        </InputOTP>
+        <FieldError>{error}</FieldError>
+      </Field>
       <Button
         type="button"
         variant="outline"
