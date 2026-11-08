@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { isShowcaseEnabled } from '@/lib/design/showcase';
+import { ButtonsSection } from './_sections/buttons';
 import { ComponentsSection } from './_sections/components';
 import { TokensSection } from './_sections/tokens';
 
@@ -16,6 +17,7 @@ export default function DesignPage() {
         <ThemeToggle />
       </header>
       <TokensSection />
+      <ButtonsSection />
       <ComponentsSection />
     </main>
   );
