@@ -26,6 +26,15 @@ describe('decideRoute', () => {
     }
   });
 
+  it('lets signed-out requests reach /design but not /designer', () => {
+    expect(
+      decideRoute({ pathname: '/design', claims: null, nowSeconds: now }),
+    ).toEqual({ action: 'continue' });
+    expect(
+      decideRoute({ pathname: '/designer', claims: null, nowSeconds: now }),
+    ).toEqual({ action: 'redirect', to: '/sign-in', signOut: false });
+  });
+
   it('does not treat /sign-inx as public', () =>
     expect(
       decideRoute({ pathname: '/sign-inx', claims: null, nowSeconds: now }),

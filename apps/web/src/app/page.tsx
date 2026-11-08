@@ -14,7 +14,7 @@ export default async function Page() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-4">
-      <h1 className="text-3xl font-semibold">10xjobs</h1>
+      <h1 className="text-title-2">10xjobs</h1>
       <p className="text-muted-foreground">Signed in as {data.claims.email}</p>
       <SignOutButton />
     </main>
