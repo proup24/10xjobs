@@ -33,6 +33,7 @@
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -154,6 +155,7 @@
   --popover-foreground: var(--gray-12);
   --primary: var(--green-11);
   --primary-foreground: var(--gray-1);
+  --primary-hover: var(--green-12);
   --secondary: var(--gray-3);
   --secondary-foreground: var(--gray-12);
   --muted: var(--gray-3);
@@ -163,7 +165,7 @@
   --destructive: var(--red-11);
   --border: var(--gray-5);
   --input: var(--gray-9);
-  --ring: var(--green-9);
+  --ring: var(--green-10);
   --chart-1: var(--green-9);
   --chart-2: var(--amber-9);
   --chart-3: var(--red-9);
@@ -250,6 +252,7 @@
   --popover-foreground: var(--gray-12);
   --primary: var(--green-7);
   --primary-foreground: var(--green-12);
+  --primary-hover: var(--green-6);
   --secondary: var(--gray-4);
   --secondary-foreground: var(--gray-11);
   --muted: var(--gray-4);
@@ -280,7 +283,7 @@
   --warning-foreground: var(--gray-1);
   --success-text: var(--green-10);
   --warning-text: var(--amber-9);
-  --destructive-text: var(--red-10);
+  --destructive-text: var(--red-11);
   --mark: var(--amber-11);
   --mark-foreground: var(--gray-1);
   --floating-shadow-strength: 5;

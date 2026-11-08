@@ -35,7 +35,7 @@ export function TextLink({
     <Link
       data-slot="text-link"
       className={cn(
-        'rounded-sm text-brand underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring',
+        'rounded-sm text-brand underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
         className,
       )}
       {...props}

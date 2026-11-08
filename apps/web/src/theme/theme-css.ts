@@ -69,6 +69,21 @@ export function resolveColor(vars: ThemeVars, name: string): string {
   ]);
 }
 
+/** `name` at `alpha` (0–1) over `--background`, like `bg-<role>/<n>`. */
+export function resolveTint(
+  vars: ThemeVars,
+  name: string,
+  alpha: number,
+): string {
+  const [r, g, b] = hexToRgba(resolveColor(vars, name));
+  const [br, bg, bb] = hexToRgba(resolveColor(vars, 'background'));
+  return rgbToHex([
+    r * alpha + br * (1 - alpha),
+    g * alpha + bg * (1 - alpha),
+    b * alpha + bb * (1 - alpha),
+  ]);
+}
+
 function luminance(hex: string): number {
   const [r, g, b] = hexToRgba(hex)
     .slice(0, 3)
