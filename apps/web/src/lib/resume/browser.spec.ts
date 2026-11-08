@@ -69,6 +69,27 @@ describe('uploadResume', () => {
     });
   });
 
+  it('accepts an empty MIME type when the name ends in .pdf, in any case', async () => {
+    const f = fake();
+    const confirm = vi.fn(async () => saved);
+    const file = new File(['%PDF-1.7'], 'cv.PDF', { type: '' });
+    expect(await uploadResume(f.supabase, U, P, file, confirm)).toEqual(saved);
+    const [, , options] = f.bucket.upload.mock.calls[0] as unknown as [
+      string,
+      File,
+      object,
+    ];
+    expect(options).toEqual({ contentType: 'application/pdf', upsert: false });
+
+    const g = fake();
+    const text = new File(['%PDF-1.7'], 'cv.txt', { type: '' });
+    expect(await uploadResume(g.supabase, U, P, text, confirm)).toEqual({
+      status: 'invalid',
+      reason: 'not-pdf',
+    });
+    expect(g.bucket.upload).not.toHaveBeenCalled();
+  });
+
   it('an upload error returns failed and never confirms', async () => {
     const f = fake({ uploadError: { message: 'boom' } });
     const confirm = vi.fn();

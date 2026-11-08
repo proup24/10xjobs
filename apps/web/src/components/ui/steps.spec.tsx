@@ -31,6 +31,15 @@ describe('Steps', () => {
     ).toBeTruthy();
   });
 
+  it('wraps whole steps onto new rows instead of breaking labels', () => {
+    render(<Steps steps={steps} current={1} />);
+    const list = screen.getByRole('list');
+    expect(list.className).toContain('sm:flex-wrap');
+    for (const item of screen.getAllByRole('listitem')) {
+      expect(item.className).toContain('whitespace-nowrap');
+    }
+  });
+
   it('clamps an out-of-range current', () => {
     const { rerender } = render(<Steps steps={steps} current={9} />);
     expect(screen.getByText(/Step 4 of 4/)).toBeTruthy();
