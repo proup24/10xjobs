@@ -4,6 +4,7 @@ import type {
   ProcessorConfig,
   ProcessorRepository,
 } from 'src/modules/processor';
+import type { MatchQueue } from '../match';
 import { processSweepConfig } from './config';
 import {
   PROCESS_JOB,
@@ -21,6 +22,7 @@ export interface ProcessJobDeps {
     'listPendingInScope' | 'releaseStale' | 'spendSince'
   >;
   queue: Pick<ProcessQueue, 'enqueue'>;
+  matchQueue: Pick<MatchQueue, 'enqueue'>;
   config: ProcessorConfig;
 }
 
@@ -39,6 +41,9 @@ export async function processProcessJob(
     const outcome = await deps.service.process(payload.data.jobId);
     // Throwing lets BullMQ back off and retry.
     if (outcome === 'retry') throw new Error('retry');
+    // Only a job with fresh processed fields has something new to match.
+    if (outcome === 'processed' || outcome === 'reused')
+      await deps.matchQueue.enqueue(payload.data.jobId);
     return { outcome };
   }
   if (job.name === PROCESS_SWEEP_JOB) {

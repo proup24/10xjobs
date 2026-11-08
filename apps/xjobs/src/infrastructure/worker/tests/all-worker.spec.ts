@@ -64,13 +64,10 @@ const checks = vi.hoisted(() => ({
   assertApiKey: vi.fn(async () => undefined),
   checkModels: vi.fn(async () => new Map()),
 }));
-vi.mock(
-  'src/modules/processor/models/client',
-  async (importOriginal) => ({
-    ...(await importOriginal<object>()),
-    ...checks,
-  }),
-);
+vi.mock('src/modules/processor/models/client', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  ...checks,
+}));
 
 import { Logger } from '@nestjs/common';
 import { WorkerModule } from '../worker.module';
@@ -78,7 +75,12 @@ import { WorkerService } from '../worker.service';
 
 // OPENROUTER_API_KEY is unset: the processor is off in `all`.
 // Only the job board is an active channel; the others remove their schedules.
-const allWorkers = ['infrastructure', 'ingest', 'collect-linkedin-job-board'];
+const allWorkers = [
+  'infrastructure',
+  'ingest',
+  'match',
+  'collect-linkedin-job-board',
+];
 const inactiveSchedulers = [
   'collect-linkedin-posts:collect',
   'collect-greenhouse:collect',
@@ -106,7 +108,7 @@ async function startAll() {
   return { module, service };
 }
 
-it('runs infrastructure, ingest and every active channel collection, but not the processor, in one process', async () => {
+it('runs infrastructure, ingest and every active channel collection, and the matcher, but not the processor, in one process', async () => {
   const warn = vi.spyOn(Logger.prototype, 'warn');
   const { module, service } = await startAll();
   try {
@@ -119,6 +121,7 @@ it('runs infrastructure, ingest and every active channel collection, but not the
       expect(check).not.toHaveBeenCalled();
     expect(created.schedulers).toEqual([
       'ingest:sweep',
+      'match:sweep',
       'collect-linkedin-job-board:collect',
     ]);
     expect(created.removedSchedulers).toEqual(inactiveSchedulers);

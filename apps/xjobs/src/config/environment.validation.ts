@@ -95,9 +95,10 @@ export const processorEnvironmentSchema = z.object(processorEnvironmentShape);
 
 /**
  * A worker process. `WORKER_ROLE=ingest` runs the ingest worker,
- * `WORKER_ROLE=processor` runs the processor (needs `OPENROUTER_API_KEY`), and
+ * `WORKER_ROLE=processor` runs the processor (needs `OPENROUTER_API_KEY`),
+ * `WORKER_ROLE=match` runs the matcher, and
  * `WORKER_ROLE=all` runs the infrastructure, ingest and every channel's
- * collection worker in one process, plus the processor whenever
+ * collection worker and the matcher in one process, plus the processor whenever
  * `OPENROUTER_API_KEY` is set. Otherwise `WORKER_CHANNEL` unset runs the
  * infrastructure worker, and a channel runs that channel's collection job.
  * Collection needs an Apify token. An unknown role or
@@ -110,7 +111,7 @@ export const workerProcessEnvironmentSchema = databaseEnvironmentSchema
     ...storageEnvironmentShape,
     APIFY_TOKEN: z.string().min(1).optional(),
     WORKER_CHANNEL: z.enum(Channel).optional(),
-    WORKER_ROLE: z.enum(['ingest', 'processor', 'all']).optional(),
+    WORKER_ROLE: z.enum(['ingest', 'processor', 'match', 'all']).optional(),
     ...processorEnvironmentShape,
   })
   .superRefine((env, ctx) => {

@@ -25,6 +25,7 @@ function deps(outcome = 'processed', spent = 0, paused = false) {
       spendSince: vi.fn(async () => spent),
     },
     queue: { enqueue: vi.fn(async () => undefined) },
+    matchQueue: { enqueue: vi.fn(async () => undefined) },
     config,
   };
 }
@@ -52,6 +53,32 @@ describe('processProcessJob', () => {
       await processProcessJob(job('process-job', { jobId: 'j1' }), d as never),
     ).toEqual({ outcome: 'processed' });
     expect(d.service.process).toHaveBeenCalledWith('j1');
+  });
+
+  it.each(['processed', 'reused'])(
+    'hands a %s job to the matcher',
+    async (o) => {
+      const d = deps(o);
+      await processProcessJob(job('process-job', { jobId: 'j1' }), d as never);
+      expect(d.matchQueue.enqueue).toHaveBeenCalledWith('j1');
+    },
+  );
+
+  it.each(['closed', 'superseded', 'not_claimed', 'blocked'])(
+    'does not hand a %s job to the matcher',
+    async (o) => {
+      const d = deps(o);
+      await processProcessJob(job('process-job', { jobId: 'j1' }), d as never);
+      expect(d.matchQueue.enqueue).not.toHaveBeenCalled();
+    },
+  );
+
+  it('does not hand a failed job to the matcher', async () => {
+    const d = deps('retry');
+    await expect(
+      processProcessJob(job('process-job', { jobId: 'j1' }), d as never),
+    ).rejects.toThrow('retry');
+    expect(d.matchQueue.enqueue).not.toHaveBeenCalled();
   });
 
   it('sweeps: releases stale claims and enqueues pending jobs', async () => {
