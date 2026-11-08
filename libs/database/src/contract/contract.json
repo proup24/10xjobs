@@ -68,6 +68,10 @@
       "model": "ProfileQuerySearchBuilder",
       "namespace": "public"
     },
+    "profile_setup_drafts": {
+      "model": "ProfileSetupDraft",
+      "namespace": "public"
+    },
     "profile_skills": {
       "model": "ProfileSkill",
       "namespace": "public"
@@ -3156,6 +3160,90 @@
               "table": "profile_query_search_builders"
             }
           },
+          "ProfileSetupDraft": {
+            "fields": {
+              "answers": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "userId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "user": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "answers": {
+                  "column": "answers"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                },
+                "userId": {
+                  "column": "userId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "profile_setup_drafts"
+            }
+          },
           "ProfileSkill": {
             "fields": {
               "createdAt": {
@@ -5013,6 +5101,20 @@
               "tableName": "iso_languages",
               "using": "true"
             },
+            "profile_setup_drafts_owner": {
+              "kind": "policy",
+              "name": "profile_setup_drafts_owner_6ea08fe5",
+              "namespaceId": "public",
+              "operation": "all",
+              "permissive": true,
+              "prefix": "profile_setup_drafts_owner",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "profile_setup_drafts",
+              "using": "\"userId\" = auth.uid()",
+              "withCheck": "\"userId\" = auth.uid()"
+            },
             "profile_skills_owner_delete": {
               "kind": "policy",
               "name": "profile_skills_owner_delete_e80e5c12",
@@ -5306,6 +5408,11 @@
               "kind": "rls",
               "namespaceId": "public",
               "tableName": "profile_query_search_builders"
+            },
+            "profile_setup_drafts": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "profile_setup_drafts"
             },
             "profile_skills": {
               "kind": "rls",
@@ -7554,6 +7661,86 @@
                 }
               ]
             },
+            "profile_setup_drafts": {
+              "columns": {
+                "answers": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "userId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "unique": [
+                      "userId"
+                    ]
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "profile_setup_drafts"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "users"
+                  }
+                }
+              ],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "userId"
+                  ]
+                }
+              ]
+            },
             "profile_skills": {
               "checks": [
                 {
@@ -9520,10 +9707,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "739bfe84606def2e9d718339bcc2f402d2692d2f8b0253bb6ea3a5e4c5acc9e4"
+    "storageHash": "2b13e35e2e7380aacb17fa41ff6141e311ba0d3a2d3e211d878889ae00959bdc"
   },
   "execution": {
-    "executionHash": "5c00fc523089c5aa487c5b6b1a909049f24c10b050d4df6321de29c1c9800a76",
+    "executionHash": "17bf76cb8b8b5cb984e062cf7a31c66511573249bbfdd3deaff95ca1f4ac330c",
     "mutations": {
       "defaults": [
         {
@@ -9652,6 +9839,32 @@
           "ref": {
             "entry": "profile_query_search_builders",
             "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv7",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "profile_setup_drafts",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "profile_setup_drafts",
+            "field": "updatedAt",
             "namespace": "public"
           }
         },

@@ -1,9 +1,10 @@
 {
-  "hash": "739bfe84606def2e9d718339bcc2f402d2692d2f8b0253bb6ea3a5e4c5acc9e4",
+  "hash": "2b13e35e2e7380aacb17fa41ff6141e311ba0d3a2d3e211d878889ae00959bdc",
   "invariants": [
     "end-expired-sessions",
     "code-check-fixes",
     "resume-storage",
-    "builder-recount"
+    "builder-recount",
+    "profile-setup-functions"
   ]
 }

@@ -54,6 +54,25 @@ export const seedSkill = (userId: string, profileId: string) =>
     mastery: 8,
   });
 
+/** Removes userId's setup draft, if any. */
+export async function clearSetupDraft(userId: string): Promise<void> {
+  const { error } = await admin()
+    .from('profile_setup_drafts')
+    .delete()
+    .eq('userId', userId);
+  if (error)
+    throw new Error(`Could not clear the setup draft: ${error.message}`);
+}
+
+/** A setup draft for userId; userId is unique, so any existing draft is removed first. */
+export async function seedSetupDraft(
+  userId: string,
+  answers: Record<string, unknown> = { version: 1 },
+): Promise<string> {
+  await clearSetupDraft(userId);
+  return insertOne('profile_setup_drafts', { userId, answers });
+}
+
 export const seedContact = (userId: string) =>
   insertOne('contacts', {
     userId,

@@ -833,6 +833,39 @@ export type Database = {
           },
         ];
       };
+      profile_setup_drafts: {
+        Row: {
+          answers: NonNullable<Json>;
+          createdAt: string;
+          id: string;
+          updatedAt: string;
+          userId: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          answers: NonNullable<Json>;
+          createdAt?: string;
+          id: string;
+          updatedAt?: string;
+          userId: string;
+        };
+        Update: {
+          answers?: NonNullable<Json>;
+          createdAt?: string;
+          id?: string;
+          updatedAt?: string;
+          userId?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'profile_setup_drafts_userId_fkey';
+            columns: ['userId'];
+            isOneToOne: true;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       profile_skills: {
         Row: {
           createdAt: string;
@@ -1509,9 +1542,17 @@ export type Database = {
         Args: { field: string; places: Json };
         Returns: undefined;
       };
+      create_profile_from_setup: {
+        Args: { p_profile: Json; p_skills: Json };
+        Returns: string;
+      };
       end_expired_sessions: {
         Args: Record<PropertyKey, never>;
         Returns: number;
+      };
+      replace_profile_skills: {
+        Args: { p_profile_id: string; p_skills: Json };
+        Returns: undefined;
       };
       resume_folder_is_own: { Args: { object_name: string }; Returns: boolean };
       resume_key_is_own: { Args: { object_name: string }; Returns: boolean };

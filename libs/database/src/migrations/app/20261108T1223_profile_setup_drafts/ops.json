@@ -1,0 +1,283 @@
+[
+  {
+    "id": "table.profile_setup_drafts",
+    "label": "Create table \"profile_setup_drafts\"",
+    "summary": "Creates table \"profile_setup_drafts\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "profile_setup_drafts"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"profile_setup_drafts\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"profile_setup_drafts\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"profile_setup_drafts\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"profile_setup_drafts\"",
+        "sql": "CREATE TABLE \"public\".\"profile_setup_drafts\" (\n  \"answers\" jsonb NOT NULL,\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"id\" uuid NOT NULL,\n  \"updatedAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"userId\" uuid NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"profile_setup_drafts\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"profile_setup_drafts\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"profile_setup_drafts\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "unique.profile_setup_drafts.profile_setup_drafts_userId_key",
+    "label": "Add unique constraint on \"profile_setup_drafts\" (userId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "profile_setup_drafts_userId_key",
+        "table": "profile_setup_drafts"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"profile_setup_drafts_userId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profile_setup_drafts_userId_key",
+          "public",
+          "\"public\".\"profile_setup_drafts\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"profile_setup_drafts_userId_key\" on \"profile_setup_drafts\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"profile_setup_drafts_userId_key\"",
+        "sql": "ALTER TABLE \"public\".\"profile_setup_drafts\" ADD CONSTRAINT \"profile_setup_drafts_userId_key\" UNIQUE (\"userId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"profile_setup_drafts_userId_key\" exists on (userId)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "profile_setup_drafts_userId_key",
+          "public",
+          "\"public\".\"profile_setup_drafts\"",
+          "u",
+          "[\"userId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.profile_setup_drafts.profile_setup_drafts_userId_fkey",
+    "label": "Add foreign key \"profile_setup_drafts_userId_fkey\" on \"profile_setup_drafts\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "profile_setup_drafts_userId_fkey",
+        "table": "profile_setup_drafts"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"profile_setup_drafts_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profile_setup_drafts_userId_fkey",
+          "public",
+          "\"public\".\"profile_setup_drafts\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"profile_setup_drafts_userId_fkey\" on \"profile_setup_drafts\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"profile_setup_drafts_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"profile_setup_drafts\"\nADD CONSTRAINT \"profile_setup_drafts_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"users\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"profile_setup_drafts_userId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "profile_setup_drafts_userId_fkey",
+          "public",
+          "\"public\".\"profile_setup_drafts\"",
+          "f",
+          "[\"userId\"]",
+          "\"public\".\"users\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.profile_setup_drafts",
+    "label": "Enable row-level security on \"profile_setup_drafts\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "profile_setup_drafts"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"profile_setup_drafts\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "profile_setup_drafts"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"profile_setup_drafts\"",
+        "sql": "ALTER TABLE \"public\".\"profile_setup_drafts\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"profile_setup_drafts\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "profile_setup_drafts"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.profile_setup_drafts.profile_setup_drafts_owner_6ea08fe5",
+    "label": "Create RLS policy \"profile_setup_drafts_owner_6ea08fe5\" on \"profile_setup_drafts\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "profile_setup_drafts_owner_6ea08fe5",
+        "table": "profile_setup_drafts"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"profile_setup_drafts_owner_6ea08fe5\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profile_setup_drafts",
+          "profile_setup_drafts_owner_6ea08fe5"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"profile_setup_drafts_owner_6ea08fe5\" on \"profile_setup_drafts\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"profile_setup_drafts_owner_6ea08fe5\"",
+        "sql": "CREATE POLICY \"profile_setup_drafts_owner_6ea08fe5\" ON \"public\".\"profile_setup_drafts\" AS PERMISSIVE FOR ALL TO authenticated USING (\"userId\" = auth.uid()) WITH CHECK (\"userId\" = auth.uid())",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"profile_setup_drafts_owner_6ea08fe5\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "profile_setup_drafts",
+          "profile_setup_drafts_owner_6ea08fe5",
+          "ALL",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "functions.create_profile_from_setup",
+    "invariantId": "profile-setup-functions",
+    "label": "create_profile_from_setup: the profile, its skills and the end of the draft, in one transaction",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "profiles"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create create_profile_from_setup(p_profile, p_skills)",
+        "sql": "CREATE OR REPLACE FUNCTION public.create_profile_from_setup(p_profile jsonb, p_skills jsonb) RETURNS uuid\n  LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $$\nDECLARE\n  draft_id uuid;\n  profile_id uuid := gen_random_uuid();\n  p public.profiles;\nBEGIN\n  -- The lock makes a second call (double submit, another tab) wait, then find no draft.\n  SELECT d.id INTO draft_id\n    FROM public.profile_setup_drafts d\n   WHERE d.\"userId\" = auth.uid()\n     FOR UPDATE;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION USING ERRCODE = 'P0002', MESSAGE = 'no setup draft to create a profile from';\n  END IF;\n\n  p := jsonb_populate_record(null::public.profiles, p_profile);\n  -- Only the columns authenticated may insert; state, publishedAt and timestamps take their defaults.\n  INSERT INTO public.profiles (\n    \"id\", \"userId\", \"position\", \"yearsOfExperience\", \"timezoneCurrent\", \"timezoneMin\", \"timezoneMax\",\n    \"engagements\", \"seniorities\", \"noticePeriodDays\", \"contractTypes\", \"locations\", \"languages\",\n    \"salaryMin\", \"salaryCurrency\", \"salaryPeriod\", \"acceptsAnyCurrency\", \"acceptedCurrencies\"\n  ) VALUES (\n    profile_id, auth.uid(), p.\"position\", p.\"yearsOfExperience\", p.\"timezoneCurrent\", p.\"timezoneMin\", p.\"timezoneMax\",\n    p.\"engagements\", p.\"seniorities\", p.\"noticePeriodDays\", p.\"contractTypes\", p.\"locations\", p.\"languages\",\n    p.\"salaryMin\", p.\"salaryCurrency\", p.\"salaryPeriod\",\n    -- An omitted key keeps the column default (true, '{}') instead of becoming null.\n    COALESCE(p.\"acceptsAnyCurrency\", true), COALESCE(p.\"acceptedCurrencies\", '{}'::text[])\n  );\n\n  INSERT INTO public.profile_skills (\"id\", \"userId\", \"profileId\", \"technology\", \"domain\", \"mastery\", \"importance\")\n  SELECT gen_random_uuid(), auth.uid(), profile_id, s.technology, s.domain, s.mastery, s.importance\n    FROM jsonb_to_recordset(p_skills) AS s(technology text, domain text, mastery integer, importance integer);\n\n  DELETE FROM public.profile_setup_drafts d WHERE d.id = draft_id;\n  RETURN profile_id;\nEND $$;\nREVOKE EXECUTE ON FUNCTION public.create_profile_from_setup(jsonb, jsonb) FROM PUBLIC, anon;\nGRANT EXECUTE ON FUNCTION public.create_profile_from_setup(jsonb, jsonb) TO authenticated;"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "functions.replace_profile_skills",
+    "label": "replace_profile_skills: swap a draft profile's whole stack in one transaction",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "profile_skills"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create replace_profile_skills(p_profile_id, p_skills)",
+        "sql": "CREATE OR REPLACE FUNCTION public.replace_profile_skills(p_profile_id uuid, p_skills jsonb) RETURNS void\n  LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $$\nBEGIN\n  -- The draft-only skill policies refuse a published or foreign profile: the delete\n  -- matches nothing and the insert raises, so the whole call rolls back.\n  DELETE FROM public.profile_skills ps\n   WHERE ps.\"profileId\" = p_profile_id AND ps.\"userId\" = auth.uid();\n\n  INSERT INTO public.profile_skills (\"id\", \"userId\", \"profileId\", \"technology\", \"domain\", \"mastery\", \"importance\")\n  SELECT gen_random_uuid(), auth.uid(), p_profile_id, s.technology, s.domain, s.mastery, s.importance\n    FROM jsonb_to_recordset(p_skills) AS s(technology text, domain text, mastery integer, importance integer);\nEND $$;\nREVOKE EXECUTE ON FUNCTION public.replace_profile_skills(uuid, jsonb) FROM PUBLIC, anon;\nGRANT EXECUTE ON FUNCTION public.replace_profile_skills(uuid, jsonb) TO authenticated;"
+      }
+    ],
+    "postcheck": []
+  }
+]
