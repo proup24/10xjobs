@@ -134,6 +134,20 @@ describe('create_profile_from_setup', () => {
     });
   });
 
+  it('with a profile already there, removes the draft and returns the oldest profile without creating one', async () => {
+    const f = await createTestUser();
+    const existingId = await seedProfile(f.id);
+    await seedSetupDraft(f.id);
+
+    const { data, error } = await create(f, profileFields(), twoSkills);
+    expect(error).toBeNull();
+    expect(data).toBe(existingId);
+    const profiles = await profilesOf(f.id);
+    expect(profiles.map((p) => p['id'])).toEqual([existingId]);
+    expect(await skillsOf(f.id)).toEqual([]);
+    expect(await draftOf(f.id)).toEqual([]);
+  });
+
   it("cannot use another user's draft", async () => {
     const d = await createTestUser();
     const e = await createTestUser();
