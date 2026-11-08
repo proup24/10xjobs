@@ -37,6 +37,9 @@ export const ROLES = [
   'success-foreground',
   'warning',
   'warning-foreground',
+  'success-text',
+  'warning-text',
+  'destructive-text',
   'mark',
   'mark-foreground',
 ] as const;

@@ -44,6 +44,9 @@
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-success-text: var(--success-text);
+  --color-warning-text: var(--warning-text);
+  --color-destructive-text: var(--destructive-text);
   --color-mark: var(--mark);
   --color-mark-foreground: var(--mark-foreground);
   --radius-sm: 4px;
@@ -176,6 +179,9 @@
   --success-foreground: var(--gray-1);
   --warning: var(--amber-11);
   --warning-foreground: var(--gray-1);
+  --success-text: var(--green-12);
+  --warning-text: var(--amber-12);
+  --destructive-text: var(--red-12);
   --mark: var(--amber-4);
   --mark-foreground: var(--amber-12);
   --radius: 8px;
@@ -269,6 +275,9 @@
   --success-foreground: var(--gray-1);
   --warning: var(--amber-9);
   --warning-foreground: var(--gray-1);
+  --success-text: var(--green-10);
+  --warning-text: var(--amber-9);
+  --destructive-text: var(--red-10);
   --mark: var(--amber-11);
   --mark-foreground: var(--gray-1);
   --floating-shadow-strength: 5;

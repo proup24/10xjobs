@@ -34,9 +34,11 @@ describe('badgeVariants', () => {
     '%s is a tinted status badge',
     (variant) => {
       const cls = badgeVariants({ variant });
-      expect(cls).toContain(`text-${variant}`);
-      expect(cls).toContain(`bg-${variant}/10`);
-      expect(cls).toContain(`dark:text-${variant}`);
+      const classes = cls.split(' ');
+      expect(classes).toContain(`text-${variant}-text`);
+      expect(classes).toContain(`bg-${variant}/10`);
+      expect(cls).not.toContain('dark:text-');
+      expect(cls).not.toContain('color-mix');
     },
   );
 
@@ -53,20 +55,9 @@ describe('badgeVariants', () => {
       const vars = parseThemeBlocks(css)[mode];
       const background = resolveColor(vars, 'background');
       for (const role of ['success', 'warning', 'destructive']) {
-        // Light mode darkens the text 25% toward black (see badge.tsx); dark mode uses the role as is.
         const base = resolveColor(vars, role);
-        const fg =
-          mode === 'light'
-            ? `#${hexToRgb(base)
-                .map((c) =>
-                  Math.round(c * 0.75)
-                    .toString(16)
-                    .padStart(2, '0'),
-                )
-                .join('')}`
-            : base;
+        const fg = resolveColor(vars, `${role}-text`);
         const ratio = contrastRatio(fg, tint(base, background, 0.1));
-        console.log(`${mode} ${role} ${ratio.toFixed(2)}`);
         expect(ratio, `${role} ${mode}`).toBeGreaterThanOrEqual(4.5);
       }
     },
