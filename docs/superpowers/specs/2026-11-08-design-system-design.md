@@ -1,7 +1,7 @@
 # Design system: Supabase-style theme and component library
 
 Date: 2026-11-08
-Status: draft
+Status: approved
 Figma source: [Supabese UI (Community)](https://www.figma.com/design/aWnbipsr7VQnWEtm5Ewx6P/Supabese-UI--Community-), a community library file
 
 ## Intent
