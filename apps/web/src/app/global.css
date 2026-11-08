@@ -164,12 +164,12 @@
   --green-4: #113b29;
   --green-5: #174933;
   --green-6: #20573e;
-  --green-7: #1b7a55;
-  --green-8: #10b981;
-  --green-9: #24b47e;
+  --green-7: #26865b;
+  --green-8: #2c9c6a;
+  --green-9: #10b981;
   --green-10: #3ecf8e;
   --green-11: #9fe7c7;
-  --green-12: #d3f5e5;
+  --green-12: #ffffff;
   --amber-1: #16120c;
   --amber-2: #1d180f;
   --amber-3: #302008;
@@ -201,8 +201,8 @@
   --card-foreground: var(--gray-12);
   --popover: var(--gray-3);
   --popover-foreground: var(--gray-12);
-  --primary: var(--green-9);
-  --primary-foreground: var(--gray-1);
+  --primary: var(--green-7);
+  --primary-foreground: var(--green-12);
   --secondary: var(--gray-4);
   --secondary-foreground: var(--gray-11);
   --muted: var(--gray-4);
@@ -220,8 +220,8 @@
   --chart-5: var(--gray-9);
   --sidebar: var(--gray-3);
   --sidebar-foreground: var(--gray-12);
-  --sidebar-primary: var(--green-9);
-  --sidebar-primary-foreground: var(--gray-1);
+  --sidebar-primary: var(--green-7);
+  --sidebar-primary-foreground: var(--green-12);
   --sidebar-accent: var(--gray-4);
   --sidebar-accent-foreground: var(--gray-12);
   --sidebar-border: var(--gray-4);
