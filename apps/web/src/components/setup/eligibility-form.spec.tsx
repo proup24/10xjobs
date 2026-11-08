@@ -118,6 +118,12 @@ describe('EligibilityForm', () => {
 
   it('sponsorship starts unselected and is required', async () => {
     const { onSave } = setup();
+    const legend = screen.getByText(
+      'Would you take a job that sponsors your visa?',
+    );
+    expect(
+      legend.querySelector('[data-slot="field-required"]')?.textContent,
+    ).toBe('*');
     const yes = screen.getByRole('radio', { name: 'Yes' });
     const no = screen.getByRole('radio', { name: 'No' });
     expect(yes.getAttribute('aria-checked')).toBe('false');

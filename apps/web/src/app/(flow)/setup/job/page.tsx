@@ -1,3 +1,4 @@
+import { setupStepTitle } from '@/lib/setup/steps';
 import { JobStep } from '@/components/setup/job-step';
 import { loadSetupProfile } from '@/lib/setup/load';
 import { loadValueLists } from '@/lib/setup/value-lists';
@@ -5,6 +6,8 @@ import { requireSetupStep } from '../guard';
 import { saveJobAction } from '../actions';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata = { title: setupStepTitle('job') };
 
 export default async function Page() {
   const { supabase, snapshot } = await requireSetupStep('job');

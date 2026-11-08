@@ -1,9 +1,12 @@
+import { setupStepTitle } from '@/lib/setup/steps';
 import { AboutStep } from '@/components/setup/about-step';
 import { loadAbout } from '@/lib/setup/load';
 import { requireSetupStep } from '../guard';
 import { saveAboutAction } from '../actions';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata = { title: setupStepTitle('about') };
 
 export default async function Page() {
   const { supabase } = await requireSetupStep('about');

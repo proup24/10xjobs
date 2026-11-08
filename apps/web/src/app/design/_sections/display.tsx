@@ -40,6 +40,16 @@ const setupSteps = [
   { id: 'review', label: 'Review' },
 ];
 
+// The guided setup's six steps: long labels that wrap inside a max-w-2xl column.
+const longSteps = [
+  { id: 'about', label: 'About you' },
+  { id: 'eligibility', label: 'Where you can work' },
+  { id: 'job', label: 'The job you want' },
+  { id: 'terms', label: 'Location and terms' },
+  { id: 'resume', label: 'Resume' },
+  { id: 'review', label: 'Review' },
+];
+
 export function DisplaySection() {
   return (
     <section className="flex flex-col gap-6">
@@ -139,6 +149,9 @@ export function DisplaySection() {
           <Steps steps={setupSteps} current={0} />
           <Steps steps={setupSteps} current={1} />
           <Steps steps={setupSteps} current={3} />
+          <div className="w-full max-w-2xl" data-testid="steps-long">
+            <Steps steps={longSteps} current={2} />
+          </div>
         </div>
       </Block>
       <FileDropZoneExamples />

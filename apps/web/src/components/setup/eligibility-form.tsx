@@ -181,7 +181,7 @@ export function EligibilityForm({
         </FieldSet>
 
         <FieldSet>
-          <FieldLegend variant="label">
+          <FieldLegend variant="label" required>
             Would you take a job that sponsors your visa?
           </FieldLegend>
           <Field invalid={Boolean(errors.acceptsSponsorship)} required>

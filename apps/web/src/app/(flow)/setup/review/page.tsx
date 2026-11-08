@@ -1,3 +1,4 @@
+import { setupStepTitle } from '@/lib/setup/steps';
 import { redirect } from 'next/navigation';
 import { Review } from '@/components/setup/review';
 import {
@@ -10,6 +11,8 @@ import { loadValueLists } from '@/lib/setup/value-lists';
 import { requireSetupStep } from '../guard';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata = { title: setupStepTitle('review') };
 
 export default async function Page() {
   const { supabase, snapshot } = await requireSetupStep('review');

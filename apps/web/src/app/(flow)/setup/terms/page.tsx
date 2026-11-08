@@ -1,3 +1,4 @@
+import { setupStepTitle } from '@/lib/setup/steps';
 import { TermsStep } from '@/components/setup/terms-step';
 import { loadSetupProfile } from '@/lib/setup/load';
 import { loadValueLists } from '@/lib/setup/value-lists';
@@ -5,6 +6,8 @@ import { requireSetupStep } from '../guard';
 import { saveTermsAction } from '../actions';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata = { title: setupStepTitle('terms') };
 
 export default async function Page() {
   const { supabase, snapshot } = await requireSetupStep('terms');

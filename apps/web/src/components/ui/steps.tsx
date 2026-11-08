@@ -23,8 +23,9 @@ function Steps({ steps, current, className }: StepsProps) {
         Step {index + 1} of {steps.length} · {steps[index].label}
       </p>
       {/* Below sm the list is visually hidden (sr-only), not removed, so
-          assistive tech reads it at every width and never the summary too. */}
-      <ol className="max-sm:sr-only sm:flex sm:items-center sm:gap-2">
+          assistive tech reads it at every width and never the summary too.
+          From sm up it wraps whole steps onto new rows; a label never breaks. */}
+      <ol className="max-sm:sr-only sm:flex sm:flex-wrap sm:items-center sm:gap-x-2 sm:gap-y-3">
         {steps.map((step, i) => {
           const done = i < index;
           const isCurrent = i === index;
@@ -33,7 +34,7 @@ function Steps({ steps, current, className }: StepsProps) {
               key={step.id}
               aria-current={isCurrent ? 'step' : undefined}
               className={cn(
-                'flex items-center gap-2 text-sm',
+                'flex items-center gap-2 text-sm whitespace-nowrap',
                 isCurrent
                   ? 'font-medium text-foreground'
                   : 'text-muted-foreground',

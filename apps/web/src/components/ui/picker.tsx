@@ -67,7 +67,14 @@ function PickerList({ emptyText }: { emptyText: string }) {
       <ComboboxEmpty>{emptyText}</ComboboxEmpty>
       <ComboboxList>
         {(option: PickerOption) => (
-          <ComboboxItem key={option.value} value={option}>
+          <ComboboxItem
+            key={option.value}
+            value={option}
+            // Without it the name runs label and detail together ("FranceCountry").
+            aria-label={
+              option.detail ? `${option.label}, ${option.detail}` : undefined
+            }
+          >
             {option.label}
             {option.detail && (
               <span className="ml-auto text-xs text-muted-foreground">

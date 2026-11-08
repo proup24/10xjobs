@@ -117,7 +117,10 @@ describe('Picker', () => {
     type(screen.getByRole('combobox'), 'country');
     await screen.findByText('No place found');
     type(screen.getByRole('combobox'), 'fra');
-    const france = await screen.findByRole('option', { name: /^France/ });
+    const france = await screen.findByRole('option', {
+      name: 'France, Country',
+    });
+    // The detail still shows after the label.
     expect(france.textContent).toBe('FranceCountry');
   });
 
