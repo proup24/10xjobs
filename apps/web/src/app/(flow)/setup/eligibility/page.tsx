@@ -1,4 +1,4 @@
-import { EligibilityForm } from '@/components/setup/eligibility-form';
+import { EligibilityStep } from '@/components/setup/eligibility-step';
 import { loadEligibility } from '@/lib/setup/load';
 import { loadValueLists } from '@/lib/setup/value-lists';
 import { requireSetupStep } from '../guard';
@@ -13,7 +13,7 @@ export default async function Page() {
     loadValueLists(supabase),
   ]);
   return (
-    <EligibilityForm
+    <EligibilityStep
       initial={initial}
       lists={{ countries: lists.countries, regions: lists.regions }}
       onSave={saveEligibilityAction}

@@ -31,15 +31,16 @@ function setup(
   onSave = vi.fn().mockResolvedValue({ status: 'saved' }),
 ) {
   const onSaved = vi.fn();
-  render(
+  const { container } = render(
     <EligibilityForm
+      formId="f"
       initial={initial}
       lists={LISTS}
       onSave={onSave}
       onSaved={onSaved}
     />,
   );
-  return { onSave, onSaved };
+  return { onSave, onSaved, container };
 }
 
 // Base UI opens the list only for typed input, so send what a keyboard sends.
@@ -51,7 +52,7 @@ async function pickResidence(text: string, label: string) {
 }
 
 const submit = () =>
-  fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+  fireEvent.submit(document.querySelector('form#f') as HTMLFormElement);
 
 const SUGGESTION = 'Add residency in Morocco?';
 

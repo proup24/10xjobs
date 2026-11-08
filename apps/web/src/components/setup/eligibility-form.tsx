@@ -1,7 +1,6 @@
 'use client';
 
-import { useId, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useId, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -20,13 +19,11 @@ import {
   type EligibilityAnswers,
 } from '@/lib/setup/answers';
 import type { SaveResult } from '@/lib/setup/save';
-import { SETUP_STEPS, stepPath } from '@/lib/setup/steps';
 import { AuthorizationRows, type AuthorizationRow } from './authorization-rows';
 import { issueErrors } from './form-errors';
-import { notifySaveFailed, StepFrame } from './step-frame';
+import type { StepStatus } from './step-status';
+import { notifySaveFailed } from './step-frame';
 
-const FORM_ID = 'eligibility-form';
-const LABEL = SETUP_STEPS[1].label;
 const NONE_LABEL = "I don't hold any work authorization";
 
 type Props = {
@@ -34,13 +31,22 @@ type Props = {
   initial: EligibilityAnswers | null;
   lists: { countries: PickerOption[]; regions: PickerOption[] };
   onSave: (input: unknown) => Promise<SaveResult>;
-  /** Defaults to opening the next step. */
-  onSaved?: () => void;
+  onSaved: () => void;
+  /** Reports the save state to whoever frames the form. */
+  onStatusChange?: (status: StepStatus) => void;
+  /** The `<form>` id, so a frame's submit button can target it. */
+  formId: string;
 };
 
 /** Step 2: residence, work authorizations (or none, deliberately) and sponsorship. */
-export function EligibilityForm({ initial, lists, onSave, onSaved }: Props) {
-  const router = useRouter();
+export function EligibilityForm({
+  formId,
+  initial,
+  lists,
+  onSave,
+  onSaved,
+  onStatusChange,
+}: Props) {
   const ids = useId();
   const [residence, setResidence] = useState<string | null>(
     initial?.residenceCountry ?? null,
@@ -54,6 +60,10 @@ export function EligibilityForm({ initial, lists, onSave, onSaved }: Props) {
   const [none, setNone] = useState(initial?.noneConfirmed ?? false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [pending, setPending] = useState(false);
+  const formError = errors._form;
+  useEffect(() => {
+    onStatusChange?.({ pending, formError });
+  }, [pending, formError, onStatusChange]);
 
   const places = [...lists.countries, ...lists.regions];
   const residenceLabel = lists.countries.find(
@@ -105,7 +115,7 @@ export function EligibilityForm({ initial, lists, onSave, onSaved }: Props) {
     }
     setPending(false);
     if (result.status === 'saved') {
-      (onSaved ?? (() => router.push(stepPath('job'))))();
+      onSaved();
     } else if (result.status === 'invalid') {
       setErrors(result.errors);
     } else {
@@ -114,92 +124,84 @@ export function EligibilityForm({ initial, lists, onSave, onSaved }: Props) {
   }
 
   return (
-    <StepFrame
-      step="eligibility"
-      title={LABEL}
-      pending={pending}
-      formId={FORM_ID}
-      formError={errors._form}
-    >
-      <form id={FORM_ID} onSubmit={submit} noValidate>
-        <FieldGroup>
-          <Field invalid={Boolean(errors.residenceCountry)} required>
-            <FieldLabel htmlFor={`${ids}-residence`}>
-              Country of residence
-            </FieldLabel>
-            <Picker
-              id={`${ids}-residence`}
-              options={lists.countries}
-              value={residence}
-              onValueChange={setResidence}
-              placeholder="Search countries"
-              emptyText="No country found"
-            />
-            <FieldError>{errors.residenceCountry}</FieldError>
-          </Field>
+    <form id={formId} onSubmit={submit} noValidate>
+      <FieldGroup>
+        <Field invalid={Boolean(errors.residenceCountry)} required>
+          <FieldLabel htmlFor={`${ids}-residence`}>
+            Country of residence
+          </FieldLabel>
+          <Picker
+            id={`${ids}-residence`}
+            options={lists.countries}
+            value={residence}
+            onValueChange={setResidence}
+            placeholder="Search countries"
+            emptyText="No country found"
+          />
+          <FieldError>{errors.residenceCountry}</FieldError>
+        </Field>
 
-          <FieldSet>
-            <FieldLegend variant="label">Work authorizations</FieldLegend>
-            <FieldDescription>
-              Where you can work without needing a visa from an employer.
-            </FieldDescription>
-            {suggest && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-auto self-start whitespace-normal"
-                onClick={addResidency}
-              >
-                {`Add residency in ${residenceLabel ?? residence}?`}
-              </Button>
-            )}
-            <AuthorizationRows
-              rows={rows}
-              places={places}
-              errors={errors}
-              onChange={changeRows}
-            />
-            <Field
-              orientation="horizontal"
-              invalid={Boolean(errors.noneConfirmed)}
+        <FieldSet>
+          <FieldLegend variant="label">Work authorizations</FieldLegend>
+          <FieldDescription>
+            Where you can work without needing a visa from an employer.
+          </FieldDescription>
+          {suggest && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-auto self-start whitespace-normal"
+              onClick={addResidency}
             >
-              <Checkbox
-                id={`${ids}-none`}
-                checked={none}
-                disabled={rows.length > 0}
-                onCheckedChange={setNone}
-              />
-              <FieldLabel htmlFor={`${ids}-none`}>{NONE_LABEL}</FieldLabel>
-            </Field>
-            <Field invalid={Boolean(errors.noneConfirmed)}>
-              <FieldError>{errors.noneConfirmed}</FieldError>
-            </Field>
-          </FieldSet>
+              {`Add residency in ${residenceLabel ?? residence}?`}
+            </Button>
+          )}
+          <AuthorizationRows
+            rows={rows}
+            places={places}
+            errors={errors}
+            onChange={changeRows}
+          />
+          <Field
+            orientation="horizontal"
+            invalid={Boolean(errors.noneConfirmed)}
+          >
+            <Checkbox
+              id={`${ids}-none`}
+              checked={none}
+              disabled={rows.length > 0}
+              onCheckedChange={setNone}
+            />
+            <FieldLabel htmlFor={`${ids}-none`}>{NONE_LABEL}</FieldLabel>
+          </Field>
+          <Field invalid={Boolean(errors.noneConfirmed)}>
+            <FieldError>{errors.noneConfirmed}</FieldError>
+          </Field>
+        </FieldSet>
 
-          <FieldSet>
-            <FieldLegend variant="label">
-              Would you take a job that sponsors your visa?
-            </FieldLegend>
-            <Field invalid={Boolean(errors.acceptsSponsorship)} required>
-              <RadioGroup
-                value={sponsorship === null ? '' : sponsorship ? 'yes' : 'no'}
-                onValueChange={(v) => setSponsorship(v === 'yes')}
-              >
-                <Field orientation="horizontal">
-                  <RadioGroupItem id={`${ids}-yes`} value="yes" />
-                  <FieldLabel htmlFor={`${ids}-yes`}>Yes</FieldLabel>
-                </Field>
-                <Field orientation="horizontal">
-                  <RadioGroupItem id={`${ids}-no`} value="no" />
-                  <FieldLabel htmlFor={`${ids}-no`}>No</FieldLabel>
-                </Field>
-              </RadioGroup>
-              <FieldError>{errors.acceptsSponsorship}</FieldError>
-            </Field>
-          </FieldSet>
-        </FieldGroup>
-      </form>
-    </StepFrame>
+        <FieldSet>
+          <FieldLegend variant="label">
+            Would you take a job that sponsors your visa?
+          </FieldLegend>
+          <Field invalid={Boolean(errors.acceptsSponsorship)} required>
+            <RadioGroup
+              value={sponsorship === null ? '' : sponsorship ? 'yes' : 'no'}
+              onValueChange={(v) => setSponsorship(v === 'yes')}
+            >
+              <Field orientation="horizontal">
+                <RadioGroupItem id={`${ids}-yes`} value="yes" />
+                <FieldLabel htmlFor={`${ids}-yes`}>Yes</FieldLabel>
+              </Field>
+              <Field orientation="horizontal">
+                <RadioGroupItem id={`${ids}-no`} value="no" />
+                <FieldLabel htmlFor={`${ids}-no`}>No</FieldLabel>
+              </Field>
+            </RadioGroup>
+            <FieldError>{errors.acceptsSponsorship}</FieldError>
+          </Field>
+        </FieldSet>
+      </FieldGroup>
+    </form>
   );
 }

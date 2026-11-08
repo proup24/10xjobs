@@ -26,24 +26,28 @@ const EMPTY: AboutAnswers = {
   links: [],
 };
 
+const onStatusChange = vi.fn();
+
 function setup(
   initial: AboutAnswers = EMPTY,
   onSave = vi.fn().mockResolvedValue({ status: 'saved' }),
 ) {
   const onSaved = vi.fn();
-  render(
+  const { container } = render(
     <AboutForm
+      formId="f"
+      onStatusChange={onStatusChange}
       email="ada@example.com"
       initial={initial}
       onSave={onSave}
       onSaved={onSaved}
     />,
   );
-  return { onSave, onSaved };
+  return { onSave, onSaved, container };
 }
 
 const submit = () =>
-  fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+  fireEvent.submit(document.querySelector('form#f') as HTMLFormElement);
 
 describe('AboutForm', () => {
   it('continue with only a name saves', async () => {
@@ -111,7 +115,10 @@ describe('AboutForm', () => {
     await waitFor(() => expect(toastError).toHaveBeenCalledTimes(1));
     submit();
     expect(await screen.findByText('Name is taken')).toBeTruthy();
-    expect(screen.getByText('Fix the errors')).toBeTruthy();
+    expect(onStatusChange).toHaveBeenLastCalledWith({
+      pending: false,
+      formError: 'Fix the errors',
+    });
     expect(toastError).toHaveBeenCalledTimes(1);
     expect(onSaved).not.toHaveBeenCalled();
   });
