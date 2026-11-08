@@ -73,14 +73,17 @@
   /* Floating surfaces (popovers, menus, dialogs): layered stacks from
      supabase/supabase packages/config/css/shadows.css (Apache-2.0). */
   --shadow-sm:
-    0 2.79px 3.72px -2px rgb(0 0 0 / calc(0.01 * var(--floating-shadow-strength))),
+    0 2.79px 3.72px -2px
+      rgb(0 0 0 / calc(0.01 * var(--floating-shadow-strength))),
     0 1.16px 1.5px 0 rgb(0 0 0 / calc(0.01 * var(--floating-shadow-strength))),
     0 0 0 1px var(--floating-ring-color);
   --shadow-md:
-    0 17.54px 23.39px 0 rgb(0 0 0 / calc(0.04 * var(--floating-shadow-strength))),
+    0 17.54px 23.39px 0
+      rgb(0 0 0 / calc(0.04 * var(--floating-shadow-strength))),
     0 9.4px 12.5px 0 rgb(0 0 0 / calc(0.03 * var(--floating-shadow-strength))),
     0 5.25px 7px 0 rgb(0 0 0 / calc(0.02 * var(--floating-shadow-strength))),
-    0 2.79px 3.72px -2px rgb(0 0 0 / calc(0.01 * var(--floating-shadow-strength))),
+    0 2.79px 3.72px -2px
+      rgb(0 0 0 / calc(0.01 * var(--floating-shadow-strength))),
     0 1.16px 1.5px 0 rgb(0 0 0 / calc(0.01 * var(--floating-shadow-strength))),
     0 0 0 1px var(--floating-ring-color);
   --shadow-lg:
