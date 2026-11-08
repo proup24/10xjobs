@@ -5,3 +5,4 @@ export { Engagement } from './engagement.enum';
 export { ProfileState } from './profile-state.enum';
 export { Seniority } from './seniority.enum';
 export { SkillDomain } from './skill-domain.enum';
+export { TECHNOLOGY_TERMS, isSearchableTech } from './technology-terms';

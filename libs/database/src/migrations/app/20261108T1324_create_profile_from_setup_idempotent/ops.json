@@ -1,0 +1,24 @@
+[
+  {
+    "id": "functions.create_profile_from_setup_idempotent",
+    "invariantId": "create-profile-from-setup-idempotent",
+    "label": "create_profile_from_setup: with a profile already there, end the draft and return that profile",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "profiles"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "replace create_profile_from_setup(p_profile, p_skills)",
+        "sql": "CREATE OR REPLACE FUNCTION public.create_profile_from_setup(p_profile jsonb, p_skills jsonb) RETURNS uuid\n  LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $$\nDECLARE\n  draft_id uuid;\n  existing_id uuid;\n  profile_id uuid := gen_random_uuid();\n  p public.profiles;\nBEGIN\n  -- The lock makes a second call (double submit, another tab) wait, then find no draft.\n  SELECT d.id INTO draft_id\n    FROM public.profile_setup_drafts d\n   WHERE d.\"userId\" = auth.uid()\n     FOR UPDATE;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION USING ERRCODE = 'P0002', MESSAGE = 'no setup draft to create a profile from';\n  END IF;\n\n  -- A profile already exists (a draft saved again after a concurrent creation, or a\n  -- profile made outside setup): setup is over, so end the stray draft and return the\n  -- oldest profile instead of creating a second one.\n  SELECT pr.id INTO existing_id\n    FROM public.profiles pr\n   WHERE pr.\"userId\" = auth.uid()\n   ORDER BY pr.\"createdAt\", pr.id\n   LIMIT 1;\n  IF FOUND THEN\n    DELETE FROM public.profile_setup_drafts d WHERE d.id = draft_id;\n    RETURN existing_id;\n  END IF;\n\n  p := jsonb_populate_record(null::public.profiles, p_profile);\n  -- Only the columns authenticated may insert; state, publishedAt and timestamps take their defaults.\n  INSERT INTO public.profiles (\n    \"id\", \"userId\", \"position\", \"yearsOfExperience\", \"timezoneCurrent\", \"timezoneMin\", \"timezoneMax\",\n    \"engagements\", \"seniorities\", \"noticePeriodDays\", \"contractTypes\", \"locations\", \"languages\",\n    \"salaryMin\", \"salaryCurrency\", \"salaryPeriod\", \"acceptsAnyCurrency\", \"acceptedCurrencies\"\n  ) VALUES (\n    profile_id, auth.uid(), p.\"position\", p.\"yearsOfExperience\", p.\"timezoneCurrent\", p.\"timezoneMin\", p.\"timezoneMax\",\n    p.\"engagements\", p.\"seniorities\", p.\"noticePeriodDays\", p.\"contractTypes\", p.\"locations\", p.\"languages\",\n    p.\"salaryMin\", p.\"salaryCurrency\", p.\"salaryPeriod\",\n    -- An omitted key keeps the column default (true, '{}') instead of becoming null.\n    COALESCE(p.\"acceptsAnyCurrency\", true), COALESCE(p.\"acceptedCurrencies\", '{}'::text[])\n  );\n\n  INSERT INTO public.profile_skills (\"id\", \"userId\", \"profileId\", \"technology\", \"domain\", \"mastery\", \"importance\")\n  SELECT gen_random_uuid(), auth.uid(), profile_id, s.technology, s.domain, s.mastery, s.importance\n    FROM jsonb_to_recordset(p_skills) AS s(technology text, domain text, mastery integer, importance integer);\n\n  DELETE FROM public.profile_setup_drafts d WHERE d.id = draft_id;\n  RETURN profile_id;\nEND $$;\nREVOKE EXECUTE ON FUNCTION public.create_profile_from_setup(jsonb, jsonb) FROM PUBLIC, anon;\nGRANT EXECUTE ON FUNCTION public.create_profile_from_setup(jsonb, jsonb) TO authenticated;"
+      }
+    ],
+    "postcheck": []
+  }
+]

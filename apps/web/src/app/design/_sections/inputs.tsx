@@ -1,6 +1,7 @@
 'use client';
 
-import { Mail } from 'lucide-react';
+import { useState } from 'react';
+import { Mail, Star } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import {
@@ -10,6 +11,7 @@ import {
 } from '@/components/ui/input-group';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { RatingBar } from '@/components/ui/rating-bar';
 import {
   Select,
   SelectContent,
@@ -19,7 +21,20 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { Toggle } from '@/components/ui/toggle';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Block } from './block';
+
+function RatingDemo({
+  initial,
+  ...props
+}: { initial: number | null } & Omit<
+  React.ComponentProps<typeof RatingBar>,
+  'value' | 'onValueChange'
+>) {
+  const [value, setValue] = useState(initial);
+  return <RatingBar value={value} onValueChange={setValue} {...props} />;
+}
 
 const LEVELS = [
   { value: 'junior', label: 'Junior' },
@@ -195,6 +210,56 @@ export function InputsSection() {
         <Choice id="s-sm" label="Small">
           <Switch id="s-sm" size="sm" defaultChecked />
         </Choice>
+      </Block>
+
+      <Block title="Toggle: unpressed, pressed, disabled">
+        <Toggle aria-label="Search for this, unpressed" variant="outline">
+          <Star />
+        </Toggle>
+        <Toggle
+          aria-label="Search for this, pressed"
+          variant="outline"
+          defaultPressed
+        >
+          <Star />
+        </Toggle>
+        <Toggle
+          aria-label="Search for this, disabled"
+          variant="outline"
+          disabled
+        >
+          <Star />
+        </Toggle>
+        <Toggle size="sm">Small</Toggle>
+      </Block>
+
+      <Block title="Toggle group: Remote, Hybrid and On-site, multiple">
+        <ToggleGroup multiple defaultValue={['remote']} variant="outline">
+          <ToggleGroupItem value="remote">Remote</ToggleGroupItem>
+          <ToggleGroupItem value="hybrid" disabled>
+            Hybrid
+          </ToggleGroupItem>
+          <ToggleGroupItem value="onsite" disabled>
+            On-site
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </Block>
+
+      <Block title="Rating bar: empty, set, invalid, disabled">
+        <RatingDemo
+          initial={null}
+          lowLabel="1 = learning"
+          highLabel="5 = expert"
+          aria-label="Mastery, empty"
+        />
+        <RatingDemo
+          initial={4}
+          lowLabel="1 = learning"
+          highLabel="5 = expert"
+          aria-label="Mastery, set"
+        />
+        <RatingDemo initial={null} aria-label="Mastery, invalid" aria-invalid />
+        <RatingDemo initial={2} disabled aria-label="Mastery, disabled" />
       </Block>
 
       <Block title="Select: default, disabled, invalid">

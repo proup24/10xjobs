@@ -325,6 +325,25 @@ policy_delete profile_skills_owner_delete {
   using = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills."profileId" AND p."userId" = auth.uid() AND p.state = 'draft')`
 }
 
+// Answers to setup steps 3–4 until the profile can be created; one per user.
+model ProfileSetupDraft {
+  id      Uuid  @id @onCreate(uuid(7))
+  userId  Uuid  @unique
+  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers Jsonb
+  +Timestamps
+
+  @@map("profile_setup_drafts")
+  @@rls
+}
+
+policy_all profile_setup_drafts_owner {
+  target = ProfileSetupDraft
+  roles = [authenticated]
+  using = sql`"userId" = auth.uid()`
+  withCheck = sql`"userId" = auth.uid()`
+}
+
 // A shared, immutable search recipe for one channel, deduplicated by hash across every
 // profile. Profiles use it through ProfileQuerySearchBuilder; rows are never hard-deleted,
 // because raw job hits are attributed to them.

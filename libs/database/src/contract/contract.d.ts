@@ -24,9 +24,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'739bfe84606def2e9d718339bcc2f402d2692d2f8b0253bb6ea3a5e4c5acc9e4'>;
+  StorageHashBase<'2b13e35e2e7380aacb17fa41ff6141e311ba0d3a2d3e211d878889ae00959bdc'>;
 export type ExecutionHash =
-  ExecutionHashBase<'5c00fc523089c5aa487c5b6b1a909049f24c10b050d4df6321de29c1c9800a76'>;
+  ExecutionHashBase<'17bf76cb8b8b5cb984e062cf7a31c66511573249bbfdd3deaff95ca1f4ac330c'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -814,6 +814,15 @@ export namespace Models {
     query: public_QuerySearchBuilder;
     readonly [RelationKeys]?: 'profile' | 'query';
   };
+  export type public_ProfileSetupDraft = {
+    answers: FieldOutputTypes['public']['ProfileSetupDraft']['answers'];
+    createdAt: FieldOutputTypes['public']['ProfileSetupDraft']['createdAt'];
+    id: FieldOutputTypes['public']['ProfileSetupDraft']['id'];
+    updatedAt: FieldOutputTypes['public']['ProfileSetupDraft']['updatedAt'];
+    userId: FieldOutputTypes['public']['ProfileSetupDraft']['userId'];
+    user: public_User;
+    readonly [RelationKeys]?: 'user';
+  };
   export type public_ProfileSkill = {
     createdAt: FieldOutputTypes['public']['ProfileSkill']['createdAt'];
     domain: FieldOutputTypes['public']['ProfileSkill']['domain'];
@@ -1004,6 +1013,7 @@ export declare const models: {
     ProcessingAttempt: Models.public_ProcessingAttempt;
     Profile: Models.public_Profile;
     ProfileQuerySearchBuilder: Models.public_ProfileQuerySearchBuilder;
+    ProfileSetupDraft: Models.public_ProfileSetupDraft;
     ProfileSkill: Models.public_ProfileSkill;
     QuerySearchBuilder: Models.public_QuerySearchBuilder;
     RawItem: Models.public_RawItem;
@@ -2733,6 +2743,61 @@ type ContractBase = Omit<
                 },
               ];
             };
+            readonly profile_setup_drafts: {
+              columns: {
+                readonly answers: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly userId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['userId'] }];
+              indexes: readonly [];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'profile_setup_drafts';
+                    readonly columns: readonly ['userId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'users';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
             readonly profile_skills: {
               columns: {
                 readonly createdAt: {
@@ -4185,6 +4250,10 @@ type ContractBase = Omit<
     readonly profile_query_search_builders: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'ProfileQuerySearchBuilder';
+    };
+    readonly profile_setup_drafts: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'ProfileSetupDraft';
     };
     readonly profile_skills: {
       readonly namespace: 'public' & NamespaceId;
@@ -5916,6 +5985,60 @@ type ContractBase = Omit<
               };
             };
           };
+          readonly ProfileSetupDraft: {
+            readonly fields: {
+              readonly answers: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly userId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+            };
+            readonly relations: {
+              readonly user: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['userId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'profile_setup_drafts';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly answers: { readonly column: 'answers' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly id: { readonly column: 'id' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+                readonly userId: { readonly column: 'userId' };
+              };
+            };
+          };
           readonly ProfileSkill: {
             readonly fields: {
               readonly createdAt: {
@@ -7226,6 +7349,23 @@ type ContractBase = Omit<
           readonly ref: {
             readonly entry: 'profile_query_search_builders';
             readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'uuidv7'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'profile_setup_drafts';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'profile_setup_drafts';
+            readonly field: 'updatedAt';
             readonly namespace: 'public';
           };
         },

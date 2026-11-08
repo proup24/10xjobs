@@ -1,0 +1,9 @@
+{
+  "from": "739bfe84606def2e9d718339bcc2f402d2692d2f8b0253bb6ea3a5e4c5acc9e4",
+  "to": "2b13e35e2e7380aacb17fa41ff6141e311ba0d3a2d3e211d878889ae00959bdc",
+  "providedInvariants": [
+    "profile-setup-functions"
+  ],
+  "createdAt": "2026-11-08T12:23:46.188Z",
+  "migrationHash": "304ffb3f30742b1bb3f505e561550ee0893bdae224e5303eb1e548bda8b4c143"
+}

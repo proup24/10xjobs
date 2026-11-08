@@ -1,0 +1,24 @@
+[
+  {
+    "id": "functions.replace_profile_skills_lock",
+    "invariantId": "replace-profile-skills-lock",
+    "label": "replace_profile_skills: lock the draft profile first, P0002 when it is not the caller's draft",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "profile_skills"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "replace replace_profile_skills(p_profile_id, p_skills)",
+        "sql": "CREATE OR REPLACE FUNCTION public.replace_profile_skills(p_profile_id uuid, p_skills jsonb) RETURNS void\n  LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $$\nBEGIN\n  -- Lock the caller's draft profile so concurrent calls (double submit, two tabs) run one\n  -- after the other: the second waits, then its delete sees the first one's rows.\n  -- Not the caller's draft (missing, published, another user's): P0002, nothing written.\n  PERFORM 1\n     FROM public.profiles p\n    WHERE p.id = p_profile_id AND p.\"userId\" = auth.uid() AND p.state = 'draft'\n      FOR UPDATE;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION USING ERRCODE = 'P0002', MESSAGE = 'no draft profile of yours to replace the skills of';\n  END IF;\n\n  DELETE FROM public.profile_skills ps\n   WHERE ps.\"profileId\" = p_profile_id AND ps.\"userId\" = auth.uid();\n\n  INSERT INTO public.profile_skills (\"id\", \"userId\", \"profileId\", \"technology\", \"domain\", \"mastery\", \"importance\")\n  SELECT gen_random_uuid(), auth.uid(), p_profile_id, s.technology, s.domain, s.mastery, s.importance\n    FROM jsonb_to_recordset(p_skills) AS s(technology text, domain text, mastery integer, importance integer);\nEND $$;\nREVOKE EXECUTE ON FUNCTION public.replace_profile_skills(uuid, jsonb) FROM PUBLIC, anon;\nGRANT EXECUTE ON FUNCTION public.replace_profile_skills(uuid, jsonb) TO authenticated;"
+      }
+    ],
+    "postcheck": []
+  }
+]

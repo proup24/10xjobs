@@ -1,0 +1,9 @@
+{
+  "from": "2b13e35e2e7380aacb17fa41ff6141e311ba0d3a2d3e211d878889ae00959bdc",
+  "to": "2b13e35e2e7380aacb17fa41ff6141e311ba0d3a2d3e211d878889ae00959bdc",
+  "providedInvariants": [
+    "create-profile-from-setup-idempotent"
+  ],
+  "createdAt": "2026-11-08T13:24:54.517Z",
+  "migrationHash": "308b053237ee5b90452f96ceb5554d1da1adb00adf1634858f0b646f48f7d2b2"
+}

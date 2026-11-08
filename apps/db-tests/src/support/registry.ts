@@ -1,9 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { admin } from './admin.js';
 import {
+  clearSetupDraft,
   profileFields,
   seedContact,
   seedProfile,
+  seedSetupDraft,
   seedSkill,
   seedWorkAuthorization,
 } from './fixtures.js';
@@ -106,6 +108,19 @@ export const ownedTables: OwnedTable[] = [
       place: 'MA',
     }),
     patch: { kind: 'residency' },
+    canDelete: true,
+  },
+  {
+    table: 'profile_setup_drafts',
+    ownerColumn: 'userId',
+    // userId is unique: seedSetupDraft replaces the user's draft, so the suite can seed
+    // twice, and insertPayload clears it, so the owner's insert follows a seed.
+    seed: (userId) => seedSetupDraft(userId),
+    insertPayload: async (userId) => {
+      await clearSetupDraft(userId);
+      return { id: randomUUID(), userId, answers: { version: 1 } };
+    },
+    patch: { answers: { version: 1, job: null } },
     canDelete: true,
   },
 ];
