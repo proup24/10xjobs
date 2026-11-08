@@ -458,6 +458,84 @@ export type Database = {
           },
         ];
       };
+      job_matches: {
+        Row: {
+          checks: NonNullable<Json>;
+          createdAt: string;
+          decidedAt: string;
+          extractionId: string;
+          id: string;
+          jobId: string;
+          matcherVersion: number;
+          outcome: string;
+          profileId: string;
+          stackScore: number | null;
+          unverified: boolean;
+          updatedAt: string;
+          userId: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          checks: NonNullable<Json>;
+          createdAt?: string;
+          decidedAt: string;
+          extractionId: string;
+          id: string;
+          jobId: string;
+          matcherVersion: number;
+          outcome: string;
+          profileId: string;
+          stackScore?: number | null;
+          unverified: boolean;
+          updatedAt?: string;
+          userId: string;
+        };
+        Update: {
+          checks?: NonNullable<Json>;
+          createdAt?: string;
+          decidedAt?: string;
+          extractionId?: string;
+          id?: string;
+          jobId?: string;
+          matcherVersion?: number;
+          outcome?: string;
+          profileId?: string;
+          stackScore?: number | null;
+          unverified?: boolean;
+          updatedAt?: string;
+          userId?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'job_matches_extractionId_fkey';
+            columns: ['extractionId'];
+            isOneToOne: false;
+            referencedRelation: 'job_extractions';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'job_matches_jobId_fkey';
+            columns: ['jobId'];
+            isOneToOne: false;
+            referencedRelation: 'normalized_jobs';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'job_matches_profileId_userId_fkey';
+            columns: ['profileId', 'userId'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id', 'userId'];
+          },
+          {
+            foreignKeyName: 'job_matches_userId_fkey';
+            columns: ['userId'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       junk_flags: {
         Row: {
           aliases: string[];

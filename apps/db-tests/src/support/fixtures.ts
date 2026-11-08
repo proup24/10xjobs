@@ -106,3 +106,49 @@ export async function publishProfile(profileId: string): Promise<void> {
   if (error)
     throw new Error(`Could not publish ${profileId}: ${error.message}`);
 }
+
+/** A published profile, a processed job with its extraction, and the engine's match row. */
+export async function seedJobMatch(userId: string): Promise<string> {
+  const profileId = await seedProfile(userId);
+  await publishProfile(profileId);
+  const now = new Date().toISOString();
+  const jobId = await insertOne('normalized_jobs', {
+    jobKey: `test:${randomUUID()}`,
+    kind: 'job',
+    status: 'active',
+    postingUrl: 'https://example.test/job',
+    closed: false,
+    fieldSources: {},
+    firstSeenAt: now,
+    lastSeenAt: now,
+    normalizerVersion: 1,
+  });
+  const extractionId = await insertOne('job_extractions', {
+    jobId,
+    inputHash: 'test',
+    schemaVersion: 1,
+    promptHash: 'test',
+    decisionModel: 'test',
+    extractionModel: 'test',
+    data: {},
+    needsReview: false,
+    worldwide: false,
+    regionCodes: [],
+    countryCodes: [],
+    cityIds: [],
+    techTags: [],
+    mainStackTags: [],
+    costUsd: 0,
+  });
+  return insertOne('job_matches', {
+    userId,
+    profileId,
+    jobId,
+    extractionId,
+    matcherVersion: 1,
+    outcome: 'qualified',
+    unverified: false,
+    checks: {},
+    decidedAt: now,
+  });
+}
