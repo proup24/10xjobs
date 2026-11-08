@@ -75,7 +75,7 @@ Light scales and non-kit dark steps are Radix Colors' gray, green, amber and red
 
 ## Components
 
-All in `src/components/ui`. Forms, overlays, pickers and display components are done.
+All in `src/components/ui`. Forms, overlays, pickers, display components and the layout parts (`sidebar`, `sheet`) are done.
 
 | Component        | Variants / sizes                                                                                                                                                                                                                                                                                                                                                                                                           | Use it for                                                                                                                                                                                                                    | Not for                                                                                  |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
@@ -129,6 +129,15 @@ Wrap each control in a `Field` with a `FieldLabel htmlFor`, optional `FieldDescr
 - **Picker vs select:** use `select` for fewer than about 10 fixed options (seniority, sort order). Use `picker` (one value) or `MultiPicker` (several) for value lists: techs, roles, countries, cities, anything long or growing.
 - Search is `filterOptions` in `picker-filter.ts`, the only matching rule: it ignores case and accents (`zurich` finds Zürich) and matches `keywords` aliases (`usa` finds United States), lists prefix matches before substring matches, and shows at most 50 matches. Give common aliases and abbreviations as `keywords`.
 - The list takes the field's width, scrolls inside a max height, and never exceeds the viewport on phones. Inside a `Field`, the search input gets the same `aria-invalid`, `aria-required` and `aria-describedby` wiring as `input`.
+
+## Layouts
+
+- `AppShell` (`components/layout/app-shell.tsx`) wraps every signed-in page, through the `src/app/(app)/layout.tsx` route group. It has a sidebar and a top bar with the theme toggle and a user menu holding `SignOutButton`. Below `md` the sidebar becomes a slide-out drawer (`Sheet`) opened by the menu button in the top bar. Pages render their content only, with no `<main>` and no `min-h-screen` of their own.
+- `FlowLayout` (`components/layout/flow-layout.tsx`) wraps multi-step flows such as setup, through `src/app/(flow)/layout.tsx`. It is a centered column with the logo and the theme toggle, no sidebar. Put a new flow under `(flow)`.
+- `/sign-in`, `/auth` and `/design` sit outside both groups.
+- The sidebar lists only routes that exist: add an entry to `NAV_ITEMS` in `components/layout/app-nav.tsx` in the same change that adds the page. The current item gets `aria-current="page"`.
+- Branding stays 10xjobs (`components/layout/brand.tsx`); never use Supabase's name or logo.
+- `sidebar` and `sheet` are in `components/ui`. Use `Sidebar*` parts for navigation chrome (colors come from the `sidebar-*` roles) and `Sheet` for any other side panel.
 
 ## Adding to the library
 
