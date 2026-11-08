@@ -2,9 +2,11 @@
 
 import { Radio as RadioPrimitive } from '@base-ui/react/radio';
 import { RadioGroup as RadioGroupPrimitive } from '@base-ui/react/radio-group';
+import { useFieldControl } from '@/components/ui/field';
 import { cn } from '@/lib/utils';
 
-function RadioGroup({ className, ...props }: RadioGroupPrimitive.Props) {
+function RadioGroup({ className, ...rest }: RadioGroupPrimitive.Props) {
+  const props = useFieldControl(rest);
   return (
     <RadioGroupPrimitive
       data-slot="radio-group"

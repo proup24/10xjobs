@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { Select as SelectPrimitive } from '@base-ui/react/select';
+import { useFieldControl } from '@/components/ui/field';
 import { cn } from '@/lib/utils';
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from 'lucide-react';
 
@@ -31,10 +32,11 @@ function SelectTrigger({
   className,
   size = 'default',
   children,
-  ...props
+  ...rest
 }: SelectPrimitive.Trigger.Props & {
   size?: 'sm' | 'default';
 }) {
+  const props = useFieldControl(rest);
   return (
     <SelectPrimitive.Trigger
       data-slot="select-trigger"

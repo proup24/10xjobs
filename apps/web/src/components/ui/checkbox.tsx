@@ -1,10 +1,12 @@
 'use client';
 
 import { Checkbox as CheckboxPrimitive } from '@base-ui/react/checkbox';
+import { useFieldControl } from '@/components/ui/field';
 import { cn } from '@/lib/utils';
 import { CheckIcon } from 'lucide-react';
 
-function Checkbox({ className, ...props }: CheckboxPrimitive.Root.Props) {
+function Checkbox({ className, ...rest }: CheckboxPrimitive.Root.Props) {
+  const props = useFieldControl(rest);
   return (
     <CheckboxPrimitive.Root
       data-slot="checkbox"

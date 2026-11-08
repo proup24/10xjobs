@@ -1,15 +1,17 @@
 'use client';
 
 import { Switch as SwitchPrimitive } from '@base-ui/react/switch';
+import { useFieldControl } from '@/components/ui/field';
 import { cn } from '@/lib/utils';
 
 function Switch({
   className,
   size = 'default',
-  ...props
+  ...rest
 }: SwitchPrimitive.Root.Props & {
   size?: 'sm' | 'default';
 }) {
+  const props = useFieldControl(rest);
   return (
     <SwitchPrimitive.Root
       data-slot="switch"

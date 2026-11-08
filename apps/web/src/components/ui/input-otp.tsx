@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useFieldControl, useFieldInvalid } from '@/components/ui/field';
 import { cn } from '@/lib/utils';
 import { OTPInput, OTPInputContext } from 'input-otp';
 import { MinusIcon } from 'lucide-react';
@@ -8,10 +9,11 @@ import { MinusIcon } from 'lucide-react';
 function InputOTP({
   className,
   containerClassName,
-  ...props
+  ...rest
 }: React.ComponentProps<typeof OTPInput> & {
   containerClassName?: string;
 }) {
+  const props = useFieldControl(rest);
   return (
     <OTPInput
       data-slot="input-otp"
@@ -48,11 +50,13 @@ function InputOTPSlot({
 }) {
   const inputOTPContext = React.useContext(OTPInputContext);
   const { char, hasFakeCaret, isActive } = inputOTPContext?.slots[index] ?? {};
+  const invalid = useFieldInvalid();
 
   return (
     <div
       data-slot="input-otp-slot"
       data-active={isActive}
+      aria-invalid={invalid || undefined}
       className={cn(
         'relative flex size-9 items-center justify-center border-y border-r border-input text-sm transition-all outline-none first:rounded-l-md first:border-l last:rounded-r-md aria-invalid:border-destructive data-[active=true]:z-10 data-[active=true]:border-brand data-[active=true]:ring-3 data-[active=true]:ring-brand/30 data-[active=true]:aria-invalid:border-destructive data-[active=true]:aria-invalid:ring-destructive/20 dark:bg-input/30 dark:data-[active=true]:aria-invalid:ring-destructive/40',
         className,
