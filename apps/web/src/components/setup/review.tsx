@@ -34,10 +34,13 @@ type Props = {
   lists: ValueLists;
 };
 
-/** A label lookup over a value list; an unknown code falls back to itself. */
+/** Shown for a code missing from its list: codes are never shown raw. */
+const UNKNOWN = 'Unknown';
+
+/** A label lookup over a value list. */
 function labeller(options: readonly PickerOption[]) {
   const byValue = new Map(options.map((o) => [o.value, o.label]));
-  return (code: string) => byValue.get(code) ?? code;
+  return (code: string) => byValue.get(code) ?? UNKNOWN;
 }
 
 const PERIOD_WORDS = {
@@ -137,7 +140,7 @@ export function Review({
   const currency = labeller(lists.currencies);
   const notice =
     NOTICE_OPTIONS.find((o) => o.days === terms.noticePeriodDays)?.label ??
-    `${terms.noticePeriodDays} days`;
+    UNKNOWN;
 
   const aboutRows: Row[] = [
     { term: 'Name', values: [about.name] },

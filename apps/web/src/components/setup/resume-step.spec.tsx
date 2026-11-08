@@ -16,7 +16,10 @@ const confirmResumeAction = vi.hoisted(() => vi.fn());
 const browserClient = vi.hoisted(() => ({ browser: true }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
 vi.mock('sonner', () => ({ toast: { error: toastError } }));
-vi.mock('@/lib/resume/browser', () => ({ uploadResume }));
+vi.mock('@/lib/resume/browser', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/resume/browser')>()),
+  uploadResume,
+}));
 vi.mock('@/lib/resume/actions', () => ({ confirmResumeAction }));
 vi.mock('@/lib/supabase/client', () => ({
   createSupabaseBrowserClient: () => browserClient,
@@ -135,6 +138,29 @@ describe('ResumeStep', () => {
     expect(screen.getByText('old.pdf')).toBeTruthy();
     expect(screen.getByText('2.0 MB')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Replace' })).toBeTruthy();
+  });
+
+  it('an empty-type cv.pdf uploads and is saved', async () => {
+    const real = await vi.importActual<typeof import('@/lib/resume/browser')>(
+      '@/lib/resume/browser',
+    );
+    const upload = vi.fn(async () => ({ data: null, error: null }));
+    const client = { storage: { from: () => ({ upload }) } };
+    confirmResumeAction.mockResolvedValue({
+      status: 'saved',
+      resume: { filename: 'cv.pdf', sizeBytes: 8, uploadedAt: 't' },
+    });
+    uploadResume.mockImplementation(
+      (_c: unknown, u: string, p: string, f: File, confirm: never) =>
+        real.uploadResume(client as never, u, p, f, confirm),
+    );
+    const { pick } = setup();
+    pick([file('cv.pdf', '')]);
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Replace' })).toBeTruthy(),
+    );
+    expect(upload).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
   it('Continue is disabled until a resume exists', async () => {

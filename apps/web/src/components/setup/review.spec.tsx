@@ -172,6 +172,27 @@ describe('Review', () => {
     }
   });
 
+  it('an unknown code shows "Unknown", never the code', () => {
+    render(
+      <Review
+        about={about}
+        eligibility={{ ...eligibility, residenceCountry: 'ZZ' }}
+        job={{ ...job, position: 'mystery_engineer' }}
+        terms={{ ...terms, noticePeriodDays: 45 }}
+        resume={{ filename: 'cv.pdf', sizeBytes: 10 }}
+        lists={lists}
+      />,
+    );
+    expect(
+      within(card('Where you can work')).getByText('Unknown'),
+    ).toBeTruthy();
+    expect(within(card('The job you want')).getByText('Unknown')).toBeTruthy();
+    expect(within(card('Location and terms')).getByText('Unknown')).toBeTruthy();
+    for (const raw of [/ZZ/, /mystery_engineer/, /45/]) {
+      expect(screen.queryByText(raw)).toBeNull();
+    }
+  });
+
   it('shows the empty answers plainly', () => {
     render(
       <Review
