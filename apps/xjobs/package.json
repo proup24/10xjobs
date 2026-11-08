@@ -6,6 +6,7 @@
     "users": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/admin/users-cli.ts",
     "db:regenerate": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/regenerate-query-search.ts",
     "db:renormalize": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/renormalize-jobs.ts",
+    "db:rematch": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/rematch-jobs.ts",
     "db:reprocess": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/reprocess-jobs.ts",
     "db:vocab": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/vocab.ts",
     "processor:golden-import": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/processor-golden-import.ts",

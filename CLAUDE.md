@@ -23,8 +23,9 @@ Precision over volume: prefer a tailored application over a fast one.
 ## Commands
 
 - `npx nx serve xjobs`: run the engine.
-- `npx nx worker-all xjobs`: run every worker in one process: infrastructure, ingest, processor (when OPENROUTER_API_KEY is set), and each enabled channel's scheduled collection.
+- `npx nx worker-all xjobs`: run every worker in one process: infrastructure, ingest, processor (when OPENROUTER_API_KEY is set), match, and each enabled channel's scheduled collection.
 - `npx nx worker-processor xjobs`: run the processor worker alone.
+- `npx nx worker-match xjobs`: run the match worker alone.
 - `npx nx worker-<channel> xjobs` (`linkedin-job-board`, `linkedin-posts`, `greenhouse`, `ashby`): run one channel's scheduled collection worker.
 - `npx nx run-many -t lint test build typecheck`: what CI runs.
 - `npx nx test xjobs`: unit tests for the engine.
@@ -35,6 +36,7 @@ Precision over volume: prefer a tailored application over a fast one.
 - `pnpm --filter @xjobs/xjobs db:regenerate`: move published profiles to the current query recipe; run once after a recipe version bump.
 - `pnpm --filter @xjobs/xjobs db:renormalize`: rebuild normalized jobs from raw storage; run once after a `NORMALIZER_VERSION` bump.
 - `pnpm --filter @xjobs/xjobs db:reprocess -- <flags>`: send in-scope jobs back to the processor (`--null-status`, `--failed`, `--all-in-scope`, `--job <id>`); run after a prompt, schema or model change.
+- `pnpm --filter @xjobs/xjobs db:rematch -- --all | --job <id>`: re-decide jobs after a rule change; bump `MATCHER_VERSION` first so the sweep also picks them up.
 - `pnpm --filter @xjobs/xjobs db:vocab -- <list> list|approve|reject|alias`: review terms the processor proposed (`cities` by id).
 - `pnpm --filter @xjobs/xjobs processor:eval`: run the processor against the golden set.
 - `npm run test:hooks`: tests for the `.claude/hooks` scripts.
