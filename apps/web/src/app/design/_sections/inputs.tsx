@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Mail, Star } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -10,6 +11,7 @@ import {
 } from '@/components/ui/input-group';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { RatingBar } from '@/components/ui/rating-bar';
 import {
   Select,
   SelectContent,
@@ -22,6 +24,17 @@ import { Textarea } from '@/components/ui/textarea';
 import { Toggle } from '@/components/ui/toggle';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Block } from './block';
+
+function RatingDemo({
+  initial,
+  ...props
+}: { initial: number | null } & Omit<
+  React.ComponentProps<typeof RatingBar>,
+  'value' | 'onValueChange'
+>) {
+  const [value, setValue] = useState(initial);
+  return <RatingBar value={value} onValueChange={setValue} {...props} />;
+}
 
 const LEVELS = [
   { value: 'junior', label: 'Junior' },
@@ -230,6 +243,23 @@ export function InputsSection() {
             On-site
           </ToggleGroupItem>
         </ToggleGroup>
+      </Block>
+
+      <Block title="Rating bar: empty, set, invalid, disabled">
+        <RatingDemo
+          initial={null}
+          lowLabel="1 = learning"
+          highLabel="5 = expert"
+          aria-label="Mastery, empty"
+        />
+        <RatingDemo
+          initial={4}
+          lowLabel="1 = learning"
+          highLabel="5 = expert"
+          aria-label="Mastery, set"
+        />
+        <RatingDemo initial={null} aria-label="Mastery, invalid" aria-invalid />
+        <RatingDemo initial={2} disabled aria-label="Mastery, disabled" />
       </Block>
 
       <Block title="Select: default, disabled, invalid">

@@ -57,6 +57,7 @@ describe('focus recipe', () => {
     ['checkbox.tsx', 'focus-visible'],
     ['radio-group.tsx', 'focus-visible'],
     ['switch.tsx', 'focus-visible'],
+    ['rating-bar.tsx', 'focus-visible'],
     ['input-group.tsx', 'has-[[data-slot=input-group-control]:focus-visible]'],
     ['combobox.tsx', 'focus-within'],
     ['input-otp.tsx', 'data-[active=true]'],
