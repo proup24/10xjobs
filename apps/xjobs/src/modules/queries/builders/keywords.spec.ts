@@ -1,4 +1,4 @@
-import { ENGINEERING_ROLE_KINDS } from '@xjobs/database';
+import { ENGINEERING_ROLE_KINDS, SEED } from '@xjobs/database';
 import { Seniority } from 'src/common/enums';
 import {
   ARRANGEMENT_WORDS,
@@ -6,8 +6,29 @@ import {
   SENIORITY_WORDS,
   TECHNOLOGY_TERMS,
 } from './keywords';
+import { LINKEDIN_TERMS } from '../channels/linkedin_board.builder';
 
 describe('keywords', () => {
+  // The maps are keyed by plain codes: a mistyped key would silently drop a
+  // technology or position from every search, so each key must be a seed code.
+  const seedCodes = (list: 'techTags' | 'roleKinds') =>
+    new Set(SEED[list].map((term) => term.code));
+
+  it.each([
+    ['TECHNOLOGY_TERMS', TECHNOLOGY_TERMS],
+    ['LINKEDIN_TERMS', LINKEDIN_TERMS],
+  ])('keys %s by seeded tech_tags codes', (_name, terms) => {
+    const codes = seedCodes('techTags');
+    expect(Object.keys(terms).filter((key) => !codes.has(key))).toEqual([]);
+  });
+
+  it('keys POSITION_TITLES by seeded role_kinds codes', () => {
+    const codes = seedCodes('roleKinds');
+    expect(
+      Object.keys(POSITION_TITLES).filter((key) => !codes.has(key)),
+    ).toEqual([]);
+  });
+
   it('maps every position to normalized phrases', () => {
     for (const position of ENGINEERING_ROLE_KINDS) {
       const titles = POSITION_TITLES[position];

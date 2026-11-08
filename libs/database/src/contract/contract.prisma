@@ -14,6 +14,8 @@ model mixin Timestamps {
 
 // Each enum below has a TypeScript twin in libs/database/src/enums/<name>.enum.ts;
 // libs/database/src/enums/enums.spec.ts fails when they drift.
+// Engagement backs no column any more (profiles.engagements holds engagements
+// codes as text); it stays because the spec deletes only the four copied enums.
 enum Engagement {
   @@type("pg/text@1")
   employee = "employee"
@@ -236,6 +238,7 @@ model Profile {
   @@check(expression: sql`cardinality("contractTypes") > 0`, name: "profiles_contract_types_nonempty")
   // At least one place overall; the profiles_check_codes trigger checks the shape first.
   @@check(expression: sql`jsonb_path_exists("locations", '$.*[*]')`, name: "profiles_locations_nonempty")
+  // The BEFORE trigger (assert_languages) refuses a non-array first, so this only adds the non-empty rule.
   @@check(expression: sql`jsonb_typeof("languages") = 'array' AND jsonb_array_length("languages") > 0`, name: "profiles_languages_nonempty")
   // Value-list codes are checked by the profiles_check_codes trigger (assert_codes, assert_places, assert_languages).
   // Target of profile_skills' (profileId, userId) foreign key.

@@ -368,6 +368,25 @@ describe('profile codes are checked against the value lists', () => {
     expect(error?.message).toContain(fn);
   });
 
+  it('lets the owner update locations and languages', async () => {
+    const id = randomUUID();
+    expect((await insertProfile({ id })).error).toBeNull();
+    const locations = {
+      remote: [],
+      hybrid: [{ kind: 'country', code: 'FR' }],
+      onsite: [],
+    };
+    const languages = [{ lang: 'ar', level: 'native' }];
+    const { data, error } = await a.client
+      .from('profiles')
+      .update({ locations, languages })
+      .eq('id', id)
+      .select('locations, languages')
+      .single();
+    expect(error).toBeNull();
+    expect(data).toEqual({ locations, languages });
+  });
+
   it('checks codes on update too', async () => {
     const id = randomUUID();
     expect((await insertProfile({ id })).error).toBeNull();

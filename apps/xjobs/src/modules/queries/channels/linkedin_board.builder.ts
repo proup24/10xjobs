@@ -33,7 +33,7 @@ const WORK_TYPES: Record<Arrangement, string | null> = {
  * drops symbols: `next js`, not `"next.js"`. Technologies not listed use
  * {@link TECHNOLOGY_TERMS}; `golang` stays, a bare `go` matching everything.
  */
-const LINKEDIN_TERMS: Readonly<Record<string, string>> = {
+export const LINKEDIN_TERMS: Readonly<Record<string, string>> = {
   nodejs: 'node js',
   nextjs: 'next js',
   vue: 'vue js',
