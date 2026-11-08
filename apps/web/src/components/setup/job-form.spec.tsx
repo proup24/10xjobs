@@ -140,6 +140,34 @@ describe('JobForm', () => {
     expect(screen.queryByRole('option', { name: 'English' })).toBeNull();
   });
 
+  it('a new language row has no level, and Continue asks for one', async () => {
+    const { onSave } = setup({ ...SAVED, languages: [] });
+    await pick('Add a language', 'fre', 'French');
+    const level = await screen.findByRole('combobox', {
+      name: 'French level',
+    });
+    expect(level.textContent).not.toMatch(/Native|Fluent|Working/);
+    submit();
+    expect(await screen.findByText('Pick a level for French')).toBeTruthy();
+    expect(level.getAttribute('aria-invalid')).toBe('true');
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it('picking a level lets the new language save with it', async () => {
+    const { onSave } = setup({ ...SAVED, languages: [] });
+    await pick('Add a language', 'fre', 'French');
+    fireEvent.click(await screen.findByRole('combobox', { name: 'French level' }));
+    // Base UI commits a mouse pick only when the press started on the item.
+    const working = await screen.findByRole('option', { name: 'Working' });
+    fireEvent.pointerDown(working, { pointerType: 'mouse' });
+    fireEvent.click(working);
+    submit();
+    await waitFor(() => expect(onSave).toHaveBeenCalled());
+    expect(onSave.mock.calls[0][0].languages).toEqual([
+      { lang: 'fr', level: 'working' },
+    ]);
+  });
+
   it('an empty form asks for each required answer', async () => {
     const { onSave } = setup();
     submit();

@@ -115,10 +115,13 @@ describe('AboutForm', () => {
     await waitFor(() => expect(toastError).toHaveBeenCalledTimes(1));
     submit();
     expect(await screen.findByText('Name is taken')).toBeTruthy();
-    expect(onStatusChange).toHaveBeenLastCalledWith({
-      pending: false,
-      formError: 'Fix the errors',
-    });
+    // The status reaches the frame from an effect, after the field error renders.
+    await waitFor(() =>
+      expect(onStatusChange).toHaveBeenLastCalledWith({
+        pending: false,
+        formError: 'Fix the errors',
+      }),
+    );
     expect(toastError).toHaveBeenCalledTimes(1);
     expect(onSaved).not.toHaveBeenCalled();
   });

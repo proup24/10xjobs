@@ -13,8 +13,10 @@ import {
 } from '@/components/ui/select';
 import { LANGUAGE_LEVELS, type JobAnswers } from '@/lib/setup/answers';
 
-type LanguageAnswer = JobAnswers['languages'][number];
-type Level = LanguageAnswer['level'];
+type Level = JobAnswers['languages'][number]['level'];
+
+/** A row as the form holds it; `level` is null until picked. */
+export type LanguageRow = { lang: string; level: Level | null };
 
 const LEVEL_LABELS: Record<Level, string> = {
   native: 'Native',
@@ -27,22 +29,25 @@ const LEVEL_ITEMS = LANGUAGE_LEVELS.map((value) => ({
 }));
 
 type Props = {
-  value: LanguageAnswer[];
-  onChange: (value: LanguageAnswer[]) => void;
+  value: LanguageRow[];
+  onChange: (value: LanguageRow[]) => void;
   /** Labels of the languages. */
   options: PickerOption[];
-  /** Form errors by path ("languages.1.lang"). */
+  /** Form errors by path ("languages.1.level", "languages.1.lang"). */
   errors?: Record<string, string>;
 };
 
-/** Language rows: label, a level Select and a remove button. Stacks below `sm`. */
+/** Language rows: label, a level Select (empty until picked) and a remove button. Stacks below `sm`. */
 export function LanguageRows({ value, onChange, options, errors = {} }: Props) {
   const byCode = new Map(options.map((o) => [o.value, o.label]));
   return (
     <div className="flex flex-col gap-3">
       {value.map((row, i) => {
         const label = byCode.get(row.lang) ?? row.lang;
-        const error = errors[`languages.${i}.lang`] ?? errors[`languages.${i}`];
+        const error =
+          errors[`languages.${i}.level`] ??
+          errors[`languages.${i}.lang`] ??
+          errors[`languages.${i}`];
         return (
           <div
             key={row.lang}
@@ -68,7 +73,7 @@ export function LanguageRows({ value, onChange, options, errors = {} }: Props) {
                   aria-label={`${label} level`}
                   className="w-full sm:w-40"
                 >
-                  <SelectValue />
+                  <SelectValue placeholder="Pick a level" />
                 </SelectTrigger>
                 <SelectContent>
                   {LEVEL_ITEMS.map((item) => (

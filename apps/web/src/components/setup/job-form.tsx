@@ -22,15 +22,13 @@ import {
 import type { SaveResult } from '@/lib/setup/save';
 import type { TechOption } from '@/lib/setup/value-lists';
 import { issueErrors } from './form-errors';
-import { LanguageRows } from './language-rows';
+import { LanguageRows, type LanguageRow } from './language-rows';
 import type { StepStatus } from './step-status';
 import { notifySaveFailed } from './step-frame';
 import { TechRows } from './tech-rows';
 
 const STACK_DESCRIPTION =
   "Add every tech you'd be happy to work with; jobs that need something not on this list are skipped.";
-/** A newly added language's level until the user changes it. */
-const DEFAULT_LEVEL = 'fluent';
 
 const schema = jobSchema(isSearchableTech);
 
@@ -71,7 +69,7 @@ export function JobForm({
     initial?.seniorities ?? [],
   );
   const [techs, setTechs] = useState<TechAnswer[]>(initial?.techs ?? []);
-  const [languages, setLanguages] = useState<JobAnswers['languages']>(
+  const [languages, setLanguages] = useState<LanguageRow[]>(
     initial?.languages ?? [],
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -82,6 +80,7 @@ export function JobForm({
   }, [pending, formError, onStatusChange]);
 
   const techLabel = new Map(lists.techs.map((t) => [t.value, t.label]));
+  const languageLabel = new Map(lists.languages.map((l) => [l.value, l.label]));
   const takenTechs = new Set(techs.map((t) => t.code));
   const techChoices = lists.techs.filter((t) => !takenTechs.has(t.value));
   const takenLanguages = new Set(languages.map((l) => l.lang));
@@ -117,6 +116,12 @@ export function JobForm({
       if (tech.rating === null) {
         found[`techs.${i}.rating`] =
           `Rate ${techLabel.get(tech.code) ?? tech.code}`;
+      }
+    });
+    languages.forEach((row, i) => {
+      if (row.level === null) {
+        found[`languages.${i}.level`] =
+          `Pick a level for ${languageLabel.get(row.lang) ?? row.lang}`;
       }
     });
     if (!parsed.success || Object.keys(found).length > 0) {
@@ -230,7 +235,7 @@ export function JobForm({
               value={null}
               onValueChange={(lang) =>
                 lang &&
-                setLanguages([...languages, { lang, level: DEFAULT_LEVEL }])
+                setLanguages([...languages, { lang, level: null }])
               }
               placeholder="Search languages"
               emptyText="No language found"
