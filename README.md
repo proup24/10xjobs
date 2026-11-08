@@ -51,6 +51,26 @@ pnpm exec nx serve @xjobs/xjobs --inspect=inspect --port=9229
 
 Then select **Attach to xjobs (9229)** in VS Code and press **F5**. Use `--inspect=inspect-brk` instead to pause before startup code runs. Nx rebuilds and restarts the app as you edit; the attach configuration reconnects automatically.
 
+## Deploy
+
+The web app (`apps/web`) runs on Vercel at https://10xjobs.vercel.app, against the shared dev database `10xjobs-dev`. There is no production project yet ([production.md](docs/production.md)). Vercel deploys `main` to that URL, and every pull request gets a preview behind Vercel's login.
+
+Vercel project settings:
+
+- Root Directory: `apps/web`, with files outside the root directory included (the build needs `libs/`).
+- Build Command: `cd ../.. && NX_NO_CLOUD=true pnpm exec nx build web`. Nx builds `@xjobs/database` first; a plain `next build` fails because the app imports the compiled library.
+- Install Command and Output Directory: the defaults.
+
+Environment variables, the same for Production and Preview:
+
+| Name                                   | Value                                  |
+| -------------------------------------- | -------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`             | `https://<ref>.supabase.co` (dev)      |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | the dev project's publishable key      |
+| `ENABLE_EXPERIMENTAL_COREPACK`         | `1` (uses the pinned `packageManager`) |
+
+No other Supabase variable is set in Vercel, and never the service-role key.
+
 ## Documentation
 
 - [Redis, caching, pub/sub, and background workers](docs/redis-jobs.md)
