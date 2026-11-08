@@ -16,6 +16,7 @@ import { Separator } from '@/components/ui/separator';
 
 type FieldContextValue = {
   invalid: boolean;
+  required: boolean;
   descriptionId: string;
   errorId: string;
   hasDescription: boolean;
@@ -33,7 +34,11 @@ const FieldContext = createContext<FieldContextValue | null>(null);
  * `aria-invalid` or `aria-describedby` on the control wins or is appended to.
  */
 function useFieldControl<
-  P extends { 'aria-invalid'?: unknown; 'aria-describedby'?: string },
+  P extends {
+    'aria-invalid'?: unknown;
+    'aria-required'?: unknown;
+    'aria-describedby'?: string;
+  },
 >(props: P): P {
   const field = useContext(FieldContext);
   if (!field) return props;
@@ -45,6 +50,8 @@ function useFieldControl<
   return {
     ...props,
     'aria-invalid': props['aria-invalid'] ?? (field.invalid ? true : undefined),
+    'aria-required':
+      props['aria-required'] ?? (field.required ? true : undefined),
     'aria-describedby': ids.length ? ids.join(' ') : undefined,
   };
 }
@@ -119,15 +126,20 @@ function Field({
   className,
   orientation = 'vertical',
   invalid = false,
+  required = false,
   ...props
 }: React.ComponentProps<'div'> &
-  VariantProps<typeof fieldVariants> & { invalid?: boolean }) {
+  VariantProps<typeof fieldVariants> & {
+    invalid?: boolean;
+    required?: boolean;
+  }) {
   const baseId = useId();
   const [hasDescription, setHasDescription] = useState(false);
   const [hasError, setHasError] = useState(false);
   const value = useMemo(
     () => ({
       invalid,
+      required,
       descriptionId: `${baseId}-description`,
       errorId: `${baseId}-error`,
       hasDescription,
@@ -135,7 +147,7 @@ function Field({
       setHasDescription,
       setHasError,
     }),
-    [baseId, invalid, hasDescription, hasError],
+    [baseId, invalid, required, hasDescription, hasError],
   );
   return (
     <FieldContext.Provider value={value}>
@@ -144,6 +156,7 @@ function Field({
         data-slot="field"
         data-orientation={orientation}
         data-invalid={invalid || undefined}
+        data-required={required || undefined}
         className={cn(fieldVariants({ orientation }), className)}
         {...props}
       />
@@ -168,6 +181,7 @@ function FieldLabel({
   className,
   ...props
 }: React.ComponentProps<typeof Label>) {
+  const required = useContext(FieldContext)?.required ?? false;
   return (
     <Label
       data-slot="field-label"
@@ -177,7 +191,18 @@ function FieldLabel({
         className,
       )}
       {...props}
-    />
+    >
+      {props.children}
+      {required ? (
+        <span
+          aria-hidden="true"
+          data-slot="field-required"
+          className="text-destructive"
+        >
+          *
+        </span>
+      ) : null}
+    </Label>
   );
 }
 

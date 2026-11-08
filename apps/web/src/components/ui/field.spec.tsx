@@ -65,4 +65,47 @@ describe('Field', () => {
     expect(input.getAttribute('aria-invalid')).toBeNull();
     expect(input.getAttribute('aria-describedby')).toBeNull();
   });
+
+  it('sets aria-required from a required Field and marks the label', () => {
+    render(
+      <Field required>
+        <FieldLabel htmlFor="r">Name</FieldLabel>
+        <Input id="r" />
+      </Field>,
+    );
+    const input = screen.getByLabelText(/Name/);
+    expect(input.getAttribute('aria-required')).toBe('true');
+    const mark = document.querySelector('[data-slot="field-required"]')!;
+    expect(mark.getAttribute('aria-hidden')).toBe('true');
+    expect(
+      document
+        .querySelector('[data-slot="field"]')!
+        .getAttribute('data-required'),
+    ).toBe('true');
+  });
+
+  it('lets an explicit aria-required win', () => {
+    render(
+      <Field required>
+        <FieldLabel htmlFor="o">Opt</FieldLabel>
+        <Input id="o" aria-required="false" />
+      </Field>,
+    );
+    expect(screen.getByLabelText(/Opt/).getAttribute('aria-required')).toBe(
+      'false',
+    );
+  });
+
+  it('shows no marker when not required', () => {
+    render(
+      <Field>
+        <FieldLabel htmlFor="n2">Plain</FieldLabel>
+        <Input id="n2" />
+      </Field>,
+    );
+    expect(document.querySelector('[data-slot="field-required"]')).toBeNull();
+    expect(
+      screen.getByLabelText('Plain').getAttribute('aria-required'),
+    ).toBeNull();
+  });
 });

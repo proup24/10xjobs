@@ -21,6 +21,12 @@ export function FieldsSection() {
           <FieldDescription>We send a sign-in code here.</FieldDescription>
         </Field>
       </Block>
+      <Block title="Required: marker on the label, aria-required on the control">
+        <Field required className="max-w-sm">
+          <FieldLabel htmlFor="field-name">Full name</FieldLabel>
+          <Input id="field-name" />
+        </Field>
+      </Block>
       <Block title="Invalid: error linked to the control">
         <Field invalid className="max-w-sm">
           <FieldLabel htmlFor="field-email-bad">Email</FieldLabel>
