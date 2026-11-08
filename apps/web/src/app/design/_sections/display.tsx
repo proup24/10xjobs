@@ -31,6 +31,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Steps } from '@/components/ui/steps';
 import { Code, Mark, TextLink } from '@/components/ui/text';
 import { Block } from './block';
+import { FileDropZoneExamples } from './file-drop-zone-examples';
 
 const setupSteps = [
   { id: 'profile', label: 'Profile' },
@@ -140,6 +141,7 @@ export function DisplaySection() {
           <Steps steps={setupSteps} current={3} />
         </div>
       </Block>
+      <FileDropZoneExamples />
       <Block title="Kbd">
         <KbdGroup>
           <Kbd>Ctrl</Kbd>
