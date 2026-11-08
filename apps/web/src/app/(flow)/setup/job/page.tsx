@@ -1,15 +1,32 @@
-import { SETUP_STEPS } from '@/lib/setup/steps';
-import { StepFrame } from '@/components/setup/step-frame';
+import { JobStep } from '@/components/setup/job-step';
+import { loadSetupProfile } from '@/lib/setup/load';
+import { loadValueLists } from '@/lib/setup/value-lists';
 import { requireSetupStep } from '../guard';
+import { saveJobAction } from '../actions';
 
 export const dynamic = 'force-dynamic';
 
-const STEP = 'job';
-
 export default async function Page() {
-  await requireSetupStep(STEP);
-  const label = SETUP_STEPS.find((s) => s.id === STEP)?.label ?? STEP;
+  const { supabase, snapshot } = await requireSetupStep('job');
+  const [stored, lists] = await Promise.all([
+    snapshot.profile
+      ? loadSetupProfile(supabase, snapshot.profile.id)
+      : Promise.resolve(null),
+    loadValueLists(supabase),
+  ]);
+  const initial = snapshot.profile
+    ? (stored?.job ?? null)
+    : (snapshot.draft?.job ?? null);
   return (
-    <StepFrame step={STEP} title={label} pending={false} formId="setup-form" />
+    <JobStep
+      initial={initial}
+      lists={{
+        positions: lists.positions,
+        seniorities: lists.seniorities,
+        techs: lists.techs,
+        languages: lists.languages,
+      }}
+      onSave={saveJobAction}
+    />
   );
 }
