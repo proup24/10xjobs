@@ -1,0 +1,9 @@
+{
+  "from": "2b13e35e2e7380aacb17fa41ff6141e311ba0d3a2d3e211d878889ae00959bdc",
+  "to": "2b13e35e2e7380aacb17fa41ff6141e311ba0d3a2d3e211d878889ae00959bdc",
+  "providedInvariants": [
+    "replace-profile-skills-lock"
+  ],
+  "createdAt": "2026-11-08T12:36:31.513Z",
+  "migrationHash": "6da5633eb857c8956d59f364caf9c3a94f0cf553b76990ed49a3677801b9b138"
+}

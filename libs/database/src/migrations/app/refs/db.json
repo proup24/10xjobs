@@ -5,6 +5,7 @@
     "code-check-fixes",
     "resume-storage",
     "builder-recount",
-    "profile-setup-functions"
+    "profile-setup-functions",
+    "replace-profile-skills-lock"
   ]
 }

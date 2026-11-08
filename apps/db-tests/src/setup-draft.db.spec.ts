@@ -177,8 +177,47 @@ describe('replace_profile_skills', () => {
     const before = await stackOf(profileId);
 
     const { error } = await replace(a, profileId, newStack);
-    expect(error).not.toBeNull();
+    expect(error?.code).toBe('P0002');
     expect(await stackOf(profileId)).toEqual(before);
+  });
+
+  it('replace_profile_skills with an empty list on a published profile raises P0002', async () => {
+    const profileId = await seedProfile(a.id);
+    await seedSkill(a.id, profileId);
+    await publishProfile(profileId);
+    const before = await stackOf(profileId);
+
+    const { error } = await replace(a, profileId, []);
+    expect(error?.code).toBe('P0002');
+    expect(await stackOf(profileId)).toEqual(before);
+  });
+
+  it('two concurrent replace_profile_skills calls leave exactly one of the lists', async () => {
+    const profileId = await seedProfile(a.id);
+    await seedSkill(a.id, profileId);
+    const other: Skill[] = [
+      { technology: 'go', domain: 'devops', mastery: 2, importance: 1 },
+      { technology: 'rust', domain: 'backend', mastery: 7, importance: 6 },
+    ];
+
+    const results = await Promise.all([
+      replace(a, profileId, newStack),
+      replace(a, profileId, other),
+    ]);
+    expect(results.map((r) => r.error)).toEqual([null, null]);
+    expect([newStack, other]).toContainEqual(await stackOf(profileId));
+  });
+
+  it('a double submit of the same stack succeeds twice and keeps one copy', async () => {
+    const profileId = await seedProfile(a.id);
+    await seedSkill(a.id, profileId);
+
+    const results = await Promise.all([
+      replace(a, profileId, newStack),
+      replace(a, profileId, newStack),
+    ]);
+    expect(results.map((r) => r.error)).toEqual([null, null]);
+    expect(await stackOf(profileId)).toEqual(newStack);
   });
 
   it("replace_profile_skills on another user's profile changes nothing", async () => {
@@ -187,7 +226,7 @@ describe('replace_profile_skills', () => {
     const before = await stackOf(profileId);
 
     const { error } = await replace(a, profileId, newStack);
-    expect(error).not.toBeNull();
+    expect(error?.code).toBe('P0002');
     expect(await stackOf(profileId)).toEqual(before);
     expect(await skillsOf(a.id)).not.toContainEqual(
       expect.objectContaining({ profileId }),
