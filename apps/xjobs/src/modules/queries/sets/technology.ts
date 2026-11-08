@@ -1,4 +1,4 @@
-import { TECHNOLOGY_TERMS } from '../builders/keywords';
+import { isSearchableTech } from '@xjobs/database/enums';
 import type { RankedSkill, TechnologySet } from '../types';
 
 export const QUERY_SEARCH_TOP_TECHNOLOGIES = 2;
@@ -11,7 +11,7 @@ const compareSkills = (a: RankedSkill, b: RankedSkill): number =>
 
 /** True when the technology has search wording; a concept tag such as `saas` has none. */
 export const hasSearchWording = (technology: string): boolean =>
-  Object.hasOwn(TECHNOLOGY_TERMS, technology);
+  isSearchableTech(technology);
 
 /**
  * The user's best searchable skills: importance 0 and techs without search

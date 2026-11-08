@@ -1,4 +1,10 @@
-import { Arrangement, Engagement, Seniority } from '../../enums';
+import {
+  Arrangement,
+  Engagement,
+  Seniority,
+  TECHNOLOGY_TERMS,
+  isSearchableTech,
+} from '../../enums';
 import {
   ENGINEERING_ROLE_KINDS,
   SEED,
@@ -18,6 +24,17 @@ describe('processor seed data', () => {
     for (const value of Object.values(enm)) {
       expect(codes(list)).toContain(value);
     }
+  });
+
+  it('every TECHNOLOGY_TERMS key is a seeded tech tag code', () => {
+    expect(codes('techTags')).toEqual(
+      expect.arrayContaining(Object.keys(TECHNOLOGY_TERMS)),
+    );
+  });
+
+  it('isSearchableTech tells technologies from concepts', () => {
+    expect(isSearchableTech('typescript')).toBe(true);
+    expect(isSearchableTech('saas')).toBe(false);
   });
 
   it('role kinds and engagements have unstated; role kinds have other', () => {
