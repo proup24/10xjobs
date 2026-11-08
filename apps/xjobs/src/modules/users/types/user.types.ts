@@ -4,9 +4,14 @@ import type { Address, UserRow } from 'src/database';
 export type UserInput = {
   name?: string | null;
   address?: Address | null;
+  residenceCountry?: string | null;
+  acceptsSponsorship?: boolean | null;
 };
 
-/** Eligibility columns the API does not expose yet. */
-export type EligibilityColumns = 'residenceCountry' | 'acceptsSponsorship';
+/** What a user must answer before publishing: null until answered. */
+export type Eligibility = {
+  residenceCountry: string | null;
+  acceptsSponsorship: boolean | null;
+};
 
-export type UserView = Omit<UserRow, EligibilityColumns>;
+export type UserView = UserRow;

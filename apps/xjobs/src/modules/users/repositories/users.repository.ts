@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService, toStoredAddress, type UserRow } from 'src/database';
-import type { UserInput } from '../types';
+import type { Eligibility, UserInput } from '../types';
 
 /**
  * Injection token and contract for user persistence. Rows are created by the
@@ -9,6 +9,7 @@ import type { UserInput } from '../types';
 export abstract class UsersRepository {
   abstract list(): Promise<UserRow[]>;
   abstract findById(userId: string): Promise<UserRow | null>;
+  abstract eligibility(userId: string): Promise<Eligibility | null>;
   abstract update(userId: string, data: UserInput): Promise<UserRow | null>;
 }
 
@@ -35,6 +36,16 @@ export class PrismaUsersRepository extends UsersRepository {
 
   findById(userId: string): Promise<UserRow | null> {
     return this.users.where({ id: userId }).first();
+  }
+
+  async eligibility(userId: string): Promise<Eligibility | null> {
+    const user = await this.findById(userId);
+    return user
+      ? {
+          residenceCountry: user.residenceCountry,
+          acceptsSponsorship: user.acceptsSponsorship,
+        }
+      : null;
   }
 
   async update(userId: string, data: UserInput): Promise<UserRow | null> {

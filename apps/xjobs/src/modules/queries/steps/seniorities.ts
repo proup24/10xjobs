@@ -6,7 +6,7 @@ export const SENIORITIES_REQUIRED =
   'seniorities must list at least one seniority';
 
 /** The set deduped, in `Seniority` enum order, so equal sets read the same. */
-export function normalizeSeniorities(seniorities: Seniority[]): Seniority[] {
+export function normalizeSeniorities(seniorities: readonly string[]): string[] {
   const wanted = new Set(seniorities);
   return Object.values(Seniority).filter((level) => wanted.has(level));
 }

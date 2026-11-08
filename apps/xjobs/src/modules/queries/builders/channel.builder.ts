@@ -1,10 +1,4 @@
-import {
-  Arrangement,
-  type Channel,
-  type Position,
-  Seniority,
-  type Technology,
-} from 'src/common/enums';
+import { Arrangement, type Channel, Seniority } from 'src/common/enums';
 import { isWorldwide } from '../channels/linkedin_geo';
 import type { ChannelQuery, QuerySearchCombination } from '../types';
 import { POSITION_TITLES, SENIORITY_WORDS, TECHNOLOGY_TERMS } from './keywords';
@@ -26,7 +20,7 @@ export function keywordPhrase(combination: QuerySearchCombination): string {
 }
 
 /** Every title people use for the position, quoted and ORed: `("a" OR "b")`, or `"a"` alone. */
-export function titleClause(position: Position): string {
+export function titleClause(position: string): string {
   const titles = POSITION_TITLES[position].map((title) => `"${title}"`);
   return titles.length === 1 ? titles[0] : `(${titles.join(' OR ')})`;
 }
@@ -37,7 +31,7 @@ function searchTerm(term: string): string {
 }
 
 /** The technologies as search terms, space separated. */
-export function technologyTerms(technologies: readonly Technology[]): string {
+export function technologyTerms(technologies: readonly string[]): string {
   return technologies
     .map((technology) => searchTerm(TECHNOLOGY_TERMS[technology]))
     .join(' ');
@@ -49,8 +43,8 @@ export function technologyTerms(technologies: readonly Technology[]): string {
  * a level one of the position's titles already names ("lead" for tech lead).
  */
 export function seniorityWord(
-  experience: Seniority,
-  position?: Position,
+  experience: string,
+  position?: string,
 ): string | null {
   if (experience === Seniority.mid) return null;
   const word = SENIORITY_WORDS[experience];

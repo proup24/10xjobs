@@ -10,7 +10,7 @@ import { LINKEDIN_GEO_IDS } from './linkedin_geo';
  * loosely (most mid-level jobs say mid-senior), so each seniority takes its
  * neighbours too.
  */
-const EXPERIENCE_LEVELS: Record<Seniority, string | null> = {
+const EXPERIENCE_LEVELS: Readonly<Record<string, string | null>> = {
   [Seniority.junior]: '1,2',
   [Seniority.mid]: '3,4',
   [Seniority.senior]: '4',
@@ -33,7 +33,7 @@ const WORK_TYPES: Record<Arrangement, string | null> = {
  * drops symbols: `next js`, not `"next.js"`. Technologies not listed use
  * {@link TECHNOLOGY_TERMS}; `golang` stays, a bare `go` matching everything.
  */
-const LINKEDIN_TERMS: Partial<Record<Technology, string>> = {
+const LINKEDIN_TERMS: Readonly<Record<string, string>> = {
   [Technology.nodejs]: 'node js',
   [Technology.nextjs]: 'next js',
   [Technology.vue]: 'vue js',
@@ -48,7 +48,7 @@ const LINKEDIN_TERMS: Partial<Record<Technology, string>> = {
 };
 
 /** The technology as LinkedIn posters write it. */
-export function linkedinTerm(technology: Technology): string {
+export function linkedinTerm(technology: string): string {
   return LINKEDIN_TERMS[technology] ?? TECHNOLOGY_TERMS[technology];
 }
 

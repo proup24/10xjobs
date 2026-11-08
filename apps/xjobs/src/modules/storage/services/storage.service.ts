@@ -22,6 +22,11 @@ export abstract class StorageService {
   abstract get(bucket: string, key: string): Promise<Buffer>;
   /** Removes the object at `key`; a missing object is not an error. */
   abstract delete(bucket: string, key: string): Promise<void>;
+  /**
+   * Removes every object whose key starts with `prefix/`, in nested folders
+   * too; an empty or missing folder is not an error.
+   */
+  abstract deletePrefix(bucket: string, prefix: string): Promise<void>;
   /** Creates `bucket` as private when it does not exist yet. */
   abstract ensureBucket(bucket: string): Promise<void>;
 }

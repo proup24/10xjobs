@@ -2,14 +2,18 @@
 import { ProfileState } from 'src/common/enums';
 import type { ContactRow, UserRow } from 'src/database';
 import { ContactsRepository } from '../repositories/contacts.repository';
-import { ProfilesRepository } from '../repositories/profiles.repository';
+import {
+  ProfilesRepository,
+  toProfileColumns,
+} from '../repositories/profiles.repository';
 import { UsersRepository } from '../repositories/users.repository';
 import type {
   ContactInput,
+  Place,
+  PlaceLabels,
   ProfileFields,
   ProfileInput,
   ProfileWithSkills,
-  ResumeMeta,
   SkillInput,
   UserInput,
 } from '../types';
@@ -39,6 +43,16 @@ export class FakeUsersRepository extends UsersRepository {
 
   async findById(userId: string) {
     return this.rows.find((row) => row.id === userId) ?? null;
+  }
+
+  async eligibility(userId: string) {
+    const row = await this.findById(userId);
+    return row
+      ? {
+          residenceCountry: row.residenceCountry,
+          acceptsSponsorship: row.acceptsSponsorship,
+        }
+      : null;
   }
 
   async update(userId: string, data: UserInput) {
@@ -119,6 +133,18 @@ export class FakeContactsRepository extends ContactsRepository {
 export class FakeProfilesRepository extends ProfilesRepository {
   rows: ProfileWithSkills[] = [];
   private nextId = 1;
+  /** The vocabulary labels `placeLabels` answers from, whatever it is asked. */
+  labels: PlaceLabels = {
+    regions: new Map([
+      ['EMEA', 'EMEA'],
+      ['MENA', 'MENA'],
+    ]),
+    countries: new Map([
+      ['FR', 'France'],
+      ['MA', 'Morocco'],
+    ]),
+    cities: new Map(),
+  };
 
   private static techStack(
     userId: string,
@@ -162,15 +188,13 @@ export class FakeProfilesRepository extends ProfilesRepository {
     const profile: ProfileWithSkills = {
       id,
       userId,
-      ...data,
-      contractTypes: null,
-      places: null,
-      spokenLanguages: null,
-      salaryMin: null,
-      salaryCurrency: null,
-      salaryPeriod: null,
-      acceptsAnyCurrency: true,
-      acceptedCurrencies: [],
+      position: data.position,
+      ...toProfileColumns(data),
+      // The old shape: no longer written.
+      languages: null,
+      country: null,
+      city: null,
+      locations: null,
       resumeKey: null,
       resumeFilename: null,
       resumeSizeBytes: null,
@@ -194,7 +218,7 @@ export class FakeProfilesRepository extends ProfilesRepository {
   ) {
     const profile = await this.findById(userId, profileId);
     if (profile?.state !== ProfileState.draft) return null;
-    return Object.assign(profile, data, {
+    return Object.assign(profile, toProfileColumns(data), {
       techStack: FakeProfilesRepository.techStack(userId, profileId, skills),
     });
   }
@@ -214,20 +238,25 @@ export class FakeProfilesRepository extends ProfilesRepository {
     });
   }
 
-  async setResume(
-    userId: string,
-    profileId: string,
-    meta: ResumeMeta | null,
-  ): Promise<boolean> {
-    const profile = await this.findById(userId, profileId);
-    if (profile?.state !== ProfileState.draft) return false;
-    Object.assign(profile, {
-      resumeKey: meta?.key ?? null,
-      resumeFilename: meta?.filename ?? null,
-      resumeSizeBytes: meta?.sizeBytes ?? null,
-      resumeSha256: meta?.sha256 ?? null,
-      resumeUploadedAt: meta?.uploadedAt ?? null,
-    });
-    return true;
+  /** The labels of `labels` the places name, a city's country included; unknown ones are left out. */
+  async placeLabels(places: Place[]): Promise<PlaceLabels> {
+    const named = new Set(
+      places.map((place) =>
+        place.kind === 'city'
+          ? place.id.toLowerCase()
+          : place.kind === 'worldwide'
+            ? ''
+            : place.code,
+      ),
+    );
+    const pick = <T>(map: Map<string, T>, keys: Set<string>) =>
+      new Map([...map].filter(([key]) => keys.has(key)));
+    const cities = pick(this.labels.cities, named);
+    for (const city of cities.values()) named.add(city.countryCode);
+    return {
+      regions: pick(this.labels.regions, named),
+      countries: pick(this.labels.countries, named),
+      cities,
+    };
   }
 }

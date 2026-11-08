@@ -15,7 +15,6 @@ import {
   ProfilesRepository,
 } from './repositories/profiles.repository';
 import { ProfilesService } from './services/profiles.service';
-import { ResumeController } from './controllers/resume.controller';
 import { RESUMES_BUCKET, ResumeService } from './services/resume.service';
 import { UsersController } from './controllers/users.controller';
 import {
@@ -26,12 +25,7 @@ import { UsersService } from './services/users.service';
 
 @Module({
   imports: [StorageModule, QuerySearchModule],
-  controllers: [
-    UsersController,
-    ContactsController,
-    ProfilesController,
-    ResumeController,
-  ],
+  controllers: [UsersController, ContactsController, ProfilesController],
   providers: [
     UsersService,
     { provide: UsersRepository, useClass: PrismaUsersRepository },

@@ -11,13 +11,18 @@ const options = { whitelist: true, forbidNonWhitelisted: true };
 
 const validProfile = {
   position: 'backend_engineer',
-  languages: ['EN', 'FR'],
-  country: 'MA',
-  city: 'Rabat',
+  languages: [
+    { lang: 'en', level: 'fluent' },
+    { lang: 'fr', level: 'native' },
+  ],
   locations: {
-    remote: ['MENA', 'North Africa', 'EMEA'],
-    hybrid: [],
-    onsite: [],
+    remote: [
+      { kind: 'region', code: 'MENA' },
+      { kind: 'region', code: 'NORTH_AFRICA' },
+      { kind: 'worldwide' },
+    ],
+    hybrid: [{ kind: 'country', code: 'MA' }],
+    onsite: [{ kind: 'city', id: '0190f3c2-7a1b-7c3d-8e4f-5a6b7c8d9e0f' }],
   },
   yearsOfExperience: 6,
   timezoneCurrent: 60,
@@ -25,6 +30,10 @@ const validProfile = {
   timezoneMax: 240,
   engagements: ['employee', 'contractor'],
   seniorities: ['senior'],
+  contractTypes: ['full_time', 'contract'],
+  salary: { min: 4000, currency: 'EUR', period: 'month' },
+  acceptsAnyCurrency: false,
+  acceptedCurrencies: ['EUR', 'MAD'],
   noticePeriodDays: 30,
   techStack: [{ technology: 'nodejs', domain: 'backend', mastery: 8 }],
 };
@@ -72,19 +81,41 @@ describe('CreateProfileDto', () => {
     expect(await errorsFor({})).toEqual([]);
   });
 
-  it.each(['languages', 'engagements'])(
+  it.each(['languages', 'engagements', 'contractTypes'])(
     'rejects an empty %s list',
     async (field) => {
       expect(await errorsFor({ [field]: [] })).toEqual([field]);
     },
   );
 
-  it.each([[['backend_engineer']], [undefined], ['wizard']])(
-    'requires exactly one known position, rejecting %j',
+  it.each([[['backend_engineer']], [undefined], ['Backend Engineer']])(
+    'requires exactly one position code, rejecting %j',
     async (position) => {
       expect(await errorsFor({ position })).toEqual(['position']);
     },
   );
+
+  it('leaves code membership to the database: an unknown position passes', async () => {
+    expect(await errorsFor({ position: 'wizard' })).toEqual([]);
+  });
+
+  it('rejects the removed country and city fields', async () => {
+    expect(await errorsFor({ country: 'MA' })).toEqual(['country']);
+    expect(await errorsFor({ city: 'Rabat' })).toEqual(['city']);
+  });
+
+  it.each([[['Full_Time']], [['full time']], ['full_time'], [undefined]])(
+    'rejects contractTypes %j',
+    async (contractTypes) => {
+      expect(await errorsFor({ contractTypes })).toEqual(['contractTypes']);
+    },
+  );
+
+  it('rejects a repeated contract type', async () => {
+    expect(
+      await errorsFor({ contractTypes: ['full_time', 'full_time'] }),
+    ).toEqual(['contractTypes']);
+  });
 
   it('rejects per-task and accepts per_task', async () => {
     expect(await errorsFor({ engagements: ['per-task'] })).toEqual([
@@ -114,6 +145,16 @@ describe('CreateProfileDto', () => {
       expect(errors).toEqual([`techStack.0.${Object.keys(rating)[0]}`]);
     },
   );
+
+  it('rejects a technology that is not a code, and passes any code on to the database', async () => {
+    const skill = validProfile.techStack[0];
+    expect(
+      await errorsFor({ techStack: [{ ...skill, technology: 'Node.js' }] }),
+    ).toEqual(['techStack.0.technology']);
+    expect(
+      await errorsFor({ techStack: [{ ...skill, technology: 'saas' }] }),
+    ).toEqual([]);
+  });
 
   it('rejects the same technology twice in one domain', async () => {
     const skill = validProfile.techStack[0];
@@ -154,13 +195,20 @@ describe('profile seniorities', () => {
   it.each([
     [[]],
     [['senior', 'senior']],
-    [['wizard']],
-    [['unstated']],
+    [['Senior']],
     ['senior'],
     [undefined],
   ])('rejects seniorities %j', async (seniorities) => {
     expect(await errorsFor({ seniorities })).toEqual(['seniorities']);
   });
+
+  // Membership is the database's job: the code trigger refuses these with a 400.
+  it.each([[['wizard']], [['unstated']]])(
+    'passes seniorities %j on to the database',
+    async (seniorities) => {
+      expect(await errorsFor({ seniorities })).toEqual([]);
+    },
+  );
 
   it('rejects the old single seniority field', async () => {
     expect(await errorsFor({ seniority: 'senior' })).toEqual(['seniority']);
@@ -169,6 +217,7 @@ describe('profile seniorities', () => {
 
 describe('profile locations', () => {
   const none = { remote: [], hybrid: [], onsite: [] };
+  const city = { kind: 'city', id: '0190f3c2-7a1b-7c3d-8e4f-5a6b7c8d9e0f' };
 
   async function messagesFor(changes: object) {
     const dto = plainToInstance(CreateProfileDto, {
@@ -183,13 +232,15 @@ describe('profile locations', () => {
     return flatten(await validate(dto, options));
   }
 
-  it('accepts locations in a single arrangement', async () => {
+  it('accepts places in a single arrangement', async () => {
     expect(
-      await errorsFor({ locations: { ...none, remote: ['Europe'] } }),
+      await errorsFor({
+        locations: { ...none, remote: [{ kind: 'worldwide' }] },
+      }),
     ).toEqual([]);
   });
 
-  it('rejects a profile with no location, saying why', async () => {
+  it('rejects a profile with no place, saying why', async () => {
     expect(await errorsFor({ locations: none })).toEqual(['locations']);
     expect(await messagesFor({ locations: none })).toContain(
       LOCATIONS_REQUIRED,
@@ -202,50 +253,86 @@ describe('profile locations', () => {
 
   it('requires every arrangement list', async () => {
     expect(
-      await errorsFor({ locations: { remote: ['Europe'], hybrid: [] } }),
+      await errorsFor({
+        locations: { remote: [{ kind: 'worldwide' }], hybrid: [] },
+      }),
     ).toEqual(['locations.onsite']);
   });
 
   it('rejects an unknown arrangement key', async () => {
     expect(
       await errorsFor({
-        locations: { ...none, remote: ['Europe'], anywhere: [] },
+        locations: { ...none, remote: [{ kind: 'worldwide' }], anywhere: [] },
       }),
     ).toEqual(['locations.anywhere']);
   });
 
   it.each([
-    ['a non-string', [42]],
-    ['a blank entry', ['   ']],
-    ['an entry over 100 characters', ['x'.repeat(101)]],
-    ['more than 20 entries', Array.from({ length: 21 }, (_, i) => `City ${i}`)],
-  ])('rejects %s', async (_name, onsite) => {
-    expect(await errorsFor({ locations: { ...none, onsite } })).toEqual([
-      'locations.onsite',
+    ['an unknown kind', [{ kind: 'planet', code: 'x' }]],
+    ['location text', ['Paris, France']],
+    ['a lowercase country code', [{ kind: 'country', code: 'ma' }]],
+    ['a three-letter country code', [{ kind: 'country', code: 'MAR' }]],
+    ['a lowercase region code', [{ kind: 'region', code: 'emea' }]],
+    ['a city by code', [{ kind: 'city', code: 'rabat' }]],
+    ['a city id that is not a uuid', [{ kind: 'city', id: 'rabat' }]],
+    ['worldwide with a code', [{ kind: 'worldwide', code: 'GLOBAL' }]],
+    ['an extra key', [{ kind: 'country', code: 'MA', label: 'Morocco' }]],
+    ['the same place twice', [city, { ...city }]],
+    [
+      'more than 20 places',
+      Array.from({ length: 21 }, (_, i) => ({
+        kind: 'country',
+        code: `A${String.fromCharCode(65 + i)}`,
+      })),
+    ],
+  ])('rejects %s', async (_name, remote) => {
+    expect(await errorsFor({ locations: { ...none, remote } })).toEqual([
+      'locations.remote',
     ]);
   });
 
-  it('accepts 20 entries of 100 characters', async () => {
-    const onsite = Array.from({ length: 20 }, (_, i) =>
-      `${i}`.padEnd(100, 'x'),
-    );
-    expect(await errorsFor({ locations: { ...none, onsite } })).toEqual([]);
+  it('lower-cases a city id, so it is stored as Postgres prints it', async () => {
+    const upper = '0190F3C2-7A1B-7C3D-8E4F-5A6B7C8D9E0F';
+    const dto = plainToInstance(CreateProfileDto, {
+      ...validProfile,
+      locations: {
+        ...none,
+        remote: [{ kind: 'country', code: 'MA' }],
+        onsite: [{ kind: 'city', id: upper }],
+      },
+    });
+    expect(await validate(dto, options)).toEqual([]);
+    expect(dto.locations.onsite).toEqual([
+      { kind: 'city', id: upper.toLowerCase() },
+    ]);
+    expect(dto.locations.remote).toEqual([{ kind: 'country', code: 'MA' }]);
+  });
+
+  it('rejects the same city twice in different cases', async () => {
+    expect(
+      await errorsFor({
+        locations: {
+          ...none,
+          onsite: [city, { kind: 'city', id: city.id.toUpperCase() }],
+        },
+      }),
+    ).toEqual(['locations.onsite']);
+  });
+
+  it('accepts 20 places in one arrangement', async () => {
+    const remote = Array.from({ length: 20 }, (_, i) => ({
+      kind: 'country',
+      code: `A${String.fromCharCode(65 + i)}`,
+    }));
+    expect(await errorsFor({ locations: { ...none, remote } })).toEqual([]);
   });
 
   it.each([
     ['arrangements', ['remote']],
     ['regions', ['EMEA']],
-  ])('rejects the removed %s field', async (field, value) => {
+    ['places', none],
+  ])('rejects the removed or internal %s field', async (field, value) => {
     expect(await errorsFor({ [field]: value })).toEqual([field]);
-  });
-
-  it('accepts onsite with no city', async () => {
-    expect(
-      await errorsFor({
-        locations: { ...none, onsite: ['Paris, France'] },
-        city: null,
-      }),
-    ).toEqual([]);
   });
 
   it('applies to replacements too', async () => {
@@ -255,5 +342,96 @@ describe('profile locations', () => {
       locations: none,
     });
     expect(paths(await validate(dto, options))).toEqual(['locations']);
+  });
+});
+
+describe('profile languages', () => {
+  it.each([
+    ['an uppercase code', [{ lang: 'EN', level: 'fluent' }]],
+    ['a three-letter code', [{ lang: 'eng', level: 'fluent' }]],
+    ['an unknown level', [{ lang: 'en', level: 'basic' }]],
+    ['a missing level', [{ lang: 'en' }]],
+    ['a bare code', ['en']],
+    [
+      'the same language twice',
+      [
+        { lang: 'en', level: 'fluent' },
+        { lang: 'en', level: 'native' },
+      ],
+    ],
+  ])('rejects %s', async (_name, languages) => {
+    const errors = await errorsFor({ languages });
+    expect(errors.length).toBeGreaterThan(0);
+    expect(errors.every((path) => path.startsWith('languages'))).toBe(true);
+  });
+
+  it.each(['native', 'fluent', 'working'])(
+    'accepts the level %s',
+    async (level) => {
+      expect(await errorsFor({ languages: [{ lang: 'en', level }] })).toEqual(
+        [],
+      );
+    },
+  );
+
+  it('leaves code membership to the database: an unknown language passes', async () => {
+    expect(
+      await errorsFor({ languages: [{ lang: 'xx', level: 'fluent' }] }),
+    ).toEqual([]);
+  });
+});
+
+describe('profile salary and currencies', () => {
+  it.each([[null], [undefined]])('accepts no salary (%j)', async (salary) => {
+    expect(await errorsFor({ salary })).toEqual([]);
+  });
+
+  it.each([
+    ['a minimum of 0', { min: 0, currency: 'EUR', period: 'month' }],
+    ['a fractional minimum', { min: 10.5, currency: 'EUR', period: 'hour' }],
+    ['a lowercase currency', { min: 10, currency: 'eur', period: 'hour' }],
+    ['an unknown period', { min: 10, currency: 'EUR', period: 'week' }],
+    ['a missing currency', { min: 10, period: 'hour' }],
+    [
+      'a minimum above int4',
+      { min: 2_147_483_648, currency: 'EUR', period: 'year' },
+    ],
+  ])('rejects a salary with %s', async (_name, salary) => {
+    const errors = await errorsFor({ salary });
+    expect(errors.length).toBeGreaterThan(0);
+    expect(errors.every((path) => path.startsWith('salary'))).toBe(true);
+  });
+
+  it('accepts the largest int4 minimum', async () => {
+    expect(
+      await errorsFor({
+        salary: { min: 2_147_483_647, currency: 'EUR', period: 'year' },
+      }),
+    ).toEqual([]);
+  });
+
+  it.each(['hour', 'day', 'month', 'year'])(
+    'accepts the period %s',
+    async (period) => {
+      expect(
+        await errorsFor({ salary: { min: 1, currency: 'EUR', period } }),
+      ).toEqual([]);
+    },
+  );
+
+  it('accepts any currency with an empty list', async () => {
+    expect(
+      await errorsFor({ acceptsAnyCurrency: true, acceptedCurrencies: [] }),
+    ).toEqual([]);
+  });
+
+  it.each([
+    ['acceptsAnyCurrency', 'yes'],
+    ['acceptsAnyCurrency', undefined],
+    ['acceptedCurrencies', ['eur']],
+    ['acceptedCurrencies', ['EUR', 'EUR']],
+    ['acceptedCurrencies', undefined],
+  ])('rejects %s %j', async (field, value) => {
+    expect(await errorsFor({ [field]: value })).toEqual([field]);
   });
 });

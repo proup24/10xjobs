@@ -2,6 +2,19 @@ import { ConflictException } from '@nestjs/common';
 
 /** Postgres SQLSTATE for a unique-constraint violation. */
 const UNIQUE_VIOLATION = '23505';
+/** Postgres SQLSTATE for a check violation, which the code-check triggers raise too. */
+const CHECK_VIOLATION = '23514';
+
+/** The first error in `error`'s `cause` chain whose SQLSTATE is `state`, or null. */
+function findSqlState(error: unknown, state: string): object | null {
+  let current: unknown = error;
+  for (let depth = 0; depth < 10 && current; depth++) {
+    if (typeof current !== 'object') return null;
+    if ((current as { sqlState?: unknown }).sqlState === state) return current;
+    current = (current as { cause?: unknown }).cause;
+  }
+  return null;
+}
 
 /**
  * @description True when `error`, or any error in its `cause` chain, is a
@@ -9,15 +22,28 @@ const UNIQUE_VIOLATION = '23505';
  * wrap them, so the chain is walked.
  */
 export function isUniqueViolation(error: unknown): boolean {
-  let current: unknown = error;
-  for (let depth = 0; depth < 10 && current; depth++) {
-    if (typeof current !== 'object') return false;
-    if ((current as { sqlState?: unknown }).sqlState === UNIQUE_VIOLATION) {
-      return true;
-    }
-    current = (current as { cause?: unknown }).cause;
-  }
-  return false;
+  return findSqlState(error, UNIQUE_VIOLATION) !== null;
+}
+
+/**
+ * @description True when `error`, or any error in its `cause` chain, is a
+ * Postgres check violation: a check constraint, or a code-check trigger
+ * refusing a value outside its list.
+ */
+export function isCheckViolation(error: unknown): boolean {
+  return findSqlState(error, CHECK_VIOLATION) !== null;
+}
+
+/**
+ * @description The message of the check violation in `error`'s `cause` chain,
+ * such as `profiles.position: 'support' is not an approved role_kinds code`;
+ * null when there is none.
+ */
+export function checkViolationMessage(error: unknown): string | null {
+  const violation = findSqlState(error, CHECK_VIOLATION);
+  if (!violation) return null;
+  const message = (violation as { message?: unknown }).message;
+  return typeof message === 'string' ? message : null;
 }
 
 /** SQLSTATEs where re-running the whole transaction can succeed. */

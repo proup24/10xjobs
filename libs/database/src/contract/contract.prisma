@@ -307,7 +307,8 @@ model Profile {
   id                 Uuid                  @id @onCreate(uuid(7))
   userId             Uuid
   user               User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  position           Position
+  // A role_kinds code (approved, engineering); checked by the profiles_check_codes trigger.
+  position           String
   // languages, country and locations are the old shape, nullable until the engine stops writing them.
   languages          Language[]?
   country            String?
@@ -318,8 +319,9 @@ model Profile {
   timezoneCurrent    Int
   timezoneMin        Int
   timezoneMax        Int
-  engagements        Engagement[]
-  seniorities        Seniority[]
+  // engagements and seniorities codes; `unstated` is refused by the trigger.
+  engagements        String[]
+  seniorities        String[]
   noticePeriodDays   Int
   // Codes from contract_types; null until the user answers.
   contractTypes      String[]?
@@ -349,8 +351,8 @@ model Profile {
   @@check(expression: sql`cardinality("languages") > 0`, name: "profiles_languages_nonempty")
   @@check(expression: sql`cardinality("engagements") > 0`, name: "profiles_engagements_nonempty")
   @@check(expression: sql`cardinality("seniorities") > 0`, name: "profiles_seniorities_nonempty")
-  // locations is exactly { remote, hybrid, onsite }: arrays of at most 20 strings, at least one location overall.
-  @@check(expression: sql`jsonb_typeof("locations") = 'object' AND "locations" ?& ARRAY['remote', 'hybrid', 'onsite'] AND ("locations" - ARRAY['remote', 'hybrid', 'onsite']) = '{}'::jsonb AND CASE WHEN jsonb_typeof("locations" -> 'remote') = 'array' AND jsonb_typeof("locations" -> 'hybrid') = 'array' AND jsonb_typeof("locations" -> 'onsite') = 'array' THEN jsonb_array_length("locations" -> 'remote') <= 20 AND jsonb_array_length("locations" -> 'hybrid') <= 20 AND jsonb_array_length("locations" -> 'onsite') <= 20 AND NOT jsonb_path_exists("locations", '$.*[*] ? (@.type() != "string")') ELSE false END`, name: "profiles_locations_shape")
+  // locations is null (the engine now writes places) or exactly { remote, hybrid, onsite }: arrays of at most 20 strings, at least one location overall.
+  @@check(expression: sql`"locations" IS NULL OR (jsonb_typeof("locations") = 'object' AND "locations" ?& ARRAY['remote', 'hybrid', 'onsite'] AND ("locations" - ARRAY['remote', 'hybrid', 'onsite']) = '{}'::jsonb AND CASE WHEN jsonb_typeof("locations" -> 'remote') = 'array' AND jsonb_typeof("locations" -> 'hybrid') = 'array' AND jsonb_typeof("locations" -> 'onsite') = 'array' THEN jsonb_array_length("locations" -> 'remote') <= 20 AND jsonb_array_length("locations" -> 'hybrid') <= 20 AND jsonb_array_length("locations" -> 'onsite') <= 20 AND NOT jsonb_path_exists("locations", '$.*[*] ? (@.type() != "string")') ELSE false END)`, name: "profiles_locations_shape")
   @@check(expression: sql`jsonb_path_exists("locations", '$.*[*]')`, name: "profiles_locations_nonempty")
   @@check(expression: sql`("salaryMin" IS NULL) = ("salaryCurrency" IS NULL) AND ("salaryMin" IS NULL) = ("salaryPeriod" IS NULL)`, name: "profiles_salary_all_or_none")
   @@check(expression: sql`"salaryMin" > 0`, name: "profiles_salary_min_positive")
@@ -373,7 +375,8 @@ model ProfileSkill {
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   profileId  Uuid
   profile    Profile     @relation(fields: [profileId, userId], references: [id, userId], onDelete: Cascade)
-  technology Technology
+  // A tech_tags code; checked by the profile_skills_check_codes trigger.
+  technology String
   domain     SkillDomain
   mastery    Int
   importance Int         @default(5)
@@ -450,7 +453,8 @@ model QuerySearchBuilder {
   // Canonical (lowercased) location text the channels search.
   location           String
   experience         Seniority
-  technologies       Technology[]
+  // tech_tags codes. Only the engine writes this table, so no trigger checks them.
+  technologies       String[]
   // The skill domain the technologies came from; part of the hash.
   domain             SkillDomain
   type               Arrangement

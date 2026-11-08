@@ -1,11 +1,4 @@
-import {
-  Arrangement,
-  type Channel,
-  type Position,
-  type Seniority,
-  type SkillDomain,
-  type Technology,
-} from 'src/common/enums';
+import { Arrangement, type Channel, type SkillDomain } from 'src/common/enums';
 
 /** The arrangements a profile lists locations for, in expansion order. */
 export const LOCATION_ARRANGEMENTS = [
@@ -18,8 +11,9 @@ export type LocationArrangement = (typeof LOCATION_ARRANGEMENTS)[number];
 /** Per arrangement, the location texts to search in ("Europe", "Paris, France"). An empty list means that arrangement is not wanted. */
 export type LocationsByArrangement = Record<LocationArrangement, string[]>;
 
+/** Position, seniority and technology are vocabulary codes, as stored. */
 export type RankedSkill = {
-  technology: Technology;
+  technology: string;
   domain: SkillDomain;
   importance: number;
   mastery: number;
@@ -27,25 +21,25 @@ export type RankedSkill = {
 
 /** The technologies one search uses and the skill domain they came from. */
 export type TechnologySet = {
-  technologies: Technology[];
+  technologies: string[];
   domain: SkillDomain;
 };
 
 export type QuerySearchProfileInput = {
-  position: Position;
+  position: string;
   locations: LocationsByArrangement;
-  seniorities: Seniority[];
+  seniorities: string[];
   skills: RankedSkill[];
 };
 
 export type QuerySearchCombination = {
   channel: Channel;
-  position: Position;
+  position: string;
   /** Canonical (lowercased) location text, whatever the arrangement. */
   location: string;
-  experience: Seniority;
+  experience: string;
   type: Arrangement;
-  technologies: Technology[];
+  technologies: string[];
   /** The domain of the skill the technologies came from; part of the hash. */
   domain: SkillDomain;
 };

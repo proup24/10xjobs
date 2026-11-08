@@ -1,21 +1,34 @@
 import axios from 'axios';
 import { createAuthUser, deleteAuthUser } from '../support/auth-users';
+import { createApprovedCity, deleteCity } from '../support/cities';
 
 const run = Date.now().toString(36);
 const ok = { validateStatus: () => true };
 
 const profile = {
   position: 'backend_engineer',
-  languages: ['EN', 'FR'],
-  country: 'MA',
-  city: 'Rabat',
-  locations: { remote: ['EMEA', 'North Africa'], hybrid: [], onsite: [] },
+  languages: [
+    { lang: 'en', level: 'fluent' },
+    { lang: 'fr', level: 'native' },
+  ],
+  locations: {
+    remote: [
+      { kind: 'region', code: 'EMEA' },
+      { kind: 'region', code: 'NORTH_AFRICA' },
+    ],
+    hybrid: [{ kind: 'country', code: 'MA' }],
+    onsite: [],
+  },
   yearsOfExperience: 6,
   timezoneCurrent: 60,
   timezoneMin: -240,
   timezoneMax: 240,
   engagements: ['employee', 'contractor'],
   seniorities: ['senior'],
+  contractTypes: ['full_time', 'contract'],
+  salary: { min: 4000, currency: 'EUR', period: 'month' },
+  acceptsAnyCurrency: false,
+  acceptedCurrencies: ['EUR', 'MAD'],
   noticePeriodDays: 30,
   techStack: [
     { technology: 'nodejs', domain: 'backend', mastery: 8, importance: 9 },
@@ -39,6 +52,8 @@ describe('users, profiles and resume', () => {
     await axios.patch(`${base()}/${userId}`, {
       name: 'E2E User',
       address: { line1: '1 Rue X', city: 'Rabat', country: 'MA' },
+      residenceCountry: 'MA',
+      acceptsSponsorship: false,
     });
     await axios.patch(`${base()}/${otherUserId}`, { name: 'Other' });
   });
@@ -157,6 +172,50 @@ describe('users, profiles and resume', () => {
     expect(get.data.data.position).toBe('backend_engineer');
   });
 
+  it('reads and writes the eligibility answers, and refuses a bad country', async () => {
+    const user = await axios.get(`${base()}/${userId}`);
+    expect(user.data.data).toMatchObject({
+      residenceCountry: 'MA',
+      acceptsSponsorship: false,
+    });
+    const bad = await axios.patch(
+      `${base()}/${otherUserId}`,
+      { residenceCountry: 'ZZ' },
+      ok,
+    );
+    expect(bad.status).toBe(400);
+    expect(bad.data.message).toBe(
+      "users.residenceCountry: 'ZZ' is not an approved countries code",
+    );
+    const shape = await axios.patch(
+      `${base()}/${otherUserId}`,
+      { residenceCountry: 'morocco', acceptsSponsorship: 'yes' },
+      ok,
+    );
+    expect(shape.status).toBe(400);
+    expect(shape.data.code).toBe('VALIDATION_FAILED');
+  });
+
+  it('refuses to publish until the country and the sponsorship answer are set', async () => {
+    const plans = `${base()}/${otherUserId}/profiles`;
+    const id = (await axios.post(plans, profile)).data.data.id;
+    const message =
+      'set your country of residence and answer the visa sponsorship question before publishing';
+    const first = await axios.post(`${plans}/${id}/publish`, {}, ok);
+    expect(first.status).toBe(409);
+    expect(first.data.message).toBe(message);
+    await axios.patch(`${base()}/${otherUserId}`, { residenceCountry: 'MA' });
+    const half = await axios.post(`${plans}/${id}/publish`, {}, ok);
+    expect(half.status).toBe(409);
+    expect(half.data.message).toBe(message);
+    expect((await axios.get(`${plans}/${id}`)).data.data.state).toBe('draft');
+    await axios.patch(`${base()}/${otherUserId}`, { acceptsSponsorship: true });
+    const done = await axios.post(`${plans}/${id}/publish`, {}, ok);
+    expect(done.status).toBe(200);
+    expect(done.data.data.state).toBe('published');
+    expect((await axios.delete(`${plans}/${id}`)).status).toBe(204);
+  });
+
   it('freezes a profile once published; it can only be deleted', async () => {
     const id = (await axios.post(profiles(), profile)).data.data.id;
     const published = await axios.post(`${profiles()}/${id}/publish`);
@@ -177,18 +236,146 @@ describe('users, profiles and resume', () => {
     expect((await axios.delete(`${profiles()}/${id}`)).status).toBe(204);
   });
 
-  it('accepts onsite in a location with no city of residence, and returns it as sent', async () => {
-    const locations = { remote: [], hybrid: [], onsite: ['Paris, France'] };
+  it('stores a city id sent in upper case as lower case, and publishes the profile', async () => {
+    const cityId = await createApprovedCity(`E2E City ${run}`);
+    try {
+      const created = await axios.post(
+        profiles(),
+        {
+          ...profile,
+          locations: {
+            ...profile.locations,
+            onsite: [{ kind: 'city', id: cityId.toUpperCase() }],
+          },
+        },
+        ok,
+      );
+      expect(created.status).toBe(201);
+      const id = created.data.data.id;
+      expect(created.data.data.locations.onsite).toEqual([
+        { kind: 'city', id: cityId },
+      ]);
+      const published = await axios.post(`${profiles()}/${id}/publish`, {}, ok);
+      expect(published.status).toBe(200);
+      expect(published.data.data.state).toBe('published');
+      expect((await axios.delete(`${profiles()}/${id}`)).status).toBe(204);
+    } finally {
+      await deleteCity(cityId);
+    }
+  });
+
+  it('refuses to publish a profile whose only skills are concept tags, leaving it a draft', async () => {
+    const id = (
+      await axios.post(profiles(), {
+        ...profile,
+        techStack: [
+          { technology: 'saas', domain: 'backend', mastery: 9, importance: 10 },
+          {
+            technology: 'microservices',
+            domain: 'backend',
+            mastery: 8,
+            importance: 9,
+          },
+        ],
+      })
+    ).data.data.id;
+    const res = await axios.post(`${profiles()}/${id}/publish`, {}, ok);
+    expect(res.status).toBe(400);
+    expect(res.data.message).toBe(
+      'at least one searchable technology with importance above 0 is required to publish',
+    );
+    expect((await axios.get(`${profiles()}/${id}`)).data.data.state).toBe(
+      'draft',
+    );
+    expect((await axios.delete(`${profiles()}/${id}`)).status).toBe(204);
+  });
+
+  it('echoes locations as the places it was sent', async () => {
+    const res = await axios.post(profiles(), profile, ok);
+    expect(res.status).toBe(201);
+    expect(res.data.data.locations).toEqual(profile.locations);
+    expect(res.data.data.languages).toEqual(profile.languages);
+    for (const hidden of ['country', 'city', 'places', 'spokenLanguages']) {
+      expect(res.data.data).not.toHaveProperty(hidden);
+    }
+    await axios.delete(`${profiles()}/${res.data.data.id}`);
+  });
+
+  it.each([
+    [
+      'a position that is not an engineering role',
+      { position: 'support' },
+      "profiles.position: 'support' is not an approved role_kinds code",
+    ],
+    [
+      'an unstated seniority',
+      { seniorities: ['unstated'] },
+      "profiles.seniorities: 'unstated' is not an approved seniorities code",
+    ],
+    [
+      'an unknown seniority',
+      { seniorities: ['wizard'] },
+      "profiles.seniorities: 'wizard' is not an approved seniorities code",
+    ],
+    [
+      'an unknown contract type',
+      { contractTypes: ['gig'] },
+      "profiles.contractTypes: 'gig' is not an approved contract_types code",
+    ],
+    [
+      'an unknown country',
+      {
+        locations: {
+          remote: [{ kind: 'country', code: 'ZZ' }],
+          hybrid: [],
+          onsite: [],
+        },
+      },
+      "profiles.places: 'ZZ' is not an approved countries code",
+    ],
+    [
+      'an unknown language',
+      { languages: [{ lang: 'xx', level: 'fluent' }] },
+      "profiles.spokenLanguages: 'xx' is not an approved iso_languages code",
+    ],
+  ])(
+    'refuses %s with a 400 naming the field',
+    async (_name, change, message) => {
+      const res = await axios.post(profiles(), { ...profile, ...change }, ok);
+      expect(res.status).toBe(400);
+      expect(res.data).toMatchObject({ code: 'BAD_REQUEST', message });
+    },
+  );
+
+  it('refuses an unknown technology with a 400 and stores nothing', async () => {
+    const before = (await axios.get(profiles())).data.data.length;
     const res = await axios.post(
       profiles(),
-      { ...profile, city: null, locations },
+      {
+        ...profile,
+        techStack: [
+          { technology: 'cobolscript', domain: 'backend', mastery: 5 },
+        ],
+      },
       ok,
     );
-    expect(res.status).toBe(201);
-    expect(res.data.data.locations).toEqual(locations);
-    expect(res.data.data).not.toHaveProperty('regions');
-    expect(res.data.data).not.toHaveProperty('arrangements');
-    await axios.delete(`${profiles()}/${res.data.data.id}`);
+    expect(res.status).toBe(400);
+    expect(res.data.message).toBe(
+      "profile_skills.technology: 'cobolscript' is not an approved tech_tags code",
+    );
+    expect((await axios.get(profiles())).data.data).toHaveLength(before);
+  });
+
+  it('refuses a bad code on replace too, leaving the profile as it was', async () => {
+    const res = await axios.put(
+      `${profiles()}/${profileId}`,
+      { ...editable, contractTypes: ['gig'] },
+      ok,
+    );
+    expect(res.status).toBe(400);
+    expect(res.data.message).toContain('profiles.contractTypes');
+    const get = await axios.get(`${profiles()}/${profileId}`);
+    expect(get.data.data.contractTypes).toEqual(profile.contractTypes);
   });
 
   it('rejects a profile with no location, saying why', async () => {
@@ -213,36 +400,6 @@ describe('users, profiles and resume', () => {
       { ...editable, timezoneMin: 300, timezoneMax: 240 },
       ok,
     );
-    expect(res.status).toBe(400);
-  });
-
-  it('uploads and downloads a resume PDF', async () => {
-    const form = new FormData();
-    form.append(
-      'file',
-      new Blob([Buffer.from('%PDF-1.4\n%%EOF')], { type: 'application/pdf' }),
-      'cv.pdf',
-    );
-    const upload = await axios.post(`${profiles()}/${profileId}/resume`, form);
-    expect(upload.status).toBe(201);
-    expect(upload.data.data.resume.filename).toBe('cv.pdf');
-
-    const download = await axios.get(`${profiles()}/${profileId}/resume`, {
-      responseType: 'arraybuffer',
-    });
-    expect(download.status).toBe(200);
-    expect(download.headers['content-type']).toContain('application/pdf');
-    expect(Buffer.from(download.data).toString()).toBe('%PDF-1.4\n%%EOF');
-  });
-
-  it('rejects a file that is not a PDF', async () => {
-    const form = new FormData();
-    form.append(
-      'file',
-      new Blob(['hello'], { type: 'application/pdf' }),
-      'cv.pdf',
-    );
-    const res = await axios.post(`${profiles()}/${profileId}/resume`, form, ok);
     expect(res.status).toBe(400);
   });
 

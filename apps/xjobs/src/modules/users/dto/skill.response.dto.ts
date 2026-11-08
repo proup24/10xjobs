@@ -1,9 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { SkillDomain, Technology } from 'src/common/enums';
+import { SkillDomain } from 'src/common/enums';
 
 export class SkillResponseDto {
-  @ApiProperty({ enum: Technology, enumName: 'Technology' })
-  technology!: Technology;
+  @ApiProperty({ example: 'nodejs', description: 'A tech_tags code' })
+  technology!: string;
 
   @ApiProperty({ enum: SkillDomain, enumName: 'SkillDomain' })
   domain!: SkillDomain;

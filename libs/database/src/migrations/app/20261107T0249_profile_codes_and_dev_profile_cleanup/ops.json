@@ -1,0 +1,370 @@
+[
+  {
+    "id": "dropCheckConstraint.profile_skills.profile_skills_technology_check_415c1e16",
+    "label": "Drop check constraint \"profile_skills_technology_check_415c1e16\" on \"profile_skills\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "profile_skills_technology_check_415c1e16",
+        "table": "profile_skills"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"profile_skills_technology_check_415c1e16\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profile_skills_technology_check_415c1e16",
+          "public",
+          "\"public\".\"profile_skills\""
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "constraint \"profile_skills_technology_check_415c1e16\" on \"profile_skills\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"profile_skills_technology_check_415c1e16\"",
+        "sql": "ALTER TABLE \"public\".\"profile_skills\" DROP CONSTRAINT \"profile_skills_technology_check_415c1e16\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"profile_skills_technology_check_415c1e16\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profile_skills_technology_check_415c1e16",
+          "public",
+          "\"public\".\"profile_skills\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"profile_skills_technology_check_415c1e16\" on \"profile_skills\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "dropCheckConstraint.profiles.profiles_engagements_check_8a34079e",
+    "label": "Drop check constraint \"profiles_engagements_check_8a34079e\" on \"profiles\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "profiles_engagements_check_8a34079e",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"profiles_engagements_check_8a34079e\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_engagements_check_8a34079e",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "constraint \"profiles_engagements_check_8a34079e\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"profiles_engagements_check_8a34079e\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" DROP CONSTRAINT \"profiles_engagements_check_8a34079e\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"profiles_engagements_check_8a34079e\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_engagements_check_8a34079e",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"profiles_engagements_check_8a34079e\" on \"profiles\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "dropCheckConstraint.profiles.profiles_locations_shape_8e195cce",
+    "label": "Drop check constraint \"profiles_locations_shape_8e195cce\" on \"profiles\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "profiles_locations_shape_8e195cce",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"profiles_locations_shape_8e195cce\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_locations_shape_8e195cce",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "constraint \"profiles_locations_shape_8e195cce\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"profiles_locations_shape_8e195cce\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" DROP CONSTRAINT \"profiles_locations_shape_8e195cce\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"profiles_locations_shape_8e195cce\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_locations_shape_8e195cce",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"profiles_locations_shape_8e195cce\" on \"profiles\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "dropCheckConstraint.profiles.profiles_position_check_af0c0d09",
+    "label": "Drop check constraint \"profiles_position_check_af0c0d09\" on \"profiles\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "profiles_position_check_af0c0d09",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"profiles_position_check_af0c0d09\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_position_check_af0c0d09",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "constraint \"profiles_position_check_af0c0d09\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"profiles_position_check_af0c0d09\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" DROP CONSTRAINT \"profiles_position_check_af0c0d09\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"profiles_position_check_af0c0d09\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_position_check_af0c0d09",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"profiles_position_check_af0c0d09\" on \"profiles\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "dropCheckConstraint.profiles.profiles_seniorities_check_c892abac",
+    "label": "Drop check constraint \"profiles_seniorities_check_c892abac\" on \"profiles\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "profiles_seniorities_check_c892abac",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"profiles_seniorities_check_c892abac\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_seniorities_check_c892abac",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "constraint \"profiles_seniorities_check_c892abac\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"profiles_seniorities_check_c892abac\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" DROP CONSTRAINT \"profiles_seniorities_check_c892abac\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"profiles_seniorities_check_c892abac\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_seniorities_check_c892abac",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"profiles_seniorities_check_c892abac\" on \"profiles\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "dropCheckConstraint.query_search_builder.query_search_builder_technologies_check_84960705",
+    "label": "Drop check constraint \"query_search_builder_technologies_check_84960705\" on \"query_search_builder\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "query_search_builder_technologies_check_84960705",
+        "table": "query_search_builder"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"query_search_builder_technologies_check_84960705\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "query_search_builder_technologies_check_84960705",
+          "public",
+          "\"public\".\"query_search_builder\""
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "constraint \"query_search_builder_technologies_check_84960705\" on \"query_search_builder\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"query_search_builder_technologies_check_84960705\"",
+        "sql": "ALTER TABLE \"public\".\"query_search_builder\" DROP CONSTRAINT \"query_search_builder_technologies_check_84960705\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"query_search_builder_technologies_check_84960705\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "query_search_builder_technologies_check_84960705",
+          "public",
+          "\"public\".\"query_search_builder\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"query_search_builder_technologies_check_84960705\" on \"query_search_builder\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.profiles.profiles_locations_shape_c8b4dcae",
+    "label": "Add check constraint \"profiles_locations_shape_c8b4dcae\" on \"profiles\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "profiles_locations_shape_c8b4dcae",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"profiles_locations_shape_c8b4dcae\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_locations_shape_c8b4dcae",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"profiles_locations_shape_c8b4dcae\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"profiles_locations_shape_c8b4dcae\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ADD CONSTRAINT \"profiles_locations_shape_c8b4dcae\" CHECK (\"locations\" IS NULL OR (jsonb_typeof(\"locations\") = 'object' AND \"locations\" ?& ARRAY['remote', 'hybrid', 'onsite'] AND (\"locations\" - ARRAY['remote', 'hybrid', 'onsite']) = '{}'::jsonb AND CASE WHEN jsonb_typeof(\"locations\" -> 'remote') = 'array' AND jsonb_typeof(\"locations\" -> 'hybrid') = 'array' AND jsonb_typeof(\"locations\" -> 'onsite') = 'array' THEN jsonb_array_length(\"locations\" -> 'remote') <= 20 AND jsonb_array_length(\"locations\" -> 'hybrid') <= 20 AND jsonb_array_length(\"locations\" -> 'onsite') <= 20 AND NOT jsonb_path_exists(\"locations\", '$.*[*] ? (@.type() != \"string\")') ELSE false END))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify check constraint \"profiles_locations_shape_c8b4dcae\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4)) AS \"result\"",
+        "params": [
+          "profiles_locations_shape_c8b4dcae",
+          "public",
+          "\"public\".\"profiles\"",
+          "c"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "data.profiles_delete_without_new_fields",
+    "label": "Delete dev profiles missing places, spokenLanguages or contractTypes",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "profiles"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "delete profiles missing a new field",
+        "sql": "DELETE FROM public.profiles\nWHERE places IS NULL OR \"spokenLanguages\" IS NULL OR \"contractTypes\" IS NULL;"
+      }
+    ],
+    "postcheck": []
+  }
+]

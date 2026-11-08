@@ -1,0 +1,24 @@
+[
+  {
+    "id": "data.query_search_builder_recount",
+    "invariantId": "builder-recount",
+    "label": "Recount associatedProfiles and isActive of every builder from its profile links",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "query_search_builder"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "recount builders whose count or active flag is stale",
+        "sql": "UPDATE public.query_search_builder b\nSET \"associatedProfiles\" = c.n, \"isActive\" = c.n > 0 AND NOT b.\"isDeleted\"\nFROM (SELECT b2.id, count(l.id) AS n FROM public.query_search_builder b2\n      LEFT JOIN public.profile_query_search_builders l ON l.\"queryId\" = b2.id\n      GROUP BY b2.id) c\nWHERE c.id = b.id\n  AND (b.\"associatedProfiles\" <> c.n OR b.\"isActive\" <> (c.n > 0 AND NOT b.\"isDeleted\"));"
+      }
+    ],
+    "postcheck": []
+  }
+]

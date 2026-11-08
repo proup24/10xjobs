@@ -11,6 +11,7 @@ export {
 } from './steps';
 export { LOCATION_ARRANGEMENTS } from './types';
 export type {
+  LocationArrangement,
   LocationsByArrangement,
   QuerySearchProfileInput,
   QuerySearchAttachResult,

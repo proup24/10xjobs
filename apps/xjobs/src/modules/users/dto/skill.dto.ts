@@ -1,11 +1,26 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsInt, IsOptional, Max, Min } from 'class-validator';
-import { SkillDomain, Technology } from 'src/common/enums';
+import {
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Matches,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
+import { SkillDomain } from 'src/common/enums';
+import { CODE } from './validators';
 
 export class SkillDto {
-  @ApiProperty({ enum: Technology, enumName: 'Technology' })
-  @IsEnum(Technology)
-  technology!: Technology;
+  @ApiProperty({
+    example: 'nodejs',
+    description: 'An approved tech_tags code; the database checks it',
+  })
+  @IsString()
+  @MaxLength(64)
+  @Matches(CODE, { message: 'technology must be a tech_tags code' })
+  technology!: string;
 
   @ApiProperty({ enum: SkillDomain, enumName: 'SkillDomain' })
   @IsEnum(SkillDomain)

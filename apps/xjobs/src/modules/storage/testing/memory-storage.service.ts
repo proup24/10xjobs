@@ -39,6 +39,18 @@ export class MemoryStorageService extends StorageService {
     this.objects.get(bucket)?.delete(key);
   }
 
+  async deletePrefix(bucket: string, prefix: string): Promise<void> {
+    if (!prefix)
+      throw new Error(`Refusing to delete ${bucket} under an empty prefix`);
+    if (this.failNextDelete) {
+      this.failNextDelete = false;
+      throw new Error('storage unavailable');
+    }
+    for (const key of this.keys(bucket)) {
+      if (key.startsWith(`${prefix}/`)) this.objects.get(bucket)?.delete(key);
+    }
+  }
+
   async ensureBucket(bucket: string): Promise<void> {
     if (!this.buckets.includes(bucket)) this.buckets.push(bucket);
   }

@@ -132,6 +132,16 @@ describe('profile codes are checked against the value lists', () => {
     });
   });
 
+  it('accepts a profile with only the new fields: the old shape columns stay null', async () => {
+    const { error } = await insertProfile({
+      languages: null,
+      country: null,
+      city: null,
+      locations: null,
+    });
+    expect(error).toBeNull();
+  });
+
   it('refuses a proposed technology in a skill', async () => {
     const profileId = await seedProfile(a.id);
     const { error } = await a.client.from('profile_skills').insert({

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { Channel } from 'src/common/enums';
+import type { Channel, Seniority } from 'src/common/enums';
 import {
   DatabaseService,
   isRetryableTransactionError,
@@ -120,6 +120,8 @@ export class PrismaQuerySearchRepository extends QuerySearchRepository {
           const { position: _position, ...columns } = recipe;
           builder = await orm.QuerySearchBuilder.create({
             ...columns,
+            // A seniority code; the column still holds the Seniority enum's values.
+            experience: columns.experience as Seniority,
             // Channel builders emit plain JSON; the column type is the JSON union.
             params: columns.params as QuerySearchBuilderRow['params'],
             associatedProfiles: 0,

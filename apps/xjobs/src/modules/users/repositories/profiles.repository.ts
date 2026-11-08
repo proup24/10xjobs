@@ -7,10 +7,11 @@ import {
 } from 'src/database';
 import type { DatabaseTransaction } from '@xjobs/database';
 import type {
+  Place,
+  PlaceLabels,
   ProfileFields,
   ProfileInput,
   ProfileWithSkills,
-  ResumeMeta,
   SkillInput,
 } from '../types';
 
@@ -51,12 +52,53 @@ export abstract class ProfilesRepository {
     profileId: string,
     publishedAt: Date,
   ): Promise<ProfileWithSkills | null>;
-  /** Sets or clears a draft's resume; false when not the user's or published. */
-  abstract setResume(
-    userId: string,
-    profileId: string,
-    meta: ResumeMeta | null,
-  ): Promise<boolean>;
+  /** The labels of the regions, countries and cities given, a city's country included. */
+  abstract placeLabels(places: Place[]): Promise<PlaceLabels>;
+}
+
+/**
+ * The region codes, country codes and city ids the places name, each once.
+ * City ids are lower-cased, as Postgres prints a uuid.
+ */
+function placeKeys(places: Place[]) {
+  const regions = new Set<string>();
+  const countries = new Set<string>();
+  const cities = new Set<string>();
+  for (const place of places) {
+    if (place.kind === 'region') regions.add(place.code);
+    else if (place.kind === 'country') countries.add(place.code);
+    else if (place.kind === 'city') cities.add(place.id.toLowerCase());
+  }
+  return {
+    regions: [...regions],
+    countries: [...countries],
+    cities: [...cities],
+  };
+}
+
+/**
+ * The columns a profile's editable fields are stored in. The old `languages`,
+ * `country`, `city` and `locations` columns are no longer written.
+ */
+export function toProfileColumns(fields: ProfileFields) {
+  // Field by field, so nothing outside the editable fields reaches a write.
+  return {
+    places: fields.locations,
+    spokenLanguages: fields.languages,
+    yearsOfExperience: fields.yearsOfExperience,
+    timezoneCurrent: fields.timezoneCurrent,
+    timezoneMin: fields.timezoneMin,
+    timezoneMax: fields.timezoneMax,
+    engagements: fields.engagements,
+    seniorities: fields.seniorities,
+    contractTypes: fields.contractTypes,
+    salaryMin: fields.salary?.min ?? null,
+    salaryCurrency: fields.salary?.currency ?? null,
+    salaryPeriod: fields.salary?.period ?? null,
+    acceptsAnyCurrency: fields.acceptsAnyCurrency,
+    acceptedCurrencies: fields.acceptedCurrencies,
+    noticePeriodDays: fields.noticePeriodDays,
+  };
 }
 
 @Injectable()
@@ -129,7 +171,12 @@ export class PrismaProfilesRepository extends ProfilesRepository {
     skills: SkillInput[],
   ): Promise<ProfileWithSkills> {
     return this.database.db.transaction(async (tx) => {
-      const profile = await tx.orm.public.Profile.create({ ...data, userId });
+      const { position, ...fields } = data;
+      const profile = await tx.orm.public.Profile.create({
+        ...toProfileColumns(fields),
+        position,
+        userId,
+      });
       const techStack = await PrismaProfilesRepository.writeSkills(
         tx,
         userId,
@@ -152,7 +199,7 @@ export class PrismaProfilesRepository extends ProfilesRepository {
         id: profileId,
         userId,
         state: ProfileState.draft,
-      }).update(data);
+      }).update(toProfileColumns(data));
       if (!profile) return null;
       const techStack = await PrismaProfilesRepository.writeSkills(
         tx,
@@ -185,22 +232,33 @@ export class PrismaProfilesRepository extends ProfilesRepository {
     return profile ? this.withSkills(profile) : null;
   }
 
-  async setResume(
-    userId: string,
-    profileId: string,
-    meta: ResumeMeta | null,
-  ): Promise<boolean> {
-    const profile = await this.orm.Profile.where({
-      id: profileId,
-      userId,
-      state: ProfileState.draft,
-    }).update({
-      resumeKey: meta?.key ?? null,
-      resumeFilename: meta?.filename ?? null,
-      resumeSizeBytes: meta?.sizeBytes ?? null,
-      resumeSha256: meta?.sha256 ?? null,
-      resumeUploadedAt: meta?.uploadedAt ?? null,
-    });
-    return profile !== null;
+  async placeLabels(places: Place[]): Promise<PlaceLabels> {
+    const keys = placeKeys(places);
+    const cities = keys.cities.length
+      ? await this.orm.City.where((city) => city.id.in(keys.cities)).all()
+      : [];
+    const countryCodes = [
+      ...new Set([...keys.countries, ...cities.map((c) => c.countryCode)]),
+    ];
+    const countries = countryCodes.length
+      ? await this.orm.Country.where((country) =>
+          country.code.in(countryCodes),
+        ).all()
+      : [];
+    const regions = keys.regions.length
+      ? await this.orm.RegionTerm.where((region) =>
+          region.code.in(keys.regions),
+        ).all()
+      : [];
+    return {
+      regions: new Map(regions.map((r) => [r.code, r.label])),
+      countries: new Map(countries.map((c) => [c.code, c.label])),
+      cities: new Map(
+        cities.map((c) => [
+          c.id.toLowerCase(),
+          { name: c.name, countryCode: c.countryCode },
+        ]),
+      ),
+    };
   }
 }

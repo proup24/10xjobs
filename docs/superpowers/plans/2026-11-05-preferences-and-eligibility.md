@@ -7,7 +7,7 @@
 **Architecture:** Three steps, each one or more PRs to `main` that leave CI green:
 
 1. **Add (the user):** new columns, eligibility, ISO reference tables, code-checking triggers and read access to the lists, all next to the old columns.
-2. **Switch (the teammate):** the engine reads and writes the new fields, and the enum-typed columns become plain codes.
+2. **Switch (the user):** the engine reads and writes the new fields, and the enum-typed columns become plain codes.
 3. **Remove (the user):** drop the old columns and enums, and give the new columns their final names.
 
 Code validation lives in `SECURITY DEFINER` trigger functions, so engine writes, service-role writes and `supabase-js` writes as the user are all checked the same way.
@@ -21,8 +21,10 @@ Code validation lives in `SECURITY DEFINER` trigger functions, so engine writes,
 **Branches and PRs:**
 
 - PR A `feat/preferences-add` (Tasks 1–6, the user's), carrying the spec and this plan.
-- PR B `feat/preferences-engine-switch` (Tasks 7–11, the teammate's), branched from `main` after PR A merges.
+- PR B `feat/preferences-engine-switch` (Tasks 7–11, the user's), branched from `main` after PR A merges.
 - PR C `feat/preferences-remove-legacy` (Tasks 12–13, the user's), branched from `main` after PR B merges.
+
+Steps 2 and 3 are carried out by `docs/superpowers/plans/2026-11-07-preferences-switch-and-remove.md`, which supersedes the Step 2 and Step 3 tasks below where they differ.
 
 ## Global Constraints
 
@@ -321,7 +323,7 @@ git commit -m "feat(db): profile contract types, places, languages with levels, 
 
 ---
 
-## Step 2: Switch (PR B, the teammate)
+## Step 2: Switch (PR B, the user)
 
 ### Task 7: Enum-typed columns become codes; profile DTOs take the new shape
 

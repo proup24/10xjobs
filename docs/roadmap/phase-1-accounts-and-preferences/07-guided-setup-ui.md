@@ -24,7 +24,7 @@ A first-time user goes from the invite email to a complete set of preferences, e
 
 - Short, guided, one step at a time.
 - The UI is shaped once slices 01–06 have landed. Backend and schema take priority.
-- Starts after steps 2 and 3 of the preferences and eligibility plan, which switch the engine and give the new columns their final names (`places` → `locations`, `spokenLanguages` → `languages`).
+- Starts after slice 06a, [Preferences switch and final names](../../superpowers/specs/2026-11-07-preferences-switch-and-remove-design.md) (steps 2 and 3 of the preferences and eligibility plan), which switches the engine and gives the new columns their final names (`places` → `locations`, `spokenLanguages` → `languages`).
 
 ## For the slice spec
 
