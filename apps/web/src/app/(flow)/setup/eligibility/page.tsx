@@ -1,15 +1,22 @@
-import { SETUP_STEPS } from '@/lib/setup/steps';
-import { StepFrame } from '@/components/setup/step-frame';
+import { EligibilityForm } from '@/components/setup/eligibility-form';
+import { loadEligibility } from '@/lib/setup/load';
+import { loadValueLists } from '@/lib/setup/value-lists';
 import { requireSetupStep } from '../guard';
+import { saveEligibilityAction } from '../actions';
 
 export const dynamic = 'force-dynamic';
 
-const STEP = 'eligibility';
-
 export default async function Page() {
-  await requireSetupStep(STEP);
-  const label = SETUP_STEPS.find((s) => s.id === STEP)?.label ?? STEP;
+  const { supabase } = await requireSetupStep('eligibility');
+  const [initial, lists] = await Promise.all([
+    loadEligibility(supabase),
+    loadValueLists(supabase),
+  ]);
   return (
-    <StepFrame step={STEP} title={label} pending={false} formId="setup-form" />
+    <EligibilityForm
+      initial={initial}
+      lists={{ countries: lists.countries, regions: lists.regions }}
+      onSave={saveEligibilityAction}
+    />
   );
 }
