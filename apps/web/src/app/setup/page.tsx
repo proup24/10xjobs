@@ -11,7 +11,7 @@ export default async function SetupPage() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-4">
-      <h1 className="text-2xl font-semibold">Set up your profile</h1>
+      <h1 className="text-title-3">Set up your profile</h1>
       <p className="text-muted-foreground">Guided setup is coming soon.</p>
       <SignOutButton />
     </main>

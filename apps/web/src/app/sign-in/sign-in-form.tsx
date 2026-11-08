@@ -70,7 +70,7 @@ export function SignInForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        {error ? <p role="alert">{error}</p> : null}
+        {error ? <p role="alert" className="text-destructive">{error}</p> : null}
         <Button type="submit" disabled={pending}>
           Send code
         </Button>
@@ -81,7 +81,7 @@ export function SignInForm() {
   return (
     <div className="flex flex-col gap-3">
       <p role="status">{sentMessage}</p>
-      <p className="text-muted-foreground text-xs">{EXPIRED_INVITE_HINT}</p>
+      <p className="text-xs text-muted-foreground">{EXPIRED_INVITE_HINT}</p>
       <Label htmlFor="code">6-digit code</Label>
       <InputOTP
         id="code"
@@ -97,7 +97,7 @@ export function SignInForm() {
           ))}
         </InputOTPGroup>
       </InputOTP>
-      {error ? <p role="alert">{error}</p> : null}
+      {error ? <p role="alert" className="text-destructive">{error}</p> : null}
       <Button
         type="button"
         variant="outline"
