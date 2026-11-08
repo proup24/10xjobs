@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { Logger } from '@nestjs/common';
 import { Channel } from 'src/common/enums';
 import type { DatabaseService } from 'src/database';
 import {
@@ -329,6 +330,22 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
       const j = await make();
       expect(await repo.loadMatchableJob(j.id)).toBeNull();
       expect(await repo.listMatchableJobs()).not.toContain(j.id);
+    });
+
+    it('warns with the job id when a matchable job has no v2 document', async () => {
+      const j = await job();
+      await db.orm.public.JobExtraction.where({ id: j.extractionId }).updateAll(
+        { data: { broken: true } as never },
+      );
+      const warn = vi
+        .spyOn(Logger.prototype, 'warn')
+        .mockImplementation(() => undefined);
+      try {
+        expect(await repo.loadMatchableJob(j.id)).toBeNull();
+        expect(warn).toHaveBeenCalledWith(expect.stringContaining(j.id));
+      } finally {
+        warn.mockRestore();
+      }
     });
 
     it('returns null for an unknown job', async () => {

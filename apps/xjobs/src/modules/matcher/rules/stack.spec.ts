@@ -112,4 +112,30 @@ describe('checkStack', () => {
       (r.check.detail as { notComparable: string[] }).notComparable,
     ).toEqual(['unknown tech']);
   });
+
+  it('explains a low score when nothing is missing and lists scored units', () => {
+    const r = checkStack(
+      stackOf([req('python', 'main', 10)]),
+      [{ technology: 'python', mastery: 2, importance: 5 }],
+      implies,
+    );
+    expect(r.check.outcome).toBe('fail');
+    expect(r.check.reason).toContain('mastery');
+    expect(r.check.reason).not.toMatch(/missing\s*$/);
+    expect(r.check.detail).toMatchObject({
+      units: [{ unit: 'python', importance: 10, mastery: 2 }],
+    });
+  });
+
+  it('records null mastery for an uncovered unit', () => {
+    const r = run(
+      stackOf([req('python', 'main', 10), req('react', 'must', 5)]),
+    );
+    expect(r.check.detail).toMatchObject({
+      units: [
+        { unit: 'python', importance: 10, mastery: 9 },
+        { unit: 'react', importance: 5, mastery: null },
+      ],
+    });
+  });
 });

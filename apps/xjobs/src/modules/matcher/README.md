@@ -6,7 +6,7 @@ Design: `docs/superpowers/specs/2026-11-08-matching-design.md`.
 
 ## Flow
 
-1. **Trigger.** When the processor finishes a job as `processed` with a current extraction (or reuses one), it enqueues the job on the `match` queue. A job finished with no extraction (a closed job) is not matched. The sweeper (every 60 s) is the safety net: it deletes the rows of jobs that left `status = 'active'`, then re-enqueues every matchable job that has a missing or stale row for some published profile. A newly published profile gets its rows the same way, from the sweep.
+1. **Trigger.** When the processor finishes a job as `processed` with a current extraction (or reuses one), it enqueues the job on the `match` queue. A job finished with no extraction (a closed job) is not matched. The sweeper (every 60 s) is the safety net: it deletes the rows of jobs that left `status = 'active'`, then re-enqueues every matchable job that has a missing or stale row for some published profile. A newly published profile gets its rows the same way: the sweep backfills it gradually (200 jobs per minute, newest first), so it is not instant. Merged jobs' rows are deleted by the sweep; a job that is `closed` (the job's closed flag, distinct from `status`) keeps its rows.
 2. **One job.** The worker calls `MatcherService.matchJob(jobId)`:
 
    | Step | Does                                                                                                                                     |
@@ -61,16 +61,16 @@ Residence and work authorization are not checked.
 
 **Tech stack.** A requirement is covered when its tag is one of the profile's skills, or is implied by one (`implies`); a requirement without a code is ignored and listed as not comparable. Requirements sharing a `group` are one unit, covered when at least `min` members are. The score over the `main` and `must` units is `sum(importance × mastery/10 if covered, else 0) / sum(importance)`; `nice` units are listed but not scored.
 
-| Job                                         | Outcome                             |
-| ------------------------------------------- | ----------------------------------- |
-| no `main` or `must` requirement with a code | `unknown`, score `null`             |
-| has `main` units and none is covered        | `fail`                              |
-| score below `MIN_STACK_SCORE` (0.4)         | `fail`, listing the uncovered units |
-| otherwise                                   | `pass`                              |
+| Job                                         | Outcome                                                                              |
+| ------------------------------------------- | ------------------------------------------------------------------------------------ |
+| no `main` or `must` requirement with a code | `unknown`, score `null`                                                              |
+| has `main` units and none is covered        | `fail`                                                                               |
+| score below `MIN_STACK_SCORE` (0.4)         | `fail`, listing the uncovered units, or saying mastery is low when none is uncovered |
+| otherwise                                   | `pass`                                                                               |
 
 ## Matchable jobs
 
-One definition serves the worker, the sweep and `db:rematch`: the job is an active LinkedIn job board job (`status = 'active'`, `kind = 'job'`), `processingStatus = 'processed'`, not closed, `lastSeenAt` within `MATCH_BACKFILL_DAYS` (30), and its current extraction has `schemaVersion = 2`. Old v1 extractions are not matched; `db:reprocess` brings them to v2. Rows of closed jobs and of jobs that age out of the window stay.
+One definition serves the worker, the sweep and `db:rematch`: the job is an active LinkedIn job board job (`status = 'active'`, `kind = 'job'`), `processingStatus = 'processed'`, not closed, `lastSeenAt` within `MATCH_BACKFILL_DAYS` (30), and its current extraction has `schemaVersion = 2`. Old v1 extractions are not matched; `db:reprocess` brings them to v2. Rows of closed jobs (the `closed` flag, distinct from `status`) and of jobs that age out of the window stay; rows of merged jobs (`status <> 'active'`) are deleted by the sweep.
 
 ## When it runs
 
@@ -97,7 +97,7 @@ Served by the API (`npx nx serve xjobs`), behind its basic auth, under `/matcher
 
 ## Rematching
 
-After a rule or threshold change, bump `MATCHER_VERSION` in `config/matcher.config.ts` first, so the sweep also treats every older row as stale and nothing is missed if the queue loses a message. Then re-decide:
+After a rule or threshold change, bump `MATCHER_VERSION` in `config/matcher.config.ts` first, so the sweep also treats every older row as stale and nothing is missed if the queue loses a message. Do the same, or run `db:rematch -- --all`, after vocabulary changes that affect matching (`region_countries`, cities, tech tag `implies`), because the matcher reads them but the rows do not notice. Then re-decide:
 
 ```sh
 pnpm --filter @xjobs/xjobs db:rematch -- --all

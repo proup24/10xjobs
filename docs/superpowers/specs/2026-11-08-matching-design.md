@@ -161,7 +161,7 @@ A new table, `job_matches`, in `contract.prisma`:
 ## Testing
 
 - Unit tests per rule cover every row of the tables above, including each `unknown` path.
-- Fixtures: the user's example profile (backend engineer, senior, remote worldwide, hybrid and onsite in two cities, Python/NestJS/Go…) against a handful of golden extractions, with the expected outcome for each. Golden case 1288 (fullstack, seniority unstated, 3+ years, remote with no places) must come out `rejected` on position only, with seniority and location `unknown`.
+- Fixtures: the user's example profile (backend engineer, senior, remote worldwide, hybrid and onsite in two cities, Python/NestJS/Go…) against a handful of golden extractions, with the expected outcome for each. Golden case 1288 (fullstack, seniority unstated, 3+ years, remote with no places) must come out `rejected` on position and stack, with seniority and location `unknown`.
 - A PostgreSQL test covers four things:
   - a processed job leads to a `job_matches` row;
   - publishing a profile backfills matchable jobs only (no closed, merged, v1 or out-of-window jobs);

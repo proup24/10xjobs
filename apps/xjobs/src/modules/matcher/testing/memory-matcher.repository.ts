@@ -11,6 +11,8 @@ type Stored = StoredMatch & { matcherVersion: number };
 /** In-memory MatcherRepository for unit tests. */
 export class MemoryMatcherRepository extends MatcherRepository {
   jobs = new Map<string, MatchJob>();
+  /** Jobs whose status is not `active` (mirrors `status <> 'active'`). */
+  inactiveJobs = new Set<string>();
   profiles: MatchProfile[] = [];
   rows: Stored[] = [];
   context: MatchContext = {
@@ -75,7 +77,7 @@ export class MemoryMatcherRepository extends MatcherRepository {
   }
 
   deleteInactive(): Promise<number> {
-    const keep = this.rows.filter((r) => this.jobs.has(r.jobId));
+    const keep = this.rows.filter((r) => !this.inactiveJobs.has(r.jobId));
     const n = this.rows.length - keep.length;
     this.rows = keep;
     return Promise.resolve(n);

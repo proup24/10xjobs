@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from 'src/database';
 import type { DatabaseTransaction } from '@xjobs/database';
 import { linkedInJobIds } from 'src/modules/processor';
@@ -67,6 +67,8 @@ const STALE_ROW = (raw: Raw) =>
 
 @Injectable()
 export class PrismaMatcherRepository extends MatcherRepository {
+  private readonly logger = new Logger(PrismaMatcherRepository.name);
+
   constructor(private readonly database: DatabaseService) {
     super();
   }
@@ -91,7 +93,12 @@ export class PrismaMatcherRepository extends MatcherRepository {
     );
     if (!row) return null;
     const stored = parseStoredDocument(row.data);
-    if (stored?.version !== 2) return null;
+    if (stored?.version !== 2) {
+      this.logger.warn(
+        `Job ${jobId} is matchable in SQL but its extraction is not a v2 document`,
+      );
+      return null;
+    }
     return {
       jobId: row.id as string,
       extractionId: row.extractionId as string,
@@ -127,8 +134,9 @@ export class PrismaMatcherRepository extends MatcherRepository {
     if (profiles.length === 0) return [];
     const ids = new Set(profiles.map((p) => p.id));
     const skills = new Map<string, MatchProfile['skills']>();
-    for (const s of await orm.public.ProfileSkill.all()) {
-      if (!ids.has(s.profileId)) continue;
+    for (const s of await orm.public.ProfileSkill.where((row) =>
+      row.profileId.in([...ids]),
+    ).all()) {
       const list = skills.get(s.profileId) ?? [];
       list.push({
         technology: s.technology,

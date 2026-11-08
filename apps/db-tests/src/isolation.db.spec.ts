@@ -81,7 +81,9 @@ describe.each(ownedTables)('isolation: $table', (t) => {
       .from(t.table)
       .update({ [t.ownerColumn]: b.id })
       .eq('id', aRow);
-    // A read-only table has no UPDATE policy: RLS silently matches zero rows.
+    // With an UPDATE grant, RLS rejects the new owner with 42501. A read-only
+    // table has no UPDATE grant, so PostgREST also answers 42501 (permission
+    // denied), not zero rows; the admin read below shows nothing changed.
     if (t.patch) expect(error?.code).toBe('42501');
     const rows = await adminRow(aRow);
     expect(rows).toHaveLength(1);

@@ -118,7 +118,7 @@ describe('decide', () => {
     expect(d.unverified).toBe(true);
   });
 
-  it('golden 1288: fullstack job is rejected on position', () => {
+  it('golden 1288: fullstack job is rejected on position and stack', () => {
     const file = join(__dirname, '../../processor/golden/cases/1288.json');
     const { expected } = JSON.parse(readFileSync(file, 'utf8'));
     const doc = jobDoc((x) => {
@@ -149,6 +149,8 @@ describe('decide', () => {
     const by = Object.fromEntries(d.checks.map((c) => [c.rule, c.outcome]));
     expect(d.outcome).toBe('rejected');
     expect(by.position).toBe('fail');
+    expect(by.stack).toBe('fail');
+    expect(d.unverified).toBe(false);
     expect(by.seniority).toBe('unknown');
     expect(by.location).toBe('unknown');
   });

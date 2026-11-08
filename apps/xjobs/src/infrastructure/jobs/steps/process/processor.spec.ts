@@ -64,6 +64,14 @@ describe('processProcessJob', () => {
     },
   );
 
+  it('still returns the outcome when the match nudge throws', async () => {
+    const d = deps('processed');
+    d.matchQueue.enqueue.mockRejectedValue(new Error('redis down'));
+    expect(
+      await processProcessJob(job('process-job', { jobId: 'j1' }), d as never),
+    ).toEqual({ outcome: 'processed' });
+  });
+
   it.each(['closed', 'superseded', 'not_claimed', 'blocked'])(
     'does not hand a %s job to the matcher',
     async (o) => {

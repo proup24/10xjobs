@@ -103,10 +103,16 @@ export function checkStack(
 
   const covered: string[] = [];
   const uncovered: string[] = [];
+  const scoredUnits: {
+    unit: string;
+    importance: number;
+    mastery: number | null;
+  }[] = [];
   let earned = 0;
   let total = 0;
   for (const u of scored) {
     const m = coveredMastery(u);
+    scoredUnits.push({ unit: label(u), importance: u.importance, mastery: m });
     total += u.importance;
     if (m === null) uncovered.push(label(u));
     else {
@@ -127,7 +133,10 @@ export function checkStack(
     reason = `none of the job's main technologies are in your stack: ${mainUnits.map(label).join(', ')}`;
   } else if (score < MIN_STACK_SCORE) {
     outcome = 'fail';
-    reason = `stack coverage ${score} is below ${MIN_STACK_SCORE}; missing ${uncovered.join(', ')}`;
+    reason =
+      uncovered.length > 0
+        ? `stack coverage ${score} is below ${MIN_STACK_SCORE}; missing ${uncovered.join(', ')}`
+        : `stack coverage ${score} is below ${MIN_STACK_SCORE}; every technology is covered but your mastery is low`;
   }
 
   return {
@@ -137,7 +146,14 @@ export function checkStack(
       jobValue: scored.map(label),
       profileValue,
       reason,
-      detail: { covered, uncovered, niceCovered, notComparable, score },
+      detail: {
+        covered,
+        uncovered,
+        niceCovered,
+        notComparable,
+        score,
+        units: scoredUnits,
+      },
     },
     score,
   };
