@@ -2,13 +2,18 @@
 
 import { useEffect, useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from '@/components/ui/input-group';
+import { Mail } from 'lucide-react';
 import {
   InputOTP,
   InputOTPGroup,
   InputOTPSlot,
 } from '@/components/ui/input-otp';
-import { Label } from '@/components/ui/label';
+import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { EXPIRED_INVITE_HINT } from '@/lib/auth/copy';
 import { requestCodeAction, verifyCodeAction } from './actions';
 
@@ -55,23 +60,31 @@ export function SignInForm() {
   if (sentMessage === null) {
     return (
       <form
-        className="flex flex-col gap-3"
+        className="flex flex-col gap-4"
         onSubmit={(e) => {
           e.preventDefault();
           request();
         }}
       >
-        <Label htmlFor="email">Email</Label>
-        <Input
-          id="email"
-          type="email"
-          autoComplete="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        {error ? <p role="alert" className="text-destructive">{error}</p> : null}
-        <Button type="submit" disabled={pending}>
+        <Field invalid={error !== null}>
+          <FieldLabel htmlFor="email">Email</FieldLabel>
+          <InputGroup>
+            <InputGroupAddon>
+              <Mail aria-hidden />
+            </InputGroupAddon>
+            <InputGroupInput
+              id="email"
+              type="email"
+              autoComplete="email"
+              placeholder="you@example.com"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </InputGroup>
+          <FieldError>{error}</FieldError>
+        </Field>
+        <Button type="submit" size="lg" className="w-full" loading={pending}>
           Send code
         </Button>
       </form>
@@ -79,29 +92,34 @@ export function SignInForm() {
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       <p role="status">{sentMessage}</p>
       <p className="text-xs text-muted-foreground">{EXPIRED_INVITE_HINT}</p>
-      <Label htmlFor="code">6-digit code</Label>
-      <InputOTP
-        id="code"
-        maxLength={6}
-        value={code}
-        onChange={setCode}
-        onComplete={verify}
-        disabled={pending}
-      >
-        <InputOTPGroup>
-          {[0, 1, 2, 3, 4, 5].map((i) => (
-            <InputOTPSlot key={i} index={i} />
-          ))}
-        </InputOTPGroup>
-      </InputOTP>
-      {error ? <p role="alert" className="text-destructive">{error}</p> : null}
+      <Field invalid={error !== null}>
+        <FieldLabel htmlFor="code">6-digit code</FieldLabel>
+        <InputOTP
+          id="code"
+          maxLength={6}
+          value={code}
+          onChange={setCode}
+          onComplete={verify}
+          disabled={pending}
+        >
+          <InputOTPGroup>
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+              <InputOTPSlot key={i} index={i} />
+            ))}
+          </InputOTPGroup>
+        </InputOTP>
+        <FieldError>{error}</FieldError>
+      </Field>
       <Button
         type="button"
         variant="outline"
-        disabled={pending || secondsLeft > 0}
+        size="lg"
+        className="w-full"
+        loading={pending}
+        disabled={secondsLeft > 0}
         onClick={request}
       >
         {secondsLeft > 0

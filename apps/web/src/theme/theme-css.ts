@@ -16,7 +16,10 @@ export function blockVars(css: string, selector: string): ThemeVars {
   return vars;
 }
 
-export function parseThemeBlocks(css: string): { light: ThemeVars; dark: ThemeVars } {
+export function parseThemeBlocks(css: string): {
+  light: ThemeVars;
+  dark: ThemeVars;
+} {
   return { light: blockVars(css, ':root'), dark: blockVars(css, '\\.dark') };
 }
 
@@ -35,7 +38,10 @@ function hexToRgba(hex: string): [number, number, number, number] {
 }
 
 function rgbToHex([r, g, b]: Rgb): string {
-  return '#' + [r, g, b].map((c) => Math.round(c).toString(16).padStart(2, '0')).join('');
+  return (
+    '#' +
+    [r, g, b].map((c) => Math.round(c).toString(16).padStart(2, '0')).join('')
+  );
 }
 
 function lookup(vars: ThemeVars, name: string): string {
@@ -56,7 +62,26 @@ export function resolveColor(vars: ThemeVars, name: string): string {
   const [r, g, b, a] = hexToRgba(value);
   if (a === 1) return value.slice(0, 7).toLowerCase();
   const [br, bg, bb] = hexToRgba(lookup(vars, 'background'));
-  return rgbToHex([r * a + br * (1 - a), g * a + bg * (1 - a), b * a + bb * (1 - a)]);
+  return rgbToHex([
+    r * a + br * (1 - a),
+    g * a + bg * (1 - a),
+    b * a + bb * (1 - a),
+  ]);
+}
+
+/** `name` at `alpha` (0–1) over `--background`, like `bg-<role>/<n>`. */
+export function resolveTint(
+  vars: ThemeVars,
+  name: string,
+  alpha: number,
+): string {
+  const [r, g, b] = hexToRgba(resolveColor(vars, name));
+  const [br, bg, bb] = hexToRgba(resolveColor(vars, 'background'));
+  return rgbToHex([
+    r * alpha + br * (1 - alpha),
+    g * alpha + bg * (1 - alpha),
+    b * alpha + bb * (1 - alpha),
+  ]);
 }
 
 function luminance(hex: string): number {

@@ -49,6 +49,7 @@
     "jest.config.ts",
     "jest.config.cts",
     "src/**/*.spec.ts",
+    "src/test/**",
     "src/**/*.test.ts",
     "vite.config.ts",
     "vite.config.mts",

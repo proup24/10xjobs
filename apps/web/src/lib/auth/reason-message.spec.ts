@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from 'vitest';
 import { LINK_FAILED, SESSION_EXPIRED } from './copy';
 import { reasonMessage } from './reason-message';

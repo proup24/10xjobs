@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { ThemeProvider } from '@/components/theme-provider';
 import { ThemeToggle } from './theme-toggle';
@@ -32,8 +38,12 @@ describe('ThemeToggle', () => {
       </ThemeProvider>,
     );
     expect(document.documentElement.classList.contains('dark')).toBe(true);
-    fireEvent.click(await screen.findByRole('button', { name: 'Switch to light theme' }));
-    await waitFor(() => expect(document.documentElement.classList.contains('light')).toBe(true));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Switch to light theme' }),
+    );
+    await waitFor(() =>
+      expect(document.documentElement.classList.contains('light')).toBe(true),
+    );
     expect(localStorage.getItem('theme')).toBe('light');
   });
 
@@ -44,7 +54,11 @@ describe('ThemeToggle', () => {
         <ThemeToggle />
       </ThemeProvider>,
     );
-    await waitFor(() => expect(document.documentElement.classList.contains('dark')).toBe(false));
-    expect(await screen.findByRole('button', { name: 'Switch to dark theme' })).toBeTruthy();
+    await waitFor(() =>
+      expect(document.documentElement.classList.contains('dark')).toBe(false),
+    );
+    expect(
+      await screen.findByRole('button', { name: 'Switch to dark theme' }),
+    ).toBeTruthy();
   });
 });

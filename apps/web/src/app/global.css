@@ -33,6 +33,7 @@
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -44,6 +45,9 @@
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-success-text: var(--success-text);
+  --color-warning-text: var(--warning-text);
+  --color-destructive-text: var(--destructive-text);
   --color-mark: var(--mark);
   --color-mark-foreground: var(--mark-foreground);
   --radius-sm: 4px;
@@ -70,14 +74,17 @@
   /* Floating surfaces (popovers, menus, dialogs): layered stacks from
      supabase/supabase packages/config/css/shadows.css (Apache-2.0). */
   --shadow-sm:
-    0 2.79px 3.72px -2px rgb(0 0 0 / calc(0.01 * var(--floating-shadow-strength))),
+    0 2.79px 3.72px -2px
+      rgb(0 0 0 / calc(0.01 * var(--floating-shadow-strength))),
     0 1.16px 1.5px 0 rgb(0 0 0 / calc(0.01 * var(--floating-shadow-strength))),
     0 0 0 1px var(--floating-ring-color);
   --shadow-md:
-    0 17.54px 23.39px 0 rgb(0 0 0 / calc(0.04 * var(--floating-shadow-strength))),
+    0 17.54px 23.39px 0
+      rgb(0 0 0 / calc(0.04 * var(--floating-shadow-strength))),
     0 9.4px 12.5px 0 rgb(0 0 0 / calc(0.03 * var(--floating-shadow-strength))),
     0 5.25px 7px 0 rgb(0 0 0 / calc(0.02 * var(--floating-shadow-strength))),
-    0 2.79px 3.72px -2px rgb(0 0 0 / calc(0.01 * var(--floating-shadow-strength))),
+    0 2.79px 3.72px -2px
+      rgb(0 0 0 / calc(0.01 * var(--floating-shadow-strength))),
     0 1.16px 1.5px 0 rgb(0 0 0 / calc(0.01 * var(--floating-shadow-strength))),
     0 0 0 1px var(--floating-ring-color);
   --shadow-lg:
@@ -148,6 +155,7 @@
   --popover-foreground: var(--gray-12);
   --primary: var(--green-11);
   --primary-foreground: var(--gray-1);
+  --primary-hover: var(--green-12);
   --secondary: var(--gray-3);
   --secondary-foreground: var(--gray-12);
   --muted: var(--gray-3);
@@ -157,7 +165,7 @@
   --destructive: var(--red-11);
   --border: var(--gray-5);
   --input: var(--gray-9);
-  --ring: var(--green-9);
+  --ring: var(--green-10);
   --chart-1: var(--green-9);
   --chart-2: var(--amber-9);
   --chart-3: var(--red-9);
@@ -176,6 +184,9 @@
   --success-foreground: var(--gray-1);
   --warning: var(--amber-11);
   --warning-foreground: var(--gray-1);
+  --success-text: var(--green-12);
+  --warning-text: var(--amber-12);
+  --destructive-text: var(--red-12);
   --mark: var(--amber-4);
   --mark-foreground: var(--amber-12);
   --radius: 8px;
@@ -241,6 +252,7 @@
   --popover-foreground: var(--gray-12);
   --primary: var(--green-7);
   --primary-foreground: var(--green-12);
+  --primary-hover: var(--green-6);
   --secondary: var(--gray-4);
   --secondary-foreground: var(--gray-11);
   --muted: var(--gray-4);
@@ -269,6 +281,9 @@
   --success-foreground: var(--gray-1);
   --warning: var(--amber-9);
   --warning-foreground: var(--gray-1);
+  --success-text: var(--green-10);
+  --warning-text: var(--amber-9);
+  --destructive-text: var(--red-11);
   --mark: var(--amber-11);
   --mark-foreground: var(--gray-1);
   --floating-shadow-strength: 5;
