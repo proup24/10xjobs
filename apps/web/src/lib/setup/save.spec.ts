@@ -47,6 +47,8 @@ type World = {
   profile?: { id: string } | null;
   draft?: { id: string; answers: unknown } | null;
   existing?: Record<string, unknown>[];
+  /** False: the profile update matches no row (e.g. the profile was published meanwhile). */
+  profileUpdateMatches?: boolean;
   failOn?: (call: QueryCall) => Reply | undefined;
   rpcError?: { code?: string; message?: string } | null;
 };
@@ -69,7 +71,11 @@ function world(w: World = {}) {
             ? w.draft
               ? [{ id: w.draft.id }]
               : []
-            : [{ id: call.table === 'profiles' ? P : U }];
+            : call.table === 'profiles'
+              ? w.profileUpdateMatches === false
+                ? []
+                : [{ id: P }]
+              : [{ id: U }];
         return { data: rows, error: null };
       }
       if (
@@ -173,6 +179,15 @@ describe('saveTerms', () => {
     expect(f.queries('profile_setup_drafts')).toHaveLength(0);
   });
 
+  it('a profile update matching no row returns failed', async () => {
+    const f = world({ profile: { id: P }, profileUpdateMatches: false });
+    expect(await saveTerms(f.supabase, U, terms, quiet)).toEqual({
+      status: 'failed',
+    });
+    expect(f.rpcs('create_profile_from_setup')).toHaveLength(0);
+    expect(f.queries('profile_setup_drafts')).toHaveLength(0);
+  });
+
   it('without job answers in the draft writes the terms and creates nothing', async () => {
     const f = world();
     expect(await saveTerms(f.supabase, U, terms, quiet)).toEqual({
@@ -269,6 +284,15 @@ describe('saveJob', () => {
     const result = await saveJob(f.supabase, U, job, () => false, quiet);
     expect(result.status).toBe('invalid');
     expect(f.calls).toEqual([]);
+  });
+
+  it('a profile update matching no row returns failed without replacing skills', async () => {
+    const f = world({ profile: { id: P }, profileUpdateMatches: false });
+    expect(await saveJob(f.supabase, U, job, isSearchableTech, quiet)).toEqual({
+      status: 'failed',
+    });
+    expect(f.rpcs('replace_profile_skills')).toHaveLength(0);
+    expect(f.queries('profile_setup_drafts')).toHaveLength(0);
   });
 
   it('a replace_profile_skills P0002 returns failed', async () => {

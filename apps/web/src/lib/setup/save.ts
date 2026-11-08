@@ -5,6 +5,7 @@ import type { ZodError } from 'zod';
 import { errorCode } from '@/lib/resume/errors';
 import {
   aboutSchema,
+  AUTHORIZATION_KINDS,
   eligibilitySchema,
   jobSchema,
   LINK_KINDS,
@@ -218,7 +219,7 @@ export async function saveEligibility(
       userId,
       ['kind', 'place'],
       // Every kind: the table holds only these (its check), all owned by step 2.
-      ['citizenship', 'residency', 'work-permit', 'clearance'],
+      AUTHORIZATION_KINDS,
       e.authorizations.map((a) => ({ kind: a.kind, place: a.place })),
     )) ?? SAVED
   );

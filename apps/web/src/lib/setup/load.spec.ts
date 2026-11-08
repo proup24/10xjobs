@@ -23,7 +23,29 @@ function tables(rows: Record<string, unknown>) {
 }
 
 describe('loadSetupSnapshot', () => {
-  it('reads the user, the draft and the oldest profile', async () => {
+  it('reads the user and the draft while there is no profile', async () => {
+    const f = tables({
+      users: { name: 'Ada', residenceCountry: 'DE', acceptsSponsorship: true },
+      profile_setup_drafts: { answers: { version: 1 } },
+      profiles: null,
+    });
+    expect(await loadSetupSnapshot(f.supabase)).toEqual({
+      name: 'Ada',
+      residenceCountry: 'DE',
+      acceptsSponsorship: true,
+      draft: { version: 1 },
+      profile: null,
+    });
+    const [profiles] = f.queries('profiles');
+    expect(profiles.filters).toContainEqual([
+      'order',
+      'createdAt',
+      { ascending: true },
+    ]);
+    expect(profiles.filters).toContainEqual(['limit', 1]);
+  });
+
+  it('reads the oldest profile and ignores a stray draft once it exists', async () => {
     const f = tables({
       users: { name: 'Ada', residenceCountry: 'DE', acceptsSponsorship: true },
       profile_setup_drafts: { answers: { version: 1 } },
@@ -33,16 +55,9 @@ describe('loadSetupSnapshot', () => {
       name: 'Ada',
       residenceCountry: 'DE',
       acceptsSponsorship: true,
-      draft: { version: 1 },
+      draft: null,
       profile: { id: P, hasResume: true },
     });
-    const [profiles] = f.queries('profiles');
-    expect(profiles.filters).toContainEqual([
-      'order',
-      'createdAt',
-      { ascending: true },
-    ]);
-    expect(profiles.filters).toContainEqual(['limit', 1]);
   });
 
   it('ignores an unparseable draft', async () => {

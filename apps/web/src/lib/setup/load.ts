@@ -33,7 +33,10 @@ function must<T>(
   return r.data ?? null;
 }
 
-/** What the next-step rule reads. An unparseable draft counts as none. */
+/**
+ * What the next-step rule reads. An unparseable draft counts as none, and so does a draft
+ * left over once a profile exists: the profile is what steps 3 and 4 edit.
+ */
 export async function loadSetupSnapshot(
   supabase: Client,
 ): Promise<SetupSnapshot> {
@@ -57,7 +60,7 @@ export async function loadSetupSnapshot(
     name: u?.name ?? null,
     residenceCountry: u?.residenceCountry ?? null,
     acceptsSponsorship: u?.acceptsSponsorship ?? null,
-    draft: d ? parseDraft(d.answers) : null,
+    draft: d && !p ? parseDraft(d.answers) : null,
     profile: p ? { id: p.id, hasResume: p.resumeKey !== null } : null,
   };
 }

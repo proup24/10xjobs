@@ -2,6 +2,7 @@
 
 import { Radio as RadioPrimitive } from '@base-ui/react/radio';
 import { RadioGroup as RadioGroupPrimitive } from '@base-ui/react/radio-group';
+import { useId } from 'react';
 import { useFieldControl } from '@/components/ui/field';
 import { cn } from '@/lib/utils';
 
@@ -29,7 +30,14 @@ function RatingBar({
   className,
   ...rest
 }: RatingBarProps) {
-  const props = useFieldControl(rest);
+  const labelsId = useId();
+  const hasLabels = Boolean(lowLabel || highLabel);
+  // The end labels describe the group too, next to any Field description or error.
+  const describedBy =
+    [rest['aria-describedby'], hasLabels ? labelsId : undefined]
+      .filter(Boolean)
+      .join(' ') || undefined;
+  const props = useFieldControl({ ...rest, 'aria-describedby': describedBy });
   return (
     <div
       data-slot="rating-bar"
@@ -53,8 +61,11 @@ function RatingBar({
           </RadioPrimitive.Root>
         ))}
       </RadioGroupPrimitive>
-      {lowLabel || highLabel ? (
-        <div className="flex justify-between gap-2 text-xs text-muted-foreground">
+      {hasLabels ? (
+        <div
+          id={labelsId}
+          className="flex justify-between gap-2 text-xs text-muted-foreground"
+        >
           <span>{lowLabel}</span>
           <span className="text-right">{highLabel}</span>
         </div>

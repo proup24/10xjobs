@@ -90,6 +90,38 @@ describe('RatingBar', () => {
     expect(texts).toContain('Rate this tech');
   });
 
+  it('describes the group with the end labels, alone or next to the Field error', () => {
+    const describedBy = () =>
+      screen
+        .getByRole('radiogroup')
+        .getAttribute('aria-describedby')
+        ?.split(' ')
+        .map((id) => document.getElementById(id)?.textContent);
+    const bar = (
+      <RatingBar
+        value={null}
+        onValueChange={vi.fn()}
+        lowLabel="1 = learning"
+        highLabel="5 = expert"
+        aria-label="Mastery"
+      />
+    );
+
+    render(bar);
+    expect(describedBy()).toEqual(['1 = learning5 = expert']);
+    cleanup();
+
+    render(
+      <Field invalid>
+        {bar}
+        <FieldError>Rate this tech</FieldError>
+      </Field>,
+    );
+    expect(describedBy()).toEqual(
+      expect.arrayContaining(['1 = learning5 = expert', 'Rate this tech']),
+    );
+  });
+
   it('shows the invalid state on the items from the group', () => {
     render(
       <Field invalid>
