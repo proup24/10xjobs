@@ -39,7 +39,7 @@ function RatingBar({
         value={value}
         onValueChange={(v) => onValueChange(Number(v))}
         disabled={disabled}
-        className="flex w-full"
+        className="group/rating flex w-full"
         {...props}
       >
         {Array.from({ length: max }, (_, i) => i + 1).map((n) => (
@@ -47,7 +47,7 @@ function RatingBar({
             key={n}
             value={n}
             data-slot="rating-bar-item"
-            className="flex h-9 min-w-0 flex-1 cursor-pointer items-center justify-center border border-input text-sm outline-none first:rounded-l-sm last:rounded-r-sm not-first:-ml-px hover:bg-accent focus-visible:z-10 focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive data-checked:z-10 data-checked:border-primary data-checked:bg-primary data-checked:text-primary-foreground"
+            className="flex h-9 min-w-0 flex-1 cursor-pointer items-center justify-center border border-input text-sm outline-none first:rounded-l-sm last:rounded-r-sm not-first:-ml-px hover:bg-accent focus-visible:z-10 focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 group-aria-invalid/rating:border-destructive data-checked:z-10 data-checked:border-primary data-checked:bg-primary data-checked:text-primary-foreground"
           >
             {n}
           </RadioPrimitive.Root>

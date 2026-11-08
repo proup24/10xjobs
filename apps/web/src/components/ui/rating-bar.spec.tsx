@@ -89,4 +89,19 @@ describe('RatingBar', () => {
       .map((id) => document.getElementById(id)?.textContent);
     expect(texts).toContain('Rate this tech');
   });
+
+  it('shows the invalid state on the items from the group', () => {
+    render(
+      <Field invalid>
+        <RatingBar value={null} onValueChange={vi.fn()} aria-label="Mastery" />
+      </Field>,
+    );
+    const group = screen.getByRole('radiogroup');
+    expect(group.getAttribute('aria-invalid')).toBe('true');
+    expect(group.classList.contains('group/rating')).toBe(true);
+    for (const item of screen.getAllByRole('radio'))
+      expect(
+        item.classList.contains('group-aria-invalid/rating:border-destructive'),
+      ).toBe(true);
+  });
 });
