@@ -127,20 +127,10 @@ export function checkQuotes(
   return { doc: out, quoteFailures };
 }
 
-<<<<<<< HEAD
-/**
- * Cross-fact rules; a disagreement downgrades both sides to unsure.
- * `engineeringRoleKinds` are the approved `role_kinds` marked `isEngineering`.
- */
-export function checkConsistency(
-  doc: ExtractionDocument,
-  engineeringRoleKinds: ReadonlySet<string>,
-=======
 /** Cross-fact rules; a disagreement downgrades both sides to unsure. */
 export function checkConsistency(
   doc: ExtractionDocument,
   engineeringRoleKinds: Set<string>,
->>>>>>> feature/matching-algorithm
 ): ExtractionDocument {
   const out = structuredClone(doc);
 
