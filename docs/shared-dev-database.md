@@ -5,7 +5,7 @@ One hosted Supabase project, `10xjobs-dev`, is the shared dev database. Use it w
 ## One-time setup (the human)
 
 1. Create the Supabase project `10xjobs-dev`.
-2. Mirror the auth settings and the email templates as in [auth-production.md](auth-production.md). Set the Site URL and the redirect URL to `http://localhost:3001`.
+2. Mirror the auth settings, the Gmail SMTP sender and the email templates as in [auth-production.md](auth-production.md). Set up SMTP first: Supabase only lets you edit the templates once custom SMTP is on, and without the repo's templates the emails carry a link the app can't use and no code. Set the Site URL to `https://10xjobs.vercel.app` and the redirect URLs to `https://10xjobs.vercel.app/**` and `http://localhost:3001`. Email links then open the Vercel app; locally, sign in with the code.
 3. Storage: create a private bucket named `resumes`.
 4. In GitHub, create the environment `dev` with three secrets:
    - `DEV_DATABASE_URL`: the **session pooler** URL (port 5432), `postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres`. Not the transaction pooler (6543).
