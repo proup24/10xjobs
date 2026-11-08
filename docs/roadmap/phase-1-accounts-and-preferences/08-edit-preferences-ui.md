@@ -11,6 +11,10 @@ After setup, a user can view and change any preference, their eligibility and th
 - Deleting a draft only through slice 06's `deleteDraftProfile`.
 - Possibly the admin invite page, if slice 03 started with a script. The slice spec decides.
 
+## Reuse from slice 07
+
+Slice 08 reuses the frame-free step forms in `apps/web/src/components/setup`: `AboutForm`, `EligibilityForm`, `JobForm` and `TermsForm`. Each takes `formId`, `initial`, `onSave` and `onSaved`, plus an optional `onStatusChange`, which must be a stable callback. The setup rules apply unchanged: a star marks at most two techs, and only searchable ones; a rating is 1-5 and is stored as mastery = rating x 2.
+
 ## Out of scope
 
 - Account deletion.

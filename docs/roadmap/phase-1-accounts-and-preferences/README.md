@@ -87,7 +87,7 @@ Slices 04 and 05 share one spec, [Preferences and eligibility schema](../../supe
 
 ## Open, to settle before slice 07
 
-- **When publishing ships.** Publishing goes through the engine, so the publish button needs a deployed engine. Recommendation: keep the engine undeployed in Phase 1 and ship the button when the engine deploys in Phase 2. Until then, profiles stay editable drafts.
+- ~~**When publishing ships.**~~ Settled by the [guided setup spec](../../superpowers/specs/2026-11-08-guided-setup-design.md) ("Decided after the builder check"). There is no publish button in Phase 1: the engine stays undeployed, and profiles stay editable drafts until the engine deploys in Phase 2.
 - ~~**Preference fields.**~~ Settled by the [preferences and eligibility spec](../../superpowers/specs/2026-11-05-preferences-and-eligibility-design.md).
 
 ## Revision 2026-11-02
