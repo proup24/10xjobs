@@ -1,8 +1,9 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Steps } from '@/components/ui/steps';
 import { SETUP_STEPS, type SetupStepId } from '@/lib/setup/steps';
 
@@ -24,7 +25,11 @@ type StepFrameProps = {
   /** The form's pending state; shows the loading button. */
   pending: boolean;
   /** The id of the step's `<form>`; the footer submit button targets it. */
-  formId: string;
+  formId?: string;
+  /** Disables the submit button, e.g. until the step has what it needs. */
+  submitDisabled?: boolean;
+  /** Renders the primary action as a link here instead of a submit button (review). */
+  submitHref?: string;
   /** A form-level error (`errors._form`), shown as an alert above the footer. */
   formError?: string;
 };
@@ -48,6 +53,8 @@ export function StepFrame({
   pending,
   formId,
   formError,
+  submitDisabled = false,
+  submitHref,
 }: StepFrameProps) {
   const router = useRouter();
   const index = STEPS.findIndex((s) => s.id === step);
@@ -81,9 +88,20 @@ export function StepFrame({
         ) : (
           <span />
         )}
-        <Button type="submit" form={formId} loading={pending}>
-          {submitLabel}
-        </Button>
+        {submitHref ? (
+          <Link href={submitHref} className={buttonVariants()}>
+            {submitLabel}
+          </Link>
+        ) : (
+          <Button
+            type="submit"
+            form={formId}
+            loading={pending}
+            disabled={submitDisabled}
+          >
+            {submitLabel}
+          </Button>
+        )}
       </div>
     </div>
   );

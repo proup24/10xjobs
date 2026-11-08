@@ -15,6 +15,7 @@ import {
   AUTHORIZATION_KINDS,
   type AuthorizationKind,
 } from '@/lib/setup/answers';
+import { AUTHORIZATION_LABELS as KIND_LABELS } from '@/lib/setup/labels';
 
 /** A row as the form holds it; `place` is '' until picked, `key` keeps the row stable. */
 export type AuthorizationRow = {
@@ -23,12 +24,6 @@ export type AuthorizationRow = {
   place: string;
 };
 
-const KIND_LABELS: Record<AuthorizationKind, string> = {
-  citizenship: 'Citizenship',
-  residency: 'Residency',
-  'work-permit': 'Work permit',
-  clearance: 'Security clearance',
-};
 const KIND_ITEMS = AUTHORIZATION_KINDS.map((value) => ({
   value,
   label: KIND_LABELS[value],

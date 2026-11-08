@@ -63,6 +63,40 @@ describe('StepFrame', () => {
     expect(screen.getByRole('alert').textContent).toBe('Bad city');
   });
 
+  it('submitDisabled disables the submit button', () => {
+    render(
+      <StepFrame
+        step="resume"
+        title="Resume"
+        pending={false}
+        formId="f"
+        submitDisabled
+      />,
+    );
+    const submit = screen.getByRole('button', {
+      name: 'Continue',
+    }) as HTMLButtonElement;
+    expect(submit.disabled).toBe(true);
+  });
+
+  it('submitHref renders the primary action as a link and keeps Back', () => {
+    render(
+      <StepFrame
+        step="review"
+        title="Review"
+        pending={false}
+        submitLabel="Finish"
+        submitHref="/"
+      />,
+    );
+    expect(
+      screen.getByRole('link', { name: 'Finish' }).getAttribute('href'),
+    ).toBe('/');
+    expect(screen.queryByRole('button', { name: 'Finish' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(push).toHaveBeenCalledWith('/setup/resume');
+  });
+
   it('notifySaveFailed toasts the failure copy', () => {
     notifySaveFailed();
     expect(toastError).toHaveBeenCalledWith("Couldn't save. Try again.");

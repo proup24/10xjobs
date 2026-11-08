@@ -12,17 +12,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { LANGUAGE_LEVELS, type JobAnswers } from '@/lib/setup/answers';
+import { LEVEL_LABELS } from '@/lib/setup/labels';
 
 type Level = JobAnswers['languages'][number]['level'];
 
 /** A row as the form holds it; `level` is null until picked. */
 export type LanguageRow = { lang: string; level: Level | null };
 
-const LEVEL_LABELS: Record<Level, string> = {
-  native: 'Native',
-  fluent: 'Fluent',
-  working: 'Working',
-};
 const LEVEL_ITEMS = LANGUAGE_LEVELS.map((value) => ({
   value,
   label: LEVEL_LABELS[value],

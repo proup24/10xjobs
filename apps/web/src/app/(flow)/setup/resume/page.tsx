@@ -1,15 +1,20 @@
-import { SETUP_STEPS } from '@/lib/setup/steps';
-import { StepFrame } from '@/components/setup/step-frame';
+import { redirect } from 'next/navigation';
+import { ResumeStep } from '@/components/setup/resume-step';
+import { loadResume } from '@/lib/setup/load';
 import { requireSetupStep } from '../guard';
 
 export const dynamic = 'force-dynamic';
 
-const STEP = 'resume';
-
 export default async function Page() {
-  await requireSetupStep(STEP);
-  const label = SETUP_STEPS.find((s) => s.id === STEP)?.label ?? STEP;
+  const { supabase, userId, snapshot } = await requireSetupStep('resume');
+  // The guard opens step 5 only once the profile exists; this narrows the type.
+  if (!snapshot.profile) redirect('/setup');
+  const current = await loadResume(supabase, snapshot.profile.id);
   return (
-    <StepFrame step={STEP} title={label} pending={false} formId="setup-form" />
+    <ResumeStep
+      profileId={snapshot.profile.id}
+      userId={userId}
+      current={current}
+    />
   );
 }

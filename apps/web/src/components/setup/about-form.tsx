@@ -24,6 +24,7 @@ import {
   LINK_KINDS,
   type AboutAnswers,
 } from '@/lib/setup/answers';
+import { LINK_LABELS } from '@/lib/setup/labels';
 import type { SaveResult } from '@/lib/setup/save';
 import { issueErrors } from './form-errors';
 import type { StepStatus } from './step-status';
@@ -32,13 +33,6 @@ import { notifySaveFailed } from './step-frame';
 type LinkKind = (typeof LINK_KINDS)[number];
 type LinkRow = { key: number; kind: LinkKind; value: string };
 
-const LINK_LABELS: Record<LinkKind, string> = {
-  github: 'GitHub',
-  gitlab: 'GitLab',
-  portfolio: 'Portfolio',
-  website: 'Website',
-  other: 'Other',
-};
 const LINK_ITEMS = LINK_KINDS.map((value) => ({
   value,
   label: LINK_LABELS[value],
