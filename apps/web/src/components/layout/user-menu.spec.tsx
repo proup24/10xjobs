@@ -10,5 +10,5 @@ describe('UserMenu', () => {
     fireEvent.click(screen.getByRole('button', { name: 'User menu' }));
     const item = await screen.findByRole('menuitem', { name: 'Sign out' });
     expect(item).toBeTruthy();
-  }, 20000);
+  });
 });

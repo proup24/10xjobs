@@ -1,3 +1,4 @@
+// @vitest-environment node
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { describe, expect, it, vi, type Mock } from 'vitest';
 import { CODE_FAILED } from './copy';

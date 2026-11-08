@@ -1,3 +1,4 @@
+// @vitest-environment node
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@xjobs/database/types';
 import { describe, expect, it, vi } from 'vitest';
