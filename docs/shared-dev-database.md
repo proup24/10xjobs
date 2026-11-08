@@ -16,7 +16,7 @@ One hosted Supabase project, `10xjobs-dev`, is the shared dev database. Use it w
 
 5. Merge `.github/workflows/dev-database.yml` to `main`. A `workflow_run` workflow only takes effect once it is on `main`. Add the secrets before merging; the merge's CI run triggers the first migrate and seed. To re-run later, re-run the latest CI run on `main`.
 
-The workflow (`.github/workflows/dev-database.yml`) runs after `CI` succeeds on a push to `main`: it migrates, then seeds. The same workflow also has a `production` job that waits for approval ([production.md](production.md)), so re-running CI on `main` queues a production run waiting for approval. Reject it if you don't want it.
+The workflow (`.github/workflows/dev-database.yml`) runs after `CI` succeeds on a push to `main`: it migrates, then seeds.
 
 ## Daily work
 

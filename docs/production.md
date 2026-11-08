@@ -1,5 +1,7 @@
 # Production (Supabase Cloud and Vercel)
 
+> **Not set up yet.** For now the only cloud database is `10xjobs-dev`. This runbook is kept for when production is wanted. The `production` CI job it describes was removed from `.github/workflows/dev-database.yml`. Restore it from git history (commit `520fa0b`), and create the `production-database` environment and its secret before merging that change.
+
 The runbook for the live app. The design and the reasons are in the [hosted launch spec](superpowers/specs/2026-11-07-hosted-launch-design.md). Never put a connection string, key or SMTP credential in git; they live only in GitHub environment secrets, Vercel env and the Supabase dashboard.
 
 ## What production is
