@@ -44,6 +44,7 @@ Precision over volume: prefer a tailored application over a fast one.
 - The app is hosted and multi-tenant, and the tenant is the Supabase Auth user (no workspaces). Every record a user owns carries `userId` and is isolated by RLS; engine-only tables have RLS on with no policies.
 - The Prisma contract (`libs/database/src/contract/contract.prisma`) is the only schema source, RLS policies included. The local stack is the Supabase CLI; production is Supabase Cloud.
 - Qualify decisions record a reason, so wrong rejections can be found and fixed.
+- UI work in `apps/web` follows `apps/web/DESIGN.md`: build only from `components/ui` and theme tokens.
 
 ## Workflow
 
