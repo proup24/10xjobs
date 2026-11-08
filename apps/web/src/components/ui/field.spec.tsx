@@ -1,6 +1,13 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
-import { Field, FieldDescription, FieldError, FieldLabel } from './field';
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from './field';
 import { Input } from './input';
 import { Textarea } from './textarea';
 import { InputGroup, InputGroupInput } from './input-group';
@@ -95,6 +102,18 @@ describe('Field', () => {
     expect(screen.getByLabelText(/Opt/).getAttribute('aria-required')).toBe(
       'false',
     );
+  });
+
+  it('marks a required legend, keeping the group name', () => {
+    render(
+      <FieldSet>
+        <FieldLegend required>Seniority</FieldLegend>
+      </FieldSet>,
+    );
+    const group = screen.getByRole('group', { name: 'Seniority' });
+    expect(
+      group.querySelector('legend [data-slot="field-required"]')?.textContent,
+    ).toBe('*');
   });
 
   it('shows no marker when not required', () => {

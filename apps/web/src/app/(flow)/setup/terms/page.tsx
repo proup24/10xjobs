@@ -28,6 +28,7 @@ export default async function Page() {
         engagements: lists.engagements,
         currencies: lists.currencies,
       }}
+      hasProfile={snapshot.profile !== null}
       onSave={saveTermsAction}
     />
   );

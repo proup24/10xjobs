@@ -73,11 +73,29 @@ function FieldSet({ className, ...props }: React.ComponentProps<'fieldset'>) {
   );
 }
 
+function RequiredMark() {
+  return (
+    <span
+      aria-hidden="true"
+      data-slot="field-required"
+      className="text-destructive"
+    >
+      *
+    </span>
+  );
+}
+
+/** `required` shows the same marker as a required `FieldLabel`, for a required group. */
 function FieldLegend({
   className,
   variant = 'legend',
+  required = false,
+  children,
   ...props
-}: React.ComponentProps<'legend'> & { variant?: 'legend' | 'label' }) {
+}: React.ComponentProps<'legend'> & {
+  variant?: 'legend' | 'label';
+  required?: boolean;
+}) {
   return (
     <legend
       data-slot="field-legend"
@@ -87,7 +105,15 @@ function FieldLegend({
         className,
       )}
       {...props}
-    />
+    >
+      {children}
+      {required ? (
+        <>
+          {' '}
+          <RequiredMark />
+        </>
+      ) : null}
+    </legend>
   );
 }
 
@@ -193,15 +219,7 @@ function FieldLabel({
       {...props}
     >
       {props.children}
-      {required ? (
-        <span
-          aria-hidden="true"
-          data-slot="field-required"
-          className="text-destructive"
-        >
-          *
-        </span>
-      ) : null}
+      {required ? <RequiredMark /> : null}
     </Label>
   );
 }

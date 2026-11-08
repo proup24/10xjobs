@@ -179,7 +179,9 @@ export function JobForm({
         </Field>
 
         <FieldSet>
-          <FieldLegend variant="label">Seniority</FieldLegend>
+          <FieldLegend variant="label" required>
+            Seniority
+          </FieldLegend>
           <Field invalid={Boolean(errors.seniorities)} required>
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-x-6">
               {lists.seniorities.map((s) => (
@@ -190,6 +192,11 @@ export function JobForm({
                     onCheckedChange={(checked) =>
                       toggleSeniority(s.value, checked)
                     }
+                    aria-invalid={errors.seniorities ? true : undefined}
+                    aria-required
+                    aria-describedby={
+                      errors.seniorities ? `${ids}-seniority-error` : undefined
+                    }
                   />
                   <FieldLabel htmlFor={`${ids}-seniority-${s.value}`}>
                     {s.label}
@@ -197,7 +204,9 @@ export function JobForm({
                 </Field>
               ))}
             </div>
-            <FieldError>{errors.seniorities}</FieldError>
+            <FieldError id={`${ids}-seniority-error`}>
+              {errors.seniorities}
+            </FieldError>
           </Field>
         </FieldSet>
 
@@ -234,8 +243,7 @@ export function JobForm({
               options={languageChoices}
               value={null}
               onValueChange={(lang) =>
-                lang &&
-                setLanguages([...languages, { lang, level: null }])
+                lang && setLanguages([...languages, { lang, level: null }])
               }
               placeholder="Search languages"
               emptyText="No language found"

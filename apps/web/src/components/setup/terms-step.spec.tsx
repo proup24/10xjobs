@@ -50,7 +50,14 @@ const initial: TermsAnswers = {
 
 describe('TermsStep', () => {
   it('shows the step title', () => {
-    render(<TermsStep initial={initial} lists={LISTS} onSave={vi.fn()} />);
+    render(
+      <TermsStep
+        initial={initial}
+        lists={LISTS}
+        hasProfile={false}
+        onSave={vi.fn()}
+      />,
+    );
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(
       'Location and terms',
     );
@@ -58,7 +65,14 @@ describe('TermsStep', () => {
 
   it('Continue submits the form and moves to the resume step', async () => {
     const onSave = vi.fn().mockResolvedValue({ status: 'saved' });
-    render(<TermsStep initial={initial} lists={LISTS} onSave={onSave} />);
+    render(
+      <TermsStep
+        initial={initial}
+        lists={LISTS}
+        hasProfile={false}
+        onSave={onSave}
+      />,
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     await waitFor(() => expect(push).toHaveBeenCalledWith('/setup/resume'));
     expect(onSave).toHaveBeenCalledWith(initial);
@@ -69,7 +83,14 @@ describe('TermsStep', () => {
       status: 'invalid',
       errors: { _form: 'city 123 is not an approved city' },
     });
-    render(<TermsStep initial={initial} lists={LISTS} onSave={onSave} />);
+    render(
+      <TermsStep
+        initial={initial}
+        lists={LISTS}
+        hasProfile={false}
+        onSave={onSave}
+      />,
+    );
     const continueButton = screen.getByRole('button', { name: 'Continue' });
     fireEvent.click(continueButton);
     const alert = await screen.findByText(/We couldn't create your profile/);

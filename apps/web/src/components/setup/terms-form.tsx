@@ -36,8 +36,10 @@ import type { StepStatus } from './step-status';
 import { notifySaveFailed } from './step-frame';
 import { TimezoneFields, type TimezoneValue } from './timezone-fields';
 
+/** The lead of a form-level refusal; the database message follows on its own line. */
 const CREATE_ERROR =
   "We couldn't create your profile from these answers. Check them and try again.";
+const SAVE_ERROR = "We couldn't save these answers. Check them and try again.";
 
 /** One plain line per engagement; an unknown code gets none. */
 const ENGAGEMENT_HINTS: Record<string, string> = {
@@ -70,6 +72,8 @@ type Props = {
     engagements: PickerOption[];
     currencies: PickerOption[];
   };
+  /** True when the profile already exists: Continue edits it instead of creating it. */
+  hasProfile: boolean;
   onSave: (input: unknown) => Promise<SaveResult>;
   onSaved: () => void;
   /** Reports the save state to whoever frames the form. */
@@ -96,6 +100,8 @@ function CheckGroup({
   error?: string;
 }) {
   const ids = useId();
+  // Each checkbox is its own Field (label, hint), so the group's state is wired by hand.
+  const errorId = `${ids}-error`;
   const toggle = (code: string, checked: boolean) =>
     onChange(
       checked
@@ -106,7 +112,9 @@ function CheckGroup({
     );
   return (
     <FieldSet>
-      <FieldLegend variant="label">{legend}</FieldLegend>
+      <FieldLegend variant="label" required>
+        {legend}
+      </FieldLegend>
       <Button
         type="button"
         variant="link"
@@ -127,6 +135,9 @@ function CheckGroup({
                   id={`${ids}-${o.value}`}
                   checked={value.includes(o.value)}
                   onCheckedChange={(checked) => toggle(o.value, checked)}
+                  aria-invalid={error ? true : undefined}
+                  aria-required
+                  aria-describedby={error ? errorId : undefined}
                 />
                 {hint ? (
                   <FieldContent>
@@ -144,7 +155,7 @@ function CheckGroup({
             );
           })}
         </div>
-        <FieldError>{error}</FieldError>
+        <FieldError id={errorId}>{error}</FieldError>
       </Field>
     </FieldSet>
   );
@@ -162,6 +173,7 @@ export function TermsForm({
   formId,
   initial,
   lists,
+  hasProfile,
   onSave,
   onSaved,
   onStatusChange,
@@ -260,7 +272,10 @@ export function TermsForm({
       setErrors(
         _form === undefined
           ? fields
-          : { ...fields, _form: `${CREATE_ERROR}\n${_form}` },
+          : {
+              ...fields,
+              _form: `${hasProfile ? SAVE_ERROR : CREATE_ERROR}\n${_form}`,
+            },
       );
     } else {
       notifySaveFailed();

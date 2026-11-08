@@ -73,6 +73,15 @@ async function pick(name: string, text: string, label: string) {
   fireEvent.click(await screen.findByRole('option', { name: label }));
 }
 
+/** The text of every element the control's aria-describedby points at. */
+function describedBy(el: HTMLElement): string {
+  return (el.getAttribute('aria-describedby') ?? '')
+    .split(' ')
+    .filter(Boolean)
+    .map((id) => document.getElementById(id)?.textContent ?? '')
+    .join(' | ');
+}
+
 const submit = () =>
   fireEvent.submit(document.querySelector('form#f') as HTMLFormElement);
 
@@ -156,7 +165,9 @@ describe('JobForm', () => {
   it('picking a level lets the new language save with it', async () => {
     const { onSave } = setup({ ...SAVED, languages: [] });
     await pick('Add a language', 'fre', 'French');
-    fireEvent.click(await screen.findByRole('combobox', { name: 'French level' }));
+    fireEvent.click(
+      await screen.findByRole('combobox', { name: 'French level' }),
+    );
     // Base UI commits a mouse pick only when the press started on the item.
     const working = await screen.findByRole('option', { name: 'Working' });
     fireEvent.pointerDown(working, { pointerType: 'mouse' });
@@ -175,6 +186,14 @@ describe('JobForm', () => {
     expect(screen.getByText('Enter your years of experience')).toBeTruthy();
     expect(screen.getByText('Pick at least one seniority')).toBeTruthy();
     expect(screen.getByText('Add at least one language')).toBeTruthy();
+    const senior = screen.getByRole('checkbox', { name: 'Senior' });
+    expect(senior.getAttribute('aria-invalid')).toBe('true');
+    expect(senior.getAttribute('aria-required')).toBe('true');
+    expect(describedBy(senior)).toContain('Pick at least one seniority');
+    const group = screen.getByRole('group', { name: 'Seniority' });
+    expect(
+      group.querySelector(':scope > legend [data-slot="field-required"]'),
+    ).toBeTruthy();
     expect(onSave).not.toHaveBeenCalled();
   });
 
@@ -193,9 +212,12 @@ describe('JobForm', () => {
   it('ticking a seniority and editing years are saved', async () => {
     const { onSave } = setup({ ...SAVED, seniorities: [] });
     fireEvent.click(screen.getByRole('checkbox', { name: 'Mid-level' }));
-    fireEvent.change(screen.getByRole('spinbutton', { name: /Years of experience/ }), {
-      target: { value: '3' },
-    });
+    fireEvent.change(
+      screen.getByRole('spinbutton', { name: /Years of experience/ }),
+      {
+        target: { value: '3' },
+      },
+    );
     submit();
     await waitFor(() => expect(onSave).toHaveBeenCalled());
     expect(onSave.mock.calls[0][0]).toMatchObject({

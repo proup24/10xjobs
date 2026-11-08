@@ -65,6 +65,7 @@ const SAVED: TermsAnswers = {
 function setup(
   initial: TermsAnswers | null = SAVED,
   onSave = vi.fn().mockResolvedValue({ status: 'saved' }),
+  hasProfile = false,
 ) {
   const onSaved = vi.fn();
   const onStatusChange = vi.fn();
@@ -76,9 +77,27 @@ function setup(
       onSave={onSave}
       onSaved={onSaved}
       onStatusChange={onStatusChange}
+      hasProfile={hasProfile}
     />,
   );
   return { onSave, onSaved, onStatusChange };
+}
+
+/** The text of every element the control's aria-describedby points at. */
+function describedBy(el: HTMLElement): string {
+  return (el.getAttribute('aria-describedby') ?? '')
+    .split(' ')
+    .filter(Boolean)
+    .map((id) => document.getElementById(id)?.textContent ?? '')
+    .join(' | ');
+}
+
+/** True when the fieldset's legend carries the required marker. */
+function legendRequired(name: string): boolean {
+  const group = screen.getByRole('group', { name });
+  return Boolean(
+    group.querySelector(':scope > legend [data-slot="field-required"]'),
+  );
 }
 
 function type(input: HTMLElement, text: string) {
@@ -191,6 +210,20 @@ describe('TermsForm', () => {
     expect(screen.getByText('Pick at least one contract type')).toBeTruthy();
     expect(screen.getByText('Pick at least one way to be hired')).toBeTruthy();
     expect(screen.getByText('Pick a notice period')).toBeTruthy();
+    for (const [box, message] of [
+      ['Full Time', 'Pick at least one contract type'],
+      ['Employee', 'Pick at least one way to be hired'],
+    ]) {
+      const checkbox = screen.getByRole('checkbox', { name: box });
+      expect(checkbox.getAttribute('aria-invalid')).toBe('true');
+      expect(checkbox.getAttribute('aria-required')).toBe('true');
+      expect(describedBy(checkbox)).toContain(message);
+    }
+    expect(
+      describedBy(screen.getByRole('checkbox', { name: 'Employee' })),
+    ).toContain('On the company');
+    expect(legendRequired('Contract types')).toBe(true);
+    expect(legendRequired('Hired as')).toBe(true);
     expect(onSave).not.toHaveBeenCalled();
   });
 
@@ -257,6 +290,25 @@ describe('TermsForm', () => {
       acceptsAnyCurrency: false,
       acceptedCurrencies: ['USD'],
     });
+  });
+
+  it('a refused save of an existing profile reads "could not save" with the database message', async () => {
+    const { onStatusChange } = setup(
+      SAVED,
+      vi.fn().mockResolvedValue({
+        status: 'invalid',
+        errors: { _form: 'city not approved' },
+      }),
+      true,
+    );
+    submit();
+    await waitFor(() =>
+      expect(onStatusChange).toHaveBeenLastCalledWith({
+        pending: false,
+        formError:
+          "We couldn't save these answers. Check them and try again.\ncity not approved",
+      }),
+    );
   });
 
   it('a creation error becomes the form error with the database message', async () => {
