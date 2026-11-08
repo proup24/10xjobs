@@ -1,6 +1,8 @@
 import './global.css';
 import { Roboto, Roboto_Mono } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
+import { Toaster } from '@/components/ui/sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
 const roboto = Roboto({
@@ -30,7 +32,10 @@ export default function RootLayout({
       className={cn('font-sans', roboto.variable, robotoMono.variable)}
     >
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <TooltipProvider>{children}</TooltipProvider>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -5,6 +5,8 @@ import { ButtonsSection } from './_sections/buttons';
 import { ComponentsSection } from './_sections/components';
 import { FieldsSection } from './_sections/fields';
 import { InputsSection } from './_sections/inputs';
+import { OverlaysSection } from './_sections/overlays';
+import { PickersSection } from './_sections/pickers';
 import { TokensSection } from './_sections/tokens';
 
 export const dynamic = 'force-dynamic';
@@ -22,6 +24,8 @@ export default function DesignPage() {
       <ButtonsSection />
       <InputsSection />
       <FieldsSection />
+      <PickersSection />
+      <OverlaysSection />
       <ComponentsSection />
     </main>
   );
