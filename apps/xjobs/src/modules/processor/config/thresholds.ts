@@ -5,7 +5,7 @@ const logger = new Logger('ProcessorThresholds');
 /** Unknown decision models already warned about in this process. */
 const warnedModels = new Set<string>();
 
-/** Minimum Jev confidence per question, keyed by the pinned decision model ID. */
+/** Minimum Jev confidence for a verdict (confirmed or rejected) per question, keyed by the pinned decision model ID. */
 export const THRESHOLDS: Record<
   string,
   Partial<Record<ClosedQuestionKey | 'junk', number>>
@@ -23,7 +23,7 @@ export const THRESHOLDS: Record<
 };
 
 /**
- * Null for an unknown model or key: the question always goes to the fallback.
+ * Null for an unknown model or key: the field stays unconfirmed (spec §3).
  * An unknown model is warned about once per process (spec §8).
  */
 export function thresholdFor(
@@ -35,7 +35,7 @@ export function thresholdFor(
     if (!warnedModels.has(model)) {
       warnedModels.add(model);
       logger.warn(
-        `No Jev thresholds for decision model ${model}; every closed question goes to the extraction model`,
+        `No Jev thresholds for decision model ${model}; every field stays unconfirmed`,
       );
     }
     return null;

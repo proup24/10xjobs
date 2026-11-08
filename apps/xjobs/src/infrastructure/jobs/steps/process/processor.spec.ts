@@ -9,6 +9,8 @@ const config: ProcessorConfig = {
   maxAttempts: 3,
   claimTimeoutMs: 900_000,
   dailyBudgetUsd: 10,
+  maxRegenerations: 2,
+  generationTries: 3,
 };
 
 function deps(outcome = 'processed', spent = 0, paused = false) {

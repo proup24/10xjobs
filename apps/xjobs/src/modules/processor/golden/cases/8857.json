@@ -32,18 +32,28 @@
     "seniority": "unstated",
     "yearsRequired": null,
     "contractMonths": null,
-    "mainStack": [
+    "requirements": [
       {
-        "anyOf": [
-          {
-            "text": "Python",
-            "code": "python"
-          },
-          {
-            "text": "JavaScript/TypeScript",
-            "code": "typescript"
-          }
-        ]
+        "text": "Python",
+        "code": "python",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "JavaScript/TypeScript",
+        "code": "typescript",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      }
+    ],
+    "groups": [
+      {
+        "id": "g1",
+        "min": 1
       }
     ],
     "requiredLanguages": [],
@@ -56,5 +66,10 @@
     },
     "junkFlags": []
   },
-  "drafted": {}
+  "drafted": {
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
 }

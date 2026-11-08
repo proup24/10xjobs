@@ -1,7 +1,9 @@
-import type { ChatResult } from '@openrouter/sdk/models';
-import type { SendChatCompletionRequestRequest } from '@openrouter/sdk/models/operations';
-import { OpenRouterError } from '@openrouter/sdk/models/errors';
 import { Logger } from '@nestjs/common';
+import { APICallError } from 'ai';
+import { MockLanguageModelV4 } from 'ai/test';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { z } from 'zod';
+import type { FieldVerdict } from '../rules/verify';
 import {
   ModelOutputError,
   ModelRequestError,
@@ -9,10 +11,10 @@ import {
   TransientModelError,
 } from './errors';
 import {
-  EXTRACTION_MAX_ATTEMPTS,
-  OpenRouterExtractionModel,
+  AiSdkExtractionModel,
+  feedbackMessage,
+  openRouterLanguageModel,
 } from './extraction.model';
-import type { OpenRouterClient } from './client';
 import { ModelPricing } from './pricing';
 import type { PostingInput } from './types';
 
@@ -32,284 +34,320 @@ const input: PostingInput = {
   },
 };
 
-const req = {
-  systemPrompt: 'Extract the facts.',
-  jsonSchema: {
-    type: 'object',
-    properties: { ok: { type: 'boolean' } },
-    required: ['ok'],
-    additionalProperties: false,
-  },
-};
+const schema = z.strictObject({
+  seniority: z.object({ value: z.enum(['junior', 'senior']).nullable() }),
+});
+const req = { systemPrompt: 'Extract the facts.', schema };
 
-function result(
-  over: {
-    content?: string | null;
-    finishReason?: 'stop' | 'length' | null;
-    choices?: ChatResult['choices'];
-    usage?: ChatResult['usage'];
-  } = {},
-): ChatResult {
+type DoGenerate = MockLanguageModelV4['doGenerate'];
+type GenerateResult = Awaited<ReturnType<DoGenerate>>;
+
+function answer(
+  text: string,
+  over: Partial<GenerateResult> = {},
+): GenerateResult {
   return {
-    id: 'gen-1',
-    object: 'chat.completion',
-    created: 1,
-    model: 'anthropic/claude-opus-5.5-20261020',
-    systemFingerprint: null,
-    choices: over.choices ?? [
-      {
-        index: 0,
-        finishReason:
-          over.finishReason === undefined ? 'stop' : over.finishReason,
-        message: {
-          role: 'assistant',
-          content: over.content === undefined ? '{"ok":true}' : over.content,
-        },
+    content: [{ type: 'text', text }],
+    finishReason: { unified: 'stop', raw: 'stop' },
+    usage: {
+      inputTokens: {
+        total: 1000,
+        noCache: 600,
+        cacheRead: 400,
+        cacheWrite: undefined,
       },
-    ],
-    usage:
-      'usage' in over
-        ? over.usage
-        : {
-            promptTokens: 1200,
-            completionTokens: 300,
-            totalTokens: 1500,
-            promptTokensDetails: { cachedTokens: 1000 },
-            cost: 0.0105,
-          },
-  } as ChatResult;
-}
-
-/** Answers each call with the next item; the last one repeats. */
-function client(...answers: (ChatResult | Error)[]) {
-  let n = 0;
-  const send = vi.fn(async (_req: SendChatCompletionRequestRequest) => {
-    const answer = answers[Math.min(n++, answers.length - 1)]!;
-    if (answer instanceof Error) throw answer;
-    return answer;
-  });
-  return {
-    send,
-    client: { chat: { send } } as unknown as OpenRouterClient,
+      outputTokens: { total: 200, text: 200, reasoning: undefined },
+    },
+    warnings: [],
+    response: {
+      id: 'gen-1',
+      modelId: 'anthropic/claude-opus-5.5-20261020',
+      timestamp: new Date(0),
+    },
+    providerMetadata: { openrouter: { usage: { cost: 0.0105 } } },
+    ...over,
   };
 }
 
-function httpError(status: number) {
-  return new OpenRouterError(`status ${status}`, {
-    response: new Response('{"error":{"message":"posting text here"}}', {
-      status,
-    }),
-    request: new Request('https://openrouter.ai/api/v1/chat/completions'),
-    body: '{"error":{"message":"posting text here"}}',
+const mock = (doGenerate: DoGenerate | GenerateResult | GenerateResult[]) =>
+  new MockLanguageModelV4({ doGenerate });
+
+const apiError = (statusCode: number, body = '') =>
+  new APICallError({
+    message: `status ${statusCode}`,
+    url: 'https://openrouter.ai/api/v1/chat/completions',
+    requestBodyValues: {},
+    statusCode,
+    responseBody: body,
+    isRetryable: statusCode === 429 || statusCode >= 500,
   });
-}
 
-describe('OpenRouterExtractionModel', () => {
-  it('returns the parsed output and the call meta', async () => {
-    const { output, meta } = await new OpenRouterExtractionModel(
-      client(result()).client,
-      MODEL,
-    ).extract(input, req);
+const model = (
+  languageModel: MockLanguageModelV4,
+  pricing = new ModelPricing(),
+) => new AiSdkExtractionModel('key', MODEL, pricing, languageModel);
 
-    expect(output).toEqual({ ok: true });
+describe('AiSdkExtractionModel', () => {
+  beforeEach(() => {
+    vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+  });
+  afterEach(() => vi.restoreAllMocks());
+
+  it('valid object → output and meta with cost from provider metadata', async () => {
+    const lm = mock(answer('{"seniority":{"value":"senior"}}'));
+    const { output, meta } = await model(lm).generate(input, req);
+
+    expect(output).toEqual({ seniority: { value: 'senior' } });
     expect(meta).toMatchObject({
       model: 'anthropic/claude-opus-5.5-20261020',
       providerRequestId: 'gen-1',
-      inputTokens: 1200,
-      outputTokens: 300,
-      cachedInputTokens: 1000,
+      inputTokens: 1000,
+      outputTokens: 200,
+      cachedInputTokens: 400,
       costUsd: 0.0105,
+    });
+    expect(meta.latencyMs).toBeGreaterThanOrEqual(0);
+    expect(lm.doGenerateCalls).toHaveLength(1);
+  });
+
+  it('estimates the cost from list prices when the provider reports none', async () => {
+    const pricing = new ModelPricing();
+    pricing.set(new Map([[MODEL, { prompt: 0.00001, completion: 0.00005 }]]));
+    const lm = mock(
+      answer('{"seniority":{"value":"senior"}}', { providerMetadata: {} }),
+    );
+    const { meta } = await model(lm, pricing).generate(input, req);
+    expect(meta.costUsd).toBeCloseTo(1000 * 0.00001 + 200 * 0.00005);
+  });
+
+  it('sends the system prompt with ephemeral cache control, the posting, and the schema', async () => {
+    const lm = mock(answer('{"seniority":{"value":null}}'));
+    await model(lm).generate(input, req);
+
+    const call = lm.doGenerateCalls[0];
+    expect(call.prompt[0]).toMatchObject({
+      role: 'system',
+      content: 'Extract the facts.',
+      providerOptions: { openrouter: { cacheControl: { type: 'ephemeral' } } },
+    });
+    expect(JSON.stringify(call.prompt[1])).toContain('Remote in the EU.');
+    expect(JSON.stringify(call.prompt[1])).toContain('was truncated');
+    expect(call.prompt).toHaveLength(2);
+    expect(call.responseFormat).toMatchObject({
+      type: 'json',
+      name: 'extraction',
+      schema: {
+        type: 'object',
+        required: ['seniority'],
+        additionalProperties: false,
+      },
     });
   });
 
-  it('sends strict structured output, a cached system prompt and no streaming', async () => {
-    const fake = client(result());
-    await new OpenRouterExtractionModel(fake.client, MODEL).extract(input, req);
+  it('schema-invalid object → ModelOutputError listing paths', async () => {
+    const lm = mock(answer('{"seniority":{"value":"wizard"}}'));
+    const error = await model(lm)
+      .generate(input, req)
+      .catch((e: unknown) => e);
 
-    const { chatRequest } = fake.send.mock.calls[0]![0];
-    expect(chatRequest).toMatchObject({
+    expect(error).toBeInstanceOf(ModelOutputError);
+    expect((error as ModelOutputError).message).toContain('seniority.value');
+    expect((error as ModelOutputError).meta).toMatchObject({
+      inputTokens: 1000,
+      outputTokens: 200,
+      providerRequestId: 'gen-1',
+    });
+    expect(lm.doGenerateCalls).toHaveLength(1);
+  });
+
+  it('unparseable or cut-off output → ModelOutputError', async () => {
+    const notJson = await model(mock(answer('not json')))
+      .generate(input, req)
+      .catch((e: unknown) => e);
+    expect(notJson).toBeInstanceOf(ModelOutputError);
+    expect((notJson as Error).message).toContain('not valid JSON');
+
+    const cut = await model(
+      mock(
+        answer('{"seniority":', {
+          finishReason: { unified: 'length', raw: 'length' },
+        }),
+      ),
+    )
+      .generate(input, req)
+      .catch((e: unknown) => e);
+    expect(cut).toBeInstanceOf(ModelOutputError);
+    expect((cut as Error).message).toContain('cut off');
+  });
+
+  it.each([
+    [402, ProviderUnavailableError],
+    [401, ProviderUnavailableError],
+    [429, TransientModelError],
+    [503, TransientModelError],
+    [400, ModelRequestError],
+  ])('%i APICallError → %o', async (status, Kind) => {
+    const lm = mock(async () => {
+      throw apiError(status, '{"error":{"message":"nope"}}');
+    });
+    const error = await model(lm)
+      .generate(input, req)
+      .catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(Kind);
+    expect((error as Error).message).toContain(`OpenRouter returned ${status}`);
+    expect((error as Error).message).toContain('nope');
+    expect((error as Error).message).toContain(MODEL);
+  });
+
+  it('request sets maxRetries 0: a retryable error is not retried', async () => {
+    const lm = mock(async () => {
+      throw apiError(503);
+    });
+    await expect(model(lm).generate(input, req)).rejects.toBeInstanceOf(
+      TransientModelError,
+    );
+    expect(lm.doGenerateCalls).toHaveLength(1);
+  });
+
+  it('adds the retry errors and the feedback as separate user messages', async () => {
+    const lm = mock(answer('{"seniority":{"value":"senior"}}'));
+    const feedback: FieldVerdict[] = [
+      {
+        key: 'seniority',
+        verdict: 'rejected',
+        score: 0.91,
+        jevPick: 'junior',
+        generatorValue: 'senior',
+        decidedBy: 'generator',
+        round: 1,
+      },
+    ];
+    await model(lm).generate(input, {
+      ...req,
+      retryErrors: ['seniority.value: Invalid option'],
+      feedback,
+    });
+    const prompt = lm.doGenerateCalls[0].prompt;
+    expect(prompt.map((m) => m.role)).toEqual([
+      'system',
+      'user',
+      'user',
+      'user',
+    ]);
+    expect(JSON.stringify(prompt[2])).toContain('re-read');
+    expect(JSON.stringify(prompt[3])).toContain(
+      'seniority.value: Invalid option',
+    );
+  });
+});
+
+describe('feedbackMessage', () => {
+  const verdicts: FieldVerdict[] = [
+    {
+      key: 'seniority',
+      verdict: 'rejected',
+      score: 0.91,
+      jevPick: 'mid',
+      generatorValue: 'senior',
+      decidedBy: 'generator',
+      round: 1,
+    },
+    {
+      key: 'junk:vague',
+      verdict: 'rejected',
+      score: 0.85,
+      jevPick: 'yes',
+      generatorValue: 'no',
+      decidedBy: 'generator',
+      round: 1,
+    },
+  ];
+
+  it('feedback renders a message naming the field, the generator value, Jev\'s pick and score, and not "use"/"adopt"', () => {
+    const text = feedbackMessage(verdicts);
+    expect(text).toContain('seniority');
+    expect(text).toContain('What seniority level does the posting ask for?');
+    expect(text).toContain('"senior"');
+    expect(text).toContain('"mid"');
+    expect(text).toContain('0.91');
+    expect(text).toContain('vague');
+    expect(text).toContain('0.85');
+    expect(text).toMatch(/re-read the posting/i);
+    expect(text).toContain('unstated');
+    expect(text).not.toMatch(/\buse\b/i);
+    expect(text).not.toMatch(/\badopt\b/i);
+    expect(text).not.toMatch(/\bcopy\b/i);
+  });
+});
+
+describe('openRouterLanguageModel', () => {
+  it('request sets require_parameters and usage accounting, with ephemeral cache control on the system prompt', async () => {
+    let body: Record<string, unknown> = {};
+    const fetch = vi.fn(async (_url: unknown, init?: RequestInit) => {
+      body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      return new Response(
+        JSON.stringify({
+          id: 'gen-1',
+          model: MODEL,
+          created: 1,
+          object: 'chat.completion',
+          choices: [
+            {
+              index: 0,
+              finish_reason: 'stop',
+              message: {
+                role: 'assistant',
+                content: '{"seniority":{"value":"senior"}}',
+              },
+            },
+          ],
+          usage: {
+            prompt_tokens: 10,
+            completion_tokens: 5,
+            total_tokens: 15,
+            cost: 0.002,
+          },
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      );
+    });
+    const lm = openRouterLanguageModel(
+      'key',
+      MODEL,
+      fetch as unknown as typeof globalThis.fetch,
+    );
+    const { meta } = await new AiSdkExtractionModel(
+      'key',
+      MODEL,
+      new ModelPricing(),
+      lm,
+    ).generate(input, req);
+
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(body).toMatchObject({
       model: MODEL,
-      stream: false,
-      provider: { requireParameters: true },
-      responseFormat: {
+      provider: { require_parameters: true },
+      usage: { include: true },
+      response_format: {
         type: 'json_schema',
-        jsonSchema: {
-          name: 'extraction',
-          strict: true,
-          schema: req.jsonSchema,
-        },
+        json_schema: { name: 'extraction', strict: true },
       },
     });
-    // Opus 5.5 takes no `temperature`; with `requireParameters` an unsupported
-    // parameter leaves no provider and OpenRouter answers 404.
-    expect(chatRequest).not.toHaveProperty('temperature');
-    expect(chatRequest.messages[0]).toEqual({
+    const messages = body.messages as {
+      role: string;
+      content: unknown;
+    }[];
+    expect(messages[0]).toMatchObject({
       role: 'system',
       content: [
         {
           type: 'text',
           text: 'Extract the facts.',
-          cacheControl: { type: 'ephemeral' },
+          cache_control: { type: 'ephemeral' },
         },
       ],
     });
-    const user = chatRequest.messages[1] as { role: string; content: string };
-    expect(user.role).toBe('user');
-    expect(user.content).toContain('Listing metadata (context only):');
-    expect(user.content).toContain('the description was truncated');
-    expect(chatRequest.messages).toHaveLength(2);
-  });
-
-  it('appends the validation errors of a schema-fix retry as a last user message', async () => {
-    const fake = client(result());
-    await new OpenRouterExtractionModel(fake.client, MODEL).extract(input, {
-      ...req,
-      retryErrors: ['openings.0.places: required'],
-    });
-    const last = fake.send.mock.calls[0]![0].chatRequest.messages.at(-1) as {
-      role: string;
-      content: string;
-    };
-    expect(last.role).toBe('user');
-    expect(last.content).toContain('- openings.0.places: required');
-  });
-
-  it('retries a cut-off answer and throws, with the cost of every call, once attempts run out', async () => {
-    const fake = client(result({ finishReason: 'length' }));
-    const error = await new OpenRouterExtractionModel(fake.client, MODEL)
-      .extract(input, req)
-      .catch((e: unknown) => e);
-    expect(error).toBeInstanceOf(ModelOutputError);
-    expect(fake.send).toHaveBeenCalledTimes(EXTRACTION_MAX_ATTEMPTS);
-    expect((error as ModelOutputError).meta?.costUsd).toBeCloseTo(
-      0.0105 * EXTRACTION_MAX_ATTEMPTS,
-      10,
-    );
-    expect((error as Error).message).toContain('cut off (length)');
-  });
-
-  it('throws an output error on empty or unparseable content after every attempt', async () => {
-    for (const content of [null, '', '{not json']) {
-      const fake = client(result({ content }));
-      await expect(
-        new OpenRouterExtractionModel(fake.client, MODEL).extract(input, req),
-      ).rejects.toBeInstanceOf(ModelOutputError);
-      expect(fake.send).toHaveBeenCalledTimes(EXTRACTION_MAX_ATTEMPTS);
-    }
-  });
-
-  it('retries an off-schema answer with its errors and returns the fixed one', async () => {
-    const fake = client(
-      result({ content: '{"ok":"yes","extra":1}' }),
-      result({ content: '{not json' }),
-      result(),
-    );
-    const { output, meta } = await new OpenRouterExtractionModel(
-      fake.client,
-      MODEL,
-    ).extract(input, req);
-
-    expect(output).toEqual({ ok: true });
-    expect(fake.send).toHaveBeenCalledTimes(3);
-    const lastMessage = (call: number) =>
-      fake.send.mock.calls[call]![0].chatRequest.messages.at(-1) as {
-        role: string;
-        content: string;
-      };
-    expect(lastMessage(1).content).toContain(
-      'Your previous answer was invalid',
-    );
-    expect(lastMessage(1).content).toContain('- ok:');
-    expect(lastMessage(2).content).toContain('- Extraction is not valid JSON');
-    // Tokens and cost add up over the three calls.
-    expect(meta.inputTokens).toBe(3600);
-    expect(meta.costUsd).toBeCloseTo(0.0315, 10);
-  });
-
-  it('stops at the configured number of attempts with the last schema errors', async () => {
-    const fake = client(result({ content: '{}' }));
-    const error = await new OpenRouterExtractionModel(
-      fake.client,
-      MODEL,
-      new ModelPricing(),
-      2,
-    )
-      .extract(input, req)
-      .catch((e: unknown) => e);
-    expect(error).toBeInstanceOf(ModelOutputError);
-    expect(fake.send).toHaveBeenCalledTimes(2);
-    expect((error as Error).message).toMatch(/after 2 attempts: ok:/);
-  });
-
-  it('does not retry provider failures, but adds the cost of earlier attempts', async () => {
-    const fake = client(result({ content: '{}' }), httpError(529));
-    const error = await new OpenRouterExtractionModel(fake.client, MODEL)
-      .extract(input, req)
-      .catch((e: unknown) => e);
-    expect(error).toBeInstanceOf(TransientModelError);
-    expect(fake.send).toHaveBeenCalledTimes(2);
-    expect((error as TransientModelError).meta?.costUsd).toBeCloseTo(
-      0.0105,
-      10,
-    );
-  });
-
-  it('throws a transient error on empty choices', async () => {
-    await expect(
-      new OpenRouterExtractionModel(
-        client(result({ choices: [] })).client,
-        MODEL,
-      ).extract(input, req),
-    ).rejects.toBeInstanceOf(TransientModelError);
-  });
-
-  it('estimates a missing cost from tokens and list prices, warning once', async () => {
-    const warn = vi
-      .spyOn(Logger.prototype, 'warn')
-      .mockImplementation(() => undefined);
-    const pricing = new ModelPricing();
-    pricing.set(new Map([[MODEL, { prompt: 0.000004, completion: 0.00002 }]]));
-    const noCost = result({
-      usage: { promptTokens: 1000, completionTokens: 100, totalTokens: 1100 },
-    });
-    const model = new OpenRouterExtractionModel(
-      client(noCost).client,
-      MODEL,
-      pricing,
-    );
-    const first = await model.extract(input, req);
-    await model.extract(input, req);
-
-    expect(first.meta.costUsd).toBeCloseTo(0.006, 10);
-    expect(warn).toHaveBeenCalledTimes(1);
-    warn.mockRestore();
-  });
-
-  it('maps provider failures and names the call with its reason', async () => {
-    const unavailable = await new OpenRouterExtractionModel(
-      client(httpError(401)).client,
-      MODEL,
-    )
-      .extract(input, req)
-      .catch((e: unknown) => e);
-    expect(unavailable).toBeInstanceOf(ProviderUnavailableError);
-
-    const bad = await new OpenRouterExtractionModel(
-      client(httpError(400)).client,
-      MODEL,
-    )
-      .extract(input, req)
-      .catch((e: unknown) => e);
-    expect(bad).toBeInstanceOf(ModelRequestError);
-    expect((bad as Error).message).toBe(
-      `chat completions (${MODEL}): OpenRouter returned 400: posting text here`,
-    );
-
-    await expect(
-      new OpenRouterExtractionModel(
-        client(httpError(529)).client,
-        MODEL,
-      ).extract(input, req),
-    ).rejects.toBeInstanceOf(TransientModelError);
+    expect(body).not.toHaveProperty('temperature');
+    expect(meta.costUsd).toBe(0.002);
   });
 });

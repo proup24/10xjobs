@@ -39,6 +39,8 @@ const noColumns: TypedColumns = {
   cityIds: [],
   techTags: [],
   mainStackTags: [],
+  requiredTags: [],
+  niceTags: [],
   salaryMin: null,
   salaryMax: null,
   salaryCurrency: null,
@@ -533,6 +535,38 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       ]);
       expect(await repo.spendSince(since)).toBeCloseTo(0.75, 6);
       expect(await repo.spendSince(new Date(Date.now() + minutes(1)))).toBe(0);
+    });
+
+    it("inserts an attempt with step 'verification'", async () => {
+      const id = await job();
+      await repo.recordAttempts([attempt({ jobId: id, step: 'verification' })]);
+      const rows = await db.orm.public.ProcessingAttempt.where({
+        jobId: id,
+      }).all();
+      expect(rows.map((r) => r.step)).toEqual(['verification']);
+    });
+
+    it("still inserts a legacy 'decision' attempt", async () => {
+      const id = await job();
+      await repo.recordAttempts([attempt({ jobId: id, step: 'decision' })]);
+      const rows = await db.orm.public.ProcessingAttempt.where({
+        jobId: id,
+      }).all();
+      expect(rows.map((r) => r.step)).toEqual(['decision']);
+    });
+
+    it('saves requiredTags and niceTags', async () => {
+      const id = await job();
+      const extractionId = await repo.saveExtraction({
+        ...extraction(id),
+        requiredTags: ['python'],
+        niceTags: ['go'],
+      });
+      const row = await db.orm.public.JobExtraction.where({
+        id: extractionId,
+      }).first();
+      expect(row?.requiredTags).toEqual(['python']);
+      expect(row?.niceTags).toEqual(['go']);
     });
 
     it('stores every field of an attempt', async () => {

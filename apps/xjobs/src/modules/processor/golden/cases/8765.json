@@ -39,30 +39,48 @@
     "seniority": "unstated",
     "yearsRequired": null,
     "contractMonths": null,
-    "mainStack": [
+    "requirements": [
       {
-        "anyOf": [
-          {
-            "text": "Python",
-            "code": "python"
-          },
-          {
-            "text": "TypeScript",
-            "code": "typescript"
-          }
-        ]
+        "text": "Python",
+        "code": "python",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g1"
       },
       {
-        "anyOf": [
-          {
-            "text": "React",
-            "code": "react"
-          },
-          {
-            "text": "Next.js",
-            "code": "nextjs"
-          }
-        ]
+        "text": "TypeScript",
+        "code": "typescript",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "React",
+        "code": "react",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      },
+      {
+        "text": "Next.js",
+        "code": "nextjs",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      }
+    ],
+    "groups": [
+      {
+        "id": "g1",
+        "min": 1
+      },
+      {
+        "id": "g2",
+        "min": 1
       }
     ],
     "requiredLanguages": [],
@@ -75,5 +93,10 @@
     },
     "junkFlags": []
   },
-  "drafted": {}
+  "drafted": {
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
 }

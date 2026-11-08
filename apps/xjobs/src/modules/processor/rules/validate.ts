@@ -27,10 +27,6 @@ function isEstablished(name: string, value: unknown): boolean {
     const w = value as { requirements: unknown[]; sponsorship: string };
     return w.requirements.length > 0 || w.sponsorship !== 'unstated';
   }
-  if (name === 'techStack') {
-    const t = value as Record<string, unknown[]>;
-    return Object.values(t).some((l) => l.length > 0);
-  }
   return true;
 }
 
@@ -66,7 +62,7 @@ export function checkQuotes(
     engagement: out.engagement,
     contractMonths: out.contractMonths,
     salary: out.salary,
-    techStack: out.techStack,
+    // techStack is checked per requirement below: its envelope quote is unused.
     requiredLanguages: out.requiredLanguages,
     workAuthorization: out.workAuthorization,
     junkFlags: out.junkFlags,
@@ -79,10 +75,10 @@ export function checkQuotes(
     } else if (
       fact.quote === '' &&
       fact.confidence === 'sure' &&
-      fact.decidedBy === 'opus' &&
+      fact.decidedBy === 'generator' &&
       isEstablished(name, fact.value)
     ) {
-      // Opus established a value without quoting the posting: not supported.
+      // The generator established a value without quoting the posting: not supported.
       fact.confidence = 'unsure';
     }
   }
@@ -94,10 +90,24 @@ export function checkQuotes(
     } else if (
       opening.quote === '' &&
       opening.confidence === 'sure' &&
-      opening.decidedBy === 'opus' &&
+      opening.decidedBy === 'generator' &&
       opening.places.length > 0
     ) {
       opening.confidence = 'unsure';
+    }
+  }
+  for (const req of out.techStack.value?.requirements ?? []) {
+    if (bad(req.quote)) {
+      req.quote = '';
+      req.confidence = 'unsure';
+      quoteFailures++;
+    } else if (
+      req.quote === '' &&
+      req.confidence === 'sure' &&
+      out.techStack.decidedBy === 'generator'
+    ) {
+      // A requirement with no quote from the posting is not supported.
+      req.confidence = 'unsure';
     }
   }
   for (const lang of out.requiredLanguages.value ?? []) {
@@ -117,6 +127,7 @@ export function checkQuotes(
   return { doc: out, quoteFailures };
 }
 
+<<<<<<< HEAD
 /**
  * Cross-fact rules; a disagreement downgrades both sides to unsure.
  * `engineeringRoleKinds` are the approved `role_kinds` marked `isEngineering`.
@@ -124,6 +135,12 @@ export function checkQuotes(
 export function checkConsistency(
   doc: ExtractionDocument,
   engineeringRoleKinds: ReadonlySet<string>,
+=======
+/** Cross-fact rules; a disagreement downgrades both sides to unsure. */
+export function checkConsistency(
+  doc: ExtractionDocument,
+  engineeringRoleKinds: Set<string>,
+>>>>>>> feature/matching-algorithm
 ): ExtractionDocument {
   const out = structuredClone(doc);
 
@@ -161,6 +178,12 @@ export function needsReview(doc: ExtractionDocument): boolean {
     doc.seniority.confidence === 'unsure' ||
     doc.position.confidence === 'unsure' ||
     doc.contractType.confidence === 'unsure' ||
-    doc.techStack.confidence === 'unsure'
+    doc.engagement.confidence === 'unsure' ||
+    doc.isSoftwareEngineeringRole.confidence === 'unsure' ||
+    doc.verification.dropped.length > 0 ||
+    doc.verification.missedJunkFlags.length > 0 ||
+    (doc.techStack.value?.requirements ?? []).some(
+      (r) => r.kind === 'main' && r.confidence === 'unsure',
+    )
   );
 }

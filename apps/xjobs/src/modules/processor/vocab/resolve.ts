@@ -33,6 +33,7 @@ export function resolveTerms(
   const proposals: TermResolution['proposals'] = [];
   const cities: TermResolution['cities'] = [];
   const seenCities = new Set<string>();
+  const proposedTerms = new Set<string>();
 
   const requireCode = (list: ListName, code: string, path: string): void => {
     if (vocab.approved[list].get(code.toLowerCase()) !== code) {
@@ -58,7 +59,11 @@ export function resolveTerms(
     }
     term.code = null;
     doc.unmatched.push({ list: 'techTags', text: term.text, at });
-    proposals.push({ list: 'techTags', text: term.text });
+    const proposed = term.text.trim().toLowerCase();
+    if (!proposedTerms.has(proposed)) {
+      proposedTerms.add(proposed);
+      proposals.push({ list: 'techTags', text: term.text });
+    }
   };
 
   const choice = (list: ListName, value: string | null, path: string): void => {
@@ -102,22 +107,9 @@ export function resolveTerms(
     });
   });
 
-  const stack = doc.techStack.value;
-  if (stack) {
-    stack.mainStack.forEach((g, i) =>
-      g.anyOf.forEach((t, j) =>
-        resolveTerm(t, `techStack.mainStack.${i}.anyOf.${j}`),
-      ),
-    );
-    stack.mustHaves.forEach((g, i) =>
-      g.anyOf.forEach((t, j) =>
-        resolveTerm(t, `techStack.mustHaves.${i}.anyOf.${j}`),
-      ),
-    );
-    stack.niceToHaves.forEach((t, i) =>
-      resolveTerm(t, `techStack.niceToHaves.${i}`),
-    );
-  }
+  (doc.techStack.value?.requirements ?? []).forEach((r, i) =>
+    resolveTerm(r.technology, `techStack.requirements.${i}.technology`),
+  );
 
   return { doc, proposals, cities };
 }

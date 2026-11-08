@@ -28,38 +28,52 @@
     "seniority": "unstated",
     "yearsRequired": null,
     "contractMonths": null,
-    "mainStack": [
+    "requirements": [
       {
-        "anyOf": [
-          {
-            "text": "Java",
-            "code": "java"
-          }
-        ]
+        "text": "Java",
+        "code": "java",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
       },
       {
-        "anyOf": [
-          {
-            "text": "Spring Boot",
-            "code": "spring"
-          }
-        ]
+        "text": "Spring Boot",
+        "code": "spring",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
       },
       {
-        "anyOf": [
-          {
-            "text": "React",
-            "code": "react"
-          },
-          {
-            "text": "Vue",
-            "code": "vue"
-          },
-          {
-            "text": "Angular",
-            "code": "angular"
-          }
-        ]
+        "text": "React",
+        "code": "react",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "Vue",
+        "code": "vue",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "Angular",
+        "code": "angular",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      }
+    ],
+    "groups": [
+      {
+        "id": "g1",
+        "min": 1
       }
     ],
     "requiredLanguages": [
@@ -81,5 +95,10 @@
     },
     "junkFlags": []
   },
-  "drafted": {}
+  "drafted": {
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
 }

@@ -1,14 +1,12 @@
 import { z } from 'zod';
-import type { DecisionQuestion } from '../models/types';
 import type { ListName } from '../vocab/lists';
 import { confidenceSchema } from './fact';
 import {
   PLACE_STRICTNESS,
-  groupSchema,
   languageSchema,
-  mustHaveSchema,
+  rangeSchema,
   salarySchema,
-  termSchema,
+  techStackSchema,
   utcOffset,
   workAuthorizationSchema,
 } from './shared';
@@ -29,7 +27,7 @@ const modelFact = <T extends z.ZodType>(value: T) =>
     confidence: confidenceSchema,
   });
 
-function buildModelOutput(options: ListOptions, fallback: DecisionQuestion[]) {
+function buildModelOutput(options: ListOptions) {
   const place = z.discriminatedUnion('kind', [
     z.strictObject({ kind: z.literal('worldwide') }),
     z.strictObject({
@@ -65,18 +63,6 @@ function buildModelOutput(options: ListOptions, fallback: DecisionQuestion[]) {
     fromListing: z.boolean().optional(),
   });
 
-  const fallbackShape: Record<
-    string,
-    ReturnType<typeof modelFact<z.ZodType<string | boolean>>>
-  > = {};
-  for (const q of fallback) {
-    fallbackShape[q.key] = modelFact(
-      q.kind === 'choice'
-        ? codeEnum(`fallback ${q.key}`, q.options)
-        : z.boolean(),
-    );
-  }
-
   return z.strictObject({
     position: modelFact(
       z.strictObject({
@@ -86,7 +72,7 @@ function buildModelOutput(options: ListOptions, fallback: DecisionQuestion[]) {
     ),
     isSoftwareEngineeringRole: modelFact(z.boolean()),
     seniority: modelFact(codeEnum('seniorities', options.seniorities)),
-    yearsRequired: modelFact(z.number().nonnegative()),
+    yearsRequired: modelFact(rangeSchema),
     arrangement: modelFact(codeEnum('arrangements', options.arrangements)),
     openings: z.array(opening).min(1),
     contractType: modelFact(codeEnum('contractTypes', options.contractTypes)),
@@ -94,13 +80,7 @@ function buildModelOutput(options: ListOptions, fallback: DecisionQuestion[]) {
     contractMonths: modelFact(z.number().positive()),
     salary: modelFact(salarySchema),
     // Term codes stay free strings: unmatched terms are resolved to approved codes afterwards (Task 5).
-    techStack: modelFact(
-      z.strictObject({
-        mainStack: z.array(groupSchema),
-        mustHaves: z.array(mustHaveSchema),
-        niceToHaves: z.array(termSchema),
-      }),
-    ),
+    techStack: modelFact(techStackSchema),
     requiredLanguages: modelFact(z.array(languageSchema)),
     workAuthorization: modelFact(workAuthorizationSchema),
     junkFlags: modelFact(
@@ -111,18 +91,14 @@ function buildModelOutput(options: ListOptions, fallback: DecisionQuestion[]) {
         }),
       ),
     ),
-    fallback: z.strictObject(fallbackShape),
   });
 }
 
-/** What Opus returns; structurally checked here, codes are enums of the approved options. */
+/** What the generator returns; structurally checked here, codes are enums of the approved options. */
 export type ModelOutput = z.infer<ReturnType<typeof buildModelOutput>>;
 
-export function modelOutputSchema(
-  options: ListOptions,
-  fallback: DecisionQuestion[],
-) {
-  return buildModelOutput(options, fallback);
+export function modelOutputSchema(options: ListOptions) {
+  return buildModelOutput(options);
 }
 
 /**
@@ -179,9 +155,6 @@ function strictNode(node: unknown): unknown {
   return out;
 }
 
-export function modelOutputJsonSchema(
-  options: ListOptions,
-  fallback: DecisionQuestion[],
-): object {
-  return flattenForStrict(z.toJSONSchema(modelOutputSchema(options, fallback)));
+export function modelOutputJsonSchema(options: ListOptions): object {
+  return flattenForStrict(z.toJSONSchema(modelOutputSchema(options)));
 }

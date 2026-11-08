@@ -18,19 +18,49 @@ describe('deriveTypedColumns', () => {
     expect(deriveTypedColumns(doc, regions).worldwide).toBe(true);
   });
 
-  it('unions tech tags and keeps main stack separate', () => {
-    const cols = deriveTypedColumns(fixtureDocument(), regions);
-    expect(cols.techTags).toEqual(['nodejs', 'rust', 'sql']);
-    expect(cols.mainStackTags).toEqual(['nodejs']);
+  it('splits tags by kind and keeps unresolved terms out of every column', () => {
+    const doc = fixtureDocument();
+    const r = (
+      code: string | null,
+      kind: 'main' | 'must' | 'nice',
+      importance: number,
+      group: string | null = null,
+    ) => ({
+      technology: { text: code ?? 'Frobnicator', code },
+      kind,
+      importance,
+      domain: null,
+      years: null,
+      quote: '',
+      confidence: 'sure' as const,
+      group,
+    });
+    doc.techStack.value = {
+      requirements: [
+        r('python', 'main', 9),
+        r('go', 'must', 6, 'g1'),
+        r('rust', 'must', 6, 'g1'),
+        r('docker', 'nice', 2),
+        r(null, 'must', 6),
+      ],
+      groups: [{ id: 'g1', min: 1 }],
+    };
+    const cols = deriveTypedColumns(doc, regions);
+    expect(cols.mainStackTags).toEqual(['python']);
+    expect(cols.requiredTags).toEqual(['go', 'python', 'rust']);
+    expect(cols.niceTags).toEqual(['docker']);
+    expect(cols.techTags).toEqual(['docker', 'go', 'python', 'rust']);
   });
 
-  it('skips null codes and maps null values to null columns', () => {
+  it('maps null values to null columns', () => {
     const doc = fixtureDocument();
-    doc.techStack.value!.niceToHaves.push({ text: 'x', code: null });
+    doc.techStack.value = null;
     doc.seniority.value = null;
     doc.salary.value = null;
     const cols = deriveTypedColumns(doc, regions);
-    expect(cols.techTags).toEqual(['nodejs', 'rust', 'sql']);
+    expect(cols.techTags).toEqual([]);
+    expect(cols.requiredTags).toEqual([]);
+    expect(cols.niceTags).toEqual([]);
     expect(cols.seniority).toBeNull();
     expect(cols.salaryMin).toBeNull();
   });

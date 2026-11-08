@@ -7,7 +7,6 @@ import {
   ProviderUnavailableError,
   TransientModelError,
 } from '../models/errors';
-import type { DecisionAnswer, DecisionQuestion } from '../models/types';
 import { extractionDocumentSchema } from '../schema';
 import {
   FakeDecisionModel,
@@ -16,6 +15,13 @@ import {
   MemoryVocabRepository,
   sequence,
 } from '../testing/fakes';
+import {
+  DESCRIPTION,
+  generatorOutput,
+  jevAnswers,
+  mf,
+} from '../testing/generator-output';
+import { needsReview } from '../rules/validate';
 import { PROVIDER_PAUSE_MS } from './processor-guard.service';
 import { createProcessorService } from './processor.service';
 
@@ -31,96 +37,13 @@ const config: ProcessorConfig = {
   maxAttempts: 3,
   claimTimeoutMs: 900_000,
   dailyBudgetUsd: 20,
+  maxRegenerations: 2,
+  generationTries: 3,
 };
 
-const DESCRIPTION =
-  'Senior Backend Engineer, remote in EMEA. Full-time employee role. We use Node.js and PostgreSQL.';
-
-/** What Jev and Opus answer for each closed question in these tests. */
-const CLOSED: Record<string, string | boolean> = {
-  arrangement: 'remote',
-  seniority: 'senior',
-  roleKind: 'backend_engineer',
-  contractType: 'full_time',
-  engagement: 'employee',
-  isSoftwareEngineeringRole: true,
-  sponsorshipOffered: 'unstated',
-};
-const closedValue = (key: string) =>
-  key.startsWith('junk:') ? false : CLOSED[key];
-
-/** Confident answers to every question; `scores` overrides one key's score. */
-const jev =
-  (scores: Record<string, number> = {}) =>
-  (_: unknown, questions: DecisionQuestion[]): DecisionAnswer[] =>
-    questions.map((q) => ({
-      key: q.key,
-      value: closedValue(q.key),
-      score: scores[q.key] ?? 0.95,
-    }));
-
-const mf = <T>(value: T, quote = '', confidence = 'sure') => ({
-  value,
-  quote,
-  confidence,
-});
-
-type Req = { jsonSchema: object; retryErrors?: string[] };
-
-/** The keys of the fallback questions in a request's JSON schema. */
-const fallbackKeys = (req: Req): string[] =>
-  Object.keys(
-    (
-      req.jsonSchema as {
-        properties: { fallback: { properties?: Record<string, unknown> } };
-      }
-    ).properties.fallback.properties ?? {},
-  );
-
-/** A valid Opus output for `DESCRIPTION`; answers every fallback question asked. */
-function opusOutput(req: Req, patch: Record<string, unknown> = {}) {
-  const fallback = Object.fromEntries(
-    fallbackKeys(req).map((k) => [k, mf(closedValue(k), '', 'sure')]),
-  );
-  if (fallback.seniority) fallback.seniority = mf('senior', 'Senior');
-  return {
-    position: mf(
-      { roleKind: 'backend_engineer', title: 'Backend Engineer' },
-      'Senior Backend Engineer',
-    ),
-    isSoftwareEngineeringRole: mf(true, 'Backend Engineer'),
-    seniority: mf('senior', 'Senior'),
-    yearsRequired: mf(null),
-    arrangement: mf('remote', 'remote in EMEA'),
-    openings: [
-      {
-        arrangements: ['remote'],
-        places: [{ kind: 'region', code: 'EMEA' }],
-        placeStrictness: 'limit',
-        timezones: [],
-        quote: 'remote in EMEA',
-        confidence: 'sure',
-      },
-    ],
-    contractType: mf('full_time', 'Full-time'),
-    engagement: mf('employee', 'employee'),
-    contractMonths: mf(null),
-    salary: mf(null),
-    techStack: mf(
-      {
-        mainStack: [{ anyOf: [{ text: 'Node.js', code: null }] }],
-        mustHaves: [],
-        niceToHaves: [{ text: 'PostgreSQL', code: 'postgresql' }],
-      },
-      'We use Node.js and PostgreSQL',
-    ),
-    requiredLanguages: mf([]),
-    workAuthorization: mf({ requirements: [], sponsorship: 'unstated' }),
-    junkFlags: mf([]),
-    fallback,
-    ...patch,
-  };
-}
+/** A valid generator output for `DESCRIPTION`. */
+const opusOutput = (_req: unknown, patch: Record<string, unknown> = {}) =>
+  generatorOutput(patch);
 
 describe('ProcessorService', () => {
   let repo: MemoryProcessorRepository;
@@ -143,11 +66,11 @@ describe('ProcessorService', () => {
   beforeEach(() => {
     repo = new MemoryProcessorRepository(now);
     vocab = new MemoryVocabRepository();
-    decision = new FakeDecisionModel(jev(), DEC);
+    decision = new FakeDecisionModel(jevAnswers(), DEC);
     extraction = new FakeExtractionModel((_, req) => opusOutput(req), EXT);
   });
 
-  it('happy path: one call per model, one extraction, two attempts', async () => {
+  it('happy path: one generation, one verification, one extraction', async () => {
     addJob();
     await expect(service().process('job-1')).resolves.toBe('processed');
 
@@ -162,10 +85,18 @@ describe('ProcessorService', () => {
     expect(saved.seniority).toBe('senior');
     expect(saved.techTags).toEqual(['nodejs', 'postgresql']);
     expect(saved.countryCodes).toContain('DE');
-    expect(repo.attempts.map((a) => [a.step, a.outcome])).toEqual([
-      ['decision', 'ok'],
-      ['extraction', 'ok'],
+    expect(repo.attempts.map((a) => [a.step, a.outcome, a.model])).toEqual([
+      ['generation', 'ok', EXT],
+      ['verification', 'ok', DEC],
     ]);
+    expect(saved.data.seniority).toMatchObject({
+      decidedBy: 'generator',
+      model: EXT,
+      confidence: 'sure',
+      verification: { verdict: 'confirmed', jevPick: 'senior', rounds: 1 },
+    });
+    expect(saved.data.models).toEqual({ verifier: DEC, generator: EXT });
+    expect(saved.data.verification).toMatchObject({ rounds: 1, dropped: [] });
     for (const a of repo.attempts) {
       expect(a.extractionId).toBe(saved.id);
       expect(a.jobId).toBe('job-1');
@@ -177,22 +108,105 @@ describe('ProcessorService', () => {
     expect(vocab.row('seniorities', 'senior')?.occurrences).toBe(1);
   });
 
-  it('confident Jev, no fallback: the request schema has an empty fallback', async () => {
+  it('confident Jev: every closed fact is confirmed and sure, and Jev never sees the generator values', async () => {
     addJob();
     await service().process('job-1');
-    expect(fallbackKeys(extraction.calls[0].req)).toEqual([]);
-    expect(repo.extractions[0].data.seniority.decidedBy).toBe('jev');
+
+    const { data, needsReview: review } = repo.extractions[0];
+    for (const fact of [
+      data.arrangement,
+      data.seniority,
+      data.position,
+      data.contractType,
+      data.engagement,
+      data.isSoftwareEngineeringRole,
+      data.workAuthorization,
+      data.junkFlags,
+    ])
+      expect(fact).toMatchObject({
+        confidence: 'sure',
+        score: 0.95,
+        verification: { verdict: 'confirmed', score: 0.95 },
+      });
+    expect(review).toBe(false);
+    const questions = decision.calls[0].questions;
+    expect(questions.every((q) => q.kind === 'choice')).toBe(true);
+    expect(JSON.stringify(questions)).not.toContain('Backend Engineer');
+    expect(extraction.calls[0].req.feedback).toBeUndefined();
   });
 
-  it('low-confidence seniority goes to Opus', async () => {
-    decision = new FakeDecisionModel(jev({ seniority: 0.4 }), DEC);
+  it('low-confidence seniority: kept as unsure, no regeneration, needs review', async () => {
+    decision = new FakeDecisionModel(
+      jevAnswers({ seniority: { value: 'mid', score: 0.3 } }),
+      DEC,
+    );
     addJob();
     await expect(service().process('job-1')).resolves.toBe('processed');
-    expect(fallbackKeys(extraction.calls[0].req)).toEqual(['seniority']);
-    const fact = repo.extractions[0].data.seniority;
-    expect(fact.decidedBy).toBe('opus');
-    expect(fact.value).toBe('senior');
-    expect(fact.score).toBe(0.4);
+
+    expect(extraction.calls).toHaveLength(1);
+    expect(decision.calls).toHaveLength(1);
+    const saved = repo.extractions[0];
+    expect(saved.seniority).toBe('senior');
+    expect(saved.data.seniority).toMatchObject({
+      value: 'senior',
+      confidence: 'unsure',
+      score: 0.3,
+      verification: { verdict: 'unconfirmed', jevPick: 'mid' },
+    });
+    expect(saved.needsReview).toBe(true);
+  });
+
+  it('rejected seniority: regenerated with feedback, then confirmed', async () => {
+    let n = 0;
+    extraction = new FakeExtractionModel(
+      (_, req) =>
+        opusOutput(req, n++ === 0 ? {} : { seniority: mf('mid', 'Senior') }),
+      EXT,
+    );
+    decision = new FakeDecisionModel(
+      jevAnswers({ seniority: { value: 'mid' } }),
+      DEC,
+    );
+    addJob();
+    await expect(service().process('job-1')).resolves.toBe('processed');
+
+    expect(extraction.calls[1].req.feedback?.map((v) => v.key)).toEqual([
+      'seniority',
+    ]);
+    expect(decision.calls[1].questions.map((q) => q.key)).toEqual([
+      'seniority',
+    ]);
+    expect(repo.attempts.map((a) => [a.step, a.outcome])).toEqual([
+      ['generation', 'ok'],
+      ['verification', 'ok'],
+      ['generation', 'ok'],
+      ['verification', 'ok'],
+    ]);
+    const saved = repo.extractions[0];
+    expect(saved.seniority).toBe('mid');
+    expect(saved.costUsd).toBeCloseTo(0.04);
+    expect(saved.data.verification.rounds).toBe(2);
+  });
+
+  it('rejected in every round: dropped to unstated, also in its column, needs review', async () => {
+    decision = new FakeDecisionModel(
+      jevAnswers({ seniority: { value: 'mid' } }),
+      DEC,
+    );
+    addJob();
+    await expect(service().process('job-1')).resolves.toBe('processed');
+
+    expect(extraction.calls).toHaveLength(3);
+    expect(decision.calls).toHaveLength(3);
+    const saved = repo.extractions[0];
+    // The typed column is derived as today: a dropped list field is `unstated`.
+    expect(saved.seniority).toBe('unstated');
+    expect(saved.data.seniority.value).toBe('unstated');
+    expect(saved.data.verification.dropped).toEqual([
+      { field: 'seniority', generatorValue: 'senior', jevPick: 'mid' },
+    ]);
+    expect(saved.needsReview).toBe(true);
+    expect(needsReview(saved.data)).toBe(true);
   });
 
   it('reuse: a second job with the same input is copied, with no model call', async () => {
@@ -201,7 +215,6 @@ describe('ProcessorService', () => {
     await service().process('job-1');
     await expect(service().process('job-2')).resolves.toBe('reused');
 
-    expect(decision.calls).toHaveLength(1);
     expect(extraction.calls).toHaveLength(1);
     expect(repo.attempts).toHaveLength(2);
     expect(repo.extractions).toHaveLength(2);
@@ -236,15 +249,15 @@ describe('ProcessorService', () => {
   it('null description: processes, and the saved document validates', async () => {
     addJob('job-1', { descriptionText: null });
     await expect(service().process('job-1')).resolves.toBe('processed');
-    expect(decision.calls[0].input.description).toBe('');
+    expect(extraction.calls[0].input.description).toBe('');
     const saved = repo.extractions[0];
     expect(extractionDocumentSchema.safeParse(saved.data).success).toBe(true);
     // Quotes from the description are not in the input: cleared and counted.
     expect(saved.data.arrangement.quote).toBe('');
-    expect(repo.attempts[1].quoteFailures).toBeGreaterThan(0);
+    expect(repo.attempts[0].quoteFailures).toBeGreaterThan(0);
   });
 
-  it('schema-invalid then valid: one retry with the errors', async () => {
+  it('schema-invalid then valid: a generation_retry with the errors', async () => {
     let n = 0;
     extraction = new FakeExtractionModel(
       (_, req) =>
@@ -261,9 +274,9 @@ describe('ProcessorService', () => {
     expect(retryErrors.length).toBeGreaterThan(0);
     expect(retryErrors.join('\n')).toContain('seniority.value');
     expect(repo.attempts.map((a) => [a.step, a.outcome])).toEqual([
-      ['decision', 'ok'],
-      ['extraction', 'invalid'],
-      ['extraction_retry', 'ok'],
+      ['generation', 'invalid'],
+      ['generation_retry', 'ok'],
+      ['verification', 'ok'],
     ]);
     expect(repo.extractions[0].costUsd).toBeCloseTo(0.03);
   });
@@ -282,30 +295,31 @@ describe('ProcessorService', () => {
     expect(extraction.calls[1].req.retryErrors).toEqual([
       'Extraction is not valid JSON',
     ]);
-    const invalid = repo.attempts[1];
+    const invalid = repo.attempts[0];
     expect([invalid.step, invalid.outcome, invalid.costUsd]).toEqual([
-      'extraction',
+      'generation',
       'invalid',
       0.5,
     ]);
     expect(invalid.model).toBe(EXT);
   });
 
-  it('invalid twice: failed, with the Zod path in processingError', async () => {
+  it('invalid on every try: failed, with the Zod path in processingError', async () => {
     extraction = new FakeExtractionModel(
       (_, req) => opusOutput(req, { seniority: mf('wizard') }),
       EXT,
     );
     addJob();
     await expect(service().process('job-1')).resolves.toBe('failed');
-    expect(extraction.calls).toHaveLength(2);
+    expect(extraction.calls).toHaveLength(3);
+    expect(decision.calls).toHaveLength(0);
     expect(job().processingStatus).toBe('failed');
     expect(job().processingError).toContain('seniority.value');
     expect(repo.extractions).toHaveLength(0);
     expect(repo.attempts.map((a) => [a.step, a.outcome])).toEqual([
-      ['decision', 'ok'],
-      ['extraction', 'invalid'],
-      ['extraction_retry', 'invalid'],
+      ['generation', 'invalid'],
+      ['generation_retry', 'invalid'],
+      ['generation_retry', 'invalid'],
     ]);
     expect(repo.attempts.every((a) => a.extractionId === null)).toBe(true);
   });
@@ -318,9 +332,9 @@ describe('ProcessorService', () => {
     await expect(service().process('job-1')).resolves.toBe('retry');
     expect(job().processingStatus).toBe('pending');
     expect(job().processingError).toContain('429');
-    const failed = repo.attempts[1];
+    const failed = repo.attempts[0];
     expect([failed.step, failed.outcome, failed.model]).toEqual([
-      'extraction',
+      'generation',
       'error',
       EXT,
     ]);
@@ -329,17 +343,16 @@ describe('ProcessorService', () => {
   });
 
   it('transient on attempt 3 of 3: failed', async () => {
-    decision = new FakeDecisionModel(() => {
+    extraction = new FakeExtractionModel(() => {
       throw new TransientModelError('503');
-    }, DEC);
+    }, EXT);
     addJob('job-1', { processingAttempts: 2 });
     await expect(service().process('job-1')).resolves.toBe('failed');
     expect(job().processingStatus).toBe('failed');
     expect(job().processingError).toContain('503');
     expect(repo.attempts.map((a) => [a.step, a.outcome])).toEqual([
-      ['decision', 'error'],
+      ['generation', 'error'],
     ]);
-    expect(extraction.calls).toHaveLength(0);
   });
 
   it('a request error fails the job at once', async () => {
@@ -349,7 +362,7 @@ describe('ProcessorService', () => {
     addJob();
     await expect(service().process('job-1')).resolves.toBe('failed');
     expect(job().processingError).toContain('400 bad schema');
-    expect(repo.attempts.map((a) => a.outcome)).toEqual(['ok', 'error']);
+    expect(repo.attempts.map((a) => a.outcome)).toEqual(['error']);
   });
 
   const cityOpening = (countryCode: string) => ({
@@ -390,9 +403,9 @@ describe('ProcessorService', () => {
       'openings.0.places.0.countryCode',
     );
     expect(repo.attempts.map((a) => [a.step, a.outcome])).toEqual([
-      ['decision', 'ok'],
-      ['extraction', 'invalid'],
-      ['extraction_retry', 'ok'],
+      ['generation', 'invalid'],
+      ['generation_retry', 'ok'],
+      ['verification', 'ok'],
     ]);
     expect(repo.extractions[0].countryCodes).toEqual(['GB']);
   });
@@ -416,11 +429,11 @@ describe('ProcessorService', () => {
       'openings.0.places.0.countryCode: "XX" is not an approved countries code',
     ]);
     expect(repo.attempts.map((a) => [a.step, a.outcome])).toEqual([
-      ['decision', 'ok'],
-      ['extraction', 'invalid'],
-      ['extraction_retry', 'ok'],
+      ['generation', 'invalid'],
+      ['generation_retry', 'ok'],
+      ['verification', 'ok'],
     ]);
-    expect(repo.attempts[1].error).toContain('openings.0.places.0.countryCode');
+    expect(repo.attempts[0].error).toContain('openings.0.places.0.countryCode');
   });
 
   it('a final document check failure takes the retry, then processes', async () => {
@@ -435,26 +448,26 @@ describe('ProcessorService', () => {
       'openings.0.placeStrictness',
     );
     expect(repo.attempts.map((a) => a.outcome)).toEqual([
-      'ok',
       'invalid',
+      'ok',
       'ok',
     ]);
   });
 
-  it('a post-merge error on the retry too: failed', async () => {
+  it('a post-merge error on every try: failed', async () => {
     extraction = new FakeExtractionModel(
       (_, req) => opusOutput(req, badStrictness),
       EXT,
     );
     addJob();
     await expect(service().process('job-1')).resolves.toBe('failed');
-    expect(extraction.calls).toHaveLength(2);
+    expect(extraction.calls).toHaveLength(3);
     expect(job().processingStatus).toBe('failed');
     expect(job().processingError).toContain('openings.0.placeStrictness');
     expect(repo.attempts.map((a) => [a.step, a.outcome])).toEqual([
-      ['decision', 'ok'],
-      ['extraction', 'invalid'],
-      ['extraction_retry', 'invalid'],
+      ['generation', 'invalid'],
+      ['generation_retry', 'invalid'],
+      ['generation_retry', 'invalid'],
     ]);
     expect(repo.extractions).toHaveLength(0);
   });
@@ -472,8 +485,8 @@ describe('ProcessorService', () => {
     };
     await expect(service().process('job-1')).resolves.toBe('retry');
     expect(repo.attempts.map((a) => a.step)).toEqual([
-      'decision',
-      'extraction',
+      'generation',
+      'verification',
     ]);
     expect(job().processingStatus).toBe('pending');
     expect(error).toHaveBeenCalledTimes(1);
@@ -486,7 +499,7 @@ describe('ProcessorService', () => {
     await expect(service().process('job-1')).resolves.toBe('over_budget');
     expect(repo.log).not.toContain('claim');
     expect(job().processingStatus).toBe('pending');
-    expect(decision.calls).toHaveLength(0);
+    expect(extraction.calls).toHaveLength(0);
   });
 
   it('over budget: warns once per UTC day', async () => {
@@ -543,8 +556,7 @@ describe('ProcessorService', () => {
         processingError: '402 no credit',
       });
       expect(repo.attempts.map((a) => [a.step, a.outcome])).toEqual([
-        ['decision', 'ok'],
-        ['extraction', 'error'],
+        ['generation', 'error'],
       ]);
       expect(error).toHaveBeenCalledTimes(1);
       expect(svc.isPaused()).toBe(true);
@@ -565,17 +577,23 @@ describe('ProcessorService', () => {
     it('a 401 from Jev is handled the same way', async () => {
       vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
       decision = new FakeDecisionModel(() => {
-        throw new ProviderUnavailableError('401 bad key');
+        throw new ProviderUnavailableError('OpenRouter returned 401');
       }, DEC);
       addJob();
-      await expect(service().process('job-1')).resolves.toBe(
-        'provider_unavailable',
-      );
+      const svc = service();
+
+      await expect(svc.process('job-1')).resolves.toBe('provider_unavailable');
       expect(job()).toMatchObject({
         processingStatus: 'pending',
         processingAttempts: 0,
+        processingError: 'OpenRouter returned 401',
       });
-      expect(extraction.calls).toHaveLength(0);
+      expect(repo.attempts.map((a) => [a.step, a.outcome, a.model])).toEqual([
+        ['generation', 'ok', EXT],
+        ['verification', 'error', DEC],
+      ]);
+      expect(repo.extractions).toHaveLength(0);
+      expect(svc.isPaused()).toBe(true);
     });
   });
 
@@ -588,7 +606,7 @@ describe('ProcessorService', () => {
   it('not claimable: not_claimed', async () => {
     addJob('job-1', { processingStatus: 'processing' });
     await expect(service().process('job-1')).resolves.toBe('not_claimed');
-    expect(decision.calls).toHaveLength(0);
+    expect(extraction.calls).toHaveLength(0);
   });
 
   it('unknown tech term: proposed, unmatched, not in techTags', async () => {
@@ -596,9 +614,29 @@ describe('ProcessorService', () => {
       (_, req) =>
         opusOutput(req, {
           techStack: mf({
-            mainStack: [{ anyOf: [{ text: 'Node.js', code: null }] }],
-            mustHaves: [],
-            niceToHaves: [{ text: 'Frobnicator', code: null }],
+            requirements: [
+              {
+                technology: { text: 'Node.js', code: null },
+                kind: 'main',
+                importance: 9,
+                domain: null,
+                years: null,
+                quote: 'Node.js',
+                confidence: 'sure',
+                group: null,
+              },
+              {
+                technology: { text: 'Frobnicator', code: null },
+                kind: 'nice',
+                importance: 2,
+                domain: null,
+                years: null,
+                quote: '',
+                confidence: 'sure',
+                group: null,
+              },
+            ],
+            groups: [],
           }),
         }),
       EXT,
@@ -610,7 +648,7 @@ describe('ProcessorService', () => {
     expect(saved.data.unmatched).toContainEqual({
       list: 'techTags',
       text: 'Frobnicator',
-      at: 'techStack.niceToHaves.0',
+      at: 'techStack.requirements.1.technology',
     });
     expect(saved.techTags).toEqual(['nodejs']);
   });
@@ -651,33 +689,28 @@ describe('ProcessorService', () => {
     expect(job().currentExtractionId).toBe(repo.extractions[0].id);
   });
 
-  it('malformed Jev answers (ModelOutputError): every closed question goes to Opus', async () => {
+  it('malformed Jev answers (ModelOutputError): every closed fact unconfirmed, processed for review', async () => {
     decision = new FakeDecisionModel(() => {
-      throw new ModelOutputError('no usable answers', {
-        costUsd: 0.002,
-        providerRequestId: 'jev-req',
+      throw new ModelOutputError('Decisions API returned no answers', {
+        costUsd: 0.003,
       });
     }, DEC);
     addJob();
     await expect(service().process('job-1')).resolves.toBe('processed');
 
-    const questions = decision.calls[0].questions.map((q) => q.key);
-    expect(fallbackKeys(extraction.calls[0].req).sort()).toEqual(
-      [...questions].sort(),
-    );
-    const [jevAttempt] = repo.attempts;
-    expect(jevAttempt).toMatchObject({
-      step: 'decision',
-      outcome: 'invalid',
-      model: DEC,
-      costUsd: 0.002,
-      providerRequestId: 'jev-req',
-      error: 'no usable answers',
+    expect(extraction.calls).toHaveLength(1);
+    expect(repo.attempts.map((a) => [a.step, a.outcome])).toEqual([
+      ['generation', 'ok'],
+      ['verification', 'invalid'],
+    ]);
+    const saved = repo.extractions[0];
+    expect(saved.costUsd).toBeCloseTo(0.013);
+    expect(saved.seniority).toBe('senior');
+    expect(saved.data.seniority).toMatchObject({
+      confidence: 'unsure',
+      verification: { verdict: 'unconfirmed', jevPick: null, score: null },
     });
-    const doc = repo.extractions[0].data;
-    expect(doc.seniority.decidedBy).toBe('opus');
-    expect(doc.arrangement.decidedBy).toBe('opus');
-    expect(job().processingStatus).toBe('processed');
+    expect(saved.needsReview).toBe(true);
   });
 
   it('logs the run: claim, each model call, and the outcome with time and cost', async () => {
@@ -691,10 +724,10 @@ describe('ProcessorService', () => {
     const run = lines.filter((l) => l.startsWith('[job job-1]'));
     expect(run.map((l) => l.replace(/ \(.*$| ok in .*$| in .*$/, ''))).toEqual([
       '[job job-1] claimed',
-      `[job job-1] decision → ${DEC}`,
-      '[job job-1] decision',
-      `[job job-1] extraction → ${EXT}`,
-      '[job job-1] extraction',
+      `[job job-1] generation → ${EXT}`,
+      '[job job-1] generation',
+      `[job job-1] verification → ${DEC}`,
+      '[job job-1] verification',
       '[job job-1] processed',
     ]);
     expect(run.at(-1)).toMatch(
@@ -716,7 +749,7 @@ describe('ProcessorService', () => {
     await expect(service().process('job-1')).resolves.toBe('failed');
     expect(warnings).toEqual([
       expect.stringMatching(
-        /^\[job job-1\] extraction failed after .*OpenRouter returned 422: bad schema$/,
+        /^\[job job-1\] generation failed after .*OpenRouter returned 422: bad schema$/,
       ),
       expect.stringMatching(
         /^\[job job-1\] failed for good after .*OpenRouter returned 422: bad schema$/,
@@ -740,9 +773,10 @@ describe('ProcessorService', () => {
       );
       expect(result.typedColumns.arrangement).toBe('remote');
       expect(result.calls.map((c) => [c.step, c.outcome])).toEqual([
-        ['decision', 'ok'],
-        ['extraction', 'ok'],
+        ['generation', 'ok'],
+        ['verification', 'ok'],
       ]);
+      expect(result.document.models.verifier).toBe(DEC);
       expect(repo.extractions).toEqual([]);
       expect(vocab.cities).toEqual([]);
     });
@@ -750,8 +784,8 @@ describe('ProcessorService', () => {
     it('records its calls with no job, so they count against the budget', async () => {
       await service().preview(posting);
       expect(repo.attempts.map((a) => [a.step, a.jobId, a.eval])).toEqual([
-        ['decision', null, false],
-        ['extraction', null, false],
+        ['generation', null, false],
+        ['verification', null, false],
       ]);
     });
 
@@ -761,14 +795,14 @@ describe('ProcessorService', () => {
         name: 'ProcessorBlockedError',
         reason: 'over_budget',
       });
-      expect(decision.calls).toHaveLength(0);
+      expect(extraction.calls).toHaveLength(0);
     });
 
     it('pauses and still records the call when the provider refuses the key', async () => {
       vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
-      decision = new FakeDecisionModel(() => {
+      extraction = new FakeExtractionModel(() => {
         throw new ProviderUnavailableError('OpenRouter returned 401');
-      }, DEC);
+      }, EXT);
       const svc = service();
       await expect(svc.preview(posting)).rejects.toBeInstanceOf(
         ProviderUnavailableError,
@@ -787,14 +821,15 @@ describe('ProcessorService', () => {
       const { outcome, job: state } = await svc.processNow('job-1');
       expect(outcome).toBe('reused');
       expect(state?.processingStatus).toBe('processed');
-      expect(state?.extraction?.data.seniority.value).toBe('senior');
+      expect(state?.extraction?.schemaVersion).toBe(2);
+      expect(state?.extraction?.data?.seniority.value).toBe('senior');
     });
 
     it('does not process an out-of-scope job', async () => {
       addJob('post-1', { kind: 'post' });
       const { outcome } = await service().processNow('post-1');
       expect(outcome).toBe('not_claimed');
-      expect(decision.calls).toHaveLength(0);
+      expect(extraction.calls).toHaveLength(0);
     });
   });
 

@@ -21,13 +21,22 @@
     ],
     "roleKind": "qa_manual",
     "seniority": "unstated",
-    "yearsRequired": 4,
+    "yearsRequired": {
+      "min": 4,
+      "max": null
+    },
     "contractMonths": null,
-    "mainStack": [],
+    "requirements": [],
+    "groups": [],
     "requiredLanguages": [],
     "sponsorship": "unstated",
     "salary": null,
     "junkFlags": []
   },
-  "drafted": {}
+  "drafted": {
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
 }

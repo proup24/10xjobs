@@ -23,7 +23,8 @@
     "seniority": "unstated",
     "yearsRequired": null,
     "contractMonths": null,
-    "mainStack": [],
+    "requirements": [],
+    "groups": [],
     "requiredLanguages": [
       {
         "lang": "en",
@@ -34,5 +35,10 @@
     "salary": null,
     "junkFlags": []
   },
-  "drafted": {}
+  "drafted": {
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
 }

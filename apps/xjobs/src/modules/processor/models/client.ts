@@ -1,5 +1,10 @@
 import { OpenRouter } from '@openrouter/sdk';
 import {
+  APICallError,
+  InvalidPromptError,
+  UnsupportedFunctionalityError,
+} from 'ai';
+import {
   ConnectionError,
   HTTPClientError,
   InvalidRequestError,
@@ -17,7 +22,8 @@ import {
 } from './errors';
 import type { Price } from './pricing';
 
-const CALL_TIMEOUT_MS = 120_000;
+/** Per model call, for both SDKs. */
+export const CALL_TIMEOUT_MS = 120_000;
 /** Key, credit or account problems: no job can succeed until a human acts. */
 const PROVIDER_UNAVAILABLE = new Set([401, 402, 403]);
 
@@ -91,6 +97,17 @@ function reasonOf(body: string): string {
  */
 export function toModelError(error: unknown, latencyMs: number): Error {
   const meta = { latencyMs };
+  // The AI SDK's HTTP failure (the generator). No status means the request
+  // never got an answer: a network failure, retried like one.
+  if (APICallError.isInstance(error)) {
+    const status = error.statusCode;
+    if (status === undefined)
+      return new TransientModelError(
+        `OpenRouter call failed: ${error.message}`,
+        meta,
+      );
+    return byStatus(status, reasonOf(error.responseBody ?? ''), meta);
+  }
   // Checked before OpenRouterError: it extends it, with the 2xx status of a
   // response the SDK could not read.
   if (error instanceof ResponseValidationError)
@@ -98,18 +115,13 @@ export function toModelError(error: unknown, latencyMs: number): Error {
       'OpenRouter returned an unreadable response',
       meta,
     );
-  if (error instanceof OpenRouterError) {
-    const status = error.statusCode;
-    const message = `OpenRouter returned ${status}${reasonOf(error.body)}`;
-    if (PROVIDER_UNAVAILABLE.has(status))
-      return new ProviderUnavailableError(message, meta);
-    if (status === 408 || status === 429 || status >= 500)
-      return new TransientModelError(message, meta);
-    return new ModelRequestError(message, meta);
-  }
+  if (error instanceof OpenRouterError)
+    return byStatus(error.statusCode, reasonOf(error.body), meta);
   if (
     error instanceof SDKValidationError ||
-    error instanceof InvalidRequestError
+    error instanceof InvalidRequestError ||
+    InvalidPromptError.isInstance(error) ||
+    UnsupportedFunctionalityError.isInstance(error)
   )
     return new ModelRequestError(
       `OpenRouter request rejected before sending: ${error.message}`,
@@ -132,6 +144,20 @@ export function toModelError(error: unknown, latencyMs: number): Error {
     `OpenRouter call failed: ${error instanceof Error ? error.message : String(error)}`,
     meta,
   );
+}
+
+/** 401/402/403 provider unavailable, 408/429/5xx transient, any other status a request error. */
+function byStatus(
+  status: number,
+  reason: string,
+  meta: { latencyMs: number },
+): Error {
+  const message = `OpenRouter returned ${status}${reason}`;
+  if (PROVIDER_UNAVAILABLE.has(status))
+    return new ProviderUnavailableError(message, meta);
+  if (status === 408 || status === 429 || status >= 500)
+    return new TransientModelError(message, meta);
+  return new ModelRequestError(message, meta);
 }
 
 /**

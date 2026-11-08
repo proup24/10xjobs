@@ -1,0 +1,429 @@
+[
+  {
+    "id": "dropCheckConstraint.processing_attempts.processing_attempts_step_0068b0ea",
+    "label": "Drop check constraint \"processing_attempts_step_0068b0ea\" on \"processing_attempts\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "processing_attempts_step_0068b0ea",
+        "table": "processing_attempts"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"processing_attempts_step_0068b0ea\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "processing_attempts_step_0068b0ea",
+          "public",
+          "\"public\".\"processing_attempts\""
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "constraint \"processing_attempts_step_0068b0ea\" on \"processing_attempts\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"processing_attempts_step_0068b0ea\"",
+        "sql": "ALTER TABLE \"public\".\"processing_attempts\" DROP CONSTRAINT \"processing_attempts_step_0068b0ea\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"processing_attempts_step_0068b0ea\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "processing_attempts_step_0068b0ea",
+          "public",
+          "\"public\".\"processing_attempts\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"processing_attempts_step_0068b0ea\" on \"processing_attempts\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "column.public.job_extractions.niceTags",
+    "label": "Add column \"niceTags\" to \"job_extractions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "niceTags",
+        "table": "job_extractions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"niceTags\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "job_extractions",
+          "niceTags"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"niceTags\" on \"job_extractions\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"niceTags\"",
+        "sql": "ALTER TABLE \"public\".\"job_extractions\" ADD COLUMN \"niceTags\" text[] DEFAULT '{}' NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"niceTags\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "job_extractions",
+          "niceTags"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"niceTags\" on \"job_extractions\""
+        }
+      },
+      {
+        "description": "verify column \"niceTags\" has type \"text[]\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "job_extractions",
+          "niceTags",
+          "text[]"
+        ]
+      },
+      {
+        "description": "verify column \"niceTags\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "job_extractions",
+          "niceTags",
+          "NO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.job_extractions.requiredTags",
+    "label": "Add column \"requiredTags\" to \"job_extractions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "requiredTags",
+        "table": "job_extractions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"requiredTags\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "job_extractions",
+          "requiredTags"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"requiredTags\" on \"job_extractions\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"requiredTags\"",
+        "sql": "ALTER TABLE \"public\".\"job_extractions\" ADD COLUMN \"requiredTags\" text[] DEFAULT '{}' NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"requiredTags\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "job_extractions",
+          "requiredTags"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"requiredTags\" on \"job_extractions\""
+        }
+      },
+      {
+        "description": "verify column \"requiredTags\" has type \"text[]\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "job_extractions",
+          "requiredTags",
+          "text[]"
+        ]
+      },
+      {
+        "description": "verify column \"requiredTags\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "job_extractions",
+          "requiredTags",
+          "NO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.job_extractions.job_extractions_niceTags_elem_not_null_3cdb81fc",
+    "label": "Add check constraint \"job_extractions_niceTags_elem_not_null_3cdb81fc\" on \"job_extractions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "job_extractions_niceTags_elem_not_null_3cdb81fc",
+        "table": "job_extractions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"job_extractions_niceTags_elem_not_null_3cdb81fc\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "job_extractions_niceTags_elem_not_null_3cdb81fc",
+          "public",
+          "\"public\".\"job_extractions\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"job_extractions_niceTags_elem_not_null_3cdb81fc\" on \"job_extractions\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"job_extractions_niceTags_elem_not_null_3cdb81fc\"",
+        "sql": "ALTER TABLE \"public\".\"job_extractions\" ADD CONSTRAINT \"job_extractions_niceTags_elem_not_null_3cdb81fc\" CHECK (array_position(\"niceTags\", NULL) IS NULL)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify check constraint \"job_extractions_niceTags_elem_not_null_3cdb81fc\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4)) AS \"result\"",
+        "params": [
+          "job_extractions_niceTags_elem_not_null_3cdb81fc",
+          "public",
+          "\"public\".\"job_extractions\"",
+          "c"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.job_extractions.job_extractions_requiredTags_elem_not_null_26d3f93d",
+    "label": "Add check constraint \"job_extractions_requiredTags_elem_not_null_26d3f93d\" on \"job_extractions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "job_extractions_requiredTags_elem_not_null_26d3f93d",
+        "table": "job_extractions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"job_extractions_requiredTags_elem_not_null_26d3f93d\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "job_extractions_requiredTags_elem_not_null_26d3f93d",
+          "public",
+          "\"public\".\"job_extractions\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"job_extractions_requiredTags_elem_not_null_26d3f93d\" on \"job_extractions\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"job_extractions_requiredTags_elem_not_null_26d3f93d\"",
+        "sql": "ALTER TABLE \"public\".\"job_extractions\" ADD CONSTRAINT \"job_extractions_requiredTags_elem_not_null_26d3f93d\" CHECK (array_position(\"requiredTags\", NULL) IS NULL)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify check constraint \"job_extractions_requiredTags_elem_not_null_26d3f93d\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4)) AS \"result\"",
+        "params": [
+          "job_extractions_requiredTags_elem_not_null_26d3f93d",
+          "public",
+          "\"public\".\"job_extractions\"",
+          "c"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.processing_attempts.processing_attempts_step_906f76b1",
+    "label": "Add check constraint \"processing_attempts_step_906f76b1\" on \"processing_attempts\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "processing_attempts_step_906f76b1",
+        "table": "processing_attempts"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"processing_attempts_step_906f76b1\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "processing_attempts_step_906f76b1",
+          "public",
+          "\"public\".\"processing_attempts\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"processing_attempts_step_906f76b1\" on \"processing_attempts\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"processing_attempts_step_906f76b1\"",
+        "sql": "ALTER TABLE \"public\".\"processing_attempts\" ADD CONSTRAINT \"processing_attempts_step_906f76b1\" CHECK (step IN ('decision', 'extraction', 'extraction_retry', 'generation', 'generation_retry', 'verification'))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify check constraint \"processing_attempts_step_906f76b1\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4)) AS \"result\"",
+        "params": [
+          "processing_attempts_step_906f76b1",
+          "public",
+          "\"public\".\"processing_attempts\"",
+          "c"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.job_extractions.job_extractions_niceTags_gin_f00ca684",
+    "label": "Create index \"job_extractions_niceTags_gin_f00ca684\" on \"job_extractions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "job_extractions_niceTags_gin_f00ca684",
+        "table": "job_extractions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"job_extractions_niceTags_gin_f00ca684\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_niceTags_gin_f00ca684\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"job_extractions_niceTags_gin_f00ca684\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"job_extractions_niceTags_gin_f00ca684\"",
+        "sql": "CREATE INDEX \"job_extractions_niceTags_gin_f00ca684\" ON \"public\".\"job_extractions\" USING \"gin\" (\"niceTags\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"job_extractions_niceTags_gin_f00ca684\" exists on \"job_extractions\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_niceTags_gin_f00ca684\"",
+          "i",
+          "I",
+          "\"public\".\"job_extractions\"",
+          "gin",
+          "[\"niceTags\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.job_extractions.job_extractions_requiredTags_gin_187039b5",
+    "label": "Create index \"job_extractions_requiredTags_gin_187039b5\" on \"job_extractions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "job_extractions_requiredTags_gin_187039b5",
+        "table": "job_extractions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"job_extractions_requiredTags_gin_187039b5\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_requiredTags_gin_187039b5\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"job_extractions_requiredTags_gin_187039b5\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"job_extractions_requiredTags_gin_187039b5\"",
+        "sql": "CREATE INDEX \"job_extractions_requiredTags_gin_187039b5\" ON \"public\".\"job_extractions\" USING \"gin\" (\"requiredTags\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"job_extractions_requiredTags_gin_187039b5\" exists on \"job_extractions\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_requiredTags_gin_187039b5\"",
+          "i",
+          "I",
+          "\"public\".\"job_extractions\"",
+          "gin",
+          "[\"requiredTags\"]"
+        ]
+      }
+    ]
+  }
+]

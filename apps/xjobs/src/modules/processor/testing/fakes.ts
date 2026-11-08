@@ -4,9 +4,11 @@
  */
 import { randomUUID } from 'node:crypto';
 import type { ListTableRow } from '@xjobs/database';
+import { ModelOutputError } from '../models/errors';
 import type {
   DecisionAnswer,
   DecisionQuestion,
+  GenerateRequest,
   JobForProcessing,
   ModelCallMeta,
   PostingInput,
@@ -20,6 +22,7 @@ import {
   type NewExtraction,
   type ProcessingCounts,
   ProcessorRepository,
+  readStoredData,
   type ReprocessFilter,
   type ReuseKey,
 } from '../repositories/processor.repository';
@@ -31,6 +34,7 @@ import {
   type Vocabulary,
 } from '../repositories/vocab.repository';
 import type { ListOptions } from '../schema';
+import { zodErrors } from '../schema/errors';
 import { LIST_NAMES, type ListName } from '../vocab/lists';
 import { slugCode, type VocabSnapshot } from '../vocab/resolve';
 import {
@@ -90,19 +94,18 @@ export class FakeDecisionModel extends DecisionModel {
   }
 }
 
-type ExtractionRequest = {
-  systemPrompt: string;
-  jsonSchema: object;
-  retryErrors?: string[];
-};
-
 type ExtractionResponder = (
   input: PostingInput,
-  req: ExtractionRequest,
+  req: GenerateRequest,
 ) => unknown;
 
+/**
+ * The generator, faked: answers with `respond`, and like the real one throws
+ * `ModelOutputError` (listing the issues) when the answer does not match
+ * `req.schema`. A thrown error is rethrown.
+ */
 export class FakeExtractionModel extends ExtractionModel {
-  readonly calls: { input: PostingInput; req: ExtractionRequest }[] = [];
+  readonly calls: { input: PostingInput; req: GenerateRequest }[] = [];
 
   constructor(
     private readonly respond: ExtractionResponder,
@@ -112,13 +115,20 @@ export class FakeExtractionModel extends ExtractionModel {
     super();
   }
 
-  async extract(
+  async generate(
     input: PostingInput,
-    req: ExtractionRequest,
+    req: GenerateRequest,
   ): Promise<{ output: unknown; meta: ModelCallMeta }> {
     this.calls.push({ input, req });
     const output = await this.respond(input, req);
-    return { output, meta: fakeMeta(this.model, this.meta) };
+    const meta = fakeMeta(this.model, this.meta);
+    const parsed = req.schema.safeParse(output);
+    if (!parsed.success)
+      throw new ModelOutputError(
+        `Extraction did not match the schema: ${zodErrors(parsed.error).join('; ')}`,
+        meta,
+      );
+    return { output: parsed.data, meta };
   }
 }
 
@@ -421,7 +431,7 @@ export class MemoryProcessorRepository extends ProcessorRepository {
             createdAt: extraction.createdAt,
             needsReview: extraction.needsReview,
             costUsd: extraction.costUsd,
-            data: extraction.data,
+            ...readStoredData(extraction.data),
           }
         : null,
     };
@@ -446,7 +456,7 @@ function attemptDefaults(): NewAttempt {
     jobId: null,
     extractionId: null,
     eval: false,
-    step: 'decision',
+    step: 'generation',
     outcome: 'ok',
     error: null,
     quoteFailures: 0,
@@ -523,7 +533,7 @@ export class MemoryVocabRepository extends VocabRepository {
       this.lists.roleKinds
         .filter(
           (r) =>
-            r.status === 'approved' && this.engineeringRoleKinds.has(r.code),
+            r.status === 'approved' && ENGINEERING_ROLE_KINDS.includes(r.code),
         )
         .map((r) => r.code),
     );

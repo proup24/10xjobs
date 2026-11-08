@@ -12,16 +12,16 @@ import { readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadEnvironmentFiles } from '@xjobs/database/env';
 import {
-  type DraftedKey,
+  type LabelKey,
   GOLDEN_CASES_DIR,
   loadGolden,
 } from 'src/modules/processor/golden/golden';
-import { OpenRouterExtractionModel } from 'src/modules/processor/models/extraction.model';
-import { createOpenRouterClient } from 'src/modules/processor/models/client';
+import { z } from 'zod';
+import { AiSdkExtractionModel } from 'src/modules/processor/models/extraction.model';
 import type { PostingInput } from 'src/modules/processor/models/types';
 import { SEED } from 'src/modules/processor/vocab/seed-data';
 
-const KEYS: DraftedKey[] = [
+const KEYS: LabelKey[] = [
   'arrangement',
   'contractType',
   'isSoftwareEngineeringRole',
@@ -39,17 +39,15 @@ const SYSTEM_PROMPT = [
   'Use "unstated" whenever the posting does not say. Never guess.',
 ].join('\n');
 
-const JSON_SCHEMA = {
-  type: 'object',
-  additionalProperties: false,
-  required: KEYS,
-  properties: {
-    arrangement: { type: 'string', enum: codes('arrangements') },
-    contractType: { type: 'string', enum: codes('contractTypes') },
-    isSoftwareEngineeringRole: { type: 'boolean' },
-    engagement: { type: 'string', enum: codes('engagements') },
-  },
-};
+const codeEnum = (list: keyof typeof SEED) =>
+  z.enum(codes(list) as [string, ...string[]]);
+
+const SCHEMA = z.strictObject({
+  arrangement: codeEnum('arrangements'),
+  contractType: codeEnum('contractTypes'),
+  isSoftwareEngineeringRole: z.boolean(),
+  engagement: codeEnum('engagements'),
+});
 
 async function main(): Promise<void> {
   loadEnvironmentFiles();
@@ -57,10 +55,7 @@ async function main(): Promise<void> {
   if (!apiKey) throw new Error('OPENROUTER_API_KEY is not set');
   const model =
     process.env.PROCESSOR_EXTRACTION_MODEL ?? 'anthropic/claude-opus-5.5';
-  const extraction = new OpenRouterExtractionModel(
-    createOpenRouterClient(apiKey),
-    model,
-  );
+  const extraction = new AiSdkExtractionModel(apiKey, model);
   const todo = loadGolden().filter((c) => KEYS.some((k) => !c.drafted[k]));
   console.log(`drafting ${todo.length} cases with ${model}`);
   let cost = 0;
@@ -70,12 +65,12 @@ async function main(): Promise<void> {
       ...c.input,
       truncated: false,
     };
-    const { output, meta } = await extraction.extract(input, {
+    const { output, meta } = await extraction.generate(input, {
       systemPrompt: SYSTEM_PROMPT,
-      jsonSchema: JSON_SCHEMA,
+      schema: SCHEMA,
     });
     cost += meta.costUsd;
-    const answer = output as Record<DraftedKey, unknown>;
+    const answer = output as Record<LabelKey, unknown>;
     for (const key of KEYS)
       c.drafted[key] = { value: answer[key], reviewed: false };
     const file = readdirSync(GOLDEN_CASES_DIR).find(

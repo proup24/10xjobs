@@ -1,3 +1,5 @@
+import { ENGINEERING_ROLE_KINDS } from '../vocab/seed-data';
+import { MemoryVocabRepository } from '../testing/fakes';
 import { matchingForms } from './vocab.repository';
 
 const row = (
@@ -31,5 +33,16 @@ describe('matchingForms', () => {
     ]);
     expect(forms.get('go')).toBe('go');
     expect(forms.get('golang_tools')).toBe('golang_tools');
+  });
+});
+
+describe('MemoryVocabRepository.snapshot', () => {
+  it('names the seed engineering role kinds', async () => {
+    const { engineeringRoleKinds } =
+      await new MemoryVocabRepository().snapshot();
+    expect([...engineeringRoleKinds].sort()).toEqual(
+      [...ENGINEERING_ROLE_KINDS].sort(),
+    );
+    expect(engineeringRoleKinds.has('support')).toBe(false);
   });
 });

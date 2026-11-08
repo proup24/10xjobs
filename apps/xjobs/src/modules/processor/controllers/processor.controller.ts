@@ -43,7 +43,7 @@ export class ProcessorController {
   @ApiOperation({
     summary: 'Extract the facts of a posting, storing nothing',
     description:
-      'Runs Jev, Opus and every check on the posting. Saves no extraction and no vocabulary; the model calls are recorded and count against the daily budget.',
+      'Runs the generator, every check and the Jev verification on the posting. Saves no extraction and no vocabulary; the model calls are recorded and count against the daily budget.',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -143,7 +143,7 @@ function toHttp(error: unknown): unknown {
     return new ServiceUnavailableException(error.message);
   if (error instanceof ExtractionFailed)
     return new HttpException(
-      `The extraction was invalid twice: ${error.message}`,
+      `The generated document was invalid after every try: ${error.message}`,
       HttpStatus.UNPROCESSABLE_ENTITY,
     );
   if (

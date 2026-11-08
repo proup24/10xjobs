@@ -23,34 +23,56 @@
     "seniority": "unstated",
     "yearsRequired": null,
     "contractMonths": null,
-    "mainStack": [
+    "requirements": [
       {
-        "anyOf": [
-          {
-            "text": "Python",
-            "code": "python"
-          },
-          {
-            "text": "Node.js",
-            "code": "nodejs"
-          }
-        ]
+        "text": "Python",
+        "code": "python",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g1"
       },
       {
-        "anyOf": [
-          {
-            "text": "React.js",
-            "code": "react"
-          },
-          {
-            "text": "Vue.js",
-            "code": "vue"
-          },
-          {
-            "text": "Next.js",
-            "code": "nextjs"
-          }
-        ]
+        "text": "Node.js",
+        "code": "nodejs",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "React.js",
+        "code": "react",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      },
+      {
+        "text": "Vue.js",
+        "code": "vue",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      },
+      {
+        "text": "Next.js",
+        "code": "nextjs",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      }
+    ],
+    "groups": [
+      {
+        "id": "g1",
+        "min": 1
+      },
+      {
+        "id": "g2",
+        "min": 1
       }
     ],
     "requiredLanguages": [
@@ -63,5 +85,10 @@
     "salary": null,
     "junkFlags": []
   },
-  "drafted": {}
+  "drafted": {
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
 }

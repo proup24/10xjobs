@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildDecisionQuestions } from '../rules/questions';
+import { buildVerificationQuestions } from '../rules/questions';
 import { seedOptions } from '../rules/options.testing';
 import { modelOutputSchema } from '../schema';
 import { promptHash, systemPrompt } from './prompt';
@@ -8,9 +8,9 @@ describe('promptHash', () => {
   const options = seedOptions();
 
   it('ignores option changes', () => {
-    const a = promptHash(buildDecisionQuestions(options));
+    const a = promptHash(buildVerificationQuestions(options));
     const b = promptHash(
-      buildDecisionQuestions({
+      buildVerificationQuestions({
         ...options,
         seniorities: [...options.seniorities, 'fellow'],
       }),
@@ -19,9 +19,9 @@ describe('promptHash', () => {
   });
 
   it('changes when a junk flag is added', () => {
-    const a = promptHash(buildDecisionQuestions(options));
+    const a = promptHash(buildVerificationQuestions(options));
     const b = promptHash(
-      buildDecisionQuestions({
+      buildVerificationQuestions({
         ...options,
         junkFlags: [...options.junkFlags, 'new_flag'],
       }),
@@ -30,7 +30,7 @@ describe('promptHash', () => {
   });
 
   it('changes when an instruction changes', () => {
-    const qs = buildDecisionQuestions(options);
+    const qs = buildVerificationQuestions(options);
     const a = promptHash(qs);
     qs[0] = { ...qs[0], instructions: qs[0].instructions + ' Changed.' };
     expect(promptHash(qs)).not.toBe(a);
@@ -46,10 +46,21 @@ describe('systemPrompt', () => {
       expect(text).not.toContain(bad);
   });
 
-  it('explains fromListing and the fallback answers', () => {
+  it('explains fromListing and verbatim quotes', () => {
     expect(text).toContain('fromListing');
-    expect(text).toContain('fallback');
     expect(text).toContain('verbatim');
+  });
+
+  it('describes no fallback answers: the generator answers every field', () => {
+    expect(text).not.toMatch(/fallback/i);
+  });
+
+  it('gives must-have alternatives their own example, not the main one', () => {
+    const must = text.slice(text.indexOf('`kind: "must"`'));
+    expect(must).toContain('"PostgreSQL or MySQL"');
+    expect(must.slice(0, must.indexOf('### `groups`'))).not.toContain(
+      'Python, TypeScript or Go',
+    );
   });
 });
 
@@ -57,16 +68,17 @@ describe('systemPrompt field paths', () => {
   const text = systemPrompt();
 
   it('mentions every top-level key of the model output', () => {
-    const shape = modelOutputSchema(seedOptions(), []).shape;
+    const shape = modelOutputSchema(seedOptions()).shape;
     for (const key of Object.keys(shape)) expect(text).toContain(key);
   });
 
   it('mentions the nested names', () => {
     for (const name of [
-      'mainStack',
-      'mustHaves',
-      'niceToHaves',
-      'anyOf',
+      'requirements',
+      'technology',
+      'importance',
+      'domain',
+      'groups',
       'lang',
     ])
       expect(text).toContain(name);

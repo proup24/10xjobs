@@ -5,13 +5,14 @@
  *   pnpm --filter @xjobs/xjobs processor:smoke
  *
  * Runs the worker's startup checks (key, extraction model listing, structured
- * outputs, pricing), then one Decisions call and one structured extraction on
+ * outputs, pricing), then one Decisions call and one structured generation
+ * (through the AI SDK) on
  * a sample posting, and prints the answers, the output and each call's cost.
  * Costs a few cents. Needs `OPENROUTER_API_KEY`; reads the PROCESSOR_* models.
  */
 import { loadEnvironmentFiles } from '@xjobs/database/env';
 import { OpenRouterDecisionModel } from 'src/modules/processor/models/decision.model';
-import { OpenRouterExtractionModel } from 'src/modules/processor/models/extraction.model';
+import { AiSdkExtractionModel } from 'src/modules/processor/models/extraction.model';
 import {
   assertApiKey,
   checkModels,
@@ -19,9 +20,9 @@ import {
 } from 'src/modules/processor/models/client';
 import { ModelPricing } from 'src/modules/processor/models/pricing';
 import type { PostingInput } from 'src/modules/processor/models/types';
-import { buildDecisionQuestions } from 'src/modules/processor/rules/questions';
+import { buildVerificationQuestions } from 'src/modules/processor/rules/questions';
 import { systemPrompt } from 'src/modules/processor/prompts/prompt';
-import { modelOutputJsonSchema } from 'src/modules/processor/schema';
+import { modelOutputSchema } from 'src/modules/processor/schema';
 import { SEED } from 'src/modules/processor/vocab/seed-data';
 import { LIST_NAMES } from 'src/modules/processor/vocab/lists';
 
@@ -65,8 +66,8 @@ async function main(): Promise<void> {
 
   const options = Object.fromEntries(
     LIST_NAMES.map((list) => [list, SEED[list].map((t) => t.code)]),
-  ) as Parameters<typeof buildDecisionQuestions>[0];
-  const questions = buildDecisionQuestions(options);
+  ) as Parameters<typeof buildVerificationQuestions>[0];
+  const questions = buildVerificationQuestions(options);
 
   const decision = await new OpenRouterDecisionModel(
     client,
@@ -81,13 +82,13 @@ async function main(): Promise<void> {
       `  ${a.key} = ${String(a.value)} (score ${a.score.toFixed(2)})`,
     );
 
-  const extraction = await new OpenRouterExtractionModel(
-    client,
+  const extraction = await new AiSdkExtractionModel(
+    apiKey,
     config.extractionModel,
     pricing,
-  ).extract(POSTING, {
+  ).generate(POSTING, {
     systemPrompt: systemPrompt(),
-    jsonSchema: modelOutputJsonSchema(options, []),
+    schema: modelOutputSchema(options),
   });
   console.log(
     `\n${config.extractionModel}: $${extraction.meta.costUsd.toFixed(6)}, ${extraction.meta.inputTokens} in (${extraction.meta.cachedInputTokens} cached), ${extraction.meta.outputTokens} out`,

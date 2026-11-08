@@ -10,7 +10,11 @@ import type {
 } from '../models/types';
 import { PROCESSOR_CHANNEL } from '../config/processor.config';
 import type { TypedColumns } from '../rules/typed-columns';
-import type { ExtractionDocument } from '../schema';
+import {
+  type ExtractionDocument,
+  type ExtractionDocumentV1,
+  parseStoredDocument,
+} from '../schema';
 
 /** A job this worker holds: what `finish` checks the row against. */
 export interface Claim {
@@ -41,7 +45,13 @@ export interface NewAttempt extends ModelCallMeta {
   jobId: string | null;
   extractionId: string | null;
   eval: boolean;
-  step: 'decision' | 'extraction' | 'extraction_retry';
+  step:
+    | 'decision'
+    | 'extraction'
+    | 'extraction_retry'
+    | 'generation'
+    | 'generation_retry'
+    | 'verification';
   outcome: 'ok' | 'error' | 'invalid';
   error: string | null;
   quoteFailures: number;
@@ -82,8 +92,21 @@ export interface JobState {
     createdAt: Date;
     needsReview: boolean;
     costUsd: number;
-    data: ExtractionDocument;
+    /** The schema version the stored data reads as; null when neither v2 nor v1 reads it. */
+    schemaVersion: 1 | 2 | null;
+    data: ExtractionDocument | ExtractionDocumentV1 | null;
   } | null;
+}
+
+/** A stored extraction's `data`, read as v2 and else as v1. */
+export function readStoredData(
+  data: unknown,
+): Pick<NonNullable<JobState['extraction']>, 'schemaVersion' | 'data'> {
+  const stored = parseStoredDocument(data);
+  return {
+    schemaVersion: stored?.version ?? null,
+    data: stored?.document ?? null,
+  };
 }
 
 /** In-scope jobs per processing status; `unset` is a null status (never sent to the processor). */
@@ -377,7 +400,7 @@ export class PrismaProcessorRepository extends ProcessorRepository {
             createdAt: extraction.createdAt,
             needsReview: extraction.needsReview,
             costUsd: Number(extraction.costUsd),
-            data: extraction.data as ExtractionDocument,
+            ...readStoredData(extraction.data),
           }
         : null,
     };

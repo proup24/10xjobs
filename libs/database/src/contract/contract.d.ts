@@ -642,8 +642,10 @@ export namespace Models {
     jobId: FieldOutputTypes['public']['JobExtraction']['jobId'];
     mainStackTags: FieldOutputTypes['public']['JobExtraction']['mainStackTags'];
     needsReview: FieldOutputTypes['public']['JobExtraction']['needsReview'];
+    niceTags: FieldOutputTypes['public']['JobExtraction']['niceTags'];
     promptHash: FieldOutputTypes['public']['JobExtraction']['promptHash'];
     regionCodes: FieldOutputTypes['public']['JobExtraction']['regionCodes'];
+    requiredTags: FieldOutputTypes['public']['JobExtraction']['requiredTags'];
     roleKind: FieldOutputTypes['public']['JobExtraction']['roleKind'];
     salaryCurrency: FieldOutputTypes['public']['JobExtraction']['salaryCurrency'];
     salaryMax: FieldOutputTypes['public']['JobExtraction']['salaryMax'];
@@ -1704,6 +1706,16 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly many: false;
                 };
+                readonly niceTags: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', readonly []>;
+                  };
+                  readonly many: { readonly elementNullable: false };
+                };
                 readonly promptHash: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -1714,6 +1726,16 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: false;
+                  readonly many: { readonly elementNullable: false };
+                };
+                readonly requiredTags: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', readonly []>;
+                  };
                   readonly many: { readonly elementNullable: false };
                 };
                 readonly roleKind: {
@@ -1825,9 +1847,23 @@ type ContractBase = Omit<
                   readonly type: 'gin';
                 },
                 {
+                  readonly name: 'job_extractions_niceTags_gin_f00ca684';
+                  readonly prefix: 'job_extractions_niceTags_gin';
+                  readonly columns: readonly ['niceTags'];
+                  readonly unique: false;
+                  readonly type: 'gin';
+                },
+                {
                   readonly name: 'job_extractions_regionCodes_gin_2489d722';
                   readonly prefix: 'job_extractions_regionCodes_gin';
                   readonly columns: readonly ['regionCodes'];
+                  readonly unique: false;
+                  readonly type: 'gin';
+                },
+                {
+                  readonly name: 'job_extractions_requiredTags_gin_187039b5';
+                  readonly prefix: 'job_extractions_requiredTags_gin';
+                  readonly columns: readonly ['requiredTags'];
                   readonly unique: false;
                   readonly type: 'gin';
                 },
@@ -4847,11 +4883,21 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
               };
+              readonly niceTags: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+                readonly many: { readonly elementNullable: false };
+              };
               readonly promptHash: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly regionCodes: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+                readonly many: { readonly elementNullable: false };
+              };
+              readonly requiredTags: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
                 readonly many: { readonly elementNullable: false };
@@ -5012,8 +5058,10 @@ type ContractBase = Omit<
                 readonly jobId: { readonly column: 'jobId' };
                 readonly mainStackTags: { readonly column: 'mainStackTags' };
                 readonly needsReview: { readonly column: 'needsReview' };
+                readonly niceTags: { readonly column: 'niceTags' };
                 readonly promptHash: { readonly column: 'promptHash' };
                 readonly regionCodes: { readonly column: 'regionCodes' };
+                readonly requiredTags: { readonly column: 'requiredTags' };
                 readonly roleKind: { readonly column: 'roleKind' };
                 readonly salaryCurrency: { readonly column: 'salaryCurrency' };
                 readonly salaryMax: { readonly column: 'salaryMax' };

@@ -20,22 +20,17 @@ Most facts have the same shape: \`{ "value", "quote", "confidence" }\`.
 
 ## Field paths
 
-The top-level keys are \`position\`, \`isSoftwareEngineeringRole\`, \`seniority\`, \`yearsRequired\`, \`arrangement\`, \`openings\`, \`contractType\`, \`engagement\`, \`contractMonths\`, \`salary\`, \`techStack\`, \`requiredLanguages\`, \`workAuthorization\`, \`junkFlags\` and \`fallback\`. Every one except \`openings\` and \`fallback\` is a \`{ value, quote, confidence }\` fact. Where the sections below say a field's name, this is its path:
+The top-level keys are \`position\`, \`isSoftwareEngineeringRole\`, \`seniority\`, \`yearsRequired\`, \`arrangement\`, \`openings\`, \`contractType\`, \`engagement\`, \`contractMonths\`, \`salary\`, \`techStack\`, \`requiredLanguages\`, \`workAuthorization\` and \`junkFlags\`. Every one except \`openings\` is a \`{ value, quote, confidence }\` fact. Where the sections below say a field's name, this is its path:
 
 - \`position.value.{roleKind, title}\`
-- \`techStack.value.mainStack[].anyOf[]\`, each term \`{ text, code }\`
-- \`techStack.value.mustHaves[].{anyOf, min}\`
-- \`techStack.value.niceToHaves[]\`, each term \`{ text, code }\`
+- \`techStack.value.requirements[].{technology, kind, importance, domain, years, quote, confidence, group}\`, with \`technology\` a term \`{ text, code }\` and \`years\` \`{ min, max }\` or \`null\`
+- \`techStack.value.groups[].{id, min}\`
+- \`yearsRequired.value.{min, max}\`
 - \`requiredLanguages.value[].{lang, level, quote}\`
 - \`workAuthorization.value.{requirements, sponsorship}\`, each requirement \`{ kind, place }\`
 - \`junkFlags.value[].{code, quote}\`
 - \`salary.value.{min, max, currency, period}\`
 - \`openings[].{arrangements, places, placeStrictness, timezones, quote, confidence, fromListing}\`, with no \`value\` wrapper
-- \`fallback.<key>.{value, quote, confidence}\`
-
-## Fallback questions
-
-The \`fallback\` object has one entry per key in the schema. Each entry is a closed question that an earlier, cheaper pass answered with low confidence or in a way that contradicts the listing metadata. Answer each one afresh from the posting alone, choosing one of the allowed values: \`{ "value", "quote", "confidence" }\`, with the quote verbatim from the posting or \`""\` when the posting doesn't state it. Choose the \`unstated\` option (or \`no\` for a yes/no flag) when the posting says nothing, with \`confidence: "sure"\`. Do not copy the listing metadata into a fallback value unless the posting text says the same.
 
 ## Who can apply: \`openings\`
 
@@ -96,7 +91,7 @@ A time zone is never a place: "remote from anywhere within the European time zon
 - A list of terms per place -> one opening per term. "Costa Rica (Remote); Toronto, Ontario (Hybrid/Remote)" -> \`{ ["remote"], [country CR], limit }\` and \`{ ["hybrid", "remote"], [city Toronto, CA], limit }\`.
 - A choice of places on the same terms -> one opening, several places. "Remote within Canada or the US" -> \`{ ["remote"], [CA, US], limit }\`.
 - A time-zone condition belongs to the opening it qualifies; a posting-wide one goes on every opening. "Remote, within two hours of the UK time zone" -> \`{ ["remote"], [], unstated, [{ -2, 2, "within two hours of the UK time zone" }] }\`.
-- Listing metadata fallback. When the posting text says nothing about place or time zone, you may build the opening from the listing metadata's location. Then set \`fromListing: true\` on that opening, give the place \`placeStrictness: "label"\`, use \`quote: ""\` and \`confidence: "unsure"\`. When the posting text says anything about place or time zone, the listing location plays no part. Otherwise set \`fromListing: false\`; every opening carries it.
+- Listing metadata as a last resort. When the posting text says nothing about place or time zone, you may build the opening from the listing metadata's location. Then set \`fromListing: true\` on that opening, give the place \`placeStrictness: "label"\`, use \`quote: ""\` and \`confidence: "unsure"\`. When the posting text says anything about place or time zone, the listing location plays no part. Otherwise set \`fromListing: false\`; every opening carries it.
 
 ## Work authorization
 
@@ -128,21 +123,40 @@ Only languages the posting requires, as ISO 639-1 codes, with \`level\`: \`nativ
 
 \`isSoftwareEngineeringRole\`: \`true\` when the job is mainly about building or running software. A support, sales, marketing or recruiting job is \`false\`, even at a software company.
 
-## \`mainStack\`
+## \`techStack\`
 
-The main programming languages or frameworks the role is mostly written in: one group per language or framework, never a database, cloud, tool or AI concept. A choice is one group. "Python, TypeScript or Go" -> one group of three options. "A Python backend with a React frontend" -> two groups. Leave out a language the role is not mostly written in: one asked for only as experience to have ("experience with Go or a strong willingness to use it"), as a plus, or as an open choice ("Python; .NET or anything else of your taste"). Those go in \`mustHaves\` or \`niceToHaves\`, never in \`mainStack\`. "Node.js, TypeScript and React; experience with Go or a willingness to use it" -> groups for Node.js, TypeScript and React only. Use \`[]\` when the posting names none. Each option has \`text\` (the posting's wording) and \`code\`: the canonical tech tag that matches it (lower-case, such as \`typescript\` or \`nodejs\`), else \`null\`.
+\`techStack.value\` lists the technologies the posting asks for as \`requirements\`, one technology per requirement, plus the \`groups\` of alternatives. Leave out soft skills, degrees and years of experience on their own. Leave the \`techStack\` fact's own \`quote\` as \`""\`: each requirement carries its own.
+
+Each requirement has:
+
+- \`technology\`: \`text\` (the posting's wording) and \`code\`: the canonical tech tag that matches it (lower-case, such as \`typescript\` or \`nodejs\`), else \`null\`.
+- \`kind\`: \`main\`, \`must\` or \`nice\` (below).
+- \`importance\`: an integer from 1 to 10 (10 = most important), judged from the posting's emphasis: repeated, "strong", "expert" or core to the duties -> higher. It must fall in its kind's band: \`main\` 8 to 10, \`must\` 5 to 9, \`nice\` 1 to 4. "Strong, hands-on Python" as the role's language -> \`main\`, 10; "experience with Kubernetes" -> \`must\`, 6; "Terraform is a plus" -> \`nice\`, 2.
+- \`domain\`: the domain the posting ties the skill to: \`backend\`, \`frontend\`, \`fullstack\`, \`mobile\`, \`devops\`, \`data\`, \`ml\`, \`security\` or \`qa\`; \`null\` when it ties it to none. "Python for our data pipelines" -> \`data\`. The same technology may appear twice only with different domains.
+- \`years\`: the years of experience asked for this skill: "3+ years of Go" -> \`{ "min": 3, "max": null }\`, "3-5 years of Go" -> \`{ "min": 3, "max": 5 }\`; \`null\` when not stated. \`max\` is never below \`min\`.
+- \`quote\`: the posting's words this requirement comes from, verbatim.
+- \`confidence\`: \`unsure\` when the posting's words leave the requirement's kind or technology a genuine toss-up, else \`sure\`.
+- \`group\`: \`null\` for a requirement needed on its own; the \`id\` of a group for one of several alternatives.
+
+### \`kind: "main"\`
+
+The main programming languages or frameworks the role is mostly written in, never a database, cloud, tool or AI concept. "A Python backend with a React frontend" -> two \`main\` requirements. A choice is one group: "Python, TypeScript or Go" -> three \`main\` requirements in one group with \`min: 1\`. Leave out of \`main\` a language the role is not mostly written in: one asked for only as experience to have ("experience with Go or a strong willingness to use it"), as a plus, or as an open choice ("Python; .NET or anything else of your taste"). Those are \`must\` or \`nice\`, never \`main\`. "Node.js, TypeScript and React; experience with Go or a willingness to use it" -> \`main\` for Node.js, TypeScript and React only.
+
+### \`kind: "must"\` and \`kind: "nice"\`
+
+\`must\`: every other required skill. Alternatives are separate requirements that share a group: "PostgreSQL or MySQL" is two requirements in one group with \`min: 1\`; "two of AWS, GCP and Azure" is three requirements in one group with \`min: 2\`. Skills required together are separate requirements, each with \`group: null\`.
+
+\`nice\`: skills listed as a plus, bonus or nice to have.
+
+### \`groups\`
+
+One entry per group used: \`{ "id": "<any short id, such as g1>", "min": <how many of its members are needed> }\`. A group has at least two members, all of the same \`kind\`, and \`min\` is at most its member count. Use \`[]\` when no requirement has alternatives.
 
 ## \`seniority\`, \`yearsRequired\`
 
 \`seniority\`: from the title or the text: \`junior\`, \`mid\`, \`senior\`, \`staff\`, \`lead\`, \`principal\` or \`unstated\`.
 
-\`yearsRequired\`: the minimum years of experience stated, as a number; \`null\` when none is stated.
-
-## \`mustHaves\`, \`niceToHaves\`
-
-One \`mustHaves\` group per required skill. Alternatives share a group: "Python, TypeScript or Go" is one group of three options with \`min: 1\`; "two of Python, TypeScript and Go" has \`min: 2\`. Skills required together are separate groups. Leave out soft skills, degrees and years of experience.
-
-\`niceToHaves\`: skills listed as a plus, bonus or nice to have, as options with \`text\` and \`code\`.
+\`yearsRequired\`: the years of experience the role asks for overall, as \`{ min, max }\`: "5+ years" -> \`{ "min": 5, "max": null }\`, "3-5 years" -> \`{ "min": 3, "max": 5 }\`; \`null\` when none is stated.
 
 ## \`junkFlags\`
 

@@ -13,6 +13,10 @@ export interface ProcessorConfig {
   maxAttempts: number;
   claimTimeoutMs: number;
   dailyBudgetUsd: number;
+  /** Rounds after the first generation, when Jev rejects a field (spec §1). */
+  maxRegenerations: number;
+  /** Model calls per generation: the first and its schema-fix retries (spec §2). */
+  generationTries: number;
 }
 
 export const PROCESSOR_CONFIG = Symbol('PROCESSOR_CONFIG');

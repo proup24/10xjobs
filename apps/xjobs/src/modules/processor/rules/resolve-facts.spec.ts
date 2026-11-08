@@ -1,15 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import type {
-  DecisionAnswer,
-  DecisionQuestion,
-  Evidence,
-  PostingInput,
-} from '../models/types';
+import type { Evidence, PostingInput } from '../models/types';
 import type { ModelOutput } from '../schema';
-import { resolveFacts, selectFallback } from './resolve-facts';
+import { resolveFacts } from './resolve-facts';
 
-const DEC = 'typesafe/jev-1.14';
-const EXT = 'anthropic/opus';
+const GEN = 'anthropic/opus';
 
 const evidence = (p: Partial<Evidence> = {}): Evidence => ({
   location: null,
@@ -28,13 +22,6 @@ const input = (e: Evidence): PostingInput => ({
   evidence: e,
 });
 
-const choice = (key: DecisionQuestion['key']): DecisionQuestion => ({
-  key,
-  kind: 'choice',
-  options: ['a', 'b'],
-  instructions: '',
-});
-
 const mf = <T>(
   value: T | null,
   confidence: 'sure' | 'unsure' = 'sure',
@@ -45,9 +32,7 @@ const mf = <T>(
   confidence,
 });
 
-function output(
-  fallback: Record<string, ReturnType<typeof mf>> = {},
-): ModelOutput {
+function output(patch: Record<string, unknown> = {}): ModelOutput {
   return {
     position: mf({ roleKind: 'backend_engineer', title: 'Backend Engineer' }),
     isSoftwareEngineeringRole: mf(true),
@@ -68,123 +53,85 @@ function output(
     engagement: mf('employee'),
     contractMonths: mf(null),
     salary: mf(null),
-    techStack: mf({ mainStack: [], mustHaves: [], niceToHaves: [] }),
+    techStack: mf({ requirements: [], groups: [] }),
     requiredLanguages: mf([]),
     workAuthorization: mf({ requirements: [], sponsorship: 'unstated' }),
     junkFlags: mf([]),
-    fallback,
+    ...patch,
   } as unknown as ModelOutput;
 }
 
-const ans = (
-  key: DecisionAnswer['key'],
-  value: DecisionAnswer['value'],
-  score: number,
-): DecisionAnswer => ({ key, value, score });
+const resolve = (out: ModelOutput, e: Evidence = evidence()) =>
+  resolveFacts({ output: out, input: input(e), generatorModel: GEN });
 
-const models = { decision: DEC, extraction: EXT };
-
-describe('selectFallback', () => {
-  it('keeps confident agreeing answers out of the fallback', () => {
-    const qs = [choice('seniority')];
-    expect(
-      selectFallback([ans('seniority', 'senior', 0.9)], qs, evidence(), DEC),
-    ).toEqual([]);
-  });
-
-  it('sends low-score answers', () => {
-    const qs = [choice('seniority')];
-    expect(
-      selectFallback([ans('seniority', 'senior', 0.5)], qs, evidence(), DEC),
-    ).toEqual(qs);
-  });
-
-  it('sends contradicting answers even when confident', () => {
-    const qs = [choice('contractType')];
-    const e = evidence({ contractType: 'Full-time' });
-    expect(
-      selectFallback([ans('contractType', 'contract', 0.95)], qs, e, DEC),
-    ).toEqual(qs);
-  });
-
-  it('sends everything for an unknown decision model', () => {
-    const qs = [choice('seniority'), choice('engagement')];
-    expect(
-      selectFallback(
-        [ans('seniority', 'senior', 0.99), ans('engagement', 'employee', 0.99)],
-        qs,
-        evidence(),
-        'other/model',
-      ),
-    ).toEqual(qs);
-  });
-
-  it('sends a question with no answer', () => {
-    const qs = [choice('seniority')];
-    expect(selectFallback([], qs, evidence(), DEC)).toEqual(qs);
-  });
-});
+const FACTS = [
+  'position',
+  'isSoftwareEngineeringRole',
+  'seniority',
+  'yearsRequired',
+  'arrangement',
+  'contractType',
+  'engagement',
+  'contractMonths',
+  'salary',
+  'techStack',
+  'requiredLanguages',
+  'workAuthorization',
+  'junkFlags',
+] as const;
 
 describe('resolveFacts', () => {
-  it('lets a confident agreeing Jev answer stand', () => {
-    const doc = resolveFacts({
-      output: output(),
-      answers: [ans('seniority', 'senior', 0.9)],
-      fallback: [],
-      input: input(evidence({ experienceLevel: 'Mid-Senior level' })),
-      models,
-    });
-    expect(doc.seniority).toMatchObject({
-      value: 'senior',
-      decidedBy: 'jev',
-      confidence: 'sure',
-      score: 0.9,
-      model: DEC,
-    });
+  it('takes every fact from the generator, unverified', () => {
+    const doc = resolve(output());
+    for (const name of FACTS) {
+      expect([name, doc[name]]).toMatchObject([
+        name,
+        {
+          decidedBy: 'generator',
+          score: null,
+          verification: null,
+          model: GEN,
+        },
+      ]);
+    }
+    expect(doc.openings[0].decidedBy).toBe('generator');
+    expect(doc.seniority.value).toBe('mid');
   });
 
-  it('uses Opus for a fallback question and keeps its unsure', () => {
-    const doc = resolveFacts({
-      output: output({ seniority: mf('senior', 'unsure', '') }),
-      answers: [ans('seniority', 'junior', 0.5)],
-      fallback: [choice('seniority')],
-      input: input(evidence()),
-      models,
+  it('records one round, nothing dropped, and no verifier', () => {
+    const doc = resolve(output());
+    expect(doc.verification).toEqual({
+      rounds: 1,
+      regenerationInvalid: false,
+      dropped: [],
+      missedJunkFlags: [],
     });
-    expect(doc.seniority).toMatchObject({
-      value: 'senior',
-      decidedBy: 'opus',
+    expect(doc.models).toEqual({ verifier: null, generator: GEN });
+    expect(doc.truncated).toBe(false);
+  });
+
+  it('fills an unstated seniority from evidence that maps to one code', () => {
+    const doc = resolve(
+      output({ seniority: mf('unstated') }),
+      evidence({ experienceLevel: 'Entry level' }),
+    );
+    expect(doc.seniority).toEqual({
+      value: 'junior',
       confidence: 'unsure',
-      model: EXT,
+      decidedBy: 'ingest',
+      score: null,
+      quote: '',
+      model: null,
+      verification: null,
     });
+    expect(doc.conflicts).toEqual([]);
   });
 
-  it('records a conflict when Jev contradicts the evidence', () => {
-    const doc = resolveFacts({
-      output: output({ contractType: mf('full_time', 'sure') }),
-      answers: [ans('contractType', 'contract', 0.95)],
-      fallback: [choice('contractType')],
-      input: input(evidence({ contractType: 'Full-time' })),
-      models,
-    });
-    expect(doc.conflicts).toEqual([
-      {
-        field: 'contractType',
-        ingestValue: 'Full-time',
-        extractedValue: 'contract',
-      },
-    ]);
-    expect(doc.contractType.decidedBy).toBe('opus');
-  });
-
-  it('falls back to the evidence when Opus says unstated', () => {
-    const doc = resolveFacts({
-      output: output({ contractType: mf('unstated', 'sure') }),
-      answers: [ans('contractType', 'unstated', 0.3)],
-      fallback: [choice('contractType')],
-      input: input(evidence({ contractType: 'Full-time' })),
-      models,
-    });
+  it('fills a null contractType from the evidence', () => {
+    const doc = resolve(
+      output({ contractType: mf(null) }),
+      evidence({ contractType: 'Full-time' }),
+    );
     expect(doc.contractType).toMatchObject({
       value: 'full_time',
       decidedBy: 'ingest',
@@ -193,109 +140,99 @@ describe('resolveFacts', () => {
     });
   });
 
-  it('falls back to the evidence when a confident Jev says unstated', () => {
-    const doc = resolveFacts({
-      output: output(),
-      answers: [ans('contractType', 'unstated', 0.95)],
-      fallback: [],
-      input: input(evidence({ contractType: 'Full-time' })),
-      models,
+  it('leaves seniority unstated when the evidence maps to several codes', () => {
+    const doc = resolve(
+      output({ seniority: mf('unstated') }),
+      evidence({ experienceLevel: 'Mid-Senior level' }),
+    );
+    expect(doc.seniority).toMatchObject({
+      value: 'unstated',
+      decidedBy: 'generator',
     });
-    expect(doc.contractType).toEqual({
-      value: 'full_time',
-      decidedBy: 'ingest',
-      confidence: 'unsure',
-      score: null,
-      quote: '',
-      model: null,
+  });
+
+  it('keeps a generator value that contradicts the evidence, and records the conflict', () => {
+    const doc = resolve(
+      output({ seniority: mf('senior', 'sure', 'Senior') }),
+      evidence({ experienceLevel: 'Entry level' }),
+    );
+    expect(doc.seniority).toMatchObject({
+      value: 'senior',
+      decidedBy: 'generator',
+      confidence: 'sure',
     });
+    expect(doc.conflicts).toEqual([
+      {
+        field: 'seniority',
+        ingestValue: 'Entry level',
+        extractedValue: 'senior',
+      },
+    ]);
+  });
+
+  it('records no conflict for a generator value the evidence allows', () => {
+    const doc = resolve(
+      output({ seniority: mf('senior') }),
+      evidence({ experienceLevel: 'Mid-Senior level' }),
+    );
     expect(doc.conflicts).toEqual([]);
   });
 
-  it('takes seniority from the evidence only when it maps to one code', () => {
-    const resolve = (experienceLevel: string) =>
-      resolveFacts({
-        output: output({ seniority: mf('unstated', 'sure') }),
-        answers: [ans('seniority', 'unstated', 0.95)],
-        fallback: [],
-        input: input(evidence({ experienceLevel })),
-        models,
-      }).seniority;
-    expect(resolve('Entry level')).toMatchObject({
-      decidedBy: 'ingest',
-      score: null,
-    });
-    expect(resolve('Mid-Senior level')).toMatchObject({
-      value: 'unstated',
-      decidedBy: 'jev',
-    });
+  it('records a contractType conflict', () => {
+    const doc = resolve(
+      output({ contractType: mf('contract') }),
+      evidence({ contractType: 'Full-time' }),
+    );
+    expect(doc.contractType.value).toBe('contract');
+    expect(doc.conflicts).toEqual([
+      {
+        field: 'contractType',
+        ingestValue: 'Full-time',
+        extractedValue: 'contract',
+      },
+    ]);
   });
 
-  it('builds the open facts from Opus', () => {
-    const doc = resolveFacts({
-      output: output(),
-      answers: [],
-      fallback: [],
-      input: input(evidence()),
-      models,
+  it("takes the sponsorship from the generator's workAuthorization", () => {
+    const out = output({
+      workAuthorization: mf({ requirements: [], sponsorship: 'yes' }, 'unsure'),
     });
-    expect(doc.yearsRequired.decidedBy).toBe('opus');
-    expect(doc.openings[0].decidedBy).toBe('opus');
-    expect(doc.models).toEqual(models);
-    expect(doc.truncated).toBe(false);
-  });
-
-  it('keeps workAuthorization unsure when Opus was unsure of the requirements', () => {
-    const out = output({ sponsorshipOffered: mf('yes', 'sure') });
-    out.workAuthorization.confidence = 'unsure';
-    const doc = resolveFacts({
-      output: out,
-      answers: [ans('sponsorshipOffered', 'yes', 0.95)],
-      fallback: [],
-      input: input(evidence()),
-      models,
-    });
+    const doc = resolve(out);
     expect(doc.workAuthorization.value?.sponsorship).toBe('yes');
     expect(doc.workAuthorization.confidence).toBe('unsure');
+    expect(doc.workAuthorization.decidedBy).toBe('generator');
   });
 
-  it('marks junk flags unsure when an unsure Opus answer changes them', () => {
-    const doc = resolveFacts({
-      output: output({ 'junk:spam': mf(true, 'unsure', '') }),
-      answers: [ans('junk:spam', true, 0.4)],
-      fallback: [{ key: 'junk:spam', kind: 'yesno', instructions: '' }],
-      input: input(evidence()),
-      models,
-    });
-    expect(doc.junkFlags.value).toEqual([{ code: 'spam', quote: '' }]);
+  it("takes the junk flags from the generator's output", () => {
+    const doc = resolve(
+      output({
+        junkFlags: mf([{ code: 'spam', quote: 'buy now' }], 'unsure'),
+      }),
+    );
+    expect(doc.junkFlags.value).toEqual([{ code: 'spam', quote: 'buy now' }]);
     expect(doc.junkFlags.confidence).toBe('unsure');
   });
 
   it('records a salary conflict and keeps the posting value', () => {
-    const out = output();
-    out.salary = mf({
-      min: 80000,
-      max: 100000,
-      currency: 'EUR',
-      period: 'year',
-    }) as never;
-    const doc = resolveFacts({
-      output: out,
-      answers: [],
-      fallback: [],
-      input: input(
-        evidence({
-          salary: {
-            text: null,
-            min: 50000,
-            max: 100000,
-            currency: 'EUR',
-            period: 'yearly',
-          },
+    const doc = resolve(
+      output({
+        salary: mf({
+          min: 80000,
+          max: 100000,
+          currency: 'EUR',
+          period: 'year',
         }),
-      ),
-      models,
-    });
+      }),
+      evidence({
+        salary: {
+          text: null,
+          min: 50000,
+          max: 100000,
+          currency: 'EUR',
+          period: 'yearly',
+        },
+      }),
+    );
     expect(doc.salary.value?.min).toBe(80000);
     expect(doc.conflicts).toContainEqual({
       field: 'salary',
@@ -315,65 +252,46 @@ describe('resolveFacts', () => {
   });
 
   it('records a salary conflict when only the period differs', () => {
-    const out = output();
-    out.salary = mf({
-      min: 50,
-      max: 60,
-      currency: 'EUR',
-      period: 'hour',
-    }) as never;
+    const out = output({
+      salary: mf({ min: 50, max: 60, currency: 'EUR', period: 'hour' }),
+    });
     const salary = (period: string) =>
-      resolveFacts({
-        output: out,
-        answers: [],
-        fallback: [],
-        input: input(
-          evidence({
-            salary: { text: null, min: 50, max: 60, currency: 'EUR', period },
-          }),
-        ),
-        models,
-      }).conflicts.filter((c) => c.field === 'salary');
+      resolve(
+        out,
+        evidence({
+          salary: { text: null, min: 50, max: 60, currency: 'EUR', period },
+        }),
+      ).conflicts.filter((c) => c.field === 'salary');
     expect(salary('yearly')).toHaveLength(1);
     expect(salary('HOURLY')).toEqual([]);
   });
 
   it('takes the evidence salary when the posting has none', () => {
-    const doc = resolveFacts({
-      output: output(),
-      answers: [],
-      fallback: [],
-      input: input(
-        evidence({
-          salary: {
-            text: null,
-            min: 50000,
-            max: 60000,
-            currency: 'USD',
-            period: 'yearly',
-          },
-        }),
-      ),
-      models,
-    });
+    const doc = resolve(
+      output(),
+      evidence({
+        salary: {
+          text: null,
+          min: 50000,
+          max: 60000,
+          currency: 'USD',
+          period: 'yearly',
+        },
+      }),
+    );
     expect(doc.salary).toMatchObject({
       value: { min: 50000, max: 60000, currency: 'USD', period: 'year' },
       decidedBy: 'ingest',
       confidence: 'unsure',
       model: null,
+      verification: null,
     });
   });
 
   it('marks an opening taken from the listing as ingest and unsure', () => {
     const out = output();
     (out.openings[0] as { fromListing?: boolean }).fromListing = true;
-    const doc = resolveFacts({
-      output: out,
-      answers: [],
-      fallback: [],
-      input: input(evidence()),
-      models,
-    });
+    const doc = resolve(out);
     expect(doc.openings[0]).toMatchObject({
       decidedBy: 'ingest',
       confidence: 'unsure',

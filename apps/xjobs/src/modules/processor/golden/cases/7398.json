@@ -21,9 +21,13 @@
     ],
     "roleKind": "backend_engineer",
     "seniority": "mid",
-    "yearsRequired": 3,
+    "yearsRequired": {
+      "min": 3,
+      "max": 5
+    },
     "contractMonths": null,
-    "mainStack": [],
+    "requirements": [],
+    "groups": [],
     "requiredLanguages": [],
     "sponsorship": "unstated",
     "salary": {
@@ -34,5 +38,10 @@
     },
     "junkFlags": []
   },
-  "drafted": {}
+  "drafted": {
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
 }

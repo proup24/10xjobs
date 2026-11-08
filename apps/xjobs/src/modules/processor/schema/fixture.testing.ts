@@ -3,10 +3,26 @@ import type { ExtractionDocument } from './extraction';
 const fact = <T>(value: T | null) => ({
   value,
   confidence: 'sure' as const,
-  decidedBy: 'opus' as const,
+  decidedBy: 'generator' as const,
   score: null,
   quote: '',
   model: 'm',
+  verification: null,
+});
+
+const requirement = (
+  technology: { text: string; code: string | null },
+  kind: 'main' | 'must' | 'nice',
+  importance: number,
+) => ({
+  technology,
+  kind,
+  importance,
+  domain: null,
+  years: null,
+  quote: '',
+  confidence: 'sure' as const,
+  group: null,
 });
 
 export function fixtureDocument(): ExtractionDocument {
@@ -14,7 +30,7 @@ export function fixtureDocument(): ExtractionDocument {
     position: fact({ roleKind: 'backend', title: 'Backend Engineer' }),
     isSoftwareEngineeringRole: fact(true),
     seniority: fact('senior'),
-    yearsRequired: fact(5),
+    yearsRequired: fact({ min: 5, max: null }),
     arrangement: fact('remote'),
     openings: [
       {
@@ -24,7 +40,7 @@ export function fixtureDocument(): ExtractionDocument {
         timezones: [{ fromUtc: 0, toUtc: 3, label: 'CET' }],
         quote: 'Remote in EMEA',
         confidence: 'sure',
-        decidedBy: 'opus',
+        decidedBy: 'generator',
       },
     ],
     contractType: fact('full_time'),
@@ -32,9 +48,12 @@ export function fixtureDocument(): ExtractionDocument {
     contractMonths: fact(null),
     salary: fact({ min: 80000, max: 100000, currency: 'EUR', period: 'year' }),
     techStack: fact({
-      mainStack: [{ anyOf: [{ text: 'Node', code: 'nodejs' }] }],
-      mustHaves: [{ anyOf: [{ text: 'SQL', code: 'sql' }], min: 1 }],
-      niceToHaves: [{ text: 'Rust', code: 'rust' }],
+      requirements: [
+        requirement({ text: 'Node', code: 'nodejs' }, 'main', 9),
+        requirement({ text: 'SQL', code: 'sql' }, 'must', 6),
+        requirement({ text: 'Rust', code: 'rust' }, 'nice', 2),
+      ],
+      groups: [],
     }),
     requiredLanguages: fact([
       { lang: 'en', level: 'fluent', quote: 'fluent English' },
@@ -44,6 +63,12 @@ export function fixtureDocument(): ExtractionDocument {
     conflicts: [],
     unmatched: [],
     truncated: false,
-    models: { decision: null, extraction: 'm' },
+    verification: {
+      rounds: 1,
+      regenerationInvalid: false,
+      dropped: [],
+      missedJunkFlags: [],
+    },
+    models: { verifier: null, generator: 'm' },
   };
 }

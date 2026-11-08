@@ -25,7 +25,7 @@ export interface FailureDecision {
  * | -------------------------------------------- | --------------------------- |
  * | ProviderUnavailableError (401/402/403)        | pending, attempt given back |
  * | ModelRequestError, ExtractionInvalidError,    | failed                      |
- * |   ExtractionFailed (output invalid twice)     |                             |
+ * |   ExtractionFailed (first generation invalid) |                             |
  * | TransientModelError, anything else            | pending until maxAttempts,  |
  * |                                              |   then failed               |
  */

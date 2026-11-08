@@ -1,12 +1,17 @@
 import { z } from 'zod';
+import { stackIssues } from '../rules/stack';
 import { LIST_NAMES } from '../vocab/lists';
+import {
+  type ExtractionDocumentV1,
+  extractionDocumentV1Schema,
+} from './extraction-v1';
 import { confidenceSchema, decidedBySchema, factSchema } from './fact';
 import {
   PLACE_STRICTNESS,
-  groupSchema,
   languageSchema,
-  mustHaveSchema,
+  rangeSchema,
   salarySchema,
+  techStackSchema,
   termSchema,
   timezoneSchema,
   workAuthorizationSchema,
@@ -43,10 +48,18 @@ const unmatchedSchema = z.strictObject({
   at: z.string(),
 });
 
-const techStackSchema = z.strictObject({
-  mainStack: z.array(groupSchema),
-  mustHaves: z.array(mustHaveSchema),
-  niceToHaves: z.array(termSchema),
+/** How the verification went: rounds used, and per finally-rejected field what was dropped. */
+const documentVerificationSchema = z.strictObject({
+  rounds: z.number().int().min(1),
+  regenerationInvalid: z.boolean(),
+  dropped: z.array(
+    z.strictObject({
+      field: z.string(),
+      generatorValue: z.unknown(),
+      jevPick: z.string().nullable(),
+    }),
+  ),
+  missedJunkFlags: z.array(z.string()),
 });
 
 export const extractionDocumentSchema = z
@@ -56,7 +69,7 @@ export const extractionDocumentSchema = z
     ),
     isSoftwareEngineeringRole: factSchema(z.boolean()),
     seniority: factSchema(z.string().min(1)),
-    yearsRequired: factSchema(z.number().nonnegative()),
+    yearsRequired: factSchema(rangeSchema),
     arrangement: factSchema(z.string().min(1)),
     openings: z.array(openingSchema).min(1),
     contractType: factSchema(z.string().min(1)),
@@ -78,12 +91,30 @@ export const extractionDocumentSchema = z
     ),
     unmatched: z.array(unmatchedSchema),
     truncated: z.boolean(),
+    verification: documentVerificationSchema,
     models: z.strictObject({
-      decision: z.string().nullable(),
-      extraction: z.string().min(1),
+      verifier: z.string().nullable(),
+      generator: z.string().min(1),
     }),
   })
   .superRefine((doc, ctx) => {
+    const years = doc.yearsRequired.value;
+    if (years?.min != null && years.max != null && years.max < years.min) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['yearsRequired', 'value', 'max'],
+        message: 'max must be >= min',
+      });
+    }
+    if (doc.techStack.value) {
+      for (const issue of stackIssues(doc.techStack.value)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['techStack', 'value', ...issue.path],
+          message: issue.message,
+        });
+      }
+    }
     doc.openings.forEach((o, i) => {
       if ((o.placeStrictness === 'unstated') !== (o.places.length === 0)) {
         ctx.addIssue({
@@ -105,7 +136,23 @@ export const extractionDocumentSchema = z
   });
 
 export type ExtractionDocument = z.infer<typeof extractionDocumentSchema>;
+export type DocumentVerification = z.infer<typeof documentVerificationSchema>;
+
+/** A stored `job_extractions.data`, read as the version it was written in. */
+export type StoredDocument =
+  | { version: 2; document: ExtractionDocument }
+  | { version: 1; document: ExtractionDocumentV1 };
+
+/** Reads stored `data` as v2, falling back to v1 for old rows; null when neither reads it. */
+export function parseStoredDocument(data: unknown): StoredDocument | null {
+  const v2 = extractionDocumentSchema.safeParse(data);
+  if (v2.success) return { version: 2, document: v2.data };
+  const v1 = extractionDocumentV1Schema.safeParse(data);
+  if (v1.success) return { version: 1, document: v1.data };
+  return null;
+}
 export type Place = z.infer<typeof placeSchema>;
 export type Opening = z.infer<typeof openingSchema>;
 export type Term = z.infer<typeof termSchema>;
+export type { Requirement, RequirementGroup, TechStack } from './shared';
 export type UnmatchedTerm = z.infer<typeof unmatchedSchema>;

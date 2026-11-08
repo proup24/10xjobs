@@ -13,6 +13,10 @@ export interface TypedColumns {
   cityIds: string[];
   techTags: string[];
   mainStackTags: string[];
+  /** `main` and `must` requirements. */
+  requiredTags: string[];
+  /** `nice` requirements. */
+  niceTags: string[];
   salaryMin: number | null;
   salaryMax: number | null;
   salaryCurrency: string | null;
@@ -48,14 +52,13 @@ export function deriveTypedColumns(
     }
   }
 
-  const stack = doc.techStack.value;
-  const mainStack = stack
-    ? stack.mainStack.flatMap((g) => codesOf(g.anyOf))
-    : [];
-  const mustHaves = stack
-    ? stack.mustHaves.flatMap((g) => codesOf(g.anyOf))
-    : [];
-  const niceToHaves = stack ? codesOf(stack.niceToHaves) : [];
+  const requirements = doc.techStack.value?.requirements ?? [];
+  const codesOfKind = (...kinds: string[]): string[] =>
+    codesOf(
+      requirements
+        .filter((r) => kinds.includes(r.kind))
+        .map((r) => r.technology),
+    );
   const salary = doc.salary.value;
 
   return {
@@ -69,8 +72,10 @@ export function deriveTypedColumns(
     regionCodes: uniqueSorted(regions),
     countryCodes: uniqueSorted(countries),
     cityIds: uniqueSorted(cities),
-    techTags: uniqueSorted([...mainStack, ...mustHaves, ...niceToHaves]),
-    mainStackTags: uniqueSorted(mainStack),
+    techTags: uniqueSorted(codesOf(requirements.map((r) => r.technology))),
+    mainStackTags: uniqueSorted(codesOfKind('main')),
+    requiredTags: uniqueSorted(codesOfKind('main', 'must')),
+    niceTags: uniqueSorted(codesOfKind('nice')),
     salaryMin: salary?.min ?? null,
     salaryMax: salary?.max ?? null,
     salaryCurrency: salary?.currency ?? null,
