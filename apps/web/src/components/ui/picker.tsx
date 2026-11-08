@@ -69,6 +69,11 @@ function PickerList({ emptyText }: { emptyText: string }) {
         {(option: PickerOption) => (
           <ComboboxItem key={option.value} value={option}>
             {option.label}
+            {option.detail && (
+              <span className="ml-auto text-xs text-muted-foreground">
+                {option.detail}
+              </span>
+            )}
           </ComboboxItem>
         )}
       </ComboboxList>

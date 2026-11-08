@@ -100,6 +100,27 @@ describe('Picker', () => {
     expect(onValueChange).toHaveBeenLastCalledWith('zurich');
   });
 
+  it('shows an option detail after its label, without searching it', async () => {
+    render(
+      <Picker
+        aria-label="Place"
+        options={[
+          { value: 'FR', label: 'France', detail: 'Country' },
+          { value: 'paris', label: 'Paris, France', detail: 'City' },
+        ]}
+        value={null}
+        onValueChange={vi.fn()}
+        placeholder="Search places"
+        emptyText="No place found"
+      />,
+    );
+    type(screen.getByRole('combobox'), 'country');
+    await screen.findByText('No place found');
+    type(screen.getByRole('combobox'), 'fra');
+    const france = await screen.findByRole('option', { name: /^France/ });
+    expect(france.textContent).toBe('FranceCountry');
+  });
+
   it('shows the selected label in the input', () => {
     const { input } = setup('berlin');
     expect((input as HTMLInputElement).value).toBe('Berlin');

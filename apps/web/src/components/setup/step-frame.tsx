@@ -62,7 +62,10 @@ export function StepFrame({
       </div>
       {children}
       {formError && (
-        <p role="alert" className="text-sm text-destructive">
+        <p
+          role="alert"
+          className="text-sm whitespace-pre-line text-destructive"
+        >
           {formError}
         </p>
       )}
