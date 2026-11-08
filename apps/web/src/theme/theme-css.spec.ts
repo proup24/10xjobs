@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { CONTRAST_PAIRS, ROLES, SCALES } from './roles';
-import { contrastRatio, parseThemeBlocks, resolveColor } from './theme-css';
+import { contrastRatio, parseThemeBlocks, parseThemeInline, resolveColor } from './theme-css';
 
 const css = readFileSync(join(__dirname, '..', 'app', 'global.css'), 'utf8');
 
@@ -38,5 +38,29 @@ describe('theme css', () => {
 
   it('resolveColor composites 8-digit hex over the background', () => {
     expect(resolveColor({ background: '#000000', x: '#ffffff80' }, 'x')).toBe('#808080');
+  });
+
+  it('defines the kit type scale, pinned radii and shadows in @theme inline', () => {
+    const t = parseThemeInline(css);
+    const titles = [
+      ['48px', '57.6px'],
+      ['36px', '43.2px'],
+      ['24px', '32px'],
+      ['18px', '28px'],
+      ['16px', '24px'],
+    ];
+    titles.forEach(([size, lh], i) => {
+      expect(t[`text-title-${i + 1}`]).toBe(size);
+      expect(t[`text-title-${i + 1}--line-height`]).toBe(lh);
+    });
+    expect(t['radius-sm']).toBe('4px');
+    expect(t['radius-md']).toBe('6px');
+    expect(t['radius-lg']).toBe('8px');
+    expect(t['radius-xl']).toBe('12px');
+    expect(t['shadow-button']).toBe('0 2px 0 rgb(0 0 0 / 0.05)');
+    expect(t['text-shadow-brand']).toBe('0 0 4px rgb(38 111 78 / 0.5)');
+    expect(t['shadow-sm']).toBeDefined();
+    expect(t['shadow-md']).toBeDefined();
+    expect(t['shadow-lg']).toBeDefined();
   });
 });

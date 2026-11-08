@@ -5,8 +5,9 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-heading: var(--font-sans);
-  --font-sans: var(--font-sans);
+  --font-heading: var(--font-roboto);
+  --font-sans: var(--font-roboto);
+  --font-mono: var(--font-roboto-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -45,13 +46,48 @@
   --color-warning-foreground: var(--warning-foreground);
   --color-mark: var(--mark);
   --color-mark-foreground: var(--mark-foreground);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  --text-title-1: 48px;
+  --text-title-1--line-height: 57.6px;
+  --text-title-2: 36px;
+  --text-title-2--line-height: 43.2px;
+  --text-title-3: 24px;
+  --text-title-3--line-height: 32px;
+  --text-title-4: 18px;
+  --text-title-4--line-height: 28px;
+  --text-title-5: 16px;
+  --text-title-5--line-height: 24px;
+
+  --shadow-button: 0 2px 0 rgb(0 0 0 / 0.05);
+  --text-shadow-brand: 0 0 4px rgb(38 111 78 / 0.5);
+  /* Floating surfaces (popovers, menus, dialogs): layered stacks from
+     supabase/supabase packages/config/css/shadows.css (Apache-2.0). */
+  --shadow-sm:
+    0 2.79px 3.72px -2px rgb(0 0 0 / calc(0.01 * var(--floating-shadow-strength))),
+    0 1.16px 1.5px 0 rgb(0 0 0 / calc(0.01 * var(--floating-shadow-strength))),
+    0 0 0 1px var(--floating-ring-color);
+  --shadow-md:
+    0 17.54px 23.39px 0 rgb(0 0 0 / calc(0.04 * var(--floating-shadow-strength))),
+    0 9.4px 12.5px 0 rgb(0 0 0 / calc(0.03 * var(--floating-shadow-strength))),
+    0 5.25px 7px 0 rgb(0 0 0 / calc(0.02 * var(--floating-shadow-strength))),
+    0 2.79px 3.72px -2px rgb(0 0 0 / calc(0.01 * var(--floating-shadow-strength))),
+    0 1.16px 1.5px 0 rgb(0 0 0 / calc(0.01 * var(--floating-shadow-strength))),
+    0 0 0 1px var(--floating-ring-color);
+  --shadow-lg:
+    0 18px 47px 0 rgb(0 0 0 / calc(0.03 * var(--floating-shadow-strength))),
+    0 7.5px 19px 0 rgb(0 0 0 / calc(0.02 * var(--floating-shadow-strength))),
+    0 4px 10.5px 0 rgb(0 0 0 / calc(0.03 * var(--floating-shadow-strength))),
+    0 2.3px 5.8px 0 rgb(0 0 0 / calc(0.03 * var(--floating-shadow-strength))),
+    0 1.2px 3.1px 0 rgb(0 0 0 / calc(0.03 * var(--floating-shadow-strength))),
+    0 0.5px 1.3px 0 rgb(0 0 0 / calc(0.02 * var(--floating-shadow-strength))),
+    0 0 0 1px var(--floating-ring-color);
 }
 
 :root {
@@ -142,7 +178,9 @@
   --warning-foreground: var(--gray-1);
   --mark: var(--amber-4);
   --mark-foreground: var(--amber-12);
-  --radius: 0.625rem;
+  --radius: 8px;
+  --floating-shadow-strength: 1;
+  --floating-ring-color: rgb(0 0 0 / 0.05);
 }
 
 .dark {
@@ -233,6 +271,8 @@
   --warning-foreground: var(--gray-1);
   --mark: var(--amber-11);
   --mark-foreground: var(--gray-1);
+  --floating-shadow-strength: 5;
+  --floating-ring-color: rgb(255 255 255 / 0.18);
 }
 
 @layer base {
@@ -240,9 +280,14 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background font-sans text-sm text-foreground;
   }
   html {
     @apply font-sans;
+  }
+  /* Icons: Lucide at 16px (size-4) with a 1.5 stroke, set once here. */
+  svg.lucide {
+    @apply size-4;
+    stroke-width: 1.5;
   }
 }

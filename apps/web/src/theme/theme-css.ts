@@ -3,7 +3,7 @@
 
 export type ThemeVars = Record<string, string>;
 
-function blockVars(css: string, selector: string): ThemeVars {
+export function blockVars(css: string, selector: string): ThemeVars {
   const vars: ThemeVars = {};
   const start = new RegExp(`(^|\\n)${selector}\\s*\\{`).exec(css);
   if (!start) return vars;
@@ -18,6 +18,12 @@ function blockVars(css: string, selector: string): ThemeVars {
 
 export function parseThemeBlocks(css: string): { light: ThemeVars; dark: ThemeVars } {
   return { light: blockVars(css, ':root'), dark: blockVars(css, '\\.dark') };
+}
+
+/** Variables declared in the `@theme inline` block (falls back to `@theme`). */
+export function parseThemeInline(css: string): ThemeVars {
+  const inline = blockVars(css, '@theme inline');
+  return Object.keys(inline).length ? inline : blockVars(css, '@theme');
 }
 
 type Rgb = [number, number, number];
