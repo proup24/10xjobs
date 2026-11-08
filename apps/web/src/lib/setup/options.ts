@@ -45,22 +45,37 @@ export function formatOffset(minutes: number): string {
   return `UTC${sign}${hours}${rest ? `:${String(rest).padStart(2, '0')}` : ''}`;
 }
 
-const clampOffset = (m: number) =>
-  Math.min(MAX_OFFSET, Math.max(MIN_OFFSET, m));
+/** The offered offset nearest to `minutes`; a tie goes to the lower one. */
+export function snapOffset(minutes: number): number {
+  return TIMEZONE_OFFSETS.reduce((best, o) =>
+    Math.abs(o - minutes) < Math.abs(best - minutes) ? o : best,
+  );
+}
+
+/** The largest offered offset at or below `minutes` (the lowest when there is none). */
+export function snapOffsetDown(minutes: number): number {
+  return TIMEZONE_OFFSETS.findLast((o) => o <= minutes) ?? MIN_OFFSET;
+}
+
+/** The smallest offered offset at or above `minutes` (the highest when there is none). */
+export function snapOffsetUp(minutes: number): number {
+  return TIMEZONE_OFFSETS.find((o) => o >= minutes) ?? MAX_OFFSET;
+}
 
 /**
  * The time zone answers prefilled from the browser offset
- * (`-new Date().getTimezoneOffset()`): current, and a range of ±3 hours.
+ * (`-new Date().getTimezoneOffset()`): current, and a range of at least ±3 hours.
+ * Every value is an offered offset; the range snaps outward, so it never narrows.
  */
 export function timezonePrefill(browserOffset: number): {
   current: number;
   min: number;
   max: number;
 } {
-  const current = clampOffset(browserOffset) + 0; // + 0 turns -0 into 0
+  const current = snapOffset(browserOffset) + 0; // + 0 turns -0 into 0
   return {
     current,
-    min: clampOffset(current - 180),
-    max: clampOffset(current + 180),
+    min: snapOffsetDown(current - 180),
+    max: snapOffsetUp(current + 180),
   };
 }

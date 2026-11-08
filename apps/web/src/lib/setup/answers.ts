@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { NOTICE_OPTIONS, MAX_OFFSET, MIN_OFFSET } from './options';
+import { NOTICE_OPTIONS, TIMEZONE_OFFSETS } from './options';
 
 /** Answers of each setup step, as the forms hold them. Zod checks them before every save. */
 
@@ -225,11 +225,10 @@ const ARRANGEMENT_LABELS: Record<ArrangementKey, string> = {
 };
 export const MAX_PLACES_PER_ARRANGEMENT = 20;
 
+/** A UTC offset in minutes, one the step 4 Selects offer. */
 const offset = z
   .number()
-  .int()
-  .min(MIN_OFFSET, 'Pick a UTC offset')
-  .max(MAX_OFFSET, 'Pick a UTC offset');
+  .refine((m) => TIMEZONE_OFFSETS.includes(m), 'Pick a UTC offset');
 
 const placeRowShape = z.object({
   place: placeSchema,

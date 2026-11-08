@@ -361,6 +361,20 @@ describe('termsSchema', () => {
     ]);
   });
 
+  it.each(['timezoneCurrent', 'timezoneMin', 'timezoneMax'] as const)(
+    'refuses a %s that is not an offered offset',
+    (field) => {
+      expect(
+        paths(termsSchema, {
+          ...terms,
+          timezoneMin: -180,
+          timezoneMax: 240,
+          [field]: 150,
+        }),
+      ).toEqual([field]);
+    },
+  );
+
   it('needs a contract type and an engagement', () => {
     expect(
       paths(termsSchema, { ...terms, contractTypes: [], engagements: [] }),

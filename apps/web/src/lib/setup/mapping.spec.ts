@@ -1,7 +1,12 @@
 // @vitest-environment node
-import { SkillDomain } from '@xjobs/database/enums';
+import { isSearchableTech, SkillDomain } from '@xjobs/database/enums';
 import { describe, expect, it } from 'vitest';
-import type { JobAnswers, TermsAnswers } from './answers';
+import {
+  jobSchema,
+  termsSchema,
+  type JobAnswers,
+  type TermsAnswers,
+} from './answers';
 import {
   domainFor,
   fromProfile,
@@ -277,6 +282,27 @@ describe('fromProfile', () => {
       { code: 'typescript', rating: 4, starred: true },
     ]);
     expect(r.terms.noticePeriodDays).toBe(30);
+    expect(jobSchema(isSearchableTech).safeParse(r.job).success).toBe(true);
+    expect(termsSchema.safeParse(r.terms).success).toBe(true);
+  });
+
+  it('snaps stored offsets into the offered list and still saves', () => {
+    const r = fromProfile(
+      storedRow({
+        noticePeriodDays: 45,
+        timezoneCurrent: 100,
+        timezoneMin: -150,
+        timezoneMax: 100,
+      }),
+      [skill({ technology: 'typescript', mastery: 7, importance: 8 })],
+    );
+    expect(r.terms).toMatchObject({
+      timezoneCurrent: 120,
+      timezoneMin: -180,
+      timezoneMax: 120,
+    });
+    expect(jobSchema(isSearchableTech).safeParse(r.job).success).toBe(true);
+    expect(termsSchema.safeParse(r.terms).success).toBe(true);
   });
 
   it('merges a place listed under several arrangements into one row, in first-seen order', () => {

@@ -4,6 +4,9 @@ import {
   formatOffset,
   nearestNotice,
   NOTICE_OPTIONS,
+  snapOffset,
+  snapOffsetDown,
+  snapOffsetUp,
   TIMEZONE_OFFSETS,
   timezonePrefill,
 } from './options';
@@ -68,6 +71,38 @@ describe('time zone offsets', () => {
       min: -720,
       max: -420,
     });
+  });
+
+  it.each([
+    [330, { current: 330, min: 120, max: 525 }],
+    [345, { current: 345, min: 120, max: 525 }],
+    [-570, { current: -570, min: -720, max: -360 }],
+  ])(
+    'widens the range of %i outward to offered offsets',
+    (browser, expected) => {
+      const r = timezonePrefill(browser);
+      expect(r).toEqual(expected);
+      for (const v of Object.values(r)) {
+        expect(TIMEZONE_OFFSETS).toContain(v);
+      }
+    },
+  );
+
+  it('snaps a browser offset that is not offered to the nearest one', () => {
+    expect(timezonePrefill(100).current).toBe(120);
+    expect(timezonePrefill(10).current).toBe(0);
+  });
+
+  it.each([
+    [100, 120, 60, 120],
+    [-200, -210, -210, -180],
+    [-900, -720, -720, -720],
+    [900, 840, 840, 840],
+    [330, 330, 330, 330],
+  ])('snaps %i: nearest %i, down %i, up %i', (m, nearest, down, up) => {
+    expect(snapOffset(m)).toBe(nearest);
+    expect(snapOffsetDown(m)).toBe(down);
+    expect(snapOffsetUp(m)).toBe(up);
   });
 
   it('reads a browser -0 as UTC', () => {

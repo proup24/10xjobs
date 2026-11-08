@@ -13,7 +13,12 @@ import {
   type TechAnswer,
   type TermsAnswers,
 } from './answers';
-import { nearestNotice } from './options';
+import {
+  nearestNotice,
+  snapOffset,
+  snapOffsetDown,
+  snapOffsetUp,
+} from './options';
 
 /** Setup answers ↔ `profiles` and `profile_skills` rows. */
 
@@ -275,9 +280,10 @@ export function fromProfile(
     },
     terms: {
       places: readPlaces(row.locations),
-      timezoneCurrent: row.timezoneCurrent,
-      timezoneMin: row.timezoneMin,
-      timezoneMax: row.timezoneMax,
+      // Snapped into the offered list: the range outward, so it never narrows.
+      timezoneCurrent: snapOffset(row.timezoneCurrent),
+      timezoneMin: snapOffsetDown(row.timezoneMin),
+      timezoneMax: snapOffsetUp(row.timezoneMax),
       contractTypes: withoutUnstated(row.contractTypes),
       engagements: withoutUnstated(row.engagements),
       noticePeriodDays: nearestNotice(row.noticePeriodDays),
