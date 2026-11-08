@@ -2,7 +2,12 @@
 
 import { useEffect, useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from '@/components/ui/input-group';
+import { Mail } from 'lucide-react';
 import {
   InputOTP,
   InputOTPGroup,
@@ -55,7 +60,7 @@ export function SignInForm() {
   if (sentMessage === null) {
     return (
       <form
-        className="flex flex-col gap-3"
+        className="flex flex-col gap-4"
         onSubmit={(e) => {
           e.preventDefault();
           request();
@@ -63,17 +68,23 @@ export function SignInForm() {
       >
         <Field invalid={error !== null}>
           <FieldLabel htmlFor="email">Email</FieldLabel>
-          <Input
-            id="email"
-            type="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
+          <InputGroup>
+            <InputGroupAddon>
+              <Mail aria-hidden />
+            </InputGroupAddon>
+            <InputGroupInput
+              id="email"
+              type="email"
+              autoComplete="email"
+              placeholder="you@example.com"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </InputGroup>
           <FieldError>{error}</FieldError>
         </Field>
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" size="lg" className="w-full" loading={pending}>
           Send code
         </Button>
       </form>
@@ -81,7 +92,7 @@ export function SignInForm() {
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       <p role="status">{sentMessage}</p>
       <p className="text-xs text-muted-foreground">{EXPIRED_INVITE_HINT}</p>
       <Field invalid={error !== null}>
@@ -105,7 +116,10 @@ export function SignInForm() {
       <Button
         type="button"
         variant="outline"
-        disabled={pending || secondsLeft > 0}
+        size="lg"
+        className="w-full"
+        loading={pending}
+        disabled={secondsLeft > 0}
         onClick={request}
       >
         {secondsLeft > 0
