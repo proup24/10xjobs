@@ -20,6 +20,8 @@ type ConfirmDialogProps = {
   confirmLabel: string;
   destructive?: boolean;
   onConfirm: () => void | Promise<void>;
+  /** Called when `onConfirm` throws or rejects. Defaults to `console.error`. */
+  onError?: (error: unknown) => void;
 };
 
 /**
@@ -34,18 +36,25 @@ function ConfirmDialog({
   confirmLabel,
   destructive = false,
   onConfirm,
+  onError,
 }: ConfirmDialogProps) {
   const [open, setOpen] = React.useState(false);
   const [pending, setPending] = React.useState(false);
+  const inFlight = React.useRef(false);
 
   async function handleConfirm() {
+    if (inFlight.current) return;
+    inFlight.current = true;
     setPending(true);
     try {
       await onConfirm();
       setOpen(false);
-    } catch {
-      // Stay open so the user can retry or cancel; the caller surfaces the error.
+    } catch (error) {
+      // Stay open so the user can retry or cancel.
+      if (onError) onError(error);
+      else console.error(error);
     } finally {
+      inFlight.current = false;
       setPending(false);
     }
   }

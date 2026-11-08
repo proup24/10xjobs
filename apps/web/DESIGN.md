@@ -52,7 +52,7 @@ Scales (`--gray-1..12`, `--green-*`, `--amber-*`, `--red-*`) exist only to feed 
 
 **Radius:** `rounded-sm` 4px (buttons, checkboxes), `rounded-md` 6px (inputs), `rounded-lg` 8px (`--radius`, cards), `rounded-xl` 12px (dialogs). Larger steps scale from `--radius`.
 
-**Shadows:** `shadow-button` (`0 2px 0 rgb(0 0 0 / 0.05)`) on buttons; `text-shadow-brand` on the primary button text. `shadow-sm`, `shadow-md`, `shadow-lg` are for floating surfaces (popovers, menus, dialogs): layered stacks adapted from supabase/supabase (Apache-2.0), with a ring that is stronger in dark mode via `--floating-shadow-strength` and `--floating-ring-color`.
+**Shadows:** `shadow-button` (`0 2px 0 rgb(0 0 0 / 0.05)`) on buttons; `text-shadow-brand` on the primary button text. `shadow-sm`, `shadow-md`, `shadow-lg` exist; floating surfaces (popovers, menus, dialogs, toasts) all use `shadow-lg`: layered stacks adapted from supabase/supabase (Apache-2.0), with a ring that is stronger in dark mode via `--floating-shadow-strength` and `--floating-ring-color`.
 
 ## Contrast adjustments
 
@@ -101,7 +101,7 @@ All in `src/components/ui`. Forms and overlays are done; the rest of PR 3 and PR
 
 - **Dialog vs confirm dialog:** a dialog hosts a task (a form, content to read or edit) and has a close button. A confirm dialog asks one yes/no question about an action the user already chose; it has Cancel and a confirm button, and `destructive` styles the confirm button red. If the question needs input, use a dialog.
 - **Tooltip vs popover:** a tooltip is a one-line, non-interactive label shown on hover and focus. A popover opens on click, can hold links, buttons and fields, and stays until dismissed. If the user needs the information to proceed, use a popover or put it in the page, not a tooltip.
-- Floating surfaces use the `popover` role and `shadow-md` (menus, popovers) or `shadow-lg` (dialogs, toasts). Dialogs are full width with a 1rem margin below `sm` and `max-w-sm` from `sm` up.
+- Floating surfaces use the `popover` role and `shadow-lg` (menus, popovers, dialogs, toasts). Dialogs are full width with a 1rem margin below `sm` and `max-w-sm` from `sm` up.
 - Toasts: call `toast` from `sonner`; do not mount another `Toaster`.
 
 ## Forms
