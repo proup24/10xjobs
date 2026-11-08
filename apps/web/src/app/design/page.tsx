@@ -3,6 +3,7 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { isShowcaseEnabled } from '@/lib/design/showcase';
 import { ButtonsSection } from './_sections/buttons';
 import { ComponentsSection } from './_sections/components';
+import { InputsSection } from './_sections/inputs';
 import { TokensSection } from './_sections/tokens';
 
 export const dynamic = 'force-dynamic';
@@ -18,6 +19,7 @@ export default function DesignPage() {
       </header>
       <TokensSection />
       <ButtonsSection />
+      <InputsSection />
       <ComponentsSection />
     </main>
   );
