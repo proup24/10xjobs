@@ -1,13 +1,6 @@
-import { CircleUser } from 'lucide-react';
 import { Brand } from '@/components/layout/brand';
 import { AppNav } from '@/components/layout/app-nav';
-import { SignOutButton } from '@/components/sign-out-button';
-import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { UserMenu } from '@/components/layout/user-menu';
 import { Separator } from '@/components/ui/separator';
 import {
   Sidebar,
@@ -39,18 +32,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Separator orientation="vertical" className="h-4 md:hidden" />
           <div className="ml-auto flex items-center gap-1">
             <ThemeToggle />
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button variant="ghost" size="icon" aria-label="User menu" />
-                }
-              >
-                <CircleUser aria-hidden />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-auto p-2">
-                <SignOutButton />
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <UserMenu />
           </div>
         </header>
         <div className="flex-1 p-4 md:p-6">{children}</div>
