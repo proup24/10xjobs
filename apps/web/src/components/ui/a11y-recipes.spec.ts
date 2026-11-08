@@ -30,21 +30,25 @@ describe('focus recipe', () => {
         expect(text.match(halo)?.[0], file).toBeUndefined();
   });
 
-  it.each(['badge.tsx', 'tabs.tsx', 'text.tsx', 'sidebar.tsx'])(
-    '%s clickables use the solid outline and never hide it',
-    (file) => {
-      const lists = literals(file).filter((t) =>
-        t.includes('focus-visible:outline-2'),
-      );
-      expect(lists.length, file).toBeGreaterThan(0);
-      for (const list of lists) {
-        const classes = list.split(/\s+/);
-        for (const c of OUTLINE) expect(classes, file).toContain(c);
-        expect(classes, file).not.toContain('outline-none');
-        expect(classes, file).not.toContain('outline-hidden');
-      }
-    },
-  );
+  it.each([
+    'badge.tsx',
+    'tabs.tsx',
+    'text.tsx',
+    'sidebar.tsx',
+    'toggle.tsx',
+    'toggle-group.tsx',
+  ])('%s clickables use the solid outline and never hide it', (file) => {
+    const lists = literals(file).filter((t) =>
+      t.includes('focus-visible:outline-2'),
+    );
+    expect(lists.length, file).toBeGreaterThan(0);
+    for (const list of lists) {
+      const classes = list.split(/\s+/);
+      for (const c of OUTLINE) expect(classes, file).toContain(c);
+      expect(classes, file).not.toContain('outline-none');
+      expect(classes, file).not.toContain('outline-hidden');
+    }
+  });
 
   it.each([
     ['input.tsx', 'focus-visible'],

@@ -1,6 +1,6 @@
 'use client';
 
-import { Mail } from 'lucide-react';
+import { Mail, Star } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import {
@@ -19,6 +19,8 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { Toggle } from '@/components/ui/toggle';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Block } from './block';
 
 const LEVELS = [
@@ -195,6 +197,39 @@ export function InputsSection() {
         <Choice id="s-sm" label="Small">
           <Switch id="s-sm" size="sm" defaultChecked />
         </Choice>
+      </Block>
+
+      <Block title="Toggle: unpressed, pressed, disabled">
+        <Toggle aria-label="Search for this, unpressed" variant="outline">
+          <Star />
+        </Toggle>
+        <Toggle
+          aria-label="Search for this, pressed"
+          variant="outline"
+          defaultPressed
+        >
+          <Star />
+        </Toggle>
+        <Toggle
+          aria-label="Search for this, disabled"
+          variant="outline"
+          disabled
+        >
+          <Star />
+        </Toggle>
+        <Toggle size="sm">Small</Toggle>
+      </Block>
+
+      <Block title="Toggle group: Remote, Hybrid and On-site, multiple">
+        <ToggleGroup multiple defaultValue={['remote']} variant="outline">
+          <ToggleGroupItem value="remote">Remote</ToggleGroupItem>
+          <ToggleGroupItem value="hybrid" disabled>
+            Hybrid
+          </ToggleGroupItem>
+          <ToggleGroupItem value="onsite" disabled>
+            On-site
+          </ToggleGroupItem>
+        </ToggleGroup>
       </Block>
 
       <Block title="Select: default, disabled, invalid">
