@@ -4,13 +4,9 @@ export {
   Channel,
   ContactKind,
   Engagement,
-  Language,
-  Position,
   ProfileState,
-  Region,
   Seniority,
   SkillDomain,
-  Technology,
 } from '@xjobs/database/enums';
 export { EnvironmentType } from '@xjobs/database/env';
 export { ErrorCode } from './error-code.enum';

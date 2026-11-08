@@ -233,100 +233,6 @@
               }
             ]
           },
-          "Language": {
-            "codecId": "pg/text@1",
-            "members": [
-              {
-                "name": "AR",
-                "value": "AR"
-              },
-              {
-                "name": "FR",
-                "value": "FR"
-              },
-              {
-                "name": "EN",
-                "value": "EN"
-              },
-              {
-                "name": "ES",
-                "value": "ES"
-              }
-            ]
-          },
-          "Position": {
-            "codecId": "pg/text@1",
-            "members": [
-              {
-                "name": "backend_engineer",
-                "value": "backend_engineer"
-              },
-              {
-                "name": "frontend_engineer",
-                "value": "frontend_engineer"
-              },
-              {
-                "name": "fullstack_engineer",
-                "value": "fullstack_engineer"
-              },
-              {
-                "name": "mobile_engineer",
-                "value": "mobile_engineer"
-              },
-              {
-                "name": "devops_engineer",
-                "value": "devops_engineer"
-              },
-              {
-                "name": "site_reliability_engineer",
-                "value": "site_reliability_engineer"
-              },
-              {
-                "name": "platform_engineer",
-                "value": "platform_engineer"
-              },
-              {
-                "name": "cloud_engineer",
-                "value": "cloud_engineer"
-              },
-              {
-                "name": "security_engineer",
-                "value": "security_engineer"
-              },
-              {
-                "name": "data_engineer",
-                "value": "data_engineer"
-              },
-              {
-                "name": "ml_engineer",
-                "value": "ml_engineer"
-              },
-              {
-                "name": "ai_engineer",
-                "value": "ai_engineer"
-              },
-              {
-                "name": "qa_engineer",
-                "value": "qa_engineer"
-              },
-              {
-                "name": "embedded_engineer",
-                "value": "embedded_engineer"
-              },
-              {
-                "name": "software_architect",
-                "value": "software_architect"
-              },
-              {
-                "name": "tech_lead",
-                "value": "tech_lead"
-              },
-              {
-                "name": "engineering_manager",
-                "value": "engineering_manager"
-              }
-            ]
-          },
           "ProfileState": {
             "codecId": "pg/text@1",
             "members": [
@@ -337,59 +243,6 @@
               {
                 "name": "published",
                 "value": "published"
-              }
-            ]
-          },
-          "Region": {
-            "codecId": "pg/text@1",
-            "members": [
-              {
-                "name": "EMEA",
-                "value": "EMEA"
-              },
-              {
-                "name": "MENA",
-                "value": "MENA"
-              },
-              {
-                "name": "NORTH_AFRICA",
-                "value": "NORTH_AFRICA"
-              },
-              {
-                "name": "SUB_SAHARAN_AFRICA",
-                "value": "SUB_SAHARAN_AFRICA"
-              },
-              {
-                "name": "MIDDLE_EAST",
-                "value": "MIDDLE_EAST"
-              },
-              {
-                "name": "EUROPE",
-                "value": "EUROPE"
-              },
-              {
-                "name": "EU",
-                "value": "EU"
-              },
-              {
-                "name": "UK",
-                "value": "UK"
-              },
-              {
-                "name": "NORTH_AMERICA",
-                "value": "NORTH_AMERICA"
-              },
-              {
-                "name": "LATAM",
-                "value": "LATAM"
-              },
-              {
-                "name": "APAC",
-                "value": "APAC"
-              },
-              {
-                "name": "GLOBAL",
-                "value": "GLOBAL"
               }
             ]
           },
@@ -464,275 +317,6 @@
               {
                 "name": "qa",
                 "value": "qa"
-              }
-            ]
-          },
-          "Technology": {
-            "codecId": "pg/text@1",
-            "members": [
-              {
-                "name": "javascript",
-                "value": "javascript"
-              },
-              {
-                "name": "typescript",
-                "value": "typescript"
-              },
-              {
-                "name": "python",
-                "value": "python"
-              },
-              {
-                "name": "java",
-                "value": "java"
-              },
-              {
-                "name": "kotlin",
-                "value": "kotlin"
-              },
-              {
-                "name": "go",
-                "value": "go"
-              },
-              {
-                "name": "rust",
-                "value": "rust"
-              },
-              {
-                "name": "csharp",
-                "value": "csharp"
-              },
-              {
-                "name": "cpp",
-                "value": "cpp"
-              },
-              {
-                "name": "php",
-                "value": "php"
-              },
-              {
-                "name": "ruby",
-                "value": "ruby"
-              },
-              {
-                "name": "scala",
-                "value": "scala"
-              },
-              {
-                "name": "elixir",
-                "value": "elixir"
-              },
-              {
-                "name": "swift",
-                "value": "swift"
-              },
-              {
-                "name": "dart",
-                "value": "dart"
-              },
-              {
-                "name": "sql",
-                "value": "sql"
-              },
-              {
-                "name": "bash",
-                "value": "bash"
-              },
-              {
-                "name": "nodejs",
-                "value": "nodejs"
-              },
-              {
-                "name": "nestjs",
-                "value": "nestjs"
-              },
-              {
-                "name": "express",
-                "value": "express"
-              },
-              {
-                "name": "fastify",
-                "value": "fastify"
-              },
-              {
-                "name": "django",
-                "value": "django"
-              },
-              {
-                "name": "fastapi",
-                "value": "fastapi"
-              },
-              {
-                "name": "flask",
-                "value": "flask"
-              },
-              {
-                "name": "spring",
-                "value": "spring"
-              },
-              {
-                "name": "dotnet",
-                "value": "dotnet"
-              },
-              {
-                "name": "laravel",
-                "value": "laravel"
-              },
-              {
-                "name": "rails",
-                "value": "rails"
-              },
-              {
-                "name": "graphql",
-                "value": "graphql"
-              },
-              {
-                "name": "grpc",
-                "value": "grpc"
-              },
-              {
-                "name": "react",
-                "value": "react"
-              },
-              {
-                "name": "nextjs",
-                "value": "nextjs"
-              },
-              {
-                "name": "vue",
-                "value": "vue"
-              },
-              {
-                "name": "nuxt",
-                "value": "nuxt"
-              },
-              {
-                "name": "angular",
-                "value": "angular"
-              },
-              {
-                "name": "svelte",
-                "value": "svelte"
-              },
-              {
-                "name": "tailwindcss",
-                "value": "tailwindcss"
-              },
-              {
-                "name": "react_native",
-                "value": "react_native"
-              },
-              {
-                "name": "flutter",
-                "value": "flutter"
-              },
-              {
-                "name": "postgresql",
-                "value": "postgresql"
-              },
-              {
-                "name": "mysql",
-                "value": "mysql"
-              },
-              {
-                "name": "mongodb",
-                "value": "mongodb"
-              },
-              {
-                "name": "redis",
-                "value": "redis"
-              },
-              {
-                "name": "elasticsearch",
-                "value": "elasticsearch"
-              },
-              {
-                "name": "kafka",
-                "value": "kafka"
-              },
-              {
-                "name": "rabbitmq",
-                "value": "rabbitmq"
-              },
-              {
-                "name": "spark",
-                "value": "spark"
-              },
-              {
-                "name": "airflow",
-                "value": "airflow"
-              },
-              {
-                "name": "dbt",
-                "value": "dbt"
-              },
-              {
-                "name": "snowflake",
-                "value": "snowflake"
-              },
-              {
-                "name": "aws",
-                "value": "aws"
-              },
-              {
-                "name": "gcp",
-                "value": "gcp"
-              },
-              {
-                "name": "azure",
-                "value": "azure"
-              },
-              {
-                "name": "docker",
-                "value": "docker"
-              },
-              {
-                "name": "kubernetes",
-                "value": "kubernetes"
-              },
-              {
-                "name": "terraform",
-                "value": "terraform"
-              },
-              {
-                "name": "ansible",
-                "value": "ansible"
-              },
-              {
-                "name": "github_actions",
-                "value": "github_actions"
-              },
-              {
-                "name": "gitlab_ci",
-                "value": "gitlab_ci"
-              },
-              {
-                "name": "linux",
-                "value": "linux"
-              },
-              {
-                "name": "nginx",
-                "value": "nginx"
-              },
-              {
-                "name": "prometheus",
-                "value": "prometheus"
-              },
-              {
-                "name": "grafana",
-                "value": "grafana"
-              },
-              {
-                "name": "pytorch",
-                "value": "pytorch"
-              },
-              {
-                "name": "tensorflow",
-                "value": "tensorflow"
-              },
-              {
-                "name": "langchain",
-                "value": "langchain"
               }
             ]
           }
@@ -3150,25 +2734,11 @@
                   "kind": "scalar"
                 }
               },
-              "city": {
-                "nullable": true,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
               "contractTypes": {
                 "many": {
                   "elementNullable": false
                 },
-                "nullable": true,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "country": {
-                "nullable": true,
+                "nullable": false,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
@@ -3202,23 +2772,14 @@
                 }
               },
               "languages": {
-                "many": {
-                  "elementNullable": false
-                },
-                "nullable": true,
+                "nullable": false,
                 "type": {
-                  "codecId": "pg/text@1",
+                  "codecId": "pg/jsonb@1",
                   "kind": "scalar"
-                },
-                "valueSet": {
-                  "entityKind": "enum",
-                  "entityName": "Language",
-                  "namespaceId": "public",
-                  "plane": "domain"
                 }
               },
               "locations": {
-                "nullable": true,
+                "nullable": false,
                 "type": {
                   "codecId": "pg/jsonb@1",
                   "kind": "scalar"
@@ -3228,13 +2789,6 @@
                 "nullable": false,
                 "type": {
                   "codecId": "pg/int4@1",
-                  "kind": "scalar"
-                }
-              },
-              "places": {
-                "nullable": true,
-                "type": {
-                  "codecId": "pg/jsonb@1",
                   "kind": "scalar"
                 }
               },
@@ -3324,13 +2878,6 @@
                   "kind": "scalar"
                 }
               },
-              "spokenLanguages": {
-                "nullable": true,
-                "type": {
-                  "codecId": "pg/jsonb@1",
-                  "kind": "scalar"
-                }
-              },
               "state": {
                 "nullable": false,
                 "type": {
@@ -3416,14 +2963,8 @@
                 "acceptsAnyCurrency": {
                   "column": "acceptsAnyCurrency"
                 },
-                "city": {
-                  "column": "city"
-                },
                 "contractTypes": {
                   "column": "contractTypes"
-                },
-                "country": {
-                  "column": "country"
                 },
                 "createdAt": {
                   "column": "createdAt"
@@ -3442,9 +2983,6 @@
                 },
                 "noticePeriodDays": {
                   "column": "noticePeriodDays"
-                },
-                "places": {
-                  "column": "places"
                 },
                 "position": {
                   "column": "position"
@@ -3478,9 +3016,6 @@
                 },
                 "seniorities": {
                   "column": "seniorities"
-                },
-                "spokenLanguages": {
-                  "column": "spokenLanguages"
                 },
                 "state": {
                   "column": "state"
@@ -8121,8 +7656,8 @@
                   "prefix": "profiles_contractTypes_elem_not_null"
                 },
                 {
-                  "expression": "\"contractTypes\" IS NULL OR cardinality(\"contractTypes\") > 0",
-                  "name": "profiles_contract_types_nonempty_2e2f0c84",
+                  "expression": "cardinality(\"contractTypes\") > 0",
+                  "name": "profiles_contract_types_nonempty_fff662eb",
                   "prefix": "profiles_contract_types_nonempty"
                 },
                 {
@@ -8141,29 +7676,14 @@
                   "prefix": "profiles_engagements_nonempty"
                 },
                 {
-                  "expression": "array_remove(\"languages\", NULL) <@ '{\"AR\",\"FR\",\"EN\",\"ES\"}'",
-                  "name": "profiles_languages_check_dd30c302",
-                  "prefix": "profiles_languages_check"
-                },
-                {
-                  "expression": "array_position(\"languages\", NULL) IS NULL",
-                  "name": "profiles_languages_elem_not_null_d4aa0a00",
-                  "prefix": "profiles_languages_elem_not_null"
-                },
-                {
-                  "expression": "cardinality(\"languages\") > 0",
-                  "name": "profiles_languages_nonempty_ee0e6ea8",
+                  "expression": "jsonb_typeof(\"languages\") = 'array' AND jsonb_array_length(\"languages\") > 0",
+                  "name": "profiles_languages_nonempty_ba8ae822",
                   "prefix": "profiles_languages_nonempty"
                 },
                 {
                   "expression": "jsonb_path_exists(\"locations\", '$.*[*]')",
                   "name": "profiles_locations_nonempty_dfbcb81c",
                   "prefix": "profiles_locations_nonempty"
-                },
-                {
-                  "expression": "\"locations\" IS NULL OR (jsonb_typeof(\"locations\") = 'object' AND \"locations\" ?& ARRAY['remote', 'hybrid', 'onsite'] AND (\"locations\" - ARRAY['remote', 'hybrid', 'onsite']) = '{}'::jsonb AND CASE WHEN jsonb_typeof(\"locations\" -> 'remote') = 'array' AND jsonb_typeof(\"locations\" -> 'hybrid') = 'array' AND jsonb_typeof(\"locations\" -> 'onsite') = 'array' THEN jsonb_array_length(\"locations\" -> 'remote') <= 20 AND jsonb_array_length(\"locations\" -> 'hybrid') <= 20 AND jsonb_array_length(\"locations\" -> 'onsite') <= 20 AND NOT jsonb_path_exists(\"locations\", '$.*[*] ? (@.type() != \"string\")') ELSE false END)",
-                  "name": "profiles_locations_shape_c8b4dcae",
-                  "prefix": "profiles_locations_shape"
                 },
                 {
                   "expression": "\"noticePeriodDays\" BETWEEN 0 AND 365",
@@ -8233,23 +7753,13 @@
                   },
                   "nullable": false
                 },
-                "city": {
-                  "codecId": "pg/text@1",
-                  "dataType": "pg/text",
-                  "nullable": true
-                },
                 "contractTypes": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
                   "many": {
                     "elementNullable": false
                   },
-                  "nullable": true
-                },
-                "country": {
-                  "codecId": "pg/text@1",
-                  "dataType": "pg/text",
-                  "nullable": true
+                  "nullable": false
                 },
                 "createdAt": {
                   "codecId": "pg/timestamptz-date@1",
@@ -8277,33 +7787,19 @@
                   "nullable": false
                 },
                 "languages": {
-                  "codecId": "pg/text@1",
-                  "dataType": "pg/text",
-                  "many": {
-                    "elementNullable": false
-                  },
-                  "nullable": true,
-                  "valueSet": {
-                    "entityKind": "valueSet",
-                    "entityName": "Language",
-                    "namespaceId": "public",
-                    "plane": "storage"
-                  }
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": false
                 },
                 "locations": {
                   "codecId": "pg/jsonb@1",
                   "dataType": "pg/jsonb",
-                  "nullable": true
+                  "nullable": false
                 },
                 "noticePeriodDays": {
                   "codecId": "pg/int4@1",
                   "dataType": "pg/int4",
                   "nullable": false
-                },
-                "places": {
-                  "codecId": "pg/jsonb@1",
-                  "dataType": "pg/jsonb",
-                  "nullable": true
                 },
                 "position": {
                   "codecId": "pg/text@1",
@@ -8368,11 +7864,6 @@
                     "elementNullable": false
                   },
                   "nullable": false
-                },
-                "spokenLanguages": {
-                  "codecId": "pg/jsonb@1",
-                  "dataType": "pg/jsonb",
-                  "nullable": true
                 },
                 "state": {
                   "codecId": "pg/text@1",
@@ -9912,59 +9403,11 @@
                 "per_task"
               ]
             },
-            "Language": {
-              "kind": "valueSet",
-              "values": [
-                "AR",
-                "FR",
-                "EN",
-                "ES"
-              ]
-            },
-            "Position": {
-              "kind": "valueSet",
-              "values": [
-                "backend_engineer",
-                "frontend_engineer",
-                "fullstack_engineer",
-                "mobile_engineer",
-                "devops_engineer",
-                "site_reliability_engineer",
-                "platform_engineer",
-                "cloud_engineer",
-                "security_engineer",
-                "data_engineer",
-                "ml_engineer",
-                "ai_engineer",
-                "qa_engineer",
-                "embedded_engineer",
-                "software_architect",
-                "tech_lead",
-                "engineering_manager"
-              ]
-            },
             "ProfileState": {
               "kind": "valueSet",
               "values": [
                 "draft",
                 "published"
-              ]
-            },
-            "Region": {
-              "kind": "valueSet",
-              "values": [
-                "EMEA",
-                "MENA",
-                "NORTH_AFRICA",
-                "SUB_SAHARAN_AFRICA",
-                "MIDDLE_EAST",
-                "EUROPE",
-                "EU",
-                "UK",
-                "NORTH_AMERICA",
-                "LATAM",
-                "APAC",
-                "GLOBAL"
               ]
             },
             "Seniority": {
@@ -9992,77 +9435,6 @@
                 "security",
                 "qa"
               ]
-            },
-            "Technology": {
-              "kind": "valueSet",
-              "values": [
-                "javascript",
-                "typescript",
-                "python",
-                "java",
-                "kotlin",
-                "go",
-                "rust",
-                "csharp",
-                "cpp",
-                "php",
-                "ruby",
-                "scala",
-                "elixir",
-                "swift",
-                "dart",
-                "sql",
-                "bash",
-                "nodejs",
-                "nestjs",
-                "express",
-                "fastify",
-                "django",
-                "fastapi",
-                "flask",
-                "spring",
-                "dotnet",
-                "laravel",
-                "rails",
-                "graphql",
-                "grpc",
-                "react",
-                "nextjs",
-                "vue",
-                "nuxt",
-                "angular",
-                "svelte",
-                "tailwindcss",
-                "react_native",
-                "flutter",
-                "postgresql",
-                "mysql",
-                "mongodb",
-                "redis",
-                "elasticsearch",
-                "kafka",
-                "rabbitmq",
-                "spark",
-                "airflow",
-                "dbt",
-                "snowflake",
-                "aws",
-                "gcp",
-                "azure",
-                "docker",
-                "kubernetes",
-                "terraform",
-                "ansible",
-                "github_actions",
-                "gitlab_ci",
-                "linux",
-                "nginx",
-                "prometheus",
-                "grafana",
-                "pytorch",
-                "tensorflow",
-                "langchain"
-              ]
             }
           }
         },
@@ -10070,7 +9442,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "5c5ebc05508c65605769bbcd77d4eb71adc71b016b5cf9fc5cf54cf2cc573806"
+    "storageHash": "888075ad022526b1838845dbd48fde015f395986010ef9199c82d6bec4a6c4db"
   },
   "execution": {
     "executionHash": "5c00fc523089c5aa487c5b6b1a909049f24c10b050d4df6321de29c1c9800a76",

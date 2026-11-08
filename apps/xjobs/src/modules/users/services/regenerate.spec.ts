@@ -11,10 +11,10 @@ const noLabels = async (): Promise<PlaceLabels> => ({
 describe('regeneratePublished', () => {
   it('regenerates every published profile, then retires outdated builders', async () => {
     const calls: string[] = [];
-    const places = { remote: [], hybrid: [], onsite: [] };
+    const locations = { remote: [], hybrid: [], onsite: [] };
     const published = [
-      { id: 'p1', places },
-      { id: 'p2', places },
+      { id: 'p1', locations },
+      { id: 'p2', locations },
     ] as never[];
     const result = await regeneratePublished(
       {
@@ -57,7 +57,7 @@ describe('regeneratePublished', () => {
         id: 'p1',
         position: 'backend_engineer',
         seniorities: ['senior'],
-        places: { remote: [], hybrid: [], onsite },
+        locations: { remote: [], hybrid: [], onsite },
         techStack: [
           {
             technology: 'go',

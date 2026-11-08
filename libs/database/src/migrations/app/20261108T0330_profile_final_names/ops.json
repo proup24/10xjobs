@@ -1,0 +1,904 @@
+[
+  {
+    "id": "data.profiles_delete_without_final_fields",
+    "label": "Delete dev profiles missing places, spokenLanguages or contractTypes",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "profiles"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "delete profiles missing a field that becomes required",
+        "sql": "DELETE FROM public.profiles\nWHERE places IS NULL OR \"spokenLanguages\" IS NULL OR \"contractTypes\" IS NULL;"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "dropCheckConstraint.profiles.profiles_contract_types_nonempty_2e2f0c84",
+    "label": "Drop check constraint \"profiles_contract_types_nonempty_2e2f0c84\" on \"profiles\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "profiles_contract_types_nonempty_2e2f0c84",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"profiles_contract_types_nonempty_2e2f0c84\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_contract_types_nonempty_2e2f0c84",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "constraint \"profiles_contract_types_nonempty_2e2f0c84\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"profiles_contract_types_nonempty_2e2f0c84\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" DROP CONSTRAINT \"profiles_contract_types_nonempty_2e2f0c84\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"profiles_contract_types_nonempty_2e2f0c84\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_contract_types_nonempty_2e2f0c84",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"profiles_contract_types_nonempty_2e2f0c84\" on \"profiles\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "dropCheckConstraint.profiles.profiles_languages_check_dd30c302",
+    "label": "Drop check constraint \"profiles_languages_check_dd30c302\" on \"profiles\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "profiles_languages_check_dd30c302",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"profiles_languages_check_dd30c302\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_languages_check_dd30c302",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "constraint \"profiles_languages_check_dd30c302\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"profiles_languages_check_dd30c302\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" DROP CONSTRAINT \"profiles_languages_check_dd30c302\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"profiles_languages_check_dd30c302\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_languages_check_dd30c302",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"profiles_languages_check_dd30c302\" on \"profiles\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "dropCheckConstraint.profiles.profiles_languages_elem_not_null_d4aa0a00",
+    "label": "Drop check constraint \"profiles_languages_elem_not_null_d4aa0a00\" on \"profiles\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "profiles_languages_elem_not_null_d4aa0a00",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"profiles_languages_elem_not_null_d4aa0a00\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_languages_elem_not_null_d4aa0a00",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "constraint \"profiles_languages_elem_not_null_d4aa0a00\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"profiles_languages_elem_not_null_d4aa0a00\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" DROP CONSTRAINT \"profiles_languages_elem_not_null_d4aa0a00\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"profiles_languages_elem_not_null_d4aa0a00\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_languages_elem_not_null_d4aa0a00",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"profiles_languages_elem_not_null_d4aa0a00\" on \"profiles\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "dropCheckConstraint.profiles.profiles_languages_nonempty_ee0e6ea8",
+    "label": "Drop check constraint \"profiles_languages_nonempty_ee0e6ea8\" on \"profiles\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "profiles_languages_nonempty_ee0e6ea8",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"profiles_languages_nonempty_ee0e6ea8\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_languages_nonempty_ee0e6ea8",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "constraint \"profiles_languages_nonempty_ee0e6ea8\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"profiles_languages_nonempty_ee0e6ea8\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" DROP CONSTRAINT \"profiles_languages_nonempty_ee0e6ea8\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"profiles_languages_nonempty_ee0e6ea8\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_languages_nonempty_ee0e6ea8",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"profiles_languages_nonempty_ee0e6ea8\" on \"profiles\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "dropCheckConstraint.profiles.profiles_locations_shape_c8b4dcae",
+    "label": "Drop check constraint \"profiles_locations_shape_c8b4dcae\" on \"profiles\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "profiles_locations_shape_c8b4dcae",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"profiles_locations_shape_c8b4dcae\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_locations_shape_c8b4dcae",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "constraint \"profiles_locations_shape_c8b4dcae\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"profiles_locations_shape_c8b4dcae\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" DROP CONSTRAINT \"profiles_locations_shape_c8b4dcae\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"profiles_locations_shape_c8b4dcae\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_locations_shape_c8b4dcae",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"profiles_locations_shape_c8b4dcae\" on \"profiles\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "dropCheckConstraint.profiles.profiles_locations_nonempty_dfbcb81c",
+    "label": "Drop check constraint \"profiles_locations_nonempty_dfbcb81c\" on \"profiles\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "profiles_locations_nonempty_dfbcb81c",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"profiles_locations_nonempty_dfbcb81c\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_locations_nonempty_dfbcb81c",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "constraint \"profiles_locations_nonempty_dfbcb81c\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"profiles_locations_nonempty_dfbcb81c\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" DROP CONSTRAINT \"profiles_locations_nonempty_dfbcb81c\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"profiles_locations_nonempty_dfbcb81c\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_locations_nonempty_dfbcb81c",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"profiles_locations_nonempty_dfbcb81c\" on \"profiles\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "dropColumn.profiles.country",
+    "label": "Drop column \"country\" from \"profiles\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "country",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"country\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "country"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"country\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop column \"country\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" DROP COLUMN \"country\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"country\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "country"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"country\" on \"profiles\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "dropColumn.profiles.city",
+    "label": "Drop column \"city\" from \"profiles\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "city",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"city\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "city"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"city\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop column \"city\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" DROP COLUMN \"city\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"city\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "city"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"city\" on \"profiles\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "dropColumn.profiles.languages",
+    "label": "Drop column \"languages\" from \"profiles\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "languages",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"languages\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "languages"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"languages\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop column \"languages\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" DROP COLUMN \"languages\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"languages\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "languages"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"languages\" on \"profiles\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "dropColumn.profiles.locations",
+    "label": "Drop column \"locations\" from \"profiles\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "locations",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"locations\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "locations"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"locations\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop column \"locations\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" DROP COLUMN \"locations\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"locations\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "locations"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"locations\" on \"profiles\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "columns.profiles_final_names",
+    "label": "Rename profiles places to locations and spokenLanguages to languages",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "profiles"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "rename places and spokenLanguages",
+        "sql": "ALTER TABLE public.profiles RENAME COLUMN places TO locations;\nALTER TABLE public.profiles RENAME COLUMN \"spokenLanguages\" TO languages;"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "alterNullability.setNotNull.profiles.contractTypes",
+    "label": "Set NOT NULL on \"profiles\".\"contractTypes\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "contractTypes",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"contractTypes\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "contractTypes"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"contractTypes\" on \"profiles\""
+        }
+      },
+      {
+        "description": "ensure no NULL values in \"contractTypes\"",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"public\".\"profiles\" WHERE \"contractTypes\" IS NULL) AS \"result\"",
+        "params": [],
+        "meta": {
+          "requiredColumn": {
+            "table": "profiles",
+            "column": "contractTypes",
+            "reason": "nullValues"
+          }
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "set NOT NULL on \"contractTypes\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ALTER COLUMN \"contractTypes\" SET NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"contractTypes\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "contractTypes",
+          "NO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "alterNullability.setNotNull.profiles.locations",
+    "label": "Set NOT NULL on \"profiles\".\"locations\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "locations",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"locations\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "locations"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"locations\" on \"profiles\""
+        }
+      },
+      {
+        "description": "ensure no NULL values in \"locations\"",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"public\".\"profiles\" WHERE \"locations\" IS NULL) AS \"result\"",
+        "params": [],
+        "meta": {
+          "requiredColumn": {
+            "table": "profiles",
+            "column": "locations",
+            "reason": "nullValues"
+          }
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "set NOT NULL on \"locations\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ALTER COLUMN \"locations\" SET NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"locations\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "locations",
+          "NO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "alterNullability.setNotNull.profiles.languages",
+    "label": "Set NOT NULL on \"profiles\".\"languages\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "languages",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"languages\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "languages"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"languages\" on \"profiles\""
+        }
+      },
+      {
+        "description": "ensure no NULL values in \"languages\"",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"public\".\"profiles\" WHERE \"languages\" IS NULL) AS \"result\"",
+        "params": [],
+        "meta": {
+          "requiredColumn": {
+            "table": "profiles",
+            "column": "languages",
+            "reason": "nullValues"
+          }
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "set NOT NULL on \"languages\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ALTER COLUMN \"languages\" SET NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"languages\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "languages",
+          "NO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.profiles.profiles_contract_types_nonempty_fff662eb",
+    "label": "Add check constraint \"profiles_contract_types_nonempty_fff662eb\" on \"profiles\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "profiles_contract_types_nonempty_fff662eb",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"profiles_contract_types_nonempty_fff662eb\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_contract_types_nonempty_fff662eb",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"profiles_contract_types_nonempty_fff662eb\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"profiles_contract_types_nonempty_fff662eb\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ADD CONSTRAINT \"profiles_contract_types_nonempty_fff662eb\" CHECK (cardinality(\"contractTypes\") > 0)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify check constraint \"profiles_contract_types_nonempty_fff662eb\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4)) AS \"result\"",
+        "params": [
+          "profiles_contract_types_nonempty_fff662eb",
+          "public",
+          "\"public\".\"profiles\"",
+          "c"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.profiles.profiles_locations_nonempty_dfbcb81c",
+    "label": "Add check constraint \"profiles_locations_nonempty_dfbcb81c\" on \"profiles\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "profiles_locations_nonempty_dfbcb81c",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"profiles_locations_nonempty_dfbcb81c\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_locations_nonempty_dfbcb81c",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"profiles_locations_nonempty_dfbcb81c\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"profiles_locations_nonempty_dfbcb81c\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ADD CONSTRAINT \"profiles_locations_nonempty_dfbcb81c\" CHECK (jsonb_path_exists(\"locations\", '$.*[*]'))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify check constraint \"profiles_locations_nonempty_dfbcb81c\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4)) AS \"result\"",
+        "params": [
+          "profiles_locations_nonempty_dfbcb81c",
+          "public",
+          "\"public\".\"profiles\"",
+          "c"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.profiles.profiles_languages_nonempty_ba8ae822",
+    "label": "Add check constraint \"profiles_languages_nonempty_ba8ae822\" on \"profiles\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "profiles_languages_nonempty_ba8ae822",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"profiles_languages_nonempty_ba8ae822\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "profiles_languages_nonempty_ba8ae822",
+          "public",
+          "\"public\".\"profiles\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"profiles_languages_nonempty_ba8ae822\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"profiles_languages_nonempty_ba8ae822\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ADD CONSTRAINT \"profiles_languages_nonempty_ba8ae822\" CHECK (jsonb_typeof(\"languages\") = 'array' AND jsonb_array_length(\"languages\") > 0)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify check constraint \"profiles_languages_nonempty_ba8ae822\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4)) AS \"result\"",
+        "params": [
+          "profiles_languages_nonempty_ba8ae822",
+          "public",
+          "\"public\".\"profiles\"",
+          "c"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "function.profiles_check_codes_final_names",
+    "label": "Check profile codes on the final column names",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "profiles"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "replace profiles_check_codes()",
+        "sql": "CREATE OR REPLACE FUNCTION public.profiles_check_codes() RETURNS trigger\n  LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$\nDECLARE\n  ins boolean := TG_OP = 'INSERT';\nBEGIN\n  IF NEW.position IS NOT NULL AND (ins OR NEW.position IS DISTINCT FROM OLD.position) THEN\n    PERFORM public.assert_codes('profiles.position', 'role_kinds', ARRAY[NEW.position::text]);\n  END IF;\n  IF ins OR NEW.seniorities IS DISTINCT FROM OLD.seniorities THEN\n    PERFORM public.assert_codes('profiles.seniorities', 'seniorities', NEW.seniorities::text[]);\n  END IF;\n  IF ins OR NEW.engagements IS DISTINCT FROM OLD.engagements THEN\n    PERFORM public.assert_codes('profiles.engagements', 'engagements', NEW.engagements::text[]);\n  END IF;\n  IF ins OR NEW.\"contractTypes\" IS DISTINCT FROM OLD.\"contractTypes\" THEN\n    PERFORM public.assert_codes('profiles.contractTypes', 'contract_types', NEW.\"contractTypes\");\n  END IF;\n  IF ins OR NEW.locations IS DISTINCT FROM OLD.locations THEN\n    PERFORM public.assert_places('profiles.locations', NEW.locations);\n  END IF;\n  IF ins OR NEW.languages IS DISTINCT FROM OLD.languages THEN\n    PERFORM public.assert_languages('profiles.languages', NEW.languages);\n  END IF;\n  IF NEW.\"salaryCurrency\" IS NOT NULL AND (ins OR NEW.\"salaryCurrency\" IS DISTINCT FROM OLD.\"salaryCurrency\") THEN\n    PERFORM public.assert_codes('profiles.salaryCurrency', 'iso_currencies', ARRAY[NEW.\"salaryCurrency\"]);\n  END IF;\n  IF ins OR NEW.\"acceptedCurrencies\" IS DISTINCT FROM OLD.\"acceptedCurrencies\" THEN\n    PERFORM public.assert_codes('profiles.acceptedCurrencies', 'iso_currencies', NEW.\"acceptedCurrencies\");\n  END IF;\n  RETURN NEW;\nEND $$;\nREVOKE EXECUTE ON FUNCTION public.profiles_check_codes() FROM PUBLIC, anon, authenticated;"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "grants.profiles_user_columns_final_names",
+    "label": "Limit authenticated writes on profiles to the questionnaire columns, final names",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "profiles"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "revoke table-level writes, grant the user-editable columns",
+        "sql": "REVOKE INSERT, UPDATE ON public.profiles FROM anon, authenticated;\nGRANT INSERT (\"id\", \"userId\", \"position\", \"yearsOfExperience\", \"timezoneCurrent\", \"timezoneMin\", \"timezoneMax\", \"engagements\", \"seniorities\", \"noticePeriodDays\", \"contractTypes\", \"locations\", \"languages\", \"salaryMin\", \"salaryCurrency\", \"salaryPeriod\", \"acceptsAnyCurrency\", \"acceptedCurrencies\") ON public.profiles TO authenticated;\nGRANT UPDATE (\"position\", \"yearsOfExperience\", \"timezoneCurrent\", \"timezoneMin\", \"timezoneMax\", \"engagements\", \"seniorities\", \"noticePeriodDays\", \"contractTypes\", \"locations\", \"languages\", \"salaryMin\", \"salaryCurrency\", \"salaryPeriod\", \"acceptsAnyCurrency\", \"acceptedCurrencies\") ON public.profiles TO authenticated;"
+      }
+    ],
+    "postcheck": []
+  }
+]

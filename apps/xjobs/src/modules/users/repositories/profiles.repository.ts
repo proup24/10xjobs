@@ -76,15 +76,12 @@ function placeKeys(places: Place[]) {
   };
 }
 
-/**
- * The columns a profile's editable fields are stored in. The old `languages`,
- * `country`, `city` and `locations` columns are no longer written.
- */
+/** The columns a profile's editable fields are stored in. */
 export function toProfileColumns(fields: ProfileFields) {
   // Field by field, so nothing outside the editable fields reaches a write.
   return {
-    places: fields.locations,
-    spokenLanguages: fields.languages,
+    locations: fields.locations,
+    languages: fields.languages,
     yearsOfExperience: fields.yearsOfExperience,
     timezoneCurrent: fields.timezoneCurrent,
     timezoneMin: fields.timezoneMin,

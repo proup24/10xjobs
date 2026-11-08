@@ -3,13 +3,7 @@ import {
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
-import {
-  Engagement,
-  Position,
-  Seniority,
-  SkillDomain,
-  Technology,
-} from 'src/common/enums';
+import { Engagement, Seniority, SkillDomain } from 'src/common/enums';
 import {
   ELIGIBILITY_REQUIRED,
   PROFILE_PUBLISHED,
@@ -29,7 +23,7 @@ import { UsersService } from './users.service';
 import type { ProfileInput, SkillInput } from '../types';
 
 const profileInput: ProfileInput = {
-  position: Position.backend_engineer,
+  position: 'backend_engineer',
   languages: [{ lang: 'en', level: 'fluent' }],
   locations: {
     remote: [{ kind: 'region', code: 'MENA' }],
@@ -99,7 +93,7 @@ describe('ProfilesService', () => {
       });
   });
 
-  const create = (techStack = [skill(Technology.nodejs, 8)]) =>
+  const create = (techStack = [skill('nodejs', 8)]) =>
     service.create(userId, { ...profileInput, techStack });
 
   it('creates a draft profile with its tech stack', async () => {
@@ -124,7 +118,7 @@ describe('ProfilesService', () => {
     const view = await service.create(userId, {
       ...profileInput,
       seniorities: [Seniority.staff, Seniority.senior, Seniority.staff],
-      techStack: [skill(Technology.nodejs, 8)],
+      techStack: [skill('nodejs', 8)],
     });
     expect(view.seniorities).toEqual([Seniority.senior, Seniority.staff]);
     const row = await profiles.findById(userId, view.id);
@@ -145,7 +139,7 @@ describe('ProfilesService', () => {
     const { id } = await service.create(userId, {
       ...profileInput,
       seniorities: [Seniority.senior, Seniority.staff],
-      techStack: [skill(Technology.nodejs, 8)],
+      techStack: [skill('nodejs', 8)],
     });
     const profile = (await profiles.findById(userId, id))!;
     const input = toQuerySearchInput(
@@ -163,7 +157,7 @@ describe('ProfilesService', () => {
         hybrid: [],
         onsite: [{ kind: 'country', code: 'MA' }],
       },
-      techStack: [skill(Technology.nodejs, 8)],
+      techStack: [skill('nodejs', 8)],
     });
     const [profile] = await profiles.list(userId);
     const input = toQuerySearchInput(profile, {
@@ -190,8 +184,8 @@ describe('ProfilesService', () => {
     });
     const row = await profiles.findById(userId, view.id);
     expect(row).toMatchObject({
-      places: profileInput.locations,
-      spokenLanguages: profileInput.languages,
+      locations: profileInput.locations,
+      languages: profileInput.languages,
       contractTypes: ['full_time'],
       salaryMin: 4000,
       salaryCurrency: 'EUR',
@@ -199,15 +193,7 @@ describe('ProfilesService', () => {
       acceptsAnyCurrency: false,
       acceptedCurrencies: ['EUR'],
     });
-    for (const hidden of [
-      'country',
-      'city',
-      'places',
-      'spokenLanguages',
-      'salaryMin',
-      'salaryCurrency',
-      'salaryPeriod',
-    ]) {
+    for (const hidden of ['salaryMin', 'salaryCurrency', 'salaryPeriod']) {
       expect(view).not.toHaveProperty(hidden);
     }
   });
@@ -292,11 +278,11 @@ describe('ProfilesService', () => {
   });
 
   it('lets one user keep several independent profiles', async () => {
-    const backend = await create([skill(Technology.go, 8)]);
+    const backend = await create([skill('go', 8)]);
     const frontend = await service.create(userId, {
       ...profileInput,
-      position: Position.frontend_engineer,
-      techStack: [skill(Technology.react, 7)],
+      position: 'frontend_engineer',
+      techStack: [skill('react', 7)],
     });
     expect(frontend.id).not.toBe(backend.id);
     const listed = await service.list(userId);
@@ -329,7 +315,7 @@ describe('ProfilesService', () => {
     const first = await create();
     const second = await service.replace(userId, first.id, {
       ...editable,
-      techStack: [skill(Technology.go, 5), skill(Technology.rust, 3)],
+      techStack: [skill('go', 5), skill('rust', 3)],
     });
     expect(second.id).toBe(first.id);
     expect(second.techStack.map((s) => s.technology)).toEqual(['go', 'rust']);
@@ -340,16 +326,16 @@ describe('ProfilesService', () => {
     const sneaky = {
       ...editable,
       noticePeriodDays: 60,
-      position: Position.ml_engineer,
+      position: 'ml_engineer',
       techStack: [],
     };
     const view = await service.replace(userId, id, sneaky);
     expect(view).toMatchObject({
-      position: Position.backend_engineer,
+      position: 'backend_engineer',
       noticePeriodDays: 60,
     });
     expect((await profiles.findById(userId, id))?.position).toBe(
-      Position.backend_engineer,
+      'backend_engineer',
     );
   });
 
@@ -358,11 +344,11 @@ describe('ProfilesService', () => {
     await service.delete(userId, backend.id);
     const ml = await service.create(userId, {
       ...profileInput,
-      position: Position.ml_engineer,
+      position: 'ml_engineer',
       techStack: [],
     });
     expect((await service.list(userId)).map((p) => p.position)).toEqual([
-      Position.ml_engineer,
+      'ml_engineer',
     ]);
     expect(ml.id).not.toBe(backend.id);
   });
@@ -375,10 +361,7 @@ describe('ProfilesService', () => {
   });
 
   it('stores importance 5 when a write omits it', async () => {
-    const { importance: _omitted, ...withoutImportance } = skill(
-      Technology.go,
-      5,
-    );
+    const { importance: _omitted, ...withoutImportance } = skill('go', 5);
     const view = await service.create(userId, {
       ...profileInput,
       techStack: [withoutImportance],
@@ -387,18 +370,12 @@ describe('ProfilesService', () => {
   });
 
   it('sorts the stack by importance then mastery', async () => {
-    const view = await create([
-      skill(Technology.rust, 5, 2),
-      skill(Technology.go, 5, 9),
-    ]);
+    const view = await create([skill('rust', 5, 2), skill('go', 5, 9)]);
     expect(view.techStack.map((s) => s.technology)).toEqual(['go', 'rust']);
   });
 
   it('keeps an explicit importance of 0 and sorts it last', async () => {
-    const view = await create([
-      skill(Technology.rust, 9, 0),
-      skill(Technology.go, 1, 1),
-    ]);
+    const view = await create([skill('rust', 9, 0), skill('go', 1, 1)]);
     expect(view.techStack.map((s) => [s.technology, s.importance])).toEqual([
       ['go', 1],
       ['rust', 0],
@@ -422,9 +399,9 @@ describe('ProfilesService', () => {
 
   it('views hide the storage key and sort equal importance by mastery', async () => {
     const { id } = await create([
-      skill(Technology.go, 9),
-      skill(Technology.rust, 4),
-      skill(Technology.java, 7),
+      skill('go', 9),
+      skill('rust', 4),
+      skill('java', 7),
     ]);
     const stored = await profiles.findById(userId, id);
     if (!stored) throw new Error('profile was not stored');
@@ -451,7 +428,7 @@ describe('ProfilesService', () => {
   });
 
   describe('publishing', () => {
-    const stack = [skill(Technology.nodejs, 8), skill(Technology.go, 5)];
+    const stack = [skill('nodejs', 8), skill('go', 5)];
 
     it.each([
       [null, false],
@@ -592,7 +569,7 @@ describe('ProfilesService', () => {
     });
 
     it('refuses to publish a profile whose skills all have importance 0, leaving it a draft', async () => {
-      const { id } = await create([skill(Technology.go, 5, 0)]);
+      const { id } = await create([skill('go', 5, 0)]);
       await expect(service.publish(userId, id)).rejects.toThrow(
         BadRequestException,
       );

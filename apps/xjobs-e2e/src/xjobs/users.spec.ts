@@ -295,9 +295,6 @@ describe('users, profiles and resume', () => {
     expect(res.status).toBe(201);
     expect(res.data.data.locations).toEqual(profile.locations);
     expect(res.data.data.languages).toEqual(profile.languages);
-    for (const hidden of ['country', 'city', 'places', 'spokenLanguages']) {
-      expect(res.data.data).not.toHaveProperty(hidden);
-    }
     await axios.delete(`${profiles()}/${res.data.data.id}`);
   });
 
@@ -331,12 +328,12 @@ describe('users, profiles and resume', () => {
           onsite: [],
         },
       },
-      "profiles.places: 'ZZ' is not an approved countries code",
+      "profiles.locations: 'ZZ' is not an approved countries code",
     ],
     [
       'an unknown language',
       { languages: [{ lang: 'xx', level: 'fluent' }] },
-      "profiles.spokenLanguages: 'xx' is not an approved iso_languages code",
+      "profiles.languages: 'xx' is not an approved iso_languages code",
     ],
   ])(
     'refuses %s with a 400 naming the field',

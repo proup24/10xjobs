@@ -1,16 +1,13 @@
 import contractJson from '../contract/contract.json';
+import { SEED } from '../seeds/vocab/seed-data';
 import {
   Arrangement,
   Channel,
   ContactKind,
   Engagement,
-  Language,
-  Position,
   ProfileState,
-  Region,
   Seniority,
   SkillDomain,
-  Technology,
 } from './index';
 
 function contractValues(name: string): string[] {
@@ -23,18 +20,31 @@ function contractValues(name: string): string[] {
 
 describe('enums', () => {
   it.each([
-    ['Position', Position],
-    ['Language', Language],
-    ['Region', Region],
     ['Engagement', Engagement],
     ['Arrangement', Arrangement],
     ['Seniority', Seniority],
     ['ContactKind', ContactKind],
-    ['Technology', Technology],
     ['SkillDomain', SkillDomain],
     ['Channel', Channel],
     ['ProfileState', ProfileState],
   ] as const)('%s matches the data contract', (name, values) => {
     expect(Object.values(values).sort()).toEqual(contractValues(name).sort());
+  });
+
+  // The profile columns hold seniorities and engagements codes as text, so the
+  // contract no longer ties these enums to the value lists: these tests do.
+  it('Seniority matches the seniorities seed codes', () => {
+    expect(Object.values(Seniority).sort()).toEqual(
+      SEED.seniorities.map((term) => term.code).sort(),
+    );
+  });
+
+  it('Engagement matches the engagements seed codes, without unstated', () => {
+    expect(Object.values(Engagement).sort()).toEqual(
+      SEED.engagements
+        .map((term) => term.code)
+        .filter((code) => code !== 'unstated')
+        .sort(),
+    );
   });
 });

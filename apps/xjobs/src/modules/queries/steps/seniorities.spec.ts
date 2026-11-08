@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { Position, Seniority } from 'src/common/enums';
+import { Seniority } from 'src/common/enums';
 import type { QuerySearchProfileInput } from '../types';
 import {
   assertHasSeniorities,
@@ -9,7 +9,7 @@ import {
 
 const { junior, senior, staff, unstated } = Seniority;
 const profile: QuerySearchProfileInput = {
-  position: Position.backend_engineer,
+  position: 'backend_engineer',
   seniorities: [senior],
   locations: { remote: ['Europe'], hybrid: [], onsite: [] },
   skills: [],

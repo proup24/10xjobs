@@ -1,24 +1,22 @@
 import {
   ACTIVE_CHANNELS,
   Arrangement,
-  Position,
   Seniority,
   SkillDomain,
-  Technology,
 } from 'src/common/enums';
 import { toRecipe } from '../builders';
 import type { QuerySearchProfileInput, QuerySearchRecipe } from '../types';
 import { dedupeByHash, locationCombinations } from './combinations';
 
 const profile: QuerySearchProfileInput = {
-  position: Position.backend_engineer,
+  position: 'backend_engineer',
   seniorities: [Seniority.senior],
   locations: { remote: ['Europe'], hybrid: ['France'], onsite: ['France'] },
   skills: [],
 };
 const sets = [
-  { technologies: [Technology.nestjs], domain: SkillDomain.backend },
-  { technologies: [Technology.typescript], domain: SkillDomain.fullstack },
+  { technologies: ['nestjs'], domain: SkillDomain.backend },
+  { technologies: ['typescript'], domain: SkillDomain.fullstack },
 ];
 const channels = ACTIVE_CHANNELS.length;
 
@@ -51,13 +49,13 @@ describe('locationCombinations', () => {
       type: Arrangement.remote,
       channel: ACTIVE_CHANNELS[0],
       location: 'europe',
-      technologies: [Technology.nestjs],
+      technologies: ['nestjs'],
       domain: SkillDomain.backend,
       experience: Seniority.senior,
     });
     expect(second).toMatchObject({
       location: 'europe',
-      technologies: [Technology.typescript],
+      technologies: ['typescript'],
       domain: SkillDomain.fullstack,
     });
   });

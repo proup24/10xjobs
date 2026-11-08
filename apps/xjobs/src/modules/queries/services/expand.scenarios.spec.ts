@@ -1,11 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import {
-  Arrangement,
-  Channel,
-  Seniority,
-  SkillDomain,
-  Technology,
-} from 'src/common/enums';
+import { Arrangement, Channel, Seniority, SkillDomain } from 'src/common/enums';
 import {
   LOCATIONS_REQUIRED,
   SENIORITIES_REQUIRED,
@@ -41,9 +35,9 @@ describe('expand scenarios over mock profiles', () => {
     expect(hashSet(recipes).size).toBe(16);
     expect(recipes.every((r) => r.type === Arrangement.remote)).toBe(true);
     expect(recipes.every((r) => r.technologies.length === 1)).toBe(true);
-    expect(
-      recipes.some((r) => r.technologies.includes(Technology.postgresql)),
-    ).toBe(false);
+    expect(recipes.some((r) => r.technologies.includes('postgresql'))).toBe(
+      false,
+    );
     expect(keywords(recipes, Channel.LINKEDIN_JOB_BOARD)).toEqual([
       'nestjs',
       'typescript',
@@ -108,9 +102,7 @@ describe('expand scenarios over mock profiles', () => {
       true,
     );
     expect(remote.every((r) => r.location === 'north america')).toBe(true);
-    expect(recipes.some((r) => r.technologies.includes(Technology.aws))).toBe(
-      false,
-    );
+    expect(recipes.some((r) => r.technologies.includes('aws'))).toBe(false);
     expect(keywords(recipes, Channel.LINKEDIN_JOB_BOARD)).toEqual([
       'kubernetes',
       'terraform',
@@ -321,7 +313,7 @@ describe('expand scenarios over mock profiles', () => {
     const recipes = expand(MOCK_PROFILES.remoteBackendMa);
     for (const recipe of recipes) {
       expect(recipe.domain).toBe(
-        recipe.technologies[0] === Technology.nestjs
+        recipe.technologies[0] === 'nestjs'
           ? SkillDomain.backend
           : SkillDomain.fullstack,
       );
@@ -342,13 +334,11 @@ describe('expand scenarios over mock profiles', () => {
     expect(hashSet(recipes).size).toBe(8);
     expect(
       on(recipes, Channel.LINKEDIN_JOB_BOARD).map((r) => r.technologies),
-    ).toEqual([[Technology.go], [Technology.rust]]);
+    ).toEqual([['go'], ['rust']]);
     expect(
       on(recipes, Channel.LINKEDIN_JOB_BOARD).map((r) => r.domain),
     ).toEqual([SkillDomain.backend, SkillDomain.backend]);
-    expect(recipes.some((r) => r.technologies.includes(Technology.java))).toBe(
-      false,
-    );
+    expect(recipes.some((r) => r.technologies.includes('java'))).toBe(false);
   });
 
   it('messy location: same builders as the clean profile', () => {
@@ -403,12 +393,8 @@ describe('expand scenarios over mock profiles', () => {
           domain: SkillDomain.fullstack,
         })),
       };
-      const a = expand(backend).filter(
-        (r) => r.technologies[0] === Technology.nestjs,
-      );
-      const b = expand(fullstack).filter(
-        (r) => r.technologies[0] === Technology.nestjs,
-      );
+      const a = expand(backend).filter((r) => r.technologies[0] === 'nestjs');
+      const b = expand(fullstack).filter((r) => r.technologies[0] === 'nestjs');
       expect(a.map((r) => r.keyword)).toEqual(b.map((r) => r.keyword));
       expect([...hashSet(a)].some((hash) => hashSet(b).has(hash))).toBe(false);
     });

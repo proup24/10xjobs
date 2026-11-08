@@ -1,11 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  Arrangement,
-  Channel,
-  Seniority,
-  SkillDomain,
-  Technology,
-} from 'src/common/enums';
+import { Arrangement, Channel, Seniority, SkillDomain } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
 
 /** Collection claim columns: engine-internal, never returned by the API. */
@@ -56,8 +50,12 @@ export class QuerySearchBuilderResponseDto implements QueryBuilderView {
   })
   domain!: SkillDomain;
 
-  @ApiProperty({ enum: Technology, enumName: 'Technology', isArray: true })
-  technologies!: Technology[];
+  @ApiProperty({
+    type: [String],
+    example: ['typescript', 'nestjs'],
+    description: 'tech_tags codes',
+  })
+  technologies!: string[];
 
   @ApiProperty({ enum: Arrangement, enumName: 'Arrangement' })
   type!: Arrangement;

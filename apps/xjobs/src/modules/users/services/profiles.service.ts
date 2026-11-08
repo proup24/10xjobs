@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { checkViolationMessage, type ProfileRow } from 'src/database';
+import { checkViolationMessage } from 'src/database';
 import { ProfileState, Seniority, SkillDomain } from 'src/common/enums';
 import {
   normalizeSeniorities,
@@ -27,16 +27,7 @@ import type {
   SpokenLanguage,
 } from '../types';
 
-/** The old shape: no longer written, and left out of the API. */
-const OLD_SHAPE_COLUMNS = [
-  'languages',
-  'country',
-  'city',
-  'locations',
-] as const satisfies readonly (keyof ProfileRow)[];
-type OldShapeColumn = (typeof OLD_SHAPE_COLUMNS)[number];
-
-/** The API shape of a profile: no storage key or old-shape columns, stack ordered by importance, then mastery. */
+/** The API shape of a profile: no storage key, stack ordered by importance, then mastery. */
 export function toProfileView(profile: ProfileWithSkills): ProfileView {
   const {
     techStack,
@@ -45,23 +36,20 @@ export function toProfileView(profile: ProfileWithSkills): ProfileView {
     resumeSizeBytes,
     resumeSha256,
     resumeUploadedAt,
-    places,
-    spokenLanguages,
+    locations,
+    languages,
     contractTypes,
     salaryMin,
     salaryCurrency,
     salaryPeriod,
     ...columns
   } = profile;
-  const row: Partial<typeof columns> = { ...columns };
-  for (const column of OLD_SHAPE_COLUMNS) delete row[column];
   return {
-    ...(row as Omit<typeof columns, OldShapeColumn>),
+    ...columns,
     // jsonb columns the database checks into these shapes (assert_places, assert_languages).
-    locations: places as PlacesByArrangement,
-    languages: spokenLanguages as SpokenLanguage[],
-    // Non-null for every profile since the dev-profile cleanup; [] only guards the type.
-    contractTypes: [...(contractTypes ?? [])],
+    locations: locations as PlacesByArrangement,
+    languages: languages as SpokenLanguage[],
+    contractTypes: [...contractTypes],
     // All three or none (profiles_salary_all_or_none).
     salary:
       salaryMin !== null && salaryCurrency !== null && salaryPeriod !== null
@@ -115,9 +103,9 @@ export function toQuerySearchInput(
   };
 }
 
-/** The jsonb `places` column, which the database checks into this shape (assert_places). */
+/** The jsonb `locations` column, which the database checks into this shape (assert_places). */
 function profilePlaces(profile: ProfileWithSkills): PlacesByArrangement {
-  return profile.places as PlacesByArrangement;
+  return profile.locations as PlacesByArrangement;
 }
 
 /** The labels of every place the profile lists. */

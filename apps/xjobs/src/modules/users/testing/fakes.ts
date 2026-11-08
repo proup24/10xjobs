@@ -190,11 +190,6 @@ export class FakeProfilesRepository extends ProfilesRepository {
       userId,
       position: data.position,
       ...toProfileColumns(data),
-      // The old shape: no longer written.
-      languages: null,
-      country: null,
-      city: null,
-      locations: null,
       resumeKey: null,
       resumeFilename: null,
       resumeSizeBytes: null,
