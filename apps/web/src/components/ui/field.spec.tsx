@@ -3,6 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { Field, FieldDescription, FieldError, FieldLabel } from './field';
 import { Input } from './input';
 import { Textarea } from './textarea';
+import { InputGroup, InputGroupInput } from './input-group';
 
 afterEach(cleanup);
 
@@ -107,5 +108,26 @@ describe('Field', () => {
     expect(
       screen.getByLabelText('Plain').getAttribute('aria-required'),
     ).toBeNull();
+  });
+});
+
+describe('text inputs', () => {
+  // Below 16px, iOS Safari zooms the page when a field takes focus.
+  it('are 16px on small screens and 14px from md up', () => {
+    render(
+      <>
+        <Input aria-label="plain" />
+        <Textarea aria-label="area" />
+        <InputGroup>
+          <InputGroupInput aria-label="grouped" />
+        </InputGroup>
+      </>,
+    );
+    for (const name of ['plain', 'area', 'grouped']) {
+      const classes = screen.getByLabelText(name).className.split(' ');
+      expect(classes, name).toContain('text-base');
+      expect(classes, name).toContain('md:text-sm');
+      expect(classes, name).not.toContain('text-sm');
+    }
   });
 });

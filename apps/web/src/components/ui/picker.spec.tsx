@@ -13,7 +13,6 @@ const CITIES: PickerOption[] = [
 ];
 
 // First portal mounts can be slow on a loaded host.
-const PORTAL = { timeout: 3000 };
 
 // Base UI opens the list only for typed input (an InputEvent with
 // `inputType`), not for autofill-like changes, so send what a keyboard sends.
@@ -44,7 +43,7 @@ describe('MultiPicker', () => {
   it('typing "ber" and choosing Berlin adds it', async () => {
     const { input, onValueChange } = setup();
     type(input, 'ber');
-    await screen.findByRole('option', { name: 'Berlin' }, PORTAL);
+    await screen.findByRole('option', { name: 'Berlin' });
     expect(optionLabels()).toEqual(['Berlin', 'Alberta']);
     fireEvent.click(screen.getByRole('option', { name: 'Berlin' }));
     expect(onValueChange).toHaveBeenLastCalledWith(['berlin']);
@@ -65,14 +64,14 @@ describe('MultiPicker', () => {
   it('does not list selected options again', async () => {
     const { input } = setup(['berlin']);
     type(input, 'ber');
-    await screen.findByRole('option', { name: 'Alberta' }, PORTAL);
+    await screen.findByRole('option', { name: 'Alberta' });
     expect(optionLabels()).toEqual(['Alberta']);
   });
 
   it('shows emptyText when nothing matches', async () => {
     const { input } = setup();
     type(input, 'tokyo');
-    await screen.findByText('No city found', undefined, PORTAL);
+    await screen.findByText('No city found');
     expect(screen.queryAllByRole('option')).toHaveLength(0);
   });
 });
@@ -95,11 +94,7 @@ describe('Picker', () => {
   it('finds Zürich by typing "zurich" and selects its value', async () => {
     const { input, onValueChange } = setup();
     type(input, 'zurich');
-    const option = await screen.findByRole(
-      'option',
-      { name: 'Zürich' },
-      PORTAL,
-    );
+    const option = await screen.findByRole('option', { name: 'Zürich' });
     expect(optionLabels()).toEqual(['Zürich']);
     fireEvent.click(option);
     expect(onValueChange).toHaveBeenLastCalledWith('zurich');
@@ -113,7 +108,7 @@ describe('Picker', () => {
   it('shows emptyText when nothing matches', async () => {
     const { input } = setup();
     type(input, 'tokyo');
-    await screen.findByText('No city found', undefined, PORTAL);
+    await screen.findByText('No city found');
   });
 
   it('renders at most 50 of 2,000 options and still finds the last one', async () => {
@@ -133,10 +128,10 @@ describe('Picker', () => {
     );
     const input = screen.getByRole('combobox');
     type(input, 'option');
-    await screen.findByRole('option', { name: 'Option 0' }, PORTAL);
+    await screen.findByRole('option', { name: 'Option 0' });
     expect(screen.getAllByRole('option')).toHaveLength(50);
     type(input, 'option 1999');
-    await screen.findByRole('option', { name: 'Option 1999' }, PORTAL);
+    await screen.findByRole('option', { name: 'Option 1999' });
     expect(optionLabels()).toEqual(['Option 1999']);
   });
 

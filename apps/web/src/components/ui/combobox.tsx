@@ -236,7 +236,7 @@ function ComboboxChips({
     <ComboboxPrimitive.Chips
       data-slot="combobox-chips"
       className={cn(
-        'flex min-h-9 w-full min-w-0 flex-wrap items-center gap-1 rounded-md border border-input bg-transparent bg-clip-padding px-2.5 py-1 text-sm transition-colors focus-within:border-brand focus-within:ring-3 focus-within:ring-brand/30 has-disabled:opacity-50 has-aria-invalid:border-destructive has-aria-invalid:ring-3 has-aria-invalid:ring-destructive/20 has-data-[slot=combobox-chip]:px-1 dark:bg-input/30 dark:has-aria-invalid:border-destructive/50 dark:has-aria-invalid:ring-destructive/40',
+        'flex min-h-9 w-full min-w-0 flex-wrap items-center gap-1 rounded-md border border-input bg-transparent bg-clip-padding px-2.5 py-1 text-sm transition-colors focus-within:border-ring focus-within:ring-1 focus-within:ring-ring has-disabled:opacity-50 has-aria-invalid:border-destructive has-aria-invalid:ring-3 has-aria-invalid:ring-destructive/20 has-data-[slot=combobox-chip]:px-1 dark:bg-input/30 dark:has-aria-invalid:border-destructive/50 dark:has-aria-invalid:ring-destructive/40',
         className,
       )}
       {...props}
@@ -289,7 +289,7 @@ function ComboboxChipsInput({
     <ComboboxPrimitive.Input
       data-slot="combobox-chip-input"
       className={cn(
-        'h-7 min-w-16 flex-1 bg-transparent px-1 outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed',
+        'h-7 min-w-16 flex-1 bg-transparent px-1 text-base outline-none md:text-sm placeholder:text-muted-foreground disabled:cursor-not-allowed',
         className,
       )}
       {...props}

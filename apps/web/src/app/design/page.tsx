@@ -3,9 +3,11 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { isShowcaseEnabled } from '@/lib/design/showcase';
 import { ButtonsSection } from './_sections/buttons';
 import { ComponentsSection } from './_sections/components';
+import { DisplaySection } from './_sections/display';
 import { FieldsSection } from './_sections/fields';
 import { InputsSection } from './_sections/inputs';
 import { OverlaysSection } from './_sections/overlays';
+import { SidebarSection } from './_sections/sidebar';
 import { PickersSection } from './_sections/pickers';
 import { TokensSection } from './_sections/tokens';
 
@@ -26,6 +28,8 @@ export default function DesignPage() {
       <FieldsSection />
       <PickersSection />
       <OverlaysSection />
+      <SidebarSection />
+      <DisplaySection />
       <ComponentsSection />
     </main>
   );

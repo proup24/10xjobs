@@ -30,6 +30,14 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
+import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -81,6 +89,21 @@ export function OverlaysSection() {
             <DropdownMenuItem variant="destructive">Reject</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+      </Block>
+      <Block title="Sheet: a side panel (the mobile navigation drawer)">
+        <Sheet>
+          <SheetTrigger render={<Button variant="outline" />}>
+            Open sheet
+          </SheetTrigger>
+          <SheetContent side="left">
+            <SheetHeader>
+              <SheetTitle>Side panel</SheetTitle>
+              <SheetDescription>
+                Opens from an edge. The close button is in the corner.
+              </SheetDescription>
+            </SheetHeader>
+          </SheetContent>
+        </Sheet>
       </Block>
       <Block title="Dialog: a task with its own content or form">
         <Dialog>
