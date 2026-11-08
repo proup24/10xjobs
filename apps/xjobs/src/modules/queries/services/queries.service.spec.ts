@@ -1,11 +1,4 @@
-import {
-  Arrangement,
-  Channel,
-  Position,
-  Seniority,
-  SkillDomain,
-  Technology,
-} from 'src/common/enums';
+import { Arrangement, Channel, Seniority, SkillDomain } from 'src/common/enums';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { LOCATIONS_REQUIRED, SKILLS_REQUIRED } from '../steps';
 import type { QuerySearchProfileInput, QuerySearchRecipe } from '../types';
@@ -20,7 +13,7 @@ vi.mock('src/common/enums', async (importOriginal) => {
 });
 
 const profile: QuerySearchProfileInput = {
-  position: Position.backend_engineer,
+  position: 'backend_engineer',
   locations: {
     remote: ['EMEA', 'MENA'],
     hybrid: [],
@@ -29,19 +22,19 @@ const profile: QuerySearchProfileInput = {
   seniorities: [Seniority.senior],
   skills: [
     {
-      technology: Technology.nestjs,
+      technology: 'nestjs',
       domain: SkillDomain.backend,
       importance: 9,
       mastery: 5,
     },
     {
-      technology: Technology.typescript,
+      technology: 'typescript',
       domain: SkillDomain.backend,
       importance: 8,
       mastery: 5,
     },
     {
-      technology: Technology.postgresql,
+      technology: 'postgresql',
       domain: SkillDomain.backend,
       importance: 7,
       mastery: 5,
@@ -184,9 +177,9 @@ describe('QuerySearchService', () => {
     it('builds every recipe from the one position', async () => {
       const { service } = await setup();
       const recipes = service.expand(profile);
-      expect(
-        recipes.every((r) => r.position === Position.backend_engineer),
-      ).toBe(true);
+      expect(recipes.every((r) => r.position === 'backend_engineer')).toBe(
+        true,
+      );
     });
 
     it('shares one builder between profiles with the same recipe and counts both', async () => {

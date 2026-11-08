@@ -1,7 +1,11 @@
 import type { SkillDomain } from 'src/common/enums';
 import type { ProfileRow, ProfileSkillRow } from 'src/database';
 import type { QuerySearchAttachResult } from 'src/modules/queries';
-import type { PlacesByArrangement, Salary, SpokenLanguage } from './place.types';
+import type {
+  PlacesByArrangement,
+  Salary,
+  SpokenLanguage,
+} from './place.types';
 
 /**
  * A profile as the engine writes it. Codes are plain strings: the database's
@@ -10,9 +14,7 @@ import type { PlacesByArrangement, Salary, SpokenLanguage } from './place.types'
 export type ProfileInput = {
   /** A role_kinds code. */
   position: string;
-  /** Written to the `places` column. */
   locations: PlacesByArrangement;
-  /** Written to the `spokenLanguages` column. */
   languages: SpokenLanguage[];
   yearsOfExperience: number;
   timezoneCurrent: number;
@@ -45,28 +47,22 @@ export type SkillInput = {
 
 export type ProfileWithSkills = ProfileRow & { techStack: ProfileSkillRow[] };
 
-/** Columns the API does not show as stored: the old shape, and the new fields it renames or groups. */
+/** Columns the API does not show as stored: it types the jsonb ones, and groups the salary and resume ones. */
 export type HiddenProfileColumns =
   | 'resumeKey'
   | 'resumeFilename'
   | 'resumeSizeBytes'
   | 'resumeSha256'
   | 'resumeUploadedAt'
-  | 'languages'
-  | 'country'
-  | 'city'
   | 'locations'
-  | 'places'
-  | 'spokenLanguages'
+  | 'languages'
   | 'contractTypes'
   | 'salaryMin'
   | 'salaryCurrency'
   | 'salaryPeriod';
 
 export type ProfileView = Omit<ProfileRow, HiddenProfileColumns> & {
-  /** The `places` column. */
   locations: PlacesByArrangement;
-  /** The `spokenLanguages` column. */
   languages: SpokenLanguage[];
   contractTypes: string[];
   salary: Salary | null;

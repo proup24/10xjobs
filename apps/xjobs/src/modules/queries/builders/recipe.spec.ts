@@ -1,10 +1,4 @@
-import {
-  Arrangement,
-  Channel,
-  Seniority,
-  SkillDomain,
-  Technology,
-} from 'src/common/enums';
+import { Arrangement, Channel, Seniority, SkillDomain } from 'src/common/enums';
 import { locationKey } from '../steps/normalize';
 import type { QuerySearchCombination } from '../types';
 import { QUERY_SEARCH_RECIPE_VERSION, recipeHash, toRecipe } from './recipe';
@@ -32,10 +26,7 @@ describe('recipe', () => {
     ['experience', { experience: Seniority.staff }],
     ['type', { type: Arrangement.hybrid }],
     ['domain', { domain: SkillDomain.fullstack }],
-    [
-      'technology order',
-      { technologies: [Technology.typescript, Technology.nestjs] },
-    ],
+    ['technology order', { technologies: ['typescript', 'nestjs'] }],
   ])('changes the hash when %s changes', (_name, change) => {
     expect(toRecipe({ ...base, ...change }).hash).not.toBe(toRecipe(base).hash);
   });

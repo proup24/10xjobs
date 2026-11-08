@@ -1,4 +1,4 @@
-import { Position, Seniority } from 'src/common/enums';
+import { Seniority } from 'src/common/enums';
 import type { QuerySearchProfileInput } from '../types';
 import {
   displayLocation,
@@ -9,7 +9,7 @@ import {
 
 const empty = { remote: [], hybrid: [], onsite: [] };
 const input: QuerySearchProfileInput = {
-  position: Position.backend_engineer,
+  position: 'backend_engineer',
   seniorities: [Seniority.senior],
   locations: { ...empty, remote: ['EMEA'] },
   skills: [],

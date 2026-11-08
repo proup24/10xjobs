@@ -1,4 +1,4 @@
-import { SkillDomain, Technology } from 'src/common/enums';
+import { SkillDomain } from 'src/common/enums';
 import type { RankedSkill } from '../types';
 import { technologySets, topTechnologies } from './technology';
 
@@ -13,39 +13,34 @@ describe('topTechnologies', () => {
   it('orders by importance, then mastery', () => {
     expect(
       topTechnologies([
-        skill(Technology.go, 5, 9),
-        skill(Technology.rust, 8, 5),
-        skill(Technology.nestjs, 8, 5),
+        skill('go', 5, 9),
+        skill('rust', 8, 5),
+        skill('nestjs', 8, 5),
       ]),
-    ).toEqual([Technology.nestjs, Technology.rust]);
+    ).toEqual(['nestjs', 'rust']);
   });
 
   it('breaks full ties by technology name', () => {
-    expect(
-      topTechnologies([
-        skill(Technology.rust, 5, 5),
-        skill(Technology.go, 5, 5),
-      ]),
-    ).toEqual([Technology.go, Technology.rust]);
+    expect(topTechnologies([skill('rust', 5, 5), skill('go', 5, 5)])).toEqual([
+      'go',
+      'rust',
+    ]);
   });
 
   it('drops importance 0', () => {
-    expect(
-      topTechnologies([
-        skill(Technology.go, 0, 9),
-        skill(Technology.rust, 1, 0),
-      ]),
-    ).toEqual([Technology.rust]);
+    expect(topTechnologies([skill('go', 0, 9), skill('rust', 1, 0)])).toEqual([
+      'rust',
+    ]);
   });
 
   it('counts a technology under two domains once, at its highest rank', () => {
     expect(
       topTechnologies([
-        skill(Technology.go, 3, 9),
-        skill(Technology.rust, 5, 5),
-        skill(Technology.go, 8, 1),
+        skill('go', 3, 9),
+        skill('rust', 5, 5),
+        skill('go', 8, 1),
       ]),
-    ).toEqual([Technology.go, Technology.rust]);
+    ).toEqual(['go', 'rust']);
   });
 
   it('searches only techs with search wording, never a concept tag such as saas', () => {
@@ -68,18 +63,18 @@ describe('topTechnologies', () => {
   it('keeps only the top 2 of 5', () => {
     expect(
       topTechnologies([
-        skill(Technology.go, 1, 5),
-        skill(Technology.rust, 2, 5),
-        skill(Technology.nestjs, 3, 5),
-        skill(Technology.react, 4, 5),
-        skill(Technology.postgresql, 5, 5),
+        skill('go', 1, 5),
+        skill('rust', 2, 5),
+        skill('nestjs', 3, 5),
+        skill('react', 4, 5),
+        skill('postgresql', 5, 5),
       ]),
-    ).toEqual([Technology.postgresql, Technology.react]);
+    ).toEqual(['postgresql', 'react']);
   });
 });
 
 describe('technologySets', () => {
-  const [a, b, c] = [Technology.go, Technology.rust, Technology.nestjs];
+  const [a, b, c] = ['go', 'rust', 'nestjs'];
   const skills = [
     skill(a, 9, 5, SkillDomain.backend),
     skill(b, 8, 5, SkillDomain.devops),

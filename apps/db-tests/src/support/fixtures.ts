@@ -4,16 +4,8 @@ import { admin } from './admin.js';
 /** Valid required `profiles` fields; the owner is added by the caller. */
 export const profileFields = () => ({
   position: 'backend_engineer',
-  languages: ['EN', 'FR'],
-  country: 'MA',
-  city: 'Rabat',
-  locations: {
-    remote: ['MENA', 'North Africa', 'EMEA'],
-    hybrid: [],
-    onsite: [],
-  },
   contractTypes: ['full_time'],
-  places: {
+  locations: {
     remote: [
       { kind: 'region', code: 'MENA' },
       { kind: 'country', code: 'MA' },
@@ -21,7 +13,7 @@ export const profileFields = () => ({
     hybrid: [],
     onsite: [],
   },
-  spokenLanguages: [
+  languages: [
     { lang: 'en', level: 'fluent' },
     { lang: 'fr', level: 'native' },
   ],

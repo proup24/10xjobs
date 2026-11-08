@@ -1,4 +1,5 @@
-import { Position, Seniority, Technology } from 'src/common/enums';
+import { ENGINEERING_ROLE_KINDS } from '@xjobs/database';
+import { Seniority } from 'src/common/enums';
 import {
   ARRANGEMENT_WORDS,
   POSITION_TITLES,
@@ -8,7 +9,7 @@ import {
 
 describe('keywords', () => {
   it('maps every position to normalized phrases', () => {
-    for (const position of Object.values(Position)) {
+    for (const position of ENGINEERING_ROLE_KINDS) {
       const titles = POSITION_TITLES[position];
       expect(titles.length).toBeGreaterThanOrEqual(1);
       expect(titles.length).toBeLessThanOrEqual(3);
@@ -26,7 +27,7 @@ describe('keywords', () => {
   });
 
   it('maps every technology to a non-empty term', () => {
-    for (const technology of Object.values(Technology)) {
+    for (const technology of Object.keys(TECHNOLOGY_TERMS)) {
       expect(TECHNOLOGY_TERMS[technology]).toBeTruthy();
     }
     expect(TECHNOLOGY_TERMS.nodejs).toBe('node.js');

@@ -1,4 +1,4 @@
-import { Arrangement, Channel, Seniority, Technology } from 'src/common/enums';
+import { Arrangement, Channel, Seniority } from 'src/common/enums';
 import type { ChannelQuery, QuerySearchCombination } from '../types';
 import type { ChannelQueryBuilder } from '../builders/channel.builder';
 import { TECHNOLOGY_TERMS } from '../builders/keywords';
@@ -34,17 +34,17 @@ const WORK_TYPES: Record<Arrangement, string | null> = {
  * {@link TECHNOLOGY_TERMS}; `golang` stays, a bare `go` matching everything.
  */
 const LINKEDIN_TERMS: Readonly<Record<string, string>> = {
-  [Technology.nodejs]: 'node js',
-  [Technology.nextjs]: 'next js',
-  [Technology.vue]: 'vue js',
-  [Technology.express]: 'express js',
-  [Technology.spring]: 'spring',
-  [Technology.spark]: 'spark',
-  [Technology.tailwindcss]: 'tailwind',
-  [Technology.rails]: 'rails',
-  [Technology.dotnet]: 'dotnet',
-  [Technology.csharp]: 'csharp',
-  [Technology.cpp]: 'cpp',
+  nodejs: 'node js',
+  nextjs: 'next js',
+  vue: 'vue js',
+  express: 'express js',
+  spring: 'spring',
+  spark: 'spark',
+  tailwindcss: 'tailwind',
+  rails: 'rails',
+  dotnet: 'dotnet',
+  csharp: 'csharp',
+  cpp: 'cpp',
 };
 
 /** The technology as LinkedIn posters write it. */

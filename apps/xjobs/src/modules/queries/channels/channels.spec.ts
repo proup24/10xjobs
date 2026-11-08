@@ -1,11 +1,5 @@
-import {
-  Arrangement,
-  Channel,
-  Position,
-  Seniority,
-  SkillDomain,
-  Technology,
-} from 'src/common/enums';
+import { ENGINEERING_ROLE_KINDS } from '@xjobs/database';
+import { Arrangement, Channel, Seniority, SkillDomain } from 'src/common/enums';
 import { locationKey } from '../steps/normalize';
 import type { QuerySearchCombination } from '../types';
 import { TECHNOLOGY_TERMS } from '../builders/keywords';
@@ -121,19 +115,19 @@ describe('LinkedIn job board builder', () => {
   });
 
   it('uses the short spelling LinkedIn posters write', () => {
-    const keyword = (technologies: Technology[]) =>
+    const keyword = (technologies: string[]) =>
       build(Channel.LINKEDIN_JOB_BOARD, { technologies }).keyword;
-    expect(keyword([Technology.nextjs])).toBe('next js');
-    expect(keyword([Technology.nodejs])).toBe('node js');
-    expect(keyword([Technology.spring])).toBe('spring');
-    expect(keyword([Technology.dotnet])).toBe('dotnet');
-    expect(keyword([Technology.csharp])).toBe('csharp');
-    expect(keyword([Technology.cpp])).toBe('cpp');
-    expect(keyword([Technology.go])).toBe('golang');
+    expect(keyword(['nextjs'])).toBe('next js');
+    expect(keyword(['nodejs'])).toBe('node js');
+    expect(keyword(['spring'])).toBe('spring');
+    expect(keyword(['dotnet'])).toBe('dotnet');
+    expect(keyword(['csharp'])).toBe('csharp');
+    expect(keyword(['cpp'])).toBe('cpp');
+    expect(keyword(['go'])).toBe('golang');
   });
 
   it('keeps every LinkedIn term free of quotes and symbols', () => {
-    for (const technology of Object.values(Technology))
+    for (const technology of Object.keys(TECHNOLOGY_TERMS))
       expect(linkedinTerm(technology)).toMatch(/^[a-z0-9 ]+$/);
   });
 
@@ -189,10 +183,10 @@ describe('LinkedIn posts builder', () => {
   });
 
   it('stays within the actor limits of 500 characters and 5 operators', () => {
-    const longest = Object.values(Technology).reduce((a, b) =>
+    const longest = Object.keys(TECHNOLOGY_TERMS).reduce((a, b) =>
       TECHNOLOGY_TERMS[a].length >= TECHNOLOGY_TERMS[b].length ? a : b,
     );
-    for (const position of Object.values(Position)) {
+    for (const position of ENGINEERING_ROLE_KINDS) {
       const { keyword } = build(Channel.LINKEDIN_POSTS, {
         ...onsite,
         position,
@@ -245,7 +239,7 @@ describe('Greenhouse and Ashby builders', () => {
   });
 
   it("stay within Google's 32 words", () => {
-    for (const position of Object.values(Position)) {
+    for (const position of ENGINEERING_ROLE_KINDS) {
       const { keyword } = build(Channel.ASHBY, { ...onsite, position });
       const words = `site:jobs.ashbyhq.com ${keyword} (intitle:engineer OR intitle:developer) -intitle:manager -intitle:director -intitle:intern`;
       expect(words.split(/\s+/).length).toBeLessThanOrEqual(32);

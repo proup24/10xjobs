@@ -9,17 +9,18 @@ import type { TestUser } from './support/test-users.js';
 afterAll(cleanupTestUsers);
 
 const CHECK_VIOLATION = '23514';
+const NOT_NULL_VIOLATION = '23502';
 
 function expectCheckViolation(error: PostgrestError | null, field: string) {
   expect(error?.code).toBe(CHECK_VIOLATION);
   expect(error?.message).toContain(field);
 }
 
-/** A valid draft with the new preference fields set. */
+/** A valid draft with every preference field set. */
 const draft = () => ({
   ...profileFields(),
   contractTypes: ['full_time', 'contract'],
-  places: {
+  locations: {
     remote: [
       { kind: 'worldwide' },
       { kind: 'region', code: 'EMEA' },
@@ -28,7 +29,7 @@ const draft = () => ({
     hybrid: [],
     onsite: [],
   },
-  spokenLanguages: [{ lang: 'en', level: 'fluent' }],
+  languages: [{ lang: 'en', level: 'fluent' }],
   salaryMin: 3000,
   salaryCurrency: 'EUR',
   salaryPeriod: 'month',
@@ -76,17 +77,15 @@ describe('profile codes are checked against the value lists', () => {
     expect(countryPlaces).toHaveLength(21);
 
     // Cities are not pre-seeded: seed one approved city for the city-place cases.
-    const city = await admin()
-      .from('cities')
-      .insert({
-        id: approvedCityId,
-        name: approvedCityKey,
-        nameKey: approvedCityKey,
-        countryCode: 'MA',
-        aliases: [],
-        status: 'approved',
-        firstSeenAt: new Date().toISOString(),
-      });
+    const city = await admin().from('cities').insert({
+      id: approvedCityId,
+      name: approvedCityKey,
+      nameKey: approvedCityKey,
+      countryCode: 'MA',
+      aliases: [],
+      status: 'approved',
+      firstSeenAt: new Date().toISOString(),
+    });
     if (city.error) throw new Error(city.error.message);
   });
 
@@ -105,15 +104,15 @@ describe('profile codes are checked against the value lists', () => {
     const { data, error: readError } = await a.client
       .from('profiles')
       .select(
-        'contractTypes, places, spokenLanguages, salaryMin, salaryCurrency, salaryPeriod, acceptsAnyCurrency, acceptedCurrencies',
+        'contractTypes, locations, languages, salaryMin, salaryCurrency, salaryPeriod, acceptsAnyCurrency, acceptedCurrencies',
       )
       .eq('id', id)
       .single();
     expect(readError).toBeNull();
     const {
       contractTypes,
-      places,
-      spokenLanguages,
+      locations,
+      languages,
       salaryMin,
       salaryCurrency,
       salaryPeriod,
@@ -122,8 +121,8 @@ describe('profile codes are checked against the value lists', () => {
     } = draft();
     expect(data).toEqual({
       contractTypes,
-      places,
-      spokenLanguages,
+      locations,
+      languages,
       salaryMin,
       salaryCurrency,
       salaryPeriod,
@@ -132,14 +131,21 @@ describe('profile codes are checked against the value lists', () => {
     });
   });
 
-  it('accepts a profile with only the new fields: the old shape columns stay null', async () => {
+  it.each(['contractTypes', 'locations', 'languages'])(
+    'refuses a profile without %s',
+    async (column) => {
+      const { error } = await insertProfile({ [column]: null });
+      expect(error?.code).toBe(NOT_NULL_VIOLATION);
+      expect(error?.message).toContain(column);
+    },
+  );
+
+  it('refuses a profile with no place in any arrangement', async () => {
     const { error } = await insertProfile({
-      languages: null,
-      country: null,
-      city: null,
-      locations: null,
+      locations: { remote: [], hybrid: [], onsite: [] },
     });
-    expect(error).toBeNull();
+    expect(error?.code).toBe(CHECK_VIOLATION);
+    expect(error?.message).toContain('profiles_locations_nonempty');
   });
 
   it('refuses a proposed technology in a skill', async () => {
@@ -179,56 +185,56 @@ describe('profile codes are checked against the value lists', () => {
     [
       'unknown country place',
       () => ({
-        places: {
+        locations: {
           remote: [{ kind: 'country', code: 'ZZ' }],
           hybrid: [],
           onsite: [],
         },
       }),
-      'profiles.places',
+      'profiles.locations',
     ],
     [
       'GLOBAL region',
       () => ({
-        places: {
+        locations: {
           remote: [{ kind: 'region', code: 'GLOBAL' }],
           hybrid: [],
           onsite: [],
         },
       }),
-      'profiles.places',
+      'profiles.locations',
     ],
     [
       'unknown city id',
       () => ({
-        places: {
+        locations: {
           remote: [],
           hybrid: [],
           onsite: [{ kind: 'city', id: randomUUID() }],
         },
       }),
-      'profiles.places',
+      'profiles.locations',
     ],
     [
       'malformed city id',
       () => ({
-        places: {
+        locations: {
           remote: [],
           hybrid: [],
           onsite: [{ kind: 'city', id: 'not-a-uuid' }],
         },
       }),
-      'profiles.places',
+      'profiles.locations',
     ],
     [
       '21 places',
-      () => ({ places: { remote: countryPlaces, hybrid: [], onsite: [] } }),
-      'profiles.places',
+      () => ({ locations: { remote: countryPlaces, hybrid: [], onsite: [] } }),
+      'profiles.locations',
     ],
     [
       'duplicate place',
       () => ({
-        places: {
+        locations: {
           remote: [
             { kind: 'country', code: 'MA' },
             { kind: 'country', code: 'MA' },
@@ -237,55 +243,51 @@ describe('profile codes are checked against the value lists', () => {
           onsite: [],
         },
       }),
-      'profiles.places',
+      'profiles.locations',
     ],
     [
       'scalar place',
-      () => ({ places: { remote: ['MA'], hybrid: [], onsite: [] } }),
-      'profiles.places',
+      () => ({ locations: { remote: ['MA'], hybrid: [], onsite: [] } }),
+      'profiles.locations',
     ],
     [
       'null place',
-      () => ({ places: { remote: [null], hybrid: [], onsite: [] } }),
-      'profiles.places',
+      () => ({ locations: { remote: [null], hybrid: [], onsite: [] } }),
+      'profiles.locations',
     ],
     [
       'unknown place kind',
       () => ({
-        places: { remote: [{ kind: 'planet' }], hybrid: [], onsite: [] },
+        locations: { remote: [{ kind: 'planet' }], hybrid: [], onsite: [] },
       }),
-      'profiles.places',
+      'profiles.locations',
     ],
     [
       'missing arrangement',
-      () => ({ places: { remote: [], hybrid: [] } }),
-      'profiles.places',
+      () => ({ locations: { remote: [], hybrid: [] } }),
+      'profiles.locations',
     ],
     [
       'bad language',
-      () => ({ spokenLanguages: [{ lang: 'xx', level: 'fluent' }] }),
-      'profiles.spokenLanguages',
+      () => ({ languages: [{ lang: 'xx', level: 'fluent' }] }),
+      'profiles.languages',
     ],
     [
       'bad level',
-      () => ({ spokenLanguages: [{ lang: 'en', level: 'basic' }] }),
-      'profiles.spokenLanguages',
+      () => ({ languages: [{ lang: 'en', level: 'basic' }] }),
+      'profiles.languages',
     ],
     [
       'duplicate language',
       () => ({
-        spokenLanguages: [
+        languages: [
           { lang: 'en', level: 'fluent' },
           { lang: 'en', level: 'native' },
         ],
       }),
-      'profiles.spokenLanguages',
+      'profiles.languages',
     ],
-    [
-      'no languages',
-      () => ({ spokenLanguages: [] }),
-      'profiles.spokenLanguages',
-    ],
+    ['no languages', () => ({ languages: [] }), 'profiles.languages'],
     [
       'bad currency',
       () => ({
@@ -314,21 +316,21 @@ describe('profile codes are checked against the value lists', () => {
 
   it('says a profile uses worldwide instead of the GLOBAL region', async () => {
     const { error } = await insertProfile({
-      places: {
+      locations: {
         remote: [{ kind: 'region', code: 'GLOBAL' }],
         hybrid: [],
         onsite: [],
       },
     });
-    expectCheckViolation(error, "profiles.places: 'GLOBAL'");
+    expectCheckViolation(error, "profiles.locations: 'GLOBAL'");
     expect(error?.message).toBe(
-      "profiles.places: 'GLOBAL' is not allowed in a profile; use { kind: worldwide }",
+      "profiles.locations: 'GLOBAL' is not allowed in a profile; use { kind: worldwide }",
     );
   });
 
   it('accepts an approved city, its id in any case', async () => {
     const { error } = await insertProfile({
-      places: {
+      locations: {
         remote: [],
         hybrid: [],
         onsite: [{ kind: 'city', id: approvedCityId.toUpperCase() }],
@@ -339,7 +341,7 @@ describe('profile codes are checked against the value lists', () => {
 
   it('refuses the same city twice when its id differs only in case', async () => {
     const { error } = await insertProfile({
-      places: {
+      locations: {
         remote: [],
         hybrid: [],
         onsite: [
@@ -348,7 +350,7 @@ describe('profile codes are checked against the value lists', () => {
         ],
       },
     });
-    expectCheckViolation(error, 'profiles.places');
+    expectCheckViolation(error, 'profiles.locations');
     expect(error?.message).toContain('more than once');
   });
 
@@ -404,13 +406,6 @@ describe('profile codes are checked against the value lists', () => {
     });
     expect(error?.code).toBe(CHECK_VIOLATION);
     expect(error?.message).toContain('profiles_currencies_any_xor_list');
-  });
-
-  it('accepts a profile written the old way, without the new columns', async () => {
-    const { error } = await a.client
-      .from('profiles')
-      .insert({ id: randomUUID(), userId: a.id, ...profileFields() });
-    expect(error).toBeNull();
   });
 
   it('accepts a profile with no salary and any currency', async () => {

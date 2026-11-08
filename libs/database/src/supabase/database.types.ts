@@ -883,16 +883,13 @@ export type Database = {
         Row: {
           acceptedCurrencies: string[];
           acceptsAnyCurrency: boolean;
-          city: string | null;
-          contractTypes: string[] | null;
-          country: string | null;
+          contractTypes: string[];
           createdAt: string;
           engagements: string[];
           id: string;
-          languages: string[] | null;
-          locations: Json | null;
+          languages: NonNullable<Json>;
+          locations: NonNullable<Json>;
           noticePeriodDays: number;
-          places: Json | null;
           position: string;
           publishedAt: string | null;
           resumeFilename: string | null;
@@ -904,7 +901,6 @@ export type Database = {
           salaryMin: number | null;
           salaryPeriod: string | null;
           seniorities: string[];
-          spokenLanguages: Json | null;
           state: string;
           timezoneCurrent: number;
           timezoneMax: number;
@@ -917,16 +913,13 @@ export type Database = {
         Insert: {
           acceptedCurrencies?: string[];
           acceptsAnyCurrency?: boolean;
-          city?: string | null;
-          contractTypes?: string[] | null;
-          country?: string | null;
+          contractTypes: string[];
           createdAt?: string;
           engagements: string[];
           id: string;
-          languages?: string[] | null;
-          locations?: Json | null;
+          languages: NonNullable<Json>;
+          locations: NonNullable<Json>;
           noticePeriodDays: number;
-          places?: Json | null;
           position: string;
           publishedAt?: string | null;
           resumeFilename?: string | null;
@@ -938,7 +931,6 @@ export type Database = {
           salaryMin?: number | null;
           salaryPeriod?: string | null;
           seniorities: string[];
-          spokenLanguages?: Json | null;
           state?: string;
           timezoneCurrent: number;
           timezoneMax: number;
@@ -950,16 +942,13 @@ export type Database = {
         Update: {
           acceptedCurrencies?: string[];
           acceptsAnyCurrency?: boolean;
-          city?: string | null;
-          contractTypes?: string[] | null;
-          country?: string | null;
+          contractTypes?: string[];
           createdAt?: string;
           engagements?: string[];
           id?: string;
-          languages?: string[] | null;
-          locations?: Json | null;
+          languages?: NonNullable<Json>;
+          locations?: NonNullable<Json>;
           noticePeriodDays?: number;
-          places?: Json | null;
           position?: string;
           publishedAt?: string | null;
           resumeFilename?: string | null;
@@ -971,7 +960,6 @@ export type Database = {
           salaryMin?: number | null;
           salaryPeriod?: string | null;
           seniorities?: string[];
-          spokenLanguages?: Json | null;
           state?: string;
           timezoneCurrent?: number;
           timezoneMax?: number;

@@ -12,9 +12,13 @@ afterAll(cleanupTestUsers);
 const draftProfile = (userId: string) => ({
   userId,
   position: 'backend_engineer',
-  languages: ['EN'],
-  country: 'MA',
-  locations: { remote: ['EMEA'], hybrid: [], onsite: [] },
+  contractTypes: ['full_time'],
+  locations: {
+    remote: [{ kind: 'region', code: 'EMEA' }],
+    hybrid: [],
+    onsite: [],
+  },
+  languages: [{ lang: 'en', level: 'fluent' }],
   yearsOfExperience: 5,
   timezoneCurrent: 60,
   timezoneMin: 0,

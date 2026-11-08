@@ -1,11 +1,4 @@
-import {
-  Arrangement,
-  Engagement,
-  Position,
-  Region,
-  Seniority,
-  Technology,
-} from '../../enums';
+import { Arrangement, Engagement, Seniority } from '../../enums';
 import {
   ENGINEERING_ROLE_KINDS,
   SEED,
@@ -20,10 +13,7 @@ describe('processor seed data', () => {
   it.each([
     ['arrangements', Arrangement],
     ['seniorities', Seniority],
-    ['roleKinds', Position],
     ['engagements', Engagement],
-    ['regions', Region],
-    ['techTags', Technology],
   ] as const)('every contract enum code is a seed code (%s)', (list, enm) => {
     for (const value of Object.values(enm)) {
       expect(codes(list)).toContain(value);
@@ -81,7 +71,27 @@ describe('processor seed data', () => {
   });
 
   it('marks exactly the 17 engineering role kinds, all seeded', () => {
-    expect(ENGINEERING_ROLE_KINDS).toHaveLength(17);
+    expect([...ENGINEERING_ROLE_KINDS].sort()).toEqual(
+      [
+        'backend_engineer',
+        'frontend_engineer',
+        'fullstack_engineer',
+        'mobile_engineer',
+        'devops_engineer',
+        'site_reliability_engineer',
+        'platform_engineer',
+        'cloud_engineer',
+        'security_engineer',
+        'data_engineer',
+        'ml_engineer',
+        'ai_engineer',
+        'qa_engineer',
+        'embedded_engineer',
+        'software_architect',
+        'tech_lead',
+        'engineering_manager',
+      ].sort(),
+    );
     expect(codes('roleKinds')).toEqual(
       expect.arrayContaining([...ENGINEERING_ROLE_KINDS]),
     );

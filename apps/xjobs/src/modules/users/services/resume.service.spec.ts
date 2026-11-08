@@ -1,12 +1,7 @@
 import { QuerySearchService } from 'src/modules/queries';
 import { FakeQuerySearchRepository } from 'src/modules/queries/testing/fakes';
 import { NotFoundException } from '@nestjs/common';
-import {
-  Engagement,
-  Position,
-  ProfileState,
-  Seniority,
-} from 'src/common/enums';
+import { Engagement, ProfileState, Seniority } from 'src/common/enums';
 import { ProfilesService } from './profiles.service';
 import { ResumeService } from './resume.service';
 import { MemoryStorageService } from 'src/modules/storage/testing';
@@ -17,7 +12,7 @@ import type { ProfileInput } from '../types';
 const pdfBytes = Buffer.from('%PDF-1.7\n%%EOF');
 
 const profileInput: ProfileInput = {
-  position: Position.backend_engineer,
+  position: 'backend_engineer',
   languages: [{ lang: 'en', level: 'fluent' }],
   locations: { remote: [{ kind: 'worldwide' }], hybrid: [], onsite: [] },
   yearsOfExperience: 6,

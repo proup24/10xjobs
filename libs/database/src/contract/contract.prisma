@@ -14,51 +14,6 @@ model mixin Timestamps {
 
 // Each enum below has a TypeScript twin in libs/database/src/enums/<name>.enum.ts;
 // libs/database/src/enums/enums.spec.ts fails when they drift.
-enum Position {
-  @@type("pg/text@1")
-  backend_engineer = "backend_engineer"
-  frontend_engineer = "frontend_engineer"
-  fullstack_engineer = "fullstack_engineer"
-  mobile_engineer = "mobile_engineer"
-  devops_engineer = "devops_engineer"
-  site_reliability_engineer = "site_reliability_engineer"
-  platform_engineer = "platform_engineer"
-  cloud_engineer = "cloud_engineer"
-  security_engineer = "security_engineer"
-  data_engineer = "data_engineer"
-  ml_engineer = "ml_engineer"
-  ai_engineer = "ai_engineer"
-  qa_engineer = "qa_engineer"
-  embedded_engineer = "embedded_engineer"
-  software_architect = "software_architect"
-  tech_lead = "tech_lead"
-  engineering_manager = "engineering_manager"
-}
-
-enum Language {
-  @@type("pg/text@1")
-  AR = "AR"
-  FR = "FR"
-  EN = "EN"
-  ES = "ES"
-}
-
-enum Region {
-  @@type("pg/text@1")
-  EMEA = "EMEA"
-  MENA = "MENA"
-  NORTH_AFRICA = "NORTH_AFRICA"
-  SUB_SAHARAN_AFRICA = "SUB_SAHARAN_AFRICA"
-  MIDDLE_EAST = "MIDDLE_EAST"
-  EUROPE = "EUROPE"
-  EU = "EU"
-  UK = "UK"
-  NORTH_AMERICA = "NORTH_AMERICA"
-  LATAM = "LATAM"
-  APAC = "APAC"
-  GLOBAL = "GLOBAL"
-}
-
 enum Engagement {
   @@type("pg/text@1")
   employee = "employee"
@@ -110,76 +65,6 @@ enum SkillDomain {
   ml = "ml"
   security = "security"
   qa = "qa"
-}
-
-enum Technology {
-  @@type("pg/text@1")
-  javascript = "javascript"
-  typescript = "typescript"
-  python = "python"
-  java = "java"
-  kotlin = "kotlin"
-  go = "go"
-  rust = "rust"
-  csharp = "csharp"
-  cpp = "cpp"
-  php = "php"
-  ruby = "ruby"
-  scala = "scala"
-  elixir = "elixir"
-  swift = "swift"
-  dart = "dart"
-  sql = "sql"
-  bash = "bash"
-  nodejs = "nodejs"
-  nestjs = "nestjs"
-  express = "express"
-  fastify = "fastify"
-  django = "django"
-  fastapi = "fastapi"
-  flask = "flask"
-  spring = "spring"
-  dotnet = "dotnet"
-  laravel = "laravel"
-  rails = "rails"
-  graphql = "graphql"
-  grpc = "grpc"
-  react = "react"
-  nextjs = "nextjs"
-  vue = "vue"
-  nuxt = "nuxt"
-  angular = "angular"
-  svelte = "svelte"
-  tailwindcss = "tailwindcss"
-  react_native = "react_native"
-  flutter = "flutter"
-  postgresql = "postgresql"
-  mysql = "mysql"
-  mongodb = "mongodb"
-  redis = "redis"
-  elasticsearch = "elasticsearch"
-  kafka = "kafka"
-  rabbitmq = "rabbitmq"
-  spark = "spark"
-  airflow = "airflow"
-  dbt = "dbt"
-  snowflake = "snowflake"
-  aws = "aws"
-  gcp = "gcp"
-  azure = "azure"
-  docker = "docker"
-  kubernetes = "kubernetes"
-  terraform = "terraform"
-  ansible = "ansible"
-  github_actions = "github_actions"
-  gitlab_ci = "gitlab_ci"
-  linux = "linux"
-  nginx = "nginx"
-  prometheus = "prometheus"
-  grafana = "grafana"
-  pytorch = "pytorch"
-  tensorflow = "tensorflow"
-  langchain = "langchain"
 }
 
 enum Channel {
@@ -309,12 +194,6 @@ model Profile {
   user               User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   // A role_kinds code (approved, engineering); checked by the profiles_check_codes trigger.
   position           String
-  // languages, country and locations are the old shape, nullable until the engine stops writing them.
-  languages          Language[]?
-  country            String?
-  city               String?
-  // { remote, hybrid, onsite } lists of location text in display form.
-  locations          Jsonb?
   yearsOfExperience  Int
   timezoneCurrent    Int
   timezoneMin        Int
@@ -323,12 +202,12 @@ model Profile {
   engagements        String[]
   seniorities        String[]
   noticePeriodDays   Int
-  // Codes from contract_types; null until the user answers.
-  contractTypes      String[]?
+  // Codes from contract_types.
+  contractTypes      String[]
   // { remote, hybrid, onsite } arrays of { kind: worldwide | region | country | city } places.
-  places             Jsonb?
+  locations          Jsonb
   // [{ lang: ISO 639-1 code, level: native | fluent | working }].
-  spokenLanguages    Jsonb?
+  languages          Jsonb
   // Minimum salary: all three set, or none.
   salaryMin          Int?
   salaryCurrency     String?
@@ -348,17 +227,16 @@ model Profile {
   @@check(expression: sql`"yearsOfExperience" BETWEEN 0 AND 60`, name: "profiles_years_range")
   @@check(expression: sql`"noticePeriodDays" BETWEEN 0 AND 365`, name: "profiles_notice_range")
   @@check(expression: sql`"timezoneCurrent" BETWEEN -720 AND 840 AND "timezoneMin" BETWEEN -720 AND 840 AND "timezoneMax" BETWEEN -720 AND 840 AND "timezoneMin" <= "timezoneMax"`, name: "profiles_tz_range")
-  @@check(expression: sql`cardinality("languages") > 0`, name: "profiles_languages_nonempty")
   @@check(expression: sql`cardinality("engagements") > 0`, name: "profiles_engagements_nonempty")
   @@check(expression: sql`cardinality("seniorities") > 0`, name: "profiles_seniorities_nonempty")
-  // locations is null (the engine now writes places) or exactly { remote, hybrid, onsite }: arrays of at most 20 strings, at least one location overall.
-  @@check(expression: sql`"locations" IS NULL OR (jsonb_typeof("locations") = 'object' AND "locations" ?& ARRAY['remote', 'hybrid', 'onsite'] AND ("locations" - ARRAY['remote', 'hybrid', 'onsite']) = '{}'::jsonb AND CASE WHEN jsonb_typeof("locations" -> 'remote') = 'array' AND jsonb_typeof("locations" -> 'hybrid') = 'array' AND jsonb_typeof("locations" -> 'onsite') = 'array' THEN jsonb_array_length("locations" -> 'remote') <= 20 AND jsonb_array_length("locations" -> 'hybrid') <= 20 AND jsonb_array_length("locations" -> 'onsite') <= 20 AND NOT jsonb_path_exists("locations", '$.*[*] ? (@.type() != "string")') ELSE false END)`, name: "profiles_locations_shape")
-  @@check(expression: sql`jsonb_path_exists("locations", '$.*[*]')`, name: "profiles_locations_nonempty")
   @@check(expression: sql`("salaryMin" IS NULL) = ("salaryCurrency" IS NULL) AND ("salaryMin" IS NULL) = ("salaryPeriod" IS NULL)`, name: "profiles_salary_all_or_none")
   @@check(expression: sql`"salaryMin" > 0`, name: "profiles_salary_min_positive")
   @@check(expression: sql`"salaryPeriod" IN ('hour','day','month','year')`, name: "profiles_salary_period")
   @@check(expression: sql`("acceptsAnyCurrency" AND cardinality("acceptedCurrencies") = 0) OR (NOT "acceptsAnyCurrency" AND cardinality("acceptedCurrencies") > 0)`, name: "profiles_currencies_any_xor_list")
-  @@check(expression: sql`"contractTypes" IS NULL OR cardinality("contractTypes") > 0`, name: "profiles_contract_types_nonempty")
+  @@check(expression: sql`cardinality("contractTypes") > 0`, name: "profiles_contract_types_nonempty")
+  // At least one place overall; the profiles_check_codes trigger checks the shape first.
+  @@check(expression: sql`jsonb_path_exists("locations", '$.*[*]')`, name: "profiles_locations_nonempty")
+  @@check(expression: sql`jsonb_typeof("languages") = 'array' AND jsonb_array_length("languages") > 0`, name: "profiles_languages_nonempty")
   // Value-list codes are checked by the profiles_check_codes trigger (assert_codes, assert_places, assert_languages).
   // Target of profile_skills' (profileId, userId) foreign key.
   @@unique([id, userId])
