@@ -12,6 +12,7 @@ import {
 import { DatabaseModule } from 'src/database';
 import { RedisModule } from 'src/infrastructure/redis/redis.module';
 import { JobsModule } from 'src/infrastructure/jobs/jobs.module';
+import { MatcherModule } from 'src/modules/matcher';
 import { ProcessorModule } from 'src/modules/processor';
 import { QuerySearchModule } from 'src/modules/queries';
 import { UsersModule } from 'src/modules/users';
@@ -35,6 +36,8 @@ import { HealthService } from './services/health.service';
     // The processor's HTTP routes only. The workers run in their own process
     // (src/worker.ts), so the API never consumes jobs.
     ProcessorModule,
+    // The matcher's HTTP routes only, like the processor's.
+    MatcherModule,
   ],
   controllers: [HealthController],
   providers: [

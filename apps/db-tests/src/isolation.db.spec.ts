@@ -46,10 +46,11 @@ describe.each(ownedTables)('isolation: $table', (t) => {
     const before = await adminRow(bRow);
     const { data } = await a.client
       .from(t.table)
-      .update(t.patch)
+      .update(t.patch ?? { [t.ownerColumn]: a.id })
       .eq('id', bRow)
       .select();
-    expect(data).toEqual([]);
+    // A read-only table has no UPDATE grant, so the call errors and returns no data.
+    expect(data ?? []).toEqual([]);
     expect(await adminRow(bRow)).toEqual(before);
   });
 
@@ -75,43 +76,71 @@ describe.each(ownedTables)('isolation: $table', (t) => {
 
   it('cannot hand its own row to another user', async () => {
     const aRow = await t.seed(a.id);
+    const before = await adminRow(aRow);
     const { error } = await a.client
       .from(t.table)
       .update({ [t.ownerColumn]: b.id })
       .eq('id', aRow);
-    expect(error?.code).toBe('42501');
+    // With an UPDATE grant, RLS rejects the new owner with 42501. A read-only
+    // table has no UPDATE grant, so PostgREST also answers 42501 (permission
+    // denied), not zero rows; the admin read below shows nothing changed.
+    if (t.patch) expect(error?.code).toBe('42501');
     const rows = await adminRow(aRow);
     expect(rows).toHaveLength(1);
+    if (!t.patch) expect(rows).toEqual(before);
     expect(rows[0]?.[t.ownerColumn]).toBe(a.id);
   });
 
-  it('lets the owner read, update, insert and delete their own rows', async () => {
+  it('lets the owner read their own rows', async () => {
     const aRow = await t.seed(a.id);
     const read = await a.client.from(t.table).select('*').eq('id', aRow);
     expect(read.data).toHaveLength(1);
-
-    const updated = await a.client
-      .from(t.table)
-      .update(t.patch)
-      .eq('id', aRow)
-      .select();
-    expect(updated.error).toBeNull();
-    expect(updated.data).toHaveLength(1);
-    expect(updated.data?.[0]).toMatchObject(t.patch);
-
-    if (t.insertPayload) {
-      const payload = await t.insertPayload(a.id);
-      const inserted = await a.client.from(t.table).insert(payload);
-      expect(inserted.error).toBeNull();
-      expect(await adminRow(payload['id'] as string)).toHaveLength(1);
-    }
-
-    if (t.canDelete) {
-      const del = await a.client.from(t.table).delete().eq('id', aRow);
-      expect(del.error).toBeNull();
-      expect(await adminRow(aRow)).toEqual([]);
-    }
   });
+
+  it.skipIf(t.patch !== null)(
+    'keeps a read-only table read-only for its owner',
+    async () => {
+      const aRow = await t.seed(a.id);
+      const before = await adminRow(aRow);
+      const updated = await a.client
+        .from(t.table)
+        .update({ [t.ownerColumn]: a.id })
+        .eq('id', aRow)
+        .select();
+      expect(updated.data ?? []).toEqual([]);
+      await a.client.from(t.table).delete().eq('id', aRow);
+      expect(await adminRow(aRow)).toEqual(before);
+    },
+  );
+
+  it.skipIf(t.patch === null)(
+    'lets the owner update, insert and delete their own rows',
+    async () => {
+      if (!t.patch) return;
+      const aRow = await t.seed(a.id);
+      const updated = await a.client
+        .from(t.table)
+        .update(t.patch)
+        .eq('id', aRow)
+        .select();
+      expect(updated.error).toBeNull();
+      expect(updated.data).toHaveLength(1);
+      expect(updated.data?.[0]).toMatchObject(t.patch);
+
+      if (t.insertPayload) {
+        const payload = await t.insertPayload(a.id);
+        const inserted = await a.client.from(t.table).insert(payload);
+        expect(inserted.error).toBeNull();
+        expect(await adminRow(payload['id'] as string)).toHaveLength(1);
+      }
+
+      if (t.canDelete) {
+        const del = await a.client.from(t.table).delete().eq('id', aRow);
+        expect(del.error).toBeNull();
+        expect(await adminRow(aRow)).toEqual([]);
+      }
+    },
+  );
 
   it('shows nothing to anon', async () => {
     await t.seed(a.id);

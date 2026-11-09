@@ -5,6 +5,10 @@ import {
 } from 'src/infrastructure/jobs/steps/collect';
 import { SWEEP_JOB } from 'src/infrastructure/jobs/steps/ingest/queue.service';
 import {
+  MATCH_SWEEP,
+  MATCH_SWEEP_JOB,
+} from 'src/infrastructure/jobs/steps/match';
+import {
   PROCESS_SWEEP_JOB,
   processSweepConfig,
 } from 'src/infrastructure/jobs/steps/process';
@@ -46,5 +50,16 @@ export async function syncProcessSweepScheduler(
     PROCESS_SWEEP_JOB,
     { every: processSweepConfig.everyMs },
     { name: PROCESS_SWEEP_JOB, opts: { attempts: 1 } },
+  );
+}
+
+/** Deletes matches of inactive jobs and re-enqueues stale ones on an interval; idempotent. */
+export async function syncMatchSweepScheduler(
+  queue: Pick<Queue, 'upsertJobScheduler'>,
+): Promise<void> {
+  await queue.upsertJobScheduler(
+    MATCH_SWEEP_JOB,
+    { every: MATCH_SWEEP.everyMs },
+    { name: MATCH_SWEEP_JOB, opts: { attempts: 1 } },
   );
 }

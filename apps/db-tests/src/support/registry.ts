@@ -4,6 +4,7 @@ import {
   clearSetupDraft,
   profileFields,
   seedContact,
+  seedJobMatch,
   seedProfile,
   seedSetupDraft,
   seedSkill,
@@ -33,8 +34,8 @@ export type OwnedTable = {
   seed(userId: string): Promise<string>;
   /** A valid insert payload for userId, or null if users can't insert. */
   insertPayload: ((userId: string) => Promise<Record<string, unknown>>) | null;
-  /** A harmless update the owner is allowed to make. */
-  patch: Record<string, unknown>;
+  /** A harmless update the owner is allowed to make, or null if the owner can't write. */
+  patch: Record<string, unknown> | null;
   /** The owner may delete their own row. The cross-user delete case runs for every table regardless. */
   canDelete: boolean;
 };
@@ -122,5 +123,13 @@ export const ownedTables: OwnedTable[] = [
     },
     patch: { answers: { version: 1, job: null } },
     canDelete: true,
+  },
+  {
+    table: 'job_matches',
+    ownerColumn: 'userId',
+    seed: seedJobMatch,
+    insertPayload: null,
+    patch: null,
+    canDelete: false,
   },
 ];

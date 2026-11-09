@@ -120,6 +120,7 @@ model User {
   // ISO 3166-1 alpha-2 code from countries; null until the user answers.
   residenceCountry   String?
   acceptsSponsorship Boolean?
+  jobMatches         JobMatch[]
   +Timestamps
 
   @@map("users")
@@ -224,6 +225,7 @@ model Profile {
   resumeUploadedAt   TimestamptzJsDate(3)?
   state              ProfileState          @default(draft)
   publishedAt        TimestamptzJsDate(3)?
+  jobMatches         JobMatch[]
   +Timestamps
 
   @@check(expression: sql`"yearsOfExperience" BETWEEN 0 AND 60`, name: "profiles_years_range")
@@ -592,6 +594,7 @@ model NormalizedJob {
   normalizerVersion     Int
   extractions           JobExtraction[]       @relation("JobExtractions")
   attempts              ProcessingAttempt[]
+  matches               JobMatch[]
   +Timestamps
 
   @@check(expression: sql`kind IN ('job', 'post')`, name: "normalized_jobs_kind")
@@ -844,6 +847,7 @@ model JobExtraction {
   costUsd                   Decimal
   createdAt                 TimestamptzJsDate(3) @default(now())
   currentFor                NormalizedJob[]      @relation("CurrentExtraction")
+  matches                   JobMatch[]
   attempts                  ProcessingAttempt[]
 
   @@index([jobId, createdAt], map: "job_extractions_job_created")
@@ -889,6 +893,43 @@ model ProcessingAttempt {
   @@index([createdAt], where: sql`NOT eval`, name: "processing_attempts_created_noneval")
   @@map("processing_attempts")
   @@rls
+}
+
+// The engine's qualify verdict for one published profile and one job. Users read; only the
+// engine writes. extractionId records which extraction the verdict was made on.
+model JobMatch {
+  id             Uuid                 @id @onCreate(uuid(7))
+  userId         Uuid
+  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profileId      Uuid
+  profile        Profile              @relation(fields: [profileId, userId], references: [id, userId], onDelete: Cascade)
+  jobId          Uuid
+  job            NormalizedJob        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  extractionId   Uuid
+  extraction     JobExtraction        @relation(fields: [extractionId], references: [id], onDelete: Restrict)
+  matcherVersion Int
+  outcome        String
+  unverified     Boolean
+  stackScore     Numeric(4, 3)?
+  checks         Jsonb
+  decidedAt      TimestamptzJsDate(3)
+  +Timestamps
+
+  @@check(expression: sql`outcome IN ('qualified','rejected')`, name: "job_matches_outcome")
+  @@check(expression: sql`"stackScore" IS NULL OR "stackScore" BETWEEN 0 AND 1`, name: "job_matches_stack_score_range")
+  @@check(expression: sql`NOT (outcome = 'rejected' AND unverified)`, name: "job_matches_rejected_verified")
+  @@unique([profileId, jobId])
+  @@index([profileId, outcome, decidedAt])
+  @@index([jobId])
+  @@map("job_matches")
+  @@rls
+}
+
+// Owners read their matches. Only the engine writes them.
+policy_select job_matches_owner_read {
+  target = JobMatch
+  roles = [authenticated]
+  using = sql`"userId" = auth.uid()`
 }
 
 // Users read the value lists through the pickers and never write them. Column grants

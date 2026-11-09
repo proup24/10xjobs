@@ -6,6 +6,7 @@
     "users": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/admin/users-cli.ts",
     "db:regenerate": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/regenerate-query-search.ts",
     "db:renormalize": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/renormalize-jobs.ts",
+    "db:rematch": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/rematch-jobs.ts",
     "db:reprocess": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/reprocess-jobs.ts",
     "db:vocab": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/vocab.ts",
     "processor:golden-import": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/processor-golden-import.ts",
@@ -22,6 +23,7 @@
     "worker:greenhouse:dev": "WORKER_CHANNEL=GREEN_HOUSE tsx watch --conditions=@xjobs/source --tsconfig tsconfig.app.json src/worker.ts",
     "worker:ashby:dev": "WORKER_CHANNEL=ASHBY tsx watch --conditions=@xjobs/source --tsconfig tsconfig.app.json src/worker.ts",
     "worker:ingest:dev": "WORKER_ROLE=ingest tsx watch --conditions=@xjobs/source --tsconfig tsconfig.app.json src/worker.ts",
+    "worker:match:dev": "WORKER_ROLE=match tsx watch --conditions=@xjobs/source --tsconfig tsconfig.app.json src/worker.ts",
     "worker:processor:dev": "WORKER_ROLE=processor tsx watch --conditions=@xjobs/source --tsconfig tsconfig.app.json src/worker.ts",
     "jobs:smoke": "JOBS_SMOKE=1 vitest run --config vitest.config.mts src/infrastructure/jobs/tests/smoke.spec.ts"
   },
@@ -123,6 +125,19 @@
           "command": "node apps/xjobs/dist/worker.js",
           "env": {
             "WORKER_ROLE": "processor"
+          }
+        }
+      },
+      "worker-match": {
+        "continuous": true,
+        "executor": "nx:run-commands",
+        "dependsOn": [
+          "build"
+        ],
+        "options": {
+          "command": "node apps/xjobs/dist/worker.js",
+          "env": {
+            "WORKER_ROLE": "match"
           }
         }
       },

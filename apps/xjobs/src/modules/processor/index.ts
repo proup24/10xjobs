@@ -17,6 +17,7 @@ export { ProcessorModule } from './processor.module';
 export {
   type Claim,
   ProcessorRepository,
+  linkedInJobIds,
   type ReprocessFilter,
 } from './repositories/processor.repository';
 export { ModelPricing, type Price } from './models/pricing';

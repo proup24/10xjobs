@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { Redis } from 'ioredis';
+import { MatchQueue } from 'src/infrastructure/jobs/steps/match';
 import {
   PROCESS_QUEUE,
   ProcessQueue,
@@ -32,6 +33,7 @@ export class ProcessorWorkerService {
     private readonly service: ProcessorService,
     private readonly repo: ProcessorRepository,
     private readonly processQueue: ProcessQueue,
+    private readonly matchQueue: MatchQueue,
     @Inject(PROCESSOR_CONFIG) private readonly config: ProcessorConfig,
     private readonly pricing: ModelPricing,
     @Inject(OPENROUTER_CLIENT) private readonly client: OpenRouterClient,
@@ -61,6 +63,7 @@ export class ProcessorWorkerService {
           service: this.service,
           repo: this.repo,
           queue: this.processQueue,
+          matchQueue: this.matchQueue,
           config: this.config,
         }),
       this.config.concurrency,

@@ -3,14 +3,17 @@ import { ConfigModule } from '@nestjs/config';
 import { validateWorkerProcessEnvironment } from 'src/config';
 import { DatabaseModule } from 'src/database';
 import { JobsModule } from 'src/infrastructure/jobs/jobs.module';
+import { MatchQueue } from 'src/infrastructure/jobs/steps/match';
 import { ProcessQueue } from 'src/infrastructure/jobs/steps/process';
 import { RedisSettingsModule } from 'src/infrastructure/redis/settings.module';
 import { IngestModule } from 'src/modules/ingest';
+import { MatcherModule } from 'src/modules/matcher';
 import { ProcessorModule } from 'src/modules/processor';
 import { StorageModule } from 'src/modules/storage';
 import { CollectionWorkerService } from './collection.service';
 import { InfrastructureWorkerService } from './infrastructure.service';
 import { IngestWorkerService } from './ingest.service';
+import { MatchWorkerService } from './match.service';
 import { ProcessorWorkerService } from './processor.service';
 import { WorkerRuntimeService } from './runtime.service';
 import { WorkerService } from './worker.service';
@@ -33,6 +36,7 @@ import { WorkerService } from './worker.service';
     JobsModule,
     IngestModule,
     ProcessorModule,
+    MatcherModule,
     StorageModule,
   ],
   providers: [
@@ -42,6 +46,8 @@ import { WorkerService } from './worker.service';
     IngestWorkerService,
     ProcessorWorkerService,
     ProcessQueue,
+    MatchQueue,
+    MatchWorkerService,
     InfrastructureWorkerService,
   ],
 })

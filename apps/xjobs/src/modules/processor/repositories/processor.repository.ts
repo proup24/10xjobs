@@ -158,12 +158,14 @@ type Json = JobExtractionRow['data'];
 const TIMESTAMP = 'pg/timestamptz-date@1';
 const UUID = 'pg/uuid@1';
 
+type LinkedInJobIds = ReturnType<ReturnType<Raw['sql']>['returnsRow']>;
+
 /**
  * Ids of jobs with a LinkedIn job board source. Spliced into the statements
  * below as `id IN (…)`; the job's own columns are checked on the updated row
  * itself, so a concurrent change to them is seen (see `claim`).
  */
-function linkedInJobIds(raw: Raw) {
+export function linkedInJobIds(raw: Raw): LinkedInJobIds {
   return raw.sql`SELECT s."jobId" FROM normalized_job_sources s JOIN raw_items r ON r.id = s."rawItemId" WHERE r.channel = ${PROCESSOR_CHANNEL}`.returnsRow(
     { jobId: UUID },
   );

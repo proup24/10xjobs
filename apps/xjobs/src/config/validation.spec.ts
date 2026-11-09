@@ -190,6 +190,12 @@ describe('worker process configuration', () => {
     ).toMatchObject({ WORKER_ROLE: 'ingest' });
   });
 
+  it('runs the match worker without keys', () => {
+    expect(
+      validateWorkerProcessEnvironment({ ...worker, WORKER_ROLE: 'match' }),
+    ).toMatchObject({ WORKER_ROLE: 'match' });
+  });
+
   it('refuses an unknown worker role', () => {
     expect(() =>
       validateWorkerProcessEnvironment({ ...worker, WORKER_ROLE: 'other' }),

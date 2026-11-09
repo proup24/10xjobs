@@ -1,9 +1,11 @@
+import { Logger } from '@nestjs/common';
 import { UnrecoverableError } from 'bullmq';
 import { z } from 'zod';
 import type {
   ProcessorConfig,
   ProcessorRepository,
 } from 'src/modules/processor';
+import type { MatchQueue } from '../match';
 import { processSweepConfig } from './config';
 import {
   PROCESS_JOB,
@@ -11,6 +13,8 @@ import {
   type ProcessQueue,
 } from './queue.service';
 import { ProcessorService } from 'src/modules/processor/services/processor.service';
+
+const logger = new Logger('ProcessJob');
 
 const jobPayload = z.object({ jobId: z.string().min(1) });
 
@@ -21,6 +25,7 @@ export interface ProcessJobDeps {
     'listPendingInScope' | 'releaseStale' | 'spendSince'
   >;
   queue: Pick<ProcessQueue, 'enqueue'>;
+  matchQueue: Pick<MatchQueue, 'enqueue'>;
   config: ProcessorConfig;
 }
 
@@ -39,6 +44,17 @@ export async function processProcessJob(
     const outcome = await deps.service.process(payload.data.jobId);
     // Throwing lets BullMQ back off and retry.
     if (outcome === 'retry') throw new Error('retry');
+    // Only a job with fresh processed fields has something new to match.
+    // The database is the truth and the match sweep heals a missed nudge.
+    if (outcome === 'processed' || outcome === 'reused') {
+      try {
+        await deps.matchQueue.enqueue(payload.data.jobId);
+      } catch (err) {
+        logger.warn(
+          `Could not enqueue match for job ${payload.data.jobId}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
     return { outcome };
   }
   if (job.name === PROCESS_SWEEP_JOB) {

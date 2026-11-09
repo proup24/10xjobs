@@ -46,13 +46,10 @@ const checks = vi.hoisted(() => ({
   assertApiKey: vi.fn(async () => undefined),
   checkModels: vi.fn(async () => new Map()),
 }));
-vi.mock(
-  'src/modules/processor/models/client',
-  async (importOriginal) => ({
-    ...(await importOriginal<object>()),
-    ...checks,
-  }),
-);
+vi.mock('src/modules/processor/models/client', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  ...checks,
+}));
 
 import { StorageService } from 'src/modules/storage';
 import { MemoryStorageService } from 'src/modules/storage/testing';
@@ -91,9 +88,11 @@ it('runs the processor with the others when the OpenRouter key is set', async ()
       'infrastructure',
       'ingest',
       'process',
+      'match',
       'collect-linkedin-job-board',
     ]);
     expect(created.schedulers).toContain('process:sweep');
+    expect(created.schedulers).toContain('match:sweep');
   } finally {
     await module.close();
   }
