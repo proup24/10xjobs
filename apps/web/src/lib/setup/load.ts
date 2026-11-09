@@ -34,8 +34,10 @@ function must<T>(
 }
 
 /**
- * What the next-step rule reads. An unparseable draft counts as none, and so does a draft
- * left over once a profile exists: the profile is what steps 3 and 4 edit.
+ * What the next-step rule reads. `profile` is the first profile with a resume, else the
+ * oldest, else null. An unparseable draft counts as none (a v2 new-profile draft is
+ * unparseable here), and so does a draft left over once a profile exists: the profile is
+ * what steps 3 and 4 edit.
  */
 export async function loadSetupSnapshot(
   supabase: Client,
@@ -50,12 +52,13 @@ export async function loadSetupSnapshot(
       .from('profiles')
       .select('id, resumeKey')
       .order('createdAt', { ascending: true })
-      .limit(1)
-      .maybeSingle(),
+      .order('id', { ascending: true }),
   ]);
   const u = must('users read', user);
   const d = must('draft read', draft);
-  const p = must('profile read', profile);
+  const rows = must('profile read', profile) ?? [];
+  // Setup is done once any profile has a resume; else the oldest is the one to finish.
+  const p = rows.find((r) => r.resumeKey !== null) ?? rows[0] ?? null;
   return {
     name: u?.name ?? null,
     residenceCountry: u?.residenceCountry ?? null,
