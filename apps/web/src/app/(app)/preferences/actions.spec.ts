@@ -5,6 +5,7 @@ import {
   saveEligibilityPrefsAction,
   saveProfileJobAction,
   saveProfileTermsAction,
+  deleteProfileAction,
 } from './actions';
 
 const save = vi.hoisted(() => ({
@@ -14,6 +15,18 @@ const save = vi.hoisted(() => ({
   saveProfileTerms: vi.fn(),
 }));
 vi.mock('@/lib/setup/save', () => save);
+
+const del = vi.hoisted(() => ({
+  deleteProfile: vi.fn(),
+  hrefAfterDelete: vi.fn(),
+}));
+vi.mock('@/lib/preferences/delete-profile', () => del);
+const loadProfileList = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/preferences/profiles', () => ({ loadProfileList }));
+const redirect = vi.hoisted(() => vi.fn());
+vi.mock('next/navigation', () => ({ redirect }));
+const revalidatePath = vi.hoisted(() => vi.fn());
+vi.mock('next/cache', () => ({ revalidatePath }));
 
 const getClaims = vi.fn();
 const client = { auth: { getClaims } };
@@ -77,5 +90,38 @@ describe('preferences actions', () => {
     });
     expect(save.saveProfileJob).not.toHaveBeenCalled();
     expect(save.saveProfileTerms).not.toHaveBeenCalled();
+  });
+});
+
+describe('deleteProfileAction', () => {
+  const LIST = [{ id: ID }, { id: 'other' }];
+
+  it('reads the list first, deletes, refreshes the nav and redirects to the next profile', async () => {
+    loadProfileList.mockResolvedValue(LIST);
+    del.deleteProfile.mockResolvedValue('deleted');
+    del.hrefAfterDelete.mockReturnValue('/preferences/profiles/other/job');
+    await deleteProfileAction(ID);
+    expect(del.deleteProfile).toHaveBeenCalledWith(client, 'user-1', ID);
+    expect(del.hrefAfterDelete).toHaveBeenCalledWith(LIST, ID);
+    expect(revalidatePath).toHaveBeenCalledWith('/preferences', 'layout');
+    expect(redirect).toHaveBeenCalledWith('/preferences/profiles/other/job');
+    expect(loadProfileList.mock.invocationCallOrder[0]).toBeLessThan(
+      del.deleteProfile.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('returns the refusal and does not redirect', async () => {
+    loadProfileList.mockResolvedValue(LIST);
+    del.deleteProfile.mockResolvedValue('last');
+    expect(await deleteProfileAction(ID)).toBe('last');
+    expect(redirect).not.toHaveBeenCalled();
+    expect(revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it('fails on a bad id or no session without deleting', async () => {
+    expect(await deleteProfileAction('nope')).toBe('failed');
+    getClaims.mockResolvedValue({ data: null });
+    expect(await deleteProfileAction(ID)).toBe('failed');
+    expect(del.deleteProfile).not.toHaveBeenCalled();
   });
 });
