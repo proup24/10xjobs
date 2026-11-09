@@ -121,8 +121,6 @@ export function Review({
       : region(code);
   const placeLabel = (place: Place) => {
     switch (place.kind) {
-      case 'worldwide':
-        return 'Worldwide';
       case 'region':
         return region(place.code);
       case 'country':
@@ -190,8 +188,7 @@ export function Review({
     {
       term: 'Tech stack',
       values: job.techs.map(
-        (t) =>
-          `${tech(t.code)}${t.rating === null ? '' : ` ${t.rating}/5`}${t.starred ? ', searched' : ''}`,
+        (t) => `${tech(t.code)}${t.rating === null ? '' : ` ${t.rating}/5`}`,
       ),
     },
     {

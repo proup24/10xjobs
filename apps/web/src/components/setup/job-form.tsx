@@ -219,8 +219,7 @@ export function JobForm({
               options={techChoices}
               value={null}
               onValueChange={(code) =>
-                code &&
-                setTechs([...techs, { code, rating: null, starred: false }])
+                code && setTechs([...techs, { code, rating: null }])
               }
               placeholder="Search techs"
               emptyText="No tech found"

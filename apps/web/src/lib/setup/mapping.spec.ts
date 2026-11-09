@@ -8,6 +8,7 @@ import {
   type TermsAnswers,
 } from './answers';
 import {
+  DEFAULT_IMPORTANCE,
   domainFor,
   fromProfile,
   jobColumns,
@@ -27,8 +28,8 @@ const job: JobAnswers = {
   yearsOfExperience: 6,
   seniorities: ['senior', 'staff'],
   techs: [
-    { code: 'typescript', rating: 5, starred: true },
-    { code: 'saas', rating: 2, starred: false },
+    { code: 'typescript', rating: 5 },
+    { code: 'saas', rating: 2 },
   ],
   languages: [
     { lang: 'en', level: 'fluent' },
@@ -192,15 +193,20 @@ describe('toProfileWrite', () => {
     });
   });
 
-  it('gives importance 10 to a star, 5 otherwise, and the position domain to every skill', () => {
+  it('gives the position domain and the default importance to every skill', () => {
     expect(toProfileWrite(job, terms).skills).toEqual([
       {
         technology: 'typescript',
         domain: 'frontend',
         mastery: 10,
-        importance: 10,
+        importance: DEFAULT_IMPORTANCE,
       },
-      { technology: 'saas', domain: 'frontend', mastery: 4, importance: 5 },
+      {
+        technology: 'saas',
+        domain: 'frontend',
+        mastery: 4,
+        importance: DEFAULT_IMPORTANCE,
+      },
     ]);
   });
 
@@ -212,23 +218,10 @@ describe('toProfileWrite', () => {
     });
   });
 
-  it('writes worldwide as the bare kind, with no stray keys', () => {
-    const { profile } = toProfileWrite(job, {
-      ...terms,
-      places: [
-        {
-          place: { kind: 'worldwide', code: 'x' } as never,
-          remote: true,
-          hybrid: false,
-          onsite: false,
-        },
-      ],
-    });
-    expect(profile.locations).toEqual({
-      remote: [{ kind: 'worldwide' }],
-      hybrid: [],
-      onsite: [],
-    });
+  it('gives every tech the default importance', () => {
+    const { skills } = toProfileWrite(job, terms);
+    expect(skills.length).toBeGreaterThan(0);
+    for (const s of skills) expect(s.importance).toBe(DEFAULT_IMPORTANCE);
   });
 
   it('writes the three salary keys as null without a salary', () => {
@@ -243,10 +236,7 @@ describe('toProfileWrite', () => {
 
   it('refuses an unrated tech', () => {
     expect(() =>
-      toProfileWrite(
-        { ...job, techs: [{ code: 'go', rating: null, starred: false }] },
-        terms,
-      ),
+      toProfileWrite({ ...job, techs: [{ code: 'go', rating: null }] }, terms),
     ).toThrow();
   });
 
@@ -278,9 +268,7 @@ describe('fromProfile', () => {
     const r = fromProfile(storedRow({ noticePeriodDays: 45 }), [
       skill({ technology: 'typescript', mastery: 7, importance: 8 }),
     ]);
-    expect(r.job.techs).toEqual([
-      { code: 'typescript', rating: 4, starred: true },
-    ]);
+    expect(r.job.techs).toEqual([{ code: 'typescript', rating: 4 }]);
     expect(r.terms.noticePeriodDays).toBe(30);
     expect(jobSchema(isSearchableTech).safeParse(r.job).success).toBe(true);
     expect(termsSchema.safeParse(r.terms).success).toBe(true);
@@ -335,11 +323,11 @@ describe('fromProfile', () => {
     ]);
   });
 
-  it('keeps only remote for worldwide, dropping a row left with nothing', () => {
+  it('skips a stored worldwide entry', () => {
     const r = fromProfile(
       storedRow({
         locations: {
-          remote: [],
+          remote: [{ kind: 'worldwide' }],
           hybrid: [{ kind: 'worldwide' }],
           onsite: [{ kind: 'country', code: 'DE' }],
         },
@@ -356,18 +344,14 @@ describe('fromProfile', () => {
     ]);
   });
 
-  it('stars at most two searchable techs, by importance then mastery then name', () => {
+  it('reads one rating per tech, with no star', () => {
     const r = fromProfile(storedRow(), [
-      skill({ technology: 'saas', mastery: 10, importance: 10 }),
       skill({ technology: 'rust', mastery: 6, importance: 9 }),
-      skill({ technology: 'go', mastery: 8, importance: 9 }),
-      skill({ technology: 'python', mastery: 8, importance: 9 }),
+      skill({ technology: 'go', mastery: 8, importance: 10 }),
     ]);
     expect(r.job.techs).toEqual([
-      { code: 'saas', rating: 5, starred: false },
-      { code: 'rust', rating: 3, starred: false },
-      { code: 'go', rating: 4, starred: true },
-      { code: 'python', rating: 4, starred: true },
+      { code: 'rust', rating: 3 },
+      { code: 'go', rating: 4 },
     ]);
   });
 
@@ -381,9 +365,7 @@ describe('fromProfile', () => {
         importance: 7,
       }),
     ]);
-    expect(r.job.techs).toEqual([
-      { code: 'typescript', rating: 5, starred: true },
-    ]);
+    expect(r.job.techs).toEqual([{ code: 'typescript', rating: 5 }]);
   });
 
   it('drops values the step lists never offer and malformed JSON entries', () => {
@@ -410,13 +392,6 @@ describe('fromProfile', () => {
     expect(r.terms.contractTypes).toEqual([]);
     expect(r.terms.engagements).toEqual(['employee']);
     expect(r.job.languages).toEqual([{ lang: 'en', level: 'fluent' }]);
-    expect(r.terms.places).toEqual([
-      {
-        place: { kind: 'worldwide' },
-        remote: true,
-        hybrid: false,
-        onsite: false,
-      },
-    ]);
+    expect(r.terms.places).toEqual([]);
   });
 });

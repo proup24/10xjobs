@@ -111,12 +111,10 @@ export type EligibilityAnswers = z.infer<typeof eligibilitySchema>;
 // Step 3
 
 export const LANGUAGE_LEVELS = ['native', 'fluent', 'working'] as const;
-export const MAX_STARRED = 2;
 
 const techShape = z.object({
   code,
   rating: z.literal([1, 2, 3, 4, 5]).nullable(),
-  starred: z.boolean(),
 });
 
 export type TechAnswer = z.infer<typeof techShape>;
@@ -145,7 +143,6 @@ export type JobAnswers = z.infer<typeof jobShape>;
 export function jobSchema(isSearchable: (code: string) => boolean) {
   return jobShape.superRefine((job, ctx) => {
     const dupes = new Set(repeats(job.techs, (t) => t.code));
-    let starred = 0;
     job.techs.forEach((tech, i) => {
       if (tech.rating === null) {
         ctx.addIssue({
@@ -159,20 +156,6 @@ export function jobSchema(isSearchable: (code: string) => boolean) {
           code: 'custom',
           path: ['techs', i, 'code'],
           message: 'This tech is already listed',
-        });
-      }
-      if (!tech.starred) return;
-      if (!isSearchable(tech.code)) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['techs', i, 'starred'],
-          message: 'We can’t search for this tech',
-        });
-      } else if (++starred > MAX_STARRED) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['techs', i, 'starred'],
-          message: 'Search for at most two techs',
         });
       }
     });
@@ -197,7 +180,6 @@ export function jobSchema(isSearchable: (code: string) => boolean) {
 
 /** A location place, in exactly the JSON `assert_places` accepts. */
 export const placeSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('worldwide') }),
   z.object({ kind: z.enum(['region', 'country']), code }),
   z.object({ kind: z.literal('city'), id: z.string().regex(UUID) }),
 ]);
@@ -207,8 +189,6 @@ export type Place = z.infer<typeof placeSchema>;
 /** One key per distinct place; city ids are uuids, matched in any case as the database does. */
 export function placeKey(place: Place): string {
   switch (place.kind) {
-    case 'worldwide':
-      return 'worldwide';
     case 'city':
       return `city ${place.id.toLowerCase()}`;
     default:
@@ -274,22 +254,11 @@ export const termsSchema = termsShape.superRefine((t, ctx) => {
         message: 'Pick remote, hybrid or on-site',
       });
     }
-    if (row.place.kind === 'worldwide') {
-      for (const a of ['hybrid', 'onsite'] as const) {
-        if (row[a]) {
-          ctx.addIssue({
-            code: 'custom',
-            path: ['places', i, a],
-            message: 'Worldwide is remote only',
-          });
-        }
-      }
-    }
     if (row.place.kind === 'region' && row.place.code === 'GLOBAL') {
       ctx.addIssue({
         code: 'custom',
         path: ['places', i, 'place'],
-        message: 'Use worldwide instead',
+        message: 'Pick the regions you want instead',
       });
     } else if (dupes.has(i)) {
       ctx.addIssue({
@@ -345,10 +314,21 @@ export const termsSchema = termsShape.superRefine((t, ctx) => {
  * the rules run again on the next save, so a tech that stopped being searchable
  * doesn't throw the draft away.
  */
+/** Drafts saved while Worldwide was offered: drop those rows rather than refuse the draft. */
+function dropWorldwideRows(value: unknown): unknown {
+  if (!value || typeof value !== 'object' || !('places' in value)) return value;
+  const { places } = value;
+  if (!Array.isArray(places)) return value;
+  return {
+    ...value,
+    places: places.filter((r) => !(r?.place?.kind === 'worldwide')),
+  };
+}
+
 const draftSchema = z.object({
   version: z.literal(1),
   job: jobShape.optional(),
-  terms: termsShape.optional(),
+  terms: z.preprocess(dropWorldwideRows, termsShape).optional(),
 });
 
 export type SetupDraft = { version: 1; job?: JobAnswers; terms?: TermsAnswers };
