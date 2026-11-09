@@ -4,7 +4,11 @@ import type { Database } from '@xjobs/database/types';
 import type { PickerOption } from '@/components/ui/picker';
 import { loadError } from './load';
 
-/** The options every setup picker offers, read as the signed-in user (approved terms only). */
+/**
+ * The options every setup picker offers, read as the signed-in user.
+ * The value lists' read policies return approved rows only, and `status` is a hidden
+ * column (no SELECT grant), so filtering on it is refused with 42501: never filter on it here.
+ */
 
 export type TechOption = PickerOption & { searchable: boolean };
 
@@ -81,7 +85,6 @@ export async function loadValueLists(
       supabase
         .from(table)
         .select('code, label, aliases')
-        .eq('status', 'approved')
         .order('code')
         .range(from, to),
     );
@@ -106,7 +109,6 @@ export async function loadValueLists(
       supabase
         .from('role_kinds')
         .select('code, label, aliases')
-        .eq('status', 'approved')
         .eq('isEngineering', true)
         .order('code')
         .range(from, to),
@@ -123,7 +125,6 @@ export async function loadValueLists(
       supabase
         .from('cities')
         .select('id, name, countryCode, aliases')
-        .eq('status', 'approved')
         .order('id')
         .range(from, to),
     ),

@@ -262,8 +262,28 @@ describe('loadValueLists', () => {
     ]);
 
     const [roles] = f.queries('role_kinds');
-    expect(roles.filters).toContainEqual(['eq', 'status', 'approved']);
     expect(roles.filters).toContainEqual(['eq', 'isEngineering', true]);
+  });
+
+  it('never filters on the hidden status column (the read policies return approved rows only)', async () => {
+    const f = fakeSupabase();
+    await loadValueLists(f.supabase);
+    const tables = [
+      'role_kinds',
+      'seniorities',
+      'contract_types',
+      'engagements',
+      'tech_tags',
+      'countries',
+      'regions',
+      'cities',
+    ];
+    for (const table of tables) {
+      expect(f.queries(table).length).toBeGreaterThan(0);
+      for (const call of f.queries(table)) {
+        expect(call.filters.some((x) => x[1] === 'status')).toBe(false);
+      }
+    }
   });
 
   it('pages past the row limit', async () => {
