@@ -80,7 +80,7 @@ export function AboutForm({
   useEffect(() => {
     onStatusChange?.({ pending, formError });
   }, [pending, formError, onStatusChange]);
-  const { dirty, markClean } = useDirty({
+  const { dirty, markClean, snapshot } = useDirty({
     name: withName ? name : null,
     phone,
     linkedin,
@@ -117,7 +117,7 @@ export function AboutForm({
     }
     setPending(false);
     if (result.status === 'saved') {
-      markClean();
+      markClean(snapshot);
       onSaved();
     } else if (result.status === 'invalid') {
       setErrors(result.errors);

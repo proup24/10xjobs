@@ -78,18 +78,31 @@ describe('AppNav', () => {
   });
 
   it('navigates at once when clean', () => {
+    pathname.value = '/preferences';
     renderNav();
     fireEvent.click(screen.getByRole('link', { name: 'Home' }));
     expect(push).toHaveBeenCalledWith('/');
   });
 
   it('asks before navigating when dirty, and goes on Discard', () => {
+    pathname.value = '/preferences';
     renderNav();
     fireEvent.click(screen.getByRole('button', { name: 'make dirty' }));
     fireEvent.click(screen.getByRole('link', { name: 'Home' }));
     expect(push).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Discard' }));
     expect(push).toHaveBeenCalledWith('/');
+  });
+
+  it('clicking the link you are already on does nothing, even when dirty', () => {
+    pathname.value = '/';
+    renderNav();
+    fireEvent.click(screen.getByRole('button', { name: 'make dirty' }));
+    expect(fireEvent.click(screen.getByRole('link', { name: 'Home' }))).toBe(
+      false,
+    );
+    expect(screen.queryByText('Discard changes?')).toBeNull();
+    expect(push).not.toHaveBeenCalled();
   });
 
   it('lets modified clicks through untouched even when dirty', () => {

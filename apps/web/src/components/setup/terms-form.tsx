@@ -216,7 +216,7 @@ export function TermsForm({
     onStatusChange?.({ pending, formError });
   }, [pending, formError, onStatusChange]);
   // The raw time zone, not the shown one: the browser prefill is not an edit.
-  const { dirty, markClean } = useDirty({
+  const { dirty, markClean, snapshot } = useDirty({
     places,
     timezone,
     contractTypes,
@@ -284,7 +284,7 @@ export function TermsForm({
     }
     setPending(false);
     if (result.status === 'saved') {
-      markClean();
+      markClean(snapshot);
       onSaved();
     } else if (result.status === 'invalid') {
       const { _form, ...fields } = result.errors;

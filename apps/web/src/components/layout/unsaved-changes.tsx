@@ -21,6 +21,13 @@ type UnsavedChanges = {
 
 const UnsavedChangesContext = React.createContext<UnsavedChanges | null>(null);
 
+/** A click the browser should handle itself: a new tab or window, not a page change. */
+export function opensElsewhere(event: { preventDefault(): void }): boolean {
+  if (!('button' in event)) return false;
+  const e = event as React.MouseEvent;
+  return e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey;
+}
+
 /**
  * Tracks whether the page has unsaved edits. While dirty, a page unload asks
  * the browser to confirm and in-app navigation asks through `confirmLeave`.
@@ -52,6 +59,7 @@ export function UnsavedChangesProvider({
     if (!dirty) return;
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
       event.preventDefault();
+      event.returnValue = ''; // some browsers only prompt when this is set
     };
     window.addEventListener('beforeunload', onBeforeUnload);
     return () => window.removeEventListener('beforeunload', onBeforeUnload);

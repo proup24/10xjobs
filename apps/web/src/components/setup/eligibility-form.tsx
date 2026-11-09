@@ -68,7 +68,12 @@ export function EligibilityForm({
   useEffect(() => {
     onStatusChange?.({ pending, formError });
   }, [pending, formError, onStatusChange]);
-  const { dirty, markClean } = useDirty({ residence, sponsorship, rows, none });
+  const { dirty, markClean, snapshot } = useDirty({
+    residence,
+    sponsorship,
+    rows,
+    none,
+  });
   useEffect(() => {
     onDirtyChange?.(dirty);
   }, [dirty, onDirtyChange]);
@@ -123,7 +128,7 @@ export function EligibilityForm({
     }
     setPending(false);
     if (result.status === 'saved') {
-      markClean();
+      markClean(snapshot);
       onSaved();
     } else if (result.status === 'invalid') {
       setErrors(result.errors);

@@ -82,7 +82,7 @@ export function JobForm({
   useEffect(() => {
     onStatusChange?.({ pending, formError });
   }, [pending, formError, onStatusChange]);
-  const { dirty, markClean } = useDirty({
+  const { dirty, markClean, snapshot } = useDirty({
     position,
     years,
     seniorities,
@@ -152,7 +152,7 @@ export function JobForm({
     }
     setPending(false);
     if (result.status === 'saved') {
-      markClean();
+      markClean(snapshot);
       onSaved();
     } else if (result.status === 'invalid') {
       setErrors(result.errors);

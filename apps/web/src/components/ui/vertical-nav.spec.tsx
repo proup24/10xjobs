@@ -45,6 +45,38 @@ describe('VerticalNav', () => {
     ).toBe('/preferences/contacts');
   });
 
+  it('separates the badge from the label in the accessible name', () => {
+    render(<VerticalNav groups={groups} label="Preferences" />);
+    expect(
+      screen.getByRole('link', { name: /^Backend,\s?Draft$/ }),
+    ).toBeTruthy();
+  });
+
+  it('does not list a parent twice when a child shares its href', () => {
+    const dup: VerticalNavGroup[] = [
+      {
+        label: 'Profiles',
+        items: [
+          {
+            href: '/p/resume',
+            label: 'Backend',
+            children: [
+              { href: '/p/job', label: 'Job', current: true },
+              { href: '/p/resume', label: 'Resume' },
+            ],
+          },
+        ],
+      },
+    ];
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    render(<VerticalNav groups={dup} label="Preferences" />);
+    fireEvent.click(screen.getByRole('combobox', { name: 'Preferences' }));
+    const options = screen.getAllByRole('option').map((o) => o.textContent);
+    expect(options).toEqual(['Backend: Job', 'Backend: Resume']);
+    expect(spy).not.toHaveBeenCalled();
+    spy.mockRestore();
+  });
+
   it('marks only the current item with aria-current="page"', () => {
     render(<VerticalNav groups={groups} label="Preferences" />);
     const current = nav().querySelectorAll('[aria-current="page"]');
@@ -54,7 +86,7 @@ describe('VerticalNav', () => {
 
   it('renders children after their parent', () => {
     render(<VerticalNav groups={groups} label="Preferences" />);
-    const text = links().map((t) => t?.replace(/Draft$/, ''));
+    const text = links().map((t) => t?.replace(/, Draft$/, ''));
     expect(text.indexOf('Roles')).toBe(text.indexOf('Backend') + 1);
   });
 

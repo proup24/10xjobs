@@ -85,7 +85,15 @@ describe('UnsavedChangesProvider', () => {
     setup();
     expect(unload().defaultPrevented).toBe(false);
     click('dirty');
-    expect(unload().defaultPrevented).toBe(true);
+    // jsdom's Event.returnValue is a boolean, so catch the assignment.
+    const event = new Event('beforeunload', { cancelable: true });
+    const assigned: unknown[] = [];
+    Object.defineProperty(event, 'returnValue', {
+      set: (v) => assigned.push(v),
+    });
+    window.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+    expect(assigned).toEqual(['']);
     click('clean');
     expect(unload().defaultPrevented).toBe(false);
   });

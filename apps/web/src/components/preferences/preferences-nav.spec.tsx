@@ -79,7 +79,9 @@ describe('PreferencesNav', () => {
   it('a profile without a resume shows "Needs a resume" and links to its resume', () => {
     renderNav();
     const withResume = link(/Berlin/);
-    expect(withResume.getAttribute('href')).toBe(`/preferences/profiles/${A}`);
+    expect(withResume.getAttribute('href')).toBe(
+      `/preferences/profiles/${A}/job`,
+    );
     expect(withResume.textContent).not.toContain('Needs a resume');
     const without = link(/Paris/);
     expect(without.textContent).toContain('Needs a resume');
@@ -108,6 +110,18 @@ describe('PreferencesNav', () => {
     expect(link(/Berlin/).getAttribute('aria-current')).toBeNull();
   });
 
+  it('a selected profile without a resume has no duplicate link targets', () => {
+    pathname.value = `/preferences/profiles/${B}/job`;
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    renderNav();
+    expect(spy).not.toHaveBeenCalled();
+    spy.mockRestore();
+    fireEvent.click(screen.getByRole('combobox', { name: 'Preferences' }));
+    const options = screen.getAllByRole('option').map((o) => o.textContent);
+    expect(new Set(options).size).toBe(options.length);
+    expect(options).toContain('Backend engineer · Paris: Resume');
+  });
+
   it('no profile sections while on a You page', () => {
     renderNav();
     expect(within(nav()).queryByRole('link', { name: 'Resume' })).toBeNull();
@@ -127,6 +141,14 @@ describe('PreferencesNav', () => {
     expect(push).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Discard' }));
     expect(push).toHaveBeenCalledWith('/preferences/eligibility');
+  });
+
+  it('clicking the link you are already on does nothing, even when dirty', () => {
+    renderNav();
+    fireEvent.click(screen.getByRole('button', { name: 'make dirty' }));
+    expect(fireEvent.click(link('Contacts'))).toBe(false);
+    expect(screen.queryByText('Discard changes?')).toBeNull();
+    expect(push).not.toHaveBeenCalled();
   });
 
   it('lets modified and middle clicks through untouched even when dirty', () => {

@@ -9,7 +9,10 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { useUnsavedChanges } from '@/components/layout/unsaved-changes';
+import {
+  opensElsewhere,
+  useUnsavedChanges,
+} from '@/components/layout/unsaved-changes';
 
 // Only routes that exist belong here.
 export const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
@@ -44,16 +47,10 @@ export function AppNav() {
                   onClick={(event) => {
                     // Modified and non-primary clicks open a new tab and lose
                     // nothing, so they go through untouched.
-                    if (
-                      event.button !== 0 ||
-                      event.metaKey ||
-                      event.ctrlKey ||
-                      event.shiftKey ||
-                      event.altKey
-                    ) {
-                      return;
-                    }
+                    if (opensElsewhere(event)) return;
                     event.preventDefault();
+                    // Already here: nothing to leave, nothing to ask.
+                    if (href === pathname) return;
                     confirmLeave(() => {
                       setOpenMobile(false);
                       router.push(href);

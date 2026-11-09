@@ -1,10 +1,12 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { useUnsavedChanges } from '@/components/layout/unsaved-changes';
+import {
+  opensElsewhere,
+  useUnsavedChanges,
+} from '@/components/layout/unsaved-changes';
 import {
   VerticalNav,
-  type NavigateEvent,
   type VerticalNavGroup,
   type VerticalNavItem,
 } from '@/components/ui/vertical-nav';
@@ -26,13 +28,6 @@ type Props = {
   labels: Record<string, string>;
 };
 
-/** A click the browser should handle itself: a new tab or window, not a page change. */
-function opensElsewhere(event: NavigateEvent): boolean {
-  if (!('button' in event)) return false;
-  const e = event as React.MouseEvent;
-  return e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey;
-}
-
 /** The Preferences side nav: the user's own sections, then each profile and its sections. */
 export function PreferencesNav({ items, labels }: Props) {
   const pathname = usePathname();
@@ -45,14 +40,12 @@ export function PreferencesNav({ items, labels }: Props) {
   ].map((i) => ({ ...i, current: pathname === i.href }));
 
   const profiles: VerticalNavItem[] = items.map((p) => {
-    const root = profilePath(p.id);
-    const selected = pathname === root || pathname.startsWith(`${root}/`);
+    const selected = pathname.startsWith(`${profilePath(p.id)}/`);
     return {
       // Without a resume the profile opens on the section it still needs.
-      href: p.hasResume ? root : profilePath(p.id, 'resume'),
+      href: profilePath(p.id, p.hasResume ? 'job' : 'resume'),
       label: labels[p.id] ?? 'Profile',
       badge: p.hasResume ? undefined : 'Needs a resume',
-      current: pathname === root,
       children: selected
         ? PROFILE_SECTIONS.map(({ section, label }) => {
             const href = profilePath(p.id, section);
@@ -74,6 +67,8 @@ export function PreferencesNav({ items, labels }: Props) {
       onNavigate={(href, event) => {
         if (opensElsewhere(event)) return;
         event.preventDefault();
+        // Already here: nothing to leave, nothing to ask.
+        if (href === pathname) return;
         confirmLeave(() => router.push(href));
       }}
     />

@@ -43,14 +43,23 @@ type VerticalNavProps = {
 type FlatItem = { href: string; label: string; current: boolean };
 
 function flatten(items: VerticalNavItem[], parent?: string): FlatItem[] {
-  return items.flatMap((item) => [
-    {
-      href: item.href,
-      label: parent ? `${parent}: ${item.label}` : item.label,
-      current: Boolean(item.current),
-    },
-    ...flatten(item.children ?? [], item.label),
-  ]);
+  return items.flatMap((item) => {
+    const children = item.children ?? [];
+    // A parent that opens the same page as one of its children is listed once.
+    const duplicated = children.some((c) => c.href === item.href);
+    return [
+      ...(duplicated
+        ? []
+        : [
+            {
+              href: item.href,
+              label: parent ? `${parent}: ${item.label}` : item.label,
+              current: Boolean(item.current),
+            },
+          ]),
+      ...flatten(children, item.label),
+    ];
+  });
 }
 
 function NavLinks({
@@ -79,7 +88,10 @@ function NavLinks({
           >
             <span className="min-w-0 break-words">{item.label}</span>
             {item.badge ? (
-              <Badge variant="secondary">{item.badge}</Badge>
+              <>
+                <span className="sr-only">, </span>
+                <Badge variant="secondary">{item.badge}</Badge>
+              </>
             ) : null}
           </Link>
           {item.children?.length ? (
