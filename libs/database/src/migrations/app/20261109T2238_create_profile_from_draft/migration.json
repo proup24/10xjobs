@@ -1,0 +1,9 @@
+{
+  "from": "692de7e1f3a1de4d1810971aad16ccc8e77c43000f9f6446faf2b873a6ce64fe",
+  "to": "692de7e1f3a1de4d1810971aad16ccc8e77c43000f9f6446faf2b873a6ce64fe",
+  "providedInvariants": [
+    "create-profile-from-draft"
+  ],
+  "createdAt": "2026-11-09T22:38:07.770Z",
+  "migrationHash": "58aa9ef78eb448e5cdb1071af7fec1541c34652aa9e7114c6d0bd3fbf2c5962d"
+}

@@ -1620,6 +1620,10 @@ export type Database = {
         Args: { field: string; places: Json };
         Returns: undefined;
       };
+      create_profile_from_draft: {
+        Args: { p_profile: Json; p_profile_id: string; p_skills: Json };
+        Returns: string;
+      };
       create_profile_from_setup: {
         Args: { p_profile: Json; p_skills: Json };
         Returns: string;
