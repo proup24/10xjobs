@@ -11,7 +11,11 @@ export async function uploadResume(
   file: File,
   confirm: typeof confirmResumeAction,
 ): Promise<ConfirmResult> {
-  if (file.type !== 'application/pdf') {
+  // Some systems report no MIME type; then the name decides. Confirm checks the bytes.
+  const looksLikePdf =
+    file.type === 'application/pdf' ||
+    (file.type === '' && file.name.toLowerCase().endsWith('.pdf'));
+  if (!looksLikePdf) {
     return { status: 'invalid', reason: 'not-pdf' };
   }
   if (file.size > MAX_RESUME_BYTES) {

@@ -3,6 +3,8 @@ export type PickerOption = {
   label: string;
   /** Aliases that also match, e.g. `['USA']` for United States. */
   keywords?: string[];
+  /** A short muted tag after the label in the list, e.g. the kind of a place. Not searched. */
+  detail?: string;
 };
 
 /** Lowercase and strip accents (NFD, then drop combining marks). */

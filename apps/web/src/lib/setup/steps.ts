@@ -12,3 +12,10 @@ export type SetupStepId = (typeof SETUP_STEPS)[number]['id'];
 export function stepPath(id: SetupStepId | 'review'): string {
   return `/setup/${id}`;
 }
+
+/** The document title of a setup page: "<step label> · 10xjobs". */
+export function setupStepTitle(id: SetupStepId | 'review'): string {
+  const label =
+    id === 'review' ? 'Review' : SETUP_STEPS.find((s) => s.id === id)!.label;
+  return `${label} · 10xjobs`;
+}

@@ -4,6 +4,8 @@
 
 A first-time user goes from the invite email to a complete set of preferences, eligibility and a resume through a short setup, one step at a time.
 
+The slice spec is [Guided setup](../../superpowers/specs/2026-11-08-guided-setup-design.md). There is no publish button in this slice; profiles stay drafts.
+
 ## In scope
 
 - A step-by-step setup that creates the user's first profile and writes to the schemas from slices 04–06, directly through Supabase as the signed-in user.

@@ -160,3 +160,23 @@ export async function loadEligibility(
     noneConfirmed: authorizations.length === 0,
   };
 }
+
+/** Step 5: the profile's current resume file, or null when it has none. */
+export async function loadResume(
+  supabase: Client,
+  profileId: string,
+): Promise<{ filename: string; sizeBytes: number } | null> {
+  const row = must(
+    'profile read',
+    await supabase
+      .from('profiles')
+      .select('resumeKey, resumeFilename, resumeSizeBytes')
+      .eq('id', profileId)
+      .maybeSingle(),
+  );
+  if (!row || row.resumeKey === null) return null;
+  return {
+    filename: row.resumeFilename ?? '',
+    sizeBytes: row.resumeSizeBytes ?? 0,
+  };
+}

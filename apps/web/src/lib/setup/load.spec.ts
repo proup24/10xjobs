@@ -4,6 +4,7 @@ import { fakeSupabase, type QueryCall, type Reply } from '@/test/fake-supabase';
 import {
   loadAbout,
   loadEligibility,
+  loadResume,
   loadSetupProfile,
   loadSetupSnapshot,
 } from './load';
@@ -163,6 +164,35 @@ describe('loadSetupProfile', () => {
     const f = tables({ profiles: null });
     expect(await loadSetupProfile(f.supabase, P)).toBeNull();
     expect(f.queries('profile_skills')).toHaveLength(0);
+  });
+});
+
+describe('loadResume', () => {
+  it('reads the stored file name and size', async () => {
+    const f = tables({
+      profiles: {
+        resumeKey: 'u1/p/x.pdf',
+        resumeFilename: 'cv.pdf',
+        resumeSizeBytes: 1234,
+      },
+    });
+    expect(await loadResume(f.supabase, P)).toEqual({
+      filename: 'cv.pdf',
+      sizeBytes: 1234,
+    });
+    const [profiles] = f.queries('profiles');
+    expect(profiles.filters).toContainEqual(['eq', 'id', P]);
+  });
+
+  it('is null without a resume', async () => {
+    const f = tables({
+      profiles: {
+        resumeKey: null,
+        resumeFilename: null,
+        resumeSizeBytes: null,
+      },
+    });
+    expect(await loadResume(f.supabase, P)).toBeNull();
   });
 });
 

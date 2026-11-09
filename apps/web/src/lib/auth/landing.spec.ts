@@ -1,32 +1,46 @@
 // @vitest-environment node
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Database } from '@xjobs/database/types';
+import type { SetupSnapshot } from '@/lib/setup/next-step';
 import { landingPath } from './landing';
 
-function fakeClient(rows: { id: string }[]) {
-  const limit = vi.fn(async () => ({ data: rows, error: null }));
-  const select = vi.fn(() => ({ limit }));
-  const from = vi.fn(() => ({ select }));
-  return {
-    client: { from } as unknown as SupabaseClient<Database>,
-    from,
-    select,
-    limit,
-  };
-}
+const load = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/setup/load', () => ({ loadSetupSnapshot: load }));
+
+const client = {} as SupabaseClient<Database>;
+const base: SetupSnapshot = {
+  name: 'Ada',
+  residenceCountry: 'DE',
+  acceptsSponsorship: false,
+  draft: null,
+  profile: { id: 'p1', hasResume: true },
+};
+
+beforeEach(() => load.mockReset());
 
 describe('landingPath', () => {
-  it('sends a user with no profiles to /setup', async () => {
-    const { client, from, select, limit } = fakeClient([]);
+  it('sends a new user to /setup', async () => {
+    load.mockResolvedValue({
+      ...base,
+      name: null,
+      residenceCountry: null,
+      acceptsSponsorship: null,
+      profile: null,
+    });
     expect(await landingPath(client)).toBe('/setup');
-    expect(from).toHaveBeenCalledWith('profiles');
-    expect(select).toHaveBeenCalledWith('id');
-    expect(limit).toHaveBeenCalledWith(1);
   });
 
-  it('sends a user with a profile to /', async () => {
-    const { client } = fakeClient([{ id: 'p1' }]);
+  it('sends a user with a profile but no resume to /setup', async () => {
+    load.mockResolvedValue({
+      ...base,
+      profile: { id: 'p1', hasResume: false },
+    });
+    expect(await landingPath(client)).toBe('/setup');
+  });
+
+  it('sends a finished user to /', async () => {
+    load.mockResolvedValue(base);
     expect(await landingPath(client)).toBe('/');
   });
 });

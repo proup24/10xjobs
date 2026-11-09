@@ -25,8 +25,16 @@ const TECHS: PickerOption[] = [
   { value: 'kubernetes', label: 'Kubernetes', keywords: ['k8s'] },
 ];
 
+const PLACES: PickerOption[] = [
+  { value: 'worldwide', label: 'Worldwide', detail: 'Remote only' },
+  { value: 'region EU', label: 'Europe', detail: 'Region' },
+  { value: 'country FR', label: 'France', detail: 'Country' },
+  { value: 'city paris', label: 'Paris, France', detail: 'City' },
+];
+
 export function PickersSection() {
   const [country, setCountry] = useState<string | null>(null);
+  const [place, setPlace] = useState<string | null>(null);
   const [countries, setCountries] = useState<string[]>(['CH', 'DE']);
   const [techs, setTechs] = useState<string[]>([]);
 
@@ -47,6 +55,19 @@ export function PickersSection() {
           <FieldDescription>
             Shows 50 matches at most; keep typing to narrow.
           </FieldDescription>
+        </Field>
+      </Block>
+      <Block title="Picker with a detail tag per option (the kind of a place)">
+        <Field className="w-full max-w-sm">
+          <FieldLabel htmlFor="picker-place">Place</FieldLabel>
+          <Picker
+            id="picker-place"
+            options={PLACES}
+            value={place}
+            onValueChange={setPlace}
+            placeholder="Search places"
+            emptyText="No place found"
+          />
         </Field>
       </Block>
       <Block title="MultiPicker: chips, Backspace removes the last one">
