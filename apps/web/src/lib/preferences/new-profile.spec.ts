@@ -318,7 +318,7 @@ describe('saveNewProfileTerms', () => {
   it('with job answers creates the profile under the draft id', async () => {
     const f = world({ draft: { id: D, answers: v2({ job }) } });
     expect(
-      await saveNewProfileTerms(f.supabase, U, terms, searchable, quiet),
+      await saveNewProfileTerms(f.supabase, U, NEW, terms, searchable, quiet),
     ).toEqual({ status: 'created', profileId: NEW });
     const [write] = f.queries('profile_setup_drafts', 'update');
     expect(write.payload).toEqual({ answers: v2({ job, terms }) });
@@ -338,7 +338,7 @@ describe('saveNewProfileTerms', () => {
   it('a blank flow does not copy a resume', async () => {
     const copyResume = vi.fn();
     const f = world({ draft: { id: D, answers: v2({ job }) } });
-    await saveNewProfileTerms(f.supabase, U, terms, searchable, {
+    await saveNewProfileTerms(f.supabase, U, NEW, terms, searchable, {
       ...quiet,
       copyResume,
     });
@@ -352,7 +352,7 @@ describe('saveNewProfileTerms', () => {
     }));
     const f = world({ draft: { id: D, answers: v2({ job, copyFrom: SRC }) } });
     expect(
-      await saveNewProfileTerms(f.supabase, U, terms, searchable, {
+      await saveNewProfileTerms(f.supabase, U, NEW, terms, searchable, {
         ...quiet,
         copyResume,
       }),
@@ -382,14 +382,14 @@ describe('saveNewProfileTerms', () => {
     const log = vi.fn();
     const f = world({ draft: { id: D, answers: v2({ job, copyFrom: SRC }) } });
     expect(
-      await saveNewProfileTerms(f.supabase, U, terms, searchable, {
+      await saveNewProfileTerms(f.supabase, U, NEW, terms, searchable, {
         log,
         copyResume: vi.fn(impl),
       }),
     ).toEqual({ status: 'created', profileId: NEW });
   });
 
-  it('a second submit after the draft is gone returns the same profile', async () => {
+  it('a submit whose draft ends before its write returns the same profile', async () => {
     const copyResume = vi.fn();
     const f = world({
       draft: { id: D, answers: v2({ job, copyFrom: SRC }) },
@@ -397,7 +397,7 @@ describe('saveNewProfileTerms', () => {
       byId: { [NEW]: { id: NEW } },
     });
     expect(
-      await saveNewProfileTerms(f.supabase, U, terms, searchable, {
+      await saveNewProfileTerms(f.supabase, U, NEW, terms, searchable, {
         ...quiet,
         copyResume,
       }),
@@ -412,7 +412,7 @@ describe('saveNewProfileTerms', () => {
       draftUpdateMatches: false,
     });
     expect(
-      await saveNewProfileTerms(f.supabase, U, terms, searchable, quiet),
+      await saveNewProfileTerms(f.supabase, U, NEW, terms, searchable, quiet),
     ).toEqual({
       status: 'invalid',
       errors: { _form: 'Start the new profile again' },
@@ -425,7 +425,7 @@ describe('saveNewProfileTerms', () => {
       rpcError: { code: 'P0001', message: 'You can have at most 5 profiles' },
     });
     expect(
-      await saveNewProfileTerms(f.supabase, U, terms, searchable, quiet),
+      await saveNewProfileTerms(f.supabase, U, NEW, terms, searchable, quiet),
     ).toEqual({
       status: 'invalid',
       errors: { _form: 'You can have at most 5 profiles' },
@@ -441,14 +441,14 @@ describe('saveNewProfileTerms', () => {
       },
     });
     expect(
-      await saveNewProfileTerms(f.supabase, U, terms, searchable, quiet),
+      await saveNewProfileTerms(f.supabase, U, NEW, terms, searchable, quiet),
     ).toEqual({ status: 'failed' });
   });
 
   it('without job answers saves the terms and creates nothing', async () => {
     const f = world({ draft: { id: D, answers: v2() } });
     expect(
-      await saveNewProfileTerms(f.supabase, U, terms, searchable, quiet),
+      await saveNewProfileTerms(f.supabase, U, NEW, terms, searchable, quiet),
     ).toEqual({ status: 'saved' });
     expect(f.queries('profile_setup_drafts', 'update')[0].payload).toEqual({
       answers: v2({ terms }),
@@ -468,6 +468,7 @@ describe('saveNewProfileTerms', () => {
     const r = await saveNewProfileTerms(
       f.supabase,
       U,
+      NEW,
       terms,
       searchable,
       quiet,
@@ -479,10 +480,10 @@ describe('saveNewProfileTerms', () => {
     expect(f.rpcs('create_profile_from_draft')).toHaveLength(0);
   });
 
-  it('without a v2 draft asks to start again and writes nothing', async () => {
+  it('without a draft or profile asks to start again and writes nothing', async () => {
     const f = world();
     expect(
-      await saveNewProfileTerms(f.supabase, U, terms, searchable, quiet),
+      await saveNewProfileTerms(f.supabase, U, NEW, terms, searchable, quiet),
     ).toEqual({
       status: 'invalid',
       errors: { _form: 'Start the new profile again' },
@@ -490,11 +491,105 @@ describe('saveNewProfileTerms', () => {
     expect(f.queries('profile_setup_drafts', 'update')).toHaveLength(0);
   });
 
+  it('a sequential double submit returns the same profile without creating again', async () => {
+    // The first call creates the profile and the function deletes the draft.
+    const state: { draft: { id: string; answers: unknown } | null } = {
+      draft: { id: D, answers: v2({ job, copyFrom: SRC }) },
+    };
+    let created = false;
+    const copyResume = vi.fn(async () => ({ status: 'none' as const }));
+    const f = fakeSupabase({
+      reply(call) {
+        if (call.table === 'profile_setup_drafts' && call.action === 'select') {
+          return { data: state.draft, error: null };
+        }
+        if (call.table === 'profile_setup_drafts' && call.action === 'update') {
+          return { data: state.draft ? [{ id: D }] : [], error: null };
+        }
+        if (call.table === 'profiles' && call.action === 'select') {
+          return { data: created ? { id: NEW } : null, error: null };
+        }
+        return undefined;
+      },
+      rpc: () => {
+        created = true;
+        state.draft = null;
+        return { data: NEW, error: null };
+      },
+    });
+    const deps = { ...quiet, copyResume };
+    const first = await saveNewProfileTerms(
+      f.supabase,
+      U,
+      NEW,
+      terms,
+      searchable,
+      deps,
+    );
+    const second = await saveNewProfileTerms(
+      f.supabase,
+      U,
+      NEW,
+      terms,
+      searchable,
+      deps,
+    );
+    expect(first).toEqual({ status: 'created', profileId: NEW });
+    expect(second).toEqual({ status: 'created', profileId: NEW });
+    expect(f.rpcs('create_profile_from_draft')).toHaveLength(1);
+    expect(f.queries('profile_setup_drafts', 'update')).toHaveLength(1);
+    expect(copyResume).toHaveBeenCalledTimes(1);
+  });
+
+  it('a draft naming another id is not written; the stale tab asks to start again', async () => {
+    const OTHER = '55555555-5555-4555-8555-555555555555';
+    const f = world({ draft: { id: D, answers: v2({ job, newProfileId: OTHER }) } });
+    expect(
+      await saveNewProfileTerms(f.supabase, U, NEW, terms, searchable, quiet),
+    ).toEqual({
+      status: 'invalid',
+      errors: { _form: 'Start the new profile again' },
+    });
+    expect(f.queries('profile_setup_drafts', 'update')).toHaveLength(0);
+    expect(f.rpcs('create_profile_from_draft')).toHaveLength(0);
+  });
+
+  it('a draft naming another id, with this profile created, is created', async () => {
+    const OTHER = '55555555-5555-4555-8555-555555555555';
+    const f = world({
+      draft: { id: D, answers: v2({ newProfileId: OTHER }) },
+      byId: { [NEW]: { id: NEW } },
+    });
+    expect(
+      await saveNewProfileTerms(f.supabase, U, NEW, terms, searchable, quiet),
+    ).toEqual({ status: 'created', profileId: NEW });
+    expect(f.queries('profile_setup_drafts', 'update')).toHaveLength(0);
+  });
+
+  it('the draft write only matches the draft naming this id', async () => {
+    const f = world({ draft: { id: D, answers: v2() } });
+    await saveNewProfileTerms(f.supabase, U, NEW, terms, searchable, quiet);
+    const [write] = f.queries('profile_setup_drafts', 'update');
+    expect(write.filters).toContainEqual(['eq', 'answers->>newProfileId', NEW]);
+  });
+
+  it('a malformed id asks to start again without a query', async () => {
+    const f = world({ draft: { id: D, answers: v2({ job }) } });
+    expect(
+      await saveNewProfileTerms(f.supabase, U, 'nope', terms, searchable, quiet),
+    ).toEqual({
+      status: 'invalid',
+      errors: { _form: 'Start the new profile again' },
+    });
+    expect(f.calls).toHaveLength(0);
+  });
+
   it('refuses invalid terms without writing', async () => {
     const f = world({ draft: { id: D, answers: v2({ job }) } });
     const r = await saveNewProfileTerms(
       f.supabase,
       U,
+      NEW,
       { ...terms, places: [] },
       searchable,
       quiet,

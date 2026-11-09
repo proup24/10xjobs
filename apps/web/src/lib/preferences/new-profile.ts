@@ -6,6 +6,7 @@ import {
   jobSchema,
   parseNewProfileDraft,
   termsSchema,
+  UUID,
   type NewProfileDraft,
 } from '@/lib/setup/answers';
 import { loadError, loadSetupProfile } from '@/lib/setup/load';
@@ -143,6 +144,8 @@ async function updateDraft(
     .from(DRAFTS)
     .update({ answers: draftJson(answers) })
     .eq('userId', userId)
+    // Only the draft read: one replaced meanwhile (another tab) matches nothing.
+    .eq('answers->>newProfileId', answers.newProfileId)
     .select('id');
   if (write.error) return { error: write.error };
   return { matched: (write.data ?? []).length > 0 };
@@ -184,30 +187,22 @@ export async function saveNewProfileJob(
 export async function saveNewProfileTerms(
   supabase: Client,
   userId: string,
+  newProfileId: string,
   input: unknown,
   isSearchable: (code: string) => boolean,
   deps: Deps = {},
 ): Promise<CreateResult> {
   const log = logger(deps);
+  if (typeof newProfileId !== 'string' || !UUID.test(newProfileId)) {
+    return START_AGAIN;
+  }
   const parsed = termsSchema.safeParse(input);
   if (!parsed.success) return fieldErrors(parsed.error);
   const terms = parsed.data;
 
-  const draft = await readDraft(supabase, userId);
-  if (draft.error) {
-    return failure(log, 'new profile terms draft read', draft.error);
-  }
-  const current = draft.data ? parseNewProfileDraft(draft.data.answers) : null;
-  if (!current) return START_AGAIN;
-  const { newProfileId, copyFrom, job } = current;
-
-  const write = await updateDraft(supabase, userId, { ...current, terms });
-  if ('error' in write) {
-    return failure(log, 'new profile terms draft write', write.error);
-  }
-  if (!write.matched) {
-    // The draft ended between our read and write: another request created the profile,
-    // or the flow was discarded.
+  // Already created (a repeated submit, or the draft replaced since this page rendered):
+  // the caller's own profile with this id, read under RLS, and nothing is written.
+  const alreadyCreated = async (): Promise<CreateResult> => {
     const existing = await supabase
       .from('profiles')
       .select('id')
@@ -219,7 +214,23 @@ export async function saveNewProfileTerms(
     return existing.data
       ? { status: 'created', profileId: newProfileId }
       : START_AGAIN;
+  };
+
+  const draft = await readDraft(supabase, userId);
+  if (draft.error) {
+    return failure(log, 'new profile terms draft read', draft.error);
   }
+  const current = draft.data ? parseNewProfileDraft(draft.data.answers) : null;
+  // Never write into a draft for another profile: a stale tab mustn't overwrite a newer one.
+  if (!current || current.newProfileId !== newProfileId) return alreadyCreated();
+  const { copyFrom, job } = current;
+
+  const write = await updateDraft(supabase, userId, { ...current, terms });
+  if ('error' in write) {
+    return failure(log, 'new profile terms draft write', write.error);
+  }
+  // The draft ended or changed between our read and write.
+  if (!write.matched) return alreadyCreated();
   if (!job) return SAVED;
 
   // The draft row is client-writable: its job runs the full rules again before creating.
