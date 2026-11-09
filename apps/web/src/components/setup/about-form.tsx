@@ -21,12 +21,14 @@ import {
 } from '@/components/ui/select';
 import {
   aboutSchema,
+  contactsSchema,
   LINK_KINDS,
   type AboutAnswers,
 } from '@/lib/setup/answers';
 import { LINK_LABELS } from '@/lib/setup/labels';
 import type { SaveResult } from '@/lib/setup/save';
 import { issueErrors } from './form-errors';
+import { useDirty } from './use-dirty';
 import type { StepStatus } from './step-status';
 import { notifySaveFailed } from './step-frame';
 
@@ -41,12 +43,17 @@ const LINK_ITEMS = LINK_KINDS.map((value) => ({
 type Props = {
   email: string;
   initial: AboutAnswers;
+  /** Gets no `name` key when `withName` is false. */
   onSave: (input: unknown) => Promise<SaveResult>;
   onSaved: () => void;
   /** Reports the save state to whoever frames the form. */
   onStatusChange?: (status: StepStatus) => void;
   /** The `<form>` id, so a frame's submit button can target it. */
   formId: string;
+  /** Reports whether the form has unsaved edits. Pass a stable callback. */
+  onDirtyChange?: (dirty: boolean) => void;
+  /** Show the Name field (default). Preferences hides it. */
+  withName?: boolean;
 };
 
 /** Step 1: name, the account email (read-only) and optional contacts. */
@@ -57,6 +64,8 @@ export function AboutForm({
   onSave,
   onSaved,
   onStatusChange,
+  onDirtyChange,
+  withName = true,
 }: Props) {
   const ids = useId();
   const [name, setName] = useState(initial.name);
@@ -71,18 +80,29 @@ export function AboutForm({
   useEffect(() => {
     onStatusChange?.({ pending, formError });
   }, [pending, formError, onStatusChange]);
+  const { dirty, markClean } = useDirty({
+    name: withName ? name : null,
+    phone,
+    linkedin,
+    links,
+  });
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
 
   const updateLink = (key: number, patch: Partial<LinkRow>) =>
     setLinks(links.map((l) => (l.key === key ? { ...l, ...patch } : l)));
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    const parsed = aboutSchema.safeParse({
-      name,
+    const contacts = {
       phone: phone.trim() === '' ? null : phone,
       linkedin: linkedin.trim() === '' ? null : linkedin,
       links: links.map(({ kind, value }) => ({ kind, value })),
-    });
+    };
+    const parsed = withName
+      ? aboutSchema.safeParse({ name, ...contacts })
+      : contactsSchema.safeParse(contacts);
     if (!parsed.success) {
       setErrors(issueErrors(parsed.error));
       return;
@@ -97,6 +117,7 @@ export function AboutForm({
     }
     setPending(false);
     if (result.status === 'saved') {
+      markClean();
       onSaved();
     } else if (result.status === 'invalid') {
       setErrors(result.errors);
@@ -110,16 +131,18 @@ export function AboutForm({
   return (
     <form id={formId} onSubmit={submit} noValidate>
       <FieldGroup>
-        <Field invalid={Boolean(errors.name)} required>
-          <FieldLabel htmlFor={`${ids}-name`}>Name</FieldLabel>
-          <Input
-            id={`${ids}-name`}
-            autoComplete="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-          <FieldError>{errors.name}</FieldError>
-        </Field>
+        {withName && (
+          <Field invalid={Boolean(errors.name)} required>
+            <FieldLabel htmlFor={`${ids}-name`}>Name</FieldLabel>
+            <Input
+              id={`${ids}-name`}
+              autoComplete="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+            <FieldError>{errors.name}</FieldError>
+          </Field>
+        )}
         <Field>
           <FieldLabel htmlFor={`${ids}-email`}>Email</FieldLabel>
           <Input id={`${ids}-email`} value={email} readOnly />

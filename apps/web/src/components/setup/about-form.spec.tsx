@@ -28,15 +28,20 @@ const EMPTY: AboutAnswers = {
 
 const onStatusChange = vi.fn();
 
+const onDirtyChange = vi.fn();
+
 function setup(
   initial: AboutAnswers = EMPTY,
   onSave = vi.fn().mockResolvedValue({ status: 'saved' }),
+  withName = true,
 ) {
   const onSaved = vi.fn();
   const { container } = render(
     <AboutForm
       formId="f"
       onStatusChange={onStatusChange}
+      onDirtyChange={onDirtyChange}
+      withName={withName}
       email="ada@example.com"
       initial={initial}
       onSave={onSave}
@@ -124,5 +129,31 @@ describe('AboutForm', () => {
     );
     expect(toastError).toHaveBeenCalledTimes(1);
     expect(onSaved).not.toHaveBeenCalled();
+  });
+
+  it('withName={false} renders no Name field and saves without a name', async () => {
+    const { onSave, onSaved } = setup(EMPTY, undefined, false);
+    expect(screen.queryByRole('textbox', { name: /Name/ })).toBeNull();
+    expect((screen.getByLabelText(/Email/) as HTMLInputElement).value).toBe(
+      'ada@example.com',
+    );
+    submit();
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(onSave).toHaveBeenCalledWith({
+      phone: null,
+      linkedin: null,
+      links: [],
+    });
+  });
+
+  it('reports unsaved edits and clears after a save', async () => {
+    setup({ ...EMPTY, name: 'Ada' });
+    expect(onDirtyChange).not.toHaveBeenCalledWith(true);
+    fireEvent.change(screen.getByLabelText(/Phone/), {
+      target: { value: '+33 1 23' },
+    });
+    await waitFor(() => expect(onDirtyChange).toHaveBeenLastCalledWith(true));
+    submit();
+    await waitFor(() => expect(onDirtyChange).toHaveBeenLastCalledWith(false));
   });
 });

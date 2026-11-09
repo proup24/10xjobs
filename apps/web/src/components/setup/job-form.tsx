@@ -22,6 +22,7 @@ import {
 import type { SaveResult } from '@/lib/setup/save';
 import type { TechOption } from '@/lib/setup/value-lists';
 import { issueErrors } from './form-errors';
+import { useDirty } from './use-dirty';
 import { LanguageRows, type LanguageRow } from './language-rows';
 import type { StepStatus } from './step-status';
 import { notifySaveFailed } from './step-frame';
@@ -47,6 +48,8 @@ type Props = {
   onStatusChange?: (status: StepStatus) => void;
   /** The `<form>` id, so a frame's submit button can target it. */
   formId: string;
+  /** Reports whether the form has unsaved edits. Pass a stable callback. */
+  onDirtyChange?: (dirty: boolean) => void;
 };
 
 /** Step 3: position, experience, seniorities, the tech stack and languages. */
@@ -57,6 +60,7 @@ export function JobForm({
   onSave,
   onSaved,
   onStatusChange,
+  onDirtyChange,
 }: Props) {
   const ids = useId();
   const [position, setPosition] = useState<string | null>(
@@ -78,6 +82,16 @@ export function JobForm({
   useEffect(() => {
     onStatusChange?.({ pending, formError });
   }, [pending, formError, onStatusChange]);
+  const { dirty, markClean } = useDirty({
+    position,
+    years,
+    seniorities,
+    techs,
+    languages,
+  });
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
 
   const techLabel = new Map(lists.techs.map((t) => [t.value, t.label]));
   const languageLabel = new Map(lists.languages.map((l) => [l.value, l.label]));
@@ -138,6 +152,7 @@ export function JobForm({
     }
     setPending(false);
     if (result.status === 'saved') {
+      markClean();
       onSaved();
     } else if (result.status === 'invalid') {
       setErrors(result.errors);

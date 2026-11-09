@@ -69,6 +69,7 @@ function setup(
 ) {
   const onSaved = vi.fn();
   const onStatusChange = vi.fn();
+  const onDirtyChange = vi.fn();
   render(
     <TermsForm
       formId="f"
@@ -77,10 +78,11 @@ function setup(
       onSave={onSave}
       onSaved={onSaved}
       onStatusChange={onStatusChange}
+      onDirtyChange={onDirtyChange}
       hasProfile={hasProfile}
     />,
   );
-  return { onSave, onSaved, onStatusChange };
+  return { onSave, onSaved, onStatusChange, onDirtyChange };
 }
 
 /** The text of every element the control's aria-describedby points at. */
@@ -344,5 +346,16 @@ describe('TermsForm', () => {
     submit();
     await waitFor(() => expect(toastError).toHaveBeenCalled());
     expect(onSaved).not.toHaveBeenCalled();
+  });
+
+  it('reports unsaved edits and clears after a save', async () => {
+    const { onDirtyChange } = setup();
+    fireEvent.click(screen.getByRole('combobox', { name: 'Notice period' }));
+    const option = await screen.findByRole('option', { name: '2 months' });
+    fireEvent.pointerDown(option, { pointerType: 'mouse' });
+    fireEvent.click(option);
+    await waitFor(() => expect(onDirtyChange).toHaveBeenLastCalledWith(true));
+    fireEvent.submit(document.querySelector('form#f') as HTMLFormElement);
+    await waitFor(() => expect(onDirtyChange).toHaveBeenLastCalledWith(false));
   });
 });
