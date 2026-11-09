@@ -2,9 +2,10 @@ import type { PickerOption } from '@/components/ui/picker';
 import type { Place } from './answers';
 
 /** Shown for a code missing from its list: codes are never shown raw. */
-const UNKNOWN = 'Unknown';
+export const UNKNOWN = 'Unknown';
 
-function labeller(options: readonly PickerOption[]) {
+/** A label lookup over a value list. */
+export function labeller(options: readonly PickerOption[]) {
   const byValue = new Map(options.map((o) => [o.value, o.label]));
   return (code: string) => byValue.get(code) ?? UNKNOWN;
 }

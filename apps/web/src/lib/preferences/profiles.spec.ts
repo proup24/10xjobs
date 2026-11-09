@@ -118,12 +118,10 @@ describe('loadProfileList', () => {
       { id: 'c', position: 'x', firstPlace: null, hasResume: false },
     ]);
     const [q] = f.queries('profiles');
-    expect(q.filters).toContainEqual([
-      'order',
-      'createdAt',
-      { ascending: true },
+    expect(q.filters.filter(([n]) => n === 'order')).toEqual([
+      ['order', 'createdAt', { ascending: true }],
+      ['order', 'id', { ascending: true }],
     ]);
-    expect(q.filters).toContainEqual(['order', 'id', { ascending: true }]);
   });
 
   it('throws the load error without data', async () => {
