@@ -11,7 +11,6 @@ import type {
   AboutAnswers,
   EligibilityAnswers,
   JobAnswers,
-  Place,
   TermsAnswers,
 } from '@/lib/setup/answers';
 import {
@@ -21,6 +20,7 @@ import {
   formatFileSize,
 } from '@/lib/setup/labels';
 import { NOTICE_OPTIONS, formatOffset } from '@/lib/setup/options';
+import { placeLabeler } from '@/lib/setup/place-label';
 import { SETUP_STEPS, stepPath, type SetupStepId } from '@/lib/setup/steps';
 import type { ValueLists } from '@/lib/setup/value-lists';
 import { StepFrame } from './step-frame';
@@ -112,25 +112,11 @@ export function Review({
 }: Props) {
   const country = labeller(lists.countries);
   const region = labeller(lists.regions);
-  const city = labeller(
-    lists.cities.map((c) => ({ ...c, value: c.value.toLowerCase() })),
-  );
   const authorizationPlace = (code: string) =>
     lists.countries.some((c) => c.value === code)
       ? country(code)
       : region(code);
-  const placeLabel = (place: Place) => {
-    switch (place.kind) {
-      case 'worldwide':
-        return 'Worldwide';
-      case 'region':
-        return region(place.code);
-      case 'country':
-        return country(place.code);
-      case 'city':
-        return city(place.id.toLowerCase());
-    }
-  };
+  const placeLabel = placeLabeler(lists);
   const position = labeller(lists.positions);
   const seniority = labeller(lists.seniorities);
   const tech = labeller(lists.techs);

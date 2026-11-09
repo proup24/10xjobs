@@ -230,7 +230,7 @@ function readTechs(skills: SkillRow[]): TechAnswer[] {
 }
 
 /** Place rows by identity, in first-seen order; worldwide keeps only remote. */
-function readPlaces(json: ProfileRow['locations']): PlaceRow[] {
+export function readPlaces(json: ProfileRow['locations']): PlaceRow[] {
   const rows = new Map<string, PlaceRow>();
   const lists =
     json && typeof json === 'object' && !Array.isArray(json) ? json : {};
