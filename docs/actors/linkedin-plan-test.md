@@ -2,6 +2,13 @@
 
 Results of `pnpm --filter @xjobs/xjobs apify:linkedin-plan-test`, run by the maintainer before the shared-search planner is built. Spec: `docs/superpowers/specs/2026-11-09-shared-linkedin-searches-design.md`, section "The test". Run on: <date>. Total reserved budget: <usd>.
 
+## How to run
+
+1. Find a geoId for each place the test needs (at least EMEA; also LATAM, Europe, United States, Canada, Morocco and your own places): on linkedin.com/jobs pick the location in the search and read `geoId` from the URL.
+2. Dry run (no Apify calls): `pnpm --filter @xjobs/xjobs apify:linkedin-plan-test -- --dry-run --geo 'EMEA=<id>' ...`
+3. Main run: `pnpm --filter @xjobs/xjobs apify:linkedin-plan-test -- --geo 'EMEA=<id>' ... > private/linkedin-plan-test.json`
+4. Ceiling run (its own $1 budget): `... -- --sections ceiling --geo 'EMEA=<id>' > private/linkedin-plan-ceiling.json`
+
 ## Gate verdict
 
 | Question                                          | Result |

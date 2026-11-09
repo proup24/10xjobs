@@ -6,12 +6,22 @@
  *   pnpm --filter @xjobs/xjobs apify:linkedin-plan-test > private/linkedin-plan-test.json
  *
  * Needs APIFY_TOKEN and the database variables (read-only). Prints one JSON
- * block per section: places, or, length, containment, ceiling, publishedAt.
- * Every run uses 1024 MB; a run that fails is reported as a memory failure.
+ * block per section: places, geo, or, length, containment (one block per pair),
+ * ceiling, publishedAt, budget. Every run uses 1024 MB.
+ *
+ * Flags:
+ *   --dry-run               print places, ordered pairs and reserved spend; no Apify calls
+ *   --sections a,b          or,length,containment,ceiling (default or,length,containment;
+ *                           the ceiling run alone reserves almost the whole $1, so run it
+ *                           as its own invocation: --sections ceiling)
+ *   --geo '<place>=<id>'    pin a LinkedIn geoId for a place (repeatable); wins over
+ *                           LINKEDIN_GEO_IDS. Find it on linkedin.com/jobs (location
+ *                           picked in the search, `geoId` in the URL).
  * The decisions (budget, OR forms, containment, publishedAt stats) are in
  * `linkedin-plan-test/logic.ts`.
  */
 import '../environment';
+import { parseArgs } from 'node:util';
 import { ApifyClient } from 'apify-client';
 import { Logger } from '@nestjs/common';
 import { loadDatabaseEnvironment, toDatabaseConfig } from 'src/config';
@@ -24,102 +34,126 @@ import {
 } from 'src/modules/collectors/providers/mappers/linkedin-job-board.mapper';
 import { LINKEDIN_GEO_IDS } from 'src/modules/queries/channels/linkedin_geo';
 import {
+  BudgetExceededError,
   TOTAL_BUDGET_USD,
-  containmentVerdict,
+  buildPairs,
+  classifyRun,
   createBudget,
+  datedItems,
+  judgeContainment,
   keywordOfLength,
   orForms,
+  orderPairs,
+  parseGeoArgs,
+  parseSections,
   publishedAtStats,
-  type DatedItem,
+  resolveGeo,
+  rowsCap,
+  type GeoSource,
+  type RunOutcome,
 } from './linkedin-plan-test/logic';
 
 const MEMORY_MBYTES = 1024;
 const SEVEN_DAYS = 7 * 24 * 3600;
-const FIXED_PARENTS = ['EMEA', 'Europe', 'LATAM', 'North Africa'];
 const CONTAINMENT_KEYWORD = 'software engineer';
-/** Caps per run, by rows asked (USD). */
-const CAP_25 = 0.03;
-const CAP_50 = 0.06;
-const CAP_200 = 0.2;
-const CAP_CEILING = 0.25;
+const CEILING_ROWS = 1200;
+const OR_RUNS = 5;
+const LENGTHS = [100, 200, 400, 800];
 
 type Item = Record<string, unknown>;
 
-const budget = createBudget(TOTAL_BUDGET_USD);
-const token = process.env.APIFY_TOKEN;
-if (!token) throw new Error('APIFY_TOKEN is required');
-const client = new ApifyClient({ token });
-const actor = channelJobsConfig[Channel.LINKEDIN_JOB_BOARD].run.actor;
-const allItems: Item[] = [];
+const { values } = parseArgs({
+  // pnpm forwards a literal `--` separator; both spellings work.
+  args: process.argv.slice(2).filter((arg) => arg !== '--'),
+  options: {
+    'dry-run': { type: 'boolean', default: false },
+    sections: { type: 'string' },
+    geo: { type: 'string', multiple: true },
+  },
+});
+const dryRun = values['dry-run'];
+const sections = parseSections(values.sections ?? 'or,length,containment');
+const geoOverrides = parseGeoArgs(values.geo ?? []);
 
-interface RunResult {
+const budget = createBudget(TOTAL_BUDGET_USD);
+const allItems: Item[] = [];
+const geoUsed = new Map<string, { geoId?: string; source: GeoSource }>();
+let client: ApifyClient | undefined;
+let actor = '';
+
+interface RunResult extends RunOutcome {
   url: string;
   rows: number;
-  ok: boolean;
-  /** A failed run counts as a memory failure at MEMORY_MBYTES. */
-  memoryFailure: boolean;
+  /** The Apify run status, apart from what it means. */
   status: string;
+  statusMessage: string | null;
+  error?: string;
   costUsd: number | null;
   searchTotals: unknown;
   items: Item[];
-  error?: string;
 }
 
 function str(value: unknown): string | null {
   return typeof value === 'string' ? value : null;
 }
 
+function geoPlace(location: string): { location: string; geoId?: string } {
+  const resolved = resolveGeo(location, geoOverrides, LINKEDIN_GEO_IDS);
+  geoUsed.set(location, resolved);
+  return resolved.geoId ? { location, geoId: resolved.geoId } : { location };
+}
+
 /** One capped run of one search; the budget refuses it before it starts. */
 async function search(
   keyword: string,
-  place: { location: string; geoId?: string },
+  location: string,
   rows: number,
-  maxTotalChargeUsd: number,
 ): Promise<RunResult> {
+  const maxTotalChargeUsd = rowsCap(rows);
   budget.reserve(maxTotalChargeUsd);
-  const url = linkedinJobSearchUrl(keyword, place, SEVEN_DAYS);
+  const url = linkedinJobSearchUrl(keyword, geoPlace(location), SEVEN_DAYS);
+  if (!client) throw new Error('No Apify client');
   try {
     const run = await client
       .actor(actor)
       .call(toLinkedinJobBoardInput(url, rows), {
         maxTotalChargeUsd,
         memory: MEMORY_MBYTES,
-        waitSecs: 600,
+        waitSecs: 900,
       });
     const { items } = await client.dataset(run.defaultDatasetId).listItems();
     const totals = await client
       .keyValueStore(run.defaultKeyValueStoreId)
       .getRecord('SEARCH_TOTALS');
-    const ok = run.status === 'SUCCEEDED';
     allItems.push(...(items as Item[]));
     return {
+      ...classifyRun({
+        status: run.status,
+        statusMessage: run.statusMessage,
+        exitCode: run.exitCode,
+      }),
       url,
       rows,
-      ok,
-      memoryFailure: !ok,
       status: run.status,
+      statusMessage: run.statusMessage ?? null,
       costUsd: run.usageTotalUsd ?? null,
       searchTotals: totals?.value ?? null,
       items: items as Item[],
     };
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     return {
+      ...classifyRun({ status: 'ERROR', error: message }),
       url,
       rows,
-      ok: false,
-      memoryFailure: true,
       status: 'ERROR',
+      statusMessage: null,
+      error: message,
       costUsd: null,
       searchTotals: null,
       items: [],
-      error: error instanceof Error ? error.message : String(error),
     };
   }
-}
-
-function geoPlace(location: string): { location: string; geoId?: string } {
-  const geoId = LINKEDIN_GEO_IDS[location.toLowerCase()];
-  return geoId ? { location, geoId } : { location };
 }
 
 function squash(text: string): string {
@@ -153,11 +187,15 @@ function emit(section: string, value: unknown): void {
   console.log(JSON.stringify({ section, ...(value as object) }, null, 2));
 }
 
-function toDated(items: Item[]): DatedItem[] {
-  return items.map((item) => ({
-    id: String(item.jobId ?? item.jobUrl ?? ''),
-    publishedAt: str(item.publishedAt),
-  }));
+function emitGeo(): void {
+  const entries = [...geoUsed].map(([place, geo]) => ({ place, ...geo }));
+  const emea = entries.find((e) => e.place.toLowerCase() === 'emea');
+  const warning =
+    emea && emea.source === 'none'
+      ? 'EMEA has no geoId: the gate cannot pass on text-only EMEA. Pin it with --geo "EMEA=<geoId>".'
+      : undefined;
+  if (warning) console.error(`WARNING: ${warning}`);
+  emit('geo', { places: entries, warning });
 }
 
 async function main(): Promise<void> {
@@ -167,7 +205,7 @@ async function main(): Promise<void> {
     logger,
   );
   try {
-    // 1. places
+    // places
     const orm = db.orm.public;
     const builders = await orm.QuerySearchBuilder.where({
       channel: Channel.LINKEDIN_JOB_BOARD,
@@ -178,140 +216,157 @@ async function main(): Promise<void> {
     const types = [...new Set(builders.map((b) => b.type))].sort();
     emit('places', { places, types });
 
-    // Containment candidates: place -> each region containing it (a city goes
-    // through its country), plus the fixed wide regions.
-    const regions = await orm.RegionTerm.all();
-    const countries = await orm.Country.all();
-    const cities = await orm.City.all();
-    const links = await orm.RegionCountry.all();
-    const regionByLabel = new Map(
-      regions.map((r) => [r.label.toLowerCase(), r]),
+    const pairs = orderPairs(
+      buildPairs(places, {
+        regions: await orm.RegionTerm.all(),
+        countries: await orm.Country.all(),
+        cities: await orm.City.all(),
+        links: await orm.RegionCountry.all(),
+      }),
     );
-    const countryByLabel = new Map(
-      countries.flatMap((c) => [
-        [c.label.toLowerCase(), c] as const,
-        [c.code.toLowerCase(), c] as const,
-      ]),
-    );
-    const regionsOf = (countryCode: string) =>
-      links
-        .filter((l) => l.countryCode === countryCode)
-        .map((l) => regions.find((r) => r.code === l.regionCode)?.label)
-        .filter((label): label is string => !!label);
-    const pairs = new Map<string, [string, string]>();
-    const addPair = (child: string, parent: string) => {
-      if (child.toLowerCase() !== parent.toLowerCase())
-        pairs.set(`${child}|${parent}`.toLowerCase(), [child, parent]);
-    };
-    for (const place of places) {
-      if (regionByLabel.has(place)) continue;
-      const country = countryByLabel.get(place);
-      const city = cities.find((c) => {
-        const owner = countries.find((k) => k.code === c.countryCode);
-        return owner && `${c.name}, ${owner.label}`.toLowerCase() === place;
-      });
-      const countryCode = country?.code ?? city?.countryCode;
-      if (!countryCode) continue;
-      if (city) {
-        const owner = countries.find((k) => k.code === city.countryCode);
-        if (owner) addPair(place, owner.label);
-      }
-      for (const parent of regionsOf(countryCode)) addPair(place, parent);
-      for (const parent of FIXED_PARENTS) addPair(place, parent);
-    }
+    const pairCost = 2 * rowsCap(50);
+    const ceilingFloor = sections.has('ceiling') ? rowsCap(CEILING_ROWS) : 0;
 
-    // 2. or
-    const terms = ['nestjs', 'next js'];
-    const forms = orForms(terms);
-    const emea = geoPlace('EMEA');
-    const orResults: Record<string, unknown> = {};
-    for (const [name, keyword] of Object.entries(forms)) {
-      const result = await search(keyword, emea, 25, CAP_25);
-      orResults[name] = {
-        keyword,
-        ...summary(result),
-        mentionsPerTerm: Object.fromEntries(
-          terms.map((t) => [t, mentions(result.items, t)]),
+    if (dryRun) {
+      geoPlace('EMEA');
+      for (const pair of pairs) {
+        geoPlace(pair.child);
+        geoPlace(pair.parent);
+      }
+      emitGeo();
+      const afford = Math.max(
+        0,
+        Math.floor(
+          (TOTAL_BUDGET_USD -
+            (sections.has('or') ? OR_RUNS * rowsCap(25) : 0) -
+            (sections.has('length') ? LENGTHS.length * rowsCap(25) : 0) -
+            ceilingFloor) /
+            pairCost,
         ),
-      };
-    }
-    const singles: Record<string, unknown> = {};
-    for (const term of terms) {
-      const result = await search(term, emea, 25, CAP_25);
-      singles[term] = {
-        ...summary(result),
-        mentions: mentions(result.items, term),
-      };
-    }
-    emit('or', { forms: orResults, singles });
-
-    // 3. length
-    const lengths: Record<string, unknown> = {};
-    for (const size of [100, 200, 400, 800]) {
-      const keyword = keywordOfLength(size);
-      const result = await search(keyword, emea, 25, CAP_25);
-      lengths[String(size)] = {
-        chars: keyword.length,
-        keyword,
-        ...summary(result),
-      };
-    }
-    emit('length', { lengths });
-
-    // 4. containment
-    const containment: unknown[] = [];
-    for (const [child, parent] of pairs.values()) {
-      const childRun = await search(
-        CONTAINMENT_KEYWORD,
-        geoPlace(child),
-        50,
-        CAP_50,
       );
-      let parentRun = await search(
-        CONTAINMENT_KEYWORD,
-        geoPlace(parent),
-        50,
-        CAP_50,
-      );
-      let verdict = containmentVerdict(
-        toDated(childRun.items),
-        toDated(parentRun.items),
-      );
-      let rerun = false;
-      if (verdict.verdict === 'row-limit-cut') {
-        rerun = true;
-        parentRun = await search(
-          CONTAINMENT_KEYWORD,
-          geoPlace(parent),
-          200,
-          CAP_200,
-        );
-        verdict = containmentVerdict(
-          toDated(childRun.items),
-          toDated(parentRun.items),
-        );
-      }
-      containment.push({
-        child,
-        parent,
-        ...verdict,
-        rerunParentAt200: rerun,
-        childRun: summary(childRun),
-        parentRun: summary(parentRun),
+      emit('dry-run', {
+        sections: [...sections],
+        orderedPairs: pairs,
+        reservedUsd: {
+          or: sections.has('or') ? OR_RUNS * rowsCap(25) : 0,
+          length: sections.has('length') ? LENGTHS.length * rowsCap(25) : 0,
+          containmentPerPair: sections.has('containment') ? pairCost : 0,
+          containmentPairsAffordable: sections.has('containment') ? afford : 0,
+          ceiling: ceilingFloor,
+        },
+        limitUsd: TOTAL_BUDGET_USD,
       });
+      return;
     }
-    emit('containment', { pairs: containment });
 
-    // 5. ceiling
-    const ceiling = await search('software engineer', emea, 1200, CAP_CEILING);
-    emit('ceiling', {
-      ...summary(ceiling),
-      itemsReturned: ceiling.items.length,
-    });
+    const token = process.env.APIFY_TOKEN;
+    if (!token) throw new Error('APIFY_TOKEN is required');
+    client = new ApifyClient({ token });
+    actor = channelJobsConfig[Channel.LINKEDIN_JOB_BOARD].run.actor;
 
-    // 6. publishedAt
+    try {
+      if (sections.has('or')) {
+        const terms = ['nestjs', 'next js'];
+        const forms: Record<string, unknown> = {};
+        for (const [name, keyword] of Object.entries(orForms(terms))) {
+          const result = await search(keyword, 'EMEA', 25);
+          forms[name] = {
+            keyword,
+            ...summary(result),
+            mentionsPerTerm: Object.fromEntries(
+              terms.map((t) => [t, mentions(result.items, t)]),
+            ),
+          };
+        }
+        const singles: Record<string, unknown> = {};
+        for (const term of terms) {
+          const result = await search(term, 'EMEA', 25);
+          singles[term] = {
+            ...summary(result),
+            mentions: mentions(result.items, term),
+          };
+        }
+        emit('or', { forms, singles });
+      }
+
+      if (sections.has('length')) {
+        const lengths: Record<string, unknown> = {};
+        for (const size of LENGTHS) {
+          const keyword = keywordOfLength(size);
+          const result = await search(keyword, 'EMEA', 25);
+          lengths[String(size)] = {
+            chars: keyword.length,
+            keyword,
+            ...summary(result),
+          };
+        }
+        emit('length', { lengths });
+      }
+
+      if (sections.has('containment')) {
+        for (const { child, parent } of pairs) {
+          // Keep the ceiling run's share, then stop when a pair no longer fits.
+          if (budget.remaining() - ceilingFloor < pairCost) {
+            emit('containment-stopped', {
+              reason: 'budget: the next pair no longer fits',
+            });
+            break;
+          }
+          const childRun = await search(CONTAINMENT_KEYWORD, child, 50);
+          let parentRun = await search(CONTAINMENT_KEYWORD, parent, 50);
+          const side = (run: RunResult) => ({
+            ok: run.ok,
+            ...datedItems(run.items),
+          });
+          const c = side(childRun);
+          let p = side(parentRun);
+          let verdict = judgeContainment(
+            { ok: c.ok, items: c.items },
+            { ok: p.ok, items: p.items },
+          );
+          let rerun = false;
+          if (verdict.verdict === 'row-limit-cut') {
+            rerun = true;
+            parentRun = await search(CONTAINMENT_KEYWORD, parent, 200);
+            p = side(parentRun);
+            verdict = judgeContainment(
+              { ok: c.ok, items: c.items },
+              { ok: p.ok, items: p.items },
+            );
+          }
+          emit('containment', {
+            child,
+            parent,
+            ...verdict,
+            rerunParentAt200: rerun,
+            itemsWithoutId: { child: c.withoutId, parent: p.withoutId },
+            childRun: summary(childRun),
+            parentRun: summary(parentRun),
+          });
+        }
+      }
+
+      if (sections.has('ceiling')) {
+        const ceiling = await search('software engineer', 'EMEA', CEILING_ROWS);
+        emit('ceiling', {
+          ...summary(ceiling),
+          itemsReturned: ceiling.items.length,
+          // A run stopped by its charge cap is truncated by us, not LinkedIn.
+          hitChargeCap: ceiling.chargeCapped,
+        });
+      }
+    } catch (error) {
+      if (!(error instanceof BudgetExceededError)) throw error;
+      emit('budget-stop', { reason: error.message });
+    }
+
+    emitGeo();
     emit('publishedAt', publishedAtStats(allItems));
-    emit('budget', { reservedUsd: budget.spent(), limitUsd: TOTAL_BUDGET_USD });
+    emit('budget', {
+      reservedUsd: budget.spent(),
+      limitUsd: TOTAL_BUDGET_USD,
+      note: 'reserved sums each run cap; real spend is lower (see costUsd per run)',
+    });
   } finally {
     await db.close();
   }
