@@ -19,7 +19,6 @@ const validProfile = {
     remote: [
       { kind: 'region', code: 'MENA' },
       { kind: 'region', code: 'NORTH_AFRICA' },
-      { kind: 'worldwide' },
     ],
     hybrid: [{ kind: 'country', code: 'MA' }],
     onsite: [{ kind: 'city', id: '0190f3c2-7a1b-7c3d-8e4f-5a6b7c8d9e0f' }],
@@ -235,9 +234,16 @@ describe('profile locations', () => {
   it('accepts places in a single arrangement', async () => {
     expect(
       await errorsFor({
-        locations: { ...none, remote: [{ kind: 'worldwide' }] },
+        locations: { ...none, remote: [{ kind: 'region', code: 'EMEA' }] },
       }),
     ).toEqual([]);
+  });
+
+  it('rejects worldwide, with a message that does not offer it', async () => {
+    const locations = { ...none, remote: [{ kind: 'worldwide' }] };
+    expect(await errorsFor({ locations })).toEqual(['locations.remote']);
+    const messages = await messagesFor({ locations });
+    expect(messages.join(' ')).not.toMatch(/worldwide/i);
   });
 
   it('rejects a profile with no place, saying why', async () => {
@@ -254,7 +260,7 @@ describe('profile locations', () => {
   it('requires every arrangement list', async () => {
     expect(
       await errorsFor({
-        locations: { remote: [{ kind: 'worldwide' }], hybrid: [] },
+        locations: { remote: [{ kind: 'region', code: 'EMEA' }], hybrid: [] },
       }),
     ).toEqual(['locations.onsite']);
   });
@@ -262,7 +268,11 @@ describe('profile locations', () => {
   it('rejects an unknown arrangement key', async () => {
     expect(
       await errorsFor({
-        locations: { ...none, remote: [{ kind: 'worldwide' }], anywhere: [] },
+        locations: {
+          ...none,
+          remote: [{ kind: 'region', code: 'EMEA' }],
+          anywhere: [],
+        },
       }),
     ).toEqual(['locations.anywhere']);
   });
@@ -275,7 +285,7 @@ describe('profile locations', () => {
     ['a lowercase region code', [{ kind: 'region', code: 'emea' }]],
     ['a city by code', [{ kind: 'city', code: 'rabat' }]],
     ['a city id that is not a uuid', [{ kind: 'city', id: 'rabat' }]],
-    ['worldwide with a code', [{ kind: 'worldwide', code: 'GLOBAL' }]],
+    ['worldwide', [{ kind: 'worldwide' }]],
     ['an extra key', [{ kind: 'country', code: 'MA', label: 'Morocco' }]],
     ['the same place twice', [city, { ...city }]],
     [

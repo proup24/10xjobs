@@ -217,7 +217,11 @@ describe('ProfilesService', () => {
     const { id } = await create();
     const view = await service.replace(userId, id, {
       ...editable,
-      locations: { remote: [], hybrid: [], onsite: [{ kind: 'worldwide' }] },
+      locations: {
+        remote: [],
+        hybrid: [],
+        onsite: [{ kind: 'country', code: 'FR' }],
+      },
       languages: [{ lang: 'ar', level: 'native' }],
       contractTypes: ['freelance'],
       salary: null,
@@ -226,7 +230,11 @@ describe('ProfilesService', () => {
       techStack: [],
     });
     expect(view).toMatchObject({
-      locations: { remote: [], hybrid: [], onsite: [{ kind: 'worldwide' }] },
+      locations: {
+        remote: [],
+        hybrid: [],
+        onsite: [{ kind: 'country', code: 'FR' }],
+      },
       languages: [{ lang: 'ar', level: 'native' }],
       contractTypes: ['freelance'],
       salary: null,

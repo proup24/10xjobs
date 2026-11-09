@@ -14,7 +14,11 @@ const pdfBytes = Buffer.from('%PDF-1.7\n%%EOF');
 const profileInput: ProfileInput = {
   position: 'backend_engineer',
   languages: [{ lang: 'en', level: 'fluent' }],
-  locations: { remote: [{ kind: 'worldwide' }], hybrid: [], onsite: [] },
+  locations: {
+    remote: [{ kind: 'region', code: 'EMEA' }],
+    hybrid: [],
+    onsite: [],
+  },
   yearsOfExperience: 6,
   timezoneCurrent: 0,
   timezoneMin: 0,

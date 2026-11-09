@@ -28,8 +28,8 @@ function hasExactKeys(value: object, keys: string[]): boolean {
 }
 
 /**
- * True when `value` is a place in shape: `{ kind: 'worldwide' }`, a region or
- * country by code, or a city by uuid. Whether the code is approved is the
+ * True when `value` is a place in shape: a region or country by code, or a
+ * city by uuid. Worldwide is not a place a profile can want. Whether the code is approved is the
  * database's call.
  */
 export function isPlace(value: unknown): boolean {
@@ -37,8 +37,6 @@ export function isPlace(value: unknown): boolean {
     return false;
   const place = value as Record<string, unknown>;
   switch (place.kind) {
-    case 'worldwide':
-      return hasExactKeys(place, ['kind']);
     case 'region':
       return (
         hasExactKeys(place, ['kind', 'code']) &&
@@ -84,7 +82,7 @@ export function IsPlace(options?: ValidationOptions) {
       target: target.constructor,
       propertyName,
       options: {
-        message: `${propertyName} entries must be { kind: 'worldwide' }, { kind: 'region' | 'country', code } or { kind: 'city', id }`,
+        message: `${propertyName} entries must be { kind: 'region' | 'country', code } or { kind: 'city', id }`,
         ...options,
       },
       validator: { validate: (value: unknown) => isPlace(value) },

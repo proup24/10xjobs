@@ -1,0 +1,46 @@
+[
+  {
+    "id": "data.profile_places_strip_worldwide",
+    "invariantId": "profile-places-strip-worldwide",
+    "label": "profiles: drop worldwide from existing places",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "profiles"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "remove {\"kind\":\"worldwide\"} from every arrangement",
+        "sql": "DO $$\nDECLARE\n  stuck uuid[];\nBEGIN\n  UPDATE public.profiles p\n     SET locations = f.filtered\n    FROM (\n      SELECT q.id,\n             jsonb_build_object(\n               'remote', (SELECT COALESCE(jsonb_agg(e), '[]'::jsonb) FROM jsonb_array_elements(q.locations -> 'remote') AS e WHERE e <> '{\"kind\": \"worldwide\"}'::jsonb),\n               'hybrid', (SELECT COALESCE(jsonb_agg(e), '[]'::jsonb) FROM jsonb_array_elements(q.locations -> 'hybrid') AS e WHERE e <> '{\"kind\": \"worldwide\"}'::jsonb),\n               'onsite', (SELECT COALESCE(jsonb_agg(e), '[]'::jsonb) FROM jsonb_array_elements(q.locations -> 'onsite') AS e WHERE e <> '{\"kind\": \"worldwide\"}'::jsonb)\n             ) AS filtered\n        FROM public.profiles q\n       WHERE jsonb_path_exists(q.locations, '$.*[*] ? (@.kind == \"worldwide\")')\n    ) AS f\n   WHERE p.id = f.id\n     AND jsonb_path_exists(f.filtered, '$.*[*]');\n\n  -- A profile whose only place is worldwide would break profiles_locations_nonempty: leave it and say so.\n  SELECT array_agg(id) INTO stuck\n    FROM public.profiles\n   WHERE jsonb_path_exists(locations, '$.*[*] ? (@.kind == \"worldwide\")');\n  IF stuck IS NOT NULL THEN\n    RAISE NOTICE 'profiles left with a worldwide-only place, edit them by hand: %', stuck;\n  END IF;\nEND $$;"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "functions.assert_places_no_worldwide",
+    "invariantId": "profile-places-no-worldwide",
+    "label": "assert_places: refuse worldwide, explain it like GLOBAL",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "profiles"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "replace assert_places(field, places)",
+        "sql": "CREATE OR REPLACE FUNCTION public.assert_places(field text, places jsonb) RETURNS void\n  LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = '' AS $$\nDECLARE\n  arrangement text;\n  list jsonb;\n  place jsonb;\n  city_id text;\nBEGIN\n  IF places IS NULL THEN\n    RETURN;\n  END IF;\n  IF jsonb_typeof(places) <> 'object'\n     OR NOT places ?& ARRAY['remote', 'hybrid', 'onsite']\n     OR (places - ARRAY['remote', 'hybrid', 'onsite']) <> '{}'::jsonb THEN\n    RAISE EXCEPTION USING ERRCODE = 'check_violation',\n      MESSAGE = format('%s: must be an object with exactly remote, hybrid and onsite', field);\n  END IF;\n  -- Worldwide is not a place a profile can want; checked before the shape loop so it gets its own message.\n  IF jsonb_path_exists(places, '$.*[*] ? (@.kind == \"worldwide\")') THEN\n    RAISE EXCEPTION USING ERRCODE = 'check_violation',\n      MESSAGE = format('%s: worldwide is not allowed in a profile', field);\n  END IF;\n  FOREACH arrangement IN ARRAY ARRAY['remote', 'hybrid', 'onsite'] LOOP\n    list := places -> arrangement;\n    IF jsonb_typeof(list) <> 'array' THEN\n      RAISE EXCEPTION USING ERRCODE = 'check_violation',\n        MESSAGE = format('%s: %s must be an array', field, arrangement);\n    END IF;\n    IF jsonb_array_length(list) > 20 THEN\n      RAISE EXCEPTION USING ERRCODE = 'check_violation',\n        MESSAGE = format('%s: %s has more than 20 places', field, arrangement);\n    END IF;\n    FOR place IN SELECT e FROM jsonb_array_elements(list) AS e LOOP\n      -- A scalar or null element is checked first: the key tests below need an object.\n      IF jsonb_typeof(place) <> 'object' THEN\n        RAISE EXCEPTION USING ERRCODE = 'check_violation',\n          MESSAGE = format('%s: %s is not a region, country or city place', field, place);\n      END IF;\n      IF NOT (\n        (place ->> 'kind' IN ('region', 'country')\n            AND (place - ARRAY['kind', 'code']) = '{}'::jsonb\n            AND jsonb_typeof(place -> 'code') = 'string')\n        OR (place ->> 'kind' = 'city'\n            AND (place - ARRAY['kind', 'id']) = '{}'::jsonb\n            AND jsonb_typeof(place -> 'id') = 'string')\n      ) THEN\n        RAISE EXCEPTION USING ERRCODE = 'check_violation',\n          MESSAGE = format('%s: %s is not a region, country or city place', field, place);\n      END IF;\n    END LOOP;\n    -- City ids are uuids, matched in any case, so compare them in lower case.\n    IF (SELECT count(DISTINCT CASE WHEN e ->> 'kind' = 'city'\n                              THEN jsonb_build_object('kind', 'city', 'id', lower(e ->> 'id'))\n                              ELSE e END) <> count(*)\n        FROM jsonb_array_elements(list) AS e) THEN\n      RAISE EXCEPTION USING ERRCODE = 'check_violation',\n        MESSAGE = format('%s: %s lists a place more than once', field, arrangement);\n    END IF;\n  END LOOP;\n\n  -- GLOBAL is an approved region for jobs, but a profile cannot want it.\n  IF jsonb_path_exists(places, '$.*[*] ? (@.kind == \"region\" && @.code == \"GLOBAL\")') THEN\n    RAISE EXCEPTION USING ERRCODE = 'check_violation',\n      MESSAGE = format('%s: %L is not allowed in a profile', field, 'GLOBAL');\n  END IF;\n  PERFORM public.assert_codes(field, 'regions', ARRAY(\n    SELECT p ->> 'code' FROM jsonb_path_query(places, '$.*[*] ? (@.kind == \"region\")') AS p));\n  PERFORM public.assert_codes(field, 'countries', ARRAY(\n    SELECT p ->> 'code' FROM jsonb_path_query(places, '$.*[*] ? (@.kind == \"country\")') AS p));\n\n  -- Check the uuid format first so a malformed id is a check_violation, not invalid_text_representation.\n  FOR city_id IN SELECT p ->> 'id' FROM jsonb_path_query(places, '$.*[*] ? (@.kind == \"city\")') AS p LOOP\n    IF city_id !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'\n       OR NOT EXISTS (SELECT 1 FROM public.cities c WHERE c.id = city_id::uuid AND c.status = 'approved') THEN\n      RAISE EXCEPTION USING ERRCODE = 'check_violation',\n        MESSAGE = format('%s: %L is not an approved cities code', field, city_id);\n    END IF;\n  END LOOP;\nEND $$;\nREVOKE EXECUTE ON FUNCTION public.assert_places(text, jsonb) FROM PUBLIC, anon, authenticated;"
+      }
+    ],
+    "postcheck": []
+  }
+]
