@@ -5,7 +5,8 @@ import { NOTICE_OPTIONS, TIMEZONE_OFFSETS } from './options';
 
 const code = z.string().trim().min(1);
 const currency = z.string().regex(/^[A-Z]{3}$/, 'Pick a currency');
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export const UUID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** True when `value` is an absolute http(s) URL. */
 function isHttpUrl(value: string): boolean {

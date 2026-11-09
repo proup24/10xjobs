@@ -23,6 +23,7 @@ import { AuthorizationRows, type AuthorizationRow } from './authorization-rows';
 import { issueErrors } from './form-errors';
 import type { StepStatus } from './step-status';
 import { notifySaveFailed } from './step-frame';
+import { useDirty } from './use-dirty';
 
 const NONE_LABEL = "I don't hold any work authorization";
 
@@ -36,6 +37,8 @@ type Props = {
   onStatusChange?: (status: StepStatus) => void;
   /** The `<form>` id, so a frame's submit button can target it. */
   formId: string;
+  /** Reports whether the form has unsaved edits. Pass a stable callback. */
+  onDirtyChange?: (dirty: boolean) => void;
 };
 
 /** Step 2: residence, work authorizations (or none, deliberately) and sponsorship. */
@@ -46,6 +49,7 @@ export function EligibilityForm({
   onSave,
   onSaved,
   onStatusChange,
+  onDirtyChange,
 }: Props) {
   const ids = useId();
   const [residence, setResidence] = useState<string | null>(
@@ -64,6 +68,10 @@ export function EligibilityForm({
   useEffect(() => {
     onStatusChange?.({ pending, formError });
   }, [pending, formError, onStatusChange]);
+  const { dirty, markClean } = useDirty({ residence, sponsorship, rows, none });
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
 
   const places = [...lists.countries, ...lists.regions];
   const residenceLabel = lists.countries.find(
@@ -115,6 +123,7 @@ export function EligibilityForm({
     }
     setPending(false);
     if (result.status === 'saved') {
+      markClean();
       onSaved();
     } else if (result.status === 'invalid') {
       setErrors(result.errors);

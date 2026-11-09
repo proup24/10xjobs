@@ -1,6 +1,6 @@
 'use client';
 
-import { Home, type LucideIcon } from 'lucide-react';
+import { Home, SlidersHorizontal, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -14,7 +14,14 @@ import { useUnsavedChanges } from '@/components/layout/unsaved-changes';
 // Only routes that exist belong here.
 export const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/', label: 'Home', icon: Home },
+  { href: '/preferences', label: 'Preferences', icon: SlidersHorizontal },
 ];
+
+/** Home only at `/`; any other item for its own path and everything under it. */
+export function isActive(href: string, pathname: string): boolean {
+  if (href === '/') return pathname === '/';
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 export function AppNav() {
   const pathname = usePathname();
@@ -25,7 +32,7 @@ export function AppNav() {
   return (
     <SidebarMenu>
       {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-        const active = pathname === href;
+        const active = isActive(href, pathname);
         return (
           <SidebarMenuItem key={href}>
             <SidebarMenuButton

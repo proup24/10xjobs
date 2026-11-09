@@ -57,7 +57,24 @@ describe('AppNav', () => {
   });
 
   it('lists only routes that exist', () => {
-    expect(NAV_ITEMS.map((i) => i.href)).toEqual(['/']);
+    expect(NAV_ITEMS.map((i) => i.href)).toEqual(['/', '/preferences']);
+  });
+
+  it('marks Preferences current on any page under /preferences', () => {
+    pathname.value = '/preferences/profiles/abc/job';
+    renderNav();
+    const prefs = screen.getByRole('link', { name: 'Preferences' });
+    expect(prefs.getAttribute('aria-current')).toBe('page');
+    expect(prefs.getAttribute('href')).toBe('/preferences');
+    expect(
+      screen.getByRole('link', { name: 'Home' }).getAttribute('aria-current'),
+    ).toBeNull();
+  });
+
+  it('does not mark Preferences on a path that only shares its prefix', () => {
+    pathname.value = '/preferencesx';
+    renderNav();
+    expect(document.querySelector('[aria-current="page"]')).toBeNull();
   });
 
   it('navigates at once when clean', () => {
