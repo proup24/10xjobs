@@ -45,6 +45,7 @@ type Deps = {
   copyResume?: typeof copyResume;
 };
 
+const PREFIX = 'new profile';
 const DRAFTS = 'profile_setup_drafts';
 const START_AGAIN: SaveResult = {
   status: 'invalid',
@@ -63,15 +64,17 @@ async function readDraft(supabase: Client, userId: string) {
 }
 
 /**
- * Starts a new profile: a fresh version-2 draft (replacing any draft), blank or filled
- * from one of the user's profiles. The 5-profile limit is checked first.
+ * Starts a new profile: a fresh version-2 draft, blank or filled from one of the user's
+ * profiles. The 5-profile limit is checked first. A draft already in progress (v2) is
+ * left alone ('in-progress'), so a stale tab can't replace it; "Start over" discards
+ * it first. A setup (v1) draft is stale here and is replaced.
  */
 export async function startNewProfile(
   supabase: Client,
   userId: string,
   source: NewProfileSource,
   deps: Deps = {},
-): Promise<'started' | 'limit' | 'failed'> {
+): Promise<'started' | 'limit' | 'in-progress' | 'failed'> {
   const log = logger(deps);
   const fail = (what: string, error: unknown) => {
     log(`new profile: ${what} code=${errorCode(error)}`);
@@ -96,7 +99,7 @@ export async function startNewProfile(
       copied = await loadSetupProfile(supabase, source.profileId);
     } catch (e) {
       // loadSetupProfile's message is "setup load: <what> code=<code>", no data.
-      log(`new profile: source read failed (${(e as Error).message})`);
+      log(`new profile: source read failed code=${errorCode(e)}`);
       return 'failed';
     }
     if (!copied) {
@@ -108,6 +111,9 @@ export async function startNewProfile(
 
   const draft = await readDraft(supabase, userId);
   if (draft.error) return fail('draft read', draft.error);
+  if (draft.data && parseNewProfileDraft(draft.data.answers)) {
+    return 'in-progress';
+  }
   const write = await supabase.from(DRAFTS).upsert(
     {
       // Reuse the row's id, so the upsert's update doesn't replace it.
@@ -164,8 +170,7 @@ export async function saveNewProfileJob(
   if (!parsed.success) return fieldErrors(parsed.error);
 
   const draft = await readDraft(supabase, userId);
-  if (draft.error)
-    return failure(log, 'new profile job draft read', draft.error);
+  if (draft.error) return failure(log, 'job draft read', draft.error, PREFIX);
   const current = draft.data ? parseNewProfileDraft(draft.data.answers) : null;
   if (!current) return START_AGAIN;
 
@@ -174,7 +179,7 @@ export async function saveNewProfileJob(
     job: parsed.data,
   });
   if ('error' in write) {
-    return failure(log, 'new profile job draft write', write.error);
+    return failure(log, 'job draft write', write.error, PREFIX);
   }
   return write.matched ? SAVED : START_AGAIN;
 }
@@ -209,7 +214,7 @@ export async function saveNewProfileTerms(
       .eq('id', newProfileId)
       .maybeSingle();
     if (existing.error) {
-      return failure(log, 'new profile created read', existing.error);
+      return failure(log, 'created read', existing.error, PREFIX);
     }
     return existing.data
       ? { status: 'created', profileId: newProfileId }
@@ -218,16 +223,17 @@ export async function saveNewProfileTerms(
 
   const draft = await readDraft(supabase, userId);
   if (draft.error) {
-    return failure(log, 'new profile terms draft read', draft.error);
+    return failure(log, 'terms draft read', draft.error, PREFIX);
   }
   const current = draft.data ? parseNewProfileDraft(draft.data.answers) : null;
   // Never write into a draft for another profile: a stale tab mustn't overwrite a newer one.
-  if (!current || current.newProfileId !== newProfileId) return alreadyCreated();
+  if (!current || current.newProfileId !== newProfileId)
+    return alreadyCreated();
   const { copyFrom, job } = current;
 
   const write = await updateDraft(supabase, userId, { ...current, terms });
   if ('error' in write) {
-    return failure(log, 'new profile terms draft write', write.error);
+    return failure(log, 'terms draft write', write.error, PREFIX);
   }
   // The draft ended or changed between our read and write.
   if (!write.matched) return alreadyCreated();
@@ -252,15 +258,15 @@ export async function saveNewProfileTerms(
   if (created.error) {
     const code = (created.error as { code?: unknown }).code;
     if (code === 'P0002') {
-      log(`setup save: new profile create code=P0002`);
+      log(`new profile: create code=P0002`);
       return START_AGAIN;
     }
     // A forged id that is someone else's profile: never echo the database message.
     if (code === '23505') {
-      log(`setup save: new profile create code=23505`);
+      log(`new profile: create code=23505`);
       return FAILED;
     }
-    return failure(log, 'new profile create', created.error);
+    return failure(log, 'create', created.error, PREFIX);
   }
 
   if (copyFrom) {

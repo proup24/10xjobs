@@ -11,7 +11,8 @@ type Deps = {
 };
 
 /**
- * Deletes one of the user's profiles, never the last one. The delete itself, files
+ * Deletes one of the user's profiles, never the last one and never the only one with a
+ * resume (setup stays done once any profile has a resume). The delete itself, files
  * included, is `deleteDraftProfile`'s. Log lines carry ids and error codes only.
  */
 export async function deleteProfile(
@@ -19,18 +20,21 @@ export async function deleteProfile(
   userId: string,
   profileId: string,
   deps: Deps = {},
-): Promise<'deleted' | 'last' | 'not-draft' | 'failed'> {
+): Promise<'deleted' | 'last' | 'only-resume' | 'not-draft' | 'failed'> {
   const log = deps.log ?? ((line: string) => console.warn(line));
-  const counted = await supabase
-    .from('profiles')
-    .select('id', { count: 'exact', head: true });
-  if (counted.error || counted.count === null) {
+  const read = await supabase.from('profiles').select('id, resumeKey');
+  if (read.error || !read.data) {
     log(
-      `profile delete: count failed profile=${profileId} code=${errorCode(counted.error)}`,
+      `profile delete: profiles read failed profile=${profileId} code=${errorCode(read.error)}`,
     );
     return 'failed';
   }
-  if (counted.count <= 1) return 'last';
+  if (read.data.length <= 1) return 'last';
+  const target = read.data.find((r) => r.id === profileId);
+  const otherWithResume = read.data.some(
+    (r) => r.id !== profileId && r.resumeKey !== null,
+  );
+  if (target?.resumeKey != null && !otherWithResume) return 'only-resume';
   return (deps.deleteDraft ?? deleteDraftProfile)(supabase, userId, profileId);
 }
 

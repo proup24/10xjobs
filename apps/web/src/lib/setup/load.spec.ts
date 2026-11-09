@@ -109,6 +109,22 @@ describe('loadSetupSnapshot', () => {
     expect(nextSetupStep(snap)).toBe('job');
   });
 
+  it('ignores a v2 draft once a profile exists, picking the profile as usual', async () => {
+    const f = tables({
+      users: { name: 'Ada', residenceCountry: 'DE', acceptsSponsorship: true },
+      profile_setup_drafts: {
+        answers: { version: 2, newProfileId: Q, copyFrom: null },
+      },
+      profiles: [
+        { id: P, resumeKey: null },
+        { id: Q, resumeKey: 'u1/q/x.pdf' },
+      ],
+    });
+    const snap = await loadSetupSnapshot(f.supabase);
+    expect(snap.draft).toBeNull();
+    expect(snap.profile).toEqual({ id: Q, hasResume: true });
+  });
+
   it('ignores an unparseable draft', async () => {
     const f = tables({
       users: { name: 'Ada', residenceCountry: null, acceptsSponsorship: null },

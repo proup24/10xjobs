@@ -46,16 +46,56 @@ async function confirm() {
 
 describe('DeleteProfileButton', () => {
   it('is disabled with the hint when it is the last profile', () => {
-    render(<DeleteProfileButton profileId={ID} label="Backend" isLast />);
+    render(
+      <DeleteProfileButton
+        profileId={ID}
+        label="Backend"
+        blockedReason="last"
+      />,
+    );
     expect(trigger().disabled).toBe(true);
     const hint = screen.getByText('You need at least one profile');
     expect(trigger().getAttribute('aria-describedby')).toBe(hint.id);
   });
 
+  it('is disabled with its own hint when it holds the only resume', () => {
+    render(
+      <DeleteProfileButton
+        profileId={ID}
+        label="Backend"
+        blockedReason="only-resume"
+      />,
+    );
+    expect(trigger().disabled).toBe(true);
+    const hint = screen.getByText('Add a resume to another profile first');
+    expect(trigger().getAttribute('aria-describedby')).toBe(hint.id);
+  });
+
+  it('a stale refusal for the only resume toasts that hint', async () => {
+    deleteProfileAction.mockResolvedValue('only-resume');
+    render(
+      <DeleteProfileButton
+        profileId={ID}
+        label="Backend"
+        blockedReason={null}
+      />,
+    );
+    await confirm();
+    await waitFor(() =>
+      expect(toastError).toHaveBeenCalledWith(
+        'Add a resume to another profile first',
+      ),
+    );
+  });
+
   it('asks first, then deletes', async () => {
     deleteProfileAction.mockResolvedValue('failed');
     render(
-      <DeleteProfileButton profileId={ID} label="Backend" isLast={false} />,
+      <DeleteProfileButton
+        profileId={ID}
+        label="Backend"
+        blockedReason={null}
+      />,
     );
     expect(screen.queryByText('You need at least one profile')).toBeNull();
     fireEvent.click(trigger());
@@ -73,7 +113,11 @@ describe('DeleteProfileButton', () => {
   it('a failure toasts', async () => {
     deleteProfileAction.mockResolvedValue('not-draft');
     render(
-      <DeleteProfileButton profileId={ID} label="Backend" isLast={false} />,
+      <DeleteProfileButton
+        profileId={ID}
+        label="Backend"
+        blockedReason={null}
+      />,
     );
     await confirm();
     await waitFor(() =>
@@ -90,7 +134,11 @@ describe('DeleteProfileButton', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     render(
       <Boundary>
-        <DeleteProfileButton profileId={ID} label="Backend" isLast={false} />
+        <DeleteProfileButton
+          profileId={ID}
+          label="Backend"
+          blockedReason={null}
+        />
       </Boundary>,
     );
     await confirm();

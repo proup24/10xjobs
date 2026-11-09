@@ -49,6 +49,8 @@ export async function startNewProfileAction(
   const s = await session();
   if (!s) return 'failed';
   const result = await startNewProfile(s.supabase, s.userId, parsed);
+  // A draft is already in progress (another tab): its continue-or-start-over choice.
+  if (result === 'in-progress') redirect('/preferences/new');
   if (result !== 'started') return result;
   refreshNav();
   redirect('/preferences/new/job');

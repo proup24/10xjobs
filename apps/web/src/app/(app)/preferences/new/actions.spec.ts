@@ -74,6 +74,14 @@ describe('new-profile actions', () => {
     expect(redirect).not.toHaveBeenCalled();
   });
 
+  it('start: a draft in progress goes to the continue-or-start-over choice', async () => {
+    flow.startNewProfile.mockResolvedValue('in-progress');
+    await expect(startNewProfileAction({ kind: 'blank' })).rejects.toBe(
+      REDIRECT,
+    );
+    expect(redirect).toHaveBeenCalledWith('/preferences/new');
+  });
+
   it('start: a malformed source fails and starts nothing', async () => {
     for (const source of [
       null,

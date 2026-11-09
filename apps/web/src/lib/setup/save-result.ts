@@ -37,8 +37,9 @@ export function failure(
   log: (line: string) => void,
   what: string,
   error: unknown,
+  prefix = 'setup save',
 ): SaveResult {
-  log(`setup save: ${what} code=${errorCode(error)}`);
+  log(`${prefix}: ${what} code=${errorCode(error)}`);
   const e = error as { code?: unknown; message?: unknown } | null;
   if (e && isRefusal(e.code) && typeof e.message === 'string') {
     return { status: 'invalid', errors: { _form: e.message } };

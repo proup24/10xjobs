@@ -70,7 +70,7 @@ export async function saveProfileTermsAction(
  */
 export async function deleteProfileAction(
   profileId: string,
-): Promise<'last' | 'not-draft' | 'failed'> {
+): Promise<'last' | 'only-resume' | 'not-draft' | 'failed'> {
   if (!isProfileId(profileId)) return 'failed';
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.auth.getClaims();

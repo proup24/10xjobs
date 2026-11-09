@@ -13,6 +13,13 @@ export default async function ProfileLayout({
 }) {
   const { profileId } = await requireOwnProfile((await params).profileId);
   const { items, labels } = await preferenceProfiles();
+  const mine = items.find((i) => i.id === profileId);
+  const blockedReason =
+    items.length <= 1
+      ? 'last'
+      : mine?.hasResume && !items.some((i) => i.id !== profileId && i.hasResume)
+        ? 'only-resume'
+        : null;
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -22,7 +29,7 @@ export default async function ProfileLayout({
         <DeleteProfileButton
           profileId={profileId}
           label={labels[profileId] ?? 'Profile'}
-          isLast={items.length <= 1}
+          blockedReason={blockedReason}
         />
       </div>
       {children}

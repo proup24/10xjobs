@@ -22,7 +22,9 @@ import type { SetupSnapshot } from './next-step';
 type Client = SupabaseClient<Database>;
 
 export function loadError(what: string, error: unknown): Error {
-  return new Error(`setup load: ${what} code=${errorCode(error)}`);
+  const code = errorCode(error);
+  // `code` lets callers log it with errorCode() without the message.
+  return Object.assign(new Error(`setup load: ${what} code=${code}`), { code });
 }
 
 function must<T>(

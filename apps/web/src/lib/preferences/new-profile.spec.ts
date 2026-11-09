@@ -221,6 +221,40 @@ describe('startNewProfile', () => {
     });
   });
 
+  it('leaves a draft in progress (v2) alone and says so', async () => {
+    const f = world({
+      profiles: [{ id: SRC }],
+      draft: { id: D, answers: v2({ job }) },
+    });
+    expect(await startNewProfile(f.supabase, U, { kind: 'blank' }, quiet)).toBe(
+      'in-progress',
+    );
+    expect(f.queries('profile_setup_drafts', 'upsert')).toHaveLength(0);
+  });
+
+  it('a failed source read logs the code, not the message', async () => {
+    const log = vi.fn();
+    const f = world({
+      profiles: [{ id: SRC }],
+      failOn: (c) =>
+        c.table === 'profile_skills'
+          ? { data: null, error: { code: 'XX000', message: 'secret' } }
+          : undefined,
+      byId: { [SRC]: storedRow() },
+    });
+    expect(
+      await startNewProfile(
+        f.supabase,
+        U,
+        { kind: 'copy', profileId: SRC },
+        { log },
+      ),
+    ).toBe('failed');
+    expect(log).toHaveBeenCalledWith(
+      'new profile: source read failed code=XX000',
+    );
+  });
+
   it('a source RLS does not return fails without writing', async () => {
     const f = world({ profiles: [{ id: SRC }] });
     expect(
@@ -247,6 +281,38 @@ describe('startNewProfile', () => {
     ).toBe('failed');
     expect(log.mock.calls.join(' ')).toContain('XX000');
     expect(log.mock.calls.join(' ')).not.toContain('secret');
+  });
+});
+
+describe('new-profile log lines', () => {
+  it('every failure line is prefixed "new profile:", never "setup save:"', async () => {
+    const lines: string[] = [];
+    const log = (l: string) => lines.push(l);
+    const draft = { id: D, answers: v2({ job }) };
+    await saveNewProfileJob(
+      world({
+        failOn: (c) =>
+          c.table === 'profile_setup_drafts'
+            ? { data: null, error: { code: 'XX000' } }
+            : undefined,
+      }).supabase,
+      U,
+      job,
+      searchable,
+      { log },
+    );
+    for (const code of ['P0002', '23505', 'XX000']) {
+      await saveNewProfileTerms(
+        world({ draft, rpcError: { code } }).supabase,
+        U,
+        NEW,
+        terms,
+        searchable,
+        { log },
+      );
+    }
+    expect(lines.length).toBeGreaterThanOrEqual(4);
+    for (const l of lines) expect(l).toMatch(/^new profile: /);
   });
 });
 
@@ -543,7 +609,9 @@ describe('saveNewProfileTerms', () => {
 
   it('a draft naming another id is not written; the stale tab asks to start again', async () => {
     const OTHER = '55555555-5555-4555-8555-555555555555';
-    const f = world({ draft: { id: D, answers: v2({ job, newProfileId: OTHER }) } });
+    const f = world({
+      draft: { id: D, answers: v2({ job, newProfileId: OTHER }) },
+    });
     expect(
       await saveNewProfileTerms(f.supabase, U, NEW, terms, searchable, quiet),
     ).toEqual({
@@ -576,7 +644,14 @@ describe('saveNewProfileTerms', () => {
   it('a malformed id asks to start again without a query', async () => {
     const f = world({ draft: { id: D, answers: v2({ job }) } });
     expect(
-      await saveNewProfileTerms(f.supabase, U, 'nope', terms, searchable, quiet),
+      await saveNewProfileTerms(
+        f.supabase,
+        U,
+        'nope',
+        terms,
+        searchable,
+        quiet,
+      ),
     ).toEqual({
       status: 'invalid',
       errors: { _form: 'Start the new profile again' },
