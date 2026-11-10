@@ -165,6 +165,12 @@ jobs:
           context: apps/xjobs
           file: apps/xjobs/Dockerfile
           push: true
+          # The source label links a new GHCR package to this repository, so
+          # the deploy job's GITHUB_TOKEN can pull it.
+          labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          # When two merges deploy out of order, `:dev` can briefly point at the
+          # older build: this job cannot know. The deploy job still refuses to
+          # roll the server back to it.
           tags: |
             ${{ env.IMAGE }}:${{ needs.check.outputs.sha }}
             ${{ env.IMAGE }}:dev
@@ -193,6 +199,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up SSH
+        id: ssh
         env:
           ENGINE_SSH_PRIVATE_KEY: ${{ secrets.ENGINE_SSH_PRIVATE_KEY }}
           ENGINE_SSH_KNOWN_HOSTS: ${{ secrets.ENGINE_SSH_KNOWN_HOSTS }}
@@ -208,11 +215,53 @@ jobs:
             BatchMode yes
           CONF
 
+      # Parallel CI runs for two quick merges can finish out of order. Never let
+      # an automatic deploy roll the server back to an older commit. Manual
+      # dispatches skip this check, so rollbacks still work.
+      - name: Skip if the server runs a newer commit
+        id: newer
+        if: github.event_name == 'workflow_run'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          raw="$(ssh "$ENGINE_SSH_USER@$ENGINE_SSH_HOST" \
+            'if [ -f ~/engine/image.env ]; then sed -n "s/^ENGINE_IMAGE_TAG=//p" ~/engine/image.env; fi')"
+          current="$(printf '%s' "$raw" | tr -d '\r"' | head -n 1)"
+          if [ -z "$current" ]; then
+            echo "No deployed image recorded; first deploy"
+            exit 0
+          fi
+          if ! [[ "$current" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::warning::ENGINE_IMAGE_TAG on the server is not a commit SHA; deploying anyway"
+            exit 0
+          fi
+          if [ "$current" = "$SHA" ]; then
+            echo "The server already runs $SHA; redeploying"
+            exit 0
+          fi
+          # compare/BASE...HEAD: `ahead` means HEAD (the running commit) has
+          # commits that BASE (the new one) lacks, so the server is newer.
+          if ! status="$(gh api "repos/$REPO/compare/$SHA...$current" --jq .status 2>/dev/null)"; then
+            echo "::error::Could not compare $SHA with the running $current"
+            exit 1
+          fi
+          echo "compare $SHA...$current: $status"
+          if [ "$status" = ahead ]; then
+            echo "::notice::The server runs $current, which is newer than $SHA; skipping the rollout"
+            echo "stale=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Staged in .incoming/ so a failed pull leaves the live files untouched.
       - name: Copy the deploy files
-        run: scp deploy/engine/compose.yaml deploy/engine/Caddyfile "$ENGINE_SSH_USER@$ENGINE_SSH_HOST:engine/"
+        if: steps.newer.outputs.stale != 'true'
+        run: |
+          ssh "$ENGINE_SSH_USER@$ENGINE_SSH_HOST" 'mkdir -p ~/engine/.incoming'
+          scp deploy/engine/compose.yaml deploy/engine/Caddyfile "$ENGINE_SSH_USER@$ENGINE_SSH_HOST:engine/.incoming/"
 
       # The token goes over ssh stdin only: never into a command line or the log.
       - name: Log the server in to GHCR
+        if: steps.newer.outputs.stale != 'true'
         env:
           GHCR_TOKEN: ${{ github.token }}
           ACTOR: ${{ github.actor }}
@@ -221,21 +270,35 @@ jobs:
           printf '%s' "$GHCR_TOKEN" | ssh "$ENGINE_SSH_USER@$ENGINE_SSH_HOST" \
             "docker login ghcr.io -u $(printf '%q' "$ACTOR") --password-stdin"
 
+      # Pull with the staged compose file first; only a successful pull moves
+      # the files into place and records the new tag in image.env.
+      # `--project-directory .` keeps `env_file: .env` and `./Caddyfile`
+      # resolving in ~/engine rather than in .incoming/.
       - name: Roll out the image
+        if: steps.newer.outputs.stale != 'true'
         run: |
           # shellcheck disable=SC2029  # the validated SHA is quoted on purpose, client side
           ssh "$ENGINE_SSH_USER@$ENGINE_SSH_HOST" "bash -s $(printf '%q' "$SHA")" <<'REMOTE'
           set -euo pipefail
           cd ~/engine
+          ENGINE_IMAGE_TAG="$1" docker compose -p xjobs-engine -f .incoming/compose.yaml \
+            --project-directory . --env-file .env pull api worker
+          mv .incoming/compose.yaml compose.yaml
+          # Rewrite in place: caddy bind-mounts this single file, which pins its
+          # inode, so a renamed-over file would stay invisible to the container.
+          cat .incoming/Caddyfile > Caddyfile
+          rm .incoming/Caddyfile
           printf 'ENGINE_IMAGE_TAG=%s\n' "$1" > image.env
           C="docker compose -p xjobs-engine --env-file image.env --env-file .env"
-          $C pull api worker
           $C up -d --remove-orphans
+          # `up` does not recreate caddy for a Caddyfile change; reload it.
+          $C exec -T caddy caddy reload --config /etc/caddy/Caddyfile
           # Remove images created more than a week ago (by image creation time, not pull time)
           docker image prune -af --filter "until=168h"
           REMOTE
 
       - name: Health check
+        if: steps.newer.outputs.stale != 'true'
         run: |
           raw="$(ssh "$ENGINE_SSH_USER@$ENGINE_SSH_HOST" "bash -c 'set -o pipefail; grep ^ENGINE_HOSTNAME= ~/engine/.env | cut -d= -f2-'")" || {
             echo "::error::Could not read ENGINE_HOSTNAME from ~/engine/.env over ssh"
@@ -248,9 +311,15 @@ jobs:
           fi
           if ! curl -fsS --retry 24 --retry-delay 5 --retry-all-errors "https://$ENGINE_HOST/api/health"; then
             echo "::error::Health check failed for https://$ENGINE_HOST/api/health"
-            ssh "$ENGINE_SSH_USER@$ENGINE_SSH_HOST" 'cd ~/engine && C="docker compose -p xjobs-engine --env-file image.env --env-file .env" ; $C ps; $C logs --tail 100 api worker' || true
             exit 1
           fi
+
+      # Also covers a failed `up -d`, which never reaches the health check.
+      - name: Dump container status and logs
+        if: failure() && steps.ssh.outcome == 'success'
+        run: |
+          ssh "$ENGINE_SSH_USER@$ENGINE_SSH_HOST" \
+            'cd ~/engine && C="docker compose -p xjobs-engine --env-file image.env --env-file .env"; $C ps; $C logs --tail 100 api worker' || true
 
       - name: Log the server out of GHCR
         if: always()
