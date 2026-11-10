@@ -1,4 +1,4 @@
-import { Channel } from "src/common/enums";
+import { Channel } from 'src/common/enums';
 
 /** What one collect job did across the channel's segments. */
 export interface CollectionSummary {
@@ -8,6 +8,8 @@ export interface CollectionSummary {
   segmentsFailed: number;
   /** Segments not searched: another run holds, or already covered, every member. */
   segmentsSkipped: number;
+  /** Segments not started because the worker was shutting down. */
+  segmentsDeferred: number;
   /** Members dropped from their segment for the same reasons. */
   queriesSkipped: number;
   /** Items returned, attributed or not. */

@@ -23,6 +23,11 @@ export class CollectionWorkerService {
     @Inject(RUN_SCHEDULES) private readonly runSchedules: boolean,
   ) {}
 
+  /** Lets a running collect job finish its current segment and start no other. */
+  stop(): void {
+    this.collection.stop();
+  }
+
   /** Returns false when the channel is disabled. With schedules off it still starts the worker. */
   async start(channel: Channel, connection: Redis): Promise<boolean> {
     await this.storage.ensureBucket(ingestConfig.bucket);
