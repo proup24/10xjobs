@@ -152,11 +152,10 @@ export const environmentSchema = databaseEnvironmentSchema
     COOKIE_DOMAIN: z.string().min(1).optional(),
     COOKIE_SECURE: booleanFlag.optional(),
     COOKIE_SAME_SITE: z.enum(['lax', 'strict', 'none']).default('lax'),
-    /** Credentials every API request must send as HTTP Basic auth. */
-    BASIC_AUTH_USERNAME: z.string().min(1),
-    BASIC_AUTH_PASSWORD: z
+    /** Shared secret the web app sends as `X-Engine-Key` on every request. */
+    ENGINE_API_KEY: z
       .string()
-      .min(12, 'BASIC_AUTH_PASSWORD must be at least 12 characters'),
+      .min(32, 'ENGINE_API_KEY must be at least 32 characters'),
     ...storageEnvironmentShape,
     /**
      * Private bucket that holds resume PDFs. Pinned: the migration, the

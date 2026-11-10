@@ -3,8 +3,7 @@ vi.hoisted(() => {
   process.env.DATABASE_URL ??= 'postgresql://u:p@127.0.0.1:1/db';
   process.env.SUPABASE_URL ??= 'http://127.0.0.1:1';
   process.env.SUPABASE_SERVICE_ROLE_KEY ??= 'service-key';
-  process.env.BASIC_AUTH_USERNAME ??= 'admin';
-  process.env.BASIC_AUTH_PASSWORD ??= 'a-long-test-password';
+  process.env.ENGINE_API_KEY ??= 'test-engine-key-0123456789-0123456789';
   delete process.env.WORKER_ROLE;
   delete process.env.WORKER_CHANNEL;
 });

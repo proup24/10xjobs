@@ -89,16 +89,9 @@ export function getSystemDomain(config: AppConfigService): string {
   return config.get('SYSTEM_DOMAIN', { infer: true });
 }
 
-export interface BasicAuthConfig {
-  username: string;
-  password: string;
-}
-
-export function getBasicAuthConfig(config: AppConfigService): BasicAuthConfig {
-  return {
-    username: config.get('BASIC_AUTH_USERNAME', { infer: true }),
-    password: config.get('BASIC_AUTH_PASSWORD', { infer: true }),
-  };
+/** The shared key every request must send as `X-Engine-Key`. */
+export function getEngineApiKey(config: AppConfigService): string {
+  return config.get('ENGINE_API_KEY', { infer: true });
 }
 
 /**

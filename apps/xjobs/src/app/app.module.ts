@@ -1,14 +1,9 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { ConfigModule } from '@nestjs/config';
+import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { HttpExceptionFilter } from 'src/common/filters';
-import { BASIC_AUTH_CREDENTIALS, BasicAuthGuard } from 'src/common/guards';
 import { ResponseInterceptor } from 'src/common/interceptors';
-import {
-  getBasicAuthConfig,
-  validateEnvironment,
-  type EnvironmentVariables,
-} from 'src/config';
+import { validateEnvironment } from 'src/config';
 import { DatabaseModule } from 'src/database';
 import { RedisModule } from 'src/infrastructure/redis/redis.module';
 import { JobsModule } from 'src/infrastructure/jobs/jobs.module';
@@ -42,13 +37,6 @@ import { HealthService } from './services/health.service';
   controllers: [HealthController],
   providers: [
     HealthService,
-    {
-      provide: BASIC_AUTH_CREDENTIALS,
-      inject: [ConfigService],
-      useFactory: (config: ConfigService<EnvironmentVariables, true>) =>
-        getBasicAuthConfig(config),
-    },
-    { provide: APP_GUARD, useClass: BasicAuthGuard },
     { provide: APP_INTERCEPTOR, useClass: ResponseInterceptor },
     { provide: APP_FILTER, useClass: HttpExceptionFilter },
   ],

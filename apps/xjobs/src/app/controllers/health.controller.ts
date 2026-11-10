@@ -5,11 +5,7 @@ import {
   HttpStatus,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import {
-  ApiErrorResponses,
-  ApiSuccessResponse,
-  Public,
-} from 'src/common/decorators';
+import { ApiErrorResponses, ApiSuccessResponse } from 'src/common/decorators';
 import { HealthResponseDto, HealthStatus } from '../dto/health.response.dto';
 import { HealthService } from '../services/health.service';
 
@@ -23,11 +19,10 @@ export class HealthController {
 
   /**
    * Readiness probe: 200 when Postgres and the queue Redis answer (status
-   * `degraded` if only the cache is down), 503 otherwise. Open so probes need
-   * no credentials.
+   * `degraded` if only the cache is down), 503 otherwise. Like every route it
+   * needs the engine key.
    */
   @ApiSuccessResponse(HealthResponseDto)
-  @Public()
   @Header('Cache-Control', 'no-store')
   @Get()
   async check(): Promise<HealthResponseDto> {
