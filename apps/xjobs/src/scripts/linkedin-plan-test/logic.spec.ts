@@ -3,13 +3,17 @@ import {
   TOTAL_BUDGET_USD,
   BudgetExceededError,
   buildPairs,
+  CAMPAIGN_BUDGET_USD,
   classifyRun,
   createBudget,
   containmentVerdict,
   datedItems,
   judgeContainment,
-  orderPairs,
+  filterPairs,
+  invocationLimit,
   parseGeoArgs,
+  parsePairsFilter,
+  planSpend,
   parseSections,
   resolveGeo,
   rowsCap,
@@ -69,6 +73,10 @@ describe('keywordOfLength', () => {
 
 describe('containmentVerdict', () => {
   const at = (day: number) => `2026-11-0${day}T10:00:00.000Z`;
+  // What the actor really returns: a date, at midnight UTC.
+  const day = (d: number) => `2026-11-0${d}T00:00:00.000Z`;
+  const full = { parentFull: true };
+  const notFull = { parentFull: false };
 
   it('passes when the parent holds every child job', () => {
     const result = containmentVerdict(
@@ -77,11 +85,12 @@ describe('containmentVerdict', () => {
         { id: 'a', publishedAt: at(5) },
         { id: 'b', publishedAt: at(4) },
       ],
+      notFull,
     );
     expect(result).toEqual({ verdict: 'pass', missing: [] });
   });
 
-  it('is a row-limit cut when every missing job is older than the parent oldest', () => {
+  it('is a row-limit cut when the parent is full and every missing job is older', () => {
     const result = containmentVerdict(
       [
         { id: 'a', publishedAt: at(5) },
@@ -91,29 +100,116 @@ describe('containmentVerdict', () => {
         { id: 'a', publishedAt: at(5) },
         { id: 'b', publishedAt: at(3) },
       ],
+      full,
     );
     expect(result).toEqual({ verdict: 'row-limit-cut', missing: ['old'] });
   });
 
-  it('fails when a missing job is newer than the parent oldest', () => {
+  it('is a row-limit cut for a midnight-only miss on the parent oldest day', () => {
+    const result = containmentVerdict(
+      [
+        { id: 'a', publishedAt: day(5) },
+        { id: 'same-day', publishedAt: day(3) },
+      ],
+      [
+        { id: 'a', publishedAt: day(5) },
+        { id: 'b', publishedAt: day(3) },
+      ],
+      full,
+    );
+    expect(result).toEqual({ verdict: 'row-limit-cut', missing: ['same-day'] });
+  });
+
+  it('allows one day of slack for dates rounded in another time zone', () => {
+    expect(
+      containmentVerdict(
+        [{ id: 'x', publishedAt: day(4) }],
+        [{ id: 'b', publishedAt: day(3) }],
+        full,
+      ).verdict,
+    ).toBe('row-limit-cut');
+    expect(
+      containmentVerdict(
+        [{ id: 'x', publishedAt: day(5) }],
+        [{ id: 'b', publishedAt: day(3) }],
+        full,
+      ).verdict,
+    ).toBe('fail');
+  });
+
+  it('ignores parent items with no date when finding the oldest', () => {
+    const result = containmentVerdict(
+      [{ id: 'old', publishedAt: day(2) }],
+      [
+        { id: 'b', publishedAt: day(3) },
+        { id: 'c', publishedAt: null },
+      ],
+      full,
+    );
+    expect(result.verdict).toBe('row-limit-cut');
+  });
+
+  it('cannot call a dateless miss from a full parent a fail', () => {
+    const result = containmentVerdict(
+      [{ id: 'x', publishedAt: null }],
+      [{ id: 'b', publishedAt: day(3) }],
+      full,
+    );
+    expect(result.verdict).toBe('row-limit-cut');
+  });
+
+  it('fails any miss when the parent was not full, whatever its date', () => {
+    expect(
+      containmentVerdict(
+        [{ id: 'old', publishedAt: day(1) }],
+        [{ id: 'b', publishedAt: day(3) }],
+        notFull,
+      ).verdict,
+    ).toBe('fail');
+    expect(
+      containmentVerdict(
+        [{ id: 'x', publishedAt: null }],
+        [{ id: 'b', publishedAt: day(3) }],
+        notFull,
+      ).verdict,
+    ).toBe('fail');
+  });
+
+  it('fails when a missing job is newer than the parent oldest day', () => {
     const result = containmentVerdict(
       [{ id: 'new', publishedAt: at(6) }],
       [{ id: 'b', publishedAt: at(3) }],
+      full,
     );
     expect(result).toEqual({ verdict: 'fail', missing: ['new'] });
   });
 
-  it('fails when a missing job has no usable date', () => {
-    const result = containmentVerdict(
-      [{ id: 'x', publishedAt: null }],
-      [{ id: 'b', publishedAt: at(3) }],
-    );
-    expect(result.verdict).toBe('fail');
-  });
-
   it('fails when the parent is empty and the child is not', () => {
     expect(
-      containmentVerdict([{ id: 'x', publishedAt: at(2) }], []).verdict,
+      containmentVerdict([{ id: 'x', publishedAt: at(2) }], [], notFull)
+        .verdict,
+    ).toBe('fail');
+  });
+
+  it('calls misses at the start of the window a window edge, not a fail', () => {
+    // The window opened during day 2: a day 2 job can age out between the runs.
+    const windowStart = Date.parse('2026-11-02T15:00:00Z');
+    expect(
+      containmentVerdict(
+        [{ id: 'edge', publishedAt: day(2) }],
+        [{ id: 'b', publishedAt: day(3) }],
+        { parentFull: false, windowStart },
+      ),
+    ).toEqual({ verdict: 'window-edge', missing: ['edge'] });
+    expect(
+      containmentVerdict(
+        [
+          { id: 'edge', publishedAt: day(2) },
+          { id: 'real', publishedAt: day(4) },
+        ],
+        [{ id: 'b', publishedAt: day(3) }],
+        { parentFull: false, windowStart },
+      ).verdict,
     ).toBe('fail');
   });
 });
@@ -188,6 +284,16 @@ describe('resolveGeo', () => {
   });
 });
 
+describe('resolveGeo with a region code', () => {
+  it('finds an override given by code for a place named by label', () => {
+    const overrides = parseGeoArgs(['LATAM=555']);
+    expect(resolveGeo(['Latin America', 'LATAM'], overrides, {})).toEqual({
+      geoId: '555',
+      source: 'override',
+    });
+  });
+});
+
 describe('parseSections', () => {
   it('defaults to every section', () => {
     expect([...parseSections(undefined)]).toEqual([
@@ -204,61 +310,139 @@ describe('parseSections', () => {
   });
 });
 
-describe('buildPairs and orderPairs', () => {
+describe('buildPairs', () => {
   const geography = {
     regions: [
       { code: 'EMEA', label: 'EMEA' },
-      { code: 'EU', label: 'Europe' },
+      { code: 'EUROPE', label: 'Europe' },
+      { code: 'NORTH_AFRICA', label: 'North Africa' },
+      { code: 'LATAM', label: 'Latin America' },
+      { code: 'NORTH_AMERICA', label: 'North America' },
+      { code: 'GLOBAL', label: 'Global' },
     ],
     countries: [
       { code: 'DE', label: 'Germany' },
       { code: 'MA', label: 'Morocco' },
+      { code: 'BR', label: 'Brazil' },
+      { code: 'CA', label: 'Canada' },
     ],
     cities: [{ name: 'Casablanca', countryCode: 'MA' }],
     links: [
       { regionCode: 'EMEA', countryCode: 'DE' },
       { regionCode: 'EMEA', countryCode: 'MA' },
-      { regionCode: 'EU', countryCode: 'DE' },
+      { regionCode: 'EUROPE', countryCode: 'DE' },
+      { regionCode: 'NORTH_AFRICA', countryCode: 'MA' },
+      { regionCode: 'LATAM', countryCode: 'BR' },
+      { regionCode: 'NORTH_AMERICA', countryCode: 'CA' },
+      ...['DE', 'MA', 'BR', 'CA'].map((c) => ({
+        regionCode: 'GLOBAL',
+        countryCode: c,
+      })),
     ],
   };
+  const keys = (places: string[]) =>
+    buildPairs(places, geography).map((p) => `${p.child}>${p.parent}`);
 
-  it('pairs a country with its regions and the fixed parents, once each', () => {
-    const pairs = buildPairs(['germany'], geography);
-    const keys = pairs.map((p) => `${p.child}>${p.parent}`);
-    expect(keys).toContain('germany>EMEA');
-    expect(keys).toContain('germany>Europe');
-    expect(keys).toContain('germany>LATAM');
-    expect(keys).toContain('germany>North Africa');
-    expect(new Set(keys).size).toBe(keys.length);
+  it('pairs a country only with the regions that contain it, once each', () => {
+    const pairs = keys(['germany']);
+    expect(pairs).toEqual(['germany>EMEA', 'germany>Europe']);
   });
 
-  it('pairs a city with its country as well', () => {
-    const keys = buildPairs(['casablanca, morocco'], geography).map(
-      (p) => `${p.child}>${p.parent}`,
-    );
-    expect(keys).toContain('casablanca, morocco>Morocco');
-    expect(keys).toContain('casablanca, morocco>EMEA');
+  it('never pairs a place with a region that does not contain it', () => {
+    expect(keys(['Canada'])).toEqual(['Canada>North America']);
+    expect(keys(['Brazil'])).toEqual(['Brazil>Latin America']);
   });
 
-  it('skips regions and places it cannot place', () => {
-    expect(buildPairs(['emea', 'atlantis'], geography)).toEqual([]);
+  it('pairs a city with its country and the regions holding that country', () => {
+    const pairs = keys(['Casablanca, Morocco']);
+    expect(pairs).toContain('Casablanca, Morocco>Morocco');
+    expect(pairs).toContain('Casablanca, Morocco>EMEA');
+    expect(pairs).not.toContain('Casablanca, Morocco>Europe');
   });
 
-  it('orders fixed parents first with EMEA first, keeping the rest after', () => {
-    const ordered = orderPairs([
-      { child: 'germany', parent: 'Morocco' },
-      { child: 'germany', parent: 'LATAM' },
-      { child: 'germany', parent: 'Europe' },
-      { child: 'germany', parent: 'EMEA' },
-      { child: 'morocco', parent: 'North Africa' },
+  it('pairs a region with the regions that hold all of its countries', () => {
+    expect(keys(['Europe'])).toEqual(['Europe>EMEA']);
+    expect(keys(['North Africa'])).toEqual(['North Africa>EMEA']);
+    expect(keys(['Latin America'])).toEqual([]);
+  });
+
+  it('names parents by their region label, so LATAM is "Latin America"', () => {
+    const pairs = buildPairs(['Brazil', 'Latin America'], geography);
+    expect(pairs).toEqual([
+      { child: 'Brazil', parent: 'Latin America', parentCode: 'LATAM' },
     ]);
-    expect(ordered.map((p) => p.parent)).toEqual([
-      'EMEA',
+  });
+
+  it('carries a region child its code too', () => {
+    expect(buildPairs(['Europe'], geography)).toEqual([
+      {
+        child: 'Europe',
+        childCode: 'EUROPE',
+        parent: 'EMEA',
+        parentCode: 'EMEA',
+      },
+    ]);
+  });
+
+  it('never uses Global as a parent', () => {
+    expect(
+      keys(['Germany', 'Morocco']).some((k) => k.endsWith('>Global')),
+    ).toBe(false);
+  });
+
+  it('skips places it cannot place', () => {
+    expect(buildPairs(['atlantis'], geography)).toEqual([]);
+  });
+
+  it('runs the worked example folds first: into EMEA, city into country, into LATAM', () => {
+    const pairs = keys([
+      'Brazil',
+      'Casablanca, Morocco',
+      'Canada',
+      'Germany',
       'Europe',
-      'LATAM',
       'North Africa',
-      'Morocco',
     ]);
+    expect(pairs.slice(0, 4)).toEqual([
+      'Europe>EMEA',
+      'North Africa>EMEA',
+      'Germany>EMEA',
+      'Casablanca, Morocco>Morocco',
+    ]);
+    expect(pairs[4]).toBe('Brazil>Latin America');
+    expect(pairs.indexOf('Casablanca, Morocco>EMEA')).toBeGreaterThan(4);
+  });
+});
+
+describe('parsePairsFilter and filterPairs', () => {
+  const pairs = [
+    { child: 'Europe', parent: 'EMEA', parentCode: 'EMEA' },
+    { child: 'Casablanca, Morocco', parent: 'Morocco' },
+    { child: 'Brazil', parent: 'Latin America', parentCode: 'LATAM' },
+  ];
+
+  it('parses child>parent entries', () => {
+    expect(parsePairsFilter('Casablanca>Morocco, Europe>EMEA')).toEqual([
+      { child: 'Casablanca', parent: 'Morocco' },
+      { child: 'Europe', parent: 'EMEA' },
+    ]);
+    expect(() => parsePairsFilter('Casablanca')).toThrow(/--pairs/);
+    expect(() => parsePairsFilter('>EMEA')).toThrow(/--pairs/);
+  });
+
+  it('keeps the matching pairs in run order, by city name or region code', () => {
+    const { pairs: kept, unmatched } = filterPairs(
+      pairs,
+      parsePairsFilter('brazil>LATAM,Casablanca>Morocco'),
+    );
+    expect(kept.map((p) => p.child)).toEqual(['Casablanca, Morocco', 'Brazil']);
+    expect(unmatched).toEqual([]);
+  });
+
+  it('reports entries that match no pair', () => {
+    expect(
+      filterPairs(pairs, parsePairsFilter('Canada>EMEA')).unmatched,
+    ).toEqual(['Canada>EMEA']);
   });
 });
 
@@ -329,22 +513,105 @@ describe('classifyRun', () => {
     expect(classifyRun({ status: 'TIMED-OUT' }).memoryFailure).toBe(false);
   });
 
-  it('flags a charge-cap stop on its own', () => {
-    const result = classifyRun({
-      status: 'ABORTED',
-      statusMessage: 'Run stopped: maximum total charge reached',
-    });
-    expect(result).toEqual({
-      ok: false,
-      memoryFailure: false,
-      chargeCapped: true,
-    });
+  it('does not take any mention of memory for a memory failure', () => {
+    for (const statusMessage of [
+      'Finished. Peak memory usage 412 MB',
+      'Low memory mode: scraping one page at a time',
+      'Charged for memory: 1 GB',
+    ])
+      expect(
+        classifyRun({ status: 'FAILED', statusMessage }).memoryFailure,
+      ).toBe(false);
   });
 
   it('reads a thrown error message too', () => {
     expect(classifyRun({ error: 'Container OOM killed' }).memoryFailure).toBe(
       true,
     );
+    expect(
+      classifyRun({ error: 'FATAL ERROR: JavaScript heap out of memory' })
+        .memoryFailure,
+    ).toBe(true);
+  });
+
+  it('flags a charge-cap stop from the run usage reaching its cap', () => {
+    expect(
+      classifyRun({
+        status: 'SUCCEEDED',
+        usageTotalUsd: 0.0399,
+        maxTotalChargeUsd: 0.04,
+      }).chargeCapped,
+    ).toBe(true);
+    expect(
+      classifyRun({
+        status: 'SUCCEEDED',
+        usageTotalUsd: 0.02,
+        maxTotalChargeUsd: 0.04,
+      }).chargeCapped,
+    ).toBe(false);
+  });
+
+  it('flags the charge-limit status message, and nothing looser', () => {
+    expect(
+      classifyRun({
+        status: 'ABORTED',
+        statusMessage: 'Run stopped: maximum total charge reached',
+      }),
+    ).toEqual({ ok: false, memoryFailure: false, chargeCapped: true });
+    for (const statusMessage of [
+      'Max results reached',
+      'Cost per job: $0.0007, limit of 50 rows reached',
+    ])
+      expect(
+        classifyRun({ status: 'SUCCEEDED', statusMessage }).chargeCapped,
+      ).toBe(false);
+  });
+});
+
+describe('planSpend', () => {
+  it('counts what each chosen section reserves and how many pairs fit', () => {
+    const plan = planSpend({
+      sections: new Set(['or', 'length', 'containment'] as const),
+      pairCount: 40,
+      limitUsd: 1,
+    });
+    expect(plan.reservedUsd.or).toBeCloseTo(5 * rowsCap(25));
+    expect(plan.reservedUsd.length).toBeCloseTo(4 * rowsCap(25));
+    expect(plan.reservedUsd.ceiling).toBe(0);
+    expect(plan.containmentPairsAffordable).toBeGreaterThan(0);
+    expect(plan.warnings.join(' ')).toMatch(/of 40 pairs/);
+  });
+
+  it('warns plainly when the ceiling cannot fit beside the other sections', () => {
+    const plan = planSpend({
+      sections: new Set(['or', 'length', 'containment', 'ceiling'] as const),
+      pairCount: 10,
+      limitUsd: 1,
+    });
+    expect(plan.containmentPairsAffordable).toBe(0);
+    expect(plan.warnings.join(' ')).toMatch(/ceiling.*does not fit/i);
+    expect(plan.warnings.join(' ')).toMatch(/no containment pair fits/i);
+  });
+
+  it('has no warnings for the ceiling on its own', () => {
+    const plan = planSpend({
+      sections: new Set(['ceiling'] as const),
+      pairCount: 10,
+      limitUsd: 1,
+    });
+    expect(plan.warnings).toEqual([]);
+  });
+});
+
+describe('invocationLimit', () => {
+  it('is the per-run budget while the campaign has room', () => {
+    expect(invocationLimit(0)).toBe(TOTAL_BUDGET_USD);
+    expect(CAMPAIGN_BUDGET_USD).toBe(2);
+  });
+
+  it('shrinks to what the campaign has left, never below zero', () => {
+    expect(invocationLimit(1.5)).toBeCloseTo(0.5);
+    expect(invocationLimit(2.5)).toBe(0);
   });
 });
 

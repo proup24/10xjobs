@@ -1,26 +1,34 @@
 /**
  * The go/no-go live test of the shared LinkedIn search plan. It spends real
- * Apify money (every run is capped, and the whole script stops before passing
- * TOTAL_BUDGET_USD), so run it by hand and keep the output:
+ * Apify money (every run is capped, one invocation stops before passing
+ * TOTAL_BUDGET_USD, and every invocation together stops before
+ * CAMPAIGN_BUDGET_USD), so run it by hand and keep the output:
  *
  *   pnpm --filter @xjobs/xjobs apify:linkedin-plan-test > private/linkedin-plan-test.json
  *
  * Needs APIFY_TOKEN and the database variables (read-only). Prints one JSON
- * block per section: places, geo, or, length, containment (one block per pair),
- * ceiling, publishedAt, budget. Every run uses 1024 MB.
+ * block per section: places, plan, geo, or, length, containment (one block per
+ * pair, plus one per rerun), ceiling, publishedAt, budget. Every run uses
+ * 1024 MB, the ceiling run included (see docs/actors/linkedin-plan-test.md).
  *
  * Flags:
- *   --dry-run               print places, ordered pairs and reserved spend; no Apify calls
+ *   --dry-run               print places, ordered pairs, reserved spend and warnings; no Apify calls
  *   --sections a,b          or,length,containment,ceiling (default or,length,containment;
  *                           the ceiling run alone reserves almost the whole $1, so run it
  *                           as its own invocation: --sections ceiling)
- *   --geo '<place>=<id>'    pin a LinkedIn geoId for a place (repeatable); wins over
- *                           LINKEDIN_GEO_IDS. Find it on linkedin.com/jobs (location
- *                           picked in the search, `geoId` in the URL).
- * The decisions (budget, OR forms, containment, publishedAt stats) are in
+ *   --pairs 'a>b,c>d'       only these containment pairs (child>parent; a city by its name,
+ *                           a region by its label or code), in run order
+ *   --geo '<place>=<id>'    pin a LinkedIn geoId for a place (repeatable; a region by its
+ *                           label or code); wins over LINKEDIN_GEO_IDS. Find it on
+ *                           linkedin.com/jobs (location picked in the search, `geoId` in the URL).
+ *   --spend-file <path>     the running total across invocations (default
+ *                           tmp/linkedin-plan-test-spend.json, gitignored)
+ * The decisions (budget, OR forms, pairs, containment, publishedAt stats) are in
  * `linkedin-plan-test/logic.ts`.
  */
 import '../environment';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { ApifyClient } from 'apify-client';
 import { Logger } from '@nestjs/common';
@@ -35,30 +43,37 @@ import {
 import { LINKEDIN_GEO_IDS } from 'src/modules/queries/channels/linkedin_geo';
 import {
   BudgetExceededError,
+  CAMPAIGN_BUDGET_USD,
+  CEILING_ROWS,
+  LENGTHS,
+  PAIR_ROWS,
+  RERUN_ROWS,
+  SMALL_ROWS,
   TOTAL_BUDGET_USD,
   buildPairs,
   classifyRun,
   createBudget,
   datedItems,
+  filterPairs,
+  invocationLimit,
   judgeContainment,
   keywordOfLength,
   orForms,
-  orderPairs,
   parseGeoArgs,
+  parsePairsFilter,
   parseSections,
+  planSpend,
   publishedAtStats,
   resolveGeo,
   rowsCap,
   type GeoSource,
+  type Pair,
   type RunOutcome,
 } from './linkedin-plan-test/logic';
 
 const MEMORY_MBYTES = 1024;
 const SEVEN_DAYS = 7 * 24 * 3600;
 const CONTAINMENT_KEYWORD = 'software engineer';
-const CEILING_ROWS = 1200;
-const OR_RUNS = 5;
-const LENGTHS = [100, 200, 400, 800];
 
 type Item = Record<string, unknown>;
 
@@ -69,13 +84,35 @@ const { values } = parseArgs({
     'dry-run': { type: 'boolean', default: false },
     sections: { type: 'string' },
     geo: { type: 'string', multiple: true },
+    pairs: { type: 'string' },
+    'spend-file': {
+      type: 'string',
+      default: 'tmp/linkedin-plan-test-spend.json',
+    },
   },
 });
 const dryRun = values['dry-run'];
 const sections = parseSections(values.sections ?? 'or,length,containment');
 const geoOverrides = parseGeoArgs(values.geo ?? []);
+const pairsFilter =
+  values.pairs === undefined ? undefined : parsePairsFilter(values.pairs);
 
-const budget = createBudget(TOTAL_BUDGET_USD);
+/** What every paid invocation reserved, kept in a local file between runs. */
+interface Ledger {
+  reservedUsd: number;
+  runs: { at: string; rows: number; capUsd: number; costUsd: number | null }[];
+}
+const spendFile = resolve(values['spend-file']);
+const ledger: Ledger = existsSync(spendFile)
+  ? (JSON.parse(readFileSync(spendFile, 'utf8')) as Ledger)
+  : { reservedUsd: 0, runs: [] };
+function saveLedger(): void {
+  mkdirSync(dirname(spendFile), { recursive: true });
+  writeFileSync(spendFile, `${JSON.stringify(ledger, null, 2)}\n`);
+}
+
+const limitUsd = invocationLimit(ledger.reservedUsd);
+const budget = createBudget(limitUsd);
 const allItems: Item[] = [];
 const geoUsed = new Map<string, { geoId?: string; source: GeoSource }>();
 let client: ApifyClient | undefined;
@@ -97,8 +134,16 @@ function str(value: unknown): string | null {
   return typeof value === 'string' ? value : null;
 }
 
-function geoPlace(location: string): { location: string; geoId?: string } {
-  const resolved = resolveGeo(location, geoOverrides, LINKEDIN_GEO_IDS);
+/** A place's search params; `code` is a region's code, so `--geo LATAM=` reaches "Latin America". */
+function geoPlace(
+  location: string,
+  code?: string,
+): { location: string; geoId?: string } {
+  const resolved = resolveGeo(
+    code ? [location, code] : [location],
+    geoOverrides,
+    LINKEDIN_GEO_IDS,
+  );
   geoUsed.set(location, resolved);
   return resolved.geoId ? { location, geoId: resolved.geoId } : { location };
 }
@@ -108,10 +153,25 @@ async function search(
   keyword: string,
   location: string,
   rows: number,
+  code?: string,
 ): Promise<RunResult> {
   const maxTotalChargeUsd = rowsCap(rows);
   budget.reserve(maxTotalChargeUsd);
-  const url = linkedinJobSearchUrl(keyword, geoPlace(location), SEVEN_DAYS);
+  // Recorded before the run starts, so a crash still counts it.
+  const entry = {
+    at: new Date().toISOString(),
+    rows,
+    capUsd: maxTotalChargeUsd,
+    costUsd: null as number | null,
+  };
+  ledger.reservedUsd += maxTotalChargeUsd;
+  ledger.runs.push(entry);
+  saveLedger();
+  const url = linkedinJobSearchUrl(
+    keyword,
+    geoPlace(location, code),
+    SEVEN_DAYS,
+  );
   if (!client) throw new Error('No Apify client');
   try {
     const run = await client
@@ -126,11 +186,15 @@ async function search(
       .keyValueStore(run.defaultKeyValueStoreId)
       .getRecord('SEARCH_TOTALS');
     allItems.push(...(items as Item[]));
+    entry.costUsd = run.usageTotalUsd ?? null;
+    saveLedger();
     return {
       ...classifyRun({
         status: run.status,
         statusMessage: run.statusMessage,
         exitCode: run.exitCode,
+        usageTotalUsd: run.usageTotalUsd,
+        maxTotalChargeUsd,
       }),
       url,
       rows,
@@ -216,46 +280,50 @@ async function main(): Promise<void> {
     const types = [...new Set(builders.map((b) => b.type))].sort();
     emit('places', { places, types });
 
-    const pairs = orderPairs(
-      buildPairs(places, {
-        regions: await orm.RegionTerm.all(),
-        countries: await orm.Country.all(),
-        cities: await orm.City.all(),
-        links: await orm.RegionCountry.all(),
-      }),
-    );
-    const pairCost = 2 * rowsCap(50);
-    const ceilingFloor = sections.has('ceiling') ? rowsCap(CEILING_ROWS) : 0;
+    const allPairs = buildPairs(places, {
+      regions: await orm.RegionTerm.all(),
+      countries: await orm.Country.all(),
+      cities: await orm.City.all(),
+      links: await orm.RegionCountry.all(),
+    });
+    let pairs: Pair[] = allPairs;
+    if (pairsFilter) {
+      const filtered = filterPairs(allPairs, pairsFilter);
+      pairs = filtered.pairs;
+      if (filtered.unmatched.length > 0)
+        console.error(
+          `WARNING: --pairs entries that match no candidate pair: ${filtered.unmatched.join(', ')}`,
+        );
+    }
+    const plan = planSpend({ sections, pairCount: pairs.length, limitUsd });
+    const ceilingFloor = plan.reservedUsd.ceiling;
+    const pairCost = plan.reservedUsd.containmentPerPair;
+    const warnings = [...plan.warnings];
+    if (limitUsd < TOTAL_BUDGET_USD)
+      warnings.unshift(
+        `${spendFile} already records ${ledger.reservedUsd.toFixed(2)} of the ${CAMPAIGN_BUDGET_USD} USD campaign budget: this invocation may reserve only ${limitUsd.toFixed(2)} USD.`,
+      );
+    for (const warning of warnings) console.error(`WARNING: ${warning}`);
+    emit('plan', {
+      sections: [...sections],
+      orderedPairs: pairs,
+      ...plan,
+      warnings,
+      limitUsd,
+      campaign: {
+        spendFile,
+        reservedBeforeUsd: ledger.reservedUsd,
+        limitUsd: CAMPAIGN_BUDGET_USD,
+      },
+    });
 
     if (dryRun) {
       geoPlace('EMEA');
       for (const pair of pairs) {
-        geoPlace(pair.child);
-        geoPlace(pair.parent);
+        geoPlace(pair.child, pair.childCode);
+        geoPlace(pair.parent, pair.parentCode);
       }
       emitGeo();
-      const afford = Math.max(
-        0,
-        Math.floor(
-          (TOTAL_BUDGET_USD -
-            (sections.has('or') ? OR_RUNS * rowsCap(25) : 0) -
-            (sections.has('length') ? LENGTHS.length * rowsCap(25) : 0) -
-            ceilingFloor) /
-            pairCost,
-        ),
-      );
-      emit('dry-run', {
-        sections: [...sections],
-        orderedPairs: pairs,
-        reservedUsd: {
-          or: sections.has('or') ? OR_RUNS * rowsCap(25) : 0,
-          length: sections.has('length') ? LENGTHS.length * rowsCap(25) : 0,
-          containmentPerPair: sections.has('containment') ? pairCost : 0,
-          containmentPairsAffordable: sections.has('containment') ? afford : 0,
-          ceiling: ceilingFloor,
-        },
-        limitUsd: TOTAL_BUDGET_USD,
-      });
       return;
     }
 
@@ -269,7 +337,7 @@ async function main(): Promise<void> {
         const terms = ['nestjs', 'next js'];
         const forms: Record<string, unknown> = {};
         for (const [name, keyword] of Object.entries(orForms(terms))) {
-          const result = await search(keyword, 'EMEA', 25);
+          const result = await search(keyword, 'EMEA', SMALL_ROWS);
           forms[name] = {
             keyword,
             ...summary(result),
@@ -280,7 +348,7 @@ async function main(): Promise<void> {
         }
         const singles: Record<string, unknown> = {};
         for (const term of terms) {
-          const result = await search(term, 'EMEA', 25);
+          const result = await search(term, 'EMEA', SMALL_ROWS);
           singles[term] = {
             ...summary(result),
             mentions: mentions(result.items, term),
@@ -293,7 +361,7 @@ async function main(): Promise<void> {
         const lengths: Record<string, unknown> = {};
         for (const size of LENGTHS) {
           const keyword = keywordOfLength(size);
-          const result = await search(keyword, 'EMEA', 25);
+          const result = await search(keyword, 'EMEA', SMALL_ROWS);
           lengths[String(size)] = {
             chars: keyword.length,
             keyword,
@@ -304,7 +372,11 @@ async function main(): Promise<void> {
       }
 
       if (sections.has('containment')) {
-        for (const { child, parent } of pairs) {
+        const side = (run: RunResult) => ({
+          ok: run.ok,
+          ...datedItems(run.items),
+        });
+        for (const { child, childCode, parent, parentCode } of pairs) {
           // Keep the ceiling run's share, then stop when a pair no longer fits.
           if (budget.remaining() - ceilingFloor < pairCost) {
             emit('containment-stopped', {
@@ -312,36 +384,64 @@ async function main(): Promise<void> {
             });
             break;
           }
-          const childRun = await search(CONTAINMENT_KEYWORD, child, 50);
-          let parentRun = await search(CONTAINMENT_KEYWORD, parent, 50);
-          const side = (run: RunResult) => ({
-            ok: run.ok,
-            ...datedItems(run.items),
-          });
-          const c = side(childRun);
-          let p = side(parentRun);
-          let verdict = judgeContainment(
-            { ok: c.ok, items: c.items },
-            { ok: p.ok, items: p.items },
+          // Both runs share one f_TPR window; the child runs first, so a job
+          // only it holds may have aged out of the window before the parent ran.
+          const windowStart = Date.now() - SEVEN_DAYS * 1000;
+          const childRun = await search(
+            CONTAINMENT_KEYWORD,
+            child,
+            PAIR_ROWS,
+            childCode,
           );
-          let rerun = false;
-          if (verdict.verdict === 'row-limit-cut') {
-            rerun = true;
-            parentRun = await search(CONTAINMENT_KEYWORD, parent, 200);
-            p = side(parentRun);
-            verdict = judgeContainment(
-              { ok: c.ok, items: c.items },
-              { ok: p.ok, items: p.items },
-            );
-          }
+          const parentRun = await search(
+            CONTAINMENT_KEYWORD,
+            parent,
+            PAIR_ROWS,
+            parentCode,
+          );
+          const c = side(childRun);
+          const p = side(parentRun);
+          const parentFull = parentRun.items.length >= PAIR_ROWS;
+          const verdict = judgeContainment(c, p, { parentFull, windowStart });
+          // Emitted before any rerun, so a budget stop cannot lose paid results.
           emit('containment', {
             child,
             parent,
             ...verdict,
-            rerunParentAt200: rerun,
+            parentFull,
             itemsWithoutId: { child: c.withoutId, parent: p.withoutId },
             childRun: summary(childRun),
             parentRun: summary(parentRun),
+          });
+          const inconclusive =
+            verdict.verdict === 'row-limit-cut' || verdict.verdict === 'fail';
+          if (!inconclusive || !parentFull) continue;
+          const rerunCap = rowsCap(RERUN_ROWS);
+          if (budget.remaining() - ceilingFloor < rerunCap) {
+            emit('containment-rerun', {
+              child,
+              parent,
+              skipped: `budget: a ${RERUN_ROWS}-row rerun (${rerunCap} USD) no longer fits`,
+            });
+            continue;
+          }
+          const rerun = await search(
+            CONTAINMENT_KEYWORD,
+            parent,
+            RERUN_ROWS,
+            parentCode,
+          );
+          const r = side(rerun);
+          emit('containment-rerun', {
+            child,
+            parent,
+            ...judgeContainment(c, r, {
+              parentFull: rerun.items.length >= RERUN_ROWS,
+              windowStart,
+            }),
+            parentFull: rerun.items.length >= RERUN_ROWS,
+            itemsWithoutId: { parent: r.withoutId },
+            parentRun: summary(rerun),
           });
         }
       }
@@ -364,7 +464,13 @@ async function main(): Promise<void> {
     emit('publishedAt', publishedAtStats(allItems));
     emit('budget', {
       reservedUsd: budget.spent(),
-      limitUsd: TOTAL_BUDGET_USD,
+      limitUsd,
+      campaign: {
+        spendFile,
+        reservedUsd: ledger.reservedUsd,
+        costUsd: ledger.runs.reduce((sum, run) => sum + (run.costUsd ?? 0), 0),
+        limitUsd: CAMPAIGN_BUDGET_USD,
+      },
       note: 'reserved sums each run cap; real spend is lower (see costUsd per run)',
     });
   } finally {
