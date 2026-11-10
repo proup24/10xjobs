@@ -9,6 +9,7 @@ vi.hoisted(() => {
   // No OpenRouter key: `all` runs every worker except the processor.
   delete process.env.OPENROUTER_API_KEY;
   process.env.WORKER_ROLE = 'all';
+  process.env.XJOBS_RUN_SCHEDULES = '1';
   delete process.env.WORKER_CHANNEL;
 });
 

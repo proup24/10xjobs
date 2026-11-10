@@ -8,6 +8,7 @@ vi.hoisted(() => {
   process.env.APIFY_TOKEN ??= 'apify-token';
   process.env.OPENROUTER_API_KEY ??= 'or-key';
   process.env.WORKER_ROLE = 'all';
+  process.env.XJOBS_RUN_SCHEDULES = '1';
   delete process.env.WORKER_CHANNEL;
 });
 

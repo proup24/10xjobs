@@ -6,6 +6,7 @@ import {
   validateEnvironment,
   validateWorkerProcessEnvironment,
 } from './index';
+import { workerProcessEnvironmentSchema } from './environment.validation';
 
 const minimal = {
   DATABASE_URL: 'postgresql://u:p@localhost:5432/db',
@@ -162,6 +163,31 @@ describe('worker process configuration', () => {
     expect(
       validateWorkerProcessEnvironment(worker).WORKER_CHANNEL,
     ).toBeUndefined();
+  });
+
+  it('registers schedules only when XJOBS_RUN_SCHEDULES is truthy; unset is off', () => {
+    const run = (v?: string) =>
+      validateWorkerProcessEnvironment({
+        ...worker,
+        ...(v === undefined ? {} : { XJOBS_RUN_SCHEDULES: v }),
+      }).XJOBS_RUN_SCHEDULES;
+    expect(run()).toBe(false);
+    expect(run('1')).toBe(true);
+    expect(run('true')).toBe(true);
+    expect(run('0')).toBe(false);
+    // booleanFlag rejects the empty string: leave the variable unset to turn it off.
+    expect(() => run('')).toThrow('XJOBS_RUN_SCHEDULES');
+  });
+
+  it('rejects an unrecognised XJOBS_RUN_SCHEDULES value', () => {
+    const result = workerProcessEnvironmentSchema.safeParse({
+      ...worker,
+      XJOBS_RUN_SCHEDULES: 'maybe',
+    });
+    expect(result.success).toBe(false);
+    expect(result.error?.issues.map((i) => i.path)).toContainEqual([
+      'XJOBS_RUN_SCHEDULES',
+    ]);
   });
 
   it('accepts a channel with an Apify token', () => {

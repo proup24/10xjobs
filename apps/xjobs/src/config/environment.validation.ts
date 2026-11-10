@@ -112,6 +112,11 @@ export const workerProcessEnvironmentSchema = databaseEnvironmentSchema
     APIFY_TOKEN: z.string().min(1).optional(),
     WORKER_CHANNEL: z.enum(Channel).optional(),
     WORKER_ROLE: z.enum(['ingest', 'processor', 'match', 'all']).optional(),
+    /**
+     * Registers the workers' cron and sweep schedulers. Set only on the hosted
+     * engine; local workers remove theirs.
+     */
+    XJOBS_RUN_SCHEDULES: booleanFlag.default(false),
     ...processorEnvironmentShape,
   })
   .superRefine((env, ctx) => {

@@ -21,7 +21,7 @@ import {
   type OpenRouterClient,
 } from 'src/modules/processor/models/client';
 import { WorkerRuntimeService } from './runtime.service';
-import { syncProcessSweepScheduler } from './scheduler';
+import { RUN_SCHEDULES, syncProcessSweepScheduler } from './scheduler';
 
 @Injectable()
 export class ProcessorWorkerService {
@@ -37,6 +37,7 @@ export class ProcessorWorkerService {
     @Inject(PROCESSOR_CONFIG) private readonly config: ProcessorConfig,
     private readonly pricing: ModelPricing,
     @Inject(OPENROUTER_CLIENT) private readonly client: OpenRouterClient,
+    @Inject(RUN_SCHEDULES) private readonly runSchedules: boolean,
   ) {}
 
   /**
@@ -55,7 +56,7 @@ export class ProcessorWorkerService {
   async start(connection: Redis): Promise<void> {
     await this.checkStartup();
     const queue = await this.runtime.createQueue(PROCESS_QUEUE, connection);
-    await syncProcessSweepScheduler(queue);
+    await syncProcessSweepScheduler(queue, this.runSchedules);
     this.runtime.startWorker(
       PROCESS_QUEUE,
       (bullJob) =>
@@ -70,7 +71,9 @@ export class ProcessorWorkerService {
       connection,
     );
     this.logger.log(
-      `Processing jobs; sweeping every ${processSweepConfig.everyMs / 1000}s`,
+      this.runSchedules
+        ? `Processing jobs; sweeping every ${processSweepConfig.everyMs / 1000}s`
+        : 'Processing jobs; schedules off',
     );
   }
 }

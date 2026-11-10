@@ -22,6 +22,8 @@ The workflow (`.github/workflows/dev-database.yml`) runs after `CI` succeeds on 
 
 Point your env at the shared project. In the root `.env`, replace the local values with the commented shared-dev block from `.env.example`: `DATABASE_URL` (session pooler), `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. In `apps/web/.env.local`, set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` from the dev project's API settings. Then run `npx nx serve xjobs` and `npx nx dev web` as usual.
 
+The hosted engine owns every schedule, collection and sweeps alike. Local workers register none, so they only run jobs someone triggers. Do not set `XJOBS_RUN_SCHEDULES` locally.
+
 Vercel previews use `10xjobs-dev`, so resetting dev also resets what previews see.
 
 Print a sign-in link instead of waiting for an email. The users CLI reads `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from the root `.env` (shell values win):
