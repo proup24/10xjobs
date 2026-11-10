@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { join } from 'node:path';
 
@@ -22,6 +22,7 @@ export default defineConfig(() => ({
     include: [
       '{src,app,pages,specs}/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
     ],
+    exclude: ['**/*.live.spec.ts', ...configDefaults.exclude],
     reporters: ['default'],
     coverage: {
       reportsDirectory: './test-output/vitest/coverage',
