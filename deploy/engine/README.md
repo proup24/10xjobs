@@ -50,7 +50,7 @@ After bootstrap, SSH allows only `deploy` (`AllowUsers deploy`, `PermitRootLogin
 2. Create `.env` with the names in `deploy/engine/.env.example`, then `chmod 600 .env`.
 3. Set `ENGINE_HOSTNAME=api.<ip with dashes>.sslip.io`, for example `api.203-0-113-10.sslip.io`.
 4. Get `DATABASE_URL`, `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from the same places as the `DEV_*` secrets in [shared-dev-database.md](../../docs/shared-dev-database.md). `DATABASE_URL` is the session pooler on port 5432, never 6543.
-5. Generate the engine key with `openssl rand -base64 48` (at least 32 characters) and set it as `ENGINE_API_KEY`. The same value goes into Vercel (section 5a). The deploy's health check reads it from this file on the server; it never goes to GitHub.
+5. Generate the engine key with `openssl rand -base64 48` (at least 32 characters) and set it as `ENGINE_API_KEY`. The same value goes into Vercel (section 5a). The deploy's health check reads it from the running `api` container on the server; it never goes to GitHub.
 6. Set `APIFY_TOKEN` and `OPENROUTER_API_KEY` (only the `worker` container uses the latter).
 7. Single-quote any value that contains `$`, because Compose interpolates `env_file` values. `openssl rand -base64 48` output has no `$`.
 
@@ -91,7 +91,7 @@ In the `dev` environment, set only these four:
 ## 7. First deploy
 
 1. The first merge to `main` after setup deploys automatically. Or run it by hand: Actions, Deploy engine, Run workflow, branch `main`, no input.
-2. On the server, `curl -sf -H "X-Engine-Key: $(grep ^ENGINE_API_KEY= ~/engine/.env | cut -d= -f2-)" https://api.<ip with dashes>.sslip.io/api/health` must return 200 with a valid certificate. The deploy job runs this check itself.
+2. On the server, `curl -sf -H "X-Engine-Key: $($C exec -T api printenv ENGINE_API_KEY)" https://api.<ip with dashes>.sslip.io/api/health` must return 200 with a valid certificate. The deploy job runs this check itself.
 3. Every route without the key, health included, must return 401: `curl -s -o /dev/null -w '%{http_code}\n' https://api.<ip with dashes>.sslip.io/api/health` prints `401`.
 
 ## 8. Everyday operations

@@ -311,7 +311,7 @@ jobs:
             echo "::error::ENGINE_HOSTNAME is missing or invalid in the caddy container"
             exit 1
           fi
-          # Runs on the server: the key is read from ~/engine/.env there and
+          # Runs on the server: the key is read from the api container there and
           # never reaches CI or the log. No `set -x` in this script.
           # shellcheck disable=SC2029  # the validated hostname is quoted on purpose, client side
           ssh "$ENGINE_SSH_USER@$ENGINE_SSH_HOST" "bash -s $(printf '%q' "$ENGINE_HOST")" <<'REMOTE'
@@ -330,9 +330,9 @@ jobs:
             echo "::error::The api container is '$status', not healthy"
             exit 1
           fi
-          key="$(grep '^ENGINE_API_KEY=' .env | cut -d= -f2- | tr -d "\r\"'" || true)"
+          key="$(docker exec "$cid" printenv ENGINE_API_KEY | tr -d '\r' || true)"
           if [ -z "$key" ]; then
-            echo "::error::ENGINE_API_KEY is missing in ~/engine/.env"
+            echo "::error::ENGINE_API_KEY is not set in the api container"
             exit 1
           fi
           # The header goes over stdin (-H @-), so the key is not in curl's argv.
