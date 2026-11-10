@@ -199,7 +199,7 @@ export function detailedDocument(): Record<string, unknown> {
   };
   return {
     position: fact(
-      { roleKind: 'backend', title: 'Senior Backend Engineer' },
+      { roleKind: 'backend_engineer', title: 'Senior Backend Engineer' },
       'We are hiring a Senior Backend Engineer',
     ),
     isSoftwareEngineeringRole: fact(true, ''),
@@ -449,7 +449,7 @@ export async function seedDetailedJob(
     needsReview: false,
     arrangement: 'remote',
     seniority: 'senior',
-    roleKind: 'backend',
+    roleKind: 'backend_engineer',
     contractType: 'full_time',
     isSoftwareEngineeringRole: true,
     worldwide: false,
