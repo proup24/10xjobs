@@ -138,7 +138,7 @@ These touch files slice 01 creates, so **this slice's PR is branched from `main`
 - `deploy/engine/README.md` (runbook): generating the key, setting it on the server and in Vercel, rotating it, and the merge-day order below.
 - Slice 01's spec "Done when" item 2 is superseded: after this slice, every route without the key returns 401.
 
-**Merge-day order (runbook):** before merging this slice's PR, the owner adds `ENGINE_API_KEY` to the server's `.env` (removing `BASIC_AUTH_*` is optional, the engine ignores them) and sets `ENGINE_URL` / `ENGINE_API_KEY` in Vercel. Otherwise the deploy's health check fails and the old image keeps running, which is a safe failure.
+**Merge-day order (runbook):** before merging this slice's PR, the owner adds `ENGINE_API_KEY` to the server's `.env` (removing `BASIC_AUTH_*` is optional, the engine ignores them) and sets `ENGINE_URL` / `ENGINE_API_KEY` in Vercel. Otherwise the new image fails env validation and crash-loops: the deploy's rollout replaces `api` before its health check, so the API stays down until the key is added to the server `.env` and `docker compose up -d` runs, or a rollback runs.
 
 ### Local Supabase
 

@@ -52,7 +52,7 @@ After bootstrap, SSH allows only `deploy` (`AllowUsers deploy`, `PermitRootLogin
 4. Get `DATABASE_URL`, `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from the same places as the `DEV_*` secrets in [shared-dev-database.md](../../docs/shared-dev-database.md). `DATABASE_URL` is the session pooler on port 5432, never 6543.
 5. Generate the engine key with `openssl rand -base64 48` (at least 32 characters) and set it as `ENGINE_API_KEY`. The same value goes into Vercel (section 5a). The deploy's health check reads it from this file on the server; it never goes to GitHub.
 6. Set `APIFY_TOKEN` and `OPENROUTER_API_KEY` (only the `worker` container uses the latter).
-7. Single-quote any value that contains `$`, because Compose interpolates `env_file` values. `openssl rand -base64 24` output has no `$`.
+7. Single-quote any value that contains `$`, because Compose interpolates `env_file` values. `openssl rand -base64 48` output has no `$`.
 
 Engine runtime secrets live only in this file. They never go to GitHub.
 
@@ -73,7 +73,7 @@ Locally, put `ENGINE_URL=http://localhost:3000` and a local `ENGINE_API_KEY` in 
 3. On the server, `$C up -d` (section 8) so `api` restarts with the new key, then redeploy the web app in Vercel so it picks up the new value.
 4. Expect brief failures between the two sides changing: the web app's engine calls answer 401 or "unavailable" until both have the new key. User data is already saved, so nothing is lost; retry afterwards.
 
-**Merge-day order for the engine auth slice.** The deploy fails its health check (and the old image keeps running, a safe failure) if the server has no key. So, before merging:
+**Merge-day order for the engine auth slice.** The deploy replaces `api` with the new image before its health check. Without `ENGINE_API_KEY` in the server `.env`, the new image fails env validation and crash-loops, so the API is down (and the deploy fails) until the key is added to `~/engine/.env` and `$C up -d` runs, or a rollback (section 9) runs. So, before merging:
 
 1. Add `ENGINE_API_KEY` to the server `.env`. Removing the old basic-auth username and password lines is optional; the engine ignores them.
 2. Set `ENGINE_URL` and `ENGINE_API_KEY` in Vercel, every environment.
