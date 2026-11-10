@@ -451,24 +451,25 @@ describe('judgeContainment', () => {
     ok: true,
     items: [{ id: 'a', publishedAt: '2026-11-05T10:00:00Z' }],
   };
+  const ctx = { parentFull: false };
 
   it('is invalid when the child run failed or came back empty', () => {
     expect(
-      judgeContainment({ ok: false, items: good.items }, good).verdict,
+      judgeContainment({ ok: false, items: good.items }, good, ctx).verdict,
     ).toBe('invalid');
-    expect(judgeContainment({ ok: true, items: [] }, good).verdict).toBe(
+    expect(judgeContainment({ ok: true, items: [] }, good, ctx).verdict).toBe(
       'invalid',
     );
   });
 
   it('is invalid, not fail, when the parent run failed', () => {
-    expect(judgeContainment(good, { ok: false, items: [] }).verdict).toBe(
+    expect(judgeContainment(good, { ok: false, items: [] }, ctx).verdict).toBe(
       'invalid',
     );
   });
 
   it('otherwise defers to the containment verdict', () => {
-    expect(judgeContainment(good, good)).toEqual({
+    expect(judgeContainment(good, good, ctx)).toEqual({
       verdict: 'pass',
       missing: [],
     });
