@@ -47,12 +47,68 @@ test('bash: secrets and private', () => {
   assert.equal(blocked('Bash', { command: 'ls apps/private-api' }), false);
 });
 
+test('bash: git push of a feature branch is allowed', () => {
+  for (const command of [
+    'git push -u origin chore/x',
+    'git push --set-upstream origin docs/phase-2-roadmap',
+    'git push origin feat/edit-preferences',
+    'git push origin refs/heads/feat/x',
+    'git -C .worktrees/x push -u origin feat/x',
+    'cd .worktrees/x && git push -u origin feat/x',
+    'git status && git push -u origin fix/a_b.c',
+    'bash -c "git push -u origin chore/x"',
+  ]) {
+    assert.equal(blocked('Bash', { command }), false, command);
+  }
+});
+
+test('bash: unsafe git push forms stay blocked', () => {
+  for (const command of [
+    // main, directly or by another name
+    'git push origin main',
+    'git push -u origin main',
+    'git push origin refs/heads/main',
+    'git push origin master',
+    'git push origin HEAD',
+    'git push origin feat/x:main',
+    'git push origin HEAD:main',
+    // implicit target
+    'git push',
+    'git push -u',
+    'git push origin',
+    // force, delete, mirror, all
+    'git push --force origin feat/x',
+    'git push -f origin feat/x',
+    'git push -uf origin feat/x',
+    'git push --force-with-lease origin feat/x',
+    'git push origin +feat/x',
+    'git push --delete origin feat/x',
+    'git push -d origin feat/x',
+    'git push origin :feat/x',
+    'git push --mirror origin',
+    'git push --all origin',
+    'git push --tags origin',
+    // other remotes, extra refspecs, tags, overrides, flags
+    'git push upstream feat/x',
+    'git push git@github.com:x/y.git feat/x',
+    'git push origin feat/x main',
+    'git push origin refs/tags/v1',
+    'git push origin feat/../main',
+    'git -c remote.origin.url=x push origin feat/x',
+    'git --config-env=a=b push origin feat/x',
+    'git push --no-verify origin feat/x',
+    'git push --receive-pack=x origin feat/x',
+    'git push -o ci.skip origin feat/x',
+    // unverifiable arguments
+    'echo main | xargs git push origin feat/x',
+    'bash -c "git push origin main"',
+  ]) {
+    assert.equal(blocked('Bash', { command }), true, command);
+  }
+});
+
 test('bash: git push', () => {
   assert.equal(blocked('Bash', { command: 'git push' }), true);
-  assert.equal(
-    blocked('Bash', { command: 'git push -u origin chore/x' }),
-    true,
-  );
   assert.equal(blocked('Bash', { command: 'cd apps && git push' }), true);
   assert.equal(blocked('Bash', { command: 'git -C apps push' }), true);
   assert.equal(
@@ -115,7 +171,7 @@ test('bash: git push through wrappers', () => {
 
 test('bash: comments, escapes, heredocs, unterminated quotes', () => {
   for (const command of [
-    "# Let's push the branch\ngit push -u origin x",
+    "# Let's push the branch\ngit push -u origin main",
     "# don't print it\ncat .env",
     "cat > /tmp/m <<'EOF'\nDon't forget\nEOF\ngit commit -F /tmp/m && git push",
     "echo it\\'s && git push",
@@ -168,7 +224,12 @@ test('reasons', () => {
     tool_name: 'Bash',
     tool_input: { command: 'git push' },
   });
-  assert.match(push.reason, /push it yourself/);
+  assert.match(push.reason, /name the remote and one branch/);
+  const main = evaluate({
+    tool_name: 'Bash',
+    tool_input: { command: 'git push origin main' },
+  });
+  assert.match(main.reason, /main is protected/);
   const secret = evaluate({
     tool_name: 'Read',
     tool_input: { file_path: '/repo/.env' },

@@ -145,20 +145,63 @@ function nestedCommand(tokens, i) {
 const rawTokens = (command) =>
   command.split(/[\s;&|()`'"<>=]+/).map((t) => t.replace(/^\.\//, ''));
 
-function isGitPush(command) {
+// Claude may push a feature branch, and only in one explicit form:
+// `git push [-u|--set-upstream] origin <branch>`. Everything else is blocked:
+// pushing main, a bare `git push` (it depends on the current branch), force
+// pushes, deletes, refspecs with `:` or `+`, HEAD, other remotes, other flags
+// and `git -c` overrides.
+const PUSH_FLAGS = ['-u', '--set-upstream'];
+const PROTECTED_BRANCHES = ['main', 'master'];
+const BRANCH_NAME = /^[\w][\w./-]*$/;
+
+function pushArgsProblem(args) {
+  const rest = args.filter((a) => !PUSH_FLAGS.includes(a));
+  const flag = rest.find((a) => a.startsWith('-'));
+  if (flag) return `the ${flag} flag is not allowed`;
+  if (rest.length !== 2 || rest[0] !== 'origin') {
+    return 'name the remote and one branch: git push -u origin <branch>';
+  }
+  const branch = rest[1].replace(/^refs\/heads\//, '');
+  if (
+    !BRANCH_NAME.test(branch) ||
+    branch === 'HEAD' ||
+    branch.startsWith('refs/') ||
+    branch.includes('..')
+  ) {
+    return `${rest[1]} is not a plain branch name`;
+  }
+  if (PROTECTED_BRANCHES.includes(branch)) return `${branch} is protected`;
+  return null;
+}
+
+// Returns why a git push in the command is not allowed, or null.
+function gitPushProblem(command) {
   const { segments, unclosed } = parse(command);
-  if (unclosed && /\bgit\b[^\n;&|]*\bpush\b/.test(command)) return true;
+  if (unclosed && /\bgit\b[^\n;&|]*\bpush\b/.test(command)) {
+    return 'a push inside an unterminated quote cannot be checked';
+  }
   for (const tokens of segments) {
     let i = commandIndex(tokens);
     const nested = nestedCommand(tokens, i);
-    if (nested && isGitPush(nested)) return true;
+    const nestedProblem = nested && gitPushProblem(nested);
+    if (nestedProblem) return nestedProblem;
+    // xargs appends stdin to the arguments, so the refspecs cannot be checked.
+    const viaXargs = tokens.slice(0, i).includes('xargs');
     if (tokens[i++] !== 'git') continue;
+    let override = false;
     while (tokens[i]?.startsWith('-')) {
+      if (tokens[i] === '-c' || tokens[i].startsWith('--config')) {
+        override = true;
+      }
       i += tokens[i] === '-C' || tokens[i] === '-c' ? 2 : 1;
     }
-    if (tokens[i] === 'push') return true;
+    if (tokens[i] !== 'push') continue;
+    if (override) return 'git -c overrides are not allowed on push';
+    if (viaXargs) return 'a push through xargs cannot be checked';
+    const problem = pushArgsProblem(tokens.slice(i + 1));
+    if (problem) return problem;
   }
-  return false;
+  return null;
 }
 
 // Returns the first secret or private token, looking inside nested shells.
@@ -183,11 +226,11 @@ function findBlockedToken(command) {
 export function evaluate({ tool_name, tool_input = {} }) {
   if (tool_name === 'Bash') {
     const command = tool_input.command ?? '';
-    if (isGitPush(command)) {
+    const pushProblem = gitPushProblem(command);
+    if (pushProblem) {
       return {
         block: true,
-        reason:
-          'git push is blocked for Claude in this repo — push it yourself.',
+        reason: `git push blocked: ${pushProblem}. Claude may only run \`git push -u origin <branch>\` for a branch other than main; the human does anything else.`,
       };
     }
     const hit = findBlockedToken(command);
