@@ -207,7 +207,17 @@ function perToken(value: string | undefined): number | null {
 export const EXTRACTION_PARAMETERS = [
   'response_format',
   'structured_outputs',
+  'max_tokens',
 ] as const;
+
+/**
+ * Output-token cap on each generation call. Without one, OpenRouter reserves
+ * the model's maximum (131k for DeepSeek) against the key's credit and refuses
+ * the call with 402 when the balance is lower, even though generations use far
+ * less: the largest seen on 10xjobs-dev was about 22k, the median about 3k. An
+ * output that hits the cap is reported as cut off (`length`).
+ */
+export const GENERATION_MAX_OUTPUT_TOKENS = 32_768;
 
 /**
  * Startup check of the configured models, returning their list prices.
