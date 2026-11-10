@@ -39,7 +39,9 @@ export class UserTokenVerifier {
       if (
         error instanceof errors.JWKSTimeout ||
         error instanceof errors.JWKSInvalid ||
-        !(error instanceof errors.JOSEError)
+        !(error instanceof errors.JOSEError) ||
+        // jose throws the bare base class for a non-200 or non-JSON JWKS reply.
+        error.code === 'ERR_JOSE_GENERIC'
       ) {
         this.logger.error(
           `User token keys unavailable: ${error instanceof Error ? error.constructor.name : typeof error}`,

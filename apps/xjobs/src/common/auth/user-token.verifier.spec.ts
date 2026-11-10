@@ -1,6 +1,7 @@
 import {
   SignJWT,
   createLocalJWKSet,
+  createRemoteJWKSet,
   errors,
   exportJWK,
   generateKeyPair,
@@ -10,6 +11,8 @@ import {
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { createServer, type Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { Logger } from '@nestjs/common';
 import { UserTokenVerifier } from './user-token.verifier';
 
@@ -165,5 +168,46 @@ describe('UserTokenVerifier', () => {
     await expect(verifier(keys).verify(await sign(privateKey))).rejects.toThrow(
       ServiceUnavailableException,
     );
+  });
+
+  it('answers 503 when the key set throws the bare JOSEError (non-200 JWKS reply)', async () => {
+    const { privateKey } = await keyPair();
+    const keys: JWTVerifyGetKey = () => {
+      throw new errors.JOSEError(
+        'Expected 200 OK from the JSON Web Key Set HTTP response',
+      );
+    };
+    await expect(verifier(keys).verify(await sign(privateKey))).rejects.toThrow(
+      ServiceUnavailableException,
+    );
+  });
+
+  describe('against a JWKS endpoint answering 500', () => {
+    let server: Server;
+    let url: URL;
+
+    beforeAll(async () => {
+      server = createServer((_req, res) => {
+        res.statusCode = 500;
+        res.end('boom');
+      });
+      await new Promise<void>((resolve) =>
+        server.listen(0, '127.0.0.1', resolve),
+      );
+      url = new URL(
+        `http://127.0.0.1:${(server.address() as AddressInfo).port}/jwks.json`,
+      );
+    });
+
+    afterAll(async () => {
+      await new Promise((resolve) => server.close(resolve));
+    });
+
+    it('answers 503', async () => {
+      const { privateKey } = await keyPair();
+      await expect(
+        verifier(createRemoteJWKSet(url)).verify(await sign(privateKey)),
+      ).rejects.toThrow(ServiceUnavailableException);
+    });
   });
 });
