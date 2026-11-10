@@ -84,3 +84,64 @@ describe('the migration strips worldwide from existing profiles', () => {
     expect(byId.get(only)).toEqual({ remote: [ww], hybrid: [], onsite: [] });
   });
 });
+
+describe('the migration names profiles that lose remote search', () => {
+  let a: TestUser;
+  beforeAll(async () => {
+    a = await createTestUser();
+  });
+
+  it('raises a notice for a remote list that was only worldwide', async () => {
+    const lost = randomUUID();
+    const kept = randomUUID();
+    const ww = { kind: 'worldwide' };
+    const emea = { kind: 'region', code: 'EMEA' };
+    const fr = { kind: 'country', code: 'FR' };
+
+    for (const id of [lost, kept]) {
+      const { error } = await admin()
+        .from('profiles')
+        .insert({ id, userId: a.id, ...profileFields() });
+      if (error) throw new Error(error.message);
+    }
+
+    const { notices, rows } = await withCatalog(async (c) => {
+      const notices: string[] = [];
+      c.on('notice', (n) => notices.push(n.message ?? ''));
+      await c.query('BEGIN');
+      try {
+        await c.query("SET LOCAL session_replication_role = 'replica'");
+        for (const [id, locations] of [
+          [lost, { remote: [ww], hybrid: [fr], onsite: [] }],
+          [kept, { remote: [ww, emea], hybrid: [fr], onsite: [] }],
+        ] as const) {
+          await c.query(
+            'UPDATE public.profiles SET locations = $2 WHERE id = $1',
+            [id, JSON.stringify(locations)],
+          );
+        }
+        await c.query("SET LOCAL session_replication_role = 'origin'");
+        await c.query(stripSql());
+        const res = await c.query(
+          'SELECT id, locations FROM public.profiles WHERE id = ANY($1)',
+          [[lost, kept]],
+        );
+        return {
+          notices,
+          rows: res.rows as { id: string; locations: unknown }[],
+        };
+      } finally {
+        await c.query('ROLLBACK');
+      }
+    });
+
+    const remoteNotice = notices.find((n) => n.includes('no remote places'));
+    expect(remoteNotice).toContain(lost);
+    expect(remoteNotice).not.toContain(kept);
+    expect(rows.find((r) => r.id === lost)?.locations).toEqual({
+      remote: [],
+      hybrid: [fr],
+      onsite: [],
+    });
+  });
+});

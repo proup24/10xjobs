@@ -45,7 +45,17 @@ export default class M extends Migration<Start, End> {
             sql: `DO $$
 DECLARE
   stuck uuid[];
+  lost_remote uuid[];
 BEGIN
+  -- Remote was only worldwide but other arrangements keep the profile valid: it is
+  -- stripped below and quietly loses all remote search, so name those profiles.
+  SELECT array_agg(id) INTO lost_remote
+    FROM public.profiles
+   WHERE jsonb_array_length(COALESCE(locations -> 'remote', '[]'::jsonb)) > 0
+     AND NOT jsonb_path_exists(locations, '$.remote[*] ? (@.kind != "worldwide")')
+     AND (jsonb_path_exists(locations, '$.hybrid[*] ? (@.kind != "worldwide")')
+          OR jsonb_path_exists(locations, '$.onsite[*] ? (@.kind != "worldwide")'));
+
   UPDATE public.profiles p
      SET locations = f.filtered
     FROM (
@@ -67,6 +77,9 @@ BEGIN
    WHERE jsonb_path_exists(locations, '$.*[*] ? (@.kind == "worldwide")');
   IF stuck IS NOT NULL THEN
     RAISE NOTICE 'profiles left with a worldwide-only place, edit them by hand: %', stuck;
+  END IF;
+  IF lost_remote IS NOT NULL THEN
+    RAISE NOTICE 'profiles whose only remote place was worldwide now have no remote places, check them: %', lost_remote;
   END IF;
 END $$;`,
           },
