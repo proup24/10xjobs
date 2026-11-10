@@ -1,18 +1,10 @@
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { checkViolationMessage } from 'src/database';
+import { ErrorCode, ProfileState, SkillDomain } from 'src/common/enums';
 import {
-  ErrorCode,
-  ProfileState,
-  Seniority,
-  SkillDomain,
-} from 'src/common/enums';
-import {
-  normalizeSeniorities,
   QuerySearchService,
   type QuerySearchProfileInput,
 } from 'src/modules/queries';
@@ -22,13 +14,10 @@ import { allPlaces, placeTexts } from './place-labels';
 import type {
   PlaceLabels,
   PlacesByArrangement,
-  ProfileFields,
-  ProfileInput,
   ProfileView,
   ProfileWithSkills,
   PublishedProfileView,
   Salary,
-  SkillInput,
   SpokenLanguage,
 } from '../types';
 
@@ -121,68 +110,6 @@ function labelsFor(
   return profiles.placeLabels(allPlaces(profilePlaces(profile)));
 }
 
-/** A profile write as the API sends it: salary may be left out, and importance defaults to 5. */
-export type ProfileWrite = Omit<ProfileInput, 'salary'> & {
-  salary?: Salary | null;
-  techStack: (Omit<SkillInput, 'importance'> & { importance?: number })[];
-};
-
-/** A replacement as the API sends it: the position is fixed at creation and cannot be sent. */
-export type ProfileReplaceWrite = Omit<ProfileWrite, 'position'>;
-
-/** The editable fields of a write, built field by field so a stray `position` can never reach a replace. */
-function toFields(data: ProfileReplaceWrite): ProfileFields {
-  return {
-    locations: data.locations,
-    languages: data.languages,
-    yearsOfExperience: data.yearsOfExperience,
-    timezoneCurrent: data.timezoneCurrent,
-    timezoneMin: data.timezoneMin,
-    timezoneMax: data.timezoneMax,
-    engagements: data.engagements,
-    seniorities: orderSeniorities(data.seniorities),
-    contractTypes: data.contractTypes,
-    salary: data.salary ?? null,
-    acceptsAnyCurrency: data.acceptsAnyCurrency,
-    acceptedCurrencies: data.acceptedCurrencies,
-    noticePeriodDays: data.noticePeriodDays,
-  };
-}
-
-function toSkills(techStack: ProfileReplaceWrite['techStack']): SkillInput[] {
-  return techStack.map(({ technology, domain, mastery, importance }) => ({
-    technology,
-    domain,
-    mastery,
-    importance: importance ?? 5,
-  }));
-}
-
-/**
- * Dedupes seniorities into Seniority enum order. A code the enum does not know
- * is kept, after the known ones, so the database refuses it with a 400 rather
- * than it being dropped silently.
- */
-function orderSeniorities(seniorities: string[]): string[] {
-  const known = new Set<string>(Object.values(Seniority));
-  const unique = [...new Set(seniorities)];
-  return [
-    ...normalizeSeniorities(unique.filter((code) => known.has(code))),
-    ...unique.filter((code) => !known.has(code)),
-  ];
-}
-
-/** Turns a database check violation (a bad code, a bad shape) into a 400 with its message; rethrows anything else. */
-async function badRequestOnCheck<T>(write: Promise<T>): Promise<T> {
-  try {
-    return await write;
-  } catch (error) {
-    const message = checkViolationMessage(error);
-    if (message !== null) throw new BadRequestException(message);
-    throw error;
-  }
-}
-
 export const ELIGIBILITY_REQUIRED =
   'set your country of residence and answer the visa sponsorship question before publishing';
 
@@ -262,11 +189,6 @@ export class ProfilesService {
     return profile;
   }
 
-  async list(userId: string): Promise<ProfileView[]> {
-    await this.users.getOrThrow(userId);
-    return (await this.profiles.list(userId)).map(toProfileView);
-  }
-
   /** 404s like getOrThrow, and 409s a published profile: only drafts can change. */
   async getDraftOrThrow(
     userId: string,
@@ -282,65 +204,6 @@ export class ProfilesService {
     await this.getDraftOrThrow(userId, profileId);
     // Still a draft yet the write missed: treat it as a lost race on publish.
     throw publishedConflict();
-  }
-
-  async get(userId: string, profileId: string): Promise<ProfileView> {
-    return toProfileView(await this.getOrThrow(userId, profileId));
-  }
-
-  /** New profiles start as unpublished drafts. */
-  async create(userId: string, data: ProfileWrite): Promise<ProfileView> {
-    await this.users.getOrThrow(userId);
-    return toProfileView(
-      await badRequestOnCheck(
-        this.profiles.create(
-          userId,
-          { position: data.position, ...toFields(data) },
-          toSkills(data.techStack),
-        ),
-      ),
-    );
-  }
-
-  /** Replaces a draft's editable fields and whole tech stack; the position is kept. Published profiles are frozen. */
-  async replace(
-    userId: string,
-    profileId: string,
-    data: ProfileReplaceWrite,
-  ): Promise<ProfileView> {
-    await this.getDraftOrThrow(userId, profileId);
-    const profile = await badRequestOnCheck(
-      this.profiles.replace(
-        userId,
-        profileId,
-        toFields(data),
-        toSkills(data.techStack),
-      ),
-    );
-    if (!profile) return this.rejectWrite(userId, profileId);
-    return toProfileView(profile);
-  }
-
-  /**
-   * The only way out of a profile, published or not: releases its shared query
-   * search builders (each loses one associated profile and goes inactive at 0),
-   * then deletes the row. The caller removes its resume file.
-   */
-  async delete(userId: string, profileId: string): Promise<void> {
-    const profile = await this.getOrThrow(userId, profileId);
-    await this.querySearch.detach(profile.id);
-    if (!(await this.profiles.delete(userId, profile.id)))
-      throw new NotFoundException(PROFILE_NOT_FOUND);
-  }
-
-  /**
-   * Releases the builders of every profile a user owns, so the shared counters
-   * stay right when the user's rows cascade away.
-   */
-  async releaseAll(userId: string): Promise<void> {
-    for (const profile of await this.profiles.list(userId)) {
-      await this.querySearch.detach(profile.id);
-    }
   }
 
   /**

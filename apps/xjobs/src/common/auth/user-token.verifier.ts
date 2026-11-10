@@ -34,6 +34,7 @@ export class UserTokenVerifier {
         issuer: this.issuer,
         audience: 'authenticated',
         algorithms: ['ES256', 'RS256'],
+        requiredClaims: ['exp', 'sub'],
       }));
     } catch (error) {
       if (

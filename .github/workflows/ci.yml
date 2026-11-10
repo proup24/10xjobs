@@ -177,9 +177,6 @@ jobs:
       - name: Run the engine boundary tests
         run: pnpm exec nx e2e @xjobs/xjobs-e2e --excludeTaskDependencies
 
-      - name: Run the web client live test
-        run: ENGINE_URL=http://127.0.0.1:3000 pnpm exec nx run web:test-live
-
       - name: Show the engine log
         if: failure()
         run: cat engine.log || true

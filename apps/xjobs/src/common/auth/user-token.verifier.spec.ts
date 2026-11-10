@@ -31,7 +31,7 @@ type Overrides = {
   claims?: Record<string, unknown>;
   iss?: string;
   aud?: string;
-  exp?: string | number;
+  exp?: string | number | null;
   omitSub?: boolean;
 };
 
@@ -41,12 +41,12 @@ async function sign(privateKey: PrivateKey, o: Overrides = {}) {
     ...(o.omitSub ? {} : { sub: SUB }),
     ...o.claims,
   };
-  return new SignJWT(claims)
+  const jwt = new SignJWT(claims)
     .setProtectedHeader({ alg: 'ES256', kid: 'k1' })
     .setIssuer(o.iss ?? ISSUER)
-    .setAudience(o.aud ?? 'authenticated')
-    .setExpirationTime(o.exp ?? '1h')
-    .sign(privateKey);
+    .setAudience(o.aud ?? 'authenticated');
+  if (o.exp !== null) jwt.setExpirationTime(o.exp ?? '1h');
+  return jwt.sign(privateKey);
 }
 
 function verifier(keys: JWTVerifyGetKey) {
@@ -109,6 +109,14 @@ describe('UserTokenVerifier', () => {
     const { privateKey, keys } = await keyPair();
     const token = await sign(privateKey, { claims: { sub: 'not-a-uuid' } });
     await expect(verifier(keys).verify(token)).rejects.toThrow(
+      UnauthorizedException,
+    );
+  });
+
+  it('rejects a token without exp (it would never expire)', async () => {
+    const { privateKey, keys } = await keyPair();
+    const token = await sign(privateKey, { exp: null });
+    await expect(verifier(keys).verify(token)).rejects.toBeInstanceOf(
       UnauthorizedException,
     );
   });

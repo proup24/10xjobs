@@ -26,7 +26,7 @@ describe('UsersService', () => {
       residenceCountry: null,
       acceptsSponsorship: null,
     });
-    await repository.update(user.id, {
+    repository.setEligibility(user.id, {
       residenceCountry: 'MA',
       acceptsSponsorship: false,
     });

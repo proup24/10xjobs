@@ -7,8 +7,15 @@
     "noImplicitAny": false,
     "types": ["vitest/globals", "node"]
   },
-  "include": ["vitest.config.mts", "src/**/*.ts"],
+  "include": [
+    "vitest.config.mts",
+    "src/**/*.ts",
+    "../web/src/lib/engine/client.ts"
+  ],
   "references": [
+    {
+      "path": "../web"
+    },
     {
       "path": "../../libs/database"
     }

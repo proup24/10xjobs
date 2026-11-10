@@ -1,3 +1,6 @@
+// Deliberately no `server-only` import, so this file can be unit tested and
+// exercised by the engine e2e suite. The engine key is read only in
+// `server.ts`, which does have `server-only`, and handed in through `deps`.
 export type PublishedProfile = { id: string; state: string };
 
 export type EngineResult<T> =
@@ -23,6 +26,8 @@ export interface EngineClient {
 
 const DEFAULT_TIMEOUT_MS = 10_000;
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
@@ -35,14 +40,18 @@ export function createEngineClient(deps: EngineClientDeps): EngineClient {
     profileId: string,
   ): Promise<EngineResult<PublishedProfile>> {
     let status: number | undefined;
+    // Not a UUID: the engine would 400 it, and the raw input stays out of the log.
+    const validId = UUID.test(profileId);
     const finish = (
       result: EngineResult<PublishedProfile>,
     ): EngineResult<PublishedProfile> => {
       log(
-        `engine publishProfile profile=${profileId} outcome=${result.kind} status=${status ?? 'none'}`,
+        `engine publishProfile profile=${validId ? profileId : 'invalid'} outcome=${result.kind} status=${status ?? 'none'}`,
       );
       return result;
     };
+
+    if (!validId) return finish({ kind: 'not-found' });
 
     if (!deps.url || !deps.apiKey) return finish({ kind: 'unavailable' });
 

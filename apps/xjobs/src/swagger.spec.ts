@@ -31,6 +31,7 @@ it('documents application routes with the API prefix and the engine key', async 
       components: {
         securitySchemes: {
           'engine-key': { type: 'apiKey', name: 'X-Engine-Key', in: 'header' },
+          bearer: { type: 'http', scheme: 'bearer' },
         },
       },
       security: [{ 'engine-key': [] }],

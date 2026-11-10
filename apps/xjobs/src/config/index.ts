@@ -111,9 +111,11 @@ export interface StorageConfig {
 
 /** Validation guarantees one of each URL and key pair is set. */
 export function getStorageConfig(config: AppConfigService): StorageConfig {
+  const supabaseUrl = (config.get('SUPABASE_URL', { infer: true }) ??
+    config.get('SUPABASE_PUBLIC_URL', { infer: true })) as string;
   return {
-    supabaseUrl: (config.get('SUPABASE_URL', { infer: true }) ??
-      config.get('SUPABASE_PUBLIC_URL', { infer: true })) as string,
+    // No trailing slash: the JWKS URL and the token issuer are built from it.
+    supabaseUrl: supabaseUrl.replace(/\/+$/, ''),
     serviceRoleKey: (config.get('SUPABASE_SERVICE_ROLE_KEY', { infer: true }) ??
       config.get('SERVICE_ROLE_KEY', { infer: true })) as string,
   };

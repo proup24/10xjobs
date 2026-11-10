@@ -1,19 +1,14 @@
 /** In-memory repositories for unit tests; not part of the application build. */
 import { ProfileState } from 'src/common/enums';
 import type { UserRow } from 'src/database';
-import {
-  ProfilesRepository,
-  toProfileColumns,
-} from '../repositories/profiles.repository';
+import { ProfilesRepository } from '../repositories/profiles.repository';
 import { UsersRepository } from '../repositories/users.repository';
 import type {
   Place,
   PlaceLabels,
-  ProfileFields,
   ProfileInput,
   ProfileWithSkills,
   SkillInput,
-  UserInput,
 } from '../types';
 
 export class FakeUsersRepository extends UsersRepository {
@@ -35,10 +30,6 @@ export class FakeUsersRepository extends UsersRepository {
     return row;
   }
 
-  async list(): Promise<UserRow[]> {
-    return this.rows;
-  }
-
   async findById(userId: string) {
     return this.rows.find((row) => row.id === userId) ?? null;
   }
@@ -53,11 +44,16 @@ export class FakeUsersRepository extends UsersRepository {
       : null;
   }
 
-  async update(userId: string, data: UserInput) {
-    const row = await this.findById(userId);
-    if (!row) return null;
-    Object.assign(row, data);
-    return row;
+  /** Sets the eligibility answers directly, as the web app does through Supabase. */
+  setEligibility(
+    userId: string,
+    data: {
+      residenceCountry: string | null;
+      acceptsSponsorship: boolean | null;
+    },
+  ) {
+    const row = this.rows.find((r) => r.id === userId);
+    if (row) Object.assign(row, data);
   }
 }
 
@@ -93,10 +89,6 @@ export class FakeProfilesRepository extends ProfilesRepository {
     }));
   }
 
-  async list(userId: string) {
-    return this.rows.filter((row) => row.userId === userId);
-  }
-
   async listPublished() {
     return this.rows.filter((row) => row.state === ProfileState.published);
   }
@@ -108,7 +100,8 @@ export class FakeProfilesRepository extends ProfilesRepository {
     );
   }
 
-  async create(
+  /** Stands in for the web app's direct insert of a draft. */
+  async add(
     userId: string,
     data: ProfileInput,
     skills: SkillInput[],
@@ -120,7 +113,21 @@ export class FakeProfilesRepository extends ProfilesRepository {
       id,
       userId,
       position: data.position,
-      ...toProfileColumns(data),
+      locations: data.locations,
+      languages: data.languages,
+      yearsOfExperience: data.yearsOfExperience,
+      timezoneCurrent: data.timezoneCurrent,
+      timezoneMin: data.timezoneMin,
+      timezoneMax: data.timezoneMax,
+      engagements: data.engagements,
+      seniorities: data.seniorities,
+      contractTypes: data.contractTypes,
+      salaryMin: data.salary?.min ?? null,
+      salaryCurrency: data.salary?.currency ?? null,
+      salaryPeriod: data.salary?.period ?? null,
+      acceptsAnyCurrency: data.acceptsAnyCurrency,
+      acceptedCurrencies: data.acceptedCurrencies,
+      noticePeriodDays: data.noticePeriodDays,
       resumeKey: null,
       resumeFilename: null,
       resumeSizeBytes: null,
@@ -134,25 +141,6 @@ export class FakeProfilesRepository extends ProfilesRepository {
     };
     this.rows.push(profile);
     return profile;
-  }
-
-  async replace(
-    userId: string,
-    profileId: string,
-    data: ProfileFields,
-    skills: SkillInput[],
-  ) {
-    const profile = await this.findById(userId, profileId);
-    if (profile?.state !== ProfileState.draft) return null;
-    return Object.assign(profile, toProfileColumns(data), {
-      techStack: FakeProfilesRepository.techStack(userId, profileId, skills),
-    });
-  }
-
-  async delete(userId: string, profileId: string) {
-    const profile = await this.findById(userId, profileId);
-    this.rows = this.rows.filter((row) => row !== profile);
-    return profile !== null;
   }
 
   async publish(userId: string, profileId: string, publishedAt: Date) {

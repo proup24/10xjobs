@@ -11,6 +11,7 @@ export function setupSwagger(app: INestApplication): void {
       { type: 'apiKey', name: 'X-Engine-Key', in: 'header' },
       'engine-key',
     )
+    .addBearerAuth()
     // Every route requires it; the Authorize button sends it on Try it out.
     .addSecurityRequirements('engine-key')
     .build();

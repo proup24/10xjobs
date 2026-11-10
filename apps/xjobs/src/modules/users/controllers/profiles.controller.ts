@@ -7,7 +7,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, UserGuard } from 'src/common/auth';
 import { ApiErrorResponses, ApiSuccessResponse } from 'src/common/decorators';
 import { PublishProfileResponseDto } from '../dto/publish-profile.response.dto';
@@ -15,6 +15,7 @@ import { ProfilesService } from '../services/profiles.service';
 import type { PublishedProfileView } from '../types';
 
 @ApiTags('profiles')
+@ApiBearerAuth()
 @ApiErrorResponses(HttpStatus.UNAUTHORIZED, HttpStatus.INTERNAL_SERVER_ERROR)
 @Controller('profiles')
 @UseGuards(UserGuard)

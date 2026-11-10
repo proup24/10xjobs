@@ -328,7 +328,7 @@ jobs:
             echo "::error::The api container is '$status', not healthy"
             exit 1
           fi
-          key="$(grep '^ENGINE_API_KEY=' .env | cut -d= -f2- | tr -d "\r\"'")"
+          key="$(grep '^ENGINE_API_KEY=' .env | cut -d= -f2- | tr -d "\r\"'" || true)"
           if [ -z "$key" ]; then
             echo "::error::ENGINE_API_KEY is missing in ~/engine/.env"
             exit 1

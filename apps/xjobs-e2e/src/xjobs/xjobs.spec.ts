@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import axios from 'axios';
 
 const base = () => axios.defaults.baseURL;
@@ -44,7 +45,19 @@ describe('unknown and removed routes', () => {
     expect(res.status).toBe(404);
   });
 
-  it.each(['/api/users', '/api/processor/status'])(
+  const gone = [
+    '/api/users',
+    `/api/users/${randomUUID()}/profiles`,
+    `/api/users/${randomUUID()}/contacts`,
+  ];
+  // `.env.example` turns the operator endpoints on, and a local run serves the
+  // engine from that .env; the processor path is only absent when the flag is off.
+  const operatorOn = ['true', '1', 'yes'].includes(
+    process.env.XJOBS_OPERATOR_ENDPOINTS ?? '',
+  );
+  if (!operatorOn) gone.push('/api/processor/status');
+
+  it.each(gone)(
     '404s %s with the key: CRUD is gone and the operator flag is off',
     async (path) => {
       const res = await fetch(`${base()}${path}`, withKey());

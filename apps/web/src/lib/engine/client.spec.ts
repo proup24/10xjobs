@@ -4,6 +4,7 @@ import { createEngineClient, type EngineClientDeps } from './client';
 
 const KEY = 'k'.repeat(40);
 const TOKEN = 'secret.jwt.token';
+const PID = '3f2b8c1e-5d4a-4e6f-9a7b-1c2d3e4f5a6b';
 
 function json(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -32,15 +33,15 @@ function setup(
 describe('engine client publishProfile', () => {
   it('sends POST {url}/api/profiles/{id}/publish with X-Engine-Key and Bearer token', async () => {
     const { client, fetchMock } = setup(() =>
-      json(200, { status: 'success', data: { id: 'p1', state: 'published' } }),
+      json(200, { status: 'success', data: { id: PID, state: 'published' } }),
     );
-    const result = await client.publishProfile('p1');
+    const result = await client.publishProfile(PID);
     expect(result).toEqual({
       kind: 'ok',
-      data: { id: 'p1', state: 'published' },
+      data: { id: PID, state: 'published' },
     });
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe('http://engine.test/api/profiles/p1/publish');
+    expect(url).toBe(`http://engine.test/api/profiles/${PID}/publish`);
     expect(init?.method).toBe('POST');
     const headers = new Headers(init?.headers);
     expect(headers.get('x-engine-key')).toBe(KEY);
@@ -49,17 +50,17 @@ describe('engine client publishProfile', () => {
 
   it('401 → unauthorized', async () => {
     const { client } = setup(() => json(401, { code: 'UNAUTHORIZED' }));
-    expect(await client.publishProfile('p1')).toEqual({ kind: 'unauthorized' });
+    expect(await client.publishProfile(PID)).toEqual({ kind: 'unauthorized' });
   });
 
   it('404 → not-found', async () => {
     const { client } = setup(() => json(404, { code: 'NOT_FOUND' }));
-    expect(await client.publishProfile('p1')).toEqual({ kind: 'not-found' });
+    expect(await client.publishProfile(PID)).toEqual({ kind: 'not-found' });
   });
 
   it('409 PROFILE_PUBLISHED → conflict already-published', async () => {
     const { client } = setup(() => json(409, { code: 'PROFILE_PUBLISHED' }));
-    expect(await client.publishProfile('p1')).toEqual({
+    expect(await client.publishProfile(PID)).toEqual({
       kind: 'conflict',
       reason: 'already-published',
     });
@@ -67,7 +68,7 @@ describe('engine client publishProfile', () => {
 
   it('409 ELIGIBILITY_REQUIRED → conflict incomplete', async () => {
     const { client } = setup(() => json(409, { code: 'ELIGIBILITY_REQUIRED' }));
-    expect(await client.publishProfile('p1')).toEqual({
+    expect(await client.publishProfile(PID)).toEqual({
       kind: 'conflict',
       reason: 'incomplete',
     });
@@ -75,14 +76,14 @@ describe('engine client publishProfile', () => {
 
   it('409 with an unknown code → unavailable', async () => {
     const { client } = setup(() => json(409, { code: 'SOMETHING_ELSE' }));
-    expect(await client.publishProfile('p1')).toEqual({ kind: 'unavailable' });
+    expect(await client.publishProfile(PID)).toEqual({ kind: 'unavailable' });
   });
 
   it('400 → invalid with the body message', async () => {
     const { client } = setup(() =>
       json(400, { code: 'BAD_REQUEST', message: 'profileId must be a UUID' }),
     );
-    expect(await client.publishProfile('p1')).toEqual({
+    expect(await client.publishProfile(PID)).toEqual({
       kind: 'invalid',
       message: 'profileId must be a UUID',
     });
@@ -90,26 +91,26 @@ describe('engine client publishProfile', () => {
 
   it('503 → unavailable', async () => {
     const { client } = setup(() => json(503, { code: 'SERVICE_UNAVAILABLE' }));
-    expect(await client.publishProfile('p1')).toEqual({ kind: 'unavailable' });
+    expect(await client.publishProfile(PID)).toEqual({ kind: 'unavailable' });
   });
 
   it('network error → unavailable', async () => {
     const { client } = setup(() => {
       throw new TypeError('fetch failed');
     });
-    expect(await client.publishProfile('p1')).toEqual({ kind: 'unavailable' });
+    expect(await client.publishProfile(PID)).toEqual({ kind: 'unavailable' });
   });
 
   it('502 with an HTML body → unavailable, no throw', async () => {
     const { client } = setup(
       () => new Response('<html>Bad Gateway</html>', { status: 502 }),
     );
-    expect(await client.publishProfile('p1')).toEqual({ kind: 'unavailable' });
+    expect(await client.publishProfile(PID)).toEqual({ kind: 'unavailable' });
   });
 
   it('empty 200 body → unavailable', async () => {
     const { client } = setup(() => new Response('', { status: 200 }));
-    expect(await client.publishProfile('p1')).toEqual({ kind: 'unavailable' });
+    expect(await client.publishProfile(PID)).toEqual({ kind: 'unavailable' });
   });
 
   it('aborts after timeoutMs → unavailable', async () => {
@@ -125,13 +126,13 @@ describe('engine client publishProfile', () => {
       fetch: hanging,
       timeoutMs: 10,
     });
-    expect(await client.publishProfile('p1')).toEqual({ kind: 'unavailable' });
+    expect(await client.publishProfile(PID)).toEqual({ kind: 'unavailable' });
   });
 
   it('missing ENGINE_URL or key → unavailable without fetching', async () => {
     for (const overrides of [{ url: undefined }, { apiKey: undefined }]) {
       const { client, fetchMock } = setup(() => json(200, {}), overrides);
-      expect(await client.publishProfile('p1')).toEqual({
+      expect(await client.publishProfile(PID)).toEqual({
         kind: 'unavailable',
       });
       expect(fetchMock).not.toHaveBeenCalled();
@@ -142,18 +143,29 @@ describe('engine client publishProfile', () => {
     const { client, fetchMock } = setup(() => json(200, {}), {
       accessToken: async () => null,
     });
-    expect(await client.publishProfile('p1')).toEqual({ kind: 'unauthorized' });
+    expect(await client.publishProfile(PID)).toEqual({ kind: 'unauthorized' });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('never logs the key or the token', async () => {
     const { client, log } = setup(() => json(401, { code: 'UNAUTHORIZED' }));
-    await client.publishProfile('p1');
+    await client.publishProfile(PID);
     expect(log).toHaveBeenCalledWith(
-      'engine publishProfile profile=p1 outcome=unauthorized status=401',
+      `engine publishProfile profile=${PID} outcome=unauthorized status=401`,
     );
     const logged = JSON.stringify(log.mock.calls);
     expect(logged).not.toContain(KEY);
     expect(logged).not.toContain(TOKEN);
+  });
+
+  it('a non-UUID profile id → not-found without fetching, and the raw value is not logged', async () => {
+    const { client, fetchMock, log } = setup(() => json(200, {}));
+    const raw = '../../etc/passwd?x=1';
+    expect(await client.publishProfile(raw)).toEqual({ kind: 'not-found' });
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(log).toHaveBeenCalledWith(
+      'engine publishProfile profile=invalid outcome=not-found status=none',
+    );
+    expect(JSON.stringify(log.mock.calls)).not.toContain('passwd');
   });
 });
