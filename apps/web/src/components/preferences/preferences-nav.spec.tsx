@@ -19,6 +19,9 @@ vi.mock('next/navigation', () => ({
   usePathname: () => pathname.value,
   useRouter: () => ({ push }),
 }));
+vi.mock('@/app/(app)/preferences/new/actions', () => ({
+  discardNewProfileAction: vi.fn(),
+}));
 
 afterEach(() => {
   cleanup();
@@ -49,7 +52,7 @@ function MakeDirty() {
 function renderNav() {
   return render(
     <UnsavedChangesProvider>
-      <PreferencesNav items={ITEMS} labels={LABELS} />
+      <PreferencesNav items={ITEMS} labels={LABELS} draftInProgress={false} />
       <MakeDirty />
     </UnsavedChangesProvider>,
   );
@@ -68,6 +71,17 @@ describe('PreferencesNav', () => {
     expect(link('Where you can work').getAttribute('href')).toBe(
       '/preferences/eligibility',
     );
+  });
+
+  it('the Profiles group has "New profile", in the side column and the phone block', () => {
+    renderNav();
+    const links = screen.getAllByRole('link', { name: 'New profile' });
+    expect(links).toHaveLength(2);
+    for (const l of links)
+      expect(l.getAttribute('href')).toBe('/preferences/new');
+    expect(
+      within(nav()).getByRole('link', { name: 'New profile' }),
+    ).toBeTruthy();
   });
 
   it('marks the current section', () => {

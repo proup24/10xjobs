@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 type Step = { id: string; label: string };
 
 type StepsProps = {
-  steps: Step[];
+  steps: readonly Step[];
   /** Zero-based index of the current step. Out-of-range values are clamped. */
   current: number;
   className?: string;

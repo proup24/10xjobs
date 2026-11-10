@@ -5,17 +5,30 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Steps } from '@/components/ui/steps';
-import { SETUP_STEPS, type SetupStepId } from '@/lib/setup/steps';
+import { SETUP_STEPS, stepPath, type SetupStepId } from '@/lib/setup/steps';
 
-const STEPS = [...SETUP_STEPS, { id: 'review', label: 'Review' }];
+const SETUP_FLOW: StepFlow = {
+  steps: [...SETUP_STEPS, { id: 'review', label: 'Review' }],
+  pathFor: (id) => stepPath(id as SetupStepId | 'review'),
+};
+
+/** The ordered steps of a flow and where each one lives. */
+export type StepFlow = {
+  steps: readonly { id: string; label: string }[];
+  pathFor: (id: string) => string;
+};
+
+/** Without `flow` the frame is setup's; with it, `step` is any id of the flow. */
+type FlowProps =
+  | { flow?: undefined; step: SetupStepId | 'review' }
+  | { flow: StepFlow; step: string };
 
 /** The toast for `{status:'failed'}`; step forms call it, nothing else does. */
 export function notifySaveFailed() {
   toast.error("Couldn't save. Try again.");
 }
 
-type StepFrameProps = {
-  step: SetupStepId | 'review';
+type StepFrameProps = FlowProps & {
   title: string;
   lead?: string;
   children?: React.ReactNode;
@@ -44,6 +57,7 @@ type StepFrameProps = {
  * `errors._form` passed as `formError`. Do not toast invalid results.
  */
 export function StepFrame({
+  flow = SETUP_FLOW,
   step,
   title,
   lead,
@@ -57,12 +71,12 @@ export function StepFrame({
   submitHref,
 }: StepFrameProps) {
   const router = useRouter();
-  const index = STEPS.findIndex((s) => s.id === step);
-  const previous = index > 0 ? STEPS[index - 1].id : null;
+  const index = flow.steps.findIndex((s) => s.id === step);
+  const previous = index > 0 ? flow.steps[index - 1].id : null;
   // On review every setup step is done; the frame shows review as the current one.
   return (
     <div className="flex flex-col gap-6">
-      <Steps steps={STEPS} current={index} />
+      <Steps steps={flow.steps} current={index} />
       <div className="flex flex-col gap-2">
         <h1 className="text-title-3">{title}</h1>
         {lead && <p className="text-muted-foreground">{lead}</p>}
@@ -81,7 +95,7 @@ export function StepFrame({
           <Button
             type="button"
             variant="ghost"
-            onClick={onBack ?? (() => router.push(`/setup/${previous}`))}
+            onClick={onBack ?? (() => router.push(flow.pathFor(previous)))}
           >
             Back
           </Button>

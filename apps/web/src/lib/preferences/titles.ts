@@ -10,3 +10,6 @@ export const SECTION_TITLES = {
 /** The document title of a Preferences page: "<section> · Preferences · 10xjobs". */
 export const preferencesTitle = (section: string) =>
   `${section} · Preferences · 10xjobs`;
+
+/** The new-profile pages' section title. */
+export const NEW_PROFILE_TITLE = 'New profile';

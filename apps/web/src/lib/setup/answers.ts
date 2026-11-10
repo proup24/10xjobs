@@ -137,7 +137,7 @@ const techShape = z.object({
 export type TechAnswer = z.infer<typeof techShape>;
 
 /** Step 3's shape alone; `jobSchema` adds the rules. */
-const jobShape = z.object({
+export const jobShape = z.object({
   position: code,
   yearsOfExperience: z
     .number()
@@ -255,7 +255,7 @@ const placeRowShape = z.object({
 export type PlaceRow = z.infer<typeof placeRowShape>;
 
 /** Step 4's shape alone; `termsSchema` adds the rules. */
-const termsShape = z.object({
+export const termsShape = z.object({
   places: z.array(placeRowShape).min(1, 'Add at least one place'),
   timezoneCurrent: offset,
   timezoneMin: offset,
@@ -371,5 +371,28 @@ export type SetupDraft = { version: 1; job?: JobAnswers; terms?: TermsAnswers };
 /** The stored draft, or null when it doesn't match this version (the step starts over). */
 export function parseDraft(json: unknown): SetupDraft | null {
   const r = draftSchema.safeParse(json);
+  return r.success ? r.data : null;
+}
+
+const newProfileDraftSchema = z.object({
+  version: z.literal(2),
+  newProfileId: z.string().regex(UUID),
+  copyFrom: z.string().regex(UUID).nullable(),
+  job: jobShape.optional(),
+  terms: termsShape.optional(),
+});
+
+/** A new-profile flow's answers, kept in the same draft row as setup's but as version 2. */
+export type NewProfileDraft = {
+  version: 2;
+  newProfileId: string;
+  copyFrom: string | null;
+  job?: JobAnswers;
+  terms?: TermsAnswers;
+};
+
+/** The stored new-profile draft, or null for any other version or shape. */
+export function parseNewProfileDraft(json: unknown): NewProfileDraft | null {
+  const r = newProfileDraftSchema.safeParse(json);
   return r.success ? r.data : null;
 }

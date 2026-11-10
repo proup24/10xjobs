@@ -7,6 +7,7 @@
     "builder-recount",
     "profile-setup-functions",
     "replace-profile-skills-lock",
-    "create-profile-from-setup-idempotent"
+    "create-profile-from-setup-idempotent",
+    "create-profile-from-draft"
   ]
 }

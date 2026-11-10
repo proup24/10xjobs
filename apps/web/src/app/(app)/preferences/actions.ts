@@ -1,6 +1,13 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { isSearchableTech } from '@xjobs/database/enums';
+import {
+  deleteProfile,
+  hrefAfterDelete,
+} from '@/lib/preferences/delete-profile';
+import { loadProfileList } from '@/lib/preferences/profiles';
 import {
   saveContacts,
   saveEligibility,
@@ -55,4 +62,29 @@ export async function saveProfileTermsAction(
 ): Promise<SaveResult> {
   if (!isProfileId(profileId)) return FAILED;
   return run((s) => saveProfileTerms(s, profileId, input));
+}
+
+/**
+ * Deletes one of the signed-in user's profiles, through `deleteDraftProfile` only. The
+ * list is read first so a delete can land on the profile that followed the deleted one.
+ */
+export async function deleteProfileAction(
+  profileId: string,
+): Promise<'last' | 'only-resume' | 'not-draft' | 'failed'> {
+  if (!isProfileId(profileId)) return 'failed';
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.auth.getClaims();
+  const userId = data?.claims.sub;
+  if (!userId) return 'failed';
+  let list: Awaited<ReturnType<typeof loadProfileList>>;
+  try {
+    list = await loadProfileList(supabase);
+  } catch {
+    return 'failed';
+  }
+  const result = await deleteProfile(supabase, userId, profileId);
+  if (result !== 'deleted') return result;
+  // The nav lists profiles: re-read it before landing on the next one.
+  revalidatePath('/preferences', 'layout');
+  redirect(hrefAfterDelete(list, profileId));
 }

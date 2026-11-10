@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/vertical-nav';
 import type { ProfileListItem } from '@/lib/preferences/profiles';
 import { SECTION_TITLES } from '@/lib/preferences/titles';
+import { NewProfileAction } from './new-profile-action';
 
 const BASE = '/preferences';
 
@@ -26,10 +27,12 @@ type Props = {
   items: Pick<ProfileListItem, 'id' | 'hasResume'>[];
   /** Profile id → its nav label (see `profileLabels`). */
   labels: Record<string, string>;
+  /** A new profile's draft exists: "+ New profile" offers to continue it. */
+  draftInProgress: boolean;
 };
 
 /** The Preferences side nav: the user's own sections, then each profile and its sections. */
-export function PreferencesNav({ items, labels }: Props) {
+export function PreferencesNav({ items, labels, draftInProgress }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const { confirmLeave } = useUnsavedChanges();
@@ -57,7 +60,16 @@ export function PreferencesNav({ items, labels }: Props) {
 
   const groups: VerticalNavGroup[] = [
     { label: 'You', items: you },
-    { label: 'Profiles', items: profiles },
+    {
+      label: 'Profiles',
+      items: profiles,
+      action: (
+        <NewProfileAction
+          count={items.length}
+          draftInProgress={draftInProgress}
+        />
+      ),
+    },
   ];
 
   return (
