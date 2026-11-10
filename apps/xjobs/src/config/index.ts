@@ -107,7 +107,6 @@ export function getApifyToken(config: AppConfigService): string {
 export interface StorageConfig {
   supabaseUrl: string;
   serviceRoleKey: string;
-  resumesBucket: string;
 }
 
 /** Validation guarantees one of each URL and key pair is set. */
@@ -117,7 +116,6 @@ export function getStorageConfig(config: AppConfigService): StorageConfig {
       config.get('SUPABASE_PUBLIC_URL', { infer: true })) as string,
     serviceRoleKey: (config.get('SUPABASE_SERVICE_ROLE_KEY', { infer: true }) ??
       config.get('SERVICE_ROLE_KEY', { infer: true })) as string,
-    resumesBucket: config.get('STORAGE_RESUMES_BUCKET', { infer: true }),
   };
 }
 

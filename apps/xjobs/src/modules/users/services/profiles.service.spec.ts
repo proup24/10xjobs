@@ -527,6 +527,14 @@ describe('ProfilesService', () => {
       expect(missing.getResponse()).toEqual(error.getResponse());
     });
 
+    it('404s publish when the user row disappears after the profile lookup', async () => {
+      const { id } = await create(stack);
+      vi.spyOn(userRows, 'eligibility').mockResolvedValue(null);
+      const error = await service.publish(userId, id).catch((e) => e);
+      expect(error).toBeInstanceOf(NotFoundException);
+      expect(error.message).toBe('Profile not found');
+    });
+
     it('publishes one profile without touching the other', async () => {
       const a = await create(stack);
       const b = await create(stack);

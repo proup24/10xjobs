@@ -157,11 +157,6 @@ export const environmentSchema = databaseEnvironmentSchema
       .string()
       .min(32, 'ENGINE_API_KEY must be at least 32 characters'),
     ...storageEnvironmentShape,
-    /**
-     * Private bucket that holds resume PDFs. Pinned: the migration, the
-     * storage policies and the web app all fix the name `resumes`.
-     */
-    STORAGE_RESUMES_BUCKET: z.literal('resumes').default('resumes'),
     /** Apify API token for the collectors. Optional so the API boots without collection. */
     APIFY_TOKEN: z.string().min(1).optional(),
     ...processorEnvironmentShape,

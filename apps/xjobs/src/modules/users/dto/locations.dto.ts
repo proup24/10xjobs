@@ -1,13 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
-import { ArrayMaxSize, IsArray } from 'class-validator';
 import type { Place, PlacesByArrangement } from '../types';
-import { IsPlace, lowerCityId, UniqueBy } from './validators';
 
 /** Most places one arrangement may list: each one multiplies the searches. */
 export const MAX_LOCATIONS = 20;
 
-/** Decorators shared by every arrangement's list of places. */
+/** Swagger decorators shared by every arrangement's list of places; response schema only. */
 function PlaceList(example: Place[]) {
   const decorators = [
     ApiProperty({
@@ -42,13 +39,6 @@ function PlaceList(example: Place[]) {
       description:
         'Places by code: a regions code, an ISO 3166-1 alpha-2 countries code, or a cities id; empty when the arrangement is not wanted',
     }),
-    Transform(({ value }: { value: unknown }) =>
-      Array.isArray(value) ? value.map(lowerCityId) : value,
-    ),
-    IsArray(),
-    ArrayMaxSize(MAX_LOCATIONS),
-    IsPlace({ each: true }),
-    UniqueBy(['kind', 'code', 'id']),
   ];
   return (target: object, propertyName: string) => {
     for (const decorate of decorators) decorate(target, propertyName);

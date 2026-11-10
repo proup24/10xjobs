@@ -22,12 +22,13 @@ export class ProfilesController {
   constructor(private readonly profiles: ProfilesService) {}
 
   @ApiSuccessResponse(PublishProfileResponseDto, {
-    description: 'One-way: afterwards the profile can only be deleted',
+    description: 'One-way: a published profile is frozen',
   })
   @ApiErrorResponses(
     HttpStatus.BAD_REQUEST,
     HttpStatus.NOT_FOUND,
     HttpStatus.CONFLICT,
+    HttpStatus.SERVICE_UNAVAILABLE,
   )
   @HttpCode(HttpStatus.OK)
   @Post(':profileId/publish')

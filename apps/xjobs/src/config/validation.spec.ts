@@ -21,11 +21,10 @@ function storageConfigFor(raw: Record<string, unknown>) {
 }
 
 describe('storage configuration', () => {
-  it('reads the Supabase URL, key and default resumes bucket', () => {
+  it('reads the Supabase URL, key and service-role key', () => {
     expect(storageConfigFor(minimal)).toEqual({
       supabaseUrl: 'http://localhost:8000',
       serviceRoleKey: 'service-key',
-      resumesBucket: 'resumes',
     });
   });
 
@@ -41,18 +40,6 @@ describe('storage configuration', () => {
       supabaseUrl: 'http://localhost:8000',
       serviceRoleKey: 'legacy-key',
     });
-  });
-
-  it('accepts the resumes bucket set explicitly', () => {
-    expect(
-      storageConfigFor({ ...minimal, STORAGE_RESUMES_BUCKET: 'resumes' }),
-    ).toMatchObject({ resumesBucket: 'resumes' });
-  });
-
-  it('refuses any other bucket, since the migration, policies and web app fix the name', () => {
-    expect(() =>
-      validateEnvironment({ ...minimal, STORAGE_RESUMES_BUCKET: 'cv' }),
-    ).toThrow(/STORAGE_RESUMES_BUCKET/);
   });
 
   it('fails without any Supabase URL or key', () => {

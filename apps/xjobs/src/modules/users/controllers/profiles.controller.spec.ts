@@ -1,3 +1,5 @@
+import { GUARDS_METADATA } from '@nestjs/common/constants';
+import { UserGuard } from 'src/common/auth';
 import type { ProfilesService } from '../services/profiles.service';
 import type { PublishedProfileView } from '../types';
 import { ProfilesController } from './profiles.controller';
@@ -13,5 +15,11 @@ describe('ProfilesController', () => {
       view,
     );
     expect(publish).toHaveBeenCalledExactlyOnceWith('token-user', 'profile-1');
+  });
+
+  it('requires the user token on every route', () => {
+    expect(Reflect.getMetadata(GUARDS_METADATA, ProfilesController)).toContain(
+      UserGuard,
+    );
   });
 });

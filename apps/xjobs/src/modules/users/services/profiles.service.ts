@@ -190,6 +190,17 @@ const PROFILE_NOT_FOUND = 'Profile not found';
 export const PROFILE_PUBLISHED =
   'A published profile cannot be changed; delete it and create a new one';
 
+/** A deleted user and another user's profile look the same to the caller: 'Profile not found'. */
+async function profileNotFoundIfUserGone<T>(lookup: Promise<T>): Promise<T> {
+  try {
+    return await lookup;
+  } catch (error) {
+    if (error instanceof NotFoundException)
+      throw new NotFoundException(PROFILE_NOT_FOUND);
+    throw error;
+  }
+}
+
 function publishedConflict(): ConflictException {
   return new ConflictException({
     message: PROFILE_PUBLISHED,
@@ -245,14 +256,7 @@ export class ProfilesService {
     userId: string,
     profileId: string,
   ): Promise<ProfileWithSkills> {
-    try {
-      await this.users.getOrThrow(userId);
-    } catch (error) {
-      // A deleted user and another user's profile look the same to the caller.
-      if (error instanceof NotFoundException)
-        throw new NotFoundException(PROFILE_NOT_FOUND);
-      throw error;
-    }
+    await profileNotFoundIfUserGone(this.users.getOrThrow(userId));
     const profile = await this.profiles.findById(userId, profileId);
     if (!profile) throw new NotFoundException(PROFILE_NOT_FOUND);
     return profile;
@@ -361,7 +365,7 @@ export class ProfilesService {
   ): Promise<PublishedProfileView> {
     const profile = await this.getDraftOrThrow(userId, profileId);
     const { residenceCountry, acceptsSponsorship } =
-      await this.users.eligibility(userId);
+      await profileNotFoundIfUserGone(this.users.eligibility(userId));
     if (residenceCountry === null || acceptsSponsorship === null)
       throw new ConflictException({
         message: ELIGIBILITY_REQUIRED,
