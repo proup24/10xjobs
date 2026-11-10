@@ -64,3 +64,6 @@ apps/xjobs/src/modules/processor/golden/last-report*.json
 # Next.js
 .next
 out
+
+# Local Supabase JWT signing key (credential)
+supabase/signing_keys.json

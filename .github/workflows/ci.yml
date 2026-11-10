@@ -63,6 +63,9 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - name: Create the local JWT signing key
+        run: scripts/ensure-signing-key.sh
+
       # Keeps kong, gotrue, postgrest, storage-api, mailpit and postgres-meta (needed by `supabase gen types`)
       - name: Start the Supabase stack
         run: pnpm exec supabase start -x studio,realtime,edge-runtime,imgproxy,logflare,vector
