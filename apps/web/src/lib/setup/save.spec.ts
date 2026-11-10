@@ -4,7 +4,15 @@ import { describe, expect, it } from 'vitest';
 import { fakeSupabase, type QueryCall, type Reply } from '@/test/fake-supabase';
 import type { JobAnswers, TermsAnswers } from './answers';
 import { termsColumns, toProfileWrite } from './mapping';
-import { saveAbout, saveEligibility, saveJob, saveTerms } from './save';
+import {
+  saveAbout,
+  saveContacts,
+  saveEligibility,
+  saveJob,
+  saveProfileJob,
+  saveProfileTerms,
+  saveTerms,
+} from './save';
 
 const U = '11111111-1111-4111-8111-111111111111';
 const P = '22222222-2222-4222-8222-222222222222';
@@ -471,5 +479,86 @@ describe('saveEligibility', () => {
       'work_authorizations.select',
       'work_authorizations.delete',
     ]);
+  });
+});
+
+describe('saveContacts', () => {
+  const contacts = {
+    phone: '+44 20 1234',
+    linkedin: null,
+    links: [{ kind: 'github', value: 'https://github.com/ada' }],
+  };
+
+  it('never updates users', async () => {
+    const f = world();
+    expect(await saveContacts(f.supabase, U, contacts, quiet)).toEqual({
+      status: 'saved',
+    });
+    expect(f.queries('users')).toHaveLength(0);
+    const [upsert] = f.queries('contacts', 'upsert');
+    expect(
+      (upsert.payload as { kind: string; value: string }[]).map((r) => [
+        r.kind,
+        r.value,
+      ]),
+    ).toEqual([
+      ['phone', '+44 20 1234'],
+      ['github', 'https://github.com/ada'],
+    ]);
+  });
+
+  it('ignores a name in the input', async () => {
+    const f = world();
+    const input = { name: 'X', phone: null, linkedin: null, links: [] };
+    expect(await saveContacts(f.supabase, U, input, quiet)).toEqual({
+      status: 'saved',
+    });
+    expect(f.queries('users')).toHaveLength(0);
+  });
+});
+
+describe('saveProfileJob', () => {
+  const OTHER = '44444444-4444-4444-8444-444444444444';
+
+  it('writes the given profile, not the oldest', async () => {
+    const f = world({ profile: { id: P } });
+    expect(
+      await saveProfileJob(f.supabase, OTHER, job, isSearchableTech, quiet),
+    ).toEqual({ status: 'saved' });
+    const [update] = f.queries('profiles', 'update');
+    expect(update.filters).toContainEqual(['eq', 'id', OTHER]);
+    const [rpc] = f.rpcs('replace_profile_skills');
+    expect((rpc.args as { p_profile_id: string }).p_profile_id).toBe(OTHER);
+    expect(f.queries('profiles', 'select')).toHaveLength(0);
+  });
+
+  it('returns failed when the update matches no row', async () => {
+    const f = world({ profileUpdateMatches: false });
+    expect(
+      await saveProfileJob(f.supabase, P, job, isSearchableTech, quiet),
+    ).toEqual({ status: 'failed' });
+    expect(f.rpcs('replace_profile_skills')).toHaveLength(0);
+  });
+});
+
+describe('saveProfileTerms', () => {
+  const OTHER = '44444444-4444-4444-8444-444444444444';
+
+  it('writes the given profile, not the oldest', async () => {
+    const f = world({ profile: { id: P } });
+    expect(await saveProfileTerms(f.supabase, OTHER, terms, quiet)).toEqual({
+      status: 'saved',
+    });
+    const [update] = f.queries('profiles', 'update');
+    expect(update.filters).toContainEqual(['eq', 'id', OTHER]);
+    expect(update.payload).toEqual(termsColumns(terms));
+    expect(f.queries('profiles', 'select')).toHaveLength(0);
+  });
+
+  it('returns failed when the update matches no row', async () => {
+    const f = world({ profileUpdateMatches: false });
+    expect(await saveProfileTerms(f.supabase, P, terms, quiet)).toEqual({
+      status: 'failed',
+    });
   });
 });

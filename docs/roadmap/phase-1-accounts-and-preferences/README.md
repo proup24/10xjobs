@@ -2,7 +2,7 @@
 
 Date: 2026-10-29
 Revised: 2026-11-02, to match the engine work already on `main` (see "Revision 2026-11-02" below).
-Status: draft
+Status: draft. Closes with [Phase 2's launch check](../phase-2-find/10-launch-check.md), on `10xjobs-dev` (production is deferred).
 
 ## Intent
 
@@ -66,7 +66,7 @@ Slices 04 and 05 share one spec, [Preferences and eligibility schema](../../supe
 - **Ownership:** every table a user owns carries its own `userId` column, child tables included (`contacts`, `profiles`, `profile_skills` and later ones), so every policy is `"userId" = auth.uid()` with no joins.
 - **Shared tables:** search queries (`query_search_builder`, `profile_query_search_builders`) and raw jobs (`raw_jobs` and its identity and hit tables) are shared across users on purpose, so the same search runs once. They have RLS on with no user policies, so users can't see them. The processor's value lists (techs, roles, seniorities, contract types, engagements, regions, countries, cities, `region_countries`, languages and currencies) are shared tables that users can read, read-only and for approved rows only, so the web app's pickers can load them. Only an admin changes them.
 - **Every table has RLS enabled**, which makes a "table without RLS" check in CI simple.
-- **Published profiles are frozen.** RLS lets a user update and delete only their `draft` profiles, and never set `state` themselves. Only the engine publishes. The one exception is the resume: a user can replace it on a published profile too, through a database function that checks the file is theirs (slice 06).
+- **Published profiles are frozen.** _(Reversed in Phase 2: published profiles stay editable, see [Phase 2](../phase-2-find/README.md#decisions-locked-for-the-whole-phase).)_ RLS lets a user update and delete only their `draft` profiles, and never set `state` themselves. Only the engine publishes. The one exception is the resume: a user can replace it on a published profile too, through a database function that checks the file is theirs (slice 06).
 
 **Local development and CI**
 

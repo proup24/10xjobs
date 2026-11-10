@@ -37,6 +37,7 @@ describe('focus recipe', () => {
     'sidebar.tsx',
     'toggle.tsx',
     'toggle-group.tsx',
+    'vertical-nav.tsx',
   ])('%s clickables use the solid outline and never hide it', (file) => {
     const lists = literals(file).filter((t) =>
       t.includes('focus-visible:outline-2'),

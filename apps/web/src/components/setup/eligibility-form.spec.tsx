@@ -172,4 +172,30 @@ describe('EligibilityForm', () => {
     expect(await screen.findByText('Pick a place')).toBeTruthy();
     expect(onSave).not.toHaveBeenCalled();
   });
+
+  it('reports unsaved edits, and clean again once saved', async () => {
+    const onDirtyChange = vi.fn();
+    const onSave = vi.fn().mockResolvedValue({ status: 'saved' });
+    render(
+      <EligibilityForm
+        formId="f"
+        initial={{
+          residenceCountry: 'MA',
+          acceptsSponsorship: false,
+          authorizations: [],
+          noneConfirmed: true,
+        }}
+        lists={LISTS}
+        onSave={onSave}
+        onSaved={vi.fn()}
+        onDirtyChange={onDirtyChange}
+      />,
+    );
+    expect(onDirtyChange).not.toHaveBeenCalledWith(true);
+    fireEvent.click(screen.getByRole('radio', { name: 'Yes' }));
+    await waitFor(() => expect(onDirtyChange).toHaveBeenLastCalledWith(true));
+    submit();
+    await waitFor(() => expect(onDirtyChange).toHaveBeenLastCalledWith(false));
+    expect(onSave).toHaveBeenCalled();
+  });
 });

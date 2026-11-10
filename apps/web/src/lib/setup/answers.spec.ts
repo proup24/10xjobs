@@ -6,6 +6,7 @@ import {
   eligibilitySchema,
   jobSchema,
   parseDraft,
+  parseNewProfileDraft,
   termsSchema,
   type AboutAnswers,
   type EligibilityAnswers,
@@ -450,6 +451,73 @@ describe('parseDraft', () => {
   it('is null when an answer has the wrong shape', () => {
     expect(
       parseDraft({ version: 1, job: { ...jobAnswers, techs: 'typescript' } }),
+    ).toBeNull();
+  });
+});
+
+describe('parseNewProfileDraft', () => {
+  const ids = { newProfileId: BERLIN, copyFrom: null };
+
+  it('reads a version 2 draft', () => {
+    expect(
+      parseNewProfileDraft({ version: 2, ...ids, job: jobAnswers, terms }),
+    ).toEqual({ version: 2, ...ids, job: jobAnswers, terms });
+    expect(parseNewProfileDraft({ version: 2, ...ids })).toEqual({
+      version: 2,
+      ...ids,
+    });
+    expect(
+      parseNewProfileDraft({
+        version: 2,
+        newProfileId: BERLIN,
+        copyFrom: BERLIN,
+      }),
+    ).toMatchObject({ copyFrom: BERLIN });
+  });
+
+  it('is null for a version 1 draft, and parseDraft is null for version 2', () => {
+    expect(parseNewProfileDraft({ version: 1, job: jobAnswers })).toBeNull();
+    expect(parseDraft({ version: 2, ...ids })).toBeNull();
+  });
+
+  it('is null for a bad uuid or a missing id', () => {
+    expect(
+      parseNewProfileDraft({
+        version: 2,
+        newProfileId: 'nope',
+        copyFrom: null,
+      }),
+    ).toBeNull();
+    expect(
+      parseNewProfileDraft({ version: 2, newProfileId: BERLIN, copyFrom: 'x' }),
+    ).toBeNull();
+    expect(parseNewProfileDraft({ version: 2, copyFrom: null })).toBeNull();
+  });
+
+  it('drops worldwide rows', () => {
+    const emea = {
+      place: { kind: 'region', code: 'EMEA' },
+      remote: true,
+      hybrid: false,
+      onsite: false,
+    };
+    const worldwide = { ...emea, place: { kind: 'worldwide' } };
+    expect(
+      parseNewProfileDraft({
+        version: 2,
+        ...ids,
+        terms: { ...terms, places: [worldwide, emea] },
+      })?.terms?.places,
+    ).toEqual([emea]);
+  });
+
+  it('is null when an answer has the wrong shape', () => {
+    expect(
+      parseNewProfileDraft({
+        version: 2,
+        ...ids,
+        job: { ...jobAnswers, techs: 'x' },
+      }),
     ).toBeNull();
   });
 });

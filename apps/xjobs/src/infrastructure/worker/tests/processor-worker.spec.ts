@@ -7,6 +7,7 @@ vi.hoisted(() => {
   process.env.SUPABASE_SERVICE_ROLE_KEY ??= 'service-key';
   process.env.OPENROUTER_API_KEY ??= 'or-key';
   process.env.WORKER_ROLE = 'processor';
+  process.env.XJOBS_RUN_SCHEDULES = '1';
   delete process.env.WORKER_CHANNEL;
 });
 

@@ -74,6 +74,38 @@ describe('resume storage policies', () => {
     expect(await adminList(`${a.id}/${aDraft}`)).toEqual([]);
   });
 
+  it("A copies a resume into A's other profile, not into B's", async () => {
+    const aOther = await seedProfile(a.id);
+    const source = resumeKeyFor(a.id, aPub);
+    const bucket = a.client.storage.from('resumes');
+    expect((await bucket.upload(source, pdfBytes(), PDF)).error).toBeNull();
+
+    const own = resumeKeyFor(a.id, aOther);
+    const copied = await bucket.copy(source, own);
+    expect(copied.error).toBeNull();
+    const names = (await adminList(`${a.id}/${aOther}`)).map((o) => o.name);
+    expect(names).toEqual([own.split('/')[2]]);
+
+    for (const target of [
+      resumeKeyFor(b.id, bDraft),
+      resumeKeyFor(a.id, bDraft),
+    ]) {
+      const refused = await bucket.copy(source, target);
+      expect(refused.error, target).not.toBeNull();
+    }
+    expect(await adminList(`${b.id}/${bDraft}`)).toEqual([]);
+    expect(await adminList(`${a.id}/${bDraft}`)).toEqual([]);
+
+    // Nor can B copy A's file into B's own folder.
+    const stolen = await b.client.storage
+      .from('resumes')
+      .copy(source, resumeKeyFor(b.id, bDraft));
+    expect(stolen.error).not.toBeNull();
+    expect(await adminList(`${b.id}/${bDraft}`)).toEqual([]);
+
+    await admin().storage.from('resumes').remove([source, own]);
+  });
+
   it("A cannot upload into B's folder", async () => {
     const { error } = await a.client.storage
       .from('resumes')

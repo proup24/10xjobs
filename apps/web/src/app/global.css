@@ -300,6 +300,11 @@
   html {
     @apply font-sans;
   }
+  /* Tailwind v4 preflight resets buttons to cursor: default. */
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
   /* Icons: Lucide at 16px (size-4) with a 1.5 stroke, set once here. */
   svg.lucide {
     @apply size-4;

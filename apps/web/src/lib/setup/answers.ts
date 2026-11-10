@@ -5,7 +5,8 @@ import { NOTICE_OPTIONS, TIMEZONE_OFFSETS } from './options';
 
 const code = z.string().trim().min(1);
 const currency = z.string().regex(/^[A-Z]{3}$/, 'Pick a currency');
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export const UUID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** True when `value` is an absolute http(s) URL. */
 function isHttpUrl(value: string): boolean {
@@ -39,34 +40,48 @@ export const LINK_KINDS = [
   'other',
 ] as const;
 
-export const aboutSchema = z
+const aboutShape = {
+  name: z
+    .string()
+    .trim()
+    .min(1, 'Enter your name')
+    .max(200, 'Use at most 200 characters'),
+  phone: z.string().trim().min(1).nullable(),
+  linkedin: z.string().trim().min(1).nullable(),
+  links: z.array(
+    z.object({
+      kind: z.enum(LINK_KINDS),
+      value: z
+        .string()
+        .trim()
+        .refine(isHttpUrl, 'Enter a link starting with http:// or https://'),
+    }),
+  ),
+};
+
+function noRepeatedLinks(
+  about: { links: { kind: string; value: string }[] },
+  ctx: z.RefinementCtx,
+) {
+  for (const i of repeats(about.links, (l) => `${l.kind} ${l.value}`)) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['links', i, 'value'],
+      message: 'This link is already listed',
+    });
+  }
+}
+
+export const aboutSchema = z.object(aboutShape).superRefine(noRepeatedLinks);
+
+/** Step 1 without the name: what Preferences saves. */
+export const contactsSchema = z
   .object({
-    name: z
-      .string()
-      .trim()
-      .min(1, 'Enter your name')
-      .max(200, 'Use at most 200 characters'),
-    phone: z.string().trim().min(1).nullable(),
-    linkedin: z.string().trim().min(1).nullable(),
-    links: z.array(
-      z.object({
-        kind: z.enum(LINK_KINDS),
-        value: z
-          .string()
-          .trim()
-          .refine(isHttpUrl, 'Enter a link starting with http:// or https://'),
-      }),
-    ),
+    phone: aboutShape.phone,
+    linkedin: aboutShape.linkedin,
+    links: aboutShape.links,
   })
-  .superRefine((about, ctx) => {
-    for (const i of repeats(about.links, (l) => `${l.kind} ${l.value}`)) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['links', i, 'value'],
-        message: 'This link is already listed',
-      });
-    }
-  });
+  .superRefine(noRepeatedLinks);
 
 export type AboutAnswers = z.infer<typeof aboutSchema>;
 
@@ -120,7 +135,7 @@ const techShape = z.object({
 export type TechAnswer = z.infer<typeof techShape>;
 
 /** Step 3's shape alone; `jobSchema` adds the rules. */
-const jobShape = z.object({
+export const jobShape = z.object({
   position: code,
   yearsOfExperience: z
     .number()
@@ -220,7 +235,7 @@ const placeRowShape = z.object({
 export type PlaceRow = z.infer<typeof placeRowShape>;
 
 /** Step 4's shape alone; `termsSchema` adds the rules. */
-const termsShape = z.object({
+export const termsShape = z.object({
   places: z.array(placeRowShape).min(1, 'Add at least one place'),
   timezoneCurrent: offset,
   timezoneMin: offset,
@@ -336,5 +351,28 @@ export type SetupDraft = { version: 1; job?: JobAnswers; terms?: TermsAnswers };
 /** The stored draft, or null when it doesn't match this version (the step starts over). */
 export function parseDraft(json: unknown): SetupDraft | null {
   const r = draftSchema.safeParse(json);
+  return r.success ? r.data : null;
+}
+
+const newProfileDraftSchema = z.object({
+  version: z.literal(2),
+  newProfileId: z.string().regex(UUID),
+  copyFrom: z.string().regex(UUID).nullable(),
+  job: jobShape.optional(),
+  terms: z.preprocess(dropWorldwideRows, termsShape).optional(),
+});
+
+/** A new-profile flow's answers, kept in the same draft row as setup's but as version 2. */
+export type NewProfileDraft = {
+  version: 2;
+  newProfileId: string;
+  copyFrom: string | null;
+  job?: JobAnswers;
+  terms?: TermsAnswers;
+};
+
+/** The stored new-profile draft, or null for any other version or shape. */
+export function parseNewProfileDraft(json: unknown): NewProfileDraft | null {
+  const r = newProfileDraftSchema.safeParse(json);
   return r.success ? r.data : null;
 }

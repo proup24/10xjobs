@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { UnrecoverableError } from 'bullmq';
 import type { Redis } from 'ioredis';
 import { Channel } from 'src/common/enums';
@@ -9,7 +9,7 @@ import {
 } from 'src/infrastructure/jobs/steps/collect';
 import { ingestConfig } from 'src/modules/ingest';
 import { StorageService } from 'src/modules/storage';
-import { syncCollectionScheduler } from './scheduler';
+import { RUN_SCHEDULES, syncCollectionScheduler } from './scheduler';
 import { WorkerRuntimeService } from './runtime.service';
 
 @Injectable()
@@ -20,14 +20,16 @@ export class CollectionWorkerService {
     private readonly runtime: WorkerRuntimeService,
     private readonly collection: CollectionService,
     private readonly storage: StorageService,
+    @Inject(RUN_SCHEDULES) private readonly runSchedules: boolean,
   ) {}
 
-  /** Returns false when the channel is disabled and its schedule was removed. */
+  /** Returns false when the channel is disabled. With schedules off it still starts the worker. */
   async start(channel: Channel, connection: Redis): Promise<boolean> {
     await this.storage.ensureBucket(ingestConfig.bucket);
     const config = channelJobsConfig[channel];
     const queue = await this.runtime.createQueue(config.queueName, connection);
-    if ((await syncCollectionScheduler(queue, config)) === 'removed') {
+    await syncCollectionScheduler(queue, config, this.runSchedules);
+    if (!config.enabled) {
       this.logger.log(`${channel} disabled; scheduler removed`);
       return false;
     }
@@ -41,9 +43,14 @@ export class CollectionWorkerService {
       config.concurrency,
       connection,
     );
-    this.logger.log(
-      `Collecting ${channel} on ${config.schedule.pattern} ${config.schedule.timezone}`,
-    );
+    if (!this.runSchedules)
+      this.logger.log(
+        `${channel}: schedules off (XJOBS_RUN_SCHEDULES not set); scheduler removed`,
+      );
+    else
+      this.logger.log(
+        `Collecting ${channel} on ${config.schedule.pattern} ${config.schedule.timezone}`,
+      );
     return true;
   }
 }

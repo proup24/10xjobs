@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { NEW_PROFILE_STEPS } from '@/lib/preferences/new-profile-steps';
 import { StepFrame, notifySaveFailed } from './step-frame';
 
 const push = vi.hoisted(() => vi.fn());
@@ -95,6 +96,29 @@ describe('StepFrame', () => {
     expect(screen.queryByRole('button', { name: 'Finish' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
     expect(push).toHaveBeenCalledWith('/setup/resume');
+  });
+
+  it('a custom flow drives progress and Back', () => {
+    const flow = {
+      steps: NEW_PROFILE_STEPS,
+      pathFor: (id: string) => `/preferences/new/${id}`,
+    };
+    render(
+      <StepFrame
+        flow={flow}
+        step="terms"
+        title="Terms"
+        pending={false}
+        formId="f"
+      />,
+    );
+    expect(screen.getAllByRole('listitem')).toHaveLength(3);
+    const current = screen
+      .getAllByRole('listitem')
+      .filter((li) => li.getAttribute('aria-current') === 'step');
+    expect(current[0].textContent).toContain('Location and terms');
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(push).toHaveBeenCalledWith('/preferences/new/job');
   });
 
   it('notifySaveFailed toasts the failure copy', () => {

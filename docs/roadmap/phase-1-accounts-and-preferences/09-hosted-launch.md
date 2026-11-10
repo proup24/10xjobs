@@ -4,6 +4,8 @@ Spec: [Hosted launch: production setup](../../superpowers/specs/2026-11-07-hoste
 
 ## Goal
 
+_Revised 2026-11-10:_ production is deferred, so this slice's launch check moved to [Phase 2's launch check](../phase-2-find/10-launch-check.md), which runs Phase 1's exit criteria on `10xjobs-dev` and closes Phase 1. The production setup below waits until production is wanted.
+
 The shared, hosted app runs in production and the phase's exit criteria are checked on it.
 
 ## In scope

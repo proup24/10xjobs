@@ -30,6 +30,7 @@ import {
 import { NOTICE_OPTIONS, timezonePrefill } from '@/lib/setup/options';
 import type { SaveResult } from '@/lib/setup/save';
 import { issueErrors } from './form-errors';
+import { useDirty } from './use-dirty';
 import { PlaceRows, placeOptions } from './place-rows';
 import { SalaryFields, type SalaryDraft } from './salary-fields';
 import type { StepStatus } from './step-status';
@@ -80,6 +81,8 @@ type Props = {
   onStatusChange?: (status: StepStatus) => void;
   /** The `<form>` id, so a frame's submit button can target it. */
   formId: string;
+  /** Reports whether the form has unsaved edits. Pass a stable callback. */
+  onDirtyChange?: (dirty: boolean) => void;
 };
 
 function CheckGroup({
@@ -177,6 +180,7 @@ export function TermsForm({
   onSave,
   onSaved,
   onStatusChange,
+  onDirtyChange,
 }: Props) {
   const ids = useId();
   const [places, setPlaces] = useState<PlaceRow[]>(initial?.places ?? []);
@@ -211,6 +215,20 @@ export function TermsForm({
   useEffect(() => {
     onStatusChange?.({ pending, formError });
   }, [pending, formError, onStatusChange]);
+  // The raw time zone, not the shown one: the browser prefill is not an edit.
+  const { dirty, markClean, snapshot } = useDirty({
+    places,
+    timezone,
+    contractTypes,
+    engagements,
+    notice,
+    salary,
+    anyCurrency,
+    currencies,
+  });
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
 
   const offset = useSyncExternalStore(noSubscribe, browserOffset, serverOffset);
   const prefill = offset === null ? null : timezonePrefill(offset);
@@ -266,6 +284,7 @@ export function TermsForm({
     }
     setPending(false);
     if (result.status === 'saved') {
+      markClean(snapshot);
       onSaved();
     } else if (result.status === 'invalid') {
       const { _form, ...fields } = result.errors;

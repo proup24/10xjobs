@@ -50,16 +50,18 @@ function setup(
   onSave = vi.fn().mockResolvedValue({ status: 'saved' }),
 ) {
   const onSaved = vi.fn();
+  const onDirtyChange = vi.fn();
   render(
     <JobForm
       formId="f"
+      onDirtyChange={onDirtyChange}
       initial={initial}
       lists={LISTS}
       onSave={onSave}
       onSaved={onSaved}
     />,
   );
-  return { onSave, onSaved };
+  return { onSave, onSaved, onDirtyChange };
 }
 
 // Base UI opens the list only for typed input, so send what a keyboard sends.
@@ -240,5 +242,16 @@ describe('JobForm', () => {
     submit();
     await waitFor(() => expect(toastError).toHaveBeenCalled());
     expect(onSaved).not.toHaveBeenCalled();
+  });
+
+  it('reports unsaved edits and clears after a save', async () => {
+    const { onDirtyChange } = setup(SAVED);
+    fireEvent.change(
+      screen.getByRole('spinbutton', { name: /Years of experience/ }),
+      { target: { value: '7' } },
+    );
+    await waitFor(() => expect(onDirtyChange).toHaveBeenLastCalledWith(true));
+    submit();
+    await waitFor(() => expect(onDirtyChange).toHaveBeenLastCalledWith(false));
   });
 });

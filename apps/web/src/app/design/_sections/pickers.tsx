@@ -26,7 +26,6 @@ const TECHS: PickerOption[] = [
 ];
 
 const PLACES: PickerOption[] = [
-  { value: 'worldwide', label: 'Worldwide', detail: 'Remote only' },
   { value: 'region EU', label: 'Europe', detail: 'Region' },
   { value: 'country FR', label: 'France', detail: 'Country' },
   { value: 'city paris', label: 'Paris, France', detail: 'City' },

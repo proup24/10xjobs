@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { Redis } from 'ioredis';
 import {
   INGEST_QUEUE,
@@ -13,7 +13,7 @@ import {
   ingestConfig,
 } from 'src/modules/ingest';
 import { StorageService } from 'src/modules/storage';
-import { syncSweepScheduler } from './scheduler';
+import { RUN_SCHEDULES, syncSweepScheduler } from './scheduler';
 import { WorkerRuntimeService } from './runtime.service';
 
 @Injectable()
@@ -27,12 +27,13 @@ export class IngestWorkerService {
     private readonly rawStorage: RawStorageRepository,
     private readonly ingestQueue: IngestQueue,
     private readonly processQueue: ProcessQueue,
+    @Inject(RUN_SCHEDULES) private readonly runSchedules: boolean,
   ) {}
 
   async start(connection: Redis): Promise<void> {
     await this.storage.ensureBucket(ingestConfig.bucket);
     const queue = await this.runtime.createQueue(INGEST_QUEUE, connection);
-    await syncSweepScheduler(queue);
+    await syncSweepScheduler(queue, this.runSchedules);
     this.runtime.startWorker(
       INGEST_QUEUE,
       (bullJob) =>
@@ -46,7 +47,9 @@ export class IngestWorkerService {
       connection,
     );
     this.logger.log(
-      `Ingesting collection batches; sweeping every ${ingestConfig.sweepEveryMs / 1000}s`,
+      this.runSchedules
+        ? `Ingesting collection batches; sweeping every ${ingestConfig.sweepEveryMs / 1000}s`
+        : 'Ingesting collection batches; schedules off',
     );
   }
 }
