@@ -1,0 +1,9 @@
+{
+  "from": "692de7e1f3a1de4d1810971aad16ccc8e77c43000f9f6446faf2b873a6ce64fe",
+  "to": "692de7e1f3a1de4d1810971aad16ccc8e77c43000f9f6446faf2b873a6ce64fe",
+  "providedInvariants": [
+    "match-details"
+  ],
+  "createdAt": "2026-11-10T21:47:46.524Z",
+  "migrationHash": "5bc8976488129ff98e0c890175c8f1278c3bfe5f0a4d78a7dbfc9162b9cde478"
+}

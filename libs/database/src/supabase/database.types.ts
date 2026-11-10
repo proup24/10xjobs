@@ -1632,6 +1632,47 @@ export type Database = {
         Args: Record<PropertyKey, never>;
         Returns: number;
       };
+      match_details: {
+        Args: {
+          p_job_id?: string;
+          p_outcome?: string;
+          p_profile_id: string;
+          p_since?: string;
+        };
+        Returns: {
+          applyUrl: string;
+          channels: string[];
+          checks: Json;
+          closed: boolean;
+          companyName: string;
+          companyUrl: string;
+          decidedAt: string;
+          descriptionText: string;
+          facts: Json;
+          firstSeenAt: string;
+          jobId: string;
+          kind: string;
+          lastSeenAt: string;
+          location: string;
+          matchId: string;
+          outcome: string;
+          posterName: string;
+          posterProfileUrl: string;
+          posterType: string;
+          postingUrl: string;
+          profileId: string;
+          publishedAt: string;
+          salaryCurrency: string;
+          salaryMax: number;
+          salaryMin: number;
+          salaryPeriod: string;
+          salaryText: string;
+          stackScore: number;
+          title: string;
+          unverified: boolean;
+        }[];
+      };
+      match_facts: { Args: { doc: Json }; Returns: Json };
       replace_profile_skills: {
         Args: { p_profile_id: string; p_skills: Json };
         Returns: undefined;

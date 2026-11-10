@@ -432,9 +432,10 @@ export async function seedDetailedJob(
       : null;
   const jobId = await insertDetailedJob(status, targetId, jobKey);
   if (opts.lastSeenAt) {
+    // firstSeenAt moves too: a job is never last seen before it was first seen.
     const { error } = await admin()
       .from('normalized_jobs')
-      .update({ lastSeenAt: opts.lastSeenAt })
+      .update({ firstSeenAt: opts.lastSeenAt, lastSeenAt: opts.lastSeenAt })
       .eq('id', jobId);
     if (error) throw new Error(`Could not set lastSeenAt: ${error.message}`);
   }
