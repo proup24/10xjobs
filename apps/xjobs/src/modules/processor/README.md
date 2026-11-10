@@ -36,7 +36,7 @@ Jobs ingested before the processor existed have no processing status and are not
 
 ## Testing endpoints
 
-Served by the API (`npx nx serve xjobs`), behind its basic auth, under `/processor`:
+Served by the API (`npx nx serve xjobs`), local only, with `XJOBS_OPERATOR_ENDPOINTS=1`, and the engine key, under `/processor`:
 
 | Endpoint                          | Does                                                                                                                                                                                                                                                                                                                 |
 | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

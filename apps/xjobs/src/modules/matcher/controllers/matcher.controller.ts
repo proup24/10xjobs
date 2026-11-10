@@ -13,8 +13,8 @@ import { MatcherRepository } from '../repositories/matcher.repository';
 import { MatcherService } from '../services/matcher.service';
 
 /**
- * Manual entry points to the matcher, for testing and inspection. Behind the
- * app's basic auth. No model is called.
+ * Manual entry points to the matcher, for testing and inspection. Local only,
+ * with `XJOBS_OPERATOR_ENDPOINTS=1`, and the engine key. No model is called.
  */
 @ApiTags('matcher')
 @ApiErrorResponses(HttpStatus.UNAUTHORIZED, HttpStatus.INTERNAL_SERVER_ERROR)

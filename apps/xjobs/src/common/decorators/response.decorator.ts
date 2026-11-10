@@ -5,7 +5,7 @@ import { ErrorResponseDto, SuccessResponseDto } from '../dtos';
 const ERROR_DESCRIPTIONS: Partial<Record<HttpStatus, string>> = {
   [HttpStatus.BAD_REQUEST]:
     'Invalid input (code BAD_REQUEST or VALIDATION_FAILED)',
-  [HttpStatus.UNAUTHORIZED]: 'Missing or wrong Basic auth credentials',
+  [HttpStatus.UNAUTHORIZED]: 'Missing or wrong engine key or user token',
   [HttpStatus.NOT_FOUND]: 'Not found',
   [HttpStatus.CONFLICT]: 'Conflicts with an existing record',
   [HttpStatus.GONE]: 'No longer available',

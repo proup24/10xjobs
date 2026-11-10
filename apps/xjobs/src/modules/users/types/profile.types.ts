@@ -34,9 +34,6 @@ export type ProfileInput = {
   noticePeriodDays: number;
 };
 
-/** The editable part of a profile: everything but its position. */
-export type ProfileFields = Omit<ProfileInput, 'position'>;
-
 export type SkillInput = {
   /** A tech_tags code. */
   technology: string;

@@ -152,24 +152,32 @@ export const environmentSchema = databaseEnvironmentSchema
     COOKIE_DOMAIN: z.string().min(1).optional(),
     COOKIE_SECURE: booleanFlag.optional(),
     COOKIE_SAME_SITE: z.enum(['lax', 'strict', 'none']).default('lax'),
-    /** Credentials every API request must send as HTTP Basic auth. */
-    BASIC_AUTH_USERNAME: z.string().min(1),
-    BASIC_AUTH_PASSWORD: z
+    /** Shared secret the web app sends as `X-Engine-Key` on every request. */
+    ENGINE_API_KEY: z
       .string()
-      .min(12, 'BASIC_AUTH_PASSWORD must be at least 12 characters'),
+      .min(32, 'ENGINE_API_KEY must be at least 32 characters'),
     ...storageEnvironmentShape,
-    /**
-     * Private bucket that holds resume PDFs. Pinned: the migration, the
-     * storage policies and the web app all fix the name `resumes`.
-     */
-    STORAGE_RESUMES_BUCKET: z.literal('resumes').default('resumes'),
     /** Apify API token for the collectors. Optional so the API boots without collection. */
     APIFY_TOKEN: z.string().min(1).optional(),
     ...processorEnvironmentShape,
+    /** Mounts the operator routes (processor, matcher, query search); local only. */
+    XJOBS_OPERATOR_ENDPOINTS: booleanFlag.default(false),
     /** Set by Nx in development to receive the server's ready signal. */
     NX_READY_SIGNAL_SOCKET: z.string().min(1).optional(),
   })
-  .superRefine(requireStorage);
+  .superRefine((env, ctx) => {
+    requireStorage(env, ctx);
+    if (
+      env.XJOBS_OPERATOR_ENDPOINTS &&
+      env.NODE_ENV === EnvironmentType.production
+    )
+      ctx.addIssue({
+        code: 'custom',
+        path: ['XJOBS_OPERATOR_ENDPOINTS'],
+        message:
+          'XJOBS_OPERATOR_ENDPOINTS is local only; unset it when NODE_ENV=production',
+      });
+  });
 
 export type ProcessorEnvironmentVariables = z.infer<
   typeof processorEnvironmentSchema

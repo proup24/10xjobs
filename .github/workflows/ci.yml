@@ -63,6 +63,9 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - name: Create the local JWT signing key
+        run: scripts/ensure-signing-key.sh
+
       # Keeps kong, gotrue, postgrest, storage-api, mailpit and postgres-meta (needed by `supabase gen types`)
       - name: Start the Supabase stack
         run: pnpm exec supabase start -x studio,realtime,edge-runtime,imgproxy,logflare,vector
@@ -86,6 +89,97 @@ jobs:
 
       - name: Run the database tests
         run: pnpm db:test
+
+      - name: Show Supabase status and container logs
+        if: failure()
+        run: |
+          pnpm exec supabase status || true
+          for c in $(docker ps -a --filter name=supabase_ --format '{{.Names}}'); do
+            echo "::group::$c"
+            docker logs --tail 100 "$c" || true
+            echo "::endgroup::"
+          done
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      XJOBS_SKIP_ENV_FILES: '1'
+      NODE_ENV: development
+      HOST: 127.0.0.1
+      PORT: '3000'
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+      REDIS_URL: redis://127.0.0.1:6379
+      REDIS_CACHE_URL: redis://127.0.0.1:6380
+    steps:
+      - uses: actions/checkout@v7
+
+      # Installs the pnpm version pinned in package.json's packageManager field
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Create the local JWT signing key
+        run: scripts/ensure-signing-key.sh
+
+      - name: Start the Supabase stack
+        run: pnpm exec supabase start -x studio,realtime,edge-runtime,imgproxy,logflare,vector
+
+      - name: Apply the Prisma migrations
+        run: pnpm --filter @xjobs/database db:migrate
+
+      # The engine, the seed and the tests all read these from the job env
+      - name: Export the Supabase credentials
+        run: |
+          eval "$(scripts/supabase-env.sh)"
+          echo "::add-mask::$SUPABASE_SERVICE_ROLE_KEY"
+          echo "SUPABASE_URL=$SUPABASE_URL" >> "$GITHUB_ENV"
+          echo "SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
+          echo "SUPABASE_PUBLISHABLE_KEY=$SUPABASE_PUBLISHABLE_KEY" >> "$GITHUB_ENV"
+
+      - name: Seed the database
+        run: pnpm --filter @xjobs/database db:seed
+
+      - name: Start Redis
+        run: docker compose up -d --wait redis redis-cache
+
+      # Generated per run and masked; never a GitHub secret
+      - name: Generate the engine key
+        run: |
+          key=$(openssl rand -hex 32)
+          echo "::add-mask::$key"
+          echo "ENGINE_API_KEY=$key" >> "$GITHUB_ENV"
+
+      - name: Build the engine
+        run: pnpm exec nx build xjobs
+
+      - name: Start the engine
+        run: |
+          nohup node apps/xjobs/dist/main.js > engine.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -sf -H "X-Engine-Key: $ENGINE_API_KEY" http://127.0.0.1:3000/api/health > /dev/null; then
+              echo "engine is up"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "engine did not become healthy within 60s"
+          cat engine.log
+          exit 1
+
+      # --excludeTaskDependencies: the e2e target depends on the continuous
+      # `serve`, which would start a second engine on port 3000
+      - name: Run the engine boundary tests
+        run: pnpm exec nx e2e @xjobs/xjobs-e2e --excludeTaskDependencies
+
+      - name: Show the engine log
+        if: failure()
+        run: cat engine.log || true
 
       - name: Show Supabase status and container logs
         if: failure()

@@ -10,6 +10,9 @@
   "include": ["vitest.config.mts", "src/**/*.ts"],
   "references": [
     {
+      "path": "../../libs/engine-client"
+    },
+    {
       "path": "../../libs/database"
     }
   ]

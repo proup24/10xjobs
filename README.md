@@ -18,17 +18,17 @@ npx nx serve xjobs
 Supabase runs locally through the Supabase CLI (Docker required); Compose only runs Redis. In order:
 
 1. `pnpm db:start` starts Supabase (API 54321, Postgres 54322, Studio 54323, Mailpit 54324).
-2. Copy `.env.example` to `.env` and fill `SUPABASE_SERVICE_ROLE_KEY` from `pnpm db:status`.
+2. Copy `.env.example` to `.env`, fill `SUPABASE_SERVICE_ROLE_KEY` from `pnpm db:status`, and set `ENGINE_API_KEY` (at least 32 characters: `openssl rand -base64 48`). Every engine route requires it in the `X-Engine-Key` header.
 3. `pnpm db:migrate`, then `eval "$(scripts/supabase-env.sh)"` and `pnpm db:seed`. The seed needs `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` because it creates `admin@`, `recruiter@` and `candidate@xjobs.local` as Supabase Auth users; a sign-up trigger adds their `public.users` rows.
 4. `pnpm infra:redis` starts Redis.
 5. `npx nx serve xjobs` runs the engine.
-6. For the web app, copy `apps/web/.env.example` to `apps/web/.env.local` and fill `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` from `pnpm db:status`. Then `npx nx dev web` serves on http://localhost:3001.
+6. For the web app, copy `apps/web/.env.example` to `apps/web/.env.local` and fill `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` from `pnpm db:status`. Also set `ENGINE_URL` (`http://localhost:3000`) and the same `ENGINE_API_KEY` as the engine. Then `npx nx dev web` serves on http://localhost:3001.
 
 Migration refs: after `prisma migration ref set` or advancing the `db` ref in `libs/database/src/migrations/app/refs/db.json`, re-add `"end-expired-sessions"` to its `invariants`. Prisma writes `invariants: []`, and fresh databases would then skip the session-cleanup cron job.
 
 `pnpm db:stop` stops the stack, and `pnpm db:reset` wipes it and re-applies migrations and the seed (it loads those two variables itself). The old self-hosted Compose stack is retired: its data and your old `.env` are not carried over, so build a fresh `.env` from `.env.example`.
 
-Users are created through Supabase Auth; `POST /api/users` returns 410. The e2e suite needs the same two variables, so run `eval "$(scripts/supabase-env.sh)"` before `npx nx e2e xjobs-e2e`.
+Users are created through Supabase Auth. A stack started before the engine-auth change signs HS256 tokens, which the engine refuses: restart it with `pnpm db:stop && pnpm db:start` so it issues ES256 tokens. The e2e suite needs the same two variables, so run `eval "$(scripts/supabase-env.sh)"` before `npx nx e2e xjobs-e2e`.
 
 ### Signing in locally
 
