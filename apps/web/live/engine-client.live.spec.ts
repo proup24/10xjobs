@@ -1,8 +1,9 @@
 // Runs against a live engine and the local Supabase stack: `nx run web:test-live`.
+// Lives outside src/ so the service-role guard in src/ keeps scanning only what the app ships.
 import { randomUUID } from 'node:crypto';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createEngineClient } from './client';
+import { createEngineClient } from '../src/lib/engine/client';
 
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
 

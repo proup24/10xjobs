@@ -1,0 +1,10 @@
+{
+  "extends": "../tsconfig.spec.json",
+  "compilerOptions": {
+    "rootDir": "..",
+    "outDir": "../out-tsc/live",
+    "tsBuildInfoFile": "../out-tsc/live/tsconfig.tsbuildinfo",
+    "paths": { "@/*": ["../src/*"] }
+  },
+  "include": ["./**/*.ts"]
+}
