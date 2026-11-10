@@ -1,5 +1,8 @@
 name: Dev database
 
+# The SHA in the run name tells Deploy engine which commit was migrated.
+run-name: Dev database ${{ github.event.workflow_run.head_sha }}
+
 # Migrates and seeds the shared dev database (Supabase Cloud) once CI has
 # passed on main. Never runs for pull requests.
 on:

@@ -6,6 +6,7 @@ vi.hoisted(() => {
   process.env.SUPABASE_URL ??= 'http://127.0.0.1:1';
   process.env.SUPABASE_SERVICE_ROLE_KEY ??= 'service-key';
   process.env.WORKER_ROLE = 'ingest';
+  process.env.XJOBS_RUN_SCHEDULES = '1';
   delete process.env.WORKER_CHANNEL;
 });
 

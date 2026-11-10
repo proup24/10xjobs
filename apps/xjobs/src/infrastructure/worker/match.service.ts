@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { Redis } from 'ioredis';
 import {
   MATCH_QUEUE,
@@ -8,7 +8,7 @@ import {
 } from 'src/infrastructure/jobs/steps/match';
 import { MatcherRepository, MatcherService } from 'src/modules/matcher';
 import { WorkerRuntimeService } from './runtime.service';
-import { syncMatchSweepScheduler } from './scheduler';
+import { RUN_SCHEDULES, syncMatchSweepScheduler } from './scheduler';
 
 const MATCH_CONCURRENCY = 4;
 
@@ -21,11 +21,12 @@ export class MatchWorkerService {
     private readonly service: MatcherService,
     private readonly repo: MatcherRepository,
     private readonly matchQueue: MatchQueue,
+    @Inject(RUN_SCHEDULES) private readonly runSchedules: boolean,
   ) {}
 
   async start(connection: Redis): Promise<void> {
     const queue = await this.runtime.createQueue(MATCH_QUEUE, connection);
-    await syncMatchSweepScheduler(queue);
+    await syncMatchSweepScheduler(queue, this.runSchedules);
     this.runtime.startWorker(
       MATCH_QUEUE,
       async (bullJob) => {
@@ -42,7 +43,9 @@ export class MatchWorkerService {
       connection,
     );
     this.logger.log(
-      `Matching jobs; sweeping every ${MATCH_SWEEP.everyMs / 1000}s`,
+      this.runSchedules
+        ? `Matching jobs; sweeping every ${MATCH_SWEEP.everyMs / 1000}s`
+        : 'Matching jobs; schedules off',
     );
   }
 }

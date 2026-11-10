@@ -23,10 +23,10 @@ Precision over volume: prefer a tailored application over a fast one.
 ## Commands
 
 - `npx nx serve xjobs`: run the engine.
-- `npx nx worker-all xjobs`: run every worker in one process: infrastructure, ingest, processor (when OPENROUTER_API_KEY is set), match, and each enabled channel's scheduled collection.
+- `npx nx worker-all xjobs`: run every worker in one process: infrastructure, ingest, processor (when OPENROUTER_API_KEY is set), match, and each enabled channel's scheduled collection (registers schedules only with `XJOBS_RUN_SCHEDULES=1`, set on the hosted engine).
 - `npx nx worker-processor xjobs`: run the processor worker alone.
 - `npx nx worker-match xjobs`: run the match worker alone.
-- `npx nx worker-<channel> xjobs` (`linkedin-job-board`, `linkedin-posts`, `greenhouse`, `ashby`): run one channel's scheduled collection worker.
+- `npx nx worker-<channel> xjobs` (`linkedin-job-board`, `linkedin-posts`, `greenhouse`, `ashby`): run one channel's scheduled collection worker (registers schedules only with `XJOBS_RUN_SCHEDULES=1`, set on the hosted engine).
 - `npx nx run-many -t lint test build typecheck`: what CI runs.
 - `npx nx test xjobs`: unit tests for the engine.
 - `npx nx e2e xjobs-e2e`: e2e tests.

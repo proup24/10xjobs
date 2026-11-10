@@ -1,0 +1,100 @@
+name: xjobs-engine
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+x-engine-env: &engine-env
+  NODE_ENV: production
+  XJOBS_SKIP_ENV_FILES: "1"
+  REDIS_URL: redis://redis:6379
+  REDIS_CACHE_URL: redis://redis-cache:6379
+  REDIS_PREFIX: xjobs
+
+x-engine-depends: &engine-depends
+  redis:
+    condition: service_healthy
+  redis-cache:
+    condition: service_healthy
+
+services:
+  api:
+    image: ghcr.io/proup24/10xjobs-engine:${ENGINE_IMAGE_TAG:?}
+    restart: unless-stopped
+    stop_grace_period: 60s
+    env_file: .env
+    environment: *engine-env
+    expose: ["3000"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    depends_on: *engine-depends
+    logging: *logging
+
+  worker:
+    image: ghcr.io/proup24/10xjobs-engine:${ENGINE_IMAGE_TAG:?}
+    restart: unless-stopped
+    stop_grace_period: 60s
+    command: ["node", "worker.js"]
+    env_file: .env
+    environment:
+      <<: *engine-env
+      WORKER_ROLE: all
+      XJOBS_RUN_SCHEDULES: "1"
+    depends_on: *engine-depends
+    logging: *logging
+
+  redis:
+    image: redis:8.2.10-alpine
+    restart: unless-stopped
+    # BullMQ keys must never be evicted; AOF preserves queued jobs on restart.
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec", "--maxmemory-policy", "noeviction"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    logging: *logging
+
+  redis-cache:
+    image: redis:8.2.10-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    logging: *logging
+
+  caddy:
+    image: caddy:2.11.6-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      ENGINE_HOSTNAME: ${ENGINE_HOSTNAME:?}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+    logging: *logging
+
+volumes:
+  redis-data:
+  caddy-data:
+  caddy-config:

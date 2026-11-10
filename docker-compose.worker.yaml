@@ -1,3 +1,4 @@
+# These local containers run without schedules unless XJOBS_RUN_SCHEDULES is passed.
 # Build the runtime files first: pnpm exec nx prune @xjobs/xjobs
 # Start all workers:
 # docker compose -f docker-compose.yaml -f docker-compose.worker.yaml up -d --build \

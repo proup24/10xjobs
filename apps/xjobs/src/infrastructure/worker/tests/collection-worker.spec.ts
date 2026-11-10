@@ -8,6 +8,7 @@ vi.hoisted(() => {
   process.env.WORKER_CHANNEL = 'LINKEDIN_JOB_BOARD';
   process.env.APIFY_TOKEN ??= 'apify-token';
   delete process.env.WORKER_ROLE;
+  process.env.XJOBS_RUN_SCHEDULES = '1';
 });
 
 const created = vi.hoisted(() => ({

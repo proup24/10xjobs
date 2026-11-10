@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { validateWorkerProcessEnvironment } from 'src/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import {
+  type WorkerProcessEnvironmentVariables,
+  validateWorkerProcessEnvironment,
+} from 'src/config';
 import { DatabaseModule } from 'src/database';
 import { JobsModule } from 'src/infrastructure/jobs/jobs.module';
 import { MatchQueue } from 'src/infrastructure/jobs/steps/match';
@@ -16,6 +19,7 @@ import { IngestWorkerService } from './ingest.service';
 import { MatchWorkerService } from './match.service';
 import { ProcessorWorkerService } from './processor.service';
 import { WorkerRuntimeService } from './runtime.service';
+import { RUN_SCHEDULES } from './scheduler';
 import { WorkerService } from './worker.service';
 
 /**
@@ -40,6 +44,13 @@ import { WorkerService } from './worker.service';
     StorageModule,
   ],
   providers: [
+    {
+      provide: RUN_SCHEDULES,
+      inject: [ConfigService],
+      useFactory: (
+        config: ConfigService<WorkerProcessEnvironmentVariables, true>,
+      ) => config.get('XJOBS_RUN_SCHEDULES', { infer: true }),
+    },
     WorkerService,
     WorkerRuntimeService,
     CollectionWorkerService,
