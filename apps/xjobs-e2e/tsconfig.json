@@ -7,14 +7,10 @@
     "noImplicitAny": false,
     "types": ["vitest/globals", "node"]
   },
-  "include": [
-    "vitest.config.mts",
-    "src/**/*.ts",
-    "../web/src/lib/engine/client.ts"
-  ],
+  "include": ["vitest.config.mts", "src/**/*.ts"],
   "references": [
     {
-      "path": "../web"
+      "path": "../../libs/engine-client"
     },
     {
       "path": "../../libs/database"

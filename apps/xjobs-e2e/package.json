@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@xjobs/database": "workspace:*",
+    "@xjobs/engine-client": "workspace:*",
     "jose": "^6.2.14"
   }
 }

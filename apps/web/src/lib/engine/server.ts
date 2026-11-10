@@ -1,6 +1,6 @@
 import 'server-only';
 import { createSupabaseServerClient } from '../supabase/server';
-import { createEngineClient, type EngineClient } from './client';
+import { createEngineClient, type EngineClient } from '@xjobs/engine-client';
 
 export async function engineClient(): Promise<EngineClient> {
   return createEngineClient({

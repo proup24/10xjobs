@@ -1,4 +1,4 @@
-// The web app's real engine client (pure, no `server-only`) against the running engine.
+// The web app's real engine client (`@xjobs/engine-client`, framework-free) against the running engine.
 import axios from 'axios';
 import {
   createAuthUser,
@@ -6,9 +6,7 @@ import {
   setEligibility,
 } from '../support/auth-users';
 import { createDraftProfile } from '../support/profiles';
-// The one cross-project import: the web app is not a library, and this is the real client code under test.
-// eslint-disable-next-line @nx/enforce-module-boundaries
-import { createEngineClient } from '../../../web/src/lib/engine/client';
+import { createEngineClient } from '@xjobs/engine-client';
 
 describe('web engine client against the running engine', () => {
   let userId: string;

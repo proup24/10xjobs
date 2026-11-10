@@ -1,6 +1,7 @@
-// Deliberately no `server-only` import, so this file can be unit tested and
-// exercised by the engine e2e suite. The engine key is read only in
-// `server.ts`, which does have `server-only`, and handed in through `deps`.
+// Framework-free on purpose: no Next and no `server-only` import, so this file
+// can be unit tested here and exercised by the engine e2e suite. The engine key
+// is read only in the web app's `apps/web/src/lib/engine/server.ts`, which does
+// import `server-only`, and is handed in through `deps`.
 export type PublishedProfile = { id: string; state: string };
 
 export type EngineResult<T> =

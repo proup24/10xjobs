@@ -17,6 +17,7 @@ type Schema = {
   type?: string;
 };
 type Operation = {
+  security?: Record<string, string[]>[];
   parameters?: { in: string }[];
   requestBody?: unknown;
   responses: Record<string, { content?: Record<string, { schema: Schema }> }>;
@@ -105,6 +106,18 @@ describe('API contract', () => {
       'GET /api/users/{userId}/profiles/{profileId}/query-search',
       'POST /api/profiles/{profileId}/publish',
     ]);
+  });
+
+  it('requires the engine key and the bearer token together on publish', () => {
+    const publish = (
+      document.paths['/api/profiles/{profileId}/publish'] as Record<
+        string,
+        Operation
+      >
+    )['post'];
+    // One requirement object: both schemes ANDed. Two objects would be OR, and
+    // any operation-level security replaces the global engine-key requirement.
+    expect(publish?.security).toEqual([{ 'engine-key': [], bearer: [] }]);
   });
 
   it('has no workspace route or parameter', () => {

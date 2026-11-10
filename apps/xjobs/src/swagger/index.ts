@@ -1,6 +1,7 @@
 import type { INestApplication } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { API_VERSION } from 'src/common/constants';
+import { BEARER_SCHEME, ENGINE_KEY_SCHEME } from './security';
 
 export function setupSwagger(app: INestApplication): void {
   const config = new DocumentBuilder()
@@ -9,11 +10,11 @@ export function setupSwagger(app: INestApplication): void {
     .setVersion(API_VERSION)
     .addApiKey(
       { type: 'apiKey', name: 'X-Engine-Key', in: 'header' },
-      'engine-key',
+      ENGINE_KEY_SCHEME,
     )
-    .addBearerAuth()
+    .addBearerAuth(undefined, BEARER_SCHEME)
     // Every route requires it; the Authorize button sends it on Try it out.
-    .addSecurityRequirements('engine-key')
+    .addSecurityRequirements(ENGINE_KEY_SCHEME)
     .build();
   const document = SwaggerModule.createDocument(app, config);
 

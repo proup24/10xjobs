@@ -7,15 +7,18 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, UserGuard } from 'src/common/auth';
 import { ApiErrorResponses, ApiSuccessResponse } from 'src/common/decorators';
+import { ENGINE_KEY_AND_BEARER } from 'src/swagger/security';
 import { PublishProfileResponseDto } from '../dto/publish-profile.response.dto';
 import { ProfilesService } from '../services/profiles.service';
 import type { PublishedProfileView } from '../types';
 
 @ApiTags('profiles')
-@ApiBearerAuth()
+// Both headers on every route: one requirement object, so they are ANDed and
+// the global engine-key requirement is not dropped.
+@ApiSecurity(ENGINE_KEY_AND_BEARER)
 @ApiErrorResponses(HttpStatus.UNAUTHORIZED, HttpStatus.INTERNAL_SERVER_ERROR)
 @Controller('profiles')
 @UseGuards(UserGuard)

@@ -68,6 +68,9 @@
   ],
   "references": [
     {
+      "path": "../../libs/engine-client"
+    },
+    {
       "path": "../../libs/database"
     }
   ]
