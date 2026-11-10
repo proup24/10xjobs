@@ -17,24 +17,22 @@ import {
 // It adds match_details, the one way a signed-in user reads their matches with each job's
 // details and curated extraction facts. normalized_jobs, job_extractions and the raw tables
 // stay engine-only: match_details is SECURITY DEFINER and reaches a job only through the
-// caller's own job_matches rows. match_facts builds the facts from the match's extraction,
-// field by field, so nothing of `data` passes through unlisted.
+// caller's own job_matches rows. The facts are built from the match's extraction field by
+// field, so nothing of `data` passes through unlisted.
 
-// match_facts(doc) builds one document's facts; match_details calls it per row. Its cost per
-// row is kept to the JSON building itself:
-// - `doc || '{}'` decompresses the stored document once, and each top-level field is read
-//   from it once into `x`; OFFSET 0 keeps the planner from folding those expressions back
-//   into every reference, which would decompress (and copy) the document again each time.
-// - Each label is one primary-key lookup. The value lists are a few pages, so the planner
-//   would rather scan a whole list for every code it looks up, which costs far more per row
-//   than the index; `enable_seqscan = off`, set on match_facts only, keeps the index lookups.
+// Facts are built inline over the row set (a per-row helper function paid executor start-up
+// for every row), and the cost per row is kept to the JSON building itself:
+// - `e.data || '{}'` decompresses the stored document once per row, and each top-level field
+//   is read from it once into `x`; OFFSET 0 keeps the planner from folding those expressions
+//   back into every reference, which would decompress (and copy) the document again each time.
+// - Labels come from one code -> label map per value list, built once per call (a scan of each
+//   small list), so a label is a key lookup in memory instead of a correlated subquery per code.
 
 // A fact whose value is present (not missing, not JSON null).
 const has = (field: string) => `jsonb_typeof(x."${field}"->'value') <> 'null'`;
 const quote = (expr: string) => `NULLIF(${expr}->>'quote', '')`;
 // The label of `code` in the value list `list`; null when the code is null or unknown.
-const label = (list: string, code: string) =>
-  `(SELECT t.label FROM public.${list} t WHERE t.code = ${code})`;
+const label = (list: string, code: string) => `l.${list} ->> (${code})`;
 // A coded fact: { code, label, quote }, the label read from `list` by code.
 const coded = (field: string, list: string) =>
   `'${field}', CASE WHEN ${has(field)} THEN jsonb_build_object(
@@ -133,11 +131,11 @@ const facts = `jsonb_build_object(
   'requiredLanguages', CASE WHEN ${has('requiredLanguages')} THEN jsonb_build_object(
       'languages', (
         SELECT COALESCE(jsonb_agg(jsonb_build_object(
-          'lang', l.lang->'lang',
-          'level', l.lang->'level',
-          'quote', ${quote('l.lang')}
-        ) ORDER BY l.ord), '[]'::jsonb)
-        FROM jsonb_array_elements(x."requiredLanguages"->'value') WITH ORDINALITY l(lang, ord)),
+          'lang', lg.lang->'lang',
+          'level', lg.lang->'level',
+          'quote', ${quote('lg.lang')}
+        ) ORDER BY lg.ord), '[]'::jsonb)
+        FROM jsonb_array_elements(x."requiredLanguages"->'value') WITH ORDINALITY lg(lang, ord)),
       'quote', ${quote(`x."requiredLanguages"`)}) END,
   'workAuthorization', CASE WHEN ${has('workAuthorization')} THEN jsonb_build_object(
       'requirements', (
@@ -150,7 +148,22 @@ const facts = `jsonb_build_object(
       'quote', ${quote(`x."workAuthorization"`)}) END
 )`;
 
-// The document's top-level fields the facts are built from, each read once.
+// The value lists facts take labels from, each read into one code -> label map per call,
+// labels regardless of status.
+const labelLists = [
+  'role_kinds',
+  'seniorities',
+  'arrangements',
+  'contract_types',
+  'engagements',
+  'tech_tags',
+  'regions',
+  'countries',
+];
+const labelMap = (list: string) =>
+  `(SELECT COALESCE(jsonb_object_agg(t.code, t.label), '{}'::jsonb) FROM public.${list} t) AS ${list}`;
+
+// The document's top-level fields the facts are built from, each read once per row.
 const fields = [
   'position',
   'seniority',
@@ -165,16 +178,6 @@ const fields = [
   'requiredLanguages',
   'workAuthorization',
 ];
-
-const matchFacts = `CREATE OR REPLACE FUNCTION public.match_facts(doc jsonb) RETURNS jsonb
-  LANGUAGE sql STABLE SECURITY INVOKER SET search_path = '' SET enable_seqscan = off AS $$
-SELECT ${facts}
-FROM (
-  SELECT ${fields.map((f) => `dd.d->'${f}' AS "${f}"`).join(', ')}
-  FROM (SELECT doc || '{}'::jsonb AS d OFFSET 0) dd
-  OFFSET 0) x
-$$;
-REVOKE EXECUTE ON FUNCTION public.match_facts(jsonb) FROM PUBLIC, anon, authenticated;`;
 
 const matchDetails = `CREATE OR REPLACE FUNCTION public.match_details(
   p_profile_id uuid,
@@ -191,6 +194,10 @@ const matchDetails = `CREATE OR REPLACE FUNCTION public.match_details(
   "descriptionText" text, channels text[], facts jsonb
 )
   LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
+WITH l AS MATERIALIZED (
+  SELECT
+    ${labelLists.map(labelMap).join(',\n    ')}
+)
 SELECT
   m.id, m."profileId", m."jobId", m.outcome, m.unverified, m."stackScore", m.checks, m."decidedAt",
   j.kind, j.title, j."companyName", j."companyUrl", j.location,
@@ -205,10 +212,15 @@ SELECT
      WHERE s."jobId" = j.id
      ORDER BY 1),
   -- The facts the match was decided on, not the job's current extraction.
-  public.match_facts(e.data)
+  ${facts}
 FROM public.job_matches m
 JOIN public.normalized_jobs j ON j.id = m."jobId"
 JOIN public.job_extractions e ON e.id = m."extractionId"
+CROSS JOIN LATERAL (
+  SELECT ${fields.map((f) => `dd.d->'${f}' AS "${f}"`).join(', ')}
+  FROM (SELECT e.data || '{}'::jsonb AS d OFFSET 0) dd
+  OFFSET 0) x
+CROSS JOIN l
 -- Every job row is reached only through the caller's own matches; a null uid matches none.
 WHERE m."userId" = auth.uid()
   AND m."profileId" = p_profile_id
@@ -244,10 +256,6 @@ export default class M extends Migration<Start, End> {
         },
         precheck: [],
         execute: [
-          {
-            description: 'create match_facts(doc), owner-only',
-            sql: matchFacts,
-          },
           {
             description:
               'create match_details(p_profile_id, p_outcome, p_since, p_job_id) for authenticated',

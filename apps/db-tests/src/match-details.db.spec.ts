@@ -266,9 +266,9 @@ describe('match_details', () => {
     expect(data).toBeNull();
   });
 
-  it('cannot call match_facts directly', async () => {
+  it('exposes no helper function', async () => {
     const { data, error } = await a.client.rpc('match_facts', { doc: {} });
-    expect(error?.message).toMatch(/permission denied/);
+    expect(error).not.toBeNull();
     expect(data).toBeNull();
   });
 

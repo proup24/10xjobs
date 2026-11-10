@@ -1672,7 +1672,6 @@ export type Database = {
           unverified: boolean;
         }[];
       };
-      match_facts: { Args: { doc: Json }; Returns: Json };
       replace_profile_skills: {
         Args: { p_profile_id: string; p_skills: Json };
         Returns: undefined;
