@@ -95,7 +95,7 @@ it('runs only the processor queue with its sweeper after the startup checks', as
     expect(created.workers).toEqual(['process']);
     expect(created.schedulers.map(([id]) => id)).toEqual(['sweep']);
   } finally {
-    await module.get(WorkerService).onApplicationShutdown();
+    await module.get(WorkerService).beforeApplicationShutdown();
     await module.close();
   }
 });
@@ -115,7 +115,7 @@ it('refuses to start when a model has no pricing', async () => {
     );
     expect(created.workers).toEqual([]);
   } finally {
-    await module.get(WorkerService).onApplicationShutdown();
+    await module.get(WorkerService).beforeApplicationShutdown();
     await module.close();
   }
 });
@@ -133,7 +133,7 @@ it('refuses to start when the key is rejected', async () => {
     );
     expect(created.workers).toEqual([]);
   } finally {
-    await module.get(WorkerService).onApplicationShutdown();
+    await module.get(WorkerService).beforeApplicationShutdown();
     await module.close();
   }
 });

@@ -364,6 +364,7 @@ describe('CollectionService.collect', () => {
         segments: 2,
         segmentsFailed: 1,
         segmentsSkipped: 0,
+        segmentsDeferred: 0,
         queriesSkipped: 0,
         batches: 1,
         collected: 2,
@@ -420,6 +421,48 @@ describe('CollectionService.collect', () => {
     expect(collector.collect).not.toHaveBeenCalled();
     expect(segments.runs).toEqual([]);
     expect(segments.collected).toEqual([]);
+  });
+});
+
+describe('CollectionService.stop', () => {
+  it('finishes the segment in flight and leaves the rest unclaimed for the next run', async () => {
+    const rows = builders(25);
+    let stop = () => undefined as void;
+    const { collection, collector, segments, ingestQueue } = setup(
+      rows,
+      async (s) => {
+        stop();
+        return resultFor(s);
+      },
+    );
+    stop = () => collection.stop();
+    const summary = await collection.collect(Channel.ASHBY);
+
+    expect(collector.collect).toHaveBeenCalledTimes(1);
+    expect(segments.collected).toHaveLength(1);
+    expect(ingestQueue.enqueue).toHaveBeenCalledTimes(1);
+    expect(segments.runs).toEqual([]);
+    // Only the first segment's members were claimed and moved.
+    const first = rows.slice(0, 10).map((r) => r.id);
+    expect([...segments.cursors.keys()].sort()).toEqual(first.sort());
+    expect(segments.claims.size).toBe(0);
+    expect(summary).toMatchObject({
+      segments: 3,
+      batches: 1,
+      segmentsFailed: 0,
+      segmentsDeferred: 2,
+    });
+  });
+
+  it('does not fail the job when it stops before any segment', async () => {
+    const { collection, collector } = setup(builders(2));
+    collection.stop();
+    expect(await collection.collect(Channel.ASHBY)).toMatchObject({
+      segments: 1,
+      segmentsDeferred: 1,
+      segmentsFailed: 0,
+    });
+    expect(collector.collect).not.toHaveBeenCalled();
   });
 });
 
@@ -575,8 +618,9 @@ describe('CollectionService claims', () => {
   it('releases claims when narrowing the segment throws', async () => {
     const rows = builders(2);
     const { collection, collector, segments } = setup(rows);
-    const claim = vi.spyOn(segments, 'claim').mockImplementation(
-      async (runId, ids, window, leaseMs) => {
+    const claim = vi
+      .spyOn(segments, 'claim')
+      .mockImplementation(async (runId, ids, window, leaseMs) => {
         await FakeSearchSegmentsRepository.prototype.claim.call(
           segments,
           runId,
@@ -588,8 +632,7 @@ describe('CollectionService claims', () => {
           claimed: [{ id: 'not-a-member', coveredUntil: null }],
           skipped: [],
         };
-      },
-    );
+      });
 
     await expect(collection.collect(Channel.ASHBY)).rejects.toThrow();
 

@@ -63,6 +63,7 @@ import {
 } from 'src/infrastructure/jobs/steps/collect';
 import { StorageService } from 'src/modules/storage';
 import { MemoryStorageService } from 'src/modules/storage/testing';
+import { WorkerRuntimeService } from '../runtime.service';
 import { WorkerModule } from '../worker.module';
 import { WorkerService } from '../worker.service';
 
@@ -78,11 +79,12 @@ afterEach(() => vi.restoreAllMocks());
 
 it('routes the scheduled collect job to the coordinator and rejects unknown jobs', async () => {
   const collect = vi.fn(async () => ({ batches: 1 }));
+  const stop = vi.fn();
   const storage = new MemoryStorageService();
   const ensureBucket = vi.spyOn(storage, 'ensureBucket');
   const module = await Test.createTestingModule({ imports: [WorkerModule] })
     .overrideProvider(CollectionService)
-    .useValue({ collect })
+    .useValue({ collect, stop })
     .overrideProvider(StorageService)
     .useValue(storage)
     .compile();
@@ -107,9 +109,31 @@ it('routes the scheduled collect job to the coordinator and rejects unknown jobs
     ).rejects.toThrow('Unsupported job');
     expect(collect).toHaveBeenCalledTimes(1);
   } finally {
-    await module.get(WorkerService).onApplicationShutdown();
+    await module.get(WorkerService).beforeApplicationShutdown();
     await module.close();
   }
+});
+
+it('stops collection between segments before draining the workers', async () => {
+  const order: string[] = [];
+  const stop = vi.fn(() => order.push('stop'));
+  const module = await Test.createTestingModule({ imports: [WorkerModule] })
+    .overrideProvider(CollectionService)
+    .useValue({ collect: vi.fn(), stop })
+    .overrideProvider(StorageService)
+    .useValue(new MemoryStorageService())
+    .compile();
+  const service = module.get(WorkerService);
+  await service.onModuleInit();
+  const runtime = module.get(WorkerRuntimeService);
+  const close = runtime.close.bind(runtime);
+  vi.spyOn(runtime, 'close').mockImplementation(async () => {
+    order.push('close');
+    await close();
+  });
+  await service.beforeApplicationShutdown();
+  expect(order).toEqual(['stop', 'close']);
+  await module.close();
 });
 
 it('removes a disabled channel schedule without starting any worker', async () => {

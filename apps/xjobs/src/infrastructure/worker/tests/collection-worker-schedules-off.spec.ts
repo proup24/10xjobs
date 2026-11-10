@@ -73,7 +73,7 @@ it('starts the collection worker without a schedule when schedules are off', asy
     expect(created.removedSchedulers).toContain('collect');
     expect(created.schedulers).toEqual([]);
   } finally {
-    await module.get(WorkerService).onApplicationShutdown();
+    await module.get(WorkerService).beforeApplicationShutdown();
     await module.close();
   }
 });
