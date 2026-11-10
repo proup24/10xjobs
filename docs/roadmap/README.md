@@ -39,13 +39,19 @@ Authentication, user accounts and a multi-tenant data model with per-user isolat
 
 **Slices:** [phase-1-accounts-and-preferences/](phase-1-accounts-and-preferences/README.md)
 
+Phase 1 closes with Phase 2's launch check, run on `10xjobs-dev`, because production is deferred.
+
 ### Phase 2: Find
 
-Collect jobs from LinkedIn (through Apify), Ashby and Greenhouse for each published profile. Normalize and deduplicate them, extract each job's facts, and qualify each job against the profile as qualified or rejected with a reason. The Anthropic API first enters the repo here.
+Collect jobs from LinkedIn (through Apify), Ashby and Greenhouse for each published profile. Normalize and deduplicate them, extract each job's facts, and qualify each job against the profile as qualified or rejected with a reason. LLMs enter the repo here, called through OpenRouter.
 
-Engine work for this phase (search query generation, collection, ingest) started in parallel with Phase 1 and is already on `main`.
+Engine work for this phase (search query generation, collection, ingest, the processor and the matcher) is already on `main`. The first set of slices hosts the engine, publishes profiles from the web app, keeps published profiles editable, and shows matches, for LinkedIn job-board jobs. Ashby-only and Greenhouse-only jobs and LinkedIn hiring posts follow in a later set.
 
-**Exit criteria:** collection runs on a schedule without manual steps, duplicates across runs and sources are merged, and the web app shows new qualified jobs since the user last looked, from all three sources. Rejected jobs and their reasons can be viewed.
+**Exit criteria (first set):** finishing setup publishes a profile without manual steps; collection, processing and matching run on a schedule on the hosted engine; editing a published profile takes effect on later searches and on recent jobs; matching also checks languages and work authorization; the web app shows recent qualified LinkedIn job-board jobs with their details, why they matched and what's new since the user last looked; rejected jobs and their reasons can be viewed.
+
+**Exit criteria (whole phase):** the same, from all three sources, with duplicates across runs and sources merged.
+
+**Slices:** [phase-2-find/](phase-2-find/README.md)
 
 ### Phase 3: Apply
 
