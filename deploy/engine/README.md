@@ -107,7 +107,7 @@ Containers restart on failure by themselves.
 
 1. Add an A record for the name pointing to `<ip>`.
 2. Change `ENGINE_HOSTNAME` in `.env` to that name.
-3. `$C up -d caddy`. The deploy health check reads `ENGINE_HOSTNAME` from `.env`, so it follows.
+3. `$C up -d caddy`. The deploy health check reads `ENGINE_HOSTNAME` from the running `caddy` container, so it follows once Caddy has restarted.
 
 ## 12. Verify that collection works
 

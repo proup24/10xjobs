@@ -300,13 +300,15 @@ jobs:
       - name: Health check
         if: steps.newer.outputs.stale != 'true'
         run: |
-          raw="$(ssh "$ENGINE_SSH_USER@$ENGINE_SSH_HOST" "bash -c 'set -o pipefail; grep ^ENGINE_HOSTNAME= ~/engine/.env | cut -d= -f2-'")" || {
-            echo "::error::Could not read ENGINE_HOSTNAME from ~/engine/.env over ssh"
+          # Ask the running Caddy for the hostname Compose resolved from .env, so
+          # any .env syntax Compose accepts (spaces, `export`, quotes) works here too.
+          raw="$(ssh "$ENGINE_SSH_USER@$ENGINE_SSH_HOST" 'docker exec xjobs-engine-caddy-1 printenv ENGINE_HOSTNAME')" || {
+            echo "::error::Could not read ENGINE_HOSTNAME from the caddy container over ssh"
             exit 1
           }
           ENGINE_HOST="$(printf '%s' "$raw" | tr -d '\r"')"
           if ! [[ "$ENGINE_HOST" =~ ^[A-Za-z0-9.-]+$ ]]; then
-            echo "::error::ENGINE_HOSTNAME is missing or invalid in ~/engine/.env"
+            echo "::error::ENGINE_HOSTNAME is missing or invalid in the caddy container"
             exit 1
           fi
           if ! curl -fsS --retry 24 --retry-delay 5 --retry-all-errors "https://$ENGINE_HOST/api/health"; then
