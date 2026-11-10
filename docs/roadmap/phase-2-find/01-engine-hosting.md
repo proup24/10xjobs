@@ -42,3 +42,5 @@ The NestJS engine runs hosted, all day, against `10xjobs-dev`: its HTTP API reac
 ## Done when
 
 A merge to `main` deploys the engine without manual steps, the health endpoint answers over HTTPS, and a scheduled LinkedIn job-board collection run lands jobs that are processed and matched in `10xjobs-dev`.
+
+Runbook and design: [engine hosting spec](../../superpowers/specs/2026-11-10-engine-hosting-design.md), [deploy/engine/README.md](../../../deploy/engine/README.md).
