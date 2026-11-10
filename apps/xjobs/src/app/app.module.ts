@@ -11,6 +11,7 @@ import { MatcherModule } from 'src/modules/matcher';
 import { ProcessorModule } from 'src/modules/processor';
 import { QuerySearchModule } from 'src/modules/queries';
 import { UsersModule } from 'src/modules/users';
+import { AuthModule } from 'src/common/auth';
 import { HealthController } from './controllers/health.controller';
 import { HealthService } from './services/health.service';
 
@@ -23,6 +24,7 @@ import { HealthService } from './services/health.service';
       ignoreEnvFile: true,
       validate: validateEnvironment,
     }),
+    AuthModule,
     DatabaseModule,
     RedisModule,
     JobsModule,

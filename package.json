@@ -49,6 +49,7 @@
     "class-validator": "^0.15.1",
     "cookie-parser": "^1.4.7",
     "dotenv": "^18.0.9",
+    "jose": "^6.2.14",
     "next": "~16.4.1",
     "pg-native": "^3.9.1",
     "prisma": "8.0.0-rc.28",
