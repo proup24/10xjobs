@@ -1,7 +1,7 @@
 import {
   Injectable,
   Logger,
-  type OnApplicationShutdown,
+  type BeforeApplicationShutdown,
   type OnModuleInit,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -17,7 +17,7 @@ import { WorkerRuntimeService } from './runtime.service';
 
 /** Selects the worker for this process and coordinates its lifecycle. */
 @Injectable()
-export class WorkerService implements OnModuleInit, OnApplicationShutdown {
+export class WorkerService implements OnModuleInit, BeforeApplicationShutdown {
   private readonly logger = new Logger(WorkerService.name);
   private readonly channel?: Channel;
   private readonly role?: 'ingest' | 'processor' | 'match' | 'all';
@@ -83,7 +83,13 @@ export class WorkerService implements OnModuleInit, OnApplicationShutdown {
       await this.collection.start(channel, connection);
   }
 
-  async onApplicationShutdown(): Promise<void> {
+  /**
+   * Drains before any module's shutdown hook closes the database or queues
+   * that the jobs still in flight write to. Collection stops between segments
+   * first, so the drain fits in the container's stop grace period.
+   */
+  async beforeApplicationShutdown(): Promise<void> {
+    this.collection.stop();
     await this.runtime.close();
   }
 }

@@ -10,6 +10,7 @@ import {
   ProviderUnavailableError,
   TransientModelError,
 } from './errors';
+import { GENERATION_MAX_OUTPUT_TOKENS } from './client';
 import {
   AiSdkExtractionModel,
   feedbackMessage,
@@ -199,6 +200,14 @@ describe('AiSdkExtractionModel', () => {
     expect((error as Error).message).toContain(MODEL);
   });
 
+  it('caps the output tokens so OpenRouter does not reserve the model maximum', async () => {
+    const lm = mock(answer('{"seniority":{"value":null}}'));
+    await model(lm).generate(input, req);
+    expect(lm.doGenerateCalls[0].maxOutputTokens).toBe(
+      GENERATION_MAX_OUTPUT_TOKENS,
+    );
+  });
+
   it('request sets maxRetries 0: a retryable error is not retried', async () => {
     const lm = mock(async () => {
       throw apiError(503);
@@ -326,6 +335,7 @@ describe('openRouterLanguageModel', () => {
     expect(fetch).toHaveBeenCalledTimes(1);
     expect(body).toMatchObject({
       model: MODEL,
+      max_tokens: GENERATION_MAX_OUTPUT_TOKENS,
       provider: { require_parameters: true },
       usage: { include: true },
       response_format: {

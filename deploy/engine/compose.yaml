@@ -26,9 +26,14 @@ services:
     stop_grace_period: 60s
     env_file: .env
     environment: *engine-env
+    # The hosted API has no operator endpoints, so it never needs the OpenRouter
+    # key. `.env` is shared with the worker, so drop the key before node starts.
+    command: ["sh", "-c", "unset OPENROUTER_API_KEY; exec node main.js"]
     expose: ["3000"]
+    # Every route needs the key, health included. `$$` stops Compose
+    # interpolating it; the container's own shell expands it from env_file.
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- --header \"X-Engine-Key: $$ENGINE_API_KEY\" http://127.0.0.1:3000/api/health || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -39,7 +44,8 @@ services:
   worker:
     image: ghcr.io/proup24/10xjobs-engine:${ENGINE_IMAGE_TAG:?}
     restart: unless-stopped
-    stop_grace_period: 60s
+    # Room for a collection segment to finish its Apify run (up to 5 min) and store it.
+    stop_grace_period: 7m
     command: ["node", "worker.js"]
     env_file: .env
     environment:

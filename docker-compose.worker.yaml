@@ -11,7 +11,8 @@ x-worker: &worker
     dockerfile: Dockerfile
   command: ['node', 'worker.js']
   restart: unless-stopped
-  stop_grace_period: 60s
+  # Room for a collection segment to finish its Apify run (up to 5 min) and store it.
+  stop_grace_period: 7m
   environment: &worker-environment
     NODE_ENV: production
     XJOBS_SKIP_ENV_FILES: '1'

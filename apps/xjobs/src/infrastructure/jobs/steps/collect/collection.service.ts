@@ -49,6 +49,8 @@ const message = (error: unknown) =>
 @Injectable()
 export class CollectionService {
   private readonly logger = new Logger(CollectionService.name);
+  /** Set on worker shutdown: the segment in flight finishes, no new one starts. */
+  private stopping = false;
 
   constructor(
     private readonly ashby: AshbyCollector,
@@ -60,6 +62,15 @@ export class CollectionService {
     private readonly storage: StorageService,
     private readonly ingestQueue: IngestQueue,
   ) {}
+
+  /**
+   * Starts no further segment. The one in flight still finishes and stores
+   * what Apify returned, so a restart never leaves a paid run uncollected;
+   * the rest stay unclaimed and the next scheduled run searches them.
+   */
+  stop(): void {
+    this.stopping = true;
+  }
 
   async collect(channel: Channel): Promise<CollectionSummary> {
     const config = channelJobsConfig[channel];
@@ -73,13 +84,21 @@ export class CollectionService {
       segments: segments.length,
       segmentsFailed: 0,
       segmentsSkipped: 0,
+      segmentsDeferred: 0,
       queriesSkipped: 0,
       collected: 0,
       batches: 0,
       costUsd: 0,
     };
 
-    for (const segment of segments) {
+    for (const [index, segment] of segments.entries()) {
+      if (this.stopping) {
+        summary.segmentsDeferred = segments.length - index;
+        this.logger.log(
+          `${channel} collection stopping for shutdown; ${summary.segmentsDeferred} segments left for the next run`,
+        );
+        break;
+      }
       const outcome = await this.runSegment(channel, segment, until);
       summary.queriesSkipped += outcome.queriesSkipped;
       if (outcome.skipped) {
@@ -97,7 +116,8 @@ export class CollectionService {
         .map(([key, value]) => `${key}=${value}`)
         .join(' '),
     );
-    const attempted = summary.segments - summary.segmentsSkipped;
+    const attempted =
+      summary.segments - summary.segmentsSkipped - summary.segmentsDeferred;
     if (attempted > 0 && summary.segmentsFailed === attempted)
       throw new Error(
         `${channel} collection failed for all ${attempted} segments`,

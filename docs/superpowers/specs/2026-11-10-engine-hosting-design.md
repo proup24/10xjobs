@@ -151,7 +151,7 @@ The runbook covers: creating the server and firewall in Hetzner, running `bootst
 ## Done when
 
 1. A merge to `main` runs CI, then `Dev database`, then `Deploy engine`, with no manual step, and the server runs the image tagged with the merge commit's SHA.
-2. `curl https://api.<ip>.sslip.io/api/health` returns 200 with a valid certificate; any other route without Basic auth returns 401.
+2. `curl https://api.<ip>.sslip.io/api/health` returns 200 with a valid certificate; any other route without Basic auth returns 401. Superseded by the [engine auth slice](2026-11-10-engine-auth-design.md): every route without the `X-Engine-Key` header, health included, returns 401.
 3. Within a scheduled LinkedIn job-board window, a collection run lands jobs in `10xjobs-dev` that the processor then processes and the matcher decides (checked by querying the dev database).
 4. `docker compose restart worker` (or a killed container) comes back on its own; `docker compose logs` shows each service's output.
 5. Both the owner and the teammate can SSH in with their own keys; root and password logins are refused.

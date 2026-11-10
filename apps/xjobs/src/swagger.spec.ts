@@ -5,7 +5,7 @@ import { SwaggerModule } from '@nestjs/swagger';
 import { setupSwagger } from 'src/swagger';
 import { expect, it, vi } from 'vitest';
 
-it('documents application routes with the API prefix and basic authentication', async () => {
+it('documents application routes with the API prefix and the engine key', async () => {
   class HealthController {
     health() {
       return { ok: true };
@@ -29,9 +29,12 @@ it('documents application routes with the API prefix and basic authentication', 
     expect(document).toMatchObject({
       paths: { '/api/health': { get: expect.any(Object) } },
       components: {
-        securitySchemes: { basic: { type: 'http', scheme: 'basic' } },
+        securitySchemes: {
+          'engine-key': { type: 'apiKey', name: 'X-Engine-Key', in: 'header' },
+          bearer: { type: 'http', scheme: 'bearer' },
+        },
       },
-      security: [{ basic: [] }],
+      security: [{ 'engine-key': [] }],
     });
   } finally {
     setup.mockRestore();

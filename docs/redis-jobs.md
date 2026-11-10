@@ -76,7 +76,7 @@ The worker uses the same image layout as the API, with `node worker.js` as its c
 docker compose -f docker-compose.yaml -f docker-compose.worker.yaml up -d --scale worker=3 worker
 ```
 
-Each worker has its own `JOBS_CONCURRENCY`; total parallelism grows with the worker count. SIGTERM stops fetching work and waits for active handlers. Compose allows 60 seconds before forcibly terminating the container; adjust that grace period to the longest job. BullMQ recovers stalled jobs after forced termination.
+Each worker has its own `JOBS_CONCURRENCY`; total parallelism grows with the worker count. SIGTERM stops fetching work and waits for active handlers. A collect job starts no new segment once SIGTERM arrives: the segment in flight finishes and stores its Apify results, and the remaining segments stay unclaimed for the next scheduled run, so a restart never pays for a window twice. Compose gives workers 7 minutes before forcibly terminating the container, enough for one segment's Apify wait (up to 5 minutes) plus storing it; keep that grace period above the longest segment. BullMQ recovers stalled jobs after forced termination.
 
 ## Verification
 

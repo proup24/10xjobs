@@ -8,13 +8,14 @@ import cookieParser from 'cookie-parser';
 import * as Sentry from '@sentry/node';
 
 import { AppModule } from 'src/app';
-import { getAppConfig, getSystemDomain } from 'src/config';
+import { getAppConfig, getEngineApiKey, getSystemDomain } from 'src/config';
 import { setupSwagger } from 'src/swagger';
 import type { EnvironmentVariables } from 'src/config';
 import { EnvironmentType } from 'src/common/enums';
 import { getHostName } from 'src/utils';
 import { CorseConfig } from './cors';
 import { traceIdMiddleware } from 'src/common/middleware';
+import { engineKeyMiddleware } from 'src/common/auth';
 
 const APP_CONFIG = {
   name: 'MAIN FILE',
@@ -44,6 +45,7 @@ function configure(
   dsn: string | undefined,
   nodeEnv: EnvironmentType,
   domain: string,
+  engineKey: string,
 ) {
   if (dsn) Sentry.init({ dsn, environment: nodeEnv });
   const validatorPipe = new ValidationPipe({
@@ -59,14 +61,17 @@ function configure(
 
   // First, so every response and log line can carry the request's trace id.
   app.use(traceIdMiddleware);
+  // Next, before any routing: no route answers without the engine key.
+  app.use(engineKeyMiddleware(engineKey));
   app.useGlobalPipes(validatorPipe);
   app.use(cookieParser());
   app.disable('x-powered-by');
 
+  // The hosted engine is called server to server, so CORS is development only.
   if (nodeEnv === EnvironmentType.development) {
     corsConfig.origin.push(/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/);
+    app.enableCors(corsConfig);
   }
-  app.enableCors(corsConfig);
 
   if (nodeEnv === EnvironmentType.development) setupSwagger(app);
 }
@@ -86,7 +91,7 @@ async function bootstrap() {
     getAppConfig(configService);
   const domain = getSystemDomain(configService);
 
-  configure(app, sentryDsn, nodeEnv, domain);
+  configure(app, sentryDsn, nodeEnv, domain, getEngineApiKey(configService));
   await app.listen(port, host);
   if (readySignalSocket) {
     try {

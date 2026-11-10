@@ -34,6 +34,14 @@ function messageOf(exception: HttpException): string | string[] {
   return exception.message;
 }
 
+/** An ErrorCode the exception carries in its body, such as `{ message, code }`; undefined otherwise. */
+function codeOf(exception: HttpException): ErrorCode | undefined {
+  const body = exception.getResponse();
+  if (typeof body === 'string') return undefined;
+  const code = (body as { code?: unknown }).code;
+  return Object.values(ErrorCode).find((known) => known === code);
+}
+
 /**
  * @description Formats every error as the error envelope. Unexpected errors
  * become a generic 500 so driver or stack details never reach the client or
@@ -72,7 +80,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
           message,
         )
       : ErrorResponseDto.of(
-          CODES[status] ??
+          codeOf(exception) ??
+            CODES[status] ??
             (status >= 500 ? ErrorCode.INTERNAL_ERROR : ErrorCode.HTTP_ERROR),
           message,
           traceId,

@@ -23,7 +23,6 @@ import {
   PrismaVocabRepository,
   VocabRepository,
 } from './repositories/vocab.repository';
-import { ProcessorController } from './controllers/processor.controller';
 import { ExtractionPipeline } from './services/extraction-pipeline.service';
 import { ExtractionStore } from './services/extraction-store.service';
 import { FactAssembler } from './services/fact-assembler.service';
@@ -36,12 +35,11 @@ type Env = ConfigService<ProcessorEnvironmentVariables, true>;
 
 /**
  * Turns normalized jobs into validated extractions (spec: processor design).
- * `ProcessorService` is the entry point; the worker and the HTTP controller
- * both call it. The controller is served by the API app only.
+ * `ProcessorService` is the entry point; the worker and the operator
+ * controller (`OperatorModule`, local only) both call it.
  */
 @Module({
   imports: [ConfigModule, DatabaseModule],
-  controllers: [ProcessorController],
   providers: [
     ProcessorService,
     ProcessorGuard,

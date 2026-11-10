@@ -38,7 +38,8 @@
         "executor": "@nx/js:prune-lockfile",
         "outputs": [
           "{workspaceRoot}/apps/xjobs/dist/package.json",
-          "{workspaceRoot}/apps/xjobs/dist/package-lock.json"
+          "{workspaceRoot}/apps/xjobs/dist/pnpm-lock.yaml",
+          "{workspaceRoot}/apps/xjobs/dist/pnpm-workspace.yaml"
         ],
         "options": {
           "buildTarget": "build"
@@ -216,6 +217,7 @@
     "cookie-parser": "^1.4.7",
     "html-to-text": "9.0.5",
     "ioredis": "^5.11.1",
+    "jose": "^6.2.14",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.0",
     "tslib": "^2.3.0",

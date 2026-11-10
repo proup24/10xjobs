@@ -60,7 +60,7 @@ it('runs the ingest queue with its sweeper and ensures the batch bucket', async 
     expect(created.workers).toEqual(['ingest']);
     expect(created.schedulers.map(([id]) => id)).toEqual(['sweep']);
   } finally {
-    await module.get(WorkerService).onApplicationShutdown();
+    await module.get(WorkerService).beforeApplicationShutdown();
     await module.close();
   }
 });

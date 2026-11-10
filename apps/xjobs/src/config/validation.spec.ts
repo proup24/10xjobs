@@ -1,7 +1,7 @@
 import {
   getApifyToken,
   getAppConfig,
-  getBasicAuthConfig,
+  getEngineApiKey,
   getStorageConfig,
   validateEnvironment,
   validateWorkerProcessEnvironment,
@@ -12,8 +12,7 @@ const minimal = {
   DATABASE_URL: 'postgresql://u:p@localhost:5432/db',
   SUPABASE_URL: 'http://localhost:8000',
   SUPABASE_SERVICE_ROLE_KEY: 'service-key',
-  BASIC_AUTH_USERNAME: 'admin',
-  BASIC_AUTH_PASSWORD: 'correct horse battery',
+  ENGINE_API_KEY: 'k'.repeat(32),
 };
 
 function storageConfigFor(raw: Record<string, unknown>) {
@@ -22,11 +21,10 @@ function storageConfigFor(raw: Record<string, unknown>) {
 }
 
 describe('storage configuration', () => {
-  it('reads the Supabase URL, key and default resumes bucket', () => {
+  it('reads the Supabase URL, key and service-role key', () => {
     expect(storageConfigFor(minimal)).toEqual({
       supabaseUrl: 'http://localhost:8000',
       serviceRoleKey: 'service-key',
-      resumesBucket: 'resumes',
     });
   });
 
@@ -36,8 +34,7 @@ describe('storage configuration', () => {
         DATABASE_URL: minimal.DATABASE_URL,
         SUPABASE_PUBLIC_URL: 'http://localhost:8000',
         SERVICE_ROLE_KEY: 'legacy-key',
-        BASIC_AUTH_USERNAME: minimal.BASIC_AUTH_USERNAME,
-        BASIC_AUTH_PASSWORD: minimal.BASIC_AUTH_PASSWORD,
+        ENGINE_API_KEY: minimal.ENGINE_API_KEY,
       }),
     ).toMatchObject({
       supabaseUrl: 'http://localhost:8000',
@@ -45,52 +42,61 @@ describe('storage configuration', () => {
     });
   });
 
-  it('accepts the resumes bucket set explicitly', () => {
-    expect(
-      storageConfigFor({ ...minimal, STORAGE_RESUMES_BUCKET: 'resumes' }),
-    ).toMatchObject({ resumesBucket: 'resumes' });
-  });
-
-  it('refuses any other bucket, since the migration, policies and web app fix the name', () => {
-    expect(() =>
-      validateEnvironment({ ...minimal, STORAGE_RESUMES_BUCKET: 'cv' }),
-    ).toThrow(/STORAGE_RESUMES_BUCKET/);
-  });
-
   it('fails without any Supabase URL or key', () => {
     expect(() =>
       validateEnvironment({
         DATABASE_URL: minimal.DATABASE_URL,
-        BASIC_AUTH_USERNAME: minimal.BASIC_AUTH_USERNAME,
-        BASIC_AUTH_PASSWORD: minimal.BASIC_AUTH_PASSWORD,
+        ENGINE_API_KEY: minimal.ENGINE_API_KEY,
       }),
     ).toThrow(/SUPABASE_URL[\s\S]*SUPABASE_SERVICE_ROLE_KEY/);
   });
 });
 
-describe('basic auth configuration', () => {
-  it('reads the username and password', () => {
+describe('engine API key configuration', () => {
+  it('reads the key', () => {
     const env = validateEnvironment(minimal) as Record<string, unknown>;
-    expect(
-      getBasicAuthConfig({ get: (key: string) => env[key] } as never),
-    ).toEqual({
-      username: 'admin',
-      password: 'correct horse battery',
+    expect(getEngineApiKey({ get: (key: string) => env[key] } as never)).toBe(
+      'k'.repeat(32),
+    );
+  });
+
+  it('refuses to start without a key', () => {
+    const { ENGINE_API_KEY: _key, ...rest } = minimal;
+    expect(() => validateEnvironment(rest)).toThrow(/ENGINE_API_KEY/);
+  });
+
+  it('refuses a key of 31 characters', () => {
+    expect(() =>
+      validateEnvironment({ ...minimal, ENGINE_API_KEY: 'k'.repeat(31) }),
+    ).toThrow(/ENGINE_API_KEY must be at least 32 characters/);
+  });
+});
+
+describe('operator endpoints flag', () => {
+  it('is off by default', () => {
+    expect(validateEnvironment(minimal)).toMatchObject({
+      XJOBS_OPERATOR_ENDPOINTS: false,
     });
   });
 
-  it('refuses to start without credentials', () => {
-    const { BASIC_AUTH_USERNAME, BASIC_AUTH_PASSWORD, ...rest } = minimal;
-    expect(() => validateEnvironment(rest)).toThrow(
-      /BASIC_AUTH_USERNAME[\s\S]*BASIC_AUTH_PASSWORD/,
-    );
-    expect(BASIC_AUTH_USERNAME && BASIC_AUTH_PASSWORD).toBeTruthy();
+  it('refuses XJOBS_OPERATOR_ENDPOINTS=1 with NODE_ENV=production', () => {
+    expect(() =>
+      validateEnvironment({
+        ...minimal,
+        NODE_ENV: 'production',
+        XJOBS_OPERATOR_ENDPOINTS: '1',
+      }),
+    ).toThrow(/XJOBS_OPERATOR_ENDPOINTS is local only/);
   });
 
-  it('refuses a password shorter than 12 characters', () => {
-    expect(() =>
-      validateEnvironment({ ...minimal, BASIC_AUTH_PASSWORD: 'short' }),
-    ).toThrow(/BASIC_AUTH_PASSWORD/);
+  it('accepts it in development', () => {
+    expect(
+      validateEnvironment({
+        ...minimal,
+        NODE_ENV: 'development',
+        XJOBS_OPERATOR_ENDPOINTS: '1',
+      }),
+    ).toMatchObject({ XJOBS_OPERATOR_ENDPOINTS: true });
   });
 });
 
