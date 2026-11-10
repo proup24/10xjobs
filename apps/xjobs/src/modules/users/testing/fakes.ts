@@ -1,14 +1,12 @@
 /** In-memory repositories for unit tests; not part of the application build. */
 import { ProfileState } from 'src/common/enums';
-import type { ContactRow, UserRow } from 'src/database';
-import { ContactsRepository } from '../repositories/contacts.repository';
+import type { UserRow } from 'src/database';
 import {
   ProfilesRepository,
   toProfileColumns,
 } from '../repositories/profiles.repository';
 import { UsersRepository } from '../repositories/users.repository';
 import type {
-  ContactInput,
   Place,
   PlaceLabels,
   ProfileFields,
@@ -59,73 +57,6 @@ export class FakeUsersRepository extends UsersRepository {
     const row = await this.findById(userId);
     if (!row) return null;
     Object.assign(row, data);
-    return row;
-  }
-}
-
-export class FakeContactsRepository extends ContactsRepository {
-  rows: ContactRow[] = [];
-
-  async create(userId: string, data: ContactInput): Promise<ContactRow> {
-    if (
-      this.rows.some(
-        (row) =>
-          row.userId === userId &&
-          row.kind === data.kind &&
-          row.value === data.value,
-      )
-    ) {
-      throw { sqlState: '23505' };
-    }
-    const now = new Date();
-    const row: ContactRow = {
-      id: `contact-${this.rows.length + 1}`,
-      userId,
-      kind: data.kind,
-      value: data.value,
-      label: data.label ?? null,
-      isPrimary: data.isPrimary ?? false,
-      createdAt: now,
-      updatedAt: now,
-    };
-    this.rows.push(row);
-    return row;
-  }
-
-  async list(userId: string): Promise<ContactRow[]> {
-    return this.rows.filter((row) => row.userId === userId);
-  }
-
-  async findById(userId: string, contactId: string) {
-    return (
-      this.rows.find((row) => row.userId === userId && row.id === contactId) ??
-      null
-    );
-  }
-
-  async update(userId: string, contactId: string, data: Partial<ContactInput>) {
-    const row = await this.findById(userId, contactId);
-    if (!row) return null;
-    Object.assign(row, data);
-    return row;
-  }
-
-  async delete(userId: string, contactId: string) {
-    const row = await this.findById(userId, contactId);
-    this.rows = this.rows.filter((candidate) => candidate !== row);
-    return row !== null;
-  }
-
-  async setPrimary(
-    userId: string,
-    contactId: string,
-    kind: ContactRow['kind'],
-  ): Promise<ContactRow> {
-    for (const row of await this.list(userId)) {
-      if (row.kind === kind) row.isPrimary = row.id === contactId;
-    }
-    const row = await this.findById(userId, contactId);
-    if (!row) throw new Error('missing contact');
     return row;
   }
 }

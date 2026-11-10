@@ -440,9 +440,12 @@ describe('ProfilesService', () => {
         const { id } = await create(stack);
         await userRows.update(userId, { residenceCountry, acceptsSponsorship });
         const publish = vi.spyOn(profiles, 'publish');
-        await expect(service.publish(userId, id)).rejects.toThrow(
-          new ConflictException(ELIGIBILITY_REQUIRED),
-        );
+        const error = await service.publish(userId, id).catch((e) => e);
+        expect(error).toBeInstanceOf(ConflictException);
+        expect(error.getResponse()).toEqual({
+          message: ELIGIBILITY_REQUIRED,
+          code: 'ELIGIBILITY_REQUIRED',
+        });
         expect(ELIGIBILITY_REQUIRED).toBe(
           'set your country of residence and answer the visa sponsorship question before publishing',
         );
@@ -472,22 +475,27 @@ describe('ProfilesService', () => {
       expect(querySearches.links.every((link) => link.profileId === id)).toBe(
         true,
       );
-      await expect(service.publish(userId, id)).rejects.toThrow(
-        new ConflictException(PROFILE_PUBLISHED),
-      );
+      const error = await service.publish(userId, id).catch((e) => e);
+      expect(error).toBeInstanceOf(ConflictException);
+      expect(error.getResponse()).toEqual({
+        message: PROFILE_PUBLISHED,
+        code: 'PROFILE_PUBLISHED',
+      });
       expect(querySearches.links).toHaveLength(first.querySearches.created);
     });
 
     it('freezes a published profile: replacing it is a 409 and changes nothing', async () => {
       const { id } = await create(stack);
       await service.publish(userId, id);
-      await expect(
-        service.replace(userId, id, {
+      const error = await service
+        .replace(userId, id, {
           ...editable,
           noticePeriodDays: 90,
           techStack: [],
-        }),
-      ).rejects.toThrow(new ConflictException(PROFILE_PUBLISHED));
+        })
+        .catch((e) => e);
+      expect(error).toBeInstanceOf(ConflictException);
+      expect(error.getResponse()).toMatchObject({ code: 'PROFILE_PUBLISHED' });
       expect(await service.get(userId, id)).toMatchObject({
         state: 'published',
         noticePeriodDays: profileInput.noticePeriodDays,
@@ -505,6 +513,18 @@ describe('ProfilesService', () => {
       await expect(service.publish(userId, 'missing')).rejects.toBeInstanceOf(
         NotFoundException,
       );
+    });
+
+    it('404s publish when the user row is gone, like a missing profile', async () => {
+      const { id } = await create(stack);
+      userRows.rows = userRows.rows.filter((row) => row.id !== userId);
+      const error = await service.publish(userId, id).catch((e) => e);
+      expect(error).toBeInstanceOf(NotFoundException);
+      expect(error.message).toBe('Profile not found');
+      const missing = await service
+        .publish(otherUserId, 'missing')
+        .catch((e) => e);
+      expect(missing.getResponse()).toEqual(error.getResponse());
     });
 
     it('publishes one profile without touching the other', async () => {

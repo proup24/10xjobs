@@ -47,6 +47,28 @@ describe('HttpExceptionFilter', () => {
     });
   });
 
+  it('uses an ErrorCode carried in the exception body', () => {
+    const { host, sent } = hostFor({ traceId: 't' });
+    filter.catch(
+      new ConflictException({
+        message: 'x',
+        code: ErrorCode.PROFILE_PUBLISHED,
+      }),
+      host,
+    );
+    expect(sent.status).toBe(409);
+    expect(sent.body).toMatchObject({
+      code: 'PROFILE_PUBLISHED',
+      message: 'x',
+    });
+  });
+
+  it('ignores an unknown code', () => {
+    const { host, sent } = hostFor({ traceId: 't' });
+    filter.catch(new ConflictException({ message: 'x', code: 'NOPE' }), host);
+    expect(sent.body).toMatchObject({ code: 'CONFLICT', message: 'x' });
+  });
+
   it('turns validation messages into details', () => {
     const { host, sent } = hostFor({ traceId: 't' });
     filter.catch(

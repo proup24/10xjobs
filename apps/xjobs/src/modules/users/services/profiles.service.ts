@@ -5,7 +5,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { checkViolationMessage } from 'src/database';
-import { ProfileState, Seniority, SkillDomain } from 'src/common/enums';
+import {
+  ErrorCode,
+  ProfileState,
+  Seniority,
+  SkillDomain,
+} from 'src/common/enums';
 import {
   normalizeSeniorities,
   QuerySearchService,
@@ -185,6 +190,13 @@ const PROFILE_NOT_FOUND = 'Profile not found';
 export const PROFILE_PUBLISHED =
   'A published profile cannot be changed; delete it and create a new one';
 
+function publishedConflict(): ConflictException {
+  return new ConflictException({
+    message: PROFILE_PUBLISHED,
+    code: ErrorCode.PROFILE_PUBLISHED,
+  });
+}
+
 /** What regenerating published profiles needs. */
 export interface RegenerateDeps {
   profiles: Pick<ProfilesRepository, 'listPublished' | 'placeLabels'>;
@@ -233,7 +245,14 @@ export class ProfilesService {
     userId: string,
     profileId: string,
   ): Promise<ProfileWithSkills> {
-    await this.users.getOrThrow(userId);
+    try {
+      await this.users.getOrThrow(userId);
+    } catch (error) {
+      // A deleted user and another user's profile look the same to the caller.
+      if (error instanceof NotFoundException)
+        throw new NotFoundException(PROFILE_NOT_FOUND);
+      throw error;
+    }
     const profile = await this.profiles.findById(userId, profileId);
     if (!profile) throw new NotFoundException(PROFILE_NOT_FOUND);
     return profile;
@@ -250,8 +269,7 @@ export class ProfilesService {
     profileId: string,
   ): Promise<ProfileWithSkills> {
     const profile = await this.getOrThrow(userId, profileId);
-    if (profile.state !== ProfileState.draft)
-      throw new ConflictException(PROFILE_PUBLISHED);
+    if (profile.state !== ProfileState.draft) throw publishedConflict();
     return profile;
   }
 
@@ -259,7 +277,7 @@ export class ProfilesService {
   private async rejectWrite(userId: string, profileId: string): Promise<never> {
     await this.getDraftOrThrow(userId, profileId);
     // Still a draft yet the write missed: treat it as a lost race on publish.
-    throw new ConflictException(PROFILE_PUBLISHED);
+    throw publishedConflict();
   }
 
   async get(userId: string, profileId: string): Promise<ProfileView> {
@@ -345,7 +363,10 @@ export class ProfilesService {
     const { residenceCountry, acceptsSponsorship } =
       await this.users.eligibility(userId);
     if (residenceCountry === null || acceptsSponsorship === null)
-      throw new ConflictException(ELIGIBILITY_REQUIRED);
+      throw new ConflictException({
+        message: ELIGIBILITY_REQUIRED,
+        code: ErrorCode.ELIGIBILITY_REQUIRED,
+      });
     const querySearches = await this.querySearch.generate(
       profile.id,
       toQuerySearchInput(profile, await labelsFor(this.profiles, profile)),
