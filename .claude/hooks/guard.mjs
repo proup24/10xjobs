@@ -33,6 +33,9 @@ const blockPath = (p) => ({
   reason: `Blocked: ${p} is a secret or private file (see CLAUDE.md).`,
 });
 
+// Marks a redirection in a segment; the token after it is its target.
+const REDIRECT = '\0redirect';
+
 // Splits a command into segments of tokens. Unquoted shell operators and
 // grouping characters end a token; `;`, `&`, `|`, newlines, parentheses and
 // backticks also end the segment. Quote characters are removed, backslashes
@@ -82,10 +85,20 @@ function parse(command) {
           if ((strip ? line.trim() : line) === word) break;
         }
       }
+    } else if (ch === '<' || ch === '>') {
+      // `2>` names a file descriptor, not an argument.
+      if (/^\d+$/.test(token)) token = '';
+      else endToken();
+      while (command[i + 1] === '<' || command[i + 1] === '>') i++;
+      if (command[i + 1] === '&') i++;
+      if (command[i] === '&' && /[\d-]/.test(command[i + 1] ?? '')) {
+        // `>&2`, `2>&1`, `>&-` duplicate a descriptor: there is no target.
+        while (/[\d-]/.test(command[i + 1] ?? '')) i++;
+      } else segments.at(-1).push(REDIRECT);
     } else if (/[;&|()`]/.test(ch)) {
       endToken();
       segments.push([]);
-    } else if (/[\s<>]/.test(ch)) {
+    } else if (/\s/.test(ch)) {
       endToken();
     } else {
       token += ch;
@@ -198,7 +211,10 @@ function gitPushProblem(command) {
     if (tokens[i] !== 'push') continue;
     if (override) return 'git -c overrides are not allowed on push';
     if (viaXargs) return 'a push through xargs cannot be checked';
-    const problem = pushArgsProblem(tokens.slice(i + 1));
+    const args = tokens
+      .slice(i + 1)
+      .filter((t, j, all) => t !== REDIRECT && all[j - 1] !== REDIRECT);
+    const problem = pushArgsProblem(args);
     if (problem) return problem;
   }
   return null;

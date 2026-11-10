@@ -57,6 +57,12 @@ test('bash: git push of a feature branch is allowed', () => {
     'cd .worktrees/x && git push -u origin feat/x',
     'git status && git push -u origin fix/a_b.c',
     'bash -c "git push -u origin chore/x"',
+    // redirections are not refspecs
+    'git push -u origin chore/x 2>&1 | tail -3',
+    'git push -u origin chore/x > /tmp/log 2>&1',
+    'git push origin chore/x 2>/dev/null',
+    'git push origin chore/x >&2',
+    'git push origin chore/x>>/tmp/log',
   ]) {
     assert.equal(blocked('Bash', { command }), false, command);
   }
@@ -102,6 +108,8 @@ test('bash: unsafe git push forms stay blocked', () => {
     // unverifiable arguments
     'echo main | xargs git push origin feat/x',
     'bash -c "git push origin main"',
+    'git push origin main 2>&1 | tail -3',
+    'git push origin feat/x 2>&1 main',
   ]) {
     assert.equal(blocked('Bash', { command }), true, command);
   }
