@@ -72,6 +72,34 @@ describe('engine API key configuration', () => {
   });
 });
 
+describe('operator endpoints flag', () => {
+  it('is off by default', () => {
+    expect(validateEnvironment(minimal)).toMatchObject({
+      XJOBS_OPERATOR_ENDPOINTS: false,
+    });
+  });
+
+  it('refuses XJOBS_OPERATOR_ENDPOINTS=1 with NODE_ENV=production', () => {
+    expect(() =>
+      validateEnvironment({
+        ...minimal,
+        NODE_ENV: 'production',
+        XJOBS_OPERATOR_ENDPOINTS: '1',
+      }),
+    ).toThrow(/XJOBS_OPERATOR_ENDPOINTS is local only/);
+  });
+
+  it('accepts it in development', () => {
+    expect(
+      validateEnvironment({
+        ...minimal,
+        NODE_ENV: 'development',
+        XJOBS_OPERATOR_ENDPOINTS: '1',
+      }),
+    ).toMatchObject({ XJOBS_OPERATOR_ENDPOINTS: true });
+  });
+});
+
 describe('collector and tooling configuration', () => {
   const configFor = (raw: Record<string, unknown>) => {
     const env = validateEnvironment({ ...minimal, ...raw }) as Record<

@@ -11,6 +11,7 @@ vi.hoisted(() => {
 import { MODULE_METADATA } from '@nestjs/common/constants';
 import { WorkerModule } from 'src/infrastructure/worker/worker.module';
 import { ProcessorModule } from 'src/modules/processor';
+import { OperatorModule } from './operator.module';
 import { AppModule } from './app.module';
 
 describe('AppModule', () => {
@@ -21,7 +22,8 @@ describe('AppModule', () => {
     expect(imports).not.toContain(WorkerModule);
   });
 
-  it('serves the processor routes', () => {
-    expect(imports).toContain(ProcessorModule);
+  it('imports no operator module directly: the flag decides', () => {
+    expect(imports).not.toContain(ProcessorModule);
+    expect(imports).not.toContain(OperatorModule);
   });
 });

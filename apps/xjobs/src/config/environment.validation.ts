@@ -160,10 +160,24 @@ export const environmentSchema = databaseEnvironmentSchema
     /** Apify API token for the collectors. Optional so the API boots without collection. */
     APIFY_TOKEN: z.string().min(1).optional(),
     ...processorEnvironmentShape,
+    /** Mounts the operator routes (processor, matcher, query search); local only. */
+    XJOBS_OPERATOR_ENDPOINTS: booleanFlag.default(false),
     /** Set by Nx in development to receive the server's ready signal. */
     NX_READY_SIGNAL_SOCKET: z.string().min(1).optional(),
   })
-  .superRefine(requireStorage);
+  .superRefine((env, ctx) => {
+    requireStorage(env, ctx);
+    if (
+      env.XJOBS_OPERATOR_ENDPOINTS &&
+      env.NODE_ENV === EnvironmentType.production
+    )
+      ctx.addIssue({
+        code: 'custom',
+        path: ['XJOBS_OPERATOR_ENDPOINTS'],
+        message:
+          'XJOBS_OPERATOR_ENDPOINTS is local only; unset it when NODE_ENV=production',
+      });
+  });
 
 export type ProcessorEnvironmentVariables = z.infer<
   typeof processorEnvironmentSchema
