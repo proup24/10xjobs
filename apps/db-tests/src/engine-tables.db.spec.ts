@@ -16,6 +16,9 @@ const segmentRunId = randomUUID();
 const batchId = randomUUID();
 const rawItemId = randomUUID();
 const versionId = randomUUID();
+const jobId = randomUUID();
+const extractionId = randomUUID();
+const normalizedVersionId = randomUUID();
 // Set in beforeAll, before any row() that needs it runs.
 let profileId = '';
 
@@ -96,6 +99,63 @@ const fixtures: Fixture[] = [
       firstBatchId: batchId,
       firstSeenAt: now,
       lastSeenAt: now,
+    }),
+  },
+  {
+    table: 'normalized_versions',
+    row: () => ({
+      id: normalizedVersionId,
+      rawVersionId: versionId,
+      normalizerVersion: 1,
+      status: 'valid',
+      record: {},
+      jobKey: `test:${jobId}`,
+    }),
+  },
+  {
+    table: 'normalized_jobs',
+    row: () => ({
+      id: jobId,
+      jobKey: `test:${jobId}`,
+      kind: 'job',
+      status: 'active',
+      postingUrl: 'https://example.test/job',
+      closed: false,
+      fieldSources: {},
+      firstSeenAt: now,
+      lastSeenAt: now,
+      normalizerVersion: 1,
+    }),
+  },
+  {
+    table: 'job_extractions',
+    row: () => ({
+      id: extractionId,
+      jobId,
+      inputHash: 'test',
+      schemaVersion: 2,
+      promptHash: 'test',
+      decisionModel: 'test',
+      extractionModel: 'test',
+      data: {},
+      needsReview: false,
+      worldwide: false,
+      regionCodes: [],
+      countryCodes: [],
+      cityIds: [],
+      techTags: [],
+      mainStackTags: [],
+      costUsd: 0,
+    }),
+  },
+  {
+    table: 'normalized_job_sources',
+    row: () => ({
+      id: randomUUID(),
+      jobId,
+      rawItemId,
+      normalizedVersionId,
+      linkedAt: now,
     }),
   },
   {
