@@ -23,7 +23,7 @@ export default async function PreferencesLayout({
           labels={labels}
           draftInProgress={draft !== null}
         />
-        <div className="min-w-0">{children}</div>
+        <div className="min-w-0 max-w-2xl">{children}</div>
       </div>
     </div>
   );
