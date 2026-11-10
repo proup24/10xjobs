@@ -566,6 +566,9 @@ importers:
       '@xjobs/database':
         specifier: workspace:*
         version: link:../../libs/database
+      jose:
+        specifier: ^6.2.14
+        version: 6.2.14
 
   libs/database:
     dependencies:

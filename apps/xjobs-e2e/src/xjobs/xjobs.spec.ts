@@ -1,9 +1,24 @@
 import axios from 'axios';
 
+const base = () => axios.defaults.baseURL;
+const key = () => process.env.ENGINE_API_KEY ?? '';
+// fetch, not axios: the headers sent must be exactly the ones named here.
+const withKey = () => ({ headers: { 'X-Engine-Key': key() } });
+
 describe('GET /api/health', () => {
-  it('reports every dependency up, without credentials', async () => {
-    // fetch, not axios: axios instances inherit the default credentials.
-    const res = await fetch(`${axios.defaults.baseURL}/api/health`);
+  it('401s without the key, with no WWW-Authenticate', async () => {
+    const res = await fetch(`${base()}/api/health`);
+    expect(res.status).toBe(401);
+    expect(res.headers.get('www-authenticate')).toBeNull();
+    expect(await res.json()).toMatchObject({
+      status: 'error',
+      code: 'UNAUTHORIZED',
+      message: 'Authentication required',
+    });
+  });
+
+  it('reports every dependency up with the key', async () => {
+    const res = await fetch(`${base()}/api/health`, withKey());
 
     expect(res.status).toBe(200);
     expect(res.headers.get('cache-control')).toBe('no-store');
@@ -16,23 +31,24 @@ describe('GET /api/health', () => {
   });
 });
 
-describe('basic auth', () => {
-  it('401s a protected route without credentials, with a Basic challenge', async () => {
-    // fetch, not axios: axios instances inherit the default credentials.
-    const res = await fetch(`${axios.defaults.baseURL}/api/users`);
+describe('unknown and removed routes', () => {
+  it('401s an unknown path without the key', async () => {
+    const res = await fetch(`${base()}/api/does-not-exist`);
     expect(res.status).toBe(401);
-    expect(res.headers.get('www-authenticate')).toContain('Basic');
-    expect(await res.json()).toMatchObject({
-      status: 'error',
-      code: 'UNAUTHORIZED',
-    });
+    expect(res.headers.get('www-authenticate')).toBeNull();
+    expect(await res.json()).toMatchObject({ code: 'UNAUTHORIZED' });
   });
 
-  it('401s wrong credentials', async () => {
-    const res = await axios.get('/api/users', {
-      auth: { username: 'admin', password: 'definitely-wrong-password' },
-      validateStatus: () => true,
-    });
-    expect(res.status).toBe(401);
+  it('404s an unknown path with the key', async () => {
+    const res = await fetch(`${base()}/api/does-not-exist`, withKey());
+    expect(res.status).toBe(404);
   });
+
+  it.each(['/api/users', '/api/processor/status'])(
+    '404s %s with the key: CRUD is gone and the operator flag is off',
+    async (path) => {
+      const res = await fetch(`${base()}${path}`, withKey());
+      expect(res.status).toBe(404);
+    },
+  );
 });
