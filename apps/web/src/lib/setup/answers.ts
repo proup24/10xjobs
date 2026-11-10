@@ -325,26 +325,38 @@ export const termsSchema = termsShape.superRefine((t, ctx) => {
 // Draft
 
 /**
+ * Drafts saved while Worldwide was offered: drop those rows rather than refuse
+ * the draft. When Worldwide was the only place, drop step 4's answers (they
+ * need a place) and keep step 3's.
+ */
+function dropWorldwideRows(draft: unknown): unknown {
+  if (!draft || typeof draft !== 'object' || !('terms' in draft)) return draft;
+  const { terms } = draft;
+  if (!terms || typeof terms !== 'object' || !('places' in terms)) return draft;
+  const { places } = terms;
+  if (!Array.isArray(places)) return draft;
+  const kept = places.filter((r) => !(r?.place?.kind === 'worldwide'));
+  if (kept.length === places.length) return draft;
+  if (kept.length === 0) {
+    const { terms: _dropped, ...rest } = draft;
+    return rest;
+  }
+  return { ...draft, terms: { ...terms, places: kept } };
+}
+
+/**
  * Steps 3 and 4 as entered, before the profile exists. Only the shape is checked here:
  * the rules run again on the next save, so a tech that stopped being searchable
  * doesn't throw the draft away.
  */
-/** Drafts saved while Worldwide was offered: drop those rows rather than refuse the draft. */
-function dropWorldwideRows(value: unknown): unknown {
-  if (!value || typeof value !== 'object' || !('places' in value)) return value;
-  const { places } = value;
-  if (!Array.isArray(places)) return value;
-  return {
-    ...value,
-    places: places.filter((r) => !(r?.place?.kind === 'worldwide')),
-  };
-}
-
-const draftSchema = z.object({
-  version: z.literal(1),
-  job: jobShape.optional(),
-  terms: z.preprocess(dropWorldwideRows, termsShape).optional(),
-});
+const draftSchema = z.preprocess(
+  dropWorldwideRows,
+  z.object({
+    version: z.literal(1),
+    job: jobShape.optional(),
+    terms: termsShape.optional(),
+  }),
+);
 
 export type SetupDraft = { version: 1; job?: JobAnswers; terms?: TermsAnswers };
 
@@ -354,13 +366,16 @@ export function parseDraft(json: unknown): SetupDraft | null {
   return r.success ? r.data : null;
 }
 
-const newProfileDraftSchema = z.object({
-  version: z.literal(2),
-  newProfileId: z.string().regex(UUID),
-  copyFrom: z.string().regex(UUID).nullable(),
-  job: jobShape.optional(),
-  terms: z.preprocess(dropWorldwideRows, termsShape).optional(),
-});
+const newProfileDraftSchema = z.preprocess(
+  dropWorldwideRows,
+  z.object({
+    version: z.literal(2),
+    newProfileId: z.string().regex(UUID),
+    copyFrom: z.string().regex(UUID).nullable(),
+    job: jobShape.optional(),
+    terms: termsShape.optional(),
+  }),
+);
 
 /** A new-profile flow's answers, kept in the same draft row as setup's but as version 2. */
 export type NewProfileDraft = {

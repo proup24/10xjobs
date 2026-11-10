@@ -437,6 +437,22 @@ describe('parseDraft', () => {
     ).toEqual([emea]);
   });
 
+  it('keeps the job answers when worldwide was the only place', () => {
+    const worldwide = {
+      place: { kind: 'worldwide' },
+      remote: true,
+      hybrid: false,
+      onsite: false,
+    };
+    expect(
+      parseDraft({
+        version: 1,
+        job: jobAnswers,
+        terms: { ...terms, places: [worldwide] },
+      }),
+    ).toEqual({ version: 1, job: jobAnswers });
+  });
+
   it('ignores a stored starred key on a tech', () => {
     const r = parseDraft({
       version: 1,
@@ -509,6 +525,23 @@ describe('parseNewProfileDraft', () => {
         terms: { ...terms, places: [worldwide, emea] },
       })?.terms?.places,
     ).toEqual([emea]);
+  });
+
+  it('keeps the job answers when worldwide was the only place', () => {
+    const worldwide = {
+      place: { kind: 'worldwide' },
+      remote: true,
+      hybrid: false,
+      onsite: false,
+    };
+    expect(
+      parseNewProfileDraft({
+        version: 2,
+        ...ids,
+        job: jobAnswers,
+        terms: { ...terms, places: [worldwide] },
+      }),
+    ).toEqual({ version: 2, ...ids, job: jobAnswers });
   });
 
   it('is null when an answer has the wrong shape', () => {
