@@ -12,7 +12,9 @@ Docker Compose project `xjobs-engine`, five services (`compose.yaml`):
 - `redis-cache`: a 128 MB LRU cache, nothing persisted.
 - `caddy`: HTTPS in front of `api`, with an automatic Let's Encrypt certificate for `ENGINE_HOSTNAME`.
 
-CI deploys on merge to `main`: CI, then `Dev database`, then `Deploy engine` (`.github/workflows/deploy-engine.yml`). It skips green while the `ENGINE_SSH_HOST` secret is unset.
+CI deploys on merge to `main`: CI, then `Dev database`, then `Deploy engine` (`.github/workflows/deploy-engine.yml`). It skips green while the `ENGINE_SSH_HOST` secret is unset. An automatic deploy also skips green when the server already runs a newer commit, so two quick merges that finish out of order never roll it back.
+
+Each deploy of a new image recreates `api` and `worker`, so the API is briefly down (a short outage) and the worker restarts. If the new image is broken, the API stays down until a rollback (section 9) runs. A failed image pull leaves the running deploy and its files untouched.
 
 ## 2. Create the server
 
@@ -20,7 +22,7 @@ CI deploys on merge to `main`: CI, then `Dev database`, then `Deploy engine` (`.
 2. Pick the location nearest the `10xjobs-dev` Supabase region. Find the region in Supabase under Project Settings, General. For `eu-central-1` use Falkenstein or Nuremberg.
 3. Add both people's SSH keys at creation.
 4. Create a Cloud Firewall allowing inbound 22/tcp, 80/tcp, 443/tcp and 443/udp. Attach it to the server.
-5. Note the server IPv4 and the ed25519 host key fingerprint shown in the console.
+5. Note the server IPv4. Get its ed25519 host key fingerprint from the server itself, since the console may not show it: in the root session of section 4, run `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub`.
 
 ## 3. The CI deploy key
 
@@ -61,7 +63,7 @@ In the `dev` environment, set only these four:
 1. `ENGINE_SSH_HOST`: `<ip>`.
 2. `ENGINE_SSH_USER`: `deploy`.
 3. `ENGINE_SSH_PRIVATE_KEY`: the contents of `engine-deploy` (section 3). Delete the local copy afterwards.
-4. `ENGINE_SSH_KNOWN_HOSTS`: the output of `ssh-keyscan -t ed25519 <ip>`. Check its fingerprint (`ssh-keygen -lf` on that line) against the one in the Hetzner console.
+4. `ENGINE_SSH_KNOWN_HOSTS`: the output of `ssh-keyscan -t ed25519 <ip>`. Save that line to a file and run `ssh-keygen -lf` on it. The fingerprint must match the one `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` printed on the server (section 2).
 
 ## 7. First deploy
 
@@ -90,9 +92,10 @@ Containers restart on failure by themselves.
 ## 9. Roll back
 
 1. Pick a merge SHA: `git log main`. It must be the full 40-character SHA.
-2. Actions, Deploy engine, Run workflow, with `image_tag` set to that SHA.
+2. Actions, Deploy engine, Run workflow, from branch `main`, with `image_tag` set to that SHA. Always run it from `main`: the `dev` environment only allows `main`, so a run from any other branch fails on the environment policy.
 3. The image must still exist in GHCR; that is what gets pulled. The server also prunes images created more than 168 hours ago from its disk.
-4. A dispatch with no `image_tag` builds only from `main`. From any other branch it skips with a notice.
+4. A dispatch with no `image_tag` builds and deploys `main`'s HEAD.
+5. A manual dispatch always deploys, even an older commit. That is what makes it a rollback.
 
 ## 10. Add or remove a person
 
@@ -110,7 +113,7 @@ Containers restart on failure by themselves.
 
 The LinkedIn job board collects at minute 0 of each hour from 08:00 to 22:00 UTC, Monday to Friday.
 
-1. After the first such hour following the deploy: `$C logs worker | grep -i collect`.
+1. After the first such hour following the deploy: `$C logs worker | grep CollectionService`. Each run logs one summary line, such as `channel=linkedin-job-board builders=… segments=… collected=… batches=… costUsd=…`.
 2. Query `10xjobs-dev` (SQL editor or the read-only `supabase-dev` MCP). Replace the timestamp with the deploy time:
 
 ```sql
