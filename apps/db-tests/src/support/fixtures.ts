@@ -172,7 +172,11 @@ async function insertTracked(
   return id;
 }
 
-/** A valid v2 extraction document; every hidden value starts with `secret-`, no exposed one does. */
+/**
+ * A valid v2 extraction document. String-typed hidden values carry `secret-`, and no exposed
+ * one does. Enum and number internals (confidence, decidedBy, score, verdict, ...) can't carry
+ * it; the facts deep-equal in match-details.db.spec.ts guards those.
+ */
 export function detailedDocument(): Record<string, unknown> {
   const envelope = {
     confidence: 'sure',
@@ -464,6 +468,43 @@ export async function seedDetailedJob(
   const now = new Date().toISOString();
   for (const channel of opts.channels ?? ['LINKEDIN_JOB_BOARD'])
     await seedSourceChain(jobId, jobKey, channel, now);
+  return { jobId, extractionId };
+}
+
+/** A newer v2 extraction on an existing job, with its own `seniority` column; returns it as a SeededJob. */
+export async function addExtraction(
+  jobId: string,
+  document: Record<string, unknown>,
+  seniority: string,
+): Promise<SeededJob> {
+  const extractionId = await insertTracked('job_extractions', {
+    jobId,
+    inputHash: 'test-newer',
+    schemaVersion: 2,
+    promptHash: 'secret-prompt',
+    decisionModel: 'secret-decision',
+    extractionModel: 'secret-extraction',
+    data: document,
+    needsReview: false,
+    arrangement: 'remote',
+    seniority,
+    roleKind: 'backend_engineer',
+    contractType: 'full_time',
+    isSoftwareEngineeringRole: true,
+    worldwide: false,
+    regionCodes: ['EMEA'],
+    countryCodes: [],
+    cityIds: [],
+    techTags: ['typescript'],
+    mainStackTags: ['typescript'],
+    costUsd: 0.01,
+  });
+  const { error } = await admin()
+    .from('normalized_jobs')
+    .update({ currentExtractionId: extractionId })
+    .eq('id', jobId);
+  if (error)
+    throw new Error(`Could not set currentExtractionId: ${error.message}`);
   return { jobId, extractionId };
 }
 

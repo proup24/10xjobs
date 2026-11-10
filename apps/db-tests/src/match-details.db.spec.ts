@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { admin, anon } from './support/admin.js';
 import {
+  addExtraction,
   cleanupDetailedJobs,
   detailedDocument,
   publishProfile,
@@ -124,6 +125,8 @@ describe('match_details', () => {
   let jobMerged: string;
   let jobNobody: string;
   let jobEmptyQuote: string;
+  let jobNewerExtraction: string;
+  let jobEdge: string;
 
   const call = async (user: TestUser, params: Params): Promise<Row[]> => {
     const { data, error } = await user.client.rpc('match_details', params);
@@ -141,7 +144,7 @@ describe('match_details', () => {
     await publishProfile(profileB);
 
     const shared = await seedDetailedJob({
-      channels: ['LINKEDIN_JOB_BOARD', 'ASHBY'],
+      channels: ['ASHBY', 'ASHBY', 'LINKEDIN_JOB_BOARD'],
     });
     await seedMatchOn(a.id, profileA, shared, {
       checks: { a: 1 },
@@ -171,6 +174,64 @@ describe('match_details', () => {
     profileA2 = await seedProfile(a.id);
     await publishProfile(profileA2);
     await seedMatchOn(a.id, profileA2, emptyQuote);
+
+    // Matched on the older extraction; a newer one with another seniority must not leak in.
+    const newer = await seedDetailedJob();
+    await addExtraction(
+      newer.jobId,
+      {
+        ...detailedDocument(),
+        seniority: { ...base.seniority, value: 'junior', quote: 'Junior' },
+      },
+      'junior',
+    );
+    await seedMatchOn(a.id, profileA2, newer);
+    // Place kinds and value-list rows that do not exist.
+    const edgeDoc = detailedDocument() as unknown as Doc;
+    const edge = await seedDetailedJob({
+      document: {
+        ...detailedDocument(),
+        openings: [
+          {
+            ...edgeDoc.openings[0],
+            places: [
+              { kind: 'worldwide' },
+              { kind: 'region', code: 'ZZREGION' },
+              {
+                kind: 'city',
+                name: 'Lisbon',
+                countryCode: 'PT',
+                cityId: 'city-lisbon',
+              },
+              {
+                kind: 'city',
+                name: 'Nowhere',
+                countryCode: null,
+                cityId: null,
+              },
+            ],
+            confidence: 'sure',
+            decidedBy: 'generator',
+          },
+        ],
+        techStack: {
+          ...edgeDoc.techStack,
+          value: {
+            ...edgeDoc.techStack.value,
+            requirements: [
+              {
+                ...edgeDoc.techStack.value.requirements[0],
+                technology: { code: 'zz-not-a-tag', text: 'Zzz' },
+              },
+            ],
+            groups: [],
+          },
+        },
+      },
+    });
+    await seedMatchOn(a.id, profileA2, edge);
+    jobNewerExtraction = newer.jobId;
+    jobEdge = edge.jobId;
 
     jobShared = shared.jobId;
     jobA = onlyA.jobId;
@@ -269,6 +330,10 @@ describe('match_details', () => {
   it('exposes no helper function', async () => {
     const { data, error } = await a.client.rpc('match_facts', { doc: {} });
     expect(error).not.toBeNull();
+    expect(
+      error?.code === 'PGRST202' ||
+        /Could not find the function/.test(error?.message ?? ''),
+    ).toBe(true);
     expect(data).toBeNull();
   });
 
@@ -345,9 +410,10 @@ describe('match_details', () => {
           tech.requirements.map(async (r) => ({
             technology: {
               code: r.technology.code,
-              label: r.technology.code
-                ? await labelOf('tech_tags', r.technology.code)
-                : r.technology.text,
+              label:
+                (r.technology.code
+                  ? await labelOf('tech_tags', r.technology.code)
+                  : null) ?? r.technology.text,
               text: r.technology.text,
             },
             kind: r.kind,
@@ -392,5 +458,50 @@ describe('match_details', () => {
     expect(
       (row.facts as { seniority: { quote: unknown } }).seniority.quote,
     ).toBeNull();
+  });
+
+  it("takes the facts from the match's own extraction, not the job's newest", async () => {
+    const rows = await call(a, {
+      p_profile_id: profileA2,
+      p_job_id: jobNewerExtraction,
+    });
+    expect(rows).toHaveLength(1);
+    const facts = rows[0].facts as { seniority: { code: string } };
+    expect(facts.seniority.code).toBe('senior');
+  });
+
+  it('lists a job once per channel, sorted', async () => {
+    const [row] = await call(a, {
+      p_profile_id: profileA,
+      p_job_id: jobShared,
+    });
+    expect(row.channels).toEqual(['ASHBY', 'LINKEDIN_JOB_BOARD']);
+  });
+
+  it('covers every place kind and unknown value-list rows', async () => {
+    const [row] = await call(a, {
+      p_profile_id: profileA2,
+      p_job_id: jobEdge,
+    });
+    const facts = row.facts as {
+      openings: Array<{ places: unknown[] }>;
+      techStack: { requirements: Array<{ technology: unknown }> };
+    };
+    expect(facts.openings[0].places).toEqual([
+      { kind: 'worldwide' },
+      { kind: 'region', code: 'ZZREGION', label: null },
+      {
+        kind: 'city',
+        name: 'Lisbon',
+        countryCode: 'PT',
+        cityId: 'city-lisbon',
+      },
+      { kind: 'city', name: 'Nowhere', countryCode: null, cityId: null },
+    ]);
+    expect(facts.techStack.requirements[0].technology).toEqual({
+      code: 'zz-not-a-tag',
+      label: 'Zzz',
+      text: 'Zzz',
+    });
   });
 });
