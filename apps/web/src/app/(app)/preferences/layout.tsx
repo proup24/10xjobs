@@ -1,6 +1,6 @@
 import { PreferencesNav } from '@/components/preferences/preferences-nav';
 import { requireSignedIn } from './guard';
-import { preferenceProfiles } from './data';
+import { preferenceNewProfileDraft, preferenceProfiles } from './data';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,7 +10,10 @@ export default async function PreferencesLayout({
   children: React.ReactNode;
 }) {
   await requireSignedIn();
-  const { items, labels } = await preferenceProfiles();
+  const [{ items, labels }, draft] = await Promise.all([
+    preferenceProfiles(),
+    preferenceNewProfileDraft(),
+  ]);
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-title-3">Preferences</h1>
@@ -18,6 +21,7 @@ export default async function PreferencesLayout({
         <PreferencesNav
           items={items.map(({ id, hasResume }) => ({ id, hasResume }))}
           labels={labels}
+          draftInProgress={draft !== null}
         />
         <div className="min-w-0">{children}</div>
       </div>

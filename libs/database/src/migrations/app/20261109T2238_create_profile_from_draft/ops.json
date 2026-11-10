@@ -1,0 +1,24 @@
+[
+  {
+    "id": "functions.create_profile_from_draft",
+    "invariantId": "create-profile-from-draft",
+    "label": "create_profile_from_draft: create an additional profile from a new-profile (version 2) draft",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "profiles"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create create_profile_from_draft(p_profile_id, p_profile, p_skills)",
+        "sql": "CREATE OR REPLACE FUNCTION public.create_profile_from_draft(p_profile_id uuid, p_profile jsonb, p_skills jsonb) RETURNS uuid\n  LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $$\nDECLARE\n  draft_id uuid;\n  draft_answers jsonb;\n  p public.profiles;\nBEGIN\n  -- The lock makes a second call (double submit, another tab) wait here, then find the\n  -- draft gone and the profile there.\n  SELECT d.id, d.answers INTO draft_id, draft_answers\n    FROM public.profile_setup_drafts d\n   WHERE d.\"userId\" = auth.uid()\n     FOR UPDATE;\n\n  -- Already created (a repeated or concurrent call): return the same id. Only the caller's\n  -- own profile counts, so another user's id is never returned. A draft for this same\n  -- profile (saved again after creation) is ended; any other draft is left alone.\n  PERFORM 1\n     FROM public.profiles pr\n    WHERE pr.id = p_profile_id\n      AND pr.\"userId\" = auth.uid();\n  IF FOUND THEN\n    IF draft_id IS NOT NULL AND draft_answers->>'newProfileId' = p_profile_id::text THEN\n      DELETE FROM public.profile_setup_drafts d WHERE d.id = draft_id;\n    END IF;\n    RETURN p_profile_id;\n  END IF;\n\n  -- The draft must be a new-profile draft for exactly this id; the client can't forge either.\n  IF draft_id IS NULL\n     OR draft_answers->'version' IS DISTINCT FROM '2'::jsonb\n     OR draft_answers->>'newProfileId' IS DISTINCT FROM p_profile_id::text THEN\n    RAISE EXCEPTION USING ERRCODE = 'P0002', MESSAGE = 'no new-profile draft to create a profile from';\n  END IF;\n\n  -- Checked under the draft lock, so two flows of the same user can't both pass it.\n  IF (SELECT count(*) FROM public.profiles pr WHERE pr.\"userId\" = auth.uid()) >= 5 THEN\n    RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'You can have at most 5 profiles';\n  END IF;\n\n  p := jsonb_populate_record(null::public.profiles, p_profile);\n  -- Only the columns authenticated may insert; state, publishedAt and timestamps take their defaults.\n  INSERT INTO public.profiles (\n    \"id\", \"userId\", \"position\", \"yearsOfExperience\", \"timezoneCurrent\", \"timezoneMin\", \"timezoneMax\",\n    \"engagements\", \"seniorities\", \"noticePeriodDays\", \"contractTypes\", \"locations\", \"languages\",\n    \"salaryMin\", \"salaryCurrency\", \"salaryPeriod\", \"acceptsAnyCurrency\", \"acceptedCurrencies\"\n  ) VALUES (\n    p_profile_id, auth.uid(), p.\"position\", p.\"yearsOfExperience\", p.\"timezoneCurrent\", p.\"timezoneMin\", p.\"timezoneMax\",\n    p.\"engagements\", p.\"seniorities\", p.\"noticePeriodDays\", p.\"contractTypes\", p.\"locations\", p.\"languages\",\n    p.\"salaryMin\", p.\"salaryCurrency\", p.\"salaryPeriod\",\n    -- An omitted key keeps the column default (true, '{}') instead of becoming null.\n    COALESCE(p.\"acceptsAnyCurrency\", true), COALESCE(p.\"acceptedCurrencies\", '{}'::text[])\n  );\n\n  INSERT INTO public.profile_skills (\"id\", \"userId\", \"profileId\", \"technology\", \"domain\", \"mastery\", \"importance\")\n  SELECT gen_random_uuid(), auth.uid(), p_profile_id, s.technology, s.domain, s.mastery, s.importance\n    FROM jsonb_to_recordset(p_skills) AS s(technology text, domain text, mastery integer, importance integer);\n\n  DELETE FROM public.profile_setup_drafts d WHERE d.id = draft_id;\n  RETURN p_profile_id;\nEND $$;\nREVOKE EXECUTE ON FUNCTION public.create_profile_from_draft(uuid, jsonb, jsonb) FROM PUBLIC, anon;\nGRANT EXECUTE ON FUNCTION public.create_profile_from_draft(uuid, jsonb, jsonb) TO authenticated;"
+      }
+    ],
+    "postcheck": []
+  }
+]

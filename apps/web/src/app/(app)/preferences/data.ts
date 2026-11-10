@@ -1,4 +1,5 @@
 import { cache } from 'react';
+import { loadNewProfileDraft } from '@/lib/preferences/new-profile';
 import {
   loadProfileList,
   profileLabels,
@@ -31,4 +32,9 @@ export const preferenceProfiles = cache(
     );
     return { items, labels: Object.fromEntries(labels) };
   },
+);
+
+/** The user's new-profile draft (v2), or null; read once per request. */
+export const preferenceNewProfileDraft = cache(async () =>
+  loadNewProfileDraft(await createSupabaseServerClient()),
 );

@@ -6,6 +6,9 @@ import { readPlaces } from '@/lib/setup/mapping';
 
 export const MAX_PROFILES = 5;
 
+/** Shown wherever the limit stops a new profile. */
+export const PROFILE_LIMIT_HINT = `You can have up to ${MAX_PROFILES} profiles`;
+
 export type ProfileListItem = {
   id: string;
   position: string;

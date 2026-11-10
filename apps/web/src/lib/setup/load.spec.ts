@@ -8,9 +8,11 @@ import {
   loadSetupProfile,
   loadSetupSnapshot,
 } from './load';
+import { nextSetupStep } from './next-step';
 import { loadValueLists } from './value-lists';
 
 const P = '22222222-2222-4222-8222-222222222222';
+const Q = '33333333-3333-4333-8333-333333333333';
 const CITY = '8f9c1a52-3b1e-4c7a-9d2e-1f0a2b3c4d5e';
 
 function tables(rows: Record<string, unknown>) {
@@ -28,7 +30,7 @@ describe('loadSetupSnapshot', () => {
     const f = tables({
       users: { name: 'Ada', residenceCountry: 'DE', acceptsSponsorship: true },
       profile_setup_drafts: { answers: { version: 1 } },
-      profiles: null,
+      profiles: [],
     });
     expect(await loadSetupSnapshot(f.supabase)).toEqual({
       name: 'Ada',
@@ -43,14 +45,19 @@ describe('loadSetupSnapshot', () => {
       'createdAt',
       { ascending: true },
     ]);
-    expect(profiles.filters).toContainEqual(['limit', 1]);
+    expect(profiles.filters).toContainEqual([
+      'order',
+      'id',
+      { ascending: true },
+    ]);
+    expect(profiles.filters).not.toContainEqual(['limit', 1]);
   });
 
   it('reads the oldest profile and ignores a stray draft once it exists', async () => {
     const f = tables({
       users: { name: 'Ada', residenceCountry: 'DE', acceptsSponsorship: true },
       profile_setup_drafts: { answers: { version: 1 } },
-      profiles: { id: P, resumeKey: 'u1/p/x.pdf' },
+      profiles: [{ id: P, resumeKey: 'u1/p/x.pdf' }],
     });
     expect(await loadSetupSnapshot(f.supabase)).toEqual({
       name: 'Ada',
@@ -61,11 +68,68 @@ describe('loadSetupSnapshot', () => {
     });
   });
 
+  it('picks the first profile with a resume, not the oldest', async () => {
+    const f = tables({
+      users: { name: 'Ada', residenceCountry: 'DE', acceptsSponsorship: true },
+      profile_setup_drafts: null,
+      profiles: [
+        { id: P, resumeKey: null },
+        { id: Q, resumeKey: 'u1/q/x.pdf' },
+      ],
+    });
+    const snap = await loadSetupSnapshot(f.supabase);
+    expect(snap.profile).toEqual({ id: Q, hasResume: true });
+    expect(nextSetupStep(snap)).toBe('done');
+  });
+
+  it('falls back to the oldest profile when none has a resume', async () => {
+    const f = tables({
+      users: { name: 'Ada', residenceCountry: 'DE', acceptsSponsorship: true },
+      profile_setup_drafts: null,
+      profiles: [
+        { id: P, resumeKey: null },
+        { id: Q, resumeKey: null },
+      ],
+    });
+    const snap = await loadSetupSnapshot(f.supabase);
+    expect(snap.profile).toEqual({ id: P, hasResume: false });
+    expect(nextSetupStep(snap)).toBe('resume');
+  });
+
+  it('never returns a v2 new-profile draft as the setup draft', async () => {
+    const f = tables({
+      users: { name: 'Ada', residenceCountry: 'DE', acceptsSponsorship: true },
+      profile_setup_drafts: {
+        answers: { version: 2, newProfileId: Q, copyFrom: null },
+      },
+      profiles: [],
+    });
+    const snap = await loadSetupSnapshot(f.supabase);
+    expect(snap.draft).toBeNull();
+    expect(nextSetupStep(snap)).toBe('job');
+  });
+
+  it('ignores a v2 draft once a profile exists, picking the profile as usual', async () => {
+    const f = tables({
+      users: { name: 'Ada', residenceCountry: 'DE', acceptsSponsorship: true },
+      profile_setup_drafts: {
+        answers: { version: 2, newProfileId: Q, copyFrom: null },
+      },
+      profiles: [
+        { id: P, resumeKey: null },
+        { id: Q, resumeKey: 'u1/q/x.pdf' },
+      ],
+    });
+    const snap = await loadSetupSnapshot(f.supabase);
+    expect(snap.draft).toBeNull();
+    expect(snap.profile).toEqual({ id: Q, hasResume: true });
+  });
+
   it('ignores an unparseable draft', async () => {
     const f = tables({
       users: { name: 'Ada', residenceCountry: null, acceptsSponsorship: null },
       profile_setup_drafts: { answers: { version: 99, job: 'nope' } },
-      profiles: null,
+      profiles: [],
     });
     expect(await loadSetupSnapshot(f.supabase)).toEqual({
       name: 'Ada',
