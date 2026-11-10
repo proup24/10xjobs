@@ -1,10 +1,9 @@
-import { isSearchableTech, SkillDomain } from '@xjobs/database/enums';
+import { SkillDomain } from '@xjobs/database/enums';
 import type { Database } from '@xjobs/database/types';
 import { z } from 'zod';
 import {
   ARRANGEMENTS,
   LANGUAGE_LEVELS,
-  MAX_STARRED,
   placeKey,
   placeSchema,
   type JobAnswers,
@@ -87,8 +86,7 @@ export const ratingToMastery = (rating: Rating): number => rating * 2;
 export const masteryToRating = (mastery: number): Rating =>
   Math.min(5, Math.max(1, Math.round(mastery / 2))) as Rating;
 
-const STARRED_IMPORTANCE = 10;
-const DEFAULT_IMPORTANCE = 5;
+export const DEFAULT_IMPORTANCE = 5;
 
 /** The profile columns step 3 owns. */
 export function jobColumns(
@@ -116,7 +114,7 @@ export function jobSkills(job: JobAnswers): SkillWrite[] {
       technology: tech.code,
       domain,
       mastery: ratingToMastery(tech.rating),
-      importance: tech.starred ? STARRED_IMPORTANCE : DEFAULT_IMPORTANCE,
+      importance: DEFAULT_IMPORTANCE,
     };
   });
 }
@@ -124,8 +122,6 @@ export function jobSkills(job: JobAnswers): SkillWrite[] {
 /** A fresh place object, so no stray key reaches the database. */
 function placeJson(place: Place): Place {
   switch (place.kind) {
-    case 'worldwide':
-      return { kind: 'worldwide' };
     case 'city':
       return { kind: 'city', id: place.id };
     default:
@@ -196,40 +192,23 @@ function readLanguages(json: ProfileRow['languages']): JobAnswers['languages'] {
 
 /**
  * One tech row per technology (the engine may store one under several domains, keeping
- * the highest mastery and importance). Stars go to at most two searchable techs above
- * the default importance, picked as the engine ranks: importance, mastery, then name.
+ * the highest mastery).
  */
 function readTechs(skills: SkillRow[]): TechAnswer[] {
-  const byCode = new Map<string, { mastery: number; importance: number }>();
+  const mastery = new Map<string, number>();
   for (const s of skills) {
-    const seen = byCode.get(s.technology);
-    byCode.set(s.technology, {
-      mastery: Math.max(seen?.mastery ?? -Infinity, s.mastery),
-      importance: Math.max(seen?.importance ?? -Infinity, s.importance),
-    });
+    mastery.set(
+      s.technology,
+      Math.max(mastery.get(s.technology) ?? -Infinity, s.mastery),
+    );
   }
-  const starred = new Set(
-    [...byCode]
-      .filter(
-        ([c, s]) => s.importance > DEFAULT_IMPORTANCE && isSearchableTech(c),
-      )
-      .sort(
-        ([ca, a], [cb, b]) =>
-          b.importance - a.importance ||
-          b.mastery - a.mastery ||
-          ca.localeCompare(cb),
-      )
-      .slice(0, MAX_STARRED)
-      .map(([c]) => c),
-  );
-  return [...byCode].map(([c, s]) => ({
-    code: c,
-    rating: masteryToRating(s.mastery),
-    starred: starred.has(c),
+  return [...mastery].map(([code, m]) => ({
+    code,
+    rating: masteryToRating(m),
   }));
 }
 
-/** Place rows by identity, in first-seen order; worldwide keeps only remote. */
+/** Place rows by identity, in first-seen order. */
 export function readPlaces(json: ProfileRow['locations']): PlaceRow[] {
   const rows = new Map<string, PlaceRow>();
   const lists =
@@ -244,7 +223,6 @@ export function readPlaces(json: ProfileRow['locations']): PlaceRow[] {
         r.data.kind === 'city'
           ? { kind: 'city' as const, id: r.data.id.toLowerCase() }
           : placeJson(r.data);
-      if (place.kind === 'worldwide' && a !== 'remote') continue;
       const key = placeKey(place);
       const row = rows.get(key) ?? {
         place,

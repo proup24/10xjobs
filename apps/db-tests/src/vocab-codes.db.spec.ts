@@ -22,7 +22,6 @@ const draft = () => ({
   contractTypes: ['full_time', 'contract'],
   locations: {
     remote: [
-      { kind: 'worldwide' },
       { kind: 'region', code: 'EMEA' },
       { kind: 'country', code: 'MA' },
     ],
@@ -314,7 +313,7 @@ describe('profile codes are checked against the value lists', () => {
     );
   });
 
-  it('says a profile uses worldwide instead of the GLOBAL region', async () => {
+  it('says GLOBAL is not allowed in a profile', async () => {
     const { error } = await insertProfile({
       locations: {
         remote: [{ kind: 'region', code: 'GLOBAL' }],
@@ -324,7 +323,21 @@ describe('profile codes are checked against the value lists', () => {
     });
     expectCheckViolation(error, "profiles.locations: 'GLOBAL'");
     expect(error?.message).toBe(
-      "profiles.locations: 'GLOBAL' is not allowed in a profile; use { kind: worldwide }",
+      "profiles.locations: 'GLOBAL' is not allowed in a profile",
+    );
+  });
+
+  it('refuses worldwide in a profile, saying so', async () => {
+    const { error } = await insertProfile({
+      locations: {
+        remote: [{ kind: 'worldwide' }],
+        hybrid: [],
+        onsite: [],
+      },
+    });
+    expectCheckViolation(error, 'profiles.locations');
+    expect(error?.message).toBe(
+      'profiles.locations: worldwide is not allowed in a profile',
     );
   });
 

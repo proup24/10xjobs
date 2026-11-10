@@ -126,33 +126,6 @@ describe('TermsForm', () => {
     expect(onSave).toHaveBeenCalledWith(SAVED);
   });
 
-  it('a place under worldwide remote shows the hint and still saves', async () => {
-    const { onSave } = setup({
-      ...SAVED,
-      places: [{ ...SAVED.places[0], hybrid: false }],
-    });
-    await pick('Add a place', 'world', /^Worldwide/);
-    expect(
-      screen.getByText('Worldwide remote already covers remote here.'),
-    ).toBeTruthy();
-    submit();
-    await waitFor(() => expect(onSave).toHaveBeenCalled());
-    expect(onSave.mock.calls[0][0].places).toEqual([
-      {
-        place: { kind: 'country', code: 'FR' },
-        remote: true,
-        hybrid: false,
-        onsite: false,
-      },
-      {
-        place: { kind: 'worldwide' },
-        remote: true,
-        hybrid: false,
-        onsite: false,
-      },
-    ]);
-  });
-
   it('a row with no arrangement is refused', async () => {
     const { onSave } = setup({ ...SAVED, places: [] });
     await pick('Add a place', 'germ', /^Germany/);

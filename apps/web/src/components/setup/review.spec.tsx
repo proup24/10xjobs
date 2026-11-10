@@ -56,8 +56,8 @@ const job: JobAnswers = {
   yearsOfExperience: 7,
   seniorities: ['senior'],
   techs: [
-    { code: 'typescript', rating: 5, starred: true },
-    { code: 'postgresql', rating: 3, starred: false },
+    { code: 'typescript', rating: 5 },
+    { code: 'postgresql', rating: 3 },
   ],
   languages: [{ lang: 'en', level: 'fluent' }],
 };
@@ -65,7 +65,7 @@ const job: JobAnswers = {
 const terms: TermsAnswers = {
   places: [
     {
-      place: { kind: 'worldwide' },
+      place: { kind: 'region', code: 'EU' },
       remote: true,
       hybrid: false,
       onsite: false,
@@ -150,12 +150,13 @@ describe('Review', () => {
     expect(j.getByText('Backend Engineer')).toBeTruthy();
     expect(j.getByText('7 years')).toBeTruthy();
     expect(j.getByText('Senior')).toBeTruthy();
-    expect(j.getByText('TypeScript 5/5, searched')).toBeTruthy();
+    expect(j.getByText('TypeScript 5/5')).toBeTruthy();
+    expect(j.queryByText(/searched/)).toBeNull();
     expect(j.getByText('PostgreSQL 3/5')).toBeTruthy();
     expect(j.getByText('English: Fluent')).toBeTruthy();
 
     const t = within(card('Location and terms'));
-    expect(t.getByText('Worldwide: Remote')).toBeTruthy();
+    expect(t.getByText('European Union: Remote')).toBeTruthy();
     expect(t.getByText('Berlin, Germany: Hybrid, On-site')).toBeTruthy();
     expect(t.getByText('UTC+1, working with UTC−2 to UTC+5:30')).toBeTruthy();
     expect(t.getByText('Full Time')).toBeTruthy();
@@ -187,7 +188,9 @@ describe('Review', () => {
       within(card('Where you can work')).getByText('Unknown'),
     ).toBeTruthy();
     expect(within(card('The job you want')).getByText('Unknown')).toBeTruthy();
-    expect(within(card('Location and terms')).getByText('Unknown')).toBeTruthy();
+    expect(
+      within(card('Location and terms')).getByText('Unknown'),
+    ).toBeTruthy();
     for (const raw of [/ZZ/, /mystery_engineer/, /45/]) {
       expect(screen.queryByText(raw)).toBeNull();
     }

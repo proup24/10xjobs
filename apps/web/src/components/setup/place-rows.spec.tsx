@@ -50,29 +50,12 @@ function type(input: HTMLElement, text: string) {
 
 const addPlace = () => screen.getByRole('combobox', { name: 'Add a place' });
 
-const WORLDWIDE_REMOTE: PlaceRow = {
-  place: { kind: 'worldwide' },
-  remote: true,
-  hybrid: false,
-  onsite: false,
-};
-
 describe('PlaceRows', () => {
-  it('Worldwide is the first option and its row allows only Remote', async () => {
-    const onChange = vi.fn();
-    render(<Harness onChange={onChange} />);
+  it('offers no Worldwide option', async () => {
+    render(<Harness />);
     type(addPlace(), 'w');
-    const options = await screen.findAllByRole('option');
-    expect(options[0].textContent).toContain('Worldwide');
-    fireEvent.click(options[0]);
-    expect(onChange).toHaveBeenLastCalledWith([WORLDWIDE_REMOTE]);
-    const group = screen.getByRole('group', { name: 'Worldwide arrangements' });
-    const remote = within(group).getByRole('button', { name: 'Remote' });
-    expect(remote.getAttribute('aria-pressed')).toBe('true');
-    for (const name of ['Hybrid', 'On-site']) {
-      const button = within(group).getByRole('button', { name });
-      expect(button.hasAttribute('disabled')).toBe(true);
-    }
+    await screen.findByRole('option', { name: /^Western Europe/ });
+    expect(screen.queryByRole('option', { name: /^Worldwide/ })).toBeNull();
   });
 
   it('each result is labelled with its kind', async () => {
@@ -113,34 +96,21 @@ describe('PlaceRows', () => {
   });
 
   it('a picked place is not offered again', async () => {
-    render(<Harness initial={[WORLDWIDE_REMOTE]} />);
-    type(addPlace(), 'w');
-    await screen.findByRole('option', { name: /^Western Europe/ });
-    expect(screen.queryByRole('option', { name: /^Worldwide/ })).toBeNull();
-  });
-
-  it('a remote place under worldwide remote shows a hint', () => {
     render(
       <Harness
         initial={[
-          WORLDWIDE_REMOTE,
           {
-            place: { kind: 'country', code: 'FR' },
+            place: { kind: 'region', code: 'WEU' },
             remote: true,
             hybrid: false,
-            onsite: false,
-          },
-          {
-            place: { kind: 'country', code: 'DE' },
-            remote: false,
-            hybrid: true,
             onsite: false,
           },
         ]}
       />,
     );
+    type(addPlace(), 'western');
     expect(
-      screen.getAllByText('Worldwide remote already covers remote here.'),
-    ).toHaveLength(1);
+      screen.queryByRole('option', { name: /^Western Europe/ }),
+    ).toBeNull();
   });
 });

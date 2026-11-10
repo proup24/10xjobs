@@ -180,10 +180,10 @@ const JOB: JobAnswers = {
   yearsOfExperience: 6,
   seniorities: ['mid', 'senior'],
   techs: [
-    { code: 'postgresql', rating: 4, starred: true },
-    { code: 'typescript', rating: 5, starred: true },
-    { code: 'react', rating: 2, starred: false },
-    { code: 'saas', rating: 3, starred: false },
+    { code: 'postgresql', rating: 4 },
+    { code: 'typescript', rating: 5 },
+    { code: 'react', rating: 2 },
+    { code: 'saas', rating: 3 },
   ],
   languages: [
     { lang: 'en', level: 'fluent' },

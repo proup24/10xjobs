@@ -23,8 +23,8 @@ const job: JobAnswers = {
   yearsOfExperience: 6,
   seniorities: ['senior'],
   techs: [
-    { code: 'typescript', rating: 5, starred: true },
-    { code: 'saas', rating: 2, starred: false },
+    { code: 'typescript', rating: 5 },
+    { code: 'saas', rating: 2 },
   ],
   languages: [{ lang: 'en', level: 'fluent' }],
 };

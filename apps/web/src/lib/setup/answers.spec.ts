@@ -43,8 +43,8 @@ const jobAnswers: JobAnswers = {
   yearsOfExperience: 6,
   seniorities: ['senior'],
   techs: [
-    { code: 'typescript', rating: 5, starred: true },
-    { code: 'saas', rating: 3, starred: false },
+    { code: 'typescript', rating: 5 },
+    { code: 'saas', rating: 3 },
   ],
   languages: [{ lang: 'en', level: 'fluent' }],
 };
@@ -192,10 +192,7 @@ describe('jobSchema', () => {
     expect(
       paths(job, {
         ...jobAnswers,
-        techs: [
-          jobAnswers.techs[0],
-          { code: 'saas', rating: null, starred: false },
-        ],
+        techs: [jobAnswers.techs[0], { code: 'saas', rating: null }],
       }),
     ).toEqual(['techs.1.rating']);
   });
@@ -203,7 +200,7 @@ describe('jobSchema', () => {
   it('needs one tech we can search for', () => {
     const r = job.safeParse({
       ...jobAnswers,
-      techs: [{ code: 'saas', rating: 3, starred: false }],
+      techs: [{ code: 'saas', rating: 3 }],
     });
     expect(r.success).toBe(false);
     expect(r.error?.issues.map((i) => [i.path.join('.'), i.message])).toEqual([
@@ -211,39 +208,11 @@ describe('jobSchema', () => {
     ]);
   });
 
-  it('three stars are refused', () => {
-    expect(
-      paths(job, {
-        ...jobAnswers,
-        techs: [
-          { code: 'typescript', rating: 5, starred: true },
-          { code: 'go', rating: 4, starred: true },
-          { code: 'rust', rating: 3, starred: true },
-        ],
-      }),
-    ).toEqual(['techs.2.starred']);
-  });
-
-  it('refuses a star on a tech we cannot search for', () => {
-    expect(
-      paths(job, {
-        ...jobAnswers,
-        techs: [
-          { code: 'typescript', rating: 5, starred: false },
-          { code: 'saas', rating: 3, starred: true },
-        ],
-      }),
-    ).toEqual(['techs.1.starred']);
-  });
-
   it('refuses the same tech twice', () => {
     expect(
       paths(job, {
         ...jobAnswers,
-        techs: [
-          jobAnswers.techs[0],
-          { ...jobAnswers.techs[0], starred: false },
-        ],
+        techs: [jobAnswers.techs[0], { ...jobAnswers.techs[0] }],
       }),
     ).toEqual(['techs.1.code']);
   });
@@ -286,24 +255,6 @@ describe('termsSchema', () => {
     expect(paths(termsSchema, { ...terms, places: [] })).toEqual(['places']);
   });
 
-  it('worldwide with hybrid is refused', () => {
-    expect(
-      paths(termsSchema, {
-        ...terms,
-        places: [row({ place: { kind: 'worldwide' }, hybrid: true })],
-      }),
-    ).toEqual(['places.0.hybrid']);
-  });
-
-  it('worldwide with on-site is refused', () => {
-    expect(
-      paths(termsSchema, {
-        ...terms,
-        places: [row({ place: { kind: 'worldwide' }, onsite: true })],
-      }),
-    ).toEqual(['places.0.onsite']);
-  });
-
   it('needs at least one arrangement per row', () => {
     expect(
       paths(termsSchema, { ...terms, places: [row({ remote: false })] }),
@@ -329,6 +280,25 @@ describe('termsSchema', () => {
         places: [row({ place: { kind: 'region', code: 'GLOBAL' } })],
       }),
     ).toEqual(['places.0.place']);
+  });
+
+  it('GLOBAL asks for regions instead', () => {
+    const r = termsSchema.safeParse({
+      ...terms,
+      places: [row({ place: { kind: 'region', code: 'GLOBAL' } })],
+    });
+    expect(r.error?.issues.map((i) => i.message)).toEqual([
+      'Pick the regions you want instead',
+    ]);
+  });
+
+  it('refuses a worldwide place', () => {
+    expect(
+      paths(termsSchema, {
+        ...terms,
+        places: [row({ place: { kind: 'worldwide' } as never })],
+      }),
+    ).not.toEqual([]);
   });
 
   it('refuses a malformed city id', () => {
@@ -451,6 +421,49 @@ describe('parseDraft', () => {
     expect(parseDraft(json)).toBeNull();
   });
 
+  it('parseDraft drops worldwide rows', () => {
+    const emea = {
+      place: { kind: 'region', code: 'EMEA' },
+      remote: true,
+      hybrid: false,
+      onsite: false,
+    };
+    const worldwide = { ...emea, place: { kind: 'worldwide' } };
+    expect(
+      parseDraft({
+        version: 1,
+        terms: { ...terms, places: [worldwide, emea] },
+      })?.terms?.places,
+    ).toEqual([emea]);
+  });
+
+  it('keeps the job answers when worldwide was the only place', () => {
+    const worldwide = {
+      place: { kind: 'worldwide' },
+      remote: true,
+      hybrid: false,
+      onsite: false,
+    };
+    expect(
+      parseDraft({
+        version: 1,
+        job: jobAnswers,
+        terms: { ...terms, places: [worldwide] },
+      }),
+    ).toEqual({ version: 1, job: jobAnswers });
+  });
+
+  it('ignores a stored starred key on a tech', () => {
+    const r = parseDraft({
+      version: 1,
+      job: {
+        ...jobAnswers,
+        techs: [{ code: 'typescript', rating: 5, starred: true }],
+      },
+    });
+    expect(r?.job?.techs).toEqual([{ code: 'typescript', rating: 5 }]);
+  });
+
   it('is null when an answer has the wrong shape', () => {
     expect(
       parseDraft({ version: 1, job: { ...jobAnswers, techs: 'typescript' } }),
@@ -495,6 +508,40 @@ describe('parseNewProfileDraft', () => {
       parseNewProfileDraft({ version: 2, newProfileId: BERLIN, copyFrom: 'x' }),
     ).toBeNull();
     expect(parseNewProfileDraft({ version: 2, copyFrom: null })).toBeNull();
+  });
+
+  it('drops worldwide rows', () => {
+    const emea = {
+      place: { kind: 'region', code: 'EMEA' },
+      remote: true,
+      hybrid: false,
+      onsite: false,
+    };
+    const worldwide = { ...emea, place: { kind: 'worldwide' } };
+    expect(
+      parseNewProfileDraft({
+        version: 2,
+        ...ids,
+        terms: { ...terms, places: [worldwide, emea] },
+      })?.terms?.places,
+    ).toEqual([emea]);
+  });
+
+  it('keeps the job answers when worldwide was the only place', () => {
+    const worldwide = {
+      place: { kind: 'worldwide' },
+      remote: true,
+      hybrid: false,
+      onsite: false,
+    };
+    expect(
+      parseNewProfileDraft({
+        version: 2,
+        ...ids,
+        job: jobAnswers,
+        terms: { ...terms, places: [worldwide] },
+      }),
+    ).toEqual({ version: 2, ...ids, job: jobAnswers });
   });
 
   it('is null when an answer has the wrong shape', () => {

@@ -126,12 +126,10 @@ export type EligibilityAnswers = z.infer<typeof eligibilitySchema>;
 // Step 3
 
 export const LANGUAGE_LEVELS = ['native', 'fluent', 'working'] as const;
-export const MAX_STARRED = 2;
 
 const techShape = z.object({
   code,
   rating: z.literal([1, 2, 3, 4, 5]).nullable(),
-  starred: z.boolean(),
 });
 
 export type TechAnswer = z.infer<typeof techShape>;
@@ -160,7 +158,6 @@ export type JobAnswers = z.infer<typeof jobShape>;
 export function jobSchema(isSearchable: (code: string) => boolean) {
   return jobShape.superRefine((job, ctx) => {
     const dupes = new Set(repeats(job.techs, (t) => t.code));
-    let starred = 0;
     job.techs.forEach((tech, i) => {
       if (tech.rating === null) {
         ctx.addIssue({
@@ -174,20 +171,6 @@ export function jobSchema(isSearchable: (code: string) => boolean) {
           code: 'custom',
           path: ['techs', i, 'code'],
           message: 'This tech is already listed',
-        });
-      }
-      if (!tech.starred) return;
-      if (!isSearchable(tech.code)) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['techs', i, 'starred'],
-          message: 'We can’t search for this tech',
-        });
-      } else if (++starred > MAX_STARRED) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['techs', i, 'starred'],
-          message: 'Search for at most two techs',
         });
       }
     });
@@ -212,7 +195,6 @@ export function jobSchema(isSearchable: (code: string) => boolean) {
 
 /** A location place, in exactly the JSON `assert_places` accepts. */
 export const placeSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('worldwide') }),
   z.object({ kind: z.enum(['region', 'country']), code }),
   z.object({ kind: z.literal('city'), id: z.string().regex(UUID) }),
 ]);
@@ -222,8 +204,6 @@ export type Place = z.infer<typeof placeSchema>;
 /** One key per distinct place; city ids are uuids, matched in any case as the database does. */
 export function placeKey(place: Place): string {
   switch (place.kind) {
-    case 'worldwide':
-      return 'worldwide';
     case 'city':
       return `city ${place.id.toLowerCase()}`;
     default:
@@ -289,22 +269,11 @@ export const termsSchema = termsShape.superRefine((t, ctx) => {
         message: 'Pick remote, hybrid or on-site',
       });
     }
-    if (row.place.kind === 'worldwide') {
-      for (const a of ['hybrid', 'onsite'] as const) {
-        if (row[a]) {
-          ctx.addIssue({
-            code: 'custom',
-            path: ['places', i, a],
-            message: 'Worldwide is remote only',
-          });
-        }
-      }
-    }
     if (row.place.kind === 'region' && row.place.code === 'GLOBAL') {
       ctx.addIssue({
         code: 'custom',
         path: ['places', i, 'place'],
-        message: 'Use worldwide instead',
+        message: 'Pick the regions you want instead',
       });
     } else if (dupes.has(i)) {
       ctx.addIssue({
@@ -356,15 +325,38 @@ export const termsSchema = termsShape.superRefine((t, ctx) => {
 // Draft
 
 /**
+ * Drafts saved while Worldwide was offered: drop those rows rather than refuse
+ * the draft. When Worldwide was the only place, drop step 4's answers (they
+ * need a place) and keep step 3's.
+ */
+function dropWorldwideRows(draft: unknown): unknown {
+  if (!draft || typeof draft !== 'object' || !('terms' in draft)) return draft;
+  const { terms } = draft;
+  if (!terms || typeof terms !== 'object' || !('places' in terms)) return draft;
+  const { places } = terms;
+  if (!Array.isArray(places)) return draft;
+  const kept = places.filter((r) => !(r?.place?.kind === 'worldwide'));
+  if (kept.length === places.length) return draft;
+  if (kept.length === 0) {
+    const { terms: _dropped, ...rest } = draft;
+    return rest;
+  }
+  return { ...draft, terms: { ...terms, places: kept } };
+}
+
+/**
  * Steps 3 and 4 as entered, before the profile exists. Only the shape is checked here:
  * the rules run again on the next save, so a tech that stopped being searchable
  * doesn't throw the draft away.
  */
-const draftSchema = z.object({
-  version: z.literal(1),
-  job: jobShape.optional(),
-  terms: termsShape.optional(),
-});
+const draftSchema = z.preprocess(
+  dropWorldwideRows,
+  z.object({
+    version: z.literal(1),
+    job: jobShape.optional(),
+    terms: termsShape.optional(),
+  }),
+);
 
 export type SetupDraft = { version: 1; job?: JobAnswers; terms?: TermsAnswers };
 
@@ -374,13 +366,16 @@ export function parseDraft(json: unknown): SetupDraft | null {
   return r.success ? r.data : null;
 }
 
-const newProfileDraftSchema = z.object({
-  version: z.literal(2),
-  newProfileId: z.string().regex(UUID),
-  copyFrom: z.string().regex(UUID).nullable(),
-  job: jobShape.optional(),
-  terms: termsShape.optional(),
-});
+const newProfileDraftSchema = z.preprocess(
+  dropWorldwideRows,
+  z.object({
+    version: z.literal(2),
+    newProfileId: z.string().regex(UUID),
+    copyFrom: z.string().regex(UUID).nullable(),
+    job: jobShape.optional(),
+    terms: termsShape.optional(),
+  }),
+);
 
 /** A new-profile flow's answers, kept in the same draft row as setup's but as version 2. */
 export type NewProfileDraft = {

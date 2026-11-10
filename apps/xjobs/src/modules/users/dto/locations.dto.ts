@@ -13,11 +13,6 @@ function PlaceList(example: Place[]) {
         oneOf: [
           {
             type: 'object',
-            properties: { kind: { type: 'string', enum: ['worldwide'] } },
-            required: ['kind'],
-          },
-          {
-            type: 'object',
             properties: {
               kind: { type: 'string', enum: ['region', 'country'] },
               code: { type: 'string' },
@@ -47,7 +42,10 @@ function PlaceList(example: Place[]) {
 
 /** Where to search, per arrangement. The database checks every code is approved. */
 export class LocationsDto implements PlacesByArrangement {
-  @PlaceList([{ kind: 'region', code: 'EMEA' }, { kind: 'worldwide' }])
+  @PlaceList([
+    { kind: 'region', code: 'EMEA' },
+    { kind: 'country', code: 'MA' },
+  ])
   remote!: Place[];
 
   @PlaceList([{ kind: 'country', code: 'FR' }])
