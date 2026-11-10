@@ -83,9 +83,7 @@ describe('toModelError', () => {
     expect(bad).toBeInstanceOf(ModelRequestError);
     expect(bad.message).toBe('OpenRouter returned 422: nope');
     // No status: the request never got an answer.
-    expect(toModelError(sdk(undefined), 5)).toBeInstanceOf(
-      TransientModelError,
-    );
+    expect(toModelError(sdk(undefined), 5)).toBeInstanceOf(TransientModelError);
   });
 
   it('treats a prompt the AI SDK refuses to send as a request error', () => {
@@ -235,7 +233,11 @@ describe('assertApiKey', () => {
 describe('checkModels', () => {
   const opus = {
     id: 'anthropic/claude-opus-5.5',
-    supportedParameters: ['structured_outputs', 'response_format'],
+    supportedParameters: [
+      'structured_outputs',
+      'response_format',
+      'max_tokens',
+    ],
     pricing: { prompt: '0.000004', completion: '0.00002' },
   };
 
@@ -291,6 +293,20 @@ describe('checkModels', () => {
         },
       ),
     ).rejects.toThrow(/response_format/);
+  });
+
+  it('refuses an extraction model without max_tokens', async () => {
+    await expect(
+      checkModels(
+        listed([
+          {
+            ...opus,
+            supportedParameters: ['structured_outputs', 'response_format'],
+          },
+        ]),
+        { decisionModel: 'typesafe/jev-1.14', extractionModel: opus.id },
+      ),
+    ).rejects.toThrow(/max_tokens/);
   });
 
   it('refuses an extraction model without numeric pricing', async () => {

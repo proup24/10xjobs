@@ -16,7 +16,11 @@ import { instructionsFor } from '../rules/questions';
 import type { FieldVerdict } from '../rules/verify';
 import { zodErrors } from '../schema/errors';
 import { flattenForStrict } from '../schema/model-output';
-import { CALL_TIMEOUT_MS, toModelError } from './client';
+import {
+  CALL_TIMEOUT_MS,
+  GENERATION_MAX_OUTPUT_TOKENS,
+  toModelError,
+} from './client';
 import { ModelOutputError } from './errors';
 import { ModelPricing } from './pricing';
 import type { GenerateRequest, ModelCallMeta, PostingInput } from './types';
@@ -182,6 +186,7 @@ export class AiSdkExtractionModel extends ExtractionModel {
         // `require_parameters` any unsupported parameter leaves no provider
         // (404). Every parameter sent must be in EXTRACTION_PARAMETERS.
         maxRetries: 0,
+        maxOutputTokens: GENERATION_MAX_OUTPUT_TOKENS,
         timeout: CALL_TIMEOUT_MS,
         instructions: instructions(req.systemPrompt),
         messages: messages(input, req),
