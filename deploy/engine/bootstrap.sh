@@ -13,6 +13,20 @@ if [[ -z "$KEYS_FILE" || ! -s "$KEYS_FILE" ]]; then
   exit 1
 fi
 
+# A bad keys file locks everyone out once the sshd drop-in below is written.
+# ssh-keygen -l skips unparseable lines, so also check every key line parsed.
+if ! fingerprints="$(ssh-keygen -l -f "$KEYS_FILE" 2>&1)"; then
+  echo "$KEYS_FILE has no valid public keys: $fingerprints" >&2
+  exit 1
+fi
+expected="$(grep -cvE '^[[:space:]]*(#|$)' "$KEYS_FILE" || true)"
+parsed="$(printf '%s\n' "$fingerprints" | grep -c . || true)"
+if [[ "$parsed" -ne "$expected" ]]; then
+  echo "$KEYS_FILE has $expected key lines but only $parsed parse as public keys:" >&2
+  printf '%s\n' "$fingerprints" >&2
+  exit 1
+fi
+
 export DEBIAN_FRONTEND=noninteractive
 
 # 2. Docker Engine and the Compose plugin from Docker's apt repo.
@@ -64,7 +78,9 @@ ufw allow 443/tcp
 ufw allow 443/udp
 ufw --force enable
 
-# 7. Automatic security updates.
+# 7. Automatic security updates. Refresh the package lists first: the Docker
+# step above skips its own update when Docker is already installed.
+apt-get update
 apt-get install -y unattended-upgrades
 echo 'APT::Periodic::Update-Package-Lists "1";
 APT::Periodic::Unattended-Upgrade "1";' >/etc/apt/apt.conf.d/20auto-upgrades
