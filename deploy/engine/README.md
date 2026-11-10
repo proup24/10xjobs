@@ -6,7 +6,7 @@ One Hetzner server runs the engine against the `10xjobs-dev` database. Design: [
 
 Docker Compose project `xjobs-engine`, five services (`compose.yaml`):
 
-- `api`: the NestJS HTTP API on internal port 3000. Basic auth on every route except `GET /api/health`.
+- `api`: the NestJS HTTP API on internal port 3000. Every route, health included, needs the `X-Engine-Key` header (`ENGINE_API_KEY`); the web app also sends a user token on user routes. The operator endpoints do not exist here (`XJOBS_OPERATOR_ENDPOINTS` is off, and the engine refuses it in production). The API container does not get `OPENROUTER_API_KEY`.
 - `worker`: one `worker-all` process (`WORKER_ROLE=all`). It is the only place schedules run (`XJOBS_RUN_SCHEDULES=1`).
 - `redis`: BullMQ queues, with append-only persistence and no eviction.
 - `redis-cache`: a 128 MB LRU cache, nothing persisted.
@@ -50,11 +50,34 @@ After bootstrap, SSH allows only `deploy` (`AllowUsers deploy`, `PermitRootLogin
 2. Create `.env` with the names in `deploy/engine/.env.example`, then `chmod 600 .env`.
 3. Set `ENGINE_HOSTNAME=api.<ip with dashes>.sslip.io`, for example `api.203-0-113-10.sslip.io`.
 4. Get `DATABASE_URL`, `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from the same places as the `DEV_*` secrets in [shared-dev-database.md](../../docs/shared-dev-database.md). `DATABASE_URL` is the session pooler on port 5432, never 6543.
-5. Generate the basic auth password with `openssl rand -base64 24` (at least 12 characters). Set `BASIC_AUTH_USERNAME` too.
-6. Set `APIFY_TOKEN` and `OPENROUTER_API_KEY`.
+5. Generate the engine key with `openssl rand -base64 48` (at least 32 characters) and set it as `ENGINE_API_KEY`. The same value goes into Vercel (section 5a). The deploy's health check reads it from this file on the server; it never goes to GitHub.
+6. Set `APIFY_TOKEN` and `OPENROUTER_API_KEY` (only the `worker` container uses the latter).
 7. Single-quote any value that contains `$`, because Compose interpolates `env_file` values. `openssl rand -base64 24` output has no `$`.
 
 Engine runtime secrets live only in this file. They never go to GitHub.
+
+## 5a. The engine key in Vercel
+
+The web app calls the engine with `ENGINE_URL` and `ENGINE_API_KEY`. Set both in Vercel for every environment that exists (Production, Preview, Development), all pointing at this one engine:
+
+1. `ENGINE_URL`: `https://api.<ip with dashes>.sslip.io`.
+2. `ENGINE_API_KEY`: the same value as in the server `.env`. Mark it Sensitive.
+3. Never prefix either with `NEXT_PUBLIC_`.
+
+Locally, put `ENGINE_URL=http://localhost:3000` and a local `ENGINE_API_KEY` in `apps/web/.env.local`, matching the local engine's `.env`.
+
+**Rotate the key.**
+
+1. Generate a new value: `openssl rand -base64 48`.
+2. Update `ENGINE_API_KEY` in the server `.env` and in Vercel (every environment).
+3. On the server, `$C up -d` (section 8) so `api` restarts with the new key, then redeploy the web app in Vercel so it picks up the new value.
+4. Expect brief failures between the two sides changing: the web app's engine calls answer 401 or "unavailable" until both have the new key. User data is already saved, so nothing is lost; retry afterwards.
+
+**Merge-day order for the engine auth slice.** The deploy fails its health check (and the old image keeps running, a safe failure) if the server has no key. So, before merging:
+
+1. Add `ENGINE_API_KEY` to the server `.env`. Removing the old basic-auth username and password lines is optional; the engine ignores them.
+2. Set `ENGINE_URL` and `ENGINE_API_KEY` in Vercel, every environment.
+3. Then merge. The deploy waits for `api` to report healthy, checks `/api/health` with the key from the server itself, and checks that the same URL without the key answers 401.
 
 ## 6. GitHub secrets
 
@@ -68,8 +91,8 @@ In the `dev` environment, set only these four:
 ## 7. First deploy
 
 1. The first merge to `main` after setup deploys automatically. Or run it by hand: Actions, Deploy engine, Run workflow, branch `main`, no input.
-2. `curl https://api.<ip with dashes>.sslip.io/api/health` must return 200 with a valid certificate.
-3. Any other route without Basic auth must return 401.
+2. On the server, `curl -sf -H "X-Engine-Key: $(grep ^ENGINE_API_KEY= ~/engine/.env | cut -d= -f2-)" https://api.<ip with dashes>.sslip.io/api/health` must return 200 with a valid certificate. The deploy job runs this check itself.
+3. Every route without the key, health included, must return 401: `curl -s -o /dev/null -w '%{http_code}\n' https://api.<ip with dashes>.sslip.io/api/health` prints `401`.
 
 ## 8. Everyday operations
 
@@ -107,7 +130,7 @@ Containers restart on failure by themselves.
 
 1. Add an A record for the name pointing to `<ip>`.
 2. Change `ENGINE_HOSTNAME` in `.env` to that name.
-3. `$C up -d caddy`. The deploy health check reads `ENGINE_HOSTNAME` from `.env`, so it follows.
+3. `$C up -d caddy`. The deploy health check reads `ENGINE_HOSTNAME` from `.env`, so it follows. Update `ENGINE_URL` in Vercel too.
 
 ## 12. Verify that collection works
 
