@@ -22,8 +22,11 @@ const str = (v: unknown): string | null =>
   typeof v === 'string' && v.trim() !== '' ? v : null;
 const num = (v: unknown): number | null =>
   typeof v === 'number' && Number.isFinite(v) ? v : null;
+// The value lists' `unstated` code is the extractor saying the job doesn't say: "Not stated".
 const label = (v: unknown): string | null =>
-  str(obj(v)?.label) ?? str(obj(v)?.code);
+  obj(v)?.code === 'unstated'
+    ? null
+    : (str(obj(v)?.label) ?? str(obj(v)?.code));
 const unique = (xs: (string | null)[]): string[] => [
   ...new Set(xs.filter((x): x is string => x !== null)),
 ];

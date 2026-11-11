@@ -49,6 +49,31 @@ describe('factLines', () => {
     });
   });
 
+  it("reads the value lists' unstated code as not stated", () => {
+    const unstated = { code: 'unstated', label: 'Unstated', quote: null };
+    const facts = {
+      position: {
+        roleKind: { code: 'unstated', label: 'Unstated' },
+        title: 'Senior Engineer, Core Services',
+      },
+      seniority: unstated,
+      arrangement: unstated,
+      contractType: unstated,
+      engagement: unstated,
+      openings: [],
+    };
+    expect(factLines({ ...noSalary, facts })).toEqual({
+      role: 'Senior Engineer, Core Services',
+      seniority: null,
+      arrangement: null,
+      places: null,
+      contractType: null,
+      engagement: null,
+      salary: null,
+    });
+    expect(arrangementLine(facts)).toBeNull();
+  });
+
   it('falls back to the openings for the arrangement, and words worldwide', () => {
     const facts = {
       openings: [
