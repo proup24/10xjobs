@@ -11,7 +11,7 @@ import {
 
 const position = (c: string) =>
   c === 'backend_engineer' ? 'Backend engineer' : 'Frontend engineer';
-const place = (p: Place) => (p.kind === 'worldwide' ? 'Worldwide' : 'Berlin');
+const place = (p: Place) => (p.kind === 'region' ? 'Europe' : 'Berlin');
 const item = (
   id: string,
   pos: string,
@@ -34,14 +34,14 @@ describe('profileLabels', () => {
     const m = profileLabels(
       [
         item('a', 'backend_engineer', berlin),
-        item('b', 'backend_engineer', { kind: 'worldwide' }),
+        item('b', 'backend_engineer', { kind: 'region', code: 'EU' }),
         item('c', 'frontend_engineer', berlin),
       ],
       position,
       place,
     );
     expect(m.get('a')).toBe('Backend engineer · Berlin');
-    expect(m.get('b')).toBe('Backend engineer · Worldwide');
+    expect(m.get('b')).toBe('Backend engineer · Europe');
     expect(m.get('c')).toBe('Frontend engineer');
   });
 

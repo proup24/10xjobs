@@ -7,9 +7,7 @@ import {
 } from '@nestjs/swagger';
 import { HealthController } from 'src/app/controllers/health.controller';
 import { QuerySearchController } from 'src/modules/queries/controllers/query-search.controller';
-import { ContactsController } from 'src/modules/users/controllers/contacts.controller';
 import { ProfilesController } from 'src/modules/users/controllers/profiles.controller';
-import { UsersController } from 'src/modules/users/controllers/users.controller';
 
 type Schema = {
   $ref?: string;
@@ -19,6 +17,7 @@ type Schema = {
   type?: string;
 };
 type Operation = {
+  security?: Record<string, string[]>[];
   parameters?: { in: string }[];
   requestBody?: unknown;
   responses: Record<string, { content?: Record<string, { schema: Schema }> }>;
@@ -29,13 +28,7 @@ const ERROR = '#/components/schemas/ErrorResponseDto';
 
 async function buildDocument(): Promise<OpenAPIObject> {
   const moduleRef = await Test.createTestingModule({
-    controllers: [
-      HealthController,
-      UsersController,
-      ContactsController,
-      ProfilesController,
-      QuerySearchController,
-    ],
+    controllers: [HealthController, ProfilesController, QuerySearchController],
   })
     .useMocker(() => ({}))
     .compile();
@@ -88,7 +81,7 @@ describe('API contract', () => {
 
   it('documents profile locations per arrangement, without regions or arrangements', () => {
     const profile = document.components?.schemas?.[
-      'ProfileResponseDto'
+      'PublishProfileResponseDto'
     ] as Schema & { properties: Record<string, unknown> };
     const locations = document.components?.schemas?.[
       'LocationsDto'
@@ -109,24 +102,22 @@ describe('API contract', () => {
         .map((o) => o.name)
         .sort(),
     ).toEqual([
-      'DELETE /api/users/{userId}',
-      'DELETE /api/users/{userId}/contacts/{contactId}',
-      'DELETE /api/users/{userId}/profiles/{profileId}',
       'GET /api/health',
-      'GET /api/users',
-      'GET /api/users/{userId}',
-      'GET /api/users/{userId}/contacts',
-      'GET /api/users/{userId}/profiles',
-      'GET /api/users/{userId}/profiles/{profileId}',
       'GET /api/users/{userId}/profiles/{profileId}/query-search',
-      'PATCH /api/users/{userId}',
-      'PATCH /api/users/{userId}/contacts/{contactId}',
-      'POST /api/users',
-      'POST /api/users/{userId}/contacts',
-      'POST /api/users/{userId}/profiles',
-      'POST /api/users/{userId}/profiles/{profileId}/publish',
-      'PUT /api/users/{userId}/profiles/{profileId}',
+      'POST /api/profiles/{profileId}/publish',
     ]);
+  });
+
+  it('requires the engine key and the bearer token together on publish', () => {
+    const publish = (
+      document.paths['/api/profiles/{profileId}/publish'] as Record<
+        string,
+        Operation
+      >
+    )['post'];
+    // One requirement object: both schemes ANDed. Two objects would be OR, and
+    // any operation-level security replaces the global engine-key requirement.
+    expect(publish?.security).toEqual([{ 'engine-key': [], bearer: [] }]);
   });
 
   it('has no workspace route or parameter', () => {
@@ -139,11 +130,6 @@ describe('API contract', () => {
       const successes = Object.entries(operation.responses).filter(([status]) =>
         status.startsWith('2'),
       );
-      // Kept only to answer 410: users are created and removed through Supabase Auth.
-      if (name === 'POST /api/users' || name === 'DELETE /api/users/{userId}') {
-        expect(Object.keys(operation.responses), name).toContain('410');
-        continue;
-      }
       expect(successes, name).not.toHaveLength(0);
       for (const [status, response] of successes) {
         if (status === '204') {

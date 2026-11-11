@@ -8,7 +8,7 @@ const job: JobAnswers = {
   position: 'backend_engineer',
   yearsOfExperience: 5,
   seniorities: ['senior'],
-  techs: [{ code: 'typescript', rating: 4, starred: true }],
+  techs: [{ code: 'typescript', rating: 4 }],
   languages: [{ lang: 'en', level: 'fluent' }],
 };
 

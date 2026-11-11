@@ -1,23 +1,17 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { ConfigModule } from '@nestjs/config';
+import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { HttpExceptionFilter } from 'src/common/filters';
-import { BASIC_AUTH_CREDENTIALS, BasicAuthGuard } from 'src/common/guards';
 import { ResponseInterceptor } from 'src/common/interceptors';
-import {
-  getBasicAuthConfig,
-  validateEnvironment,
-  type EnvironmentVariables,
-} from 'src/config';
+import { validateEnvironment } from 'src/config';
 import { DatabaseModule } from 'src/database';
 import { RedisModule } from 'src/infrastructure/redis/redis.module';
 import { JobsModule } from 'src/infrastructure/jobs/jobs.module';
-import { MatcherModule } from 'src/modules/matcher';
-import { ProcessorModule } from 'src/modules/processor';
-import { QuerySearchModule } from 'src/modules/queries';
 import { UsersModule } from 'src/modules/users';
+import { AuthModule } from 'src/common/auth';
 import { HealthController } from './controllers/health.controller';
 import { HealthService } from './services/health.service';
+import { operatorImports } from './operator.module';
 
 @Module({
   imports: [
@@ -28,27 +22,18 @@ import { HealthService } from './services/health.service';
       ignoreEnvFile: true,
       validate: validateEnvironment,
     }),
+    AuthModule,
     DatabaseModule,
     RedisModule,
     JobsModule,
     UsersModule,
-    QuerySearchModule,
-    // The processor's HTTP routes only. The workers run in their own process
-    // (src/worker.ts), so the API never consumes jobs.
-    ProcessorModule,
-    // The matcher's HTTP routes only, like the processor's.
-    MatcherModule,
+    // Processor, matcher and query-search routes, local only. The workers run
+    // in their own process (src/worker.ts), so the API never consumes jobs.
+    ...operatorImports(process.env),
   ],
   controllers: [HealthController],
   providers: [
     HealthService,
-    {
-      provide: BASIC_AUTH_CREDENTIALS,
-      inject: [ConfigService],
-      useFactory: (config: ConfigService<EnvironmentVariables, true>) =>
-        getBasicAuthConfig(config),
-    },
-    { provide: APP_GUARD, useClass: BasicAuthGuard },
     { provide: APP_INTERCEPTOR, useClass: ResponseInterceptor },
     { provide: APP_FILTER, useClass: HttpExceptionFilter },
   ],

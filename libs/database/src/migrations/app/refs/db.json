@@ -9,6 +9,8 @@
     "replace-profile-skills-lock",
     "create-profile-from-setup-idempotent",
     "create-profile-from-draft",
+    "profile-places-no-worldwide",
+    "profile-places-strip-worldwide",
     "match-details"
   ]
 }

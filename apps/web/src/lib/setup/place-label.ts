@@ -23,8 +23,6 @@ export function placeLabeler(lists: {
   );
   return (place) => {
     switch (place.kind) {
-      case 'worldwide':
-        return 'Worldwide';
       case 'region':
         return region(place.code);
       case 'country':

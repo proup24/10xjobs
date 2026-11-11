@@ -10,7 +10,6 @@ const label = placeLabeler({
 
 describe('placeLabeler', () => {
   it('labels each kind of place', () => {
-    expect(label({ kind: 'worldwide' })).toBe('Worldwide');
     expect(label({ kind: 'region', code: 'EU' })).toBe('Europe');
     expect(label({ kind: 'country', code: 'DE' })).toBe('Germany');
     expect(label({ kind: 'city', id: CITY })).toBe('Berlin, Germany');

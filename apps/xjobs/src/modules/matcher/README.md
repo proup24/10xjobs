@@ -88,7 +88,7 @@ One row per `(profileId, jobId)`, upserted (no history). Columns: `userId`, `pro
 
 ## Testing endpoints
 
-Served by the API (`npx nx serve xjobs`), behind its basic auth, under `/matcher`:
+Served by the API (`npx nx serve xjobs`), local only, with `XJOBS_OPERATOR_ENDPOINTS=1`, and the engine key, under `/matcher`:
 
 | Endpoint                        | Does                                                                                                                                                                                                |
 | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

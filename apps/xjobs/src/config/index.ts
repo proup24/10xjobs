@@ -89,16 +89,9 @@ export function getSystemDomain(config: AppConfigService): string {
   return config.get('SYSTEM_DOMAIN', { infer: true });
 }
 
-export interface BasicAuthConfig {
-  username: string;
-  password: string;
-}
-
-export function getBasicAuthConfig(config: AppConfigService): BasicAuthConfig {
-  return {
-    username: config.get('BASIC_AUTH_USERNAME', { infer: true }),
-    password: config.get('BASIC_AUTH_PASSWORD', { infer: true }),
-  };
+/** The shared key every request must send as `X-Engine-Key`. */
+export function getEngineApiKey(config: AppConfigService): string {
+  return config.get('ENGINE_API_KEY', { infer: true });
 }
 
 /**
@@ -114,17 +107,17 @@ export function getApifyToken(config: AppConfigService): string {
 export interface StorageConfig {
   supabaseUrl: string;
   serviceRoleKey: string;
-  resumesBucket: string;
 }
 
 /** Validation guarantees one of each URL and key pair is set. */
 export function getStorageConfig(config: AppConfigService): StorageConfig {
+  const supabaseUrl = (config.get('SUPABASE_URL', { infer: true }) ??
+    config.get('SUPABASE_PUBLIC_URL', { infer: true })) as string;
   return {
-    supabaseUrl: (config.get('SUPABASE_URL', { infer: true }) ??
-      config.get('SUPABASE_PUBLIC_URL', { infer: true })) as string,
+    // No trailing slash: the JWKS URL and the token issuer are built from it.
+    supabaseUrl: supabaseUrl.replace(/\/+$/, ''),
     serviceRoleKey: (config.get('SUPABASE_SERVICE_ROLE_KEY', { infer: true }) ??
       config.get('SERVICE_ROLE_KEY', { infer: true })) as string,
-    resumesBucket: config.get('STORAGE_RESUMES_BUCKET', { infer: true }),
   };
 }
 

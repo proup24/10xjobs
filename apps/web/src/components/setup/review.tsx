@@ -166,8 +166,7 @@ export function Review({
     {
       term: 'Tech stack',
       values: job.techs.map(
-        (t) =>
-          `${tech(t.code)}${t.rating === null ? '' : ` ${t.rating}/5`}${t.starred ? ', searched' : ''}`,
+        (t) => `${tech(t.code)}${t.rating === null ? '' : ` ${t.rating}/5`}`,
       ),
     },
     {

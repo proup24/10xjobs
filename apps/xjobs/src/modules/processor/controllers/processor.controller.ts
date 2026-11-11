@@ -28,8 +28,9 @@ import {
 import { PreviewPostingDto } from '../dtos/preview.dto';
 
 /**
- * Manual entry points to the processor, for testing and inspection. Behind
- * the app's basic auth. Preview and run call the paid models.
+ * Manual entry points to the processor, for testing and inspection. Local
+ * only, with `XJOBS_OPERATOR_ENDPOINTS=1`, and the engine key. Preview and run
+ * call the paid models.
  */
 @ApiTags('processor')
 @ApiErrorResponses(HttpStatus.UNAUTHORIZED, HttpStatus.INTERNAL_SERVER_ERROR)

@@ -28,7 +28,7 @@ const initial = {
   position: 'backend_engineer',
   yearsOfExperience: 6,
   seniorities: ['senior'],
-  techs: [{ code: 'postgresql', rating: 4 as const, starred: false }],
+  techs: [{ code: 'postgresql', rating: 4 as const }],
   languages: [{ lang: 'en', level: 'native' as const }],
 };
 

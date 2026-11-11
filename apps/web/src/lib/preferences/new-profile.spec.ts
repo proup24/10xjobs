@@ -29,8 +29,8 @@ const job: JobAnswers = {
   yearsOfExperience: 6,
   seniorities: ['senior', 'staff'],
   techs: [
-    { code: 'typescript', rating: 5, starred: true },
-    { code: 'saas', rating: 2, starred: false },
+    { code: 'typescript', rating: 5 },
+    { code: 'saas', rating: 2 },
   ],
   languages: [
     { lang: 'en', level: 'fluent' },
@@ -358,7 +358,7 @@ describe('saveNewProfileJob', () => {
     const r = await saveNewProfileJob(
       f.supabase,
       U,
-      { ...job, techs: [{ code: 'saas', rating: 2, starred: true }] },
+      { ...job, techs: [{ code: 'saas', rating: 2 }] },
       searchable,
       quiet,
     );
@@ -525,10 +525,7 @@ describe('saveNewProfileTerms', () => {
   it('re-checks a hand-edited draft job before creating', async () => {
     const forged = {
       ...job,
-      techs: [
-        { code: 'typescript', rating: 5, starred: true },
-        { code: 'saas', rating: 2, starred: true },
-      ],
+      techs: [{ code: 'saas', rating: 2 }],
     };
     const f = world({ draft: { id: D, answers: v2({ job: forged }) } });
     const r = await saveNewProfileTerms(

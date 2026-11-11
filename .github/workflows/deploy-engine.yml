@@ -311,10 +311,43 @@ jobs:
             echo "::error::ENGINE_HOSTNAME is missing or invalid in the caddy container"
             exit 1
           fi
-          if ! curl -fsS --retry 24 --retry-delay 5 --retry-all-errors "https://$ENGINE_HOST/api/health"; then
-            echo "::error::Health check failed for https://$ENGINE_HOST/api/health"
+          # Runs on the server: the key is read from the api container there and
+          # never reaches CI or the log. No `set -x` in this script.
+          # shellcheck disable=SC2029  # the validated hostname is quoted on purpose, client side
+          ssh "$ENGINE_SSH_USER@$ENGINE_SSH_HOST" "bash -s $(printf '%q' "$ENGINE_HOST")" <<'REMOTE'
+          set -euo pipefail
+          host="$1"
+          cd ~/engine
+          C="docker compose -p xjobs-engine --env-file image.env --env-file .env"
+          cid="$($C ps -q api)"
+          status=none
+          for _ in $(seq 1 24); do
+            status="$(docker inspect -f '{{.State.Health.Status}}' "$cid" 2>/dev/null || echo none)"
+            [ "$status" = healthy ] && break
+            sleep 5
+          done
+          if [ "$status" != healthy ]; then
+            echo "::error::The api container is '$status', not healthy"
             exit 1
           fi
+          key="$(docker exec "$cid" printenv ENGINE_API_KEY | tr -d '\r' || true)"
+          if [ -z "$key" ]; then
+            echo "::error::ENGINE_API_KEY is not set in the api container"
+            exit 1
+          fi
+          # The header goes over stdin (-H @-), so the key is not in curl's argv.
+          if ! printf 'X-Engine-Key: %s\n' "$key" | curl -sf -o /dev/null \
+            --retry 12 --retry-delay 5 --retry-all-errors -H @- "https://$host/api/health"; then
+            echo "::error::Health check with the key failed for https://$host/api/health"
+            exit 1
+          fi
+          code="$(curl -s -o /dev/null -w '%{http_code}' "https://$host/api/health")"
+          if [ "$code" != 401 ]; then
+            echo "::error::Health without the key answered $code, expected 401"
+            exit 1
+          fi
+          echo "Healthy with the key; 401 without it"
+          REMOTE
 
       # Also covers a failed `up -d`, which never reaches the health check.
       - name: Dump container status and logs

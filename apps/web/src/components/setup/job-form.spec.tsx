@@ -41,7 +41,7 @@ const SAVED: JobAnswers = {
   position: 'backend_engineer',
   yearsOfExperience: 6,
   seniorities: ['senior'],
-  techs: [{ code: 'postgresql', rating: 4, starred: true }],
+  techs: [{ code: 'postgresql', rating: 4 }],
   languages: [{ lang: 'en', level: 'fluent' }],
 };
 
@@ -121,7 +121,7 @@ describe('JobForm', () => {
   it('continue with an unrated tech shows "Rate PostgreSQL"', async () => {
     const { onSave } = setup({
       ...SAVED,
-      techs: [{ code: 'postgresql', rating: null, starred: false }],
+      techs: [{ code: 'postgresql', rating: null }],
     });
     submit();
     expect(await screen.findByText('Rate PostgreSQL')).toBeTruthy();
@@ -131,7 +131,7 @@ describe('JobForm', () => {
   it('only concept techs shows "Add at least one tech we can search for"', async () => {
     const { onSave } = setup({
       ...SAVED,
-      techs: [{ code: 'saas', rating: 3, starred: false }],
+      techs: [{ code: 'saas', rating: 3 }],
     });
     submit();
     expect(
