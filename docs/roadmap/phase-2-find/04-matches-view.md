@@ -1,4 +1,4 @@
-# 08: Matches view
+# 04: Matches view
 
 ## Goal
 
@@ -8,7 +8,8 @@ One organized page with every recent qualified job for a profile, and everything
 
 - The signed-in home page shows only "Signed in as …".
 - The design system (`apps/web/DESIGN.md`, `components/ui`), the vertical nav and profile labels used by preferences.
-- After slice 05, the user can read their matches with job details.
+- After slice 03, the user can read their matches with job details.
+- No publish flow in the app yet (slice 06 comes after). Matches exist for profiles published straight through the engine: the one already on `10xjobs-dev`, or test profiles published through slice 02's publish route.
 
 ## In scope
 
@@ -18,11 +19,11 @@ One organized page with every recent qualified job for a profile, and everything
 - **What wasn't checked:** the detail says plainly which preferences the matcher doesn't check yet (salary, contract type, engagement), so the user doesn't assume they were.
 - **Profile switcher** when the user has more than one published profile.
 - **"New since you last looked":** the app records when the user last viewed each profile's matches, and marks jobs whose `decidedAt` is later.
-- **Empty and early states:** a just-published profile with no matches yet, and a draft profile (send them to finish it).
+- **Empty and early states:** a just-published profile with no matches yet, and a draft profile. Until publish on create (slice 06) lands, a draft says plainly that the profile isn't live yet; slice 06 turns that into a prompt to finish setup.
 
 ## Out of scope
 
-- Rejected jobs (slice 09).
+- Rejected jobs (slice 05).
 - Marking jobs as applied, saved or hidden, and any feedback (later phases).
 - Other sources (later in Phase 2).
 - Notifications.

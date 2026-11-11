@@ -1,4 +1,4 @@
-# 07: Match on work authorization
+# 09: Match on work authorization
 
 ## Goal
 
@@ -15,7 +15,7 @@ A job is matched against where the user may legally work _(user)_. A role for "U
 
 - **Work authorization rule:** each job requirement is checked against the user's authorizations and residence, using the place hierarchy. A requirement the user meets: `pass`. One they don't meet: `fail`, unless the job offers sponsorship and the user accepts it. Nothing stated: `unknown`.
 - The matcher loads the user's eligibility with the profile, filtered by user id like every engine query.
-- **Eligibility edits re-match** _(follows from the rule)_: eligibility is per user, so changing it in preferences re-decides recent jobs for all of that user's published profiles, like a profile edit in slice 04. Each decision records which eligibility it read, alongside the profile version.
+- **Eligibility edits re-match** _(follows from the rule)_: eligibility is per user, so changing it in preferences re-decides recent jobs for all of that user's published profiles, like a profile edit in slice 07. Each decision records which eligibility it read, alongside the profile version.
 - A `MATCHER_VERSION` bump and a rematch of recent jobs.
 - Unit tests per row of the rule's table, and golden cases.
 
@@ -27,13 +27,13 @@ A job is matched against where the user may legally work _(user)_. A role for "U
 ## Locked
 
 - A fact the job doesn't state never rejects on its own.
-- Pure rule functions and readable, stored reasons, as in slice 06.
+- Pure rule functions and readable, stored reasons, as in slice 08.
 
 ## For the slice spec
 
 - How `residency` compares to `work-permit` and `citizenship` (does citizenship satisfy every requirement for that place?).
 - What `acceptsSponsorship` means when the job is silent on sponsorship.
-- How this sits with slice 04's apply path (the same engine call, or its own) and whether slice 07 should land after 04 for that reason.
+- How this sits with slice 07's apply path (the same engine call, or its own) and whether slice 09 should land after 07 for that reason.
 
 ## Done when
 

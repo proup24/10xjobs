@@ -1,4 +1,4 @@
-# 04: Edit a published profile
+# 07: Edit a published profile
 
 ## Goal
 

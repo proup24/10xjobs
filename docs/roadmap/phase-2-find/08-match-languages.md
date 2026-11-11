@@ -1,4 +1,4 @@
-# 06: Match on languages
+# 08: Match on languages
 
 ## Goal
 
@@ -22,7 +22,7 @@ A job is matched against the languages the user speaks, two ways _(user)_: the l
 ## Out of scope
 
 - Translating postings.
-- Languages in the UI beyond the check's reason (slice 08 shows it).
+- Languages in the UI beyond the check's reason (slice 04 shows it).
 
 ## Locked
 

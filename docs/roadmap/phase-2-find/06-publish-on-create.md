@@ -1,4 +1,4 @@
-# 03: Publish on create
+# 06: Publish on create
 
 ## Goal
 
@@ -15,14 +15,15 @@ A profile goes live as soon as the user finishes setting it up, with no publish 
 
 - Publishing at the end of setup and of "add a profile", through the engine (slice 02's client).
 - Deleting a **published** profile from preferences through the engine, so its shared searches are released. Drafts keep being deleted directly.
-- What the user sees right after publishing: the profile is live, and matches will appear as jobs are collected and matched. The first matches come from the backfill of recent jobs other profiles' searches already found.
+- What the user sees right after publishing: they land on the matches view (slice 04) for the new profile, in its "no matches yet" state; matches appear as jobs are collected and matched. The first matches come from the backfill of recent jobs other profiles' searches already found.
+- The matches view's draft state changes from "not live yet" to a prompt to finish setup.
 - Failure states: the engine is unreachable or refuses (for example an incomplete profile). The profile stays a draft, the user is told plainly, and they can retry.
 - Existing profiles on `10xjobs-dev` from before this slice: how drafts get published (a one-off prompt in the app, or a script), and whether the one profile already published through the engine is kept (moved to the current query recipe with `db:regenerate`) or reset. The spec decides.
 
 ## Out of scope
 
-- Changing a published profile (slice 04).
-- The matches page (slice 08).
+- Changing a published profile (slice 07).
+- The matches page itself (slice 04, already built).
 
 ## Locked
 

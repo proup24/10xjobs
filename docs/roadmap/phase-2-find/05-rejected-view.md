@@ -1,4 +1,4 @@
-# 09: Rejected view
+# 05: Rejected view
 
 ## Goal
 
@@ -7,7 +7,7 @@ The user can see recent jobs that were rejected for a profile, and why, so a wro
 ## What already exists
 
 - Every decision stores all its checks with `pass`, `fail` or `unknown`, the job's value, the profile's value and a reason (the matching spec).
-- The matches view (slice 08).
+- The matches view (slice 04).
 
 ## In scope
 
@@ -17,7 +17,7 @@ The user can see recent jobs that were rejected for a profile, and why, so a wro
 
 ## Out of scope
 
-- Overriding a rejection, or marking it wrong from the app. Fixes go through preferences (slice 04) or a matcher rule change.
+- Overriding a rejection, or marking it wrong from the app. Fixes go through preferences (slice 07) or a matcher rule change.
 - The full rejection history beyond the recent window.
 
 ## Locked
