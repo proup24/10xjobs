@@ -9,7 +9,6 @@ const UNIT_MS = {
 const AGO = /^(?:reposted\s+)?(\d+)\s+(minute|hour|day|week|month)s?\s+ago$/i;
 const NOW = /^(?:just now|moments ago)$/i;
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
-const DAY_MS = UNIT_MS.day;
 
 /**
  * Estimates when a job was posted from LinkedIn's relative text ("8 hours
@@ -35,16 +34,18 @@ export function postedAtFromAgo(
       UNIT_MS[match[2].toLowerCase() as keyof typeof UNIT_MS];
   }
   const scraped = scrapedAt.getTime();
+  if (!Number.isFinite(scraped)) return null;
   let estimate = scraped - offset;
   let hi = scraped;
   if (publishedDate && DATE_ONLY.test(publishedDate)) {
     const start = Date.parse(`${publishedDate}T00:00:00.000Z`);
     if (!Number.isNaN(start) && start <= scraped) {
-      hi = Math.min(start + DAY_MS - 1, scraped);
+      hi = Math.min(start + UNIT_MS.day - 1, scraped);
       estimate = Math.max(estimate, start);
     }
   }
-  return new Date(Math.min(estimate, hi)).toISOString();
+  const posted = new Date(Math.min(estimate, hi));
+  return Number.isNaN(posted.getTime()) ? null : posted.toISOString();
 }
 
 /**

@@ -38,6 +38,16 @@ describe('postedAtFromAgo', () => {
     expect(ago('8 hours ago', null)).toBe('2026-11-10T12:32:26.671Z');
   });
 
+  it('returns null instead of throwing for out-of-range values', () => {
+    expect(ago('99999999999 days ago')).toBeNull();
+    expect(postedAtFromAgo('1 hour ago', new Date(NaN), null)).toBeNull();
+  });
+
+  it('ignores a malformed published date', () => {
+    expect(ago('8 hours ago', '2026-13-45')).toBe('2026-11-10T12:32:26.671Z');
+    expect(ago('8 hours ago', 'garbage')).toBe('2026-11-10T12:32:26.671Z');
+  });
+
   it.each(['', null, 42, '30+ days ago', 'il y a 3 heures', 'soon'])(
     'returns null for %j',
     (value) => {
