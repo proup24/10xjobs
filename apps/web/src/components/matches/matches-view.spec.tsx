@@ -220,4 +220,15 @@ describe('MatchesView empty states', () => {
     renderView({ initial: { job: 'gone' }, selected: [] });
     expect(screen.getByText("This job isn't in your matches")).toBeTruthy();
   });
+
+  // Below `md` the list and heading are hidden while a job is open, so the pane needs its
+  // own way back.
+  it('links back to the list from a job that is not in the matches', () => {
+    renderView({ initial: { job: 'gone', tab: '7d' }, selected: [] });
+    expect(
+      screen
+        .getByRole('link', { name: 'Back to matches' })
+        .getAttribute('href'),
+    ).toBe('/?tab=7d');
+  });
 });

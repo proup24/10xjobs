@@ -5,8 +5,8 @@ import type { MatchRow } from './group';
 import { selectedRows } from './selected';
 
 const J = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
-const row = (jobId: string, profileId = 'P1') =>
-  ({ jobId, profileId }) as MatchRow;
+const row = (jobId: string, profileId = 'P1', closed = false) =>
+  ({ jobId, profileId, closed }) as MatchRow;
 const profiles = [
   { id: 'P1', state: 'published' as const },
   { id: 'D', state: 'draft' as const },
@@ -28,6 +28,15 @@ describe('selectedRows', () => {
     expect(await selectedRows(f.supabase, J, profiles)).toEqual([row(J)]);
     expect(f.rpcs('match_details')).toHaveLength(1);
     expect(f.rpcs('match_details')[0].args).toEqual({ p_job_id: J });
+  });
+
+  // A closed job has no detail to show (it is dropped when grouped), so it reads as "not
+  // in your matches" rather than a blank pane.
+  it('is empty for a closed job', async () => {
+    const f = fakeSupabase({
+      rpc: () => ({ data: [row(J, 'P1', true)], error: null }),
+    });
+    expect(await selectedRows(f.supabase, J, profiles)).toEqual([]);
   });
 
   it('is empty, with no read, for a job param that is not a uuid', async () => {

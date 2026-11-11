@@ -97,6 +97,19 @@ function TechList({ title, items }: { title: string; items: string[] }) {
   );
 }
 
+/** Below `md`, where the list is hidden while a job is open: the way back to it. */
+export function BackLink({ href }: { href: string }) {
+  return (
+    <Link
+      href={href}
+      className="inline-flex w-fit items-center gap-1 rounded-sm text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring md:hidden"
+    >
+      <ChevronLeft aria-hidden />
+      Back to matches
+    </Link>
+  );
+}
+
 /** The selected job: facts first, then why it matched, then the description. */
 export function MatchDetail({
   rows,
@@ -141,13 +154,7 @@ export function MatchDetail({
 
   return (
     <article className="flex min-w-0 flex-col gap-6">
-      <Link
-        href={backHref}
-        className="inline-flex w-fit items-center gap-1 rounded-sm text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring md:hidden"
-      >
-        <ChevronLeft aria-hidden />
-        Back to matches
-      </Link>
+      <BackLink href={backHref} />
 
       <header className="flex flex-col gap-1">
         <h2 className="text-title-3">{first.title}</h2>

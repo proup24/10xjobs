@@ -15,7 +15,7 @@ import {
   type ViewState,
 } from '@/lib/matches/view-state';
 import { cn } from '@/lib/utils';
-import { MatchDetail } from './match-detail';
+import { BackLink, MatchDetail } from './match-detail';
 import { MatchEmpty } from './match-empty';
 import { MatchFilters } from './match-filters';
 import { MatchList } from './match-list';
@@ -124,9 +124,16 @@ export function MatchesView({
   // In one profile, show that profile's reasons when it matched the job.
   const own = selected?.filter((r) => r.profileId === state.profile) ?? [];
   const detailRows = own.length ? own : (selected ?? []);
+  const backHref = href({ ...state, job: null });
   let detail: React.ReactNode;
   if (state.job === null) detail = <MatchEmpty kind="pick" />;
-  else if (detailRows.length === 0) detail = <MatchEmpty kind="not-found" />;
+  else if (detailRows.length === 0)
+    detail = (
+      <div className="flex flex-col gap-6">
+        <BackLink href={backHref} />
+        <MatchEmpty kind="not-found" />
+      </div>
+    );
   else
     detail = (
       <MatchDetail
@@ -136,7 +143,7 @@ export function MatchesView({
         profileLabels={profileLabels}
         now={now}
         userId={userId}
-        backHref={href({ ...state, job: null })}
+        backHref={backHref}
       />
     );
 
