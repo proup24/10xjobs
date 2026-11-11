@@ -52,7 +52,8 @@ export default async function Page({
   });
 
   const live = publishedRows(rows, profiles);
-  const selected = await selectedRows(supabase, state.job, live, profiles);
+  // The window has list rows only; the selected job is read in full.
+  const selected = await selectedRows(supabase, state.job, profiles);
 
   return (
     <MatchesView
