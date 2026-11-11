@@ -1,3 +1,4 @@
+import { exactPostedAt } from './posted-at';
 import { emptyRecord, type NormalizedRecord } from './record';
 import {
   cleanText,
@@ -58,6 +59,7 @@ export function mapAshby(p: Record<string, unknown>): AtsMapped {
     location: cleanText(posting.locationName),
     contractType: employment ? (ASHBY_EMPLOYMENT[employment] ?? null) : null,
     publishedAt: datePart(posting.publishedDate),
+    postedAt: exactPostedAt(posting.publishedDate),
     ...descriptions(cleanText(posting.descriptionHtml)),
     applyUrl: url,
     postingUrl: url,
@@ -76,6 +78,7 @@ export function mapGreenhouse(p: Record<string, unknown>): AtsMapped {
     companyName: cleanText(posting.company_name),
     location: cleanText(objectAt(posting.location).name),
     publishedAt: datePart(posting.first_published),
+    postedAt: exactPostedAt(posting.first_published),
     ...descriptions(content ? decodeEntitiesOnce(content) : null),
     applyUrl: url,
     postingUrl: url,

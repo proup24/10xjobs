@@ -1,4 +1,4 @@
-# 05: Job details for matches
+# 03: Job details for matches
 
 ## Goal
 
@@ -17,7 +17,7 @@ A signed-in user can read the details of the jobs they're matched with, and noth
 
 ## Out of scope
 
-- The page itself (slice 08).
+- The page itself (slice 04).
 - Any user writes to jobs.
 
 ## Locked

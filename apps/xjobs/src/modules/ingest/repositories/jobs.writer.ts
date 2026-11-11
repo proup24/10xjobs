@@ -83,6 +83,7 @@ function fieldColumns(record: NormalizedRecord): JobPatch {
     salaryCurrency: record.salary?.currency ?? null,
     salaryPeriod: record.salary?.period ?? null,
     publishedAt: record.publishedAt,
+    postedAt: record.postedAt ? new Date(record.postedAt) : null,
     descriptionHtml: record.descriptionHtml,
     descriptionText: record.descriptionText,
     applyUrl: record.applyUrl,
@@ -114,7 +115,10 @@ async function normalizedVersion(
   const raw = await orm.public.RawItemVersion.where({
     id: input.latestVersionId,
   }).first();
-  const result = normalize(input.channel, raw?.payload);
+  // The version's first sighting is the scrape that produced its stored text.
+  const result = normalize(input.channel, raw?.payload, {
+    scrapedAt: raw?.firstSeenAt ?? new Date(0),
+  });
   return orm.public.NormalizedVersion.create({
     rawVersionId: input.latestVersionId,
     normalizerVersion: NORMALIZER_VERSION,

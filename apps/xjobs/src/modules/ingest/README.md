@@ -37,7 +37,7 @@ These tables are shared, not workspace-scoped: collection is attributed to share
 
 ## Normalized jobs
 
-Each raw item's **latest** version is mapped (`normalize/`) to one unified record shaped like the LinkedIn job board: title, company, location, contract type, experience level, sector, salary, published date, descriptions, apply and posting URLs, poster, `closed`. Facts a source does not state stay null (an Ashby company is never guessed). A LinkedIn post keeps only its body and author, never as the employer: a post may hold several jobs or none, so Process splits it.
+Each raw item's **latest** version is mapped (`normalize/`) to one unified record shaped like the LinkedIn job board: title, company, location, contract type, experience level, sector, salary, published date, posted time (`postedAt`), descriptions, apply and posting URLs, poster, `closed`. Facts a source does not state stay null (an Ashby company is never guessed). A LinkedIn post keeps only its body and author, never as the employer: a post may hold several jobs or none, so Process splits it.
 
 - `normalized_versions`: one row per raw version and `NORMALIZER_VERSION`, `valid` with its record and job key, or `invalid` with a reason (the raw rows are kept either way).
 - `normalized_jobs`: one row per job key, with one typed column per field, `fieldSources` (which raw item each value came from), seen times, and the processing status Process reads. A job whose last source moved to another job is `merged` into it, never deleted.
@@ -45,7 +45,9 @@ Each raw item's **latest** version is mapped (`normalize/`) to one unified recor
 
 **Job key** (`normalize/job-key.ts`): an Ashby or Greenhouse posting is `ats:<provider>/<tenant>/<id>`, also when a LinkedIn job applies to it. Another external apply URL is `url:<canonical>|<exact title>` (no fragment, no `utm_*`/`trk*`/`gh_src`/`refId`/`ref`/`src`/`source`, other parameters kept and sorted) if it carries an identifier; the title keeps different roles on one listing page apart. Otherwise the item's own id: `linkedin-job:<id>`. A post is always `linkedin-post:<id>`. A raw item never falls back from an `ats:`/`url:` key to its own id: if a rescrape drops the apply URL, its most recent version with a posting key decides.
 
-**Merging:** per field, the first non-null value from the employer's ATS posting, then the LinkedIn job, then a post; the most recently seen source wins within a rank. The job is `closed` when every ATS posting behind it is.
+**Merging:** per field, the first non-null value from the employer's ATS posting, then the LinkedIn job, then a post; the most recently seen source wins within a rank. The job is `closed` when every ATS posting behind it is. `postedAt` is the exception: the earliest non-null value among open sources.
+
+**Posted time (`postedAt`):** exact from the source when it states a time (Greenhouse `first_published`, Ashby `publishedDate` with a time, a LinkedIn post's `postedAt.date`); otherwise estimated from LinkedIn's relative text ("8 hours ago") against the first scrape of that raw version (`normalize/posted-at.ts`), clamped to the published day; null when unknown. Version 3 introduced it, so run `db:renormalize` once after deploying it.
 
 **Processing status:** ingest sets `processingStatus = 'pending'` only when an observation creates a job (`new`) or finds it after 21 days unseen (`reopened`, `config/normalize.ts`). A new source or a content change updates the columns and leaves the status alone. `processing`, `processed` and `failed` belong to Process. After a batch is marked `ingested`, `ingestBatch` reports the jobs it left `pending` to its `onPending` hook; the ingest worker uses it to enqueue them on the processor's `process` queue (LinkedIn job board batches only). That is a nudge: a failure is logged, the batch stays `ingested`, and Process's sweeper finds the jobs anyway.
 

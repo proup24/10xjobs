@@ -1,6 +1,6 @@
 'use client';
 
-import { Home, SlidersHorizontal, type LucideIcon } from 'lucide-react';
+import { Briefcase, SlidersHorizontal, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -16,11 +16,11 @@ import {
 
 // Only routes that exist belong here.
 export const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
-  { href: '/', label: 'Home', icon: Home },
+  { href: '/', label: 'Matches', icon: Briefcase },
   { href: '/preferences', label: 'Preferences', icon: SlidersHorizontal },
 ];
 
-/** Home only at `/`; any other item for its own path and everything under it. */
+/** Matches only at `/`; any other item for its own path and everything under it. */
 export function isActive(href: string, pathname: string): boolean {
   if (href === '/') return pathname === '/';
   return pathname === href || pathname.startsWith(`${href}/`);

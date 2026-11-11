@@ -20,7 +20,7 @@ The web app can call the hosted engine on the signed-in user's behalf, and the e
 
 ## Out of scope
 
-- The publish, edit and delete flows themselves (slices 03 and 04).
+- The publish, edit and delete flows themselves (slices 06 and 07).
 
 ## Locked
 

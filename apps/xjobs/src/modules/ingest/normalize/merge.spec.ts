@@ -85,6 +85,34 @@ describe('mergeSources', () => {
     expect(merged.fieldSources.location).toBe('li-1');
   });
 
+  it('takes the earliest posted time among open sources', () => {
+    const li = source('li-1', Channel.LINKEDIN_JOB_BOARD, {
+      postedAt: '2026-11-10T12:00:00.000Z',
+    });
+    const ash = source('ashby-1', Channel.ASHBY, {
+      postedAt: '2026-11-09T08:00:00.000Z',
+    });
+    const merged = mergeSources([li, ash]);
+    expect(merged.record.postedAt).toBe('2026-11-09T08:00:00.000Z');
+    expect(merged.fieldSources.postedAt).toBe('ashby-1');
+  });
+
+  it('ignores the posted time of a closed source, and is null when none states one', () => {
+    const closed = source('ashby-1', Channel.ASHBY, {
+      closed: true,
+      postedAt: '2026-11-01T00:00:00.000Z',
+    });
+    const li = source('li-1', Channel.LINKEDIN_JOB_BOARD, {
+      postedAt: '2026-11-10T12:00:00.000Z',
+    });
+    expect(mergeSources([closed, li]).record.postedAt).toBe(
+      '2026-11-10T12:00:00.000Z',
+    );
+    const none = mergeSources([ashby, linkedin]);
+    expect(none.record.postedAt).toBeNull();
+    expect(none.fieldSources.postedAt).toBeUndefined();
+  });
+
   it('is open while any ATS posting is open', () => {
     const closed = source('ashby-1', Channel.ASHBY, { closed: true });
     const open = source('ashby-2', Channel.ASHBY, {});

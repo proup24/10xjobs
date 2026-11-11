@@ -5,7 +5,7 @@ Status: draft
 
 ## Intent
 
-Phase 1 ends with users' profiles as drafts: the engine isn't deployed and no user gets jobs. (`10xjobs-dev` has one profile published earlier through the engine directly, which slice 01 can use to check the hosted pipeline before slice 03.) Phase 2 closes that loop. A user's profile goes live when they finish setting it up, the hosted engine collects, processes and matches jobs for it on a schedule, and the web app shows the matches in one organized view: every qualified job with the details the user checks before applying (role, title, company, place, the description and the original posting), plus why it matched.
+Phase 1 ends with users' profiles as drafts: the engine isn't deployed and no user gets jobs. (`10xjobs-dev` has one profile published earlier through the engine directly, which slice 01 can use to check the hosted pipeline before slice 06.) Phase 2 closes that loop. A user's profile goes live when they finish setting it up, the hosted engine collects, processes and matches jobs for it on a schedule, and the web app shows the matches in one organized view: every qualified job with the details the user checks before applying (role, title, company, place, the description and the original posting), plus why it matched.
 
 The user's own words for how they use it: they expect the jobs the hub matches to be worth their time, but they still check the role, the title, the description and the original posting before applying. The view is built for that check.
 
@@ -33,16 +33,16 @@ On the hosted app, with LinkedIn job-board jobs:
 | --- | ------------------------------------------------------------- | ---------- |
 | 01  | [Engine hosting](01-engine-hosting.md)                        | none       |
 | 02  | [Web app to engine auth](02-engine-auth.md)                   | 01         |
-| 03  | [Publish on create](03-publish-on-create.md)                  | 02         |
-| 04  | [Edit a published profile](04-edit-published.md)              | 03         |
-| 05  | [Job details for matches](05-job-details-access.md)           | none       |
-| 06  | [Match on languages](06-match-languages.md)                   | none       |
-| 07  | [Match on work authorization](07-match-work-authorization.md) | 04         |
-| 08  | [Matches view](08-matches-view.md)                            | 03, 05     |
-| 09  | [Rejected view](09-rejected-view.md)                          | 08         |
+| 03  | [Job details for matches](03-job-details-access.md)           | none       |
+| 04  | [Matches view](04-matches-view.md)                            | 03         |
+| 05  | [Rejected view](05-rejected-view.md)                          | 04         |
+| 06  | [Publish on create](06-publish-on-create.md)                  | 02         |
+| 07  | [Edit a published profile](07-edit-published.md)              | 06         |
+| 08  | [Match on languages](08-match-languages.md)                   | none       |
+| 09  | [Match on work authorization](09-match-work-authorization.md) | 07         |
 | 10  | [Launch check](10-launch-check.md)                            | 01–09      |
 
-Slices 05 and 06 are database and engine work and can run alongside 01–03. Slice 07 follows 04 because eligibility edits re-match the same way profile edits do. Slice 04 can land after 08 if matches should be visible sooner; the order above is the default.
+The UI comes first _(user)_: job details, the matches view and the Rejected tab land before publishing and editing, so matches are visible sooner. Until slice 06 lands, slices 04 and 05 are built and checked against profiles published straight through the engine (the one already on `10xjobs-dev`, or more through slice 02's publish route). Slice 08 is engine work and can run alongside any of 03–07. Slice 09 follows 07 because eligibility edits re-match the same way profile edits do.
 
 ## Decisions locked for the whole phase
 
@@ -56,7 +56,7 @@ Slices 05 and 06 are database and engine work and can run alongside 01–03. Sli
 - **Published profiles are no longer frozen** _(user)_. This reverses the Phase 1 decision "Published profiles are frozen". A published profile stays editable, and saving a change applies it: the searches for later collection runs follow the new preferences, and recent jobs are re-decided against them. A job that only failed on the old preferences becomes qualified and shows up as new; a recent qualified job that no longer fits leaves the list. Older jobs are not re-decided.
 - **No separate publish button** _(my call)_. Finishing guided setup, or finishing "add a profile", publishes. After that, saving is enough.
 - **Editing does not re-collect the past.** A new search finds jobs from its next scheduled run on; it isn't replayed over old collection windows.
-- **A decision must still be explainable after an edit.** Today `job_matches` relies on the profile being frozen to know which preferences a decision used. With editable profiles, each decision has to record which version of the profile it read. How (a profile version counter, a snapshot of the compared values in `checks`, or both) is slice 04's to settle.
+- **A decision must still be explainable after an edit.** Today `job_matches` relies on the profile being frozen to know which preferences a decision used. With editable profiles, each decision has to record which version of the profile it read. How (a profile version counter, a snapshot of the compared values in `checks`, or both) is slice 07's to settle.
 
 **Hosting** _(my call; user asked for cheap and leaned to Hetzner)_
 

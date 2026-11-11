@@ -16,7 +16,13 @@ const item = (
   id: string,
   pos: string,
   firstPlace: Place | null = null,
-): ProfileListItem => ({ id, position: pos, firstPlace, hasResume: true });
+): ProfileListItem => ({
+  id,
+  position: pos,
+  firstPlace,
+  hasResume: true,
+  state: 'published',
+});
 const berlin: Place = { kind: 'country', code: 'DE' };
 
 describe('profileLabels', () => {
@@ -81,6 +87,7 @@ describe('loadProfileList', () => {
             id: 'a',
             position: 'backend_engineer',
             resumeKey: 'k',
+            state: 'published',
             locations: {
               remote: [],
               hybrid: [{ kind: 'country', code: 'DE' }],
@@ -91,13 +98,20 @@ describe('loadProfileList', () => {
             id: 'b',
             position: 'frontend_engineer',
             resumeKey: null,
+            state: 'published',
             locations: {
               remote: [{ kind: 'region', code: 'EU' }],
               hybrid: [{ kind: 'country', code: 'DE' }],
               onsite: [],
             },
           },
-          { id: 'c', position: 'x', resumeKey: null, locations: null },
+          {
+            id: 'c',
+            position: 'x',
+            resumeKey: null,
+            locations: null,
+            state: 'draft',
+          },
         ],
         error: null,
       }),
@@ -108,14 +122,22 @@ describe('loadProfileList', () => {
         position: 'backend_engineer',
         firstPlace: { kind: 'country', code: 'DE' },
         hasResume: true,
+        state: 'published',
       },
       {
         id: 'b',
         position: 'frontend_engineer',
         firstPlace: { kind: 'region', code: 'EU' },
         hasResume: false,
+        state: 'published',
       },
-      { id: 'c', position: 'x', firstPlace: null, hasResume: false },
+      {
+        id: 'c',
+        position: 'x',
+        firstPlace: null,
+        hasResume: false,
+        state: 'draft',
+      },
     ]);
     const [q] = f.queries('profiles');
     expect(q.filters.filter(([n]) => n === 'order')).toEqual([

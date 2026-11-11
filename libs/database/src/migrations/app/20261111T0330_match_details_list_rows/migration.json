@@ -1,0 +1,9 @@
+{
+  "from": "00a042d35d22a4fbebf6e55bab0e9ab945de091f26bbd6f41fef3e4023030455",
+  "to": "00a042d35d22a4fbebf6e55bab0e9ab945de091f26bbd6f41fef3e4023030455",
+  "providedInvariants": [
+    "match-details-list-rows"
+  ],
+  "createdAt": "2026-11-11T03:18:16.778Z",
+  "migrationHash": "23bb74d21edba8076c8e4b30e9fce71b97628899cc5b1af0ec9184e3535e37f4"
+}

@@ -57,6 +57,17 @@ export function mergeSources(sources: MergeSource[]): MergedJob {
         : 'job';
     } else if (field === 'closed') {
       record.closed = ats.length > 0 && ats.every((s) => s.record.closed);
+    } else if (field === 'postedAt') {
+      // The earliest known posting time among open sources.
+      let from: MergeSource | undefined;
+      for (const s of open)
+        if (
+          s.record.postedAt !== null &&
+          (!from || s.record.postedAt < (from.record.postedAt as string))
+        )
+          from = s;
+      record.postedAt = from ? from.record.postedAt : null;
+      if (from) fieldSources.postedAt = from.rawItemId;
     } else if (field === 'postingUrl') {
       const from = open[0] ?? first;
       record.postingUrl = from.record.postingUrl;

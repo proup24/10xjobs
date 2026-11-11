@@ -1,5 +1,5 @@
 {
-  "hash": "692de7e1f3a1de4d1810971aad16ccc8e77c43000f9f6446faf2b873a6ce64fe",
+  "hash": "00a042d35d22a4fbebf6e55bab0e9ab945de091f26bbd6f41fef3e4023030455",
   "invariants": [
     "end-expired-sessions",
     "code-check-fixes",
@@ -11,6 +11,8 @@
     "create-profile-from-draft",
     "profile-places-no-worldwide",
     "profile-places-strip-worldwide",
-    "match-details"
+    "match-details",
+    "match-details-all-profiles",
+    "match-details-list-rows"
   ]
 }

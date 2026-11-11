@@ -82,6 +82,7 @@ export function mapBebityJob(
           }
         : null,
     publishedAt: datePart(p.publishedAt),
+    postedAt: null,
     descriptionHtml,
     descriptionText:
       cleanText(p.description) ??

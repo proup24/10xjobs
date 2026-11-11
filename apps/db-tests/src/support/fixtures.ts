@@ -379,10 +379,12 @@ async function insertDetailedJob(
   status: 'active' | 'merged',
   mergedIntoId: string | null,
   jobKey: string,
+  postedAt: string | null = null,
 ): Promise<string> {
   const now = new Date().toISOString();
   return insertTracked('normalized_jobs', {
     jobKey,
+    postedAt,
     kind: 'job',
     status,
     mergedIntoId,
@@ -425,6 +427,7 @@ export async function seedDetailedJob(
     status?: 'active' | 'merged';
     channels?: Channel[];
     lastSeenAt?: string;
+    postedAt?: string | null;
     document?: Record<string, unknown>;
   } = {},
 ): Promise<SeededJob> {
@@ -434,7 +437,12 @@ export async function seedDetailedJob(
     status === 'merged'
       ? await insertDetailedJob('active', null, `test:${randomUUID()}`)
       : null;
-  const jobId = await insertDetailedJob(status, targetId, jobKey);
+  const jobId = await insertDetailedJob(
+    status,
+    targetId,
+    jobKey,
+    opts.postedAt ?? null,
+  );
   if (opts.lastSeenAt) {
     // firstSeenAt moves too: a job is never last seen before it was first seen.
     const { error } = await admin()

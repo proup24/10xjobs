@@ -536,6 +536,43 @@ export type Database = {
           },
         ];
       };
+      job_views: {
+        Row: {
+          id: string;
+          jobId: string;
+          userId: string;
+          viewedAt: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          id?: string;
+          jobId: string;
+          userId: string;
+          viewedAt?: string;
+        };
+        Update: {
+          id?: string;
+          jobId?: string;
+          userId?: string;
+          viewedAt?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'job_views_jobId_fkey';
+            columns: ['jobId'];
+            isOneToOne: false;
+            referencedRelation: 'normalized_jobs';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'job_views_userId_fkey';
+            columns: ['userId'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       junk_flags: {
         Row: {
           aliases: string[];
@@ -635,6 +672,7 @@ export type Database = {
           location: string | null;
           mergedIntoId: string | null;
           normalizerVersion: number;
+          postedAt: string | null;
           posterName: string | null;
           posterProfileUrl: string | null;
           posterType: string | null;
@@ -678,6 +716,7 @@ export type Database = {
           location?: string | null;
           mergedIntoId?: string | null;
           normalizerVersion: number;
+          postedAt?: string | null;
           posterName?: string | null;
           posterProfileUrl?: string | null;
           posterType?: string | null;
@@ -720,6 +759,7 @@ export type Database = {
           location?: string | null;
           mergedIntoId?: string | null;
           normalizerVersion?: number;
+          postedAt?: string | null;
           posterName?: string | null;
           posterProfileUrl?: string | null;
           posterType?: string | null;
@@ -1634,9 +1674,10 @@ export type Database = {
       };
       match_details: {
         Args: {
+          p_details?: boolean;
           p_job_id?: string;
           p_outcome?: string;
-          p_profile_id: string;
+          p_profile_id?: string;
           p_since?: string;
         };
         Returns: {
@@ -1656,6 +1697,7 @@ export type Database = {
           location: string;
           matchId: string;
           outcome: string;
+          postedAt: string;
           posterName: string;
           posterProfileUrl: string;
           posterType: string;
@@ -1670,6 +1712,7 @@ export type Database = {
           stackScore: number;
           title: string;
           unverified: boolean;
+          viewedAt: string;
         }[];
       };
       replace_profile_skills: {
