@@ -230,11 +230,14 @@ export function MatchDetail({
           {lines.map((l) => (
             <li key={l.rule} className="flex items-start gap-2">
               {l.mark === 'pass' ? (
-                <Check aria-label="Pass" className="mt-0.5 text-success" />
+                <Check
+                  aria-label="Pass"
+                  className="mt-0.5 shrink-0 text-success"
+                />
               ) : (
                 <CircleHelp
                   aria-label="Unknown"
-                  className="mt-0.5 text-warning"
+                  className="mt-0.5 shrink-0 text-warning"
                 />
               )}
               <span>{l.text}</span>
