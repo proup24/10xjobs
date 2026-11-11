@@ -155,7 +155,7 @@ export function MatchesView({
       <div className="flex flex-col gap-6 md:flex-row">
         <div
           className={cn(
-            'flex flex-col gap-3 md:sticky md:top-4 md:max-h-svh md:w-96 md:shrink-0 md:self-start md:overflow-y-auto',
+            'flex flex-col gap-3 md:sticky md:top-0 md:-mt-4 md:max-h-svh md:w-96 md:shrink-0 md:self-start md:overflow-y-auto md:pt-4',
             state.job && 'hidden md:flex',
           )}
         >
