@@ -43,9 +43,9 @@ afterEach(() => {
 });
 
 describe('AppNav', () => {
-  it('marks the Home link as the current page at /', () => {
+  it('marks the Matches link as the current page at /', () => {
     renderNav();
-    const home = screen.getByRole('link', { name: 'Home' });
+    const home = screen.getByRole('link', { name: 'Matches' });
     expect(home.getAttribute('aria-current')).toBe('page');
     expect(home.getAttribute('href')).toBe('/');
   });
@@ -54,6 +54,10 @@ describe('AppNav', () => {
     pathname.value = '/somewhere-else';
     renderNav();
     expect(document.querySelector('[aria-current="page"]')).toBeNull();
+  });
+
+  it('starts with Matches at /', () => {
+    expect(NAV_ITEMS[0]).toMatchObject({ href: '/', label: 'Matches' });
   });
 
   it('lists only routes that exist', () => {
@@ -67,7 +71,7 @@ describe('AppNav', () => {
     expect(prefs.getAttribute('aria-current')).toBe('page');
     expect(prefs.getAttribute('href')).toBe('/preferences');
     expect(
-      screen.getByRole('link', { name: 'Home' }).getAttribute('aria-current'),
+      screen.getByRole('link', { name: 'Matches' }).getAttribute('aria-current'),
     ).toBeNull();
   });
 
@@ -80,7 +84,7 @@ describe('AppNav', () => {
   it('navigates at once when clean', () => {
     pathname.value = '/preferences';
     renderNav();
-    fireEvent.click(screen.getByRole('link', { name: 'Home' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Matches' }));
     expect(push).toHaveBeenCalledWith('/');
   });
 
@@ -88,7 +92,7 @@ describe('AppNav', () => {
     pathname.value = '/preferences';
     renderNav();
     fireEvent.click(screen.getByRole('button', { name: 'make dirty' }));
-    fireEvent.click(screen.getByRole('link', { name: 'Home' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Matches' }));
     expect(push).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Discard' }));
     expect(push).toHaveBeenCalledWith('/');
@@ -98,7 +102,7 @@ describe('AppNav', () => {
     pathname.value = '/';
     renderNav();
     fireEvent.click(screen.getByRole('button', { name: 'make dirty' }));
-    expect(fireEvent.click(screen.getByRole('link', { name: 'Home' }))).toBe(
+    expect(fireEvent.click(screen.getByRole('link', { name: 'Matches' }))).toBe(
       false,
     );
     expect(screen.queryByText('Discard changes?')).toBeNull();
@@ -108,7 +112,7 @@ describe('AppNav', () => {
   it('lets modified clicks through untouched even when dirty', () => {
     renderNav();
     fireEvent.click(screen.getByRole('button', { name: 'make dirty' }));
-    const link = screen.getByRole('link', { name: 'Home' });
+    const link = screen.getByRole('link', { name: 'Matches' });
     for (const init of [
       { ctrlKey: true },
       { metaKey: true },

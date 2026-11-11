@@ -22,6 +22,20 @@ export type Tab = '24h' | '7d';
 
 const DAY_MS = 24 * 3600_000;
 
+/**
+ * Only the rows of published profiles. A draft profile is not live, so its leftover rows
+ * (from before it went back to draft) never show, in "All profiles" or in any count.
+ */
+export function publishedRows(
+  rows: MatchRow[],
+  profiles: { id: string; state: 'draft' | 'published' }[],
+): MatchRow[] {
+  const published = new Set(
+    profiles.filter((p) => p.state === 'published').map((p) => p.id),
+  );
+  return rows.filter((r) => published.has(r.profileId));
+}
+
 /** Rows to one job each; closed jobs dropped; newest posted first, then by job id. */
 export function groupByJob(rows: MatchRow[]): MatchedJob[] {
   const byJob = new Map<string, MatchRow[]>();

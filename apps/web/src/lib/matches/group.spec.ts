@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   groupByJob,
+  publishedRows,
   selectJobs,
   sourceOptions,
   type MatchRow,
@@ -128,5 +129,22 @@ describe('sourceOptions', () => {
       { value: 'ASHBY', label: 'Ashby' },
       { value: 'LINKEDIN_POSTS', label: 'LinkedIn posts' },
     ]);
+  });
+});
+
+describe('publishedRows', () => {
+  it("drops rows of profiles that aren't published, so every view and count skips them", () => {
+    const rows = [
+      row({ jobId: 'a', profileId: 'P1' }),
+      row({ jobId: 'a', profileId: 'D' }),
+      row({ jobId: 'b', profileId: 'D' }),
+      row({ jobId: 'c', profileId: 'gone' }),
+    ];
+    const kept = publishedRows(rows, [
+      { id: 'P1', state: 'published' },
+      { id: 'D', state: 'draft' },
+    ]);
+    expect(kept.map((r) => `${r.jobId}:${r.profileId}`)).toEqual(['a:P1']);
+    expect(groupByJob(kept).map((j) => j.jobId)).toEqual(['a']);
   });
 });

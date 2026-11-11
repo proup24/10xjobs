@@ -61,3 +61,16 @@ export function postedAge(job: MatchedJob, now: Date): string {
   const days = Math.floor(ms / DAY);
   return `${days} ${days === 1 ? 'day' : 'days'} ago`;
 }
+
+/** The detail's wording: "~3 hours ago", "~12 minutes ago", "~2 days ago"; a date-only post reads "Nov 9". */
+export function postedPhrase(job: MatchedJob, now: Date): string {
+  if (!job.postedExact) return postedAge(job, now);
+  const ms = Math.max(0, now.getTime() - job.postedAt.getTime());
+  const [n, unit] =
+    ms < HOUR
+      ? [Math.max(1, Math.floor(ms / MIN)), 'minute']
+      : ms < DAY
+        ? [Math.floor(ms / HOUR), 'hour']
+        : [Math.floor(ms / DAY), 'day'];
+  return `~${n} ${unit}${n === 1 ? '' : 's'} ago`;
+}
