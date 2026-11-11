@@ -1676,7 +1676,7 @@ export type Database = {
         Args: {
           p_job_id?: string;
           p_outcome?: string;
-          p_profile_id: string;
+          p_profile_id?: string;
           p_since?: string;
         };
         Returns: {
@@ -1696,6 +1696,7 @@ export type Database = {
           location: string;
           matchId: string;
           outcome: string;
+          postedAt: string;
           posterName: string;
           posterProfileUrl: string;
           posterType: string;
@@ -1710,6 +1711,7 @@ export type Database = {
           stackScore: number;
           title: string;
           unverified: boolean;
+          viewedAt: string;
         }[];
       };
       replace_profile_skills: {

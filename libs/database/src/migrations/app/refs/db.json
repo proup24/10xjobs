@@ -11,6 +11,7 @@
     "create-profile-from-draft",
     "profile-places-no-worldwide",
     "profile-places-strip-worldwide",
-    "match-details"
+    "match-details",
+    "match-details-all-profiles"
   ]
 }

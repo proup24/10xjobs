@@ -41,6 +41,7 @@ const COLUMNS = [
   'salaryCurrency',
   'salaryPeriod',
   'publishedAt',
+  'postedAt',
   'firstSeenAt',
   'lastSeenAt',
   'closed',
@@ -51,12 +52,13 @@ const COLUMNS = [
   'posterType',
   'descriptionText',
   'channels',
+  'viewedAt',
   'facts',
 ];
 
 type Row = Record<string, unknown> & { jobId: string };
 type Params = {
-  p_profile_id: string;
+  p_profile_id?: string;
   p_outcome?: string;
   p_since?: string;
   p_job_id?: string;
@@ -127,6 +129,9 @@ describe('match_details', () => {
   let jobEmptyQuote: string;
   let jobNewerExtraction: string;
   let jobEdge: string;
+  let jobA2: string;
+  let jobPosted: string;
+  let jobUnposted: string;
 
   const call = async (user: TestUser, params: Params): Promise<Row[]> => {
     const { data, error } = await user.client.rpc('match_details', params);
@@ -230,6 +235,19 @@ describe('match_details', () => {
       },
     });
     await seedMatchOn(a.id, profileA2, edge);
+    // A second job on profileA2 only; jobA is also matched by profileA2.
+    const a2 = await seedDetailedJob();
+    await seedMatchOn(a.id, profileA2, a2);
+    await seedMatchOn(a.id, profileA2, onlyA);
+    const posted = await seedDetailedJob({
+      postedAt: '2026-11-10T12:32:26.671Z',
+    });
+    await seedMatchOn(a.id, profileA2, posted);
+    const unposted = await seedDetailedJob({ postedAt: null });
+    await seedMatchOn(a.id, profileA2, unposted);
+    jobA2 = a2.jobId;
+    jobPosted = posted.jobId;
+    jobUnposted = unposted.jobId;
     jobNewerExtraction = newer.jobId;
     jobEdge = edge.jobId;
 
@@ -503,5 +521,67 @@ describe('match_details', () => {
       label: 'Zzz',
       text: 'Zzz',
     });
+  });
+
+  it("returns all the caller's profiles when no profile is given", async () => {
+    const rows = await call(a, {});
+    const pairs = rows.map((r) => `${r.profileId}:${r.jobId}`).sort();
+    expect(pairs).toEqual(
+      [
+        [profileA, jobShared],
+        [profileA, jobA],
+        [profileA, jobOld],
+        [profileA2, jobA],
+        [profileA2, jobA2],
+        [profileA2, jobEmptyQuote],
+        [profileA2, jobNewerExtraction],
+        [profileA2, jobEdge],
+        [profileA2, jobPosted],
+        [profileA2, jobUnposted],
+      ]
+        .map(([p, j]) => `${p}:${j}`)
+        .sort(),
+    );
+    expect(rows.filter((r) => r.jobId === jobA)).toHaveLength(2);
+    expect(rows.filter((r) => r.jobId === jobA2)).toHaveLength(1);
+  });
+
+  it("never returns another user's matches for a null profile", async () => {
+    const rows = await call(b, {});
+    expect(rows.map((r) => [r.profileId, r.jobId])).toEqual([
+      [profileB, jobShared],
+    ]);
+  });
+
+  it('returns the posted time', async () => {
+    const [posted] = await call(a, {
+      p_profile_id: profileA2,
+      p_job_id: jobPosted,
+    });
+    expect(new Date(posted.postedAt as string).getTime()).toBe(
+      new Date('2026-11-10T12:32:26.671Z').getTime(),
+    );
+    const [unposted] = await call(a, {
+      p_profile_id: profileA2,
+      p_job_id: jobUnposted,
+    });
+    expect(unposted.postedAt).toBeNull();
+  });
+
+  it("returns the caller's view time only", async () => {
+    const { error } = await a.client
+      .from('job_views')
+      .insert({ userId: a.id, jobId: jobShared });
+    if (error) throw new Error(error.message);
+    const [rowA] = await call(a, {
+      p_profile_id: profileA,
+      p_job_id: jobShared,
+    });
+    expect(rowA.viewedAt).not.toBeNull();
+    const [rowB] = await call(b, {
+      p_profile_id: profileB,
+      p_job_id: jobShared,
+    });
+    expect(rowB.viewedAt).toBeNull();
   });
 });
