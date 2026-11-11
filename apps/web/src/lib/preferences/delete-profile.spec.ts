@@ -88,6 +88,7 @@ describe('hrefAfterDelete', () => {
     position: 'x',
     firstPlace: null,
     hasResume,
+    state: 'published',
   });
   const list = [item('a'), item('b'), item('c', false)];
 

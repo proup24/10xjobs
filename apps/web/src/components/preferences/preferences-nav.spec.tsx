@@ -32,8 +32,20 @@ afterEach(() => {
 const A = '11111111-1111-4111-8111-111111111111';
 const B = '22222222-2222-4222-8222-222222222222';
 const ITEMS: ProfileListItem[] = [
-  { id: A, position: 'backend_engineer', firstPlace: null, hasResume: true },
-  { id: B, position: 'backend_engineer', firstPlace: null, hasResume: false },
+  {
+    id: A,
+    position: 'backend_engineer',
+    firstPlace: null,
+    hasResume: true,
+    state: 'published',
+  },
+  {
+    id: B,
+    position: 'backend_engineer',
+    firstPlace: null,
+    hasResume: false,
+    state: 'published',
+  },
 ];
 const LABELS = {
   [A]: 'Backend engineer · Berlin',

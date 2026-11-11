@@ -14,6 +14,7 @@ export type ProfileListItem = {
   position: string;
   firstPlace: Place | null;
   hasResume: boolean;
+  state: 'draft' | 'published';
 };
 
 /** The user's profiles in creation order, as the Preferences side nav lists them. */
@@ -22,7 +23,7 @@ export async function loadProfileList(
 ): Promise<ProfileListItem[]> {
   const r = await supabase
     .from('profiles')
-    .select('id, position, locations, resumeKey')
+    .select('id, position, locations, resumeKey, state')
     .order('createdAt', { ascending: true })
     .order('id', { ascending: true });
   if (r.error) throw loadError('profiles read', r.error);
@@ -32,6 +33,7 @@ export async function loadProfileList(
     // Remote places come first, then hybrid, then onsite.
     firstPlace: readPlaces(row.locations)[0]?.place ?? null,
     hasResume: row.resumeKey !== null,
+    state: row.state === 'published' ? 'published' : 'draft',
   }));
 }
 
