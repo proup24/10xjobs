@@ -19,6 +19,7 @@
 - **Experience mapping:** `f_E` 1 `internship`, 2 `entry`, 3 `associate`, 4 `mid-senior`, 5 `director`.
 - **Workplace mapping:** `f_WT` 1 `office`, 2 `remote`, 3 `hybrid`.
 - **Builders keep storing `f_E` and `f_WT` codes.** No recipe bump, no `db:regenerate`.
+- **Every search sends `geoIds`, never `locations` text** (spec, Places). The collector resolves a missing geoId from `LINKEDIN_GEO_IDS` at run time; an unknown location throws.
 - **The processor and the matcher are not changed.** The one exception is that the jobs writer keeps a job's extraction when the job is re-keyed (Task 5).
 - **LinkedIn's values and the processor's values never share a field.** The new fields live on `normalized_jobs` and the normalized record only.
 - **Raw identity stays `id:<LinkedIn job id>`.**
@@ -31,7 +32,7 @@
 2. **The same job seen on two ticks**, differing only in signed logo URLs, `applicants`, `views`, `_meta`, `query` or `headerCaptionText`. Expected: one raw version, not two. Tested in Task 6.
 3. **An Easy Apply item, or one whose `companyApplyUrl` is a LinkedIn URL.** Expected: `applyUrl` is null, and the job key stays `linkedin-job:<id>`. Tested in Task 3.
 4. **Re-keying when the old job was never processed (`pending`), or when the target job already has its own extraction** (an ATS posting). Expected: no extraction is copied in either case; the pending state carries over as today. Tested in Task 5.
-5. **A builder with both `geoId` and location text, and the `GLOBAL` builder.** Expected: `geoIds: [geoId]` and no `locations` for the first; `locations: ['Worldwide']` for `GLOBAL`. A multi-code `f_E` such as `'4,5'` becomes two levels, and an unknown code is dropped. Tested in Task 1.
+5. **Places.** A builder with a stored `geoId` sends `geoIds: [geoId]`. One without it sends the `LINKEDIN_GEO_IDS` value for its location. `GLOBAL` sends `92000000`. A location with no geoId throws an error naming it, and nothing is ever sent as `locations` text. A multi-code `f_E` such as `'4,5'` becomes two levels, and an unknown code is dropped. Tested in Tasks 1 and 1b.
 
 ---
 
@@ -69,6 +70,35 @@
 - [ ] **Step 4: Run** `npx nx test xjobs -- linkedin-job-board.mapper cheap-scraper-input segments`. Expected: PASS. The collector spec still uses the old helpers until Task 6, so it imports them from `cheap-scraper-input.ts` for now.
 - [ ] **Step 5: Run** `npx nx run-many -t lint typecheck -p @xjobs/xjobs`. Expected: PASS.
 - [ ] **Step 6: Commit** `feat(collectors): harvestapi job search input and a structured LinkedIn search key`.
+
+### Task 1b: A geoId for every place
+
+Added after the parity check (spec, [Places](../specs/2026-11-11-linkedin-source-harvestapi-design.md#places)).
+
+**Files:**
+
+- Modify: `apps/xjobs/src/modules/queries/channels/linkedin_geo.ts`. Add the spec's verified table to `LINKEDIN_GEO_IDS`, with a dated "verified 2026-11-11" comment per group: `worldwide` `92000000`, `europe` `100506914`, `european union` `91000000`, `european economic area` `91000002`, `emea` `91000007`, `middle east` `91000001`, `mena` `91000008`, `latin america` `91000011`, `africa` and `north africa` `103537801` (comment that LinkedIn has no North Africa region and falls back to Africa), `morocco` `102787409`, `canada` `101174742`, `united states` `103644278`.
+- Modify: `apps/xjobs/src/modules/collectors/providers/mappers/linkedin-job-board.mapper.ts`.
+- Test: `linkedin-job-board.mapper.spec.ts`, plus any builder or plan-test spec that pins the old map's contents.
+
+**Interfaces:**
+
+- Produces: `export function linkedinGeoId(params: Record<string, unknown>): string`. The builder's `geoId` when it's a string. Else `LINKEDIN_GEO_IDS[locationKey(location)]`, with `GLOBAL` read as `worldwide`. Else it throws `Error('No LinkedIn geoId for location "<location>"; add it to LINKEDIN_GEO_IDS')`. A builder with no location at all is worldwide.
+- `toHarvestJobSearchInput` sends `geoIds: [linkedinGeoId(params)]` and never `locations`. `HarvestJobSearchInput` loses `locations`.
+- `linkedinSearchKey`'s `place` becomes `{ geoId }` from `linkedinGeoId`, always. Both functions share that one helper, so the input and the key can't drift.
+
+- [ ] **Step 1: Write the failing tests:**
+  - `{ location: 'european economic area' }` gives `geoIds: ['91000002']`; `{ location: 'North Africa' }` gives `['103537801']`; `{ location: 'GLOBAL' }` and `{}` give `['92000000']`.
+  - `{ location: 'uae', geoId: '104305776' }` gives `['104305776']`.
+  - `{ location: 'atlantis' }` throws `/No LinkedIn geoId for location "atlantis"/`, from both functions.
+  - No input has a `locations` key.
+  - `linkedinSearchKey` is equal for `{ location: 'morocco' }` and `{ location: 'morocco', geoId: '102787409' }`.
+  - One literal key, pinned: `linkedinSearchKey('x', { location: 'morocco', experienceLevel: '5,4', workType: '2' })` equals `'{"keyword":"x","place":{"geoId":"102787409"},"experienceLevel":["director","mid-senior"],"workplaceType":["remote"]}'`.
+  - A code such as `'constructor'` in `experienceLevel` is dropped (look codes up with `Object.hasOwn`).
+- [ ] **Step 2: Run** `npx nx test xjobs -- linkedin-job-board.mapper`. Expected: FAIL.
+- [ ] **Step 3: Implement.** Update Task 1's tests that expected `locations` text. If a builder spec pins `LINKEDIN_GEO_IDS` contents, update it: new builders now store a `geoId` for these places, which is fine, because the search key reads the resolved geoId either way.
+- [ ] **Step 4: Run** `npx nx test xjobs` and `npx nx run-many -t lint typecheck -p @xjobs/xjobs`. Expected: PASS.
+- [ ] **Step 5: Commit** `feat(collectors): send a verified LinkedIn geoId for every place`.
 
 ### Task 2: Parity check (go/no-go)
 
@@ -263,6 +293,7 @@
   - **Input.** Actor `harvestapi/linkedin-job-search`, input `toHarvestJobSearchInput(keyword, params, 100)`, options `{ maxChargeUsd: 0.25 }`. The segment's window plays no part: the input is the same for a 1-hour and a 24-hour segment.
   - **Attribution.** Every member gets every item, ranked by dataset order.
   - **Geo spellings.** Members that spell a geoId-pinned place differently still make one run.
+  - **Unknown place.** A segment whose search has a location with no geoId throws, naming the location.
   - **Different searches** in one segment still throw `/one search/`.
   - **Truncation.** Truncated when 100 items come back, or when `totalElements` (40) is greater than the items returned (30). Not truncated at 30 of 30.
   - **Search totals.** `searchTotals` equals the first item's `_meta.pagination`, or null when there are no items. The old `SEARCH_TOTALS` record isn't read.

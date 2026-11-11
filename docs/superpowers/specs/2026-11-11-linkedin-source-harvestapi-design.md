@@ -60,7 +60,7 @@ One actor run per search, as today. A search is one builder's keyword, place, ex
 
 - **Input mapping.** This replaces `linkedinJobSearchUrl` and `toLinkedinJobBoardInput` in `collectors/providers/mappers/linkedin-job-board.mapper.ts`.
   - `jobTitles: [keyword]`.
-  - `geoIds: [geoId]` when the builder has one, else `locations: [location]`. `GLOBAL` is sent as `Worldwide`, as today.
+  - `geoIds: [geoId]`, always. The geoId is the builder's own `geoId` when it has one, else the collector looks the location up in `LINKEDIN_GEO_IDS` at run time. `GLOBAL` and `worldwide` are `92000000`. A location with no geoId isn't sent as text: the search fails with an error that names the location _(user, after the parity check)_. See [Places](#places).
   - `experienceLevel` comes from the builder's `f_E` codes: 1 `internship`, 2 `entry`, 3 `associate`, 4 `mid-senior`, 5 `director`.
   - `workplaceType` comes from its `f_WT` code: 1 `office`, 2 `remote`, 3 `hybrid`.
   - `sortBy: 'date'`, and `maxItems` is today's 100.
@@ -78,6 +78,31 @@ One actor run per search, as today. A search is one builder's keyword, place, ex
 - **Rank.** The item's position in the dataset, as today.
 - **Source key.** It must stay `id:<LinkedIn job id>`. harvestapi's `id` is already the first field `source-key.ts` reads, but the builder confirms this with the fixture.
 - **Config.** `LinkedinJobBoardCollector.config.actor` becomes `harvestapi/linkedin-job-search`.
+
+### Places
+
+The parity check (2026-11-11) showed that harvestapi accepts only place names LinkedIn's location box recognises. `European Economic Area`, `EMEA`, `Middle East` and `Latin America` were rejected: the run succeeds with 0 items. `North Africa` was silently read as South Africa. Region geoIds work. So every search sends a geoId, never text _(user)_.
+
+- **Lookup at run time.** `LINKEDIN_GEO_IDS` gains every place the dev builders use. The collector resolves a builder's geoId from it when the builder has none, so stored builders and `db:regenerate` stay untouched. The search key uses the resolved geoId, so a builder with a stored geoId and one without it share a search.
+- **Verified values** (2026-11-11, LinkedIn's public jobs page, both ways: the geoId shows the name, and the name resolves to the geoId):
+
+  | Location | geoId |
+  | --- | --- |
+  | `worldwide`, `GLOBAL` | `92000000` |
+  | `europe` | `100506914` |
+  | `european union` | `91000000` |
+  | `european economic area` | `91000002` |
+  | `emea` | `91000007` |
+  | `middle east` | `91000001` |
+  | `mena` | `91000008` |
+  | `latin america` | `91000011` |
+  | `africa`, `north africa` | `103537801` |
+  | `morocco` | `102787409` |
+  | `canada` | `101174742` |
+  | `united states` | `103644278` |
+
+- **North Africa.** LinkedIn has no North Africa region, and its own search falls back to Africa. `north africa` maps to Africa; the matcher keeps what fits _(my call: broader beats empty, and it's what LinkedIn does)_.
+- **Unknown place.** A builder whose location has no geoId makes its search throw, naming the location, so the gap shows in the logs instead of as an empty run _(user: fail loudly)_.
 
 ## Fields
 
@@ -174,7 +199,7 @@ This slice lands first, keeping one run per search _(my call: the actor swap is 
 
 ## Tests
 
-- **Parity check, first task, go/no-go.** Run three real builders' searches on both actors, same keyword, place and filters, posted in the last 24 hours, about $0.15 in all. Compare `totalElements` and the overlap of job ids. It confirms that `jobTitles` searches the way LinkedIn's `keywords` did, not by title only. If harvestapi finds clearly fewer jobs, stop and bring it back to the user _(my call, from the missed-jobs anti-goal)_.
+- **Parity check, first task, go/no-go.** Run three real builders' searches on both actors, same keyword, place and filters, posted in the last 24 hours, about $0.15 in all. Compare `totalElements` and the overlap of job ids. It confirms that `jobTitles` searches the way LinkedIn's `keywords` did, not by title only. If harvestapi finds clearly fewer jobs, stop and bring it back to the user _(my call, from the missed-jobs anti-goal)_. Result, 2026-11-11: on US remote, harvestapi found 66 jobs (11 mentioning Next.js) and cheap_scraper 36 (6), with no job ids in common, so the two see different slices of LinkedIn. Region text failed as described in [Places](#places). The user chose to switch, with geoIds first.
 - Fixtures: the 30 live-run items are at `/tmp/claude-1000/-home-lab-apps-10xjobs/0f9b0e3c-21e3-4c36-bffc-8d7d1cfbd23e/scratchpad/harvest-run/items.json`, outside the repo. Copy a selection into `ingest/utils/fixtures/linkedin-job-harvest.json`. If that file is gone, re-run the actor with the parity check, using the user's Apify token from the environment, not from a file. Pick items that cover remote, hybrid, on-site, a missing workplace type, Easy Apply, an outside apply URL, a salary, a hiring team, and a region location.
 - Mapper specs: each field in [Fields](#fields), the format detection order in `linkedin-job.mapper.ts` (harvestapi first), and that cheap_scraper and bebity items still map as before.
 - Collector specs: input mapping (`f_E` and `f_WT` to the actor's values, `geoId` versus text location, `postedLimit` always `1h`), the search key, truncation from `maxItems` and `totalElements`, and the charge cap.
