@@ -45,10 +45,30 @@ describe('expand scenarios over mock profiles', () => {
     expect(
       on(recipes, Channel.LINKEDIN_JOB_BOARD).map((r) => r.params),
     ).toEqual([
-      { location: 'emea', experienceLevel: '4', workType: '2' },
-      { location: 'emea', experienceLevel: '4', workType: '2' },
-      { location: 'european union', experienceLevel: '4', workType: '2' },
-      { location: 'european union', experienceLevel: '4', workType: '2' },
+      {
+        location: 'emea',
+        geoId: '91000007',
+        experienceLevel: '4',
+        workType: '2',
+      },
+      {
+        location: 'emea',
+        geoId: '91000007',
+        experienceLevel: '4',
+        workType: '2',
+      },
+      {
+        location: 'european union',
+        geoId: '91000000',
+        experienceLevel: '4',
+        workType: '2',
+      },
+      {
+        location: 'european union',
+        geoId: '91000000',
+        experienceLevel: '4',
+        workType: '2',
+      },
     ]);
     expect(keywords(recipes, Channel.LINKEDIN_POSTS)).toEqual([
       'hiring ("backend engineer" OR "backend developer" OR "backend software engineer") nestjs senior remote emea',
