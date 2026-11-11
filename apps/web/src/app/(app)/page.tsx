@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { MatchesView } from '@/components/matches/matches-view';
-import { loadMatch, loadMatches } from '@/lib/matches/load';
+import { loadMatches } from '@/lib/matches/load';
+import { selectedRows } from '@/lib/matches/selected';
 import { groupByJob, publishedRows } from '@/lib/matches/group';
 import { defaultProfile, readViewState } from '@/lib/matches/view-state';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
@@ -50,14 +51,7 @@ export default async function Page({
   });
 
   const live = publishedRows(rows, profiles);
-  let selected = null;
-  if (state.job) {
-    const inWindow = live.filter((r) => r.jobId === state.job);
-    // A job opened by URL outside the window still loads.
-    selected = inWindow.length
-      ? inWindow
-      : publishedRows(await loadMatch(supabase, state.job), profiles);
-  }
+  const selected = await selectedRows(supabase, state.job, live, profiles);
 
   return (
     <MatchesView
