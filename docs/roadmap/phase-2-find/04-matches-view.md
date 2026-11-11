@@ -40,7 +40,7 @@ One organized page with every recent qualified job, and everything the user chec
 - Other sources (later in Phase 2). The page shows them when they arrive.
 - Notifications.
 - Sorting other than newest first, and filters other than profile, source and the two tabs.
-- Paging. The 7-day window bounds the list; on a seeded dataset of 400 matches in the window the default page loads in under a second on a production build.
+- Paging. The 7-day window bounds the list. On a seeded dataset of 400 matches in the window, measured on a production build under heavy machine load, the default "Last 24 hours" page loads in ~680 ms and the "Last 7 days" tab (335 rows rendered and hydrated) in ~1.2 s. A virtualized list or paging is the next step if the 7-day tab needs to be faster.
 
 ## Locked
 
