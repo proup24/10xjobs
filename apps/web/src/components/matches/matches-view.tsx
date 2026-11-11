@@ -32,6 +32,7 @@ export function MatchesView({
   labels,
   initial: state,
   now: nowIso,
+  userId,
   selected,
 }: {
   /** Grouped jobs of the last 7 days, published profiles only. */
@@ -40,6 +41,8 @@ export function MatchesView({
   labels: Labels;
   initial: ViewState;
   now: string;
+  /** The signed-in user, for recording which jobs they open. */
+  userId: string;
   /** The `job` param's rows; null without one, empty when it isn't a match. */
   selected: MatchRow[] | null;
 }) {
@@ -132,6 +135,7 @@ export function MatchesView({
         labels={labels}
         profileLabels={profileLabels}
         now={now}
+        userId={userId}
         backHref={href({ ...state, job: null })}
       />
     );

@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { notCheckedText } from '@/lib/matches/checks';
 import { MatchDetail } from './match-detail';
 import {
@@ -12,7 +12,19 @@ import {
   matchRow,
 } from './test-fixtures';
 
-afterEach(cleanup);
+const refresh = vi.hoisted(() => vi.fn());
+const markViewed = vi.hoisted(() => vi.fn());
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh }) }));
+vi.mock('@/lib/supabase/client', () => ({
+  createSupabaseBrowserClient: () => ({}),
+}));
+vi.mock('@/lib/matches/mark-viewed', () => ({ markViewed }));
+
+afterEach(() => {
+  cleanup();
+  refresh.mockReset();
+  markViewed.mockReset();
+});
 
 const PROFILE_LABELS = {
   [P1]: 'Full-stack engineer',
@@ -26,11 +38,27 @@ const renderDetail = (rows = [matchRow()]) =>
       labels={labels}
       profileLabels={PROFILE_LABELS}
       now={new Date(NOW)}
+      userId="u1"
       backHref="/"
     />,
   );
 
 describe('MatchDetail', () => {
+  it('marks the job viewed, then refreshes, when "Open post" or "Apply" is clicked', async () => {
+    markViewed.mockResolvedValue(undefined);
+    renderDetail([
+      matchRow({ jobId: 'j9', applyUrl: 'https://acme.test/apply' }),
+    ]);
+    fireEvent.click(screen.getByRole('link', { name: 'Open post' }));
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
+    expect(markViewed).toHaveBeenCalledTimes(1);
+    expect(markViewed).toHaveBeenLastCalledWith(expect.anything(), 'u1', 'j9');
+    fireEvent.click(screen.getByRole('link', { name: 'Apply' }));
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(2));
+    expect(markViewed).toHaveBeenCalledTimes(2);
+    expect(markViewed).toHaveBeenLastCalledWith(expect.anything(), 'u1', 'j9');
+  });
+
   it('opens the post in a new tab', () => {
     renderDetail();
     const open = screen.getByRole('link', { name: 'Open post' });

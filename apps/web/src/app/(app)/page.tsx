@@ -29,7 +29,8 @@ export default async function Page({
 }) {
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.auth.getClaims();
-  if (!data?.claims) redirect('/sign-in');
+  const userId = data?.claims?.sub;
+  if (!userId) redirect('/sign-in');
 
   const now = new Date();
   const [rows, { items, labels: profileLabels }, lists, sp] = await Promise.all(
@@ -67,6 +68,7 @@ export default async function Page({
       }}
       initial={state}
       now={now.toISOString()}
+      userId={userId}
       selected={selected}
     />
   );

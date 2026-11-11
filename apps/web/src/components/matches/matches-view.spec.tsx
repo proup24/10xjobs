@@ -58,6 +58,7 @@ function renderView(
         ...opts.initial,
       }}
       now={NOW}
+      userId="u1"
       selected={opts.selected ?? null}
     />,
   );

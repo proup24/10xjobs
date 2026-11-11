@@ -2,6 +2,7 @@
 
 import { Check, CircleHelp, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { buttonVariants } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -11,22 +12,34 @@ import { checkLines, notCheckedText, type Labels } from '@/lib/matches/checks';
 import { factLines, stackLines } from '@/lib/matches/facts';
 import { postedPhrase } from '@/lib/matches/freshness';
 import { groupByJob, type MatchRow } from '@/lib/matches/group';
+import { markViewed } from '@/lib/matches/mark-viewed';
 import { channelLabel } from '@/lib/matches/sources';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { stackScoreText } from './match-row';
 
 const NOT_STATED = 'Not stated';
 
 /**
- * The links that leave for the job's own pages, in a new tab. One place, so marking the
- * job viewed (Task 7) wires into both.
+ * The links that leave for the job's own pages, in a new tab. Either one marks the job
+ * viewed; the tab opens at once and the list refreshes once the write is done.
  */
 function PostLinks({
   postingUrl,
   applyUrl,
+  userId,
+  jobId,
 }: {
   postingUrl: string | null;
   applyUrl: string | null;
+  userId: string;
+  jobId: string;
 }) {
+  const router = useRouter();
+  const onClick = () => {
+    void markViewed(createSupabaseBrowserClient(), userId, jobId).then(() =>
+      router.refresh(),
+    );
+  };
   return (
     <div className="flex flex-wrap gap-2">
       {postingUrl && (
@@ -34,6 +47,7 @@ function PostLinks({
           href={postingUrl}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={onClick}
           className={buttonVariants()}
         >
           Open post
@@ -44,6 +58,7 @@ function PostLinks({
           href={applyUrl}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={onClick}
           className={buttonVariants({ variant: 'outline' })}
         >
           Apply
@@ -88,6 +103,7 @@ export function MatchDetail({
   labels,
   profileLabels,
   now,
+  userId,
   backHref,
 }: {
   /** The job's rows, one per matching profile; non-empty. */
@@ -95,6 +111,7 @@ export function MatchDetail({
   labels: Labels;
   profileLabels: Record<string, string>;
   now: Date;
+  userId: string;
   backHref: string;
 }) {
   const [profileId, setProfileId] = useState(rows[0]?.profileId);
@@ -155,7 +172,12 @@ export function MatchDetail({
         </p>
       </header>
 
-      <PostLinks postingUrl={first.postingUrl} applyUrl={first.applyUrl} />
+      <PostLinks
+        postingUrl={first.postingUrl}
+        applyUrl={first.applyUrl}
+        userId={userId}
+        jobId={first.jobId}
+      />
 
       <dl className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
         {factRows.map(([term, value]) => (
