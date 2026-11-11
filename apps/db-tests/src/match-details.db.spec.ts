@@ -62,6 +62,7 @@ type Params = {
   p_outcome?: string;
   p_since?: string;
   p_job_id?: string;
+  p_details?: boolean;
 };
 
 // The parts of detailedDocument() the expected facts are derived from.
@@ -583,5 +584,44 @@ describe('match_details', () => {
       p_job_id: jobShared,
     });
     expect(rowB.viewedAt).toBeNull();
+  });
+
+  it('returns light list rows with p_details false', async () => {
+    const [full] = await call(a, {
+      p_profile_id: profileA,
+      p_job_id: jobShared,
+    });
+    const [list] = await call(a, {
+      p_profile_id: profileA,
+      p_job_id: jobShared,
+      p_details: false,
+    });
+    expect(Object.keys(list).sort()).toEqual([...COLUMNS].sort());
+    const facts = full.facts as {
+      arrangement: unknown;
+      openings: { arrangements: unknown }[];
+    };
+    expect(list).toEqual({
+      ...full,
+      checks: null,
+      descriptionText: null,
+      facts: {
+        arrangement: facts.arrangement,
+        openings: facts.openings.map((o) => ({ arrangements: o.arrangements })),
+      },
+    });
+    expect(JSON.stringify(list)).not.toContain('secret-');
+  });
+
+  it('returns the same rows, caller only, with p_details false', async () => {
+    const pairs = (rows: Row[]) =>
+      rows.map((r) => `${r.profileId}:${r.jobId}`).sort();
+    expect(pairs(await call(a, { p_details: false }))).toEqual(
+      pairs(await call(a, {})),
+    );
+    const rowsB = await call(b, { p_details: false });
+    expect(rowsB.map((r) => [r.profileId, r.jobId])).toEqual([
+      [profileB, jobShared],
+    ]);
   });
 });

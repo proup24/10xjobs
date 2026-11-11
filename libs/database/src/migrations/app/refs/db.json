@@ -12,6 +12,7 @@
     "profile-places-no-worldwide",
     "profile-places-strip-worldwide",
     "match-details",
-    "match-details-all-profiles"
+    "match-details-all-profiles",
+    "match-details-list-rows"
   ]
 }

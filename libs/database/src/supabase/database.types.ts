@@ -1674,6 +1674,7 @@ export type Database = {
       };
       match_details: {
         Args: {
+          p_details?: boolean;
           p_job_id?: string;
           p_outcome?: string;
           p_profile_id?: string;
