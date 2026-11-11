@@ -1,3 +1,5 @@
+import { postedAtFromAgo } from '../posted-at';
+import type { NormalizeContext } from '../normalize';
 import { emptyRecord, type NormalizedRecord } from '../record';
 import { cleanText, datePart } from '../text';
 import {
@@ -62,6 +64,7 @@ function salaryText(value: unknown): string | null {
 
 export function mapCheapScraperJob(
   payload: Record<string, unknown>,
+  ctx: NormalizeContext,
 ): NormalizedRecord {
   const p = payload as Partial<Record<keyof CheapScraperJobItem, unknown>>;
   const salary = salaryText(p.salaryInfo);
@@ -78,6 +81,11 @@ export function mapCheapScraperJob(
       ? { text: salary, min: null, max: null, currency: null, period: null }
       : null,
     publishedAt: datePart(p.publishedAt),
+    postedAt: postedAtFromAgo(
+      p.postedTime,
+      ctx.scrapedAt,
+      datePart(p.publishedAt),
+    ),
     descriptionText: cleanText(
       (cleanText(p.jobDescription) ?? '').replace(SHOW_MORE, ''),
     ),

@@ -1,3 +1,4 @@
+import type { NormalizeContext } from '../normalize';
 import type { NormalizedRecord } from '../record';
 import { isBebityJob, mapBebityJob } from './bebity-job.mapper';
 import {
@@ -9,7 +10,10 @@ import {
 interface LinkedinJobFormat {
   actor: string;
   matches: (payload: Record<string, unknown>) => boolean;
-  map: (payload: Record<string, unknown>) => NormalizedRecord;
+  map: (
+    payload: Record<string, unknown>,
+    ctx: NormalizeContext,
+  ) => NormalizedRecord;
 }
 
 /**
@@ -33,9 +37,10 @@ const formats: readonly LinkedinJobFormat[] = [
 /** A LinkedIn job board item, by the mapper of the actor whose shape it has. */
 export function mapLinkedinJob(
   payload: Record<string, unknown>,
+  ctx: NormalizeContext,
 ): NormalizedRecord | { invalid: string } {
   const format = formats.find(({ matches }) => matches(payload));
   return format
-    ? format.map(payload)
+    ? format.map(payload, ctx)
     : { invalid: 'normalize: unknown LinkedIn job item format' };
 }

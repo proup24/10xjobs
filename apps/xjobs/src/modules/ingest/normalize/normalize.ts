@@ -9,8 +9,15 @@ import {
 } from './record';
 import { objectAt } from './text';
 
+/** What a mapper may need besides the payload. */
+export interface NormalizeContext {
+  /** When the payload was scraped: the base of a relative "N ago" text. */
+  scrapedAt: Date;
+}
+
 type Mapper = (
   payload: Record<string, unknown>,
+  ctx: NormalizeContext,
 ) => NormalizedRecord | { invalid: string };
 
 const mappers: Record<Channel, Mapper> = {
@@ -24,8 +31,12 @@ const mappers: Record<Channel, Mapper> = {
  * Maps one raw payload to the unified record. Pure and deterministic: no
  * network, no guessing; a fact the source does not state stays null.
  */
-export function normalize(channel: Channel, payload: unknown): NormalizeResult {
-  const mapped = mappers[channel](objectAt(payload));
+export function normalize(
+  channel: Channel,
+  payload: unknown,
+  ctx: NormalizeContext,
+): NormalizeResult {
+  const mapped = mappers[channel](objectAt(payload), ctx);
   if ('invalid' in mapped) return mapped;
   const parsed = normalizedRecordSchema.safeParse(mapped);
   if (parsed.success) return { record: mapped };

@@ -19,6 +19,7 @@ import ashbyFailed from '../utils/fixtures/ashby-failed.json';
 import ashby from '../utils/fixtures/ashby.json';
 import greenhouse from '../utils/fixtures/greenhouse.json';
 import linkedinJob from '../utils/fixtures/linkedin-job.json';
+import cheapJob from '../utils/fixtures/linkedin-job-cheap.json';
 import {
   PrismaRawStorageRepository,
   type SaveItemInput,
@@ -464,6 +465,20 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
       expect((only!.fieldSources as Record<string, string>).location).toBe(
         await rawItemId(`posting:acme/${ashby.posting.id}`),
       );
+    });
+
+    it('stores the posted time estimated from the first scrape of a cheap_scraper job', async () => {
+      await save(
+        {
+          ...cheapJob,
+          postedTime: '8 hours ago',
+          publishedAt: '2026-11-10T00:00:00.000Z',
+        },
+        new Date('2026-11-10T20:32:26.671Z'),
+      );
+
+      const [only] = await jobs();
+      expect(only!.postedAt).toEqual(new Date('2026-11-10T12:32:26.671Z'));
     });
 
     it('updates a processed job for a new source without sending it back', async () => {

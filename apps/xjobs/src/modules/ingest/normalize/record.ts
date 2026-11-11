@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 /** Bump on any change to a mapper or the job key; then run `db:renormalize`. */
-export const NORMALIZER_VERSION = 2;
+export const NORMALIZER_VERSION = 3;
 
 const text = z.string().min(1).nullable();
 const url = z.url({ protocol: /^https?$/ });
@@ -33,6 +33,7 @@ export const normalizedRecordSchema = z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/)
       .nullable(),
+    postedAt: z.iso.datetime().nullable(),
     descriptionHtml: text,
     descriptionText: text,
     applyUrl: url.nullable(),
@@ -65,6 +66,7 @@ export const RECORD_FIELDS = [
   'sector',
   'salary',
   'publishedAt',
+  'postedAt',
   'descriptionHtml',
   'descriptionText',
   'applyUrl',

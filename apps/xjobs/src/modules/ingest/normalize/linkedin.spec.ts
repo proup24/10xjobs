@@ -2,12 +2,16 @@ import { Channel } from 'src/common/enums';
 import linkedinJob from '../utils/fixtures/linkedin-job.json';
 import cheapJob from '../utils/fixtures/linkedin-job-cheap.json';
 import linkedinPost from '../utils/fixtures/linkedin-post.json';
-import { normalize, type NormalizedRecord } from '.';
+import { normalize as normalizeRaw, type NormalizedRecord } from '.';
 
 const job = (overrides: Record<string, unknown> = {}) =>
   normalize(Channel.LINKEDIN_JOB_BOARD, { ...linkedinJob, ...overrides });
 const post = (overrides: Record<string, unknown> = {}) =>
   normalize(Channel.LINKEDIN_POSTS, { ...linkedinPost, ...overrides });
+
+const scrapedAt = new Date('2026-11-10T20:32:26.671Z');
+const normalize = (channel: Channel, payload: unknown) =>
+  normalizeRaw(channel, payload, { scrapedAt });
 
 function record(result: ReturnType<typeof normalize>): NormalizedRecord {
   if ('invalid' in result) throw new Error(result.invalid);
@@ -197,6 +201,25 @@ describe('normalize LinkedIn job board, item format', () => {
     ).toEqual({ invalid: 'normalize: unknown LinkedIn job item format' });
   });
 
+  it('estimates the posted time of a cheap_scraper item from its "ago" text', () => {
+    const item = {
+      ...cheapJob,
+      postedTime: '8 hours ago',
+      publishedAt: '2026-11-10T00:00:00.000Z',
+    };
+    expect(record(normalize(Channel.LINKEDIN_JOB_BOARD, item)).postedAt).toBe(
+      '2026-11-10T12:32:26.671Z',
+    );
+    const { postedTime: _unused, ...without } = item;
+    expect(
+      record(normalize(Channel.LINKEDIN_JOB_BOARD, without)).postedAt,
+    ).toBeNull();
+  });
+
+  it('has no posted time for a bebity item, which states a date only', () => {
+    expect(record(job()).postedAt).toBeNull();
+  });
+
   it('maps a bebity item by bebity names even when it carries a jobId', () => {
     const r = record(job({ jobId: '999' }));
     expect(r.postingUrl).toBe('https://www.linkedin.com/jobs/view/4012345678');
@@ -205,6 +228,19 @@ describe('normalize LinkedIn job board, item format', () => {
 });
 
 describe('normalize LinkedIn posts', () => {
+  it('takes the exact posted time when the post carries one', () => {
+    expect(record(post()).postedAt).toBe('2026-10-31T10:00:00.000Z');
+  });
+
+  it('estimates the posted time from the "ago" text when the date is absent', () => {
+    const r = record(
+      post({
+        postedAt: { postedAgoText: '2 hours ago • Visible to anyone' },
+      }),
+    );
+    expect(r.postedAt).toBe('2026-11-10T18:32:26.671Z');
+  });
+
   it('maps a post without inventing job facts', () => {
     const r = record(post());
     expect(r).toMatchObject({

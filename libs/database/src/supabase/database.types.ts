@@ -635,6 +635,7 @@ export type Database = {
           location: string | null;
           mergedIntoId: string | null;
           normalizerVersion: number;
+          postedAt: string | null;
           posterName: string | null;
           posterProfileUrl: string | null;
           posterType: string | null;
@@ -678,6 +679,7 @@ export type Database = {
           location?: string | null;
           mergedIntoId?: string | null;
           normalizerVersion: number;
+          postedAt?: string | null;
           posterName?: string | null;
           posterProfileUrl?: string | null;
           posterType?: string | null;
@@ -720,6 +722,7 @@ export type Database = {
           location?: string | null;
           mergedIntoId?: string | null;
           normalizerVersion?: number;
+          postedAt?: string | null;
           posterName?: string | null;
           posterProfileUrl?: string | null;
           posterType?: string | null;

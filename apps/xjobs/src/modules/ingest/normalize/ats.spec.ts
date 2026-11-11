@@ -2,8 +2,12 @@ import { Channel } from 'src/common/enums';
 import ashbyFailed from '../utils/fixtures/ashby-failed.json';
 import ashby from '../utils/fixtures/ashby.json';
 import greenhouse from '../utils/fixtures/greenhouse.json';
-import { normalize, type NormalizedRecord } from '.';
+import { normalize as normalizeRaw, type NormalizedRecord } from '.';
 import { decodeEntitiesOnce, htmlToPlainText } from './text';
+
+const scrapedAt = new Date('2026-11-10T20:32:26.671Z');
+const normalize = (channel: Channel, payload: unknown) =>
+  normalizeRaw(channel, payload, { scrapedAt });
 
 function record(result: ReturnType<typeof normalize>): NormalizedRecord {
   if ('invalid' in result) throw new Error(result.invalid);
@@ -42,6 +46,13 @@ describe('normalize Ashby', () => {
     });
   });
 
+  it('has no posted time when publishedDate is a date only, an exact one otherwise', () => {
+    expect(record(ashbyWith({})).postedAt).toBeNull();
+    expect(
+      record(ashbyWith({ publishedDate: '2026-10-30T08:15:00.000Z' })).postedAt,
+    ).toBe('2026-10-30T08:15:00.000Z');
+  });
+
   it('never guesses the company from the Google title or the slug', () => {
     expect(ashby.hit.title).toContain('@ Acme');
     expect(record(ashbyWith({})).companyName).toBeNull();
@@ -75,6 +86,7 @@ describe('normalize Ashby', () => {
     );
     expect(r).toEqual({
       kind: 'job',
+      postedAt: null,
       title: null,
       companyName: null,
       companyUrl: null,
@@ -101,6 +113,13 @@ describe('normalize Ashby', () => {
 });
 
 describe('normalize Greenhouse', () => {
+  it('converts first_published to an exact UTC posted time', () => {
+    const r = record(
+      normalize(Channel.GREEN_HOUSE, { ...greenhouse, posting: ghPosting }),
+    );
+    expect(r.postedAt).toBe('2026-10-30T03:30:00.000Z');
+  });
+
   it('maps the posting fields', () => {
     const r = record(
       normalize(Channel.GREEN_HOUSE, { ...greenhouse, posting: ghPosting }),

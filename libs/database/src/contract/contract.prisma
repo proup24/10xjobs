@@ -568,6 +568,8 @@ model NormalizedJob {
   salaryPeriod          String?
   // YYYY-MM-DD.
   publishedAt           String?
+  // Posted time: exact from the source, or estimated from LinkedIn's "N ago"; null when unknown.
+  postedAt              TimestamptzJsDate(3)?
   descriptionHtml       String?
   descriptionText       String?
   applyUrl              String?

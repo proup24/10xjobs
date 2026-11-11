@@ -1,3 +1,5 @@
+import type { NormalizeContext } from './normalize';
+import { exactPostedAt, postedAtFromAgo } from './posted-at';
 import { emptyRecord, type NormalizedRecord } from './record';
 import { cleanNumber, cleanText, datePart, objectAt } from './text';
 
@@ -75,18 +77,35 @@ export function jobPoster(
     : null;
 }
 
+/** `"2 hours ago • Visible to anyone on or off LinkedIn"` → `"2 hours ago"`. */
+function agoPart(value: unknown): string | null {
+  return cleanText(value)?.split('•')[0]?.trim() ?? null;
+}
+
 /**
  * A post is not a job: it may hold none (an #OpenToWork post) or several (a
  * digest), so only the body and the author are kept. The author is never the
  * employer; Process extracts jobs from the body.
  */
-export function mapLinkedinPost(p: Record<string, unknown>): NormalizedRecord {
+export function mapLinkedinPost(
+  p: Record<string, unknown>,
+  ctx: NormalizeContext,
+): NormalizedRecord {
+  const posted = objectAt(p.postedAt);
+  const publishedAt = datePart(posted.date);
   const author = objectAt(p.author);
   const name = cleanText(author.name);
   const profileUrl = httpUrl(author.linkedinUrl)?.toString() ?? null;
   return emptyRecord({
     kind: 'post',
-    publishedAt: datePart(objectAt(p.postedAt).date),
+    publishedAt,
+    postedAt:
+      exactPostedAt(posted.date) ??
+      postedAtFromAgo(
+        agoPart(posted.postedAgoText),
+        ctx.scrapedAt,
+        publishedAt,
+      ),
     descriptionText: cleanText(p.content),
     postingUrl: cleanText(p.linkedinUrl) as string,
     poster:

@@ -24,7 +24,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'692de7e1f3a1de4d1810971aad16ccc8e77c43000f9f6446faf2b873a6ce64fe'>;
+  StorageHashBase<'8cb2265e8040192761e58010428f07e29b9732beeba0a262e6073575ab0125da'>;
 export type ExecutionHash =
   ExecutionHashBase<'4eec93348adb946380233ee0ae75195b292371613562834497a8248963113ce8'>;
 export type ProfileHash =
@@ -725,6 +725,7 @@ export namespace Models {
     location: FieldOutputTypes['public']['NormalizedJob']['location'];
     mergedIntoId: FieldOutputTypes['public']['NormalizedJob']['mergedIntoId'];
     normalizerVersion: FieldOutputTypes['public']['NormalizedJob']['normalizerVersion'];
+    postedAt: FieldOutputTypes['public']['NormalizedJob']['postedAt'];
     posterName: FieldOutputTypes['public']['NormalizedJob']['posterName'];
     posterProfileUrl: FieldOutputTypes['public']['NormalizedJob']['posterProfileUrl'];
     posterType: FieldOutputTypes['public']['NormalizedJob']['posterType'];
@@ -2445,6 +2446,13 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/int4';
                   readonly codecId: 'pg/int4@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly postedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
                   readonly many: false;
                 };
                 readonly posterName: {
@@ -5640,6 +5648,14 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
               };
+              readonly postedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
               readonly posterName: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -5823,6 +5839,7 @@ type ContractBase = Omit<
                 readonly location: { readonly column: 'location' };
                 readonly mergedIntoId: { readonly column: 'mergedIntoId' };
                 readonly normalizerVersion: { readonly column: 'normalizerVersion' };
+                readonly postedAt: { readonly column: 'postedAt' };
                 readonly posterName: { readonly column: 'posterName' };
                 readonly posterProfileUrl: { readonly column: 'posterProfileUrl' };
                 readonly posterType: { readonly column: 'posterType' };
