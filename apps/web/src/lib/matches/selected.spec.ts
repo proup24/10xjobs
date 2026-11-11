@@ -30,6 +30,19 @@ describe('selectedRows', () => {
     expect(f.rpcs('match_details')[0].args).toEqual({ p_job_id: J });
   });
 
+  // The page passes its profiles still loading, so the job read runs alongside them.
+  it('starts the read before the profiles are known', async () => {
+    const f = fakeSupabase({
+      rpc: () => ({ data: [row(J), row(J, 'D')], error: null }),
+    });
+    let resolve!: (p: typeof profiles) => void;
+    const pending = new Promise<typeof profiles>((r) => (resolve = r));
+    const result = selectedRows(f.supabase, J, pending);
+    expect(f.rpcs('match_details')).toHaveLength(1);
+    resolve(profiles);
+    expect(await result).toEqual([row(J)]);
+  });
+
   // A closed job has no detail to show (it is dropped when grouped), so it reads as "not
   // in your matches" rather than a blank pane.
   it('is empty for a closed job', async () => {

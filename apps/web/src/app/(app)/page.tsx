@@ -37,29 +37,28 @@ export default async function Page({
   if (!userId) redirect('/sign-in');
 
   const now = new Date();
-  const [rows, { items, labels: profileLabels }, lists, sp] = await Promise.all(
-    [
-      loadMatches(supabase, { since: new Date(now.getTime() - WEEK_MS) }),
-      preferenceProfiles(),
-      preferenceLists(),
-      searchParams,
-    ],
+  const params = toParams(await searchParams);
+  const profilesRead = preferenceProfiles().then(({ items, labels }) =>
+    items.map((p) => ({
+      id: p.id,
+      label: labels[p.id] ?? p.position,
+      state: p.state,
+    })),
   );
-  const profiles = items.map((p) => ({
-    id: p.id,
-    label: profileLabels[p.id] ?? p.position,
-    state: p.state,
-  }));
-  const read = readViewState(toParams(sp), {
+  // The window has list rows only; the job in the URL is read in full, alongside it.
+  const [rows, profiles, lists, selected] = await Promise.all([
+    loadMatches(supabase, { since: new Date(now.getTime() - WEEK_MS) }),
+    profilesRead,
+    preferenceLists(),
+    selectedRows(supabase, readViewState(params).job, profilesRead),
+  ]);
+  const read = readViewState(params, {
     tab: '24h',
     profile: defaultProfile(profiles),
   });
   // A stale or foreign profile link shows the default profile, not an empty one.
   const state = { ...read, profile: knownProfile(read.profile, profiles) };
-
   const live = publishedRows(rows, profiles);
-  // The window has list rows only; the selected job is read in full.
-  const selected = await selectedRows(supabase, state.job, profiles);
 
   return (
     <MatchesView

@@ -4,23 +4,29 @@ import { UUID } from '@/lib/setup/answers';
 import { publishedRows, type MatchRow } from './group';
 import { loadMatch } from './load';
 
+type Profiles = { id: string; state: 'draft' | 'published' }[];
+
 /**
  * The full rows of the job in the URL, published profiles only: null without one. Always a
  * read of its own, since the window holds only list rows (and a job opened by URL outside
  * the window still loads). Empty means "not in your matches", which is also the answer for a
  * closed job (it has no detail to show) and for a malformed id: the read takes a uuid and
- * would fail in Postgres (22P02) instead.
+ * would fail in Postgres (22P02) instead. `profiles` may still be loading: the read starts
+ * first, so the page runs it alongside its other reads.
  */
 export async function selectedRows(
   supabase: SupabaseClient<Database>,
   jobId: string | null,
-  profiles: { id: string; state: 'draft' | 'published' }[],
+  profiles: Profiles | Promise<Profiles>,
 ): Promise<MatchRow[] | null> {
   if (!jobId) return null;
   if (!UUID.test(jobId)) return [];
-  const rows = await loadMatch(supabase, jobId);
+  const [rows, known] = await Promise.all([
+    loadMatch(supabase, jobId),
+    profiles,
+  ]);
   return publishedRows(
     rows.filter((r) => !r.closed),
-    profiles,
+    known,
   );
 }
