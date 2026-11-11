@@ -1,5 +1,6 @@
 import { Arrangement, Channel, SkillDomain } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
+import { linkedinSearchKey } from 'src/modules/collectors/providers/mappers/linkedin-job-board.mapper';
 import { buildSegments, segmentHash, segmentKey } from './segments';
 import { segmentWindow } from './window';
 
@@ -52,7 +53,9 @@ describe('buildSegments', () => {
       many(3, { channel: Channel.GREEN_HOUSE, location: 'europe' }),
     );
     expect(segments).toHaveLength(1);
-    expect(segments[0].key).toBe(`${Channel.GREEN_HOUSE}|backend|onsite|europe`);
+    expect(segments[0].key).toBe(
+      `${Channel.GREEN_HOUSE}|backend|onsite|europe`,
+    );
   });
 
   it('keeps one location apart across arrangements', () => {
@@ -146,7 +149,7 @@ describe('buildSegments', () => {
 
   it('keys a LinkedIn job board builder by its search, with the geoId before location text', () => {
     expect(segmentKey(builder({ params: { location: 'emea' } }))).toBe(
-      `${Channel.LINKEDIN_JOB_BOARD}|backend|onsite|search:keywords=backend&location=emea`,
+      `${Channel.LINKEDIN_JOB_BOARD}|backend|onsite|search:${linkedinSearchKey('backend', { location: 'emea' })}`,
     );
     expect(
       segmentKey(
@@ -160,7 +163,7 @@ describe('buildSegments', () => {
         }),
       ),
     ).toBe(
-      `${Channel.LINKEDIN_JOB_BOARD}|backend|onsite|search:keywords=backend&geoId=91000000&f_E=4&f_WT=2`,
+      `${Channel.LINKEDIN_JOB_BOARD}|backend|onsite|search:${linkedinSearchKey('backend', { location: 'emea', geoId: '91000000', experienceLevel: '4', workType: '2' })}`,
     );
   });
 

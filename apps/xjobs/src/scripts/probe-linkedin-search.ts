@@ -14,7 +14,7 @@ import { parseArgs } from 'node:util';
 import { ApifyClient } from 'apify-client';
 import { channelJobsConfig } from 'src/infrastructure/jobs/steps/collect/config';
 import { Channel } from 'src/common/enums';
-import { toLinkedinJobBoardInput } from 'src/modules/collectors/providers/mappers/linkedin-job-board.mapper';
+import { toLinkedinJobBoardInput } from 'src/modules/collectors/providers/mappers/cheap-scraper-input';
 
 const MAX_CHARGE_USD = 0.05;
 

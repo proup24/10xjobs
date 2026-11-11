@@ -39,7 +39,7 @@ import { channelJobsConfig } from 'src/infrastructure/jobs/steps/collect/config'
 import {
   linkedinJobSearchUrl,
   toLinkedinJobBoardInput,
-} from 'src/modules/collectors/providers/mappers/linkedin-job-board.mapper';
+} from 'src/modules/collectors/providers/mappers/cheap-scraper-input';
 import { LINKEDIN_GEO_IDS } from 'src/modules/queries/channels/linkedin_geo';
 import {
   BudgetExceededError,

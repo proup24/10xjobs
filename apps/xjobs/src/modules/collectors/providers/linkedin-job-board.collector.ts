@@ -9,13 +9,13 @@ import { reachedChargeCap } from '../utils/collected-job';
 import { ApifyActorProvider } from './apify/apify.provider';
 import {
   linkedinJobSearchUrl,
-  linkedinSearch,
   toLinkedinJobBoardInput,
-} from './mappers/linkedin-job-board.mapper';
+} from './mappers/cheap-scraper-input';
+import { linkedinSearchKey } from './mappers/linkedin-job-board.mapper';
 
 /**
  * Apify trigger for the LinkedIn job board: one actor run per search. Segments
- * group builders by their search (`linkedinSearch`), so a segment runs one
+ * group builders by their search (`linkedinSearchKey`), so a segment runs one
  * start URL and every item the run returns belongs to every member.
  * Nothing is matched by text, and the run's `maxItems` and charge cap bound
  * that one search alone.
@@ -42,7 +42,7 @@ export class LinkedinJobBoardCollector {
     );
     const searches = new Set(
       segment.queries.map(({ keyword, params }) =>
-        linkedinSearch(keyword, params),
+        linkedinSearchKey(keyword, params),
       ),
     );
     if (searches.size !== 1)

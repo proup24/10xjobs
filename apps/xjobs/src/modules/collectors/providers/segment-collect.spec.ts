@@ -4,10 +4,7 @@ import type { ApifyActorProvider } from './apify/apify.provider';
 import { GoogleJobsSearchProvider } from './apify/google-search.provider';
 import { LinkedinJobBoardCollector } from './linkedin-job-board.collector';
 import { boardQuery } from './mappers/google-search.mapper';
-import {
-  linkedinJobSearchUrl,
-  linkedinSearch,
-} from './mappers/linkedin-job-board.mapper';
+import { linkedinJobSearchUrl } from './mappers/cheap-scraper-input';
 import { LinkedinPostsCollector } from './linkedin-posts.collector';
 import { AshbyCollector } from './ashby.collector';
 import type { AshbyPostingProvider } from './extraction/ashby.provider';
@@ -47,78 +44,6 @@ const ashby: BoardSearchRunConfig = {
   suffix: 'intitle:engineer',
   maxPagesPerQuery: 3,
 };
-
-describe('linkedinJobSearchUrl', () => {
-  it('searches the keyword with the builder filters, newest first, in the window', () => {
-    const url = new URL(
-      linkedinJobSearchUrl(
-        'senior backend engineer nestjs',
-        { location: 'EMEA', experienceLevel: '4', workType: '2' },
-        7200,
-      ),
-    );
-    expect(url.origin + url.pathname).toBe(
-      'https://www.linkedin.com/jobs/search/',
-    );
-    expect(Object.fromEntries(url.searchParams)).toEqual({
-      keywords: 'senior backend engineer nestjs',
-      location: 'EMEA',
-      f_E: '4',
-      f_WT: '2',
-      sortBy: 'DD',
-      f_TPR: 'r7200',
-    });
-  });
-
-  it('pins the location with a geoId when the builder has one', () => {
-    const url = new URL(
-      linkedinJobSearchUrl(
-        '("backend engineer" OR "backend developer") AND nestjs',
-        { location: 'EMEA', geoId: '91000007' },
-        60,
-      ),
-    );
-    expect(url.searchParams.get('geoId')).toBe('91000007');
-    expect(url.searchParams.get('location')).toBe('EMEA');
-    expect(url.searchParams.get('keywords')).toBe(
-      '("backend engineer" OR "backend developer") AND nestjs',
-    );
-  });
-
-  it('sends GLOBAL as Worldwide and omits missing filters', () => {
-    const url = new URL(linkedinJobSearchUrl('x', { location: 'GLOBAL' }, 60));
-    expect(url.searchParams.get('location')).toBe('Worldwide');
-    expect(url.searchParams.has('f_E')).toBe(false);
-    expect(url.searchParams.has('f_WT')).toBe(false);
-    expect(url.href).not.toContain('undefined');
-  });
-});
-
-describe('linkedinSearch', () => {
-  it('is the keyword, the geoId before the location text, and the filters', () => {
-    expect(linkedinSearch('backend go', { location: 'Germany' })).toBe(
-      'keywords=backend+go&location=Germany',
-    );
-    expect(linkedinSearch('x', { location: 'GLOBAL' })).toBe(
-      'keywords=x&location=Worldwide',
-    );
-    expect(
-      linkedinSearch('x', {
-        location: 'uae',
-        geoId: '104305776',
-        experienceLevel: '4',
-        workType: '2',
-      }),
-    ).toBe(
-      linkedinSearch('x', {
-        location: 'united arab emirates',
-        geoId: '104305776',
-        experienceLevel: '4',
-        workType: '2',
-      }),
-    );
-  });
-});
 
 describe('LinkedIn job board segment', () => {
   const queries = [

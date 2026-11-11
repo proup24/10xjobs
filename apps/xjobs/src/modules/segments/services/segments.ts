@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { Channel } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
-import { linkedinSearch } from 'src/modules/collectors/providers/mappers/linkedin-job-board.mapper';
+import { linkedinSearchKey } from 'src/modules/collectors/providers/mappers/linkedin-job-board.mapper';
 
 /** Builders searched together in one Apify run. */
 export interface SearchSegment {
@@ -19,13 +19,13 @@ export interface SearchSegment {
 export const SEGMENT_SIZE = 10;
 
 /**
- * The exact search a LinkedIn job board builder runs (`linkedinSearch`): one
+ * The exact search a LinkedIn job board builder runs (`linkedinSearchKey`): one
  * segment is one search, so the actor's results belong to every member and a
  * search's row limit and charge cap are its own.
  */
 function linkedinJobBoardSearch(builder: QuerySearchBuilderRow): string {
   const params = (builder.params ?? {}) as Record<string, unknown>;
-  return `search:${linkedinSearch(builder.keyword, params)}`;
+  return `search:${linkedinSearchKey(builder.keyword, params)}`;
 }
 
 /**
