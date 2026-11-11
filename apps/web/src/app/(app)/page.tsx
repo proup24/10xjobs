@@ -3,7 +3,11 @@ import { MatchesView } from '@/components/matches/matches-view';
 import { loadMatches } from '@/lib/matches/load';
 import { selectedRows } from '@/lib/matches/selected';
 import { groupByJob, publishedRows } from '@/lib/matches/group';
-import { defaultProfile, readViewState } from '@/lib/matches/view-state';
+import {
+  defaultProfile,
+  knownProfile,
+  readViewState,
+} from '@/lib/matches/view-state';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { preferenceLists, preferenceProfiles } from './preferences/data';
 
@@ -46,10 +50,12 @@ export default async function Page({
     label: profileLabels[p.id] ?? p.position,
     state: p.state,
   }));
-  const state = readViewState(toParams(sp), {
+  const read = readViewState(toParams(sp), {
     tab: '24h',
     profile: defaultProfile(profiles),
   });
+  // A stale or foreign profile link shows the default profile, not an empty one.
+  const state = { ...read, profile: knownProfile(read.profile, profiles) };
 
   const live = publishedRows(rows, profiles);
   // The window has list rows only; the selected job is read in full.

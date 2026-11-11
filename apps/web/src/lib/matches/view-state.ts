@@ -54,3 +54,20 @@ export function defaultProfile(
   if (published.length >= 2) return 'all';
   return published[0]?.id ?? profiles[0]?.id ?? 'all';
 }
+
+/**
+ * The URL's profile when the page offers it: one of the user's profiles, or 'all' when two or
+ * more are published. Anything else (a deleted profile, a foreign id) falls back to the
+ * default.
+ */
+export function knownProfile(
+  profile: string | 'all',
+  profiles: Pick<ProfileListItem, 'id' | 'state'>[],
+): string | 'all' {
+  const published = profiles.filter((p) => p.state === 'published');
+  const known =
+    profile === 'all'
+      ? published.length >= 2
+      : profiles.some((p) => p.id === profile);
+  return known ? profile : defaultProfile(profiles);
+}
