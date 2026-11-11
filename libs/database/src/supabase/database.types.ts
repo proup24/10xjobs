@@ -536,6 +536,43 @@ export type Database = {
           },
         ];
       };
+      job_views: {
+        Row: {
+          id: string;
+          jobId: string;
+          userId: string;
+          viewedAt: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          id?: string;
+          jobId: string;
+          userId: string;
+          viewedAt?: string;
+        };
+        Update: {
+          id?: string;
+          jobId?: string;
+          userId?: string;
+          viewedAt?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'job_views_jobId_fkey';
+            columns: ['jobId'];
+            isOneToOne: false;
+            referencedRelation: 'normalized_jobs';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'job_views_userId_fkey';
+            columns: ['userId'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       junk_flags: {
         Row: {
           aliases: string[];

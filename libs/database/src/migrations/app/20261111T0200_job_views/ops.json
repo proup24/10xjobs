@@ -1,0 +1,438 @@
+[
+  {
+    "id": "table.job_views",
+    "label": "Create table \"job_views\"",
+    "summary": "Creates table \"job_views\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "job_views"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"job_views\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"job_views\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"job_views\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"job_views\"",
+        "sql": "CREATE TABLE \"public\".\"job_views\" (\n  \"id\" uuid DEFAULT (gen_random_uuid()) NOT NULL,\n  \"jobId\" uuid NOT NULL,\n  \"userId\" uuid NOT NULL,\n  \"viewedAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"job_views\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"job_views\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"job_views\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "unique.job_views.job_views_userId_jobId_key",
+    "label": "Add unique constraint on \"job_views\" (userId, jobId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "job_views_userId_jobId_key",
+        "table": "job_views"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"job_views_userId_jobId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "job_views_userId_jobId_key",
+          "public",
+          "\"public\".\"job_views\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"job_views_userId_jobId_key\" on \"job_views\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"job_views_userId_jobId_key\"",
+        "sql": "ALTER TABLE \"public\".\"job_views\" ADD CONSTRAINT \"job_views_userId_jobId_key\" UNIQUE (\"userId\", \"jobId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"job_views_userId_jobId_key\" exists on (userId, jobId)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "job_views_userId_jobId_key",
+          "public",
+          "\"public\".\"job_views\"",
+          "u",
+          "[\"userId\",\"jobId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.job_views.job_views_jobId_idx_623c8f77",
+    "label": "Create index \"job_views_jobId_idx_623c8f77\" on \"job_views\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "job_views_jobId_idx_623c8f77",
+        "table": "job_views"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"job_views_jobId_idx_623c8f77\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"job_views_jobId_idx_623c8f77\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"job_views_jobId_idx_623c8f77\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"job_views_jobId_idx_623c8f77\"",
+        "sql": "CREATE INDEX \"job_views_jobId_idx_623c8f77\" ON \"public\".\"job_views\" (\"jobId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"job_views_jobId_idx_623c8f77\" exists on \"job_views\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"job_views_jobId_idx_623c8f77\"",
+          "i",
+          "I",
+          "\"public\".\"job_views\"",
+          "btree",
+          "[\"jobId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.job_views.job_views_userId_idx_a489d58a",
+    "label": "Create index \"job_views_userId_idx_a489d58a\" on \"job_views\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "job_views_userId_idx_a489d58a",
+        "table": "job_views"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"job_views_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"job_views_userId_idx_a489d58a\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"job_views_userId_idx_a489d58a\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"job_views_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"job_views_userId_idx_a489d58a\" ON \"public\".\"job_views\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"job_views_userId_idx_a489d58a\" exists on \"job_views\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"job_views_userId_idx_a489d58a\"",
+          "i",
+          "I",
+          "\"public\".\"job_views\"",
+          "btree",
+          "[\"userId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.job_views.job_views_userId_fkey",
+    "label": "Add foreign key \"job_views_userId_fkey\" on \"job_views\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "job_views_userId_fkey",
+        "table": "job_views"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"job_views_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "job_views_userId_fkey",
+          "public",
+          "\"public\".\"job_views\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"job_views_userId_fkey\" on \"job_views\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"job_views_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"job_views\"\nADD CONSTRAINT \"job_views_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"users\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"job_views_userId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "job_views_userId_fkey",
+          "public",
+          "\"public\".\"job_views\"",
+          "f",
+          "[\"userId\"]",
+          "\"public\".\"users\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.job_views.job_views_jobId_fkey",
+    "label": "Add foreign key \"job_views_jobId_fkey\" on \"job_views\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "job_views_jobId_fkey",
+        "table": "job_views"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"job_views_jobId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "job_views_jobId_fkey",
+          "public",
+          "\"public\".\"job_views\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"job_views_jobId_fkey\" on \"job_views\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"job_views_jobId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"job_views\"\nADD CONSTRAINT \"job_views_jobId_fkey\"\nFOREIGN KEY (\"jobId\")\nREFERENCES \"public\".\"normalized_jobs\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"job_views_jobId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "job_views_jobId_fkey",
+          "public",
+          "\"public\".\"job_views\"",
+          "f",
+          "[\"jobId\"]",
+          "\"public\".\"normalized_jobs\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.job_views",
+    "label": "Enable row-level security on \"job_views\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "job_views"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"job_views\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "job_views"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"job_views\"",
+        "sql": "ALTER TABLE \"public\".\"job_views\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"job_views\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "job_views"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.job_views.job_views_owner_insert_f9f540c9",
+    "label": "Create RLS policy \"job_views_owner_insert_f9f540c9\" on \"job_views\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "job_views_owner_insert_f9f540c9",
+        "table": "job_views"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"job_views_owner_insert_f9f540c9\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "job_views",
+          "job_views_owner_insert_f9f540c9"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"job_views_owner_insert_f9f540c9\" on \"job_views\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"job_views_owner_insert_f9f540c9\"",
+        "sql": "CREATE POLICY \"job_views_owner_insert_f9f540c9\" ON \"public\".\"job_views\" AS PERMISSIVE FOR INSERT TO authenticated WITH CHECK (\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.job_matches m WHERE m.\"userId\" = auth.uid() AND m.\"jobId\" = job_views.\"jobId\"))",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"job_views_owner_insert_f9f540c9\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "job_views",
+          "job_views_owner_insert_f9f540c9",
+          "INSERT",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.job_views.job_views_owner_read_ab58a1a7",
+    "label": "Create RLS policy \"job_views_owner_read_ab58a1a7\" on \"job_views\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "job_views_owner_read_ab58a1a7",
+        "table": "job_views"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"job_views_owner_read_ab58a1a7\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "job_views",
+          "job_views_owner_read_ab58a1a7"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"job_views_owner_read_ab58a1a7\" on \"job_views\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"job_views_owner_read_ab58a1a7\"",
+        "sql": "CREATE POLICY \"job_views_owner_read_ab58a1a7\" ON \"public\".\"job_views\" AS PERMISSIVE FOR SELECT TO authenticated USING (\"userId\" = auth.uid())",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"job_views_owner_read_ab58a1a7\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "job_views",
+          "job_views_owner_read_ab58a1a7",
+          "SELECT",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  }
+]

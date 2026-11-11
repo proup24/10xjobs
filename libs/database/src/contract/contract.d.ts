@@ -24,9 +24,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'8cb2265e8040192761e58010428f07e29b9732beeba0a262e6073575ab0125da'>;
+  StorageHashBase<'00a042d35d22a4fbebf6e55bab0e9ab945de091f26bbd6f41fef3e4023030455'>;
 export type ExecutionHash =
-  ExecutionHashBase<'4eec93348adb946380233ee0ae75195b292371613562834497a8248963113ce8'>;
+  ExecutionHashBase<'cb38d499b437a62b77553b29409a1899e723e7a23ff5ac829bb3c68de98b43f7'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -695,6 +695,15 @@ export namespace Models {
     user: public_User;
     readonly [RelationKeys]?: 'extraction' | 'job' | 'profile' | 'user';
   };
+  export type public_JobView = {
+    id: FieldOutputTypes['public']['JobView']['id'];
+    jobId: FieldOutputTypes['public']['JobView']['jobId'];
+    userId: FieldOutputTypes['public']['JobView']['userId'];
+    viewedAt: FieldOutputTypes['public']['JobView']['viewedAt'];
+    job: public_NormalizedJob;
+    user: public_User;
+    readonly [RelationKeys]?: 'job' | 'user';
+  };
   export type public_JunkFlag = {
     aliases: FieldOutputTypes['public']['JunkFlag']['aliases'];
     approvedAt: FieldOutputTypes['public']['JunkFlag']['approvedAt'];
@@ -752,8 +761,9 @@ export namespace Models {
     extractions: public_JobExtraction[];
     matches: public_JobMatch[];
     mergedInto: public_NormalizedJob | null;
+    views: public_JobView[];
     readonly [RelationKeys]?:
-      'attempts' | 'currentExtraction' | 'extractions' | 'matches' | 'mergedInto';
+      'attempts' | 'currentExtraction' | 'extractions' | 'matches' | 'mergedInto' | 'views';
   };
   export type public_NormalizedJobSource = {
     id: FieldOutputTypes['public']['NormalizedJobSource']['id'];
@@ -1007,7 +1017,8 @@ export namespace Models {
     residenceCountry: FieldOutputTypes['public']['User']['residenceCountry'];
     updatedAt: FieldOutputTypes['public']['User']['updatedAt'];
     jobMatches: public_JobMatch[];
-    readonly [RelationKeys]?: 'jobMatches';
+    jobViews: public_JobView[];
+    readonly [RelationKeys]?: 'jobMatches' | 'jobViews';
   };
   export type public_WorkAuthorization = {
     createdAt: FieldOutputTypes['public']['WorkAuthorization']['createdAt'];
@@ -1034,6 +1045,7 @@ export declare const models: {
     IsoLanguage: Models.public_IsoLanguage;
     JobExtraction: Models.public_JobExtraction;
     JobMatch: Models.public_JobMatch;
+    JobView: Models.public_JobView;
     JunkFlag: Models.public_JunkFlag;
     NormalizedJob: Models.public_NormalizedJob;
     NormalizedJobSource: Models.public_NormalizedJobSource;
@@ -2178,6 +2190,82 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'job_extractions';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly job_views: {
+              columns: {
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly jobId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly userId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly viewedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['userId', 'jobId'] }];
+              indexes: readonly [
+                {
+                  readonly name: 'job_views_jobId_idx_623c8f77';
+                  readonly prefix: 'job_views_jobId_idx';
+                  readonly columns: readonly ['jobId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'job_views_userId_idx_a489d58a';
+                  readonly prefix: 'job_views_userId_idx';
+                  readonly columns: readonly ['userId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'job_views';
+                    readonly columns: readonly ['userId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'users';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'job_views';
+                    readonly columns: readonly ['jobId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'normalized_jobs';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -4441,6 +4529,7 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'JobMatch';
     };
+    readonly job_views: { readonly namespace: 'public' & NamespaceId; readonly model: 'JobView' };
     readonly junk_flags: { readonly namespace: 'public' & NamespaceId; readonly model: 'JunkFlag' };
     readonly normalized_job_sources: {
       readonly namespace: 'public' & NamespaceId;
@@ -5503,6 +5592,63 @@ type ContractBase = Omit<
               };
             };
           };
+          readonly JobView: {
+            readonly fields: {
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly jobId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly userId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly viewedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+            };
+            readonly relations: {
+              readonly job: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'NormalizedJob';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['jobId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly user: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['userId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'job_views';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly id: { readonly column: 'id' };
+                readonly jobId: { readonly column: 'jobId' };
+                readonly userId: { readonly column: 'userId' };
+                readonly viewedAt: { readonly column: 'viewedAt' };
+              };
+            };
+          };
           readonly JunkFlag: {
             readonly fields: {
               readonly aliases: {
@@ -5813,6 +5959,17 @@ type ContractBase = Omit<
                 readonly on: {
                   readonly localFields: readonly ['mergedIntoId'];
                   readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly views: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'JobView';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['jobId'];
                 };
               };
             };
@@ -7387,6 +7544,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['userId'];
                 };
               };
+              readonly jobViews: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'JobView';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['userId'];
+                };
+              };
             };
             readonly storage: {
               readonly table: 'users';
@@ -7721,6 +7889,14 @@ type ContractBase = Omit<
           readonly ref: {
             readonly entry: 'job_matches';
             readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'uuidv7'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'job_views';
+            readonly field: 'id';
             readonly namespace: 'public';
           };
         },

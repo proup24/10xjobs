@@ -121,6 +121,7 @@ model User {
   residenceCountry   String?
   acceptsSponsorship Boolean?
   jobMatches         JobMatch[]
+  jobViews           JobView[]
   +Timestamps
 
   @@map("users")
@@ -597,6 +598,7 @@ model NormalizedJob {
   extractions           JobExtraction[]       @relation("JobExtractions")
   attempts              ProcessingAttempt[]
   matches               JobMatch[]
+  views                 JobView[]
   +Timestamps
 
   @@check(expression: sql`kind IN ('job', 'post')`, name: "normalized_jobs_kind")
@@ -932,6 +934,34 @@ policy_select job_matches_owner_read {
   target = JobMatch
   roles = [authenticated]
   using = sql`"userId" = auth.uid()`
+}
+
+// Jobs a user opened the post or apply link of; the matches view's "Viewed" mark. Written by the user, once per job.
+model JobView {
+  id       Uuid               @id @default(sql`gen_random_uuid()`) @onCreate(uuid(7))
+  userId   Uuid
+  user     User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobId    Uuid
+  job      NormalizedJob      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  viewedAt TimestamptzJsDate(3) @default(now())
+
+  @@unique([userId, jobId])
+  @@map("job_views")
+  @@rls
+}
+
+// Owners read their views.
+policy_select job_views_owner_read {
+  target = JobView
+  roles = [authenticated]
+  using = sql`"userId" = auth.uid()`
+}
+
+// Owners record a view of a job they are matched with. No update or delete.
+policy_insert job_views_owner_insert {
+  target = JobView
+  roles = [authenticated]
+  withCheck = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.job_matches m WHERE m."userId" = auth.uid() AND m."jobId" = job_views."jobId")`
 }
 
 // Users read the value lists through the pickers and never write them. Column grants
