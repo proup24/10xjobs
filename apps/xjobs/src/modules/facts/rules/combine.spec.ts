@@ -570,6 +570,29 @@ describe('combineFacts', () => {
     });
   });
 
+  it('unstated at the top, openings stating several arrangements with one unsure leave it unstated, least sure', () => {
+    const { facts } = combine(
+      doc({
+        arrangementValue: 'unstated',
+        openings: [
+          opening({ arrangements: ['remote'], quote: 'remote in EU' }),
+          opening({
+            arrangements: ['hybrid'],
+            confidence: 'unsure',
+            quote: 'hybrid in Paris',
+          }),
+        ],
+      }),
+      listing({ arrangement: 'onsite' }),
+    );
+    expect(facts.arrangement).toEqual({
+      value: 'unstated',
+      source: 'description',
+      confidence: 'unsure',
+      quote: 'remote in EU | hybrid in Paris',
+    });
+  });
+
   it('carries engagement and contract months from the description, for display', () => {
     const base = doc();
     const d = doc({
@@ -778,7 +801,7 @@ describe('combineFacts', () => {
   it('copies the other matcher facts from the description', () => {
     const d = doc();
     const { facts } = combine(d, listing());
-    expect(facts.version).toBe(1);
+    expect(facts.version).toBe(2);
     for (const key of [
       'position',
       'isSoftwareEngineeringRole',
