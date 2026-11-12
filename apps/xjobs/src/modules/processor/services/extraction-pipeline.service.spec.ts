@@ -467,4 +467,16 @@ describe('ExtractionPipeline', () => {
     expect(doc.isSoftwareEngineeringRole.confidence).toBe('unsure');
     expect(needsReview(doc)).toBe(true);
   });
+
+  it('carries the input truncated flag onto the document', async () => {
+    const truncated = await pipeline().run(
+      { ...input, truncated: true },
+      vocabulary,
+      log,
+    );
+    const whole = await run();
+
+    expect(truncated.doc.truncated).toBe(true);
+    expect(whole.doc.truncated).toBe(false);
+  });
 });
