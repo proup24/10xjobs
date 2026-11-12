@@ -1026,6 +1026,10 @@ model JobMatch {
   decidedAt      TimestamptzJsDate(3)
   // What the decision read: the profile's updatedAt and the user's eligibilityVersion.
   // A row decided before either changed is stale. Null on rows decided before they were recorded.
+  // profileUpdatedAt is enough only because published profiles are frozen (RLS
+  // profiles_owner_update_draft, draft-only RPCs, the engine refuses edits). Phase 2 slice 07
+  // (edit published) must add a column-scoped trigger or a profile version that leaves out the
+  // resume columns and touches the profile when its profile_skills change.
   profileUpdatedAt   TimestamptzJsDate(3)?
   eligibilityVersion Int?
   +Timestamps
