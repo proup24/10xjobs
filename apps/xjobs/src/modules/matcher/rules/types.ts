@@ -1,4 +1,4 @@
-import type { ExtractionDocument } from 'src/modules/processor/schema';
+import type { JobFactsDocument } from 'src/modules/facts/schema/facts';
 import type { PlacesByArrangement } from 'src/modules/users/types/place.types';
 
 export type CheckOutcome = 'pass' | 'fail' | 'unknown';
@@ -35,8 +35,10 @@ export interface MatchProfile {
 export interface MatchJob {
   jobId: string;
   extractionId: string;
+  factsHash: string;
+  /** From the current extraction; not part of the facts. */
   needsReview: boolean;
-  document: ExtractionDocument;
+  facts: JobFactsDocument;
 }
 
 const RANK: Record<CheckOutcome, number> = { pass: 2, unknown: 1, fail: 0 };

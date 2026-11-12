@@ -629,6 +629,7 @@ export type Database = {
           createdAt: string;
           decidedAt: string;
           extractionId: string;
+          factsHash: string | null;
           id: string;
           jobId: string;
           matcherVersion: number;
@@ -645,6 +646,7 @@ export type Database = {
           createdAt?: string;
           decidedAt: string;
           extractionId: string;
+          factsHash?: string | null;
           id: string;
           jobId: string;
           matcherVersion: number;
@@ -660,6 +662,7 @@ export type Database = {
           createdAt?: string;
           decidedAt?: string;
           extractionId?: string;
+          factsHash?: string | null;
           id?: string;
           jobId?: string;
           matcherVersion?: number;

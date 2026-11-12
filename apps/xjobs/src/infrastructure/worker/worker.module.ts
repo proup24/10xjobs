@@ -9,6 +9,7 @@ import { JobsModule } from 'src/infrastructure/jobs/jobs.module';
 import { MatchQueue } from 'src/infrastructure/jobs/steps/match';
 import { ProcessQueue } from 'src/infrastructure/jobs/steps/process';
 import { RedisSettingsModule } from 'src/infrastructure/redis/settings.module';
+import { FactsModule } from 'src/modules/facts';
 import { IngestModule } from 'src/modules/ingest';
 import { MatcherModule } from 'src/modules/matcher';
 import { ProcessorModule } from 'src/modules/processor';
@@ -40,6 +41,7 @@ import { WorkerService } from './worker.service';
     JobsModule,
     IngestModule,
     ProcessorModule,
+    FactsModule,
     MatcherModule,
     StorageModule,
   ],

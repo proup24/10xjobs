@@ -999,6 +999,8 @@ model JobMatch {
   job            NormalizedJob        @relation(fields: [jobId], references: [id], onDelete: Cascade)
   extractionId   Uuid
   extraction     JobExtraction        @relation(fields: [extractionId], references: [id], onDelete: Restrict)
+  // The hash of the job_facts the decision read; null on rows decided before job facts.
+  factsHash      String?
   matcherVersion Int
   outcome        String
   unverified     Boolean

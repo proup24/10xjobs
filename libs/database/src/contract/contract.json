@@ -2325,6 +2325,13 @@
                   "kind": "scalar"
                 }
               },
+              "factsHash": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "id": {
                 "nullable": false,
                 "type": {
@@ -2477,6 +2484,9 @@
                 },
                 "extractionId": {
                   "column": "extractionId"
+                },
+                "factsHash": {
+                  "column": "factsHash"
                 },
                 "id": {
                   "column": "id"
@@ -8379,6 +8389,11 @@
                   "dataType": "pg/uuid",
                   "nullable": false
                 },
+                "factsHash": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
                 "id": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
@@ -11797,7 +11812,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "be873e1827fcd83ca4eaf63b7e76adc2c945ae78c1b594cfacd84b05fde9e3c6"
+    "storageHash": "a0e7e5cdb988c28b56a83fac52a2d9083dc8f30c34ed4db1e7736337e485494d"
   },
   "execution": {
     "executionHash": "9c0694a80d5f7adf167bc3288d7926267ba4776ae99e720efce6b64a0f440673",

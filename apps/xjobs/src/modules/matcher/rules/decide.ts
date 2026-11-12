@@ -24,7 +24,7 @@ export function decide(
   profile: MatchProfile,
   ctx: MatchContext,
 ): Decision {
-  const doc = job.document;
+  const doc = job.facts;
   const stack = checkStack(doc.techStack.value, profile.skills, ctx.implies);
   const checks: Check[] = [
     checkPosition(doc, profile),

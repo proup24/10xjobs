@@ -54,13 +54,20 @@ export class MatchQueue implements OnApplicationShutdown {
 
   /**
    * The BullMQ job id is the job id, so a job is never queued twice at once;
-   * a finished one is removed, so the same id can be queued again.
+   * a finished one is removed, so the same id can be queued again. A forced
+   * run has its own id, so a waiting unforced run of the same job can't
+   * swallow it (BullMQ refuses an id with a single `:`, hence `-force`).
+   * The worker reads `force` from the data, never from the id.
    */
   async enqueue(jobId: string, opts?: { force?: boolean }): Promise<void> {
     await this.queue.add(
       MATCH_JOB,
       { jobId, force: opts?.force },
-      { jobId, removeOnComplete: true, removeOnFail: true },
+      {
+        jobId: opts?.force ? `${jobId}-force` : jobId,
+        removeOnComplete: true,
+        removeOnFail: true,
+      },
     );
   }
 

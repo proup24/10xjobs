@@ -24,7 +24,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'be873e1827fcd83ca4eaf63b7e76adc2c945ae78c1b594cfacd84b05fde9e3c6'>;
+  StorageHashBase<'a0e7e5cdb988c28b56a83fac52a2d9083dc8f30c34ed4db1e7736337e485494d'>;
 export type ExecutionHash =
   ExecutionHashBase<'9c0694a80d5f7adf167bc3288d7926267ba4776ae99e720efce6b64a0f440673'>;
 export type ProfileHash =
@@ -733,6 +733,7 @@ export namespace Models {
     createdAt: FieldOutputTypes['public']['JobMatch']['createdAt'];
     decidedAt: FieldOutputTypes['public']['JobMatch']['decidedAt'];
     extractionId: FieldOutputTypes['public']['JobMatch']['extractionId'];
+    factsHash: FieldOutputTypes['public']['JobMatch']['factsHash'];
     id: FieldOutputTypes['public']['JobMatch']['id'];
     jobId: FieldOutputTypes['public']['JobMatch']['jobId'];
     matcherVersion: FieldOutputTypes['public']['JobMatch']['matcherVersion'];
@@ -2454,6 +2455,12 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/uuid';
                   readonly codecId: 'pg/uuid@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly factsHash: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly id: {
@@ -6319,6 +6326,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
+              readonly factsHash: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly id: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
@@ -6419,6 +6430,7 @@ type ContractBase = Omit<
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly decidedAt: { readonly column: 'decidedAt' };
                 readonly extractionId: { readonly column: 'extractionId' };
+                readonly factsHash: { readonly column: 'factsHash' };
                 readonly id: { readonly column: 'id' };
                 readonly jobId: { readonly column: 'jobId' };
                 readonly matcherVersion: { readonly column: 'matcherVersion' };

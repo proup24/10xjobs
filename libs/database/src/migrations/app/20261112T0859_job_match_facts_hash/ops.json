@@ -1,0 +1,62 @@
+[
+  {
+    "id": "column.public.job_matches.factsHash",
+    "label": "Add column \"factsHash\" to \"job_matches\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "factsHash",
+        "table": "job_matches"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"factsHash\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "job_matches",
+          "factsHash"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"factsHash\" on \"job_matches\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"factsHash\"",
+        "sql": "ALTER TABLE \"public\".\"job_matches\" ADD COLUMN \"factsHash\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"factsHash\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "job_matches",
+          "factsHash"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"factsHash\" on \"job_matches\""
+        }
+      },
+      {
+        "description": "verify column \"factsHash\" has type \"text\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "job_matches",
+          "factsHash",
+          "text"
+        ]
+      }
+    ]
+  }
+]

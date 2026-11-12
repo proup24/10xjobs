@@ -28,7 +28,7 @@ export class MatcherController {
   @ApiOperation({
     summary: 'Match one job now',
     description:
-      'Decides the job against every published profile in this request, even where the stored rows are current, and returns the outcome with the stored rows. A job that is not matchable (not processed, closed, out of the window, or without a v2 extraction) returns `not_matchable` and no rows.',
+      'Decides the job against every published profile in this request, even where the stored rows are current, and returns the outcome with the stored rows. A job that is not matchable (not processed, closed, out of the window, or without a v3 extraction) returns `not_matchable` and no rows; an expired job returns `closed` with its kept rows.',
   })
   @ApiResponse({
     status: HttpStatus.OK,

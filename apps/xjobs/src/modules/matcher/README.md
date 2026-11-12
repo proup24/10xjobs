@@ -1,20 +1,21 @@
 # Matcher
 
-The matcher is the fourth stage of the pipeline (Collect → Ingest → Process → **Match**). For each processed job it decides, for every published profile, whether the job is `qualified` or `rejected`, and stores every check it ran with the values it compared. No model is called: the profile and the extraction use the same codes from the same lists, so matching compares codes.
+The matcher is the fourth stage of the pipeline (Collect → Ingest → Process → **Match**). For each processed job it decides, for every published profile, whether the job is `qualified` or `rejected`, and stores every check it ran with the values it compared. No model is called: the matcher reads the job's combined facts (`job_facts`, built by `src/modules/facts` from the extraction and the LinkedIn listing), which use the same codes as the profile, so matching compares codes.
 
 Design: `docs/superpowers/specs/2026-11-08-matching-design.md`.
 
 ## Flow
 
-1. **Trigger.** When the processor finishes a job as `processed` with a current extraction (or reuses one), it enqueues the job on the `match` queue. A job finished with no extraction (a closed job) is not matched. The sweeper (every 60 s) is the safety net: it deletes the rows of jobs that left `status = 'active'`, then re-enqueues every matchable job that has a missing or stale row for some published profile. A newly published profile gets its rows the same way: the sweep backfills it gradually (200 jobs per minute, newest first), so it is not instant. Merged jobs' rows are deleted by the sweep; a job that is `closed` (the job's closed flag, distinct from `status`) keeps its rows.
+1. **Trigger.** When the processor finishes a job as `processed` with a current extraction (or reuses one), it enqueues the job on the `match` queue. A job finished with no extraction (a closed job) is not matched. The sweeper (every 60 s) is the safety net: it deletes the rows of jobs that left `status = 'active'`, then re-enqueues every matchable job whose facts are stale (missing, from another extraction, an older `FACTS_VERSION`, older than the job row, or open past `expiresAt`) or whose open facts have a missing or stale row for some published profile. A newly published profile gets its rows the same way: the sweep backfills it gradually (200 jobs per minute, newest first), so it is not instant. Merged jobs' rows are deleted by the sweep; a job that is `closed` (the job's closed flag, distinct from `status`) keeps its rows, and so does a job whose facts are closed (its LinkedIn `expiresAt` passed): it is not decided again.
 2. **One job.** The worker calls `MatcherService.matchJob(jobId)`:
 
-   | Step | Does                                                                                                                                     |
-   | ---- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-   | 1    | `loadMatchableJob`: the job and its current v2 or v3 extraction, or `not_matchable` (nothing stored).                                    |
-   | 2    | `listPublishedProfiles`: the published profiles with skills; only those with a stale or missing row for this extraction, unless `force`. |
-   | 3    | `decide` (pure): runs all four rules for each profile, with no early exit, so the whole picture is stored.                               |
-   | 4    | `upsertMatches`: one row per `(profile, job)`. `decidedAt` moves only when the outcome changes.                                          |
+   | Step | Does                                                                                                                                           |
+   | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+   | 1    | `loadCandidate`: the matchable job's current extraction and its `needsReview`, or `not_matchable` (nothing stored).                            |
+   | 2    | `FactsService.build`: builds and stores the job's facts; a non-v3 extraction is `not_matchable`, and closed facts return `closed` (rows kept). |
+   | 3    | `listPublishedProfiles`: the published profiles with skills; only those with a row missing or decided on other facts, unless `force`.          |
+   | 4    | `decide` (pure): runs all four rules for each profile, with no early exit, so the whole picture is stored.                                     |
+   | 5    | `upsertMatches`: one row per `(profile, job)`, with the `factsHash` it read. `decidedAt` moves only when the outcome changes.                  |
 
 ## Code map
 
@@ -70,17 +71,17 @@ Residence and work authorization are not checked.
 
 ## Matchable jobs
 
-One definition serves the worker, the sweep and `db:rematch`: the job is an active LinkedIn job board job (`status = 'active'`, `kind = 'job'`), `processingStatus = 'processed'`, not closed, `lastSeenAt` within `MATCH_BACKFILL_DAYS` (30), and its current extraction has `schemaVersion` 2 or 3. Old v1 extractions are not matched; `db:reprocess` brings them to the current version. Rows of closed jobs (the `closed` flag, distinct from `status`) and of jobs that age out of the window stay; rows of merged jobs (`status <> 'active'`) are deleted by the sweep.
+One definition serves the worker, the sweep and `db:rematch`: the job is an active LinkedIn job board job (`status = 'active'`, `kind = 'job'`), `processingStatus = 'processed'`, not closed, `lastSeenAt` within `MATCH_BACKFILL_DAYS` (30), and its current extraction has `schemaVersion` 3. Older extractions are not matched; `db:reprocess` brings them to the current version. Rows of closed jobs (the `closed` flag, distinct from `status`) and of jobs that age out of the window stay; rows of merged jobs (`status <> 'active'`) are deleted by the sweep.
 
 ## When it runs
 
 - After processing: the processor hands the job to the `match` queue.
-- Every 60 s: the sweep covers lost nudges, new extractions, new published profiles and a `MATCHER_VERSION` bump.
+- Every 60 s: the sweep covers lost nudges, stale facts (new extractions, listing changes, expiry, a `FACTS_VERSION` bump), new published profiles and a `MATCHER_VERSION` bump.
 - By hand: `db:rematch`, or the testing endpoints.
 
 ## The `job_matches` table
 
-One row per `(profileId, jobId)`, upserted (no history). Columns: `userId`, `profileId`, `jobId`, `extractionId` (the extraction the decision read), `matcherVersion`, `outcome` (`qualified` | `rejected`), `unverified`, `stackScore` (0 to 1, nullable), `checks` (jsonb, one entry per rule: `rule`, `outcome`, `jobValue`, `profileValue`, `reason`, `detail`), `decidedAt` (when `outcome` last changed), timestamps. The owner can `SELECT` their rows through RLS; only the engine writes.
+One row per `(profileId, jobId)`, upserted (no history). Columns: `userId`, `profileId`, `jobId`, `extractionId` (the extraction the facts were built from), `factsHash` (the facts the decision read; a row is stale when it differs from `job_facts.factsHash`), `matcherVersion`, `outcome` (`qualified` | `rejected`), `unverified`, `stackScore` (0 to 1, nullable), `checks` (jsonb, one entry per rule: `rule`, `outcome`, `jobValue`, `profileValue`, `reason`, `detail`), `decidedAt` (when `outcome` last changed), timestamps. The owner can `SELECT` their rows through RLS; only the engine writes.
 
 ## Running it
 
@@ -90,10 +91,10 @@ One row per `(profileId, jobId)`, upserted (no history). Columns: `userId`, `pro
 
 Served by the API (`npx nx serve xjobs`), local only, with `XJOBS_OPERATOR_ENDPOINTS=1`, and the engine key, under `/matcher`:
 
-| Endpoint                        | Does                                                                                                                                                                                                |
-| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `POST /matcher/jobs/:jobId/run` | Matches the job now, in the request, against every published profile (`force`). Returns the outcome plus `matches`; a job that is not matchable returns `{ status: 'not_matchable', matches: [] }`. |
-| `GET /matcher/jobs/:jobId`      | `{ matches }`: the stored rows of the job.                                                                                                                                                          |
+| Endpoint                        | Does                                                                                                                                                                                                                                                                       |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /matcher/jobs/:jobId/run` | Matches the job now, in the request, against every published profile (`force`). Returns the outcome plus `matches`; a job that is not matchable returns `{ status: 'not_matchable', matches: [] }`, and an expired one `{ status: 'closed', matches }` with its kept rows. |
+| `GET /matcher/jobs/:jobId`      | `{ matches }`: the stored rows of the job.                                                                                                                                                                                                                                 |
 
 ## Rematching
 
@@ -104,7 +105,7 @@ pnpm --filter @xjobs/xjobs db:rematch -- --all
 pnpm --filter @xjobs/xjobs db:rematch -- --job <id> --job <id>
 ```
 
-`--all` is every matchable job; `--job` can repeat. Each job is enqueued with `force`, so it is decided again against every published profile even where its row is current. The match worker must be running to do the work. With no selector the script exits 1 with its usage.
+`--all` is every matchable job; `--job` can repeat. Each job is enqueued with `force` (BullMQ id `<jobId>-force`, so a waiting unforced run doesn't swallow it), so it is decided again against every published profile even where its row is current. The match worker must be running to do the work. With no selector the script exits 1 with its usage.
 
 ## Verification
 

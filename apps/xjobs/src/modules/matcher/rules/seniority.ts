@@ -1,9 +1,9 @@
-import type { ExtractionDocument } from 'src/modules/processor/schema';
+import type { JobFactsDocument } from 'src/modules/facts/schema/facts';
 import { SENIORITY_YEARS_MARGIN } from '../config/matcher.config';
 import type { Check, MatchProfile } from './types';
 
 export function checkSeniority(
-  doc: ExtractionDocument,
+  doc: JobFactsDocument,
   profile: MatchProfile,
 ): Check {
   const seniority = doc.seniority.value ?? null;

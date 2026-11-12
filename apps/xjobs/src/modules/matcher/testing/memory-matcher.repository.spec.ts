@@ -7,6 +7,7 @@ const row = (jobId: string): StoredMatch =>
     userId: 'u',
     jobId,
     extractionId: 'e',
+    factsHash: 'h',
     outcome: 'qualified',
     unverified: false,
     stackScore: null,
