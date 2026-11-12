@@ -26,8 +26,18 @@ export function decide(
 ): Decision {
   const doc = job.facts;
   const stack = checkStack(doc.techStack.value, profile.skills, ctx.implies);
+  let position = checkPosition(doc, profile);
+  // Location and seniority are often unstated even on good postings, but a job
+  // whose role and stack both say nothing has nothing to show it fits.
+  if (position.outcome === 'unknown' && stack.check.outcome === 'unknown') {
+    position = {
+      ...position,
+      outcome: 'fail',
+      reason: `neither the role nor the stack could be verified (${position.reason}; ${stack.check.reason})`,
+    };
+  }
   const checks: Check[] = [
-    checkPosition(doc, profile),
+    position,
     checkSeniority(doc, profile),
     checkLocation(doc.openings, profile, ctx.places),
     stack.check,
