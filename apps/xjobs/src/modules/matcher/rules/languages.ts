@@ -28,7 +28,8 @@ export function checkRequiredLanguages(
   if (required.length === 0)
     return {
       ...base,
-      outcome: 'unknown',
+      // Nothing to check: a pass, so it does not mark the match unverified.
+      outcome: 'pass',
       reason: 'job requires no language',
       ...restsOn(null),
     };

@@ -86,13 +86,23 @@ describe('checkSalary', () => {
     ).toBe('unknown');
   });
 
-  it('unknown when the profile has no minimum', () => {
+  it('passes when the profile sets no minimum: nothing to check', () => {
     const p = profile({
       salaryMin: null,
       salaryCurrency: null,
       salaryPeriod: null,
     });
-    expect(checkSalary(doc({ max: 1 }), p, rates).outcome).toBe('unknown');
+    for (const d of [doc({ max: 1 }), doc(null)])
+      expect(checkSalary(d, p, rates)).toMatchObject({
+        outcome: 'pass',
+        unsure: false,
+        reason: 'you set no minimum salary',
+      });
+    // Even on an unsure salary: the pass does not rest on it.
+    expect(checkSalary(doc({ max: 1 }, 'unsure'), p, rates)).toMatchObject({
+      outcome: 'pass',
+      unsure: false,
+    });
   });
 
   it('an unsure salary failure is unsure', () => {
@@ -148,10 +158,12 @@ describe('checkCurrency', () => {
     ).toMatchObject({ outcome: 'pass', unsure: false, unsureField: null });
   });
 
-  it('unknown when no currency is stated', () => {
-    expect(checkCurrency(doc({ currency: null }), only).outcome).toBe(
-      'unknown',
-    );
-    expect(checkCurrency(doc(null), only).outcome).toBe('unknown');
+  it('passes when no currency is stated: nothing to check', () => {
+    for (const d of [doc({ currency: null }), doc(null), doc(null, 'unsure')])
+      expect(checkCurrency(d, only)).toMatchObject({
+        outcome: 'pass',
+        unsure: false,
+        reason: 'job states no salary currency',
+      });
   });
 });

@@ -40,7 +40,8 @@ export function checkSalary(
     profile.salaryCurrency === null ||
     profile.salaryPeriod === null
   )
-    return check('unknown', 'the profile sets no minimum salary');
+    // Nothing to check: a pass, so it does not mark the match unverified.
+    return check('pass', 'you set no minimum salary');
   if (!salary) return check('unknown', 'job states no salary');
   const best = salary.max ?? salary.min;
   if (best === null) return check('unknown', 'job states no salary amount');
@@ -100,7 +101,9 @@ export function checkCurrency(
   if (currency === null)
     return {
       ...base,
-      outcome: 'unknown',
+      // Nothing to check: a pass, so it does not mark the match unverified. When amounts
+      // come without a currency, the salary check stays unknown.
+      outcome: 'pass',
       reason: 'job states no salary currency',
       ...restsOn(null),
     };

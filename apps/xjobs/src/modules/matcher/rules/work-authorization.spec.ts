@@ -169,11 +169,15 @@ describe('checkWorkAuthorization', () => {
       ).toMatchObject({ outcome: 'fail', unsure: false });
   });
 
-  it('no requirements is unknown', () => {
-    expect(outcome(doc([]), profile())).toBe('unknown');
+  it('no requirements passes: nothing to check', () => {
+    expect(checkWorkAuthorization(doc([]), profile(), idx)).toMatchObject({
+      outcome: 'pass',
+      unsure: false,
+      reason: 'job states no work authorization requirement',
+    });
     expect(
       checkWorkAuthorization(doc(null, 'unstated', 'unsure'), profile(), idx),
-    ).toMatchObject({ outcome: 'unknown', unsure: false });
+    ).toMatchObject({ outcome: 'pass', unsure: false });
   });
 
   it('every requirement must be met', () => {

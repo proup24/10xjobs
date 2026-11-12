@@ -96,7 +96,9 @@ export function checkWorkAuthorization(
   if (!value || requirements.length === 0)
     return {
       ...base,
-      outcome: 'unknown',
+      // Nothing to check: a pass, so it does not mark the match unverified. Where the
+      // job is, the location check covers.
+      outcome: 'pass',
       reason: 'job states no work authorization requirement',
       ...restsOn(null),
     };

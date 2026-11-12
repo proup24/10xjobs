@@ -66,10 +66,14 @@ describe('checkRequiredLanguages', () => {
     ).toBe('pass');
   });
 
-  it('unknown when none required', () => {
-    expect(checkRequiredLanguages(doc([]), profile).outcome).toBe('unknown');
+  it('passes when none required: nothing to check', () => {
+    expect(checkRequiredLanguages(doc([]), profile)).toMatchObject({
+      outcome: 'pass',
+      unsure: false,
+      reason: 'job requires no language',
+    });
     expect(checkRequiredLanguages(doc(null, 'unsure'), profile)).toMatchObject({
-      outcome: 'unknown',
+      outcome: 'pass',
       unsure: false,
     });
   });

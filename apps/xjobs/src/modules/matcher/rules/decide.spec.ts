@@ -6,7 +6,11 @@ import { exampleProfile, factsDoc } from './fixtures.testing';
 import type { MatchJob } from './types';
 
 const ctx: MatchContext = {
-  places: { countriesOfRegion: new Map(), countryOfCity: new Map(), countries: new Set() },
+  places: {
+    countriesOfRegion: new Map(),
+    countryOfCity: new Map(),
+    countries: new Set(),
+  },
   implies: new Map(),
   rates: new Map(),
 };
@@ -110,34 +114,15 @@ describe('decide', () => {
   });
 
   it('qualifies when everything passes', () => {
+    // No salary minimum, and no currency, languages or authorization stated: nothing to
+    // check passes, so only the posting language needs a fact.
     const d = decide(
       job(
         passingDoc((x) => {
-          x.salary.value = {
-            min: null,
-            max: 150000,
-            currency: 'USD',
-            period: 'year',
-          };
-          x.salary.confidence = 'sure';
-          x.workAuthorization.value = {
-            requirements: [{ kind: 'work-permit', place: 'MA' }],
-            sponsorship: 'unstated',
-          };
           x.postingLanguages = { codes: ['en'], confident: true };
         }),
       ),
-      {
-        ...exampleProfile(),
-        salaryMin: 100000,
-        salaryCurrency: 'USD',
-        salaryPeriod: 'year',
-        eligibility: {
-          authorizations: [{ kind: 'citizenship', place: 'MA' }],
-          residenceCountry: 'MA',
-          acceptsSponsorship: null,
-        },
-      },
+      exampleProfile(),
       ctx,
     );
     expect(d.checks.map((c) => c.outcome)).toEqual(
@@ -146,6 +131,20 @@ describe('decide', () => {
     expect(d.outcome).toBe('qualified');
     expect(d.unverified).toBe(false);
     expect(d.stackScore).toBeGreaterThan(0);
+  });
+
+  it('is not unverified when there is nothing to check: no minimum, no currency, languages or authorization stated', () => {
+    const doc = passingDoc((x) => {
+      x.postingLanguages = { codes: ['en'], confident: true };
+      x.salary.value = null;
+      x.requiredLanguages.value = [];
+      x.workAuthorization.value = null;
+    });
+    const d = decide(job(doc), { ...exampleProfile(), salaryMin: null }, ctx);
+    expect(d.outcome).toBe('qualified');
+    expect(d.unverified).toBe(false);
+    for (const rule of ['salary', 'currency', 'languages', 'workAuthorization'])
+      expect(d.checks.find((c) => c.rule === rule)?.outcome).toBe('pass');
   });
 
   it('flags unverified when the extraction needs review', () => {
