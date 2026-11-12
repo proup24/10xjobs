@@ -1,7 +1,6 @@
 import { isSearchableTech } from '@xjobs/database/enums';
 import type { RankedSkill, TechnologySet } from '../types';
 
-
 /** Importance desc, mastery desc, then technology name asc. */
 const compareSkills = (a: RankedSkill, b: RankedSkill): number =>
   b.importance - a.importance ||
