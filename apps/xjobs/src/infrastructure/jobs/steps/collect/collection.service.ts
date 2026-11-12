@@ -35,6 +35,12 @@ import { CollectionSummary, SegmentOutcome } from './types';
 /** Scheduler id and job name of a channel's recurring collect job. */
 export const COLLECT_JOB = 'collect';
 
+/**
+ * Each LinkedIn job board search asks only for the last hour, and segments run
+ * one after another: a tick longer than this leaves postings uncollected.
+ */
+const LINKEDIN_JOB_BOARD_TICK_LIMIT_MS = 60 * 60_000;
+
 const message = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
 
@@ -111,11 +117,19 @@ export class CollectionService {
       else summary.segmentsFailed += 1;
     }
 
+    const durationMs = Date.now() - until.getTime();
     this.logger.log(
-      Object.entries(summary)
+      [...Object.entries(summary), ['durationMs', durationMs]]
         .map(([key, value]) => `${key}=${value}`)
         .join(' '),
     );
+    if (
+      channel === Channel.LINKEDIN_JOB_BOARD &&
+      durationMs > LINKEDIN_JOB_BOARD_TICK_LIMIT_MS
+    )
+      this.logger.warn(
+        `${channel} collection took ${Math.round(durationMs / 60_000)} minutes, over 60: jobs may be missed, because each search asks only for the last hour`,
+      );
     const attempted =
       summary.segments - summary.segmentsSkipped - summary.segmentsDeferred;
     if (attempted > 0 && summary.segmentsFailed === attempted)

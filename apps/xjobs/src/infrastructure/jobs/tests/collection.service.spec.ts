@@ -414,6 +414,53 @@ describe('CollectionService.collect', () => {
     });
   });
 
+  describe('LinkedIn job board tick length', () => {
+    afterEach(() => vi.useRealTimers());
+
+    const tick = async (minutes: number) => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      const start = new Date('2026-11-12T10:00:00Z');
+      vi.setSystemTime(start);
+      const { collection, warn } = setup(
+        builders(1, {
+          channel: Channel.LINKEDIN_JOB_BOARD,
+          params: { location: 'emea' },
+        }),
+        async (s) => {
+          vi.setSystemTime(start.getTime() + minutes * 60_000);
+          return resultFor(s);
+        },
+        Channel.LINKEDIN_JOB_BOARD,
+      );
+      const log = vi.mocked(Logger.prototype.log);
+      await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+      return { warn, log };
+    };
+
+    it('logs the tick duration', async () => {
+      const { log } = await tick(5);
+      expect(log).toHaveBeenCalledWith(
+        expect.stringContaining(`durationMs=${5 * 60_000}`),
+      );
+    });
+
+    it('warns when a tick runs longer than 60 minutes', async () => {
+      const { warn } = await tick(61);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringMatching(
+          /took 61 minutes, over 60: jobs may be missed, because each search asks only for the last hour/,
+        ),
+      );
+    });
+
+    it('does not warn at 60 minutes', async () => {
+      const { warn } = await tick(60);
+      expect(warn).not.toHaveBeenCalledWith(
+        expect.stringContaining('jobs may be missed'),
+      );
+    });
+  });
+
   it('treats unreported cost as zero in totals while retaining null in the run', async () => {
     const { collection, segments } = setup(builders(1), async (search) =>
       resultFor(search, undefined, { costUsd: null }),
