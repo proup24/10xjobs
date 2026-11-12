@@ -92,3 +92,13 @@ describe('RatesService.refresh', () => {
     expect(r.upsertMany).toHaveBeenCalledWith(new Map([['EUR', 0.9]]));
   });
 });
+
+describe('RatesService.hasRates', () => {
+  it('is false for an empty table and true once a rate is stored', async () => {
+    const all = vi.fn(async () => new Map<string, number>());
+    const service = new RatesService({ all } as never, fetchOf(good));
+    expect(await service.hasRates()).toBe(false);
+    all.mockResolvedValueOnce(new Map([['EUR', 0.9]]));
+    expect(await service.hasRates()).toBe(true);
+  });
+});

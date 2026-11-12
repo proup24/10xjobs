@@ -37,6 +37,7 @@ export class MatchWorkerService {
   ) {}
 
   async start(connection: Redis): Promise<void> {
+    if (this.runSchedules) await this.ensureRates();
     const queue = await this.runtime.createQueue(MATCH_QUEUE, connection);
     await syncMatchSweepScheduler(queue, this.runSchedules);
     this.runtime.startWorker(
@@ -89,5 +90,21 @@ export class MatchWorkerService {
         ? `Matching jobs; sweeping every ${MATCH_SWEEP.everyMs / 1000}s`
         : 'Matching jobs; schedules off',
     );
+  }
+
+  /**
+   * On a fresh rates table, fetches the rates once before matching starts, so a deploy's
+   * re-decide does not convert salaries without them. A failure is logged, never fatal.
+   */
+  private async ensureRates(): Promise<void> {
+    try {
+      if (await this.rates.hasRates()) return;
+      const { updated } = await this.rates.refresh();
+      this.logger.log(`Rates table was empty; refreshed ${updated} rates`);
+    } catch (error) {
+      this.logger.warn(
+        `Rates check before matching failed, matching starts anyway: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
   }
 }

@@ -231,6 +231,7 @@ describe('MatcherService', () => {
 
   it('caches the context for ten minutes', async () => {
     const { repo, service, advance } = setup();
+    repo.context.rates = new Map([['USD', 1]]);
     await service.matchJob('job-1', { force: true });
     advance(9 * 60_000);
     await service.matchJob('job-1', { force: true });
@@ -238,5 +239,16 @@ describe('MatcherService', () => {
     advance(2 * 60_000);
     await service.matchJob('job-1', { force: true });
     expect(repo.contextLoads).toBe(2);
+  });
+
+  it('does not cache a context without rates, so the next job loads them fresh', async () => {
+    const { repo, service } = setup();
+    await service.matchJob('job-1', { force: true });
+    await service.matchJob('job-1', { force: true });
+    expect(repo.contextLoads).toBe(2);
+    repo.context.rates = new Map([['USD', 1]]);
+    await service.matchJob('job-1', { force: true });
+    await service.matchJob('job-1', { force: true });
+    expect(repo.contextLoads).toBe(3);
   });
 });

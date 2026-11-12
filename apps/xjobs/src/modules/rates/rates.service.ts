@@ -21,6 +21,11 @@ export class RatesService {
     private readonly fetchFn: typeof fetch = fetch,
   ) {}
 
+  /** Whether the table holds any rate. */
+  async hasRates(): Promise<boolean> {
+    return (await this.repo.all()).size > 0;
+  }
+
   /** Fetches the source and upserts the ISO 4217 rates; never throws. */
   async refresh(): Promise<{ updated: number }> {
     try {
