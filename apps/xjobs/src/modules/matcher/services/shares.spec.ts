@@ -28,4 +28,14 @@ describe('outcomeShares', () => {
       reviewByField: {},
     });
   });
+
+  it('has empty review shares and no NaN without review rows', () => {
+    const shares = outcomeShares([
+      { outcome: 'qualified', reviewRule: null, reviewField: null },
+      { outcome: 'rejected', reviewRule: null, reviewField: null },
+    ]);
+    expect(shares.byOutcome).toEqual({ qualified: 0.5, rejected: 0.5 });
+    expect(shares.reviewByRule).toEqual({});
+    expect(shares.reviewByField).toEqual({});
+  });
 });

@@ -1,12 +1,13 @@
 /**
- * Reports the share of decided jobs per outcome, and for `review` the share
- * per rule and per field, so review stays the exception:
+ * Reports the share of decisions (job x profile) per outcome, and for `review`
+ * the share per rule and per field, so review stays the exception:
  *
  *   pnpm --filter @xjobs/xjobs db:match-shares -- --days 7
  *
- * Counts `job_matches` decided in the last N days (default 7) by the current
- * matcher version or later, so decisions from older rules do not skew the
- * shares.
+ * Counts `job_matches` rows written in the last N days (default 7) by the
+ * current matcher version or later, so decisions from older rules do not skew
+ * the shares. The window is `updatedAt`, not `decidedAt`: a re-match that keeps
+ * the outcome keeps `decidedAt` but still bumps `updatedAt`.
  */
 import { Logger } from '@nestjs/common';
 import { loadDatabaseEnvironment, toDatabaseConfig } from 'src/config';
@@ -49,7 +50,7 @@ async function main(): Promise<void> {
     const rows = (await db.query(
       raw.sql`SELECT m.outcome, m."reviewRule", m."reviewField"
         FROM job_matches m
-        WHERE m."decidedAt" >= now() - make_interval(days => ${days}::int)
+        WHERE m."updatedAt" >= now() - make_interval(days => ${days}::int)
           AND m."matcherVersion" >= ${MATCHER_VERSION}::int`
         .returnsRow({ outcome: text, reviewRule: text, reviewField: text })
         .build(),
