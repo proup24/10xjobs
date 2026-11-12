@@ -1004,14 +1004,18 @@ model JobMatch {
   matcherVersion Int
   outcome        String
   unverified     Boolean
+  // On a review: the first rule that failed only on an unsure fact, and that fact.
+  reviewRule     String?
+  reviewField    String?
   stackScore     Numeric(4, 3)?
   checks         Jsonb
   decidedAt      TimestamptzJsDate(3)
   +Timestamps
 
-  @@check(expression: sql`outcome IN ('qualified','rejected')`, name: "job_matches_outcome")
+  @@check(expression: sql`outcome IN ('qualified','rejected','review')`, name: "job_matches_outcome")
+  @@check(expression: sql`(outcome = 'review') = ("reviewRule" IS NOT NULL AND "reviewField" IS NOT NULL) AND ("reviewRule" IS NULL) = ("reviewField" IS NULL)`, name: "job_matches_review_reason")
   @@check(expression: sql`"stackScore" IS NULL OR "stackScore" BETWEEN 0 AND 1`, name: "job_matches_stack_score_range")
-  @@check(expression: sql`NOT (outcome = 'rejected' AND unverified)`, name: "job_matches_rejected_verified")
+  @@check(expression: sql`NOT (outcome IN ('rejected','review') AND unverified)`, name: "job_matches_rejected_verified")
   @@unique([profileId, jobId])
   @@index([profileId, outcome, decidedAt])
   @@index([jobId])

@@ -190,4 +190,212 @@ describe('decide', () => {
     expect(by.seniority).toBe('unknown');
     expect(by.location).toBe('unknown');
   });
+
+  describe('review', () => {
+    const berlinOnsite = {
+      ...structuredClone(worldwide),
+      arrangements: ['onsite'],
+      places: [
+        { kind: 'city', name: 'Berlin', countryCode: 'DE', cityId: 'berlin' },
+      ],
+    } as JobFactsDocument['openings'][number];
+
+    it('a sure fail rejects', () => {
+      const d = decide(
+        job(
+          passingDoc((x) => {
+            x.seniority.value = 'junior';
+          }),
+        ),
+        exampleProfile(),
+        ctx,
+      );
+      expect(d.outcome).toBe('rejected');
+      expect(d.review).toBeNull();
+    });
+
+    it('an unsure fail with no sure fail is review, with rule and field', () => {
+      const d = decide(
+        job(
+          passingDoc((x) => {
+            x.seniority.value = 'junior';
+            x.seniority.confidence = 'unsure';
+          }),
+        ),
+        exampleProfile(),
+        ctx,
+      );
+      expect(d.outcome).toBe('review');
+      expect(d.review).toEqual({ rule: 'seniority', field: 'seniority' });
+      expect(d.unverified).toBe(false);
+    });
+
+    it('the first unsure fail in rule order is the review', () => {
+      const d = decide(
+        job(
+          passingDoc((x) => {
+            x.seniority.value = 'junior';
+            x.seniority.confidence = 'unsure';
+            x.position.value = { roleKind: 'data_engineer', title: 'x' };
+            x.position.confidence = 'unsure';
+          }),
+        ),
+        exampleProfile(),
+        ctx,
+      );
+      expect(d.outcome).toBe('review');
+      expect(d.review).toEqual({ rule: 'position', field: 'position' });
+    });
+
+    it('a sure fail beats an unsure fail', () => {
+      const d = decide(
+        job(
+          passingDoc((x) => {
+            x.seniority.value = 'junior';
+            x.seniority.confidence = 'unsure';
+            x.position.value = { roleKind: 'data_engineer', title: 'x' };
+          }),
+        ),
+        exampleProfile(),
+        ctx,
+      );
+      expect(d.outcome).toBe('rejected');
+      expect(d.review).toBeNull();
+    });
+
+    it('an unsure pass stays qualified and unverified', () => {
+      const d = decide(
+        job(
+          passingDoc((x) => {
+            x.seniority.confidence = 'unsure';
+          }),
+        ),
+        exampleProfile(),
+        ctx,
+      );
+      expect(d.outcome).toBe('qualified');
+      expect(d.unverified).toBe(true);
+      expect(d.review).toBeNull();
+    });
+
+    it('a LinkedIn opening counts as sure', () => {
+      const p = exampleProfile();
+      p.locations.remote = [];
+      const d = decide(
+        job(
+          passingDoc((x) => {
+            x.openings = [
+              {
+                ...berlinOnsite,
+                placeStrictness: 'label',
+                arrangementSource: 'linkedin',
+                placesSource: 'linkedin',
+                confidence: 'sure',
+              },
+            ];
+          }),
+        ),
+        p,
+        ctx,
+      );
+      expect(d.checks.find((c) => c.rule === 'location')).toMatchObject({
+        outcome: 'fail',
+        unsure: false,
+      });
+      expect(d.outcome).toBe('rejected');
+    });
+
+    it('an unsure description opening that does not fit is review on openings', () => {
+      const d = decide(
+        job(
+          passingDoc((x) => {
+            x.openings = [
+              {
+                ...berlinOnsite,
+                placeStrictness: 'limit',
+                confidence: 'unsure',
+              },
+            ];
+          }),
+        ),
+        exampleProfile(),
+        ctx,
+      );
+      expect(d.outcome).toBe('review');
+      expect(d.review).toEqual({ rule: 'location', field: 'openings' });
+    });
+
+    const unsureNotSwe = (
+      roleKind: string,
+      edit?: (d: JobFactsDocument) => void,
+    ) =>
+      passingDoc((x) => {
+        x.isSoftwareEngineeringRole.value = false;
+        x.isSoftwareEngineeringRole.confidence = 'unsure';
+        x.position.value = { roleKind, title: 'x' };
+        edit?.(x);
+      });
+
+    it('unsure not-SWE with a sure other role is rejected', () => {
+      const d = decide(
+        job(unsureNotSwe('fullstack_engineer')),
+        exampleProfile(),
+        ctx,
+      );
+      expect(d.checks[0]).toMatchObject({ outcome: 'fail', unsure: false });
+      expect(d.outcome).toBe('rejected');
+    });
+
+    it('unsure not-SWE, role unstated, stack unknown is rejected', () => {
+      const d = decide(
+        job(
+          unsureNotSwe('unstated', (x) => {
+            x.techStack.value = null;
+          }),
+        ),
+        exampleProfile(),
+        ctx,
+      );
+      expect(d.checks[0]).toMatchObject({ outcome: 'fail', unsure: false });
+      expect(d.outcome).toBe('rejected');
+    });
+
+    it('unsure not-SWE, role unstated, with a passing stack goes to review', () => {
+      const d = decide(job(unsureNotSwe('unstated')), exampleProfile(), ctx);
+      expect(d.outcome).toBe('review');
+      expect(d.review).toEqual({
+        rule: 'position',
+        field: 'isSoftwareEngineeringRole',
+      });
+    });
+
+    it("unsure not-SWE with the profile's role goes to review", () => {
+      const d = decide(
+        job(unsureNotSwe('backend_engineer')),
+        exampleProfile(),
+        ctx,
+      );
+      expect(d.outcome).toBe('review');
+      expect(d.review).toEqual({
+        rule: 'position',
+        field: 'isSoftwareEngineeringRole',
+      });
+    });
+
+    it('neither role nor stack verifiable is a sure rejection, even on unsure facts', () => {
+      const d = decide(
+        job(
+          passingDoc((x) => {
+            x.position.value = { roleKind: 'unstated', title: 'x' };
+            x.position.confidence = 'unsure';
+            x.techStack.value = null;
+          }),
+        ),
+        exampleProfile(),
+        ctx,
+      );
+      expect(d.checks[0]).toMatchObject({ outcome: 'fail', unsure: false });
+      expect(d.outcome).toBe('rejected');
+    });
+  });
 });

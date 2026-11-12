@@ -4,6 +4,7 @@ import type { MatchProfile } from '../rules/types';
 import {
   type MatchCandidate,
   MatcherRepository,
+  type StaleFor,
   type StoredMatch,
 } from '../repositories/matcher.repository';
 
@@ -33,7 +34,7 @@ export class MemoryMatcherRepository extends MatcherRepository {
   }
 
   listPublishedProfiles(
-    opts: { onlyStaleFor?: { jobId: string; factsHash: string } } = {},
+    opts: { onlyStaleFor?: StaleFor } = {},
   ): Promise<MatchProfile[]> {
     const stale = opts.onlyStaleFor;
     return Promise.resolve(
@@ -45,6 +46,7 @@ export class MemoryMatcherRepository extends MatcherRepository {
               r.profileId === p.id &&
               r.jobId === stale.jobId &&
               r.factsHash === stale.factsHash &&
+              r.extractionId === stale.extractionId &&
               r.matcherVersion >= MATCHER_VERSION,
           ),
       ),
@@ -69,14 +71,18 @@ export class MemoryMatcherRepository extends MatcherRepository {
 
   async listStaleJobs(limit: number): Promise<string[]> {
     const out: string[] = [];
-    for (const jobId of this.candidates.keys()) {
+    for (const [jobId, candidate] of this.candidates) {
       const factsHash = this.factsHashes.get(jobId);
       if (factsHash === undefined) out.push(jobId);
       else if (this.closedJobs.has(jobId)) continue;
       else if (
         (
           await this.listPublishedProfiles({
-            onlyStaleFor: { jobId, factsHash },
+            onlyStaleFor: {
+              jobId,
+              factsHash,
+              extractionId: candidate.extractionId,
+            },
           })
         ).length > 0
       )

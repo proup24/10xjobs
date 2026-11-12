@@ -138,4 +138,99 @@ describe('checkStack', () => {
       ],
     });
   });
+
+  describe('unsure', () => {
+    const unsure = (r: Requirement): Requirement => ({
+      ...r,
+      confidence: 'unsure',
+    });
+    it('an uncovered unsure main requirement makes the failure unsure', () => {
+      const r = run(
+        stackOf([unsure(req('react', 'main', 9)), req('nextjs', 'main', 9)]),
+      );
+      expect(r.check).toMatchObject({
+        outcome: 'fail',
+        unsure: true,
+        unsureField: 'techStack',
+      });
+    });
+    it('an unsure nice requirement does not decide the failure', () => {
+      const r = run(
+        stackOf([req('react', 'main', 9), unsure(req('vue', 'nice', 3))]),
+      );
+      expect(r.check).toMatchObject({
+        outcome: 'fail',
+        unsure: false,
+        unsureField: null,
+      });
+    });
+    it('an unsure uncovered must requirement makes a low score unsure', () => {
+      const r = run(
+        stackOf([
+          req('python', 'main', 2),
+          unsure(req('java', 'must', 10)),
+          req('kotlin', 'must', 10),
+        ]),
+      );
+      expect(r.check).toMatchObject({ outcome: 'fail', unsure: true });
+    });
+    it('a low score that holds on sure requirements alone is sure', () => {
+      // Even with java covered at mastery 10: (1.8 + 1) / 23 = 0.12 < 0.4.
+      const r = run(
+        stackOf([
+          req('python', 'main', 2),
+          req('kotlin', 'must', 10),
+          req('rust', 'must', 10),
+          unsure(req('java', 'must', 1)),
+        ]),
+      );
+      expect(r.check).toMatchObject({
+        outcome: 'fail',
+        unsure: false,
+        unsureField: null,
+      });
+    });
+    it('no main covered is sure when the unsure main could not make it pass', () => {
+      // Optimistic: react at 10 gives 1 / 19 = 0.05, still below 0.4.
+      const r = run(
+        stackOf([
+          unsure(req('react', 'main', 1)),
+          req('nextjs', 'main', 9),
+          req('vue', 'main', 9),
+        ]),
+      );
+      expect(r.check).toMatchObject({ outcome: 'fail', unsure: false });
+    });
+    it('every unit covered at low mastery: an unsure covered unit counts at 10', () => {
+      const low = [
+        { technology: 'python', mastery: 2, importance: 5 },
+        { technology: 'go', mastery: 2, importance: 5 },
+      ];
+      // Optimistic: (10 * 1 + 9 * 0.2) / 19 = 0.62 >= 0.4: unsure.
+      expect(
+        checkStack(
+          stackOf([unsure(req('python', 'main', 10)), req('go', 'must', 9)]),
+          low,
+          implies,
+        ).check,
+      ).toMatchObject({ outcome: 'fail', unsure: true });
+      // Optimistic: (1 * 1 + 9 * 0.2) / 10 = 0.28 < 0.4: sure.
+      expect(
+        checkStack(
+          stackOf([unsure(req('python', 'main', 1)), req('go', 'must', 9)]),
+          low,
+          implies,
+        ).check,
+      ).toMatchObject({ outcome: 'fail', unsure: false });
+    });
+    it('an unsure stack fact makes the failure unsure', () => {
+      const r = checkStack(
+        stackOf([req('react', 'main', 9)]),
+        skills,
+        implies,
+        'unsure',
+      );
+      expect(r.check).toMatchObject({ outcome: 'fail', unsure: true });
+    });
+  });
 });

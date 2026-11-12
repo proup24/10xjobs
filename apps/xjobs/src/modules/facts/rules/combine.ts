@@ -195,6 +195,11 @@ function fillArrangement(
   return { ...o, arrangements: [listed], arrangementSource: 'linkedin' };
 }
 
+/**
+ * The job's arrangement: the description's top-level one; else the one its openings state
+ * (with the least sure of their confidences, and their quotes; `unstated` when they state
+ * several, so the openings speak for themselves); else the listing's.
+ */
 function combineArrangement(
   extraction: ExtractionDocument,
   listing: ListingFacts,
@@ -202,6 +207,27 @@ function combineArrangement(
   const described = extraction.arrangement;
   if (described.value !== null && described.value !== UNSTATED)
     return fromDescription(described);
+  const stating = extraction.openings.filter((o) =>
+    o.arrangements.some((a) => a !== UNSTATED),
+  );
+  if (stating.length > 0) {
+    const stated = [
+      ...new Set(
+        stating.flatMap((o) => o.arrangements.filter((a) => a !== UNSTATED)),
+      ),
+    ];
+    return {
+      value: stated.length === 1 ? stated[0] : UNSTATED,
+      confidence: stating
+        .map((o) => o.confidence)
+        .reduce<FactOpening['confidence']>(leastSure, 'sure'),
+      source: 'description',
+      quote: stating
+        .map((o) => o.quote)
+        .filter(Boolean)
+        .join(' | '),
+    };
+  }
   if (listing.arrangement !== null)
     return {
       value: listing.arrangement,

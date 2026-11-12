@@ -40,6 +40,7 @@ Precision over volume: prefer a tailored application over a fast one.
 - `pnpm --filter @xjobs/xjobs db:analyze`: read-only report on match and processor quality (check patterns, dropped facts, vocabulary gaps, processing errors).
 - `pnpm --filter @xjobs/xjobs db:vocab -- <list> list|approve|reject|alias`: review terms the processor proposed (`cities` by id).
 - `pnpm --filter @xjobs/xjobs db:places -- --days <n>`: list recent LinkedIn places that fell back to a country or to nothing (default 7 days), to find cities and aliases to add with `db:vocab`.
+- `pnpm --filter @xjobs/xjobs db:match-shares -- --days <n>`: share of decisions (job × profile) per outcome (default 7 days by last write, current matcher version), and for `review` the share per rule and field; review must stay the exception.
 - `pnpm --filter @xjobs/xjobs processor:eval`: run the processor against the golden set.
 - `npm run test:hooks`: tests for the `.claude/hooks` scripts.
 

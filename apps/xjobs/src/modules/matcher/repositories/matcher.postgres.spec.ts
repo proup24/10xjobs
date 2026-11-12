@@ -266,6 +266,7 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
   > => ({
     outcome: 'qualified',
     unverified: false,
+    review: null,
     stackScore: 0.75,
     checks: [
       {
@@ -274,6 +275,8 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
         jobValue: 'backend',
         profileValue: 'backend_engineer',
         reason: 'same',
+        unsure: false,
+        unsureField: null,
       },
     ],
     ...over,
@@ -385,7 +388,11 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
         timezoneMax: 180,
         skills: [{ technology: 'python', mastery: 8, importance: 9 }],
       });
-      const stale = { jobId: j.id, factsHash: 'h1' };
+      const stale = {
+        jobId: j.id,
+        factsHash: 'h1',
+        extractionId: j.extractionId,
+      };
       expect(
         await repo.listPublishedProfiles({ onlyStaleFor: stale }),
       ).toHaveLength(1);
@@ -395,7 +402,11 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
       ).toHaveLength(0);
       expect(
         await repo.listPublishedProfiles({
-          onlyStaleFor: { jobId: j.id, factsHash: 'h2' },
+          onlyStaleFor: {
+            jobId: j.id,
+            factsHash: 'h2',
+            extractionId: j.extractionId,
+          },
         }),
       ).toHaveLength(1);
     });
@@ -444,14 +455,18 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
       expect(await repo.listStaleJobs(10)).toEqual([j.id]);
       expect(
         await repo.listPublishedProfiles({
-          onlyStaleFor: { jobId: j.id, factsHash: 'h2' },
+          onlyStaleFor: {
+            jobId: j.id,
+            factsHash: 'h2',
+            extractionId: j.extractionId,
+          },
         }),
       ).toHaveLength(1);
       await repo.upsertMatches([row(p, j, { factsHash: 'h2' })]);
       expect(await repo.listStaleJobs(10)).toEqual([]);
     });
 
-    it('a new extraction with the same facts leaves rows current', async () => {
+    it('a new extraction with the same facts makes rows stale (its needsReview may differ)', async () => {
       const p = await profile();
       const j = await job();
       await facts(j);
@@ -463,7 +478,20 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
       // The facts were built from the old extraction: build them again.
       expect(await repo.listStaleJobs(10)).toEqual([j.id]);
       await facts({ id: j.id, extractionId: newer });
+      // Same facts hash, but the rows were decided on the old extraction.
+      expect(await repo.listStaleJobs(10)).toEqual([j.id]);
+      expect(
+        await repo.listPublishedProfiles({
+          onlyStaleFor: { jobId: j.id, factsHash: 'h1', extractionId: newer },
+        }),
+      ).toHaveLength(1);
+      await repo.upsertMatches([row(p, { id: j.id, extractionId: newer })]);
       expect(await repo.listStaleJobs(10)).toEqual([]);
+      expect(
+        await repo.listPublishedProfiles({
+          onlyStaleFor: { jobId: j.id, factsHash: 'h1', extractionId: newer },
+        }),
+      ).toHaveLength(0);
     });
 
     it.each([
@@ -534,6 +562,51 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
   });
 
   describe('upsertMatches', () => {
+    it('stores and reads back a review with its rule and field', async () => {
+      const p = await profile();
+      const j = await job();
+      await repo.upsertMatches([
+        row(p, j, {
+          outcome: 'review',
+          review: { rule: 'location', field: 'openings' },
+        }),
+      ]);
+      const [stored] = await repo.matchesForJob(j.id);
+      expect(stored).toMatchObject({
+        outcome: 'review',
+        unverified: false,
+        review: { rule: 'location', field: 'openings' },
+      });
+      const raw = await matchRow(p.id, j.id);
+      expect(raw).toMatchObject({
+        reviewRule: 'location',
+        reviewField: 'openings',
+      });
+      // A later qualified decision clears them.
+      await repo.upsertMatches([row(p, j)]);
+      expect(await matchRow(p.id, j.id)).toMatchObject({
+        outcome: 'qualified',
+        reviewRule: null,
+        reviewField: null,
+      });
+    });
+
+    it('refuses a review without its rule and field, and a rule on another outcome', async () => {
+      const p = await profile();
+      const j = await job();
+      await expect(
+        repo.upsertMatches([row(p, j, { outcome: 'review', review: null })]),
+      ).rejects.toThrow();
+      await expect(
+        repo.upsertMatches([
+          row(p, j, {
+            outcome: 'rejected',
+            review: { rule: 'stack', field: 'techStack' },
+          }),
+        ]),
+      ).rejects.toThrow();
+    });
+
     it('stores and reads back a decision', async () => {
       const p = await profile();
       const j = await job();

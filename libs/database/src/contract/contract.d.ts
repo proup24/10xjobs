@@ -24,7 +24,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'a0e7e5cdb988c28b56a83fac52a2d9083dc8f30c34ed4db1e7736337e485494d'>;
+  StorageHashBase<'7a9202b8254003df747c0106c86d0819f4e33a3cb129ff331fc2f1a9fafd5a95'>;
 export type ExecutionHash =
   ExecutionHashBase<'9c0694a80d5f7adf167bc3288d7926267ba4776ae99e720efce6b64a0f440673'>;
 export type ProfileHash =
@@ -739,6 +739,8 @@ export namespace Models {
     matcherVersion: FieldOutputTypes['public']['JobMatch']['matcherVersion'];
     outcome: FieldOutputTypes['public']['JobMatch']['outcome'];
     profileId: FieldOutputTypes['public']['JobMatch']['profileId'];
+    reviewField: FieldOutputTypes['public']['JobMatch']['reviewField'];
+    reviewRule: FieldOutputTypes['public']['JobMatch']['reviewRule'];
     stackScore: FieldOutputTypes['public']['JobMatch']['stackScore'];
     unverified: FieldOutputTypes['public']['JobMatch']['unverified'];
     updatedAt: FieldOutputTypes['public']['JobMatch']['updatedAt'];
@@ -2491,6 +2493,18 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/uuid';
                   readonly codecId: 'pg/uuid@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly reviewField: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly reviewRule: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly stackScore: {
@@ -6350,6 +6364,14 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
+              readonly reviewField: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly reviewRule: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly stackScore: {
                 readonly nullable: true;
                 readonly type: {
@@ -6436,6 +6458,8 @@ type ContractBase = Omit<
                 readonly matcherVersion: { readonly column: 'matcherVersion' };
                 readonly outcome: { readonly column: 'outcome' };
                 readonly profileId: { readonly column: 'profileId' };
+                readonly reviewField: { readonly column: 'reviewField' };
+                readonly reviewRule: { readonly column: 'reviewRule' };
                 readonly stackScore: { readonly column: 'stackScore' };
                 readonly unverified: { readonly column: 'unverified' };
                 readonly updatedAt: { readonly column: 'updatedAt' };

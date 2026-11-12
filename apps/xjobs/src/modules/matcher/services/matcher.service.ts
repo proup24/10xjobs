@@ -52,7 +52,15 @@ export class MatcherService {
       facts: built.facts,
     };
     const profiles = await this.repo.listPublishedProfiles(
-      opts.force ? {} : { onlyStaleFor: { jobId, factsHash: job.factsHash } },
+      opts.force
+        ? {}
+        : {
+            onlyStaleFor: {
+              jobId,
+              factsHash: job.factsHash,
+              extractionId: job.extractionId,
+            },
+          },
     );
     if (profiles.length === 0)
       return { status: 'matched', profiles: 0, qualified: 0 };

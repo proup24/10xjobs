@@ -1,0 +1,363 @@
+[
+  {
+    "id": "dropCheckConstraint.job_matches.job_matches_outcome_99dbf9c9",
+    "label": "Drop check constraint \"job_matches_outcome_99dbf9c9\" on \"job_matches\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "job_matches_outcome_99dbf9c9",
+        "table": "job_matches"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"job_matches_outcome_99dbf9c9\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "job_matches_outcome_99dbf9c9",
+          "public",
+          "\"public\".\"job_matches\""
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "constraint \"job_matches_outcome_99dbf9c9\" on \"job_matches\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"job_matches_outcome_99dbf9c9\"",
+        "sql": "ALTER TABLE \"public\".\"job_matches\" DROP CONSTRAINT \"job_matches_outcome_99dbf9c9\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"job_matches_outcome_99dbf9c9\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "job_matches_outcome_99dbf9c9",
+          "public",
+          "\"public\".\"job_matches\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"job_matches_outcome_99dbf9c9\" on \"job_matches\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "dropCheckConstraint.job_matches.job_matches_rejected_verified_42d2b1cf",
+    "label": "Drop check constraint \"job_matches_rejected_verified_42d2b1cf\" on \"job_matches\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "job_matches_rejected_verified_42d2b1cf",
+        "table": "job_matches"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"job_matches_rejected_verified_42d2b1cf\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "job_matches_rejected_verified_42d2b1cf",
+          "public",
+          "\"public\".\"job_matches\""
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "constraint \"job_matches_rejected_verified_42d2b1cf\" on \"job_matches\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"job_matches_rejected_verified_42d2b1cf\"",
+        "sql": "ALTER TABLE \"public\".\"job_matches\" DROP CONSTRAINT \"job_matches_rejected_verified_42d2b1cf\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"job_matches_rejected_verified_42d2b1cf\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "job_matches_rejected_verified_42d2b1cf",
+          "public",
+          "\"public\".\"job_matches\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"job_matches_rejected_verified_42d2b1cf\" on \"job_matches\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "column.public.job_matches.reviewField",
+    "label": "Add column \"reviewField\" to \"job_matches\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "reviewField",
+        "table": "job_matches"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"reviewField\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "job_matches",
+          "reviewField"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"reviewField\" on \"job_matches\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"reviewField\"",
+        "sql": "ALTER TABLE \"public\".\"job_matches\" ADD COLUMN \"reviewField\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"reviewField\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "job_matches",
+          "reviewField"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"reviewField\" on \"job_matches\""
+        }
+      },
+      {
+        "description": "verify column \"reviewField\" has type \"text\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "job_matches",
+          "reviewField",
+          "text"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.job_matches.reviewRule",
+    "label": "Add column \"reviewRule\" to \"job_matches\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "reviewRule",
+        "table": "job_matches"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"reviewRule\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "job_matches",
+          "reviewRule"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"reviewRule\" on \"job_matches\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"reviewRule\"",
+        "sql": "ALTER TABLE \"public\".\"job_matches\" ADD COLUMN \"reviewRule\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"reviewRule\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "job_matches",
+          "reviewRule"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"reviewRule\" on \"job_matches\""
+        }
+      },
+      {
+        "description": "verify column \"reviewRule\" has type \"text\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "job_matches",
+          "reviewRule",
+          "text"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.job_matches.job_matches_outcome_df17b99b",
+    "label": "Add check constraint \"job_matches_outcome_df17b99b\" on \"job_matches\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "job_matches_outcome_df17b99b",
+        "table": "job_matches"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"job_matches_outcome_df17b99b\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "job_matches_outcome_df17b99b",
+          "public",
+          "\"public\".\"job_matches\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"job_matches_outcome_df17b99b\" on \"job_matches\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"job_matches_outcome_df17b99b\"",
+        "sql": "ALTER TABLE \"public\".\"job_matches\" ADD CONSTRAINT \"job_matches_outcome_df17b99b\" CHECK (outcome IN ('qualified','rejected','review'))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify check constraint \"job_matches_outcome_df17b99b\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4)) AS \"result\"",
+        "params": [
+          "job_matches_outcome_df17b99b",
+          "public",
+          "\"public\".\"job_matches\"",
+          "c"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.job_matches.job_matches_rejected_verified_13f93349",
+    "label": "Add check constraint \"job_matches_rejected_verified_13f93349\" on \"job_matches\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "job_matches_rejected_verified_13f93349",
+        "table": "job_matches"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"job_matches_rejected_verified_13f93349\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "job_matches_rejected_verified_13f93349",
+          "public",
+          "\"public\".\"job_matches\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"job_matches_rejected_verified_13f93349\" on \"job_matches\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"job_matches_rejected_verified_13f93349\"",
+        "sql": "ALTER TABLE \"public\".\"job_matches\" ADD CONSTRAINT \"job_matches_rejected_verified_13f93349\" CHECK (NOT (outcome IN ('rejected','review') AND unverified))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify check constraint \"job_matches_rejected_verified_13f93349\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4)) AS \"result\"",
+        "params": [
+          "job_matches_rejected_verified_13f93349",
+          "public",
+          "\"public\".\"job_matches\"",
+          "c"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.job_matches.job_matches_review_reason_86bdbab5",
+    "label": "Add check constraint \"job_matches_review_reason_86bdbab5\" on \"job_matches\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "job_matches_review_reason_86bdbab5",
+        "table": "job_matches"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"job_matches_review_reason_86bdbab5\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "job_matches_review_reason_86bdbab5",
+          "public",
+          "\"public\".\"job_matches\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"job_matches_review_reason_86bdbab5\" on \"job_matches\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"job_matches_review_reason_86bdbab5\"",
+        "sql": "ALTER TABLE \"public\".\"job_matches\" ADD CONSTRAINT \"job_matches_review_reason_86bdbab5\" CHECK ((outcome = 'review') = (\"reviewRule\" IS NOT NULL AND \"reviewField\" IS NOT NULL) AND (\"reviewRule\" IS NULL) = (\"reviewField\" IS NULL))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify check constraint \"job_matches_review_reason_86bdbab5\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4)) AS \"result\"",
+        "params": [
+          "job_matches_review_reason_86bdbab5",
+          "public",
+          "\"public\".\"job_matches\"",
+          "c"
+        ]
+      }
+    ]
+  }
+]

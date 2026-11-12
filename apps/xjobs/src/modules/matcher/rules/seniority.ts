@@ -1,6 +1,6 @@
 import type { JobFactsDocument } from 'src/modules/facts/schema/facts';
 import { SENIORITY_YEARS_MARGIN } from '../config/matcher.config';
-import type { Check, MatchProfile } from './types';
+import { restsOn, type Check, type MatchProfile } from './types';
 
 export function checkSeniority(
   doc: JobFactsDocument,
@@ -12,26 +12,32 @@ export function checkSeniority(
     outcome: Check['outcome'],
     jobValue: unknown,
     reason: string,
+    unsureField: string | null = null,
   ): Check => ({
     rule: 'seniority',
     outcome,
     jobValue,
     profileValue: profile.seniorities,
     reason,
+    ...restsOn(unsureField),
   });
   const wanted = `[${profile.seniorities.join(', ')}]`;
 
   if (seniority !== null && seniority !== 'unstated') {
+    const unsureField =
+      doc.seniority.confidence === 'unsure' ? 'seniority' : null;
     return profile.seniorities.includes(seniority)
       ? check(
           'pass',
           seniority,
           `job seniority ${seniority} is in your seniorities ${wanted}`,
+          unsureField,
         )
       : check(
           'fail',
           seniority,
           `job seniority ${seniority} is not in your seniorities ${wanted}`,
+          unsureField,
         );
   }
   if (
@@ -42,6 +48,7 @@ export function checkSeniority(
       'fail',
       { seniority, yearsRequired: minYears },
       `job asks for ${minYears}+ years; you have ${profile.yearsOfExperience}`,
+      doc.yearsRequired.confidence === 'unsure' ? 'yearsRequired' : null,
     );
   }
   return check(
