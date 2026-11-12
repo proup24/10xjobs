@@ -8,6 +8,8 @@ import {
 } from 'src/infrastructure/jobs/steps/match';
 import {
   RATES_QUEUE,
+  RATES_REFRESH_JOB,
+  RATES_REFRESH_ON_START_JOB_ID,
   processRatesJob,
 } from 'src/infrastructure/jobs/steps/rates';
 import { MatcherRepository, MatcherService } from 'src/modules/matcher';
@@ -55,6 +57,21 @@ export class MatchWorkerService {
     // The rates refresh rides in the match worker: matching converts salaries with these rates.
     const ratesQueue = await this.runtime.createQueue(RATES_QUEUE, connection);
     await syncRatesRefreshScheduler(ratesQueue, this.runSchedules);
+    if (this.runSchedules) {
+      // Refresh at every start so a fresh or stale table does not wait for 03:00 UTC.
+      // The fixed id keeps restarts from stacking; the finished job is removed so the
+      // next boot can add it again.
+      await ratesQueue.add(
+        RATES_REFRESH_JOB,
+        {},
+        {
+          jobId: RATES_REFRESH_ON_START_JOB_ID,
+          attempts: 1,
+          removeOnComplete: true,
+          removeOnFail: true,
+        },
+      );
+    }
     this.runtime.startWorker(
       RATES_QUEUE,
       async (bullJob) => {

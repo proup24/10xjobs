@@ -18,6 +18,7 @@ const created = vi.hoisted(() => ({
   queues: [] as string[],
   schedulers: [] as string[],
   removedSchedulers: [] as string[],
+  added: [] as Array<{ queue: string; name: string; jobId?: string }>,
   closedWorkers: [] as string[],
   closedQueues: [] as string[],
 }));
@@ -27,7 +28,9 @@ vi.mock('bullmq', async (importOriginal) => {
   class Queue {
     on = vi.fn();
     waitUntilReady = vi.fn(async () => undefined);
-    add = vi.fn(async () => undefined);
+    async add(name: string, _data: unknown, opts?: { jobId?: string }) {
+      created.added.push({ queue: this.name, name, jobId: opts?.jobId });
+    }
     constructor(readonly name: string) {
       created.queues.push(name);
     }
@@ -128,6 +131,10 @@ it('runs infrastructure, ingest and every active channel collection, and the mat
       'collect-linkedin-job-board:collect',
     ]);
     expect(created.removedSchedulers).toEqual(inactiveSchedulers);
+    // Schedules on: one rates refresh at startup, under a fixed id.
+    expect(created.added).toEqual([
+      { queue: 'rates', name: 'refresh', jobId: 'refresh-on-start' },
+    ]);
   } finally {
     // Closing the module runs the shutdown hook.
     await module.close();

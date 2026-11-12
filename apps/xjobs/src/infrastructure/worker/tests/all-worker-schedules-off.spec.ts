@@ -18,6 +18,7 @@ const created = vi.hoisted(() => ({
   queues: [] as string[],
   schedulers: [] as string[],
   removedSchedulers: [] as string[],
+  added: [] as string[],
   closedWorkers: [] as string[],
   closedQueues: [] as string[],
 }));
@@ -27,7 +28,9 @@ vi.mock('bullmq', async (importOriginal) => {
   class Queue {
     on = vi.fn();
     waitUntilReady = vi.fn(async () => undefined);
-    add = vi.fn(async () => undefined);
+    async add(name: string) {
+      created.added.push(`${this.name}:${name}`);
+    }
     constructor(readonly name: string) {
       created.queues.push(name);
     }
@@ -94,6 +97,8 @@ it('registers no schedule and removes the old ones when schedules are off', asyn
   const { module } = await startAll();
   try {
     expect(created.schedulers).toEqual([]);
+    // Schedules off: no startup rates refresh either.
+    expect(created.added).toEqual([]);
     expect(created.removedSchedulers).toEqual([
       'ingest:sweep',
       'match:sweep',
