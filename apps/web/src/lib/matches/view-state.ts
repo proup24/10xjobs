@@ -1,7 +1,11 @@
 import type { ProfileListItem } from '@/lib/preferences/profiles';
 import type { Tab } from './group';
 
+/** Which list the page shows: the matches, or the jobs the matcher sent to review. */
+export type List = 'matches' | 'review';
+
 export type ViewState = {
+  list: List;
   tab: Tab;
   profile: string | 'all';
   source: string | 'all';
@@ -11,6 +15,7 @@ export type ViewState = {
 type Defaults = Partial<ViewState>;
 
 const baseDefaults: ViewState = {
+  list: 'matches',
   tab: '24h',
   profile: 'all',
   source: 'all',
@@ -23,7 +28,9 @@ export function readViewState(
 ): ViewState {
   const d = { ...baseDefaults, ...defaults };
   const tab = params.get('tab');
+  const list = params.get('list');
   return {
+    list: list === 'matches' || list === 'review' ? list : d.list,
     tab: tab === '24h' || tab === '7d' ? tab : d.tab,
     profile: params.get('profile') || d.profile,
     source: params.get('source') || d.source,
@@ -38,6 +45,7 @@ export function viewStateHref(
 ): string {
   const d = { ...baseDefaults, ...defaults };
   const q = new URLSearchParams();
+  if (state.list !== d.list) q.set('list', state.list);
   if (state.tab !== d.tab) q.set('tab', state.tab);
   if (state.profile !== d.profile) q.set('profile', state.profile);
   if (state.source !== 'all') q.set('source', state.source);

@@ -1,18 +1,27 @@
 'use client';
 
-import { Check, CircleHelp, ChevronLeft } from 'lucide-react';
+import { Check, ChevronLeft, CircleHelp, CircleX } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
-import { buttonVariants } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TextLink } from '@/components/ui/text';
-import { checkLines, notCheckedText, type Labels } from '@/lib/matches/checks';
+import {
+  checkLines,
+  fieldLabel,
+  notCheckedText,
+  ruleLabel,
+  type Labels,
+} from '@/lib/matches/checks';
 import {
   conflictLines,
   factLines,
+  factQuotes,
   stackLines,
   type ConflictField,
   type FactLine,
@@ -20,11 +29,173 @@ import {
 import { postedPhrase } from '@/lib/matches/freshness';
 import { groupByJob, type MatchRow } from '@/lib/matches/group';
 import { markViewed } from '@/lib/matches/mark-viewed';
+import type { ReportField } from '@/lib/matches/report';
 import { channelLabel } from '@/lib/matches/sources';
+import type { SaveResult } from '@/lib/setup/save-result';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { stackScoreText } from './match-row';
+import { ReportDialog, type Report } from './report-dialog';
 
 const NOT_STATED = 'Not stated';
+
+export type ReviewChoice = 'qualified' | 'rejected';
+export type Decide = (d: {
+  matchId: string;
+  choice: ReviewChoice;
+}) => Promise<SaveResult>;
+
+const DECIDED: Record<ReviewChoice, string> = {
+  qualified: 'Moved to matches',
+  rejected: 'Rejected',
+};
+
+/** The conflicts that bear on each fact a review can rest on. */
+const FIELD_CONFLICTS: Record<string, ConflictField[]> = {
+  seniority: ['seniority'],
+  yearsRequired: ['seniority'],
+  openings: ['arrangement', 'places'],
+  salary: ['salary'],
+  contractType: ['contractType'],
+};
+
+/**
+ * The report field for each fact a review can rest on. Tech stack, languages and work
+ * authorization have no line in the facts list: the review is where they can be reported.
+ */
+const REVIEW_REPORT_FIELDS: Record<string, ReportField> = {
+  position: 'role',
+  isSoftwareEngineeringRole: 'role',
+  seniority: 'seniority',
+  yearsRequired: 'yearsRequired',
+  openings: 'places',
+  salary: 'salary',
+  contractType: 'contractType',
+  techStack: 'techStack',
+  requiredLanguages: 'requiredLanguages',
+  workAuthorization: 'workAuthorization',
+};
+
+/**
+ * Why a job is in review: the rule that would have rejected it, the fact it was unsure
+ * of with the description's words for it, and LinkedIn's value when the listing disagreed,
+ * with "Report a mismatch" on that fact. Then the two decisions; Reject asks first.
+ */
+function ReviewReason({
+  row,
+  onDecide,
+  onReport,
+}: {
+  row: MatchRow;
+  onDecide?: Decide;
+  onReport?: Report;
+}) {
+  const [pending, setPending] = useState(false);
+  const field = row.reviewField ?? '';
+  const reportField = REVIEW_REPORT_FIELDS[field];
+  const quotes = factQuotes(row.facts, field);
+  const conflicts = conflictLines(row.conflicts);
+  const listing = (FIELD_CONFLICTS[field] ?? [])
+    .map((f) => conflicts[f])
+    .filter((x): x is string => Boolean(x));
+
+  /** Saves and reports the decision; false when it was not saved. */
+  const decide = async (choice: ReviewChoice): Promise<boolean> => {
+    if (!onDecide) return false;
+    let result: SaveResult;
+    try {
+      result = await onDecide({ matchId: row.matchId, choice });
+    } catch {
+      result = { status: 'failed' };
+    }
+    if (result.status === 'saved') {
+      toast.success(DECIDED[choice]);
+      return true;
+    }
+    toast.error(
+      result.status === 'invalid' && result.errors._form
+        ? result.errors._form
+        : "Couldn't save your decision. Try again.",
+    );
+    return false;
+  };
+
+  return (
+    <Section title="Why it's in review">
+      <dl className="flex flex-col gap-2">
+        <div className="flex flex-col">
+          <dt className="text-muted-foreground">Would be rejected by</dt>
+          <dd>{ruleLabel(row.reviewRule) ?? row.reviewRule}</dd>
+        </div>
+        <div className="flex flex-col gap-1">
+          <dt className="text-muted-foreground">Unsure about</dt>
+          <dd>{fieldLabel(field)}</dd>
+          {quotes.map((q) => (
+            <dd
+              key={q}
+              className="border-l-2 border-border pl-3 break-words whitespace-pre-line"
+            >
+              {`“${q}”`}
+            </dd>
+          ))}
+          {quotes.length === 0 && (
+            <dd className="text-muted-foreground">
+              The description has no words for it to quote.
+            </dd>
+          )}
+          {listing.map((l) => (
+            <dd key={l} className="text-muted-foreground">
+              {l}
+            </dd>
+          ))}
+          {onReport && reportField && (
+            <dd>
+              <ReportDialog
+                jobId={row.jobId}
+                field={reportField}
+                label={fieldLabel(field)}
+                onReport={onReport}
+              />
+            </dd>
+          )}
+        </div>
+      </dl>
+      {onDecide && (
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="secondary"
+            loading={pending}
+            onClick={async () => {
+              setPending(true);
+              try {
+                await decide('qualified');
+              } finally {
+                setPending(false);
+              }
+            }}
+          >
+            Move to matches
+          </Button>
+          <ConfirmDialog
+            trigger={
+              <Button variant="destructive" disabled={pending}>
+                Reject
+              </Button>
+            }
+            title="Reject"
+            description="Reject this job? It will leave your review list."
+            confirmLabel="Reject"
+            destructive
+            onConfirm={async () => {
+              // Keep the dialog open on a failure; the toast has said why.
+              if (!(await decide('rejected'))) throw new Error('not saved');
+            }}
+            onError={() => undefined}
+          />
+        </div>
+      )}
+    </Section>
+  );
+}
 
 /**
  * The links that leave for the job's own pages, in a new tab. Either one marks the job
@@ -125,6 +296,8 @@ export function MatchDetail({
   now,
   userId,
   backHref,
+  onDecide,
+  onReport,
 }: {
   /** The job's rows, one per matching profile; non-empty. */
   rows: MatchRow[];
@@ -133,6 +306,10 @@ export function MatchDetail({
   now: Date;
   userId: string;
   backHref: string;
+  /** Records a decision on a review row; the buttons show only with it. */
+  onDecide?: Decide;
+  /** Logs a mismatch on a fact; the report buttons show only with it. */
+  onReport?: Report;
 }) {
   const [profileId, setProfileId] = useState(rows[0]?.profileId);
   const [job] = groupByJob(rows);
@@ -144,17 +321,30 @@ export function MatchDetail({
   const techLabels = new Map(labels.techs.map((t) => [t.value, t.label]));
   const stack = stackLines(shown.checks, (c) => techLabels.get(c) ?? c);
   const lines = checkLines(shown.checks, labels);
+  // `outcome` is the engine's; the user's decision is `reviewChoice`. Only an undecided
+  // review row is in review: one the user moved to Matches reads as a match.
+  const inReview =
+    shown.outcome === 'review' &&
+    shown.reviewChoice == null &&
+    Boolean(shown.reviewRule);
+  const accepted =
+    shown.outcome === 'review' && shown.reviewChoice === 'qualified';
   const sources = job.channels.map(channelLabel).join(' and ');
   const profileLabel = (id: string) => profileLabels[id] ?? 'Profile';
 
-  const factRows: [string, FactLine | null, ConflictField | null][] = [
-    ['Role', facts.role, null],
-    ['Seniority', facts.seniority, 'seniority'],
-    ['Arrangement', facts.arrangement, 'arrangement'],
-    ['Places', facts.places, 'places'],
-    ['Contract type', facts.contractType, 'contractType'],
-    ['Engagement', facts.engagement, null],
-    ['Salary', facts.salary, 'salary'],
+  const factRows: [
+    string,
+    FactLine | null,
+    ConflictField | null,
+    ReportField,
+  ][] = [
+    ['Role', facts.role, null, 'role'],
+    ['Seniority', facts.seniority, 'seniority', 'seniority'],
+    ['Arrangement', facts.arrangement, 'arrangement', 'arrangement'],
+    ['Places', facts.places, 'places', 'places'],
+    ['Contract type', facts.contractType, 'contractType', 'contractType'],
+    ['Engagement', facts.engagement, null, 'engagement'],
+    ['Salary', facts.salary, 'salary', 'salary'],
   ];
   const noStack =
     stack.covered.length + stack.uncovered.length + stack.notCompared.length ===
@@ -194,8 +384,17 @@ export function MatchDetail({
         jobId={first.jobId}
       />
 
+      {inReview && (
+        <ReviewReason
+          key={shown.matchId}
+          row={shown}
+          onDecide={onDecide}
+          onReport={onReport}
+        />
+      )}
+
       <dl className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
-        {factRows.map(([term, value, field]) => (
+        {factRows.map(([term, value, field, reportField]) => (
           <div key={term} className="flex flex-col items-start">
             <dt className="text-muted-foreground">{term}</dt>
             <dd className={value ? undefined : 'text-muted-foreground'}>
@@ -206,6 +405,14 @@ export function MatchDetail({
             )}
             {field && conflicts[field] && (
               <p className="text-muted-foreground">{conflicts[field]}</p>
+            )}
+            {onReport && (
+              <ReportDialog
+                jobId={first.jobId}
+                field={reportField}
+                label={term}
+                onReport={onReport}
+              />
             )}
           </div>
         ))}
@@ -246,7 +453,12 @@ export function MatchDetail({
         )}
       </Section>
 
-      <Section title={`Why it matched · ${profileLabel(shown.profileId)}`}>
+      <Section
+        title={`${inReview ? 'Checks' : 'Why it matched'} · ${profileLabel(shown.profileId)}`}
+      >
+        {accepted && (
+          <p className="text-muted-foreground">You moved this from review.</p>
+        )}
         <ul className="flex flex-col gap-1.5">
           {lines.map((l) => (
             <li key={l.rule} className="flex items-start gap-2">
@@ -254,6 +466,17 @@ export function MatchDetail({
                 <Check
                   aria-label="Pass"
                   className="mt-0.5 shrink-0 text-success"
+                />
+              ) : l.mark === 'fail' && accepted ? (
+                // The check that sent it to review, which the user overruled.
+                <CircleX
+                  aria-label="Sent to review"
+                  className="mt-0.5 shrink-0 text-muted-foreground"
+                />
+              ) : l.mark === 'fail' ? (
+                <CircleX
+                  aria-label="Fail"
+                  className="mt-0.5 shrink-0 text-destructive"
                 />
               ) : (
                 <CircleHelp
@@ -263,6 +486,9 @@ export function MatchDetail({
               )}
               <span>
                 <span className="font-medium">{l.label}</span>
+                {l.unsure && (
+                  <span className="text-muted-foreground"> (unsure)</span>
+                )}
                 <span className="text-muted-foreground"> · </span>
                 <span>{l.text}</span>
               </span>

@@ -12,6 +12,7 @@ const defaults = { tab: '24h', profile: 'all' } as const;
 describe('readViewState', () => {
   it('falls back to the defaults', () => {
     expect(readViewState(new URLSearchParams(), defaults)).toEqual({
+      list: 'matches',
       tab: '24h',
       profile: 'all',
       source: 'all',
@@ -20,13 +21,14 @@ describe('readViewState', () => {
   });
   it('round-trips through viewStateHref', () => {
     const state: ViewState = {
+      list: 'review',
       tab: '7d',
       profile: 'p1',
       source: 'ASHBY',
       job: 'j1',
     };
     const href = viewStateHref(state, defaults);
-    expect(href).toBe('/?tab=7d&profile=p1&source=ASHBY&job=j1');
+    expect(href).toBe('/?list=review&tab=7d&profile=p1&source=ASHBY&job=j1');
     expect(
       readViewState(new URLSearchParams(href.split('?')[1]), defaults),
     ).toEqual(state);
@@ -34,10 +36,25 @@ describe('readViewState', () => {
   it('omits defaults from the href', () => {
     expect(
       viewStateHref(
-        { tab: '24h', profile: 'all', source: 'all', job: null },
+        {
+          list: 'matches',
+          tab: '24h',
+          profile: 'all',
+          source: 'all',
+          job: null,
+        },
         defaults,
       ),
     ).toBe('/');
+  });
+  it('readViewState reads list=review and defaults to matches', () => {
+    expect(
+      readViewState(new URLSearchParams('list=review'), defaults).list,
+    ).toBe('review');
+    expect(readViewState(new URLSearchParams(), defaults).list).toBe('matches');
+    expect(readViewState(new URLSearchParams('list=x'), defaults).list).toBe(
+      'matches',
+    );
   });
   it('ignores a bad tab', () => {
     expect(readViewState(new URLSearchParams('tab=x'), defaults).tab).toBe(

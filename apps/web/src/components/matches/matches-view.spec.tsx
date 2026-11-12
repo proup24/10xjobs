@@ -12,13 +12,22 @@ import { MatchesView } from './matches-view';
 import { NOW, P1, P2, hoursAgo, labels, matchRow } from './test-fixtures';
 
 const push = vi.hoisted(() => vi.fn());
+const refresh = vi.hoisted(() => vi.fn());
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push, refresh: vi.fn() }),
+  useRouter: () => ({ push, refresh }),
 }));
+const decideReviewAction = vi.hoisted(() => vi.fn());
+vi.mock('@/app/(app)/actions', () => ({
+  decideReviewAction,
+  reportMismatchAction: vi.fn(),
+}));
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 afterEach(() => {
   cleanup();
   push.mockClear();
+  refresh.mockClear();
+  decideReviewAction.mockReset();
 });
 
 type Profile = { id: string; label: string; state: 'draft' | 'published' };
@@ -39,6 +48,7 @@ const ROWS: MatchRow[] = [
 function renderView(
   opts: {
     rows?: MatchRow[];
+    reviewRows?: MatchRow[];
     profiles?: Profile[];
     initial?: Partial<ViewState>;
     selected?: MatchRow[] | null;
@@ -48,9 +58,11 @@ function renderView(
   render(
     <MatchesView
       jobs={groupByJob(opts.rows ?? ROWS)}
+      reviewJobs={groupByJob(opts.reviewRows ?? [])}
       profiles={profiles}
       labels={labels}
       initial={{
+        list: 'matches',
         tab: '24h',
         profile: P1,
         source: 'all',
@@ -72,6 +84,72 @@ async function options(combobox: string) {
   const found = await screen.findAllByRole('option');
   return found.map((o) => o.textContent);
 }
+
+const REVIEW: MatchRow[] = [
+  matchRow({
+    jobId: 'rev',
+    matchId: 'm-rev',
+    title: 'Review job',
+    outcome: 'review',
+    reviewRule: 'seniority',
+    reviewField: 'seniority',
+    postedAt: hoursAgo(2),
+  }),
+];
+
+describe('MatchesView lists', () => {
+  it('counts both lists on the List tabs', () => {
+    renderView({ reviewRows: REVIEW });
+    const tabs = within(screen.getByRole('tablist', { name: 'List' }));
+    expect(tabs.getByRole('tab', { name: 'Matches (3)' })).toBeTruthy();
+    expect(tabs.getByRole('tab', { name: 'Review (1)' })).toBeTruthy();
+  });
+
+  it('switches to the review list in the URL, closing the open job', () => {
+    renderView({ reviewRows: REVIEW, initial: { job: 'mid' } });
+    fireEvent.click(screen.getByRole('tab', { name: 'Review (1)' }));
+    expect(push).toHaveBeenCalledWith('/?list=review');
+  });
+
+  it('lists the review jobs on the review list', () => {
+    renderView({ reviewRows: REVIEW, initial: { list: 'review' } });
+    const links = within(
+      screen.getByRole('list', { name: 'Review' }),
+    ).getAllByRole('link');
+    expect(links).toHaveLength(1);
+    expect(within(links[0]).getByRole('heading').textContent).toBe(
+      'Review job',
+    );
+  });
+
+  it('says there is nothing to review', () => {
+    renderView({ initial: { list: 'review', tab: '7d' } });
+    expect(screen.getByText('Nothing to review')).toBeTruthy();
+  });
+
+  it('records a decision, then closes the job and refreshes', async () => {
+    decideReviewAction.mockResolvedValue({ status: 'saved' });
+    renderView({
+      reviewRows: REVIEW,
+      initial: { list: 'review', job: 'rev' },
+      selected: REVIEW,
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Move to matches' }));
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalled());
+    expect(decideReviewAction).toHaveBeenCalledWith({
+      matchId: 'm-rev',
+      choice: 'qualified',
+    });
+    expect(push).toHaveBeenCalledWith('/?list=review');
+  });
+
+  it('offers no decisions on the matches list', () => {
+    renderView({ initial: { job: 'mid' }, selected: [ROWS[2]] });
+    expect(
+      screen.queryByRole('button', { name: 'Move to matches' }),
+    ).toBeNull();
+  });
+});
 
 describe('MatchesView', () => {
   it('lists rows newest posted first', () => {

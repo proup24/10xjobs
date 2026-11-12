@@ -25,13 +25,20 @@ export function checkRequiredLanguages(
     jobValue: required,
     profileValue: profile.languages,
   };
+  // Pass or fail, the outcome rests on the stated requirements.
+  const sureness = restsOn(
+    facts.requiredLanguages.confidence === 'unsure'
+      ? 'requiredLanguages'
+      : null,
+  );
   if (required.length === 0)
     return {
       ...base,
-      // Nothing to check: a pass, so it does not mark the match unverified.
+      // Nothing to check: a pass, never review or a reject. On an unsure fact a
+      // requirement may have been missed, so the pass rests on it (unverified).
       outcome: 'pass',
       reason: 'job requires no language',
-      ...restsOn(null),
+      ...sureness,
     };
   const held = new Map(profile.languages.map((l) => [l.lang, l.level]));
   const short = required.flatMap(({ lang, level }) => {
@@ -41,12 +48,6 @@ export function checkRequiredLanguages(
       ? [`${lang} (${level}; you have ${have})`]
       : [];
   });
-  // Pass or fail, the outcome rests on the stated requirements.
-  const sureness = restsOn(
-    facts.requiredLanguages.confidence === 'unsure'
-      ? 'requiredLanguages'
-      : null,
-  );
   const asked = required.map((r) => `${r.lang} (${r.level})`).join(', ');
   return short.length === 0
     ? {

@@ -1,0 +1,9 @@
+{
+  "from": "881c039aef420519d4c8f137b88287c268d14c2afc804de5813e72c422847ce5",
+  "to": "881c039aef420519d4c8f137b88287c268d14c2afc804de5813e72c422847ce5",
+  "providedInvariants": [
+    "match-details-review"
+  ],
+  "createdAt": "2026-11-12T21:22:31.339Z",
+  "migrationHash": "5759c3e0baec468af50f10406ff5e7b63bdfc98301f7ea664457aa8371fd224d"
+}

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   arrangementLine,
   conflictLines,
+  factQuotes,
   factLines,
   salaryLine,
   stackLines,
@@ -256,5 +257,29 @@ describe('stackLines', () => {
       uncovered: [],
       notCompared: [],
     });
+  });
+});
+
+describe('factQuotes', () => {
+  it("reads a fact's quote, each opening's, or its parts'", () => {
+    const facts = {
+      seniority: { code: 'staff', quote: 'Lead as staff' },
+      openings: [
+        { quote: 'Remote in EU' },
+        { quote: null },
+        { quote: 'Remote in EU' },
+      ],
+      requiredLanguages: {
+        quote: null,
+        languages: [{ lang: 'fr', quote: 'French a must' }],
+      },
+      salary: { min: 1, quote: null },
+    };
+    expect(factQuotes(facts, 'seniority')).toEqual(['Lead as staff']);
+    expect(factQuotes(facts, 'openings')).toEqual(['Remote in EU']);
+    expect(factQuotes(facts, 'requiredLanguages')).toEqual(['French a must']);
+    expect(factQuotes(facts, 'salary')).toEqual([]);
+    expect(factQuotes(facts, 'isSoftwareEngineeringRole')).toEqual([]);
+    expect(factQuotes(null, 'seniority')).toEqual([]);
   });
 });

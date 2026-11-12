@@ -45,12 +45,17 @@ export default async function Page({
       state: p.state,
     })),
   );
-  // The window has list rows only; the job in the URL is read in full, alongside it.
-  const [rows, profiles, lists, selected] = await Promise.all([
-    loadMatches(supabase, { since: new Date(now.getTime() - WEEK_MS) }),
+  // The window has list rows only; the job in the URL is read in full, alongside it, from
+  // the list it was opened in. Both lists are read, for the counts on their tabs.
+  const since = new Date(now.getTime() - WEEK_MS);
+  const asked = readViewState(params);
+  const outcome = asked.list === 'review' ? 'review' : 'qualified';
+  const [rows, reviewRows, profiles, lists, selected] = await Promise.all([
+    loadMatches(supabase, { since, outcome: 'qualified' }),
+    loadMatches(supabase, { since, outcome: 'review' }),
     profilesRead,
     preferenceLists(),
-    selectedRows(supabase, readViewState(params).job, profilesRead),
+    selectedRows(supabase, asked.job, profilesRead, outcome),
   ]);
   const read = readViewState(params, {
     tab: '24h',
@@ -59,10 +64,12 @@ export default async function Page({
   // A stale or foreign profile link shows the default profile, not an empty one.
   const state = { ...read, profile: knownProfile(read.profile, profiles) };
   const live = publishedRows(rows, profiles);
+  const liveReview = publishedRows(reviewRows, profiles);
 
   return (
     <MatchesView
       jobs={groupByJob(live)}
+      reviewJobs={groupByJob(liveReview)}
       profiles={profiles}
       labels={{
         positions: lists.positions,
@@ -71,6 +78,9 @@ export default async function Page({
         countries: lists.countries,
         regions: lists.regions,
         cities: lists.cities,
+        languages: lists.languages,
+        currencies: lists.currencies,
+        contractTypes: lists.contractTypes,
       }}
       initial={state}
       now={now.toISOString()}

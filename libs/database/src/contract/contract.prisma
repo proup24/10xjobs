@@ -125,6 +125,8 @@ model User {
   eligibilityVersion Int                    @default(0)
   jobMatches         JobMatch[]
   jobViews           JobView[]
+  matchReviews       MatchReview[]
+  factReports        FactReport[]
   +Timestamps
 
   @@map("users")
@@ -621,6 +623,7 @@ model NormalizedJob {
   facts                 JobFacts?
   factConflicts         JobFactConflict[]
   views                 JobView[]
+  factReports           FactReport[]
   +Timestamps
 
   @@check(expression: sql`"workplaceType" IS NULL OR "workplaceType" IN ('remote', 'hybrid', 'onsite')`, name: "normalized_jobs_workplace_type")
@@ -904,6 +907,7 @@ model JobExtraction {
   attempts                  ProcessingAttempt[]
   facts                     JobFacts[]
   factConflicts             JobFactConflict[]
+  factReports               FactReport[]
 
   @@index([jobId, createdAt], map: "job_extractions_job_created")
   @@index([inputHash, schemaVersion, promptHash, decisionModel, extractionModel], map: "job_extractions_reuse")
@@ -1032,6 +1036,7 @@ model JobMatch {
   // resume columns and touches the profile when its profile_skills change.
   profileUpdatedAt   TimestamptzJsDate(3)?
   eligibilityVersion Int?
+  reviews            MatchReview[]
   +Timestamps
 
   @@check(expression: sql`outcome IN ('qualified','rejected','review')`, name: "job_matches_outcome")
@@ -1078,6 +1083,96 @@ policy_insert job_views_owner_insert {
   target = JobView
   roles = [authenticated]
   withCheck = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.job_matches m WHERE m."userId" = auth.uid() AND m."jobId" = job_views."jobId")`
+}
+
+// A user's decision on a match in review: move it to Matches (qualified) or out (rejected).
+// An overlay next to the engine's row, which it never changes. It records the rule and field
+// that sent the match to review, and applies (match_details) only while the latest decision
+// for the match is on the match's current reviewRule and reviewField and was made since the
+// match's decidedAt: a re-decision to another outcome or another rule or field wins, and older
+// rows stay as history (they don't apply again when the match returns to review).
+model MatchReview {
+  // Users insert through PostgREST, so the id has a database default too.
+  id        Uuid     @id @default(sql`gen_random_uuid()`) @onCreate(uuid(7))
+  userId    Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profileId Uuid
+  matchId   Uuid
+  match     JobMatch @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  jobId     Uuid
+  choice    String
+  rule      String
+  field     String
+  note      String?
+  +Timestamps
+
+  @@check(expression: sql`choice IN ('qualified','rejected')`, name: "match_reviews_choice")
+  @@index([matchId, createdAt])
+  @@map("match_reviews")
+  @@rls
+}
+
+// Owners read their decisions.
+policy_select match_reviews_owner_read {
+  target = MatchReview
+  roles = [authenticated]
+  using = sql`"userId" = auth.uid()`
+}
+
+// Owners decide only on their own match while it is in review on the rule and field the
+// decision names; profileId and jobId must be the match's. The outer columns are qualified: a
+// bare name in the subquery would resolve to m.
+policy_insert match_reviews_owner_insert {
+  target = MatchReview
+  roles = [authenticated]
+  withCheck = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.job_matches m WHERE m.id = match_reviews."matchId" AND m."userId" = auth.uid() AND m."profileId" = match_reviews."profileId" AND m."jobId" = match_reviews."jobId" AND m.outcome = 'review' AND m."reviewRule" = match_reviews.rule AND m."reviewField" = match_reviews.field)`
+}
+
+// Owners delete their decisions. No update: a decision is history, a new one supersedes it.
+policy_delete match_reviews_owner_delete {
+  target = MatchReview
+  roles = [authenticated]
+  using = sql`"userId" = auth.uid()`
+}
+
+// A user's report that a fact on a job is wrong: what the processor said (value and quote),
+// LinkedIn's value when there is one, and the value the user says is right. A log for
+// improving the prompt and the golden set; it changes nothing. Only the engine reads them all.
+model FactReport {
+  // Users insert through PostgREST, so the id has a database default too.
+  id             Uuid                 @id @default(sql`gen_random_uuid()`) @onCreate(uuid(7))
+  userId         Uuid
+  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobId          Uuid
+  job            NormalizedJob        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  extractionId   Uuid?
+  extraction     JobExtraction?       @relation(fields: [extractionId], references: [id], onDelete: SetNull)
+  field          String
+  processorValue Jsonb?
+  quote          String?
+  listingValue   Jsonb?
+  proposedValue  String
+  note           String?
+  createdAt      TimestamptzJsDate(3) @default(now())
+
+  @@index([userId])
+  @@index([jobId])
+  @@map("fact_reports")
+  @@rls
+}
+
+// Owners read their reports.
+policy_select fact_reports_owner_read {
+  target = FactReport
+  roles = [authenticated]
+  using = sql`"userId" = auth.uid()`
+}
+
+// Owners report a fact on a job they are matched with. No update or delete.
+policy_insert fact_reports_owner_insert {
+  target = FactReport
+  roles = [authenticated]
+  withCheck = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.job_matches m WHERE m."userId" = auth.uid() AND m."jobId" = fact_reports."jobId")`
 }
 
 // Users read the value lists through the pickers and never write them. Column grants

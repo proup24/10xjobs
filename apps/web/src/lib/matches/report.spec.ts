@@ -1,0 +1,242 @@
+import { describe, expect, it, vi } from 'vitest';
+import { REPORT_FIELDS, saveReport } from './report';
+
+const JOB = '22222222-2222-4222-8222-222222222222';
+
+type Rpc = { data: unknown; error: unknown };
+
+/** A client whose match_details read returns `rpc` and whose fact_reports insert returns `insert`. */
+function client(rpc: Rpc, insert: { error: unknown } = { error: null }) {
+  const calls = { rpc: vi.fn(), insert: vi.fn(), tables: [] as string[] };
+  const supabase = {
+    rpc: async (name: string, args: unknown) => {
+      calls.rpc(name, args);
+      return rpc;
+    },
+    from: (table: string) => {
+      calls.tables.push(table);
+      return {
+        insert: async (row: unknown) => {
+          calls.insert(row);
+          return insert;
+        },
+      };
+    },
+  } as never;
+  return { supabase, calls };
+}
+
+const row = {
+  jobId: JOB,
+  extractionId: 'ext-1',
+  facts: {
+    seniority: {
+      code: 'senior',
+      label: 'Senior',
+      source: 'description',
+      quote: 'We want a senior engineer',
+    },
+    contractType: null,
+  },
+  conflicts: [
+    { field: 'seniority', listingValue: 'mid', descriptionValue: 'senior' },
+    { field: 'salary', listingValue: { min: 1 } },
+  ],
+};
+
+describe('saveReport', () => {
+  it('saveReport inserts the processor and LinkedIn values from the row', async () => {
+    const { supabase, calls } = client({ data: [row], error: null });
+    const result = await saveReport(supabase, 'user-1', {
+      jobId: JOB,
+      field: 'seniority',
+      proposedValue: 'Mid-level',
+      note: 'The post says mid',
+      processorValue: 'forged',
+    });
+    expect(result).toEqual({ status: 'saved' });
+    expect(calls.insert).toHaveBeenCalledWith({
+      userId: 'user-1',
+      jobId: JOB,
+      field: 'seniority',
+      processorValue: row.facts.seniority,
+      quote: 'We want a senior engineer',
+      listingValue: 'mid',
+      extractionId: 'ext-1',
+      proposedValue: 'Mid-level',
+      note: 'The post says mid',
+    });
+  });
+
+  // R67a: a review on years of experience reports that fact, not the seniority label.
+  it('reports years of experience with its own value and quote', async () => {
+    const years = {
+      min: 5,
+      max: null,
+      source: 'description',
+      quote: '5+ years',
+    };
+    const { supabase, calls } = client({
+      data: [{ ...row, facts: { ...row.facts, yearsRequired: years } }],
+      error: null,
+    });
+    const result = await saveReport(supabase, 'user-1', {
+      jobId: JOB,
+      field: 'yearsRequired',
+      proposedValue: '3 years',
+    });
+    expect(result).toEqual({ status: 'saved' });
+    expect(calls.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        field: 'yearsRequired',
+        processorValue: years,
+        quote: '5+ years',
+      }),
+    );
+  });
+
+  it('stores nulls for a fact with no value, quote or conflict', async () => {
+    const { supabase, calls } = client({ data: [row], error: null });
+    await saveReport(supabase, 'user-1', {
+      jobId: JOB,
+      field: 'contractType',
+      proposedValue: 'Contractor',
+    });
+    expect(calls.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        processorValue: null,
+        quote: null,
+        listingValue: null,
+        note: null,
+      }),
+    );
+  });
+
+  it('saveReport refuses an empty proposed value', async () => {
+    const { supabase, calls } = client({ data: [row], error: null });
+    const result = await saveReport(supabase, 'user-1', {
+      jobId: JOB,
+      field: 'seniority',
+      proposedValue: '   ',
+    });
+    expect(result.status).toBe('invalid');
+    expect(calls.insert).not.toHaveBeenCalled();
+    expect(calls.rpc).not.toHaveBeenCalled();
+  });
+
+  it('stores a null extraction id when the row has none', async () => {
+    const { supabase, calls } = client({
+      data: [{ ...row, extractionId: null }],
+      error: null,
+    });
+    await saveReport(supabase, 'user-1', {
+      jobId: JOB,
+      field: 'seniority',
+      proposedValue: 'Mid',
+    });
+    expect(calls.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ extractionId: null }),
+    );
+  });
+
+  it('refuses a proposed value over 200 characters', async () => {
+    const { supabase, calls } = client({ data: [row], error: null });
+    const result = await saveReport(supabase, 'user-1', {
+      jobId: JOB,
+      field: 'seniority',
+      proposedValue: 'x'.repeat(201),
+    });
+    expect(result.status).toBe('invalid');
+    expect(calls.insert).not.toHaveBeenCalled();
+  });
+
+  it('refuses a note over 500 characters', async () => {
+    const { supabase, calls } = client({ data: [row], error: null });
+    const result = await saveReport(supabase, 'user-1', {
+      jobId: JOB,
+      field: 'seniority',
+      proposedValue: 'Mid',
+      note: 'x'.repeat(501),
+    });
+    expect(result.status).toBe('invalid');
+    expect(calls.insert).not.toHaveBeenCalled();
+  });
+
+  it('trims the proposed value and the note, and stores a blank note as null', async () => {
+    const { supabase, calls } = client({ data: [row], error: null });
+    await saveReport(supabase, 'user-1', {
+      jobId: JOB,
+      field: 'seniority',
+      proposedValue: '  Mid  ',
+      note: '  hi  ',
+    });
+    await saveReport(supabase, 'user-1', {
+      jobId: JOB,
+      field: 'seniority',
+      proposedValue: 'Mid',
+      note: '   ',
+    });
+    expect(calls.insert).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ proposedValue: 'Mid', note: 'hi' }),
+    );
+    expect(calls.insert).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ note: null }),
+    );
+  });
+
+  it('refuses a field that is not reportable', async () => {
+    const { supabase } = client({ data: [row], error: null });
+    const result = await saveReport(supabase, 'user-1', {
+      jobId: JOB,
+      field: 'title',
+      proposedValue: 'x',
+    });
+    expect(result.status).toBe('invalid');
+    expect(REPORT_FIELDS).toContain('techStack');
+  });
+
+  it('is invalid when the user has no match row on the job', async () => {
+    const { supabase, calls } = client({ data: [], error: null });
+    const result = await saveReport(supabase, 'user-1', {
+      jobId: JOB,
+      field: 'seniority',
+      proposedValue: 'Mid',
+    });
+    expect(result).toEqual({
+      status: 'invalid',
+      errors: { _form: 'This job is no longer in your matches.' },
+    });
+    expect(calls.insert).not.toHaveBeenCalled();
+  });
+
+  it('logs the code only and fails on a read error', async () => {
+    const log = vi.fn();
+    const { supabase } = client({
+      data: null,
+      error: { code: 'XX000', message: 'secret detail' },
+    });
+    const result = await saveReport(
+      supabase,
+      'user-1',
+      { jobId: JOB, field: 'seniority', proposedValue: 'Mid' },
+      { log },
+    );
+    expect(result).toEqual({ status: 'failed' });
+    expect(log.mock.calls.join()).not.toContain('secret detail');
+  });
+
+  it('fails on an insert error', async () => {
+    const { supabase } = client(
+      { data: [row], error: null },
+      { error: { code: '42501', message: 'rls' } },
+    );
+    const result = await saveReport(supabase, 'user-1', {
+      jobId: JOB,
+      field: 'seniority',
+      proposedValue: 'Mid',
+    });
+    expect(result).toEqual({ status: 'failed' });
+  });
+});

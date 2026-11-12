@@ -235,7 +235,7 @@ Existing rules (position, seniority, location, stack) keep their logic, except t
 | **Posting language**    | the profile speaks one of the posting's languages, at any level                                                       | it speaks none of them _(user: a deal breaker)_                                    | detector unsure or text too short                                                 | none (the detector's own doubt is unknown) |
 | **Work authorization**  | the user meets every requirement (kind and place, through the place hierarchy and `residenceCountry`), or none stated | one isn't met, and the job doesn't offer sponsorship or the user doesn't accept it | a requirement whose place can't be compared                                       | unsure and would fail                      |
 
-Nothing to check (no minimum set, nothing stated, none required) is a pass, so it does not mark a match unverified (user, 2026-11-12).
+Nothing to check is a pass, never a review or a reject (user, 2026-11-12). That holds only where nothing can fail: the profile sets no salary minimum, or the job states no currency, requires no language, or states no work authorization requirement. A job that states no salary against a profile minimum stays unknown. A "nothing stated" pass rests on that fact's confidence: on an unsure fact something may have been missed, so the pass is unsure and the match unverified. "No minimum set" depends on nothing in the job and is always sure.
 
 **Salary details** _(user: convert with exchange rates and standard hours)_:
 

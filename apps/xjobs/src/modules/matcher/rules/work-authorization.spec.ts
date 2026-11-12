@@ -175,9 +175,16 @@ describe('checkWorkAuthorization', () => {
       unsure: false,
       reason: 'job states no work authorization requirement',
     });
-    expect(
-      checkWorkAuthorization(doc(null, 'unstated', 'unsure'), profile(), idx),
-    ).toMatchObject({ outcome: 'pass', unsure: false });
+  });
+
+  it('no requirements on an unsure fact still passes, but rests on it', () => {
+    for (const d of [doc(null, 'unstated', 'unsure'), doc([], 'no', 'unsure')])
+      expect(checkWorkAuthorization(d, profile(), idx)).toMatchObject({
+        outcome: 'pass',
+        unsure: true,
+        unsureField: 'workAuthorization',
+        reason: 'job states no work authorization requirement',
+      });
   });
 
   it('every requirement must be met', () => {

@@ -57,6 +57,10 @@ const COLUMNS = [
   'viewedAt',
   'facts',
   'conflicts',
+  'reviewRule',
+  'reviewField',
+  'reviewChoice',
+  'extractionId',
 ];
 
 type Row = Record<string, unknown> & { jobId: string };
@@ -132,6 +136,7 @@ describe('match_details', () => {
   let jobNobody: string;
   let jobEmptyQuote: string;
   let jobNewerExtraction: string;
+  let newerFactsExtraction: string;
   let jobEdge: string;
   let jobA2: string;
   let jobPosted: string;
@@ -266,6 +271,7 @@ describe('match_details', () => {
     jobPosted = posted.jobId;
     jobUnposted = unposted.jobId;
     jobNewerExtraction = newer.jobId;
+    newerFactsExtraction = newer.extractionId;
     jobEdge = edge.jobId;
 
     jobShared = shared.jobId;
@@ -546,6 +552,7 @@ describe('match_details', () => {
       const rows = await call(c, { p_profile_id: profileC, p_details });
       expect(jobIds(rows)).toEqual([bare.jobId]);
       expect(rows[0].facts).toBeNull();
+      expect(rows[0].extractionId).toBeNull();
       expect(rows[0].conflicts ?? []).toEqual([]);
       expect(rows[0].title).toBe('Senior Backend Engineer');
     }
@@ -569,6 +576,17 @@ describe('match_details', () => {
     expect(rows).toHaveLength(1);
     const facts = rows[0].facts as { seniority: { code: string } };
     expect(facts.seniority.code).toBe('senior');
+  });
+
+  it("returns the extraction of the job's facts, on light and full rows", async () => {
+    for (const p_details of [true, false]) {
+      const [row] = await call(a, {
+        p_profile_id: profileA2,
+        p_job_id: jobNewerExtraction,
+        p_details,
+      });
+      expect(row.extractionId).toBe(newerFactsExtraction);
+    }
   });
 
   it('lists a job once per channel, sorted', async () => {

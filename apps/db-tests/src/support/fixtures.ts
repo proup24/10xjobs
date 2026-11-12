@@ -628,7 +628,9 @@ export const seedMatchOn = (
   profileId: string,
   job: SeededJob,
   opts: {
-    outcome?: 'qualified' | 'rejected';
+    outcome?: 'qualified' | 'rejected' | 'review';
+    /** With outcome `review`: the rule and field that sent it there. */
+    review?: { rule: string; field: string };
     checks?: unknown;
     stackScore?: number;
   } = {},
@@ -640,6 +642,8 @@ export const seedMatchOn = (
     extractionId: job.extractionId,
     matcherVersion: 1,
     outcome: opts.outcome ?? 'qualified',
+    reviewRule: opts.review?.rule ?? null,
+    reviewField: opts.review?.field ?? null,
     unverified: false,
     stackScore: opts.stackScore ?? null,
     checks: opts.checks ?? {},

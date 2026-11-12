@@ -1,5 +1,5 @@
 {
-  "hash": "c7e224b8457ff39be47ce7029466d362a15f7c5c9d93c0db4aa43ab160462815",
+  "hash": "881c039aef420519d4c8f137b88287c268d14c2afc804de5813e72c422847ce5",
   "invariants": [
     "end-expired-sessions",
     "code-check-fixes",
@@ -15,6 +15,7 @@
     "match-details-all-profiles",
     "match-details-list-rows",
     "match-details-job-facts",
-    "users-update-columns"
+    "users-update-columns",
+    "match-details-review"
   ]
 }

@@ -256,3 +256,24 @@ export function stackLines(
       .filter((x): x is string => x !== null),
   };
 }
+
+/**
+ * The description's words for one fact (a key of the row's `facts`, as the matcher names
+ * the field a check rests on): its own quote, else its parts' (each opening, each required
+ * language or technology). Empty when the fact has none, or isn't in the facts.
+ */
+export function factQuotes(facts: unknown, field: string): string[] {
+  const f = obj(facts);
+  if (field === 'openings')
+    return unique(arr(f?.openings).map((o) => str(obj(o)?.quote)));
+  const fact = obj(f?.[field]);
+  const own = str(fact?.quote);
+  if (own) return [own];
+  const parts =
+    field === 'requiredLanguages'
+      ? arr(fact?.languages)
+      : field === 'techStack'
+        ? arr(fact?.requirements)
+        : [];
+  return unique(parts.map((p) => str(obj(p)?.quote)));
+}

@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@xjobs/database/types';
 import { UUID } from '@/lib/setup/answers';
 import { publishedRows, type MatchRow } from './group';
-import { loadMatch } from './load';
+import { loadMatch, type ListOutcome } from './load';
 
 type Profiles = { id: string; state: 'draft' | 'published' }[];
 
@@ -18,11 +18,12 @@ export async function selectedRows(
   supabase: SupabaseClient<Database>,
   jobId: string | null,
   profiles: Profiles | Promise<Profiles>,
+  outcome: ListOutcome = 'qualified',
 ): Promise<MatchRow[] | null> {
   if (!jobId) return null;
   if (!UUID.test(jobId)) return [];
   const [rows, known] = await Promise.all([
-    loadMatch(supabase, jobId),
+    loadMatch(supabase, jobId, outcome),
     profiles,
   ]);
   return publishedRows(

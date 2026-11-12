@@ -13,6 +13,8 @@ export type EmptyKind =
   | { kind: 'draft' }
   | { kind: 'no-matches-24h'; weekHref: string }
   | { kind: 'no-matches-7d' }
+  | { kind: 'no-review-24h'; weekHref: string }
+  | { kind: 'no-review-7d' }
   | { kind: 'filtered'; clearHref: string }
   | { kind: 'not-found' }
   | { kind: 'pick' };
@@ -39,7 +41,7 @@ export function MatchEmpty(props: EmptyKind) {
       {props.kind === 'no-profile' && (
         <Action href="/setup">Set up your profile</Action>
       )}
-      {props.kind === 'no-matches-24h' && (
+      {(props.kind === 'no-matches-24h' || props.kind === 'no-review-24h') && (
         <Action href={props.weekHref}>Last 7 days</Action>
       )}
       {props.kind === 'filtered' && (
@@ -65,6 +67,14 @@ const TEXT: Record<EmptyKind['kind'], [string, string | null]> = {
   'no-matches-7d': [
     'No matches yet',
     "New jobs are matched as they're collected.",
+  ],
+  'no-review-24h': [
+    'Nothing to review from the last 24 hours',
+    "Jobs show here when a check failed on a fact the job wasn't clear about.",
+  ],
+  'no-review-7d': [
+    'Nothing to review',
+    "Jobs show here when a check failed on a fact the job wasn't clear about.",
   ],
   filtered: ['No matches for this filter', null],
   'not-found': [
