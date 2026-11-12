@@ -526,6 +526,48 @@ describe('combineFacts', () => {
         'description',
       ]);
     });
+
+    it("unstated at the top, the openings' stated arrangement is the arrangement, not the listing's", () => {
+      const { facts } = combine(
+        doc({
+          arrangementValue: 'unstated',
+          openings: [
+            opening({
+              arrangements: ['remote'],
+              confidence: 'unsure',
+              quote: 'fully remote',
+            }),
+            opening({ arrangements: ['remote'], quote: 'remote in EU' }),
+          ],
+        }),
+        listing({ arrangement: 'onsite' }),
+      );
+      expect(facts.arrangement).toEqual({
+        value: 'remote',
+        source: 'description',
+        confidence: 'unsure',
+        quote: 'fully remote | remote in EU',
+      });
+    });
+
+    it('unstated at the top, openings stating several arrangements leave it unstated, from the description', () => {
+      const { facts } = combine(
+        doc({
+          arrangementValue: 'unstated',
+          openings: [
+            opening({ arrangements: ['remote'], quote: 'remote in EU' }),
+            opening({ arrangements: ['onsite'], quote: 'onsite in Paris' }),
+          ],
+        }),
+        listing({ arrangement: 'onsite' }),
+      );
+      expect(facts.arrangement).toEqual({
+        value: 'unstated',
+        source: 'description',
+        confidence: 'sure',
+        quote: 'remote in EU | onsite in Paris',
+      });
+    });
   });
 
   it('carries engagement and contract months from the description, for display', () => {

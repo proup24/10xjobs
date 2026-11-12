@@ -212,7 +212,12 @@ describe.skipIf(!url)('facts repository in PostgreSQL', () => {
 
   it('loadInputs returns null without a current extraction', async () => {
     const j = await job();
-    await sql`UPDATE normalized_jobs SET "currentExtractionId" = NULL`;
+    await db.execute(
+      db.raw
+        .sql`UPDATE normalized_jobs SET "currentExtractionId" = NULL WHERE id = ${j.jobId}::uuid`
+        .affectedCount()
+        .build(),
+    );
     expect(await repo.loadInputs(j.jobId)).toBeNull();
   });
 
@@ -234,7 +239,12 @@ describe.skipIf(!url)('facts repository in PostgreSQL', () => {
 
     const again = await repo.loadInputs(j.jobId);
     // An ingest write lands between the load and the save.
-    await sql`UPDATE normalized_jobs SET "updatedAt" = now() + interval '1 second'`;
+    await db.execute(
+      db.raw
+        .sql`UPDATE normalized_jobs SET "updatedAt" = now() + interval '1 second' WHERE id = ${j.jobId}::uuid`
+        .affectedCount()
+        .build(),
+    );
     await repo.save({ ...saved(j), builtAt: again!.jobUpdatedAt });
     expect(await stale()).toBe(true);
   });
