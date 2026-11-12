@@ -445,4 +445,26 @@ describe('MatchDetail', () => {
     if (!why) throw new Error('no section');
     expect(within(why).getByText('(unsure)')).toBeTruthy();
   });
+  it('shows a job the user moved from review as a match, with the review check muted', () => {
+    renderDetail([{ ...reviewRow(), reviewChoice: 'qualified' }], vi.fn());
+    expect(screen.queryByText("Why it's in review")).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'Move to matches' }),
+    ).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Reject' })).toBeNull();
+    const why = screen
+      .getByText('Why it matched · Full-stack engineer')
+      .closest('section');
+    if (!why) throw new Error('no section');
+    expect(within(why).getByText('You moved this from review.')).toBeTruthy();
+    expect(within(why).queryByLabelText('Fail')).toBeNull();
+    const mark = within(why).getByLabelText('Sent to review');
+    expect(mark.getAttribute('class')).toContain('text-muted-foreground');
+    expect(mark.getAttribute('class')).not.toContain('text-destructive');
+  });
+
+  it('says nothing about review on a plain match', () => {
+    renderDetail([matchRow({ reviewChoice: null })]);
+    expect(screen.queryByText('You moved this from review.')).toBeNull();
+  });
 });

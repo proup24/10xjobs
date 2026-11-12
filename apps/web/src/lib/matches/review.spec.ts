@@ -135,7 +135,7 @@ describe('saveReview', () => {
     expect(calls.tables).toEqual([]);
   });
 
-  it('fails, logging the code only, when the insert is refused by RLS', async () => {
+  it('says the job left review when the policy refuses the insert (42501)', async () => {
     const log = vi.fn();
     const { supabase } = client(
       { data: inReview, error: null },
@@ -148,7 +148,30 @@ describe('saveReview', () => {
         { matchId: MATCH, choice: 'qualified' },
         { log },
       ),
-    ).toEqual({ status: 'failed' });
+    ).toEqual({
+      status: 'invalid',
+      errors: { _form: 'This job is no longer in review.' },
+    });
     expect(log).toHaveBeenCalledWith(expect.stringContaining('code=42501'));
+  });
+
+  it('fails, logging the code only, on any other insert error', async () => {
+    const log = vi.fn();
+    const { supabase } = client(
+      { data: inReview, error: null },
+      { error: { code: '08006', message: 'connection failure' } },
+    );
+    expect(
+      await saveReview(
+        supabase,
+        'user-1',
+        { matchId: MATCH, choice: 'rejected' },
+        { log },
+      ),
+    ).toEqual({ status: 'failed' });
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('code=08006'));
+    expect(log).not.toHaveBeenCalledWith(
+      expect.stringContaining('connection failure'),
+    );
   });
 });

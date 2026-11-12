@@ -63,7 +63,14 @@ export async function saveReview(
     choice,
     note: note ? note : null,
   });
-  if (insert.error)
+  if (insert.error) {
+    // The match was read as its owner, so a policy refusal means it left review (or moved to
+    // another rule or field) between the read and the insert.
+    if ((insert.error as { code?: unknown }).code === '42501') {
+      log(`review: insert refused match=${matchId} code=42501`);
+      return { status: 'invalid', errors: { _form: NOT_IN_REVIEW } };
+    }
     return failure(log, `insert match=${matchId}`, insert.error, 'review');
+  }
   return SAVED;
 }

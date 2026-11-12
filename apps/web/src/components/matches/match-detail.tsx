@@ -280,6 +280,14 @@ export function MatchDetail({
   const techLabels = new Map(labels.techs.map((t) => [t.value, t.label]));
   const stack = stackLines(shown.checks, (c) => techLabels.get(c) ?? c);
   const lines = checkLines(shown.checks, labels);
+  // `outcome` is the engine's; the user's decision is `reviewChoice`. Only an undecided
+  // review row is in review: one the user moved to Matches reads as a match.
+  const inReview =
+    shown.outcome === 'review' &&
+    shown.reviewChoice == null &&
+    Boolean(shown.reviewRule);
+  const accepted =
+    shown.outcome === 'review' && shown.reviewChoice === 'qualified';
   const sources = job.channels.map(channelLabel).join(' and ');
   const profileLabel = (id: string) => profileLabels[id] ?? 'Profile';
 
@@ -330,7 +338,7 @@ export function MatchDetail({
         jobId={first.jobId}
       />
 
-      {shown.outcome === 'review' && shown.reviewRule && (
+      {inReview && (
         <ReviewReason key={shown.matchId} row={shown} onDecide={onDecide} />
       )}
 
@@ -387,8 +395,11 @@ export function MatchDetail({
       </Section>
 
       <Section
-        title={`${shown.outcome === 'review' ? 'Checks' : 'Why it matched'} · ${profileLabel(shown.profileId)}`}
+        title={`${inReview ? 'Checks' : 'Why it matched'} · ${profileLabel(shown.profileId)}`}
       >
+        {accepted && (
+          <p className="text-muted-foreground">You moved this from review.</p>
+        )}
         <ul className="flex flex-col gap-1.5">
           {lines.map((l) => (
             <li key={l.rule} className="flex items-start gap-2">
@@ -396,6 +407,12 @@ export function MatchDetail({
                 <Check
                   aria-label="Pass"
                   className="mt-0.5 shrink-0 text-success"
+                />
+              ) : l.mark === 'fail' && accepted ? (
+                // The check that sent it to review, which the user overruled.
+                <CircleX
+                  aria-label="Sent to review"
+                  className="mt-0.5 shrink-0 text-muted-foreground"
                 />
               ) : l.mark === 'fail' ? (
                 <CircleX
