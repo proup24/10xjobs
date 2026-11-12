@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { notCheckedText } from '@/lib/matches/checks';
 import { MatchDetail } from './match-detail';
@@ -193,6 +199,43 @@ describe('MatchDetail', () => {
       screen.getByText('Job role Full-stack engineer matches your position'),
     ).toBeTruthy();
     expect(screen.getByText(notCheckedText())).toBeTruthy();
+    expect(
+      screen.getByText('Not checked yet: engagement. Check it in the post.'),
+    ).toBeTruthy();
+  });
+
+  it('lists the newer rules under why it matched, with their labels', () => {
+    renderDetail([
+      matchRow({
+        checks: [
+          ...checks,
+          {
+            rule: 'salary',
+            outcome: 'pass',
+            reason:
+              'job pays about 95000, at or above your minimum 90000 USD per year',
+          },
+          {
+            rule: 'workAuthorization',
+            outcome: 'unknown',
+            reason: 'job states no work authorization requirement',
+          },
+        ],
+      }),
+    ]);
+    const why = screen
+      .getByText('Why it matched · Full-stack engineer')
+      .closest('section');
+    if (!why) throw new Error('no section');
+    expect(within(why).getByText('Work authorization')).toBeTruthy();
+    expect(
+      within(why).getByText(
+        'Job pays about 95000, at or above your minimum 90000 USD per year',
+      ),
+    ).toBeTruthy();
+    expect(
+      within(why).getByText('Job states no work authorization requirement'),
+    ).toBeTruthy();
   });
 
   it('shows profile tabs only when several profiles matched', () => {

@@ -261,7 +261,11 @@ export function MatchDetail({
                   className="mt-0.5 shrink-0 text-warning"
                 />
               )}
-              <span>{l.text}</span>
+              <span>
+                <span className="font-medium">{l.label}</span>
+                <span className="text-muted-foreground"> · </span>
+                <span>{l.text}</span>
+              </span>
             </li>
           ))}
         </ul>

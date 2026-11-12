@@ -6,18 +6,29 @@ export type Labels = Pick<
   'positions' | 'seniorities' | 'techs' | 'countries' | 'regions' | 'cities'
 >;
 
+/** Each rule the matcher runs, in the order it runs them, with its plain-English name. */
+const RULE_LABELS = {
+  position: 'Position',
+  seniority: 'Seniority',
+  location: 'Location',
+  stack: 'Stack',
+  salary: 'Salary',
+  currency: 'Currency',
+  contractType: 'Contract type',
+  languages: 'Languages',
+  postingLanguage: 'Posting language',
+  workAuthorization: 'Work authorization',
+} as const;
+
 export type CheckLine = {
-  rule: 'position' | 'seniority' | 'location' | 'stack';
+  rule: keyof typeof RULE_LABELS;
+  label: string;
   mark: 'pass' | 'unknown';
   text: string;
 };
 
-const RULES: readonly CheckLine['rule'][] = [
-  'position',
-  'seniority',
-  'location',
-  'stack',
-];
+const isRule = (rule: unknown): rule is CheckLine['rule'] =>
+  typeof rule === 'string' && Object.hasOwn(RULE_LABELS, rule);
 
 /** Every code in the lists mapped to its label, so a reason can be reworded. */
 function labelMap(labels: Labels): Map<string, string> {
@@ -45,11 +56,12 @@ export function checkLines(checks: unknown, labels: Labels): CheckLine[] {
   for (const c of checks) {
     if (typeof c !== 'object' || c === null) continue;
     const { rule, outcome, reason } = c as Record<string, unknown>;
-    if (!RULES.includes(rule as CheckLine['rule'])) continue;
+    if (!isRule(rule)) continue;
     if (typeof reason !== 'string') continue;
     const text = reason.replace(/[A-Za-z0-9_]+/g, (w) => names.get(w) ?? w);
     lines.push({
-      rule: rule as CheckLine['rule'],
+      rule,
+      label: RULE_LABELS[rule],
       mark: outcome === 'pass' ? 'pass' : 'unknown',
       text: text.charAt(0).toUpperCase() + text.slice(1),
     });
@@ -59,18 +71,13 @@ export function checkLines(checks: unknown, labels: Labels): CheckLine[] {
 
 /**
  * What the matcher does not look at yet. Keep this beside the matcher's rules in mind:
- * slices 08 and 09 remove entries as the matcher gains rules, so update it in this one place.
+ * remove an entry when the matcher gains its rule, in this one place.
  */
-export const NOT_CHECKED = [
-  'salary',
-  'contract type',
-  'engagement',
-  'required languages',
-  'work authorization',
-  'residence',
-] as const;
+export const NOT_CHECKED: readonly string[] = ['engagement'];
 
 export function notCheckedText(): string {
+  if (NOT_CHECKED.length === 1)
+    return `Not checked yet: ${NOT_CHECKED[0]}. Check it in the post.`;
   const head = NOT_CHECKED.slice(0, -1).join(', ');
   const last = NOT_CHECKED[NOT_CHECKED.length - 1];
   return `Not checked yet: ${head} and ${last}. Check these in the post.`;
