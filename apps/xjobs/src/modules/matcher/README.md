@@ -14,12 +14,12 @@ Design: `docs/superpowers/specs/2026-11-08-matching-design.md`.
    | 1    | `loadCandidate`: the matchable job's current extraction and its `needsReview`, or `not_matchable` (nothing stored).                            |
    | 2    | `FactsService.build`: builds and stores the job's facts; a non-v3 extraction is `not_matchable`, and closed facts return `closed` (rows kept). |
    | 3    | `listPublishedProfiles`: the published profiles with skills; only those with a row missing or decided on other facts, unless `force`.          |
-   | 4    | `decide` (pure): runs all four rules for each profile, with no early exit, so the whole picture is stored.                                     |
+   | 4    | `decide` (pure): runs every check for each profile, with no early exit, so the whole picture is stored (the checks are listed under Rules).    |
    | 5    | `upsertMatches`: one row per `(profile, job)`, with the `factsHash` it read. `decidedAt` moves only when the outcome changes.                  |
 
 ## Code map
 
-- `rules/`: pure functions, one per criterion (`position.ts`, `seniority.ts`, `location.ts` with `places.ts`, `stack.ts`) and `decide.ts`. They take everything as arguments, so they run with no database.
+- `rules/`: pure functions, one per criterion (`position.ts`, `seniority.ts`, `location.ts` with `places.ts`, `stack.ts`, `salary.ts` with `convert.ts`, `contract.ts`, `languages.ts`, `work-authorization.ts`) and `decide.ts`. They take everything as arguments, so they run with no database.
 - `repositories/`: every read and write (`matcher.repository.ts`). `testing/memory-matcher.repository.ts` is the in-memory fake.
 - `services/matcher.service.ts`: the entry point. It caches the place hierarchy and the `implies` map for 10 minutes (they change only through `db:vocab`).
 - `config/matcher.config.ts`: `MATCHER_VERSION`, the years margin, the minimum stack score, the backfill window and the sweep settings.
@@ -28,7 +28,9 @@ Design: `docs/superpowers/specs/2026-11-08-matching-design.md`.
 
 ## Rules
 
-The decision for one (profile, job): `rejected` when at least one check fails on a sure value; otherwise `review` when a check fails only on an unsure value (the first such check, in rule order, is recorded as `reviewRule` and `reviewField`); otherwise `qualified`. A qualified decision is `unverified` when at least one check is `unknown` or rests on an unsure value, or the extraction has `needsReview`. Each check carries `unsure` (and `unsureField`): position on `position` or `isSoftwareEngineeringRole`, seniority on `seniority` or, through the years fallback, `yearsRequired`, location on `openings` (a failing opening is unsure when the part that decided it, its arrangement, places or time zones, came from the description and the opening is unsure; a part from LinkedIn is sure; any unsure failing opening makes the failure unsure, since that opening might fit), and stack on `techStack` (the fact is unsure, or a main or must unit that decided the failure has an unsure requirement). The "neither the role nor the stack" failure is sure. An unsure value never rejects. A fact the job does not state (`unstated`, `null`, no places) is `unknown`, never a rejection on its own.
+The checks, in order: `position`, `seniority`, `location`, `stack`, `salary`, `currency`, `contractType`, `languages`, `workAuthorization`.
+
+The decision for one (profile, job): `rejected` when at least one check fails on a sure value; otherwise `review` when a check fails only on an unsure value (the first such check, in rule order, is recorded as `reviewRule` and `reviewField`); otherwise `qualified`. A qualified decision is `unverified` when at least one check is `unknown` or rests on an unsure value, or the extraction has `needsReview`. Each check carries `unsure` (and `unsureField`): position on `position` or `isSoftwareEngineeringRole`, seniority on `seniority` or, through the years fallback, `yearsRequired`, location on `openings` (a failing opening is unsure when the part that decided it, its arrangement, places or time zones, came from the description and the opening is unsure; a part from LinkedIn is sure; any unsure failing opening makes the failure unsure, since that opening might fit), stack on `techStack` (the fact is unsure, or a main or must unit that decided the failure has an unsure requirement), salary and currency on `salary`, contract type on `contractType`, languages on `requiredLanguages`, and work authorization on `workAuthorization` (its requirements and sponsorship share one confidence, so an unsure fact makes both a failure and a pass unsure). The "neither the role nor the stack" failure is sure. An unsure value never rejects. A fact the job does not state (`unstated`, `null`, no places) is `unknown`, never a rejection on its own.
 
 **Position** (first row that applies decides):
 
@@ -58,7 +60,7 @@ Years fallback: `fail` when `yearsRequired.min` is more than the profile's years
 2. Places, per kept arrangement: no job places is `unknown`; some job place overlaps some profile place is `pass`; otherwise `fail` for strictness `limit` or `label`, `unknown` for `mention`. Overlap means one place contains the other in worldwide ⊃ region ⊃ country ⊃ city; two cities overlap only on the same id; a job city without a `cityId` is compared by country and gives at best `unknown`.
 3. Time zones (remote only): if the opening lists time zones and none overlaps the profile's `[timezoneMin, timezoneMax]`, the remote arrangement `fail`s.
 
-Residence and work authorization are not checked.
+Residence and work authorization are the work authorization rule's (below), not location's.
 
 **Tech stack.** A requirement is covered when its tag is one of the profile's skills, or is implied by one (`implies`); a requirement without a code is ignored and listed as not comparable. Requirements sharing a `group` are one unit, covered when at least `min` members are. The score over the `main` and `must` units is `sum(importance × mastery/10 if covered, else 0) / sum(importance)`; `nice` units are listed but not scored.
 
@@ -68,6 +70,29 @@ Residence and work authorization are not checked.
 | has `main` units and none is covered        | `fail`                                                                               |
 | score below `MIN_STACK_SCORE` (0.4)         | `fail`, listing the uncovered units, or saying mastery is low when none is uncovered |
 | otherwise                                   | `pass`                                                                               |
+
+**Contract type**: `pass` when the job's contract type is in the profile's `contractTypes`, `fail` when not, `unknown` when `null` or `unstated`.
+
+**Required languages**: `pass` when the profile holds every required language at or above its level (`working` < `fluent` < `native`), `fail` when one is missing or held lower, `unknown` when none is required.
+
+**Work authorization** reads the user's eligibility (`work_authorizations`, `users.residenceCountry`, `users.acceptsSponsorship`), the same for each of their profiles. Each requirement the job states is met by:
+
+| Requirement   | Met by                                        |
+| ------------- | --------------------------------------------- |
+| `citizenship` | citizenship                                   |
+| `work-permit` | work permit or citizenship                    |
+| `residency`   | residency, citizenship, or `residenceCountry` |
+| `clearance`   | clearance                                     |
+
+for a place that covers the required one: the same code, a region that contains the required country or region, or a country inside a required region (a posting naming a region asks for one of its countries). A two-letter code that is a known region (`EU`) is a region. A required region the index doesn't know can't be compared, so that requirement is `unknown` unless an authorization names the same code.
+
+| Job                                                                                                   | Outcome   |
+| ----------------------------------------------------------------------------------------------------- | --------- |
+| no requirement                                                                                        | `unknown` |
+| every requirement met                                                                                 | `pass`    |
+| unmet ones are all `work-permit` or `residency`, `sponsorship: yes`, and the user accepts sponsorship | `pass`    |
+| any other unmet requirement (silent sponsorship and `acceptsSponsorship` null count as no)            | `fail`    |
+| otherwise (a requirement can't be compared)                                                           | `unknown` |
 
 ## Matchable jobs
 

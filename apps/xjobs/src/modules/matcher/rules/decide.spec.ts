@@ -54,7 +54,7 @@ const job = (facts: JobFactsDocument, needsReview = false): MatchJob => ({
 });
 
 describe('decide', () => {
-  it('always returns six checks in order, even after a fail', () => {
+  it('always returns nine checks in order, even after a fail', () => {
     const d = decide(
       job(
         passingDoc((x) => {
@@ -71,6 +71,9 @@ describe('decide', () => {
       'stack',
       'salary',
       'currency',
+      'contractType',
+      'languages',
+      'workAuthorization',
     ]);
   });
 
@@ -99,6 +102,10 @@ describe('decide', () => {
             period: 'year',
           };
           x.salary.confidence = 'sure';
+          x.workAuthorization.value = {
+            requirements: [{ kind: 'work-permit', place: 'MA' }],
+            sponsorship: 'unstated',
+          };
         }),
       ),
       {
@@ -106,17 +113,17 @@ describe('decide', () => {
         salaryMin: 100000,
         salaryCurrency: 'USD',
         salaryPeriod: 'year',
+        eligibility: {
+          authorizations: [{ kind: 'citizenship', place: 'MA' }],
+          residenceCountry: 'MA',
+          acceptsSponsorship: null,
+        },
       },
       ctx,
     );
-    expect(d.checks.map((c) => c.outcome)).toEqual([
-      'pass',
-      'pass',
-      'pass',
-      'pass',
-      'pass',
-      'pass',
-    ]);
+    expect(d.checks.map((c) => c.outcome)).toEqual(
+      Array.from({ length: 9 }, () => 'pass'),
+    );
     expect(d.outcome).toBe('qualified');
     expect(d.unverified).toBe(false);
     expect(d.stackScore).toBeGreaterThan(0);
@@ -300,6 +307,56 @@ describe('decide', () => {
       expect(d.outcome).toBe('qualified');
       expect(d.unverified).toBe(true);
       expect(d.review).toBeNull();
+    });
+
+    it('a sure contract, language or authorization fail rejects', () => {
+      const edits: ((x: JobFactsDocument) => void)[] = [
+        (x) => {
+          x.contractType.value = 'internship';
+        },
+        (x) => {
+          x.requiredLanguages.value = [
+            { lang: 'de', level: 'working', quote: '' },
+          ];
+        },
+        (x) => {
+          x.workAuthorization.value = {
+            requirements: [{ kind: 'citizenship', place: 'US' }],
+            sponsorship: 'yes',
+          };
+        },
+      ];
+      for (const edit of edits)
+        expect(
+          decide(job(passingDoc(edit)), exampleProfile(), ctx).outcome,
+        ).toBe('rejected');
+    });
+
+    it('an unsure work authorization fail is review on workAuthorization', () => {
+      const d = decide(
+        job(
+          passingDoc((x) => {
+            x.workAuthorization.value = {
+              requirements: [{ kind: 'work-permit', place: 'US' }],
+              sponsorship: 'unstated',
+            };
+            x.workAuthorization.confidence = 'unsure';
+            x.contractType.value = 'internship';
+            x.contractType.confidence = 'unsure';
+          }),
+        ),
+        exampleProfile(),
+        ctx,
+      );
+      expect(d.outcome).toBe('review');
+      // contractType comes first in rule order.
+      expect(d.review).toEqual({ rule: 'contractType', field: 'contractType' });
+      expect(d.checks.at(-1)).toMatchObject({
+        rule: 'workAuthorization',
+        outcome: 'fail',
+        unsure: true,
+        unsureField: 'workAuthorization',
+      });
     });
 
     it('a LinkedIn opening counts as sure', () => {

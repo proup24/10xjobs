@@ -9,7 +9,12 @@ import { EXTRACTION_SCHEMA_VERSION } from 'src/modules/processor/schema';
 import type { PlacesByArrangement } from 'src/modules/users/types/place.types';
 import { MATCH_BACKFILL_DAYS, MATCHER_VERSION } from '../config/matcher.config';
 import type { Decision, MatchContext } from '../rules/decide';
-import type { Check, MatchProfile, RuleName } from '../rules/types';
+import type {
+  Check,
+  MatchEligibility,
+  MatchProfile,
+  RuleName,
+} from '../rules/types';
 
 /** A decision as stored: one row per profile and job. */
 export interface StoredMatch extends Decision {
@@ -170,6 +175,9 @@ export class PrismaMatcherRepository extends MatcherRepository {
       });
       skills.set(s.profileId, list);
     }
+    const eligibility = await this.loadEligibility(
+      new Set(profiles.map((p) => p.userId)),
+    );
     return profiles.map((p) => ({
       id: p.id,
       userId: p.userId,
@@ -185,7 +193,37 @@ export class PrismaMatcherRepository extends MatcherRepository {
       salaryPeriod: p.salaryPeriod as MatchProfile['salaryPeriod'],
       acceptsAnyCurrency: p.acceptsAnyCurrency,
       acceptedCurrencies: [...p.acceptedCurrencies],
+      contractTypes: [...p.contractTypes],
+      // The database checks the shape (assert_languages); keep only what the rule reads.
+      languages: (p.languages as unknown as MatchProfile['languages']).map(
+        ({ lang, level }) => ({ lang, level }),
+      ),
+      eligibility: eligibility.get(p.userId) ?? {
+        authorizations: [],
+        residenceCountry: null,
+        acceptsSponsorship: null,
+      },
     }));
+  }
+
+  /** Each user's eligibility, read once for every profile of the batch. */
+  private async loadEligibility(
+    userIds: Set<string>,
+  ): Promise<Map<string, MatchEligibility>> {
+    const { orm } = this.db;
+    const ids = [...userIds];
+    const out = new Map<string, MatchEligibility>();
+    for (const u of await orm.public.User.where((row) => row.id.in(ids)).all())
+      out.set(u.id, {
+        authorizations: [],
+        residenceCountry: u.residenceCountry,
+        acceptsSponsorship: u.acceptsSponsorship,
+      });
+    for (const a of await orm.public.WorkAuthorization.where((row) =>
+      row.userId.in(ids),
+    ).all())
+      out.get(a.userId)?.authorizations.push({ kind: a.kind, place: a.place });
+    return out;
   }
 
   async loadContext(): Promise<MatchContext> {

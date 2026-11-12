@@ -48,6 +48,13 @@ export function exampleProfile(): MatchProfile {
     salaryPeriod: null,
     acceptsAnyCurrency: true,
     acceptedCurrencies: [],
+    contractTypes: ['full_time'],
+    languages: [{ lang: 'en', level: 'fluent' }],
+    eligibility: {
+      authorizations: [],
+      residenceCountry: null,
+      acceptsSponsorship: null,
+    },
   };
 }
 

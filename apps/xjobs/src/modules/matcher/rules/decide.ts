@@ -1,3 +1,5 @@
+import { checkContractType } from './contract';
+import { checkRequiredLanguages } from './languages';
 import { checkLocation } from './location';
 import type { PlaceIndex } from './places';
 import { checkPosition } from './position';
@@ -5,6 +7,7 @@ import { checkCurrency, checkSalary } from './salary';
 import { checkSeniority } from './seniority';
 import { checkStack, type ImpliesMap } from './stack';
 import type { Check, MatchJob, MatchProfile, RuleName } from './types';
+import { checkWorkAuthorization } from './work-authorization';
 
 export interface MatchContext {
   places: PlaceIndex;
@@ -23,7 +26,10 @@ export interface Decision {
   /** On `review`: the first unsure failing check, in rule order, and the fact it rests on. */
   review: { rule: RuleName; field: string } | null;
   stackScore: number | null;
-  /** Always six checks, in the order position, seniority, location, stack, salary, currency. */
+  /**
+   * Always nine checks, in the order position, seniority, location, stack, salary,
+   * currency, contractType, languages, workAuthorization.
+   */
   checks: Check[];
 }
 
@@ -60,6 +66,9 @@ export function decide(
     stack.check,
     checkSalary(doc, profile, ctx.rates),
     checkCurrency(doc, profile),
+    checkContractType(doc, profile),
+    checkRequiredLanguages(doc, profile),
+    checkWorkAuthorization(doc, profile, ctx.places),
   ];
   const fails = checks.filter((c) => c.outcome === 'fail');
   const rejected = fails.some((c) => !c.unsure);

@@ -324,13 +324,13 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
       processorListsSeed.run(tx, {} as SeedEnvironmentVariables),
     );
     // Profiles name their languages from this list; the test database starts empty.
-    await sql`INSERT INTO iso_languages (code, label) VALUES ('en', 'English') ON CONFLICT (code) DO NOTHING`;
+    await sql`INSERT INTO iso_languages (code, label) VALUES ('en', 'English'), ('fr', 'French') ON CONFLICT (code) DO NOTHING`;
   }, 120_000);
   afterAll(async () => {
     await db?.close();
   });
   beforeEach(async () => {
-    await sql`TRUNCATE job_matches, job_fact_conflicts, job_facts, profile_skills, profiles, processing_attempts, job_extractions, normalized_job_sources, normalized_jobs, normalized_versions, raw_item_sightings, raw_item_versions, raw_items, collection_batches, search_segment_runs CASCADE`;
+    await sql`TRUNCATE job_matches, work_authorizations, job_fact_conflicts, job_facts, profile_skills, profiles, processing_attempts, job_extractions, normalized_job_sources, normalized_jobs, normalized_versions, raw_item_sightings, raw_item_versions, raw_items, collection_batches, search_segment_runs CASCADE`;
   });
 
   describe('loadCandidate', () => {
@@ -413,6 +413,62 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
           },
         }),
       ).toHaveLength(1);
+    });
+
+    it("loads contract types, languages and the user's eligibility", async () => {
+      const p = await profile();
+      const other = await profile();
+      await db.orm.public.Profile.where({ id: p.id }).updateAll({
+        contractTypes: ['full_time', 'contract'],
+        languages: [
+          { lang: 'en', level: 'fluent' },
+          { lang: 'fr', level: 'native' },
+        ],
+      } as never);
+      await db.orm.public.User.where({ id: p.userId }).updateAll({
+        residenceCountry: 'MA',
+        acceptsSponsorship: true,
+      } as never);
+      for (const [kind, place] of [
+        ['citizenship', 'MA'],
+        ['work-permit', 'EU'],
+      ])
+        await db.orm.public.WorkAuthorization.create({
+          userId: p.userId,
+          kind,
+          place,
+        } as never);
+      const byId = new Map(
+        (await repo.listPublishedProfiles()).map((x) => [x.id, x]),
+      );
+      expect(byId.get(p.id)).toMatchObject({
+        contractTypes: ['full_time', 'contract'],
+        languages: [
+          { lang: 'en', level: 'fluent' },
+          { lang: 'fr', level: 'native' },
+        ],
+        eligibility: {
+          residenceCountry: 'MA',
+          acceptsSponsorship: true,
+        },
+      });
+      expect(
+        [...(byId.get(p.id)?.eligibility.authorizations ?? [])].sort((a, b) =>
+          a.kind.localeCompare(b.kind),
+        ),
+      ).toEqual([
+        { kind: 'citizenship', place: 'MA' },
+        { kind: 'work-permit', place: 'EU' },
+      ]);
+      expect(byId.get(other.id)).toMatchObject({
+        contractTypes: ['full_time'],
+        languages: [{ lang: 'en', level: 'fluent' }],
+        eligibility: {
+          authorizations: [],
+          residenceCountry: null,
+          acceptsSponsorship: null,
+        },
+      });
     });
 
     it('skips drafts', async () => {

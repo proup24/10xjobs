@@ -8,7 +8,10 @@ export type RuleName =
   | 'location'
   | 'stack'
   | 'salary'
-  | 'currency';
+  | 'currency'
+  | 'contractType'
+  | 'languages'
+  | 'workAuthorization';
 
 /**
  * Whether a check's outcome rests on an unsure value (a fail so marked goes to review),
@@ -41,6 +44,17 @@ export interface MatchSkill {
   importance: number;
 }
 
+export type LanguageLevel = 'native' | 'fluent' | 'working';
+
+/** Where the user may work: per user, the same for each of their profiles. */
+export interface MatchEligibility {
+  /** `work_authorizations`: kind is work-permit, citizenship, residency or clearance; place a country or region code. */
+  authorizations: { kind: string; place: string }[];
+  residenceCountry: string | null;
+  /** Null (not answered) counts as no. */
+  acceptsSponsorship: boolean | null;
+}
+
 export interface MatchProfile {
   id: string;
   userId: string;
@@ -58,6 +72,11 @@ export interface MatchProfile {
   salaryPeriod: 'hour' | 'day' | 'month' | 'year' | null;
   acceptsAnyCurrency: boolean;
   acceptedCurrencies: string[];
+  /** `contract_types` codes; non-empty. */
+  contractTypes: string[];
+  /** Spoken languages, ISO 639-1; non-empty. */
+  languages: { lang: string; level: LanguageLevel }[];
+  eligibility: MatchEligibility;
 }
 
 export interface MatchJob {
