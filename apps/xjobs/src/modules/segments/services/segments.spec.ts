@@ -1,5 +1,6 @@
 import { Arrangement, Channel, SkillDomain } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
+import { linkedinSearchKey } from 'src/modules/collectors/providers/mappers/linkedin-job-board.mapper';
 import { buildSegments, segmentHash, segmentKey } from './segments';
 import { segmentWindow } from './window';
 
@@ -52,7 +53,9 @@ describe('buildSegments', () => {
       many(3, { channel: Channel.GREEN_HOUSE, location: 'europe' }),
     );
     expect(segments).toHaveLength(1);
-    expect(segments[0].key).toBe(`${Channel.GREEN_HOUSE}|backend|onsite|europe`);
+    expect(segments[0].key).toBe(
+      `${Channel.GREEN_HOUSE}|backend|onsite|europe`,
+    );
   });
 
   it('keeps one location apart across arrangements', () => {
@@ -146,7 +149,7 @@ describe('buildSegments', () => {
 
   it('keys a LinkedIn job board builder by its search, with the geoId before location text', () => {
     expect(segmentKey(builder({ params: { location: 'emea' } }))).toBe(
-      `${Channel.LINKEDIN_JOB_BOARD}|backend|onsite|search:keywords=backend&location=emea`,
+      `${Channel.LINKEDIN_JOB_BOARD}|backend|onsite|search:${linkedinSearchKey('backend', { location: 'emea' })}`,
     );
     expect(
       segmentKey(
@@ -160,7 +163,7 @@ describe('buildSegments', () => {
         }),
       ),
     ).toBe(
-      `${Channel.LINKEDIN_JOB_BOARD}|backend|onsite|search:keywords=backend&geoId=91000000&f_E=4&f_WT=2`,
+      `${Channel.LINKEDIN_JOB_BOARD}|backend|onsite|search:${linkedinSearchKey('backend', { location: 'emea', geoId: '91000000', experienceLevel: '4', workType: '2' })}`,
     );
   });
 
@@ -174,6 +177,18 @@ describe('buildSegments', () => {
       builder({ params: { location: 'France' } }),
     ]);
     expect(segments).toHaveLength(5);
+  });
+
+  it('gives a LinkedIn builder with an unknown place a segment of its own, apart from real searches', () => {
+    const good = builder({ params: { location: 'emea' } });
+    const bad = builder({ params: { location: 'atlantis' } });
+    const segments = buildSegments([good, bad]);
+    expect(segments).toHaveLength(2);
+    const unresolved = segments.find((s) => s.members[0].id === bad.id);
+    expect(unresolved?.key).toBe(
+      `${Channel.LINKEDIN_JOB_BOARD}|backend|onsite|unresolved:${bad.id}`,
+    );
+    expect(unresolved?.members).toEqual([bad]);
   });
 
   it('keeps each member cursor when builders are regrouped', () => {

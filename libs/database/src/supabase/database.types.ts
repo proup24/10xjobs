@@ -151,6 +151,67 @@ export type Database = {
           },
         ];
       };
+      companies: {
+        Row: {
+          createdAt: string;
+          description: string | null;
+          employeeCount: number | null;
+          employeeCountMax: number | null;
+          employeeCountMin: number | null;
+          firstSeenAt: string;
+          headquartersCountryCode: string | null;
+          id: string;
+          industries: string[];
+          lastSeenAt: string;
+          linkedinId: string;
+          linkedinUrl: string | null;
+          name: string | null;
+          specialities: string[];
+          universalName: string | null;
+          updatedAt: string;
+          website: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          createdAt?: string;
+          description?: string | null;
+          employeeCount?: number | null;
+          employeeCountMax?: number | null;
+          employeeCountMin?: number | null;
+          firstSeenAt: string;
+          headquartersCountryCode?: string | null;
+          id: string;
+          industries: string[];
+          lastSeenAt: string;
+          linkedinId: string;
+          linkedinUrl?: string | null;
+          name?: string | null;
+          specialities: string[];
+          universalName?: string | null;
+          updatedAt?: string;
+          website?: string | null;
+        };
+        Update: {
+          createdAt?: string;
+          description?: string | null;
+          employeeCount?: number | null;
+          employeeCountMax?: number | null;
+          employeeCountMin?: number | null;
+          firstSeenAt?: string;
+          headquartersCountryCode?: string | null;
+          id?: string;
+          industries?: string[];
+          lastSeenAt?: string;
+          linkedinId?: string;
+          linkedinUrl?: string | null;
+          name?: string | null;
+          specialities?: string[];
+          universalName?: string | null;
+          updatedAt?: string;
+          website?: string | null;
+        };
+        Relationships: [];
+      };
       contacts: {
         Row: {
           createdAt: string;
@@ -653,22 +714,29 @@ export type Database = {
       };
       normalized_jobs: {
         Row: {
+          applicantCount: number | null;
+          applicantTrackingSystem: string | null;
           applyUrl: string | null;
           closed: boolean;
+          companyId: string | null;
           companyName: string | null;
           companyUrl: string | null;
           contractType: string | null;
+          countryCode: string | null;
           createdAt: string;
           currentExtractionId: string | null;
           descriptionHtml: string | null;
           descriptionText: string | null;
+          employmentType: string | null;
           experienceLevel: string | null;
+          expiresAt: string | null;
           fieldSources: NonNullable<Json>;
           firstSeenAt: string;
           id: string;
           jobKey: string;
           kind: string;
           lastSeenAt: string;
+          listingState: string | null;
           location: string | null;
           mergedIntoId: string | null;
           normalizerVersion: number;
@@ -685,6 +753,8 @@ export type Database = {
           processingStartedAt: string | null;
           processingStatus: string | null;
           publishedAt: string | null;
+          regionCode: string | null;
+          remoteAllowed: boolean | null;
           salaryCurrency: string | null;
           salaryMax: number | null;
           salaryMin: number | null;
@@ -694,25 +764,33 @@ export type Database = {
           status: string;
           title: string | null;
           updatedAt: string;
+          workplaceType: string | null;
         };
         ComputedFields: never;
         Insert: {
+          applicantCount?: number | null;
+          applicantTrackingSystem?: string | null;
           applyUrl?: string | null;
           closed: boolean;
+          companyId?: string | null;
           companyName?: string | null;
           companyUrl?: string | null;
           contractType?: string | null;
+          countryCode?: string | null;
           createdAt?: string;
           currentExtractionId?: string | null;
           descriptionHtml?: string | null;
           descriptionText?: string | null;
+          employmentType?: string | null;
           experienceLevel?: string | null;
+          expiresAt?: string | null;
           fieldSources: NonNullable<Json>;
           firstSeenAt: string;
           id: string;
           jobKey: string;
           kind: string;
           lastSeenAt: string;
+          listingState?: string | null;
           location?: string | null;
           mergedIntoId?: string | null;
           normalizerVersion: number;
@@ -729,6 +807,8 @@ export type Database = {
           processingStartedAt?: string | null;
           processingStatus?: string | null;
           publishedAt?: string | null;
+          regionCode?: string | null;
+          remoteAllowed?: boolean | null;
           salaryCurrency?: string | null;
           salaryMax?: number | null;
           salaryMin?: number | null;
@@ -738,24 +818,32 @@ export type Database = {
           status: string;
           title?: string | null;
           updatedAt?: string;
+          workplaceType?: string | null;
         };
         Update: {
+          applicantCount?: number | null;
+          applicantTrackingSystem?: string | null;
           applyUrl?: string | null;
           closed?: boolean;
+          companyId?: string | null;
           companyName?: string | null;
           companyUrl?: string | null;
           contractType?: string | null;
+          countryCode?: string | null;
           createdAt?: string;
           currentExtractionId?: string | null;
           descriptionHtml?: string | null;
           descriptionText?: string | null;
+          employmentType?: string | null;
           experienceLevel?: string | null;
+          expiresAt?: string | null;
           fieldSources?: NonNullable<Json>;
           firstSeenAt?: string;
           id?: string;
           jobKey?: string;
           kind?: string;
           lastSeenAt?: string;
+          listingState?: string | null;
           location?: string | null;
           mergedIntoId?: string | null;
           normalizerVersion?: number;
@@ -772,6 +860,8 @@ export type Database = {
           processingStartedAt?: string | null;
           processingStatus?: string | null;
           publishedAt?: string | null;
+          regionCode?: string | null;
+          remoteAllowed?: boolean | null;
           salaryCurrency?: string | null;
           salaryMax?: number | null;
           salaryMin?: number | null;
@@ -781,8 +871,16 @@ export type Database = {
           status?: string;
           title?: string | null;
           updatedAt?: string;
+          workplaceType?: string | null;
         };
         Relationships: [
+          {
+            foreignKeyName: 'normalized_jobs_companyId_fkey';
+            columns: ['companyId'];
+            isOneToOne: false;
+            referencedRelation: 'companies';
+            referencedColumns: ['id'];
+          },
           {
             foreignKeyName: 'normalized_jobs_currentExtractionId_fkey';
             columns: ['currentExtractionId'];

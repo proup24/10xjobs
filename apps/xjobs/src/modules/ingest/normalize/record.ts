@@ -1,10 +1,28 @@
 import { z } from 'zod';
 
 /** Bump on any change to a mapper or the job key; then run `db:renormalize`. */
-export const NORMALIZER_VERSION = 3;
+export const NORMALIZER_VERSION = 4;
 
 const text = z.string().min(1).nullable();
 const url = z.url({ protocol: /^https?$/ });
+
+/** A LinkedIn company page's facts, as the harvestapi actor returns them. */
+export const normalizedCompanySchema = z.strictObject({
+  linkedinId: z.string().min(1),
+  universalName: text,
+  name: text,
+  linkedinUrl: url.nullable(),
+  website: url.nullable(),
+  employeeCount: z.number().int().nonnegative().nullable(),
+  employeeCountMin: z.number().int().nonnegative().nullable(),
+  employeeCountMax: z.number().int().nonnegative().nullable(),
+  industries: z.array(z.string().min(1)),
+  specialities: z.array(z.string().min(1)),
+  description: text,
+  headquartersCountryCode: text,
+});
+
+export type NormalizedCompany = z.infer<typeof normalizedCompanySchema>;
 
 /**
  * The unified job format, shaped like the LinkedIn job board (the most
@@ -45,6 +63,19 @@ export const normalizedRecordSchema = z
         type: z.enum(['person', 'company']).nullable(),
       })
       .nullable(),
+    workplaceType: z.enum(['remote', 'hybrid', 'onsite']).nullable(),
+    remoteAllowed: z.boolean().nullable(),
+    employmentType: text,
+    countryCode: z
+      .string()
+      .regex(/^[A-Z]{2}$/)
+      .nullable(),
+    regionCode: text,
+    applicantTrackingSystem: text,
+    applicantCount: z.number().int().nonnegative().nullable(),
+    expiresAt: z.iso.datetime().nullable(),
+    listingState: text,
+    company: normalizedCompanySchema.nullable(),
     closed: z.boolean(),
   })
   .refine((r) => r.closed || r.title !== null || r.descriptionText !== null, {
@@ -72,6 +103,16 @@ export const RECORD_FIELDS = [
   'applyUrl',
   'postingUrl',
   'poster',
+  'workplaceType',
+  'remoteAllowed',
+  'employmentType',
+  'countryCode',
+  'regionCode',
+  'applicantTrackingSystem',
+  'applicantCount',
+  'expiresAt',
+  'listingState',
+  'company',
   'closed',
 ] as const satisfies readonly (keyof NormalizedRecord)[];
 

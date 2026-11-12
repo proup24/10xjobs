@@ -1,5 +1,6 @@
 import type { NormalizeContext } from '../normalize';
 import type { NormalizedRecord } from '../record';
+import { isHarvestJob, mapHarvestJob } from './harvest-job.mapper';
 import { isBebityJob, mapBebityJob } from './bebity-job.mapper';
 import {
   isCheapScraperJob,
@@ -22,6 +23,11 @@ interface LinkedinJobFormat {
  * add an actor: write its mapper beside these and list it here first.
  */
 const formats: readonly LinkedinJobFormat[] = [
+  {
+    actor: 'harvestapi/linkedin-job-search',
+    matches: isHarvestJob,
+    map: mapHarvestJob,
+  },
   {
     actor: 'cheap_scraper/linkedin-job-scraper',
     matches: isCheapScraperJob,

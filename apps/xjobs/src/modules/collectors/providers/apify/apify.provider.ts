@@ -154,17 +154,6 @@ export class ApifyActorProvider {
     }
   }
 
-  /** A key-value store record's value, or null when there is none. */
-  async record(storeId: string, key: string): Promise<unknown> {
-    try {
-      const found = await this.client.keyValueStore(storeId).getRecord(key);
-      return found?.value ?? null;
-    } catch (error) {
-      if (isNotFound(error)) return null;
-      throw error;
-    }
-  }
-
   /** One page of a dataset's items. */
   listItems(
     datasetId: string,

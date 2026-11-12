@@ -6,6 +6,7 @@ import type {
   SegmentResult,
   SegmentSearch,
 } from 'src/modules/collectors';
+import { linkedinGeoId } from 'src/modules/collectors/providers/mappers/linkedin-job-board.mapper';
 import { ingestConfig, parseBatchFile } from 'src/modules/ingest';
 import type { QuerySearchService } from 'src/modules/queries';
 import { segmentHash } from 'src/modules/segments';
@@ -379,6 +380,87 @@ describe('CollectionService.collect', () => {
     },
   );
 
+  it('fails only the LinkedIn search whose place has no geoId, naming it, and runs the rest', async () => {
+    const linkedin = {
+      channel: Channel.LINKEDIN_JOB_BOARD,
+      type: Arrangement.onsite,
+    };
+    const good = builder({ ...linkedin, params: { location: 'emea' } });
+    const bad = builder({ ...linkedin, params: { location: 'atlantis' } });
+    // Like the real collector, resolve each query's geoId before any run.
+    const { collection, segments, collector } = setup(
+      [good, bad],
+      async (s) => {
+        for (const query of s.queries) linkedinGeoId(query.params);
+        return resultFor(s);
+      },
+      Channel.LINKEDIN_JOB_BOARD,
+    );
+    const summary = await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+    expect(collector.collect).toHaveBeenCalledTimes(2);
+    expect(segments.collected.map((c) => c.run.queryIds)).toEqual([[good.id]]);
+    expect(segments.runs).toHaveLength(1);
+    expect(segments.runs[0]).toMatchObject({
+      status: 'failed',
+      queryIds: [bad.id],
+    });
+    expect(segments.runs[0].error).toContain(
+      'No LinkedIn geoId for location "atlantis"',
+    );
+    expect(summary).toMatchObject({
+      segments: 2,
+      segmentsFailed: 1,
+      batches: 1,
+    });
+  });
+
+  describe('LinkedIn job board tick length', () => {
+    afterEach(() => vi.useRealTimers());
+
+    const tick = async (minutes: number) => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      const start = new Date('2026-11-12T10:00:00Z');
+      vi.setSystemTime(start);
+      const { collection, warn } = setup(
+        builders(1, {
+          channel: Channel.LINKEDIN_JOB_BOARD,
+          params: { location: 'emea' },
+        }),
+        async (s) => {
+          vi.setSystemTime(start.getTime() + minutes * 60_000);
+          return resultFor(s);
+        },
+        Channel.LINKEDIN_JOB_BOARD,
+      );
+      const log = vi.mocked(Logger.prototype.log);
+      await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+      return { warn, log };
+    };
+
+    it('logs the tick duration', async () => {
+      const { log } = await tick(5);
+      expect(log).toHaveBeenCalledWith(
+        expect.stringContaining(`durationMs=${5 * 60_000}`),
+      );
+    });
+
+    it('warns when a tick runs longer than 60 minutes', async () => {
+      const { warn } = await tick(61);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringMatching(
+          /took 61 minutes, over 60: jobs may be missed, because each search asks only for the last hour/,
+        ),
+      );
+    });
+
+    it('does not warn at 60 minutes', async () => {
+      const { warn } = await tick(60);
+      expect(warn).not.toHaveBeenCalledWith(
+        expect.stringContaining('jobs may be missed'),
+      );
+    });
+  });
+
   it('treats unreported cost as zero in totals while retaining null in the run', async () => {
     const { collection, segments } = setup(builders(1), async (search) =>
       resultFor(search, undefined, { costUsd: null }),
@@ -644,19 +726,21 @@ describe('CollectionService claims', () => {
 });
 
 describe('channelJobsConfig', () => {
-  it('collects LinkedIn hourly over a day at most', () => {
-    for (const channel of [
-      Channel.LINKEDIN_JOB_BOARD,
-      Channel.LINKEDIN_POSTS,
-    ]) {
-      expect(channelJobsConfig[channel]).toMatchObject({
-        schedule: { pattern: '0 8-22 * * 1-5', timezone: 'UTC' },
-        window: { initialHours: 24, overlapMinutes: 15, maximumHours: 24 },
-      });
-      expect(channelJobsConfig[channel].window).not.toHaveProperty(
-        'minimumHours',
-      );
-    }
+  it('collects LinkedIn jobs hourly 09-21 Morocco time over the last hour', () => {
+    expect(channelJobsConfig[Channel.LINKEDIN_JOB_BOARD]).toMatchObject({
+      schedule: { pattern: '0 9-21 * * 1-5', timezone: 'Africa/Casablanca' },
+      window: { initialHours: 1, overlapMinutes: 0, maximumHours: 1 },
+    });
+  });
+
+  it('collects LinkedIn posts hourly over a day at most', () => {
+    expect(channelJobsConfig[Channel.LINKEDIN_POSTS]).toMatchObject({
+      schedule: { pattern: '0 8-22 * * 1-5', timezone: 'UTC' },
+      window: { initialHours: 24, overlapMinutes: 15, maximumHours: 24 },
+    });
+    expect(channelJobsConfig[Channel.LINKEDIN_POSTS].window).not.toHaveProperty(
+      'minimumHours',
+    );
   });
 
   it('collects Google boards daily over at least three days', () => {

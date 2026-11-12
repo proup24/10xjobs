@@ -44,7 +44,7 @@ export interface SegmentResult {
   fetched: number;
   /**
    * What the source says matched each search (the LinkedIn actor's
-   * `SEARCH_TOTALS` record), untouched; null or absent when not reported.
+   * `_meta.pagination`), untouched; null or absent when not reported.
    */
   searchTotals?: unknown;
   /** What Apify charged, or null when it did not report it. */
@@ -65,9 +65,9 @@ export interface ActorRunConfig {
 export interface LinkedinJobBoardRunConfig extends ActorRunConfig {
   /**
    * Rows one search may return, sent as the run's `maxItems` (a run carries
-   * one start URL); a search that returns this many counts as truncated.
+   * one search); a search that returns this many counts as truncated.
    */
-  maxRowsPerUrl: number;
+  maxRowsPerSearch: number;
 }
 
 export interface LinkedinPostsRunConfig extends ActorRunConfig {

@@ -8,15 +8,15 @@ import type {
 import { reachedChargeCap } from '../utils/collected-job';
 import { ApifyActorProvider } from './apify/apify.provider';
 import {
-  linkedinJobSearchUrl,
-  linkedinSearch,
-  toLinkedinJobBoardInput,
+  linkedinSearchKey,
+  toHarvestJobSearchInput,
 } from './mappers/linkedin-job-board.mapper';
 
 /**
  * Apify trigger for the LinkedIn job board: one actor run per search. Segments
- * group builders by their search (`linkedinSearch`), so a segment runs one
- * start URL and every item the run returns belongs to every member.
+ * group builders by their search (`linkedinSearchKey`), so a segment runs one
+ * search and every item the run returns belongs to every member. The input
+ * never depends on the segment's window: the actor is asked for the last hour.
  * Nothing is matched by text, and the run's `maxItems` and charge cap bound
  * that one search alone.
  */
@@ -24,11 +24,10 @@ import {
 export class LinkedinJobBoardCollector {
   /** The actor and its limits; fixed for every run of this collector. */
   static readonly config: Readonly<LinkedinJobBoardRunConfig> = {
-    actor: 'cheap_scraper/linkedin-job-scraper',
-    // 100 rows cost about $0.07, plus the start fee; the cap only stops a
-    // runaway run.
+    actor: 'harvestapi/linkedin-job-search',
+    // The cap only stops a runaway run.
     maxRunChargeUsd: 0.25,
-    maxRowsPerUrl: 100,
+    maxRowsPerSearch: 100,
   };
 
   readonly channel = Channel.LINKEDIN_JOB_BOARD;
@@ -36,56 +35,53 @@ export class LinkedinJobBoardCollector {
 
   async collect(segment: SegmentSearch): Promise<SegmentResult> {
     const config = LinkedinJobBoardCollector.config;
-    const seconds = Math.max(
-      1,
-      Math.round((segment.until.getTime() - segment.since.getTime()) / 1000),
-    );
+    // Throws for a place with no geoId; that failure must reach the caller.
     const searches = new Set(
       segment.queries.map(({ keyword, params }) =>
-        linkedinSearch(keyword, params),
+        linkedinSearchKey(keyword, params),
       ),
     );
     if (searches.size !== 1)
       throw new Error(
         `A LinkedIn job board segment runs one search; this one has ${searches.size}`,
       );
-    // Members may spell a geoId-pinned place differently; any one URL runs
-    // the search.
+    // Members may spell a geoId-pinned place differently; any one runs the search.
     const [first] = segment.queries;
-    const url = linkedinJobSearchUrl(first.keyword, first.params, seconds);
-    const { items, costUsd, runId, keyValueStoreId } = await this.actor.run(
+    const { items, costUsd, runId } = await this.actor.run(
       config.actor,
-      toLinkedinJobBoardInput(url, config.maxRowsPerUrl),
+      {
+        ...toHarvestJobSearchInput(
+          first.keyword,
+          first.params,
+          config.maxRowsPerSearch,
+        ),
+      },
       { maxChargeUsd: config.maxRunChargeUsd },
     );
 
     // The actor reports no position; dataset order is newest first.
     const found = items.map((payload, i) => ({ rank: i + 1, payload }));
+    const totals = searchTotals(items[0]);
+    const total = (totals as { totalElements?: unknown } | null)?.totalElements;
+    const truncated =
+      items.length >= config.maxRowsPerSearch ||
+      (typeof total === 'number' && total > items.length);
     return {
       itemsByQuery: new Map(segment.queries.map(({ id }) => [id, [...found]])),
       unattributed: [],
-      truncatedQueryIds:
-        items.length >= config.maxRowsPerUrl
-          ? segment.queries.map(({ id }) => id)
-          : [],
+      truncatedQueryIds: truncated ? segment.queries.map(({ id }) => id) : [],
       fetched: items.length,
-      searchTotals: await this.searchTotals(keyValueStoreId),
+      searchTotals: totals,
       costUsd,
       capped: reachedChargeCap(costUsd, config.maxRunChargeUsd),
       source: { actor: config.actor, apifyRunId: runId },
     };
   }
+}
 
-  /**
-   * What LinkedIn said matched the start URL, if the actor stored it. A
-   * missing or unreadable record is null: the paid results never depend on it.
-   */
-  private async searchTotals(storeId: string | null): Promise<unknown> {
-    if (!storeId) return null;
-    try {
-      return (await this.actor.record(storeId, 'SEARCH_TOTALS')) ?? null;
-    } catch {
-      return null;
-    }
-  }
+/** What LinkedIn said matched the search: the first item's `_meta.pagination`, else null. */
+function searchTotals(first: unknown): unknown {
+  const meta = (first as { _meta?: { pagination?: unknown } } | undefined)
+    ?._meta;
+  return meta?.pagination ?? null;
 }

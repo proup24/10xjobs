@@ -37,6 +37,23 @@ export const LINKEDIN_GEO_IDS: Record<string, string> = {
   estonia: '102974008',
   czechia: '104508036',
   'czech republic': '104508036',
+  // Regions, verified 2026-11-11.
+  worldwide: '92000000',
+  europe: '100506914',
+  'european union': '91000000',
+  'european economic area': '91000002',
+  emea: '91000007',
+  'middle east': '91000001',
+  mena: '91000008',
+  'latin america': '91000011',
+  // Africa, verified 2026-11-11. LinkedIn has no North Africa region and
+  // falls back to Africa.
+  africa: '103537801',
+  'north africa': '103537801',
+  // Single countries, verified 2026-11-11.
+  morocco: '102787409',
+  canada: '101174742',
+  'united states': '103644278',
 };
 
 /** The location that means "no place restriction". */

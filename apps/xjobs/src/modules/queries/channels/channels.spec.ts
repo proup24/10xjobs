@@ -38,16 +38,22 @@ describe('LinkedIn job board builder', () => {
       experienceLevel: '4',
       workType: '2',
       location: 'emea',
+      geoId: '91000007',
     });
   });
 
-  it('searches an onsite region by its location text, with no geoId', () => {
+  it('pins an onsite region by its verified geoId', () => {
     expect(
       build(Channel.LINKEDIN_JOB_BOARD, {
         type: Arrangement.onsite,
         location: 'europe',
       }).params,
-    ).toEqual({ experienceLevel: '4', workType: '1', location: 'europe' });
+    ).toEqual({
+      experienceLevel: '4',
+      workType: '1',
+      location: 'europe',
+      geoId: '100506914',
+    });
   });
 
   it('passes worldwide as the location', () => {

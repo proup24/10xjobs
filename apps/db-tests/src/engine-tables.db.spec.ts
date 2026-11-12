@@ -16,6 +16,7 @@ const segmentRunId = randomUUID();
 const batchId = randomUUID();
 const rawItemId = randomUUID();
 const versionId = randomUUID();
+const companyId = randomUUID();
 const jobId = randomUUID();
 const extractionId = randomUUID();
 const normalizedVersionId = randomUUID();
@@ -113,12 +114,24 @@ const fixtures: Fixture[] = [
     }),
   },
   {
+    table: 'companies',
+    row: () => ({
+      id: companyId,
+      linkedinId: `test-${companyId}`,
+      industries: [],
+      specialities: [],
+      firstSeenAt: now,
+      lastSeenAt: now,
+    }),
+  },
+  {
     table: 'normalized_jobs',
     row: () => ({
       id: jobId,
       jobKey: `test:${jobId}`,
       kind: 'job',
       status: 'active',
+      companyId,
       postingUrl: 'https://example.test/job',
       closed: false,
       fieldSources: {},

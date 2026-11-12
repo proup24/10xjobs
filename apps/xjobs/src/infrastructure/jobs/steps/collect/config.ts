@@ -32,9 +32,6 @@ export interface ChannelJobConfig<R extends ActorRunConfig = ActorRunConfig> {
   run: R;
 }
 
-
-
-
 const hourly = {
   enabled: true,
   schedule: { pattern: '0 8-22 * * 1-5', timezone: 'UTC' },
@@ -43,6 +40,13 @@ const hourly = {
   segmentSize: 10,
   window: { initialHours: 24, overlapMinutes: 15, maximumHours: 24 },
   claimLeaseMinutes: 30,
+} as const;
+
+/** Hourly 09-21 Morocco time, one hour back: harvestapi's `postedLimit` is `1h`. */
+const linkedinJobBoard = {
+  ...hourly,
+  schedule: { pattern: '0 9-21 * * 1-5', timezone: 'Africa/Casablanca' },
+  window: { initialHours: 1, overlapMinutes: 0, maximumHours: 1 },
 } as const;
 
 /**
@@ -64,7 +68,7 @@ const daily = {
 export const channelJobsConfig = {
   [Channel.LINKEDIN_JOB_BOARD]: {
     queueName: 'collect-linkedin-job-board',
-    ...hourly,
+    ...linkedinJobBoard,
     enabled: ACTIVE_CHANNELS.includes(Channel.LINKEDIN_JOB_BOARD),
     run: LinkedinJobBoardCollector.config,
   },

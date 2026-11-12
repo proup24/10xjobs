@@ -4,6 +4,7 @@ import ashby from './fixtures/ashby.json';
 import greenhouse from './fixtures/greenhouse.json';
 import linkedinJob from './fixtures/linkedin-job.json';
 import cheapJob from './fixtures/linkedin-job-cheap.json';
+import harvestJobs from './fixtures/linkedin-job-harvest.json';
 import linkedinPost from './fixtures/linkedin-post.json';
 import { sourceKey } from './source-key';
 
@@ -18,6 +19,12 @@ describe('sourceKey', () => {
     it("uses a cheap_scraper item's jobId, the same id bebity's items had", () => {
       expect(sourceKey(Channel.LINKEDIN_JOB_BOARD, cheapJob)).toEqual({
         key: 'id:4354494117',
+      });
+    });
+
+    it("uses a harvestapi item's id", () => {
+      expect(sourceKey(Channel.LINKEDIN_JOB_BOARD, harvestJobs[0])).toEqual({
+        key: 'id:4488222855',
       });
     });
 

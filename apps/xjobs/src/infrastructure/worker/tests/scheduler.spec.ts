@@ -27,10 +27,22 @@ describe('syncCollectionScheduler', () => {
     ).toBe('scheduled');
     expect(q.upsertJobScheduler).toHaveBeenCalledWith(
       'collect',
-      { pattern: '0 8-22 * * 1-5', tz: 'UTC' },
+      { pattern: '0 9-21 * * 1-5', tz: 'Africa/Casablanca' },
       { name: 'collect', opts: { attempts: 1 } },
     );
     expect(q.removeJobScheduler).not.toHaveBeenCalled();
+  });
+
+  it('gives LinkedIn jobs a one-hour window and posts their hourly window', () => {
+    expect(channelJobsConfig[Channel.LINKEDIN_JOB_BOARD].window).toEqual({
+      initialHours: 1,
+      overlapMinutes: 0,
+      maximumHours: 1,
+    });
+    expect(channelJobsConfig[Channel.LINKEDIN_POSTS]).toMatchObject({
+      schedule: { pattern: '0 8-22 * * 1-5', timezone: 'UTC' },
+      window: { overlapMinutes: 15 },
+    });
   });
 
   it('removes the scheduler when the channel is disabled', async () => {
