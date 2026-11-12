@@ -17,7 +17,10 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push, refresh }),
 }));
 const decideReviewAction = vi.hoisted(() => vi.fn());
-vi.mock('@/app/(app)/actions', () => ({ decideReviewAction }));
+vi.mock('@/app/(app)/actions', () => ({
+  decideReviewAction,
+  reportMismatchAction: vi.fn(),
+}));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 afterEach(() => {

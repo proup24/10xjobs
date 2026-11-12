@@ -94,6 +94,28 @@ const reviewRow = () =>
   });
 
 describe('MatchDetail', () => {
+  it('offers "Report a mismatch" on each fact only with a report handler', () => {
+    const { unmount } = renderDetail();
+    expect(
+      screen.queryByRole('button', { name: /report a mismatch/i }),
+    ).toBeNull();
+    unmount();
+    render(
+      <MatchDetail
+        rows={[matchRow()]}
+        labels={labels}
+        profileLabels={PROFILE_LABELS}
+        now={new Date(NOW)}
+        userId="u1"
+        backHref="/"
+        onReport={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getAllByRole('button', { name: /report a mismatch/i }),
+    ).toHaveLength(7);
+  });
+
   it('marks the job viewed, then refreshes, when "Open post" or "Apply" is clicked', async () => {
     markViewed.mockResolvedValue(undefined);
     renderDetail([

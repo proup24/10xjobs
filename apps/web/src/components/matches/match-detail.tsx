@@ -29,10 +29,12 @@ import {
 import { postedPhrase } from '@/lib/matches/freshness';
 import { groupByJob, type MatchRow } from '@/lib/matches/group';
 import { markViewed } from '@/lib/matches/mark-viewed';
+import type { ReportField } from '@/lib/matches/report';
 import { channelLabel } from '@/lib/matches/sources';
 import type { SaveResult } from '@/lib/setup/save-result';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { stackScoreText } from './match-row';
+import { ReportDialog, type Report } from './report-dialog';
 
 const NOT_STATED = 'Not stated';
 
@@ -259,6 +261,7 @@ export function MatchDetail({
   userId,
   backHref,
   onDecide,
+  onReport,
 }: {
   /** The job's rows, one per matching profile; non-empty. */
   rows: MatchRow[];
@@ -269,6 +272,8 @@ export function MatchDetail({
   backHref: string;
   /** Records a decision on a review row; the buttons show only with it. */
   onDecide?: Decide;
+  /** Logs a mismatch on a fact; the report buttons show only with it. */
+  onReport?: Report;
 }) {
   const [profileId, setProfileId] = useState(rows[0]?.profileId);
   const [job] = groupByJob(rows);
@@ -291,14 +296,19 @@ export function MatchDetail({
   const sources = job.channels.map(channelLabel).join(' and ');
   const profileLabel = (id: string) => profileLabels[id] ?? 'Profile';
 
-  const factRows: [string, FactLine | null, ConflictField | null][] = [
-    ['Role', facts.role, null],
-    ['Seniority', facts.seniority, 'seniority'],
-    ['Arrangement', facts.arrangement, 'arrangement'],
-    ['Places', facts.places, 'places'],
-    ['Contract type', facts.contractType, 'contractType'],
-    ['Engagement', facts.engagement, null],
-    ['Salary', facts.salary, 'salary'],
+  const factRows: [
+    string,
+    FactLine | null,
+    ConflictField | null,
+    ReportField,
+  ][] = [
+    ['Role', facts.role, null, 'role'],
+    ['Seniority', facts.seniority, 'seniority', 'seniority'],
+    ['Arrangement', facts.arrangement, 'arrangement', 'arrangement'],
+    ['Places', facts.places, 'places', 'places'],
+    ['Contract type', facts.contractType, 'contractType', 'contractType'],
+    ['Engagement', facts.engagement, null, 'engagement'],
+    ['Salary', facts.salary, 'salary', 'salary'],
   ];
   const noStack =
     stack.covered.length + stack.uncovered.length + stack.notCompared.length ===
@@ -343,7 +353,7 @@ export function MatchDetail({
       )}
 
       <dl className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
-        {factRows.map(([term, value, field]) => (
+        {factRows.map(([term, value, field, reportField]) => (
           <div key={term} className="flex flex-col items-start">
             <dt className="text-muted-foreground">{term}</dt>
             <dd className={value ? undefined : 'text-muted-foreground'}>
@@ -354,6 +364,14 @@ export function MatchDetail({
             )}
             {field && conflicts[field] && (
               <p className="text-muted-foreground">{conflicts[field]}</p>
+            )}
+            {onReport && (
+              <ReportDialog
+                jobId={first.jobId}
+                field={reportField}
+                label={term}
+                onReport={onReport}
+              />
             )}
           </div>
         ))}

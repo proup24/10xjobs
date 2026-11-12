@@ -1,5 +1,6 @@
 'use server';
 
+import { saveReport } from '@/lib/matches/report';
 import { saveReview } from '@/lib/matches/review';
 import { FAILED, type SaveResult } from '@/lib/setup/save-result';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
@@ -14,4 +15,18 @@ export async function decideReviewAction(input: unknown): Promise<SaveResult> {
   const userId = data?.claims.sub;
   if (!userId) return FAILED;
   return saveReview(supabase, userId, input);
+}
+
+/**
+ * Logs a mismatch the signed-in user found in a job's facts. The user comes from the
+ * session; the values the processor and LinkedIn gave are read server-side.
+ */
+export async function reportMismatchAction(
+  input: unknown,
+): Promise<SaveResult> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.auth.getClaims();
+  const userId = data?.claims.sub;
+  if (!userId) return FAILED;
+  return saveReport(supabase, userId, input);
 }

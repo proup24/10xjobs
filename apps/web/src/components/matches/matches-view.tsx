@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { decideReviewAction } from '@/app/(app)/actions';
+import { decideReviewAction, reportMismatchAction } from '@/app/(app)/actions';
 import type { Labels } from '@/lib/matches/checks';
 import {
   selectJobs,
@@ -165,6 +165,7 @@ export function MatchesView({
         userId={userId}
         backHref={backHref}
         onDecide={review ? decide : undefined}
+        onReport={reportMismatchAction}
       />
     );
 
