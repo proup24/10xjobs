@@ -48,11 +48,13 @@ Each raw item's **latest** version is mapped (`normalize/`) to one unified recor
 
 **Merging:** per field, the first non-null value from the employer's ATS posting, then the LinkedIn job, then a post; the most recently seen source wins within a rank. The job is `closed` when every ATS posting behind it is. `postedAt` is the exception: the earliest non-null value among open sources.
 
-**Posted time (`postedAt`):** exact from the source when it states a time (Greenhouse `first_published`, Ashby `publishedDate` with a time, a LinkedIn post's `postedAt.date`); otherwise estimated from LinkedIn's relative text ("8 hours ago") against the first scrape of that raw version (`normalize/posted-at.ts`), clamped to the published day; null when unknown. Version 3 introduced it, so run `db:renormalize` once after deploying it.
+**Posted time (`postedAt`):** exact from the source when it states a time (Greenhouse `first_published`, Ashby `publishedDate` with a time, a LinkedIn post's `postedAt.date`); otherwise estimated from LinkedIn's relative text ("8 hours ago") against the first scrape of that raw version (`normalize/posted-at.ts`), clamped to the published day; null when unknown.
 
 **Processing status:** ingest sets `processingStatus = 'pending'` only when an observation creates a job (`new`) or finds it after 21 days unseen (`reopened`, `config/normalize.ts`). A new source or a content change updates the columns and leaves the status alone. `processing`, `processed` and `failed` belong to Process. After a batch is marked `ingested`, `ingestBatch` reports the jobs it left `pending` to its `onPending` hook; the ingest worker uses it to enqueue them on the processor's `process` queue (LinkedIn job board batches only). That is a nudge: a failure is logged, the batch stays `ingested`, and Process's sweeper finds the jobs anyway.
 
 **Re-key:** when a job's key changes (for example an outside apply URL with a posting id arrives), its processor extraction carries over to the new key.
+
+**Normalizer version:** `NORMALIZER_VERSION` is 4 (harvestapi). Don't run `db:renormalize` for it: old cheap_scraper items stay as they are, and an item seen again is normalized at the new version anyway.
 
 **Rebuild:** after a `NORMALIZER_VERSION` bump, `pnpm --filter @xjobs/xjobs db:renormalize` re-normalizes every raw item and rebuilds links and merges. It never changes processing status; jobs it creates have none until Process decides. It needs only the database variables and is safe to run while ingest runs.
 
