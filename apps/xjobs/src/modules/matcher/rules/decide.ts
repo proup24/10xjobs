@@ -3,6 +3,7 @@ import { checkRequiredLanguages } from './languages';
 import { checkLocation } from './location';
 import type { PlaceIndex } from './places';
 import { checkPosition } from './position';
+import { checkPostingLanguage } from './posting-language';
 import { checkCurrency, checkSalary } from './salary';
 import { checkSeniority } from './seniority';
 import { checkStack, type ImpliesMap } from './stack';
@@ -27,8 +28,8 @@ export interface Decision {
   review: { rule: RuleName; field: string } | null;
   stackScore: number | null;
   /**
-   * Always nine checks, in the order position, seniority, location, stack, salary,
-   * currency, contractType, languages, workAuthorization.
+   * Always ten checks, in the order position, seniority, location, stack, salary,
+   * currency, contractType, languages, postingLanguage, workAuthorization.
    */
   checks: Check[];
 }
@@ -68,6 +69,7 @@ export function decide(
     checkCurrency(doc, profile),
     checkContractType(doc, profile),
     checkRequiredLanguages(doc, profile),
+    checkPostingLanguage(doc, profile),
     checkWorkAuthorization(doc, profile, ctx.places),
   ];
   const fails = checks.filter((c) => c.outcome === 'fail');

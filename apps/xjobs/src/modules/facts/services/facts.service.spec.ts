@@ -60,6 +60,7 @@ function setup(
     extraction: over.extraction ?? fixtureDocument(),
     schemaVersion: over.schemaVersion ?? 3,
     jobUpdatedAt: UPDATED_AT,
+    descriptionText: null,
     listing: over.listing ?? listing({ workplaceType: 'onsite' }),
   });
   return {

@@ -70,6 +70,7 @@ export class FactsService {
       listing: listingFacts(inputs.listing, vocab),
       vocab,
       now,
+      descriptionText: inputs.descriptionText,
     });
     const factsHash = hashFacts(facts);
     const before = await this.repo.current(jobId);

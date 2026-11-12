@@ -92,6 +92,7 @@ export function factsDoc(
     listing: listingFacts(EMPTY_LISTING, EMPTY_VOCAB),
     vocab: EMPTY_VOCAB,
     now: new Date('2026-11-12T00:00:00Z'),
+    descriptionText: null,
   });
   const doc = structuredClone(facts);
   edit?.(doc);

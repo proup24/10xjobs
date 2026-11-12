@@ -54,7 +54,7 @@ const job = (facts: JobFactsDocument, needsReview = false): MatchJob => ({
 });
 
 describe('decide', () => {
-  it('always returns nine checks in order, even after a fail', () => {
+  it('always returns ten checks in order, even after a fail', () => {
     const d = decide(
       job(
         passingDoc((x) => {
@@ -73,8 +73,26 @@ describe('decide', () => {
       'currency',
       'contractType',
       'languages',
+      'postingLanguage',
       'workAuthorization',
     ]);
+  });
+
+  it('rejects a posting written only in a language the profile does not speak', () => {
+    const d = decide(
+      job(
+        passingDoc((x) => {
+          x.postingLanguages = { codes: ['de'], confident: true };
+        }),
+      ),
+      exampleProfile(),
+      ctx,
+    );
+    expect(d.outcome).toBe('rejected');
+    expect(d.checks.find((c) => c.rule === 'postingLanguage')).toMatchObject({
+      outcome: 'fail',
+      unsure: false,
+    });
   });
 
   it('rejects a job that fails one rule, not unverified', () => {
@@ -106,6 +124,7 @@ describe('decide', () => {
             requirements: [{ kind: 'work-permit', place: 'MA' }],
             sponsorship: 'unstated',
           };
+          x.postingLanguages = { codes: ['en'], confident: true };
         }),
       ),
       {
@@ -122,7 +141,7 @@ describe('decide', () => {
       ctx,
     );
     expect(d.checks.map((c) => c.outcome)).toEqual(
-      Array.from({ length: 9 }, () => 'pass'),
+      Array.from({ length: 10 }, () => 'pass'),
     );
     expect(d.outcome).toBe('qualified');
     expect(d.unverified).toBe(false);

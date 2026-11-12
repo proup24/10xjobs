@@ -129,6 +129,7 @@ describe.skipIf(!url)('facts repository in PostgreSQL', () => {
       ),
       vocab,
       now: t0,
+      descriptionText: null,
     });
     return {
       ...j,
@@ -180,6 +181,7 @@ describe.skipIf(!url)('facts repository in PostgreSQL', () => {
     expect(inputs).toMatchObject({
       extractionId: j.extractionId,
       schemaVersion: 3,
+      descriptionText: 'We build things.',
       listing: {
         workplaceType: 'onsite',
         countryCode: 'FR',

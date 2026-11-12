@@ -19,7 +19,7 @@ Design: `docs/superpowers/specs/2026-11-08-matching-design.md`.
 
 ## Code map
 
-- `rules/`: pure functions, one per criterion (`position.ts`, `seniority.ts`, `location.ts` with `places.ts`, `stack.ts`, `salary.ts` with `convert.ts`, `contract.ts`, `languages.ts`, `work-authorization.ts`) and `decide.ts`. They take everything as arguments, so they run with no database.
+- `rules/`: pure functions, one per criterion (`position.ts`, `seniority.ts`, `location.ts` with `places.ts`, `stack.ts`, `salary.ts` with `convert.ts`, `contract.ts`, `languages.ts`, `posting-language.ts`, `work-authorization.ts`) and `decide.ts`. They take everything as arguments, so they run with no database.
 - `repositories/`: every read and write (`matcher.repository.ts`). `testing/memory-matcher.repository.ts` is the in-memory fake.
 - `services/matcher.service.ts`: the entry point. It caches the place hierarchy and the `implies` map for 10 minutes (they change only through `db:vocab`).
 - `config/matcher.config.ts`: `MATCHER_VERSION`, the years margin, the minimum stack score, the backfill window and the sweep settings.
@@ -28,9 +28,9 @@ Design: `docs/superpowers/specs/2026-11-08-matching-design.md`.
 
 ## Rules
 
-The checks, in order: `position`, `seniority`, `location`, `stack`, `salary`, `currency`, `contractType`, `languages`, `workAuthorization`.
+The checks, in order: `position`, `seniority`, `location`, `stack`, `salary`, `currency`, `contractType`, `languages`, `postingLanguage`, `workAuthorization`.
 
-The decision for one (profile, job): `rejected` when at least one check fails on a sure value; otherwise `review` when a check fails only on an unsure value (the first such check, in rule order, is recorded as `reviewRule` and `reviewField`); otherwise `qualified`. A qualified decision is `unverified` when at least one check is `unknown` or rests on an unsure value, or the extraction has `needsReview`. Each check carries `unsure` (and `unsureField`): position on `position` or `isSoftwareEngineeringRole`, seniority on `seniority` or, through the years fallback, `yearsRequired`, location on `openings` (a failing opening is unsure when the part that decided it, its arrangement, places or time zones, came from the description and the opening is unsure; a part from LinkedIn is sure; any unsure failing opening makes the failure unsure, since that opening might fit), stack on `techStack` (the fact is unsure, or a main or must unit that decided the failure has an unsure requirement), salary and currency on `salary`, contract type on `contractType`, languages on `requiredLanguages`, and work authorization on `workAuthorization` (its requirements and sponsorship share one confidence, so an unsure fact makes both a failure and a pass unsure). The "neither the role nor the stack" failure is sure. An unsure value never rejects. A fact the job does not state (`unstated`, `null`, no places) is `unknown`, never a rejection on its own.
+The decision for one (profile, job): `rejected` when at least one check fails on a sure value; otherwise `review` when a check fails only on an unsure value (the first such check, in rule order, is recorded as `reviewRule` and `reviewField`); otherwise `qualified`. A qualified decision is `unverified` when at least one check is `unknown` or rests on an unsure value, or the extraction has `needsReview`. Each check carries `unsure` (and `unsureField`): position on `position` or `isSoftwareEngineeringRole`, seniority on `seniority` or, through the years fallback, `yearsRequired`, location on `openings` (a failing opening is unsure when the part that decided it, its arrangement, places or time zones, came from the description and the opening is unsure; a part from LinkedIn is sure; any unsure failing opening makes the failure unsure, since that opening might fit), stack on `techStack` (the fact is unsure, or a main or must unit that decided the failure has an unsure requirement), salary and currency on `salary`, contract type on `contractType`, languages on `requiredLanguages`, posting language never (the detector's doubt is `unknown`), and work authorization on `workAuthorization` (its requirements and sponsorship share one confidence, so an unsure fact makes both a failure and a pass unsure). The "neither the role nor the stack" failure is sure. An unsure value never rejects. A fact the job does not state (`unstated`, `null`, no places) is `unknown`, never a rejection on its own.
 
 **Position** (first row that applies decides):
 
@@ -74,6 +74,8 @@ Residence and work authorization are the work authorization rule's (below), not 
 **Contract type**: `pass` when the job's contract type is in the profile's `contractTypes`, `fail` when not, `unknown` when `null` or `unstated`.
 
 **Required languages**: `pass` when the profile holds every required language at or above its level (`working` < `fluent` < `native`), `fail` when one is missing or held lower, `unknown` when none is required.
+
+**Posting language** reads `postingLanguages`, detected from the description text by code (`franc`, per paragraph; a language counts when its paragraphs hold at least 25% of the detected characters): `pass` when the profile speaks one of the posting's languages, at any level, `fail` when it speaks none, `unknown` when the detection is not confident (text under 200 characters, or no paragraph detected with confidence). It is never unsure.
 
 **Work authorization** reads the user's eligibility (`work_authorizations`, `users.residenceCountry`, `users.acceptsSponsorship`), the same for each of their profiles. Each requirement the job states is met by:
 

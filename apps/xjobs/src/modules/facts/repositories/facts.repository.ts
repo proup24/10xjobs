@@ -13,6 +13,8 @@ export interface FactsInputs {
   /** The job row's `updatedAt` as read: the facts are built as of it. */
   jobUpdatedAt: Date;
   listing: ListingRow;
+  /** `normalized_jobs.descriptionText`: the posting's languages are detected from it. */
+  descriptionText: string | null;
 }
 
 export interface SavedFacts {
@@ -70,7 +72,7 @@ export class PrismaFactsRepository extends FactsRepository {
           j."workplaceType", j."countryCode", j."regionCode", j.city, j."geoId",
           j.location, j."salaryMin", j."salaryMax", j."salaryCurrency",
           j."salaryPeriod", j."salaryProvidedByEmployer", j."experienceLevel",
-          j."contractType", j."expiresAt", j."updatedAt"
+          j."contractType", j."expiresAt", j."updatedAt", j."descriptionText"
         FROM normalized_jobs j JOIN job_extractions e ON e.id = j."currentExtractionId"
         WHERE j.id = ${jobId}::uuid`
         .returnsRow({
@@ -92,6 +94,7 @@ export class PrismaFactsRepository extends FactsRepository {
           contractType: TEXT,
           expiresAt: TIMESTAMP,
           updatedAt: TIMESTAMP,
+          descriptionText: TEXT,
         })
         .build(),
     );
@@ -102,6 +105,7 @@ export class PrismaFactsRepository extends FactsRepository {
       extraction: row.data,
       schemaVersion: row.schemaVersion as number,
       jobUpdatedAt: row.updatedAt as Date,
+      descriptionText: row.descriptionText as string | null,
       listing: {
         workplaceType:
           workplace !== null && WORKPLACE.has(workplace)

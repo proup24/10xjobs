@@ -72,7 +72,13 @@ function doc(
 }
 
 const combine = (extraction: ExtractionDocument, l: ListingFacts) =>
-  combineFacts({ extraction, listing: l, vocab, now: NOW });
+  combineFacts({
+    extraction,
+    listing: l,
+    vocab,
+    now: NOW,
+    descriptionText: null,
+  });
 
 describe('combineFacts', () => {
   it('description arrangement wins and a disagreement is a conflict', () => {
@@ -798,10 +804,33 @@ describe('combineFacts', () => {
     expect(combine(d, listing()).facts.closed).toBe(false);
   });
 
+  it('detects the posting languages from the description text', () => {
+    const text = [
+      'We are looking for a senior backend engineer to join our payments team. You will design and build the services that move money between our customers and their banks.',
+      'You have at least five years of experience with Go or Python, and you enjoy working closely with product managers and designers.',
+    ].join('\n\n');
+    const withText = combineFacts({
+      extraction: doc(),
+      listing: listing(),
+      vocab,
+      now: NOW,
+      descriptionText: text,
+    }).facts;
+    expect(withText.postingLanguages).toEqual({
+      codes: ['en'],
+      confident: true,
+    });
+    expect(jobFactsDocumentSchema.safeParse(withText).success).toBe(true);
+    expect(combine(doc(), listing()).facts.postingLanguages).toEqual({
+      codes: [],
+      confident: false,
+    });
+  });
+
   it('copies the other matcher facts from the description', () => {
     const d = doc();
     const { facts } = combine(d, listing());
-    expect(facts.version).toBe(2);
+    expect(facts.version).toBe(3);
     for (const key of [
       'position',
       'isSoftwareEngineeringRole',

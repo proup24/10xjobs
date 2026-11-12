@@ -59,6 +59,7 @@ function setup(
     extraction: over.extraction ?? fixtureDocument(),
     schemaVersion: over.schemaVersion ?? 3,
     jobUpdatedAt: NOW,
+    descriptionText: null,
     listing: over.listing ?? listing(),
   });
   repo.profiles = [

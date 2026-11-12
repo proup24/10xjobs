@@ -11,6 +11,7 @@ export type RuleName =
   | 'currency'
   | 'contractType'
   | 'languages'
+  | 'postingLanguage'
   | 'workAuthorization';
 
 /**
