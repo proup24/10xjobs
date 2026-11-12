@@ -6,9 +6,18 @@ import {
   MatchQueue,
   processMatchJob,
 } from 'src/infrastructure/jobs/steps/match';
+import {
+  RATES_QUEUE,
+  processRatesJob,
+} from 'src/infrastructure/jobs/steps/rates';
 import { MatcherRepository, MatcherService } from 'src/modules/matcher';
+import { RatesService } from 'src/modules/rates';
 import { WorkerRuntimeService } from './runtime.service';
-import { RUN_SCHEDULES, syncMatchSweepScheduler } from './scheduler';
+import {
+  RUN_SCHEDULES,
+  syncMatchSweepScheduler,
+  syncRatesRefreshScheduler,
+} from './scheduler';
 
 const MATCH_CONCURRENCY = 4;
 
@@ -21,6 +30,7 @@ export class MatchWorkerService {
     private readonly service: MatcherService,
     private readonly repo: MatcherRepository,
     private readonly matchQueue: MatchQueue,
+    private readonly rates: RatesService,
     @Inject(RUN_SCHEDULES) private readonly runSchedules: boolean,
   ) {}
 
@@ -40,6 +50,21 @@ export class MatchWorkerService {
         return result;
       },
       MATCH_CONCURRENCY,
+      connection,
+    );
+    // The rates refresh rides in the match worker: matching converts salaries with these rates.
+    const ratesQueue = await this.runtime.createQueue(RATES_QUEUE, connection);
+    await syncRatesRefreshScheduler(ratesQueue, this.runSchedules);
+    this.runtime.startWorker(
+      RATES_QUEUE,
+      async (bullJob) => {
+        const result = await processRatesJob(bullJob, {
+          service: this.rates,
+        });
+        this.logger.log(`Rates refresh: ${JSON.stringify(result)}`);
+        return result;
+      },
+      1,
       connection,
     );
     this.logger.log(

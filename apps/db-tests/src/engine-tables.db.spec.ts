@@ -198,6 +198,11 @@ const fixtures: Fixture[] = [
     }),
   },
   {
+    table: 'exchange_rates',
+    key: 'currency',
+    row: () => ({ currency: 'XTS', perUsd: '1.5', fetchedAt: now }),
+  },
+  {
     table: 'normalized_job_sources',
     row: () => ({
       id: randomUUID(),

@@ -12,7 +12,9 @@ import {
   PROCESS_SWEEP_JOB,
   processSweepConfig,
 } from 'src/infrastructure/jobs/steps/process';
+import { RATES_REFRESH_JOB } from 'src/infrastructure/jobs/steps/rates';
 import { ingestConfig } from 'src/modules/ingest';
+import { RATES_REFRESH } from 'src/modules/rates';
 
 type SchedulerQueue = Pick<Queue, 'upsertJobScheduler' | 'removeJobScheduler'>;
 
@@ -90,6 +92,23 @@ export async function syncMatchSweepScheduler(
     MATCH_SWEEP_JOB,
     { every: MATCH_SWEEP.everyMs },
     { name: MATCH_SWEEP_JOB, opts: { attempts: 1 } },
+  );
+  return 'scheduled';
+}
+
+/** Refreshes the exchange rates daily at 03:00 UTC; idempotent. */
+export async function syncRatesRefreshScheduler(
+  queue: SchedulerQueue,
+  run: boolean,
+): Promise<'scheduled' | 'removed'> {
+  if (!run) {
+    await queue.removeJobScheduler(RATES_REFRESH_JOB);
+    return 'removed';
+  }
+  await queue.upsertJobScheduler(
+    RATES_REFRESH_JOB,
+    { pattern: RATES_REFRESH.pattern, tz: RATES_REFRESH.timezone },
+    { name: RATES_REFRESH_JOB, opts: { attempts: 1 } },
   );
   return 'scheduled';
 }

@@ -36,6 +36,10 @@
       "model": "EngagementTerm",
       "namespace": "public"
     },
+    "exchange_rates": {
+      "model": "ExchangeRate",
+      "namespace": "public"
+    },
     "iso_currencies": {
       "model": "IsoCurrency",
       "namespace": "public"
@@ -1448,6 +1452,50 @@
               },
               "namespaceId": "public",
               "table": "engagements"
+            }
+          },
+          "ExchangeRate": {
+            "fields": {
+              "currency": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "fetchedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "perUsd": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "currency": {
+                  "column": "currency"
+                },
+                "fetchedAt": {
+                  "column": "fetchedAt"
+                },
+                "perUsd": {
+                  "column": "perUsd"
+                }
+              },
+              "namespaceId": "public",
+              "table": "exchange_rates"
             }
           },
           "IsoCurrency": {
@@ -6586,6 +6634,11 @@
               "namespaceId": "public",
               "tableName": "engagements"
             },
+            "exchange_rates": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "exchange_rates"
+            },
             "iso_currencies": {
               "kind": "rls",
               "namespaceId": "public",
@@ -7569,6 +7622,36 @@
               "primaryKey": {
                 "columns": [
                   "code"
+                ]
+              },
+              "uniques": []
+            },
+            "exchange_rates": {
+              "columns": {
+                "currency": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "fetchedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "perUsd": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "currency"
                 ]
               },
               "uniques": []
@@ -11847,7 +11930,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "7a9202b8254003df747c0106c86d0819f4e33a3cb129ff331fc2f1a9fafd5a95"
+    "storageHash": "1cd5de0e80eaf25816ef11aaa269f6372fda3c935e90621032e65f56392bd741"
   },
   "execution": {
     "executionHash": "9c0694a80d5f7adf167bc3288d7926267ba4776ae99e720efce6b64a0f440673",

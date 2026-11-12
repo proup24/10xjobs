@@ -97,6 +97,7 @@ it('registers no schedule and removes the old ones when schedules are off', asyn
     expect(created.removedSchedulers).toEqual([
       'ingest:sweep',
       'match:sweep',
+      'rates:refresh',
       'collect-linkedin-job-board:collect',
       'collect-linkedin-posts:collect',
       'collect-greenhouse:collect',
@@ -106,6 +107,7 @@ it('registers no schedule and removes the old ones when schedules are off', asyn
       'infrastructure',
       'ingest',
       'match',
+      'rates',
       'collect-linkedin-job-board',
     ]);
   } finally {

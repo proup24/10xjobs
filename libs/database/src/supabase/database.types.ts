@@ -347,6 +347,25 @@ export type Database = {
         };
         Relationships: [];
       };
+      exchange_rates: {
+        Row: {
+          currency: string;
+          fetchedAt: string;
+          perUsd: number;
+        };
+        ComputedFields: never;
+        Insert: {
+          currency: string;
+          fetchedAt: string;
+          perUsd: number;
+        };
+        Update: {
+          currency?: string;
+          fetchedAt?: string;
+          perUsd?: number;
+        };
+        Relationships: [];
+      };
       iso_currencies: {
         Row: {
           code: string;

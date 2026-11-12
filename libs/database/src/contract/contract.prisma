@@ -936,6 +936,17 @@ model JobFacts {
   @@rls
 }
 
+// Daily currency rates, units of the currency per one USD; the engine replaces
+// them from a public source and keeps the last good ones when a refresh fails.
+model ExchangeRate {
+  currency  String               @id
+  perUsd    Decimal
+  fetchedAt TimestamptzJsDate(3)
+
+  @@map("exchange_rates")
+  @@rls
+}
+
 // Where the listing and the description disagreed on a field, and which one won.
 // Replaced as a set with the job's facts row. Engine-only.
 model JobFactConflict {

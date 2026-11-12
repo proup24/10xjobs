@@ -24,7 +24,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'7a9202b8254003df747c0106c86d0819f4e33a3cb129ff331fc2f1a9fafd5a95'>;
+  StorageHashBase<'1cd5de0e80eaf25816ef11aaa269f6372fda3c935e90621032e65f56392bd741'>;
 export type ExecutionHash =
   ExecutionHashBase<'9c0694a80d5f7adf167bc3288d7926267ba4776ae99e720efce6b64a0f440673'>;
 export type ProfileHash =
@@ -636,6 +636,12 @@ export namespace Models {
     extractions: public_JobExtraction[];
     readonly [RelationKeys]?: 'extractions';
   };
+  export type public_ExchangeRate = {
+    currency: FieldOutputTypes['public']['ExchangeRate']['currency'];
+    fetchedAt: FieldOutputTypes['public']['ExchangeRate']['fetchedAt'];
+    perUsd: FieldOutputTypes['public']['ExchangeRate']['perUsd'];
+    readonly [RelationKeys]?: never;
+  };
   export type public_IsoCurrency = {
     code: FieldOutputTypes['public']['IsoCurrency']['code'];
     label: FieldOutputTypes['public']['IsoCurrency']['label'];
@@ -1123,6 +1129,7 @@ export declare const models: {
     ContractType: Models.public_ContractType;
     Country: Models.public_Country;
     EngagementTerm: Models.public_EngagementTerm;
+    ExchangeRate: Models.public_ExchangeRate;
     IsoCurrency: Models.public_IsoCurrency;
     IsoLanguage: Models.public_IsoLanguage;
     JobExtraction: Models.public_JobExtraction;
@@ -1812,6 +1819,33 @@ type ContractBase = Omit<
                 };
               };
               primaryKey: { readonly columns: readonly ['code'] };
+              uniques: readonly [];
+              indexes: readonly [];
+              foreignKeys: readonly [];
+            };
+            readonly exchange_rates: {
+              columns: {
+                readonly currency: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly fetchedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly perUsd: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['currency'] };
               uniques: readonly [];
               indexes: readonly [];
               foreignKeys: readonly [];
@@ -5042,6 +5076,10 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'EngagementTerm';
     };
+    readonly exchange_rates: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'ExchangeRate';
+    };
     readonly iso_currencies: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'IsoCurrency';
@@ -5794,6 +5832,36 @@ type ContractBase = Omit<
                 readonly label: { readonly column: 'label' };
                 readonly occurrences: { readonly column: 'occurrences' };
                 readonly status: { readonly column: 'status' };
+              };
+            };
+          };
+          readonly ExchangeRate: {
+            readonly fields: {
+              readonly currency: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly fetchedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly perUsd: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/numeric@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'exchange_rates';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly currency: { readonly column: 'currency' };
+                readonly fetchedAt: { readonly column: 'fetchedAt' };
+                readonly perUsd: { readonly column: 'perUsd' };
               };
             };
           };
