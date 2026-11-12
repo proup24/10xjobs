@@ -53,22 +53,24 @@ function checkArrangement(
 /**
  * Whether the opening's outcome rests on an unsure value. `confidence` describes the
  * description-sourced parts (time zones always are); a part from LinkedIn is sure.
- * A failure rests on the arrangement when the profile wants one the opening rules out,
- * and on each part that failed a kept arrangement.
+ * A failure rests on the arrangement when the profile wants one the opening rules out
+ * and the opening might fit with its arrangement unstated (`fitsUnstated`), and on each
+ * part that failed a kept arrangement.
  */
 function openingUnsure(
   opening: Opening,
   outcome: CheckOutcome,
   ruledOut: boolean,
   failedOn: FailedOn[],
+  fitsUnstated: () => boolean,
 ): boolean {
   if (opening.confidence !== 'unsure' || outcome === 'unknown') return false;
   const arrangement = opening.arrangementSource === 'description';
   const places = opening.placesSource === 'description';
   if (outcome === 'pass') return arrangement || places;
   return (
-    (ruledOut && arrangement) ||
-    failedOn.some((f) => f === 'timezones' || (f === 'places' && places))
+    failedOn.some((f) => f === 'timezones' || (f === 'places' && places)) ||
+    (ruledOut && arrangement && fitsUnstated())
   );
 }
 
@@ -76,7 +78,23 @@ function checkOpening(
   opening: Opening,
   profile: MatchProfile,
   idx: PlaceIndex,
-) {
+): {
+  outcome: CheckOutcome;
+  deciding: LocationArrangement | null;
+  kept: LocationArrangement[];
+  unsure: boolean;
+} {
+  // The most favourable arrangement: the opening checked as if it stated none. Not a
+  // sure failure means the ruled-out arrangement might be what fails. Nothing is ruled
+  // out of an unstated opening, so this does not recurse further.
+  const fitsUnstated = () => {
+    const r = checkOpening(
+      { ...opening, arrangements: ['unstated'] },
+      profile,
+      idx,
+    );
+    return r.outcome !== 'fail' || r.unsure;
+  };
   const stated = opening.arrangements.filter(isArrangement);
   const onlyUnstated = !opening.arrangements.some((a) => a !== 'unstated');
   const expanded = opening.arrangements.includes('unstated')
@@ -89,10 +107,10 @@ function checkOpening(
   );
   if (kept.length === 0) {
     return {
-      outcome: 'fail' as CheckOutcome,
+      outcome: 'fail',
       deciding: null,
       kept,
-      unsure: openingUnsure(opening, 'fail', ruledOut, []),
+      unsure: openingUnsure(opening, 'fail', ruledOut, [], fitsUnstated),
     };
   }
   const results = kept.map((a) => ({
@@ -111,6 +129,7 @@ function checkOpening(
       outcome,
       ruledOut,
       results.map((r) => r.failedOn),
+      fitsUnstated,
     ),
   };
 }

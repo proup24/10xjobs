@@ -37,7 +37,7 @@ export function decide(
     ctx.implies,
     doc.techStack.confidence,
   );
-  let position = checkPosition(doc, profile);
+  let position = checkPosition(doc, profile, stack.check.outcome === 'unknown');
   // Location and seniority are often unstated even on good postings, but a job
   // whose role and stack both say nothing has nothing to show it fits. This rests on two
   // unknowns, not on an unsure value, so it is a sure failure.

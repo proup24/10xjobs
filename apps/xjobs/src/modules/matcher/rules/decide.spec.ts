@@ -325,6 +325,63 @@ describe('decide', () => {
       expect(d.review).toEqual({ rule: 'location', field: 'openings' });
     });
 
+    const unsureNotSwe = (
+      roleKind: string,
+      edit?: (d: JobFactsDocument) => void,
+    ) =>
+      passingDoc((x) => {
+        x.isSoftwareEngineeringRole.value = false;
+        x.isSoftwareEngineeringRole.confidence = 'unsure';
+        x.position.value = { roleKind, title: 'x' };
+        edit?.(x);
+      });
+
+    it('unsure not-SWE with a sure other role is rejected', () => {
+      const d = decide(
+        job(unsureNotSwe('fullstack_engineer')),
+        exampleProfile(),
+        ctx,
+      );
+      expect(d.checks[0]).toMatchObject({ outcome: 'fail', unsure: false });
+      expect(d.outcome).toBe('rejected');
+    });
+
+    it('unsure not-SWE, role unstated, stack unknown is rejected', () => {
+      const d = decide(
+        job(
+          unsureNotSwe('unstated', (x) => {
+            x.techStack.value = null;
+          }),
+        ),
+        exampleProfile(),
+        ctx,
+      );
+      expect(d.checks[0]).toMatchObject({ outcome: 'fail', unsure: false });
+      expect(d.outcome).toBe('rejected');
+    });
+
+    it('unsure not-SWE, role unstated, with a passing stack goes to review', () => {
+      const d = decide(job(unsureNotSwe('unstated')), exampleProfile(), ctx);
+      expect(d.outcome).toBe('review');
+      expect(d.review).toEqual({
+        rule: 'position',
+        field: 'isSoftwareEngineeringRole',
+      });
+    });
+
+    it("unsure not-SWE with the profile's role goes to review", () => {
+      const d = decide(
+        job(unsureNotSwe('backend_engineer')),
+        exampleProfile(),
+        ctx,
+      );
+      expect(d.outcome).toBe('review');
+      expect(d.review).toEqual({
+        rule: 'position',
+        field: 'isSoftwareEngineeringRole',
+      });
+    });
+
     it('neither role nor stack verifiable is a sure rejection, even on unsure facts', () => {
       const d = decide(
         job(

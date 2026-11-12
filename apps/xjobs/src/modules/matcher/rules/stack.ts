@@ -35,23 +35,28 @@ function masteryByCode(
 }
 
 /**
- * Whether the scored units pass, given each unit's mastery (null when uncovered): some
- * main unit is covered (when there are main units) and the score reaches the minimum.
+ * Scores the scored units given each unit's mastery (null when uncovered): they pass when
+ * some main unit is covered (when there are main units) and the score reaches the minimum.
  */
-function wouldPass(
+function evaluate(
   scored: Unit[],
   masteryOf: (u: Unit) => number | null,
-): boolean {
+): { score: number; noMainCovered: boolean; pass: boolean } {
   const mains = scored.filter((u) => u.kind === 'main');
-  if (mains.length > 0 && mains.every((u) => masteryOf(u) === null))
-    return false;
+  const noMainCovered =
+    mains.length > 0 && mains.every((u) => masteryOf(u) === null);
   let earned = 0;
   let total = 0;
   for (const u of scored) {
     total += u.importance;
     earned += u.importance * ((masteryOf(u) ?? 0) / 10);
   }
-  return Math.round((earned / total) * 1000) / 1000 >= MIN_STACK_SCORE;
+  const score = Math.round((earned / total) * 1000) / 1000;
+  return {
+    score,
+    noMainCovered,
+    pass: !noMainCovered && score >= MIN_STACK_SCORE,
+  };
 }
 
 /**
@@ -136,28 +141,13 @@ export function checkStack(
 
   const covered: string[] = [];
   const uncovered: string[] = [];
-  const scoredUnits: {
-    unit: string;
-    importance: number;
-    mastery: number | null;
-  }[] = [];
-  let earned = 0;
-  let total = 0;
-  for (const u of scored) {
+  const scoredUnits = scored.map((u) => {
     const m = coveredMastery(u);
-    scoredUnits.push({ unit: label(u), importance: u.importance, mastery: m });
-    total += u.importance;
-    if (m === null) uncovered.push(label(u));
-    else {
-      covered.push(label(u));
-      earned += u.importance * (m / 10);
-    }
-  }
-  const score = Math.round((earned / total) * 1000) / 1000;
-
+    (m === null ? uncovered : covered).push(label(u));
+    return { unit: label(u), importance: u.importance, mastery: m };
+  });
+  const { score, noMainCovered } = evaluate(scored, coveredMastery);
   const mainUnits = scored.filter((u) => u.kind === 'main');
-  const noMainCovered =
-    mainUnits.length > 0 && mainUnits.every((u) => coveredMastery(u) === null);
 
   let outcome: Check['outcome'] = 'pass';
   let reason = `job stack covered at ${score}: ${covered.join(', ') || 'none'}`;
@@ -175,7 +165,7 @@ export function checkStack(
     confidence === 'unsure' ||
     (outcome === 'pass'
       ? scored.some((u) => u.unsure && coveredMastery(u) !== null)
-      : wouldPass(scored, (u) => (u.unsure ? 10 : coveredMastery(u))));
+      : evaluate(scored, (u) => (u.unsure ? 10 : coveredMastery(u))).pass);
 
   return {
     check: {

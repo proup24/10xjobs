@@ -165,6 +165,36 @@ describe('checkLocation', () => {
         check([limited({ confidence: 'unsure', placesSource: 'linkedin' })]),
       ).toMatchObject({ outcome: 'fail', unsure: true });
     });
+    it('an unsure description arrangement ruling out a wanted one is sure when no arrangement would fit the place', () => {
+      // Remote is wanted only in Morocco, on-site only in Casablanca: a Berlin label
+      // fails whatever the arrangement really is.
+      const p = exampleProfile();
+      p.locations.remote = [{ kind: 'country', code: 'MA' }];
+      p.locations.hybrid = [];
+      p.locations.onsite = [{ kind: 'city', id: CITY_A }];
+      expect(
+        check(
+          [
+            limited({
+              confidence: 'unsure',
+              placesSource: 'linkedin',
+              placeStrictness: 'label',
+            }),
+          ],
+          p,
+        ),
+      ).toMatchObject({ outcome: 'fail', unsure: false, unsureField: null });
+    });
+    it('an unsure description arrangement ruling out a wanted one stays unsure when its unsure place might fit', () => {
+      const p = exampleProfile();
+      p.locations.remote = [{ kind: 'country', code: 'MA' }];
+      p.locations.hybrid = [];
+      p.locations.onsite = [];
+      expect(check([limited({ confidence: 'unsure' })], p)).toMatchObject({
+        outcome: 'fail',
+        unsure: true,
+      });
+    });
     it('an unsure remote time zone that does not fit is unsure', () => {
       expect(
         check([
