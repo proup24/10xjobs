@@ -116,7 +116,8 @@ describe('combineFacts', () => {
         places: [{ kind: 'country', code: 'US' }],
         placeStrictness: 'label',
         timezones: [],
-        source: 'linkedin',
+        arrangementSource: 'linkedin',
+        placesSource: 'linkedin',
         confidence: 'sure',
         quote: expect.stringContaining('LinkedIn'),
       },
@@ -139,7 +140,8 @@ describe('combineFacts', () => {
         arrangements: ['remote'],
         places: [],
         placeStrictness: 'unstated',
-        source: 'linkedin',
+        arrangementSource: 'linkedin',
+        placesSource: 'linkedin',
       },
     ]);
   });
@@ -167,7 +169,8 @@ describe('combineFacts', () => {
         places: [{ kind: 'country', code: 'US' }],
         placeStrictness: 'label',
         timezones: [],
-        source: 'linkedin',
+        arrangementSource: 'description',
+        placesSource: 'linkedin',
         confidence: 'unsure',
         quote: expect.stringContaining('remote-first'),
       },
@@ -186,7 +189,12 @@ describe('combineFacts', () => {
       listing({ arrangement: 'remote' }),
     );
     expect(facts.openings).toMatchObject([
-      { arrangements: ['remote'], places: [], source: 'description' },
+      {
+        arrangements: ['remote'],
+        places: [],
+        arrangementSource: 'description',
+        placesSource: 'description',
+      },
     ]);
   });
 
@@ -216,7 +224,8 @@ describe('combineFacts', () => {
       places: [
         { kind: 'city', name: 'Paris', countryCode: 'FR', cityId: 'c-paris' },
       ],
-      source: 'description',
+      arrangementSource: 'description',
+      placesSource: 'description',
     });
     expect(conflicts).toEqual([
       {
@@ -293,7 +302,8 @@ describe('combineFacts', () => {
         timezones: [tz],
         quote: '',
         confidence: 'sure',
-        source: 'linkedin',
+        arrangementSource: 'linkedin',
+        placesSource: 'description',
       },
     ]);
     expect(facts.arrangement).toMatchObject({
@@ -330,11 +340,13 @@ describe('combineFacts', () => {
         timezones: [],
         quote: 'based in Paris',
         confidence: 'unsure',
-        source: 'linkedin',
+        arrangementSource: 'linkedin',
+        placesSource: 'description',
       },
       expect.objectContaining({
         arrangements: ['hybrid'],
-        source: 'description',
+        arrangementSource: 'description',
+        placesSource: 'description',
       }),
     ]);
   });
@@ -418,6 +430,128 @@ describe('combineFacts', () => {
         ),
       ).toHaveLength(1);
     });
+  });
+
+  describe("the description's top-level arrangement", () => {
+    const top = (
+      value: string,
+      confidence: 'sure' | 'unsure',
+      quote: string,
+    ): ExtractionDocument['arrangement'] => ({
+      ...fixtureDocument().arrangement,
+      value,
+      confidence,
+      quote,
+    });
+
+    it('fills unstated openings before the listing, and the listing disagreeing is a conflict', () => {
+      const { facts, conflicts } = combine(
+        doc({
+          arrangement: top('hybrid', 'unsure', 'hybrid, 2 days a week'),
+          openings: [opening()],
+        }),
+        listing({ arrangement: 'remote' }),
+      );
+      expect(facts.openings).toEqual([
+        {
+          arrangements: ['hybrid'],
+          places: [],
+          placeStrictness: 'unstated',
+          timezones: [],
+          quote: '',
+          confidence: 'unsure',
+          arrangementSource: 'description',
+          placesSource: 'description',
+        },
+      ]);
+      expect(facts.arrangement).toMatchObject({
+        value: 'hybrid',
+        source: 'description',
+      });
+      expect(conflicts).toEqual([
+        {
+          field: 'arrangement',
+          listingValue: 'remote',
+          descriptionValue: ['hybrid'],
+          quote: 'hybrid, 2 days a week',
+          winner: 'description',
+        },
+      ]);
+    });
+
+    it('is the arrangement of the listing-built opening, which keeps the listing place', () => {
+      const { facts, conflicts } = combine(
+        doc({
+          arrangement: top('onsite', 'sure', 'in the office'),
+          openings: [opening()],
+        }),
+        listing({
+          arrangement: 'remote',
+          place: { kind: 'country', code: 'US' },
+          locationText: 'United States',
+        }),
+      );
+      expect(facts.openings).toEqual([
+        {
+          arrangements: ['onsite'],
+          places: [{ kind: 'country', code: 'US' }],
+          placeStrictness: 'label',
+          timezones: [],
+          quote: expect.stringContaining('LinkedIn: United States'),
+          confidence: 'sure',
+          arrangementSource: 'description',
+          placesSource: 'linkedin',
+        },
+      ]);
+      expect(conflicts.map((c) => c.field)).toEqual(['arrangement']);
+    });
+
+    it('an opening that states its own arrangement keeps it', () => {
+      const { facts } = combine(
+        doc({
+          arrangementValue: 'hybrid',
+          openings: [
+            opening({ arrangements: ['remote'] }),
+            opening({ quote: 'other' }),
+          ],
+        }),
+        listing({ arrangement: 'onsite' }),
+      );
+      expect(facts.openings.map((o) => o.arrangements)).toEqual([
+        ['remote'],
+        ['hybrid'],
+      ]);
+      expect(facts.openings.map((o) => o.arrangementSource)).toEqual([
+        'description',
+        'description',
+      ]);
+    });
+  });
+
+  it('carries engagement and contract months from the description, for display', () => {
+    const base = doc();
+    const d = doc({
+      engagement: { ...base.engagement, value: 'contractor', quote: 'B2B' },
+      contractMonths: {
+        ...base.contractMonths,
+        value: 6,
+        quote: '6-month contract',
+      },
+    });
+    const { facts } = combine(d, listing());
+    expect(facts.engagement).toEqual({
+      value: 'contractor',
+      confidence: d.engagement.confidence,
+      source: 'description',
+      quote: 'B2B',
+    });
+    expect(facts.contractMonths).toEqual({
+      value: 6,
+      confidence: d.contractMonths.confidence,
+      source: 'description',
+      quote: '6-month contract',
+    });
+    expect(jobFactsDocumentSchema.parse(facts)).toEqual(facts);
   });
 
   it('seniority is never filled from the listing', () => {

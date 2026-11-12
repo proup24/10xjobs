@@ -58,7 +58,8 @@ function descriptionOpening(o: Opening, vocab: PlaceVocabulary): FactOpening {
     timezones: o.timezones,
     quote: o.quote,
     confidence: o.confidence,
-    source: 'description',
+    arrangementSource: 'description',
+    placesSource: 'description',
   };
 }
 
@@ -103,10 +104,30 @@ function listingQuote(...parts: (string | null)[]): string {
   return said.length ? `LinkedIn: ${said.join(', ')}` : 'LinkedIn listing';
 }
 
-/** The openings: the description's, or one built from the listing (spec "The listing opening"). */
+/** The description's top-level arrangement, when it states one. */
+function statedArrangement(
+  extraction: ExtractionDocument,
+): Fact<string> | null {
+  const top = extraction.arrangement;
+  return top.value !== null && top.value !== UNSTATED ? top : null;
+}
+
+/** The less certain of two confidences. */
+const leastSure = (
+  a: FactOpening['confidence'],
+  b: FactOpening['confidence'],
+): FactOpening['confidence'] =>
+  a === 'unsure' || b === 'unsure' ? 'unsure' : 'sure';
+
+/**
+ * The openings: the description's, or one built from the listing (spec "The listing opening").
+ * An arrangement comes from the opening, else the description's top-level arrangement, else
+ * the listing's; each opening records the source of its arrangement and of its places.
+ */
 function combineOpenings(
   described: FactOpening[],
   listing: ListingFacts,
+  top: Fact<string> | null,
 ): FactOpening[] {
   const silent = described.every(
     (o) => o.places.length === 0 && o.timezones.length === 0,
@@ -114,21 +135,29 @@ function combineOpenings(
   const stated = described.some((o) =>
     o.arrangements.some((a) => a !== UNSTATED),
   );
-  const listed = listing.place !== null || listing.arrangement !== null;
+  const place = listing.place;
+  // The listing opening is built only when the listing gives it something: a place, or an
+  // arrangement the description does not state anywhere.
+  const listed =
+    place !== null || (top === null && listing.arrangement !== null);
   if (silent && listed && !stated) {
     return [
       {
-        arrangements: [listing.arrangement ?? UNSTATED],
-        places: listing.place ? [listing.place] : [],
-        placeStrictness: listing.place ? 'label' : 'unstated',
+        arrangements: [top?.value ?? listing.arrangement ?? UNSTATED],
+        places: place ? [place] : [],
+        placeStrictness: place ? 'label' : 'unstated',
         timezones: [],
-        quote: listingQuote(listing.arrangement, listing.locationText),
-        confidence: 'sure',
-        source: 'linkedin',
+        quote: top
+          ? [top.quote, listingQuote(listing.locationText)]
+              .filter(Boolean)
+              .join(' | ')
+          : listingQuote(listing.arrangement, listing.locationText),
+        confidence: top?.confidence ?? 'sure',
+        arrangementSource: top ? 'description' : 'linkedin',
+        placesSource: 'linkedin',
       },
     ];
   }
-  const place = listing.place;
   // The listing supplies only the place; the description's arrangement and its confidence stand.
   const placed: FactOpening[] =
     silent && place !== null
@@ -139,20 +168,31 @@ function combineOpenings(
           quote: [o.quote, listingQuote(listing.locationText)]
             .filter(Boolean)
             .join(' | '),
-          source: 'linkedin',
+          placesSource: 'linkedin',
         }))
       : described;
-  return placed.map((o) => fillArrangement(o, listing.arrangement));
+  return placed.map((o) => fillArrangement(o, top, listing.arrangement));
 }
 
-/** An opening whose arrangement is only `unstated` takes the listing's (description, else LinkedIn). */
+/**
+ * An opening whose arrangement is only `unstated` takes the description's top-level
+ * arrangement (with that fact's confidence), else the listing's (sure).
+ */
 function fillArrangement(
   o: FactOpening,
-  arrangement: string | null,
+  top: Fact<string> | null,
+  listed: string | null,
 ): FactOpening {
-  if (arrangement === null || o.arrangements.some((a) => a !== UNSTATED))
-    return o;
-  return { ...o, arrangements: [arrangement], source: 'linkedin' };
+  if (o.arrangements.some((a) => a !== UNSTATED)) return o;
+  if (top?.value)
+    return {
+      ...o,
+      arrangements: [top.value],
+      confidence: leastSure(o.confidence, top.confidence),
+      arrangementSource: 'description',
+    };
+  if (listed === null) return o;
+  return { ...o, arrangements: [listed], arrangementSource: 'linkedin' };
 }
 
 function combineArrangement(
@@ -177,23 +217,24 @@ function arrangementConflict(
   listing: ListingFacts,
 ): FactConflict | null {
   if (listing.arrangement === null) return null;
+  const top = statedArrangement(extraction);
+  const stating = extraction.openings.filter((o) =>
+    o.arrangements.some((a) => a !== UNSTATED),
+  );
   const stated = [
-    ...new Set(
-      extraction.openings.flatMap((o) =>
-        o.arrangements.filter((a) => a !== UNSTATED),
-      ),
-    ),
+    ...new Set([
+      ...stating.flatMap((o) => o.arrangements.filter((a) => a !== UNSTATED)),
+      ...(top?.value ? [top.value] : []),
+    ]),
   ];
   if (stated.length === 0 || stated.includes(listing.arrangement)) return null;
+  const quotes = stating.map((o) => o.quote).filter(Boolean);
   return {
     field: 'arrangement',
     listingValue: listing.arrangement,
     descriptionValue: stated,
-    quote: extraction.openings
-      .filter((o) => o.arrangements.some((a) => a !== UNSTATED))
-      .map((o) => o.quote)
-      .filter(Boolean)
-      .join(' | '),
+    // The openings' quotes; the top-level one when no opening has a quote of its own.
+    quote: (quotes.length ? quotes : [top?.quote ?? '']).join(' | '),
     winner: 'description',
   };
 }
@@ -300,6 +341,7 @@ function codeConflict(
 /**
  * The facts the matcher reads: the description wins whenever it states a fact;
  * the listing fills only arrangement, place and salary, and sets `closed`.
+ * Engagement and contract months are carried for display only.
  * Every disagreement is returned as a conflict.
  */
 export function combineFacts(args: {
@@ -323,11 +365,17 @@ export function combineFacts(args: {
     seniority: fromDescription(extraction.seniority),
     yearsRequired: fromDescription(extraction.yearsRequired),
     contractType: fromDescription(extraction.contractType),
+    engagement: fromDescription(extraction.engagement),
+    contractMonths: fromDescription(extraction.contractMonths),
     requiredLanguages: fromDescription(extraction.requiredLanguages),
     workAuthorization: fromDescription(extraction.workAuthorization),
     techStack: fromDescription(extraction.techStack),
     arrangement: combineArrangement(extraction, listing),
-    openings: combineOpenings(described, listing),
+    openings: combineOpenings(
+      described,
+      listing,
+      statedArrangement(extraction),
+    ),
     salary: salary.fact,
     closed: listing.expiresAt !== null && listing.expiresAt <= now,
   };

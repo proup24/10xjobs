@@ -17,7 +17,8 @@ const worldwide = {
   timezones: [],
   quote: '',
   confidence: 'sure',
-  source: 'description',
+  arrangementSource: 'description',
+  placesSource: 'description',
 } as unknown as JobFactsDocument['openings'][number];
 
 const passingDoc = (edit?: (d: JobFactsDocument) => void) =>

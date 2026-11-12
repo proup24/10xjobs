@@ -39,10 +39,15 @@ const sourcedFactSchema = <T extends z.ZodType>(value: T) =>
     quote: z.string(),
   });
 
-/** The processor opening, with where it came from in place of who decided it. */
-const factOpeningSchema = openingSchema
-  .omit({ decidedBy: true })
-  .extend({ source: factSourceSchema });
+/**
+ * The processor opening, with where each part came from in place of who decided it:
+ * its arrangement and its places can come from different sources. `confidence` describes
+ * the description-sourced parts; a part from LinkedIn is sure.
+ */
+const factOpeningSchema = openingSchema.omit({ decidedBy: true }).extend({
+  arrangementSource: factSourceSchema,
+  placesSource: factSourceSchema,
+});
 
 /** A salary whose currency may be unknown (dropped by `cleanCurrency`); amounts are kept. */
 const factSalarySchema = salarySchema.extend({
@@ -59,6 +64,10 @@ export const jobFactsDocumentSchema = z
     seniority: sourcedFactSchema(z.string().min(1)),
     yearsRequired: sourcedFactSchema(rangeSchema),
     contractType: sourcedFactSchema(z.string().min(1)),
+    /** Display only: the matcher never reads it. */
+    engagement: sourcedFactSchema(z.string().min(1)),
+    /** Display only: the matcher never reads it. */
+    contractMonths: sourcedFactSchema(z.number().positive()),
     requiredLanguages: sourcedFactSchema(z.array(languageSchema)),
     workAuthorization: sourcedFactSchema(workAuthorizationSchema),
     techStack: sourcedFactSchema(techStackSchema),

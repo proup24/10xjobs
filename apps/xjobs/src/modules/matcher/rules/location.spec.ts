@@ -19,7 +19,8 @@ const opening = (edit: Partial<Opening>): Opening => ({
   timezones: [],
   quote: '',
   confidence: 'sure',
-  source: 'description',
+  arrangementSource: 'description',
+  placesSource: 'description',
   ...edit,
 });
 const berlin = {
