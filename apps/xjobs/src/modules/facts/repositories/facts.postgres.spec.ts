@@ -129,6 +129,7 @@ describe.skipIf(!url)('facts repository in PostgreSQL', () => {
       ),
       vocab,
       now: t0,
+      descriptionText: null,
     });
     return {
       ...j,
@@ -180,6 +181,7 @@ describe.skipIf(!url)('facts repository in PostgreSQL', () => {
     expect(inputs).toMatchObject({
       extractionId: j.extractionId,
       schemaVersion: 3,
+      descriptionText: 'We build things.',
       listing: {
         workplaceType: 'onsite',
         countryCode: 'FR',
@@ -268,6 +270,41 @@ describe.skipIf(!url)('facts repository in PostgreSQL', () => {
       jobId: j.jobId,
     }).all();
     expect(rows.map((r) => r.field)).toEqual(['salary']);
+  });
+
+  it('markStale also marks a job whose country appears only in its description places', async () => {
+    const city = await job({ countryCode: 'DE' });
+    const country = await job({ countryCode: 'DE' });
+    const elsewhere = await job({ countryCode: 'DE' });
+    for (const j of [city, country, elsewhere]) await repo.save(saved(j));
+    const places = async (
+      j: { jobId: string },
+      list: Record<string, unknown>[],
+    ) =>
+      db.execute(
+        db.raw.sql`UPDATE job_facts SET facts = jsonb_set(facts, '{openings}',
+            jsonb_build_array(jsonb_set(facts->'openings'->0, '{places}', ${JSON.stringify(list)}::jsonb)))
+          WHERE "jobId" = ${j.jobId}::uuid`
+          .affectedCount()
+          .build(),
+      );
+    await places(city, [
+      { kind: 'city', name: 'Lyon', countryCode: 'FR', cityId: null },
+    ]);
+    await places(country, [{ kind: 'country', code: 'FR' }]);
+    await places(elsewhere, [
+      { kind: 'city', name: 'Berlin', countryCode: 'DE', cityId: null },
+      { kind: 'region', code: 'EMEA' },
+    ]);
+    expect(await repo.markStale({ countryCode: 'FR' })).toBe(2);
+    const stale = await db.query(
+      db.raw.sql`SELECT "jobId" FROM job_facts WHERE "builtAt" = '-infinity'`
+        .returnsRow({ jobId: 'pg/uuid@1' })
+        .build(),
+    );
+    expect(stale.map((r) => r.jobId).sort()).toEqual(
+      [city.jobId, country.jobId].sort(),
+    );
   });
 
   it('markStale sets builtAt to -infinity for the country only', async () => {

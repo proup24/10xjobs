@@ -9,6 +9,7 @@ const idx: PlaceIndex = {
     [CITY_A, 'MA'],
     [CITY_B, 'FR'],
   ]),
+  countries: new Set(['MA', 'FR']),
 };
 const profile = exampleProfile();
 

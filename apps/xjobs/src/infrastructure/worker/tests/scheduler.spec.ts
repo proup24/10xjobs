@@ -3,10 +3,12 @@ import { channelJobsConfig } from 'src/infrastructure/jobs/steps/collect';
 import { SWEEP_JOB } from 'src/infrastructure/jobs/steps/ingest/queue.service';
 import { MATCH_SWEEP_JOB } from 'src/infrastructure/jobs/steps/match';
 import { PROCESS_SWEEP_JOB } from 'src/infrastructure/jobs/steps/process';
+import { RATES_REFRESH_JOB } from 'src/infrastructure/jobs/steps/rates';
 import {
   syncCollectionScheduler,
   syncMatchSweepScheduler,
   syncProcessSweepScheduler,
+  syncRatesRefreshScheduler,
   syncSweepScheduler,
 } from '../scheduler';
 
@@ -95,6 +97,7 @@ it('removes every scheduler when schedules are off', async () => {
     [syncSweepScheduler, SWEEP_JOB],
     [syncProcessSweepScheduler, PROCESS_SWEEP_JOB],
     [syncMatchSweepScheduler, MATCH_SWEEP_JOB],
+    [syncRatesRefreshScheduler, RATES_REFRESH_JOB],
   ] as const) {
     const q = {
       upsertJobScheduler: vi.fn(async () => undefined),
@@ -104,4 +107,19 @@ it('removes every scheduler when schedules are off', async () => {
     expect(q.removeJobScheduler).toHaveBeenCalledWith(id);
     expect(q.upsertJobScheduler).not.toHaveBeenCalled();
   }
+});
+
+describe('syncRatesRefreshScheduler', () => {
+  it('schedules the refresh daily at 03:00 UTC', async () => {
+    const q = {
+      upsertJobScheduler: vi.fn(async () => undefined),
+      removeJobScheduler: vi.fn(async () => true),
+    };
+    expect(await syncRatesRefreshScheduler(q as never, true)).toBe('scheduled');
+    expect(q.upsertJobScheduler).toHaveBeenCalledWith(
+      'refresh',
+      { pattern: '0 3 * * *', tz: 'UTC' },
+      { name: 'refresh', opts: { attempts: 1 } },
+    );
+  });
 });

@@ -14,6 +14,7 @@ import { FactsModule } from 'src/modules/facts';
 import { IngestModule } from 'src/modules/ingest';
 import { MatcherModule } from 'src/modules/matcher';
 import { ProcessorModule } from 'src/modules/processor';
+import { RatesModule } from 'src/modules/rates';
 import { StorageModule } from 'src/modules/storage';
 import { CollectionWorkerService } from './collection.service';
 import { InfrastructureWorkerService } from './infrastructure.service';
@@ -44,6 +45,7 @@ import { WorkerService } from './worker.service';
     ProcessorModule,
     FactsModule,
     MatcherModule,
+    RatesModule,
     StorageModule,
   ],
   providers: [
@@ -60,8 +62,7 @@ import { WorkerService } from './worker.service';
       useFactory: (
         config: ConfigService<WorkerProcessEnvironmentVariables, true>,
       ) =>
-        config.get('NODE_ENV', { infer: true }) ===
-        EnvironmentType.development,
+        config.get('NODE_ENV', { infer: true }) === EnvironmentType.development,
     },
     WorkerService,
     WorkerRuntimeService,

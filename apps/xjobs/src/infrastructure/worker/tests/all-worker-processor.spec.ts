@@ -90,10 +90,12 @@ it('runs the processor with the others when the OpenRouter key is set', async ()
       'ingest',
       'process',
       'match',
+      'rates',
       'collect-linkedin-job-board',
     ]);
     expect(created.schedulers).toContain('process:sweep');
     expect(created.schedulers).toContain('match:sweep');
+    expect(created.schedulers).toContain('rates:refresh');
   } finally {
     await module.close();
   }

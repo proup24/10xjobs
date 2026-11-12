@@ -43,6 +43,20 @@ export function exampleProfile(): MatchProfile {
       skill('docker', 7, 6),
       skill('aws', 6, 5),
     ],
+    salaryMin: null,
+    salaryCurrency: null,
+    salaryPeriod: null,
+    acceptsAnyCurrency: true,
+    acceptedCurrencies: [],
+    contractTypes: ['full_time'],
+    languages: [{ lang: 'en', level: 'fluent' }],
+    eligibility: {
+      authorizations: [],
+      residenceCountry: null,
+      acceptsSponsorship: null,
+    },
+    updatedAt: new Date('2026-11-01T00:00:00Z'),
+    eligibilityVersion: 0,
   };
 }
 
@@ -80,6 +94,7 @@ export function factsDoc(
     listing: listingFacts(EMPTY_LISTING, EMPTY_VOCAB),
     vocab: EMPTY_VOCAB,
     now: new Date('2026-11-12T00:00:00Z'),
+    descriptionText: null,
   });
   const doc = structuredClone(facts);
   edit?.(doc);

@@ -72,10 +72,56 @@ describe('checkLines', () => {
     );
     expect(lines[3].text).toBe('Job stack covered at 0.713: TypeScript, React');
   });
+  it('words the six newer rules, each with its plain-English label', () => {
+    const newer = [
+      {
+        rule: 'salary',
+        outcome: 'pass',
+        reason:
+          'job pays about 95000, at or above your minimum 90000 USD per year',
+      },
+      { rule: 'currency', outcome: 'pass', reason: 'you accept any currency' },
+      {
+        rule: 'contractType',
+        outcome: 'unknown',
+        reason: 'job states no contract type',
+      },
+      {
+        rule: 'languages',
+        outcome: 'pass',
+        reason: 'job requires no language',
+      },
+      {
+        rule: 'postingLanguage',
+        outcome: 'pass',
+        reason: 'posting is written in en, which you speak',
+      },
+      {
+        rule: 'workAuthorization',
+        outcome: 'unknown',
+        reason: 'job states no work authorization requirement',
+      },
+    ];
+    const lines = checkLines([...checks, ...newer], labels);
+    expect(lines.map((l) => [l.rule, l.label])).toEqual([
+      ['position', 'Position'],
+      ['seniority', 'Seniority'],
+      ['location', 'Location'],
+      ['stack', 'Stack'],
+      ['salary', 'Salary'],
+      ['currency', 'Currency'],
+      ['contractType', 'Contract type'],
+      ['languages', 'Languages'],
+      ['postingLanguage', 'Posting language'],
+      ['workAuthorization', 'Work authorization'],
+    ]);
+    expect(lines[5].text).toBe('You accept any currency');
+    expect(lines[9].mark).toBe('unknown');
+  });
   it('skips an unknown rule and non-array input', () => {
     const extra = [
       ...checks,
-      { rule: 'languages', outcome: 'pass', reason: 'x' },
+      { rule: 'engagement', outcome: 'pass', reason: 'x' },
     ];
     expect(checkLines(extra, labels)).toHaveLength(4);
     expect(checkLines(null, labels)).toEqual([]);
@@ -85,7 +131,7 @@ describe('checkLines', () => {
 describe('notCheckedText', () => {
   it('lists what the matcher does not check', () => {
     expect(notCheckedText()).toBe(
-      'Not checked yet: salary, contract type, engagement, required languages, work authorization and residence. Check these in the post.',
+      'Not checked yet: engagement. Check it in the post.',
     );
   });
 });

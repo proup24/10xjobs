@@ -75,6 +75,12 @@ export const jobFactsDocumentSchema = z
     openings: z.array(factOpeningSchema).min(1),
     salary: sourcedFactSchema(factSalarySchema),
     closed: z.boolean(),
+    /** Detected from the description text by code; never from a model. */
+    postingLanguages: z.strictObject({
+      /** ISO 639-1. */
+      codes: z.array(z.string().length(2)),
+      confident: z.boolean(),
+    }),
   })
   .superRefine((doc, ctx) => {
     const years = doc.yearsRequired.value;

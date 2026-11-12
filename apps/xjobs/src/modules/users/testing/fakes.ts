@@ -23,6 +23,7 @@ export class FakeUsersRepository extends UsersRepository {
       address: null,
       residenceCountry: null,
       acceptsSponsorship: null,
+      eligibilityVersion: 0,
       createdAt: now,
       updatedAt: now,
     };

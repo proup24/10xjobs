@@ -36,6 +36,10 @@
       "model": "EngagementTerm",
       "namespace": "public"
     },
+    "exchange_rates": {
+      "model": "ExchangeRate",
+      "namespace": "public"
+    },
     "iso_currencies": {
       "model": "IsoCurrency",
       "namespace": "public"
@@ -1450,6 +1454,50 @@
               "table": "engagements"
             }
           },
+          "ExchangeRate": {
+            "fields": {
+              "currency": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "fetchedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "perUsd": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "currency": {
+                  "column": "currency"
+                },
+                "fetchedAt": {
+                  "column": "fetchedAt"
+                },
+                "perUsd": {
+                  "column": "perUsd"
+                }
+              },
+              "namespaceId": "public",
+              "table": "exchange_rates"
+            }
+          },
           "IsoCurrency": {
             "fields": {
               "code": {
@@ -2318,6 +2366,13 @@
                   }
                 }
               },
+              "eligibilityVersion": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
               "extractionId": {
                 "nullable": false,
                 "type": {
@@ -2365,6 +2420,16 @@
                 "type": {
                   "codecId": "pg/uuid@1",
                   "kind": "scalar"
+                }
+              },
+              "profileUpdatedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
                 }
               },
               "reviewField": {
@@ -2496,6 +2561,9 @@
                 "decidedAt": {
                   "column": "decidedAt"
                 },
+                "eligibilityVersion": {
+                  "column": "eligibilityVersion"
+                },
                 "extractionId": {
                   "column": "extractionId"
                 },
@@ -2516,6 +2584,9 @@
                 },
                 "profileId": {
                   "column": "profileId"
+                },
+                "profileUpdatedAt": {
+                  "column": "profileUpdatedAt"
                 },
                 "reviewField": {
                   "column": "reviewField"
@@ -5927,6 +5998,13 @@
                   }
                 }
               },
+              "eligibilityVersion": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
               "id": {
                 "nullable": false,
                 "type": {
@@ -6018,6 +6096,9 @@
                 },
                 "createdAt": {
                   "column": "createdAt"
+                },
+                "eligibilityVersion": {
+                  "column": "eligibilityVersion"
                 },
                 "id": {
                   "column": "id"
@@ -6585,6 +6666,11 @@
               "kind": "rls",
               "namespaceId": "public",
               "tableName": "engagements"
+            },
+            "exchange_rates": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "exchange_rates"
             },
             "iso_currencies": {
               "kind": "rls",
@@ -7573,6 +7659,36 @@
               },
               "uniques": []
             },
+            "exchange_rates": {
+              "columns": {
+                "currency": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "fetchedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "perUsd": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "currency"
+                ]
+              },
+              "uniques": []
+            },
             "iso_currencies": {
               "columns": {
                 "code": {
@@ -8409,6 +8525,11 @@
                     "precision": 3
                   }
                 },
+                "eligibilityVersion": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
                 "extractionId": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
@@ -8443,6 +8564,14 @@
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
                   "nullable": false
+                },
+                "profileUpdatedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
                 },
                 "reviewField": {
                   "codecId": "pg/text@1",
@@ -11605,6 +11734,15 @@
                     "precision": 3
                   }
                 },
+                "eligibilityVersion": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 0
+                  },
+                  "nullable": false
+                },
                 "id": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
@@ -11847,7 +11985,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "7a9202b8254003df747c0106c86d0819f4e33a3cb129ff331fc2f1a9fafd5a95"
+    "storageHash": "c7e224b8457ff39be47ce7029466d362a15f7c5c9d93c0db4aa43ab160462815"
   },
   "execution": {
     "executionHash": "9c0694a80d5f7adf167bc3288d7926267ba4776ae99e720efce6b64a0f440673",

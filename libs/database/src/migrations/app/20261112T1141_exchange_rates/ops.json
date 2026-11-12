@@ -1,0 +1,90 @@
+[
+  {
+    "id": "table.exchange_rates",
+    "label": "Create table \"exchange_rates\"",
+    "summary": "Creates table \"exchange_rates\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "exchange_rates"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"exchange_rates\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"exchange_rates\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"exchange_rates\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"exchange_rates\"",
+        "sql": "CREATE TABLE \"public\".\"exchange_rates\" (\n  \"currency\" text NOT NULL,\n  \"fetchedAt\" timestamptz(3) NOT NULL,\n  \"perUsd\" numeric NOT NULL,\n  PRIMARY KEY (\"currency\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"exchange_rates\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"exchange_rates\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"exchange_rates\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.exchange_rates",
+    "label": "Enable row-level security on \"exchange_rates\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "exchange_rates"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"exchange_rates\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "exchange_rates"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"exchange_rates\"",
+        "sql": "ALTER TABLE \"public\".\"exchange_rates\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"exchange_rates\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "exchange_rates"
+        ]
+      }
+    ]
+  }
+]

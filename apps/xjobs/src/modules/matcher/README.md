@@ -14,12 +14,12 @@ Design: `docs/superpowers/specs/2026-11-08-matching-design.md`.
    | 1    | `loadCandidate`: the matchable job's current extraction and its `needsReview`, or `not_matchable` (nothing stored).                            |
    | 2    | `FactsService.build`: builds and stores the job's facts; a non-v3 extraction is `not_matchable`, and closed facts return `closed` (rows kept). |
    | 3    | `listPublishedProfiles`: the published profiles with skills; only those with a row missing or decided on other facts, unless `force`.          |
-   | 4    | `decide` (pure): runs all four rules for each profile, with no early exit, so the whole picture is stored.                                     |
+   | 4    | `decide` (pure): runs every check for each profile, with no early exit, so the whole picture is stored (the checks are listed under Rules).    |
    | 5    | `upsertMatches`: one row per `(profile, job)`, with the `factsHash` it read. `decidedAt` moves only when the outcome changes.                  |
 
 ## Code map
 
-- `rules/`: pure functions, one per criterion (`position.ts`, `seniority.ts`, `location.ts` with `places.ts`, `stack.ts`) and `decide.ts`. They take everything as arguments, so they run with no database.
+- `rules/`: pure functions, one per criterion (`position.ts`, `seniority.ts`, `location.ts` with `places.ts`, `stack.ts`, `salary.ts` with `convert.ts`, `contract.ts`, `languages.ts`, `posting-language.ts`, `work-authorization.ts`) and `decide.ts`. They take everything as arguments, so they run with no database.
 - `repositories/`: every read and write (`matcher.repository.ts`). `testing/memory-matcher.repository.ts` is the in-memory fake.
 - `services/matcher.service.ts`: the entry point. It caches the place hierarchy and the `implies` map for 10 minutes (they change only through `db:vocab`).
 - `config/matcher.config.ts`: `MATCHER_VERSION`, the years margin, the minimum stack score, the backfill window and the sweep settings.
@@ -28,7 +28,9 @@ Design: `docs/superpowers/specs/2026-11-08-matching-design.md`.
 
 ## Rules
 
-The decision for one (profile, job): `rejected` when at least one check fails on a sure value; otherwise `review` when a check fails only on an unsure value (the first such check, in rule order, is recorded as `reviewRule` and `reviewField`); otherwise `qualified`. A qualified decision is `unverified` when at least one check is `unknown` or rests on an unsure value, or the extraction has `needsReview`. Each check carries `unsure` (and `unsureField`): position on `position` or `isSoftwareEngineeringRole`, seniority on `seniority` or, through the years fallback, `yearsRequired`, location on `openings` (a failing opening is unsure when the part that decided it, its arrangement, places or time zones, came from the description and the opening is unsure; a part from LinkedIn is sure; any unsure failing opening makes the failure unsure, since that opening might fit), and stack on `techStack` (the fact is unsure, or a main or must unit that decided the failure has an unsure requirement). The "neither the role nor the stack" failure is sure. An unsure value never rejects. A fact the job does not state (`unstated`, `null`, no places) is `unknown`, never a rejection on its own.
+The checks, in order: `position`, `seniority`, `location`, `stack`, `salary`, `currency`, `contractType`, `languages`, `postingLanguage`, `workAuthorization`.
+
+The decision for one (profile, job): `rejected` when at least one check fails on a sure value; otherwise `review` when a check fails only on an unsure value (the first such check, in rule order, is recorded as `reviewRule` and `reviewField`); otherwise `qualified`. A qualified decision is `unverified` when at least one check is `unknown` or rests on an unsure value, or the extraction has `needsReview`. Each check carries `unsure` (and `unsureField`): position on `position` or `isSoftwareEngineeringRole`, seniority on `seniority` or, through the years fallback, `yearsRequired`, location on `openings` (a failing opening is unsure when the part that decided it, its arrangement, places or time zones, came from the description and the opening is unsure; a part from LinkedIn is sure; any unsure failing opening makes the failure unsure, since that opening might fit), stack on `techStack` (the fact is unsure, or a main or must unit that decided the failure has an unsure requirement), salary and currency on `salary`, contract type on `contractType`, languages on `requiredLanguages`, posting language never (the detector's doubt is `unknown`), and work authorization on `workAuthorization` (its requirements and sponsorship share one confidence, so an unsure fact makes both a failure and a pass unsure). The "neither the role nor the stack" failure is sure. An unsure value never rejects. A fact the job does not state (`unstated`, `null`, no places) is `unknown`, never a rejection on its own, except where there is nothing to check: no salary minimum on the profile, no currency stated, no language required, no work authorization requirement. Those are a sure `pass` with that reason, so they do not mark a match unverified (user decision, 2026-11-12); `unknown` is kept for real doubts.
 
 **Position** (first row that applies decides):
 
@@ -58,7 +60,7 @@ Years fallback: `fail` when `yearsRequired.min` is more than the profile's years
 2. Places, per kept arrangement: no job places is `unknown`; some job place overlaps some profile place is `pass`; otherwise `fail` for strictness `limit` or `label`, `unknown` for `mention`. Overlap means one place contains the other in worldwide ⊃ region ⊃ country ⊃ city; two cities overlap only on the same id; a job city without a `cityId` is compared by country and gives at best `unknown`.
 3. Time zones (remote only): if the opening lists time zones and none overlaps the profile's `[timezoneMin, timezoneMax]`, the remote arrangement `fail`s.
 
-Residence and work authorization are not checked.
+Residence and work authorization are the work authorization rule's (below), not location's.
 
 **Tech stack.** A requirement is covered when its tag is one of the profile's skills, or is implied by one (`implies`); a requirement without a code is ignored and listed as not comparable. Requirements sharing a `group` are one unit, covered when at least `min` members are. The score over the `main` and `must` units is `sum(importance × mastery/10 if covered, else 0) / sum(importance)`; `nice` units are listed but not scored.
 
@@ -69,6 +71,35 @@ Residence and work authorization are not checked.
 | score below `MIN_STACK_SCORE` (0.4)         | `fail`, listing the uncovered units, or saying mastery is low when none is uncovered |
 | otherwise                                   | `pass`                                                                               |
 
+**Salary** compares the job's best pay (`max`, else `min`), converted to the profile's currency and period with the daily rates, to `salaryMin`: `pass` at or above it, `fail` more than `SALARY_MARGIN` (10%) below it, `unknown` within the margin. It is `pass` when the profile sets no minimum (nothing to check), and `unknown` when the job states no salary or no amount, when the pay can't be converted (no rate, or amounts without a currency), and when the best pay is 0 or less.
+
+**Currency**: `pass` when the profile accepts any currency (never unsure) or the job's currency is one it accepts, `fail` when not, and `pass` when the job states no currency (nothing to check; amounts without a currency leave the salary check `unknown`).
+
+**Contract type**: `pass` when the job's contract type is in the profile's `contractTypes`, `fail` when not, `unknown` when `null` or `unstated`.
+
+**Required languages**: `pass` when the profile holds every required language at or above its level (`working` < `fluent` < `native`), `fail` when one is missing or held lower, and `pass` when none is required (nothing to check).
+
+**Posting language** reads `postingLanguages`, detected from the description text by code with `franc` (pinned; bump `FACTS_VERSION` on any upgrade or threshold change). Each paragraph (a line of 50+ characters, or a run of shorter lines) counts only when franc's runner-up scores at least 0.06 below its winner, so a paragraph mixing languages counts for none; Galician is not detected (franc mistakes European Portuguese for it). A language is kept when its paragraphs hold at least 25% of the recognised characters. The check is `pass` when the profile speaks one of the posting's languages, at any level (`no`, `nb` and `nn` count as one language, as do `hr`, `sr` and `bs`), `fail` when it speaks none, and `unknown` when the detection is not confident: the text, or the part of it recognised with confidence, is under 200 characters. It is never unsure.
+
+**Work authorization** reads the user's eligibility (`work_authorizations`, `users.residenceCountry`, `users.acceptsSponsorship`), the same for each of their profiles. Each requirement the job states is met by:
+
+| Requirement   | Met by                                        |
+| ------------- | --------------------------------------------- |
+| `citizenship` | citizenship                                   |
+| `work-permit` | work permit or citizenship                    |
+| `residency`   | residency, citizenship, or `residenceCountry` |
+| `clearance`   | clearance                                     |
+
+for a place that covers the required one (codes compared upper-cased): a `GLOBAL` or `WORLDWIDE` requirement is covered by any place; the same code; a required country inside the held place; or a required region that shares a country with the held place (a posting naming a region asks for one of its countries, so `FR` or `EU` meets an `EEA` requirement). A two-letter code that is a known region (`EU`) is a region; one is a country only when it is an approved country, so a non-ISO code (`UK`) can't be compared. A required region the index doesn't know can't be compared, so that requirement is `unknown` unless an authorization names the same code.
+
+| Job                                                                                                   | Outcome   |
+| ----------------------------------------------------------------------------------------------------- | --------- |
+| no requirement (nothing to check)                                                                     | `pass`    |
+| every requirement met                                                                                 | `pass`    |
+| unmet ones are all `work-permit` or `residency`, `sponsorship: yes`, and the user accepts sponsorship | `pass`    |
+| any other unmet requirement (silent sponsorship and `acceptsSponsorship` null count as no)            | `fail`    |
+| otherwise (a requirement can't be compared)                                                           | `unknown` |
+
 ## Matchable jobs
 
 One definition serves the worker, the sweep and `db:rematch`: the job is an active LinkedIn job board job (`status = 'active'`, `kind = 'job'`), `processingStatus = 'processed'`, not closed, `lastSeenAt` within `MATCH_BACKFILL_DAYS` (30), and its current extraction has `schemaVersion` 3. Older extractions are not matched; `db:reprocess` brings them to the current version. Rows of closed jobs (the `closed` flag, distinct from `status`) and of jobs that age out of the window stay; rows of merged jobs (`status <> 'active'`) are deleted by the sweep.
@@ -76,12 +107,14 @@ One definition serves the worker, the sweep and `db:rematch`: the job is an acti
 ## When it runs
 
 - After processing: the processor hands the job to the `match` queue.
-- Every 60 s: the sweep covers lost nudges, stale facts (new extractions, listing changes, expiry, a `FACTS_VERSION` bump), new published profiles and a `MATCHER_VERSION` bump.
+- Every 60 s: the sweep covers lost nudges, stale facts (new extractions, listing changes, expiry, a `FACTS_VERSION` bump, a city change through `db:vocab`), new published profiles, profile edits, eligibility changes and a `MATCHER_VERSION` bump.
 - By hand: `db:rematch`, or the testing endpoints.
 
 ## The `job_matches` table
 
-One row per `(profileId, jobId)`, upserted (no history). Columns: `userId`, `profileId`, `jobId`, `extractionId` (the extraction the facts were built from), `factsHash` (the facts the decision read; a row is stale when it differs from `job_facts.factsHash`, or its `extractionId` is not the job's current extraction, whose `needsReview` the decision reads), `matcherVersion`, `outcome` (`qualified` | `rejected` | `review`), `unverified` (only on `qualified`), `reviewRule` and `reviewField` (set exactly on `review`), `stackScore` (0 to 1, nullable), `checks` (jsonb, one entry per rule: `rule`, `outcome`, `jobValue`, `profileValue`, `reason`, `unsure`, `unsureField`, `detail`), `decidedAt` (when `outcome` last changed), timestamps. The owner can `SELECT` their rows through RLS; only the engine writes.
+One row per `(profileId, jobId)`, upserted (no history). Columns: `userId`, `profileId`, `jobId`, `extractionId` (the extraction the facts were built from), `factsHash` (the facts the decision read; a row is stale when it differs from `job_facts.factsHash`, or its `extractionId` is not the job's current extraction, whose `needsReview` the decision reads), `matcherVersion`, `profileUpdatedAt` and `eligibilityVersion` (the profile's `updatedAt` and the user's `users.eligibilityVersion` the decision read; a row is stale when either is older than the current value, and null on rows decided before they were recorded, which the `MATCHER_VERSION` 5 bump already made stale), `outcome` (`qualified` | `rejected` | `review`), `unverified` (only on `qualified`), `reviewRule` and `reviewField` (set exactly on `review`), `stackScore` (0 to 1, nullable), `checks` (jsonb, one entry per rule: `rule`, `outcome`, `jobValue`, `profileValue`, `reason`, `unsure`, `unsureField`, `detail`), `decidedAt` (when `outcome` last changed), timestamps. The owner can `SELECT` their rows through RLS; only the engine writes.
+
+Triggers bump `users.eligibilityVersion` on any insert, update or delete of the user's `work_authorizations`, and on a change of `residenceCountry` or `acceptsSponsorship`; users cannot write the version themselves (they may update only `name`, `residenceCountry` and `acceptsSponsorship`). `profileUpdatedAt` catches every profile change only because published profiles are frozen: RLS `profiles_owner_update_draft` lets the owner update only drafts, the setup RPCs work on drafts only, and the engine refuses edits. Phase 2 slice 07 (edit a published profile) must add a column-scoped trigger or a profile version that leaves out the resume columns and touches the profile when its `profile_skills` change.
 
 ## Running it
 
@@ -98,7 +131,7 @@ Served by the API (`npx nx serve xjobs`), local only, with `XJOBS_OPERATOR_ENDPO
 
 ## Rematching
 
-After a rule or threshold change, bump `MATCHER_VERSION` in `config/matcher.config.ts` first, so the sweep also treats every older row as stale and nothing is missed if the queue loses a message. Do the same, or run `db:rematch -- --all`, after vocabulary changes that affect matching (`region_countries`, cities, tech tag `implies`), because the matcher reads them but the rows do not notice. Then re-decide:
+After a rule or threshold change, bump `MATCHER_VERSION` in `config/matcher.config.ts` first, so the sweep also treats every older row as stale and nothing is missed if the queue loses a message. Do the same, or run `db:rematch -- --all`, after vocabulary changes that affect matching (`region_countries`, tech tag `implies`), because the matcher reads them but the rows do not notice. A city approve, reject or alias through `db:vocab` needs neither: it marks stale the facts of the jobs listed in the city's country or whose openings name it, and the sweep rebuilds them and re-decides the jobs whose facts changed. Then re-decide:
 
 ```sh
 pnpm --filter @xjobs/xjobs db:rematch -- --all

@@ -11,6 +11,7 @@ import { EXTRACTION_SCHEMA_VERSION } from 'src/modules/processor/schema';
 import { fixtureDocument } from 'src/modules/processor/schema/fixture.testing';
 import { FACTS_VERSION } from 'src/modules/facts/config/facts.config';
 import { MATCHER_VERSION } from '../config/matcher.config';
+import { PrismaRatesRepository } from 'src/modules/rates/rates.repository';
 import {
   PrismaMatcherRepository,
   type StoredMatch,
@@ -207,7 +208,11 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
     );
   }
 
-  async function profile(): Promise<{ id: string; userId: string }> {
+  async function profile(): Promise<{
+    id: string;
+    userId: string;
+    updatedAt: Date;
+  }> {
     const userId = randomUUID();
     await db.execute(
       db.raw
@@ -255,14 +260,20 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
       mastery: 8,
       importance: 9,
     } as never);
-    return { id: row.id, userId };
+    return { id: row.id, userId, updatedAt: row.updatedAt };
   }
 
   const decision = (
     over: Partial<StoredMatch> = {},
   ): Omit<
     StoredMatch,
-    'profileId' | 'userId' | 'jobId' | 'extractionId' | 'factsHash'
+    | 'profileId'
+    | 'userId'
+    | 'jobId'
+    | 'extractionId'
+    | 'factsHash'
+    | 'profileUpdatedAt'
+    | 'eligibilityVersion'
   > => ({
     outcome: 'qualified',
     unverified: false,
@@ -283,7 +294,7 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
   });
 
   const row = (
-    p: { id: string; userId: string },
+    p: { id: string; userId: string; updatedAt: Date },
     j: { id: string; extractionId: string },
     over: Partial<StoredMatch> = {},
   ): StoredMatch => ({
@@ -292,6 +303,8 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
     jobId: j.id,
     extractionId: j.extractionId,
     factsHash: 'h1',
+    profileUpdatedAt: p.updatedAt,
+    eligibilityVersion: 0,
     ...decision(),
     ...over,
   });
@@ -314,19 +327,22 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
       slowQueryMs: 60000,
       logQueries: false,
     });
-    repo = new PrismaMatcherRepository({ db } as DatabaseService);
+    repo = new PrismaMatcherRepository(
+      { db } as DatabaseService,
+      new PrismaRatesRepository({ db } as DatabaseService),
+    );
     await sql`TRUNCATE processing_attempts, job_extractions, cities, region_countries, tech_tags, regions, countries, role_kinds, seniorities, arrangements, contract_types, engagements, junk_flags CASCADE`;
     await db.transaction((tx) =>
       processorListsSeed.run(tx, {} as SeedEnvironmentVariables),
     );
     // Profiles name their languages from this list; the test database starts empty.
-    await sql`INSERT INTO iso_languages (code, label) VALUES ('en', 'English') ON CONFLICT (code) DO NOTHING`;
+    await sql`INSERT INTO iso_languages (code, label) VALUES ('en', 'English'), ('fr', 'French') ON CONFLICT (code) DO NOTHING`;
   }, 120_000);
   afterAll(async () => {
     await db?.close();
   });
   beforeEach(async () => {
-    await sql`TRUNCATE job_matches, job_fact_conflicts, job_facts, profile_skills, profiles, processing_attempts, job_extractions, normalized_job_sources, normalized_jobs, normalized_versions, raw_item_sightings, raw_item_versions, raw_items, collection_batches, search_segment_runs CASCADE`;
+    await sql`TRUNCATE job_matches, work_authorizations, job_fact_conflicts, job_facts, profile_skills, profiles, processing_attempts, job_extractions, normalized_job_sources, normalized_jobs, normalized_versions, raw_item_sightings, raw_item_versions, raw_items, collection_batches, search_segment_runs CASCADE`;
   });
 
   describe('loadCandidate', () => {
@@ -387,6 +403,8 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
         timezoneMin: -60,
         timezoneMax: 180,
         skills: [{ technology: 'python', mastery: 8, importance: 9 }],
+        updatedAt: p.updatedAt,
+        eligibilityVersion: 0,
       });
       const stale = {
         jobId: j.id,
@@ -411,6 +429,62 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
       ).toHaveLength(1);
     });
 
+    it("loads contract types, languages and the user's eligibility", async () => {
+      const p = await profile();
+      const other = await profile();
+      await db.orm.public.Profile.where({ id: p.id }).updateAll({
+        contractTypes: ['full_time', 'contract'],
+        languages: [
+          { lang: 'en', level: 'fluent' },
+          { lang: 'fr', level: 'native' },
+        ],
+      } as never);
+      await db.orm.public.User.where({ id: p.userId }).updateAll({
+        residenceCountry: 'MA',
+        acceptsSponsorship: true,
+      } as never);
+      for (const [kind, place] of [
+        ['citizenship', 'MA'],
+        ['work-permit', 'EU'],
+      ])
+        await db.orm.public.WorkAuthorization.create({
+          userId: p.userId,
+          kind,
+          place,
+        } as never);
+      const byId = new Map(
+        (await repo.listPublishedProfiles()).map((x) => [x.id, x]),
+      );
+      expect(byId.get(p.id)).toMatchObject({
+        contractTypes: ['full_time', 'contract'],
+        languages: [
+          { lang: 'en', level: 'fluent' },
+          { lang: 'fr', level: 'native' },
+        ],
+        eligibility: {
+          residenceCountry: 'MA',
+          acceptsSponsorship: true,
+        },
+      });
+      expect(
+        [...(byId.get(p.id)?.eligibility.authorizations ?? [])].sort((a, b) =>
+          a.kind.localeCompare(b.kind),
+        ),
+      ).toEqual([
+        { kind: 'citizenship', place: 'MA' },
+        { kind: 'work-permit', place: 'EU' },
+      ]);
+      expect(byId.get(other.id)).toMatchObject({
+        contractTypes: ['full_time'],
+        languages: [{ lang: 'en', level: 'fluent' }],
+        eligibility: {
+          authorizations: [],
+          residenceCountry: null,
+          acceptsSponsorship: null,
+        },
+      });
+    });
+
     it('skips drafts', async () => {
       const p = await profile();
       await db.orm.public.Profile.where({ id: p.id }).updateAll({
@@ -422,9 +496,11 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
   });
 
   describe('loadContext', () => {
-    it('reads regions, cities and approved tech implications', async () => {
+    it('reads regions, cities, approved countries and tech implications', async () => {
       const ctx = await repo.loadContext();
       expect(ctx.places.countriesOfRegion.size).toBeGreaterThan(0);
+      expect(ctx.places.countries.has('FR')).toBe(true);
+      expect(ctx.places.countries.has('UK')).toBe(false);
       expect(ctx.implies.has('nestjs')).toBe(true);
     });
   });
@@ -550,6 +626,71 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
       expect(await repo.listStaleJobs(10)).toEqual([j.id]);
     });
 
+    it('a profile edit makes its rows stale', async () => {
+      const p = await profile();
+      const other = await profile();
+      const j = await job();
+      await facts(j);
+      await repo.upsertMatches([row(p, j), row(other, j)]);
+      expect(await repo.listStaleJobs(10)).toEqual([]);
+      await db.orm.public.Profile.where({ id: p.id }).updateAll({
+        updatedAt: new Date(p.updatedAt.getTime() + 1000),
+      } as never);
+      expect(await repo.listStaleJobs(10)).toEqual([j.id]);
+      const stale = await repo.listPublishedProfiles({
+        onlyStaleFor: {
+          jobId: j.id,
+          factsHash: 'h1',
+          extractionId: j.extractionId,
+        },
+      });
+      expect(stale.map((x) => x.id)).toEqual([p.id]);
+      // Decided again on the edited profile, as the service records it.
+      for (const edited of stale)
+        await repo.upsertMatches([
+          row({ ...p, updatedAt: edited.updatedAt }, j),
+        ]);
+      expect(await repo.listStaleJobs(10)).toEqual([]);
+    });
+
+    it("an eligibility bump makes the user's rows stale", async () => {
+      const p = await profile();
+      const other = await profile();
+      const j = await job();
+      await facts(j);
+      await repo.upsertMatches([row(p, j), row(other, j)]);
+      expect(await repo.listStaleJobs(10)).toEqual([]);
+      // The work_authorizations trigger bumps users.eligibilityVersion.
+      await db.orm.public.WorkAuthorization.create({
+        userId: p.userId,
+        kind: 'citizenship',
+        place: 'MA',
+      } as never);
+      expect(await repo.listStaleJobs(10)).toEqual([j.id]);
+      const stale = await repo.listPublishedProfiles({
+        onlyStaleFor: {
+          jobId: j.id,
+          factsHash: 'h1',
+          extractionId: j.extractionId,
+        },
+      });
+      expect(stale.map((x) => x.id)).toEqual([p.id]);
+      expect(stale[0]?.eligibilityVersion).toBe(1);
+      await repo.upsertMatches([row(p, j, { eligibilityVersion: 1 })]);
+      expect(await repo.listStaleJobs(10)).toEqual([]);
+    });
+
+    it('a row without a recorded profile time or eligibility version is not stale by those rules', async () => {
+      const p = await profile();
+      const j = await job();
+      await facts(j);
+      await repo.upsertMatches([row(p, j)]);
+      await sql`UPDATE job_matches SET "profileUpdatedAt" = NULL, "eligibilityVersion" = NULL`;
+      await sql`UPDATE users SET "eligibilityVersion" = 3`;
+      await sql`UPDATE profiles SET "updatedAt" = now() + interval '1 day'`;
+      expect(await repo.listStaleJobs(10)).toEqual([]);
+    });
+
     it('ignores unmatchable jobs and respects the limit', async () => {
       await profile();
       await job({ closed: true });
@@ -623,9 +764,15 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
         stackScore: 0.5,
       });
       expect(stored?.checks).toHaveLength(1);
-      expect((await matchRow(p.id, j.id))?.matcherVersion).toBe(
-        MATCHER_VERSION,
-      );
+      expect(await matchRow(p.id, j.id)).toMatchObject({
+        matcherVersion: MATCHER_VERSION,
+        profileUpdatedAt: p.updatedAt,
+        eligibilityVersion: 0,
+      });
+      expect(stored).toMatchObject({
+        profileUpdatedAt: p.updatedAt,
+        eligibilityVersion: 0,
+      });
     });
 
     it('reads a null stack score back as null and orders by profile', async () => {

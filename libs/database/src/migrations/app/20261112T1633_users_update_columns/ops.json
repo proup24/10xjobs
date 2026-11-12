@@ -1,0 +1,24 @@
+[
+  {
+    "id": "grants.users_update_columns",
+    "invariantId": "users-update-columns",
+    "label": "Limit authenticated updates on users to name, residenceCountry and acceptsSponsorship",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "users"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "revoke table-level updates, grant the user-editable columns",
+        "sql": "REVOKE UPDATE ON public.users FROM authenticated, anon;\nGRANT UPDATE (\"name\", \"residenceCountry\", \"acceptsSponsorship\") ON public.users TO authenticated;"
+      }
+    ],
+    "postcheck": []
+  }
+]

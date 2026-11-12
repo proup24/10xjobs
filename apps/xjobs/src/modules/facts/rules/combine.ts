@@ -20,6 +20,7 @@ import type {
 } from '../schema/facts';
 import { cleanCurrency } from './currency';
 import type { ListingFacts } from './listing';
+import { detectPostingLanguages } from './posting-language';
 
 export interface FactConflict {
   field: 'arrangement' | 'places' | 'salary' | 'seniority' | 'contractType';
@@ -367,7 +368,8 @@ function codeConflict(
 /**
  * The facts the matcher reads: the description wins whenever it states a fact;
  * the listing fills only arrangement, place and salary, and sets `closed`.
- * Engagement and contract months are carried for display only.
+ * Engagement and contract months are carried for display only. The posting's languages
+ * are detected from `descriptionText` (null or short text is not confident).
  * Every disagreement is returned as a conflict.
  */
 export function combineFacts(args: {
@@ -375,8 +377,9 @@ export function combineFacts(args: {
   listing: ListingFacts;
   vocab: PlaceVocabulary;
   now: Date;
+  descriptionText: string | null;
 }): { facts: JobFactsDocument; conflicts: FactConflict[] } {
-  const { extraction, listing, vocab, now } = args;
+  const { extraction, listing, vocab, now, descriptionText } = args;
   const described = extraction.openings.map((o) =>
     descriptionOpening(o, vocab),
   );
@@ -404,6 +407,7 @@ export function combineFacts(args: {
     ),
     salary: salary.fact,
     closed: listing.expiresAt !== null && listing.expiresAt <= now,
+    postingLanguages: detectPostingLanguages(descriptionText ?? ''),
   };
 
   const conflicts = [

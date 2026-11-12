@@ -72,6 +72,8 @@ export class MatcherService {
       jobId,
       extractionId: job.extractionId,
       factsHash: job.factsHash,
+      profileUpdatedAt: profile.updatedAt,
+      eligibilityVersion: profile.eligibilityVersion,
     }));
     await this.repo.upsertMatches(rows);
     return {
@@ -86,7 +88,9 @@ export class MatcherService {
     if (this.context && at - this.context.loadedAt < CONTEXT_TTL_MS)
       return this.context.value;
     const value = await this.repo.loadContext();
-    this.context = { value, loadedAt: at };
+    // An empty rates map (a fresh table before the first refresh) is not cached, so the
+    // rates are read again as soon as they land rather than ten minutes later.
+    this.context = value.rates.size > 0 ? { value, loadedAt: at } : null;
     return value;
   }
 }

@@ -6,8 +6,13 @@ import { exampleProfile, factsDoc } from './fixtures.testing';
 import type { MatchJob } from './types';
 
 const ctx: MatchContext = {
-  places: { countriesOfRegion: new Map(), countryOfCity: new Map() },
+  places: {
+    countriesOfRegion: new Map(),
+    countryOfCity: new Map(),
+    countries: new Set(),
+  },
   implies: new Map(),
+  rates: new Map(),
 };
 
 const worldwide = {
@@ -53,7 +58,7 @@ const job = (facts: JobFactsDocument, needsReview = false): MatchJob => ({
 });
 
 describe('decide', () => {
-  it('always returns four checks in order, even after a fail', () => {
+  it('always returns ten checks in order, even after a fail', () => {
     const d = decide(
       job(
         passingDoc((x) => {
@@ -68,7 +73,30 @@ describe('decide', () => {
       'seniority',
       'location',
       'stack',
+      'salary',
+      'currency',
+      'contractType',
+      'languages',
+      'postingLanguage',
+      'workAuthorization',
     ]);
+  });
+
+  it('rejects a posting written only in a language the profile does not speak', () => {
+    const d = decide(
+      job(
+        passingDoc((x) => {
+          x.postingLanguages = { codes: ['de'], confident: true };
+        }),
+      ),
+      exampleProfile(),
+      ctx,
+    );
+    expect(d.outcome).toBe('rejected');
+    expect(d.checks.find((c) => c.rule === 'postingLanguage')).toMatchObject({
+      outcome: 'fail',
+      unsure: false,
+    });
   });
 
   it('rejects a job that fails one rule, not unverified', () => {
@@ -86,16 +114,37 @@ describe('decide', () => {
   });
 
   it('qualifies when everything passes', () => {
-    const d = decide(job(passingDoc()), exampleProfile(), ctx);
-    expect(d.checks.map((c) => c.outcome)).toEqual([
-      'pass',
-      'pass',
-      'pass',
-      'pass',
-    ]);
+    // No salary minimum, and no currency, languages or authorization stated: nothing to
+    // check passes, so only the posting language needs a fact.
+    const d = decide(
+      job(
+        passingDoc((x) => {
+          x.postingLanguages = { codes: ['en'], confident: true };
+        }),
+      ),
+      exampleProfile(),
+      ctx,
+    );
+    expect(d.checks.map((c) => c.outcome)).toEqual(
+      Array.from({ length: 10 }, () => 'pass'),
+    );
     expect(d.outcome).toBe('qualified');
     expect(d.unverified).toBe(false);
     expect(d.stackScore).toBeGreaterThan(0);
+  });
+
+  it('is not unverified when there is nothing to check: no minimum, no currency, languages or authorization stated', () => {
+    const doc = passingDoc((x) => {
+      x.postingLanguages = { codes: ['en'], confident: true };
+      x.salary.value = null;
+      x.requiredLanguages.value = [];
+      x.workAuthorization.value = null;
+    });
+    const d = decide(job(doc), { ...exampleProfile(), salaryMin: null }, ctx);
+    expect(d.outcome).toBe('qualified');
+    expect(d.unverified).toBe(false);
+    for (const rule of ['salary', 'currency', 'languages', 'workAuthorization'])
+      expect(d.checks.find((c) => c.rule === rule)?.outcome).toBe('pass');
   });
 
   it('flags unverified when the extraction needs review', () => {
@@ -276,6 +325,56 @@ describe('decide', () => {
       expect(d.outcome).toBe('qualified');
       expect(d.unverified).toBe(true);
       expect(d.review).toBeNull();
+    });
+
+    it('a sure contract, language or authorization fail rejects', () => {
+      const edits: ((x: JobFactsDocument) => void)[] = [
+        (x) => {
+          x.contractType.value = 'internship';
+        },
+        (x) => {
+          x.requiredLanguages.value = [
+            { lang: 'de', level: 'working', quote: '' },
+          ];
+        },
+        (x) => {
+          x.workAuthorization.value = {
+            requirements: [{ kind: 'citizenship', place: 'US' }],
+            sponsorship: 'yes',
+          };
+        },
+      ];
+      for (const edit of edits)
+        expect(
+          decide(job(passingDoc(edit)), exampleProfile(), ctx).outcome,
+        ).toBe('rejected');
+    });
+
+    it('an unsure work authorization fail is review on workAuthorization', () => {
+      const d = decide(
+        job(
+          passingDoc((x) => {
+            x.workAuthorization.value = {
+              requirements: [{ kind: 'work-permit', place: 'US' }],
+              sponsorship: 'unstated',
+            };
+            x.workAuthorization.confidence = 'unsure';
+            x.contractType.value = 'internship';
+            x.contractType.confidence = 'unsure';
+          }),
+        ),
+        exampleProfile(),
+        ctx,
+      );
+      expect(d.outcome).toBe('review');
+      // contractType comes first in rule order.
+      expect(d.review).toEqual({ rule: 'contractType', field: 'contractType' });
+      expect(d.checks.at(-1)).toMatchObject({
+        rule: 'workAuthorization',
+        outcome: 'fail',
+        unsure: true,
+        unsureField: 'workAuthorization',
+      });
     });
 
     it('a LinkedIn opening counts as sure', () => {

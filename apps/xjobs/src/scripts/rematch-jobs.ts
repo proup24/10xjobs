@@ -19,6 +19,7 @@ import {
 import { redisEnvironmentSchema } from 'src/config/environment.validation';
 import { createDatabaseClient, type DatabaseService } from 'src/database';
 import { MatchQueue } from 'src/infrastructure/jobs/steps/match';
+import { PrismaRatesRepository } from 'src/modules/rates/rates.repository';
 import { PrismaMatcherRepository } from 'src/modules/matcher/repositories/matcher.repository';
 import { parseRematchArgs, REMATCH_USAGE } from './rematch-args';
 
@@ -48,7 +49,10 @@ async function main(): Promise<void> {
   );
   const queue = new MatchQueue(settings);
   try {
-    const repo = new PrismaMatcherRepository({ db } as DatabaseService);
+    const repo = new PrismaMatcherRepository(
+      { db } as DatabaseService,
+      new PrismaRatesRepository({ db } as DatabaseService),
+    );
     const jobIds =
       'all' in selector ? await repo.listMatchableJobs() : selector.jobIds;
     for (const jobId of jobIds) await queue.enqueue(jobId, { force: true });

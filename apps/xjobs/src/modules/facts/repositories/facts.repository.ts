@@ -13,6 +13,8 @@ export interface FactsInputs {
   /** The job row's `updatedAt` as read: the facts are built as of it. */
   jobUpdatedAt: Date;
   listing: ListingRow;
+  /** `normalized_jobs.descriptionText`: the posting's languages are detected from it. */
+  descriptionText: string | null;
 }
 
 export interface SavedFacts {
@@ -40,7 +42,10 @@ export abstract class FactsRepository {
   ): Promise<{ factsHash: string; factsVersion: number } | null>;
   /** Upserts the facts row (always setting `builtAt`) and replaces the job's conflicts in one transaction. */
   abstract save(row: SavedFacts): Promise<void>;
-  /** Marks facts of jobs listed in a country as stale (`builtAt = '-infinity'`); returns how many. */
+  /**
+   * Marks stale (`builtAt = '-infinity'`) the facts of jobs listed in a country, or whose
+   * openings name it (a country place, or a city place in it); returns how many.
+   */
   abstract markStale(where: { countryCode: string }): Promise<number>;
 }
 
@@ -70,7 +75,7 @@ export class PrismaFactsRepository extends FactsRepository {
           j."workplaceType", j."countryCode", j."regionCode", j.city, j."geoId",
           j.location, j."salaryMin", j."salaryMax", j."salaryCurrency",
           j."salaryPeriod", j."salaryProvidedByEmployer", j."experienceLevel",
-          j."contractType", j."expiresAt", j."updatedAt"
+          j."contractType", j."expiresAt", j."updatedAt", j."descriptionText"
         FROM normalized_jobs j JOIN job_extractions e ON e.id = j."currentExtractionId"
         WHERE j.id = ${jobId}::uuid`
         .returnsRow({
@@ -92,6 +97,7 @@ export class PrismaFactsRepository extends FactsRepository {
           contractType: TEXT,
           expiresAt: TIMESTAMP,
           updatedAt: TIMESTAMP,
+          descriptionText: TEXT,
         })
         .build(),
     );
@@ -102,6 +108,7 @@ export class PrismaFactsRepository extends FactsRepository {
       extraction: row.data,
       schemaVersion: row.schemaVersion as number,
       jobUpdatedAt: row.updatedAt as Date,
+      descriptionText: row.descriptionText as string | null,
       listing: {
         workplaceType:
           workplace !== null && WORKPLACE.has(workplace)
@@ -183,7 +190,16 @@ export class PrismaFactsRepository extends FactsRepository {
     const rows = await this.db.query(
       raw.sql`UPDATE job_facts f SET "builtAt" = '-infinity', "updatedAt" = now()
         FROM normalized_jobs j
-        WHERE j.id = f."jobId" AND j."countryCode" = ${where.countryCode}::text
+        WHERE j.id = f."jobId"
+          AND (j."countryCode" = ${where.countryCode}::text
+            OR EXISTS (
+              SELECT 1
+              FROM jsonb_array_elements(f.facts->'openings') o,
+                jsonb_array_elements(o->'places') pl
+              WHERE CASE pl->>'kind'
+                WHEN 'country' THEN pl->>'code'
+                WHEN 'city' THEN pl->>'countryCode'
+              END = ${where.countryCode}::text))
         RETURNING f."jobId"`
         .returnsRow({ jobId: UUID })
         .build(),

@@ -3,12 +3,18 @@ import { Injectable } from '@nestjs/common';
 import { DatabaseService } from 'src/database';
 import type { DatabaseTransaction } from '@xjobs/database';
 import { FACTS_VERSION } from 'src/modules/facts/config/facts.config';
+import { RatesRepository } from 'src/modules/rates';
 import { linkedInJobIds } from 'src/modules/processor';
 import { EXTRACTION_SCHEMA_VERSION } from 'src/modules/processor/schema';
 import type { PlacesByArrangement } from 'src/modules/users/types/place.types';
 import { MATCH_BACKFILL_DAYS, MATCHER_VERSION } from '../config/matcher.config';
 import type { Decision, MatchContext } from '../rules/decide';
-import type { Check, MatchProfile, RuleName } from '../rules/types';
+import type {
+  Check,
+  MatchEligibility,
+  MatchProfile,
+  RuleName,
+} from '../rules/types';
 
 /** A decision as stored: one row per profile and job. */
 export interface StoredMatch extends Decision {
@@ -18,6 +24,10 @@ export interface StoredMatch extends Decision {
   extractionId: string;
   /** The hash of the `job_facts` the decision read; `''` on a row decided before job facts (never current). */
   factsHash: string;
+  /** The profile's `updatedAt` the decision read; null on a row decided before it was recorded. */
+  profileUpdatedAt: Date | null;
+  /** The user's `eligibilityVersion` the decision read; null on a row decided before it was recorded. */
+  eligibilityVersion: number | null;
 }
 
 /** What a current row was decided on: the job's facts and its current extraction. */
@@ -39,7 +49,8 @@ export abstract class MatcherRepository {
   abstract loadCandidate(jobId: string): Promise<MatchCandidate | null>;
   /**
    * Published profiles with skills. `onlyStaleFor`: only those whose row for that job is
-   * missing, or has another factsHash, another extractionId, or an older matcherVersion.
+   * missing, or has another factsHash, another extractionId, or an older matcherVersion,
+   * or was decided before the profile's last edit or the user's last eligibility change.
    */
   abstract listPublishedProfiles(opts?: {
     onlyStaleFor?: StaleFor;
@@ -90,19 +101,35 @@ const STALE_FACTS = (raw: Raw) =>
     OR (NOT f.closed AND j."expiresAt" <= now()))`.returns(BOOL);
 
 /**
+ * The row `m` (joined with its user `u`) was decided on the current state of the profile `p`
+ * and of the user's eligibility. A row decided before they were recorded (null) is not stale
+ * by this test: the MATCHER_VERSION bump that came with them already makes it stale.
+ */
+const ON_CURRENT_PROFILE = (raw: Raw) =>
+  raw.sql`(m."profileUpdatedAt" IS NULL OR m."profileUpdatedAt" >= p."updatedAt")
+    AND (m."eligibilityVersion" IS NULL OR m."eligibilityVersion" >= u."eligibilityVersion")`.returns(
+    BOOL,
+  );
+
+/**
  * A published profile `p` has no row for the job `j` decided on its facts `f` and its
- * current extraction (whose `needsReview` the decision reads) by this matcher.
+ * current extraction (whose `needsReview` the decision reads) by this matcher, on the
+ * profile and eligibility as they are now.
  */
 const STALE_ROW = (raw: Raw) =>
   raw.sql`NOT EXISTS (
-    SELECT 1 FROM job_matches m
+    SELECT 1 FROM job_matches m JOIN users u ON u.id = m."userId"
     WHERE m."profileId" = p.id AND m."jobId" = j.id
       AND m."factsHash" = f."factsHash" AND m."extractionId" = j."currentExtractionId"
-      AND m."matcherVersion" >= ${MATCHER_VERSION}::int)`.returns(BOOL);
+      AND m."matcherVersion" >= ${MATCHER_VERSION}::int
+      AND ${ON_CURRENT_PROFILE(raw)})`.returns(BOOL);
 
 @Injectable()
 export class PrismaMatcherRepository extends MatcherRepository {
-  constructor(private readonly database: DatabaseService) {
+  constructor(
+    private readonly database: DatabaseService,
+    private readonly rates: RatesRepository,
+  ) {
     super();
   }
 
@@ -138,11 +165,12 @@ export class PrismaMatcherRepository extends MatcherRepository {
             await this.db.query(
               raw.sql`SELECT p.id FROM profiles p
                 WHERE p.state = 'published' AND NOT EXISTS (
-                  SELECT 1 FROM job_matches m
+                  SELECT 1 FROM job_matches m JOIN users u ON u.id = m."userId"
                   WHERE m."profileId" = p.id AND m."jobId" = ${stale.jobId}::uuid
                     AND m."factsHash" = ${stale.factsHash}::text
                     AND m."extractionId" = ${stale.extractionId}::uuid
-                    AND m."matcherVersion" >= ${MATCHER_VERSION}::int)`
+                    AND m."matcherVersion" >= ${MATCHER_VERSION}::int
+                    AND ${ON_CURRENT_PROFILE(raw)})`
                 .returnsRow({ id: UUID })
                 .build(),
             )
@@ -166,8 +194,12 @@ export class PrismaMatcherRepository extends MatcherRepository {
       });
       skills.set(s.profileId, list);
     }
+    const eligibility = await this.loadEligibility(
+      new Set(profiles.map((p) => p.userId)),
+    );
     return profiles.map((p) => ({
       id: p.id,
+      updatedAt: p.updatedAt,
       userId: p.userId,
       position: p.position,
       seniorities: [...p.seniorities],
@@ -176,7 +208,54 @@ export class PrismaMatcherRepository extends MatcherRepository {
       timezoneMax: p.timezoneMax,
       locations: p.locations as unknown as PlacesByArrangement,
       skills: skills.get(p.id) ?? [],
+      salaryMin: p.salaryMin,
+      salaryCurrency: p.salaryCurrency,
+      salaryPeriod: p.salaryPeriod as MatchProfile['salaryPeriod'],
+      acceptsAnyCurrency: p.acceptsAnyCurrency,
+      acceptedCurrencies: [...p.acceptedCurrencies],
+      contractTypes: [...p.contractTypes],
+      // The database checks the shape (assert_languages); keep only what the rule reads.
+      languages: (p.languages as unknown as MatchProfile['languages']).map(
+        ({ lang, level }) => ({ lang, level }),
+      ),
+      eligibility: eligibility.get(p.userId)?.eligibility ?? {
+        authorizations: [],
+        residenceCountry: null,
+        acceptsSponsorship: null,
+      },
+      eligibilityVersion: eligibility.get(p.userId)?.version ?? 0,
     }));
+  }
+
+  /**
+   * Each user's eligibility and its version, read once for every profile of the batch. The
+   * version is read before the authorizations: a change in between leaves the row stale.
+   */
+  private async loadEligibility(
+    userIds: Set<string>,
+  ): Promise<Map<string, { eligibility: MatchEligibility; version: number }>> {
+    const { orm } = this.db;
+    const ids = [...userIds];
+    const out = new Map<
+      string,
+      { eligibility: MatchEligibility; version: number }
+    >();
+    for (const u of await orm.public.User.where((row) => row.id.in(ids)).all())
+      out.set(u.id, {
+        eligibility: {
+          authorizations: [],
+          residenceCountry: u.residenceCountry,
+          acceptsSponsorship: u.acceptsSponsorship,
+        },
+        version: u.eligibilityVersion,
+      });
+    for (const a of await orm.public.WorkAuthorization.where((row) =>
+      row.userId.in(ids),
+    ).all())
+      out
+        .get(a.userId)
+        ?.eligibility.authorizations.push({ kind: a.kind, place: a.place });
+    return out;
   }
 
   async loadContext(): Promise<MatchContext> {
@@ -191,6 +270,11 @@ export class PrismaMatcherRepository extends MatcherRepository {
         .returnsRow({ id: UUID, countryCode: TEXT })
         .build(),
     );
+    const countries = await this.db.query(
+      raw.sql`SELECT code FROM countries WHERE status = 'approved'`
+        .returnsRow({ code: TEXT })
+        .build(),
+    );
     const tags = await this.db.query(
       raw.sql`SELECT code, to_jsonb(implies) AS implies FROM tech_tags WHERE status = 'approved'`
         .returnsRow({ code: TEXT, implies: JSONB })
@@ -203,11 +287,13 @@ export class PrismaMatcherRepository extends MatcherRepository {
       countriesOfRegion.set(r.regionCode as string, set);
     }
     return {
+      rates: await this.rates.all(),
       places: {
         countriesOfRegion,
         countryOfCity: new Map(
           cities.map((c) => [c.id as string, c.countryCode as string]),
         ),
+        countries: new Set(countries.map((c) => c.code as string)),
       },
       implies: new Map(
         tags.map((t) => [
@@ -226,9 +312,13 @@ export class PrismaMatcherRepository extends MatcherRepository {
         await tx.execute(
           tx.raw.sql`INSERT INTO job_matches
               (id, "userId", "profileId", "jobId", "extractionId", "factsHash", "matcherVersion",
+               "profileUpdatedAt", "eligibilityVersion",
                outcome, unverified, "reviewRule", "reviewField", "stackScore", checks, "decidedAt")
             VALUES (${randomUUID()}::uuid, ${r.userId}::uuid, ${r.profileId}::uuid, ${r.jobId}::uuid,
-              ${r.extractionId}::uuid, ${r.factsHash}::text, ${MATCHER_VERSION}::int, ${r.outcome}::text,
+              ${r.extractionId}::uuid, ${r.factsHash}::text, ${MATCHER_VERSION}::int,
+              NULLIF(${r.profileUpdatedAt?.toISOString() ?? ''}::text, '')::timestamptz,
+              NULLIF(${r.eligibilityVersion === null ? '' : String(r.eligibilityVersion)}::text, '')::int,
+              ${r.outcome}::text,
               ${r.unverified}::boolean,
               NULLIF(${r.review?.rule ?? ''}::text, ''), NULLIF(${r.review?.field ?? ''}::text, ''),
               NULLIF(${r.stackScore === null ? '' : String(r.stackScore)}::text, '')::numeric,
@@ -236,6 +326,8 @@ export class PrismaMatcherRepository extends MatcherRepository {
             ON CONFLICT ("profileId", "jobId") DO UPDATE SET
               "extractionId" = EXCLUDED."extractionId", "factsHash" = EXCLUDED."factsHash",
               "matcherVersion" = EXCLUDED."matcherVersion",
+              "profileUpdatedAt" = EXCLUDED."profileUpdatedAt",
+              "eligibilityVersion" = EXCLUDED."eligibilityVersion",
               outcome = EXCLUDED.outcome, unverified = EXCLUDED.unverified,
               "reviewRule" = EXCLUDED."reviewRule", "reviewField" = EXCLUDED."reviewField",
               "stackScore" = EXCLUDED."stackScore", checks = EXCLUDED.checks, "updatedAt" = now(),
@@ -294,7 +386,8 @@ export class PrismaMatcherRepository extends MatcherRepository {
   async matchesForJob(jobId: string): Promise<StoredMatch[]> {
     const { raw } = this.db;
     const rows = await this.db.query(
-      raw.sql`SELECT "profileId", "userId", "jobId", "extractionId", "factsHash", outcome,
+      raw.sql`SELECT "profileId", "userId", "jobId", "extractionId", "factsHash",
+          "profileUpdatedAt", "eligibilityVersion", outcome,
           unverified, "reviewRule", "reviewField", "stackScore", checks
         FROM job_matches WHERE "jobId" = ${jobId}::uuid
         ORDER BY "profileId" ASC`
@@ -304,6 +397,8 @@ export class PrismaMatcherRepository extends MatcherRepository {
           jobId: UUID,
           extractionId: UUID,
           factsHash: TEXT,
+          profileUpdatedAt: 'pg/timestamptz-date@1',
+          eligibilityVersion: 'pg/int4@1',
           outcome: TEXT,
           unverified: BOOL,
           reviewRule: TEXT,
@@ -319,6 +414,8 @@ export class PrismaMatcherRepository extends MatcherRepository {
       jobId: r.jobId as string,
       extractionId: r.extractionId as string,
       factsHash: (r.factsHash as string | null) ?? '',
+      profileUpdatedAt: (r.profileUpdatedAt as Date | null) ?? null,
+      eligibilityVersion: (r.eligibilityVersion as number | null) ?? null,
       outcome: r.outcome as Decision['outcome'],
       unverified: r.unverified as boolean,
       review:

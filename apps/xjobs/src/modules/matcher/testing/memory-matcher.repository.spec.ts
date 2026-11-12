@@ -8,6 +8,8 @@ const row = (jobId: string): StoredMatch =>
     jobId,
     extractionId: 'e',
     factsHash: 'h',
+    profileUpdatedAt: null,
+    eligibilityVersion: null,
     outcome: 'qualified',
     unverified: false,
     review: null,
