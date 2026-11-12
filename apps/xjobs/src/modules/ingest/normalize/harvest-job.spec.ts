@@ -79,7 +79,7 @@ describe('normalize harvestapi LinkedIn jobs', () => {
     expect(map({ ...remote, workplaceType: 'weird' }).workplaceType).toBeNull();
   });
 
-  it('takes an outside apply URL; an identifier-less one does not key the job', () => {
+  it('keeps the LinkedIn key for an outside apply URL with no posting identifier', () => {
     const r = map(hybrid);
     const url = (hybrid.applyMethod as { companyApplyUrl: string })
       .companyApplyUrl;
@@ -88,6 +88,18 @@ describe('normalize harvestapi LinkedIn jobs', () => {
     // The URL is a listing page with no posting identifier, so it is not
     // trusted as an identity: the job keeps its LinkedIn id.
     expect(key).toBe('linkedin-job:4471204920');
+  });
+
+  it('re-keys the job by an outside apply URL that carries a posting id', () => {
+    const r = map(nullWorkplace);
+    const url = (nullWorkplace.applyMethod as { companyApplyUrl: string })
+      .companyApplyUrl;
+    expect(r.applyUrl).toBe(url);
+    expect(
+      jobKey(Channel.LINKEDIN_JOB_BOARD, `id:${nullWorkplace.id}`, r),
+    ).toBe(
+      'url:https://wd1.myworkdaysite.com/en-US/recruiting/snapchat/snap/job/Paris-France/Research-Engineer_R0046981-1|Research Engineer',
+    );
   });
 
   it('has no apply URL for Easy Apply, and keys the job by its LinkedIn id', () => {
