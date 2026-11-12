@@ -17,7 +17,7 @@ describe('topTechnologies', () => {
         skill('rust', 8, 5),
         skill('nestjs', 8, 5),
       ]),
-    ).toEqual(['nestjs', 'rust']);
+    ).toEqual(['nestjs', 'rust', 'go']);
   });
 
   it('breaks full ties by technology name', () => {
@@ -60,7 +60,7 @@ describe('topTechnologies', () => {
     ).toEqual(topTechnologies([]));
   });
 
-  it('keeps only the top 2 of 5', () => {
+  it('keeps every searchable technology, best first', () => {
     expect(
       topTechnologies([
         skill('go', 1, 5),
@@ -69,7 +69,7 @@ describe('topTechnologies', () => {
         skill('react', 4, 5),
         skill('postgresql', 5, 5),
       ]),
-    ).toEqual(['postgresql', 'react']);
+    ).toEqual(['postgresql', 'react', 'nestjs', 'rust', 'go']);
   });
 });
 
@@ -81,10 +81,11 @@ describe('technologySets', () => {
     skill(c, 7, 5),
   ];
 
-  it('returns one set per top technology, with its domain', () => {
+  it('returns one set per technology, with its domain', () => {
     expect(technologySets(skills)).toEqual([
       { technologies: [a], domain: SkillDomain.backend },
       { technologies: [b], domain: SkillDomain.devops },
+      { technologies: [c], domain: SkillDomain.backend },
     ]);
   });
 
