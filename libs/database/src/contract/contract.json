@@ -40,6 +40,10 @@
       "model": "ExchangeRate",
       "namespace": "public"
     },
+    "fact_reports": {
+      "model": "FactReport",
+      "namespace": "public"
+    },
     "iso_currencies": {
       "model": "IsoCurrency",
       "namespace": "public"
@@ -70,6 +74,10 @@
     },
     "junk_flags": {
       "model": "JunkFlag",
+      "namespace": "public"
+    },
+    "match_reviews": {
+      "model": "MatchReview",
       "namespace": "public"
     },
     "normalized_job_sources": {
@@ -1498,6 +1506,179 @@
               "table": "exchange_rates"
             }
           },
+          "FactReport": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "extractionId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "field": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "jobId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "listingValue": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
+              },
+              "note": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "processorValue": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
+              },
+              "proposedValue": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "quote": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "userId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "extraction": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "extractionId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "JobExtraction",
+                  "namespace": "public"
+                }
+              },
+              "job": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "jobId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "NormalizedJob",
+                  "namespace": "public"
+                }
+              },
+              "user": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "extractionId": {
+                  "column": "extractionId"
+                },
+                "field": {
+                  "column": "field"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "jobId": {
+                  "column": "jobId"
+                },
+                "listingValue": {
+                  "column": "listingValue"
+                },
+                "note": {
+                  "column": "note"
+                },
+                "processorValue": {
+                  "column": "processorValue"
+                },
+                "proposedValue": {
+                  "column": "proposedValue"
+                },
+                "quote": {
+                  "column": "quote"
+                },
+                "userId": {
+                  "column": "userId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "fact_reports"
+            }
+          },
           "IsoCurrency": {
             "fields": {
               "code": {
@@ -1881,6 +2062,21 @@
                 },
                 "to": {
                   "model": "JobFactConflict",
+                  "namespace": "public"
+                }
+              },
+              "factReports": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "extractionId"
+                  ]
+                },
+                "to": {
+                  "model": "FactReport",
                   "namespace": "public"
                 }
               },
@@ -2533,6 +2729,21 @@
                   "namespace": "public"
                 }
               },
+              "reviews": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "matchId"
+                  ]
+                },
+                "to": {
+                  "model": "MatchReview",
+                  "namespace": "public"
+                }
+              },
               "user": {
                 "cardinality": "N:1",
                 "nullable": false,
@@ -2786,6 +2997,166 @@
               },
               "namespaceId": "public",
               "table": "junk_flags"
+            }
+          },
+          "MatchReview": {
+            "fields": {
+              "choice": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "field": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "jobId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "matchId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "note": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "profileId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "rule": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "userId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "match": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "matchId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "JobMatch",
+                  "namespace": "public"
+                }
+              },
+              "user": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "choice": {
+                  "column": "choice"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "field": {
+                  "column": "field"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "jobId": {
+                  "column": "jobId"
+                },
+                "matchId": {
+                  "column": "matchId"
+                },
+                "note": {
+                  "column": "note"
+                },
+                "profileId": {
+                  "column": "profileId"
+                },
+                "rule": {
+                  "column": "rule"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                },
+                "userId": {
+                  "column": "userId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "match_reviews"
             }
           },
           "NormalizedJob": {
@@ -3278,6 +3649,21 @@
                 },
                 "to": {
                   "model": "JobFactConflict",
+                  "namespace": "public"
+                }
+              },
+              "factReports": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "jobId"
+                  ]
+                },
+                "to": {
+                  "model": "FactReport",
                   "namespace": "public"
                 }
               },
@@ -6055,6 +6441,21 @@
                   "space": "supabase"
                 }
               },
+              "factReports": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "userId"
+                  ]
+                },
+                "to": {
+                  "model": "FactReport",
+                  "namespace": "public"
+                }
+              },
               "jobMatches": {
                 "cardinality": "1:N",
                 "on": {
@@ -6082,6 +6483,21 @@
                 },
                 "to": {
                   "model": "JobView",
+                  "namespace": "public"
+                }
+              },
+              "matchReviews": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "userId"
+                  ]
+                },
+                "to": {
+                  "model": "MatchReview",
                   "namespace": "public"
                 }
               }
@@ -6334,6 +6750,32 @@
               "tableName": "engagements",
               "using": "status = 'approved'"
             },
+            "fact_reports_owner_insert": {
+              "kind": "policy",
+              "name": "fact_reports_owner_insert_143ac371",
+              "namespaceId": "public",
+              "operation": "insert",
+              "permissive": true,
+              "prefix": "fact_reports_owner_insert",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "fact_reports",
+              "withCheck": "\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.job_matches m WHERE m.\"userId\" = auth.uid() AND m.\"jobId\" = fact_reports.\"jobId\")"
+            },
+            "fact_reports_owner_read": {
+              "kind": "policy",
+              "name": "fact_reports_owner_read_ab58a1a7",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "fact_reports_owner_read",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "fact_reports",
+              "using": "\"userId\" = auth.uid()"
+            },
             "iso_currencies_read_approved": {
               "kind": "policy",
               "name": "iso_currencies_read_approved_aede9d92",
@@ -6398,6 +6840,20 @@
               ],
               "tableName": "job_views",
               "using": "\"userId\" = auth.uid()"
+            },
+            "match_reviews_owner": {
+              "kind": "policy",
+              "name": "match_reviews_owner_23b38ff6",
+              "namespaceId": "public",
+              "operation": "all",
+              "permissive": true,
+              "prefix": "match_reviews_owner",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "match_reviews",
+              "using": "\"userId\" = auth.uid()",
+              "withCheck": "\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.job_matches m WHERE m.id = match_reviews.\"matchId\" AND m.\"userId\" = auth.uid() AND m.\"profileId\" = match_reviews.\"profileId\" AND m.\"jobId\" = match_reviews.\"jobId\" AND m.outcome = 'review' AND m.\"reviewRule\" = match_reviews.rule AND m.\"reviewField\" = match_reviews.field)"
             },
             "profile_setup_drafts_owner": {
               "kind": "policy",
@@ -6672,6 +7128,11 @@
               "namespaceId": "public",
               "tableName": "exchange_rates"
             },
+            "fact_reports": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "fact_reports"
+            },
             "iso_currencies": {
               "kind": "rls",
               "namespaceId": "public",
@@ -6711,6 +7172,11 @@
               "kind": "rls",
               "namespaceId": "public",
               "tableName": "junk_flags"
+            },
+            "match_reviews": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "match_reviews"
             },
             "normalized_job_sources": {
               "kind": "rls",
@@ -7685,6 +8151,170 @@
               "primaryKey": {
                 "columns": [
                   "currency"
+                ]
+              },
+              "uniques": []
+            },
+            "fact_reports": {
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "extractionId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "field": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "jobId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "listingValue": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": true
+                },
+                "note": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "processorValue": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": true
+                },
+                "proposedValue": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "quote": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "userId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "fact_reports_userId_idx_a489d58a"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "fact_reports"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "users"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "fact_reports_jobId_idx_623c8f77"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "jobId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "fact_reports"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "normalized_jobs"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "fact_reports_extractionId_idx_3dd68fa6"
+                  },
+                  "onDelete": "setNull",
+                  "source": {
+                    "columns": [
+                      "extractionId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "fact_reports"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "job_extractions"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "extractionId"
+                  ],
+                  "name": "fact_reports_extractionId_idx_3dd68fa6",
+                  "prefix": "fact_reports_extractionId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "jobId"
+                  ],
+                  "name": "fact_reports_jobId_idx_623c8f77",
+                  "prefix": "fact_reports_jobId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "userId"
+                  ],
+                  "name": "fact_reports_userId_idx_a489d58a",
+                  "prefix": "fact_reports_userId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
                 ]
               },
               "uniques": []
@@ -8934,6 +9564,165 @@
               "primaryKey": {
                 "columns": [
                   "code"
+                ]
+              },
+              "uniques": []
+            },
+            "match_reviews": {
+              "checks": [
+                {
+                  "expression": "choice IN ('qualified','rejected')",
+                  "name": "match_reviews_choice_6c4b833f",
+                  "prefix": "match_reviews_choice"
+                }
+              ],
+              "columns": {
+                "choice": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "field": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "jobId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "matchId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "note": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "profileId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "rule": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "userId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "match_reviews_userId_idx_a489d58a"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "match_reviews"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "users"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "match_reviews_matchId_idx_4caf5ecc"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "matchId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "match_reviews"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "job_matches"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "matchId",
+                    "createdAt"
+                  ],
+                  "name": "match_reviews_matchId_createdAt_idx_c6ba7c28",
+                  "prefix": "match_reviews_matchId_createdAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "matchId"
+                  ],
+                  "name": "match_reviews_matchId_idx_4caf5ecc",
+                  "prefix": "match_reviews_matchId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "userId"
+                  ],
+                  "name": "match_reviews_userId_idx_a489d58a",
+                  "prefix": "match_reviews_userId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
                 ]
               },
               "uniques": []
@@ -11985,10 +12774,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "c7e224b8457ff39be47ce7029466d362a15f7c5c9d93c0db4aa43ab160462815"
+    "storageHash": "c9460b85087b8c76224e2851ec975a1ae628faff433325609a6901426cf36d67"
   },
   "execution": {
-    "executionHash": "9c0694a80d5f7adf167bc3288d7926267ba4776ae99e720efce6b64a0f440673",
+    "executionHash": "d1afc78045007bb79eb075540ad58bb39a9183f73c152ea2601abe6ca2050fee",
     "mutations": {
       "defaults": [
         {
@@ -12071,6 +12860,17 @@
             "kind": "generator"
           },
           "ref": {
+            "entry": "fact_reports",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv7",
+            "kind": "generator"
+          },
+          "ref": {
             "entry": "job_extractions",
             "field": "id",
             "namespace": "public"
@@ -12136,6 +12936,32 @@
           "ref": {
             "entry": "job_views",
             "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv7",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "match_reviews",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "match_reviews",
+            "field": "updatedAt",
             "namespace": "public"
           }
         },

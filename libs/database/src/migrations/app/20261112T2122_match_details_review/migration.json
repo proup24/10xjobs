@@ -1,0 +1,9 @@
+{
+  "from": "c9460b85087b8c76224e2851ec975a1ae628faff433325609a6901426cf36d67",
+  "to": "c9460b85087b8c76224e2851ec975a1ae628faff433325609a6901426cf36d67",
+  "providedInvariants": [
+    "match-details-review"
+  ],
+  "createdAt": "2026-11-12T21:22:31.339Z",
+  "migrationHash": "3bdc880dddaccba3e7d6eff895bb24875bb0e8692b1df4c52ecde1ee0a5337ad"
+}

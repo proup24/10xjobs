@@ -1,0 +1,876 @@
+[
+  {
+    "id": "table.fact_reports",
+    "label": "Create table \"fact_reports\"",
+    "summary": "Creates table \"fact_reports\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "fact_reports"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"fact_reports\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"fact_reports\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"fact_reports\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"fact_reports\"",
+        "sql": "CREATE TABLE \"public\".\"fact_reports\" (\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"extractionId\" uuid,\n  \"field\" text NOT NULL,\n  \"id\" uuid DEFAULT (gen_random_uuid()) NOT NULL,\n  \"jobId\" uuid NOT NULL,\n  \"listingValue\" jsonb,\n  \"note\" text,\n  \"processorValue\" jsonb,\n  \"proposedValue\" text NOT NULL,\n  \"quote\" text,\n  \"userId\" uuid NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"fact_reports\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"fact_reports\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"fact_reports\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.match_reviews",
+    "label": "Create table \"match_reviews\"",
+    "summary": "Creates table \"match_reviews\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "match_reviews"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"match_reviews\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"match_reviews\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"match_reviews\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"match_reviews\"",
+        "sql": "CREATE TABLE \"public\".\"match_reviews\" (\n  \"choice\" text NOT NULL,\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"field\" text NOT NULL,\n  \"id\" uuid DEFAULT (gen_random_uuid()) NOT NULL,\n  \"jobId\" uuid NOT NULL,\n  \"matchId\" uuid NOT NULL,\n  \"note\" text,\n  \"profileId\" uuid NOT NULL,\n  \"rule\" text NOT NULL,\n  \"updatedAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"userId\" uuid NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"match_reviews_choice_6c4b833f\" CHECK (choice IN ('qualified','rejected'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"match_reviews\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"match_reviews\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"match_reviews\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "index.fact_reports.fact_reports_extractionId_idx_3dd68fa6",
+    "label": "Create index \"fact_reports_extractionId_idx_3dd68fa6\" on \"fact_reports\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "fact_reports_extractionId_idx_3dd68fa6",
+        "table": "fact_reports"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"fact_reports_extractionId_idx_3dd68fa6\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"fact_reports_extractionId_idx_3dd68fa6\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"fact_reports_extractionId_idx_3dd68fa6\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"fact_reports_extractionId_idx_3dd68fa6\"",
+        "sql": "CREATE INDEX \"fact_reports_extractionId_idx_3dd68fa6\" ON \"public\".\"fact_reports\" (\"extractionId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"fact_reports_extractionId_idx_3dd68fa6\" exists on \"fact_reports\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"fact_reports_extractionId_idx_3dd68fa6\"",
+          "i",
+          "I",
+          "\"public\".\"fact_reports\"",
+          "btree",
+          "[\"extractionId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.fact_reports.fact_reports_jobId_idx_623c8f77",
+    "label": "Create index \"fact_reports_jobId_idx_623c8f77\" on \"fact_reports\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "fact_reports_jobId_idx_623c8f77",
+        "table": "fact_reports"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"fact_reports_jobId_idx_623c8f77\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"fact_reports_jobId_idx_623c8f77\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"fact_reports_jobId_idx_623c8f77\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"fact_reports_jobId_idx_623c8f77\"",
+        "sql": "CREATE INDEX \"fact_reports_jobId_idx_623c8f77\" ON \"public\".\"fact_reports\" (\"jobId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"fact_reports_jobId_idx_623c8f77\" exists on \"fact_reports\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"fact_reports_jobId_idx_623c8f77\"",
+          "i",
+          "I",
+          "\"public\".\"fact_reports\"",
+          "btree",
+          "[\"jobId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.fact_reports.fact_reports_userId_idx_a489d58a",
+    "label": "Create index \"fact_reports_userId_idx_a489d58a\" on \"fact_reports\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "fact_reports_userId_idx_a489d58a",
+        "table": "fact_reports"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"fact_reports_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"fact_reports_userId_idx_a489d58a\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"fact_reports_userId_idx_a489d58a\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"fact_reports_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"fact_reports_userId_idx_a489d58a\" ON \"public\".\"fact_reports\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"fact_reports_userId_idx_a489d58a\" exists on \"fact_reports\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"fact_reports_userId_idx_a489d58a\"",
+          "i",
+          "I",
+          "\"public\".\"fact_reports\"",
+          "btree",
+          "[\"userId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.match_reviews.match_reviews_matchId_createdAt_idx_c6ba7c28",
+    "label": "Create index \"match_reviews_matchId_createdAt_idx_c6ba7c28\" on \"match_reviews\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "match_reviews_matchId_createdAt_idx_c6ba7c28",
+        "table": "match_reviews"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"match_reviews_matchId_createdAt_idx_c6ba7c28\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"match_reviews_matchId_createdAt_idx_c6ba7c28\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"match_reviews_matchId_createdAt_idx_c6ba7c28\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"match_reviews_matchId_createdAt_idx_c6ba7c28\"",
+        "sql": "CREATE INDEX \"match_reviews_matchId_createdAt_idx_c6ba7c28\" ON \"public\".\"match_reviews\" (\"matchId\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"match_reviews_matchId_createdAt_idx_c6ba7c28\" exists on \"match_reviews\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"match_reviews_matchId_createdAt_idx_c6ba7c28\"",
+          "i",
+          "I",
+          "\"public\".\"match_reviews\"",
+          "btree",
+          "[\"matchId\",\"createdAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.match_reviews.match_reviews_matchId_idx_4caf5ecc",
+    "label": "Create index \"match_reviews_matchId_idx_4caf5ecc\" on \"match_reviews\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "match_reviews_matchId_idx_4caf5ecc",
+        "table": "match_reviews"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"match_reviews_matchId_idx_4caf5ecc\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"match_reviews_matchId_idx_4caf5ecc\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"match_reviews_matchId_idx_4caf5ecc\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"match_reviews_matchId_idx_4caf5ecc\"",
+        "sql": "CREATE INDEX \"match_reviews_matchId_idx_4caf5ecc\" ON \"public\".\"match_reviews\" (\"matchId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"match_reviews_matchId_idx_4caf5ecc\" exists on \"match_reviews\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"match_reviews_matchId_idx_4caf5ecc\"",
+          "i",
+          "I",
+          "\"public\".\"match_reviews\"",
+          "btree",
+          "[\"matchId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.match_reviews.match_reviews_userId_idx_a489d58a",
+    "label": "Create index \"match_reviews_userId_idx_a489d58a\" on \"match_reviews\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "match_reviews_userId_idx_a489d58a",
+        "table": "match_reviews"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"match_reviews_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"match_reviews_userId_idx_a489d58a\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"match_reviews_userId_idx_a489d58a\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"match_reviews_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"match_reviews_userId_idx_a489d58a\" ON \"public\".\"match_reviews\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"match_reviews_userId_idx_a489d58a\" exists on \"match_reviews\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"match_reviews_userId_idx_a489d58a\"",
+          "i",
+          "I",
+          "\"public\".\"match_reviews\"",
+          "btree",
+          "[\"userId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.fact_reports.fact_reports_userId_fkey",
+    "label": "Add foreign key \"fact_reports_userId_fkey\" on \"fact_reports\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "fact_reports_userId_fkey",
+        "table": "fact_reports"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"fact_reports_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "fact_reports_userId_fkey",
+          "public",
+          "\"public\".\"fact_reports\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"fact_reports_userId_fkey\" on \"fact_reports\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"fact_reports_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"fact_reports\"\nADD CONSTRAINT \"fact_reports_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"users\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"fact_reports_userId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "fact_reports_userId_fkey",
+          "public",
+          "\"public\".\"fact_reports\"",
+          "f",
+          "[\"userId\"]",
+          "\"public\".\"users\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.fact_reports.fact_reports_jobId_fkey",
+    "label": "Add foreign key \"fact_reports_jobId_fkey\" on \"fact_reports\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "fact_reports_jobId_fkey",
+        "table": "fact_reports"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"fact_reports_jobId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "fact_reports_jobId_fkey",
+          "public",
+          "\"public\".\"fact_reports\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"fact_reports_jobId_fkey\" on \"fact_reports\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"fact_reports_jobId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"fact_reports\"\nADD CONSTRAINT \"fact_reports_jobId_fkey\"\nFOREIGN KEY (\"jobId\")\nREFERENCES \"public\".\"normalized_jobs\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"fact_reports_jobId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "fact_reports_jobId_fkey",
+          "public",
+          "\"public\".\"fact_reports\"",
+          "f",
+          "[\"jobId\"]",
+          "\"public\".\"normalized_jobs\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.fact_reports.fact_reports_extractionId_fkey",
+    "label": "Add foreign key \"fact_reports_extractionId_fkey\" on \"fact_reports\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "fact_reports_extractionId_fkey",
+        "table": "fact_reports"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"fact_reports_extractionId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "fact_reports_extractionId_fkey",
+          "public",
+          "\"public\".\"fact_reports\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"fact_reports_extractionId_fkey\" on \"fact_reports\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"fact_reports_extractionId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"fact_reports\"\nADD CONSTRAINT \"fact_reports_extractionId_fkey\"\nFOREIGN KEY (\"extractionId\")\nREFERENCES \"public\".\"job_extractions\" (\"id\")\nON DELETE SET NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"fact_reports_extractionId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "fact_reports_extractionId_fkey",
+          "public",
+          "\"public\".\"fact_reports\"",
+          "f",
+          "[\"extractionId\"]",
+          "\"public\".\"job_extractions\"",
+          "[\"id\"]",
+          "n",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.match_reviews.match_reviews_userId_fkey",
+    "label": "Add foreign key \"match_reviews_userId_fkey\" on \"match_reviews\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "match_reviews_userId_fkey",
+        "table": "match_reviews"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"match_reviews_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "match_reviews_userId_fkey",
+          "public",
+          "\"public\".\"match_reviews\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"match_reviews_userId_fkey\" on \"match_reviews\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"match_reviews_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"match_reviews\"\nADD CONSTRAINT \"match_reviews_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"users\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"match_reviews_userId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "match_reviews_userId_fkey",
+          "public",
+          "\"public\".\"match_reviews\"",
+          "f",
+          "[\"userId\"]",
+          "\"public\".\"users\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.match_reviews.match_reviews_matchId_fkey",
+    "label": "Add foreign key \"match_reviews_matchId_fkey\" on \"match_reviews\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "match_reviews_matchId_fkey",
+        "table": "match_reviews"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"match_reviews_matchId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "match_reviews_matchId_fkey",
+          "public",
+          "\"public\".\"match_reviews\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"match_reviews_matchId_fkey\" on \"match_reviews\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"match_reviews_matchId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"match_reviews\"\nADD CONSTRAINT \"match_reviews_matchId_fkey\"\nFOREIGN KEY (\"matchId\")\nREFERENCES \"public\".\"job_matches\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"match_reviews_matchId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "match_reviews_matchId_fkey",
+          "public",
+          "\"public\".\"match_reviews\"",
+          "f",
+          "[\"matchId\"]",
+          "\"public\".\"job_matches\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.fact_reports",
+    "label": "Enable row-level security on \"fact_reports\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "fact_reports"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"fact_reports\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "fact_reports"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"fact_reports\"",
+        "sql": "ALTER TABLE \"public\".\"fact_reports\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"fact_reports\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "fact_reports"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.match_reviews",
+    "label": "Enable row-level security on \"match_reviews\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "match_reviews"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"match_reviews\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "match_reviews"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"match_reviews\"",
+        "sql": "ALTER TABLE \"public\".\"match_reviews\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"match_reviews\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "match_reviews"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.fact_reports.fact_reports_owner_insert_143ac371",
+    "label": "Create RLS policy \"fact_reports_owner_insert_143ac371\" on \"fact_reports\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "fact_reports_owner_insert_143ac371",
+        "table": "fact_reports"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"fact_reports_owner_insert_143ac371\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "fact_reports",
+          "fact_reports_owner_insert_143ac371"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"fact_reports_owner_insert_143ac371\" on \"fact_reports\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"fact_reports_owner_insert_143ac371\"",
+        "sql": "CREATE POLICY \"fact_reports_owner_insert_143ac371\" ON \"public\".\"fact_reports\" AS PERMISSIVE FOR INSERT TO authenticated WITH CHECK (\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.job_matches m WHERE m.\"userId\" = auth.uid() AND m.\"jobId\" = fact_reports.\"jobId\"))",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"fact_reports_owner_insert_143ac371\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "fact_reports",
+          "fact_reports_owner_insert_143ac371",
+          "INSERT",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.fact_reports.fact_reports_owner_read_ab58a1a7",
+    "label": "Create RLS policy \"fact_reports_owner_read_ab58a1a7\" on \"fact_reports\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "fact_reports_owner_read_ab58a1a7",
+        "table": "fact_reports"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"fact_reports_owner_read_ab58a1a7\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "fact_reports",
+          "fact_reports_owner_read_ab58a1a7"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"fact_reports_owner_read_ab58a1a7\" on \"fact_reports\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"fact_reports_owner_read_ab58a1a7\"",
+        "sql": "CREATE POLICY \"fact_reports_owner_read_ab58a1a7\" ON \"public\".\"fact_reports\" AS PERMISSIVE FOR SELECT TO authenticated USING (\"userId\" = auth.uid())",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"fact_reports_owner_read_ab58a1a7\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "fact_reports",
+          "fact_reports_owner_read_ab58a1a7",
+          "SELECT",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.match_reviews.match_reviews_owner_23b38ff6",
+    "label": "Create RLS policy \"match_reviews_owner_23b38ff6\" on \"match_reviews\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "match_reviews_owner_23b38ff6",
+        "table": "match_reviews"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"match_reviews_owner_23b38ff6\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "match_reviews",
+          "match_reviews_owner_23b38ff6"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"match_reviews_owner_23b38ff6\" on \"match_reviews\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"match_reviews_owner_23b38ff6\"",
+        "sql": "CREATE POLICY \"match_reviews_owner_23b38ff6\" ON \"public\".\"match_reviews\" AS PERMISSIVE FOR ALL TO authenticated USING (\"userId\" = auth.uid()) WITH CHECK (\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.job_matches m WHERE m.id = match_reviews.\"matchId\" AND m.\"userId\" = auth.uid() AND m.\"profileId\" = match_reviews.\"profileId\" AND m.\"jobId\" = match_reviews.\"jobId\" AND m.outcome = 'review' AND m.\"reviewRule\" = match_reviews.rule AND m.\"reviewField\" = match_reviews.field))",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"match_reviews_owner_23b38ff6\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "match_reviews",
+          "match_reviews_owner_23b38ff6",
+          "ALL",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  }
+]

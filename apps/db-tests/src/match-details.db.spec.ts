@@ -57,6 +57,9 @@ const COLUMNS = [
   'viewedAt',
   'facts',
   'conflicts',
+  'reviewRule',
+  'reviewField',
+  'reviewChoice',
 ];
 
 type Row = Record<string, unknown> & { jobId: string };

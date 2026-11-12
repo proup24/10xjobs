@@ -366,6 +366,71 @@ export type Database = {
         };
         Relationships: [];
       };
+      fact_reports: {
+        Row: {
+          createdAt: string;
+          extractionId: string | null;
+          field: string;
+          id: string;
+          jobId: string;
+          listingValue: Json | null;
+          note: string | null;
+          processorValue: Json | null;
+          proposedValue: string;
+          quote: string | null;
+          userId: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          createdAt?: string;
+          extractionId?: string | null;
+          field: string;
+          id?: string;
+          jobId: string;
+          listingValue?: Json | null;
+          note?: string | null;
+          processorValue?: Json | null;
+          proposedValue: string;
+          quote?: string | null;
+          userId: string;
+        };
+        Update: {
+          createdAt?: string;
+          extractionId?: string | null;
+          field?: string;
+          id?: string;
+          jobId?: string;
+          listingValue?: Json | null;
+          note?: string | null;
+          processorValue?: Json | null;
+          proposedValue?: string;
+          quote?: string | null;
+          userId?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'fact_reports_extractionId_fkey';
+            columns: ['extractionId'];
+            isOneToOne: false;
+            referencedRelation: 'job_extractions';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'fact_reports_jobId_fkey';
+            columns: ['jobId'];
+            isOneToOne: false;
+            referencedRelation: 'normalized_jobs';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'fact_reports_userId_fkey';
+            columns: ['userId'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       iso_currencies: {
         Row: {
           code: string;
@@ -802,6 +867,64 @@ export type Database = {
           status?: string;
         };
         Relationships: [];
+      };
+      match_reviews: {
+        Row: {
+          choice: string;
+          createdAt: string;
+          field: string;
+          id: string;
+          jobId: string;
+          matchId: string;
+          note: string | null;
+          profileId: string;
+          rule: string;
+          updatedAt: string;
+          userId: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          choice: string;
+          createdAt?: string;
+          field: string;
+          id?: string;
+          jobId: string;
+          matchId: string;
+          note?: string | null;
+          profileId: string;
+          rule: string;
+          updatedAt?: string;
+          userId: string;
+        };
+        Update: {
+          choice?: string;
+          createdAt?: string;
+          field?: string;
+          id?: string;
+          jobId?: string;
+          matchId?: string;
+          note?: string | null;
+          profileId?: string;
+          rule?: string;
+          updatedAt?: string;
+          userId?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'match_reviews_matchId_fkey';
+            columns: ['matchId'];
+            isOneToOne: false;
+            referencedRelation: 'job_matches';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'match_reviews_userId_fkey';
+            columns: ['userId'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       normalized_job_sources: {
         Row: {
@@ -1956,6 +2079,9 @@ export type Database = {
           postingUrl: string;
           profileId: string;
           publishedAt: string;
+          reviewChoice: string;
+          reviewField: string;
+          reviewRule: string;
           salaryCurrency: string;
           salaryMax: number;
           salaryMin: number;
