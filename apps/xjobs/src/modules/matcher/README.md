@@ -103,12 +103,12 @@ One definition serves the worker, the sweep and `db:rematch`: the job is an acti
 ## When it runs
 
 - After processing: the processor hands the job to the `match` queue.
-- Every 60 s: the sweep covers lost nudges, stale facts (new extractions, listing changes, expiry, a `FACTS_VERSION` bump), new published profiles and a `MATCHER_VERSION` bump.
+- Every 60 s: the sweep covers lost nudges, stale facts (new extractions, listing changes, expiry, a `FACTS_VERSION` bump, a city change through `db:vocab`), new published profiles, profile edits, eligibility changes and a `MATCHER_VERSION` bump.
 - By hand: `db:rematch`, or the testing endpoints.
 
 ## The `job_matches` table
 
-One row per `(profileId, jobId)`, upserted (no history). Columns: `userId`, `profileId`, `jobId`, `extractionId` (the extraction the facts were built from), `factsHash` (the facts the decision read; a row is stale when it differs from `job_facts.factsHash`, or its `extractionId` is not the job's current extraction, whose `needsReview` the decision reads), `matcherVersion`, `outcome` (`qualified` | `rejected` | `review`), `unverified` (only on `qualified`), `reviewRule` and `reviewField` (set exactly on `review`), `stackScore` (0 to 1, nullable), `checks` (jsonb, one entry per rule: `rule`, `outcome`, `jobValue`, `profileValue`, `reason`, `unsure`, `unsureField`, `detail`), `decidedAt` (when `outcome` last changed), timestamps. The owner can `SELECT` their rows through RLS; only the engine writes.
+One row per `(profileId, jobId)`, upserted (no history). Columns: `userId`, `profileId`, `jobId`, `extractionId` (the extraction the facts were built from), `factsHash` (the facts the decision read; a row is stale when it differs from `job_facts.factsHash`, or its `extractionId` is not the job's current extraction, whose `needsReview` the decision reads), `matcherVersion`, `profileUpdatedAt` and `eligibilityVersion` (the profile's `updatedAt` and the user's `users.eligibilityVersion` the decision read; a row is stale when either is older than the current value, and null on rows decided before they were recorded, which the `MATCHER_VERSION` 5 bump already made stale). Triggers bump `users.eligibilityVersion` on any insert, update or delete of the user's `work_authorizations`, and on a change of `residenceCountry` or `acceptsSponsorship`, `outcome` (`qualified` | `rejected` | `review`), `unverified` (only on `qualified`), `reviewRule` and `reviewField` (set exactly on `review`), `stackScore` (0 to 1, nullable), `checks` (jsonb, one entry per rule: `rule`, `outcome`, `jobValue`, `profileValue`, `reason`, `unsure`, `unsureField`, `detail`), `decidedAt` (when `outcome` last changed), timestamps. The owner can `SELECT` their rows through RLS; only the engine writes.
 
 ## Running it
 
@@ -125,7 +125,7 @@ Served by the API (`npx nx serve xjobs`), local only, with `XJOBS_OPERATOR_ENDPO
 
 ## Rematching
 
-After a rule or threshold change, bump `MATCHER_VERSION` in `config/matcher.config.ts` first, so the sweep also treats every older row as stale and nothing is missed if the queue loses a message. Do the same, or run `db:rematch -- --all`, after vocabulary changes that affect matching (`region_countries`, cities, tech tag `implies`), because the matcher reads them but the rows do not notice. Then re-decide:
+After a rule or threshold change, bump `MATCHER_VERSION` in `config/matcher.config.ts` first, so the sweep also treats every older row as stale and nothing is missed if the queue loses a message. Do the same, or run `db:rematch -- --all`, after vocabulary changes that affect matching (`region_countries`, tech tag `implies`), because the matcher reads them but the rows do not notice. A city approve, reject or alias through `db:vocab` needs neither: it marks stale the facts of the jobs listed in the city's country or whose openings name it, and the sweep rebuilds them and re-decides the jobs whose facts changed. Then re-decide:
 
 ```sh
 pnpm --filter @xjobs/xjobs db:rematch -- --all

@@ -120,6 +120,9 @@ model User {
   // ISO 3166-1 alpha-2 code from countries; null until the user answers.
   residenceCountry   String?
   acceptsSponsorship Boolean?
+  // Bumped by triggers on any change to work_authorizations, residenceCountry or
+  // acceptsSponsorship, so the matcher re-decides the user's jobs.
+  eligibilityVersion Int                    @default(0)
   jobMatches         JobMatch[]
   jobViews           JobView[]
   +Timestamps
@@ -1021,6 +1024,10 @@ model JobMatch {
   stackScore     Numeric(4, 3)?
   checks         Jsonb
   decidedAt      TimestamptzJsDate(3)
+  // What the decision read: the profile's updatedAt and the user's eligibilityVersion.
+  // A row decided before either changed is stale. Null on rows decided before they were recorded.
+  profileUpdatedAt   TimestamptzJsDate(3)?
+  eligibilityVersion Int?
   +Timestamps
 
   @@check(expression: sql`outcome IN ('qualified','rejected','review')`, name: "job_matches_outcome")

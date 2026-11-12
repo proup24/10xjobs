@@ -1,0 +1,213 @@
+[
+  {
+    "id": "column.public.job_matches.eligibilityVersion",
+    "label": "Add column \"eligibilityVersion\" to \"job_matches\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "eligibilityVersion",
+        "table": "job_matches"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"eligibilityVersion\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "job_matches",
+          "eligibilityVersion"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"eligibilityVersion\" on \"job_matches\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"eligibilityVersion\"",
+        "sql": "ALTER TABLE \"public\".\"job_matches\" ADD COLUMN \"eligibilityVersion\" int4"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"eligibilityVersion\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "job_matches",
+          "eligibilityVersion"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"eligibilityVersion\" on \"job_matches\""
+        }
+      },
+      {
+        "description": "verify column \"eligibilityVersion\" has type \"integer\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "job_matches",
+          "eligibilityVersion",
+          "integer"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.job_matches.profileUpdatedAt",
+    "label": "Add column \"profileUpdatedAt\" to \"job_matches\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "profileUpdatedAt",
+        "table": "job_matches"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"profileUpdatedAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "job_matches",
+          "profileUpdatedAt"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"profileUpdatedAt\" on \"job_matches\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"profileUpdatedAt\"",
+        "sql": "ALTER TABLE \"public\".\"job_matches\" ADD COLUMN \"profileUpdatedAt\" timestamptz(3)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"profileUpdatedAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "job_matches",
+          "profileUpdatedAt"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"profileUpdatedAt\" on \"job_matches\""
+        }
+      },
+      {
+        "description": "verify column \"profileUpdatedAt\" has type \"timestamp(3) with time zone\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "job_matches",
+          "profileUpdatedAt",
+          "timestamp(3) with time zone"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.users.eligibilityVersion",
+    "label": "Add column \"eligibilityVersion\" to \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "eligibilityVersion",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"eligibilityVersion\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "eligibilityVersion"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"eligibilityVersion\" on \"users\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"eligibilityVersion\"",
+        "sql": "ALTER TABLE \"public\".\"users\" ADD COLUMN \"eligibilityVersion\" int4 DEFAULT 0 NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"eligibilityVersion\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "eligibilityVersion"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"eligibilityVersion\" on \"users\""
+        }
+      },
+      {
+        "description": "verify column \"eligibilityVersion\" has type \"integer\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "eligibilityVersion",
+          "integer"
+        ]
+      },
+      {
+        "description": "verify column \"eligibilityVersion\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "eligibilityVersion",
+          "NO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "trigger.bump_eligibility_version",
+    "label": "Bump users.eligibilityVersion when a user's eligibility changes",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "users"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create bump_eligibility_version() and its triggers on users and work_authorizations",
+        "sql": "CREATE FUNCTION public.bump_eligibility_version() RETURNS trigger\n  LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$\nBEGIN\n  IF TG_TABLE_NAME = 'users' THEN\n    -- BEFORE UPDATE, only when residenceCountry or acceptsSponsorship changed (see WHEN).\n    NEW.\"eligibilityVersion\" := OLD.\"eligibilityVersion\" + 1;\n    RETURN NEW;\n  END IF;\n  -- work_authorizations, AFTER each row: OLD is null on insert, NEW on delete.\n  UPDATE public.users SET \"eligibilityVersion\" = \"eligibilityVersion\" + 1\n    WHERE id IN (OLD.\"userId\", NEW.\"userId\");\n  RETURN NULL;\nEND $$;\nREVOKE EXECUTE ON FUNCTION public.bump_eligibility_version() FROM PUBLIC, anon, authenticated;\nCREATE TRIGGER bump_eligibility_version BEFORE UPDATE OF \"residenceCountry\", \"acceptsSponsorship\" ON public.users\n  FOR EACH ROW\n  WHEN (OLD.\"residenceCountry\" IS DISTINCT FROM NEW.\"residenceCountry\"\n        OR OLD.\"acceptsSponsorship\" IS DISTINCT FROM NEW.\"acceptsSponsorship\")\n  EXECUTE FUNCTION public.bump_eligibility_version();\nCREATE TRIGGER bump_eligibility_version AFTER INSERT OR UPDATE OR DELETE ON public.work_authorizations\n  FOR EACH ROW EXECUTE FUNCTION public.bump_eligibility_version();"
+      }
+    ],
+    "postcheck": []
+  }
+]

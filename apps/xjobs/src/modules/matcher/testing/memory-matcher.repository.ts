@@ -48,7 +48,12 @@ export class MemoryMatcherRepository extends MatcherRepository {
               r.jobId === stale.jobId &&
               r.factsHash === stale.factsHash &&
               r.extractionId === stale.extractionId &&
-              r.matcherVersion >= MATCHER_VERSION,
+              r.matcherVersion >= MATCHER_VERSION &&
+              // Null (decided before they were recorded) is not stale by these two.
+              (r.profileUpdatedAt === null ||
+                r.profileUpdatedAt.getTime() >= p.updatedAt.getTime()) &&
+              (r.eligibilityVersion === null ||
+                r.eligibilityVersion >= p.eligibilityVersion),
           ),
       ),
     );

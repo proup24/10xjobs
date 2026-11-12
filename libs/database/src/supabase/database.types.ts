@@ -647,6 +647,7 @@ export type Database = {
           checks: NonNullable<Json>;
           createdAt: string;
           decidedAt: string;
+          eligibilityVersion: number | null;
           extractionId: string;
           factsHash: string | null;
           id: string;
@@ -654,6 +655,7 @@ export type Database = {
           matcherVersion: number;
           outcome: string;
           profileId: string;
+          profileUpdatedAt: string | null;
           reviewField: string | null;
           reviewRule: string | null;
           stackScore: number | null;
@@ -666,6 +668,7 @@ export type Database = {
           checks: NonNullable<Json>;
           createdAt?: string;
           decidedAt: string;
+          eligibilityVersion?: number | null;
           extractionId: string;
           factsHash?: string | null;
           id: string;
@@ -673,6 +676,7 @@ export type Database = {
           matcherVersion: number;
           outcome: string;
           profileId: string;
+          profileUpdatedAt?: string | null;
           reviewField?: string | null;
           reviewRule?: string | null;
           stackScore?: number | null;
@@ -684,6 +688,7 @@ export type Database = {
           checks?: NonNullable<Json>;
           createdAt?: string;
           decidedAt?: string;
+          eligibilityVersion?: number | null;
           extractionId?: string;
           factsHash?: string | null;
           id?: string;
@@ -691,6 +696,7 @@ export type Database = {
           matcherVersion?: number;
           outcome?: string;
           profileId?: string;
+          profileUpdatedAt?: string | null;
           reviewField?: string | null;
           reviewRule?: string | null;
           stackScore?: number | null;
@@ -1823,6 +1829,7 @@ export type Database = {
           acceptsSponsorship: boolean | null;
           address: Json | null;
           createdAt: string;
+          eligibilityVersion: number;
           id: string;
           name: string | null;
           residenceCountry: string | null;
@@ -1833,6 +1840,7 @@ export type Database = {
           acceptsSponsorship?: boolean | null;
           address?: Json | null;
           createdAt?: string;
+          eligibilityVersion?: number;
           id: string;
           name?: string | null;
           residenceCountry?: string | null;
@@ -1842,6 +1850,7 @@ export type Database = {
           acceptsSponsorship?: boolean | null;
           address?: Json | null;
           createdAt?: string;
+          eligibilityVersion?: number;
           id?: string;
           name?: string | null;
           residenceCountry?: string | null;

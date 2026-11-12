@@ -170,6 +170,44 @@ describe('MatcherService', () => {
     });
   });
 
+  it("records the profile's updatedAt and the user's eligibility version it read", async () => {
+    const { repo, service } = setup();
+    const at = new Date('2026-11-10T10:00:00Z');
+    repo.profiles[0] = {
+      ...exampleProfile(),
+      updatedAt: at,
+      eligibilityVersion: 4,
+    };
+    await service.matchJob('job-1');
+    const [row] = (await repo.matchesForJob('job-1')).filter(
+      (r) => r.profileId === 'profile-1',
+    );
+    expect(row).toMatchObject({ profileUpdatedAt: at, eligibilityVersion: 4 });
+  });
+
+  it('decides again only the profile that was edited', async () => {
+    const { repo, service } = setup();
+    await service.matchJob('job-1');
+    const edited = exampleProfile();
+    edited.updatedAt = new Date(edited.updatedAt.getTime() + 1000);
+    repo.profiles[0] = edited;
+    expect(await service.matchJob('job-1')).toMatchObject({ profiles: 1 });
+    expect(await service.matchJob('job-1')).toMatchObject({ profiles: 0 });
+  });
+
+  it('decides again the profiles of a user whose eligibility changed', async () => {
+    const { repo, service } = setup();
+    await service.matchJob('job-1');
+    repo.profiles[1] = {
+      ...exampleProfile(),
+      id: 'profile-2',
+      userId: 'user-2',
+      eligibilityVersion: 1,
+    };
+    expect(await service.matchJob('job-1')).toMatchObject({ profiles: 1 });
+    expect(await service.matchJob('job-1')).toMatchObject({ profiles: 0 });
+  });
+
   it('marks every row unverified when the extraction needs review', async () => {
     const { repo, service } = setup();
     repo.candidates.set('job-1', { extractionId: 'ext-1', needsReview: true });

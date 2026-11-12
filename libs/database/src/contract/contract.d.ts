@@ -24,7 +24,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'1cd5de0e80eaf25816ef11aaa269f6372fda3c935e90621032e65f56392bd741'>;
+  StorageHashBase<'c7e224b8457ff39be47ce7029466d362a15f7c5c9d93c0db4aa43ab160462815'>;
 export type ExecutionHash =
   ExecutionHashBase<'9c0694a80d5f7adf167bc3288d7926267ba4776ae99e720efce6b64a0f440673'>;
 export type ProfileHash =
@@ -738,6 +738,7 @@ export namespace Models {
     checks: FieldOutputTypes['public']['JobMatch']['checks'];
     createdAt: FieldOutputTypes['public']['JobMatch']['createdAt'];
     decidedAt: FieldOutputTypes['public']['JobMatch']['decidedAt'];
+    eligibilityVersion: FieldOutputTypes['public']['JobMatch']['eligibilityVersion'];
     extractionId: FieldOutputTypes['public']['JobMatch']['extractionId'];
     factsHash: FieldOutputTypes['public']['JobMatch']['factsHash'];
     id: FieldOutputTypes['public']['JobMatch']['id'];
@@ -745,6 +746,7 @@ export namespace Models {
     matcherVersion: FieldOutputTypes['public']['JobMatch']['matcherVersion'];
     outcome: FieldOutputTypes['public']['JobMatch']['outcome'];
     profileId: FieldOutputTypes['public']['JobMatch']['profileId'];
+    profileUpdatedAt: FieldOutputTypes['public']['JobMatch']['profileUpdatedAt'];
     reviewField: FieldOutputTypes['public']['JobMatch']['reviewField'];
     reviewRule: FieldOutputTypes['public']['JobMatch']['reviewRule'];
     stackScore: FieldOutputTypes['public']['JobMatch']['stackScore'];
@@ -1099,6 +1101,7 @@ export namespace Models {
     acceptsSponsorship: FieldOutputTypes['public']['User']['acceptsSponsorship'];
     address: FieldOutputTypes['public']['User']['address'];
     createdAt: FieldOutputTypes['public']['User']['createdAt'];
+    eligibilityVersion: FieldOutputTypes['public']['User']['eligibilityVersion'];
     id: FieldOutputTypes['public']['User']['id'];
     name: FieldOutputTypes['public']['User']['name'];
     residenceCountry: FieldOutputTypes['public']['User']['residenceCountry'];
@@ -2487,6 +2490,12 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 3 };
                   readonly many: false;
                 };
+                readonly eligibilityVersion: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly extractionId: {
                   readonly dataType: 'pg/uuid';
                   readonly codecId: 'pg/uuid@1';
@@ -2527,6 +2536,13 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/uuid';
                   readonly codecId: 'pg/uuid@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly profileUpdatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
                   readonly many: false;
                 };
                 readonly reviewField: {
@@ -4870,6 +4886,16 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 3 };
                   readonly many: false;
                 };
+                readonly eligibilityVersion: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/int4@1', 0>;
+                  };
+                  readonly many: false;
+                };
                 readonly id: {
                   readonly dataType: 'pg/uuid';
                   readonly codecId: 'pg/uuid@1';
@@ -6404,6 +6430,10 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 3 };
                 };
               };
+              readonly eligibilityVersion: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
               readonly extractionId: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
@@ -6431,6 +6461,14 @@ type ContractBase = Omit<
               readonly profileId: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly profileUpdatedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
               };
               readonly reviewField: {
                 readonly nullable: true;
@@ -6519,6 +6557,7 @@ type ContractBase = Omit<
                 readonly checks: { readonly column: 'checks' };
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly decidedAt: { readonly column: 'decidedAt' };
+                readonly eligibilityVersion: { readonly column: 'eligibilityVersion' };
                 readonly extractionId: { readonly column: 'extractionId' };
                 readonly factsHash: { readonly column: 'factsHash' };
                 readonly id: { readonly column: 'id' };
@@ -6526,6 +6565,7 @@ type ContractBase = Omit<
                 readonly matcherVersion: { readonly column: 'matcherVersion' };
                 readonly outcome: { readonly column: 'outcome' };
                 readonly profileId: { readonly column: 'profileId' };
+                readonly profileUpdatedAt: { readonly column: 'profileUpdatedAt' };
                 readonly reviewField: { readonly column: 'reviewField' };
                 readonly reviewRule: { readonly column: 'reviewRule' };
                 readonly stackScore: { readonly column: 'stackScore' };
@@ -8562,6 +8602,10 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 3 };
                 };
               };
+              readonly eligibilityVersion: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
               readonly id: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
@@ -8615,6 +8659,7 @@ type ContractBase = Omit<
                 readonly acceptsSponsorship: { readonly column: 'acceptsSponsorship' };
                 readonly address: { readonly column: 'address' };
                 readonly createdAt: { readonly column: 'createdAt' };
+                readonly eligibilityVersion: { readonly column: 'eligibilityVersion' };
                 readonly id: { readonly column: 'id' };
                 readonly name: { readonly column: 'name' };
                 readonly residenceCountry: { readonly column: 'residenceCountry' };

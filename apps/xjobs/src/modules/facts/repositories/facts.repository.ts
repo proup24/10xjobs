@@ -42,7 +42,10 @@ export abstract class FactsRepository {
   ): Promise<{ factsHash: string; factsVersion: number } | null>;
   /** Upserts the facts row (always setting `builtAt`) and replaces the job's conflicts in one transaction. */
   abstract save(row: SavedFacts): Promise<void>;
-  /** Marks facts of jobs listed in a country as stale (`builtAt = '-infinity'`); returns how many. */
+  /**
+   * Marks stale (`builtAt = '-infinity'`) the facts of jobs listed in a country, or whose
+   * openings name it (a country place, or a city place in it); returns how many.
+   */
   abstract markStale(where: { countryCode: string }): Promise<number>;
 }
 
@@ -187,7 +190,16 @@ export class PrismaFactsRepository extends FactsRepository {
     const rows = await this.db.query(
       raw.sql`UPDATE job_facts f SET "builtAt" = '-infinity', "updatedAt" = now()
         FROM normalized_jobs j
-        WHERE j.id = f."jobId" AND j."countryCode" = ${where.countryCode}::text
+        WHERE j.id = f."jobId"
+          AND (j."countryCode" = ${where.countryCode}::text
+            OR EXISTS (
+              SELECT 1
+              FROM jsonb_array_elements(f.facts->'openings') o,
+                jsonb_array_elements(o->'places') pl
+              WHERE CASE pl->>'kind'
+                WHEN 'country' THEN pl->>'code'
+                WHEN 'city' THEN pl->>'countryCode'
+              END = ${where.countryCode}::text))
         RETURNING f."jobId"`
         .returnsRow({ jobId: UUID })
         .build(),

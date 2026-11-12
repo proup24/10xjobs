@@ -36,8 +36,16 @@ export class MemoryFactsRepository extends FactsRepository {
   markStale(where: { countryCode: string }): Promise<number> {
     let n = 0;
     for (const [jobId, row] of this.rows) {
-      if (this.inputs.get(jobId)?.listing.countryCode !== where.countryCode)
-        continue;
+      const listed =
+        this.inputs.get(jobId)?.listing.countryCode === where.countryCode;
+      const named = row.facts.openings.some((o) =>
+        o.places.some(
+          (p) =>
+            (p.kind === 'country' && p.code === where.countryCode) ||
+            (p.kind === 'city' && p.countryCode === where.countryCode),
+        ),
+      );
+      if (!listed && !named) continue;
       row.builtAt = Number.NEGATIVE_INFINITY;
       n += 1;
     }

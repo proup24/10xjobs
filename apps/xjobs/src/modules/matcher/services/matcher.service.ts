@@ -72,6 +72,8 @@ export class MatcherService {
       jobId,
       extractionId: job.extractionId,
       factsHash: job.factsHash,
+      profileUpdatedAt: profile.updatedAt,
+      eligibilityVersion: profile.eligibilityVersion,
     }));
     await this.repo.upsertMatches(rows);
     return {
