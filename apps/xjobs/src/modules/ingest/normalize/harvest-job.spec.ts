@@ -1,4 +1,5 @@
 import { Channel } from 'src/common/enums';
+import cheapJob from '../utils/fixtures/linkedin-job-cheap.json';
 import harvest from '../utils/fixtures/linkedin-job-harvest.json';
 import { jobKey } from './job-key';
 import { normalize as normalizeRaw, type NormalizedRecord } from '.';
@@ -72,6 +73,64 @@ describe('normalize harvestapi LinkedIn jobs', () => {
         period: 'MONTHLY',
       },
     });
+  });
+
+  it('maps parsed city and state', () => {
+    expect(map(hybrid)).toMatchObject({
+      city: 'Paris',
+      state: 'Île-de-France',
+    });
+    expect(map(byId('4489024089'))).toMatchObject({
+      city: 'Rueil-Malmaison',
+      state: 'Île-de-France',
+    });
+    expect(map(byId('4490001823'))).toMatchObject({
+      city: null,
+      state: 'California',
+    });
+  });
+
+  it('maps the location geoId', () => {
+    expect(map(remote)).toMatchObject({
+      geoId: '91000000',
+      countryCode: null,
+      regionCode: 'EU',
+    });
+    expect(map(byId('4454530249'))).toMatchObject({
+      geoId: '91000007',
+      regionCode: 'EMEA',
+    });
+    expect(map(byId('4489984111'))).toMatchObject({
+      geoId: '91000022',
+      regionCode: 'NAMER',
+    });
+  });
+
+  it('keeps providedByEmployer on salary', () => {
+    expect(map(onsite).salary?.providedByEmployer).toBe(true);
+    expect(map(byId('4489984111')).salary).toMatchObject({
+      period: 'HOURLY',
+      providedByEmployer: true,
+    });
+    expect(map(remote).salary).toBeNull();
+  });
+
+  it('reads providedByEmployer only as a boolean', () => {
+    const salary = { ...(onsite.salary as object), providedByEmployer: 'yes' };
+    expect(map({ ...onsite, salary }).salary?.providedByEmployer).toBeNull();
+  });
+
+  it('cheap_scraper items get null city, state and geoId', () => {
+    const result = normalizeRaw(Channel.LINKEDIN_JOB_BOARD, cheapJob, {
+      scrapedAt,
+    });
+    if ('invalid' in result) throw new Error(result.invalid);
+    expect(result.record).toMatchObject({
+      city: null,
+      state: null,
+      geoId: null,
+    });
+    expect(result.record.salary?.providedByEmployer ?? null).toBeNull();
   });
 
   it('keeps an unstated workplace type null', () => {

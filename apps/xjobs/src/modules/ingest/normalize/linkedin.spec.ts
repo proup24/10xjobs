@@ -65,6 +65,7 @@ describe('normalize LinkedIn job board', () => {
       max: 80000,
       currency: 'GBP',
       period: 'yr',
+      providedByEmployer: null,
     });
   });
 
@@ -170,6 +171,7 @@ describe('normalize LinkedIn job board, cheap_scraper items', () => {
       max: null,
       currency: null,
       period: null,
+      providedByEmployer: null,
     });
     expect(cheap({ salaryInfo: [] }).salary).toBeNull();
   });

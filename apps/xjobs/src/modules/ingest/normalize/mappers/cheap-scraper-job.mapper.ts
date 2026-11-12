@@ -78,7 +78,14 @@ export function mapCheapScraperJob(
     experienceLevel: cleanText(p.experienceLevel),
     sector: cleanText(p.sector),
     salary: salary
-      ? { text: salary, min: null, max: null, currency: null, period: null }
+      ? {
+          text: salary,
+          min: null,
+          max: null,
+          currency: null,
+          period: null,
+          providedByEmployer: null,
+        }
       : null,
     publishedAt: datePart(p.publishedAt),
     postedAt: postedAtFromAgo(

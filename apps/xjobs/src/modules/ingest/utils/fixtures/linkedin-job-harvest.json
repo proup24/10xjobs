@@ -965,5 +965,853 @@
         "pageSize": 25
       }
     }
+  },
+  {
+    "id": "4454530249",
+    "title": "Senior Backend Engineer, Integrations - 100% Remote - Europe",
+    "linkedinUrl": "https://www.linkedin.com/jobs/view/4454530249/",
+    "jobState": "LISTED",
+    "postedDate": "2026-11-11T17:48:59.000Z",
+    "headerCaptionText": "Hostaway\nEMEA\n4 hours ago\nOver 200 applicants\nSee who Hostaway has hired for this role",
+    "descriptionText": "Job Description\n\n NOTE: This is a FULLY remote role, but the candidate must be within Europe to collaborate with their team, peers, and internal customers. You do not have to be in the specific country or city shown in this listing, but please only apply if you are physically based within Europe. \n\nTrusted by 20,000+ property managers worldwide, Hostaway is an industry leading, AI-powered vacation rental management platform designed for professional short-term rental operators. Hostaway brings everything together for greater efficiency and faster growth.\n\nProfitable, high-growth, and the first short-term rental property management software unicorn 🦄. Join us at our most exciting stage yet! Learn more about our recent valuation and story here .\n\nAbout The Role\n\nHostaway is seeking a highly motivated Senior Backend Engineer to join the Core team. This team is responsible for the integrations with our key partners (Online Travel Agencies). These integrations are critical to our customers’ daily workflows, powering seamless connectivity between their properties and major booking platforms. If you’ve worked on similar tools that handle huge volumes and interact with a variety of complex APIs, you’ll be a great fit!\n\n What you'll do \n\n Design, build, and operate backend services in PHP and Go.  Drive the extraction of services out of our monolith , defining clean boundaries, ownership, and migration paths.  Collaborate closely with the Product Manage r to shape the technical direction and ensure our backend services deliver maximum value.  Design and ship APIs built for agentic interfaces — making our guest-facing domain consumable by AI agents and automated workflows.  Improve page speed and end-to-end performance , working closely wit h frontend peers since conversion depends on it.  Contribute to high-level architectural decisions and help us move quickly without accumulating regret.  Leverage AI to accelerate code delivery — we provide a Claude Team Premium subscription and expect engineers to use it well. \n\nJob Requirements\n\n 6+ years of experience as a Backend Engineer, with a strong foundation in software engineering,  Strong-level proficiency in PHP and/or Golang , with a strong willingness to dive into both.  Proven experience designing and operating high-traffic, customer-facing systems.  Experience decomposing monoliths or extracting services, with a pragmatic view on when to do it (and when not to).  Solid experience designing APIs — REST, GraphQL, or similar — with an eye on clarity, versioning, and consumability (bonus if you've built APIs for AI agents or LLM-driven clients).  Familiarity with transitioning event-driven service-oriented architectures by applying Domain Driven Design (DDD) principles  Comfortable using AI coding tools (Claude Code, Cursor, Copilot, etc.) as part of your daily workflow, and able to get real leverage out of them.  Experience working in a Cloud environment (AWS is a plus).  Experience with message queues (e.g., AWS SQS) is a plus. \n\n What success looks like \n\n Services are progressively extracted from the monolith with clear ownership and minimal disruption to delivery.  Performance (page speed, latency, uptime) becomes a measurable strength of the products.  Our domain is accessible through clean, well-designed APIs that agentic clients can consume reliably.  The team gets real productivity gains from AI-assisted development , without sacrificing code quality or ownership.  Cross-functional collaboration with Product and Design runs smoothly, with engineering contributing meaningfully to product direction. \n\n What we offer \n\n Competitive Compensation: We offer competitive pay based on market rates in the country of the applicant.  100% Remote: We have no physical offices. Work from your home office, a co-working space, or a dining room table anywhere in your country of residence. Visiting family or travelling? You can work from another country for a temporary stay with your lead’s approval. All of this is set out in our Remote Working Policy.  Yearly Team Offsite: Once a year, every department gets together in person to connect, build closer bonds, sharpen our strategy, and improve how we work together; often exploring a new location every year!  Equity: Every role in our company comes with valuable stock options in a fast-growing and profitable company. This ensures we all share in the company’s success.  Values-Driven Leadership: Our Core Values are not just words we’ve written to make us feel good. We leverage them daily when making strategic and tactical decisions.  Professional Growth: Our rapid growth offers unparalleled learning and development opportunities, along with a multitude of career advancement opportunities.  Annual Paid Leave: The specific amounts vary by country and are aligned with country and/or contract-specific norms.  Geographic Specific Benefits: As an international employer, we offer different country-specific benefits such as Health Insurance and Pensions in countries where these perks are customary. The specifics depend on the country of residence.  Dynamic Team Culture: As a global company with team members in over 40 countries, our diverse and international culture fuels our innovation and creativity, providing a key pillar to our success (and making it a lot of fun to work here). \n\nThank you for your interest. If you apply for this role, you will receive an email from our Talent Acquisition team after your application has been reviewed alongside the qualifications for this role and the qualifications of others who have applied.",
+    "descriptionHtml": "<b>Job Description<br><br><br><br></b><b> NOTE: This is a FULLY remote role, but the candidate must be within Europe to collaborate with their team, peers, and internal customers. You do not have to be in the specific country or city shown in this listing, but please only apply if you are physically based within Europe. <br><br><br><br></b>Trusted by 20,000+ property managers worldwide, Hostaway is an industry leading, AI-powered vacation rental management platform designed for professional short-term rental operators. Hostaway brings everything together for greater efficiency and faster growth.<br><br><br><br>Profitable, high-growth, and the first short-term rental property management software unicorn 🦄. Join us at our most exciting stage yet! Learn more about our recent valuation and story here .<br><br><br><br><b>About The Role<br><br><br><br></b>Hostaway is seeking a highly motivated <b>Senior Backend Engineer</b> to join the Core team. This team is responsible for the integrations with our key partners (Online Travel Agencies). These integrations are critical to our customers’ daily workflows, powering seamless connectivity between their properties and major booking platforms. If you’ve worked on similar tools that handle huge volumes and interact with a variety of complex APIs, you’ll be a great fit!<br><br><br><br><b><b> What you&#39;ll do <br><br><br><br></b></b><ul><li> Design, build, and operate backend services in PHP and Go. </li><li> Drive the extraction of services out of our monolith , defining clean boundaries, ownership, and migration paths. </li><li> Collaborate closely with the Product Manage r to shape the technical direction and ensure our backend services deliver maximum value. </li><li> Design and ship APIs built for agentic interfaces — making our guest-facing domain consumable by AI agents and automated workflows. </li><li> Improve page speed and end-to-end performance , working closely wit h frontend peers since conversion depends on it. </li><li> Contribute to high-level architectural decisions and help us move quickly without accumulating regret. </li><li> Leverage AI to accelerate code delivery — we provide a Claude Team Premium subscription and expect engineers to use it well. <br><br><br><br></li></ul><b>Job Requirements<br><br><br><br></b><ul><li> 6+ years of experience as a Backend Engineer, with a strong foundation in software engineering, </li><li> Strong-level proficiency in PHP and/or Golang , with a strong willingness to dive into both. </li><li> Proven experience designing and operating high-traffic, customer-facing systems. </li><li> Experience decomposing monoliths or extracting services, with a pragmatic view on when to do it (and when not to). </li><li> Solid experience designing APIs — REST, GraphQL, or similar — with an eye on clarity, versioning, and consumability (bonus if you&#39;ve built APIs for AI agents or LLM-driven clients). </li><li> Familiarity with transitioning event-driven service-oriented architectures by applying Domain Driven Design (DDD) principles </li><li> Comfortable using AI coding tools (Claude Code, Cursor, Copilot, etc.) as part of your daily workflow, and able to get real leverage out of them. </li><li> Experience working in a Cloud environment (AWS is a plus). </li><li> Experience with message queues (e.g., AWS SQS) is a plus. <br><br><br><br></li></ul><b><b> What success looks like <br><br><br><br></b></b><ul><li> Services are progressively extracted from the monolith with clear ownership and minimal disruption to delivery. </li><li> Performance (page speed, latency, uptime) becomes a measurable strength of the products. </li><li> Our domain is accessible through clean, well-designed APIs that agentic clients can consume reliably. </li><li> The team gets real productivity gains from AI-assisted development , without sacrificing code quality or ownership. </li><li> Cross-functional collaboration with Product and Design runs smoothly, with engineering contributing meaningfully to product direction. <br><br><br><br></li></ul><b><b> What we offer <br><br><br><br></b></b><ul><li> Competitive Compensation: We offer competitive pay based on market rates in the country of the applicant. </li><li> 100% Remote: We have no physical offices. Work from your home office, a co-working space, or a dining room table anywhere in your country of residence. Visiting family or travelling? You can work from another country for a temporary stay with your lead’s approval. All of this is set out in our Remote Working Policy. </li><li> Yearly Team Offsite: Once a year, every department gets together in person to connect, build closer bonds, sharpen our strategy, and improve how we work together; often exploring a new location every year! </li><li> Equity: Every role in our company comes with valuable stock options in a fast-growing and profitable company. This ensures we all share in the company’s success. </li><li> Values-Driven Leadership: Our Core Values are not just words we’ve written to make us feel good. We leverage them daily when making strategic and tactical decisions. </li><li> Professional Growth: Our rapid growth offers unparalleled learning and development opportunities, along with a multitude of career advancement opportunities. </li><li> Annual Paid Leave: The specific amounts vary by country and are aligned with country and/or contract-specific norms. </li><li> Geographic Specific Benefits: As an international employer, we offer different country-specific benefits such as Health Insurance and Pensions in countries where these perks are customary. The specifics depend on the country of residence. </li><li> Dynamic Team Culture: As a global company with team members in over 40 countries, our diverse and international culture fuels our innovation and creativity, providing a key pillar to our success (and making it a lot of fun to work here). <br><br><br><br></li></ul>Thank you for your interest. If you apply for this role, you will receive an email from our Talent Acquisition team after your application has been reviewed alongside the qualifications for this role and the qualifications of others who have applied.",
+    "location": {
+      "linkedinText": "EMEA",
+      "postalAddress": null,
+      "countryCode": "oo",
+      "geoId": "91000007",
+      "parsed": {
+        "text": "EMEA",
+        "countryCode": null,
+        "regionCode": "EMEA"
+      }
+    },
+    "employmentType": "full_time",
+    "workplaceType": "remote",
+    "workRemoteAllowed": true,
+    "easyApplyUrl": null,
+    "applyMethod": {
+      "companyApplyUrl": "https://careers.hostaway.com/o/senior-backend-engineer-integrations-100-remote-europe?source=LinkedIn",
+      "applyStartersPreferenceVoid": false,
+      "inPageOffsiteApply": false,
+      "type": "OffsiteApply"
+    },
+    "applicants": 200,
+    "hiringTeam": [],
+    "company": {
+      "id": "10388777",
+      "universalName": "hostaway",
+      "linkedinUrl": "https://www.linkedin.com/company/hostaway",
+      "name": "Hostaway",
+      "website": "http://www.hostaway.com",
+      "callToActionUrl": null,
+      "phone": null,
+      "logo": "https://media.licdn.com/dms/image/v2/D560BAQEBurSRKi653g/company-logo_400_400/B56ZUpNChXGUAY-/0/1740153039223/hostaway_logo?e=1796256000&v=beta&t=Lwq9YrC6bge92Mj_R44CXiJ_OTFL0gVHH7RtqJDAQk4",
+      "employeeCount": 389,
+      "employeeCountRange": {
+        "start": 201,
+        "end": 500
+      },
+      "followerCount": 44384,
+      "description": "Hostaway is the world's most loved AI vacation rental software, an industry leading, AI-powered management platform designed for professional short-term rental operators. We bring everything together for greater efficiency and faster growth.\n\nGrow your business, manage all reservations, automate guest communication, sync listings across channels like Airbnb and Vrbo, and boost direct bookings from one unified platform, saving you up to 60 minutes per reservation.\n\nWhat we offer:\n-Channel Manager\n-Property Management System\n-AI CoHost: your AI operational partner layered on top of your live business data\n-AI Replies: automate 93% of guest communication\n-Dynamic Pricing: increase earnings by 25%+\n-Unified Inbox\n-Direct Booking Engine\n-Mobile Apps\n-Analytics & Reporting\n-Open API\n-300+ Integrations\n\nBuilt for property managers and hospitality brands scaling from 5 to 500+ properties, we grow with you. With award winning 24/7 phone support, a comprehensive Help Center, a 97%+ customer satisfaction rating, and global, multi-language team coverage, you get real help, fast.\n\nSmarter hosting with AI. More bookings. Less hassle.",
+      "locations": [
+        {
+          "country": "FI",
+          "city": "Helsinki ",
+          "headquarter": true,
+          "parsed": {
+            "text": "Helsinki, Finland",
+            "countryCode": "FI",
+            "regionCode": null,
+            "country": "Finland",
+            "countryFull": "Finland",
+            "state": "Uusimaa",
+            "city": "Helsinki"
+          }
+        }
+      ],
+      "specialities": [
+        "Vacation Rentals",
+        "Channel Management",
+        "Property Management System",
+        "Mobile Apps",
+        "Airbnb",
+        "Booking.com",
+        "Expedia",
+        "VRBO",
+        "User Management",
+        "Tasks",
+        "Booking Engine",
+        "Revenue Management",
+        "Dynamic Pricing",
+        "API",
+        "Short Term Rentals",
+        "guest communication",
+        "AI Vacation Rental Software",
+        "AI CoHost",
+        "AI Replies",
+        "Direct Bookings",
+        "Automation"
+      ],
+      "industries": [
+        {
+          "id": null,
+          "name": "Software Development",
+          "title": "Software Development",
+          "hierarchy": null
+        }
+      ],
+      "logos": [
+        {
+          "url": "https://media.licdn.com/dms/image/v2/D560BAQEBurSRKi653g/company-logo_400_400/B56ZUpNChXGUAY-/0/1740153039223/hostaway_logo?e=1796256000&v=beta&t=Lwq9YrC6bge92Mj_R44CXiJ_OTFL0gVHH7RtqJDAQk4",
+          "width": 400,
+          "height": 400
+        },
+        {
+          "url": "https://media.licdn.com/dms/image/v2/D560BAQEBurSRKi653g/company-logo_200_200/B56ZUpNChXGUAI-/0/1740153039223/hostaway_logo?e=1796256000&v=beta&t=jCM2c85SjW6NCH8LPjamxzs3ev8QvxflCHD_cfLjM1k",
+          "width": 200,
+          "height": 200
+        },
+        {
+          "url": "https://media.licdn.com/dms/image/v2/D560BAQEBurSRKi653g/company-logo_100_100/B56ZUpNChXGUAQ-/0/1740153039223/hostaway_logo?e=1796256000&v=beta&t=3BRo5z2DLwHujXFNknILu6AlqwaSLZF93EqJE8uCjIk",
+          "width": 100,
+          "height": 100
+        }
+      ],
+      "backgroundCover": "https://media.licdn.com/dms/image/v2/D561BAQHaXwaATE8Mfw/company-background_10000/B56Z.LNHD_KcAI-/0/1784746898146/hostaway_cover?e=1795042800&v=beta&t=PRDdofAe4CdJCPAjWO6sEQFfdfNF2pNvNU8RBnY4tAE",
+      "backgroundCovers": [
+        {
+          "url": "https://media.licdn.com/dms/image/v2/D561BAQHaXwaATE8Mfw/company-background_10000/B56Z.LNHD_KcAI-/0/1784746898146/hostaway_cover?e=1795042800&v=beta&t=PRDdofAe4CdJCPAjWO6sEQFfdfNF2pNvNU8RBnY4tAE",
+          "width": 3190,
+          "height": 797
+        },
+        {
+          "url": "https://media.licdn.com/dms/image/v2/D561BAQHaXwaATE8Mfw/company-background_400/B56Z.LNHD_KcAQ-/0/1784746898146/hostaway_cover?e=1795042800&v=beta&t=xJ1HwrFr7Zk87smusFi6q5Swy0WqSpcpirv7xU8MSI0",
+          "width": 400,
+          "height": 99
+        },
+        {
+          "url": "https://media.licdn.com/dms/image/v2/D561BAQHaXwaATE8Mfw/company-background_200/B56Z.LNHD_KcAU-/0/1784746898146/hostaway_cover?e=1795042800&v=beta&t=zC1XikcIlJKZF7Nj0FB8U7em0MIdUhqSDLCOyewalK8",
+          "width": 200,
+          "height": 49
+        }
+      ],
+      "similarOrganizations": [],
+      "affiliatedPages": []
+    },
+    "salary": {
+      "text": null,
+      "min": null,
+      "max": null
+    },
+    "jobFunctions": ["ENG", "IT"],
+    "industries": ["Software Development"],
+    "experienceLevel": null,
+    "benefits": [],
+    "benefitsDataSource": null,
+    "views": 0,
+    "expireAt": "2026-12-29T09:34:20.000Z",
+    "new": true,
+    "closedAt": null,
+    "contentSource": "JOBS_PREMIUM_OFFLINE",
+    "jobApplicationLimitReached": false,
+    "applicantTrackingSystem": null,
+    "query": {
+      "search": "backend engineer node js",
+      "sortBy": "date",
+      "postedLimit": "week",
+      "location": "France"
+    },
+    "_meta": {
+      "pagination": {
+        "totalElements": 70,
+        "totalPages": 3,
+        "pageNumber": 1,
+        "previousElements": 0,
+        "pageSize": 25
+      }
+    }
+  },
+  {
+    "id": "4489984111",
+    "title": "Software engineer - open source contributions - Remote",
+    "linkedinUrl": "https://www.linkedin.com/jobs/view/4489984111/",
+    "jobState": "LISTED",
+    "postedDate": "2026-11-11T00:00:00.000Z",
+    "headerCaptionText": "Recruitment Room - Global\nNAMER\n23 hours ago\nBe among the first 25 applicants\nSee who Recruitment Room - Global has hired for this role",
+    "descriptionText": "Location: Fully Remote\n\nEmployment Type: Contractor\n\nAnnualized Compensation: $96,000–$192,000\n\nHourly Rate: $50–$100\n\nAbout The Role\n\nWe are seeking experienced Software Engineers with strong open-source development skills to support an AI training project. You will contribute to complex coding tasks, improve existing codebases, resolve technical issues, and evaluate software solutions. Prior AI training experience is not required.\n\nKey Responsibilities\n\nDevelop and implement features in existing open-source codebases.Identify and resolve complex bugs while maintaining code quality and reliability.Refactor legacy code to improve performance, readability, and scalability.Validate code for accuracy, consistency, and adherence to engineering standards.Apply algorithms and competitive programming techniques to solve complex problems.Review code contributions and maintain technical documentation.Produce clear technical write-ups explaining solution design and implementation.\n\nRequired Qualifications\n\nExpert-level proficiency in at least two languages, including Python, C++, Java, Rust, TypeScript, Go, or C#.Substantial open-source development experience, particularly in feature implementation, debugging, and code refactoring.Strong knowledge of algorithms and complex problem-solving.Ability to analyze technical requirements and develop efficient solutions.Excellent code review, documentation, and communication skills.Ability to work independently in a remote environment and meet project deadlines.\n\nCompensation And Work Arrangement\n\nRemote contractor engagement paying $50–$100 per hour, equivalent to $96,000–$192,000 annually based on 40 hours per week and 48 working weeks per year.\n\nCompensation is output-based, with payment for accepted tasks meeting project specifications. Minimum weekly task submissions apply. Selected candidates should be ready to begin within 24–48 hours of completing onboarding.\n\nAnnualized compensation is an illustrative equivalent based on 40 hours/week × 48 weeks/year. Actual earnings depend on hours worked, project availability, and approved work.",
+    "descriptionHtml": "Location: Fully Remote<br><br><br><br>Employment Type: Contractor<br><br><br><br>Annualized Compensation: $96,000–$192,000<br><br><br><br>Hourly Rate: $50–$100<br><br><br><br><b>About The Role<br><br><br><br></b>We are seeking experienced Software Engineers with strong open-source development skills to support an AI training project. You will contribute to complex coding tasks, improve existing codebases, resolve technical issues, and evaluate software solutions. Prior AI training experience is not required.<br><br><br><br><b>Key Responsibilities<br><br><br><br></b><ul><li>Develop and implement features in existing open-source codebases.</li><li>Identify and resolve complex bugs while maintaining code quality and reliability.</li><li>Refactor legacy code to improve performance, readability, and scalability.</li><li>Validate code for accuracy, consistency, and adherence to engineering standards.</li><li>Apply algorithms and competitive programming techniques to solve complex problems.</li><li>Review code contributions and maintain technical documentation.</li><li>Produce clear technical write-ups explaining solution design and implementation.<br><br><br><br></li></ul><b>Required Qualifications<br><br><br><br></b><ul><li>Expert-level proficiency in at least two languages, including Python, C++, Java, Rust, TypeScript, Go, or C#.</li><li>Substantial open-source development experience, particularly in feature implementation, debugging, and code refactoring.</li><li>Strong knowledge of algorithms and complex problem-solving.</li><li>Ability to analyze technical requirements and develop efficient solutions.</li><li>Excellent code review, documentation, and communication skills.</li><li>Ability to work independently in a remote environment and meet project deadlines.<br><br><br><br></li></ul><b>Compensation And Work Arrangement<br><br><br><br></b>Remote contractor engagement paying $50–$100 per hour, equivalent to $96,000–$192,000 annually based on 40 hours per week and 48 working weeks per year.<br><br><br><br>Compensation is output-based, with payment for accepted tasks meeting project specifications. Minimum weekly task submissions apply. Selected candidates should be ready to begin within 24–48 hours of completing onboarding.<br><br><br><br><i>Annualized compensation is an illustrative equivalent based on 40 hours/week × 48 weeks/year. Actual earnings depend on hours worked, project availability, and approved work.</i>",
+    "location": {
+      "linkedinText": "NAMER",
+      "postalAddress": null,
+      "countryCode": "oo",
+      "geoId": "91000022",
+      "parsed": {
+        "text": "North America",
+        "countryCode": null,
+        "regionCode": "NAMER"
+      }
+    },
+    "employmentType": "contract",
+    "workplaceType": "remote",
+    "workRemoteAllowed": true,
+    "easyApplyUrl": null,
+    "applyMethod": {
+      "companyApplyUrl": "https://jobs.pitchnhire.com/recruitmentroom.net/software-engineer-open-source-contributions-remote-clone-gBns9/019f603b-32ee-79e6-bce3-4519000feedd?utm_source=linkedin&utm_medium=web-application",
+      "applyStartersPreferenceVoid": false,
+      "inPageOffsiteApply": false,
+      "type": "OffsiteApply"
+    },
+    "applicants": 25,
+    "hiringTeam": [],
+    "company": {
+      "id": "106616160",
+      "universalName": "recruitment-room-global",
+      "linkedinUrl": "https://www.linkedin.com/company/recruitment-room-global",
+      "name": "Recruitment Room - Global",
+      "website": "https://recruitmentroom.net/",
+      "callToActionUrl": null,
+      "phone": null,
+      "logo": "https://media.licdn.com/dms/image/v2/D4D0BAQFfAkeiozjTLg/company-logo_400_400/B4DZc.wjfgG8Ac-/0/1749104606064/recruitment_room_global_logo?e=1796256000&v=beta&t=olzS4ZCvohALq8eTRtf_jdkcMi8CefHBZtwUIK-XHfk",
+      "employeeCount": 10,
+      "employeeCountRange": {
+        "start": 11,
+        "end": 50
+      },
+      "followerCount": 44489,
+      "description": "Recruitment Room – Global is building the infrastructure that powers modern workforces. We help organizations hire, employ, manage, and scale talent across borders through an integrated ecosystem of AI-driven workforce solutions.\n\nOur platform combines global talent acquisition, Employer of Record (EOR), contractor management, payroll, HRIS, workforce intelligence, and recruitment technology into a seamless experience that enables businesses to grow without geographical limitations.\n\nWe believe the future of work is global, distributed, and technology-enabled. By combining human expertise with artificial intelligence, we simplify workforce operations, reduce complexity, and empower organizations to build resilient, high-performing teams anywhere in the world.\n",
+      "locations": [
+        {
+          "country": "DE",
+          "city": "Global",
+          "headquarter": true,
+          "parsed": {
+            "text": "Global",
+            "countryCode": null,
+            "regionCode": "GLOBAL"
+          }
+        }
+      ],
+      "specialities": [
+        "Workforce Infrastructure",
+        "RR JobCopilot",
+        "AI Recruitment",
+        "Global Hiring",
+        "Employer of Record (EOR)",
+        "Contractor Management",
+        "Global Payroll",
+        "HR Technology",
+        "HRIS",
+        "Workforce Intelligence",
+        "Future of Work",
+        "Workforce Analytics",
+        "Compliance Management",
+        "Remote Workforce Solutions",
+        "International Hiring",
+        "Recruitment Marketing",
+        "Employer Branding",
+        "Executive Search",
+        "Recruitment Process Outsourcing (RPO)",
+        "Talent Intelligence",
+        "People Operations",
+        "People Operations"
+      ],
+      "industries": [
+        {
+          "id": null,
+          "name": "Software Development",
+          "title": "Software Development",
+          "hierarchy": null
+        }
+      ],
+      "logos": [
+        {
+          "url": "https://media.licdn.com/dms/image/v2/D4D0BAQFfAkeiozjTLg/company-logo_400_400/B4DZc.wjfgG8Ac-/0/1749104606064/recruitment_room_global_logo?e=1796256000&v=beta&t=olzS4ZCvohALq8eTRtf_jdkcMi8CefHBZtwUIK-XHfk",
+          "width": 400,
+          "height": 400
+        },
+        {
+          "url": "https://media.licdn.com/dms/image/v2/D4D0BAQFfAkeiozjTLg/company-logo_200_200/B4DZc.wjfgG8AM-/0/1749104606064/recruitment_room_global_logo?e=1796256000&v=beta&t=qopRqpLlCuxLCyAyGHRdE6Z7V2YT7UrGyzCM6H_kY5E",
+          "width": 200,
+          "height": 200
+        },
+        {
+          "url": "https://media.licdn.com/dms/image/v2/D4D0BAQFfAkeiozjTLg/company-logo_100_100/B4DZc.wjfgG8AU-/0/1749104606064/recruitment_room_global_logo?e=1796256000&v=beta&t=KefVmC66431xX_h4lU35MpstNWcU7Itft8wSLClaeo8",
+          "width": 100,
+          "height": 100
+        }
+      ],
+      "backgroundCover": "https://media.licdn.com/dms/image/v2/D4E3DAQH9SZ6RpZzsaw/image-scale_191_1128/B4EZvKhuU9H8Ac-/0/1768629400435/recruitment_room_global_cover?e=1795046400&v=beta&t=yQ0Vc0oUqbuOtJkeGL4kGQcBhAjeZSshZZ33KzBjrYY",
+      "backgroundCovers": [
+        {
+          "url": "https://media.licdn.com/dms/image/v2/D4E3DAQH9SZ6RpZzsaw/image-scale_191_1128/B4EZvKhuU9H8Ac-/0/1768629400435/recruitment_room_global_cover?e=1795046400&v=beta&t=yQ0Vc0oUqbuOtJkeGL4kGQcBhAjeZSshZZ33KzBjrYY",
+          "width": 1128,
+          "height": 191
+        },
+        {
+          "url": "https://media.licdn.com/dms/image/v2/D4E3DAQH9SZ6RpZzsaw/image-scale_127_750/B4EZvKhuU9H8AM-/0/1768629400435/recruitment_room_global_cover?e=1795046400&v=beta&t=3mCD4ZU6DARY2u0zzatSM7lgSJUTDz6xbHhIOYmm4A8",
+          "width": 749,
+          "height": 127
+        },
+        {
+          "url": "https://media.licdn.com/dms/image/v2/D4E3DAQH9SZ6RpZzsaw/image-scale_108_640/B4EZvKhuU9H8AQ-/0/1768629400435/recruitment_room_global_cover?e=1795046400&v=beta&t=ANRI9_rr-RhnD5zamjWaEq8VWjzXZc0P6frrmWm1e1g",
+          "width": 108,
+          "height": 18
+        }
+      ],
+      "similarOrganizations": [],
+      "affiliatedPages": []
+    },
+    "salary": {
+      "text": "50 - 100 USD",
+      "min": 50,
+      "max": 100,
+      "currency": "USD",
+      "payPeriod": "HOURLY",
+      "compensationType": "BASE_SALARY",
+      "compensationSource": "JOB_POSTER_PROVIDED",
+      "providedByEmployer": true
+    },
+    "jobFunctions": ["ENG", "IT"],
+    "industries": ["Software Development"],
+    "experienceLevel": "Associate",
+    "benefits": [],
+    "benefitsDataSource": "JOB_POSTER",
+    "views": 0,
+    "expireAt": "2026-12-11T16:54:58.000Z",
+    "new": true,
+    "closedAt": null,
+    "contentSource": "JOBS_CREATE",
+    "jobApplicationLimitReached": false,
+    "applicantTrackingSystem": null,
+    "query": {
+      "search": "next js",
+      "sortBy": "date",
+      "workplaceType": ["remote"],
+      "experienceLevel": ["associate", "mid-senior"],
+      "postedLimit": "24h",
+      "location": "united states"
+    },
+    "_meta": {
+      "pagination": {
+        "totalElements": 66,
+        "totalPages": 3,
+        "pageNumber": 2,
+        "previousElements": 25,
+        "pageSize": 25
+      }
+    },
+    "_search": {
+      "jobTitles": ["next js"],
+      "locations": ["united states"],
+      "experienceLevel": ["associate", "mid-senior"],
+      "workplaceType": ["remote"],
+      "postedLimit": "24h",
+      "sortBy": "date",
+      "maxItems": 100
+    }
+  },
+  {
+    "id": "4490001823",
+    "title": "Chief Executive Officer",
+    "linkedinUrl": "https://www.linkedin.com/jobs/view/4490001823/",
+    "jobState": "LISTED",
+    "postedDate": "2026-11-11T21:32:44.000Z",
+    "headerCaptionText": "Nature and Culture International\nCalifornia, United States\n2 hours ago\nBe among the first 25 applicants\nSee who Nature and Culture International has hired for this role",
+    "descriptionText": "Nature & Culture International (NCI) is a highly effective conservation organization working to protect tropical forests and biodiversity in South America. Over the past 30 years, it has conserved over 29 million acres in 211 protected areas across the Andes and Amazon by putting local communities at the center of the work rather than treating them as bystanders. The organization works primarily in Ecuador, Peru, Colombia, and Bolivia, partnering with Indigenous groups, traditional communities, governments, and regional allies to protect land for the long term. Country teams lead conservation work on the ground, with headquarters in Loja, Ecuador, anchoring field operations and offices throughout the region.\nThe CEO is the organization’s chief fundraiser and its lead representative in the United States. This person leads the U.S. team, focuses on cultivating major institutional and individual donors, and builds partnerships that scale conservation work across Latin America. It’s a role for a leader who can tell a compelling story, build lasting donor relationships, and turn field results into sustained giving.\nThe job, at its core, is to fund the next stage of growth. Conservation is why the organization exists; revenue is what makes it possible. The next CEO will put the expanding revenue to work protecting some of the most biodiverse forests left on the planet. The U.S. branch exists to fund the work, not run it.\nCompensationThis is a full-time, exempt, benefits-eligible role. Salary range is $275,000–$325,000, based on experience.\nBenefits include:Health, dental, and vision insuranceRetirement plan with employer contributionPaid time offProfessional development support\nLocationThis is a remote position open to candidates who live in California, with a preference for those based in Southern California, close to our U.S. operations. Expect travel for donor meetings, conferences, and presentations, plus roughly four weeks a year in the field in South America.\nStart DateFebruary 2027\nTo ApplySelect \"Apply Here\" below. Applications should include a resume and a cover letter describing your qualifications that match the position criteria and what you will bring to the role. The position is open until filled.\nFor More InformationMore information on Nature & Culture International can be found at natureandculture.org\nFor additional information regarding this opportunity, please contact Jane Doe, Principal of Example Search, at jobs@example.com",
+    "descriptionHtml": "<p>Nature &amp; Culture International (NCI) is a highly effective conservation organization working to protect tropical forests and biodiversity in South America. Over the past 30 years, it has conserved over 29 million acres in 211 protected areas across the Andes and Amazon by putting local communities at the center of the work rather than treating them as bystanders. The organization works primarily in Ecuador, Peru, Colombia, and Bolivia, partnering with Indigenous groups, traditional communities, governments, and regional allies to protect land for the long term. Country teams lead conservation work on the ground, with headquarters in Loja, Ecuador, anchoring field operations and offices throughout the region.</p><br><p>The CEO is the organization’s chief fundraiser and its lead representative in the United States. This person leads the U.S. team, focuses on cultivating major institutional and individual donors, and builds partnerships that scale conservation work across Latin America. It’s a role for a leader who can tell a compelling story, build lasting donor relationships, and turn field results into sustained giving.</p><br><p>The job, at its core, is to fund the next stage of growth. Conservation is why the organization exists; revenue is what makes it possible. The next CEO will put the expanding revenue to work protecting some of the most biodiverse forests left on the planet. The U.S. branch exists to fund the work, not run it.</p><br><p><b>Compensation</b></p><p>This is a full-time, exempt, benefits-eligible role. Salary range is $275,000–$325,000, based on experience.</p><br><p>Benefits include:</p><ul><li>Health, dental, and vision insurance</li><li>Retirement plan with employer contribution</li><li>Paid time off</li><li>Professional development support</li></ul><br><p><b>Location</b></p><p>This is a remote position open to candidates who live in California, with a preference for those based in Southern California, close to our U.S. operations. Expect travel for donor meetings, conferences, and presentations, plus roughly four weeks a year in the field in South America.</p><br><p><b>Start Date</b></p><p>February 2027</p><br><p><b>To Apply</b></p><p>Select &quot;Apply Here&quot; below. Applications should include a resume and a cover letter describing your qualifications that match the position criteria and what you will bring to the role. The position is open until filled.</p><br><p><b>For More Information</b></p><p>More information on Nature &amp; Culture International can be found at <a href=\"https://www.natureandculture.org/\"><u>natureandculture.org</u></a></p><br><p>For additional information regarding this opportunity, please contact Jane Doe, Principal of Example Search, at <u>jobs@example.com</u></p>",
+    "location": {
+      "linkedinText": "California, United States",
+      "postalAddress": null,
+      "countryCode": "us",
+      "geoId": "102095887",
+      "parsed": {
+        "text": "CA, United States",
+        "countryCode": "US",
+        "regionCode": null,
+        "country": "United States",
+        "countryFull": "United States of America",
+        "state": "California"
+      }
+    },
+    "employmentType": "full_time",
+    "workplaceType": "remote",
+    "workRemoteAllowed": true,
+    "easyApplyUrl": null,
+    "applyMethod": {
+      "companyApplyUrl": "https://potrerogroup.com/nature",
+      "applyStartersPreferenceVoid": true,
+      "inPageOffsiteApply": false,
+      "type": "OffsiteApply"
+    },
+    "applicants": 25,
+    "hiringTeam": [],
+    "company": {
+      "id": "3841715",
+      "universalName": "naturecultureinternational",
+      "linkedinUrl": "https://www.linkedin.com/company/naturecultureinternational",
+      "name": "Nature and Culture International",
+      "website": "https://natureandculture.org/donate",
+      "callToActionUrl": null,
+      "phone": null,
+      "logo": "https://media.licdn.com/dms/image/v2/D560BAQEfihUBjFzERg/company-logo_400_400/B56Zz8bN_LH8AY-/0/1773761520159/naturecultureinternational_logo?e=1796256000&v=beta&t=IChcToF6qA2o6Yh9obwyOuTvwuQoRhAhY0FZ-2kzFPk",
+      "employeeCount": 69,
+      "employeeCountRange": {
+        "start": 51,
+        "end": 200
+      },
+      "followerCount": 2915,
+      "description": "Nature and Culture International conserves biologically diverse landscapes in Latin America, in partnership with local people, for the planet's well-being. Since 1996, we have conserved 27 million acres of endangered ecosystems with exceptional cost-efficiency.\n\nWe prioritize community participation, collaborating with governments and local and indigenous communities to manage protected areas. Our sustainable development programs ensure better lives for local people while preserving vital ecosystems. Working in some of the most biodiverse regions, we are making a profound impact.",
+      "locations": [
+        {
+          "country": "US",
+          "geographicArea": "CA",
+          "city": "Del Mar",
+          "line1": "1400 Maiden Lane",
+          "postalCode": "92014",
+          "headquarter": true,
+          "parsed": {
+            "text": "Del Mar, CA, United States",
+            "countryCode": "US",
+            "regionCode": null,
+            "country": "United States",
+            "countryFull": "United States of America",
+            "state": "California",
+            "city": "Del Mar"
+          }
+        }
+      ],
+      "specialities": [
+        "Conserving land and biodiversity",
+        "Working with local communities and governments in Latin America",
+        "Creating and managing protected areas in Latin America",
+        "Preventing deforestation",
+        "Nature-based solutions to climate change",
+        "Sub-national protected area creation and protection",
+        "Sustainable bioeconomies",
+        "Environmental protection",
+        "Ecosystem-level protection",
+        "Latin America",
+        "Partnering with Indigenous Peoples"
+      ],
+      "industries": [
+        {
+          "id": null,
+          "name": "Non-profit Organizations",
+          "title": "Non-profit Organizations",
+          "hierarchy": null
+        }
+      ],
+      "logos": [
+        {
+          "url": "https://media.licdn.com/dms/image/v2/D560BAQEfihUBjFzERg/company-logo_400_400/B56Zz8bN_LH8AY-/0/1773761520159/naturecultureinternational_logo?e=1796256000&v=beta&t=IChcToF6qA2o6Yh9obwyOuTvwuQoRhAhY0FZ-2kzFPk",
+          "width": 400,
+          "height": 400
+        },
+        {
+          "url": "https://media.licdn.com/dms/image/v2/D560BAQEfihUBjFzERg/company-logo_200_200/B56Zz8bN_LH8AI-/0/1773761520159/naturecultureinternational_logo?e=1796256000&v=beta&t=3tRxb2U8NAyyZ_j2IOX_6JSnXL8iLvWFFV7hR0yPT6Y",
+          "width": 200,
+          "height": 200
+        },
+        {
+          "url": "https://media.licdn.com/dms/image/v2/D560BAQEfihUBjFzERg/company-logo_100_100/B56Zz8bN_LH8AQ-/0/1773761520159/naturecultureinternational_logo?e=1796256000&v=beta&t=9LXnXA0A9oWL1EjzEb-avF6GSU35Ix-3R2GgAZVI5ZQ",
+          "width": 100,
+          "height": 100
+        }
+      ],
+      "backgroundCover": "https://media.licdn.com/dms/image/v2/D563DAQEOwMqjAlmDHA/image-scale_191_1128/B56Zz8eB3PJIAg-/0/1773762256895/naturecultureinternational_cover?e=1795046400&v=beta&t=PCxj5a1rH_w-knnXsJG1LpJvB_9F6dy4p15RpDAFbn4",
+      "backgroundCovers": [
+        {
+          "url": "https://media.licdn.com/dms/image/v2/D563DAQEOwMqjAlmDHA/image-scale_191_1128/B56Zz8eB3PJIAg-/0/1773762256895/naturecultureinternational_cover?e=1795046400&v=beta&t=PCxj5a1rH_w-knnXsJG1LpJvB_9F6dy4p15RpDAFbn4",
+          "width": 1128,
+          "height": 191
+        },
+        {
+          "url": "https://media.licdn.com/dms/image/v2/D563DAQEOwMqjAlmDHA/image-scale_127_750/B56Zz8eB3PJIAQ-/0/1773762256895/naturecultureinternational_cover?e=1795046400&v=beta&t=dSGbBicJHCjamhyXAuzpA0Mw1nPqYol_R-EoJiF94V0",
+          "width": 750,
+          "height": 126
+        },
+        {
+          "url": "https://media.licdn.com/dms/image/v2/D563DAQEOwMqjAlmDHA/image-scale_108_640/B56Zz8eB3PJIAU-/0/1773762256895/naturecultureinternational_cover?e=1795046400&v=beta&t=o_Rxes7b6m6bCxjZwX4RC4SUsQ7k80uLQU4d-3GrAAU",
+          "width": 108,
+          "height": 18
+        }
+      ],
+      "similarOrganizations": [],
+      "affiliatedPages": []
+    },
+    "salary": {
+      "text": null,
+      "min": null,
+      "max": null
+    },
+    "jobFunctions": [],
+    "industries": [
+      "Non-profit Organizations",
+      "Conservation Programs",
+      "Environmental Services"
+    ],
+    "experienceLevel": "Mid-Senior level",
+    "benefits": [
+      "Medical insurance",
+      "Vision insurance",
+      "Dental insurance",
+      "401(k)"
+    ],
+    "benefitsDataSource": "JOB_POSTER",
+    "views": 0,
+    "expireAt": "2026-12-11T21:32:44.000Z",
+    "new": true,
+    "closedAt": null,
+    "contentSource": "JOBS_PREMIUM_OFFLINE",
+    "jobApplicationLimitReached": false,
+    "applicantTrackingSystem": null,
+    "query": {
+      "search": "next js",
+      "sortBy": "date",
+      "workplaceType": ["remote"],
+      "experienceLevel": ["associate", "mid-senior"],
+      "postedLimit": "24h",
+      "location": "united states"
+    },
+    "_meta": {
+      "pagination": {
+        "totalElements": 66,
+        "totalPages": 3,
+        "pageNumber": 2,
+        "previousElements": 25,
+        "pageSize": 25
+      }
+    },
+    "_search": {
+      "jobTitles": ["next js"],
+      "locations": ["united states"],
+      "experienceLevel": ["associate", "mid-senior"],
+      "workplaceType": ["remote"],
+      "postedLimit": "24h",
+      "sortBy": "date",
+      "maxItems": 100
+    }
+  },
+  {
+    "id": "4489024089",
+    "title": "Développeur C++ / JavaScript H/F",
+    "linkedinUrl": "https://www.linkedin.com/jobs/view/4489024089/",
+    "jobState": "LISTED",
+    "postedDate": "2026-11-11T16:26:53.000Z",
+    "headerCaptionText": "Dunasys\nRueil-Malmaison, Île-de-France, France\n6 hours ago\nBe among the first 25 applicants\nSee who Dunasys has hired for this role",
+    "descriptionText": "Fondée en 2007, Dunasys est spécialisée dans les systèmes embarqués, particulièrement dans les secteurs de l'automobile, des transports et de la défense.Notre force, c'est de maîtriser toute la chaîne. Côté R&D, notre bureau d'études conçoit nos propres boîtiers télématiques, logiciels embarqués et solutions de traitement de données. Côté Ingénierie, nous accompagnons nos clients sur des projets techniques à forte valeur ajoutée, chez eux ou dans nos locaux.Nous travaillons avec de grands noms de l'industrie et nous ouvrons aujourd'hui de nouveaux marchés, dont la défense.Avec une cinquantaine de collaborateurs, nous avons gardé l'esprit d'une PME à taille humaine : proximité, polyvalence, et des projets où chacun a un vrai impact. Si les défis techniques te motivent, tu es au bon endroit !CE QUE NOUS POUVONS ACCOMPLIR ENSEMBLEEnvie de mettre ton code au service de la défense ? Tu participeras à la conception d'un logiciel de diagnostic sécurisé pour véhicules militaires, directement utilisé sur le terrain.Tes missions :Développer l'application sous Windows IoT, en C++ et JavaScriptIntégrer la sécurité logicielle dès la conceptionFaire le lien entre matériel, système et applicatifsParticiper à la validation, avec quelques déplacements chez le client\n\nIngénieur ou Bac +5, tu as au moins 3 ans d'expérience et un pied dans l'embarqué comme dans l'IT.Indispensable : Windows IoT, C++, JavaScript, Qt, sécurité logicielleUn vrai plus : hardening Windows, culture IT, connaissance des protocoles de diagnostic, expérience d'architecte logiciel (tout en gardant les mains dans le code)⚠️ Poste soumis à habilitation défense : nationalité française requise.Ce qu'on te propose🎁 Carte Swile + restaurant inter-entreprises\n 🏢 Des locaux tout neufs\n 🏥 70 % de la mutuelle prise en charge\n 🎉 Un CE et des horaires flexibles\n 😄 Une bonne ambiance et un management de proximitéAprès un premier échange avec l'équipe RH, tu rencontreras Thibault, chef de projet, et Guillaume, DRH.Un feedback rapide te sera fait, et si ça matche, on organise ton arrivée au plus vite !",
+    "descriptionHtml": "<p>Fondée en 2007, Dunasys est spécialisée dans les systèmes embarqués, particulièrement dans les secteurs de l&#39;automobile, des transports et de la défense.</p><p>Notre force, c&#39;est de maîtriser toute la chaîne. Côté <b>R&amp;D</b>, notre bureau d&#39;études conçoit nos propres boîtiers télématiques, logiciels embarqués et solutions de traitement de données. Côté <b>Ingénierie</b>, nous accompagnons nos clients sur des projets techniques à forte valeur ajoutée, chez eux ou dans nos locaux.</p><p>Nous travaillons avec de grands noms de l&#39;industrie et nous ouvrons aujourd&#39;hui de nouveaux marchés, dont la défense.</p><p>Avec une cinquantaine de collaborateurs, nous avons gardé l&#39;esprit d&#39;une PME à taille humaine : proximité, polyvalence, et des projets où chacun a un vrai impact. Si les défis techniques te motivent, tu es au bon endroit !</p><p><b>CE QUE NOUS POUVONS ACCOMPLIR ENSEMBLE</b></p><p>Envie de mettre ton code au service de la défense ? Tu participeras à la conception d&#39;un logiciel de diagnostic sécurisé pour véhicules militaires, directement utilisé sur le terrain.</p><p>Tes missions :</p><ul><li><p>Développer l&#39;application sous <b>Windows IoT</b>, en <b>C++</b> et <b>JavaScript</b></p></li><li><p>Intégrer la <b>sécurité logicielle</b> dès la conception</p></li><li><p>Faire le lien entre matériel, système et applicatifs</p></li><li><p>Participer à la validation, avec quelques déplacements chez le client<br><br><br><br></p></li></ul><p>Ingénieur ou Bac +5, tu as au moins 3 ans d&#39;expérience et un pied dans l&#39;embarqué comme dans l&#39;IT.</p><p>Indispensable : <b>Windows IoT, C++, JavaScript, Qt, sécurité logicielle</b></p><p>Un vrai plus : <b>hardening Windows</b>, culture <b>IT</b>, connaissance des <b>protocoles de diagnostic</b>, expérience d&#39;<b>architecte logiciel</b> (tout en gardant les mains dans le code)</p><p>⚠️ Poste soumis à habilitation défense : nationalité française requise.</p><p><b>Ce qu&#39;on te propose</b></p><p>🎁 Carte Swile + restaurant inter-entreprises<br><br> 🏢 Des locaux tout neufs<br><br> 🏥 70 % de la mutuelle prise en charge<br><br> 🎉 Un CE et des horaires flexibles<br><br> 😄 Une bonne ambiance et un management de proximité</p><p>Après un premier échange avec l&#39;équipe RH, tu rencontreras Thibault, chef de projet, et Guillaume, DRH.</p><p>Un feedback rapide te sera fait, et si ça matche, on organise ton arrivée au plus vite !</p>",
+    "location": {
+      "linkedinText": "Rueil-Malmaison, Île-de-France, France",
+      "postalAddress": null,
+      "countryCode": "fr",
+      "geoId": "105825114",
+      "parsed": {
+        "text": "Rueil-Malmaison, France",
+        "countryCode": "FR",
+        "regionCode": null,
+        "country": "France",
+        "countryFull": "France",
+        "state": "Île-de-France",
+        "city": "Rueil-Malmaison"
+      }
+    },
+    "employmentType": "full_time",
+    "workplaceType": "on_site",
+    "workRemoteAllowed": false,
+    "easyApplyUrl": null,
+    "applyMethod": {
+      "companyApplyUrl": "https://easyapply.jobs/r/xK4P09x27BzPJx4YFqFV",
+      "applyStartersPreferenceVoid": false,
+      "inPageOffsiteApply": false,
+      "type": "OffsiteApply"
+    },
+    "applicants": 25,
+    "hiringTeam": [],
+    "company": {
+      "id": "1401964",
+      "universalName": "dunasys",
+      "linkedinUrl": "https://www.linkedin.com/company/dunasys",
+      "name": "Dunasys",
+      "website": "http://www.dunasys.com",
+      "callToActionUrl": null,
+      "phone": null,
+      "logo": "https://media.licdn.com/dms/image/v2/D4E0BAQGTDNMTViXLEA/company-logo_400_400/B4EZUe0d0vHcAY-/0/1739978825402/dunasys_logo?e=1796256000&v=beta&t=_06h7Rc3mNiyShU7R9tPxr_lhSciO0FW84bnuiQ00jw",
+      "employeeCount": 60,
+      "employeeCountRange": {
+        "start": 51,
+        "end": 200
+      },
+      "followerCount": 5413,
+      "description": "DUNASYS is a fast-growing engineering company specialized in embedded networks and electronic systems.\r\n\r\nDUNASYS is involved in various transport sectors such as automotive, railway, aviation, military and marine. The core business of DUNASYS is the development of embedded software and communication layers for electronic control units.",
+      "locations": [
+        {
+          "country": "FR",
+          "city": "Nanterre",
+          "line1": "18 Villa Blanche",
+          "postalCode": "92000",
+          "headquarter": true,
+          "parsed": {
+            "text": "Nanterre, France",
+            "countryCode": "FR",
+            "regionCode": null,
+            "country": "France",
+            "countryFull": "France",
+            "state": "Île-de-France",
+            "city": "Nanterre"
+          }
+        }
+      ],
+      "specialities": [
+        "Embedded software development",
+        "Electronic Systems",
+        "IoT",
+        "Smart Car"
+      ],
+      "industries": [
+        {
+          "id": null,
+          "name": "Motor Vehicle Manufacturing",
+          "title": "Motor Vehicle Manufacturing",
+          "hierarchy": null
+        }
+      ],
+      "logos": [
+        {
+          "url": "https://media.licdn.com/dms/image/v2/D4E0BAQGTDNMTViXLEA/company-logo_400_400/B4EZUe0d0vHcAY-/0/1739978825402/dunasys_logo?e=1796256000&v=beta&t=_06h7Rc3mNiyShU7R9tPxr_lhSciO0FW84bnuiQ00jw",
+          "width": 400,
+          "height": 400
+        },
+        {
+          "url": "https://media.licdn.com/dms/image/v2/D4E0BAQGTDNMTViXLEA/company-logo_200_200/B4EZUe0d0vHcAI-/0/1739978825402/dunasys_logo?e=1796256000&v=beta&t=F4k7-C2-YAhOPZpcgbZ_ToBki6lw8AeMSjJgD5QmJrI",
+          "width": 200,
+          "height": 200
+        },
+        {
+          "url": "https://media.licdn.com/dms/image/v2/D4E0BAQGTDNMTViXLEA/company-logo_100_100/B4EZUe0d0vHcAQ-/0/1739978825402/dunasys_logo?e=1796256000&v=beta&t=3zGuOiumJD7yrmAtA4cE9rISVRpDt8meU6CRj827Cec",
+          "width": 100,
+          "height": 100
+        }
+      ],
+      "backgroundCover": "https://media.licdn.com/dms/image/v2/D4E3DAQFO6QHF5N0nBQ/image-scale_191_1128/B4EZqckf.SIQAc-/0/1763563406218/dunasys_cover?e=1795042800&v=beta&t=Pi_EdDz4z3F_NSNjHam-7Jl1rm6Amm7jSKvunB3Zdrk",
+      "backgroundCovers": [
+        {
+          "url": "https://media.licdn.com/dms/image/v2/D4E3DAQFO6QHF5N0nBQ/image-scale_191_1128/B4EZqckf.SIQAc-/0/1763563406218/dunasys_cover?e=1795042800&v=beta&t=Pi_EdDz4z3F_NSNjHam-7Jl1rm6Amm7jSKvunB3Zdrk",
+          "width": 1128,
+          "height": 191
+        },
+        {
+          "url": "https://media.licdn.com/dms/image/v2/D4E3DAQFO6QHF5N0nBQ/image-scale_127_750/B4EZqckf.SIQAM-/0/1763563406218/dunasys_cover?e=1795042800&v=beta&t=LhtwpwnSw6KQe3MihomOWWR6rUsrNdt-gJ1rbc2_wq8",
+          "width": 750,
+          "height": 126
+        },
+        {
+          "url": "https://media.licdn.com/dms/image/v2/D4E3DAQFO6QHF5N0nBQ/image-scale_108_640/B4EZqckf.SIQAQ-/0/1763563406218/dunasys_cover?e=1795042800&v=beta&t=ApYHRmYh8T8I-wgIR7Lm6hjxvrY0lTvAepkf7feDC9s",
+          "width": 108,
+          "height": 18
+        }
+      ],
+      "similarOrganizations": [],
+      "affiliatedPages": []
+    },
+    "salary": {
+      "text": null,
+      "min": null,
+      "max": null
+    },
+    "jobFunctions": ["IT"],
+    "industries": ["Computers and Electronics Manufacturing"],
+    "experienceLevel": null,
+    "benefits": [],
+    "benefitsDataSource": "JOB_POSTER",
+    "views": 0,
+    "expireAt": "2027-05-10T16:26:54.000Z",
+    "new": true,
+    "closedAt": null,
+    "contentSource": "JOBS_CREATE",
+    "jobApplicationLimitReached": false,
+    "applicantTrackingSystem": null,
+    "query": {
+      "search": "react typescript",
+      "sortBy": "date",
+      "postedLimit": "week",
+      "location": "France"
+    },
+    "_meta": {
+      "pagination": {
+        "totalElements": 134,
+        "totalPages": 6,
+        "pageNumber": 1,
+        "previousElements": 0,
+        "pageSize": 25
+      }
+    }
+  },
+  {
+    "id": "4477098970",
+    "title": "Développeur d'applications front-office",
+    "linkedinUrl": "https://www.linkedin.com/jobs/view/4477098970/",
+    "jobState": "LISTED",
+    "postedDate": "2026-11-11T18:49:52.000Z",
+    "headerCaptionText": "Societe Generale Corporate and Investment Banking - SGCIB\nLa Défense, Île-de-France, France\n3 hours ago\n56 applicants\nSee who Societe Generale Corporate and Investment Banking - SGCIB has hired for this role",
+    "descriptionText": "Vos missions au quotidien \n\nDévelopper est pour vous une passion et pas seulement une compétence ? Vous aimez intervenir à différents niveaux dans la chaîne de conception de solutions informatiques pour répondre à des besoins utilisateurs variés ? Rejoignez-nous !\n\nAu sein du groupe Société Générale, vous rejoindrez la Banque de Grande Clientèle et Solutions Investisseurs, en charge des activités de Banque de financement et d'investissement, Banque privée, Gestion d'actifs et Métier titres.\n\nVous serez rattaché à une équipe internationale au sein du département Pretrade Pricing & Marking dont la mission est de fournir et optimiser les outils de marking pre-trade pour les équipes trading en charge des produits de taux d'intérêts, des crédits, du forex et des marchés émergents.\n\nConcrètement, vous serez amené à :\n\nImplémenter de nouvelles méthodologies de pricing et calibration pour les traders exo (rates, forex et credit) en utilisant une architecture en Micro-ServicesDévelopper en Python et C# (.NET) suivant les process agilesModerniser de notre stack technique et notre CI/CD pipelines : Azure, Kubernetes, GitHub Action, ElasticSearch, Grafana, etc.Rechercher la technologie la plus adaptée pour garantir la sécurité, la scalabilité des solutions et l'expérience utilisateur la plus optimaleLivrer régulièrement des solutions informatiques ayant de la valeur métier, par la pratique du TDD et du BDD, analyser les erreurs, contribuer à l’amélioration continue des solutions\n\nDurée du stage : 6 mois.\n\n Et si c’était vous ? \n\nVous êtes étudiant de niveau bac + 4/5 en école d'Ingénieur ou Université, avec une spécialisation en InformatiqueVous maîtrisez C# ou PythonVous êtes autonome et avez un fort esprit d'équipeAvoir une connaissance en finance de marché, serait un plusYou’re fluent in english ! Vous êtes notre candidat idéal !\n\n Plus qu’un poste, un tremplin \n\nRejoignez-nous pour faire grandir vos ambitions! Dès votre arrivée, vous serez intégré dans nos équipes et apprendrez chaque jour aux côtés de nos experts qui vous accompagneront dans vos missions. Progressivement, vous gagnerez en autonomie sur vos projets pour faire de cette expérience un vrai accélérateur de carrière. Vous découvrirez également toute la diversité de nos métiers, dans un secteur qui évolue et innove en permanence.\n\nA la fin de vos études, diverses opportunités pourront s’offrir à vous, en France et à l’international.\n\n Pourquoi nous choisir ? \n\nAttentif à votre qualité de vie et conditions de travail, vous bénéficiez d’avantages :\n\nTélétravail possible selon le rythme de votre servicePrise en charge de 60% de votre titre de transportBilletterie à prix réduits de notre Comité d’Entreprise (concerts, cinéma, sport)Offre variée de restaurants d’entreprise et de cafétérias à tarifs compétitifs ainsi que des titres restaurants dématérialisés quand vous êtes en télétravail\n\nCréer, oser, innover, entreprendre font partie de notre ADN. Si vous aussi vous souhaitez être dans l’action, évoluer dans un environnement stimulant et bienveillant, vous sentir utile au quotidien et développer ou renforcer votre expertise, nous sommes faits pour nous rencontrer !\n\nVous hésitez encore ?\n\nSachez que nos collaborateurs peuvent s’engager quelques jours par an pour des actions de solidarité sur leur temps de travail : parrainer des personnes en difficulté dans leur orientation ou leur insertion professionnelle, participer à l’éducation financière de jeunes en apprentissage ou encore partager leurs compétences avec une association. Les formats d’engagement sont multiples.",
+    "descriptionHtml": "<b>Vos missions au quotidien <br><br><br><br></b>Développer est pour vous une passion et pas seulement une compétence ? Vous aimez intervenir à différents niveaux dans la chaîne de conception de solutions informatiques pour répondre à des besoins utilisateurs variés ? Rejoignez-nous !<br><br><br><br>Au sein du groupe Société Générale, vous rejoindrez la Banque de Grande Clientèle et Solutions Investisseurs, en charge des activités de Banque de financement et d&#39;investissement, Banque privée, Gestion d&#39;actifs et Métier titres.<br><br><br><br>Vous serez rattaché à une équipe internationale au sein du département Pretrade Pricing &amp; Marking dont la mission est de fournir et optimiser les outils de marking pre-trade pour les équipes trading en charge des produits de taux d&#39;intérêts, des crédits, du forex et des marchés émergents.<br><br><br><br><b>Concrètement, vous serez amené à :<br><br><br><br></b><ul><li>Implémenter de nouvelles méthodologies de pricing et calibration pour les traders exo (rates, forex et credit) en utilisant une architecture en Micro-Services</li><li>Développer en Python et C# (.NET) suivant les process agiles</li><li>Moderniser de notre stack technique et notre CI/CD pipelines : Azure, Kubernetes, GitHub Action, ElasticSearch, Grafana, etc.</li><li>Rechercher la technologie la plus adaptée pour garantir la sécurité, la scalabilité des solutions et l&#39;expérience utilisateur la plus optimale</li><li>Livrer régulièrement des solutions informatiques ayant de la valeur métier, par la pratique du TDD et du BDD, analyser les erreurs, contribuer à l’amélioration continue des solutions<br><br><br><br></li></ul>Durée du stage : 6 mois.<br><br><br><br><b> Et si c’était vous ? <br><br><br><br></b><ul><li>Vous êtes étudiant de niveau bac + 4/5 en école d&#39;Ingénieur ou Université, avec une spécialisation en Informatique</li><li>Vous maîtrisez C# ou Python</li><li>Vous êtes autonome et avez un fort esprit d&#39;équipe</li><li>Avoir une connaissance en finance de marché, serait un plus</li><li>You’re fluent in english ! Vous êtes notre candidat idéal !<br><br><br><br></li></ul><b> Plus qu’un poste, un tremplin <br><br><br><br></b>Rejoignez-nous pour faire grandir vos ambitions! Dès votre arrivée, vous serez intégré dans nos équipes et apprendrez chaque jour aux côtés de nos experts qui vous accompagneront dans vos missions. Progressivement, vous gagnerez en autonomie sur vos projets pour faire de cette expérience un vrai accélérateur de carrière. Vous découvrirez également toute la diversité de nos métiers, dans un secteur qui évolue et innove en permanence.<br><br><br><br>A la fin de vos études, diverses opportunités pourront s’offrir à vous, en France et à l’international.<br><br><br><br><b> Pourquoi nous choisir ? <br><br><br><br></b>Attentif à votre <b>qualité de vie et conditions de travail</b>, vous bénéficiez d’avantages :<br><br><br><br><ul><li>Télétravail possible selon le rythme de votre service</li><li>Prise en charge de 60% de votre titre de transport</li><li>Billetterie à prix réduits de notre Comité d’Entreprise (concerts, cinéma, sport)</li><li>Offre variée de restaurants d’entreprise et de cafétérias à tarifs compétitifs ainsi que des titres restaurants dématérialisés quand vous êtes en télétravail<br><br><br><br></li></ul>Créer, oser, innover, entreprendre font partie de notre ADN. Si vous aussi vous souhaitez être dans l’action, évoluer dans un environnement stimulant et bienveillant, vous sentir utile au quotidien et développer ou renforcer votre expertise, nous sommes faits pour nous rencontrer !<br><br><br><br>Vous hésitez encore ?<br><br><br><br>Sachez que nos collaborateurs peuvent s’engager quelques jours par an pour des actions de solidarité sur leur temps de travail : parrainer des personnes en difficulté dans leur orientation ou leur insertion professionnelle, participer à l’éducation financière de jeunes en apprentissage ou encore partager leurs compétences avec une association. Les formats d’engagement sont multiples.",
+    "location": {
+      "linkedinText": "La Défense, Île-de-France, France",
+      "postalAddress": null,
+      "countryCode": "fr",
+      "geoId": "108051010",
+      "parsed": {
+        "text": "La Defense, France",
+        "countryCode": "FR",
+        "regionCode": null,
+        "country": "France",
+        "countryFull": "France",
+        "state": "Île-de-France",
+        "city": "La Defense"
+      }
+    },
+    "employmentType": "full_time",
+    "workplaceType": "hybrid",
+    "workRemoteAllowed": false,
+    "easyApplyUrl": null,
+    "applyMethod": {
+      "companyApplyUrl": "https://careers.societegenerale.com/offres-d-emploi/developpeur-dapplications-front-office-26000LQP-fr?src=JB-14381",
+      "applyStartersPreferenceVoid": true,
+      "inPageOffsiteApply": false,
+      "type": "OffsiteApply"
+    },
+    "applicants": 56,
+    "hiringTeam": [],
+    "company": {
+      "id": "3496831",
+      "universalName": "societegenerale-corporate-and-investment-banking",
+      "linkedinUrl": "https://www.linkedin.com/company/societegenerale-corporate-and-investment-banking",
+      "name": "Societe Generale Corporate and Investment Banking - SGCIB",
+      "website": "https://wholesale.banking.societegenerale.com",
+      "callToActionUrl": null,
+      "phone": null,
+      "logo": "https://media.licdn.com/dms/image/v2/C560BAQFY0AGazHvXWw/company-logo_400_400/company-logo_400_400/0/1643103465869/societegenerale_corporate_and_investment_banking_logo?e=1796256000&v=beta&t=sgPMx4lJzrEXdeLOh_jqQyRkOnuMNCKHKAkaPUzIBhg",
+      "employeeCount": 10070,
+      "employeeCountRange": {
+        "start": 10001
+      },
+      "followerCount": 369510,
+      "description": "We support you over time, during expansion phases and their more challenging periods alike. By providing a full range of solutions suited to your needs, we play a facilitating role to help you realise your ambitions and leverage your potential. This is why we intend to develop an authentic advisory relationship for all of your financial issues, specifically risk anticipation and management.\n\nOur model is based on both bankers who have a very detailed knowledge of their clients and the sectors in which they are active, as well as a broad cross-asset view of the bank’s various products and experts who bring sophisticated technical skill to their work. This client coverage model, though not in itself unique to Societe Generale, finds a better home there because of the bank’s ability to pool expertise in order to provide bespoke solutions to your needs.\n\nAs a key pillar of the Societe Generale Group’s universal banking model, SG CIB supports the economy by playing a key intermediary role, offering broad market access to issuers and smart investment solutions to investors. The service we bring to our corporate and financial institutions clients revolves around three main activities - investment banking, financing and markets - and our global franchises of equity derivatives and natural resources.\n\nFor our clients we stand out because we are a trusted advisor with a worldwide leading engineering expertise and a quality product suite.",
+      "locations": [
+        {
+          "country": "FR",
+          "geographicArea": "Ile-de-France",
+          "city": "Nanterre",
+          "line1": "17, Cours Valmy",
+          "postalCode": "92000",
+          "headquarter": true,
+          "parsed": {
+            "text": "Nanterre, France",
+            "countryCode": "FR",
+            "regionCode": null,
+            "country": "France",
+            "countryFull": "France",
+            "state": "Île-de-France",
+            "city": "Nanterre"
+          }
+        }
+      ],
+      "specialities": [
+        "Strategic advisory & capital raising",
+        "SG electronic services",
+        "Structured financing",
+        "Global Executions Services",
+        "Hedging",
+        "Prime Services",
+        "Syndication",
+        "Cross asset solutions",
+        "Cross asset research",
+        "Investment & Risk Management Solutions",
+        "positive impact finance",
+        "transaction banking",
+        "markets",
+        "financing",
+        "investment banking"
+      ],
+      "industries": [
+        {
+          "id": null,
+          "name": "Financial Services",
+          "title": "Financial Services",
+          "hierarchy": null
+        }
+      ],
+      "logos": [
+        {
+          "url": "https://media.licdn.com/dms/image/v2/C560BAQFY0AGazHvXWw/company-logo_400_400/company-logo_400_400/0/1643103465869/societegenerale_corporate_and_investment_banking_logo?e=1796256000&v=beta&t=sgPMx4lJzrEXdeLOh_jqQyRkOnuMNCKHKAkaPUzIBhg",
+          "width": 400,
+          "height": 400
+        },
+        {
+          "url": "https://media.licdn.com/dms/image/v2/C560BAQFY0AGazHvXWw/company-logo_200_200/company-logo_200_200/0/1643103465869/societegenerale_corporate_and_investment_banking_logo?e=1796256000&v=beta&t=NuLMD2e7qb2mb-H2vd4Y6f7625xJcPEqgiz_qnzoHaU",
+          "width": 200,
+          "height": 200
+        },
+        {
+          "url": "https://media.licdn.com/dms/image/v2/C560BAQFY0AGazHvXWw/company-logo_100_100/company-logo_100_100/0/1643103465869/societegenerale_corporate_and_investment_banking_logo?e=1796256000&v=beta&t=HxQkxwKAt95poC24KvrvqAIdqqT7Or5eGpb3SqpsOD0",
+          "width": 100,
+          "height": 100
+        }
+      ],
+      "backgroundCover": "https://media.licdn.com/dms/image/v2/D4E3DAQH-KQDjPrZkug/image-scale_191_1128/B4EZkUCKM5GcAg-/0/1756977738963/societegenerale_corporate_and_investment_banking_cover?e=1795042800&v=beta&t=PFAn9bA8hrxp8JmCvDUBZNeU_N5RDjEfb7uxS6OGJ-s",
+      "backgroundCovers": [
+        {
+          "url": "https://media.licdn.com/dms/image/v2/D4E3DAQH-KQDjPrZkug/image-scale_191_1128/B4EZkUCKM5GcAg-/0/1756977738963/societegenerale_corporate_and_investment_banking_cover?e=1795042800&v=beta&t=PFAn9bA8hrxp8JmCvDUBZNeU_N5RDjEfb7uxS6OGJ-s",
+          "width": 1128,
+          "height": 191
+        },
+        {
+          "url": "https://media.licdn.com/dms/image/v2/D4E3DAQH-KQDjPrZkug/image-scale_127_750/B4EZkUCKM5GcAQ-/0/1756977738963/societegenerale_corporate_and_investment_banking_cover?e=1795042800&v=beta&t=vvyQYQMU9M1p69cYJ7E9X1TzW1SXuwe-xLLkyEUGOzU",
+          "width": 750,
+          "height": 126
+        },
+        {
+          "url": "https://media.licdn.com/dms/image/v2/D4E3DAQH-KQDjPrZkug/image-scale_108_640/B4EZkUCKM5GcAU-/0/1756977738963/societegenerale_corporate_and_investment_banking_cover?e=1795042800&v=beta&t=y5Oca3xts8YcsI4exCmbVw2RdBockr-G2mEd4i349oM",
+          "width": 108,
+          "height": 18
+        }
+      ],
+      "similarOrganizations": [],
+      "affiliatedPages": []
+    },
+    "salary": {
+      "text": null,
+      "min": null,
+      "max": null
+    },
+    "jobFunctions": ["IT", "ENG"],
+    "industries": ["Financial Services"],
+    "experienceLevel": null,
+    "benefits": [],
+    "benefitsDataSource": "JOB_POSTER",
+    "views": 0,
+    "expireAt": "2026-12-14T19:43:31.000Z",
+    "new": true,
+    "closedAt": null,
+    "contentSource": "JOBS_PREMIUM_OFFLINE",
+    "jobApplicationLimitReached": false,
+    "applicantTrackingSystem": null,
+    "query": {
+      "search": "backend engineer node js",
+      "sortBy": "date",
+      "postedLimit": "week",
+      "location": "France"
+    },
+    "_meta": {
+      "pagination": {
+        "totalElements": 70,
+        "totalPages": 3,
+        "pageNumber": 1,
+        "previousElements": 0,
+        "pageSize": 25
+      }
+    }
   }
 ]

@@ -79,6 +79,7 @@ export function mapBebityJob(
             max: salaryMax,
             currency: cleanText(p.salaryCurrency),
             period: cleanText(p.salaryPeriod),
+            providedByEmployer: null,
           }
         : null,
     publishedAt: datePart(p.publishedAt),
