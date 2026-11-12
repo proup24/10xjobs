@@ -37,7 +37,8 @@ export interface ResolvedListingPlace {
   fellBack: boolean;
 }
 
-function cityKey(countryCode: string, name: string): string {
+/** The `PlaceVocabulary.cities` key for a country and a place name or alias. */
+export function cityKey(countryCode: string, name: string): string {
   return `${countryCode.toUpperCase()}|${foldPlaceName(name)}`;
 }
 

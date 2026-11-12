@@ -2,6 +2,7 @@
  * In-memory stand-ins for the processor's models and repositories. They follow
  * the abstract contracts closely enough for unit tests and the golden-set eval.
  */
+import { foldPlaceName } from 'src/modules/facts/places/fold';
 import { randomUUID } from 'node:crypto';
 import type { ListTableRow } from '@xjobs/database';
 import { ModelOutputError } from '../models/errors';
@@ -474,6 +475,7 @@ export interface MemoryCity {
   id: string;
   name: string;
   countryCode: string;
+  aliases?: string[];
   status: 'approved' | 'proposed';
   occurrences: number;
 }
@@ -572,10 +574,13 @@ export class MemoryVocabRepository extends VocabRepository {
   ): Promise<Map<string, string>> {
     const ids = new Map<string, string>();
     for (const city of c) {
+      const folded = foldPlaceName(city.name);
       let found = this.cities.find(
         (x) =>
           x.countryCode === city.countryCode &&
-          x.name.toLowerCase() === city.name.toLowerCase(),
+          [x.name, ...(x.aliases ?? [])].some(
+            (n) => foldPlaceName(n) === folded,
+          ),
       );
       if (found) found.occurrences += 1;
       else {

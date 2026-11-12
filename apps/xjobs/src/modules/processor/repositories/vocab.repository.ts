@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from 'src/database';
 import { cityNameKey, listTables, type ListTableRow } from '@xjobs/database';
+import { foldPlaceName } from 'src/modules/facts/places/fold';
 import { inRetriedTransaction } from 'src/modules/ingest/repositories/raw.repository';
 import type { ListOptions } from '../schema';
 import { LIST_NAMES, type ListName } from '../vocab/lists';
@@ -190,28 +191,47 @@ export class PrismaVocabRepository extends VocabRepository {
     if (c.length === 0) return ids;
     const cities = tally(
       c,
-      (city) => `${city.countryCode}|${cityNameKey(city.name)}`,
+      (city) => `${city.countryCode}|${foldPlaceName(city.name)}`,
     );
     const byKey = await inRetriedTransaction(this.database, async (tx) => {
       const found = new Map<string, string>();
       const now = new Date();
-      for (const [k, { name, countryCode }, n] of cities) {
-        const nameKey = cityNameKey(name);
-        const existing = await tx.orm.public.City.where({
-          nameKey,
-          countryCode,
-        })
+      // Each country's cities, once: a name matches an existing city through
+      // its folded name or any alias, so a known city is never duplicated.
+      const known = new Map<
+        string,
+        Map<string, { id: string; occurrences: number }>
+      >();
+      for (const [, { countryCode }] of cities) {
+        if (known.has(countryCode)) continue;
+        const rows = await tx.orm.public.City.where({ countryCode })
           .forNoKeyUpdate()
-          .first();
+          .all();
+        const forms = new Map<string, { id: string; occurrences: number }>();
+        for (const r of rows)
+          for (const n of [r.name, ...r.aliases]) {
+            const f = foldPlaceName(n);
+            if (f !== '' && !forms.has(f))
+              forms.set(f, { id: r.id, occurrences: r.occurrences });
+          }
+        known.set(countryCode, forms);
+      }
+      for (const [k, { name, countryCode }, n] of cities) {
+        const forms = known.get(countryCode)!;
+        const folded = foldPlaceName(name);
+        const existing = forms.get(folded);
         if (existing) {
           await tx.orm.public.City.where({ id: existing.id }).updateAll({
             occurrences: existing.occurrences + n,
           });
+          // Later spellings of the same city count on top of this one.
+          for (const e of forms.values())
+            if (e.id === existing.id) e.occurrences += n;
           found.set(k, existing.id);
         } else {
           const created = await tx.orm.public.City.create({
             name,
-            nameKey,
+            nameKey: cityNameKey(name),
             countryCode,
             geonamesId: null,
             aliases: [],
@@ -220,13 +240,14 @@ export class PrismaVocabRepository extends VocabRepository {
             firstSeenAt: now,
             approvedAt: null,
           });
+          forms.set(folded, { id: created.id, occurrences: n });
           found.set(k, created.id);
         }
       }
       return found;
     });
     for (const city of c) {
-      const id = byKey.get(`${city.countryCode}|${cityNameKey(city.name)}`);
+      const id = byKey.get(`${city.countryCode}|${foldPlaceName(city.name)}`);
       if (id) ids.set(cityKey(city), id);
     }
     return ids;
