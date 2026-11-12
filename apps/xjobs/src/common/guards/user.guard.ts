@@ -5,7 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import type { AuthedRequest } from '../types';
-import { UserTokenVerifier } from './user-token.verifier';
+import { UserTokenVerifier } from 'src/modules/auth/services';
 
 const BEARER = /^Bearer (\S+)$/i;
 

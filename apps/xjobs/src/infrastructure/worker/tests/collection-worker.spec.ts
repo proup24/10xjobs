@@ -19,6 +19,7 @@ const created = vi.hoisted(() => ({
   queues: [] as string[],
   schedulers: [] as unknown[][],
   removedSchedulers: [] as string[],
+  added: [] as unknown[][],
 }));
 
 vi.mock('bullmq', async (importOriginal) => {
@@ -27,8 +28,10 @@ vi.mock('bullmq', async (importOriginal) => {
   class Queue {
     on = vi.fn();
     waitUntilReady = done;
-    add = done;
     close = done;
+    async add(...args: unknown[]) {
+      created.added.push(args);
+    }
     constructor(readonly name: string) {
       created.queues.push(name);
     }
@@ -64,6 +67,7 @@ import {
 import { StorageService } from 'src/modules/storage';
 import { MemoryStorageService } from 'src/modules/storage/testing';
 import { WorkerRuntimeService } from '../runtime.service';
+import { COLLECT_ON_START } from '../scheduler';
 import { WorkerModule } from '../worker.module';
 import { WorkerService } from '../worker.service';
 
@@ -72,6 +76,7 @@ beforeEach(() => {
   created.queues.length = 0;
   created.schedulers.length = 0;
   created.removedSchedulers.length = 0;
+  created.added.length = 0;
   created.process = undefined;
 });
 
@@ -151,6 +156,54 @@ it('removes a disabled channel schedule without starting any worker', async () =
     expect(created.schedulers).toEqual([]);
     expect(created.workers).toEqual([]);
   } finally {
+    await module.close();
+  }
+});
+
+it('queues one collection at startup in development, then keeps the schedule', async () => {
+  const module = await Test.createTestingModule({ imports: [WorkerModule] })
+    .overrideProvider(CollectionService)
+    .useValue({ collect: vi.fn(), stop: vi.fn() })
+    .overrideProvider(StorageService)
+    .useValue(new MemoryStorageService())
+    .overrideProvider(COLLECT_ON_START)
+    .useValue(true)
+    .compile();
+  try {
+    await module.get(WorkerService).onModuleInit();
+    expect(created.added).toEqual([
+      [
+        'collect',
+        {},
+        {
+          jobId: 'collect-on-start',
+          attempts: 1,
+          removeOnComplete: true,
+          removeOnFail: true,
+        },
+      ],
+    ]);
+    expect(created.schedulers).toHaveLength(1);
+  } finally {
+    await module.get(WorkerService).beforeApplicationShutdown();
+    await module.close();
+  }
+});
+
+it('does not queue a startup collection outside development', async () => {
+  const module = await Test.createTestingModule({ imports: [WorkerModule] })
+    .overrideProvider(CollectionService)
+    .useValue({ collect: vi.fn(), stop: vi.fn() })
+    .overrideProvider(StorageService)
+    .useValue(new MemoryStorageService())
+    .overrideProvider(COLLECT_ON_START)
+    .useValue(false)
+    .compile();
+  try {
+    await module.get(WorkerService).onModuleInit();
+    expect(created.added).toEqual([]);
+  } finally {
+    await module.get(WorkerService).beforeApplicationShutdown();
     await module.close();
   }
 });

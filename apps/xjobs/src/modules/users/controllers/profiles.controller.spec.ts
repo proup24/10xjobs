@@ -1,5 +1,5 @@
 import { GUARDS_METADATA } from '@nestjs/common/constants';
-import { UserGuard } from 'src/common/auth';
+import { UserGuard } from 'src/common/guards';
 import type { ProfilesService } from '../services/profiles.service';
 import type { PublishedProfileView } from '../types';
 import { ProfilesController } from './profiles.controller';

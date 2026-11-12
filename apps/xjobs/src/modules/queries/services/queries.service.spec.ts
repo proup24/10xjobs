@@ -61,11 +61,11 @@ describe('QuerySearchService', () => {
     it('expands each arrangement by its own locations', async () => {
       const { service } = await setup();
       const recipes = service.expand(profile);
-      // remote: 4 channels x 2 locations x 2 sets; onsite: 4 channels x 1 location x 2 sets
-      expect(recipes).toHaveLength(24);
-      expect(new Set(hashes(recipes)).size).toBe(24);
+      // remote: 4 channels x 2 locations x 3 sets; onsite: 4 channels x 1 location x 3 sets
+      expect(recipes).toHaveLength(36);
+      expect(new Set(hashes(recipes)).size).toBe(36);
       expect(recipes.filter((r) => r.type === Arrangement.onsite)).toHaveLength(
-        8,
+        12,
       );
     });
 
@@ -161,15 +161,15 @@ describe('QuerySearchService', () => {
     it('creates shared builders once, then reuses them', async () => {
       const { service, repository, profileId } = await setup();
       expect(await service.generate(profileId, profile)).toEqual({
-        created: 24,
+        created: 36,
         existing: 0,
       });
       expect(await service.generate(profileId, profile)).toEqual({
         created: 0,
-        existing: 24,
+        existing: 36,
       });
-      expect(repository.rows).toHaveLength(24);
-      expect(repository.links).toHaveLength(24);
+      expect(repository.rows).toHaveLength(36);
+      expect(repository.links).toHaveLength(36);
       expect(new Set(counts(repository))).toEqual(new Set([1]));
       expect(repository.rows.every((row) => row.isActive)).toBe(true);
     });
@@ -187,10 +187,10 @@ describe('QuerySearchService', () => {
       await service.generate(profileId, profile);
       expect(await service.generate('profile-2', profile)).toEqual({
         created: 0,
-        existing: 24,
+        existing: 36,
       });
-      expect(repository.rows).toHaveLength(24);
-      expect(repository.links).toHaveLength(48);
+      expect(repository.rows).toHaveLength(36);
+      expect(repository.links).toHaveLength(72);
       expect(new Set(counts(repository))).toEqual(new Set([2]));
     });
 
@@ -198,7 +198,7 @@ describe('QuerySearchService', () => {
       const { service, repository, profileId } = await setup();
       await service.generate(profileId, profile);
       await service.generate(profileId, profile);
-      expect(repository.links).toHaveLength(24);
+      expect(repository.links).toHaveLength(36);
       expect(new Set(counts(repository))).toEqual(new Set([1]));
     });
 
@@ -232,13 +232,13 @@ describe('QuerySearchService', () => {
       const { service, repository, profileId } = await setup();
       await service.generate(profileId, profile);
       await service.generate('profile-2', profile);
-      expect(await service.detach(profileId)).toBe(24);
+      expect(await service.detach(profileId)).toBe(36);
       expect(new Set(counts(repository))).toEqual(new Set([1]));
       expect(repository.rows.every((row) => row.isActive)).toBe(true);
       await service.detach('profile-2');
       expect(new Set(counts(repository))).toEqual(new Set([0]));
       expect(repository.rows.some((row) => row.isActive)).toBe(false);
-      expect(repository.rows).toHaveLength(24);
+      expect(repository.rows).toHaveLength(36);
     });
   });
 
@@ -246,13 +246,13 @@ describe('QuerySearchService', () => {
     it('lists the builders of a profile and filters by channel', async () => {
       const { service, userId, profileId } = await setup();
       await service.generate(profileId, profile);
-      expect(await service.list(userId, profileId)).toHaveLength(24);
+      expect(await service.list(userId, profileId)).toHaveLength(36);
       const posts = await service.list(
         userId,
         profileId,
         Channel.LINKEDIN_POSTS,
       );
-      expect(posts).toHaveLength(6);
+      expect(posts).toHaveLength(9);
       expect(posts.every((row) => row.channel === Channel.LINKEDIN_POSTS)).toBe(
         true,
       );
@@ -270,7 +270,7 @@ describe('QuerySearchService', () => {
       const { service, repository, userId, profileId } = await setup();
       await service.generate(profileId, profile);
       await service.softDelete(repository.rows[0].id);
-      expect(await service.list(userId, profileId)).toHaveLength(23);
+      expect(await service.list(userId, profileId)).toHaveLength(35);
     });
   });
   describe('listActive', () => {

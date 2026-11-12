@@ -3,7 +3,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { UserGuard } from './user.guard';
-import type { UserTokenVerifier } from './user-token.verifier';
+import type { UserTokenVerifier } from 'src/modules/auth/services';
 
 const SUB = '3f2b8c1e-5d4a-4e6f-9a7b-1c2d3e4f5a6b';
 

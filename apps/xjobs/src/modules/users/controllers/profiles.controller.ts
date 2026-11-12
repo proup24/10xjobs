@@ -8,8 +8,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiSecurity, ApiTags } from '@nestjs/swagger';
-import { CurrentUser, UserGuard } from 'src/common/auth';
-import { ApiErrorResponses, ApiSuccessResponse } from 'src/common/decorators';
+import {
+  ApiErrorResponses,
+  ApiSuccessResponse,
+  CurrentUser,
+} from 'src/common/decorators';
+import { UserGuard } from 'src/common/guards';
 import { ENGINE_KEY_AND_BEARER } from 'src/swagger/security';
 import { PublishProfileResponseDto } from '../dto/publish-profile.response.dto';
 import { ProfilesService } from '../services/profiles.service';

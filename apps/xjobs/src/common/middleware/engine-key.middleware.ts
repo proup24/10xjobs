@@ -3,7 +3,7 @@ import type { NextFunction, Response } from 'express';
 import { ErrorResponseDto } from '../dtos';
 import { ErrorCode } from '../enums';
 import type { TracedRequest } from '../types';
-import { traceIdOf } from '../middleware';
+import { traceIdOf } from './trace.middleware';
 
 /** Header carrying the key shared by the engine and the web app (Node lowercases it). */
 export const ENGINE_KEY_HEADER = 'x-engine-key';

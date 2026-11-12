@@ -6,8 +6,7 @@ import {
   USER_TOKEN_ISSUER,
   USER_TOKEN_KEYS,
   UserTokenVerifier,
-} from './user-token.verifier';
-import { UserGuard } from './user.guard';
+} from './services';
 
 type Config = ConfigService<EnvironmentVariables, true>;
 
@@ -32,8 +31,7 @@ type Config = ConfigService<EnvironmentVariables, true>;
         `${getStorageConfig(config).supabaseUrl}/auth/v1`,
     },
     UserTokenVerifier,
-    UserGuard,
   ],
-  exports: [UserTokenVerifier, UserGuard],
+  exports: [UserTokenVerifier],
 })
 export class AuthModule {}
