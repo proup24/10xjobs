@@ -101,11 +101,12 @@ export function checkCurrency(
   if (currency === null)
     return {
       ...base,
-      // Nothing to check: a pass, so it does not mark the match unverified. When amounts
-      // come without a currency, the salary check stays unknown.
+      // Nothing to check: a pass, never review or a reject. When amounts come without a
+      // currency, the salary check stays unknown. On an unsure salary a currency may have
+      // been missed, so the pass rests on it (unverified).
       outcome: 'pass',
       reason: 'job states no salary currency',
-      ...restsOn(null),
+      ...restsOn(unsureOf(facts)),
     };
   if (profile.acceptsAnyCurrency)
     return {

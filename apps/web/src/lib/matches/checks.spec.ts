@@ -98,7 +98,7 @@ describe('checkLines', () => {
       },
       {
         rule: 'workAuthorization',
-        outcome: 'unknown',
+        outcome: 'pass',
         reason: 'job states no work authorization requirement',
       },
     ];
@@ -116,7 +116,8 @@ describe('checkLines', () => {
       ['workAuthorization', 'Work authorization'],
     ]);
     expect(lines[5].text).toBe('You accept any currency');
-    expect(lines[9].mark).toBe('unknown');
+    expect(lines[6].mark).toBe('unknown');
+    expect(lines[9].mark).toBe('pass');
   });
   it('skips an unknown rule and non-array input', () => {
     const extra = [

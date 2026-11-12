@@ -217,7 +217,7 @@ describe('MatchDetail', () => {
           },
           {
             rule: 'workAuthorization',
-            outcome: 'unknown',
+            outcome: 'pass',
             reason: 'job states no work authorization requirement',
           },
         ],

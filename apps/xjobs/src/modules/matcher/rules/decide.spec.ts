@@ -147,6 +147,29 @@ describe('decide', () => {
       expect(d.checks.find((c) => c.rule === rule)?.outcome).toBe('pass');
   });
 
+  it('an unsure "nothing stated" fact passes but makes a qualified job unverified', () => {
+    for (const unsure of [
+      (x: JobFactsDocument) => (x.salary.confidence = 'unsure'),
+      (x: JobFactsDocument) => (x.requiredLanguages.confidence = 'unsure'),
+      (x: JobFactsDocument) => (x.workAuthorization.confidence = 'unsure'),
+    ]) {
+      const doc = passingDoc((x) => {
+        x.postingLanguages = { codes: ['en'], confident: true };
+        x.salary.value = null;
+        x.requiredLanguages.value = [];
+        x.workAuthorization.value = null;
+        unsure(x);
+      });
+      const d = decide(job(doc), { ...exampleProfile(), salaryMin: null }, ctx);
+      expect(d.checks.map((c) => c.outcome)).toEqual(
+        Array.from({ length: 10 }, () => 'pass'),
+      );
+      expect(d.outcome).toBe('qualified');
+      expect(d.review).toBeNull();
+      expect(d.unverified).toBe(true);
+    }
+  });
+
   it('flags unverified when the extraction needs review', () => {
     const d = decide(job(passingDoc(), true), exampleProfile(), ctx);
     expect(d.outcome).toBe('qualified');

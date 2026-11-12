@@ -72,9 +72,14 @@ describe('checkRequiredLanguages', () => {
       unsure: false,
       reason: 'job requires no language',
     });
+  });
+
+  it('none required on an unsure fact still passes, but rests on it', () => {
     expect(checkRequiredLanguages(doc(null, 'unsure'), profile)).toMatchObject({
       outcome: 'pass',
-      unsure: false,
+      unsure: true,
+      unsureField: 'requiredLanguages',
+      reason: 'job requires no language',
     });
   });
 

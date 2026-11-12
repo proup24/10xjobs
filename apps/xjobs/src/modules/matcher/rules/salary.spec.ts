@@ -159,10 +159,20 @@ describe('checkCurrency', () => {
   });
 
   it('passes when no currency is stated: nothing to check', () => {
-    for (const d of [doc({ currency: null }), doc(null), doc(null, 'unsure')])
+    for (const d of [doc({ currency: null }), doc(null)])
       expect(checkCurrency(d, only)).toMatchObject({
         outcome: 'pass',
         unsure: false,
+        reason: 'job states no salary currency',
+      });
+  });
+
+  it('no currency on an unsure salary still passes, but rests on it', () => {
+    for (const d of [doc({ currency: null }, 'unsure'), doc(null, 'unsure')])
+      expect(checkCurrency(d, only)).toMatchObject({
+        outcome: 'pass',
+        unsure: true,
+        unsureField: 'salary',
         reason: 'job states no salary currency',
       });
   });

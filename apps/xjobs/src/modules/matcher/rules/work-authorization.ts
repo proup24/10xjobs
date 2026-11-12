@@ -93,14 +93,22 @@ export function checkWorkAuthorization(
     profileValue: eligibility,
   };
   const requirements = value?.requirements ?? [];
+  // Requirements and sponsorship share one confidence: when it is unsure either may be
+  // wrong, so a failure could pass and a pass could fail.
+  const sureness = restsOn(
+    facts.workAuthorization.confidence === 'unsure'
+      ? 'workAuthorization'
+      : null,
+  );
   if (!value || requirements.length === 0)
     return {
       ...base,
-      // Nothing to check: a pass, so it does not mark the match unverified. Where the
-      // job is, the location check covers.
+      // Nothing to check: a pass, never review or a reject. Where the job is, the
+      // location check covers. On an unsure fact a requirement may have been missed,
+      // so the pass rests on it and marks the match unverified.
       outcome: 'pass',
       reason: 'job states no work authorization requirement',
-      ...restsOn(null),
+      ...sureness,
     };
   const unmet: Requirement[] = [];
   const unclear: Requirement[] = [];
@@ -109,13 +117,6 @@ export function checkWorkAuthorization(
     if (o === 'no') unmet.push(r);
     else if (o === 'maybe') unclear.push(r);
   }
-  // Requirements and sponsorship share one confidence: when it is unsure either may be
-  // wrong, so a failure could pass and a pass could fail.
-  const sureness = restsOn(
-    facts.workAuthorization.confidence === 'unsure'
-      ? 'workAuthorization'
-      : null,
-  );
   const detail = { unmet, unclear };
 
   if (unmet.length > 0) {
