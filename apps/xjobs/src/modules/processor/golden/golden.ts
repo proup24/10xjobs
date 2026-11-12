@@ -72,27 +72,11 @@ export interface GoldenFacts {
   engagement: string;
 }
 
-/** The listing fields a golden case still records; the processor no longer reads them. */
-interface GoldenEvidence {
-  location: string | null;
-  contractType: string | null;
-  experienceLevel: string | null;
-  salary: {
-    text: string | null;
-    min: number | null;
-    max: number | null;
-    currency: string | null;
-    period: string | null;
-  } | null;
-}
-
 export interface GoldenCase {
   id: string;
   input: {
     title: string;
-    companyName: string;
     description: string;
-    evidence: GoldenEvidence;
   };
   expected: Partial<GoldenFacts>;
   /** A drafted value counts only once a human sets `reviewed: true`. */

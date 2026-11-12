@@ -41,14 +41,7 @@ function matchingCase(id = 'c1'): GoldenCase {
     id,
     input: {
       title: 'Backend Engineer',
-      companyName: 'Acme',
       description: 'Remote in EMEA',
-      evidence: {
-        location: null,
-        contractType: null,
-        experienceLevel: null,
-        salary: null,
-      },
     },
     expected: {
       roleKind: 'backend',
@@ -178,6 +171,12 @@ describe('summarize', () => {
     expect(report.facts.mainStack.accuracy).toBe(1);
     expect(report.sureContradicted).toBe(0);
     expect(report.pass).toBe(true);
+  });
+
+  it('reports have no ingest share', () => {
+    const report = summarize([scoreCase(fixtureDocument(), matchingCase())]);
+    for (const fact of Object.values(report.facts))
+      expect(Object.keys(fact).sort()).toEqual(['accuracy', 'scored']);
   });
 
   it('counts a sure wrong seniority in sureContradicted and fails', () => {

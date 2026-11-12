@@ -81,12 +81,10 @@ const pct = (n: number | null): string =>
 
 function print(report: EvalReport, failed: string[]): void {
   console.log(`\ncases: ${report.cases}   failed to process: ${failed.length}`);
-  console.log(
-    '\nfact                       scored  accuracy  generator ingest',
-  );
+  console.log('\nfact                       scored  accuracy');
   for (const [name, f] of Object.entries(report.facts))
     console.log(
-      `${name.padEnd(26)} ${String(f.scored).padStart(5)}  ${pct(f.accuracy)}   ${pct(f.generatorShare)} ${pct(f.ingestShare)}`,
+      `${name.padEnd(26)} ${String(f.scored).padStart(5)}  ${pct(f.accuracy)}`,
     );
   console.log(
     '\nclosed field               verified  confirmed unconfirmed rejected',
@@ -177,7 +175,6 @@ async function main(): Promise<void> {
     repo.addJob({
       id: c.id,
       title: c.input.title,
-      companyName: c.input.companyName,
       descriptionText: c.input.description,
     });
 
