@@ -9,6 +9,7 @@ export function MatchList({
   now,
   showProfiles,
   profileLabels,
+  label = 'Matches',
 }: {
   jobs: MatchedJob[];
   hrefFor: (jobId: string) => string;
@@ -16,9 +17,11 @@ export function MatchList({
   now: Date;
   showProfiles: boolean;
   profileLabels: Record<string, string>;
+  /** The list's accessible name. */
+  label?: string;
 }) {
   return (
-    <ul aria-label="Matches" className="flex flex-col gap-1">
+    <ul aria-label={label} className="flex flex-col gap-1">
       {jobs.map((job) => (
         <li key={job.jobId}>
           <MatchRowLink

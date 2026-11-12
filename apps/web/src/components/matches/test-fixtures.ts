@@ -22,6 +22,19 @@ export const labels: Labels = {
   countries: [{ value: 'FR', label: 'France' }],
   regions: [{ value: 'EU', label: 'Europe' }],
   cities: [],
+  languages: [
+    { value: 'en', label: 'English' },
+    { value: 'fr', label: 'French' },
+    { value: 'it', label: 'Italian' },
+  ],
+  currencies: [
+    { value: 'EUR', label: 'Euro' },
+    { value: 'USD', label: 'US dollar' },
+  ],
+  contractTypes: [
+    { value: 'full_time', label: 'Full-time' },
+    { value: 'contractor', label: 'Contractor' },
+  ],
 };
 
 export const checks = [

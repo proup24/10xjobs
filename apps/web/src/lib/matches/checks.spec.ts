@@ -14,6 +14,19 @@ const labels: Labels = {
   countries: [{ value: 'FR', label: 'France' }],
   regions: [{ value: 'EU', label: 'Europe' }],
   cities: [],
+  languages: [
+    { value: 'en', label: 'English' },
+    { value: 'fr', label: 'French' },
+    { value: 'it', label: 'Italian' },
+  ],
+  currencies: [
+    { value: 'EUR', label: 'Euro' },
+    { value: 'USD', label: 'US dollar' },
+  ],
+  contractTypes: [
+    { value: 'full_time', label: 'Full-time' },
+    { value: 'contractor', label: 'Contractor' },
+  ],
 };
 
 // The shape the matcher stores in job_matches.checks (rules/*.ts).
@@ -118,6 +131,116 @@ describe('checkLines', () => {
     expect(lines[5].text).toBe('You accept any currency');
     expect(lines[6].mark).toBe('unknown');
     expect(lines[9].mark).toBe('pass');
+  });
+  it('marks a pass that rests on an unsure value', () => {
+    const [sure, unsure] = checkLines(
+      [
+        { rule: 'position', outcome: 'pass', reason: 'a', unsure: false },
+        {
+          rule: 'seniority',
+          outcome: 'pass',
+          reason: 'b',
+          unsure: true,
+          unsureField: 'seniority',
+        },
+      ],
+      labels,
+    );
+    expect(sure.unsure).toBe(false);
+    expect(unsure.unsure).toBe(true);
+    expect(unsure.mark).toBe('pass');
+  });
+  it('marks a failing check as a fail', () => {
+    const [line] = checkLines(
+      [{ rule: 'seniority', outcome: 'fail', reason: 'x', unsure: true }],
+      labels,
+    );
+    expect(line.mark).toBe('fail');
+  });
+  it('words language, currency and contract codes from their structured values', () => {
+    const lines = checkLines(
+      [
+        {
+          rule: 'languages',
+          outcome: 'fail',
+          jobValue: [
+            { lang: 'it', level: 'fluent' },
+            { lang: 'en', level: 'native' },
+          ],
+          profileValue: [{ lang: 'en', level: 'fluent' }],
+          reason:
+            "job requires it (fluent; you don't speak it), en (native; you have fluent)",
+        },
+        {
+          rule: 'languages',
+          outcome: 'pass',
+          jobValue: [{ lang: 'en', level: 'working' }],
+          profileValue: [{ lang: 'en', level: 'fluent' }],
+          reason: 'you speak every required language: en (working)',
+        },
+        {
+          rule: 'postingLanguage',
+          outcome: 'pass',
+          jobValue: { codes: ['fr', 'en'], confident: true },
+          profileValue: ['en'],
+          reason: 'posting is written in en, which you speak',
+        },
+        {
+          rule: 'postingLanguage',
+          outcome: 'fail',
+          jobValue: { codes: ['it'], confident: true },
+          profileValue: ['en'],
+          reason: "posting is written in it, which you don't speak",
+        },
+        {
+          rule: 'currency',
+          outcome: 'fail',
+          jobValue: 'EUR',
+          profileValue: ['USD'],
+          reason: 'job pays in EUR; you accept [USD]',
+        },
+        {
+          rule: 'currency',
+          outcome: 'pass',
+          jobValue: 'USD',
+          profileValue: ['USD', 'EUR'],
+          reason: 'job pays in USD, which you accept',
+        },
+        {
+          rule: 'contractType',
+          outcome: 'fail',
+          jobValue: 'contractor',
+          profileValue: ['full_time'],
+          reason:
+            'job contract contractor is not in your contract types [full_time]',
+        },
+      ],
+      labels,
+    );
+    expect(lines.map((l) => l.text)).toEqual([
+      "Job requires Italian (fluent; you don't speak it), English (native; you have fluent)",
+      'You speak every required language: English (working)',
+      'Posting is written in English, which you speak',
+      "Posting is written in Italian, which you don't speak",
+      'Job pays in Euro; you accept US dollar',
+      'Job pays in US dollar, which you accept',
+      'Job contract Contractor is not in your contract types: Full-time',
+    ]);
+  });
+  it('keeps the reason when a code has no label or the value is not structured', () => {
+    const [line] = checkLines(
+      [
+        {
+          rule: 'currency',
+          outcome: 'pass',
+          jobValue: 'XYZ',
+          profileValue: ['XYZ'],
+          reason: 'job pays in XYZ, which you accept',
+        },
+      ],
+      labels,
+    );
+    expect(line.text).toBe('Job pays in XYZ, which you accept');
   });
   it('skips an unknown rule and non-array input', () => {
     const extra = [

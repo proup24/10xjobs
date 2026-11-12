@@ -26,11 +26,15 @@ vi.mock('@/lib/supabase/client', () => ({
   createSupabaseBrowserClient: () => ({}),
 }));
 vi.mock('@/lib/matches/mark-viewed', () => ({ markViewed }));
+const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
+vi.mock('sonner', () => ({ toast }));
 
 afterEach(() => {
   cleanup();
   refresh.mockReset();
   markViewed.mockReset();
+  toast.success.mockReset();
+  toast.error.mockReset();
 });
 
 const PROFILE_LABELS = {
@@ -38,7 +42,13 @@ const PROFILE_LABELS = {
   [P2]: 'Backend engineer',
 };
 
-const renderDetail = (rows = [matchRow()]) =>
+const renderDetail = (
+  rows = [matchRow()],
+  onDecide?: (d: {
+    matchId: string;
+    choice: 'qualified' | 'rejected';
+  }) => Promise<{ status: 'saved' } | { status: 'failed' }>,
+) =>
   render(
     <MatchDetail
       rows={rows}
@@ -47,8 +57,41 @@ const renderDetail = (rows = [matchRow()]) =>
       now={new Date(NOW)}
       userId="u1"
       backHref="/"
+      onDecide={onDecide}
     />,
   );
+
+/** A row the matcher sent to review: seniority failed on an unsure value. */
+const reviewRow = () =>
+  matchRow({
+    matchId: 'm-review',
+    outcome: 'review',
+    reviewRule: 'seniority',
+    reviewField: 'seniority',
+    unverified: false,
+    checks: [
+      ...checks,
+      {
+        rule: 'seniority',
+        outcome: 'fail',
+        jobValue: 'staff',
+        profileValue: ['senior'],
+        reason: 'job seniority staff is not in your seniorities [senior]',
+        unsure: true,
+        unsureField: 'seniority',
+      },
+    ],
+    facts: {
+      ...facts,
+      seniority: {
+        code: 'staff',
+        label: 'Staff',
+        source: 'description',
+        quote: 'You will lead as a staff-level engineer',
+      },
+    },
+    conflicts: [{ field: 'seniority', listingValue: 'Mid-Senior level' }],
+  });
 
 describe('MatchDetail', () => {
   it('marks the job viewed, then refreshes, when "Open post" or "Apply" is clicked', async () => {
@@ -279,5 +322,127 @@ describe('MatchDetail', () => {
         .getByRole('link', { name: 'Back to matches' })
         .getAttribute('href'),
     ).toBe('/');
+  });
+  it("MatchDetail on a review row shows the rule, the unsure fact's quote and the LinkedIn value", () => {
+    renderDetail([reviewRow()], vi.fn());
+    const why = screen.getByText("Why it's in review").closest('section');
+    if (!why) throw new Error('no section');
+    const w = within(why);
+    expect(w.getByText('Would be rejected by')).toBeTruthy();
+    expect(w.getAllByText('Seniority').length).toBeGreaterThan(0);
+    expect(w.getByText('Unsure about')).toBeTruthy();
+    expect(
+      w.getByText('“You will lead as a staff-level engineer”'),
+    ).toBeTruthy();
+    expect(w.getByText('LinkedIn says Mid-Senior level')).toBeTruthy();
+    // A review row did not match: its checks are not "why it matched".
+    expect(screen.queryByText(/Why it matched/)).toBeNull();
+    expect(screen.getByText('Checks · Full-stack engineer')).toBeTruthy();
+  });
+
+  it('names the location fact and its LinkedIn places on an openings review', () => {
+    const row = reviewRow();
+    renderDetail(
+      [
+        {
+          ...row,
+          reviewRule: 'location',
+          reviewField: 'openings',
+          facts: {
+            ...facts,
+            openings: [{ ...facts.openings[0], quote: 'Remote in Europe' }],
+          },
+          conflicts: [
+            {
+              field: 'places',
+              listingValue: [{ kind: 'country', label: 'France' }],
+            },
+          ],
+        },
+      ],
+      vi.fn(),
+    );
+    const why = screen.getByText("Why it's in review").closest('section');
+    if (!why) throw new Error('no section');
+    expect(within(why).getByText('Location')).toBeTruthy();
+    expect(within(why).getByText('Where and how you work')).toBeTruthy();
+    expect(within(why).getByText('“Remote in Europe”')).toBeTruthy();
+    expect(within(why).getByText('LinkedIn says France')).toBeTruthy();
+  });
+
+  it('shows no decision buttons on a qualified row', () => {
+    renderDetail([matchRow()], vi.fn());
+    expect(
+      screen.queryByRole('button', { name: 'Move to matches' }),
+    ).toBeNull();
+    expect(screen.queryByText("Why it's in review")).toBeNull();
+  });
+
+  it('clicking Move to matches calls onDecide with qualified', async () => {
+    const onDecide = vi.fn().mockResolvedValue({ status: 'saved' });
+    renderDetail([reviewRow()], onDecide);
+    fireEvent.click(screen.getByRole('button', { name: 'Move to matches' }));
+    await vi.waitFor(() =>
+      expect(onDecide).toHaveBeenCalledWith({
+        matchId: 'm-review',
+        choice: 'qualified',
+      }),
+    );
+    await vi.waitFor(() =>
+      expect(toast.success).toHaveBeenCalledWith('Moved to matches'),
+    );
+  });
+
+  it('Reject calls onDecide with rejected and shows a toast', async () => {
+    const onDecide = vi.fn().mockResolvedValue({ status: 'saved' });
+    renderDetail([reviewRow()], onDecide);
+    fireEvent.click(screen.getByRole('button', { name: 'Reject' }));
+    const dialog = await screen.findByRole('alertdialog');
+    expect(
+      within(dialog).getByText(
+        'Reject this job? It will leave your review list.',
+      ),
+    ).toBeTruthy();
+    expect(onDecide).not.toHaveBeenCalled();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Reject' }));
+    await vi.waitFor(() =>
+      expect(onDecide).toHaveBeenCalledWith({
+        matchId: 'm-review',
+        choice: 'rejected',
+      }),
+    );
+    await vi.waitFor(() =>
+      expect(toast.success).toHaveBeenCalledWith('Rejected'),
+    );
+  });
+
+  it('reports a failed decision with an error toast', async () => {
+    const onDecide = vi.fn().mockResolvedValue({ status: 'failed' });
+    renderDetail([reviewRow()], onDecide);
+    fireEvent.click(screen.getByRole('button', { name: 'Move to matches' }));
+    await vi.waitFor(() => expect(toast.error).toHaveBeenCalled());
+    expect(toast.success).not.toHaveBeenCalled();
+  });
+
+  it('marks a check that passes on an unsure value, so the Unverified badge has its reason', () => {
+    renderDetail([
+      matchRow({
+        unverified: true,
+        checks: [
+          {
+            rule: 'seniority',
+            outcome: 'pass',
+            reason: 'job seniority senior is in your seniorities [senior]',
+            unsure: true,
+            unsureField: 'seniority',
+          },
+        ],
+      }),
+    ]);
+    const why = screen
+      .getByText('Why it matched · Full-stack engineer')
+      .closest('section');
+    if (!why) throw new Error('no section');
+    expect(within(why).getByText('(unsure)')).toBeTruthy();
   });
 });

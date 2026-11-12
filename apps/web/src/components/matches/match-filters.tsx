@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { Tab } from '@/lib/matches/group';
+import type { List } from '@/lib/matches/view-state';
 
 type Option = { value: string; label: string };
 
@@ -49,8 +50,14 @@ function FilterSelect({
   );
 }
 
-/** Profile and source selects, then the two time tabs with their counts. */
+/**
+ * The list tabs (matches or review) with their counts, then the profile and source selects,
+ * then the two time tabs with their counts.
+ */
 export function MatchFilters({
+  list,
+  listCounts,
+  onList,
   profileItems,
   profile,
   onProfile,
@@ -61,6 +68,9 @@ export function MatchFilters({
   counts,
   onTab,
 }: {
+  list: List;
+  listCounts: Record<List, number>;
+  onList: (list: List) => void;
   /** Null hides the profile switcher. */
   profileItems: Option[] | null;
   profile: string;
@@ -75,6 +85,23 @@ export function MatchFilters({
 }) {
   return (
     <div className="flex flex-col gap-3">
+      {sourceItems && (
+        <Tabs
+          value={list}
+          onValueChange={(v) => {
+            if (v === 'matches' || v === 'review') onList(v);
+          }}
+        >
+          <TabsList aria-label="List" className="w-full">
+            <TabsTrigger value="matches">
+              Matches ({listCounts.matches})
+            </TabsTrigger>
+            <TabsTrigger value="review">
+              Review ({listCounts.review})
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      )}
       <div className="flex flex-wrap gap-2">
         {profileItems && (
           <FilterSelect

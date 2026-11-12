@@ -27,7 +27,19 @@ describe('selectedRows', () => {
     });
     expect(await selectedRows(f.supabase, J, profiles)).toEqual([row(J)]);
     expect(f.rpcs('match_details')).toHaveLength(1);
-    expect(f.rpcs('match_details')[0].args).toEqual({ p_job_id: J });
+    expect(f.rpcs('match_details')[0].args).toEqual({
+      p_job_id: J,
+      p_outcome: 'qualified',
+    });
+  });
+
+  it('reads the job from the review list when asked', async () => {
+    const f = fakeSupabase({ rpc: () => ({ data: [row(J)], error: null }) });
+    await selectedRows(f.supabase, J, profiles, 'review');
+    expect(f.rpcs('match_details')[0].args).toEqual({
+      p_job_id: J,
+      p_outcome: 'review',
+    });
   });
 
   // The page passes its profiles still loading, so the job read runs alongside them.

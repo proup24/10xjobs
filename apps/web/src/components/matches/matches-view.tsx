@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { decideReviewAction } from '@/app/(app)/actions';
 import type { Labels } from '@/lib/matches/checks';
 import {
   selectJobs,
@@ -15,7 +16,7 @@ import {
   type ViewState,
 } from '@/lib/matches/view-state';
 import { cn } from '@/lib/utils';
-import { BackLink, MatchDetail } from './match-detail';
+import { BackLink, MatchDetail, type Decide } from './match-detail';
 import { MatchEmpty } from './match-empty';
 import { MatchFilters } from './match-filters';
 import { MatchList } from './match-list';
@@ -23,11 +24,12 @@ import { MatchList } from './match-list';
 type Profile = { id: string; label: string; state: 'draft' | 'published' };
 
 /**
- * The matches page: the list beside the selected job from `md` up, one or the other below
- * it. Every choice lives in the URL; the server reloads on navigation.
+ * The matches page: the list (matches or review) beside the selected job from `md` up, one
+ * or the other below it. Every choice lives in the URL; the server reloads on navigation.
  */
 export function MatchesView({
-  jobs,
+  jobs: matchedJobs,
+  reviewJobs,
   profiles,
   labels,
   initial: state,
@@ -35,8 +37,10 @@ export function MatchesView({
   userId,
   selected,
 }: {
-  /** Grouped jobs of the last 7 days, published profiles only. */
+  /** Grouped matches of the last 7 days, published profiles only. */
   jobs: MatchedJob[];
+  /** Grouped review rows of the last 7 days not yet decided, published profiles only. */
+  reviewJobs: MatchedJob[];
   profiles: Profile[];
   labels: Labels;
   initial: ViewState;
@@ -52,6 +56,17 @@ export function MatchesView({
   const href = (next: ViewState) => viewStateHref(next, defaults);
   const go = (next: Partial<ViewState>) =>
     router.push(href({ ...state, ...next }));
+  const review = state.list === 'review';
+  const jobs = review ? reviewJobs : matchedJobs;
+  // A decided job leaves the review list: close it and read the lists again.
+  const decide: Decide = async (d) => {
+    const result = await decideReviewAction(d);
+    if (result.status === 'saved') {
+      router.push(href({ ...state, job: null }));
+      router.refresh();
+    }
+    return result;
+  };
 
   if (profiles.length === 0) {
     return (
@@ -91,6 +106,10 @@ export function MatchesView({
     '7d': selectJobs(jobs, { ...base, tab: '7d' }).length,
   };
   const visible = selectJobs(jobs, { ...base, tab: state.tab });
+  const listCounts = {
+    matches: selectJobs(matchedJobs, { ...base, tab: '7d' }).length,
+    review: selectJobs(reviewJobs, { ...base, tab: '7d' }).length,
+  };
 
   let list: React.ReactNode;
   if (isDraft) list = <MatchEmpty kind="draft" />;
@@ -103,6 +122,7 @@ export function MatchesView({
         now={now}
         showProfiles={state.profile === 'all'}
         profileLabels={profileLabels}
+        label={review ? 'Review' : 'Matches'}
       />
     );
   else if (selectJobs(jobs, { ...base, source: 'all', tab: state.tab }).length)
@@ -115,11 +135,11 @@ export function MatchesView({
   else if (state.tab === '24h')
     list = (
       <MatchEmpty
-        kind="no-matches-24h"
+        kind={review ? 'no-review-24h' : 'no-matches-24h'}
         weekHref={href({ ...state, tab: '7d' })}
       />
     );
-  else list = <MatchEmpty kind="no-matches-7d" />;
+  else list = <MatchEmpty kind={review ? 'no-review-7d' : 'no-matches-7d'} />;
 
   // In one profile, show that profile's reasons when it matched the job.
   const own = selected?.filter((r) => r.profileId === state.profile) ?? [];
@@ -144,6 +164,7 @@ export function MatchesView({
         now={now}
         userId={userId}
         backHref={backHref}
+        onDecide={review ? decide : undefined}
       />
     );
 
@@ -160,6 +181,9 @@ export function MatchesView({
           )}
         >
           <MatchFilters
+            list={state.list}
+            listCounts={listCounts}
+            onList={(list) => go({ list, job: null })}
             profileItems={profileItems}
             profile={state.profile}
             onProfile={(profile) => go({ profile })}
