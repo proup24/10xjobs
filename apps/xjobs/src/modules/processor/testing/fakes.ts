@@ -2,6 +2,8 @@
  * In-memory stand-ins for the processor's models and repositories. They follow
  * the abstract contracts closely enough for unit tests and the golden-set eval.
  */
+import { cityForms, placeCityKey } from 'src/modules/facts/places/city-forms';
+import { foldPlaceName } from 'src/modules/facts/places/fold';
 import { randomUUID } from 'node:crypto';
 import type { ListTableRow } from '@xjobs/database';
 import { ModelOutputError } from '../models/errors';
@@ -32,6 +34,7 @@ import {
   type ProposedCity,
   type ProposedTerm,
   type Vocabulary,
+  addsAlias,
 } from '../repositories/vocab.repository';
 import type { ListOptions } from '../schema';
 import { zodErrors } from '../schema/errors';
@@ -474,8 +477,11 @@ export interface MemoryCity {
   id: string;
   name: string;
   countryCode: string;
+  aliases?: string[];
   status: 'approved' | 'proposed';
   occurrences: number;
+  /** Defaults to the row's position, so earlier rows are older. */
+  firstSeenAt?: Date;
 }
 
 /** The list tables in memory, seeded as approved from `SEED` by default. */
@@ -572,11 +578,16 @@ export class MemoryVocabRepository extends VocabRepository {
   ): Promise<Map<string, string>> {
     const ids = new Map<string, string>();
     for (const city of c) {
-      let found = this.cities.find(
-        (x) =>
-          x.countryCode === city.countryCode &&
-          x.name.toLowerCase() === city.name.toLowerCase(),
+      if (foldPlaceName(city.name) === '') continue;
+      const forms = cityForms(
+        this.cities.map((x, i) => ({
+          ...x,
+          aliases: x.aliases ?? [],
+          firstSeenAt: x.firstSeenAt ?? new Date(i),
+        })),
       );
+      const foundId = forms.get(placeCityKey(city.countryCode, city.name));
+      let found = this.cities.find((x) => x.id === foundId);
       if (found) found.occurrences += 1;
       else {
         found = {
@@ -663,6 +674,14 @@ export class MemoryVocabRepository extends VocabRepository {
     );
     if (i < 0 || this.citiesInUse.has(id)) return false;
     this.cities.splice(i, 1);
+    return true;
+  }
+
+  async aliasCity(id: string, spelling: string): Promise<boolean> {
+    const city = this.cities.find((c) => c.id === id);
+    if (city?.status !== 'approved') return false;
+    const aliases = (city.aliases ??= []);
+    if (addsAlias(city.name, aliases, spelling)) aliases.push(spelling.trim());
     return true;
   }
 }

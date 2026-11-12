@@ -1,0 +1,242 @@
+[
+  {
+    "id": "column.public.normalized_jobs.city",
+    "label": "Add column \"city\" to \"normalized_jobs\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "city",
+        "table": "normalized_jobs"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"city\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "normalized_jobs",
+          "city"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"city\" on \"normalized_jobs\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"city\"",
+        "sql": "ALTER TABLE \"public\".\"normalized_jobs\" ADD COLUMN \"city\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"city\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "normalized_jobs",
+          "city"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"city\" on \"normalized_jobs\""
+        }
+      },
+      {
+        "description": "verify column \"city\" has type \"text\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "normalized_jobs",
+          "city",
+          "text"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.normalized_jobs.geoId",
+    "label": "Add column \"geoId\" to \"normalized_jobs\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "geoId",
+        "table": "normalized_jobs"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"geoId\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "normalized_jobs",
+          "geoId"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"geoId\" on \"normalized_jobs\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"geoId\"",
+        "sql": "ALTER TABLE \"public\".\"normalized_jobs\" ADD COLUMN \"geoId\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"geoId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "normalized_jobs",
+          "geoId"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"geoId\" on \"normalized_jobs\""
+        }
+      },
+      {
+        "description": "verify column \"geoId\" has type \"text\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "normalized_jobs",
+          "geoId",
+          "text"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.normalized_jobs.salaryProvidedByEmployer",
+    "label": "Add column \"salaryProvidedByEmployer\" to \"normalized_jobs\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "salaryProvidedByEmployer",
+        "table": "normalized_jobs"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"salaryProvidedByEmployer\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "normalized_jobs",
+          "salaryProvidedByEmployer"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"salaryProvidedByEmployer\" on \"normalized_jobs\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"salaryProvidedByEmployer\"",
+        "sql": "ALTER TABLE \"public\".\"normalized_jobs\" ADD COLUMN \"salaryProvidedByEmployer\" bool"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"salaryProvidedByEmployer\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "normalized_jobs",
+          "salaryProvidedByEmployer"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"salaryProvidedByEmployer\" on \"normalized_jobs\""
+        }
+      },
+      {
+        "description": "verify column \"salaryProvidedByEmployer\" has type \"boolean\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "normalized_jobs",
+          "salaryProvidedByEmployer",
+          "boolean"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.normalized_jobs.state",
+    "label": "Add column \"state\" to \"normalized_jobs\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "state",
+        "table": "normalized_jobs"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"state\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "normalized_jobs",
+          "state"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"state\" on \"normalized_jobs\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"state\"",
+        "sql": "ALTER TABLE \"public\".\"normalized_jobs\" ADD COLUMN \"state\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"state\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "normalized_jobs",
+          "state"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"state\" on \"normalized_jobs\""
+        }
+      },
+      {
+        "description": "verify column \"state\" has type \"text\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "normalized_jobs",
+          "state",
+          "text"
+        ]
+      }
+    ]
+  }
+]

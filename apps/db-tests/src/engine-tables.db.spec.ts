@@ -132,6 +132,11 @@ const fixtures: Fixture[] = [
       kind: 'job',
       status: 'active',
       companyId,
+      // The listing-location columns: an unknown column fails the insert.
+      city: 'Paris',
+      state: 'Île-de-France',
+      geoId: '101240143',
+      salaryProvidedByEmployer: true,
       postingUrl: 'https://example.test/job',
       closed: false,
       fieldSources: {},

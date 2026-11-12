@@ -567,6 +567,8 @@ model NormalizedJob {
   salaryMax             Int?
   salaryCurrency        String?
   salaryPeriod          String?
+  // True when the employer stated the pay (LinkedIn's providedByEmployer); null when unknown.
+  salaryProvidedByEmployer Boolean?
   // YYYY-MM-DD.
   publishedAt           String?
   // Posted time: exact from the source, or estimated from LinkedIn's "N ago"; null when unknown.
@@ -576,6 +578,10 @@ model NormalizedJob {
   employmentType        String?
   countryCode           String?
   regionCode            String?
+  // LinkedIn's parsed city and state, and its location geoId; null off the harvestapi actor.
+  city                  String?
+  state                 String?
+  geoId                 String?
   applicantTrackingSystem String?
   applicantCount        Int?
   expiresAt             TimestamptzJsDate(3)?

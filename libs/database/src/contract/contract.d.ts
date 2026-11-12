@@ -24,7 +24,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'a770004147015113556bc2c1c38562bfe20c02fe2d9ee05087874392fe44a59d'>;
+  StorageHashBase<'f7a1c0acc4b8baef72167a011f0293c8e81285ca85739d0f73171cb5e648de76'>;
 export type ExecutionHash =
   ExecutionHashBase<'8bc8825d20cc71c0168a24c0ad5f4ab984ef4f211b07b463ca60f85f9203b8c8'>;
 export type ProfileHash =
@@ -739,6 +739,7 @@ export namespace Models {
     applicantCount: FieldOutputTypes['public']['NormalizedJob']['applicantCount'];
     applicantTrackingSystem: FieldOutputTypes['public']['NormalizedJob']['applicantTrackingSystem'];
     applyUrl: FieldOutputTypes['public']['NormalizedJob']['applyUrl'];
+    city: FieldOutputTypes['public']['NormalizedJob']['city'];
     closed: FieldOutputTypes['public']['NormalizedJob']['closed'];
     companyId: FieldOutputTypes['public']['NormalizedJob']['companyId'];
     companyName: FieldOutputTypes['public']['NormalizedJob']['companyName'];
@@ -754,6 +755,7 @@ export namespace Models {
     expiresAt: FieldOutputTypes['public']['NormalizedJob']['expiresAt'];
     fieldSources: FieldOutputTypes['public']['NormalizedJob']['fieldSources'];
     firstSeenAt: FieldOutputTypes['public']['NormalizedJob']['firstSeenAt'];
+    geoId: FieldOutputTypes['public']['NormalizedJob']['geoId'];
     id: FieldOutputTypes['public']['NormalizedJob']['id'];
     jobKey: FieldOutputTypes['public']['NormalizedJob']['jobKey'];
     kind: FieldOutputTypes['public']['NormalizedJob']['kind'];
@@ -781,8 +783,10 @@ export namespace Models {
     salaryMax: FieldOutputTypes['public']['NormalizedJob']['salaryMax'];
     salaryMin: FieldOutputTypes['public']['NormalizedJob']['salaryMin'];
     salaryPeriod: FieldOutputTypes['public']['NormalizedJob']['salaryPeriod'];
+    salaryProvidedByEmployer: FieldOutputTypes['public']['NormalizedJob']['salaryProvidedByEmployer'];
     salaryText: FieldOutputTypes['public']['NormalizedJob']['salaryText'];
     sector: FieldOutputTypes['public']['NormalizedJob']['sector'];
+    state: FieldOutputTypes['public']['NormalizedJob']['state'];
     status: FieldOutputTypes['public']['NormalizedJob']['status'];
     title: FieldOutputTypes['public']['NormalizedJob']['title'];
     updatedAt: FieldOutputTypes['public']['NormalizedJob']['updatedAt'];
@@ -2591,6 +2595,12 @@ type ContractBase = Omit<
                   readonly nullable: true;
                   readonly many: false;
                 };
+                readonly city: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly closed: {
                   readonly dataType: 'pg/bool';
                   readonly codecId: 'pg/bool@1';
@@ -2683,6 +2693,12 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/timestamptz-date@1';
                   readonly nullable: false;
                   readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly geoId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly id: {
@@ -2856,6 +2872,12 @@ type ContractBase = Omit<
                   readonly nullable: true;
                   readonly many: false;
                 };
+                readonly salaryProvidedByEmployer: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly salaryText: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -2863,6 +2885,12 @@ type ContractBase = Omit<
                   readonly many: false;
                 };
                 readonly sector: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly state: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: true;
@@ -6079,6 +6107,10 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly city: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly closed: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
@@ -6150,6 +6182,10 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/timestamptz-date@1';
                   readonly typeParams: { readonly precision: 3 };
                 };
+              };
+              readonly geoId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly id: {
                 readonly nullable: false;
@@ -6279,11 +6315,19 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly salaryProvidedByEmployer: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
               readonly salaryText: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly sector: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly state: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
@@ -6397,6 +6441,7 @@ type ContractBase = Omit<
                 readonly applicantCount: { readonly column: 'applicantCount' };
                 readonly applicantTrackingSystem: { readonly column: 'applicantTrackingSystem' };
                 readonly applyUrl: { readonly column: 'applyUrl' };
+                readonly city: { readonly column: 'city' };
                 readonly closed: { readonly column: 'closed' };
                 readonly companyId: { readonly column: 'companyId' };
                 readonly companyName: { readonly column: 'companyName' };
@@ -6412,6 +6457,7 @@ type ContractBase = Omit<
                 readonly expiresAt: { readonly column: 'expiresAt' };
                 readonly fieldSources: { readonly column: 'fieldSources' };
                 readonly firstSeenAt: { readonly column: 'firstSeenAt' };
+                readonly geoId: { readonly column: 'geoId' };
                 readonly id: { readonly column: 'id' };
                 readonly jobKey: { readonly column: 'jobKey' };
                 readonly kind: { readonly column: 'kind' };
@@ -6439,8 +6485,10 @@ type ContractBase = Omit<
                 readonly salaryMax: { readonly column: 'salaryMax' };
                 readonly salaryMin: { readonly column: 'salaryMin' };
                 readonly salaryPeriod: { readonly column: 'salaryPeriod' };
+                readonly salaryProvidedByEmployer: { readonly column: 'salaryProvidedByEmployer' };
                 readonly salaryText: { readonly column: 'salaryText' };
                 readonly sector: { readonly column: 'sector' };
+                readonly state: { readonly column: 'state' };
                 readonly status: { readonly column: 'status' };
                 readonly title: { readonly column: 'title' };
                 readonly updatedAt: { readonly column: 'updatedAt' };

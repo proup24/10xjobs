@@ -89,10 +89,23 @@ describe('parseVocabArgs', () => {
     });
   });
 
-  it('says aliases are not supported for cities', () => {
+  it('parses cities alias <id> --as <spelling>', () => {
+    expect(parseVocabArgs(['cities', 'alias', 'id-1', '--as', 'Fez'])).toEqual({
+      list: 'cities',
+      action: 'alias',
+      code: 'id-1',
+      spelling: 'Fez',
+    });
+  });
+
+  it('city alias needs --as, and list aliases need --to', () => {
+    expect(() => parseVocabArgs(['cities', 'alias', 'id-1'])).toThrow('--as');
     expect(() =>
       parseVocabArgs(['cities', 'alias', 'id-1', '--to', 'id-2']),
-    ).toThrow('alias is not supported for cities');
+    ).toThrow('--as');
+    expect(() =>
+      parseVocabArgs(['techTags', 'alias', 'a', '--as', 'b']),
+    ).toThrow('--to');
   });
 
   it('refuses an unknown list, action or a missing code or target', () => {

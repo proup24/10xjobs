@@ -1,7 +1,11 @@
 import { z } from 'zod';
 
-/** Bump on any change to a mapper or the job key; then run `db:renormalize`. */
-export const NORMALIZER_VERSION = 4;
+/**
+ * Bump on any change to a mapper or the job key; then run `db:renormalize`.
+ * Version 5 adds city, state, geoId and salary.providedByEmployer. No
+ * `db:renormalize` is needed for old items: they stay null until re-collected.
+ */
+export const NORMALIZER_VERSION = 5;
 
 const text = z.string().min(1).nullable();
 const url = z.url({ protocol: /^https?$/ });
@@ -45,6 +49,7 @@ export const normalizedRecordSchema = z
         max: z.number().nullable(),
         currency: text,
         period: text,
+        providedByEmployer: z.boolean().nullable(),
       })
       .nullable(),
     publishedAt: z
@@ -71,6 +76,9 @@ export const normalizedRecordSchema = z
       .regex(/^[A-Z]{2}$/)
       .nullable(),
     regionCode: text,
+    city: text,
+    state: text,
+    geoId: text,
     applicantTrackingSystem: text,
     applicantCount: z.number().int().nonnegative().nullable(),
     expiresAt: z.iso.datetime().nullable(),
@@ -108,6 +116,9 @@ export const RECORD_FIELDS = [
   'employmentType',
   'countryCode',
   'regionCode',
+  'city',
+  'state',
+  'geoId',
   'applicantTrackingSystem',
   'applicantCount',
   'expiresAt',

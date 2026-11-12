@@ -717,6 +717,7 @@ export type Database = {
           applicantCount: number | null;
           applicantTrackingSystem: string | null;
           applyUrl: string | null;
+          city: string | null;
           closed: boolean;
           companyId: string | null;
           companyName: string | null;
@@ -732,6 +733,7 @@ export type Database = {
           expiresAt: string | null;
           fieldSources: NonNullable<Json>;
           firstSeenAt: string;
+          geoId: string | null;
           id: string;
           jobKey: string;
           kind: string;
@@ -759,8 +761,10 @@ export type Database = {
           salaryMax: number | null;
           salaryMin: number | null;
           salaryPeriod: string | null;
+          salaryProvidedByEmployer: boolean | null;
           salaryText: string | null;
           sector: string | null;
+          state: string | null;
           status: string;
           title: string | null;
           updatedAt: string;
@@ -771,6 +775,7 @@ export type Database = {
           applicantCount?: number | null;
           applicantTrackingSystem?: string | null;
           applyUrl?: string | null;
+          city?: string | null;
           closed: boolean;
           companyId?: string | null;
           companyName?: string | null;
@@ -786,6 +791,7 @@ export type Database = {
           expiresAt?: string | null;
           fieldSources: NonNullable<Json>;
           firstSeenAt: string;
+          geoId?: string | null;
           id: string;
           jobKey: string;
           kind: string;
@@ -813,8 +819,10 @@ export type Database = {
           salaryMax?: number | null;
           salaryMin?: number | null;
           salaryPeriod?: string | null;
+          salaryProvidedByEmployer?: boolean | null;
           salaryText?: string | null;
           sector?: string | null;
+          state?: string | null;
           status: string;
           title?: string | null;
           updatedAt?: string;
@@ -824,6 +832,7 @@ export type Database = {
           applicantCount?: number | null;
           applicantTrackingSystem?: string | null;
           applyUrl?: string | null;
+          city?: string | null;
           closed?: boolean;
           companyId?: string | null;
           companyName?: string | null;
@@ -839,6 +848,7 @@ export type Database = {
           expiresAt?: string | null;
           fieldSources?: NonNullable<Json>;
           firstSeenAt?: string;
+          geoId?: string | null;
           id?: string;
           jobKey?: string;
           kind?: string;
@@ -866,8 +876,10 @@ export type Database = {
           salaryMax?: number | null;
           salaryMin?: number | null;
           salaryPeriod?: string | null;
+          salaryProvidedByEmployer?: boolean | null;
           salaryText?: string | null;
           sector?: string | null;
+          state?: string | null;
           status?: string;
           title?: string | null;
           updatedAt?: string;

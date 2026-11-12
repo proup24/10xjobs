@@ -14,6 +14,7 @@ import {
   PrismaProcessorRepository,
   type ReuseKey,
 } from './processor.repository';
+import { PrismaPlaceVocabularyRepository } from 'src/modules/facts/places/place-vocabulary.repository';
 import { PrismaVocabRepository } from './vocab.repository';
 import type { SeedEnvironmentVariables } from 'src/config';
 
@@ -721,6 +722,118 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
         status: 'proposed',
         occurrences: 2,
       });
+    });
+
+    it('maps accented and aliased city names to the existing city', async () => {
+      const fes = await db.orm.public.City.create({
+        name: 'Fès',
+        nameKey: 'fès',
+        countryCode: 'MA',
+        geonamesId: null,
+        aliases: ['Fez'],
+        status: 'approved',
+        occurrences: 3,
+        firstSeenAt: new Date(),
+        approvedAt: new Date(),
+      });
+      const ids = await vocab.upsertCities([
+        { name: 'Fez', countryCode: 'MA' },
+        { name: 'Fes', countryCode: 'MA' },
+      ]);
+      expect(ids.get('Fez|MA')).toBe(fes.id);
+      expect(ids.get('Fes|MA')).toBe(fes.id);
+      expect(
+        await db.orm.public.City.where({ countryCode: 'MA' }).all(),
+      ).toHaveLength(1);
+      const after = await db.orm.public.City.where({ id: fes.id }).first();
+      expect(after?.occurrences).toBe(5);
+    });
+
+    it('sends a spelling two cities share to the same city as load()', async () => {
+      const make = (
+        name: string,
+        status: 'approved' | 'proposed',
+        firstSeenAt: Date,
+        aliases: string[] = [],
+      ) =>
+        db.orm.public.City.create({
+          name,
+          nameKey: name.toLowerCase(),
+          countryCode: 'MA',
+          geonamesId: null,
+          aliases,
+          status,
+          occurrences: 1,
+          firstSeenAt,
+          approvedAt: status === 'approved' ? new Date() : null,
+        });
+      await make('Fes', 'proposed', new Date('2020-01-01'));
+      const approved = await make('Fès', 'approved', new Date('2026-01-01'), [
+        'Fes',
+      ]);
+      const ids = await vocab.upsertCities([
+        { name: 'Fes', countryCode: 'MA' },
+      ]);
+      const places = await new PrismaPlaceVocabularyRepository({
+        db,
+      } as DatabaseService).load();
+      expect(ids.get('Fes|MA')).toBe(approved.id);
+      expect(places.cities.get('MA|fes')).toBe(approved.id);
+    });
+
+    it('does not insert a city whose name folds to nothing', async () => {
+      const ids = await vocab.upsertCities([
+        { name: ' - ', countryCode: 'MA' },
+      ]);
+      expect(ids.size).toBe(0);
+      expect(
+        await db.orm.public.City.where({ countryCode: 'MA' }).all(),
+      ).toHaveLength(0);
+    });
+
+    it('sums the sightings of several spellings of one city in a batch', async () => {
+      const fes = await db.orm.public.City.create({
+        name: 'Fès',
+        nameKey: 'fès',
+        countryCode: 'MA',
+        geonamesId: null,
+        aliases: ['Fez'],
+        status: 'approved',
+        occurrences: 3,
+        firstSeenAt: new Date(),
+        approvedAt: new Date(),
+      });
+      const ids = await vocab.upsertCities([
+        { name: 'Fez', countryCode: 'MA' },
+        { name: 'Fes', countryCode: 'MA' },
+        { name: 'Fez', countryCode: 'MA' },
+      ]);
+      expect(ids.get('Fez|MA')).toBe(fes.id);
+      expect(ids.get('Fes|MA')).toBe(fes.id);
+      const after = await db.orm.public.City.where({ id: fes.id }).first();
+      expect(after?.occurrences).toBe(6);
+    });
+
+    it('loads approved places and every city under its folded name and aliases', async () => {
+      const fes = await db.orm.public.City.create({
+        name: 'Fès',
+        nameKey: 'fès',
+        countryCode: 'MA',
+        geonamesId: null,
+        aliases: ['Fez'],
+        status: 'proposed',
+        occurrences: 1,
+        firstSeenAt: new Date(),
+        approvedAt: null,
+      });
+      const places = await new PrismaPlaceVocabularyRepository({
+        db,
+      } as DatabaseService).load();
+      expect(places.cities.get('MA|fes')).toBe(fes.id);
+      expect(places.cities.get('MA|fez')).toBe(fes.id);
+      expect(places.cityNames.get(fes.id)).toBe('Fès');
+      expect(places.countries.has('DE')).toBe(true);
+      expect(places.regionCountries.get('EMEA')?.has('DE')).toBe(true);
     });
 
     it('bumps the occurrences of approved codes', async () => {

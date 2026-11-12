@@ -4,7 +4,7 @@
  *
  *   pnpm --filter @xjobs/xjobs db:vocab -- techTags list
  *   ... techTags approve <code> | reject <code> | alias <code> --to <approved code>
- *   ... cities list | approve <id> | reject <id>
+ *   ... cities list | approve <id> | reject <id> | alias <id> --as "<spelling>"
  *
  * Opens the client directly, like `renormalize-jobs.ts`.
  */
@@ -17,10 +17,15 @@ import { parseVocabArgs } from './processor-args';
 async function main(): Promise<void> {
   const logger = new Logger('Vocab');
   const command = parseVocabArgs(process.argv.slice(2));
-  const done = (changed: boolean, message: string, code: string) => {
+  const done = (
+    changed: boolean,
+    message: string,
+    code: string,
+    failure = 'not found or not proposed',
+  ) => {
     if (changed) logger.log(message);
     else {
-      logger.error(`not found or not proposed: ${code}`);
+      logger.error(`${failure}: ${code}`);
       process.exitCode = 1;
     }
   };
@@ -45,6 +50,13 @@ async function main(): Promise<void> {
           await vocab.rejectCity(command.code),
           `Rejected city ${command.code}`,
           command.code,
+        );
+      } else if (command.action === 'alias') {
+        done(
+          await vocab.aliasCity(command.code, command.spelling),
+          `Aliased city ${command.code} as ${command.spelling}`,
+          command.code,
+          'not found or not approved',
         );
       }
       return;

@@ -131,6 +131,10 @@ export function mapHarvestJob(
             max: salaryMax,
             currency: cleanText(salary.currency),
             period: cleanText(salary.payPeriod),
+            providedByEmployer:
+              typeof salary.providedByEmployer === 'boolean'
+                ? salary.providedByEmployer
+                : null,
           }
         : null,
     publishedAt: datePart(postedDate),
@@ -149,6 +153,9 @@ export function mapHarvestJob(
     countryCode:
       countryCode && /^[A-Z]{2}$/.test(countryCode) ? countryCode : null,
     regionCode: cleanText(parsed.regionCode),
+    city: cleanText(parsed.city),
+    state: cleanText(parsed.state),
+    geoId: cleanText(objectAt(p.location).geoId),
     applicantTrackingSystem: cleanText(p.applicantTrackingSystem),
     applicantCount: count(p.applicants),
     expiresAt: isoDatetime(p.expireAt),
