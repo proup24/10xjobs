@@ -10,6 +10,7 @@
     "db:rematch": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/rematch-jobs.ts",
     "db:reprocess": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/reprocess-jobs.ts",
     "db:places": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/places-recheck.ts",
+    "db:match-shares": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/match-shares.ts",
     "db:vocab": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/vocab.ts",
     "processor:golden-import": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/processor-golden-import.ts",
     "processor:golden-draft": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/processor-golden-draft.ts",
