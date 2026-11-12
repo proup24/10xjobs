@@ -1,0 +1,232 @@
+import { randomUUID } from 'node:crypto';
+import {
+  createDatabaseClient,
+  type DatabaseClient,
+  processorListsSeed,
+} from '@xjobs/database';
+import type { DatabaseService } from 'src/database';
+import type { SeedEnvironmentVariables } from 'src/config';
+import { fixtureDocument } from 'src/modules/processor/schema/fixture.testing';
+import { combineFacts } from '../rules/combine';
+import { listingFacts } from '../rules/listing';
+import { hashFacts } from '../services/facts.service';
+import { FACTS_VERSION } from '../config/facts.config';
+import { PrismaFactsRepository, type SavedFacts } from './facts.repository';
+
+/**
+ * Needs PROCESSOR_TEST_DATABASE_URL: a disposable `processor_test` database on
+ * 127.0.0.1, migrated to the current contract. Truncates its tables.
+ */
+const url = process.env.PROCESSOR_TEST_DATABASE_URL;
+const t0 = new Date('2026-11-01T08:00:00Z');
+
+describe.skipIf(!url)('facts repository in PostgreSQL', () => {
+  let db: DatabaseClient;
+  let repo: PrismaFactsRepository;
+
+  async function sql(statement: TemplateStringsArray): Promise<void> {
+    await db.execute(db.raw.sql(statement).affectedCount().build());
+  }
+
+  async function job(
+    over: { countryCode?: string; contractType?: string } = {},
+  ) {
+    const row = await db.orm.public.NormalizedJob.create({
+      jobKey: randomUUID(),
+      kind: 'job',
+      status: 'active',
+      mergedIntoId: null,
+      title: 'Backend Engineer',
+      companyName: 'Acme',
+      location: 'Paris, France',
+      contractType: over.contractType ?? 'Full-time',
+      experienceLevel: 'Mid-Senior level',
+      salaryText: null,
+      salaryMin: 50000,
+      salaryMax: 60000,
+      salaryCurrency: 'EUR',
+      salaryPeriod: 'YEAR',
+      salaryProvidedByEmployer: true,
+      workplaceType: 'onsite',
+      countryCode: over.countryCode ?? 'FR',
+      descriptionText: 'We build things.',
+      postingUrl: `https://example.com/${randomUUID()}`,
+      closed: false,
+      fieldSources: {},
+      firstSeenAt: t0,
+      lastSeenAt: t0,
+      processingStatus: 'processed',
+      processingReason: null,
+      processingRequestedAt: t0,
+      normalizerVersion: 1,
+    });
+    const ex = await db.orm.public.JobExtraction.create({
+      jobId: row.id,
+      inputHash: randomUUID(),
+      schemaVersion: 3,
+      promptHash: 'p',
+      decisionModel: 'd',
+      extractionModel: 'e',
+      data: fixtureDocument() as never,
+      needsReview: false,
+      arrangement: null,
+      seniority: null,
+      roleKind: null,
+      contractType: null,
+      engagement: null,
+      isSoftwareEngineeringRole: null,
+      worldwide: false,
+      regionCodes: [],
+      countryCodes: [],
+      cityIds: [],
+      techTags: [],
+      mainStackTags: [],
+      requiredTags: [],
+      niceTags: [],
+      salaryMin: null,
+      salaryMax: null,
+      salaryCurrency: null,
+      salaryPeriod: null,
+      costUsd: '0',
+    });
+    await db.orm.public.NormalizedJob.where({ id: row.id }).updateAll({
+      currentExtractionId: ex.id,
+    });
+    return { jobId: row.id, extractionId: ex.id };
+  }
+
+  function saved(
+    j: { jobId: string; extractionId: string },
+    conflictFields: Array<'arrangement' | 'salary'> = [],
+  ): SavedFacts {
+    const vocab = {
+      regions: new Set(['EMEA']),
+      countries: new Set(['FR']),
+      cities: new Map(),
+      cityNames: new Map(),
+      regionCountries: new Map([['EMEA', new Set(['FR'])]]),
+    };
+    const { facts } = combineFacts({
+      extraction: fixtureDocument(),
+      listing: listingFacts(
+        {
+          workplaceType: null,
+          countryCode: null,
+          regionCode: null,
+          city: null,
+          geoId: null,
+          location: null,
+          salaryMin: null,
+          salaryMax: null,
+          salaryCurrency: null,
+          salaryPeriod: null,
+          salaryProvidedByEmployer: null,
+          experienceLevel: null,
+          contractType: null,
+          expiresAt: null,
+        },
+        vocab,
+      ),
+      vocab,
+      now: t0,
+    });
+    return {
+      ...j,
+      factsVersion: FACTS_VERSION,
+      factsHash: hashFacts(facts),
+      facts,
+      closed: false,
+      conflicts: conflictFields.map((field) => ({
+        field,
+        listingValue: 'a',
+        descriptionValue: 'b',
+        quote: 'q',
+        winner: 'description' as const,
+      })),
+    };
+  }
+
+  beforeAll(async () => {
+    const target = new URL(url!);
+    if (
+      target.hostname !== '127.0.0.1' ||
+      target.pathname !== '/processor_test'
+    )
+      throw new Error('Use a disposable localhost processor_test database');
+    db = createDatabaseClient({
+      url: url!,
+      connectionTimeoutMs: 3000,
+      idleTimeoutMs: 1000,
+      slowQueryMs: 60000,
+      logQueries: false,
+    });
+    repo = new PrismaFactsRepository({ db } as DatabaseService);
+    await sql`TRUNCATE processing_attempts, job_extractions, cities, region_countries, tech_tags, regions, countries, role_kinds, seniorities, arrangements, contract_types, engagements, junk_flags CASCADE`;
+    await db.transaction((tx) =>
+      processorListsSeed.run(tx, {} as SeedEnvironmentVariables),
+    );
+  }, 120_000);
+  afterAll(async () => {
+    await db?.close();
+  });
+  beforeEach(async () => {
+    await sql`TRUNCATE job_fact_conflicts, job_facts, job_matches, processing_attempts, job_extractions, normalized_job_sources, normalized_jobs CASCADE`;
+  });
+
+  it('loadInputs selects the listing columns, including contractType', async () => {
+    const j = await job();
+    const inputs = await repo.loadInputs(j.jobId);
+    expect(inputs).toMatchObject({
+      extractionId: j.extractionId,
+      schemaVersion: 3,
+      listing: {
+        workplaceType: 'onsite',
+        countryCode: 'FR',
+        contractType: 'Full-time',
+        salaryMin: 50000,
+        salaryProvidedByEmployer: true,
+      },
+    });
+  });
+
+  it('loadInputs returns null without a current extraction', async () => {
+    const j = await job();
+    await sql`UPDATE normalized_jobs SET "currentExtractionId" = NULL`;
+    expect(await repo.loadInputs(j.jobId)).toBeNull();
+  });
+
+  it('save then current round-trips', async () => {
+    const j = await job();
+    expect(await repo.current(j.jobId)).toBeNull();
+    const row = saved(j);
+    await repo.save(row);
+    expect(await repo.current(j.jobId)).toEqual({
+      factsHash: row.factsHash,
+      factsVersion: FACTS_VERSION,
+    });
+  });
+
+  it('conflicts are replaced, not appended', async () => {
+    const j = await job();
+    await repo.save(saved(j, ['arrangement', 'salary']));
+    await repo.save(saved(j, ['salary']));
+    const rows = await db.orm.public.JobFactConflict.where({
+      jobId: j.jobId,
+    }).all();
+    expect(rows.map((r) => r.field)).toEqual(['salary']);
+  });
+
+  it('markStale sets builtAt to -infinity for the country only', async () => {
+    const fr = await job({ countryCode: 'FR' });
+    const de = await job({ countryCode: 'DE' });
+    await repo.save(saved(fr));
+    await repo.save(saved(de));
+    expect(await repo.markStale({ countryCode: 'FR' })).toBe(1);
+    const stale = await db.query(
+      db.raw.sql`SELECT "jobId" FROM job_facts WHERE "builtAt" = '-infinity'`
+        .returnsRow({ jobId: 'pg/uuid@1' })
+        .build(),
+    );
+    expect(stale.map((r) => r.jobId)).toEqual([fr.jobId]);
+  });
+});
