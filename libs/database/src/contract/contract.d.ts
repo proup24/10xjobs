@@ -24,9 +24,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'00a042d35d22a4fbebf6e55bab0e9ab945de091f26bbd6f41fef3e4023030455'>;
+  StorageHashBase<'a770004147015113556bc2c1c38562bfe20c02fe2d9ee05087874392fe44a59d'>;
 export type ExecutionHash =
-  ExecutionHashBase<'cb38d499b437a62b77553b29409a1899e723e7a23ff5ac829bb3c68de98b43f7'>;
+  ExecutionHashBase<'8bc8825d20cc71c0168a24c0ad5f4ab984ef4f211b07b463ca60f85f9203b8c8'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -569,6 +569,27 @@ export namespace Models {
     segmentRun: public_SearchSegmentRun;
     readonly [RelationKeys]?: 'segmentRun';
   };
+  export type public_Company = {
+    createdAt: FieldOutputTypes['public']['Company']['createdAt'];
+    description: FieldOutputTypes['public']['Company']['description'];
+    employeeCount: FieldOutputTypes['public']['Company']['employeeCount'];
+    employeeCountMax: FieldOutputTypes['public']['Company']['employeeCountMax'];
+    employeeCountMin: FieldOutputTypes['public']['Company']['employeeCountMin'];
+    firstSeenAt: FieldOutputTypes['public']['Company']['firstSeenAt'];
+    headquartersCountryCode: FieldOutputTypes['public']['Company']['headquartersCountryCode'];
+    id: FieldOutputTypes['public']['Company']['id'];
+    industries: FieldOutputTypes['public']['Company']['industries'];
+    lastSeenAt: FieldOutputTypes['public']['Company']['lastSeenAt'];
+    linkedinId: FieldOutputTypes['public']['Company']['linkedinId'];
+    linkedinUrl: FieldOutputTypes['public']['Company']['linkedinUrl'];
+    name: FieldOutputTypes['public']['Company']['name'];
+    specialities: FieldOutputTypes['public']['Company']['specialities'];
+    universalName: FieldOutputTypes['public']['Company']['universalName'];
+    updatedAt: FieldOutputTypes['public']['Company']['updatedAt'];
+    website: FieldOutputTypes['public']['Company']['website'];
+    jobs: public_NormalizedJob[];
+    readonly [RelationKeys]?: 'jobs';
+  };
   export type public_Contact = {
     createdAt: FieldOutputTypes['public']['Contact']['createdAt'];
     id: FieldOutputTypes['public']['Contact']['id'];
@@ -715,22 +736,29 @@ export namespace Models {
     readonly [RelationKeys]?: never;
   };
   export type public_NormalizedJob = {
+    applicantCount: FieldOutputTypes['public']['NormalizedJob']['applicantCount'];
+    applicantTrackingSystem: FieldOutputTypes['public']['NormalizedJob']['applicantTrackingSystem'];
     applyUrl: FieldOutputTypes['public']['NormalizedJob']['applyUrl'];
     closed: FieldOutputTypes['public']['NormalizedJob']['closed'];
+    companyId: FieldOutputTypes['public']['NormalizedJob']['companyId'];
     companyName: FieldOutputTypes['public']['NormalizedJob']['companyName'];
     companyUrl: FieldOutputTypes['public']['NormalizedJob']['companyUrl'];
     contractType: FieldOutputTypes['public']['NormalizedJob']['contractType'];
+    countryCode: FieldOutputTypes['public']['NormalizedJob']['countryCode'];
     createdAt: FieldOutputTypes['public']['NormalizedJob']['createdAt'];
     currentExtractionId: FieldOutputTypes['public']['NormalizedJob']['currentExtractionId'];
     descriptionHtml: FieldOutputTypes['public']['NormalizedJob']['descriptionHtml'];
     descriptionText: FieldOutputTypes['public']['NormalizedJob']['descriptionText'];
+    employmentType: FieldOutputTypes['public']['NormalizedJob']['employmentType'];
     experienceLevel: FieldOutputTypes['public']['NormalizedJob']['experienceLevel'];
+    expiresAt: FieldOutputTypes['public']['NormalizedJob']['expiresAt'];
     fieldSources: FieldOutputTypes['public']['NormalizedJob']['fieldSources'];
     firstSeenAt: FieldOutputTypes['public']['NormalizedJob']['firstSeenAt'];
     id: FieldOutputTypes['public']['NormalizedJob']['id'];
     jobKey: FieldOutputTypes['public']['NormalizedJob']['jobKey'];
     kind: FieldOutputTypes['public']['NormalizedJob']['kind'];
     lastSeenAt: FieldOutputTypes['public']['NormalizedJob']['lastSeenAt'];
+    listingState: FieldOutputTypes['public']['NormalizedJob']['listingState'];
     location: FieldOutputTypes['public']['NormalizedJob']['location'];
     mergedIntoId: FieldOutputTypes['public']['NormalizedJob']['mergedIntoId'];
     normalizerVersion: FieldOutputTypes['public']['NormalizedJob']['normalizerVersion'];
@@ -747,6 +775,8 @@ export namespace Models {
     processingStartedAt: FieldOutputTypes['public']['NormalizedJob']['processingStartedAt'];
     processingStatus: FieldOutputTypes['public']['NormalizedJob']['processingStatus'];
     publishedAt: FieldOutputTypes['public']['NormalizedJob']['publishedAt'];
+    regionCode: FieldOutputTypes['public']['NormalizedJob']['regionCode'];
+    remoteAllowed: FieldOutputTypes['public']['NormalizedJob']['remoteAllowed'];
     salaryCurrency: FieldOutputTypes['public']['NormalizedJob']['salaryCurrency'];
     salaryMax: FieldOutputTypes['public']['NormalizedJob']['salaryMax'];
     salaryMin: FieldOutputTypes['public']['NormalizedJob']['salaryMin'];
@@ -756,14 +786,22 @@ export namespace Models {
     status: FieldOutputTypes['public']['NormalizedJob']['status'];
     title: FieldOutputTypes['public']['NormalizedJob']['title'];
     updatedAt: FieldOutputTypes['public']['NormalizedJob']['updatedAt'];
+    workplaceType: FieldOutputTypes['public']['NormalizedJob']['workplaceType'];
     attempts: public_ProcessingAttempt[];
+    company: public_Company | null;
     currentExtraction: public_JobExtraction | null;
     extractions: public_JobExtraction[];
     matches: public_JobMatch[];
     mergedInto: public_NormalizedJob | null;
     views: public_JobView[];
     readonly [RelationKeys]?:
-      'attempts' | 'currentExtraction' | 'extractions' | 'matches' | 'mergedInto' | 'views';
+      | 'attempts'
+      | 'company'
+      | 'currentExtraction'
+      | 'extractions'
+      | 'matches'
+      | 'mergedInto'
+      | 'views';
   };
   export type public_NormalizedJobSource = {
     id: FieldOutputTypes['public']['NormalizedJobSource']['id'];
@@ -1037,6 +1075,7 @@ export declare const models: {
     ArrangementTerm: Models.public_ArrangementTerm;
     City: Models.public_City;
     CollectionBatch: Models.public_CollectionBatch;
+    Company: Models.public_Company;
     Contact: Models.public_Contact;
     ContractType: Models.public_ContractType;
     Country: Models.public_Country;
@@ -1363,6 +1402,122 @@ type ContractBase = Omit<
                   };
                 },
               ];
+            };
+            readonly companies: {
+              columns: {
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly description: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly employeeCount: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly employeeCountMax: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly employeeCountMin: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly firstSeenAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly headquartersCountryCode: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly industries: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: { readonly elementNullable: false };
+                };
+                readonly lastSeenAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly linkedinId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly linkedinUrl: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly name: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly specialities: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: { readonly elementNullable: false };
+                };
+                readonly universalName: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly website: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['linkedinId'] }];
+              indexes: readonly [];
+              foreignKeys: readonly [];
             };
             readonly contacts: {
               columns: {
@@ -2418,6 +2573,18 @@ type ContractBase = Omit<
             };
             readonly normalized_jobs: {
               columns: {
+                readonly applicantCount: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly applicantTrackingSystem: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly applyUrl: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -2428,6 +2595,12 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/bool';
                   readonly codecId: 'pg/bool@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly companyId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly companyName: {
@@ -2443,6 +2616,12 @@ type ContractBase = Omit<
                   readonly many: false;
                 };
                 readonly contractType: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly countryCode: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: true;
@@ -2474,10 +2653,23 @@ type ContractBase = Omit<
                   readonly nullable: true;
                   readonly many: false;
                 };
+                readonly employmentType: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly experienceLevel: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly expiresAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
                   readonly many: false;
                 };
                 readonly fieldSources: {
@@ -2516,6 +2708,12 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/timestamptz-date@1';
                   readonly nullable: false;
                   readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly listingState: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly location: {
@@ -2622,6 +2820,18 @@ type ContractBase = Omit<
                   readonly nullable: true;
                   readonly many: false;
                 };
+                readonly regionCode: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly remoteAllowed: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly salaryCurrency: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -2678,10 +2888,22 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 3 };
                   readonly many: false;
                 };
+                readonly workplaceType: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
               };
               primaryKey: { readonly columns: readonly ['id'] };
               uniques: readonly [{ readonly columns: readonly ['jobKey'] }];
               indexes: readonly [
+                {
+                  readonly name: 'normalized_jobs_companyId_idx_33acc5ed';
+                  readonly prefix: 'normalized_jobs_companyId_idx';
+                  readonly columns: readonly ['companyId'];
+                  readonly unique: false;
+                },
                 {
                   readonly name: 'normalized_jobs_currentExtractionId_idx_6f0ea778';
                   readonly prefix: 'normalized_jobs_currentExtractionId_idx';
@@ -2710,6 +2932,18 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'normalized_jobs';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'normalized_jobs';
+                    readonly columns: readonly ['companyId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'companies';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -4503,6 +4737,7 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'CollectionBatch';
     };
+    readonly companies: { readonly namespace: 'public' & NamespaceId; readonly model: 'Company' };
     readonly contacts: { readonly namespace: 'public' & NamespaceId; readonly model: 'Contact' };
     readonly contract_types: {
       readonly namespace: 'public' & NamespaceId;
@@ -4856,6 +5091,132 @@ type ContractBase = Omit<
                 readonly segmentRunId: { readonly column: 'segmentRunId' };
                 readonly status: { readonly column: 'status' };
                 readonly storageKey: { readonly column: 'storageKey' };
+              };
+            };
+          };
+          readonly Company: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly description: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly employeeCount: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly employeeCountMax: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly employeeCountMin: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly firstSeenAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly headquartersCountryCode: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly industries: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+                readonly many: { readonly elementNullable: false };
+              };
+              readonly lastSeenAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly linkedinId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly linkedinUrl: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly name: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly specialities: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+                readonly many: { readonly elementNullable: false };
+              };
+              readonly universalName: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly website: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly jobs: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'NormalizedJob';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['companyId'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'companies';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly description: { readonly column: 'description' };
+                readonly employeeCount: { readonly column: 'employeeCount' };
+                readonly employeeCountMax: { readonly column: 'employeeCountMax' };
+                readonly employeeCountMin: { readonly column: 'employeeCountMin' };
+                readonly firstSeenAt: { readonly column: 'firstSeenAt' };
+                readonly headquartersCountryCode: { readonly column: 'headquartersCountryCode' };
+                readonly id: { readonly column: 'id' };
+                readonly industries: { readonly column: 'industries' };
+                readonly lastSeenAt: { readonly column: 'lastSeenAt' };
+                readonly linkedinId: { readonly column: 'linkedinId' };
+                readonly linkedinUrl: { readonly column: 'linkedinUrl' };
+                readonly name: { readonly column: 'name' };
+                readonly specialities: { readonly column: 'specialities' };
+                readonly universalName: { readonly column: 'universalName' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+                readonly website: { readonly column: 'website' };
               };
             };
           };
@@ -5706,6 +6067,14 @@ type ContractBase = Omit<
           };
           readonly NormalizedJob: {
             readonly fields: {
+              readonly applicantCount: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly applicantTrackingSystem: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly applyUrl: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -5713,6 +6082,10 @@ type ContractBase = Omit<
               readonly closed: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly companyId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
               readonly companyName: {
                 readonly nullable: true;
@@ -5723,6 +6096,10 @@ type ContractBase = Omit<
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly contractType: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly countryCode: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
@@ -5746,9 +6123,21 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly employmentType: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly experienceLevel: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly expiresAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
               };
               readonly fieldSources: {
                 readonly nullable: false;
@@ -5781,6 +6170,10 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/timestamptz-date@1';
                   readonly typeParams: { readonly precision: 3 };
                 };
+              };
+              readonly listingState: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly location: {
                 readonly nullable: true;
@@ -5862,6 +6255,14 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly regionCode: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly remoteAllowed: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
               readonly salaryCurrency: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -5902,6 +6303,10 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 3 };
                 };
               };
+              readonly workplaceType: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
             };
             readonly relations: {
               readonly attempts: {
@@ -5913,6 +6318,18 @@ type ContractBase = Omit<
                 readonly on: {
                   readonly localFields: readonly ['id'];
                   readonly targetFields: readonly ['jobId'];
+                };
+              };
+              readonly company: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Company';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['companyId'];
+                  readonly targetFields: readonly ['id'];
                 };
               };
               readonly currentExtraction: {
@@ -5977,22 +6394,29 @@ type ContractBase = Omit<
               readonly table: 'normalized_jobs';
               readonly namespaceId: 'public';
               readonly fields: {
+                readonly applicantCount: { readonly column: 'applicantCount' };
+                readonly applicantTrackingSystem: { readonly column: 'applicantTrackingSystem' };
                 readonly applyUrl: { readonly column: 'applyUrl' };
                 readonly closed: { readonly column: 'closed' };
+                readonly companyId: { readonly column: 'companyId' };
                 readonly companyName: { readonly column: 'companyName' };
                 readonly companyUrl: { readonly column: 'companyUrl' };
                 readonly contractType: { readonly column: 'contractType' };
+                readonly countryCode: { readonly column: 'countryCode' };
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly currentExtractionId: { readonly column: 'currentExtractionId' };
                 readonly descriptionHtml: { readonly column: 'descriptionHtml' };
                 readonly descriptionText: { readonly column: 'descriptionText' };
+                readonly employmentType: { readonly column: 'employmentType' };
                 readonly experienceLevel: { readonly column: 'experienceLevel' };
+                readonly expiresAt: { readonly column: 'expiresAt' };
                 readonly fieldSources: { readonly column: 'fieldSources' };
                 readonly firstSeenAt: { readonly column: 'firstSeenAt' };
                 readonly id: { readonly column: 'id' };
                 readonly jobKey: { readonly column: 'jobKey' };
                 readonly kind: { readonly column: 'kind' };
                 readonly lastSeenAt: { readonly column: 'lastSeenAt' };
+                readonly listingState: { readonly column: 'listingState' };
                 readonly location: { readonly column: 'location' };
                 readonly mergedIntoId: { readonly column: 'mergedIntoId' };
                 readonly normalizerVersion: { readonly column: 'normalizerVersion' };
@@ -6009,6 +6433,8 @@ type ContractBase = Omit<
                 readonly processingStartedAt: { readonly column: 'processingStartedAt' };
                 readonly processingStatus: { readonly column: 'processingStatus' };
                 readonly publishedAt: { readonly column: 'publishedAt' };
+                readonly regionCode: { readonly column: 'regionCode' };
+                readonly remoteAllowed: { readonly column: 'remoteAllowed' };
                 readonly salaryCurrency: { readonly column: 'salaryCurrency' };
                 readonly salaryMax: { readonly column: 'salaryMax' };
                 readonly salaryMin: { readonly column: 'salaryMin' };
@@ -6018,6 +6444,7 @@ type ContractBase = Omit<
                 readonly status: { readonly column: 'status' };
                 readonly title: { readonly column: 'title' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
+                readonly workplaceType: { readonly column: 'workplaceType' };
               };
             };
           };
@@ -7847,6 +8274,23 @@ type ContractBase = Omit<
           readonly ref: {
             readonly entry: 'collection_batches';
             readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'uuidv7'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'companies';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'companies';
+            readonly field: 'updatedAt';
             readonly namespace: 'public';
           };
         },

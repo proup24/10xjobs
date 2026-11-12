@@ -571,6 +571,17 @@ model NormalizedJob {
   publishedAt           String?
   // Posted time: exact from the source, or estimated from LinkedIn's "N ago"; null when unknown.
   postedAt              TimestamptzJsDate(3)?
+  workplaceType         String?
+  remoteAllowed         Boolean?
+  employmentType        String?
+  countryCode           String?
+  regionCode            String?
+  applicantTrackingSystem String?
+  applicantCount        Int?
+  expiresAt             TimestamptzJsDate(3)?
+  listingState          String?
+  companyId             Uuid?
+  company               Company?              @relation(fields: [companyId], references: [id], onDelete: Restrict)
   descriptionHtml       String?
   descriptionText       String?
   applyUrl              String?
@@ -601,6 +612,8 @@ model NormalizedJob {
   views                 JobView[]
   +Timestamps
 
+  @@check(expression: sql`"workplaceType" IS NULL OR "workplaceType" IN ('remote', 'hybrid', 'onsite')`, name: "normalized_jobs_workplace_type")
+  @@index([companyId])
   @@check(expression: sql`kind IN ('job', 'post')`, name: "normalized_jobs_kind")
   @@check(expression: sql`status IN ('active', 'merged')`, name: "normalized_jobs_status")
   @@check(expression: sql`(status = 'merged') = ("mergedIntoId" IS NOT NULL)`, name: "normalized_jobs_merged_into")
@@ -611,6 +624,31 @@ model NormalizedJob {
   @@unique([jobKey])
   @@index([processingStatus, processingRequestedAt], map: "normalized_jobs_processing_queue")
   @@map("normalized_jobs")
+  @@rls
+}
+
+// A LinkedIn company, shared across jobs. Engine-only.
+model Company {
+  id                      Uuid                 @id @onCreate(uuid(7))
+  linkedinId              String               @unique
+  universalName           String?
+  name                    String?
+  linkedinUrl             String?
+  website                 String?
+  employeeCount           Int?
+  employeeCountMin        Int?
+  employeeCountMax        Int?
+  industries              String[]
+  specialities            String[]
+  description             String?
+  headquartersCountryCode String?
+  firstSeenAt             TimestamptzJsDate(3)
+  lastSeenAt              TimestamptzJsDate(3)
+  jobs                    NormalizedJob[]
+  +Timestamps
+
+  @@check(expression: sql`"firstSeenAt" <= "lastSeenAt"`, name: "companies_seen_order")
+  @@map("companies")
   @@rls
 }
 
