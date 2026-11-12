@@ -8,14 +8,14 @@ You read one job posting and record its facts as JSON. The facts serve any candi
 
 ## Input and output
 
-The input is one posting: its title, the company name, the description text, and a "listing metadata" block (LinkedIn's location, contract type, experience level and salary fields). The listing metadata is context only. The posting text always wins over it, with one exception described under "Writing openings". The description may have been cut at a paragraph boundary; judge only what you can see.
+The input is one posting: its title and its description text. The description may have been cut at a paragraph boundary; judge only what you can see.
 
 Reply with one JSON object that matches the response schema you were given. Nothing before or after it.
 
 Most facts have the same shape: \`{ "value", "quote", "confidence" }\`.
 
 - \`value\` is the fact. When the posting doesn't say, use the field's "not stated" value (\`unstated\`, \`null\` or an empty list) with \`confidence: "sure"\`.
-- \`quote\` holds short verbatim words from the posting (about 20 words at most) that support the value. Copy them exactly, as one contiguous piece of the posting. Every quote must be verbatim words from the posting, never a paraphrase and never taken from the listing metadata. Use \`""\` when the posting doesn't state the fact.
+- \`quote\` holds short verbatim words from the posting (about 20 words at most) that support the value. Copy them exactly, as one contiguous piece of the posting. Every quote must be verbatim words from the posting, never a paraphrase. Use \`""\` when the posting doesn't state the fact.
 - \`confidence\` is \`"unsure"\` when the posting's words support two readings, or when the title and the description disagree, or when two statements in the posting disagree about who can apply (for example a templated "based in <place>" intro and a later "open to candidates in the Americas or European time zones"). Mark the affected openings unsure. Otherwise it is \`"sure"\`. An unsure fact sends the job to a person who reads it, so keep it for a genuine toss-up: when one reading is clearly the plainer or likelier one, record it as \`"sure"\`.
 
 ## Field paths
@@ -30,7 +30,7 @@ The top-level keys are \`position\`, \`isSoftwareEngineeringRole\`, \`seniority\
 - \`workAuthorization.value.{requirements, sponsorship}\`, each requirement \`{ kind, place }\`
 - \`junkFlags.value[].{code, quote}\`
 - \`salary.value.{min, max, currency, period}\`
-- \`openings[].{arrangements, places, placeStrictness, timezones, quote, confidence, fromListing}\`, with no \`value\` wrapper
+- \`openings[].{arrangements, places, placeStrictness, timezones, quote, confidence}\`, with no \`value\` wrapper
 
 ## Who can apply: \`openings\`
 
@@ -91,7 +91,6 @@ A time zone is never a place: "remote from anywhere within the European time zon
 - A list of terms per place -> one opening per term. "Costa Rica (Remote); Toronto, Ontario (Hybrid/Remote)" -> \`{ ["remote"], [country CR], limit }\` and \`{ ["hybrid", "remote"], [city Toronto, CA], limit }\`.
 - A choice of places on the same terms -> one opening, several places. "Remote within Canada or the US" -> \`{ ["remote"], [CA, US], limit }\`.
 - A time-zone condition belongs to the opening it qualifies; a posting-wide one goes on every opening. "Remote, within two hours of the UK time zone" -> \`{ ["remote"], [], unstated, [{ -2, 2, "within two hours of the UK time zone" }] }\`.
-- Listing metadata as a last resort. When the posting text says nothing about place or time zone, you may build the opening from the listing metadata's location. Then set \`fromListing: true\` on that opening, give the place \`placeStrictness: "label"\`, use \`quote: ""\` and \`confidence: "unsure"\`. When the posting text says anything about place or time zone, the listing location plays no part. Otherwise set \`fromListing: false\`; every opening carries it.
 
 ## Work authorization
 
@@ -164,5 +163,5 @@ Each flag that applies, with the posting's quote: a title that names a different
 
 ## \`salary\`
 
-\`salary\` when the posting text states a pay amount or range: \`min\` and \`max\` (either may be \`null\`), \`currency\` (ISO 4217), \`period\` (\`hour\`, \`day\`, \`month\` or \`year\`); otherwise \`null\`. Pay from the listing metadata alone is not stated by the posting.
+\`salary\` when the posting text states a pay amount or range: \`min\` and \`max\` (either may be \`null\`), \`currency\` (ISO 4217), \`period\` (\`hour\`, \`day\`, \`month\` or \`year\`); otherwise \`null\`.
 `;

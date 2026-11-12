@@ -59,8 +59,6 @@ function buildModelOutput(options: ListOptions) {
     ),
     quote: z.string(),
     confidence: confidenceSchema,
-    /** Set when the place came from the listing metadata because the posting says nothing about it. */
-    fromListing: z.boolean().optional(),
   });
 
   return z.strictObject({

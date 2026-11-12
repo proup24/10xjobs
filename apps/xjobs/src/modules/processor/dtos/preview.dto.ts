@@ -9,12 +9,6 @@ export class PreviewPostingDto {
   @MaxLength(500)
   title?: string;
 
-  @ApiPropertyOptional({ example: 'Acme' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(500)
-  companyName?: string;
-
   @ApiProperty({
     description:
       'The posting text. Longer than 30,000 bytes is cut at a paragraph boundary.',
@@ -25,25 +19,4 @@ export class PreviewPostingDto {
   @MinLength(1)
   @MaxLength(200_000)
   description!: string;
-
-  @ApiPropertyOptional({
-    description: "LinkedIn's location field: context only, never copied.",
-    example: 'Berlin, Germany',
-  })
-  @IsOptional()
-  @IsString()
-  @MaxLength(500)
-  location?: string;
-
-  @ApiPropertyOptional({ example: 'Full-time' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  contractType?: string;
-
-  @ApiPropertyOptional({ example: 'Mid-Senior level' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  experienceLevel?: string;
 }

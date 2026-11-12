@@ -2,21 +2,12 @@ import { describe, expect, it } from 'vitest';
 import type { JobForProcessing } from '../models/types';
 import { DESCRIPTION_CAP_BYTES, buildPostingInput, inputHash } from './input';
 
-const evidence = {
-  location: 'Berlin',
-  contractType: 'Full-time',
-  experienceLevel: null,
-  salary: null,
-};
-
 function job(over: Partial<JobForProcessing> = {}): JobForProcessing {
   return {
     id: 'j1',
     closed: false,
     title: 'Engineer',
-    companyName: 'Acme',
     descriptionText: 'Hello',
-    evidence,
     ...over,
   };
 }
@@ -92,11 +83,38 @@ describe('inputHash', () => {
     expect(inputHash(a)).toBe(inputHash(b));
   });
 
-  it('changes when the evidence changes', () => {
-    const a = buildPostingInput(job());
-    const b = buildPostingInput(
-      job({ evidence: { ...evidence, contractType: 'Contract' } }),
+  it('ignores nothing but the title and description', () => {
+    // Listing columns a stored job row carries are not part of the input.
+    const listing = (over: Record<string, unknown>) =>
+      job(over as Partial<JobForProcessing>);
+    const a = buildPostingInput(
+      listing({
+        companyName: 'Acme',
+        evidence: { location: 'Berlin', contractType: 'Full-time' },
+      }),
     );
-    expect(inputHash(a)).not.toBe(inputHash(b));
+    const b = buildPostingInput(
+      listing({
+        companyName: 'Other',
+        evidence: { location: 'Paris', contractType: 'Contract' },
+      }),
+    );
+    expect(inputHash(a)).toBe(inputHash(b));
+    expect(Object.keys(a).sort()).toEqual([
+      'description',
+      'jobId',
+      'title',
+      'truncated',
+    ]);
+  });
+
+  it('changes when the title or description changes', () => {
+    const a = buildPostingInput(job());
+    expect(inputHash(buildPostingInput(job({ title: 'Other' })))).not.toBe(
+      inputHash(a),
+    );
+    expect(
+      inputHash(buildPostingInput(job({ descriptionText: 'Bye' }))),
+    ).not.toBe(inputHash(a));
   });
 });

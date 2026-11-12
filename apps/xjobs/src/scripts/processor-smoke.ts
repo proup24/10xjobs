@@ -29,7 +29,6 @@ import { LIST_NAMES } from 'src/modules/processor/vocab/lists';
 const POSTING: PostingInput = {
   jobId: 'smoke',
   title: 'Senior Backend Engineer',
-  companyName: 'Acme',
   description: [
     'We are hiring a Senior Backend Engineer, remote within the EU.',
     'You will build NestJS and PostgreSQL services for our payments platform.',
@@ -37,12 +36,6 @@ const POSTING: PostingInput = {
     'Open to candidates in Germany, France and Spain. Full-time, permanent.',
   ].join('\n\n'),
   truncated: false,
-  evidence: {
-    location: 'Berlin, Germany',
-    contractType: 'Full-time',
-    experienceLevel: 'Mid-Senior level',
-    salary: null,
-  },
 };
 
 async function main(): Promise<void> {

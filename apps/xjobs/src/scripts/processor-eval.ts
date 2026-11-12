@@ -179,7 +179,6 @@ async function main(): Promise<void> {
       title: c.input.title,
       companyName: c.input.companyName,
       descriptionText: c.input.description,
-      evidence: c.input.evidence,
     });
 
   const scores: FactScores[] = [];

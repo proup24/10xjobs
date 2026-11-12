@@ -13,7 +13,7 @@ export interface FieldVerdict {
   score: number | null;
   jevPick: string | null;
   generatorValue: string;
-  /** Who filled the judged value: a rejected `ingest` value is dropped, never regenerated. */
+  /** Who filled the judged value. */
   decidedBy: DecidedBy;
   /** The generation round the verdict was given in; a carried verdict keeps it. */
   round: number;

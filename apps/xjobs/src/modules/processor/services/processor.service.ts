@@ -4,7 +4,7 @@ import {
   type ProcessorConfig,
 } from '../config/processor.config';
 import { ProviderUnavailableError } from '../models/errors';
-import { DecisionModel, type Evidence, ExtractionModel } from '../models/types';
+import { DecisionModel, ExtractionModel } from '../models/types';
 import {
   type Claim,
   type FinishOutcome,
@@ -37,10 +37,8 @@ export type ProcessOutcome =
 
 /** A posting to preview, as a client would send it. */
 export interface PreviewPosting {
-  title?: string | null;
-  companyName?: string | null;
+  title?: string;
   description: string;
-  evidence?: Partial<Evidence>;
 }
 
 export interface PreviewResult {
@@ -152,15 +150,7 @@ export class ProcessorService {
       id: 'preview',
       closed: false,
       title: posting.title ?? null,
-      companyName: posting.companyName ?? null,
       descriptionText: posting.description,
-      evidence: {
-        location: null,
-        contractType: null,
-        experienceLevel: null,
-        salary: null,
-        ...posting.evidence,
-      },
     });
     const vocabulary = await this.vocab.snapshot();
     const log = new AttemptLog(null);
@@ -175,7 +165,7 @@ export class ProcessorService {
       );
       return {
         document: doc,
-        typedColumns: deriveTypedColumns(doc, vocabulary.regionCountries),
+        typedColumns: deriveTypedColumns(doc),
         needsReview: needsReview(doc),
         costUsd: log.costUsd,
         calls: log.entries().map((a) => ({
@@ -247,7 +237,7 @@ export class ProcessorService {
 
     const input = buildPostingInput(job);
     log.debug(
-      `input: "${job.title ?? '(no title)'}" at ${job.companyName ?? '(no company)'}, ${input.description.length} characters${input.truncated ? ' (truncated)' : ''}, LinkedIn ${JSON.stringify(input.evidence)}`,
+      `input: "${job.title ?? '(no title)'}", ${input.description.length} characters${input.truncated ? ' (truncated)' : ''}`,
     );
     const vocabulary = await this.vocab.snapshot();
     const key = this.store.reuseKey(input, vocabulary);

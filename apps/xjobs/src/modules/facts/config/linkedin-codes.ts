@@ -8,7 +8,7 @@ export const EXPERIENCE_LEVEL_SENIORITY: Record<string, string[]> = {
   Executive: ['lead', 'principal'],
 };
 
-/** LinkedIn values that say nothing: no comparison, and no unmapped-value warning. */
+/** LinkedIn values that say nothing: no comparison. */
 export const LINKEDIN_NO_EVIDENCE = new Set(['Not Applicable']);
 
 /** LinkedIn `contractType` to the `contract_types` codes it allows (spec section 4). */

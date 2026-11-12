@@ -22,10 +22,8 @@ export function buildPostingInput(job: JobForProcessing): PostingInput {
   return {
     jobId: job.id,
     title: job.title,
-    companyName: job.companyName,
     description: text,
     truncated,
-    evidence: job.evidence,
   };
 }
 

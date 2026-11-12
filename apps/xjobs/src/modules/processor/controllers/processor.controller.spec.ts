@@ -31,22 +31,15 @@ async function statusOf(promise: Promise<unknown>): Promise<number> {
 const body = { description: 'Remote in the EU.' };
 
 describe('ProcessorController', () => {
-  it('passes the posting and its listing fields to the preview', async () => {
+  it('passes only the title and description to the preview', async () => {
     const preview = vi.fn(async () => ({}) as never);
     await controller({ preview }).preview({
       ...body,
       title: 'Engineer',
-      contractType: 'Full-time',
     });
     expect(preview).toHaveBeenCalledWith({
       title: 'Engineer',
-      companyName: undefined,
       description: 'Remote in the EU.',
-      evidence: {
-        location: null,
-        contractType: 'Full-time',
-        experienceLevel: null,
-      },
     });
   });
 

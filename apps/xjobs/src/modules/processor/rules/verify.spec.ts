@@ -196,10 +196,8 @@ describe('generatorDecidedBy', () => {
   it('reads each verified field from the fact that holds it', () => {
     const options = seedOptions();
     const doc = fixtureDocument();
-    doc.seniority.decidedBy = 'ingest';
-    doc.contractType.decidedBy = 'generator';
     const out = generatorDecidedBy(doc, options);
-    expect(out.seniority).toBe('ingest');
+    expect(out.seniority).toBe('generator');
     expect(out.contractType).toBe('generator');
     expect(out.roleKind).toBe(doc.position.decidedBy);
     expect(out[`junk:${options.junkFlags[0]}`]).toBe(doc.junkFlags.decidedBy);

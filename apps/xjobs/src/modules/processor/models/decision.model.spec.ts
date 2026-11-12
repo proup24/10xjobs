@@ -16,15 +16,8 @@ const MODEL = 'typesafe/jev-1.14';
 const input: PostingInput = {
   jobId: 'j1',
   title: 'Senior Backend Engineer',
-  companyName: 'Acme',
   description: 'Remote in the EU. TypeScript and PostgreSQL.',
   truncated: false,
-  evidence: {
-    location: 'Paris, France',
-    contractType: 'Full-time',
-    experienceLevel: 'Mid-Senior level',
-    salary: null,
-  },
 };
 
 const questions: DecisionQuestion[] = [
@@ -84,6 +77,17 @@ function httpError(status: number) {
 }
 
 describe('OpenRouterDecisionModel', () => {
+  it('the user message has no listing metadata or company line', async () => {
+    const fake = client(response());
+    await new OpenRouterDecisionModel(fake.client, MODEL).decide(
+      input,
+      questions,
+    );
+    const [req] = fake.create.mock.calls[0]!;
+    expect(req.decisionsRequest.state).not.toContain('Listing metadata');
+    expect(req.decisionsRequest.state).not.toContain('Company:');
+  });
+
   it('sends one Decisions request with every question', async () => {
     const fake = client(response());
     await new OpenRouterDecisionModel(fake.client, MODEL).decide(
@@ -95,9 +99,8 @@ describe('OpenRouterDecisionModel', () => {
     expect(req.decisionsRequest.model).toBe(MODEL);
     expect(req.decisionsRequest.state).toContain('Senior Backend Engineer');
     expect(req.decisionsRequest.state).toContain('Remote in the EU');
-    expect(req.decisionsRequest.state).toContain(
-      'Listing metadata (context only):',
-    );
+    expect(req.decisionsRequest.state).not.toContain('Listing metadata');
+    expect(req.decisionsRequest.state).not.toContain('Company:');
     expect(req.decisionsRequest.questions.seniority).toEqual({
       type: 'choice',
       instructions: 'The seniority the posting asks for.',

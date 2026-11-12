@@ -872,7 +872,7 @@ function summarizeFacts(scores: FactScores[]): {
 
 function summarizeFact(entries: ScoredEntry[]): FactReport {
   const decided = entries.filter(({ e }) => e.decidedBy !== null);
-  const share = (by: DecidedBy) =>
+  const share = (by: string) =>
     ratio(decided.filter(({ e }) => e.decidedBy === by).length, decided.length);
   return {
     scored: entries.length,

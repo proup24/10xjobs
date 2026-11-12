@@ -100,7 +100,7 @@ export class GenerationService {
         );
         log.setLastQuoteFailures(assembled.quoteFailures);
         log.debug(
-          `document assembled: ${assembled.doc.openings.length} openings, ${assembled.quoteFailures} unsupported quotes cleared, ${assembled.doc.conflicts.length} evidence conflicts, ${assembled.proposals.length} new terms, ${assembled.cities.length} cities`,
+          `document assembled: ${assembled.doc.openings.length} openings, ${assembled.quoteFailures} unsupported quotes cleared, ${assembled.proposals.length} new terms, ${assembled.cities.length} cities`,
         );
         return { ok: true, assembled };
       } catch (error) {

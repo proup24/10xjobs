@@ -60,7 +60,6 @@ export function fixtureDocument(): ExtractionDocument {
     ]),
     workAuthorization: fact({ requirements: [], sponsorship: 'unstated' }),
     junkFlags: fact([]),
-    conflicts: [],
     unmatched: [],
     truncated: false,
     verification: {

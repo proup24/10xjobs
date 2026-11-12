@@ -43,15 +43,8 @@ const baseConfig: ProcessorConfig = {
 const input: PostingInput = {
   jobId: 'job-1',
   title: 'Senior Backend Engineer',
-  companyName: 'Acme',
   description: DESCRIPTION,
   truncated: false,
-  evidence: {
-    location: null,
-    contractType: null,
-    experienceLevel: null,
-    salary: null,
-  },
 };
 
 type Responder = (
@@ -473,61 +466,5 @@ describe('ExtractionPipeline', () => {
     expect(doc.position.confidence).toBe('unsure');
     expect(doc.isSoftwareEngineeringRole.confidence).toBe('unsure');
     expect(needsReview(doc)).toBe(true);
-  });
-
-  describe('a rejected ingest-filled field', () => {
-    const fromIngest: PostingInput = {
-      ...input,
-      evidence: { ...input.evidence, experienceLevel: 'Entry level' },
-    };
-    const unstatedSeniority = () =>
-      generatorOutput({ seniority: mf('unstated') });
-
-    it('is dropped without a regeneration', async () => {
-      extraction = new FakeExtractionModel(unstatedSeniority, EXT);
-      decision = new FakeDecisionModel(
-        jevAnswers({ seniority: { value: 'senior' } }),
-        DEC,
-      );
-
-      const { doc } = await pipeline().run(fromIngest, vocabulary, log);
-
-      expect(extraction.calls).toHaveLength(1);
-      expect(decision.calls).toHaveLength(1);
-      expect(doc.verification.rounds).toBe(1);
-      expect(doc.verification.dropped).toEqual([
-        { field: 'seniority', generatorValue: 'junior', jevPick: 'senior' },
-      ]);
-      expect(doc.seniority).toMatchObject({
-        value: 'unstated',
-        confidence: 'unsure',
-      });
-      expect(needsReview(doc)).toBe(true);
-    });
-
-    it('is left out of the feedback when another field is regenerated', async () => {
-      extraction = new FakeExtractionModel(unstatedSeniority, EXT);
-      decision = new FakeDecisionModel(
-        rounds(
-          jevAnswers({
-            seniority: { value: 'senior' },
-            engagement: { value: 'contractor' },
-          }),
-          jevAnswers({ seniority: { value: 'senior' } }),
-        ),
-        DEC,
-      );
-
-      const { doc } = await pipeline().run(fromIngest, vocabulary, log);
-
-      expect(extraction.calls).toHaveLength(2);
-      expect(extraction.calls[1].req.feedback?.map((f) => f.key)).toEqual([
-        'engagement',
-      ]);
-      expect(doc.verification.rounds).toBe(2);
-      expect(doc.verification.dropped.map((d) => d.field)).toEqual([
-        'seniority',
-      ]);
-    });
   });
 });

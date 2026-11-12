@@ -5,6 +5,10 @@ import {
   type ExtractionDocumentV1,
   extractionDocumentV1Schema,
 } from './extraction-v1';
+import {
+  type ExtractionDocumentV2,
+  extractionDocumentV2Schema,
+} from './extraction-v2';
 import { confidenceSchema, decidedBySchema, factSchema } from './fact';
 import {
   PLACE_STRICTNESS,
@@ -18,7 +22,7 @@ import {
 } from './shared';
 
 /** Bump on any change to the document shape. Stored with each extraction. */
-export const EXTRACTION_SCHEMA_VERSION = 2;
+export const EXTRACTION_SCHEMA_VERSION = 3;
 
 const placeSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('worldwide') }),
@@ -82,13 +86,6 @@ export const extractionDocumentSchema = z
     junkFlags: factSchema(
       z.array(z.strictObject({ code: z.string().min(1), quote: z.string() })),
     ),
-    conflicts: z.array(
-      z.strictObject({
-        field: z.string().min(1),
-        ingestValue: z.unknown(),
-        extractedValue: z.unknown(),
-      }),
-    ),
     unmatched: z.array(unmatchedSchema),
     truncated: z.boolean(),
     verification: documentVerificationSchema,
@@ -140,12 +137,15 @@ export type DocumentVerification = z.infer<typeof documentVerificationSchema>;
 
 /** A stored `job_extractions.data`, read as the version it was written in. */
 export type StoredDocument =
-  | { version: 2; document: ExtractionDocument }
+  | { version: 3; document: ExtractionDocument }
+  | { version: 2; document: ExtractionDocumentV2 }
   | { version: 1; document: ExtractionDocumentV1 };
 
-/** Reads stored `data` as v2, falling back to v1 for old rows; null when neither reads it. */
+/** Reads stored `data` as v3, then v2, then v1 for old rows; null when none reads it. */
 export function parseStoredDocument(data: unknown): StoredDocument | null {
-  const v2 = extractionDocumentSchema.safeParse(data);
+  const v3 = extractionDocumentSchema.safeParse(data);
+  if (v3.success) return { version: 3, document: v3.data };
+  const v2 = extractionDocumentV2Schema.safeParse(data);
   if (v2.success) return { version: 2, document: v2.data };
   const v1 = extractionDocumentV1Schema.safeParse(data);
   if (v1.success) return { version: 1, document: v1.data };

@@ -11,7 +11,7 @@ Design: `docs/superpowers/specs/2026-11-08-matching-design.md`.
 
    | Step | Does                                                                                                                                     |
    | ---- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-   | 1    | `loadMatchableJob`: the job and its current v2 extraction, or `not_matchable` (nothing stored).                                          |
+   | 1    | `loadMatchableJob`: the job and its current v2 or v3 extraction, or `not_matchable` (nothing stored).                                    |
    | 2    | `listPublishedProfiles`: the published profiles with skills; only those with a stale or missing row for this extraction, unless `force`. |
    | 3    | `decide` (pure): runs all four rules for each profile, with no early exit, so the whole picture is stored.                               |
    | 4    | `upsertMatches`: one row per `(profile, job)`. `decidedAt` moves only when the outcome changes.                                          |
@@ -70,7 +70,7 @@ Residence and work authorization are not checked.
 
 ## Matchable jobs
 
-One definition serves the worker, the sweep and `db:rematch`: the job is an active LinkedIn job board job (`status = 'active'`, `kind = 'job'`), `processingStatus = 'processed'`, not closed, `lastSeenAt` within `MATCH_BACKFILL_DAYS` (30), and its current extraction has `schemaVersion = 2`. Old v1 extractions are not matched; `db:reprocess` brings them to v2. Rows of closed jobs (the `closed` flag, distinct from `status`) and of jobs that age out of the window stay; rows of merged jobs (`status <> 'active'`) are deleted by the sweep.
+One definition serves the worker, the sweep and `db:rematch`: the job is an active LinkedIn job board job (`status = 'active'`, `kind = 'job'`), `processingStatus = 'processed'`, not closed, `lastSeenAt` within `MATCH_BACKFILL_DAYS` (30), and its current extraction has `schemaVersion` 2 or 3. Old v1 extractions are not matched; `db:reprocess` brings them to the current version. Rows of closed jobs (the `closed` flag, distinct from `status`) and of jobs that age out of the window stay; rows of merged jobs (`status <> 'active'`) are deleted by the sweep.
 
 ## When it runs
 

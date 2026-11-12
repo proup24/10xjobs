@@ -3,6 +3,7 @@ import { buildVerificationQuestions } from '../rules/questions';
 import { seedOptions } from '../rules/options.testing';
 import { modelOutputSchema } from '../schema';
 import { promptHash, systemPrompt } from './prompt';
+import { SYSTEM_PROMPT } from './system.prompt';
 
 describe('promptHash', () => {
   const options = seedOptions();
@@ -46,9 +47,14 @@ describe('systemPrompt', () => {
       expect(text).not.toContain(bad);
   });
 
-  it('explains fromListing and verbatim quotes', () => {
-    expect(text).toContain('fromListing');
+  it('explains verbatim quotes', () => {
     expect(text).toContain('verbatim');
+  });
+
+  it('never mentions the listing', () => {
+    expect(SYSTEM_PROMPT).not.toMatch(/listing/i);
+    expect(SYSTEM_PROMPT).not.toMatch(/fromListing/);
+    expect(SYSTEM_PROMPT).not.toMatch(/company name/i);
   });
 
   it('describes no fallback answers: the generator answers every field', () => {

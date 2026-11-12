@@ -30,10 +30,7 @@ const codesOf = (terms: readonly { code: string | null }[]): string[] =>
   terms.flatMap((t) => (t.code === null ? [] : [t.code]));
 
 /** The filterable columns of a job_extractions row, derived from its document. */
-export function deriveTypedColumns(
-  doc: ExtractionDocument,
-  regionCountries: ReadonlyMap<string, readonly string[]>,
-): TypedColumns {
+export function deriveTypedColumns(doc: ExtractionDocument): TypedColumns {
   const regions: string[] = [];
   const countries: string[] = [];
   const cities: string[] = [];
@@ -41,10 +38,8 @@ export function deriveTypedColumns(
   for (const opening of doc.openings) {
     for (const place of opening.places) {
       if (place.kind === 'worldwide') worldwide = true;
-      else if (place.kind === 'region') {
-        regions.push(place.code);
-        countries.push(...(regionCountries.get(place.code) ?? []));
-      } else if (place.kind === 'country') countries.push(place.code);
+      else if (place.kind === 'region') regions.push(place.code);
+      else if (place.kind === 'country') countries.push(place.code);
       else {
         if (place.countryCode !== null) countries.push(place.countryCode);
         if (place.cityId !== null) cities.push(place.cityId);

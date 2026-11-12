@@ -29,8 +29,6 @@ import { ExtractionModel } from './types';
 function postingText(input: PostingInput): string {
   return [
     input.title && `Title: ${input.title}`,
-    input.companyName && `Company: ${input.companyName}`,
-    `Listing metadata (context only): ${JSON.stringify(input.evidence)}`,
     input.truncated && 'Note: the description was truncated.',
     input.description,
   ]

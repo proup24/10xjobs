@@ -24,15 +24,8 @@ const MODEL = 'anthropic/claude-opus-5.5';
 const input: PostingInput = {
   jobId: 'j1',
   title: 'Senior Backend Engineer',
-  companyName: 'Acme',
   description: 'Remote in the EU. TypeScript and PostgreSQL.',
   truncated: true,
-  evidence: {
-    location: 'Paris, France',
-    contractType: 'Full-time',
-    experienceLevel: 'Mid-Senior level',
-    salary: null,
-  },
 };
 
 const schema = z.strictObject({
@@ -143,6 +136,15 @@ describe('AiSdkExtractionModel', () => {
         additionalProperties: false,
       },
     });
+  });
+
+  it('the user message has no listing metadata or company line', async () => {
+    const lm = mock(answer('{"seniority":{"value":null}}'));
+    await model(lm).generate(input, req);
+    const message = JSON.stringify(lm.doGenerateCalls[0].prompt[1]);
+    expect(message).toContain('Senior Backend Engineer');
+    expect(message).not.toContain('Listing metadata');
+    expect(message).not.toContain('Company:');
   });
 
   it('schema-invalid object → ModelOutputError listing paths', async () => {

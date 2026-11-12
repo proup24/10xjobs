@@ -84,7 +84,9 @@ describe('ProcessorService', () => {
     expect(saved.costUsd).toBeCloseTo(0.02);
     expect(saved.seniority).toBe('senior');
     expect(saved.techTags).toEqual(['nodejs', 'postgresql']);
-    expect(saved.countryCodes).toContain('DE');
+    // A region place stays a region: it is not expanded into countries.
+    expect(saved.regionCodes).toEqual(['EMEA']);
+    expect(saved.countryCodes).toEqual([]);
     expect(repo.attempts.map((a) => [a.step, a.outcome, a.model])).toEqual([
       ['generation', 'ok', EXT],
       ['verification', 'ok', DEC],
@@ -821,7 +823,7 @@ describe('ProcessorService', () => {
       const { outcome, job: state } = await svc.processNow('job-1');
       expect(outcome).toBe('reused');
       expect(state?.processingStatus).toBe('processed');
-      expect(state?.extraction?.schemaVersion).toBe(2);
+      expect(state?.extraction?.schemaVersion).toBe(3);
       expect(state?.extraction?.data?.seniority.value).toBe('senior');
     });
 
