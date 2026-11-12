@@ -8,6 +8,7 @@ import {
   processorListsSeed,
 } from '@xjobs/database';
 import type { SeedEnvironmentVariables } from 'src/config';
+import { EXTRACTION_SCHEMA_VERSION } from 'src/modules/processor/schema';
 import { fixtureDocument } from 'src/modules/processor/schema/fixture.testing';
 import { MATCHER_VERSION } from '../config/matcher.config';
 import {
@@ -97,7 +98,10 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
     });
   }
 
-  async function extraction(jobId: string, schemaVersion = 2): Promise<string> {
+  async function extraction(
+    jobId: string,
+    schemaVersion = EXTRACTION_SCHEMA_VERSION,
+  ): Promise<string> {
     const row = await db.orm.public.JobExtraction.create({
       jobId,
       inputHash: randomUUID(),
@@ -138,7 +142,7 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
     schemaVersion?: number;
   }
 
-  /** A processed active job with a current v2 extraction, last seen now. */
+  /** A processed active job with a current extraction, last seen now. */
   async function job(spec: JobSpec = {}): Promise<{
     id: string;
     extractionId: string;
@@ -208,7 +212,12 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
       seniorities: ['senior'],
       noticePeriodDays: 30,
       contractTypes: ['full_time'],
-      locations: { remote: [{ kind: 'worldwide' }], hybrid: [], onsite: [] },
+      // A profile may not name worldwide (migration profile_places_no_worldwide).
+      locations: {
+        remote: [{ kind: 'region', code: 'EMEA' }],
+        hybrid: [],
+        onsite: [],
+      },
       languages: [{ lang: 'en', level: 'fluent' }],
       salaryMin: null,
       salaryCurrency: null,
@@ -294,7 +303,7 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
   });
 
   describe('loadMatchableJob', () => {
-    it('returns a fresh processed v2 job with its document', async () => {
+    it('returns a fresh processed job with its document', async () => {
       const j = await job();
       const loaded = await repo.loadMatchableJob(j.id);
       expect(loaded).toMatchObject({
