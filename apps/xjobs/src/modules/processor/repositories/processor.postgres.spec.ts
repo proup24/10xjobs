@@ -749,6 +749,48 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       expect(after?.occurrences).toBe(5);
     });
 
+    it('sends a spelling two cities share to the same city as load()', async () => {
+      const make = (
+        name: string,
+        status: 'approved' | 'proposed',
+        firstSeenAt: Date,
+        aliases: string[] = [],
+      ) =>
+        db.orm.public.City.create({
+          name,
+          nameKey: name.toLowerCase(),
+          countryCode: 'MA',
+          geonamesId: null,
+          aliases,
+          status,
+          occurrences: 1,
+          firstSeenAt,
+          approvedAt: status === 'approved' ? new Date() : null,
+        });
+      await make('Fes', 'proposed', new Date('2020-01-01'));
+      const approved = await make('Fès', 'approved', new Date('2026-01-01'), [
+        'Fes',
+      ]);
+      const ids = await vocab.upsertCities([
+        { name: 'Fes', countryCode: 'MA' },
+      ]);
+      const places = await new PrismaPlaceVocabularyRepository({
+        db,
+      } as DatabaseService).load();
+      expect(ids.get('Fes|MA')).toBe(approved.id);
+      expect(places.cities.get('MA|fes')).toBe(approved.id);
+    });
+
+    it('does not insert a city whose name folds to nothing', async () => {
+      const ids = await vocab.upsertCities([
+        { name: ' - ', countryCode: 'MA' },
+      ]);
+      expect(ids.size).toBe(0);
+      expect(
+        await db.orm.public.City.where({ countryCode: 'MA' }).all(),
+      ).toHaveLength(0);
+    });
+
     it('sums the sightings of several spellings of one city in a batch', async () => {
       const fes = await db.orm.public.City.create({
         name: 'Fès',

@@ -2,6 +2,7 @@
  * In-memory stand-ins for the processor's models and repositories. They follow
  * the abstract contracts closely enough for unit tests and the golden-set eval.
  */
+import { cityForms, placeCityKey } from 'src/modules/facts/places/city-forms';
 import { foldPlaceName } from 'src/modules/facts/places/fold';
 import { randomUUID } from 'node:crypto';
 import type { ListTableRow } from '@xjobs/database';
@@ -479,6 +480,8 @@ export interface MemoryCity {
   aliases?: string[];
   status: 'approved' | 'proposed';
   occurrences: number;
+  /** Defaults to the row's position, so earlier rows are older. */
+  firstSeenAt?: Date;
 }
 
 /** The list tables in memory, seeded as approved from `SEED` by default. */
@@ -575,14 +578,16 @@ export class MemoryVocabRepository extends VocabRepository {
   ): Promise<Map<string, string>> {
     const ids = new Map<string, string>();
     for (const city of c) {
-      const folded = foldPlaceName(city.name);
-      let found = this.cities.find(
-        (x) =>
-          x.countryCode === city.countryCode &&
-          [x.name, ...(x.aliases ?? [])].some(
-            (n) => foldPlaceName(n) === folded,
-          ),
+      if (foldPlaceName(city.name) === '') continue;
+      const forms = cityForms(
+        this.cities.map((x, i) => ({
+          ...x,
+          aliases: x.aliases ?? [],
+          firstSeenAt: x.firstSeenAt ?? new Date(i),
+        })),
       );
+      const foundId = forms.get(placeCityKey(city.countryCode, city.name));
+      let found = this.cities.find((x) => x.id === foundId);
       if (found) found.occurrences += 1;
       else {
         found = {

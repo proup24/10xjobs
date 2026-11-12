@@ -3,7 +3,7 @@ import {
   LINKEDIN_REGION_GEO_IDS,
   WORLDWIDE,
 } from '../config/linkedin-places';
-import { foldPlaceName } from './fold';
+import { placeCityKey } from './city-forms';
 
 export interface PlaceVocabulary {
   /** Approved region codes. */
@@ -37,18 +37,13 @@ export interface ResolvedListingPlace {
   fellBack: boolean;
 }
 
-/** The `PlaceVocabulary.cities` key for a country and a place name or alias. */
-export function cityKey(countryCode: string, name: string): string {
-  return `${countryCode.toUpperCase()}|${foldPlaceName(name)}`;
-}
-
 /** The id of the city a country and name (or alias) point at, or null. */
 export function findCity(
   name: string,
   countryCode: string,
   vocab: PlaceVocabulary,
 ): string | null {
-  return vocab.cities.get(cityKey(countryCode, name)) ?? null;
+  return vocab.cities.get(placeCityKey(countryCode, name)) ?? null;
 }
 
 /** Resolve a mapped region code: a place, or null when it is not an approved region. */
@@ -70,6 +65,8 @@ export function resolveListingPlace(
 
   const code = loc.regionCode?.trim().toUpperCase();
   if (code) {
+    // An unmapped LinkedIn code passes through only when it is already one of
+    // our approved region codes (e.g. APAC, LATAM), by design.
     const place = regionPlace(LINKEDIN_REGION_CODES[code] ?? code, vocab);
     if (place) return { place, fellBack: false };
     named = true;

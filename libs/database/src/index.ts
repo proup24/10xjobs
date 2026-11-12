@@ -38,6 +38,8 @@ export type { DatabaseTransaction, Seed } from './seeds/seed.interface';
 export { listTables, processorListsSeed } from './seeds/processor.seed';
 export type { ListTable, ListTableRow } from './seeds/processor.seed';
 export { cityNameKey } from './seeds/vocab/city-key';
+export { SEED_CITIES } from './seeds/vocab/seed-cities';
+export type { SeedCity } from './seeds/vocab/seed-cities';
 export { LIST_NAMES } from './seeds/vocab/lists';
 export type { ListName } from './seeds/vocab/lists';
 export {

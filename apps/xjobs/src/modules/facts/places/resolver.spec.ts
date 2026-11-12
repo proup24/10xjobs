@@ -1,3 +1,5 @@
+import { SEED_CITIES } from '@xjobs/database';
+import { cityForms } from './city-forms';
 import { foldPlaceName } from './fold';
 import {
   findCity,
@@ -120,5 +122,66 @@ describe('resolveListingPlace', () => {
 describe('findCity', () => {
   it('returns null when absent', () => {
     expect(findCity('Lyon', 'FR', vocab)).toBeNull();
+  });
+});
+
+describe('resolveListingPlace against the seeded Moroccan cities', () => {
+  const rows = SEED_CITIES.map((c, i) => ({
+    id: `seed-${i}`,
+    name: c.name,
+    aliases: c.aliases,
+    countryCode: c.countryCode,
+    status: 'approved' as const,
+    firstSeenAt: new Date(2026, 0, 1),
+  }));
+  const seeded = (omitAlias?: string): PlaceVocabulary => {
+    const used = rows.map((r) => ({
+      ...r,
+      aliases: r.aliases.filter((a) => a !== omitAlias),
+    }));
+    return {
+      regions: new Set(['NORTH_AMERICA']),
+      countries: new Set(['MA']),
+      cities: cityForms(used),
+      cityNames: new Map(used.map((r) => [r.id, r.name])),
+      regionCountries: new Map(),
+    };
+  };
+  const cityOf = (city: string) => {
+    const r = resolveListingPlace(loc({ countryCode: 'MA', city }), seeded());
+    return r.place?.kind === 'city' ? r.place.name : r;
+  };
+
+  it.each([
+    ['Mechouar', 'Casablanca'],
+    ['Prefecture of Casablanca', 'Casablanca'],
+    ['Fez', 'Fès'],
+    ['Marrakesh', 'Marrakech'],
+    ['Salé El Jadida', 'Salé'],
+    ['Tanger', 'Tangier'],
+  ])('resolves %s to %s', (city, name) => {
+    expect(cityOf(city)).toBe(name);
+  });
+
+  it('keeps a state-only Casablanca-Settat as the country', () => {
+    expect(
+      resolveListingPlace(loc({ countryCode: 'MA', city: null }), seeded()),
+    ).toEqual({ place: { kind: 'country', code: 'MA' }, fellBack: false });
+  });
+
+  it('falls back to the country for a city the vocabulary lacks', () => {
+    expect(
+      resolveListingPlace(
+        loc({ countryCode: 'MA', city: 'Mechouar' }),
+        seeded('Mechouar'),
+      ),
+    ).toEqual({ place: { kind: 'country', code: 'MA' }, fellBack: true });
+  });
+
+  it('maps the NAMER geoId to North America', () => {
+    expect(resolveListingPlace(loc({ geoId: '91000022' }), seeded())).toEqual({
+      place: { kind: 'region', code: 'NORTH_AMERICA' },
+      fellBack: false,
+    });
   });
 });

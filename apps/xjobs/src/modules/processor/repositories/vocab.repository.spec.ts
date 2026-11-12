@@ -89,4 +89,34 @@ describe('MemoryVocabRepository.upsertCities', () => {
     });
     expect(ids.get('Rabat|MA')).toBe(vocab.cities[1].id);
   });
+
+  it('maps a spelling the same way cityForms does when two cities share it', async () => {
+    const vocab = new MemoryVocabRepository();
+    vocab.cities.push(
+      {
+        id: 'proposed-fes',
+        name: 'Fes',
+        countryCode: 'MA',
+        status: 'proposed',
+        occurrences: 1,
+      },
+      {
+        id: 'approved-fes',
+        name: 'Fès',
+        countryCode: 'MA',
+        aliases: ['Fes'],
+        status: 'approved',
+        occurrences: 1,
+      },
+    );
+    const ids = await vocab.upsertCities([{ name: 'Fes', countryCode: 'MA' }]);
+    expect(ids.get('Fes|MA')).toBe('approved-fes');
+  });
+
+  it('does not create a city whose name folds to nothing', async () => {
+    const vocab = new MemoryVocabRepository();
+    const ids = await vocab.upsertCities([{ name: ' - ', countryCode: 'MA' }]);
+    expect(vocab.cities).toHaveLength(0);
+    expect(ids.size).toBe(0);
+  });
 });

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from 'src/database';
-import { cityKey, type PlaceVocabulary } from './resolver';
+import { cityForms } from './city-forms';
+import type { PlaceVocabulary } from './resolver';
 
 /** Reads the places the resolver matches against. */
 export abstract class PlaceVocabularyRepository {
@@ -35,23 +36,10 @@ export class PrismaPlaceVocabularyRepository extends PlaceVocabularyRepository {
       set.add(link.countryCode);
       regionCountries.set(link.regionCode, set);
     }
-    const cities = new Map<string, string>();
-    const cityNames = new Map<string, string>();
     // Every city is proposed or approved, so none is left out.
     const rows = await tables.City.all();
-    // The canonical name wins a key over any alias, then the oldest row.
-    const ordered = [...rows].sort(
-      (a, b) => a.firstSeenAt.getTime() - b.firstSeenAt.getTime(),
-    );
-    for (const r of ordered) cityNames.set(r.id, r.name);
-    for (const r of ordered)
-      if (!cities.has(cityKey(r.countryCode, r.name)))
-        cities.set(cityKey(r.countryCode, r.name), r.id);
-    for (const r of ordered)
-      for (const alias of r.aliases) {
-        const key = cityKey(r.countryCode, alias);
-        if (!cities.has(key)) cities.set(key, r.id);
-      }
+    const cities = cityForms(rows);
+    const cityNames = new Map(rows.map((r) => [r.id, r.name]));
     return { regions, countries, cities, cityNames, regionCountries };
   }
 }

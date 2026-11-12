@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from 'src/database';
 import { cityNameKey, listTables, type ListTableRow } from '@xjobs/database';
+import { cityForms, placeCityKey } from 'src/modules/facts/places/city-forms';
 import { foldPlaceName } from 'src/modules/facts/places/fold';
 import { inRetriedTransaction } from 'src/modules/ingest/repositories/raw.repository';
 import type { ListOptions } from '../schema';
@@ -195,9 +196,10 @@ export class PrismaVocabRepository extends VocabRepository {
   ): Promise<Map<string, string>> {
     const ids = new Map<string, string>();
     if (c.length === 0) return ids;
+    // A name that folds to nothing (only hyphens, spaces) is not a city.
     const cities = tally(
-      c,
-      (city) => `${city.countryCode}|${foldPlaceName(city.name)}`,
+      c.filter((city) => foldPlaceName(city.name) !== ''),
+      (city) => placeCityKey(city.countryCode, city.name),
     );
     const byKey = await inRetriedTransaction(this.database, async (tx) => {
       const found = new Map<string, string>();
@@ -208,20 +210,15 @@ export class PrismaVocabRepository extends VocabRepository {
       for (const [, { countryCode }] of cities) {
         if (known.has(countryCode)) continue;
         const rows = await tx.orm.public.City.where({ countryCode }).all();
-        const forms = new Map<string, string>();
-        for (const r of rows)
-          for (const n of [r.name, ...r.aliases]) {
-            const f = foldPlaceName(n);
-            if (f !== '' && !forms.has(f)) forms.set(f, r.id);
-          }
+        const forms = cityForms(rows);
         known.set(countryCode, forms);
       }
       // Sightings per matched city, summed over every spelling in the batch.
       const sightings = new Map<string, number>();
       for (const [k, { name, countryCode }, n] of cities) {
         const forms = known.get(countryCode)!;
-        const folded = foldPlaceName(name);
-        const existingId = forms.get(folded);
+        const formKey = placeCityKey(countryCode, name);
+        const existingId = forms.get(formKey);
         if (existingId) {
           sightings.set(existingId, (sightings.get(existingId) ?? 0) + n);
           found.set(k, existingId);
@@ -237,7 +234,7 @@ export class PrismaVocabRepository extends VocabRepository {
             firstSeenAt: now,
             approvedAt: null,
           });
-          forms.set(folded, created.id);
+          forms.set(formKey, created.id);
           found.set(k, created.id);
         }
       }
@@ -254,7 +251,7 @@ export class PrismaVocabRepository extends VocabRepository {
       return found;
     });
     for (const city of c) {
-      const id = byKey.get(`${city.countryCode}|${foldPlaceName(city.name)}`);
+      const id = byKey.get(placeCityKey(city.countryCode, city.name));
       if (id) ids.set(cityKey(city), id);
     }
     return ids;
