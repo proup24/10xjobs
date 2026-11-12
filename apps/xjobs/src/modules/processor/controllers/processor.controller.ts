@@ -65,13 +65,7 @@ export class ProcessorController {
     try {
       return await this.processor.preview({
         title: body.title,
-        companyName: body.companyName,
         description: body.description,
-        evidence: {
-          location: body.location ?? null,
-          contractType: body.contractType ?? null,
-          experienceLevel: body.experienceLevel ?? null,
-        },
       });
     } catch (error) {
       throw toHttp(error);

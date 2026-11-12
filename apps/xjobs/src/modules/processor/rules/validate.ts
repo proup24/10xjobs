@@ -44,9 +44,7 @@ export function checkQuotes(
 ): { doc: ExtractionDocument; quoteFailures: number } {
   const out = structuredClone(doc);
   const haystack = normalizeForQuote(
-    [input.title, input.companyName, input.description]
-      .filter((s): s is string => !!s)
-      .join('\n'),
+    [input.title, input.description].filter((s): s is string => !!s).join('\n'),
   );
   let quoteFailures = 0;
   const bad = (quote: string): boolean =>
@@ -159,10 +157,9 @@ export function checkConsistency(
   return out;
 }
 
-/** True when a fact qualify reads is unsure, or the evidence conflicts with the extraction. */
+/** True when a fact qualify reads is unsure, or the verification dropped or missed something. */
 export function needsReview(doc: ExtractionDocument): boolean {
   return (
-    doc.conflicts.length > 0 ||
     doc.arrangement.confidence === 'unsure' ||
     doc.openings.some((o) => o.confidence === 'unsure') ||
     doc.seniority.confidence === 'unsure' ||

@@ -1,26 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { Evidence, PostingInput } from '../models/types';
 import type { ModelOutput } from '../schema';
 import { resolveFacts } from './resolve-facts';
 
 const GEN = 'anthropic/opus';
-
-const evidence = (p: Partial<Evidence> = {}): Evidence => ({
-  location: null,
-  contractType: null,
-  experienceLevel: null,
-  salary: null,
-  ...p,
-});
-
-const input = (e: Evidence): PostingInput => ({
-  jobId: 'j1',
-  title: 'Backend Engineer',
-  companyName: 'Acme',
-  description: 'We hire.',
-  truncated: false,
-  evidence: e,
-});
 
 const mf = <T>(
   value: T | null,
@@ -61,8 +43,8 @@ function output(patch: Record<string, unknown> = {}): ModelOutput {
   } as unknown as ModelOutput;
 }
 
-const resolve = (out: ModelOutput, e: Evidence = evidence()) =>
-  resolveFacts({ output: out, input: input(e), generatorModel: GEN });
+const resolve = (out: ModelOutput) =>
+  resolveFacts({ output: out, generatorModel: GEN });
 
 const FACTS = [
   'position',
@@ -110,87 +92,36 @@ describe('resolveFacts', () => {
     expect(doc.truncated).toBe(false);
   });
 
-  it('fills an unstated seniority from evidence that maps to one code', () => {
-    const doc = resolve(
-      output({ seniority: mf('unstated') }),
-      evidence({ experienceLevel: 'Entry level' }),
-    );
-    expect(doc.seniority).toEqual({
-      value: 'junior',
-      confidence: 'unsure',
-      decidedBy: 'ingest',
-      score: null,
-      quote: '',
-      model: null,
-      verification: null,
-    });
-    expect(doc.conflicts).toEqual([]);
-  });
-
-  it('fills a null contractType from the evidence', () => {
-    const doc = resolve(
-      output({ contractType: mf(null) }),
-      evidence({ contractType: 'Full-time' }),
-    );
-    expect(doc.contractType).toMatchObject({
-      value: 'full_time',
-      decidedBy: 'ingest',
-      confidence: 'unsure',
-      model: null,
-    });
-  });
-
-  it('leaves seniority unstated when the evidence maps to several codes', () => {
-    const doc = resolve(
-      output({ seniority: mf('unstated') }),
-      evidence({ experienceLevel: 'Mid-Senior level' }),
-    );
+  it('an unstated seniority stays unstated', () => {
+    const doc = resolve(output({ seniority: mf('unstated') }));
     expect(doc.seniority).toMatchObject({
       value: 'unstated',
       decidedBy: 'generator',
+      model: GEN,
     });
   });
 
-  it('keeps a generator value that contradicts the evidence, and records the conflict', () => {
-    const doc = resolve(
-      output({ seniority: mf('senior', 'sure', 'Senior') }),
-      evidence({ experienceLevel: 'Entry level' }),
-    );
-    expect(doc.seniority).toMatchObject({
-      value: 'senior',
+  it('an unstated contract type stays as the generator gave it', () => {
+    const doc = resolve(output({ contractType: mf(null) }));
+    expect(doc.contractType).toMatchObject({
+      value: null,
       decidedBy: 'generator',
-      confidence: 'sure',
     });
-    expect(doc.conflicts).toEqual([
-      {
-        field: 'seniority',
-        ingestValue: 'Entry level',
-        extractedValue: 'senior',
-      },
-    ]);
   });
 
-  it('records no conflict for a generator value the evidence allows', () => {
-    const doc = resolve(
-      output({ seniority: mf('senior') }),
-      evidence({ experienceLevel: 'Mid-Senior level' }),
-    );
-    expect(doc.conflicts).toEqual([]);
+  it('an unstated salary stays null', () => {
+    const doc = resolve(output());
+    expect(doc.salary).toMatchObject({ value: null, decidedBy: 'generator' });
   });
 
-  it('records a contractType conflict', () => {
-    const doc = resolve(
-      output({ contractType: mf('contract') }),
-      evidence({ contractType: 'Full-time' }),
-    );
-    expect(doc.contractType.value).toBe('contract');
-    expect(doc.conflicts).toEqual([
-      {
-        field: 'contractType',
-        ingestValue: 'Full-time',
-        extractedValue: 'contract',
-      },
-    ]);
+  it('keeps a generator salary as written', () => {
+    const salary = { min: 80000, max: 100000, currency: 'EUR', period: 'year' };
+    const doc = resolve(output({ salary: mf(salary, 'sure', '80k-100k') }));
+    expect(doc.salary).toMatchObject({ value: salary, decidedBy: 'generator' });
+  });
+
+  it('has no conflicts key', () => {
+    expect(resolve(output())).not.toHaveProperty('conflicts');
   });
 
   it("takes the sponsorship from the generator's workAuthorization", () => {
@@ -213,89 +144,13 @@ describe('resolveFacts', () => {
     expect(doc.junkFlags.confidence).toBe('unsure');
   });
 
-  it('records a salary conflict and keeps the posting value', () => {
-    const doc = resolve(
-      output({
-        salary: mf({
-          min: 80000,
-          max: 100000,
-          currency: 'EUR',
-          period: 'year',
-        }),
-      }),
-      evidence({
-        salary: {
-          text: null,
-          min: 50000,
-          max: 100000,
-          currency: 'EUR',
-          period: 'yearly',
-        },
-      }),
-    );
-    expect(doc.salary.value?.min).toBe(80000);
-    expect(doc.conflicts).toContainEqual({
-      field: 'salary',
-      ingestValue: {
-        min: 50000,
-        max: 100000,
-        currency: 'EUR',
-        period: 'yearly',
-      },
-      extractedValue: {
-        min: 80000,
-        max: 100000,
-        currency: 'EUR',
-        period: 'year',
-      },
-    });
-  });
-
-  it('records a salary conflict when only the period differs', () => {
-    const out = output({
-      salary: mf({ min: 50, max: 60, currency: 'EUR', period: 'hour' }),
-    });
-    const salary = (period: string) =>
-      resolve(
-        out,
-        evidence({
-          salary: { text: null, min: 50, max: 60, currency: 'EUR', period },
-        }),
-      ).conflicts.filter((c) => c.field === 'salary');
-    expect(salary('yearly')).toHaveLength(1);
-    expect(salary('HOURLY')).toEqual([]);
-  });
-
-  it('takes the evidence salary when the posting has none', () => {
-    const doc = resolve(
-      output(),
-      evidence({
-        salary: {
-          text: null,
-          min: 50000,
-          max: 60000,
-          currency: 'USD',
-          period: 'yearly',
-        },
-      }),
-    );
-    expect(doc.salary).toMatchObject({
-      value: { min: 50000, max: 60000, currency: 'USD', period: 'year' },
-      decidedBy: 'ingest',
-      confidence: 'unsure',
-      model: null,
-      verification: null,
-    });
-  });
-
-  it('marks an opening taken from the listing as ingest and unsure', () => {
+  it('takes every opening from the generator, whatever it carries', () => {
     const out = output();
     (out.openings[0] as { fromListing?: boolean }).fromListing = true;
     const doc = resolve(out);
     expect(doc.openings[0]).toMatchObject({
-      decidedBy: 'ingest',
-      confidence: 'unsure',
+      decidedBy: 'generator',
+      confidence: 'sure',
     });
-    expect(doc.openings[0]).not.toHaveProperty('fromListing');
   });
 });

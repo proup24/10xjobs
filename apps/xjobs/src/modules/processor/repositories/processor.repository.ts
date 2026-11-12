@@ -1,18 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { or } from '@prisma/orm-postgres/orm-client';
-import { DatabaseService, type NormalizedJobRow } from 'src/database';
+import { DatabaseService } from 'src/database';
 import type { DatabaseTransaction, JobExtractionRow } from '@xjobs/database';
 import { inRetriedTransaction } from 'src/modules/ingest/repositories/raw.repository';
-import type {
-  Evidence,
-  JobForProcessing,
-  ModelCallMeta,
-} from '../models/types';
+import type { JobForProcessing, ModelCallMeta } from '../models/types';
 import { PROCESSOR_CHANNEL } from '../config/processor.config';
 import type { TypedColumns } from '../rules/typed-columns';
 import {
   type ExtractionDocument,
   type ExtractionDocumentV1,
+  type ExtractionDocumentV2,
   parseStoredDocument,
 } from '../schema';
 
@@ -92,13 +89,17 @@ export interface JobState {
     createdAt: Date;
     needsReview: boolean;
     costUsd: number;
-    /** The schema version the stored data reads as; null when neither v2 nor v1 reads it. */
-    schemaVersion: 1 | 2 | null;
-    data: ExtractionDocument | ExtractionDocumentV1 | null;
+    /** The schema version the stored data reads as; null when none reads it. */
+    schemaVersion: 1 | 2 | 3 | null;
+    data:
+      | ExtractionDocument
+      | ExtractionDocumentV2
+      | ExtractionDocumentV1
+      | null;
   } | null;
 }
 
-/** A stored extraction's `data`, read as v2 and else as v1. */
+/** A stored extraction's `data`, read as v3, else v2, else v1. */
 export function readStoredData(
   data: unknown,
 ): Pick<NonNullable<JobState['extraction']>, 'schemaVersion' | 'data'> {
@@ -240,9 +241,7 @@ export class PrismaProcessorRepository extends ProcessorRepository {
       id: row.id,
       closed: row.closed,
       title: row.title,
-      companyName: row.companyName,
       descriptionText: row.descriptionText,
-      evidence: evidenceOf(row),
     };
   }
 
@@ -494,21 +493,4 @@ function pendingColumns(raw: Raw) {
     "processingError" = NULL,
     "processingStartedAt" = NULL,
     "updatedAt" = now()`.returns('pg/text@1');
-}
-
-/** What LinkedIn itself states about the posting, kept beside the text. */
-function evidenceOf(row: NormalizedJobRow): Evidence {
-  const salary = {
-    text: row.salaryText,
-    min: row.salaryMin,
-    max: row.salaryMax,
-    currency: row.salaryCurrency,
-    period: row.salaryPeriod,
-  };
-  return {
-    location: row.location,
-    contractType: row.contractType,
-    experienceLevel: row.experienceLevel,
-    salary: Object.values(salary).every((v) => v === null) ? null : salary,
-  };
 }

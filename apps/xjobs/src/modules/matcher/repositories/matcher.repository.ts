@@ -3,7 +3,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from 'src/database';
 import type { DatabaseTransaction } from '@xjobs/database';
 import { linkedInJobIds } from 'src/modules/processor';
-import { parseStoredDocument } from 'src/modules/processor/schema';
+import {
+  type ExtractionDocument,
+  parseStoredDocument,
+} from 'src/modules/processor/schema';
 import type { PlacesByArrangement } from 'src/modules/users/types/place.types';
 import { MATCH_BACKFILL_DAYS, MATCHER_VERSION } from '../config/matcher.config';
 import type { Decision, MatchContext } from '../rules/decide';
@@ -19,7 +22,7 @@ export interface StoredMatch extends Decision {
 
 /** Every read and write the matcher makes. */
 export abstract class MatcherRepository {
-  /** The job and its current v2 extraction when matchable, else null. */
+  /** The job and its current v2 or v3 extraction when matchable, else null. */
   abstract loadMatchableJob(jobId: string): Promise<MatchJob | null>;
   /** Published profiles with skills. `onlyStaleFor`: only those whose row for that job is missing, has another extractionId, or an older matcherVersion. */
   abstract listPublishedProfiles(opts?: {
@@ -46,14 +49,14 @@ const JSONB = 'pg/jsonb@1';
 /**
  * What makes a job matchable, over `normalized_jobs j` joined with its
  * current extraction `e`: an active, processed, open LinkedIn job seen within
- * the backfill window, with a v2 extraction.
+ * the backfill window, with a v2 or v3 extraction.
  */
 function matchable(raw: Raw) {
   return raw.sql`j.status = 'active' AND j.kind = 'job'
     AND j.id IN (${linkedInJobIds(raw)})
     AND j."processingStatus" = 'processed' AND NOT j.closed
     AND j."lastSeenAt" >= now() - make_interval(days => ${MATCH_BACKFILL_DAYS}::int)
-    AND e."schemaVersion" = 2`.returns(BOOL);
+    AND e."schemaVersion" IN (2, 3)`.returns(BOOL);
 }
 
 /** A published profile `p` has no up-to-date row for the matchable job `j` (extraction `e`). */
@@ -93,9 +96,9 @@ export class PrismaMatcherRepository extends MatcherRepository {
     );
     if (!row) return null;
     const stored = parseStoredDocument(row.data);
-    if (stored?.version !== 2) {
+    if (stored?.version !== 3 && stored?.version !== 2) {
       this.logger.warn(
-        `Job ${jobId} is matchable in SQL but its extraction is not a v2 document`,
+        `Job ${jobId} is matchable in SQL but its extraction is not a v3 or v2 document`,
       );
       return null;
     }
@@ -103,7 +106,9 @@ export class PrismaMatcherRepository extends MatcherRepository {
       jobId: row.id as string,
       extractionId: row.extractionId as string,
       needsReview: row.needsReview as boolean,
-      document: stored.document,
+      // A v2 document differs from v3 only in the dropped ingest provenance
+      // (`conflicts`, an `ingest` decider), which the matcher never reads.
+      document: stored.document as ExtractionDocument,
     };
   }
 

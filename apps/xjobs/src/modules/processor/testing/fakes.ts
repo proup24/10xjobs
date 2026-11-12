@@ -136,6 +136,8 @@ export class FakeExtractionModel extends ExtractionModel {
 }
 
 export interface MemoryJob extends JobForProcessing {
+  /** Shown by `jobState` only; the processor never reads it. */
+  companyName: string | null;
   status: 'active' | 'merged';
   kind: 'job' | 'post';
   /** Has a LinkedIn job board source. */
@@ -177,12 +179,6 @@ export class MemoryProcessorRepository extends ProcessorRepository {
       title: 'Backend Engineer',
       companyName: 'Acme',
       descriptionText: 'We hire.',
-      evidence: {
-        location: null,
-        contractType: null,
-        experienceLevel: null,
-        salary: null,
-      },
       status: 'active',
       kind: 'job',
       linkedIn: true,
@@ -269,9 +265,7 @@ export class MemoryProcessorRepository extends ProcessorRepository {
       id: job.id,
       closed: job.closed,
       title: job.title,
-      companyName: job.companyName,
       descriptionText: job.descriptionText,
-      evidence: structuredClone(job.evidence),
     };
   }
 

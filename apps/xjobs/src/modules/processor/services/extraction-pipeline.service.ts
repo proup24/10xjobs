@@ -71,11 +71,7 @@ export class ExtractionPipeline {
     );
 
     for (let round = 1; ; round++) {
-      // A rejected ingest value is not the generator's: regenerating cannot
-      // fix it and its feedback would be false. It is dropped at finalize.
-      const rejected = verdicts.filter(
-        (v) => v.verdict === 'rejected' && v.decidedBy !== 'ingest',
-      );
+      const rejected = verdicts.filter((v) => v.verdict === 'rejected');
       if (rejected.length === 0)
         return this.finalize(current, verdicts, round, false, vocabulary, log);
       if (round > this.config.maxRegenerations) {

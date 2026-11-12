@@ -7,9 +7,11 @@ import {
   parseStoredDocument,
 } from './extraction';
 import { extractionDocumentV1Schema } from './extraction-v1';
+import { extractionDocumentV2Schema } from './extraction-v2';
 import { factSchema } from './fact';
 import { fixtureDocument } from './fixture.testing';
 import { fixtureDocumentV1 } from './fixture-v1.testing';
+import { fixtureDocumentV2 } from './fixture-v2.testing';
 import {
   modelOutputJsonSchema,
   modelOutputSchema,
@@ -46,8 +48,23 @@ describe('extractionDocumentSchema', () => {
     expect(extractionDocumentSchema.safeParse(doc).success).toBe(false);
   });
 
-  it('is schema version 2', () => {
-    expect(EXTRACTION_SCHEMA_VERSION).toBe(2);
+  it('is schema version 3', () => {
+    expect(EXTRACTION_SCHEMA_VERSION).toBe(3);
+  });
+
+  it('a v3 document has no conflicts key', () => {
+    const doc = fixtureDocument();
+    expect(doc).not.toHaveProperty('conflicts');
+    expect(extractionDocumentSchema.safeParse(doc).success).toBe(true);
+    expect(
+      extractionDocumentSchema.safeParse({ ...doc, conflicts: [] }).success,
+    ).toBe(false);
+  });
+
+  it('rejects an ingest decider', () => {
+    const doc = fixtureDocument();
+    (doc.seniority as { decidedBy: string }).decidedBy = 'ingest';
+    expect(extractionDocumentSchema.safeParse(doc).success).toBe(false);
   });
 
   it('takes a document verification summary and the verifier and generator models', () => {
@@ -55,7 +72,9 @@ describe('extractionDocumentSchema', () => {
     doc.verification = {
       rounds: 2,
       regenerationInvalid: true,
-      dropped: [{ field: 'seniority', generatorValue: 'senior', jevPick: 'mid' }],
+      dropped: [
+        { field: 'seniority', generatorValue: 'senior', jevPick: 'mid' },
+      ],
       missedJunkFlags: ['spam'],
     };
     doc.models = { verifier: 'typesafe/jev-1.14', generator: 'm' };
@@ -65,9 +84,9 @@ describe('extractionDocumentSchema', () => {
   });
 
   it('rejects a v1 document', () => {
-    expect(extractionDocumentSchema.safeParse(fixtureDocumentV1()).success).toBe(
-      false,
-    );
+    expect(
+      extractionDocumentSchema.safeParse(fixtureDocumentV1()).success,
+    ).toBe(false);
   });
 });
 
@@ -83,10 +102,10 @@ describe('fact envelope', () => {
     verification: null,
   };
 
-  it('is decided by the generator or the ingest evidence only', () => {
+  it('is decided by the generator only', () => {
     expect(schema.safeParse(fact).success).toBe(true);
     expect(schema.safeParse({ ...fact, decidedBy: 'ingest' }).success).toBe(
-      true,
+      false,
     );
     expect(schema.safeParse({ ...fact, decidedBy: 'jev' }).success).toBe(false);
     expect(schema.safeParse({ ...fact, decidedBy: 'opus' }).success).toBe(
@@ -113,9 +132,31 @@ describe('fact envelope', () => {
         .success,
     ).toBe(false);
     expect(
-      schema.safeParse({ ...fact, verification: { ...verification, rounds: 0 } })
-        .success,
+      schema.safeParse({
+        ...fact,
+        verification: { ...verification, rounds: 0 },
+      }).success,
     ).toBe(false);
+  });
+});
+
+describe('extractionDocumentV2Schema', () => {
+  it('parses a document stored at version 2, conflicts included', () => {
+    expect(
+      extractionDocumentV2Schema.safeParse(fixtureDocumentV2()).success,
+    ).toBe(true);
+  });
+
+  it('reads an ingest-decided fact and a listing-filled opening', () => {
+    const doc = fixtureDocumentV2();
+    doc.seniority.decidedBy = 'ingest';
+    doc.openings[0].decidedBy = 'ingest';
+    doc.conflicts.push({
+      field: 'seniority',
+      ingestValue: 'x',
+      extractedValue: 'y',
+    });
+    expect(extractionDocumentV2Schema.safeParse(doc).success).toBe(true);
   });
 });
 
@@ -127,17 +168,24 @@ describe('extractionDocumentV1Schema', () => {
   });
 
   it('rejects a v2 document', () => {
-    expect(extractionDocumentV1Schema.safeParse(fixtureDocument()).success).toBe(
-      false,
-    );
+    expect(
+      extractionDocumentV1Schema.safeParse(fixtureDocument()).success,
+    ).toBe(false);
   });
 });
 
 describe('parseStoredDocument', () => {
-  it('reads a v2 document as version 2', () => {
+  it('reads a v3 document as version 3', () => {
     expect(parseStoredDocument(fixtureDocument())).toEqual({
-      version: 2,
+      version: 3,
       document: fixtureDocument(),
+    });
+  });
+
+  it('parseStoredDocument still reads a stored v2 document as version 2', () => {
+    expect(parseStoredDocument(fixtureDocumentV2())).toEqual({
+      version: 2,
+      document: fixtureDocumentV2(),
     });
   });
 
@@ -266,9 +314,9 @@ describe('modelOutputSchema', () => {
   });
 
   it('throws when a list has no approved options', () => {
-    expect(() =>
-      modelOutputSchema({ ...options, regions: [] }),
-    ).toThrow('no approved options for regions');
+    expect(() => modelOutputSchema({ ...options, regions: [] })).toThrow(
+      'no approved options for regions',
+    );
   });
 
   it('produces a JSON schema with additionalProperties false at the root', () => {

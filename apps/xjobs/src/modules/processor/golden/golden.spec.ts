@@ -14,6 +14,11 @@ describe('golden set', () => {
     expect(new Set(cases.map((c) => c.id)).size).toBe(cases.length);
   });
 
+  it('every case input has only title and description', () => {
+    for (const c of cases)
+      expect(Object.keys(c.input).sort()).toEqual(['description', 'title']);
+  });
+
   it('keeps only the LinkedIn text', () => {
     for (const c of cases) {
       expect(c.input.description).not.toContain('## Company page');
@@ -45,7 +50,7 @@ describe('golden set', () => {
 /** Case 10317's expected stack before the conversion (career-hub's anyOf groups). */
 const V1_10317 = {
   id: '10317',
-  input: { title: 't', companyName: 'c', description: 'd', evidence: {} },
+  input: { title: 't', description: 'd' },
   expected: {
     roleKind: 'fullstack_engineer',
     yearsRequired: null,

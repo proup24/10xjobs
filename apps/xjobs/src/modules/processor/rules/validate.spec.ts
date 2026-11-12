@@ -14,15 +14,8 @@ import {
 const input = (description: string): PostingInput => ({
   jobId: 'j',
   title: null,
-  companyName: null,
   description,
   truncated: false,
-  evidence: {
-    location: null,
-    contractType: null,
-    experienceLevel: null,
-    salary: null,
-  },
 });
 
 describe('normalizeForQuote', () => {
@@ -76,6 +69,21 @@ describe('checkQuotes', () => {
   });
 });
 
+describe('checkQuotes haystack', () => {
+  it('a quote from the company name alone is not found', () => {
+    const doc = quietDocument();
+    doc.seniority.quote = 'Initech Holdings';
+    // A stored job row still carries a company name; the input must not.
+    const posting = {
+      ...input('We hire engineers.'),
+      companyName: 'Initech Holdings',
+    } as PostingInput;
+    const r = checkQuotes(doc, posting);
+    expect(r.quoteFailures).toBe(1);
+    expect(r.doc.seniority).toMatchObject({ quote: '', confidence: 'unsure' });
+  });
+});
+
 describe('checkQuotes without a quote', () => {
   it('downgrades an Opus fact with a value and no quote', () => {
     const doc = quietDocument();
@@ -83,13 +91,6 @@ describe('checkQuotes without a quote', () => {
     const r = checkQuotes(doc, input('x'));
     expect(r.quoteFailures).toBe(0);
     expect(r.doc.seniority.confidence).toBe('unsure');
-  });
-
-  it('leaves ingest facts alone', () => {
-    const doc = quietDocument();
-    doc.contractType.decidedBy = 'ingest';
-    const r = checkQuotes(doc, input('x'));
-    expect(r.doc.contractType.confidence).toBe('sure');
   });
 
   it('leaves an unestablished Opus fact alone', () => {
@@ -217,10 +218,12 @@ describe('needsReview', () => {
     doc.seniority.confidence = 'unsure';
     expect(needsReview(doc)).toBe(true);
   });
-  it('is true for conflicts', () => {
+  it('needsReview ignores what conflicts used to flag', () => {
     const doc = fixtureDocument();
-    doc.conflicts.push({ field: 'x', ingestValue: 1, extractedValue: 2 });
-    expect(needsReview(doc)).toBe(true);
+    Object.assign(doc, {
+      conflicts: [{ field: 'x', ingestValue: 1, extractedValue: 2 }],
+    });
+    expect(needsReview(doc)).toBe(false);
   });
   it('is false otherwise', () => {
     expect(needsReview(fixtureDocument())).toBe(false);

@@ -106,13 +106,6 @@ function salaryInText(salary: Json, text: string): boolean {
   );
 }
 
-/** The owner's home country is not part of the golden set; the city stays. */
-function cleanLocation(location: string): string {
-  return redact(location)
-    .replace(/,?\s*Morocco\b/g, '')
-    .trim();
-}
-
 export function skipReason(raw: Json): string | null {
   const covers = String(raw.covers ?? '');
   if (/\bposts?\b/i.test(covers))
@@ -250,14 +243,7 @@ export function translateCase(raw: Json, seed: Seed): ImportResult {
       id: String(raw.id),
       input: {
         title: redact(String(raw.title ?? '')),
-        companyName: redact(String(raw.company ?? '')),
         description: redact(stripped),
-        evidence: {
-          location: raw.location ? cleanLocation(String(raw.location)) : null,
-          contractType: null,
-          experienceLevel: null,
-          salary: null,
-        },
       },
       expected,
       // Requirement domains and years are labeled by hand.

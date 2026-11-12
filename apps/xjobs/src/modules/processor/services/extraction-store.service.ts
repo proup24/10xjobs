@@ -68,7 +68,7 @@ export class ExtractionStore {
     await this.vocab.propose(assembled.proposals);
     const extractionId = await this.repo.saveExtraction({
       ...key,
-      ...deriveTypedColumns(doc, vocabulary.regionCountries),
+      ...deriveTypedColumns(doc),
       jobId,
       data: doc,
       needsReview: needsReview(doc),

@@ -2,20 +2,23 @@ import { describe, expect, it } from 'vitest';
 import { fixtureDocument } from '../schema/fixture.testing';
 import { deriveTypedColumns } from './typed-columns';
 
-const regions = new Map([['EMEA', ['MA', 'FR']]]);
-
 describe('deriveTypedColumns', () => {
-  it('expands a region opening into countries', () => {
-    const cols = deriveTypedColumns(fixtureDocument(), regions);
+  it('a region place adds no country codes', () => {
+    // The old call also passed a region-to-country map; it must be ignored.
+    const cols = deriveTypedColumns(
+      ...([fixtureDocument(), new Map([['EMEA', ['MA', 'FR']]])] as unknown as [
+        ReturnType<typeof fixtureDocument>,
+      ]),
+    );
     expect(cols.regionCodes).toEqual(['EMEA']);
-    expect(cols.countryCodes).toEqual(['FR', 'MA']);
+    expect(cols.countryCodes).toEqual([]);
     expect(cols.worldwide).toBe(false);
   });
 
   it('flags worldwide', () => {
     const doc = fixtureDocument();
     doc.openings[0].places = [{ kind: 'worldwide' }];
-    expect(deriveTypedColumns(doc, regions).worldwide).toBe(true);
+    expect(deriveTypedColumns(doc).worldwide).toBe(true);
   });
 
   it('splits tags by kind and keeps unresolved terms out of every column', () => {
@@ -45,7 +48,7 @@ describe('deriveTypedColumns', () => {
       ],
       groups: [{ id: 'g1', min: 1 }],
     };
-    const cols = deriveTypedColumns(doc, regions);
+    const cols = deriveTypedColumns(doc);
     expect(cols.mainStackTags).toEqual(['python']);
     expect(cols.requiredTags).toEqual(['go', 'python', 'rust']);
     expect(cols.niceTags).toEqual(['docker']);
@@ -57,7 +60,7 @@ describe('deriveTypedColumns', () => {
     doc.techStack.value = null;
     doc.seniority.value = null;
     doc.salary.value = null;
-    const cols = deriveTypedColumns(doc, regions);
+    const cols = deriveTypedColumns(doc);
     expect(cols.techTags).toEqual([]);
     expect(cols.requiredTags).toEqual([]);
     expect(cols.niceTags).toEqual([]);
@@ -70,7 +73,7 @@ describe('deriveTypedColumns', () => {
     doc.openings[0].places = [
       { kind: 'city', name: 'Paris', countryCode: 'FR', cityId: null },
     ];
-    const cols = deriveTypedColumns(doc, regions);
+    const cols = deriveTypedColumns(doc);
     expect(cols.countryCodes).toEqual(['FR']);
     expect(cols.cityIds).toEqual([]);
   });
@@ -80,11 +83,11 @@ describe('deriveTypedColumns', () => {
     doc.openings[0].places = [
       { kind: 'city', name: 'Paris', countryCode: 'FR', cityId: 'c1' },
     ];
-    expect(deriveTypedColumns(doc, regions).cityIds).toEqual(['c1']);
+    expect(deriveTypedColumns(doc).cityIds).toEqual(['c1']);
   });
 
   it('maps a non-null salary', () => {
-    const cols = deriveTypedColumns(fixtureDocument(), regions);
+    const cols = deriveTypedColumns(fixtureDocument());
     expect(cols).toMatchObject({
       salaryMin: 80000,
       salaryMax: 100000,
@@ -93,24 +96,20 @@ describe('deriveTypedColumns', () => {
     });
   });
 
-  it('merges a region with a country, deduplicated', () => {
+  it('merges a region with countries, deduplicated', () => {
     const doc = fixtureDocument();
     doc.openings[0].places = [
       { kind: 'region', code: 'EMEA' },
       { kind: 'country', code: 'DE' },
       { kind: 'country', code: 'FR' },
     ];
-    expect(deriveTypedColumns(doc, regions).countryCodes).toEqual([
-      'DE',
-      'FR',
-      'MA',
-    ]);
+    expect(deriveTypedColumns(doc).countryCodes).toEqual(['DE', 'FR']);
   });
 
   it('keeps an unknown region code and adds no countries', () => {
     const doc = fixtureDocument();
     doc.openings[0].places = [{ kind: 'region', code: 'APAC' }];
-    const cols = deriveTypedColumns(doc, regions);
+    const cols = deriveTypedColumns(doc);
     expect(cols.regionCodes).toEqual(['APAC']);
     expect(cols.countryCodes).toEqual([]);
   });

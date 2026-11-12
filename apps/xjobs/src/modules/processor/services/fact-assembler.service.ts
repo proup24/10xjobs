@@ -39,11 +39,10 @@ export class FactAssembler {
     vocabulary: Vocabulary,
   ): AssembledDocument {
     // The model the provider reports, so each fact names the exact model ID.
-    const resolved = resolveFacts({
-      output,
-      input,
-      generatorModel: meta.model,
-    });
+    const resolved = {
+      ...resolveFacts({ output, generatorModel: meta.model }),
+      truncated: input.truncated,
+    };
     const quoted = checkQuotes(resolved, input);
     const consistent = checkConsistency(
       quoted.doc,

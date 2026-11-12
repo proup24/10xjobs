@@ -1,6 +1,5 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { Evidence } from '../models/types';
 import type { SKILL_DOMAINS } from '../schema/shared';
 
 /** Golden labels drafted by a model, which count once a human reviews them. */
@@ -77,9 +76,7 @@ export interface GoldenCase {
   id: string;
   input: {
     title: string;
-    companyName: string;
     description: string;
-    evidence: Evidence;
   };
   expected: Partial<GoldenFacts>;
   /** A drafted value counts only once a human sets `reviewed: true`. */

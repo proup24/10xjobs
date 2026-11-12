@@ -347,20 +347,13 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
   });
 
   describe('loadJob', () => {
-    it('returns the posting and its LinkedIn evidence', async () => {
+    it('returns only the title and description', async () => {
       const id = await job({ descriptionText: null });
       expect(await repo.loadJob(id)).toEqual({
         id,
         closed: false,
         title: 'Backend Engineer',
-        companyName: 'Acme',
         descriptionText: null,
-        evidence: {
-          location: 'Berlin, Germany',
-          contractType: 'Full-time',
-          experienceLevel: 'Mid-Senior level',
-          salary: null,
-        },
       });
       expect(await repo.loadJob(randomUUID())).toBeNull();
     });

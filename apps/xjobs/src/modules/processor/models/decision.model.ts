@@ -19,12 +19,11 @@ type ResponseAnswer = DecisionsResponse['answers'][string];
 const finite = (v: unknown): v is number =>
   typeof v === 'number' && Number.isFinite(v);
 
-/** The posting as Jev reads it; listing metadata is labelled as context only. */
+/** The posting as Jev reads it: its title, then its description. */
 function statement(input: PostingInput): string {
   return [
     input.title && `Title: ${input.title}`,
-    input.companyName && `Company: ${input.companyName}`,
-    `Listing metadata (context only): ${JSON.stringify(input.evidence)}`,
+    input.truncated && 'Note: the description was truncated.',
     input.description,
   ]
     .filter(Boolean)

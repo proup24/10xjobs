@@ -637,9 +637,6 @@ export interface FactReport {
   scored: number;
   /** Null when no case is scored. */
   accuracy: number | null;
-  /** Shares of the decided values set by the generator and by ingest evidence. */
-  generatorShare: number | null;
-  ingestShare: number | null;
 }
 
 /** Jev's final verdicts on one closed field, as shares of the `verified` cases. */
@@ -871,17 +868,12 @@ function summarizeFacts(scores: FactScores[]): {
 }
 
 function summarizeFact(entries: ScoredEntry[]): FactReport {
-  const decided = entries.filter(({ e }) => e.decidedBy !== null);
-  const share = (by: DecidedBy) =>
-    ratio(decided.filter(({ e }) => e.decidedBy === by).length, decided.length);
   return {
     scored: entries.length,
     accuracy: ratio(
       entries.reduce((total, { e }) => total + e.correct, 0),
       entries.reduce((total, { e }) => total + e.total, 0),
     ),
-    generatorShare: share('generator'),
-    ingestShare: share('ingest'),
   };
 }
 

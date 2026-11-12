@@ -26,9 +26,7 @@ type Envelope = {
 /**
  * Applies Jev's verdicts to the generated document (spec §4).
  * Confirmed -> sure; unconfirmed -> unsure; rejected on the final round -> dropped
- * (an ingest-filled value too: the pipeline never regenerates it).
  * A rejection before the final round only records the verdict.
- * Nothing is ever refilled from ingest evidence here.
  */
 export function applyVerdicts(
   doc: ExtractionDocument,
