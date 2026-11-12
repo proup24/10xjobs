@@ -2064,6 +2064,7 @@ export type Database = {
           conflicts: Json;
           decidedAt: string;
           descriptionText: string;
+          extractionId: string;
           facts: Json;
           firstSeenAt: string;
           jobId: string;

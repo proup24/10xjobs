@@ -86,12 +86,9 @@ async function readRow(
 
 /**
  * Logs a mismatch the user found between a fact and the job post. The processor's value,
- * its quote and LinkedIn's value are copied from the job's `match_details` row here, never
+ * its quote, LinkedIn's value and the extraction id are copied from the job's `match_details` row here, never
  * taken from the client. A job the user has no match on is `invalid`. Nothing reads these
  * reports yet. Log lines carry ids and error codes only.
- *
- * `extractionId` stays null: `match_details` does not return it and the extraction tables
- * are engine-only, so the web app cannot read it.
  */
 export async function saveReport(
   supabase: Client,
@@ -121,7 +118,7 @@ export async function saveReport(
   const insert = await supabase.from('fact_reports').insert({
     userId,
     jobId,
-    extractionId: null,
+    extractionId: row.extractionId ?? null,
     field,
     processorValue: (asRecord(row.facts)?.[key] ?? null) as Json,
     quote: quotes.length ? quotes.join('\n') : null,

@@ -28,6 +28,7 @@ function client(rpc: Rpc, insert: { error: unknown } = { error: null }) {
 
 const row = {
   jobId: JOB,
+  extractionId: 'ext-1',
   facts: {
     seniority: {
       code: 'senior',
@@ -61,7 +62,7 @@ describe('saveReport', () => {
       processorValue: row.facts.seniority,
       quote: 'We want a senior engineer',
       listingValue: 'mid',
-      extractionId: null,
+      extractionId: 'ext-1',
       proposedValue: 'Mid-level',
       note: 'The post says mid',
     });
@@ -94,6 +95,68 @@ describe('saveReport', () => {
     expect(result.status).toBe('invalid');
     expect(calls.insert).not.toHaveBeenCalled();
     expect(calls.rpc).not.toHaveBeenCalled();
+  });
+
+  it('stores a null extraction id when the row has none', async () => {
+    const { supabase, calls } = client({
+      data: [{ ...row, extractionId: null }],
+      error: null,
+    });
+    await saveReport(supabase, 'user-1', {
+      jobId: JOB,
+      field: 'seniority',
+      proposedValue: 'Mid',
+    });
+    expect(calls.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ extractionId: null }),
+    );
+  });
+
+  it('refuses a proposed value over 200 characters', async () => {
+    const { supabase, calls } = client({ data: [row], error: null });
+    const result = await saveReport(supabase, 'user-1', {
+      jobId: JOB,
+      field: 'seniority',
+      proposedValue: 'x'.repeat(201),
+    });
+    expect(result.status).toBe('invalid');
+    expect(calls.insert).not.toHaveBeenCalled();
+  });
+
+  it('refuses a note over 500 characters', async () => {
+    const { supabase, calls } = client({ data: [row], error: null });
+    const result = await saveReport(supabase, 'user-1', {
+      jobId: JOB,
+      field: 'seniority',
+      proposedValue: 'Mid',
+      note: 'x'.repeat(501),
+    });
+    expect(result.status).toBe('invalid');
+    expect(calls.insert).not.toHaveBeenCalled();
+  });
+
+  it('trims the proposed value and the note, and stores a blank note as null', async () => {
+    const { supabase, calls } = client({ data: [row], error: null });
+    await saveReport(supabase, 'user-1', {
+      jobId: JOB,
+      field: 'seniority',
+      proposedValue: '  Mid  ',
+      note: '  hi  ',
+    });
+    await saveReport(supabase, 'user-1', {
+      jobId: JOB,
+      field: 'seniority',
+      proposedValue: 'Mid',
+      note: '   ',
+    });
+    expect(calls.insert).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ proposedValue: 'Mid', note: 'hi' }),
+    );
+    expect(calls.insert).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ note: null }),
+    );
   });
 
   it('refuses a field that is not reportable', async () => {

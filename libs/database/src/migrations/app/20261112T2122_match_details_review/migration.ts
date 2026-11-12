@@ -25,6 +25,7 @@ import {
 //   rejected.
 // - `outcome` stays the engine's. New columns: `reviewRule` and `reviewField` (the match's) and
 //   `reviewChoice` (the applicable decision's choice; null when none applies).
+//   Also `extractionId` (the job_facts row's extraction; null without a facts row).
 // Everything else is as match-details-job-facts:
 // - Facts come from the job's `job_facts` row, each fact with its `source`, each opening with its
 //   `arrangementSource` and `placesSource`; `conflicts` lists where the listing and the
@@ -232,7 +233,7 @@ const matchDetails = `CREATE FUNCTION public.match_details(
   "publishedAt" text, "postedAt" timestamptz, "firstSeenAt" timestamptz, "lastSeenAt" timestamptz, closed boolean,
   "postingUrl" text, "applyUrl" text, "posterName" text, "posterProfileUrl" text, "posterType" text,
   "descriptionText" text, channels text[], "viewedAt" timestamptz, facts jsonb, conflicts jsonb,
-  "reviewRule" text, "reviewField" text, "reviewChoice" text
+  "reviewRule" text, "reviewField" text, "reviewChoice" text, "extractionId" uuid
 )
   LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
 WITH l AS MATERIALIZED (
@@ -269,7 +270,7 @@ SELECT
     ) ORDER BY c.field, c.id), '[]'::jsonb)
     FROM public.job_fact_conflicts c
     WHERE c."jobId" = m."jobId") END,
-  m."reviewRule", m."reviewField", d.choice
+  m."reviewRule", m."reviewField", d.choice, f."extractionId"
 FROM public.job_matches m
 JOIN public.normalized_jobs j ON j.id = m."jobId"
 LEFT JOIN public.job_facts f ON f."jobId" = m."jobId"

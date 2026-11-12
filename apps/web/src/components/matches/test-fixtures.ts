@@ -136,5 +136,6 @@ export const matchRow = (over: Over = {}): MatchRow =>
     checks,
     facts,
     conflicts: [],
+    extractionId: 'e-1',
     ...over,
   }) as MatchRow;
