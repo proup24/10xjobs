@@ -1,8 +1,8 @@
 #!/usr/bin/env -S node
+import type { Contract as End } from '../../snapshots/881c039aef420519d4c8f137b88287c268d14c2afc804de5813e72c422847ce5/contract';
+import endContract from '../../snapshots/881c039aef420519d4c8f137b88287c268d14c2afc804de5813e72c422847ce5/contract.json' with { type: 'json' };
 import type { Contract as Start } from '../../snapshots/c7e224b8457ff39be47ce7029466d362a15f7c5c9d93c0db4aa43ab160462815/contract';
 import startContract from '../../snapshots/c7e224b8457ff39be47ce7029466d362a15f7c5c9d93c0db4aa43ab160462815/contract.json' with { type: 'json' };
-import type { Contract as End } from '../../snapshots/c9460b85087b8c76224e2851ec975a1ae628faff433325609a6901426cf36d67/contract';
-import endContract from '../../snapshots/c9460b85087b8c76224e2851ec975a1ae628faff433325609a6901426cf36d67/contract.json' with { type: 'json' };
 import {
   Migration,
   MigrationCLI,
@@ -265,15 +265,48 @@ export default class M extends Migration<Start, End> {
         policy: {
           naming: {
             kind: 'wire',
-            prefix: 'match_reviews_owner',
-            hash: '23b38ff6',
+            prefix: 'match_reviews_owner_delete',
+            hash: '8d4763aa',
           },
           tableName: 'match_reviews',
           namespaceId: 'public',
-          operation: 'all',
+          operation: 'delete',
           roles: ['authenticated'],
           using: sql`"userId" = auth.uid()`,
+          permissive: true,
+        },
+      }),
+      this.createRlsPolicy({
+        schema: 'public',
+        table: 'match_reviews',
+        policy: {
+          naming: {
+            kind: 'wire',
+            prefix: 'match_reviews_owner_insert',
+            hash: '11c249f3',
+          },
+          tableName: 'match_reviews',
+          namespaceId: 'public',
+          operation: 'insert',
+          roles: ['authenticated'],
           withCheck: sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.job_matches m WHERE m.id = match_reviews."matchId" AND m."userId" = auth.uid() AND m."profileId" = match_reviews."profileId" AND m."jobId" = match_reviews."jobId" AND m.outcome = 'review' AND m."reviewRule" = match_reviews.rule AND m."reviewField" = match_reviews.field)`,
+          permissive: true,
+        },
+      }),
+      this.createRlsPolicy({
+        schema: 'public',
+        table: 'match_reviews',
+        policy: {
+          naming: {
+            kind: 'wire',
+            prefix: 'match_reviews_owner_read',
+            hash: 'ab58a1a7',
+          },
+          tableName: 'match_reviews',
+          namespaceId: 'public',
+          operation: 'select',
+          roles: ['authenticated'],
+          using: sql`"userId" = auth.uid()`,
           permissive: true,
         },
       }),

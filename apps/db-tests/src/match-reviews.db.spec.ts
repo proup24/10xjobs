@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { admin, anon } from './support/admin.js';
+import { withCatalog } from './support/pg.js';
 import {
   cleanupDetailedJobs,
   publishProfile,
@@ -24,6 +25,7 @@ type Row = {
   matchId: string;
   jobId: string;
   outcome: string;
+  unverified: boolean;
   reviewRule: string | null;
   reviewField: string | null;
   reviewChoice: string | null;
@@ -76,6 +78,13 @@ describe('match_reviews and the review-aware match_details', () => {
       outcome: 'review',
       review,
     });
+    // decidedAt by the database's clock, before any decision: the seed writes the test's.
+    await withCatalog((c) =>
+      c.query(
+        `UPDATE public.job_matches SET "decidedAt" = now() - interval '1 minute' WHERE id = $1`,
+        [matchId],
+      ),
+    );
     return { job, matchId };
   };
 
@@ -97,24 +106,25 @@ describe('match_reviews and the review-aware match_details', () => {
       note: 'checked the post',
     });
 
-  /** The engine deciding the match again, as after a profile change. */
-  const redecide = async (
+  /**
+   * The engine deciding the match again, as after a profile change: as the matcher's upsert,
+   * decidedAt moves (to the database's now()) only when the outcome changes.
+   */
+  const redecide = (
     matchId: string,
     outcome: 'qualified' | 'rejected' | 'review',
     review: Review | null,
-  ) => {
-    const { error } = await admin()
-      .from('job_matches')
-      .update({
-        outcome,
-        reviewRule: review?.rule ?? null,
-        reviewField: review?.field ?? null,
-        decidedAt: new Date().toISOString(),
-        profileUpdatedAt: new Date().toISOString(),
-      })
-      .eq('id', matchId);
-    if (error) throw new Error(`Could not re-decide: ${error.message}`);
-  };
+  ) =>
+    withCatalog((c) =>
+      c.query(
+        `UPDATE public.job_matches
+            SET "decidedAt" = CASE WHEN outcome = $2 THEN "decidedAt" ELSE now() END,
+                outcome = $2, "reviewRule" = $3, "reviewField" = $4,
+                "profileUpdatedAt" = now()
+          WHERE id = $1`,
+        [matchId, outcome, review?.rule ?? null, review?.field ?? null],
+      ),
+    );
 
   it('a review row appears under review', async () => {
     const m = await reviewMatch();
@@ -136,6 +146,20 @@ describe('match_reviews and the review-aware match_details', () => {
       outcome: 'review',
       reviewRule: 'seniority',
       reviewField: 'seniority',
+      reviewChoice: 'qualified',
+    });
+  });
+
+  // R65: the matcher stores unverified = false on review rows; a row the user moved to Matches
+  // still rests on an unsure check.
+  it('a review row the user moved to Matches reads as unverified', async () => {
+    const m = await reviewMatch();
+    expect(await rowOf(a, 'review', m.job.jobId)).toMatchObject({
+      unverified: false,
+    });
+    expect((await decide(a, m, 'qualified')).error).toBeNull();
+    expect(await rowOf(a, 'qualified', m.job.jobId)).toMatchObject({
+      unverified: true,
       reviewChoice: 'qualified',
     });
   });
@@ -192,9 +216,13 @@ describe('match_reviews and the review-aware match_details', () => {
     await redecide(rejected.matchId, 'qualified', null);
     expect(await listsOf(a, rejected.job.jobId)).toEqual(['qualified']);
 
-    // Back in review on the decided rule and field: the old decision applies again.
+    // Back in review on the decided rule and field after another outcome: the engine's
+    // outcome won in between, so the old decision no longer applies (R66).
     await redecide(m.matchId, 'review', SENIORITY);
-    expect(await listsOf(a, m.job.jobId)).toEqual(['qualified']);
+    expect(await listsOf(a, m.job.jobId)).toEqual(['review']);
+    expect(await rowOf(a, 'review', m.job.jobId)).toMatchObject({
+      reviewChoice: null,
+    });
 
     // The old decision is kept as history.
     const { data } = await a.client
@@ -204,6 +232,61 @@ describe('match_reviews and the review-aware match_details', () => {
     expect(data).toEqual([
       { choice: 'qualified', rule: 'seniority', field: 'seniority' },
     ]);
+  });
+
+  // R66: decidedAt moves only when the outcome changes.
+  it('a decision does not revive after the outcome changed and came back to review', async () => {
+    for (const outcome of ['qualified', 'rejected'] as const) {
+      const m = await reviewMatch();
+      expect((await decide(a, m, 'qualified')).error).toBeNull();
+
+      // A profile change re-deciding onto the same rule and field keeps the decision.
+      await redecide(m.matchId, 'review', SENIORITY);
+      expect(await listsOf(a, m.job.jobId)).toEqual(['qualified']);
+
+      // Another outcome, then back to review on the same rule and field: under review again.
+      await redecide(m.matchId, outcome, null);
+      expect(await listsOf(a, m.job.jobId)).toEqual([outcome]);
+      await redecide(m.matchId, 'review', SENIORITY);
+      expect(await listsOf(a, m.job.jobId)).toEqual(['review']);
+
+      // A new decision on the returned review applies.
+      expect((await decide(a, m, 'rejected')).error).toBeNull();
+      expect(await listsOf(a, m.job.jobId)).toEqual(['rejected']);
+    }
+  });
+
+  // R67b: decisions are history; an owner may read, insert and delete, never rewrite.
+  it('an owner cannot update a decision', async () => {
+    const m = await reviewMatch();
+    const inserted = await decide(a, m, 'qualified').select('id').single();
+    expect(inserted.error).toBeNull();
+    const id = (inserted.data as { id: string }).id;
+
+    const updated = await a.client
+      .from('match_reviews')
+      .update({ choice: 'rejected', note: 'changed' })
+      .eq('id', id)
+      .select('id');
+    expect(updated.error ? [] : updated.data).toEqual([]);
+    const { data } = await admin()
+      .from('match_reviews')
+      .select('choice, note')
+      .eq('id', id)
+      .single();
+    expect(data).toEqual({ choice: 'qualified', note: 'checked the post' });
+
+    // B can't delete A's decision; A can.
+    await b.client.from('match_reviews').delete().eq('id', id);
+    expect(
+      (await admin().from('match_reviews').select('id').eq('id', id)).data,
+    ).toHaveLength(1);
+    expect(
+      (await a.client.from('match_reviews').delete().eq('id', id)).error,
+    ).toBeNull();
+    expect(
+      (await admin().from('match_reviews').select('id').eq('id', id)).data,
+    ).toEqual([]);
   });
 
   it("a user can't attach a review to another user's match", async () => {

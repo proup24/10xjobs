@@ -2,9 +2,9 @@
 import type {
   Contract as End,
   Contract as Start,
-} from '../../snapshots/c9460b85087b8c76224e2851ec975a1ae628faff433325609a6901426cf36d67/contract';
-import endContract from '../../snapshots/c9460b85087b8c76224e2851ec975a1ae628faff433325609a6901426cf36d67/contract.json' with { type: 'json' };
-import startContract from '../../snapshots/c9460b85087b8c76224e2851ec975a1ae628faff433325609a6901426cf36d67/contract.json' with { type: 'json' };
+} from '../../snapshots/881c039aef420519d4c8f137b88287c268d14c2afc804de5813e72c422847ce5/contract';
+import endContract from '../../snapshots/881c039aef420519d4c8f137b88287c268d14c2afc804de5813e72c422847ce5/contract.json' with { type: 'json' };
+import startContract from '../../snapshots/881c039aef420519d4c8f137b88287c268d14c2afc804de5813e72c422847ce5/contract.json' with { type: 'json' };
 import {
   Migration,
   MigrationCLI,
@@ -16,14 +16,19 @@ import {
 // database. Advancing the `db` ref writes `invariants: []`; re-add it, and keep the earlier ones.
 // It replaces match_details (the return columns change, so CREATE OR REPLACE cannot) to apply
 // the user's review decisions (match_reviews). A match's effective outcome is the choice of the
-// latest decision for it (by createdAt, then id) when the match is in review and that decision
-// names the match's current reviewRule and reviewField; otherwise the engine's outcome. A
-// re-decision to another outcome, or to review on another rule or field, wins; the decision
-// stays as history and applies again if the match returns to review on its rule and field.
+// latest decision for it (by createdAt, then id) when the match is in review, that decision
+// names the match's current reviewRule and reviewField, and it was made since the match's
+// decidedAt; otherwise the engine's outcome. decidedAt moves only when the engine's outcome
+// changes, so a re-decision onto the same review rule and field (a profile change) keeps the
+// decision, while a re-decision to another outcome, or to review on another rule or field,
+// wins: the decision stays as history and does not apply again if the match later returns to
+// review on its rule and field.
 // - `p_outcome` filters on the effective outcome: 'review' lists review rows with no applicable
 //   decision, 'qualified' also lists those the user moved to Matches, 'rejected' those they
 //   rejected.
-// - `outcome` stays the engine's. New columns: `reviewRule` and `reviewField` (the match's) and
+// - `outcome` stays the engine's. `unverified` is also true when the applicable decision moved
+//   the row to Matches: it rests on an unsure check (the matcher stores false on review rows).
+//   New columns: `reviewRule` and `reviewField` (the match's) and
 //   `reviewChoice` (the applicable decision's choice; null when none applies).
 //   Also `extractionId` (the job_facts row's extraction; null without a facts row).
 // Everything else is as match-details-job-facts:
@@ -241,7 +246,9 @@ WITH l AS MATERIALIZED (
     ${labelLists.map(labelMap).join(',\n    ')}
 )
 SELECT
-  m.id, m."profileId", m."jobId", m.outcome, m.unverified, m."stackScore",
+  m.id, m."profileId", m."jobId", m.outcome,
+  -- A review row the user moved to Matches rests on an unsure check.
+  m.unverified OR COALESCE(d.choice = 'qualified', false), m."stackScore",
   CASE WHEN p_details THEN m.checks END, m."decidedAt",
   j.kind, j.title, j."companyName", j."companyUrl", j.location,
   j."salaryText", j."salaryMin", j."salaryMax", j."salaryCurrency", j."salaryPeriod",
@@ -281,15 +288,17 @@ CROSS JOIN LATERAL (
   OFFSET 0) x
 CROSS JOIN l
 -- The user's decision that applies: the latest for the match, when the match is in review on
--- the rule and field it names.
+-- the rule and field it names and the decision was made since the engine last changed the
+-- outcome (decidedAt), so an old decision does not revive after another outcome.
 LEFT JOIN LATERAL (
   SELECT r.choice
-    FROM (SELECT r.choice, r.rule, r.field
+    FROM (SELECT r.choice, r.rule, r.field, r."createdAt"
             FROM public.match_reviews r
            WHERE r."matchId" = m.id AND r."userId" = m."userId"
            ORDER BY r."createdAt" DESC, r.id DESC
            LIMIT 1) r
-   WHERE m.outcome = 'review' AND r.rule = m."reviewRule" AND r.field = m."reviewField") d ON true
+   WHERE m.outcome = 'review' AND r.rule = m."reviewRule" AND r.field = m."reviewField"
+     AND r."createdAt" >= m."decidedAt") d ON true
 -- Every job row is reached only through the caller's own matches; a null uid matches none.
 WHERE m."userId" = (SELECT auth.uid())
   AND (p_profile_id IS NULL OR m."profileId" = p_profile_id)
@@ -316,7 +325,7 @@ export default class M extends Migration<Start, End> {
         id: 'functions.match_details_review',
         invariantId: 'match-details-review',
         label:
-          "match_details: the user's review decisions set the effective outcome, plus reviewRule, reviewField and reviewChoice",
+          "match_details: the user's review decisions set the effective outcome and unverified, plus reviewRule, reviewField and reviewChoice",
         operationClass: 'data',
         target: {
           id: 'postgres',

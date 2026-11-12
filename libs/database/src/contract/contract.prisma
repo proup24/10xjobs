@@ -1088,8 +1088,9 @@ policy_insert job_views_owner_insert {
 // A user's decision on a match in review: move it to Matches (qualified) or out (rejected).
 // An overlay next to the engine's row, which it never changes. It records the rule and field
 // that sent the match to review, and applies (match_details) only while the latest decision
-// for the match is on the match's current reviewRule and reviewField: a re-decision to another
-// outcome or another rule or field wins, and older rows stay as history.
+// for the match is on the match's current reviewRule and reviewField and was made since the
+// match's decidedAt: a re-decision to another outcome or another rule or field wins, and older
+// rows stay as history (they don't apply again when the match returns to review).
 model MatchReview {
   // Users insert through PostgREST, so the id has a database default too.
   id        Uuid     @id @default(sql`gen_random_uuid()`) @onCreate(uuid(7))
@@ -1111,14 +1112,27 @@ model MatchReview {
   @@rls
 }
 
-// Owners read and write their decisions, and only on their own match while it is in review
-// on the rule and field the decision names; profileId and jobId must be the match's. The
-// outer columns are qualified: a bare name in the subquery would resolve to m.
-policy_all match_reviews_owner {
+// Owners read their decisions.
+policy_select match_reviews_owner_read {
   target = MatchReview
   roles = [authenticated]
   using = sql`"userId" = auth.uid()`
+}
+
+// Owners decide only on their own match while it is in review on the rule and field the
+// decision names; profileId and jobId must be the match's. The outer columns are qualified: a
+// bare name in the subquery would resolve to m.
+policy_insert match_reviews_owner_insert {
+  target = MatchReview
+  roles = [authenticated]
   withCheck = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.job_matches m WHERE m.id = match_reviews."matchId" AND m."userId" = auth.uid() AND m."profileId" = match_reviews."profileId" AND m."jobId" = match_reviews."jobId" AND m.outcome = 'review' AND m."reviewRule" = match_reviews.rule AND m."reviewField" = match_reviews.field)`
+}
+
+// Owners delete their decisions. No update: a decision is history, a new one supersedes it.
+policy_delete match_reviews_owner_delete {
+  target = MatchReview
+  roles = [authenticated]
+  using = sql`"userId" = auth.uid()`
 }
 
 // A user's report that a fact on a job is wrong: what the processor said (value and quote),

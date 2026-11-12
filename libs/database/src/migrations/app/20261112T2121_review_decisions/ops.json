@@ -824,49 +824,149 @@
     ]
   },
   {
-    "id": "rlsPolicy.public.match_reviews.match_reviews_owner_23b38ff6",
-    "label": "Create RLS policy \"match_reviews_owner_23b38ff6\" on \"match_reviews\"",
+    "id": "rlsPolicy.public.match_reviews.match_reviews_owner_delete_8d4763aa",
+    "label": "Create RLS policy \"match_reviews_owner_delete_8d4763aa\" on \"match_reviews\"",
     "operationClass": "additive",
     "target": {
       "id": "postgres",
       "details": {
         "schema": "public",
         "objectType": "rlsPolicy",
-        "name": "match_reviews_owner_23b38ff6",
+        "name": "match_reviews_owner_delete_8d4763aa",
         "table": "match_reviews"
       }
     },
     "precheck": [
       {
-        "description": "ensure RLS policy \"match_reviews_owner_23b38ff6\" does not exist",
+        "description": "ensure RLS policy \"match_reviews_owner_delete_8d4763aa\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
         "params": [
           "public",
           "match_reviews",
-          "match_reviews_owner_23b38ff6"
+          "match_reviews_owner_delete_8d4763aa"
         ],
         "expectation": {
           "expects": "absent",
-          "object": "RLS policy \"match_reviews_owner_23b38ff6\" on \"match_reviews\""
+          "object": "RLS policy \"match_reviews_owner_delete_8d4763aa\" on \"match_reviews\""
         }
       }
     ],
     "execute": [
       {
-        "description": "create RLS policy \"match_reviews_owner_23b38ff6\"",
-        "sql": "CREATE POLICY \"match_reviews_owner_23b38ff6\" ON \"public\".\"match_reviews\" AS PERMISSIVE FOR ALL TO authenticated USING (\"userId\" = auth.uid()) WITH CHECK (\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.job_matches m WHERE m.id = match_reviews.\"matchId\" AND m.\"userId\" = auth.uid() AND m.\"profileId\" = match_reviews.\"profileId\" AND m.\"jobId\" = match_reviews.\"jobId\" AND m.outcome = 'review' AND m.\"reviewRule\" = match_reviews.rule AND m.\"reviewField\" = match_reviews.field))",
+        "description": "create RLS policy \"match_reviews_owner_delete_8d4763aa\"",
+        "sql": "CREATE POLICY \"match_reviews_owner_delete_8d4763aa\" ON \"public\".\"match_reviews\" AS PERMISSIVE FOR DELETE TO authenticated USING (\"userId\" = auth.uid())",
         "params": []
       }
     ],
     "postcheck": [
       {
-        "description": "verify RLS policy \"match_reviews_owner_23b38ff6\" exists with the planned command, roles and permissiveness",
+        "description": "verify RLS policy \"match_reviews_owner_delete_8d4763aa\" exists with the planned command, roles and permissiveness",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
         "params": [
           "public",
           "match_reviews",
-          "match_reviews_owner_23b38ff6",
-          "ALL",
+          "match_reviews_owner_delete_8d4763aa",
+          "DELETE",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.match_reviews.match_reviews_owner_insert_11c249f3",
+    "label": "Create RLS policy \"match_reviews_owner_insert_11c249f3\" on \"match_reviews\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "match_reviews_owner_insert_11c249f3",
+        "table": "match_reviews"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"match_reviews_owner_insert_11c249f3\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "match_reviews",
+          "match_reviews_owner_insert_11c249f3"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"match_reviews_owner_insert_11c249f3\" on \"match_reviews\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"match_reviews_owner_insert_11c249f3\"",
+        "sql": "CREATE POLICY \"match_reviews_owner_insert_11c249f3\" ON \"public\".\"match_reviews\" AS PERMISSIVE FOR INSERT TO authenticated WITH CHECK (\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.job_matches m WHERE m.id = match_reviews.\"matchId\" AND m.\"userId\" = auth.uid() AND m.\"profileId\" = match_reviews.\"profileId\" AND m.\"jobId\" = match_reviews.\"jobId\" AND m.outcome = 'review' AND m.\"reviewRule\" = match_reviews.rule AND m.\"reviewField\" = match_reviews.field))",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"match_reviews_owner_insert_11c249f3\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "match_reviews",
+          "match_reviews_owner_insert_11c249f3",
+          "INSERT",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.match_reviews.match_reviews_owner_read_ab58a1a7",
+    "label": "Create RLS policy \"match_reviews_owner_read_ab58a1a7\" on \"match_reviews\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "match_reviews_owner_read_ab58a1a7",
+        "table": "match_reviews"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"match_reviews_owner_read_ab58a1a7\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "match_reviews",
+          "match_reviews_owner_read_ab58a1a7"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"match_reviews_owner_read_ab58a1a7\" on \"match_reviews\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"match_reviews_owner_read_ab58a1a7\"",
+        "sql": "CREATE POLICY \"match_reviews_owner_read_ab58a1a7\" ON \"public\".\"match_reviews\" AS PERMISSIVE FOR SELECT TO authenticated USING (\"userId\" = auth.uid())",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"match_reviews_owner_read_ab58a1a7\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "match_reviews",
+          "match_reviews_owner_read_ab58a1a7",
+          "SELECT",
           "PERMISSIVE",
           "[\"authenticated\"]"
         ]

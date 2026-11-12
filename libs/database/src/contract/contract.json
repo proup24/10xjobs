@@ -6841,19 +6841,44 @@
               "tableName": "job_views",
               "using": "\"userId\" = auth.uid()"
             },
-            "match_reviews_owner": {
+            "match_reviews_owner_delete": {
               "kind": "policy",
-              "name": "match_reviews_owner_23b38ff6",
+              "name": "match_reviews_owner_delete_8d4763aa",
               "namespaceId": "public",
-              "operation": "all",
+              "operation": "delete",
               "permissive": true,
-              "prefix": "match_reviews_owner",
+              "prefix": "match_reviews_owner_delete",
               "roles": [
                 "authenticated"
               ],
               "tableName": "match_reviews",
-              "using": "\"userId\" = auth.uid()",
+              "using": "\"userId\" = auth.uid()"
+            },
+            "match_reviews_owner_insert": {
+              "kind": "policy",
+              "name": "match_reviews_owner_insert_11c249f3",
+              "namespaceId": "public",
+              "operation": "insert",
+              "permissive": true,
+              "prefix": "match_reviews_owner_insert",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "match_reviews",
               "withCheck": "\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.job_matches m WHERE m.id = match_reviews.\"matchId\" AND m.\"userId\" = auth.uid() AND m.\"profileId\" = match_reviews.\"profileId\" AND m.\"jobId\" = match_reviews.\"jobId\" AND m.outcome = 'review' AND m.\"reviewRule\" = match_reviews.rule AND m.\"reviewField\" = match_reviews.field)"
+            },
+            "match_reviews_owner_read": {
+              "kind": "policy",
+              "name": "match_reviews_owner_read_ab58a1a7",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "match_reviews_owner_read",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "match_reviews",
+              "using": "\"userId\" = auth.uid()"
             },
             "profile_setup_drafts_owner": {
               "kind": "policy",
@@ -12774,7 +12799,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "c9460b85087b8c76224e2851ec975a1ae628faff433325609a6901426cf36d67"
+    "storageHash": "881c039aef420519d4c8f137b88287c268d14c2afc804de5813e72c422847ce5"
   },
   "execution": {
     "executionHash": "d1afc78045007bb79eb075540ad58bb39a9183f73c152ea2601abe6ca2050fee",
