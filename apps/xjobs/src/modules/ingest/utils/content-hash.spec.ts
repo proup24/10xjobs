@@ -3,6 +3,7 @@ import ashbyFailed from './fixtures/ashby-failed.json';
 import ashby from './fixtures/ashby.json';
 import linkedinJob from './fixtures/linkedin-job.json';
 import cheapJob from './fixtures/linkedin-job-cheap.json';
+import harvestJobs from './fixtures/linkedin-job-harvest.json';
 import linkedinPost from './fixtures/linkedin-post.json';
 import { contentHash } from './content-hash';
 
@@ -37,6 +38,37 @@ describe('contentHash', () => {
     expect(contentHash(Channel.LINKEDIN_JOB_BOARD, later)).toBe(
       contentHash(Channel.LINKEDIN_JOB_BOARD, linkedinJob),
     );
+  });
+
+  it('ignores what changes on an unchanged harvestapi job, and sees a changed description', () => {
+    const [harvest] = harvestJobs;
+    const later = {
+      ...harvest,
+      company: {
+        ...harvest.company,
+        logo: 'https://media.licdn.com/other-logo',
+        logos: [],
+        backgroundCover: 'https://media.licdn.com/other-cover',
+        backgroundCovers: [],
+        followerCount: 1,
+        employeeCount: 2,
+      },
+      applicants: 'many',
+      views: 999,
+      new: !harvest.new,
+      _meta: { pagination: { totalElements: 1 } },
+      query: { search: 'another search' },
+      headerCaptionText: 'Acme\nElsewhere\n2 days ago',
+    };
+    expect(contentHash(Channel.LINKEDIN_JOB_BOARD, later)).toBe(
+      contentHash(Channel.LINKEDIN_JOB_BOARD, harvest),
+    );
+    expect(
+      contentHash(Channel.LINKEDIN_JOB_BOARD, {
+        ...harvest,
+        descriptionText: `${harvest.descriptionText} Changed.`,
+      }),
+    ).not.toBe(contentHash(Channel.LINKEDIN_JOB_BOARD, harvest));
   });
 
   it('ignores the search a cheap_scraper job was found by', () => {

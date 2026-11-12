@@ -644,19 +644,21 @@ describe('CollectionService claims', () => {
 });
 
 describe('channelJobsConfig', () => {
-  it('collects LinkedIn hourly over a day at most', () => {
-    for (const channel of [
-      Channel.LINKEDIN_JOB_BOARD,
-      Channel.LINKEDIN_POSTS,
-    ]) {
-      expect(channelJobsConfig[channel]).toMatchObject({
-        schedule: { pattern: '0 8-22 * * 1-5', timezone: 'UTC' },
-        window: { initialHours: 24, overlapMinutes: 15, maximumHours: 24 },
-      });
-      expect(channelJobsConfig[channel].window).not.toHaveProperty(
-        'minimumHours',
-      );
-    }
+  it('collects LinkedIn jobs hourly 09-21 Morocco time over the last hour', () => {
+    expect(channelJobsConfig[Channel.LINKEDIN_JOB_BOARD]).toMatchObject({
+      schedule: { pattern: '0 9-21 * * 1-5', timezone: 'Africa/Casablanca' },
+      window: { initialHours: 1, overlapMinutes: 0, maximumHours: 1 },
+    });
+  });
+
+  it('collects LinkedIn posts hourly over a day at most', () => {
+    expect(channelJobsConfig[Channel.LINKEDIN_POSTS]).toMatchObject({
+      schedule: { pattern: '0 8-22 * * 1-5', timezone: 'UTC' },
+      window: { initialHours: 24, overlapMinutes: 15, maximumHours: 24 },
+    });
+    expect(channelJobsConfig[Channel.LINKEDIN_POSTS].window).not.toHaveProperty(
+      'minimumHours',
+    );
   });
 
   it('collects Google boards daily over at least three days', () => {

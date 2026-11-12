@@ -190,20 +190,4 @@ describe('ApifyActorProvider', () => {
     const result = await provider.run('a/b', {}, { maxChargeUsd: 1 });
     expect(result.keyValueStoreId).toBe('kv-1');
   });
-
-  it('reads a key-value record, null when it is absent', async () => {
-    sdk.keyValueStore.getRecord.mockResolvedValueOnce({
-      key: 'SEARCH_TOTALS',
-      value: { total: 3 },
-    });
-    expect(await provider.record('kv-1', 'SEARCH_TOTALS')).toEqual({
-      total: 3,
-    });
-    sdk.keyValueStore.getRecord.mockResolvedValueOnce(undefined);
-    expect(await provider.record('kv-1', 'SEARCH_TOTALS')).toBeNull();
-    sdk.keyValueStore.getRecord.mockRejectedValueOnce(
-      new sdk.ApifyApiError(404),
-    );
-    expect(await provider.record('kv-1', 'SEARCH_TOTALS')).toBeNull();
-  });
 });

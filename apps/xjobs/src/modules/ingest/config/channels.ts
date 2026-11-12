@@ -22,6 +22,20 @@ export const channelIngestConfig: Record<Channel, ChannelIngestConfig> = {
       'postedTime',
       'applicationsCount',
       'companyLogo',
+      // harvestapi: signed image URLs, counters and the search echo change
+      // between scrapes of an unchanged posting.
+      'company.logo',
+      'company.logos',
+      'company.backgroundCover',
+      'company.backgroundCovers',
+      'company.followerCount',
+      'company.employeeCount',
+      'applicants',
+      'views',
+      'new',
+      '_meta',
+      'query',
+      'headerCaptionText',
     ],
   },
   [Channel.LINKEDIN_POSTS]: {
