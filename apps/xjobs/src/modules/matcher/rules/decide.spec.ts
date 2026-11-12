@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { ExtractionDocument } from 'src/modules/processor/schema';
+import type { JobFactsDocument } from 'src/modules/facts/schema/facts';
 import { decide, type MatchContext } from './decide';
-import { exampleProfile, jobDoc } from './fixtures.testing';
+import { exampleProfile, factsDoc } from './fixtures.testing';
 import type { MatchJob } from './types';
 
 const ctx: MatchContext = {
@@ -17,11 +17,12 @@ const worldwide = {
   timezones: [],
   quote: '',
   confidence: 'sure',
-  decidedBy: 'generator',
-} as unknown as ExtractionDocument['openings'][number];
+  arrangementSource: 'description',
+  placesSource: 'description',
+} as unknown as JobFactsDocument['openings'][number];
 
-const passingDoc = (edit?: (d: ExtractionDocument) => void) =>
-  jobDoc((d) => {
+const passingDoc = (edit?: (d: JobFactsDocument) => void) =>
+  factsDoc((d) => {
     d.position.value = { roleKind: 'backend_engineer', title: 'Backend' };
     d.seniority.value = 'senior';
     d.openings = [structuredClone(worldwide)];
@@ -43,11 +44,12 @@ const passingDoc = (edit?: (d: ExtractionDocument) => void) =>
     edit?.(d);
   });
 
-const job = (document: ExtractionDocument, needsReview = false): MatchJob => ({
+const job = (facts: JobFactsDocument, needsReview = false): MatchJob => ({
   jobId: 'j1',
   extractionId: 'e1',
+  factsHash: 'h1',
   needsReview,
-  document,
+  facts,
 });
 
 describe('decide', () => {
@@ -155,7 +157,7 @@ describe('decide', () => {
   it('golden 1288: fullstack job is rejected on position and stack', () => {
     const file = join(__dirname, '../../processor/golden/cases/1288.json');
     const { expected } = JSON.parse(readFileSync(file, 'utf8'));
-    const doc = jobDoc((x) => {
+    const doc = factsDoc((x) => {
       x.position.value = { roleKind: expected.roleKind, title: 'x' };
       x.seniority.value = expected.seniority;
       x.yearsRequired.value = expected.yearsRequired;

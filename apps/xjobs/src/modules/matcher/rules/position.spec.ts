@@ -1,9 +1,9 @@
 import { checkPosition } from './position';
-import { exampleProfile, jobDoc } from './fixtures.testing';
+import { exampleProfile, factsDoc } from './fixtures.testing';
 
 const profile = exampleProfile();
 const withRole = (roleKind: string | null, isSwe = true) =>
-  jobDoc((d) => {
+  factsDoc((d) => {
     d.position.value = roleKind === null ? null : { roleKind, title: 't' };
     d.isSoftwareEngineeringRole.value = isSwe;
   });

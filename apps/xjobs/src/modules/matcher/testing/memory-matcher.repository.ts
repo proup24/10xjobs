@@ -1,7 +1,8 @@
 import { MATCHER_VERSION } from '../config/matcher.config';
 import type { MatchContext } from '../rules/decide';
-import type { MatchJob, MatchProfile } from '../rules/types';
+import type { MatchProfile } from '../rules/types';
 import {
+  type MatchCandidate,
   MatcherRepository,
   type StoredMatch,
 } from '../repositories/matcher.repository';
@@ -10,7 +11,12 @@ type Stored = StoredMatch & { matcherVersion: number };
 
 /** In-memory MatcherRepository for unit tests. */
 export class MemoryMatcherRepository extends MatcherRepository {
-  jobs = new Map<string, MatchJob>();
+  /** Matchable jobs and their current extraction. */
+  candidates = new Map<string, MatchCandidate>();
+  /** The stored facts hash per job; a candidate without one has stale facts. */
+  factsHashes = new Map<string, string>();
+  /** Jobs whose stored facts are closed. */
+  closedJobs = new Set<string>();
   /** Jobs whose status is not `active` (mirrors `status <> 'active'`). */
   inactiveJobs = new Set<string>();
   profiles: MatchProfile[] = [];
@@ -22,12 +28,12 @@ export class MemoryMatcherRepository extends MatcherRepository {
   contextLoads = 0;
   upserts: StoredMatch[][] = [];
 
-  loadMatchableJob(jobId: string): Promise<MatchJob | null> {
-    return Promise.resolve(this.jobs.get(jobId) ?? null);
+  loadCandidate(jobId: string): Promise<MatchCandidate | null> {
+    return Promise.resolve(this.candidates.get(jobId) ?? null);
   }
 
   listPublishedProfiles(
-    opts: { onlyStaleFor?: { jobId: string; extractionId: string } } = {},
+    opts: { onlyStaleFor?: { jobId: string; factsHash: string } } = {},
   ): Promise<MatchProfile[]> {
     const stale = opts.onlyStaleFor;
     return Promise.resolve(
@@ -38,7 +44,7 @@ export class MemoryMatcherRepository extends MatcherRepository {
             (r) =>
               r.profileId === p.id &&
               r.jobId === stale.jobId &&
-              r.extractionId === stale.extractionId &&
+              r.factsHash === stale.factsHash &&
               r.matcherVersion >= MATCHER_VERSION,
           ),
       ),
@@ -63,17 +69,24 @@ export class MemoryMatcherRepository extends MatcherRepository {
 
   async listStaleJobs(limit: number): Promise<string[]> {
     const out: string[] = [];
-    for (const job of this.jobs.values()) {
-      const stale = await this.listPublishedProfiles({
-        onlyStaleFor: { jobId: job.jobId, extractionId: job.extractionId },
-      });
-      if (stale.length > 0) out.push(job.jobId);
+    for (const jobId of this.candidates.keys()) {
+      const factsHash = this.factsHashes.get(jobId);
+      if (factsHash === undefined) out.push(jobId);
+      else if (this.closedJobs.has(jobId)) continue;
+      else if (
+        (
+          await this.listPublishedProfiles({
+            onlyStaleFor: { jobId, factsHash },
+          })
+        ).length > 0
+      )
+        out.push(jobId);
     }
     return out.slice(0, limit);
   }
 
   listMatchableJobs(): Promise<string[]> {
-    return Promise.resolve([...this.jobs.keys()].sort());
+    return Promise.resolve([...this.candidates.keys()].sort());
   }
 
   deleteInactive(): Promise<number> {

@@ -24,7 +24,7 @@ import {
 /** Bump on any change to the document shape. Stored with each extraction. */
 export const EXTRACTION_SCHEMA_VERSION = 3;
 
-const placeSchema = z.discriminatedUnion('kind', [
+export const placeSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('worldwide') }),
   z.strictObject({ kind: z.literal('region'), code: z.string().min(1) }),
   z.strictObject({ kind: z.literal('country'), code: z.string().min(1) }),
@@ -36,7 +36,7 @@ const placeSchema = z.discriminatedUnion('kind', [
   }),
 ]);
 
-const openingSchema = z.strictObject({
+export const openingSchema = z.strictObject({
   arrangements: z.array(z.string().min(1)).min(1),
   places: z.array(placeSchema),
   placeStrictness: z.enum(PLACE_STRICTNESS),
@@ -113,24 +113,38 @@ export const extractionDocumentSchema = z
       }
     }
     doc.openings.forEach((o, i) => {
-      if ((o.placeStrictness === 'unstated') !== (o.places.length === 0)) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['openings', i, 'placeStrictness'],
-          message: 'placeStrictness is unstated exactly when places is empty',
-        });
+      for (const issue of openingIssues(o)) {
+        ctx.addIssue({ ...issue, path: ['openings', i, ...issue.path] });
       }
-      o.timezones.forEach((tz, j) => {
-        if (tz.fromUtc > tz.toUtc) {
-          ctx.addIssue({
-            code: 'custom',
-            path: ['openings', i, 'timezones', j, 'fromUtc'],
-            message: 'fromUtc must be <= toUtc',
-          });
-        }
-      });
     });
   });
+
+/** An opening's cross-field problems, with paths relative to the opening. */
+export function openingIssues(o: {
+  places: readonly unknown[];
+  placeStrictness: string;
+  timezones: readonly { fromUtc: number; toUtc: number }[];
+}): { code: 'custom'; path: (string | number)[]; message: string }[] {
+  const issues: { code: 'custom'; path: (string | number)[]; message: string }[] =
+    [];
+  if ((o.placeStrictness === 'unstated') !== (o.places.length === 0)) {
+    issues.push({
+      code: 'custom',
+      path: ['placeStrictness'],
+      message: 'placeStrictness is unstated exactly when places is empty',
+    });
+  }
+  o.timezones.forEach((tz, j) => {
+    if (tz.fromUtc > tz.toUtc) {
+      issues.push({
+        code: 'custom',
+        path: ['timezones', j, 'fromUtc'],
+        message: 'fromUtc must be <= toUtc',
+      });
+    }
+  });
+  return issues;
+}
 
 export type ExtractionDocument = z.infer<typeof extractionDocumentSchema>;
 export type DocumentVerification = z.infer<typeof documentVerificationSchema>;

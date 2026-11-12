@@ -1,5 +1,5 @@
 {
-  "hash": "f7a1c0acc4b8baef72167a011f0293c8e81285ca85739d0f73171cb5e648de76",
+  "hash": "a0e7e5cdb988c28b56a83fac52a2d9083dc8f30c34ed4db1e7736337e485494d",
   "invariants": [
     "end-expired-sessions",
     "code-check-fixes",
@@ -13,6 +13,7 @@
     "profile-places-strip-worldwide",
     "match-details",
     "match-details-all-profiles",
-    "match-details-list-rows"
+    "match-details-list-rows",
+    "match-details-job-facts"
   ]
 }

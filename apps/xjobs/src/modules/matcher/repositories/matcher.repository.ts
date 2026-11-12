@@ -1,16 +1,14 @@
 import { randomUUID } from 'node:crypto';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { DatabaseService } from 'src/database';
 import type { DatabaseTransaction } from '@xjobs/database';
+import { FACTS_VERSION } from 'src/modules/facts/config/facts.config';
 import { linkedInJobIds } from 'src/modules/processor';
-import {
-  type ExtractionDocument,
-  parseStoredDocument,
-} from 'src/modules/processor/schema';
+import { EXTRACTION_SCHEMA_VERSION } from 'src/modules/processor/schema';
 import type { PlacesByArrangement } from 'src/modules/users/types/place.types';
 import { MATCH_BACKFILL_DAYS, MATCHER_VERSION } from '../config/matcher.config';
 import type { Decision, MatchContext } from '../rules/decide';
-import type { Check, MatchJob, MatchProfile } from '../rules/types';
+import type { Check, MatchProfile } from '../rules/types';
 
 /** A decision as stored: one row per profile and job. */
 export interface StoredMatch extends Decision {
@@ -18,19 +16,30 @@ export interface StoredMatch extends Decision {
   userId: string;
   jobId: string;
   extractionId: string;
+  /** The hash of the `job_facts` the decision read; `''` on a row decided before job facts (never current). */
+  factsHash: string;
+}
+
+/** A matchable job's current extraction, which the facts are built from. */
+export interface MatchCandidate {
+  extractionId: string;
+  needsReview: boolean;
 }
 
 /** Every read and write the matcher makes. */
 export abstract class MatcherRepository {
-  /** The job and its current v2 or v3 extraction when matchable, else null. */
-  abstract loadMatchableJob(jobId: string): Promise<MatchJob | null>;
-  /** Published profiles with skills. `onlyStaleFor`: only those whose row for that job is missing, has another extractionId, or an older matcherVersion. */
+  /** The job's current extraction when the job is matchable, else null. */
+  abstract loadCandidate(jobId: string): Promise<MatchCandidate | null>;
+  /** Published profiles with skills. `onlyStaleFor`: only those whose row for that job is missing, has another factsHash, or an older matcherVersion. */
   abstract listPublishedProfiles(opts?: {
-    onlyStaleFor?: { jobId: string; extractionId: string };
+    onlyStaleFor?: { jobId: string; factsHash: string };
   }): Promise<MatchProfile[]>;
   abstract loadContext(): Promise<MatchContext>;
   abstract upsertMatches(rows: StoredMatch[]): Promise<void>;
-  /** Matchable jobs with at least one stale or missing row for a published profile. */
+  /**
+   * Matchable jobs whose facts are stale (so building them may change them),
+   * or whose open facts have a stale or missing row for a published profile.
+   */
   abstract listStaleJobs(limit: number): Promise<string[]>;
   /** Every matchable job id (for db:rematch). */
   abstract listMatchableJobs(): Promise<string[]>;
@@ -49,29 +58,38 @@ const JSONB = 'pg/jsonb@1';
 /**
  * What makes a job matchable, over `normalized_jobs j` joined with its
  * current extraction `e`: an active, processed, open LinkedIn job seen within
- * the backfill window, with a v2 or v3 extraction.
+ * the backfill window, with a current-schema (v3) extraction.
  */
 function matchable(raw: Raw) {
   return raw.sql`j.status = 'active' AND j.kind = 'job'
     AND j.id IN (${linkedInJobIds(raw)})
     AND j."processingStatus" = 'processed' AND NOT j.closed
     AND j."lastSeenAt" >= now() - make_interval(days => ${MATCH_BACKFILL_DAYS}::int)
-    AND e."schemaVersion" IN (2, 3)`.returns(BOOL);
+    AND e."schemaVersion" = ${EXTRACTION_SCHEMA_VERSION}::int`.returns(BOOL);
 }
 
-/** A published profile `p` has no up-to-date row for the matchable job `j` (extraction `e`). */
+/**
+ * The job `j`'s `job_facts f` must be built again: missing, built from another
+ * extraction or an older rule set, older than the job row, or open past expiry.
+ */
+const STALE_FACTS = (raw: Raw) =>
+  raw.sql`(f."jobId" IS NULL
+    OR f."extractionId" <> j."currentExtractionId"
+    OR f."factsVersion" < ${FACTS_VERSION}::int
+    OR j."updatedAt" > f."builtAt"
+    OR (NOT f.closed AND j."expiresAt" <= now()))`.returns(BOOL);
+
+/** A published profile `p` has no row for the job `j` decided on its facts `f` by this matcher. */
 const STALE_ROW = (raw: Raw) =>
   raw.sql`NOT EXISTS (
     SELECT 1 FROM job_matches m
     WHERE m."profileId" = p.id AND m."jobId" = j.id
-      AND m."extractionId" = e.id AND m."matcherVersion" >= ${MATCHER_VERSION}::int)`.returns(
+      AND m."factsHash" = f."factsHash" AND m."matcherVersion" >= ${MATCHER_VERSION}::int)`.returns(
     BOOL,
   );
 
 @Injectable()
 export class PrismaMatcherRepository extends MatcherRepository {
-  private readonly logger = new Logger(PrismaMatcherRepository.name);
-
   constructor(private readonly database: DatabaseService) {
     super();
   }
@@ -80,40 +98,25 @@ export class PrismaMatcherRepository extends MatcherRepository {
     return this.database.db;
   }
 
-  async loadMatchableJob(jobId: string): Promise<MatchJob | null> {
+  async loadCandidate(jobId: string): Promise<MatchCandidate | null> {
     const { raw } = this.db;
     const [row] = await this.db.query(
-      raw.sql`SELECT j.id, e.id AS "extractionId", e."needsReview", e.data
+      raw.sql`SELECT e.id AS "extractionId", e."needsReview"
         FROM normalized_jobs j JOIN job_extractions e ON e.id = j."currentExtractionId"
         WHERE j.id = ${jobId}::uuid AND ${matchable(raw)}`
-        .returnsRow({
-          id: UUID,
-          extractionId: UUID,
-          needsReview: BOOL,
-          data: JSONB,
-        })
+        .returnsRow({ extractionId: UUID, needsReview: BOOL })
         .build(),
     );
-    if (!row) return null;
-    const stored = parseStoredDocument(row.data);
-    if (stored?.version !== 3 && stored?.version !== 2) {
-      this.logger.warn(
-        `Job ${jobId} is matchable in SQL but its extraction is not a v3 or v2 document`,
-      );
-      return null;
-    }
-    return {
-      jobId: row.id as string,
-      extractionId: row.extractionId as string,
-      needsReview: row.needsReview as boolean,
-      // A v2 document differs from v3 only in the dropped ingest provenance
-      // (`conflicts`, an `ingest` decider), which the matcher never reads.
-      document: stored.document as ExtractionDocument,
-    };
+    return row
+      ? {
+          extractionId: row.extractionId as string,
+          needsReview: row.needsReview as boolean,
+        }
+      : null;
   }
 
   async listPublishedProfiles(
-    opts: { onlyStaleFor?: { jobId: string; extractionId: string } } = {},
+    opts: { onlyStaleFor?: { jobId: string; factsHash: string } } = {},
   ): Promise<MatchProfile[]> {
     const { raw, orm } = this.db;
     const stale = opts.onlyStaleFor;
@@ -125,7 +128,7 @@ export class PrismaMatcherRepository extends MatcherRepository {
                 WHERE p.state = 'published' AND NOT EXISTS (
                   SELECT 1 FROM job_matches m
                   WHERE m."profileId" = p.id AND m."jobId" = ${stale.jobId}::uuid
-                    AND m."extractionId" = ${stale.extractionId}::uuid
+                    AND m."factsHash" = ${stale.factsHash}::text
                     AND m."matcherVersion" >= ${MATCHER_VERSION}::int)`
                 .returnsRow({ id: UUID })
                 .build(),
@@ -209,14 +212,15 @@ export class PrismaMatcherRepository extends MatcherRepository {
       for (const r of rows)
         await tx.execute(
           tx.raw.sql`INSERT INTO job_matches
-              (id, "userId", "profileId", "jobId", "extractionId", "matcherVersion",
+              (id, "userId", "profileId", "jobId", "extractionId", "factsHash", "matcherVersion",
                outcome, unverified, "stackScore", checks, "decidedAt")
             VALUES (${randomUUID()}::uuid, ${r.userId}::uuid, ${r.profileId}::uuid, ${r.jobId}::uuid,
-              ${r.extractionId}::uuid, ${MATCHER_VERSION}::int, ${r.outcome}::text,
+              ${r.extractionId}::uuid, ${r.factsHash}::text, ${MATCHER_VERSION}::int, ${r.outcome}::text,
               ${r.unverified}::boolean, NULLIF(${r.stackScore === null ? '' : String(r.stackScore)}::text, '')::numeric,
               ${JSON.stringify(r.checks)}::jsonb, now())
             ON CONFLICT ("profileId", "jobId") DO UPDATE SET
-              "extractionId" = EXCLUDED."extractionId", "matcherVersion" = EXCLUDED."matcherVersion",
+              "extractionId" = EXCLUDED."extractionId", "factsHash" = EXCLUDED."factsHash",
+              "matcherVersion" = EXCLUDED."matcherVersion",
               outcome = EXCLUDED.outcome, unverified = EXCLUDED.unverified,
               "stackScore" = EXCLUDED."stackScore", checks = EXCLUDED.checks, "updatedAt" = now(),
               "decidedAt" = CASE WHEN job_matches.outcome = EXCLUDED.outcome
@@ -232,8 +236,12 @@ export class PrismaMatcherRepository extends MatcherRepository {
     const rows = await this.db.query(
       raw.sql`SELECT j.id FROM normalized_jobs j
         JOIN job_extractions e ON e.id = j."currentExtractionId"
+        LEFT JOIN job_facts f ON f."jobId" = j.id
         WHERE ${matchable(raw)}
-          AND EXISTS (SELECT 1 FROM profiles p WHERE p.state = 'published' AND ${STALE_ROW(raw)})
+          AND (${STALE_FACTS(raw)}
+            -- A closed job is not decided again; its rows stay as they are.
+            OR (NOT f.closed AND EXISTS (
+              SELECT 1 FROM profiles p WHERE p.state = 'published' AND ${STALE_ROW(raw)})))
         ORDER BY j."lastSeenAt" DESC, j.id ASC
         LIMIT ${limit}::int`
         .returnsRow({ id: UUID })
@@ -270,7 +278,7 @@ export class PrismaMatcherRepository extends MatcherRepository {
   async matchesForJob(jobId: string): Promise<StoredMatch[]> {
     const { raw } = this.db;
     const rows = await this.db.query(
-      raw.sql`SELECT "profileId", "userId", "jobId", "extractionId", outcome,
+      raw.sql`SELECT "profileId", "userId", "jobId", "extractionId", "factsHash", outcome,
           unverified, "stackScore", checks
         FROM job_matches WHERE "jobId" = ${jobId}::uuid
         ORDER BY "profileId" ASC`
@@ -279,6 +287,7 @@ export class PrismaMatcherRepository extends MatcherRepository {
           userId: UUID,
           jobId: UUID,
           extractionId: UUID,
+          factsHash: TEXT,
           outcome: TEXT,
           unverified: BOOL,
           stackScore: 'pg/numeric@1',
@@ -291,6 +300,7 @@ export class PrismaMatcherRepository extends MatcherRepository {
       userId: r.userId as string,
       jobId: r.jobId as string,
       extractionId: r.extractionId as string,
+      factsHash: (r.factsHash as string | null) ?? '',
       outcome: r.outcome as Decision['outcome'],
       unverified: r.unverified as boolean,
       stackScore: r.stackScore === null ? null : Number(r.stackScore),

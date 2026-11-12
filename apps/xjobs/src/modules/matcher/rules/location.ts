@@ -1,4 +1,4 @@
-import type { Opening } from 'src/modules/processor/schema';
+import type { FactOpening as Opening } from 'src/modules/facts/schema/facts';
 import {
   LOCATION_ARRANGEMENTS,
   type LocationArrangement,

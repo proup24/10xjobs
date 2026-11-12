@@ -158,18 +158,96 @@ type Channel =
   | 'LINKEDIN_POSTS'
   | 'GREEN_HOUSE'
   | 'ASHBY';
-type SeededJob = { jobId: string; extractionId: string };
+export type SeededJob = { jobId: string; extractionId: string };
 
 // Every row the detailed-job seeders create, in creation order; cleanup deletes in reverse.
-const detailedRows: Array<[table: string, id: string]> = [];
+const detailedRows: Array<[table: string, id: string, idColumn: string]> = [];
 
 async function insertTracked(
   table: string,
   row: Record<string, unknown>,
 ): Promise<string> {
   const id = await insertOne(table, row);
-  detailedRows.push([table, id]);
+  detailedRows.push([table, id, 'id']);
   return id;
+}
+
+const FACT_FIELDS = [
+  'position',
+  'isSoftwareEngineeringRole',
+  'seniority',
+  'yearsRequired',
+  'contractType',
+  'engagement',
+  'contractMonths',
+  'requiredLanguages',
+  'workAuthorization',
+  'techStack',
+  'arrangement',
+  'salary',
+];
+
+type FactSource = 'description' | 'linkedin';
+
+/**
+ * The job_facts document for an extraction document: the same facts, each sourced from the
+ * description (`sources` overrides a field's source), openings sourced per part too
+ * (`openingSources` overrides them).
+ */
+export function factsDocumentFor(
+  document: Record<string, unknown>,
+  sources: Record<string, FactSource> = {},
+  openingSources: { arrangement?: FactSource; places?: FactSource } = {},
+): Record<string, unknown> {
+  const doc: Record<string, unknown> = { version: 1, closed: false };
+  for (const f of FACT_FIELDS)
+    doc[f] = {
+      ...(document[f] as Record<string, unknown>),
+      source: sources[f] ?? 'description',
+    };
+  doc.openings = (document.openings as Record<string, unknown>[]).map((o) => ({
+    ...o,
+    arrangementSource: openingSources.arrangement ?? 'description',
+    placesSource: openingSources.places ?? 'description',
+  }));
+  return doc;
+}
+
+/** The job's job_facts row (one per job; removed with the job's other rows). */
+export async function seedJobFacts(
+  job: SeededJob,
+  facts: Record<string, unknown>,
+  closed = false,
+): Promise<void> {
+  const { error } = await admin().from('job_facts').insert({
+    jobId: job.jobId,
+    extractionId: job.extractionId,
+    factsVersion: 1,
+    factsHash: 'test',
+    facts,
+    closed,
+    builtAt: new Date().toISOString(),
+  });
+  if (error) throw new Error(`Could not insert job_facts: ${error.message}`);
+  detailedRows.push(['job_facts', job.jobId, 'jobId']);
+}
+
+/** A conflict between the listing and the description on a job's field. */
+export async function seedFactConflict(
+  job: SeededJob,
+  conflict: {
+    field: string;
+    listingValue: unknown;
+    descriptionValue: unknown;
+    winner: 'description' | 'listing';
+  },
+): Promise<void> {
+  await insertTracked('job_fact_conflicts', {
+    jobId: job.jobId,
+    extractionId: job.extractionId,
+    quote: 'Quote',
+    ...conflict,
+  });
 }
 
 /**
@@ -429,6 +507,16 @@ export async function seedDetailedJob(
     lastSeenAt?: string;
     postedAt?: string | null;
     document?: Record<string, unknown>;
+    /** Skip the job_facts row (a job still on a v2 extraction). */
+    noFacts?: boolean;
+    /** Per-field sources for the job_facts row; the rest come from the description. */
+    sources?: Record<string, FactSource>;
+    /** Per-part sources of the job_facts openings; both default to the description. */
+    openingSources?: { arrangement?: FactSource; places?: FactSource };
+    /** job_facts.closed (an expired LinkedIn listing); normalized_jobs.closed stays false. */
+    factsClosed?: boolean;
+    /** normalized_jobs.expiresAt. */
+    expiresAt?: string;
   } = {},
 ): Promise<SeededJob> {
   const status = opts.status ?? 'active';
@@ -450,6 +538,13 @@ export async function seedDetailedJob(
       .update({ firstSeenAt: opts.lastSeenAt, lastSeenAt: opts.lastSeenAt })
       .eq('id', jobId);
     if (error) throw new Error(`Could not set lastSeenAt: ${error.message}`);
+  }
+  if (opts.expiresAt) {
+    const { error } = await admin()
+      .from('normalized_jobs')
+      .update({ expiresAt: opts.expiresAt })
+      .eq('id', jobId);
+    if (error) throw new Error(`Could not set expiresAt: ${error.message}`);
   }
   const extractionId = await insertTracked('job_extractions', {
     jobId,
@@ -476,7 +571,18 @@ export async function seedDetailedJob(
   const now = new Date().toISOString();
   for (const channel of opts.channels ?? ['LINKEDIN_JOB_BOARD'])
     await seedSourceChain(jobId, jobKey, channel, now);
-  return { jobId, extractionId };
+  const seeded = { jobId, extractionId };
+  if (!opts.noFacts)
+    await seedJobFacts(
+      seeded,
+      factsDocumentFor(
+        opts.document ?? detailedDocument(),
+        opts.sources,
+        opts.openingSources,
+      ),
+      opts.factsClosed ?? false,
+    );
+  return seeded;
 }
 
 /** A newer v2 extraction on an existing job, with its own `seniority` column; returns it as a SeededJob. */
@@ -543,8 +649,8 @@ export const seedMatchOn = (
 /** Deletes everything seedDetailedJob and seedMatchOn created, children first. */
 export async function cleanupDetailedJobs(): Promise<void> {
   while (detailedRows.length > 0) {
-    const [table, id] = detailedRows.pop()!;
-    const { error } = await admin().from(table).delete().eq('id', id);
+    const [table, id, idColumn] = detailedRows.pop()!;
+    const { error } = await admin().from(table).delete().eq(idColumn, id);
     if (error) throw new Error(`Could not delete ${table}: ${error.message}`);
   }
 }

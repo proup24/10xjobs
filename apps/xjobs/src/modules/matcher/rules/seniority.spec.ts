@@ -1,9 +1,9 @@
 import { checkSeniority } from './seniority';
-import { exampleProfile, jobDoc } from './fixtures.testing';
+import { exampleProfile, factsDoc } from './fixtures.testing';
 
 const profile = exampleProfile();
 const doc = (seniority: string | null, min: number | null = null) =>
-  jobDoc((d) => {
+  factsDoc((d) => {
     d.seniority.value = seniority;
     d.yearsRequired.value = min === null ? null : { min, max: null };
   });

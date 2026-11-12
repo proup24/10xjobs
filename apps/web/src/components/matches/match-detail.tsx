@@ -4,12 +4,19 @@ import { Check, CircleHelp, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
 import { buttonVariants } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TextLink } from '@/components/ui/text';
 import { checkLines, notCheckedText, type Labels } from '@/lib/matches/checks';
-import { factLines, stackLines } from '@/lib/matches/facts';
+import {
+  conflictLines,
+  factLines,
+  stackLines,
+  type ConflictField,
+  type FactLine,
+} from '@/lib/matches/facts';
 import { postedPhrase } from '@/lib/matches/freshness';
 import { groupByJob, type MatchRow } from '@/lib/matches/group';
 import { markViewed } from '@/lib/matches/mark-viewed';
@@ -133,20 +140,21 @@ export function MatchDetail({
   const first = job.rows[0];
   const shown = job.rows.find((r) => r.profileId === profileId) ?? first;
   const facts = factLines(first);
+  const conflicts = conflictLines(first.conflicts);
   const techLabels = new Map(labels.techs.map((t) => [t.value, t.label]));
   const stack = stackLines(shown.checks, (c) => techLabels.get(c) ?? c);
   const lines = checkLines(shown.checks, labels);
   const sources = job.channels.map(channelLabel).join(' and ');
   const profileLabel = (id: string) => profileLabels[id] ?? 'Profile';
 
-  const factRows: [string, string | null][] = [
-    ['Role', facts.role],
-    ['Seniority', facts.seniority],
-    ['Arrangement', facts.arrangement],
-    ['Places', facts.places],
-    ['Contract type', facts.contractType],
-    ['Engagement', facts.engagement],
-    ['Salary', facts.salary],
+  const factRows: [string, FactLine | null, ConflictField | null][] = [
+    ['Role', facts.role, null],
+    ['Seniority', facts.seniority, 'seniority'],
+    ['Arrangement', facts.arrangement, 'arrangement'],
+    ['Places', facts.places, 'places'],
+    ['Contract type', facts.contractType, 'contractType'],
+    ['Engagement', facts.engagement, null],
+    ['Salary', facts.salary, 'salary'],
   ];
   const noStack =
     stack.covered.length + stack.uncovered.length + stack.notCompared.length ===
@@ -187,12 +195,18 @@ export function MatchDetail({
       />
 
       <dl className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
-        {factRows.map(([term, value]) => (
-          <div key={term} className="flex flex-col">
+        {factRows.map(([term, value, field]) => (
+          <div key={term} className="flex flex-col items-start">
             <dt className="text-muted-foreground">{term}</dt>
             <dd className={value ? undefined : 'text-muted-foreground'}>
-              {value ?? NOT_STATED}
+              {value?.text ?? NOT_STATED}
             </dd>
+            {value?.source === 'linkedin' && (
+              <Badge variant="secondary">From LinkedIn</Badge>
+            )}
+            {field && conflicts[field] && (
+              <p className="text-muted-foreground">{conflicts[field]}</p>
+            )}
           </div>
         ))}
       </dl>

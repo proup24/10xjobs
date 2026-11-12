@@ -1,4 +1,4 @@
-import type { Opening } from 'src/modules/processor/schema';
+import type { FactOpening as Opening } from 'src/modules/facts/schema/facts';
 import { checkLocation } from './location';
 import type { PlaceIndex } from './places';
 import { CITY_A, CITY_B, exampleProfile } from './fixtures.testing';
@@ -19,7 +19,8 @@ const opening = (edit: Partial<Opening>): Opening => ({
   timezones: [],
   quote: '',
   confidence: 'sure',
-  decidedBy: 'generator',
+  arrangementSource: 'description',
+  placesSource: 'description',
   ...edit,
 });
 const berlin = {

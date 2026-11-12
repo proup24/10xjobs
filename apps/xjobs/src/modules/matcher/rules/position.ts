@@ -1,8 +1,8 @@
-import type { ExtractionDocument } from 'src/modules/processor/schema';
+import type { JobFactsDocument } from 'src/modules/facts/schema/facts';
 import type { Check, MatchProfile } from './types';
 
 export function checkPosition(
-  doc: ExtractionDocument,
+  doc: JobFactsDocument,
   profile: MatchProfile,
 ): Check {
   const roleKind = doc.position.value?.roleKind ?? null;

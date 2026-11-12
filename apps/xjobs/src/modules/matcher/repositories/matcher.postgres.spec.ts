@@ -1,5 +1,4 @@
 import { randomUUID } from 'node:crypto';
-import { Logger } from '@nestjs/common';
 import { Channel } from 'src/common/enums';
 import type { DatabaseService } from 'src/database';
 import {
@@ -8,7 +7,9 @@ import {
   processorListsSeed,
 } from '@xjobs/database';
 import type { SeedEnvironmentVariables } from 'src/config';
+import { EXTRACTION_SCHEMA_VERSION } from 'src/modules/processor/schema';
 import { fixtureDocument } from 'src/modules/processor/schema/fixture.testing';
+import { FACTS_VERSION } from 'src/modules/facts/config/facts.config';
 import { MATCHER_VERSION } from '../config/matcher.config';
 import {
   PrismaMatcherRepository,
@@ -97,7 +98,10 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
     });
   }
 
-  async function extraction(jobId: string, schemaVersion = 2): Promise<string> {
+  async function extraction(
+    jobId: string,
+    schemaVersion = EXTRACTION_SCHEMA_VERSION,
+  ): Promise<string> {
     const row = await db.orm.public.JobExtraction.create({
       jobId,
       inputHash: randomUUID(),
@@ -136,9 +140,10 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
     lastSeenAt?: Date;
     processingStatus?: string | null;
     schemaVersion?: number;
+    expiresAt?: Date | null;
   }
 
-  /** A processed active job with a current v2 extraction, last seen now. */
+  /** A processed active job with a current extraction, last seen now. */
   async function job(spec: JobSpec = {}): Promise<{
     id: string;
     extractionId: string;
@@ -173,7 +178,8 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
       processingReason: null,
       processingRequestedAt: t0,
       normalizerVersion: 1,
-    });
+      ...(spec.expiresAt ? { expiresAt: spec.expiresAt } : {}),
+    } as never);
     for (const channel of spec.channels ?? [Channel.LINKEDIN_JOB_BOARD])
       await source(row.id, channel);
     const extractionId = await extraction(row.id, spec.schemaVersion);
@@ -181,6 +187,24 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
       currentExtractionId: extractionId,
     });
     return { id: row.id, extractionId };
+  }
+
+  /** Stores the job's facts row as `FactsService.build` would, built now. */
+  async function facts(
+    j: { id: string; extractionId: string },
+    over: { factsHash?: string; closed?: boolean; factsVersion?: number } = {},
+  ): Promise<void> {
+    await db.execute(
+      db.raw.sql`INSERT INTO job_facts
+          ("jobId", "extractionId", "factsVersion", "factsHash", facts, closed, "builtAt", "createdAt", "updatedAt")
+        VALUES (${j.id}::uuid, ${j.extractionId}::uuid, ${over.factsVersion ?? FACTS_VERSION}::int,
+          ${over.factsHash ?? 'h1'}::text, '{}'::jsonb, ${over.closed ?? false}::boolean, now(), now(), now())
+        ON CONFLICT ("jobId") DO UPDATE SET
+          "extractionId" = EXCLUDED."extractionId", "factsVersion" = EXCLUDED."factsVersion",
+          "factsHash" = EXCLUDED."factsHash", closed = EXCLUDED.closed, "builtAt" = now()`
+        .affectedCount()
+        .build(),
+    );
   }
 
   async function profile(): Promise<{ id: string; userId: string }> {
@@ -208,7 +232,12 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
       seniorities: ['senior'],
       noticePeriodDays: 30,
       contractTypes: ['full_time'],
-      locations: { remote: [{ kind: 'worldwide' }], hybrid: [], onsite: [] },
+      // A profile may not name worldwide (migration profile_places_no_worldwide).
+      locations: {
+        remote: [{ kind: 'region', code: 'EMEA' }],
+        hybrid: [],
+        onsite: [],
+      },
       languages: [{ lang: 'en', level: 'fluent' }],
       salaryMin: null,
       salaryCurrency: null,
@@ -231,7 +260,10 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
 
   const decision = (
     over: Partial<StoredMatch> = {},
-  ): Omit<StoredMatch, 'profileId' | 'userId' | 'jobId' | 'extractionId'> => ({
+  ): Omit<
+    StoredMatch,
+    'profileId' | 'userId' | 'jobId' | 'extractionId' | 'factsHash'
+  > => ({
     outcome: 'qualified',
     unverified: false,
     stackScore: 0.75,
@@ -256,6 +288,7 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
     userId: p.userId,
     jobId: j.id,
     extractionId: j.extractionId,
+    factsHash: 'h1',
     ...decision(),
     ...over,
   });
@@ -290,19 +323,17 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
     await db?.close();
   });
   beforeEach(async () => {
-    await sql`TRUNCATE job_matches, profile_skills, profiles, processing_attempts, job_extractions, normalized_job_sources, normalized_jobs, normalized_versions, raw_item_sightings, raw_item_versions, raw_items, collection_batches, search_segment_runs CASCADE`;
+    await sql`TRUNCATE job_matches, job_fact_conflicts, job_facts, profile_skills, profiles, processing_attempts, job_extractions, normalized_job_sources, normalized_jobs, normalized_versions, raw_item_sightings, raw_item_versions, raw_items, collection_batches, search_segment_runs CASCADE`;
   });
 
-  describe('loadMatchableJob', () => {
-    it('returns a fresh processed v2 job with its document', async () => {
+  describe('loadCandidate', () => {
+    it('returns the current extraction of a fresh processed job', async () => {
       const j = await job();
-      const loaded = await repo.loadMatchableJob(j.id);
-      expect(loaded).toMatchObject({
-        jobId: j.id,
+      expect(await repo.loadCandidate(j.id)).toEqual({
         extractionId: j.extractionId,
         needsReview: false,
       });
-      expect(loaded?.document.position.value?.roleKind).toBe('backend');
+      expect(await repo.listMatchableJobs()).toContain(j.id);
     });
 
     it.each([
@@ -312,7 +343,7 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
         () => job({ lastSeenAt: new Date(Date.now() - 31 * DAY) }),
       ],
       ['pending', () => job({ processingStatus: 'pending' })],
-      ['schema version 1', () => job({ schemaVersion: 1 })],
+      ['schema version 2', () => job({ schemaVersion: 2 })],
       ['no LinkedIn source', () => job({ channels: [Channel.ASHBY] })],
       [
         'merged',
@@ -328,28 +359,13 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
       ],
     ])('returns null for a %s job', async (_name, make) => {
       const j = await make();
-      expect(await repo.loadMatchableJob(j.id)).toBeNull();
+      expect(await repo.loadCandidate(j.id)).toBeNull();
       expect(await repo.listMatchableJobs()).not.toContain(j.id);
-    });
-
-    it('warns with the job id when a matchable job has no v2 document', async () => {
-      const j = await job();
-      await db.orm.public.JobExtraction.where({ id: j.extractionId }).updateAll(
-        { data: { broken: true } as never },
-      );
-      const warn = vi
-        .spyOn(Logger.prototype, 'warn')
-        .mockImplementation(() => undefined);
-      try {
-        expect(await repo.loadMatchableJob(j.id)).toBeNull();
-        expect(warn).toHaveBeenCalledWith(expect.stringContaining(j.id));
-      } finally {
-        warn.mockRestore();
-      }
+      expect(await repo.listStaleJobs(10)).not.toContain(j.id);
     });
 
     it('returns null for an unknown job', async () => {
-      expect(await repo.loadMatchableJob(randomUUID())).toBeNull();
+      expect(await repo.loadCandidate(randomUUID())).toBeNull();
     });
   });
 
@@ -369,7 +385,7 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
         timezoneMax: 180,
         skills: [{ technology: 'python', mastery: 8, importance: 9 }],
       });
-      const stale = { jobId: j.id, extractionId: j.extractionId };
+      const stale = { jobId: j.id, factsHash: 'h1' };
       expect(
         await repo.listPublishedProfiles({ onlyStaleFor: stale }),
       ).toHaveLength(1);
@@ -379,7 +395,7 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
       ).toHaveLength(0);
       expect(
         await repo.listPublishedProfiles({
-          onlyStaleFor: { jobId: j.id, extractionId: randomUUID() },
+          onlyStaleFor: { jobId: j.id, factsHash: 'h2' },
         }),
       ).toHaveLength(1);
     });
@@ -403,19 +419,12 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
   });
 
   describe('stale jobs', () => {
-    it('lists a job with no row, then not, then again on change', async () => {
+    it('lists a job with no row, then not, then again on a stale row', async () => {
       const p = await profile();
       const j = await job();
+      await facts(j);
       expect(await repo.listStaleJobs(10)).toEqual([j.id]);
       await repo.upsertMatches([row(p, j)]);
-      expect(await repo.listStaleJobs(10)).toEqual([]);
-
-      const newer = await extraction(j.id);
-      await db.orm.public.NormalizedJob.where({ id: j.id }).updateAll({
-        currentExtractionId: newer,
-      });
-      expect(await repo.listStaleJobs(10)).toEqual([j.id]);
-      await repo.upsertMatches([row(p, { id: j.id, extractionId: newer })]);
       expect(await repo.listStaleJobs(10)).toEqual([]);
 
       await db.orm.public.JobMatch.where({
@@ -425,9 +434,88 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
       expect(await repo.listStaleJobs(10)).toEqual([j.id]);
     });
 
+    it('a facts change makes rows stale', async () => {
+      const p = await profile();
+      const j = await job();
+      await facts(j, { factsHash: 'h1' });
+      await repo.upsertMatches([row(p, j, { factsHash: 'h1' })]);
+      expect(await repo.listStaleJobs(10)).toEqual([]);
+      await facts(j, { factsHash: 'h2' });
+      expect(await repo.listStaleJobs(10)).toEqual([j.id]);
+      expect(
+        await repo.listPublishedProfiles({
+          onlyStaleFor: { jobId: j.id, factsHash: 'h2' },
+        }),
+      ).toHaveLength(1);
+      await repo.upsertMatches([row(p, j, { factsHash: 'h2' })]);
+      expect(await repo.listStaleJobs(10)).toEqual([]);
+    });
+
+    it('a new extraction with the same facts leaves rows current', async () => {
+      const p = await profile();
+      const j = await job();
+      await facts(j);
+      await repo.upsertMatches([row(p, j)]);
+      const newer = await extraction(j.id);
+      await db.orm.public.NormalizedJob.where({ id: j.id }).updateAll({
+        currentExtractionId: newer,
+      });
+      // The facts were built from the old extraction: build them again.
+      expect(await repo.listStaleJobs(10)).toEqual([j.id]);
+      await facts({ id: j.id, extractionId: newer });
+      expect(await repo.listStaleJobs(10)).toEqual([]);
+    });
+
+    it.each([
+      ['are missing', async () => undefined],
+      [
+        'come from an older rule set',
+        async (j: { id: string; extractionId: string }) =>
+          facts(j, { factsVersion: FACTS_VERSION - 1 }),
+      ],
+      [
+        'are older than the job row',
+        async (j: { id: string; extractionId: string }) => {
+          await facts(j);
+          await sql`UPDATE job_facts SET "builtAt" = '-infinity'`;
+        },
+      ],
+    ])(
+      'lists a job whose facts %s, even with current rows',
+      async (_n, make) => {
+        const p = await profile();
+        const j = await job();
+        await repo.upsertMatches([row(p, j)]);
+        await make(j);
+        expect(await repo.listStaleJobs(10)).toEqual([j.id]);
+      },
+    );
+
+    it('lists an open job past its expiry so its facts are built again', async () => {
+      const p = await profile();
+      const j = await job({ expiresAt: new Date(Date.now() - DAY) });
+      await facts(j, { closed: false });
+      await repo.upsertMatches([row(p, j)]);
+      expect(await repo.listStaleJobs(10)).toEqual([j.id]);
+    });
+
+    it('a closed job is not listed again once its facts are built', async () => {
+      const p = await profile();
+      const j = await job({ expiresAt: new Date(Date.now() - DAY) });
+      await repo.upsertMatches([row(p, j, { factsHash: 'open' })]);
+      expect(await repo.listStaleJobs(10)).toEqual([j.id]);
+      await facts(j, { factsHash: 'closed', closed: true });
+      expect(await repo.listStaleJobs(10)).toEqual([]);
+      await profile();
+      expect(await repo.listStaleJobs(10)).toEqual([]);
+      expect(await repo.matchesForJob(j.id)).toHaveLength(1);
+      expect(await repo.deleteInactive()).toBe(0);
+    });
+
     it('lists an already matched job again for a later profile', async () => {
       const first = await profile();
       const j = await job();
+      await facts(j);
       await repo.upsertMatches([row(first, j)]);
       expect(await repo.listStaleJobs(10)).toEqual([]);
       await profile();
@@ -456,6 +544,7 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
         userId: p.userId,
         jobId: j.id,
         extractionId: j.extractionId,
+        factsHash: 'h1',
         outcome: 'qualified',
         unverified: false,
         stackScore: 0.5,

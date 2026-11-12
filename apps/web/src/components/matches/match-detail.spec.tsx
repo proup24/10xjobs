@@ -8,6 +8,7 @@ import {
   P2,
   checks,
   hoursAgo,
+  facts,
   labels,
   matchRow,
 } from './test-fixtures';
@@ -105,6 +106,67 @@ describe('MatchDetail', () => {
     expect(salary?.textContent).toBe('Not stated');
     const contract = screen.getByText('Contract type').nextElementSibling;
     expect(contract?.textContent).toBe('Not stated');
+  });
+
+  it('shows "From LinkedIn" next to a LinkedIn fact only', () => {
+    renderDetail([
+      matchRow({
+        facts: {
+          ...facts,
+          arrangement: { ...facts.arrangement, source: 'linkedin' },
+        },
+      }),
+    ]);
+    expect(screen.getAllByText('From LinkedIn')).toHaveLength(1);
+    const arrangement = screen.getByText('Arrangement').parentElement;
+    expect(arrangement?.textContent).toContain('From LinkedIn');
+    const role = screen.getByText('Role').parentElement;
+    expect(role?.textContent).not.toContain('From LinkedIn');
+  });
+
+  it('shows "From LinkedIn" on places only when only the places came from LinkedIn', () => {
+    renderDetail([
+      matchRow({
+        facts: {
+          ...facts,
+          openings: facts.openings.map((o) => ({
+            ...o,
+            placesSource: 'linkedin',
+          })),
+        },
+      }),
+    ]);
+    expect(screen.getAllByText('From LinkedIn')).toHaveLength(1);
+    const places = screen.getByText('Europe (CET)').parentElement;
+    expect(places?.textContent).toContain('From LinkedIn');
+    const arrangement = screen.getByText('Arrangement').parentElement;
+    expect(arrangement?.textContent).not.toContain('From LinkedIn');
+  });
+
+  it('lists a conflict under its fact', () => {
+    renderDetail([
+      matchRow({
+        conflicts: [
+          {
+            field: 'arrangement',
+            listingValue: 'onsite',
+            descriptionValue: ['remote'],
+            winner: 'description',
+          },
+        ],
+      }),
+    ]);
+    const arrangement = screen.getByText('Arrangement').parentElement;
+    expect(arrangement?.textContent).toContain('LinkedIn says onsite');
+    expect(screen.getAllByText('LinkedIn says onsite')).toHaveLength(1);
+  });
+
+  it('renders a row without job facts', () => {
+    renderDetail([matchRow({ facts: null, conflicts: null })]);
+    expect(screen.getByText('Role').nextElementSibling?.textContent).toBe(
+      'Not stated',
+    );
+    expect(screen.queryByText('From LinkedIn')).toBeNull();
   });
 
   it('shows the stated salary', () => {

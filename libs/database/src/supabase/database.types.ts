@@ -519,12 +519,117 @@ export type Database = {
           },
         ];
       };
+      job_fact_conflicts: {
+        Row: {
+          createdAt: string;
+          descriptionValue: NonNullable<Json>;
+          extractionId: string;
+          field: string;
+          id: string;
+          jobId: string;
+          listingValue: NonNullable<Json>;
+          quote: string;
+          winner: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          createdAt?: string;
+          descriptionValue: NonNullable<Json>;
+          extractionId: string;
+          field: string;
+          id: string;
+          jobId: string;
+          listingValue: NonNullable<Json>;
+          quote: string;
+          winner: string;
+        };
+        Update: {
+          createdAt?: string;
+          descriptionValue?: NonNullable<Json>;
+          extractionId?: string;
+          field?: string;
+          id?: string;
+          jobId?: string;
+          listingValue?: NonNullable<Json>;
+          quote?: string;
+          winner?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'job_fact_conflicts_extractionId_fkey';
+            columns: ['extractionId'];
+            isOneToOne: false;
+            referencedRelation: 'job_extractions';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'job_fact_conflicts_jobId_fkey';
+            columns: ['jobId'];
+            isOneToOne: false;
+            referencedRelation: 'normalized_jobs';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      job_facts: {
+        Row: {
+          builtAt: string;
+          closed: boolean;
+          createdAt: string;
+          extractionId: string;
+          facts: NonNullable<Json>;
+          factsHash: string;
+          factsVersion: number;
+          jobId: string;
+          updatedAt: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          builtAt: string;
+          closed: boolean;
+          createdAt?: string;
+          extractionId: string;
+          facts: NonNullable<Json>;
+          factsHash: string;
+          factsVersion: number;
+          jobId: string;
+          updatedAt?: string;
+        };
+        Update: {
+          builtAt?: string;
+          closed?: boolean;
+          createdAt?: string;
+          extractionId?: string;
+          facts?: NonNullable<Json>;
+          factsHash?: string;
+          factsVersion?: number;
+          jobId?: string;
+          updatedAt?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'job_facts_extractionId_fkey';
+            columns: ['extractionId'];
+            isOneToOne: false;
+            referencedRelation: 'job_extractions';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'job_facts_jobId_fkey';
+            columns: ['jobId'];
+            isOneToOne: true;
+            referencedRelation: 'normalized_jobs';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       job_matches: {
         Row: {
           checks: NonNullable<Json>;
           createdAt: string;
           decidedAt: string;
           extractionId: string;
+          factsHash: string | null;
           id: string;
           jobId: string;
           matcherVersion: number;
@@ -541,6 +646,7 @@ export type Database = {
           createdAt?: string;
           decidedAt: string;
           extractionId: string;
+          factsHash?: string | null;
           id: string;
           jobId: string;
           matcherVersion: number;
@@ -556,6 +662,7 @@ export type Database = {
           createdAt?: string;
           decidedAt?: string;
           extractionId?: string;
+          factsHash?: string | null;
           id?: string;
           jobId?: string;
           matcherVersion?: number;
@@ -1797,6 +1904,7 @@ export type Database = {
           closed: boolean;
           companyName: string;
           companyUrl: string;
+          conflicts: Json;
           decidedAt: string;
           descriptionText: string;
           facts: Json;

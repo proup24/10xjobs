@@ -27,7 +27,8 @@ export function buildPostingInput(job: JobForProcessing): PostingInput {
   };
 }
 
-function canonical(value: unknown): unknown {
+/** Key-sorted copy of a JSON value, so equal values serialize alike. */
+export function canonical(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(canonical);
   if (value && typeof value === 'object') {
     return Object.fromEntries(

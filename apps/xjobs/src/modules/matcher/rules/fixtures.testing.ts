@@ -1,5 +1,8 @@
+import type { PlaceVocabulary } from 'src/modules/facts/places/resolver';
+import { combineFacts } from 'src/modules/facts/rules/combine';
+import { listingFacts, type ListingRow } from 'src/modules/facts/rules/listing';
+import type { JobFactsDocument } from 'src/modules/facts/schema/facts';
 import { fixtureDocument } from 'src/modules/processor/schema/fixture.testing';
-import type { ExtractionDocument } from 'src/modules/processor/schema';
 import type { MatchProfile } from './types';
 
 export const CITY_A = '00000000-0000-4000-8000-00000000000a';
@@ -43,11 +46,42 @@ export function exampleProfile(): MatchProfile {
   };
 }
 
-/** A copy of the fixture extraction with `edit` applied to it. */
-export function jobDoc(
-  edit?: (doc: ExtractionDocument) => void,
-): ExtractionDocument {
-  const doc = structuredClone(fixtureDocument());
+const EMPTY_VOCAB: PlaceVocabulary = {
+  regions: new Set(),
+  countries: new Set(),
+  cities: new Map(),
+  cityNames: new Map(),
+  regionCountries: new Map(),
+};
+
+const EMPTY_LISTING: ListingRow = {
+  workplaceType: null,
+  countryCode: null,
+  regionCode: null,
+  city: null,
+  geoId: null,
+  location: null,
+  salaryMin: null,
+  salaryMax: null,
+  salaryCurrency: null,
+  salaryPeriod: null,
+  salaryProvidedByEmployer: null,
+  experienceLevel: null,
+  contractType: null,
+  expiresAt: null,
+};
+
+/** The facts of the fixture extraction with an empty listing, with `edit` applied. */
+export function factsDoc(
+  edit?: (doc: JobFactsDocument) => void,
+): JobFactsDocument {
+  const { facts } = combineFacts({
+    extraction: fixtureDocument(),
+    listing: listingFacts(EMPTY_LISTING, EMPTY_VOCAB),
+    vocab: EMPTY_VOCAB,
+    now: new Date('2026-11-12T00:00:00Z'),
+  });
+  const doc = structuredClone(facts);
   edit?.(doc);
   return doc;
 }

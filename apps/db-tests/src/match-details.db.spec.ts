@@ -6,8 +6,10 @@ import {
   detailedDocument,
   publishProfile,
   seedDetailedJob,
+  seedFactConflict,
   seedMatchOn,
   seedProfile,
+  type SeededJob,
 } from './support/fixtures.js';
 import {
   cleanupTestUsers,
@@ -54,6 +56,7 @@ const COLUMNS = [
   'channels',
   'viewedAt',
   'facts',
+  'conflicts',
 ];
 
 type Row = Record<string, unknown> & { jobId: string };
@@ -151,6 +154,19 @@ describe('match_details', () => {
 
     const shared = await seedDetailedJob({
       channels: ['ASHBY', 'ASHBY', 'LINKEDIN_JOB_BOARD'],
+      sources: { arrangement: 'linkedin' },
+    });
+    await seedFactConflict(shared, {
+      field: 'workplaceType',
+      listingValue: 'onsite',
+      descriptionValue: 'remote',
+      winner: 'description',
+    });
+    await seedFactConflict(shared, {
+      field: 'city',
+      listingValue: 'Paris',
+      descriptionValue: 'Lyon',
+      winner: 'listing',
     });
     await seedMatchOn(a.id, profileA, shared, {
       checks: { a: 1 },
@@ -382,17 +398,24 @@ describe('match_details', () => {
           label: await labelOf('role_kinds', d.position.value.roleKind),
         },
         title: d.position.value.title,
+        source: 'description',
         quote: d.position.quote,
       },
       seniority: {
         code: d.seniority.value,
         label: await labelOf('seniorities', d.seniority.value),
+        source: 'description',
         quote: d.seniority.quote,
       },
-      yearsRequired: { ...d.yearsRequired.value, quote: d.yearsRequired.quote },
+      yearsRequired: {
+        ...d.yearsRequired.value,
+        source: 'description',
+        quote: d.yearsRequired.quote,
+      },
       arrangement: {
         code: d.arrangement.value,
         label: await labelOf('arrangements', d.arrangement.value),
+        source: 'linkedin',
         quote: d.arrangement.quote,
       },
       openings: [
@@ -413,17 +436,24 @@ describe('match_details', () => {
           ],
           placeStrictness: opening.placeStrictness,
           timezones: opening.timezones,
+          arrangementSource: 'description',
+          placesSource: 'description',
           quote: opening.quote,
         },
       ],
       contractType: {
         code: d.contractType.value,
         label: await labelOf('contract_types', d.contractType.value),
+        source: 'description',
         quote: d.contractType.quote,
       },
       engagement: null,
       contractMonths: null,
-      salary: { ...d.salary.value, quote: d.salary.quote },
+      salary: {
+        ...d.salary.value,
+        source: 'description',
+        quote: d.salary.quote,
+      },
       techStack: {
         requirements: await Promise.all(
           tech.requirements.map(async (r) => ({
@@ -444,14 +474,17 @@ describe('match_details', () => {
           })),
         ),
         groups: tech.groups,
+        source: 'description',
         quote: d.techStack.quote,
       },
       requiredLanguages: {
         languages: d.requiredLanguages.value,
+        source: 'description',
         quote: d.requiredLanguages.quote,
       },
       workAuthorization: {
         ...d.workAuthorization.value,
+        source: 'description',
         quote: d.workAuthorization.quote,
       },
     };
@@ -469,6 +502,55 @@ describe('match_details', () => {
     expect(keys).not.toContain('decidedBy');
   });
 
+  it('returns facts from job_facts with their source', async () => {
+    const [row] = await call(a, {
+      p_profile_id: profileA,
+      p_job_id: jobShared,
+    });
+    const facts = row.facts as Record<string, { source: string } | undefined>;
+    expect(facts.arrangement?.source).toBe('linkedin');
+    expect(facts.position?.source).toBe('description');
+    expect(facts.salary?.source).toBe('description');
+  });
+
+  it('returns conflicts for a job', async () => {
+    const [row] = await call(a, {
+      p_profile_id: profileA,
+      p_job_id: jobShared,
+    });
+    expect(row.conflicts).toEqual([
+      {
+        field: 'city',
+        listingValue: 'Paris',
+        descriptionValue: 'Lyon',
+        winner: 'listing',
+      },
+      {
+        field: 'workplaceType',
+        listingValue: 'onsite',
+        descriptionValue: 'remote',
+        winner: 'description',
+      },
+    ]);
+    const [other] = await call(a, { p_profile_id: profileA, p_job_id: jobA });
+    expect(other.conflicts).toEqual([]);
+  });
+
+  it('a match without job_facts still returns, with null facts', async () => {
+    const c = await createTestUser();
+    const profileC = await seedProfile(c.id);
+    await publishProfile(profileC);
+    const bare = await seedDetailedJob({ noFacts: true });
+    await seedMatchOn(c.id, profileC, bare);
+    for (const p_details of [true, false]) {
+      const rows = await call(c, { p_profile_id: profileC, p_details });
+      expect(jobIds(rows)).toEqual([bare.jobId]);
+      expect(rows[0].facts).toBeNull();
+      expect(rows[0].conflicts ?? []).toEqual([]);
+      expect(rows[0].title).toBe('Senior Backend Engineer');
+    }
+  });
+
   it('turns empty quotes into null', async () => {
     const [row] = await call(a, {
       p_profile_id: profileA2,
@@ -479,7 +561,7 @@ describe('match_details', () => {
     ).toBeNull();
   });
 
-  it("takes the facts from the match's own extraction, not the job's newest", async () => {
+  it("takes the facts from job_facts, not the job's newest extraction", async () => {
     const rows = await call(a, {
       p_profile_id: profileA2,
       p_job_id: jobNewerExtraction,
@@ -605,6 +687,7 @@ describe('match_details', () => {
       ...full,
       checks: null,
       descriptionText: null,
+      conflicts: null,
       facts: {
         arrangement: facts.arrangement,
         openings: facts.openings.map((o) => ({ arrangements: o.arrangements })),
@@ -623,5 +706,126 @@ describe('match_details', () => {
     expect(rowsB.map((r) => [r.profileId, r.jobId])).toEqual([
       [profileB, jobShared],
     ]);
+  });
+
+  describe('on its own user', () => {
+    let c: TestUser;
+    let profileC: string;
+    beforeAll(async () => {
+      c = await createTestUser();
+      profileC = await seedProfile(c.id);
+      await publishProfile(profileC);
+    });
+    const one = async (job: SeededJob): Promise<Row> => {
+      await seedMatchOn(c.id, profileC, job);
+      const rows = await call(c, {
+        p_profile_id: profileC,
+        p_job_id: job.jobId,
+      });
+      expect(rows).toHaveLength(1);
+      return rows[0];
+    };
+
+    it('shows a job closed when its facts are closed or it has expired', async () => {
+      const factsClosed = await one(
+        await seedDetailedJob({ factsClosed: true }),
+      );
+      expect(factsClosed.closed).toBe(true);
+      const expired = await one(
+        await seedDetailedJob({ expiresAt: '2026-01-01T00:00:00Z' }),
+      );
+      expect(expired.closed).toBe(true);
+      const open = await one(
+        await seedDetailedJob({ expiresAt: '2999-01-01T00:00:00Z' }),
+      );
+      expect(open.closed).toBe(false);
+      const [listRow] = await call(c, {
+        p_profile_id: profileC,
+        p_job_id: factsClosed.jobId,
+        p_details: false,
+      });
+      expect(listRow.closed).toBe(true);
+    });
+
+    it('returns engagement and contract months', async () => {
+      const base = detailedDocument() as Record<
+        string,
+        Record<string, unknown>
+      >;
+      const row = await one(
+        await seedDetailedJob({
+          document: {
+            ...base,
+            engagement: {
+              ...base.engagement,
+              value: 'contractor',
+              quote: 'B2B',
+            },
+            contractMonths: {
+              ...base.contractMonths,
+              value: 6,
+              quote: 'Six months',
+            },
+          },
+        }),
+      );
+      const facts = row.facts as Record<string, unknown>;
+      expect(facts.engagement).toEqual({
+        code: 'contractor',
+        label: await labelOf('engagements', 'contractor'),
+        source: 'description',
+        quote: 'B2B',
+      });
+      expect(facts.contractMonths).toEqual({
+        months: 6,
+        source: 'description',
+        quote: 'Six months',
+      });
+    });
+
+    it("returns each opening's arrangement and places sources", async () => {
+      const row = await one(
+        await seedDetailedJob({ openingSources: { places: 'linkedin' } }),
+      );
+      const facts = row.facts as { openings: Record<string, unknown>[] };
+      expect(facts.openings[0]).toMatchObject({
+        arrangementSource: 'description',
+        placesSource: 'linkedin',
+      });
+      expect(facts.openings[0]).not.toHaveProperty('source');
+    });
+
+    it("never returns another job's conflicts", async () => {
+      const first = await seedDetailedJob();
+      const second = await seedDetailedJob();
+      await seedFactConflict(first, {
+        field: 'salary',
+        listingValue: 'first',
+        descriptionValue: 'first',
+        winner: 'description',
+      });
+      await seedFactConflict(second, {
+        field: 'places',
+        listingValue: 'second',
+        descriptionValue: 'second',
+        winner: 'description',
+      });
+      expect((await one(first)).conflicts).toEqual([
+        {
+          field: 'salary',
+          listingValue: 'first',
+          descriptionValue: 'first',
+          winner: 'description',
+        },
+      ]);
+      expect((await one(second)).conflicts).toEqual([
+        {
+          field: 'places',
+          listingValue: 'second',
+          descriptionValue: 'second',
+          winner: 'description',
+        },
+      ]);
+    });
   });
 });

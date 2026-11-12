@@ -1,5 +1,7 @@
 import { Inject, Injectable, Optional } from '@nestjs/common';
+import { FactsService } from 'src/modules/facts/services/facts.service';
 import { decide, type MatchContext } from '../rules/decide';
+import type { MatchJob } from '../rules/types';
 import {
   MatcherRepository,
   type StoredMatch,
@@ -7,6 +9,8 @@ import {
 
 export type MatchOutcome =
   | { status: 'not_matchable' }
+  /** The job expired: it is not decided again, and its rows stay. */
+  | { status: 'closed' }
   | { status: 'matched'; profiles: number; qualified: number };
 
 /** Clock token; defaults to Date.now. Tests provide their own. */
@@ -21,22 +25,34 @@ export class MatcherService {
 
   constructor(
     private readonly repo: MatcherRepository,
+    private readonly facts: FactsService,
     @Optional()
     @Inject(MATCHER_CLOCK)
     private readonly now: () => number = Date.now,
   ) {}
 
-  /** Decides the job for every published profile whose row is stale (all of them when force). */
+  /**
+   * Builds the job's facts, then decides it for every published profile whose
+   * row is stale (all of them when force). A closed job keeps its rows.
+   */
   async matchJob(
     jobId: string,
     opts: { force?: boolean } = {},
   ): Promise<MatchOutcome> {
-    const job = await this.repo.loadMatchableJob(jobId);
-    if (!job) return { status: 'not_matchable' };
+    const candidate = await this.repo.loadCandidate(jobId);
+    if (!candidate) return { status: 'not_matchable' };
+    const built = await this.facts.build(jobId);
+    if (built.status === 'skipped') return { status: 'not_matchable' };
+    if (built.facts.closed) return { status: 'closed' };
+    const job: MatchJob = {
+      jobId,
+      extractionId: built.extractionId,
+      factsHash: built.factsHash,
+      needsReview: candidate.needsReview,
+      facts: built.facts,
+    };
     const profiles = await this.repo.listPublishedProfiles(
-      opts.force
-        ? {}
-        : { onlyStaleFor: { jobId, extractionId: job.extractionId } },
+      opts.force ? {} : { onlyStaleFor: { jobId, factsHash: job.factsHash } },
     );
     if (profiles.length === 0)
       return { status: 'matched', profiles: 0, qualified: 0 };
@@ -47,6 +63,7 @@ export class MatcherService {
       userId: profile.userId,
       jobId,
       extractionId: job.extractionId,
+      factsHash: job.factsHash,
     }));
     await this.repo.upsertMatches(rows);
     return {
