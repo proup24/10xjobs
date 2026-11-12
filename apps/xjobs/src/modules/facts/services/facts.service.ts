@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { Inject, Injectable, Optional } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { parseStoredDocument } from 'src/modules/processor/schema/extraction';
 import { canonical } from 'src/modules/processor/rules/input';
 import { FACTS_VERSION } from '../config/facts.config';
@@ -19,7 +19,11 @@ export type BuildResult =
       factsHash: string;
       extractionId: string;
     }
-  | { status: 'skipped'; reason: 'no_extraction' | 'old_schema' };
+  | {
+      status: 'skipped';
+      /** `invalid_document`: a v3 row whose stored document does not parse. */
+      reason: 'no_extraction' | 'old_schema' | 'invalid_document';
+    };
 
 /** Clock token; defaults to the current time. Tests provide their own. */
 export const FACTS_CLOCK = Symbol('FACTS_CLOCK');
@@ -35,6 +39,7 @@ export function hashFacts(facts: JobFactsDocument): string {
 
 @Injectable()
 export class FactsService {
+  private readonly logger = new Logger(FactsService.name);
   private vocab: { value: PlaceVocabulary; loadedAt: number } | null = null;
 
   constructor(
@@ -49,9 +54,15 @@ export class FactsService {
   async build(jobId: string): Promise<BuildResult> {
     const inputs = await this.repo.loadInputs(jobId);
     if (!inputs) return { status: 'skipped', reason: 'no_extraction' };
-    const stored = parseStoredDocument(inputs.extraction);
-    if (inputs.schemaVersion !== 3 || stored?.version !== 3)
+    if (inputs.schemaVersion !== 3)
       return { status: 'skipped', reason: 'old_schema' };
+    const stored = parseStoredDocument(inputs.extraction);
+    if (stored?.version !== 3) {
+      this.logger.warn(
+        `job ${jobId}: extraction ${inputs.extractionId} is schema v3 but its document is not a valid v3 document; no facts built`,
+      );
+      return { status: 'skipped', reason: 'invalid_document' };
+    }
     const now = this.clock();
     const vocab = await this.loadVocabulary(now.getTime());
     const { facts, conflicts } = combineFacts({
@@ -63,10 +74,12 @@ export class FactsService {
     const factsHash = hashFacts(facts);
     const before = await this.repo.current(jobId);
     // Saved even when unchanged: builtAt, extractionId and factsVersion must
-    // move or the stale sweep would pick the job again forever.
+    // move or the stale sweep would pick the job again forever. builtAt is the
+    // job's updatedAt as loaded, so a change made since leaves the facts stale.
     await this.repo.save({
       jobId,
       extractionId: inputs.extractionId,
+      builtAt: inputs.jobUpdatedAt,
       factsVersion: FACTS_VERSION,
       factsHash,
       facts,

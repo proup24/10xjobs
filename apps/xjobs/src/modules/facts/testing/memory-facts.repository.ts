@@ -7,11 +7,11 @@ import {
 /** In-memory FactsRepository for unit tests. */
 export class MemoryFactsRepository extends FactsRepository {
   inputs = new Map<string, FactsInputs>();
-  rows = new Map<string, SavedFacts & { builtAt: number }>();
+  /** The saved rows; `builtAt` as epoch ms (`-Infinity` once marked stale). */
+  rows = new Map<string, Omit<SavedFacts, 'builtAt'> & { builtAt: number }>();
   conflictsByJob = new Map<string, SavedFacts['conflicts']>();
   /** Counts saves so tests can see a write that changed nothing. */
   saves = 0;
-  clock = 0;
 
   loadInputs(jobId: string): Promise<FactsInputs | null> {
     return Promise.resolve(this.inputs.get(jobId) ?? null);
@@ -28,8 +28,7 @@ export class MemoryFactsRepository extends FactsRepository {
 
   save(row: SavedFacts): Promise<void> {
     this.saves += 1;
-    this.clock += 1;
-    this.rows.set(row.jobId, { ...row, builtAt: this.clock });
+    this.rows.set(row.jobId, { ...row, builtAt: row.builtAt.getTime() });
     this.conflictsByJob.set(row.jobId, row.conflicts);
     return Promise.resolve();
   }

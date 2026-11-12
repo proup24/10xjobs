@@ -132,6 +132,7 @@ describe.skipIf(!url)('facts repository in PostgreSQL', () => {
     });
     return {
       ...j,
+      builtAt: t0,
       factsVersion: FACTS_VERSION,
       factsHash: hashFacts(facts),
       facts,
@@ -187,12 +188,55 @@ describe.skipIf(!url)('facts repository in PostgreSQL', () => {
         salaryProvidedByEmployer: true,
       },
     });
+    const [{ updatedAt }] = await db.query(
+      db.raw
+        .sql`SELECT "updatedAt" FROM normalized_jobs WHERE id = ${j.jobId}::uuid`
+        .returnsRow({ updatedAt: 'pg/timestamptz-date@1' })
+        .build(),
+    );
+    expect(inputs?.jobUpdatedAt).toEqual(updatedAt);
+  });
+
+  it('save stores the given builtAt, not the time of the save', async () => {
+    const j = await job();
+    const builtAt = new Date('2026-10-01T10:00:00.123Z');
+    await repo.save({ ...saved(j), builtAt });
+    const [row] = await db.query(
+      db.raw
+        .sql`SELECT "builtAt" FROM job_facts WHERE "jobId" = ${j.jobId}::uuid`
+        .returnsRow({ builtAt: 'pg/timestamptz-date@1' })
+        .build(),
+    );
+    expect(row.builtAt).toEqual(builtAt);
   });
 
   it('loadInputs returns null without a current extraction', async () => {
     const j = await job();
     await sql`UPDATE normalized_jobs SET "currentExtractionId" = NULL`;
     expect(await repo.loadInputs(j.jobId)).toBeNull();
+  });
+
+  it('facts saved as of the load are current; a job change after the load leaves them stale', async () => {
+    const j = await job();
+    const stale = async () => {
+      const [row] = await db.query(
+        db.raw.sql`SELECT j."updatedAt" > f."builtAt" AS stale
+          FROM normalized_jobs j JOIN job_facts f ON f."jobId" = j.id
+          WHERE j.id = ${j.jobId}::uuid`
+          .returnsRow({ stale: 'pg/bool@1' })
+          .build(),
+      );
+      return row.stale;
+    };
+    const inputs = await repo.loadInputs(j.jobId);
+    await repo.save({ ...saved(j), builtAt: inputs!.jobUpdatedAt });
+    expect(await stale()).toBe(false);
+
+    const again = await repo.loadInputs(j.jobId);
+    // An ingest write lands between the load and the save.
+    await sql`UPDATE normalized_jobs SET "updatedAt" = now() + interval '1 second'`;
+    await repo.save({ ...saved(j), builtAt: again!.jobUpdatedAt });
+    expect(await stale()).toBe(true);
   });
 
   it('save then current round-trips', async () => {

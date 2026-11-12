@@ -10,12 +10,19 @@ export interface FactsInputs {
   /** The stored `job_extractions.data`, not yet parsed. */
   extraction: unknown;
   schemaVersion: number;
+  /** The job row's `updatedAt` as read: the facts are built as of it. */
+  jobUpdatedAt: Date;
   listing: ListingRow;
 }
 
 export interface SavedFacts {
   jobId: string;
   extractionId: string;
+  /**
+   * The job's `updatedAt` when its inputs were loaded, so an ingest change between the load
+   * and the save leaves the facts stale (`j."updatedAt" > f."builtAt"`).
+   */
+  builtAt: Date;
   factsVersion: number;
   factsHash: string;
   facts: JobFactsDocument;
@@ -31,7 +38,7 @@ export abstract class FactsRepository {
   abstract current(
     jobId: string,
   ): Promise<{ factsHash: string; factsVersion: number } | null>;
-  /** Upserts the facts row (always refreshing `builtAt`) and replaces the job's conflicts in one transaction. */
+  /** Upserts the facts row (always setting `builtAt`) and replaces the job's conflicts in one transaction. */
   abstract save(row: SavedFacts): Promise<void>;
   /** Marks facts of jobs listed in a country as stale (`builtAt = '-infinity'`); returns how many. */
   abstract markStale(where: { countryCode: string }): Promise<number>;
@@ -63,7 +70,7 @@ export class PrismaFactsRepository extends FactsRepository {
           j."workplaceType", j."countryCode", j."regionCode", j.city, j."geoId",
           j.location, j."salaryMin", j."salaryMax", j."salaryCurrency",
           j."salaryPeriod", j."salaryProvidedByEmployer", j."experienceLevel",
-          j."contractType", j."expiresAt"
+          j."contractType", j."expiresAt", j."updatedAt"
         FROM normalized_jobs j JOIN job_extractions e ON e.id = j."currentExtractionId"
         WHERE j.id = ${jobId}::uuid`
         .returnsRow({
@@ -84,6 +91,7 @@ export class PrismaFactsRepository extends FactsRepository {
           experienceLevel: TEXT,
           contractType: TEXT,
           expiresAt: TIMESTAMP,
+          updatedAt: TIMESTAMP,
         })
         .build(),
     );
@@ -93,6 +101,7 @@ export class PrismaFactsRepository extends FactsRepository {
       extractionId: row.extractionId as string,
       extraction: row.data,
       schemaVersion: row.schemaVersion as number,
+      jobUpdatedAt: row.updatedAt as Date,
       listing: {
         workplaceType:
           workplace !== null && WORKPLACE.has(workplace)
@@ -142,16 +151,17 @@ export class PrismaFactsRepository extends FactsRepository {
             ("jobId", "extractionId", "factsVersion", "factsHash", facts, closed, "builtAt", "createdAt", "updatedAt")
           VALUES (${row.jobId}::uuid, ${row.extractionId}::uuid, ${row.factsVersion}::int,
             ${row.factsHash}::text, ${JSON.stringify(row.facts)}::jsonb, ${row.closed}::boolean,
-            now(), now(), now())
+            ${row.builtAt.toISOString()}::timestamptz, now(), now())
           ON CONFLICT ("jobId") DO UPDATE SET
             "extractionId" = EXCLUDED."extractionId", "factsVersion" = EXCLUDED."factsVersion",
             "factsHash" = EXCLUDED."factsHash", facts = EXCLUDED.facts, closed = EXCLUDED.closed,
-            "builtAt" = now(), "updatedAt" = now()`
+            "builtAt" = EXCLUDED."builtAt", "updatedAt" = now()`
           .affectedCount()
           .build(),
       );
       await tx.execute(
-        tx.raw.sql`DELETE FROM job_fact_conflicts WHERE "jobId" = ${row.jobId}::uuid`
+        tx.raw
+          .sql`DELETE FROM job_fact_conflicts WHERE "jobId" = ${row.jobId}::uuid`
           .affectedCount()
           .build(),
       );

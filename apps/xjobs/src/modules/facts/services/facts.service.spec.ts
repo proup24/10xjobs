@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { fixtureDocument } from '../../processor/schema/fixture.testing';
 import { FACTS_VERSION } from '../config/facts.config';
 import { PlaceVocabularyRepository } from '../places/place-vocabulary.repository';
@@ -41,16 +42,24 @@ const listing = (p: Partial<ListingRow> = {}): ListingRow => ({
 });
 
 const JOB = '00000000-0000-4000-8000-000000000001';
+const UPDATED_AT = new Date('2026-11-12T11:00:00Z');
 
-function setup(over: { schemaVersion?: number; listing?: ListingRow } = {}) {
+function setup(
+  over: {
+    schemaVersion?: number;
+    listing?: ListingRow;
+    extraction?: unknown;
+  } = {},
+) {
   const repo = new MemoryFactsRepository();
   const vocabulary = new StubVocabulary();
   let now = new Date('2026-11-12T12:00:00Z');
   const service = new FactsService(repo, vocabulary, () => now);
   repo.inputs.set(JOB, {
     extractionId: 'e1',
-    extraction: fixtureDocument(),
+    extraction: over.extraction ?? fixtureDocument(),
     schemaVersion: over.schemaVersion ?? 3,
+    jobUpdatedAt: UPDATED_AT,
     listing: over.listing ?? listing({ workplaceType: 'onsite' }),
   });
   return {
@@ -87,6 +96,20 @@ describe('FactsService', () => {
     expect(repo.saves).toBe(0);
   });
 
+  it('skips a v3 row whose document is invalid, and says which job', async () => {
+    const warn = vi
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
+    const { service, repo } = setup({ extraction: { version: 3, junk: true } });
+    expect(await service.build(JOB)).toEqual({
+      status: 'skipped',
+      reason: 'invalid_document',
+    });
+    expect(repo.saves).toBe(0);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining(JOB));
+    warn.mockRestore();
+  });
+
   it('skips a job without a current extraction', async () => {
     const { service } = setup();
     expect(await service.build('missing')).toEqual({
@@ -102,13 +125,15 @@ describe('FactsService', () => {
     expect(second).toMatchObject({ status: 'built', changed: false });
   });
 
-  it('an unchanged rebuild still refreshes builtAt', async () => {
+  it("builtAt is the job's updatedAt at load, also on an unchanged rebuild", async () => {
     const { service, repo } = setup();
     await service.build(JOB);
-    const first = repo.rows.get(JOB)!.builtAt;
+    expect(repo.rows.get(JOB)!.builtAt).toBe(UPDATED_AT.getTime());
+    const later = new Date('2026-11-12T11:30:00Z');
+    repo.inputs.set(JOB, { ...repo.inputs.get(JOB)!, jobUpdatedAt: later });
     await service.build(JOB);
     expect(repo.saves).toBe(2);
-    expect(repo.rows.get(JOB)!.builtAt).toBeGreaterThan(first);
+    expect(repo.rows.get(JOB)!.builtAt).toBe(later.getTime());
   });
 
   it("rebuild replaces the job's conflicts", async () => {

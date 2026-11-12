@@ -44,14 +44,21 @@ const listing = (p: Partial<ListingRow> = {}): ListingRow => ({
 
 const NOW = new Date('2026-11-12T12:00:00Z');
 
-function setup(over: { schemaVersion?: number; listing?: ListingRow } = {}) {
+function setup(
+  over: {
+    schemaVersion?: number;
+    listing?: ListingRow;
+    extraction?: unknown;
+  } = {},
+) {
   const repo = new MemoryMatcherRepository();
   const factsRepo = new MemoryFactsRepository();
   repo.candidates.set('job-1', { extractionId: 'ext-1', needsReview: false });
   factsRepo.inputs.set('job-1', {
     extractionId: 'ext-1',
-    extraction: fixtureDocument(),
+    extraction: over.extraction ?? fixtureDocument(),
     schemaVersion: over.schemaVersion ?? 3,
+    jobUpdatedAt: NOW,
     listing: over.listing ?? listing(),
   });
   repo.profiles = [
@@ -73,6 +80,17 @@ function setup(over: { schemaVersion?: number; listing?: ListingRow } = {}) {
 }
 
 describe('MatcherService', () => {
+  it('reports not_matchable for an invalid v3 document, writing nothing', async () => {
+    const { repo, factsRepo, service } = setup({
+      extraction: { version: 3, junk: true },
+    });
+    expect(await service.matchJob('job-1')).toEqual({
+      status: 'not_matchable',
+    });
+    expect(factsRepo.saves).toBe(0);
+    expect(repo.rows).toEqual([]);
+  });
+
   it('reports not_matchable without upserting', async () => {
     const { repo, service } = setup();
     expect(await service.matchJob('missing')).toEqual({
