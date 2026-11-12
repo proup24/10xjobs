@@ -5,14 +5,18 @@ import type { MatchRow } from './group';
  * worded for display. Every value is null when the job doesn't state it.
  */
 export type FactLines = {
-  role: string | null;
-  seniority: string | null;
-  arrangement: string | null;
-  places: string | null;
-  contractType: string | null;
-  engagement: string | null;
-  salary: string | null;
+  role: FactLine | null;
+  seniority: FactLine | null;
+  arrangement: FactLine | null;
+  places: FactLine | null;
+  contractType: FactLine | null;
+  engagement: FactLine | null;
+  salary: FactLine | null;
 };
+
+/** A worded fact and where it came from: the description, or the LinkedIn listing. */
+export type FactLine = { text: string; source: FactSource };
+export type FactSource = 'description' | 'linkedin';
 
 type Obj = Record<string, unknown>;
 const obj = (v: unknown): Obj | null =>
@@ -80,22 +84,9 @@ function salaryRange(
     .join(' ');
 }
 
-export function salaryLine(
-  row: Pick<
-    MatchRow,
-    'salaryText' | 'salaryMin' | 'salaryMax' | 'salaryCurrency' | 'salaryPeriod'
-  > & { facts: unknown },
-): string | null {
-  const fromJob =
-    str(row.salaryText) ??
-    salaryRange(
-      num(row.salaryMin),
-      num(row.salaryMax),
-      str(row.salaryCurrency),
-      str(row.salaryPeriod),
-    );
-  if (fromJob) return fromJob;
-  const s = obj(obj(row.facts)?.salary);
+/** The salary from the job's combined facts (the description's, else LinkedIn's). */
+function factSalary(facts: unknown): string | null {
+  const s = obj(obj(facts)?.salary);
   return salaryRange(
     num(s?.min),
     num(s?.max),
@@ -103,6 +94,30 @@ export function salaryLine(
     str(s?.period),
   );
 }
+
+/** The job's salary: the combined facts', else the listing's own text or range. */
+export function salaryLine(
+  row: Pick<
+    MatchRow,
+    'salaryText' | 'salaryMin' | 'salaryMax' | 'salaryCurrency' | 'salaryPeriod'
+  > & { facts: unknown },
+): string | null {
+  return (
+    factSalary(row.facts) ??
+    str(row.salaryText) ??
+    salaryRange(
+      num(row.salaryMin),
+      num(row.salaryMax),
+      str(row.salaryCurrency),
+      str(row.salaryPeriod),
+    )
+  );
+}
+
+const sourceOf = (v: unknown): FactSource =>
+  v === 'linkedin' ? 'linkedin' : 'description';
+const line = (text: string | null, source: unknown): FactLine | null =>
+  text === null ? null : { text, source: sourceOf(source) };
 
 /** The job's arrangement: the stated one, else those of its openings. */
 export function arrangementLine(facts: unknown): string | null {
@@ -119,23 +134,94 @@ export function factLines(
   row: Pick<
     MatchRow,
     'salaryText' | 'salaryMin' | 'salaryMax' | 'salaryCurrency' | 'salaryPeriod'
-  > & { facts: unknown },
+  > & { facts: unknown; channels?: string[] | null },
 ): FactLines {
   const f = obj(row.facts);
   const position = obj(f?.position);
   const seniority = [label(f?.seniority), years(f?.yearsRequired)].filter(
     (x): x is string => x !== null,
   );
-  const places = unique(arr(f?.openings).map(opening));
+  const openings = arr(f?.openings);
+  const places = unique(openings.map(opening));
+  const stated = label(f?.arrangement);
+  const arrangement = arrangementLine(row.facts);
+  const salary = salaryLine(row);
+  const listed = (row.channels ?? []).some((c) => c.startsWith('LINKEDIN'));
   return {
-    role: label(position?.roleKind) ?? str(position?.title),
-    seniority: seniority.length ? seniority.join(' · ') : null,
-    arrangement: arrangementLine(row.facts),
-    places: places.length ? places.join('; ') : null,
-    contractType: label(f?.contractType),
-    engagement: label(f?.engagement),
-    salary: salaryLine(row),
+    role: line(
+      label(position?.roleKind) ?? str(position?.title),
+      position?.source,
+    ),
+    seniority: line(
+      seniority.length ? seniority.join(' · ') : null,
+      obj(f?.seniority)?.source,
+    ),
+    arrangement: line(
+      arrangement,
+      stated ? obj(f?.arrangement)?.source : firstLinkedIn(openings),
+    ),
+    places: line(
+      places.length ? places.join('; ') : null,
+      firstLinkedIn(openings),
+    ),
+    contractType: line(label(f?.contractType), obj(f?.contractType)?.source),
+    engagement: line(label(f?.engagement), obj(f?.engagement)?.source),
+    salary: line(
+      salary,
+      factSalary(row.facts)
+        ? obj(f?.salary)?.source
+        : listed
+          ? 'linkedin'
+          : 'description',
+    ),
   };
+}
+
+/** 'linkedin' when any opening came from the listing. */
+const firstLinkedIn = (openings: unknown[]): FactSource =>
+  openings.some((o) => obj(o)?.source === 'linkedin')
+    ? 'linkedin'
+    : 'description';
+
+const CONFLICT_FIELDS = [
+  'arrangement',
+  'places',
+  'salary',
+  'seniority',
+  'contractType',
+] as const;
+export type ConflictField = (typeof CONFLICT_FIELDS)[number];
+
+/** Words one side of a conflict: a code or text, a place, a salary, or a list of them. */
+function conflictValue(v: unknown): string | null {
+  if (Array.isArray(v)) {
+    const parts = unique(v.map(conflictValue));
+    return parts.length ? parts.join(', ') : null;
+  }
+  if (typeof v === 'string') return str(v);
+  if (typeof v === 'number') return String(v);
+  const o = obj(v);
+  if (!o) return null;
+  if ('min' in o || 'max' in o)
+    return salaryRange(num(o.min), num(o.max), str(o.currency), str(o.period));
+  return placeName(o) ?? str(o.text) ?? str(o.city) ?? str(o.country);
+}
+
+/**
+ * Where the LinkedIn listing disagreed with the description, by fact, worded as
+ * "LinkedIn says X". A fact with no conflict is absent.
+ */
+export function conflictLines(
+  conflicts: unknown,
+): Partial<Record<ConflictField, string>> {
+  const out: Partial<Record<ConflictField, string>> = {};
+  for (const c of arr(conflicts)) {
+    const field = obj(c)?.field;
+    const text = conflictValue(obj(c)?.listingValue);
+    if (text && CONFLICT_FIELDS.some((f) => f === field))
+      out[field as ConflictField] = `LinkedIn says ${text}`;
+  }
+  return out;
 }
 
 /** The stack rule's comparison for one match, with tech codes shown as labels. */

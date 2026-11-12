@@ -1,0 +1,9 @@
+{
+  "from": "a0e7e5cdb988c28b56a83fac52a2d9083dc8f30c34ed4db1e7736337e485494d",
+  "to": "a0e7e5cdb988c28b56a83fac52a2d9083dc8f30c34ed4db1e7736337e485494d",
+  "providedInvariants": [
+    "match-details-job-facts"
+  ],
+  "createdAt": "2026-11-12T09:17:18.072Z",
+  "migrationHash": "c52d82f9f16974d358c5d9af1a90ee82f800088074a6e0819fc7253481270536"
+}

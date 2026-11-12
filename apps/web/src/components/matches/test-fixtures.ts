@@ -52,17 +52,29 @@ export const facts = {
   position: {
     roleKind: { code: 'fullstack_engineer', label: 'Full-stack engineer' },
     title: 'Senior Full-stack Engineer',
+    source: 'description',
     quote: null,
   },
-  seniority: { code: 'senior', label: 'Senior', quote: null },
-  yearsRequired: { min: 5, max: null, quote: null },
-  arrangement: { code: 'remote', label: 'Remote', quote: null },
+  seniority: {
+    code: 'senior',
+    label: 'Senior',
+    source: 'description',
+    quote: null,
+  },
+  yearsRequired: { min: 5, max: null, source: 'description', quote: null },
+  arrangement: {
+    code: 'remote',
+    label: 'Remote',
+    source: 'description',
+    quote: null,
+  },
   openings: [
     {
       arrangements: [{ code: 'remote', label: 'Remote' }],
       places: [{ kind: 'region', code: 'EU', label: 'Europe' }],
       placeStrictness: null,
       timezones: [{ fromUtc: 0, toUtc: 2, label: 'CET' }],
+      source: 'description',
       quote: null,
     },
   ],
@@ -109,5 +121,6 @@ export const matchRow = (over: Over = {}): MatchRow =>
     stackScore: 0.713,
     checks,
     facts,
+    conflicts: [],
     ...over,
   }) as MatchRow;

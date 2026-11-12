@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { arrangementLine, factLines, salaryLine, stackLines } from './facts';
+import {
+  arrangementLine,
+  conflictLines,
+  factLines,
+  salaryLine,
+  stackLines,
+} from './facts';
 
 const noSalary = {
   salaryText: null,
@@ -63,7 +69,7 @@ describe('factLines', () => {
       openings: [],
     };
     expect(factLines({ ...noSalary, facts })).toEqual({
-      role: 'Senior Engineer, Core Services',
+      role: { text: 'Senior Engineer, Core Services', source: 'description' },
       seniority: null,
       arrangement: null,
       places: null,
@@ -85,7 +91,99 @@ describe('factLines', () => {
       ],
     };
     expect(arrangementLine(facts)).toBe('Hybrid');
-    expect(factLines({ ...noSalary, facts }).places).toBe('Worldwide');
+    expect(factLines({ ...noSalary, facts }).places).toEqual({
+      text: 'Worldwide',
+      source: 'description',
+    });
+  });
+
+  it('marks a LinkedIn arrangement', () => {
+    const facts = {
+      arrangement: {
+        code: 'remote',
+        label: 'Remote',
+        source: 'linkedin',
+        quote: null,
+      },
+      seniority: { code: 'senior', label: 'Senior', source: 'description' },
+      openings: [
+        {
+          arrangements: [{ code: 'remote', label: 'Remote' }],
+          places: [{ kind: 'country', code: 'MA', label: 'Morocco' }],
+          timezones: [],
+          source: 'linkedin',
+        },
+      ],
+      salary: {
+        min: 500,
+        max: null,
+        currency: 'USD',
+        period: 'day',
+        source: 'linkedin',
+      },
+    };
+    const lines = factLines({ ...noSalary, facts });
+    expect(lines.arrangement).toEqual({ text: 'Remote', source: 'linkedin' });
+    expect(lines.seniority).toEqual({ text: 'Senior', source: 'description' });
+    expect(lines.places).toEqual({ text: 'Morocco', source: 'linkedin' });
+    expect(lines.salary).toEqual({
+      text: 'USD 500+ per day',
+      source: 'linkedin',
+    });
+  });
+
+  it('takes the facts salary before the listing columns', () => {
+    const facts = {
+      salary: {
+        min: 90000,
+        max: null,
+        currency: 'EUR',
+        period: 'year',
+        source: 'description',
+      },
+    };
+    expect(
+      factLines({
+        ...noSalary,
+        salaryText: '€80k',
+        channels: ['LINKEDIN_JOB_BOARD'],
+        facts,
+      }).salary,
+    ).toEqual({ text: 'EUR 90k+ per year', source: 'description' });
+    expect(
+      factLines({
+        ...noSalary,
+        salaryText: '€80k',
+        channels: ['LINKEDIN_JOB_BOARD'],
+        facts: null,
+      }).salary,
+    ).toEqual({ text: '€80k', source: 'linkedin' });
+  });
+});
+
+describe('conflictLines', () => {
+  it('words the listing side of each conflict by field', () => {
+    expect(
+      conflictLines([
+        {
+          field: 'arrangement',
+          listingValue: 'onsite',
+          descriptionValue: ['remote'],
+          winner: 'description',
+        },
+        {
+          field: 'places',
+          listingValue: { kind: 'country', code: 'US', label: 'United States' },
+          descriptionValue: [],
+          winner: 'description',
+        },
+        { field: 'unknown', listingValue: 'x' },
+      ]),
+    ).toEqual({
+      arrangement: 'LinkedIn says onsite',
+      places: 'LinkedIn says United States',
+    });
+    expect(conflictLines(null)).toEqual({});
   });
 });
 

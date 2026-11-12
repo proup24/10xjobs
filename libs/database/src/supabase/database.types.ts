@@ -1904,6 +1904,7 @@ export type Database = {
           closed: boolean;
           companyName: string;
           companyUrl: string;
+          conflicts: Json;
           decidedAt: string;
           descriptionText: string;
           facts: Json;
