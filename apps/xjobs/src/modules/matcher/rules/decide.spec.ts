@@ -118,6 +118,40 @@ describe('decide', () => {
     expect(d.unverified).toBe(true);
   });
 
+  it('rejects when neither the role nor the stack can be verified', () => {
+    const d = decide(
+      job(
+        passingDoc((x) => {
+          x.position.value = { roleKind: 'unstated', title: 'x' };
+          x.techStack.value = null;
+        }),
+        true,
+      ),
+      exampleProfile(),
+      ctx,
+    );
+    const position = d.checks.find((c) => c.rule === 'position');
+    expect(d.outcome).toBe('rejected');
+    expect(d.unverified).toBe(false);
+    expect(position?.outcome).toBe('fail');
+    expect(position?.reason).toMatch(/neither the role nor the stack/);
+    expect(d.checks.find((c) => c.rule === 'stack')?.outcome).toBe('unknown');
+  });
+
+  it('still qualifies an unstated role when the stack passes', () => {
+    const d = decide(
+      job(
+        passingDoc((x) => {
+          x.position.value = { roleKind: 'unstated', title: 'x' };
+        }),
+      ),
+      exampleProfile(),
+      ctx,
+    );
+    expect(d.outcome).toBe('qualified');
+    expect(d.unverified).toBe(true);
+  });
+
   it('golden 1288: fullstack job is rejected on position and stack', () => {
     const file = join(__dirname, '../../processor/golden/cases/1288.json');
     const { expected } = JSON.parse(readFileSync(file, 'utf8'));

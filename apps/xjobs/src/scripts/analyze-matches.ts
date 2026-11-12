@@ -1,0 +1,235 @@
+/**
+ * Read-only report on match quality: why jobs qualify with unknown checks,
+ * how the processor fills position and tech stack, and which facts it drops.
+ *
+ *   pnpm --filter @xjobs/xjobs db:analyze
+ *
+ * Reads the database named by the environment files, like the other db:
+ * scripts. Only SELECTs, inside a READ ONLY transaction.
+ */
+import { Logger } from '@nestjs/common';
+import {
+  loadDatabaseEnvironment,
+  loadEnvironmentFiles,
+  toDatabaseConfig,
+} from 'src/config';
+import { createDatabaseClient } from 'src/database';
+
+const JSONB = 'pg/jsonb@1';
+
+type Db = ReturnType<typeof createDatabaseClient>;
+type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
+type Raw = Tx['raw'];
+
+/** Each query returns its rows as one jsonb array in `rows`. */
+const SECTIONS: { title: string; sql: (raw: Raw) => ReturnType<Raw['sql']> }[] =
+  [
+    {
+      title: '0. Database contents',
+      sql: (
+        raw,
+      ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
+        SELECT current_database() AS db,
+          (SELECT count(*) FROM normalized_jobs) AS jobs,
+          (SELECT count(*) FROM job_extractions) AS extractions,
+          (SELECT count(*) FROM job_matches) AS matches,
+          (SELECT count(*) FROM profiles) AS profiles) t`,
+    },
+    {
+      title: '1. Jobs by processing status',
+      sql: (
+        raw,
+      ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
+        SELECT kind, status, "processingStatus", count(*) FROM normalized_jobs
+        GROUP BY 1, 2, 3 ORDER BY 4 DESC) t`,
+    },
+    {
+      title: '2. Match outcomes',
+      sql: (
+        raw,
+      ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
+        SELECT outcome, unverified, count(*) FROM job_matches
+        GROUP BY 1, 2 ORDER BY 1, 2) t`,
+    },
+    {
+      title:
+        '3. Qualified matches by check pattern (position / seniority / location / stack)',
+      sql: (
+        raw,
+      ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
+        SELECT (SELECT string_agg(c->>'outcome', ' / ' ORDER BY o)
+                  FROM jsonb_array_elements(checks) WITH ORDINALITY x(c, o)) AS pattern,
+          count(*)
+        FROM job_matches WHERE outcome = 'qualified'
+        GROUP BY 1 ORDER BY 2 DESC) t`,
+    },
+    {
+      title: '4. Check reasons by rule and outcome',
+      sql: (
+        raw,
+      ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
+        SELECT c->>'rule' AS rule, c->>'outcome' AS outcome,
+          left(regexp_replace(c->>'reason', '[:;].*$', ''), 70) AS reason, count(*)
+        FROM job_matches, jsonb_array_elements(checks) c
+        GROUP BY 1, 2, 3 ORDER BY 1, 4 DESC) t`,
+    },
+    {
+      title: '5. Current extractions: roleKind and isSoftwareEngineeringRole',
+      sql: (
+        raw,
+      ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
+        SELECT coalesce(e."roleKind", '<null>') AS role_kind,
+          e."isSoftwareEngineeringRole" AS is_swe, count(*)
+        FROM job_extractions e JOIN normalized_jobs j ON j."currentExtractionId" = e.id
+        WHERE e.data <> '{}'::jsonb
+        GROUP BY 1, 2 ORDER BY 3 DESC) t`,
+    },
+    {
+      title:
+        '6. Position fact: value, Jev verdict and pick, confidence, empty quote',
+      sql: (
+        raw,
+      ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
+        SELECT coalesce(e.data->'position'->'value'->>'roleKind', '<null>') AS role_kind,
+          e.data->'position'->'verification'->>'verdict' AS verdict,
+          e.data->'position'->'verification'->>'jevPick' AS jev_pick,
+          e.data->'position'->>'decidedBy' AS decided_by,
+          e.data->'position'->>'confidence' AS confidence,
+          (e.data->'position'->>'quote' = '') AS empty_quote,
+          count(*)
+        FROM job_extractions e JOIN normalized_jobs j ON j."currentExtractionId" = e.id
+        WHERE e.data <> '{}'::jsonb
+        GROUP BY 1, 2, 3, 4, 5, 6 ORDER BY 7 DESC) t`,
+    },
+    {
+      title:
+        '7. Tech requirement shape (no main/must means the stack check is always unknown)',
+      sql: (
+        raw,
+      ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
+        WITH r AS (
+          SELECT e.id,
+            count(*) FILTER (WHERE q->>'kind' = 'main') AS main,
+            count(*) FILTER (WHERE q->>'kind' = 'must') AS must,
+            count(*) FILTER (WHERE q IS NOT NULL AND q->'technology'->>'code' IS NULL) AS uncoded,
+            count(q) AS total
+          FROM job_extractions e
+          JOIN normalized_jobs j ON j."currentExtractionId" = e.id
+          LEFT JOIN LATERAL jsonb_array_elements(
+            CASE WHEN jsonb_typeof(e.data->'techStack'->'value'->'requirements') = 'array'
+                 THEN e.data->'techStack'->'value'->'requirements' ELSE '[]'::jsonb END) q ON true
+          WHERE e.data <> '{}'::jsonb
+          GROUP BY e.id)
+        SELECT CASE WHEN total = 0 THEN 'no requirements'
+                    WHEN main + must = 0 THEN 'only nice'
+                    WHEN main = 0 THEN 'must but no main'
+                    ELSE 'has main' END AS shape,
+          count(*), round(avg(total), 1) AS avg_reqs, round(avg(uncoded), 1) AS avg_uncoded
+        FROM r GROUP BY 1 ORDER BY 2 DESC) t`,
+    },
+    {
+      title: '8. Uncoded technologies seen most often (vocabulary gaps)',
+      sql: (
+        raw,
+      ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
+        SELECT q->'technology'->>'text' AS text, q->>'kind' AS kind, count(*)
+        FROM job_extractions e
+        JOIN normalized_jobs j ON j."currentExtractionId" = e.id,
+          jsonb_array_elements(
+            CASE WHEN jsonb_typeof(e.data->'techStack'->'value'->'requirements') = 'array'
+                 THEN e.data->'techStack'->'value'->'requirements' ELSE '[]'::jsonb END) q
+        WHERE q->'technology'->>'code' IS NULL
+        GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 30) t`,
+    },
+    {
+      title: '9. Facts by final Jev verdict',
+      sql: (
+        raw,
+      ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
+        SELECT f.k AS fact, f.v->'verification'->>'verdict' AS verdict,
+          count(*) FILTER (WHERE f.v->'value' = 'null'::jsonb) AS value_null,
+          count(*)
+        FROM job_extractions e
+        JOIN normalized_jobs j ON j."currentExtractionId" = e.id,
+          jsonb_each(e.data) f(k, v)
+        WHERE jsonb_typeof(f.v) = 'object' AND f.v->'verification' <> 'null'::jsonb
+        GROUP BY 1, 2 ORDER BY 1, 4 DESC) t`,
+    },
+    {
+      title: '10. Qualified matches with BOTH position and stack unknown',
+      sql: (
+        raw,
+      ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
+        SELECT j.id, left(j.title, 50) AS title, left(j."companyName", 25) AS company,
+          length(j."descriptionText") AS desc_len,
+          e.data->'isSoftwareEngineeringRole'->>'value' AS is_swe,
+          e.data->'position'->'verification'->>'verdict' AS pos_verdict,
+          e.data->'position'->'verification'->>'jevPick' AS jev_pick,
+          e."needsReview" AS needs_review
+        FROM job_matches m
+        JOIN normalized_jobs j ON j.id = m."jobId"
+        JOIN job_extractions e ON e.id = m."extractionId"
+        WHERE m.outcome = 'qualified'
+          AND EXISTS (SELECT 1 FROM jsonb_array_elements(m.checks) c
+                      WHERE c->>'rule' = 'position' AND c->>'outcome' = 'unknown')
+          AND EXISTS (SELECT 1 FROM jsonb_array_elements(m.checks) c
+                      WHERE c->>'rule' = 'stack' AND c->>'outcome' = 'unknown')
+        ORDER BY m."decidedAt" DESC LIMIT 40) t`,
+    },
+    {
+      title: '11. Processing attempts by step and outcome',
+      sql: (
+        raw,
+      ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
+        SELECT step, outcome, count(*),
+          round(avg("quoteFailures"), 2) AS avg_quote_failures,
+          round(sum("costUsd"), 4) AS cost_usd
+        FROM processing_attempts WHERE NOT eval
+        GROUP BY 1, 2 ORDER BY 1, 2) t`,
+    },
+    {
+      title: '12. Most common processing errors',
+      sql: (
+        raw,
+      ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
+        SELECT step, left(error, 110) AS error, count(*)
+        FROM processing_attempts WHERE NOT eval AND error IS NOT NULL
+        GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 15) t`,
+    },
+  ];
+
+async function main(): Promise<void> {
+  const logger = new Logger('AnalyzeMatches');
+  loadEnvironmentFiles();
+  const db = createDatabaseClient(
+    toDatabaseConfig(loadDatabaseEnvironment()),
+    logger,
+  );
+  try {
+    await db.transaction(async (tx) => {
+      await tx.execute(
+        tx.raw.sql`SET TRANSACTION READ ONLY`.affectedCount().build(),
+      );
+      for (const section of SECTIONS) {
+        const [row] = await tx.query(
+          section.sql(tx.raw).returnsRow({ rows: JSONB }).build(),
+        );
+        const rows = (row?.rows ?? []) as Record<string, unknown>[];
+        console.log(`\n== ${section.title} ==`);
+        if (rows.length === 0) console.log('(no rows)');
+        else console.table(rows);
+      }
+    });
+  } finally {
+    await db.close();
+  }
+}
+
+main().catch((error: unknown) => {
+  Logger.error(
+    error instanceof Error ? error.message : String(error),
+    undefined,
+    'AnalyzeMatches',
+  );
+  process.exit(1);
+});
