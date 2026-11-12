@@ -25,6 +25,7 @@ export class MemoryMatcherRepository extends MatcherRepository {
   context: MatchContext = {
     places: { countriesOfRegion: new Map(), countryOfCity: new Map() },
     implies: new Map(),
+    rates: new Map(),
   };
   contextLoads = 0;
   upserts: StoredMatch[][] = [];

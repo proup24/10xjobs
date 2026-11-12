@@ -43,6 +43,11 @@ export function exampleProfile(): MatchProfile {
       skill('docker', 7, 6),
       skill('aws', 6, 5),
     ],
+    salaryMin: null,
+    salaryCurrency: null,
+    salaryPeriod: null,
+    acceptsAnyCurrency: true,
+    acceptedCurrencies: [],
   };
 }
 

@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { DatabaseService } from 'src/database';
 import type { DatabaseTransaction } from '@xjobs/database';
 import { FACTS_VERSION } from 'src/modules/facts/config/facts.config';
+import { RatesRepository } from 'src/modules/rates';
 import { linkedInJobIds } from 'src/modules/processor';
 import { EXTRACTION_SCHEMA_VERSION } from 'src/modules/processor/schema';
 import type { PlacesByArrangement } from 'src/modules/users/types/place.types';
@@ -102,7 +103,10 @@ const STALE_ROW = (raw: Raw) =>
 
 @Injectable()
 export class PrismaMatcherRepository extends MatcherRepository {
-  constructor(private readonly database: DatabaseService) {
+  constructor(
+    private readonly database: DatabaseService,
+    private readonly rates: RatesRepository,
+  ) {
     super();
   }
 
@@ -176,6 +180,11 @@ export class PrismaMatcherRepository extends MatcherRepository {
       timezoneMax: p.timezoneMax,
       locations: p.locations as unknown as PlacesByArrangement,
       skills: skills.get(p.id) ?? [],
+      salaryMin: p.salaryMin,
+      salaryCurrency: p.salaryCurrency,
+      salaryPeriod: p.salaryPeriod as MatchProfile['salaryPeriod'],
+      acceptsAnyCurrency: p.acceptsAnyCurrency,
+      acceptedCurrencies: [...p.acceptedCurrencies],
     }));
   }
 
@@ -203,6 +212,7 @@ export class PrismaMatcherRepository extends MatcherRepository {
       countriesOfRegion.set(r.regionCode as string, set);
     }
     return {
+      rates: await this.rates.all(),
       places: {
         countriesOfRegion,
         countryOfCity: new Map(

@@ -11,6 +11,7 @@ import { EXTRACTION_SCHEMA_VERSION } from 'src/modules/processor/schema';
 import { fixtureDocument } from 'src/modules/processor/schema/fixture.testing';
 import { FACTS_VERSION } from 'src/modules/facts/config/facts.config';
 import { MATCHER_VERSION } from '../config/matcher.config';
+import { PrismaRatesRepository } from 'src/modules/rates/rates.repository';
 import {
   PrismaMatcherRepository,
   type StoredMatch,
@@ -314,7 +315,10 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
       slowQueryMs: 60000,
       logQueries: false,
     });
-    repo = new PrismaMatcherRepository({ db } as DatabaseService);
+    repo = new PrismaMatcherRepository(
+      { db } as DatabaseService,
+      new PrismaRatesRepository({ db } as DatabaseService),
+    );
     await sql`TRUNCATE processing_attempts, job_extractions, cities, region_countries, tech_tags, regions, countries, role_kinds, seniorities, arrangements, contract_types, engagements, junk_flags CASCADE`;
     await db.transaction((tx) =>
       processorListsSeed.run(tx, {} as SeedEnvironmentVariables),

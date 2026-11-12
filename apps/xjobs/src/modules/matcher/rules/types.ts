@@ -2,7 +2,13 @@ import type { JobFactsDocument } from 'src/modules/facts/schema/facts';
 import type { PlacesByArrangement } from 'src/modules/users/types/place.types';
 
 export type CheckOutcome = 'pass' | 'fail' | 'unknown';
-export type RuleName = 'position' | 'seniority' | 'location' | 'stack';
+export type RuleName =
+  | 'position'
+  | 'seniority'
+  | 'location'
+  | 'stack'
+  | 'salary'
+  | 'currency';
 
 /**
  * Whether a check's outcome rests on an unsure value (a fail so marked goes to review),
@@ -46,6 +52,12 @@ export interface MatchProfile {
   timezoneMax: number;
   locations: PlacesByArrangement;
   skills: MatchSkill[];
+  /** Minimum pay: all three set, or none. */
+  salaryMin: number | null;
+  salaryCurrency: string | null;
+  salaryPeriod: 'hour' | 'day' | 'month' | 'year' | null;
+  acceptsAnyCurrency: boolean;
+  acceptedCurrencies: string[];
 }
 
 export interface MatchJob {

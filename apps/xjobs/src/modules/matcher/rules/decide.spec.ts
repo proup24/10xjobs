@@ -8,6 +8,7 @@ import type { MatchJob } from './types';
 const ctx: MatchContext = {
   places: { countriesOfRegion: new Map(), countryOfCity: new Map() },
   implies: new Map(),
+  rates: new Map(),
 };
 
 const worldwide = {
@@ -53,7 +54,7 @@ const job = (facts: JobFactsDocument, needsReview = false): MatchJob => ({
 });
 
 describe('decide', () => {
-  it('always returns four checks in order, even after a fail', () => {
+  it('always returns six checks in order, even after a fail', () => {
     const d = decide(
       job(
         passingDoc((x) => {
@@ -68,6 +69,8 @@ describe('decide', () => {
       'seniority',
       'location',
       'stack',
+      'salary',
+      'currency',
     ]);
   });
 
@@ -86,8 +89,29 @@ describe('decide', () => {
   });
 
   it('qualifies when everything passes', () => {
-    const d = decide(job(passingDoc()), exampleProfile(), ctx);
+    const d = decide(
+      job(
+        passingDoc((x) => {
+          x.salary.value = {
+            min: null,
+            max: 150000,
+            currency: 'USD',
+            period: 'year',
+          };
+          x.salary.confidence = 'sure';
+        }),
+      ),
+      {
+        ...exampleProfile(),
+        salaryMin: 100000,
+        salaryCurrency: 'USD',
+        salaryPeriod: 'year',
+      },
+      ctx,
+    );
     expect(d.checks.map((c) => c.outcome)).toEqual([
+      'pass',
+      'pass',
       'pass',
       'pass',
       'pass',
