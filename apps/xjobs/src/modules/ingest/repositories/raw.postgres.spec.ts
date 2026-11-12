@@ -20,7 +20,9 @@ import ashby from '../utils/fixtures/ashby.json';
 import greenhouse from '../utils/fixtures/greenhouse.json';
 import linkedinJob from '../utils/fixtures/linkedin-job.json';
 import cheapJob from '../utils/fixtures/linkedin-job-cheap.json';
+import harvestJobs from '../utils/fixtures/linkedin-job-harvest.json';
 import {
+  linkJobSafely,
   PrismaRawStorageRepository,
   type SaveItemInput,
 } from './raw.repository';
@@ -139,7 +141,7 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
   beforeEach(async () => {
     await db.execute(
       db.raw
-        .sql`TRUNCATE normalized_job_sources, normalized_jobs, normalized_versions, raw_item_sightings, raw_item_versions, raw_items, collection_batches, search_segment_runs, query_search_builder CASCADE`
+        .sql`TRUNCATE normalized_job_sources, normalized_jobs, companies, normalized_versions, raw_item_sightings, raw_item_versions, raw_items, collection_batches, search_segment_runs, query_search_builder CASCADE`
         .affectedCount()
         .build(),
     );
@@ -743,6 +745,226 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
           `url:https://acme.com/jobs/7777${round}|Senior Backend Engineer`,
         );
       }
+    });
+
+    describe('harvestapi LinkedIn jobs', () => {
+      const remote = harvestJobs.find((j) => j.id === '4488222855')!;
+      const remoteCompany = remote.company as Record<string, unknown>;
+      const harvest = (
+        overrides: Record<string, unknown> = {},
+      ): Record<string, unknown> => ({
+        ...structuredClone(remote),
+        ...overrides,
+      });
+      /** The harvestapi copy of the job, applied to through its Ashby posting. */
+      const viaAshby = () =>
+        harvest({
+          applyMethod: { ...remote.applyMethod, companyApplyUrl: ashbyUrl },
+        });
+      /** The cheap_scraper copy of the same LinkedIn job: Easy Apply, keyed by its id. */
+      const cheap = () => ({
+        ...cheapJob,
+        jobId: remote.id,
+        jobUrl: `https://www.linkedin.com/jobs/view/${remote.id}`,
+        applyType: 'EASY_APPLY',
+        applyUrl: '',
+      });
+      const linkedinKey = `linkedin-job:${remote.id}`;
+      const ashbyKey = `ats:ashby/acme/${ashby.posting.id}`;
+      const jobByKey = async (jobKey: string) =>
+        (await db.orm.public.NormalizedJob.where({ jobKey }).first())!;
+      /** Marks the job processed by an extraction of its own. */
+      const processWith = async (jobId: string, data: { doc: string }) => {
+        const extraction = await db.orm.public.JobExtraction.create({
+          jobId,
+          inputHash: 'test',
+          schemaVersion: 2,
+          promptHash: 'test',
+          decisionModel: 'test',
+          extractionModel: 'test',
+          data,
+          needsReview: false,
+          worldwide: false,
+          regionCodes: [],
+          countryCodes: [],
+          cityIds: [],
+          techTags: ['node'],
+          mainStackTags: [],
+          costUsd: '0.25',
+        });
+        await db.orm.public.NormalizedJob.where({ id: jobId }).updateAll({
+          processingStatus: 'processed',
+          processingReason: null,
+          processingRequestedAt: null,
+          currentExtractionId: extraction.id,
+          processedAt: t1,
+        });
+        return extraction;
+      };
+
+      it('stores the listing fields and links the company', async () => {
+        await save(harvest(), t1);
+
+        const [only] = await jobs();
+        expect(only).toMatchObject({
+          workplaceType: 'remote',
+          employmentType: 'full_time',
+          regionCode: 'EU',
+          listingState: 'LISTED',
+          companyId: expect.any(String),
+          descriptionHtml: expect.any(String),
+        });
+        expect(only!.expiresAt).toBeInstanceOf(Date);
+        expect((only!.fieldSources as Record<string, string>).company).toBe(
+          await rawItemId(`id:${remote.id}`),
+        );
+      });
+
+      it('writes the company row from the fixture', async () => {
+        await save(harvest(), t1);
+
+        const [only] = await jobs();
+        const companies = await db.orm.public.Company.all();
+        expect(companies).toHaveLength(1);
+        expect(companies[0]).toMatchObject({
+          id: only!.companyId,
+          linkedinId: remoteCompany.id,
+          // The mapper stores the URL in its canonical form.
+          website: new URL(remoteCompany.website as string).href,
+          firstSeenAt: t1,
+          lastSeenAt: t1,
+        });
+      });
+
+      it('writes no company for a confidential poster', async () => {
+        await save(harvest({ company: null }), t1);
+
+        expect((await jobs())[0]!.companyId).toBeNull();
+        expect(await db.orm.public.Company.all()).toHaveLength(0);
+      });
+
+      it('keeps the newer company data when an older job is rebuilt', async () => {
+        await save(harvest(), t1);
+        const later = '4488222999';
+        await save(
+          harvest({
+            id: later,
+            linkedinUrl: `https://www.linkedin.com/jobs/view/${later}/`,
+            company: { ...remoteCompany, employeeCount: 4242 },
+          }),
+          t2,
+        );
+        expect((await db.orm.public.Company.all())[0]).toMatchObject({
+          employeeCount: 4242,
+          firstSeenAt: t1,
+          lastSeenAt: t2,
+        });
+
+        await linkJobSafely({ db } as DatabaseService, {
+          rawItemId: await rawItemId(`id:${remote.id}`),
+          observedAt: t1,
+          rebuild: true,
+        });
+        const companies = await db.orm.public.Company.all();
+        expect(companies).toHaveLength(1);
+        expect(companies[0]).toMatchObject({
+          employeeCount: 4242,
+          firstSeenAt: t1,
+          lastSeenAt: t2,
+        });
+        expect(new Set((await jobs()).map((j) => j.companyId))).toEqual(
+          new Set([companies[0]!.id]),
+        );
+      });
+
+      it('writes one company when its jobs are saved concurrently', async () => {
+        const [b1, b2] = [await batch(), await batch()];
+        const other = '4488222999';
+        await Promise.all([
+          repo.saveItem(input(b1, harvest(), t1)),
+          repo.saveItem(
+            input(
+              b2,
+              harvest({
+                id: other,
+                linkedinUrl: `https://www.linkedin.com/jobs/view/${other}/`,
+              }),
+              t2,
+            ),
+          ),
+        ]);
+        const companies = await db.orm.public.Company.all();
+        expect(companies).toHaveLength(1);
+        expect(companies[0]).toMatchObject({ firstSeenAt: t1, lastSeenAt: t2 });
+        expect((await jobs()).map((j) => j.companyId)).toEqual([
+          companies[0]!.id,
+          companies[0]!.id,
+        ]);
+      });
+
+      it('carries the extraction over when a re-key creates the job', async () => {
+        await save(cheap(), t1);
+        const old = await jobByKey(linkedinKey);
+        const extraction = await processWith(old.id, { doc: 'old' });
+
+        await save(viaAshby(), t2);
+
+        const merged = await jobByKey(linkedinKey);
+        const moved = await jobByKey(ashbyKey);
+        expect(merged).toMatchObject({
+          status: 'merged',
+          mergedIntoId: moved.id,
+        });
+        expect(moved).toMatchObject({
+          status: 'active',
+          processingStatus: 'processed',
+          processedAt: t1,
+        });
+        expect(moved.currentExtractionId).not.toBe(extraction.id);
+        const copy = await db.orm.public.JobExtraction.where({
+          id: moved.currentExtractionId!,
+        }).first();
+        expect(copy).toMatchObject({
+          jobId: moved.id,
+          data: { doc: 'old' },
+          techTags: ['node'],
+          inputHash: extraction.inputHash,
+        });
+        expect(Number(copy!.costUsd)).toBe(0);
+      });
+
+      it('keeps the extraction of the job a re-key moves into', async () => {
+        await save(ashby, t1, Channel.ASHBY);
+        const existing = await jobByKey(ashbyKey);
+        const own = await processWith(existing.id, { doc: 'ashby' });
+        await save(cheap(), t1);
+        await processWith((await jobByKey(linkedinKey)).id, { doc: 'old' });
+
+        await save(viaAshby(), t2);
+
+        expect(await jobByKey(linkedinKey)).toMatchObject({
+          status: 'merged',
+          mergedIntoId: existing.id,
+        });
+        expect(await jobByKey(ashbyKey)).toMatchObject({
+          status: 'active',
+          currentExtractionId: own.id,
+        });
+      });
+
+      it('carries no extraction when the re-keyed job was still pending', async () => {
+        await save(cheap(), t1);
+
+        await save(viaAshby(), t2);
+
+        expect(await jobByKey(linkedinKey)).toMatchObject({ status: 'merged' });
+        expect(await jobByKey(ashbyKey)).toMatchObject({
+          status: 'active',
+          processingStatus: 'pending',
+          currentExtractionId: null,
+        });
+        expect(await db.orm.public.JobExtraction.all()).toHaveLength(0);
+      });
     });
 
     describe('rebuild', () => {

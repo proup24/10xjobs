@@ -2,6 +2,7 @@ export { normalize, type NormalizeContext } from './normalize';
 export {
   emptyRecord,
   NORMALIZER_VERSION,
+  type NormalizedCompany,
   type NormalizedRecord,
   normalizedRecordSchema,
   type NormalizeResult,

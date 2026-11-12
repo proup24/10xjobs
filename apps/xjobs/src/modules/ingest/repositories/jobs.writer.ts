@@ -12,6 +12,7 @@ import {
   type NormalizedRecord,
   type ProcessingState,
 } from '../normalize';
+import { upsertCompany } from './companies.writer';
 
 /** What linking one raw item to its job did. */
 export type LinkOutcome =
@@ -91,6 +92,15 @@ function fieldColumns(record: NormalizedRecord): JobPatch {
     posterName: record.poster?.name ?? null,
     posterProfileUrl: record.poster?.profileUrl ?? null,
     posterType: record.poster?.type ?? null,
+    workplaceType: record.workplaceType,
+    remoteAllowed: record.remoteAllowed,
+    employmentType: record.employmentType,
+    countryCode: record.countryCode,
+    regionCode: record.regionCode,
+    applicantTrackingSystem: record.applicantTrackingSystem,
+    applicantCount: record.applicantCount,
+    expiresAt: record.expiresAt ? new Date(record.expiresAt) : null,
+    listingState: record.listingState,
     closed: record.closed,
   };
 }
@@ -178,13 +188,48 @@ async function remerge(tx: DatabaseTransaction, jobId: string): Promise<void> {
     };
   });
   const merged = mergeSources(merge);
+  // The company's facts are as recent as the source they came from.
+  const companySource = merge.find(
+    (s) => s.rawItemId === merged.fieldSources.company,
+  );
+  const companyId =
+    merged.record.company && companySource
+      ? await upsertCompany(tx, merged.record.company, companySource.lastSeenAt)
+      : null;
   await orm.public.NormalizedJob.where({ id: jobId }).updateAll({
     ...fieldColumns(merged.record),
+    companyId,
     fieldSources: merged.fieldSources as unknown as Json,
     firstSeenAt: items.map((i) => i.firstSeenAt).reduce(min),
     lastSeenAt: items.map((i) => i.lastSeenAt).reduce(max),
     normalizerVersion: NORMALIZER_VERSION,
   });
+}
+
+/**
+ * A re-keyed job's extraction, copied to the job that replaces it so the
+ * processed job needs no new model call. The copy cost nothing.
+ */
+async function carriedExtraction(
+  tx: DatabaseTransaction,
+  old: NormalizedJobRow,
+  jobId: string,
+): Promise<JobPatch> {
+  if (!old.currentExtractionId) return {};
+  const { orm } = tx;
+  const source = found(
+    await orm.public.JobExtraction.where({
+      id: old.currentExtractionId,
+    }).first(),
+    'previous extraction',
+  );
+  const { id: _id, createdAt: _createdAt, ...fields } = source;
+  const copy = await orm.public.JobExtraction.create({
+    ...fields,
+    jobId,
+    costUsd: '0',
+  });
+  return { currentExtractionId: copy.id, processedAt: old.processedAt };
 }
 
 /**
@@ -326,9 +371,10 @@ export async function linkJob(
         inherited = true;
         current = oldState;
         previousLastSeenAt = old.lastSeenAt;
-        await orm.public.NormalizedJob.where({ id: job.id }).updateAll(
-          processingColumns(oldState),
-        );
+        await orm.public.NormalizedJob.where({ id: job.id }).updateAll({
+          ...processingColumns(oldState),
+          ...(await carriedExtraction(tx, old, job.id)),
+        });
       } else if (
         oldState.status === 'pending' &&
         current.status !== 'pending'
