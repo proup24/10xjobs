@@ -84,7 +84,7 @@ Residence and work authorization are the work authorization rule's (below), not 
 | `residency`   | residency, citizenship, or `residenceCountry` |
 | `clearance`   | clearance                                     |
 
-for a place that covers the required one: the same code, a region that contains the required country or region, or a country inside a required region (a posting naming a region asks for one of its countries). A two-letter code that is a known region (`EU`) is a region. A required region the index doesn't know can't be compared, so that requirement is `unknown` unless an authorization names the same code.
+for a place that covers the required one (codes compared upper-cased): a `GLOBAL` or `WORLDWIDE` requirement is covered by any place; the same code; a required country inside the held place; or a required region that shares a country with the held place (a posting naming a region asks for one of its countries, so `FR` or `EU` meets an `EEA` requirement). A two-letter code that is a known region (`EU`) is a region. A required region the index doesn't know can't be compared, so that requirement is `unknown` unless an authorization names the same code.
 
 | Job                                                                                                   | Outcome   |
 | ----------------------------------------------------------------------------------------------------- | --------- |

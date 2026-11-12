@@ -13,6 +13,7 @@ const idx: PlaceIndex = {
   countriesOfRegion: new Map([
     ['EU', new Set(['FR', 'DE', 'ES'])],
     ['EMEA', new Set(['FR', 'DE', 'ES', 'MA', 'GB'])],
+    ['EEA', new Set(['FR', 'DE', 'ES', 'NO'])],
   ]),
   countryOfCity: new Map(),
 };
@@ -200,6 +201,94 @@ describe('checkWorkAuthorization', () => {
         profile({ authorizations: [auth('work-permit', 'APAC')] }),
       ),
     ).toBe('pass');
+  });
+
+  describe('region overlap and codes (R56)', () => {
+    it('an EU authorization meets an EEA requirement', () => {
+      expect(
+        outcome(
+          doc([['work-permit', 'EEA']]),
+          profile({ authorizations: [auth('work-permit', 'EU')] }),
+        ),
+      ).toBe('pass');
+    });
+
+    it('an EU authorization meets an EMEA requirement', () => {
+      expect(
+        outcome(
+          doc([['citizenship', 'EMEA']]),
+          profile({ authorizations: [auth('citizenship', 'EU')] }),
+        ),
+      ).toBe('pass');
+    });
+
+    it('a lower-case place is met by a US authorization', () => {
+      expect(
+        outcome(
+          doc([['work-permit', 'us']]),
+          profile({ authorizations: [auth('work-permit', 'US')] }),
+        ),
+      ).toBe('pass');
+      expect(
+        outcome(
+          doc([['work-permit', 'US']]),
+          profile({ authorizations: [auth('work-permit', 'us')] }),
+        ),
+      ).toBe('pass');
+    });
+
+    it('a GLOBAL citizenship requirement is met by any citizenship', () => {
+      for (const place of ['GLOBAL', 'WORLDWIDE', 'global'])
+        expect(
+          outcome(
+            doc([['citizenship', place]]),
+            profile({ authorizations: [auth('citizenship', 'MA')] }),
+          ),
+        ).toBe('pass');
+      // Only by a kind that meets it.
+      expect(
+        outcome(
+          doc([['citizenship', 'GLOBAL']]),
+          profile({ authorizations: [auth('work-permit', 'MA')] }),
+        ),
+      ).toBe('fail');
+    });
+
+    it('residency is met by citizenship', () => {
+      expect(
+        outcome(
+          doc([['residency', 'FR']]),
+          profile({ authorizations: [auth('citizenship', 'FR')] }),
+        ),
+      ).toBe('pass');
+    });
+
+    it('residency is met by a residency authorization', () => {
+      expect(
+        outcome(
+          doc([['residency', 'EU']]),
+          profile({ authorizations: [auth('residency', 'DE')] }),
+        ),
+      ).toBe('pass');
+    });
+
+    it('a sponsored unmet requirement with one that cannot be told is unknown', () => {
+      const c = checkWorkAuthorization(
+        doc(
+          [
+            ['work-permit', 'US'],
+            ['work-permit', 'APAC'],
+          ],
+          'yes',
+        ),
+        profile({
+          authorizations: [auth('work-permit', 'FR')],
+          acceptsSponsorship: true,
+        }),
+        idx,
+      );
+      expect(c).toMatchObject({ outcome: 'unknown', unsure: false });
+    });
   });
 
   describe('unsure', () => {

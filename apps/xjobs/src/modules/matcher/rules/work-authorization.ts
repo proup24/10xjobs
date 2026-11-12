@@ -30,19 +30,25 @@ function countriesOf(code: string, idx: PlaceIndex): Set<string> | null {
   return countries && countries.size > 0 ? countries : null;
 }
 
+/** Requirement places that name everywhere: met by any authorization of a fitting kind. */
+const EVERYWHERE = new Set(['GLOBAL', 'WORLDWIDE']);
+
 /**
- * Whether an authorization for `held` covers a requirement for `required`: the same
- * place, a required place inside the held one (a region covers its countries and the
- * regions within it), or a held country inside a required region (a posting naming a
- * region asks for one of its countries). `maybe` when the index cannot place either.
+ * Whether an authorization for `held` covers a requirement for `required` (codes compared
+ * upper-cased): a requirement for everywhere, the same code, a required country inside the
+ * held place, or a required region that shares a country with the held place (a posting
+ * naming a region asks for one of its countries). `maybe` when the index cannot place either.
  */
 function covers(held: string, required: string, idx: PlaceIndex): Overlap {
-  if (held === required) return 'yes';
-  const heldCountries = countriesOf(held, idx);
-  const requiredCountries = countriesOf(required, idx);
+  const h = held.toUpperCase();
+  const r = required.toUpperCase();
+  if (EVERYWHERE.has(r) || h === r) return 'yes';
+  const heldCountries = countriesOf(h, idx);
+  const requiredCountries = countriesOf(r, idx);
   if (!heldCountries || !requiredCountries) return 'maybe';
-  if ([...requiredCountries].every((c) => heldCountries.has(c))) return 'yes';
-  return isCountry(held, idx) && requiredCountries.has(held) ? 'yes' : 'no';
+  if (isCountry(r, idx)) return heldCountries.has(r) ? 'yes' : 'no';
+  for (const c of requiredCountries) if (heldCountries.has(c)) return 'yes';
+  return 'no';
 }
 
 function meets(
