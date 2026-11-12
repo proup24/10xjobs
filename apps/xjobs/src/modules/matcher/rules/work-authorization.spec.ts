@@ -16,6 +16,7 @@ const idx: PlaceIndex = {
     ['EEA', new Set(['FR', 'DE', 'ES', 'NO'])],
   ]),
   countryOfCity: new Map(),
+  countries: new Set(['US', 'FR', 'DE', 'ES', 'MA', 'GB', 'NO']),
 };
 
 const profile = (
@@ -183,6 +184,29 @@ describe('checkWorkAuthorization', () => {
           ['clearance', 'FR'],
         ]),
         profile({ authorizations: [auth('citizenship', 'FR')] }),
+      ),
+    ).toBe('fail');
+  });
+
+  it('a two-letter code that is not a known country is unknown, never a sure fail', () => {
+    // `UK` is not ISO (that is `GB`): it may be the user's place under another name.
+    const c = checkWorkAuthorization(
+      doc([['work-permit', 'UK']]),
+      profile({ authorizations: [auth('work-permit', 'FR')] }),
+      idx,
+    );
+    expect(c).toMatchObject({ outcome: 'unknown', unsure: false });
+    expect(
+      outcome(
+        doc([['work-permit', 'FR']]),
+        profile({ authorizations: [auth('work-permit', 'UK')] }),
+      ),
+    ).toBe('unknown');
+    // A known country the user lacks is still a sure fail.
+    expect(
+      outcome(
+        doc([['work-permit', 'GB']]),
+        profile({ authorizations: [auth('work-permit', 'FR')] }),
       ),
     ).toBe('fail');
   });

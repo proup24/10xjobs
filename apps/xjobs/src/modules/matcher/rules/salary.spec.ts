@@ -105,6 +105,19 @@ describe('checkSalary', () => {
   });
 });
 
+describe('checkSalary with no usable amount', () => {
+  it('a best pay of zero or less is unknown, never a fail', () => {
+    for (const max of [0, -5]) {
+      const c = checkSalary(doc({ max }), profile(), rates);
+      expect(c).toMatchObject({ outcome: 'unknown', unsure: false });
+      expect(c.reason).toBe('the job states no usable amount');
+    }
+    expect(checkSalary(doc({ min: 0 }), profile(), rates).outcome).toBe(
+      'unknown',
+    );
+  });
+});
+
 describe('checkCurrency', () => {
   const only = profile({
     acceptsAnyCurrency: false,
@@ -127,6 +140,12 @@ describe('checkCurrency', () => {
     expect(checkCurrency(doc({ currency: 'EUR' }), profile()).outcome).toBe(
       'pass',
     );
+  });
+
+  it('accepting any currency passes surely, even on an unsure salary', () => {
+    expect(
+      checkCurrency(doc({ currency: 'EUR' }, 'unsure'), profile()),
+    ).toMatchObject({ outcome: 'pass', unsure: false, unsureField: null });
   });
 
   it('unknown when no currency is stated', () => {

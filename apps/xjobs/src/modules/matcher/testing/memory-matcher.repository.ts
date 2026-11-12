@@ -23,7 +23,7 @@ export class MemoryMatcherRepository extends MatcherRepository {
   profiles: MatchProfile[] = [];
   rows: Stored[] = [];
   context: MatchContext = {
-    places: { countriesOfRegion: new Map(), countryOfCity: new Map() },
+    places: { countriesOfRegion: new Map(), countryOfCity: new Map(), countries: new Set() },
     implies: new Map(),
     rates: new Map(),
   };

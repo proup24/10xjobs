@@ -496,9 +496,11 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
   });
 
   describe('loadContext', () => {
-    it('reads regions, cities and approved tech implications', async () => {
+    it('reads regions, cities, approved countries and tech implications', async () => {
       const ctx = await repo.loadContext();
       expect(ctx.places.countriesOfRegion.size).toBeGreaterThan(0);
+      expect(ctx.places.countries.has('FR')).toBe(true);
+      expect(ctx.places.countries.has('UK')).toBe(false);
       expect(ctx.implies.has('nestjs')).toBe(true);
     });
   });

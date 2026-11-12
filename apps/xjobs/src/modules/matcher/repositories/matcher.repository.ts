@@ -270,6 +270,11 @@ export class PrismaMatcherRepository extends MatcherRepository {
         .returnsRow({ id: UUID, countryCode: TEXT })
         .build(),
     );
+    const countries = await this.db.query(
+      raw.sql`SELECT code FROM countries WHERE status = 'approved'`
+        .returnsRow({ code: TEXT })
+        .build(),
+    );
     const tags = await this.db.query(
       raw.sql`SELECT code, to_jsonb(implies) AS implies FROM tech_tags WHERE status = 'approved'`
         .returnsRow({ code: TEXT, implies: JSONB })
@@ -288,6 +293,7 @@ export class PrismaMatcherRepository extends MatcherRepository {
         countryOfCity: new Map(
           cities.map((c) => [c.id as string, c.countryCode as string]),
         ),
+        countries: new Set(countries.map((c) => c.code as string)),
       },
       implies: new Map(
         tags.map((t) => [

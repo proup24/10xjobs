@@ -6,7 +6,7 @@ import { exampleProfile, factsDoc } from './fixtures.testing';
 import type { MatchJob } from './types';
 
 const ctx: MatchContext = {
-  places: { countriesOfRegion: new Map(), countryOfCity: new Map() },
+  places: { countriesOfRegion: new Map(), countryOfCity: new Map(), countries: new Set() },
   implies: new Map(),
   rates: new Map(),
 };

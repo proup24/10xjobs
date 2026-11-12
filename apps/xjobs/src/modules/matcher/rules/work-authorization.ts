@@ -19,9 +19,14 @@ const SPONSORABLE = new Set<string>(['work-permit', 'residency']);
 
 const RANK: Record<Overlap, number> = { yes: 2, maybe: 1, no: 0 };
 
-/** A country code: two letters that are not a known region (`EU` is a region). */
+/**
+ * A known country code: two letters in the countries vocabulary and not a region (`EU` is a
+ * region). A non-ISO code such as `UK` is not one, so it stays `maybe` rather than a sure `no`.
+ */
 const isCountry = (code: string, idx: PlaceIndex): boolean =>
-  /^[A-Z]{2}$/.test(code) && !idx.countriesOfRegion.has(code);
+  /^[A-Z]{2}$/.test(code) &&
+  idx.countries.has(code) &&
+  !idx.countriesOfRegion.has(code);
 
 /** The countries a country or region code covers, or null when the index cannot say. */
 function countriesOf(code: string, idx: PlaceIndex): Set<string> | null {

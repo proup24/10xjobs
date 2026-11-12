@@ -44,6 +44,7 @@ export function checkSalary(
   if (!salary) return check('unknown', 'job states no salary');
   const best = salary.max ?? salary.min;
   if (best === null) return check('unknown', 'job states no salary amount');
+  if (best <= 0) return check('unknown', 'the job states no usable amount');
   if (salary.currency === null)
     return check('unknown', 'job salary has no known currency');
   const converted = convertPay(
@@ -108,7 +109,8 @@ export function checkCurrency(
       ...base,
       outcome: 'pass',
       reason: 'you accept any currency',
-      ...restsOn(unsureOf(facts)),
+      // Holds whatever the salary says, so it never rests on it.
+      ...restsOn(null),
     };
   const accepted = profile.acceptedCurrencies.includes(currency);
   return {
