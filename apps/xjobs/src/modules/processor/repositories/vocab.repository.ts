@@ -196,38 +196,29 @@ export class PrismaVocabRepository extends VocabRepository {
     const byKey = await inRetriedTransaction(this.database, async (tx) => {
       const found = new Map<string, string>();
       const now = new Date();
-      // Each country's cities, once: a name matches an existing city through
-      // its folded name or any alias, so a known city is never duplicated.
-      const known = new Map<
-        string,
-        Map<string, { id: string; occurrences: number }>
-      >();
+      // Each country's cities, read once and without a lock: a name matches an
+      // existing city through its folded name or any alias.
+      const known = new Map<string, Map<string, string>>();
       for (const [, { countryCode }] of cities) {
         if (known.has(countryCode)) continue;
-        const rows = await tx.orm.public.City.where({ countryCode })
-          .forNoKeyUpdate()
-          .all();
-        const forms = new Map<string, { id: string; occurrences: number }>();
+        const rows = await tx.orm.public.City.where({ countryCode }).all();
+        const forms = new Map<string, string>();
         for (const r of rows)
           for (const n of [r.name, ...r.aliases]) {
             const f = foldPlaceName(n);
-            if (f !== '' && !forms.has(f))
-              forms.set(f, { id: r.id, occurrences: r.occurrences });
+            if (f !== '' && !forms.has(f)) forms.set(f, r.id);
           }
         known.set(countryCode, forms);
       }
+      // Sightings per matched city, summed over every spelling in the batch.
+      const sightings = new Map<string, number>();
       for (const [k, { name, countryCode }, n] of cities) {
         const forms = known.get(countryCode)!;
         const folded = foldPlaceName(name);
-        const existing = forms.get(folded);
-        if (existing) {
-          await tx.orm.public.City.where({ id: existing.id }).updateAll({
-            occurrences: existing.occurrences + n,
-          });
-          // Later spellings of the same city count on top of this one.
-          for (const e of forms.values())
-            if (e.id === existing.id) e.occurrences += n;
-          found.set(k, existing.id);
+        const existingId = forms.get(folded);
+        if (existingId) {
+          sightings.set(existingId, (sightings.get(existingId) ?? 0) + n);
+          found.set(k, existingId);
         } else {
           const created = await tx.orm.public.City.create({
             name,
@@ -240,9 +231,19 @@ export class PrismaVocabRepository extends VocabRepository {
             firstSeenAt: now,
             approvedAt: null,
           });
-          forms.set(folded, { id: created.id, occurrences: n });
+          forms.set(folded, created.id);
           found.set(k, created.id);
         }
+      }
+      // Lock only the matched rows, in id order, so concurrent writers cannot deadlock.
+      for (const id of [...sightings.keys()].sort()) {
+        const row = await tx.orm.public.City.where({ id })
+          .forNoKeyUpdate()
+          .first();
+        if (row)
+          await tx.orm.public.City.where({ id }).updateAll({
+            occurrences: row.occurrences + sightings.get(id)!,
+          });
       }
       return found;
     });

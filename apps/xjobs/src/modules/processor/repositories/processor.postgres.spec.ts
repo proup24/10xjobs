@@ -749,6 +749,29 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       expect(after?.occurrences).toBe(5);
     });
 
+    it('sums the sightings of several spellings of one city in a batch', async () => {
+      const fes = await db.orm.public.City.create({
+        name: 'Fès',
+        nameKey: 'fès',
+        countryCode: 'MA',
+        geonamesId: null,
+        aliases: ['Fez'],
+        status: 'approved',
+        occurrences: 3,
+        firstSeenAt: new Date(),
+        approvedAt: new Date(),
+      });
+      const ids = await vocab.upsertCities([
+        { name: 'Fez', countryCode: 'MA' },
+        { name: 'Fes', countryCode: 'MA' },
+        { name: 'Fez', countryCode: 'MA' },
+      ]);
+      expect(ids.get('Fez|MA')).toBe(fes.id);
+      expect(ids.get('Fes|MA')).toBe(fes.id);
+      const after = await db.orm.public.City.where({ id: fes.id }).first();
+      expect(after?.occurrences).toBe(6);
+    });
+
     it('loads approved places and every city under its folded name and aliases', async () => {
       const fes = await db.orm.public.City.create({
         name: 'Fès',
