@@ -4,18 +4,28 @@ import type { PlacesByArrangement } from 'src/modules/users/types/place.types';
 export type CheckOutcome = 'pass' | 'fail' | 'unknown';
 export type RuleName = 'position' | 'seniority' | 'location' | 'stack';
 
-export interface Check {
+/**
+ * Whether a check's outcome rests on an unsure value (a fail so marked goes to review),
+ * and the fact it rests on (e.g. `seniority`, `openings`): always named when unsure.
+ */
+export type Sureness =
+  | { unsure: false; unsureField: null }
+  | { unsure: true; unsureField: string };
+
+/** Sure when no field is named; unsure on the named field. */
+export const restsOn = (field: string | null): Sureness =>
+  field === null
+    ? { unsure: false, unsureField: null }
+    : { unsure: true, unsureField: field };
+
+export type Check = {
   rule: RuleName;
   outcome: CheckOutcome;
   jobValue: unknown;
   profileValue: unknown;
   reason: string;
-  /** True when the outcome rests on an unsure value (a fail so marked goes to review). */
-  unsure: boolean;
-  /** The fact the unsure outcome rests on (e.g. `seniority`, `openings`); null when sure. */
-  unsureField: string | null;
   detail?: unknown;
-}
+} & Sureness;
 
 export type Confidence = 'sure' | 'unsure';
 

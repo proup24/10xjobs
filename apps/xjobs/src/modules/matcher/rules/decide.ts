@@ -58,7 +58,9 @@ export function decide(
   ];
   const fails = checks.filter((c) => c.outcome === 'fail');
   const rejected = fails.some((c) => !c.unsure);
-  const doubt = fails.find((c) => c.unsure);
+  const doubt = fails.find(
+    (c): c is Check & { unsure: true; unsureField: string } => c.unsure,
+  );
   const outcome: MatchOutcome = rejected
     ? 'rejected'
     : doubt
@@ -73,7 +75,7 @@ export function decide(
     unverified,
     review:
       outcome === 'review' && doubt
-        ? { rule: doubt.rule, field: doubt.unsureField ?? doubt.rule }
+        ? { rule: doubt.rule, field: doubt.unsureField }
         : null,
     stackScore: stack.score,
     checks,

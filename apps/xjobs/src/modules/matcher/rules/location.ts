@@ -6,6 +6,7 @@ import {
 import { overlaps, type Overlap, type PlaceIndex } from './places';
 import {
   bestOutcome,
+  restsOn,
   type Check,
   type CheckOutcome,
   type MatchProfile,
@@ -172,8 +173,7 @@ export function checkLocation(
     jobValue,
     profileValue: wanted,
     reason,
-    unsure,
-    unsureField: unsure ? 'openings' : null,
+    ...restsOn(unsure ? 'openings' : null),
     detail,
   };
 }

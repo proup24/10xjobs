@@ -1,6 +1,6 @@
 import type { JobFactsDocument } from 'src/modules/facts/schema/facts';
 import { SENIORITY_YEARS_MARGIN } from '../config/matcher.config';
-import type { Check, MatchProfile } from './types';
+import { restsOn, type Check, type MatchProfile } from './types';
 
 export function checkSeniority(
   doc: JobFactsDocument,
@@ -19,8 +19,7 @@ export function checkSeniority(
     jobValue,
     profileValue: profile.seniorities,
     reason,
-    unsure: unsureField !== null,
-    unsureField,
+    ...restsOn(unsureField),
   });
   const wanted = `[${profile.seniorities.join(', ')}]`;
 

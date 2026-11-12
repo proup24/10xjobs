@@ -1,5 +1,5 @@
 import type { JobFactsDocument } from 'src/modules/facts/schema/facts';
-import type { Check, MatchProfile } from './types';
+import { restsOn, type Check, type MatchProfile } from './types';
 
 export function checkPosition(
   doc: JobFactsDocument,
@@ -17,8 +17,7 @@ export function checkPosition(
     jobValue,
     profileValue: profile.position,
     reason,
-    unsure: unsureField !== null,
-    unsureField,
+    ...restsOn(unsureField),
   });
   const positionUnsure =
     doc.position.confidence === 'unsure' ? 'position' : null;

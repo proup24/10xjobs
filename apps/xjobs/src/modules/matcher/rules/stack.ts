@@ -1,6 +1,6 @@
 import type { Requirement, TechStack } from 'src/modules/processor/schema';
 import { MIN_STACK_SCORE } from '../config/matcher.config';
-import type { Check, Confidence, MatchSkill } from './types';
+import { restsOn, type Check, type Confidence, type MatchSkill } from './types';
 
 /** tech tag code -> codes it implies (tech_tags.implies). */
 export type ImpliesMap = Map<string, string[]>;
@@ -35,8 +35,30 @@ function masteryByCode(
 }
 
 /**
+ * Whether the scored units pass, given each unit's mastery (null when uncovered): some
+ * main unit is covered (when there are main units) and the score reaches the minimum.
+ */
+function wouldPass(
+  scored: Unit[],
+  masteryOf: (u: Unit) => number | null,
+): boolean {
+  const mains = scored.filter((u) => u.kind === 'main');
+  if (mains.length > 0 && mains.every((u) => masteryOf(u) === null))
+    return false;
+  let earned = 0;
+  let total = 0;
+  for (const u of scored) {
+    total += u.importance;
+    earned += u.importance * ((masteryOf(u) ?? 0) / 10);
+  }
+  return Math.round((earned / total) * 1000) / 1000 >= MIN_STACK_SCORE;
+}
+
+/**
  * `confidence` is the tech stack fact's own: an unsure fact makes any outcome rest on it.
- * Otherwise a failure is unsure when a main or must unit that decided it has an unsure member.
+ * Otherwise a failure is unsure only when it might not hold: counting every unit with an
+ * unsure requirement as covered at mastery 10 (the most favourable case), the stack would
+ * pass. A pass is unsure when a covered unit has an unsure requirement.
  */
 export function checkStack(
   stack: TechStack | null,
@@ -139,22 +161,21 @@ export function checkStack(
 
   let outcome: Check['outcome'] = 'pass';
   let reason = `job stack covered at ${score}: ${covered.join(', ') || 'none'}`;
-  // The units the outcome rests on: the covered ones for a pass, the missing ones for a fail.
-  let deciding = scored.filter((u) => coveredMastery(u) !== null);
   if (noMainCovered) {
     outcome = 'fail';
     reason = `none of the job's main technologies are in your stack: ${mainUnits.map(label).join(', ')}`;
-    deciding = mainUnits;
   } else if (score < MIN_STACK_SCORE) {
     outcome = 'fail';
     reason =
       uncovered.length > 0
         ? `stack coverage ${score} is below ${MIN_STACK_SCORE}; missing ${uncovered.join(', ')}`
         : `stack coverage ${score} is below ${MIN_STACK_SCORE}; every technology is covered but your mastery is low`;
-    const missing = scored.filter((u) => coveredMastery(u) === null);
-    deciding = missing.length > 0 ? missing : scored;
   }
-  const unsure = confidence === 'unsure' || deciding.some((u) => u.unsure);
+  const unsure =
+    confidence === 'unsure' ||
+    (outcome === 'pass'
+      ? scored.some((u) => u.unsure && coveredMastery(u) !== null)
+      : wouldPass(scored, (u) => (u.unsure ? 10 : coveredMastery(u))));
 
   return {
     check: {
@@ -163,8 +184,7 @@ export function checkStack(
       jobValue: scored.map(label),
       profileValue,
       reason,
-      unsure,
-      unsureField: unsure ? 'techStack' : null,
+      ...restsOn(unsure ? 'techStack' : null),
       detail: {
         covered,
         uncovered,
