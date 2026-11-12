@@ -38,6 +38,7 @@ export function parseReprocessArgs(
 export type VocabCommand =
   | { list: ListName | 'cities'; action: 'list' }
   | { list: ListName | 'cities'; action: 'approve' | 'reject'; code: string }
+  | { list: 'cities'; action: 'alias'; code: string; spelling: string }
   | { list: ListName; action: 'alias'; code: string; to: string };
 
 export function parseVocabArgs(rawArgv: readonly string[]): VocabCommand {
@@ -52,10 +53,6 @@ export function parseVocabArgs(rawArgv: readonly string[]): VocabCommand {
     return { list: named, action };
   }
   if (action === 'approve' || action === 'reject' || action === 'alias') {
-    if (action === 'alias' && named === 'cities')
-      throw new Error(
-        'alias is not supported for cities; approve or reject the city by id',
-      );
     if (code === undefined || code.startsWith('--'))
       throw new Error(
         `${action} needs a ${named === 'cities' ? 'city id' : 'code'}`,
@@ -63,6 +60,12 @@ export function parseVocabArgs(rawArgv: readonly string[]): VocabCommand {
     if (action !== 'alias') {
       if (rest.length > 0) throw new Error(`unexpected argument: ${rest[0]}`);
       return { list: named, action, code };
+    }
+    if (named === 'cities') {
+      if (rest[0] !== '--as' || !rest[1]?.trim())
+        throw new Error('alias needs --as "<spelling>"');
+      if (rest.length > 2) throw new Error(`unexpected argument: ${rest[2]}`);
+      return { list: 'cities', action, code, spelling: rest[1] };
     }
     if (rest[0] !== '--to' || rest[1] === undefined)
       throw new Error('alias needs --to <approved code>');

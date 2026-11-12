@@ -41,3 +41,22 @@ describe('MemoryVocabRepository approve and reject', () => {
     expect(await vocab.rejectCity(paris)).toBe(true);
   });
 });
+
+describe('MemoryVocabRepository aliasCity', () => {
+  it('appends to an approved city, skips folded duplicates, refuses others', async () => {
+    const vocab = new MemoryVocabRepository();
+    const ids = await vocab.upsertCities([
+      { name: 'Fès', countryCode: 'MA' },
+      { name: 'Rabat', countryCode: 'MA' },
+    ]);
+    const fes = ids.get('Fès|MA')!;
+    expect(await vocab.aliasCity(fes, 'Fez')).toBe(false);
+    await vocab.approveCity(fes);
+    expect(await vocab.aliasCity(fes, 'Fez')).toBe(true);
+    expect(await vocab.aliasCity(fes, 'FEZ')).toBe(true);
+    expect(await vocab.aliasCity(fes, 'Fes')).toBe(true);
+    expect(vocab.cities.find((c) => c.id === fes)?.aliases).toEqual(['Fez']);
+    expect(await vocab.aliasCity('missing', 'x')).toBe(false);
+    expect(await vocab.aliasCity(ids.get('Rabat|MA')!, 'x')).toBe(false);
+  });
+});

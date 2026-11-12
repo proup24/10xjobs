@@ -52,6 +52,12 @@ export abstract class VocabRepository {
    * extraction's `cityIds` still names it.
    */
   abstract rejectCity(id: string): Promise<boolean>;
+  /**
+   * Appends a spelling to an approved city's aliases; false when the city is
+   * missing or not approved. A spelling that already folds equal to the name
+   * or an alias adds nothing and still returns true.
+   */
+  abstract aliasCity(id: string, spelling: string): Promise<boolean>;
 }
 
 export interface ProposedTerm {
@@ -368,4 +374,30 @@ export class PrismaVocabRepository extends VocabRepository {
       return true;
     });
   }
+
+  async aliasCity(id: string, spelling: string): Promise<boolean> {
+    return inRetriedTransaction(this.database, async (tx) => {
+      const city = tx.orm.public.City;
+      const row = await city.where({ id }).forNoKeyUpdate().first();
+      if (row?.status !== 'approved') return false;
+      if (!addsAlias(row.name, row.aliases, spelling)) return true;
+      await city
+        .where({ id })
+        .updateAll({ aliases: [...row.aliases, spelling.trim()] });
+      return true;
+    });
+  }
+}
+
+/** Whether a spelling is new: it folds equal to neither the name nor an alias. */
+export function addsAlias(
+  name: string,
+  aliases: readonly string[],
+  spelling: string,
+): boolean {
+  const folded = foldPlaceName(spelling);
+  return (
+    folded !== '' &&
+    ![name, ...aliases].some((known) => foldPlaceName(known) === folded)
+  );
 }

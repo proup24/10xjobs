@@ -33,6 +33,7 @@ import {
   type ProposedCity,
   type ProposedTerm,
   type Vocabulary,
+  addsAlias,
 } from '../repositories/vocab.repository';
 import type { ListOptions } from '../schema';
 import { zodErrors } from '../schema/errors';
@@ -668,6 +669,14 @@ export class MemoryVocabRepository extends VocabRepository {
     );
     if (i < 0 || this.citiesInUse.has(id)) return false;
     this.cities.splice(i, 1);
+    return true;
+  }
+
+  async aliasCity(id: string, spelling: string): Promise<boolean> {
+    const city = this.cities.find((c) => c.id === id);
+    if (city?.status !== 'approved') return false;
+    const aliases = (city.aliases ??= []);
+    if (addsAlias(city.name, aliases, spelling)) aliases.push(spelling.trim());
     return true;
   }
 }
