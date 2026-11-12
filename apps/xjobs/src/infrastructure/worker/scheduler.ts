@@ -19,6 +19,12 @@ type SchedulerQueue = Pick<Queue, 'upsertJobScheduler' | 'removeJobScheduler'>;
 /** Nest injection token: whether this process registers schedulers (XJOBS_RUN_SCHEDULES). */
 export const RUN_SCHEDULES = Symbol('RUN_SCHEDULES');
 
+/** Nest injection token: whether collection workers enqueue one run at startup (NODE_ENV=development). */
+export const COLLECT_ON_START = Symbol('COLLECT_ON_START');
+
+/** Job id of the startup run; a fixed id keeps restarts from stacking runs. */
+export const COLLECT_ON_START_JOB_ID = 'collect-on-start';
+
 /** Makes the queue's cron scheduler match the channel's config; idempotent. */
 export async function syncCollectionScheduler(
   queue: SchedulerQueue,
