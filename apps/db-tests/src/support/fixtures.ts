@@ -158,7 +158,7 @@ type Channel =
   | 'LINKEDIN_POSTS'
   | 'GREEN_HOUSE'
   | 'ASHBY';
-type SeededJob = { jobId: string; extractionId: string };
+export type SeededJob = { jobId: string; extractionId: string };
 
 // Every row the detailed-job seeders create, in creation order; cleanup deletes in reverse.
 const detailedRows: Array<[table: string, id: string, idColumn: string]> = [];

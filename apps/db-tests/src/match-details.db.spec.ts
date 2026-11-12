@@ -9,6 +9,7 @@ import {
   seedFactConflict,
   seedMatchOn,
   seedProfile,
+  type SeededJob,
 } from './support/fixtures.js';
 import {
   cleanupTestUsers,
@@ -715,7 +716,7 @@ describe('match_details', () => {
       profileC = await seedProfile(c.id);
       await publishProfile(profileC);
     });
-    const one = async (job: { jobId: string }): Promise<Row> => {
+    const one = async (job: SeededJob): Promise<Row> => {
       await seedMatchOn(c.id, profileC, job);
       const rows = await call(c, {
         p_profile_id: profileC,
