@@ -234,6 +234,7 @@ export class ProfilesService {
         message: ELIGIBILITY_REQUIRED,
         code: ErrorCode.ELIGIBILITY_REQUIRED,
       });
+      
     const querySearches = await this.querySearch.generate(
       profile.id,
       toQuerySearchInput(profile, await labelsFor(this.profiles, profile)),
