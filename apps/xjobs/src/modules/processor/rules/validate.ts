@@ -37,6 +37,90 @@ type AnyFact = {
   value: unknown;
 };
 
+function invalidateQuote(holder: { quote: string; confidence: 'sure' | 'unsure' }): void {
+  holder.quote = '';
+  holder.confidence = 'unsure';
+}
+
+function checkFactQuotes(
+  facts: Record<string, AnyFact>,
+  isBad: (quote: string) => boolean,
+): number {
+  let failures = 0;
+  for (const [name, fact] of Object.entries(facts)) {
+    if (isBad(fact.quote)) {
+      invalidateQuote(fact);
+      failures++;
+    } else if (
+      fact.quote === '' &&
+      fact.confidence === 'sure' &&
+      fact.decidedBy === 'generator' &&
+      isEstablished(name, fact.value)
+    ) {
+      // The generator established a value without quoting the posting: not supported.
+      fact.confidence = 'unsure';
+    }
+  }
+  return failures;
+}
+
+function checkOpeningQuotes(
+  openings: ExtractionDocument['openings'],
+  isBad: (quote: string) => boolean,
+): number {
+  let failures = 0;
+  for (const opening of openings) {
+    if (isBad(opening.quote)) {
+      invalidateQuote(opening);
+      failures++;
+    } else if (
+      opening.quote === '' &&
+      opening.confidence === 'sure' &&
+      opening.decidedBy === 'generator' &&
+      opening.places.length > 0
+    ) {
+      opening.confidence = 'unsure';
+    }
+  }
+  return failures;
+}
+
+function checkTechStackQuotes(
+  techStack: ExtractionDocument['techStack'],
+  isBad: (quote: string) => boolean,
+): number {
+  let failures = 0;
+  for (const req of techStack.value?.requirements ?? []) {
+    if (isBad(req.quote)) {
+      invalidateQuote(req);
+      failures++;
+    } else if (
+      req.quote === '' &&
+      req.confidence === 'sure' &&
+      techStack.decidedBy === 'generator'
+    ) {
+      // A requirement with no quote from the posting is not supported.
+      req.confidence = 'unsure';
+    }
+  }
+  return failures;
+}
+
+function checkEnvelopeListQuotes(
+  envelope: { confidence: 'sure' | 'unsure'; value: Array<{ quote: string }> | null },
+  isBad: (quote: string) => boolean,
+): number {
+  let failures = 0;
+  for (const item of envelope.value ?? []) {
+    if (isBad(item.quote)) {
+      item.quote = '';
+      envelope.confidence = 'unsure';
+      failures++;
+    }
+  }
+  return failures;
+}
+
 /** Clear every quote that is not in the input and downgrade the fact that carried it. */
 export function checkQuotes(
   doc: ExtractionDocument,
@@ -48,7 +132,6 @@ export function checkQuotes(
       .filter((s): s is string => !!s)
       .join('\n'),
   );
-  let quoteFailures = 0;
   const bad = (quote: string): boolean =>
     quote !== '' && !haystack.includes(normalizeForQuote(quote));
 
@@ -62,68 +145,19 @@ export function checkQuotes(
     engagement: out.engagement,
     contractMonths: out.contractMonths,
     salary: out.salary,
-    // techStack is checked per requirement below: its envelope quote is unused.
+    // techStack is checked per requirement: its envelope quote is unused.
     requiredLanguages: out.requiredLanguages,
     workAuthorization: out.workAuthorization,
     junkFlags: out.junkFlags,
   };
-  for (const [name, fact] of Object.entries(facts)) {
-    if (bad(fact.quote)) {
-      fact.quote = '';
-      fact.confidence = 'unsure';
-      quoteFailures++;
-    } else if (
-      fact.quote === '' &&
-      fact.confidence === 'sure' &&
-      fact.decidedBy === 'generator' &&
-      isEstablished(name, fact.value)
-    ) {
-      // The generator established a value without quoting the posting: not supported.
-      fact.confidence = 'unsure';
-    }
-  }
-  for (const opening of out.openings) {
-    if (bad(opening.quote)) {
-      opening.quote = '';
-      opening.confidence = 'unsure';
-      quoteFailures++;
-    } else if (
-      opening.quote === '' &&
-      opening.confidence === 'sure' &&
-      opening.decidedBy === 'generator' &&
-      opening.places.length > 0
-    ) {
-      opening.confidence = 'unsure';
-    }
-  }
-  for (const req of out.techStack.value?.requirements ?? []) {
-    if (bad(req.quote)) {
-      req.quote = '';
-      req.confidence = 'unsure';
-      quoteFailures++;
-    } else if (
-      req.quote === '' &&
-      req.confidence === 'sure' &&
-      out.techStack.decidedBy === 'generator'
-    ) {
-      // A requirement with no quote from the posting is not supported.
-      req.confidence = 'unsure';
-    }
-  }
-  for (const lang of out.requiredLanguages.value ?? []) {
-    if (bad(lang.quote)) {
-      lang.quote = '';
-      out.requiredLanguages.confidence = 'unsure';
-      quoteFailures++;
-    }
-  }
-  for (const flag of out.junkFlags.value ?? []) {
-    if (bad(flag.quote)) {
-      flag.quote = '';
-      out.junkFlags.confidence = 'unsure';
-      quoteFailures++;
-    }
-  }
+
+  let quoteFailures = 0;
+  quoteFailures += checkFactQuotes(facts, bad);
+  quoteFailures += checkOpeningQuotes(out.openings, bad);
+  quoteFailures += checkTechStackQuotes(out.techStack, bad);
+  quoteFailures += checkEnvelopeListQuotes(out.requiredLanguages, bad);
+  quoteFailures += checkEnvelopeListQuotes(out.junkFlags, bad);
+
   return { doc: out, quoteFailures };
 }
 
