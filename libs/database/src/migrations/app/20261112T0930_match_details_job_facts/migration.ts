@@ -16,8 +16,11 @@ import {
 // database. Advancing the `db` ref writes `invariants: []`; re-add it, and keep the earlier ones.
 // It replaces match_details (the return columns change, so CREATE OR REPLACE cannot): the facts
 // now come from the job's `job_facts` row (the listing and the description combined, each fact
-// carrying its `source`) instead of the match's extraction, and a `conflicts` column lists where
-// the listing and the description disagreed. Everything else is as match-details-list-rows:
+// carrying its `source`, each opening its `arrangementSource` and `placesSource`) instead of the
+// match's extraction, and a `conflicts` column lists where the listing and the description
+// disagreed. `closed` is also true when job_facts is closed or the listing's expiresAt has
+// passed (an expired job stays matched and shows as closed). Everything else is as
+// match-details-list-rows:
 // - `p_details = false` returns light list rows (no checks, description, full facts or conflicts).
 // - Isolation is unchanged: rows are reached only through the caller's own job_matches
 //   (userId = auth.uid(), read once per call as `(SELECT auth.uid())`).
@@ -90,7 +93,8 @@ const facts = `jsonb_build_object(
           'label', z.tz->'label'
         ) ORDER BY z.ord), '[]'::jsonb)
         FROM jsonb_array_elements(o.opening->'timezones') WITH ORDINALITY z(tz, ord)),
-      'source', o.opening->'source',
+      'arrangementSource', o.opening->'arrangementSource',
+      'placesSource', o.opening->'placesSource',
       'quote', ${quote('o.opening')}
     ) ORDER BY o.ord), '[]'::jsonb)
     FROM jsonb_array_elements(x."openings") WITH ORDINALITY o(opening, ord)),
@@ -229,7 +233,9 @@ SELECT
   CASE WHEN p_details THEN m.checks END, m."decidedAt",
   j.kind, j.title, j."companyName", j."companyUrl", j.location,
   j."salaryText", j."salaryMin", j."salaryMax", j."salaryCurrency", j."salaryPeriod",
-  j."publishedAt", j."postedAt", j."firstSeenAt", j."lastSeenAt", j.closed,
+  j."publishedAt", j."postedAt", j."firstSeenAt", j."lastSeenAt",
+  -- Closed by its sources, by its combined facts, or by a LinkedIn listing past its expiry.
+  j.closed OR COALESCE(f.closed, false) OR (j."expiresAt" IS NOT NULL AND j."expiresAt" <= now()),
   j."postingUrl", j."applyUrl", j."posterName", j."posterProfileUrl", j."posterType",
   CASE WHEN p_details THEN j."descriptionText" END,
   ARRAY(

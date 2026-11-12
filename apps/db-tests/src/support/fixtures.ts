@@ -178,6 +178,8 @@ const FACT_FIELDS = [
   'seniority',
   'yearsRequired',
   'contractType',
+  'engagement',
+  'contractMonths',
   'requiredLanguages',
   'workAuthorization',
   'techStack',
@@ -185,13 +187,17 @@ const FACT_FIELDS = [
   'salary',
 ];
 
+type FactSource = 'description' | 'linkedin';
+
 /**
  * The job_facts document for an extraction document: the same facts, each sourced from the
- * description (`sources` overrides a field's source), openings sourced too.
+ * description (`sources` overrides a field's source), openings sourced per part too
+ * (`openingSources` overrides them).
  */
 export function factsDocumentFor(
   document: Record<string, unknown>,
-  sources: Record<string, 'description' | 'linkedin'> = {},
+  sources: Record<string, FactSource> = {},
+  openingSources: { arrangement?: FactSource; places?: FactSource } = {},
 ): Record<string, unknown> {
   const doc: Record<string, unknown> = { version: 1, closed: false };
   for (const f of FACT_FIELDS)
@@ -201,7 +207,8 @@ export function factsDocumentFor(
     };
   doc.openings = (document.openings as Record<string, unknown>[]).map((o) => ({
     ...o,
-    source: 'description',
+    arrangementSource: openingSources.arrangement ?? 'description',
+    placesSource: openingSources.places ?? 'description',
   }));
   return doc;
 }
@@ -210,6 +217,7 @@ export function factsDocumentFor(
 export async function seedJobFacts(
   job: SeededJob,
   facts: Record<string, unknown>,
+  closed = false,
 ): Promise<void> {
   const { error } = await admin().from('job_facts').insert({
     jobId: job.jobId,
@@ -217,7 +225,7 @@ export async function seedJobFacts(
     factsVersion: 1,
     factsHash: 'test',
     facts,
-    closed: false,
+    closed,
     builtAt: new Date().toISOString(),
   });
   if (error) throw new Error(`Could not insert job_facts: ${error.message}`);
@@ -502,7 +510,13 @@ export async function seedDetailedJob(
     /** Skip the job_facts row (a job still on a v2 extraction). */
     noFacts?: boolean;
     /** Per-field sources for the job_facts row; the rest come from the description. */
-    sources?: Record<string, 'description' | 'linkedin'>;
+    sources?: Record<string, FactSource>;
+    /** Per-part sources of the job_facts openings; both default to the description. */
+    openingSources?: { arrangement?: FactSource; places?: FactSource };
+    /** job_facts.closed (an expired LinkedIn listing); normalized_jobs.closed stays false. */
+    factsClosed?: boolean;
+    /** normalized_jobs.expiresAt. */
+    expiresAt?: string;
   } = {},
 ): Promise<SeededJob> {
   const status = opts.status ?? 'active';
@@ -524,6 +538,13 @@ export async function seedDetailedJob(
       .update({ firstSeenAt: opts.lastSeenAt, lastSeenAt: opts.lastSeenAt })
       .eq('id', jobId);
     if (error) throw new Error(`Could not set lastSeenAt: ${error.message}`);
+  }
+  if (opts.expiresAt) {
+    const { error } = await admin()
+      .from('normalized_jobs')
+      .update({ expiresAt: opts.expiresAt })
+      .eq('id', jobId);
+    if (error) throw new Error(`Could not set expiresAt: ${error.message}`);
   }
   const extractionId = await insertTracked('job_extractions', {
     jobId,
@@ -554,7 +575,12 @@ export async function seedDetailedJob(
   if (!opts.noFacts)
     await seedJobFacts(
       seeded,
-      factsDocumentFor(opts.document ?? detailedDocument(), opts.sources),
+      factsDocumentFor(
+        opts.document ?? detailedDocument(),
+        opts.sources,
+        opts.openingSources,
+      ),
+      opts.factsClosed ?? false,
     );
   return seeded;
 }

@@ -111,7 +111,8 @@ describe('factLines', () => {
           arrangements: [{ code: 'remote', label: 'Remote' }],
           places: [{ kind: 'country', code: 'MA', label: 'Morocco' }],
           timezones: [],
-          source: 'linkedin',
+          arrangementSource: 'linkedin',
+          placesSource: 'linkedin',
         },
       ],
       salary: {
@@ -130,6 +131,50 @@ describe('factLines', () => {
       text: 'USD 500+ per day',
       source: 'linkedin',
     });
+  });
+
+  it('marks places and arrangement from LinkedIn separately, per opening part', () => {
+    const opening = (arrangementSource: string, placesSource: string) => ({
+      arrangements: [{ code: 'hybrid', label: 'Hybrid' }],
+      places: [{ kind: 'country', code: 'FR', label: 'France' }],
+      timezones: [],
+      arrangementSource,
+      placesSource,
+    });
+    const placesListed = factLines({
+      ...noSalary,
+      facts: { openings: [opening('description', 'linkedin')] },
+    });
+    expect(placesListed.places).toEqual({ text: 'France', source: 'linkedin' });
+    expect(placesListed.arrangement).toEqual({
+      text: 'Hybrid',
+      source: 'description',
+    });
+    const arrangementListed = factLines({
+      ...noSalary,
+      facts: { openings: [opening('linkedin', 'description')] },
+    });
+    expect(arrangementListed.places).toEqual({
+      text: 'France',
+      source: 'description',
+    });
+    expect(arrangementListed.arrangement).toEqual({
+      text: 'Hybrid',
+      source: 'linkedin',
+    });
+    // A description top-level arrangement with LinkedIn places: only places are marked.
+    const stated = factLines({
+      ...noSalary,
+      facts: {
+        arrangement: { code: 'hybrid', label: 'Hybrid', source: 'description' },
+        openings: [opening('description', 'linkedin')],
+      },
+    });
+    expect(stated.arrangement).toEqual({
+      text: 'Hybrid',
+      source: 'description',
+    });
+    expect(stated.places).toEqual({ text: 'France', source: 'linkedin' });
   });
 
   it('takes the facts salary before the listing columns', () => {

@@ -158,11 +158,14 @@ export function factLines(
     ),
     arrangement: line(
       arrangement,
-      stated ? obj(f?.arrangement)?.source : firstLinkedIn(openings),
+      obj(f?.arrangement)?.source === 'linkedin' ||
+        (!stated && fromListing(openings, 'arrangementSource'))
+        ? 'linkedin'
+        : 'description',
     ),
     places: line(
       places.length ? places.join('; ') : null,
-      firstLinkedIn(openings),
+      fromListing(openings, 'placesSource') ? 'linkedin' : 'description',
     ),
     contractType: line(label(f?.contractType), obj(f?.contractType)?.source),
     engagement: line(label(f?.engagement), obj(f?.engagement)?.source),
@@ -177,11 +180,11 @@ export function factLines(
   };
 }
 
-/** 'linkedin' when any opening came from the listing. */
-const firstLinkedIn = (openings: unknown[]): FactSource =>
-  openings.some((o) => obj(o)?.source === 'linkedin')
-    ? 'linkedin'
-    : 'description';
+/** Whether any opening took that part (its arrangement or its places) from the listing. */
+const fromListing = (
+  openings: unknown[],
+  part: 'arrangementSource' | 'placesSource',
+): boolean => openings.some((o) => obj(o)?.[part] === 'linkedin');
 
 const CONFLICT_FIELDS = [
   'arrangement',

@@ -435,7 +435,8 @@ describe('match_details', () => {
           ],
           placeStrictness: opening.placeStrictness,
           timezones: opening.timezones,
-          source: 'description',
+          arrangementSource: 'description',
+          placesSource: 'description',
           quote: opening.quote,
         },
       ],
@@ -704,5 +705,126 @@ describe('match_details', () => {
     expect(rowsB.map((r) => [r.profileId, r.jobId])).toEqual([
       [profileB, jobShared],
     ]);
+  });
+
+  describe('on its own user', () => {
+    let c: TestUser;
+    let profileC: string;
+    beforeAll(async () => {
+      c = await createTestUser();
+      profileC = await seedProfile(c.id);
+      await publishProfile(profileC);
+    });
+    const one = async (job: { jobId: string }): Promise<Row> => {
+      await seedMatchOn(c.id, profileC, job);
+      const rows = await call(c, {
+        p_profile_id: profileC,
+        p_job_id: job.jobId,
+      });
+      expect(rows).toHaveLength(1);
+      return rows[0];
+    };
+
+    it('shows a job closed when its facts are closed or it has expired', async () => {
+      const factsClosed = await one(
+        await seedDetailedJob({ factsClosed: true }),
+      );
+      expect(factsClosed.closed).toBe(true);
+      const expired = await one(
+        await seedDetailedJob({ expiresAt: '2026-01-01T00:00:00Z' }),
+      );
+      expect(expired.closed).toBe(true);
+      const open = await one(
+        await seedDetailedJob({ expiresAt: '2999-01-01T00:00:00Z' }),
+      );
+      expect(open.closed).toBe(false);
+      const [listRow] = await call(c, {
+        p_profile_id: profileC,
+        p_job_id: factsClosed.jobId,
+        p_details: false,
+      });
+      expect(listRow.closed).toBe(true);
+    });
+
+    it('returns engagement and contract months', async () => {
+      const base = detailedDocument() as Record<
+        string,
+        Record<string, unknown>
+      >;
+      const row = await one(
+        await seedDetailedJob({
+          document: {
+            ...base,
+            engagement: {
+              ...base.engagement,
+              value: 'contractor',
+              quote: 'B2B',
+            },
+            contractMonths: {
+              ...base.contractMonths,
+              value: 6,
+              quote: 'Six months',
+            },
+          },
+        }),
+      );
+      const facts = row.facts as Record<string, unknown>;
+      expect(facts.engagement).toEqual({
+        code: 'contractor',
+        label: await labelOf('engagements', 'contractor'),
+        source: 'description',
+        quote: 'B2B',
+      });
+      expect(facts.contractMonths).toEqual({
+        months: 6,
+        source: 'description',
+        quote: 'Six months',
+      });
+    });
+
+    it("returns each opening's arrangement and places sources", async () => {
+      const row = await one(
+        await seedDetailedJob({ openingSources: { places: 'linkedin' } }),
+      );
+      const facts = row.facts as { openings: Record<string, unknown>[] };
+      expect(facts.openings[0]).toMatchObject({
+        arrangementSource: 'description',
+        placesSource: 'linkedin',
+      });
+      expect(facts.openings[0]).not.toHaveProperty('source');
+    });
+
+    it("never returns another job's conflicts", async () => {
+      const first = await seedDetailedJob();
+      const second = await seedDetailedJob();
+      await seedFactConflict(first, {
+        field: 'salary',
+        listingValue: 'first',
+        descriptionValue: 'first',
+        winner: 'description',
+      });
+      await seedFactConflict(second, {
+        field: 'places',
+        listingValue: 'second',
+        descriptionValue: 'second',
+        winner: 'description',
+      });
+      expect((await one(first)).conflicts).toEqual([
+        {
+          field: 'salary',
+          listingValue: 'first',
+          descriptionValue: 'first',
+          winner: 'description',
+        },
+      ]);
+      expect((await one(second)).conflicts).toEqual([
+        {
+          field: 'places',
+          listingValue: 'second',
+          descriptionValue: 'second',
+          winner: 'description',
+        },
+      ]);
+    });
   });
 });

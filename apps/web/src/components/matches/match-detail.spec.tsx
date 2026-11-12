@@ -124,6 +124,25 @@ describe('MatchDetail', () => {
     expect(role?.textContent).not.toContain('From LinkedIn');
   });
 
+  it('shows "From LinkedIn" on places only when only the places came from LinkedIn', () => {
+    renderDetail([
+      matchRow({
+        facts: {
+          ...facts,
+          openings: facts.openings.map((o) => ({
+            ...o,
+            placesSource: 'linkedin',
+          })),
+        },
+      }),
+    ]);
+    expect(screen.getAllByText('From LinkedIn')).toHaveLength(1);
+    const places = screen.getByText('Europe (CET)').parentElement;
+    expect(places?.textContent).toContain('From LinkedIn');
+    const arrangement = screen.getByText('Arrangement').parentElement;
+    expect(arrangement?.textContent).not.toContain('From LinkedIn');
+  });
+
   it('lists a conflict under its fact', () => {
     renderDetail([
       matchRow({
