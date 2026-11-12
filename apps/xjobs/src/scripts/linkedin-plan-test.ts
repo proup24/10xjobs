@@ -35,8 +35,8 @@ import { Logger } from '@nestjs/common';
 import { loadDatabaseEnvironment, toDatabaseConfig } from 'src/config';
 import { createDatabaseClient } from 'src/database';
 import { Channel } from 'src/common/enums';
-import { channelJobsConfig } from 'src/infrastructure/jobs/steps/collect/config';
 import {
+  CHEAP_SCRAPER_ACTOR,
   linkedinJobSearchUrl,
   toLinkedinJobBoardInput,
 } from 'src/modules/collectors/providers/mappers/cheap-scraper-input';
@@ -330,7 +330,7 @@ async function main(): Promise<void> {
     const token = process.env.APIFY_TOKEN;
     if (!token) throw new Error('APIFY_TOKEN is required');
     client = new ApifyClient({ token });
-    actor = channelJobsConfig[Channel.LINKEDIN_JOB_BOARD].run.actor;
+    actor = CHEAP_SCRAPER_ACTOR;
 
     try {
       if (sections.has('or')) {

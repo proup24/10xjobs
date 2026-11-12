@@ -1,5 +1,5 @@
 /**
- * Runs the LinkedIn job board actor once over the given search URLs and prints
+ * Runs the old LinkedIn job board actor (cheap_scraper) once over the given search URLs and prints
  * what we need to tune collection: the `searchString` each search's items
  * carry (collection no longer reads it; LinkedIn may rewrite it), the fields
  * of a sample job and its company profile, and the cost. A paid run (capped at $0.05); run it by hand:
@@ -12,9 +12,10 @@
 import '../environment';
 import { parseArgs } from 'node:util';
 import { ApifyClient } from 'apify-client';
-import { channelJobsConfig } from 'src/infrastructure/jobs/steps/collect/config';
-import { Channel } from 'src/common/enums';
-import { toLinkedinJobBoardInput } from 'src/modules/collectors/providers/mappers/cheap-scraper-input';
+import {
+  CHEAP_SCRAPER_ACTOR,
+  toLinkedinJobBoardInput,
+} from 'src/modules/collectors/providers/mappers/cheap-scraper-input';
 
 const MAX_CHARGE_USD = 0.05;
 
@@ -42,7 +43,7 @@ async function main(): Promise<void> {
   const token = process.env.APIFY_TOKEN;
   if (!token) throw new Error('APIFY_TOKEN is required');
 
-  const actor = channelJobsConfig[Channel.LINKEDIN_JOB_BOARD].run.actor;
+  const actor = CHEAP_SCRAPER_ACTOR;
   const client = new ApifyClient({ token });
   const run = await client.actor(actor).call(
     {

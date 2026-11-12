@@ -3,6 +3,9 @@
  * the shared-searches planner is revised.
  */
 
+/** The old actor these inputs are for; the engine now runs harvestapi. */
+export const CHEAP_SCRAPER_ACTOR = 'cheap_scraper/linkedin-job-scraper';
+
 /** LinkedIn has no `GLOBAL` location; its worldwide search is `Worldwide`. */
 function linkedinLocation(value: unknown): string | null {
   if (typeof value !== 'string' || !value) return null;

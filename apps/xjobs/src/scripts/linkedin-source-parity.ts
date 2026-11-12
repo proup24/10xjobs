@@ -19,12 +19,12 @@ import '../environment';
 import { parseArgs } from 'node:util';
 import { ApifyClient } from 'apify-client';
 import {
+  CHEAP_SCRAPER_ACTOR,
   linkedinJobSearchUrl,
   toLinkedinJobBoardInput,
 } from 'src/modules/collectors/providers/mappers/cheap-scraper-input';
 import { toHarvestJobSearchInput } from 'src/modules/collectors/providers/mappers/linkedin-job-board.mapper';
 
-const CHEAP_ACTOR = 'cheap_scraper/linkedin-job-scraper';
 const HARVEST_ACTOR = 'harvestapi/linkedin-job-search';
 const RUN_CAP_USD = 0.03;
 const RESERVED_LIMIT_USD = 0.2;
@@ -117,7 +117,7 @@ async function main(): Promise<void> {
     console.error(`cheap_scraper: ${spec}`);
     const url = linkedinJobSearchUrl(keyword, params, ONE_DAY_SECONDS);
     const cheapRun = await client
-      .actor(CHEAP_ACTOR)
+      .actor(CHEAP_SCRAPER_ACTOR)
       .call(toLinkedinJobBoardInput(url, MAX_ITEMS), options);
     const cheapItems = (
       await client.dataset(cheapRun.defaultDatasetId).listItems()
