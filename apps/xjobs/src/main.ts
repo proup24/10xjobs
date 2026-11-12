@@ -14,8 +14,7 @@ import type { EnvironmentVariables } from 'src/config';
 import { EnvironmentType } from 'src/common/enums';
 import { getHostName } from 'src/utils';
 import { CorseConfig } from './cors';
-import { traceIdMiddleware } from 'src/common/middleware';
-import { engineKeyMiddleware } from 'src/common/auth';
+import { engineKeyMiddleware, traceIdMiddleware } from 'src/common/middleware';
 
 const APP_CONFIG = {
   name: 'MAIN FILE',

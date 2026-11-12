@@ -1,7 +1,6 @@
 import { isSearchableTech } from '@xjobs/database/enums';
 import type { RankedSkill, TechnologySet } from '../types';
 
-export const QUERY_SEARCH_TOP_TECHNOLOGIES = 2;
 
 /** Importance desc, mastery desc, then technology name asc. */
 const compareSkills = (a: RankedSkill, b: RankedSkill): number =>
@@ -24,7 +23,7 @@ export function topSkills(skills: RankedSkill[]): RankedSkill[] {
     .filter((skill) => hasSearchWording(skill.technology))
     .sort(compareSkills))
     if (!best.has(skill.technology)) best.set(skill.technology, skill);
-  return [...best.values()].slice(0, QUERY_SEARCH_TOP_TECHNOLOGIES);
+  return [...best.values()];
 }
 
 /** The user's best technologies; see {@link topSkills}. */

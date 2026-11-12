@@ -8,7 +8,7 @@ import { DatabaseModule } from 'src/database';
 import { RedisModule } from 'src/infrastructure/redis/redis.module';
 import { JobsModule } from 'src/infrastructure/jobs/jobs.module';
 import { UsersModule } from 'src/modules/users';
-import { AuthModule } from 'src/common/auth';
+import { AuthModule } from 'src/modules/auth';
 import { HealthController } from './controllers/health.controller';
 import { HealthService } from './services/health.service';
 import { operatorImports } from './operator.module';
