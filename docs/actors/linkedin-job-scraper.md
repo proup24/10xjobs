@@ -1,3 +1,5 @@
+> Replaced by harvestapi on 2026-11-11; kept for the old raw items.
+
 # LinkedIn Jobs Scraper | Remove Duplicate Jobs | Pay Per Result (`cheap_scraper/linkedin-job-scraper`) Actor
 
 Scrape LinkedIn jobs by keywords and location or by LinkedIn search URLs, or both. Export to JSON, CSV or Excel. No login or cookies needed. Filter jobs, filter with AI, remove duplicates, add company data, and automate with n8n, Make, Zapier or AI agents.

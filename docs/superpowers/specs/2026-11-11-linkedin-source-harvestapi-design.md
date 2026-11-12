@@ -1,7 +1,7 @@
 # LinkedIn source: move to harvestapi (Phase 3, slice 01)
 
 Date: 2026-11-11
-Status: draft
+Status: approved
 Roadmap: [01-linkedin-source-data](../../roadmap/phase-3-find-quality/01-linkedin-source-data.md)
 
 ## Intent
