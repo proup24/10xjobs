@@ -6,6 +6,7 @@ import type {
   SegmentResult,
   SegmentSearch,
 } from 'src/modules/collectors';
+import { linkedinGeoId } from 'src/modules/collectors/providers/mappers/linkedin-job-board.mapper';
 import { ingestConfig, parseBatchFile } from 'src/modules/ingest';
 import type { QuerySearchService } from 'src/modules/queries';
 import { segmentHash } from 'src/modules/segments';
@@ -378,6 +379,40 @@ describe('CollectionService.collect', () => {
       expect(ingestQueue.enqueue).toHaveBeenCalledTimes(1);
     },
   );
+
+  it('fails only the LinkedIn search whose place has no geoId, naming it, and runs the rest', async () => {
+    const linkedin = {
+      channel: Channel.LINKEDIN_JOB_BOARD,
+      type: Arrangement.onsite,
+    };
+    const good = builder({ ...linkedin, params: { location: 'emea' } });
+    const bad = builder({ ...linkedin, params: { location: 'atlantis' } });
+    // Like the real collector, resolve each query's geoId before any run.
+    const { collection, segments, collector } = setup(
+      [good, bad],
+      async (s) => {
+        for (const query of s.queries) linkedinGeoId(query.params);
+        return resultFor(s);
+      },
+      Channel.LINKEDIN_JOB_BOARD,
+    );
+    const summary = await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+    expect(collector.collect).toHaveBeenCalledTimes(2);
+    expect(segments.collected.map((c) => c.run.queryIds)).toEqual([[good.id]]);
+    expect(segments.runs).toHaveLength(1);
+    expect(segments.runs[0]).toMatchObject({
+      status: 'failed',
+      queryIds: [bad.id],
+    });
+    expect(segments.runs[0].error).toContain(
+      'No LinkedIn geoId for location "atlantis"',
+    );
+    expect(summary).toMatchObject({
+      segments: 2,
+      segmentsFailed: 1,
+      batches: 1,
+    });
+  });
 
   it('treats unreported cost as zero in totals while retaining null in the run', async () => {
     const { collection, segments } = setup(builders(1), async (search) =>

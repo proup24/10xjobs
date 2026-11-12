@@ -179,6 +179,18 @@ describe('buildSegments', () => {
     expect(segments).toHaveLength(5);
   });
 
+  it('gives a LinkedIn builder with an unknown place a segment of its own, apart from real searches', () => {
+    const good = builder({ params: { location: 'emea' } });
+    const bad = builder({ params: { location: 'atlantis' } });
+    const segments = buildSegments([good, bad]);
+    expect(segments).toHaveLength(2);
+    const unresolved = segments.find((s) => s.members[0].id === bad.id);
+    expect(unresolved?.key).toBe(
+      `${Channel.LINKEDIN_JOB_BOARD}|backend|onsite|unresolved:${bad.id}`,
+    );
+    expect(unresolved?.members).toEqual([bad]);
+  });
+
   it('keeps each member cursor when builders are regrouped', () => {
     const remote = { type: Arrangement.remote };
     const until = new Date('2026-11-01T12:00:00Z');

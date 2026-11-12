@@ -21,11 +21,18 @@ export const SEGMENT_SIZE = 10;
 /**
  * The exact search a LinkedIn job board builder runs (`linkedinSearchKey`): one
  * segment is one search, so the actor's results belong to every member and a
- * search's row limit and charge cap are its own.
+ * search's row limit and charge cap are its own. A builder whose search can't
+ * be resolved (a place with no geoId) gets a segment of its own, keyed so it
+ * can't collide with a real search: its run fails loudly, naming the place,
+ * and every other segment still runs.
  */
 function linkedinJobBoardSearch(builder: QuerySearchBuilderRow): string {
   const params = (builder.params ?? {}) as Record<string, unknown>;
-  return `search:${linkedinSearchKey(builder.keyword, params)}`;
+  try {
+    return `search:${linkedinSearchKey(builder.keyword, params)}`;
+  } catch {
+    return `unresolved:${builder.id}`;
+  }
 }
 
 /**
