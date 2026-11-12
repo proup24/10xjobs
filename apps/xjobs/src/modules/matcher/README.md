@@ -1,6 +1,6 @@
 # Matcher
 
-The matcher is the fourth stage of the pipeline (Collect → Ingest → Process → **Match**). For each processed job it decides, for every published profile, whether the job is `qualified` or `rejected`, and stores every check it ran with the values it compared. No model is called: the matcher reads the job's combined facts (`job_facts`, built by `src/modules/facts` from the extraction and the LinkedIn listing), which use the same codes as the profile, so matching compares codes.
+The matcher is the fourth stage of the pipeline (Collect → Ingest → Process → **Match**). For each processed job it decides, for every published profile, whether the job is `qualified`, `rejected` or sent to `review`, and stores every check it ran with the values it compared. No model is called: the matcher reads the job's combined facts (`job_facts`, built by `src/modules/facts` from the extraction and the LinkedIn listing), which use the same codes as the profile, so matching compares codes.
 
 Design: `docs/superpowers/specs/2026-11-08-matching-design.md`.
 
@@ -28,7 +28,7 @@ Design: `docs/superpowers/specs/2026-11-08-matching-design.md`.
 
 ## Rules
 
-The decision for one (profile, job): `rejected` when at least one check is `fail`; otherwise `qualified`. A qualified decision is `unverified` when at least one check is `unknown` or the extraction has `needsReview`. A fact the job does not state (`unstated`, `null`, no places) is `unknown`, never a rejection on its own.
+The decision for one (profile, job): `rejected` when at least one check fails on a sure value; otherwise `review` when a check fails only on an unsure value (the first such check, in rule order, is recorded as `reviewRule` and `reviewField`); otherwise `qualified`. A qualified decision is `unverified` when at least one check is `unknown` or rests on an unsure value, or the extraction has `needsReview`. Each check carries `unsure` (and `unsureField`): position on `position` or `isSoftwareEngineeringRole`, seniority on `seniority` or, through the years fallback, `yearsRequired`, location on `openings` (a failing opening is unsure when the part that decided it, its arrangement, places or time zones, came from the description and the opening is unsure; a part from LinkedIn is sure; any unsure failing opening makes the failure unsure, since that opening might fit), and stack on `techStack` (the fact is unsure, or a main or must unit that decided the failure has an unsure requirement). The "neither the role nor the stack" failure is sure. An unsure value never rejects. A fact the job does not state (`unstated`, `null`, no places) is `unknown`, never a rejection on its own.
 
 **Position** (first row that applies decides):
 
@@ -81,7 +81,7 @@ One definition serves the worker, the sweep and `db:rematch`: the job is an acti
 
 ## The `job_matches` table
 
-One row per `(profileId, jobId)`, upserted (no history). Columns: `userId`, `profileId`, `jobId`, `extractionId` (the extraction the facts were built from), `factsHash` (the facts the decision read; a row is stale when it differs from `job_facts.factsHash`), `matcherVersion`, `outcome` (`qualified` | `rejected`), `unverified`, `stackScore` (0 to 1, nullable), `checks` (jsonb, one entry per rule: `rule`, `outcome`, `jobValue`, `profileValue`, `reason`, `detail`), `decidedAt` (when `outcome` last changed), timestamps. The owner can `SELECT` their rows through RLS; only the engine writes.
+One row per `(profileId, jobId)`, upserted (no history). Columns: `userId`, `profileId`, `jobId`, `extractionId` (the extraction the facts were built from), `factsHash` (the facts the decision read; a row is stale when it differs from `job_facts.factsHash`, or its `extractionId` is not the job's current extraction, whose `needsReview` the decision reads), `matcherVersion`, `outcome` (`qualified` | `rejected` | `review`), `unverified` (only on `qualified`), `reviewRule` and `reviewField` (set exactly on `review`), `stackScore` (0 to 1, nullable), `checks` (jsonb, one entry per rule: `rule`, `outcome`, `jobValue`, `profileValue`, `reason`, `unsure`, `unsureField`, `detail`), `decidedAt` (when `outcome` last changed), timestamps. The owner can `SELECT` their rows through RLS; only the engine writes.
 
 ## Running it
 

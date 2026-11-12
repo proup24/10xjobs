@@ -107,4 +107,80 @@ describe('checkLocation', () => {
     expect(check.outcome).toBe('fail');
     expect(check.reason).toContain('remote');
   });
+
+  describe('unsure', () => {
+    const limited = (edit: Partial<Opening>) =>
+      opening({
+        arrangements: ['onsite'],
+        places: [berlin],
+        placeStrictness: 'limit',
+        ...edit,
+      });
+    const check = (openings: Opening[], p = profile) =>
+      checkLocation(openings, p, idx);
+
+    it('an unsure description place that does not fit is unsure', () => {
+      expect(check([limited({ confidence: 'unsure' })])).toMatchObject({
+        outcome: 'fail',
+        unsure: true,
+        unsureField: 'openings',
+      });
+    });
+    it('a sure opening that does not fit is sure', () => {
+      expect(check([limited({})])).toMatchObject({
+        outcome: 'fail',
+        unsure: false,
+        unsureField: null,
+      });
+    });
+    it('a LinkedIn place that does not fit is sure, whatever the opening confidence', () => {
+      const p = exampleProfile();
+      p.locations.remote = [];
+      p.locations.hybrid = [];
+      expect(
+        check([limited({ confidence: 'unsure', placesSource: 'linkedin' })], p),
+      ).toMatchObject({ outcome: 'fail', unsure: false });
+    });
+    it('an unwanted LinkedIn arrangement is sure', () => {
+      const p = exampleProfile();
+      p.locations.remote = [];
+      expect(
+        check(
+          [opening({ confidence: 'unsure', arrangementSource: 'linkedin' })],
+          p,
+        ),
+      ).toMatchObject({ outcome: 'fail', unsure: false });
+    });
+    it('an unwanted unsure description arrangement is unsure', () => {
+      const p = exampleProfile();
+      p.locations.remote = [];
+      expect(check([opening({ confidence: 'unsure' })], p)).toMatchObject({
+        outcome: 'fail',
+        unsure: true,
+      });
+    });
+    it('a LinkedIn place failing under an unsure description arrangement is unsure when another arrangement is wanted', () => {
+      // Onsite in Berlin does not fit, but remote (wanted) might be the real arrangement.
+      expect(
+        check([limited({ confidence: 'unsure', placesSource: 'linkedin' })]),
+      ).toMatchObject({ outcome: 'fail', unsure: true });
+    });
+    it('an unsure remote time zone that does not fit is unsure', () => {
+      expect(
+        check([
+          opening({
+            places: [{ kind: 'worldwide' }],
+            placeStrictness: 'limit',
+            timezones: [{ fromUtc: -8, toUtc: -6, label: 'x' }],
+            confidence: 'unsure',
+          }),
+        ]),
+      ).toMatchObject({ outcome: 'fail', unsure: true });
+    });
+    it('any unsure failing opening makes the failure unsure', () => {
+      expect(
+        check([limited({}), limited({ confidence: 'unsure' })]),
+      ).toMatchObject({ outcome: 'fail', unsure: true });
+    });
+  });
 });

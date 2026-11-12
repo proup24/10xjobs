@@ -138,4 +138,50 @@ describe('checkStack', () => {
       ],
     });
   });
+
+  describe('unsure', () => {
+    const unsure = (r: Requirement): Requirement => ({
+      ...r,
+      confidence: 'unsure',
+    });
+    it('an uncovered unsure main requirement makes the failure unsure', () => {
+      const r = run(
+        stackOf([unsure(req('react', 'main', 9)), req('nextjs', 'main', 9)]),
+      );
+      expect(r.check).toMatchObject({
+        outcome: 'fail',
+        unsure: true,
+        unsureField: 'techStack',
+      });
+    });
+    it('an unsure nice requirement does not decide the failure', () => {
+      const r = run(
+        stackOf([req('react', 'main', 9), unsure(req('vue', 'nice', 3))]),
+      );
+      expect(r.check).toMatchObject({
+        outcome: 'fail',
+        unsure: false,
+        unsureField: null,
+      });
+    });
+    it('an unsure uncovered must requirement makes a low score unsure', () => {
+      const r = run(
+        stackOf([
+          req('python', 'main', 2),
+          unsure(req('java', 'must', 10)),
+          req('kotlin', 'must', 10),
+        ]),
+      );
+      expect(r.check).toMatchObject({ outcome: 'fail', unsure: true });
+    });
+    it('an unsure stack fact makes the failure unsure', () => {
+      const r = checkStack(
+        stackOf([req('react', 'main', 9)]),
+        skills,
+        implies,
+        'unsure',
+      );
+      expect(r.check).toMatchObject({ outcome: 'fail', unsure: true });
+    });
+  });
 });

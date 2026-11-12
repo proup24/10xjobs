@@ -35,4 +35,40 @@ describe('checkSeniority', () => {
     expect(c.outcome).toBe('unknown');
     expect('jobValue' in c).toBe(true);
   });
+
+  describe('unsure', () => {
+    it('a failing seniority resting on an unsure seniority is unsure', () => {
+      const d = doc('junior');
+      d.seniority.confidence = 'unsure';
+      expect(checkSeniority(d, profile)).toMatchObject({
+        outcome: 'fail',
+        unsure: true,
+        unsureField: 'seniority',
+      });
+    });
+    it('the years fallback resting on unsure years is unsure, on yearsRequired', () => {
+      const d = doc('unstated', 8);
+      d.yearsRequired.confidence = 'unsure';
+      expect(checkSeniority(d, profile)).toMatchObject({
+        outcome: 'fail',
+        unsure: true,
+        unsureField: 'yearsRequired',
+      });
+    });
+    it('the years fallback is sure when only the seniority is unsure', () => {
+      const d = doc('unstated', 8);
+      d.seniority.confidence = 'unsure';
+      expect(checkSeniority(d, profile)).toMatchObject({
+        outcome: 'fail',
+        unsure: false,
+      });
+    });
+    it('a sure failure is not unsure', () => {
+      expect(checkSeniority(doc('junior'), profile)).toMatchObject({
+        outcome: 'fail',
+        unsure: false,
+        unsureField: null,
+      });
+    });
+  });
 });

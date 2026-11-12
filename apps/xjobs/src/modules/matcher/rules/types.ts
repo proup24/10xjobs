@@ -10,8 +10,14 @@ export interface Check {
   jobValue: unknown;
   profileValue: unknown;
   reason: string;
+  /** True when the outcome rests on an unsure value (a fail so marked goes to review). */
+  unsure: boolean;
+  /** The fact the unsure outcome rests on (e.g. `seniority`, `openings`); null when sure. */
+  unsureField: string | null;
   detail?: unknown;
 }
+
+export type Confidence = 'sure' | 'unsure';
 
 export interface MatchSkill {
   technology: string;

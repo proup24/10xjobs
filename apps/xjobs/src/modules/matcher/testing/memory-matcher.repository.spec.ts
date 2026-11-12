@@ -10,6 +10,7 @@ const row = (jobId: string): StoredMatch =>
     factsHash: 'h',
     outcome: 'qualified',
     unverified: false,
+    review: null,
     stackScore: null,
     checks: [],
   }) as StoredMatch;

@@ -2367,6 +2367,20 @@
                   "kind": "scalar"
                 }
               },
+              "reviewField": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "reviewRule": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "stackScore": {
                 "nullable": true,
                 "type": {
@@ -2502,6 +2516,12 @@
                 },
                 "profileId": {
                   "column": "profileId"
+                },
+                "reviewField": {
+                  "column": "reviewField"
+                },
+                "reviewRule": {
+                  "column": "reviewRule"
                 },
                 "stackScore": {
                   "column": "stackScore"
@@ -8343,14 +8363,19 @@
             "job_matches": {
               "checks": [
                 {
-                  "expression": "outcome IN ('qualified','rejected')",
-                  "name": "job_matches_outcome_99dbf9c9",
+                  "expression": "outcome IN ('qualified','rejected','review')",
+                  "name": "job_matches_outcome_df17b99b",
                   "prefix": "job_matches_outcome"
                 },
                 {
-                  "expression": "NOT (outcome = 'rejected' AND unverified)",
-                  "name": "job_matches_rejected_verified_42d2b1cf",
+                  "expression": "NOT (outcome IN ('rejected','review') AND unverified)",
+                  "name": "job_matches_rejected_verified_13f93349",
                   "prefix": "job_matches_rejected_verified"
+                },
+                {
+                  "expression": "(outcome = 'review') = (\"reviewRule\" IS NOT NULL AND \"reviewField\" IS NOT NULL) AND (\"reviewRule\" IS NULL) = (\"reviewField\" IS NULL)",
+                  "name": "job_matches_review_reason_86bdbab5",
+                  "prefix": "job_matches_review_reason"
                 },
                 {
                   "expression": "\"stackScore\" IS NULL OR \"stackScore\" BETWEEN 0 AND 1",
@@ -8418,6 +8443,16 @@
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
                   "nullable": false
+                },
+                "reviewField": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "reviewRule": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
                 },
                 "stackScore": {
                   "codecId": "pg/numeric@1",
@@ -11812,7 +11847,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "a0e7e5cdb988c28b56a83fac52a2d9083dc8f30c34ed4db1e7736337e485494d"
+    "storageHash": "7a9202b8254003df747c0106c86d0819f4e33a3cb129ff331fc2f1a9fafd5a95"
   },
   "execution": {
     "executionHash": "9c0694a80d5f7adf167bc3288d7926267ba4776ae99e720efce6b64a0f440673",

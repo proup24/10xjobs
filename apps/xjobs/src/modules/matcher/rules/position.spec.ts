@@ -43,4 +43,40 @@ describe('checkPosition', () => {
       checkPosition(withRole('fullstack_engineer'), profile).jobValue,
     ).toBe('fullstack_engineer');
   });
+
+  describe('unsure', () => {
+    it('a failing role resting on an unsure position is unsure, on that field', () => {
+      const d = withRole('fullstack_engineer');
+      d.position.confidence = 'unsure';
+      const c = checkPosition(d, profile);
+      expect(c).toMatchObject({
+        outcome: 'fail',
+        unsure: true,
+        unsureField: 'position',
+      });
+    });
+    it('a non engineering role resting on an unsure flag is unsure, on that field', () => {
+      const d = withRole('backend_engineer', false);
+      d.isSoftwareEngineeringRole.confidence = 'unsure';
+      expect(checkPosition(d, profile)).toMatchObject({
+        outcome: 'fail',
+        unsure: true,
+        unsureField: 'isSoftwareEngineeringRole',
+      });
+    });
+    it('a non engineering role is sure when only the position is unsure', () => {
+      const d = withRole('backend_engineer', false);
+      d.position.confidence = 'unsure';
+      expect(checkPosition(d, profile)).toMatchObject({
+        outcome: 'fail',
+        unsure: false,
+        unsureField: null,
+      });
+    });
+    it('a sure failure is not unsure', () => {
+      expect(
+        checkPosition(withRole('fullstack_engineer'), profile),
+      ).toMatchObject({ outcome: 'fail', unsure: false, unsureField: null });
+    });
+  });
 });

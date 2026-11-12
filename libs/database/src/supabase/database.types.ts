@@ -635,6 +635,8 @@ export type Database = {
           matcherVersion: number;
           outcome: string;
           profileId: string;
+          reviewField: string | null;
+          reviewRule: string | null;
           stackScore: number | null;
           unverified: boolean;
           updatedAt: string;
@@ -652,6 +654,8 @@ export type Database = {
           matcherVersion: number;
           outcome: string;
           profileId: string;
+          reviewField?: string | null;
+          reviewRule?: string | null;
           stackScore?: number | null;
           unverified: boolean;
           updatedAt?: string;
@@ -668,6 +672,8 @@ export type Database = {
           matcherVersion?: number;
           outcome?: string;
           profileId?: string;
+          reviewField?: string | null;
+          reviewRule?: string | null;
           stackScore?: number | null;
           unverified?: boolean;
           updatedAt?: string;

@@ -8,7 +8,7 @@ import { EXTRACTION_SCHEMA_VERSION } from 'src/modules/processor/schema';
 import type { PlacesByArrangement } from 'src/modules/users/types/place.types';
 import { MATCH_BACKFILL_DAYS, MATCHER_VERSION } from '../config/matcher.config';
 import type { Decision, MatchContext } from '../rules/decide';
-import type { Check, MatchProfile } from '../rules/types';
+import type { Check, MatchProfile, RuleName } from '../rules/types';
 
 /** A decision as stored: one row per profile and job. */
 export interface StoredMatch extends Decision {
@@ -18,6 +18,13 @@ export interface StoredMatch extends Decision {
   extractionId: string;
   /** The hash of the `job_facts` the decision read; `''` on a row decided before job facts (never current). */
   factsHash: string;
+}
+
+/** What a current row was decided on: the job's facts and its current extraction. */
+export interface StaleFor {
+  jobId: string;
+  factsHash: string;
+  extractionId: string;
 }
 
 /** A matchable job's current extraction, which the facts are built from. */
@@ -30,9 +37,12 @@ export interface MatchCandidate {
 export abstract class MatcherRepository {
   /** The job's current extraction when the job is matchable, else null. */
   abstract loadCandidate(jobId: string): Promise<MatchCandidate | null>;
-  /** Published profiles with skills. `onlyStaleFor`: only those whose row for that job is missing, has another factsHash, or an older matcherVersion. */
+  /**
+   * Published profiles with skills. `onlyStaleFor`: only those whose row for that job is
+   * missing, or has another factsHash, another extractionId, or an older matcherVersion.
+   */
   abstract listPublishedProfiles(opts?: {
-    onlyStaleFor?: { jobId: string; factsHash: string };
+    onlyStaleFor?: StaleFor;
   }): Promise<MatchProfile[]>;
   abstract loadContext(): Promise<MatchContext>;
   abstract upsertMatches(rows: StoredMatch[]): Promise<void>;
@@ -79,14 +89,16 @@ const STALE_FACTS = (raw: Raw) =>
     OR j."updatedAt" > f."builtAt"
     OR (NOT f.closed AND j."expiresAt" <= now()))`.returns(BOOL);
 
-/** A published profile `p` has no row for the job `j` decided on its facts `f` by this matcher. */
+/**
+ * A published profile `p` has no row for the job `j` decided on its facts `f` and its
+ * current extraction (whose `needsReview` the decision reads) by this matcher.
+ */
 const STALE_ROW = (raw: Raw) =>
   raw.sql`NOT EXISTS (
     SELECT 1 FROM job_matches m
     WHERE m."profileId" = p.id AND m."jobId" = j.id
-      AND m."factsHash" = f."factsHash" AND m."matcherVersion" >= ${MATCHER_VERSION}::int)`.returns(
-    BOOL,
-  );
+      AND m."factsHash" = f."factsHash" AND m."extractionId" = j."currentExtractionId"
+      AND m."matcherVersion" >= ${MATCHER_VERSION}::int)`.returns(BOOL);
 
 @Injectable()
 export class PrismaMatcherRepository extends MatcherRepository {
@@ -116,7 +128,7 @@ export class PrismaMatcherRepository extends MatcherRepository {
   }
 
   async listPublishedProfiles(
-    opts: { onlyStaleFor?: { jobId: string; factsHash: string } } = {},
+    opts: { onlyStaleFor?: StaleFor } = {},
   ): Promise<MatchProfile[]> {
     const { raw, orm } = this.db;
     const stale = opts.onlyStaleFor;
@@ -129,6 +141,7 @@ export class PrismaMatcherRepository extends MatcherRepository {
                   SELECT 1 FROM job_matches m
                   WHERE m."profileId" = p.id AND m."jobId" = ${stale.jobId}::uuid
                     AND m."factsHash" = ${stale.factsHash}::text
+                    AND m."extractionId" = ${stale.extractionId}::uuid
                     AND m."matcherVersion" >= ${MATCHER_VERSION}::int)`
                 .returnsRow({ id: UUID })
                 .build(),
@@ -213,15 +226,18 @@ export class PrismaMatcherRepository extends MatcherRepository {
         await tx.execute(
           tx.raw.sql`INSERT INTO job_matches
               (id, "userId", "profileId", "jobId", "extractionId", "factsHash", "matcherVersion",
-               outcome, unverified, "stackScore", checks, "decidedAt")
+               outcome, unverified, "reviewRule", "reviewField", "stackScore", checks, "decidedAt")
             VALUES (${randomUUID()}::uuid, ${r.userId}::uuid, ${r.profileId}::uuid, ${r.jobId}::uuid,
               ${r.extractionId}::uuid, ${r.factsHash}::text, ${MATCHER_VERSION}::int, ${r.outcome}::text,
-              ${r.unverified}::boolean, NULLIF(${r.stackScore === null ? '' : String(r.stackScore)}::text, '')::numeric,
+              ${r.unverified}::boolean,
+              NULLIF(${r.review?.rule ?? ''}::text, ''), NULLIF(${r.review?.field ?? ''}::text, ''),
+              NULLIF(${r.stackScore === null ? '' : String(r.stackScore)}::text, '')::numeric,
               ${JSON.stringify(r.checks)}::jsonb, now())
             ON CONFLICT ("profileId", "jobId") DO UPDATE SET
               "extractionId" = EXCLUDED."extractionId", "factsHash" = EXCLUDED."factsHash",
               "matcherVersion" = EXCLUDED."matcherVersion",
               outcome = EXCLUDED.outcome, unverified = EXCLUDED.unverified,
+              "reviewRule" = EXCLUDED."reviewRule", "reviewField" = EXCLUDED."reviewField",
               "stackScore" = EXCLUDED."stackScore", checks = EXCLUDED.checks, "updatedAt" = now(),
               "decidedAt" = CASE WHEN job_matches.outcome = EXCLUDED.outcome
                                  THEN job_matches."decidedAt" ELSE now() END`
@@ -279,7 +295,7 @@ export class PrismaMatcherRepository extends MatcherRepository {
     const { raw } = this.db;
     const rows = await this.db.query(
       raw.sql`SELECT "profileId", "userId", "jobId", "extractionId", "factsHash", outcome,
-          unverified, "stackScore", checks
+          unverified, "reviewRule", "reviewField", "stackScore", checks
         FROM job_matches WHERE "jobId" = ${jobId}::uuid
         ORDER BY "profileId" ASC`
         .returnsRow({
@@ -290,6 +306,8 @@ export class PrismaMatcherRepository extends MatcherRepository {
           factsHash: TEXT,
           outcome: TEXT,
           unverified: BOOL,
+          reviewRule: TEXT,
+          reviewField: TEXT,
           stackScore: 'pg/numeric@1',
           checks: JSONB,
         })
@@ -303,6 +321,13 @@ export class PrismaMatcherRepository extends MatcherRepository {
       factsHash: (r.factsHash as string | null) ?? '',
       outcome: r.outcome as Decision['outcome'],
       unverified: r.unverified as boolean,
+      review:
+        r.reviewRule === null
+          ? null
+          : {
+              rule: r.reviewRule as RuleName,
+              field: r.reviewField as string,
+            },
       stackScore: r.stackScore === null ? null : Number(r.stackScore),
       checks: r.checks as unknown as Check[],
     }));
