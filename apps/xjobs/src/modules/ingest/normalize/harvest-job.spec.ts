@@ -137,6 +137,22 @@ describe('normalize harvestapi LinkedIn jobs', () => {
     expect(map({ ...remote, company: { name: 'X' } }).company).toBeNull();
   });
 
+  it('keeps the company name and page of a poster with no company id', () => {
+    const r = map({ ...remote, company: { name: 'X' } });
+    expect(r.company).toBeNull();
+    expect(r.companyName).toBe('X');
+    expect(r.companyUrl).toBeNull();
+    const withPage = map({
+      ...remote,
+      company: {
+        name: 'X',
+        linkedinUrl: 'https://www.linkedin.com/company/x/?trk=public_jobs',
+      },
+    });
+    expect(withPage.company).toBeNull();
+    expect(withPage.companyUrl).toBe('https://www.linkedin.com/company/x/');
+  });
+
   it('drops bad values', () => {
     expect(
       map({ ...remote, salary: { text: null, min: null, max: null } }).salary,

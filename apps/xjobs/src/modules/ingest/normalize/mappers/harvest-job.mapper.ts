@@ -114,8 +114,11 @@ export function mapHarvestJob(
   return emptyRecord({
     kind: 'job',
     title: cleanText(p.title),
-    companyName: company?.name ?? null,
-    companyUrl: company?.linkedinUrl ?? null,
+    // A confidential poster has no company id, so no company, but may still name one.
+    companyName: company?.name ?? cleanText(objectAt(p.company).name),
+    companyUrl:
+      company?.linkedinUrl ??
+      withoutTrk(httpUrl(objectAt(p.company).linkedinUrl)),
     location: cleanText(objectAt(p.location).linkedinText),
     contractType: contractText(employmentType),
     experienceLevel: cleanText(p.experienceLevel),
