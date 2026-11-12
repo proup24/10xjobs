@@ -530,7 +530,7 @@ importers:
         specifier: ^1.4.7
         version: 1.4.7
       franc:
-        specifier: ^6.2.0
+        specifier: 6.2.0
         version: 6.2.0
       html-to-text:
         specifier: 9.0.5

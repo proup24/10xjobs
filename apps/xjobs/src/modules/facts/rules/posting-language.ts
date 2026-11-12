@@ -6,6 +6,9 @@ export interface PostingLanguages {
   confident: boolean;
 }
 
+// Any franc upgrade or change to these thresholds or the table below changes the detected
+// languages: bump FACTS_VERSION (facts/config/facts.config.ts) with it.
+
 /** Below this many characters (of the text, and of its detected paragraphs) nothing is sure. */
 const MIN_TEXT = 200;
 /** A paragraph shorter than this is not detected (franc's `minLength`). */
@@ -14,15 +17,18 @@ const MIN_PARAGRAPH = 50;
 const MIN_SHARE = 0.25;
 /**
  * A paragraph counts only when the runner-up scores at least this far below the winner
- * (franc scores the winner 1). A bare list of tool names scores Portuguese and Galician
- * within 0.002 of each other; real prose leaves 0.03 or more.
+ * (franc scores the winner 1). A paragraph mixing French and English sentences scores the
+ * two within 0.004 to 0.056, and a bare list of tool names within 0.002; single-language
+ * prose leaves a clear gap to its nearest unrelated rival.
  */
-const MIN_MARGIN = 0.02;
+const MIN_MARGIN = 0.06;
 
 /**
  * franc's ISO 639-3 codes to the ISO 639-1 codes of the `languages` vocabulary
  * (`iso_languages`), for every language franc can detect that has one. franc reports some
  * macrolanguages by a member (`arb` for Arabic, `pes` for Persian, `cmn` for Chinese).
+ * Galician (`glg`) is left out on purpose: franc reads European Portuguese as Galician,
+ * which would reject a Portuguese speaker.
  */
 const ISO_639_1: Record<string, string> = {
   afr: 'af', // Afrikaans
@@ -50,7 +56,6 @@ const ISO_639_1: Record<string, string> = {
   ewe: 'ee', // Ewe
   fin: 'fi', // Finnish
   fra: 'fr', // French
-  glg: 'gl', // Galician
   guj: 'gu', // Gujarati
   hat: 'ht', // Haitian
   hau: 'ha', // Hausa

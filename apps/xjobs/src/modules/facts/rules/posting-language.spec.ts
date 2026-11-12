@@ -23,6 +23,23 @@ const ENGLISH_FR = [
   'You will own the services that move money between our customers and their banks, and you will work closely with our product team.',
 ].join('\n\n');
 
+const PORTUGUESE = [
+  'Estamos à procura de um engenheiro de backend com experiência para integrar a nossa equipa de pagamentos em Lisboa. Vais desenhar e construir os serviços que ligam os nossos clientes aos seus bancos.',
+  'Tens pelo menos cinco anos de experiência com Go ou Python, preocupas-te com a fiabilidade e gostas de trabalhar de perto com a equipa de produto.',
+  'Oferecemos um salário competitivo, horário flexível, um orçamento anual para formação e a possibilidade de trabalhar a partir de casa.',
+].join('\n\n');
+
+/** Scored close to Galician by franc. */
+const PORTUGUESE_SHORT = [
+  'Procuramos um engenheiro de backend para integrar a nossa equipa de pagamentos. Vais desenhar e construir os serviços que ligam os nossos clientes aos seus bancos.',
+  'Tens pelo menos cinco anos de experiência com Go ou Python e gostas de trabalhar com a equipa de produto.',
+  'Oferecemos um salário competitivo, horário flexível e a possibilidade de trabalhar a partir de casa.',
+].join('\n\n');
+
+/** French and English sentences alternating in one paragraph. */
+const ALTERNATING =
+  'Nous recherchons un développeur backend senior. We are looking for a senior backend developer. Vous travaillerez sur notre plateforme de paiement en Java. You will work on our payment platform in Java. Nous offrons un salaire attractif et du télétravail. We offer an attractive salary and remote work options.';
+
 describe('detectPostingLanguages', () => {
   it('detects an English posting', () => {
     expect(detectPostingLanguages(ENGLISH)).toEqual({
@@ -51,6 +68,22 @@ describe('detectPostingLanguages', () => {
     const result = detectPostingLanguages(text);
     expect(result.confident).toBe(true);
     expect([...result.codes].sort()).toEqual(['en', 'fr']);
+  });
+
+  it('a paragraph alternating French and English sentences is not confident', () => {
+    expect(ALTERNATING.length).toBeGreaterThan(200);
+    expect(detectPostingLanguages(ALTERNATING)).toEqual({
+      codes: [],
+      confident: false,
+    });
+  });
+
+  it('a Portuguese posting is Portuguese, never Galician', () => {
+    expect(detectPostingLanguages(PORTUGUESE)).toEqual({
+      codes: ['pt'],
+      confident: true,
+    });
+    expect(detectPostingLanguages(PORTUGUESE_SHORT).codes).not.toContain('gl');
   });
 
   it('a short text is not confident', () => {
