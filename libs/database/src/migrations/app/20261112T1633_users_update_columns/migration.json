@@ -1,0 +1,9 @@
+{
+  "from": "c7e224b8457ff39be47ce7029466d362a15f7c5c9d93c0db4aa43ab160462815",
+  "to": "c7e224b8457ff39be47ce7029466d362a15f7c5c9d93c0db4aa43ab160462815",
+  "providedInvariants": [
+    "users-update-columns"
+  ],
+  "createdAt": "2026-11-12T16:33:16.768Z",
+  "migrationHash": "569c6ffe610f2ef8ab05a121e63debd780bd96bf9de11c64d81aefc6443088ce"
+}

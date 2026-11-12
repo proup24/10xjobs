@@ -58,6 +58,21 @@ describe('eligibility version', () => {
     expect(await version()).toBe(start + 3);
   });
 
+  it('a user updates name, residenceCountry and acceptsSponsorship, never eligibilityVersion', async () => {
+    await updateUser({
+      name: 'Grant Test',
+      residenceCountry: 'ES',
+      acceptsSponsorship: false,
+    });
+    const start = await version();
+    const denied = await a.client
+      .from('users')
+      .update({ eligibilityVersion: start - 1 })
+      .eq('id', a.id);
+    expect(denied.error?.code).toBe('42501');
+    expect(await version()).toBe(start);
+  });
+
   it('changing residenceCountry bumps it', async () => {
     const start = await version();
     await updateUser({ residenceCountry: 'MA' });

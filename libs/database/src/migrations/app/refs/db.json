@@ -14,6 +14,7 @@
     "match-details",
     "match-details-all-profiles",
     "match-details-list-rows",
-    "match-details-job-facts"
+    "match-details-job-facts",
+    "users-update-columns"
   ]
 }
