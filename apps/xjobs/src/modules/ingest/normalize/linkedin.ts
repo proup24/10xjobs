@@ -65,6 +65,12 @@ export function externalApplyUrl(
   return url && !isLinkedinHost(url) ? cleanText(applyUrl) : null;
 }
 
+/** An http(s) URL off LinkedIn, unchanged; null for anything else. */
+export function outsideUrl(value: unknown): string | null {
+  const url = httpUrl(value);
+  return url && !isLinkedinHost(url) ? cleanText(value) : null;
+}
+
 /** The person LinkedIn shows on a job, or null when it shows none. */
 export function jobPoster(
   name: unknown,

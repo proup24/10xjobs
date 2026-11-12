@@ -1,6 +1,7 @@
 import { Channel } from 'src/common/enums';
 import linkedinJob from '../utils/fixtures/linkedin-job.json';
 import cheapJob from '../utils/fixtures/linkedin-job-cheap.json';
+import harvestJobs from '../utils/fixtures/linkedin-job-harvest.json';
 import linkedinPost from '../utils/fixtures/linkedin-post.json';
 import { normalize as normalizeRaw, type NormalizedRecord } from '.';
 
@@ -271,5 +272,33 @@ describe('normalize LinkedIn posts', () => {
 
   it('is invalid without a post URL', () => {
     expect('invalid' in post({ linkedinUrl: null })).toBe(true);
+  });
+});
+
+describe('LinkedIn job format order', () => {
+  const newFields = {
+    workplaceType: null,
+    remoteAllowed: null,
+    employmentType: null,
+    countryCode: null,
+    regionCode: null,
+    applicantTrackingSystem: null,
+    applicantCount: null,
+    expiresAt: null,
+    listingState: null,
+    company: null,
+  };
+
+  it('leaves the new fields null for bebity and cheap_scraper items', () => {
+    expect(record(job())).toMatchObject(newFields);
+    expect(
+      record(normalize(Channel.LINKEDIN_JOB_BOARD, cheapJob)),
+    ).toMatchObject(newFields);
+  });
+
+  it("maps a harvestapi item by its own mapper, not bebity's", () => {
+    const r = record(normalize(Channel.LINKEDIN_JOB_BOARD, harvestJobs[0]));
+    expect(r.listingState).toBe('LISTED');
+    expect(r.company).not.toBeNull();
   });
 });

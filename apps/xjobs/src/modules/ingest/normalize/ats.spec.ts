@@ -101,6 +101,16 @@ describe('normalize Ashby', () => {
       applyUrl: null,
       postingUrl: ashbyFailed.hit.url,
       poster: null,
+      workplaceType: null,
+      remoteAllowed: null,
+      employmentType: null,
+      countryCode: null,
+      regionCode: null,
+      applicantTrackingSystem: null,
+      applicantCount: null,
+      expiresAt: null,
+      listingState: null,
+      company: null,
       closed: true,
     });
   });
@@ -171,5 +181,28 @@ describe('decodeEntitiesOnce', () => {
 
   it('decodes a double-encoded entity exactly once', () => {
     expect(decodeEntitiesOnce('&amp;lt;p&amp;gt;')).toBe('&lt;p&gt;');
+  });
+});
+
+describe('ATS records carry no LinkedIn-only fields', () => {
+  it('leaves them null', () => {
+    const nulls = {
+      workplaceType: null,
+      remoteAllowed: null,
+      employmentType: null,
+      countryCode: null,
+      regionCode: null,
+      applicantTrackingSystem: null,
+      applicantCount: null,
+      expiresAt: null,
+      listingState: null,
+      company: null,
+    };
+    expect(record(ashbyWith({}))).toMatchObject(nulls);
+    expect(
+      record(
+        normalize(Channel.GREEN_HOUSE, { ...greenhouse, posting: ghPosting }),
+      ),
+    ).toMatchObject(nulls);
   });
 });

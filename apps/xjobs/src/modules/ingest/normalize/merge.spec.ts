@@ -144,4 +144,16 @@ describe('mergeSources', () => {
   it('refuses an empty source list', () => {
     expect(() => mergeSources([])).toThrow();
   });
+
+  it('fills the LinkedIn-only fields from the LinkedIn source over an ATS gap', () => {
+    const li = source('li-2', Channel.LINKEDIN_JOB_BOARD, {
+      workplaceType: 'remote',
+      regionCode: 'EU',
+    });
+    const merged = mergeSources([ashby, li]);
+    expect(merged.record.workplaceType).toBe('remote');
+    expect(merged.record.regionCode).toBe('EU');
+    expect(merged.record.company).toBeNull();
+    expect(merged.fieldSources.workplaceType).toBe('li-2');
+  });
 });
