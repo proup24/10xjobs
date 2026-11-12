@@ -68,6 +68,33 @@ describe('saveReport', () => {
     });
   });
 
+  // R67a: a review on years of experience reports that fact, not the seniority label.
+  it('reports years of experience with its own value and quote', async () => {
+    const years = {
+      min: 5,
+      max: null,
+      source: 'description',
+      quote: '5+ years',
+    };
+    const { supabase, calls } = client({
+      data: [{ ...row, facts: { ...row.facts, yearsRequired: years } }],
+      error: null,
+    });
+    const result = await saveReport(supabase, 'user-1', {
+      jobId: JOB,
+      field: 'yearsRequired',
+      proposedValue: '3 years',
+    });
+    expect(result).toEqual({ status: 'saved' });
+    expect(calls.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        field: 'yearsRequired',
+        processorValue: years,
+        quote: '5+ years',
+      }),
+    );
+  });
+
   it('stores nulls for a fact with no value, quote or conflict', async () => {
     const { supabase, calls } = client({ data: [row], error: null });
     await saveReport(supabase, 'user-1', {

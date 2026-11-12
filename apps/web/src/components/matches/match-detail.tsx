@@ -59,13 +59,39 @@ const FIELD_CONFLICTS: Record<string, ConflictField[]> = {
 };
 
 /**
- * Why a job is in review: the rule that would have rejected it, the fact it was unsure
- * of with the description's words for it, and LinkedIn's value when the listing disagreed.
- * Then the two decisions; Reject asks first.
+ * The report field for each fact a review can rest on. Tech stack, languages and work
+ * authorization have no line in the facts list: the review is where they can be reported.
  */
-function ReviewReason({ row, onDecide }: { row: MatchRow; onDecide?: Decide }) {
+const REVIEW_REPORT_FIELDS: Record<string, ReportField> = {
+  position: 'role',
+  isSoftwareEngineeringRole: 'role',
+  seniority: 'seniority',
+  yearsRequired: 'yearsRequired',
+  openings: 'places',
+  salary: 'salary',
+  contractType: 'contractType',
+  techStack: 'techStack',
+  requiredLanguages: 'requiredLanguages',
+  workAuthorization: 'workAuthorization',
+};
+
+/**
+ * Why a job is in review: the rule that would have rejected it, the fact it was unsure
+ * of with the description's words for it, and LinkedIn's value when the listing disagreed,
+ * with "Report a mismatch" on that fact. Then the two decisions; Reject asks first.
+ */
+function ReviewReason({
+  row,
+  onDecide,
+  onReport,
+}: {
+  row: MatchRow;
+  onDecide?: Decide;
+  onReport?: Report;
+}) {
   const [pending, setPending] = useState(false);
   const field = row.reviewField ?? '';
+  const reportField = REVIEW_REPORT_FIELDS[field];
   const quotes = factQuotes(row.facts, field);
   const conflicts = conflictLines(row.conflicts);
   const listing = (FIELD_CONFLICTS[field] ?? [])
@@ -121,6 +147,16 @@ function ReviewReason({ row, onDecide }: { row: MatchRow; onDecide?: Decide }) {
               {l}
             </dd>
           ))}
+          {onReport && reportField && (
+            <dd>
+              <ReportDialog
+                jobId={row.jobId}
+                field={reportField}
+                label={fieldLabel(field)}
+                onReport={onReport}
+              />
+            </dd>
+          )}
         </div>
       </dl>
       {onDecide && (
@@ -349,7 +385,12 @@ export function MatchDetail({
       />
 
       {inReview && (
-        <ReviewReason key={shown.matchId} row={shown} onDecide={onDecide} />
+        <ReviewReason
+          key={shown.matchId}
+          row={shown}
+          onDecide={onDecide}
+          onReport={onReport}
+        />
       )}
 
       <dl className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">

@@ -3,11 +3,14 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
   within,
 } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { notCheckedText } from '@/lib/matches/checks';
+import { groupByJob } from '@/lib/matches/group';
 import { MatchDetail } from './match-detail';
+import { MatchRowLink } from './match-row';
 import {
   NOW,
   P1,
@@ -488,5 +491,91 @@ describe('MatchDetail', () => {
   it('says nothing about review on a plain match', () => {
     renderDetail([matchRow({ reviewChoice: null })]);
     expect(screen.queryByText('You moved this from review.')).toBeNull();
+  });
+  // R67a: the fact a review rests on can be reported where it matters, including the ones
+  // the fact list does not show (tech stack, languages, work authorization).
+  const renderReview = (
+    row: ReturnType<typeof reviewRow>,
+    onReport = vi.fn().mockResolvedValue({ status: 'saved' }),
+  ) => {
+    render(
+      <MatchDetail
+        rows={[row]}
+        labels={labels}
+        profileLabels={PROFILE_LABELS}
+        now={new Date(NOW)}
+        userId="u1"
+        backHref="/"
+        onDecide={vi.fn()}
+        onReport={onReport}
+      />,
+    );
+    const why = screen.getByText("Why it's in review").closest('section');
+    if (!why) throw new Error('no section');
+    return { why: within(why), onReport };
+  };
+
+  it.each([
+    ['techStack', 'Tech stack', 'techStack'],
+    ['requiredLanguages', 'Required languages', 'requiredLanguages'],
+    ['workAuthorization', 'Work authorization', 'workAuthorization'],
+    ['seniority', 'Seniority', 'seniority'],
+    ['yearsRequired', 'Years of experience required', 'yearsRequired'],
+    ['openings', 'Where and how you work', 'places'],
+  ])(
+    'offers "Report a mismatch" on the %s fact a review rests on',
+    async (reviewField, label, field) => {
+      const { why, onReport } = renderReview({
+        ...reviewRow(),
+        reviewRule: 'rule',
+        reviewField,
+      });
+      fireEvent.click(
+        why.getByRole('button', { name: `Report a mismatch on ${label}` }),
+      );
+      fireEvent.change(screen.getByLabelText(/what it should say/i), {
+        target: { value: 'Not required' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Send report' }));
+      await waitFor(() =>
+        expect(onReport).toHaveBeenCalledWith({
+          jobId: reviewRow().jobId,
+          field,
+          proposedValue: 'Not required',
+        }),
+      );
+    },
+  );
+
+  it('offers no review report without a report handler', () => {
+    renderDetail([reviewRow()], vi.fn());
+    const why = screen.getByText("Why it's in review").closest('section');
+    if (!why) throw new Error('no section');
+    expect(
+      within(why).queryByRole('button', { name: /report a mismatch/i }),
+    ).toBeNull();
+  });
+
+  // R65: match_details returns unverified = true for a review row the user moved to Matches.
+  it('shows Unverified on a job moved from review, with the line that explains it', () => {
+    const accepted = {
+      ...reviewRow(),
+      reviewChoice: 'qualified',
+      unverified: true,
+    };
+    render(
+      <MatchRowLink
+        job={groupByJob([accepted])[0]}
+        href="/"
+        now={new Date(NOW)}
+        profileLabels={PROFILE_LABELS}
+        selected={false}
+        showProfiles={false}
+      />,
+    );
+    expect(screen.getByText('Unverified')).toBeTruthy();
+    cleanup();
+    renderDetail([accepted], vi.fn());
+    expect(screen.getByText('You moved this from review.')).toBeTruthy();
   });
 });

@@ -12,7 +12,10 @@ import {
 import { factQuotes, type FactLines } from './facts';
 import type { MatchRow } from './group';
 
-/** The fact lines a user can report, plus the three the matcher reads without showing. */
+/**
+ * The fact lines a user can report, plus the facts the matcher reads without showing them
+ * on their own line; those are reported from a review that rests on them.
+ */
 const FACT_FIELDS = [
   'role',
   'seniority',
@@ -25,6 +28,7 @@ const FACT_FIELDS = [
 
 export const REPORT_FIELDS = [
   ...FACT_FIELDS,
+  'yearsRequired',
   'techStack',
   'requiredLanguages',
   'workAuthorization',
@@ -54,6 +58,7 @@ const FACT_KEY: Record<ReportField, string> = {
   contractType: 'contractType',
   engagement: 'engagement',
   salary: 'salary',
+  yearsRequired: 'yearsRequired',
   techStack: 'techStack',
   requiredLanguages: 'requiredLanguages',
   workAuthorization: 'workAuthorization',

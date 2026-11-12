@@ -96,9 +96,12 @@ export function ReportDialog({
         if (!pending) setOpen(next);
       }}
     >
-      <DialogTrigger render={<Button variant="link" size="xs" />}>
+      {/* The name carries the fact: several triggers share the visible text. */}
+      <DialogTrigger
+        render={<Button variant="link" size="xs" />}
+        aria-label={`Report a mismatch on ${label}`}
+      >
         Report a mismatch
-        <span className="sr-only">{` on ${label}`}</span>
       </DialogTrigger>
       <DialogContent>
         <form onSubmit={submit} noValidate className="grid gap-4">
