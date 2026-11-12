@@ -24,9 +24,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'f7a1c0acc4b8baef72167a011f0293c8e81285ca85739d0f73171cb5e648de76'>;
+  StorageHashBase<'be873e1827fcd83ca4eaf63b7e76adc2c945ae78c1b594cfacd84b05fde9e3c6'>;
 export type ExecutionHash =
-  ExecutionHashBase<'8bc8825d20cc71c0168a24c0ad5f4ab984ef4f211b07b463ca60f85f9203b8c8'>;
+  ExecutionHashBase<'9c0694a80d5f7adf167bc3288d7926267ba4776ae99e720efce6b64a0f440673'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -681,6 +681,8 @@ export namespace Models {
     contractTypeTerm: public_ContractType | null;
     currentFor: public_NormalizedJob[];
     engagementTerm: public_EngagementTerm | null;
+    factConflicts: public_JobFactConflict[];
+    facts: public_JobFacts[];
     job: public_NormalizedJob;
     matches: public_JobMatch[];
     roleKindTerm: public_RoleKind | null;
@@ -691,10 +693,40 @@ export namespace Models {
       | 'contractTypeTerm'
       | 'currentFor'
       | 'engagementTerm'
+      | 'factConflicts'
+      | 'facts'
       | 'job'
       | 'matches'
       | 'roleKindTerm'
       | 'seniorityTerm';
+  };
+  export type public_JobFactConflict = {
+    createdAt: FieldOutputTypes['public']['JobFactConflict']['createdAt'];
+    descriptionValue: FieldOutputTypes['public']['JobFactConflict']['descriptionValue'];
+    extractionId: FieldOutputTypes['public']['JobFactConflict']['extractionId'];
+    field: FieldOutputTypes['public']['JobFactConflict']['field'];
+    id: FieldOutputTypes['public']['JobFactConflict']['id'];
+    jobId: FieldOutputTypes['public']['JobFactConflict']['jobId'];
+    listingValue: FieldOutputTypes['public']['JobFactConflict']['listingValue'];
+    quote: FieldOutputTypes['public']['JobFactConflict']['quote'];
+    winner: FieldOutputTypes['public']['JobFactConflict']['winner'];
+    extraction: public_JobExtraction;
+    job: public_NormalizedJob;
+    readonly [RelationKeys]?: 'extraction' | 'job';
+  };
+  export type public_JobFacts = {
+    builtAt: FieldOutputTypes['public']['JobFacts']['builtAt'];
+    closed: FieldOutputTypes['public']['JobFacts']['closed'];
+    createdAt: FieldOutputTypes['public']['JobFacts']['createdAt'];
+    extractionId: FieldOutputTypes['public']['JobFacts']['extractionId'];
+    facts: FieldOutputTypes['public']['JobFacts']['facts'];
+    factsHash: FieldOutputTypes['public']['JobFacts']['factsHash'];
+    factsVersion: FieldOutputTypes['public']['JobFacts']['factsVersion'];
+    jobId: FieldOutputTypes['public']['JobFacts']['jobId'];
+    updatedAt: FieldOutputTypes['public']['JobFacts']['updatedAt'];
+    extraction: public_JobExtraction;
+    job: public_NormalizedJob;
+    readonly [RelationKeys]?: 'extraction' | 'job';
   };
   export type public_JobMatch = {
     checks: FieldOutputTypes['public']['JobMatch']['checks'];
@@ -795,6 +827,8 @@ export namespace Models {
     company: public_Company | null;
     currentExtraction: public_JobExtraction | null;
     extractions: public_JobExtraction[];
+    factConflicts: public_JobFactConflict[];
+    facts: public_JobFacts | null;
     matches: public_JobMatch[];
     mergedInto: public_NormalizedJob | null;
     views: public_JobView[];
@@ -803,6 +837,8 @@ export namespace Models {
       | 'company'
       | 'currentExtraction'
       | 'extractions'
+      | 'factConflicts'
+      | 'facts'
       | 'matches'
       | 'mergedInto'
       | 'views';
@@ -1087,6 +1123,8 @@ export declare const models: {
     IsoCurrency: Models.public_IsoCurrency;
     IsoLanguage: Models.public_IsoLanguage;
     JobExtraction: Models.public_JobExtraction;
+    JobFactConflict: Models.public_JobFactConflict;
+    JobFacts: Models.public_JobFacts;
     JobMatch: Models.public_JobMatch;
     JobView: Models.public_JobView;
     JunkFlag: Models.public_JunkFlag;
@@ -2178,6 +2216,213 @@ type ContractBase = Omit<
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'engagements';
                     readonly columns: readonly ['code'];
+                  };
+                },
+              ];
+            };
+            readonly job_fact_conflicts: {
+              columns: {
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly descriptionValue: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly extractionId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly field: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly jobId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly listingValue: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly quote: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly winner: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'job_fact_conflicts_extractionId_idx_3dd68fa6';
+                  readonly prefix: 'job_fact_conflicts_extractionId_idx';
+                  readonly columns: readonly ['extractionId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'job_fact_conflicts_field_idx_7672e3b5';
+                  readonly prefix: 'job_fact_conflicts_field_idx';
+                  readonly columns: readonly ['field'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'job_fact_conflicts_jobId_idx_623c8f77';
+                  readonly prefix: 'job_fact_conflicts_jobId_idx';
+                  readonly columns: readonly ['jobId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'job_fact_conflicts';
+                    readonly columns: readonly ['jobId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'normalized_jobs';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'job_fact_conflicts';
+                    readonly columns: readonly ['extractionId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'job_extractions';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly job_facts: {
+              columns: {
+                readonly builtAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly closed: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly extractionId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly facts: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly factsHash: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly factsVersion: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly jobId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['jobId'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'job_facts_extractionId_idx_3dd68fa6';
+                  readonly prefix: 'job_facts_extractionId_idx';
+                  readonly columns: readonly ['extractionId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'job_facts';
+                    readonly columns: readonly ['jobId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'normalized_jobs';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'job_facts';
+                    readonly columns: readonly ['extractionId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'job_extractions';
+                    readonly columns: readonly ['id'];
                   };
                 },
               ];
@@ -4788,6 +5033,11 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'JobExtraction';
     };
+    readonly job_fact_conflicts: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'JobFactConflict';
+    };
+    readonly job_facts: { readonly namespace: 'public' & NamespaceId; readonly model: 'JobFacts' };
     readonly job_matches: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'JobMatch';
@@ -5757,6 +6007,28 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['code'];
                 };
               };
+              readonly factConflicts: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'JobFactConflict';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['extractionId'];
+                };
+              };
+              readonly facts: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'JobFacts';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['extractionId'];
+                };
+              };
               readonly job: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -5840,6 +6112,184 @@ type ContractBase = Omit<
                 readonly seniority: { readonly column: 'seniority' };
                 readonly techTags: { readonly column: 'techTags' };
                 readonly worldwide: { readonly column: 'worldwide' };
+              };
+            };
+          };
+          readonly JobFactConflict: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly descriptionValue: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+              readonly extractionId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly field: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly jobId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly listingValue: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+              readonly quote: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly winner: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly extraction: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'JobExtraction';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['extractionId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly job: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'NormalizedJob';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['jobId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'job_fact_conflicts';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly descriptionValue: { readonly column: 'descriptionValue' };
+                readonly extractionId: { readonly column: 'extractionId' };
+                readonly field: { readonly column: 'field' };
+                readonly id: { readonly column: 'id' };
+                readonly jobId: { readonly column: 'jobId' };
+                readonly listingValue: { readonly column: 'listingValue' };
+                readonly quote: { readonly column: 'quote' };
+                readonly winner: { readonly column: 'winner' };
+              };
+            };
+          };
+          readonly JobFacts: {
+            readonly fields: {
+              readonly builtAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly closed: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly extractionId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly facts: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+              readonly factsHash: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly factsVersion: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly jobId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+            };
+            readonly relations: {
+              readonly extraction: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'JobExtraction';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['extractionId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly job: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'NormalizedJob';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['jobId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'job_facts';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly builtAt: { readonly column: 'builtAt' };
+                readonly closed: { readonly column: 'closed' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly extractionId: { readonly column: 'extractionId' };
+                readonly facts: { readonly column: 'facts' };
+                readonly factsHash: { readonly column: 'factsHash' };
+                readonly factsVersion: { readonly column: 'factsVersion' };
+                readonly jobId: { readonly column: 'jobId' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
               };
             };
           };
@@ -6394,6 +6844,29 @@ type ContractBase = Omit<
                   readonly model: 'JobExtraction';
                 };
                 readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['jobId'];
+                };
+              };
+              readonly factConflicts: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'JobFactConflict';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['jobId'];
+                };
+              };
+              readonly facts: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'JobFacts';
+                };
+                readonly cardinality: '1:1';
+                readonly nullable: true;
                 readonly on: {
                   readonly localFields: readonly ['id'];
                   readonly targetFields: readonly ['jobId'];
@@ -8364,6 +8837,23 @@ type ContractBase = Omit<
           readonly ref: {
             readonly entry: 'job_extractions';
             readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'uuidv7'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'job_fact_conflicts';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'job_facts';
+            readonly field: 'updatedAt';
             readonly namespace: 'public';
           };
         },

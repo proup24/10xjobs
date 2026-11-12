@@ -615,6 +615,8 @@ model NormalizedJob {
   extractions           JobExtraction[]       @relation("JobExtractions")
   attempts              ProcessingAttempt[]
   matches               JobMatch[]
+  facts                 JobFacts?
+  factConflicts         JobFactConflict[]
   views                 JobView[]
   +Timestamps
 
@@ -897,6 +899,8 @@ model JobExtraction {
   currentFor                NormalizedJob[]      @relation("CurrentExtraction")
   matches                   JobMatch[]
   attempts                  ProcessingAttempt[]
+  facts                     JobFacts[]
+  factConflicts             JobFactConflict[]
 
   @@index([jobId, createdAt], map: "job_extractions_job_created")
   @@index([inputHash, schemaVersion, promptHash, decisionModel, extractionModel], map: "job_extractions_reuse")
@@ -911,6 +915,46 @@ model JobExtraction {
   @@index([requiredTags], type: "gin", name: "job_extractions_requiredTags_gin")
   @@index([niceTags], type: "gin", name: "job_extractions_niceTags_gin")
   @@map("job_extractions")
+  @@rls
+}
+
+// The combined facts for one job: the listing and the extraction merged, one row per job.
+// Engine-only. factsHash is the sha256 of the canonical facts JSON.
+model JobFacts {
+  jobId        Uuid                 @id
+  job          NormalizedJob        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  extractionId Uuid
+  extraction   JobExtraction        @relation(fields: [extractionId], references: [id], onDelete: Restrict)
+  factsVersion Int
+  factsHash    String
+  facts        Jsonb
+  closed       Boolean
+  builtAt      TimestamptzJsDate(3)
+  +Timestamps
+
+  @@map("job_facts")
+  @@rls
+}
+
+// Where the listing and the description disagreed on a field, and which one won.
+// Replaced as a set with the job's facts row. Engine-only.
+model JobFactConflict {
+  id               Uuid                 @id @onCreate(uuid(7))
+  jobId            Uuid
+  job              NormalizedJob        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  extractionId     Uuid
+  extraction       JobExtraction        @relation(fields: [extractionId], references: [id], onDelete: Restrict)
+  field            String
+  listingValue     Jsonb
+  descriptionValue Jsonb
+  quote            String
+  winner           String
+  createdAt        TimestamptzJsDate(3) @default(now())
+
+  @@check(expression: sql`winner IN ('description','listing')`, name: "job_fact_conflicts_winner")
+  @@index([jobId])
+  @@index([field])
+  @@map("job_fact_conflicts")
   @@rls
 }
 

@@ -9,7 +9,12 @@ import {
 
 const now = '2026-11-03T00:00:00Z';
 
-type Fixture = { table: string; row: () => Record<string, unknown> };
+// `key` is the primary key column when it is not `id`.
+type Fixture = {
+  table: string;
+  key?: string;
+  row: () => Record<string, unknown>;
+};
 
 const queryId = randomUUID();
 const segmentRunId = randomUUID();
@@ -167,6 +172,32 @@ const fixtures: Fixture[] = [
     }),
   },
   {
+    table: 'job_facts',
+    key: 'jobId',
+    row: () => ({
+      jobId,
+      extractionId,
+      factsVersion: 1,
+      factsHash: 'test',
+      facts: {},
+      closed: false,
+      builtAt: now,
+    }),
+  },
+  {
+    table: 'job_fact_conflicts',
+    row: () => ({
+      id: randomUUID(),
+      jobId,
+      extractionId,
+      field: 'city',
+      listingValue: 'Paris',
+      descriptionValue: 'Lyon',
+      quote: 'Based in Lyon',
+      winner: 'description',
+    }),
+  },
+  {
     table: 'normalized_job_sources',
     row: () => ({
       id: randomUUID(),
@@ -190,15 +221,19 @@ const fixtures: Fixture[] = [
   },
 ];
 
+const keyOf = (table: string) =>
+  fixtures.find((f) => f.table === table)?.key ?? 'id';
+
 describe('engine-only tables are hidden from users', () => {
   let user: TestUser;
   const rows = new Map<string, Record<string, unknown>>();
-  const cleanup: Array<[string, string]> = [];
+  const cleanup: Array<[string, string, string]> = [];
 
   async function adminInsert(table: string, row: Record<string, unknown>) {
     const { error } = await admin().from(table).insert(row);
     if (error) throw new Error(`admin insert into ${table}: ${error.message}`);
-    cleanup.push([table, row.id as string]);
+    const key = keyOf(table);
+    cleanup.push([table, key, row[key] as string]);
   }
 
   beforeAll(async () => {
@@ -234,15 +269,16 @@ describe('engine-only tables are hidden from users', () => {
   });
 
   afterAll(async () => {
-    for (const [table, id] of cleanup.reverse()) {
-      await admin().from(table).delete().eq('id', id);
+    for (const [table, key, id] of cleanup.reverse()) {
+      await admin().from(table).delete().eq(key, id);
     }
     await cleanupTestUsers();
   });
 
   describe.each(fixtures.map((f) => f.table))('%s', (table) => {
+    const key = keyOf(table);
     it('exists for the admin but returns nothing to a signed-in user', async () => {
-      const seen = await admin().from(table).select('id').limit(1);
+      const seen = await admin().from(table).select(key).limit(1);
       expect(seen.error).toBeNull();
       expect(seen.data).toHaveLength(1);
 
@@ -255,7 +291,7 @@ describe('engine-only tables are hidden from users', () => {
       expect(valid).toBeDefined();
       const { error } = await user.client
         .from(table)
-        .insert({ ...valid, id: randomUUID() });
+        .insert({ ...valid, [key]: randomUUID() });
       expect(error?.code).toBe('42501');
     });
   });

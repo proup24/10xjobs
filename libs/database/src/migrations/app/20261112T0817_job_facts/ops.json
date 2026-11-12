@@ -1,0 +1,578 @@
+[
+  {
+    "id": "table.job_fact_conflicts",
+    "label": "Create table \"job_fact_conflicts\"",
+    "summary": "Creates table \"job_fact_conflicts\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "job_fact_conflicts"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"job_fact_conflicts\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"job_fact_conflicts\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"job_fact_conflicts\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"job_fact_conflicts\"",
+        "sql": "CREATE TABLE \"public\".\"job_fact_conflicts\" (\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"descriptionValue\" jsonb NOT NULL,\n  \"extractionId\" uuid NOT NULL,\n  \"field\" text NOT NULL,\n  \"id\" uuid NOT NULL,\n  \"jobId\" uuid NOT NULL,\n  \"listingValue\" jsonb NOT NULL,\n  \"quote\" text NOT NULL,\n  \"winner\" text NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"job_fact_conflicts_winner_e30266de\" CHECK (winner IN ('description','listing'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"job_fact_conflicts\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"job_fact_conflicts\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"job_fact_conflicts\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.job_facts",
+    "label": "Create table \"job_facts\"",
+    "summary": "Creates table \"job_facts\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "job_facts"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"job_facts\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"job_facts\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"job_facts\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"job_facts\"",
+        "sql": "CREATE TABLE \"public\".\"job_facts\" (\n  \"builtAt\" timestamptz(3) NOT NULL,\n  \"closed\" bool NOT NULL,\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"extractionId\" uuid NOT NULL,\n  \"facts\" jsonb NOT NULL,\n  \"factsHash\" text NOT NULL,\n  \"factsVersion\" int4 NOT NULL,\n  \"jobId\" uuid NOT NULL,\n  \"updatedAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  PRIMARY KEY (\"jobId\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"job_facts\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"job_facts\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"job_facts\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "index.job_fact_conflicts.job_fact_conflicts_extractionId_idx_3dd68fa6",
+    "label": "Create index \"job_fact_conflicts_extractionId_idx_3dd68fa6\" on \"job_fact_conflicts\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "job_fact_conflicts_extractionId_idx_3dd68fa6",
+        "table": "job_fact_conflicts"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"job_fact_conflicts_extractionId_idx_3dd68fa6\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"job_fact_conflicts_extractionId_idx_3dd68fa6\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"job_fact_conflicts_extractionId_idx_3dd68fa6\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"job_fact_conflicts_extractionId_idx_3dd68fa6\"",
+        "sql": "CREATE INDEX \"job_fact_conflicts_extractionId_idx_3dd68fa6\" ON \"public\".\"job_fact_conflicts\" (\"extractionId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"job_fact_conflicts_extractionId_idx_3dd68fa6\" exists on \"job_fact_conflicts\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"job_fact_conflicts_extractionId_idx_3dd68fa6\"",
+          "i",
+          "I",
+          "\"public\".\"job_fact_conflicts\"",
+          "btree",
+          "[\"extractionId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.job_fact_conflicts.job_fact_conflicts_field_idx_7672e3b5",
+    "label": "Create index \"job_fact_conflicts_field_idx_7672e3b5\" on \"job_fact_conflicts\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "job_fact_conflicts_field_idx_7672e3b5",
+        "table": "job_fact_conflicts"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"job_fact_conflicts_field_idx_7672e3b5\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"job_fact_conflicts_field_idx_7672e3b5\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"job_fact_conflicts_field_idx_7672e3b5\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"job_fact_conflicts_field_idx_7672e3b5\"",
+        "sql": "CREATE INDEX \"job_fact_conflicts_field_idx_7672e3b5\" ON \"public\".\"job_fact_conflicts\" (\"field\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"job_fact_conflicts_field_idx_7672e3b5\" exists on \"job_fact_conflicts\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"job_fact_conflicts_field_idx_7672e3b5\"",
+          "i",
+          "I",
+          "\"public\".\"job_fact_conflicts\"",
+          "btree",
+          "[\"field\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.job_fact_conflicts.job_fact_conflicts_jobId_idx_623c8f77",
+    "label": "Create index \"job_fact_conflicts_jobId_idx_623c8f77\" on \"job_fact_conflicts\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "job_fact_conflicts_jobId_idx_623c8f77",
+        "table": "job_fact_conflicts"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"job_fact_conflicts_jobId_idx_623c8f77\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"job_fact_conflicts_jobId_idx_623c8f77\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"job_fact_conflicts_jobId_idx_623c8f77\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"job_fact_conflicts_jobId_idx_623c8f77\"",
+        "sql": "CREATE INDEX \"job_fact_conflicts_jobId_idx_623c8f77\" ON \"public\".\"job_fact_conflicts\" (\"jobId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"job_fact_conflicts_jobId_idx_623c8f77\" exists on \"job_fact_conflicts\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"job_fact_conflicts_jobId_idx_623c8f77\"",
+          "i",
+          "I",
+          "\"public\".\"job_fact_conflicts\"",
+          "btree",
+          "[\"jobId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.job_facts.job_facts_extractionId_idx_3dd68fa6",
+    "label": "Create index \"job_facts_extractionId_idx_3dd68fa6\" on \"job_facts\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "job_facts_extractionId_idx_3dd68fa6",
+        "table": "job_facts"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"job_facts_extractionId_idx_3dd68fa6\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"job_facts_extractionId_idx_3dd68fa6\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"job_facts_extractionId_idx_3dd68fa6\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"job_facts_extractionId_idx_3dd68fa6\"",
+        "sql": "CREATE INDEX \"job_facts_extractionId_idx_3dd68fa6\" ON \"public\".\"job_facts\" (\"extractionId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"job_facts_extractionId_idx_3dd68fa6\" exists on \"job_facts\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"job_facts_extractionId_idx_3dd68fa6\"",
+          "i",
+          "I",
+          "\"public\".\"job_facts\"",
+          "btree",
+          "[\"extractionId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.job_fact_conflicts.job_fact_conflicts_jobId_fkey",
+    "label": "Add foreign key \"job_fact_conflicts_jobId_fkey\" on \"job_fact_conflicts\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "job_fact_conflicts_jobId_fkey",
+        "table": "job_fact_conflicts"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"job_fact_conflicts_jobId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "job_fact_conflicts_jobId_fkey",
+          "public",
+          "\"public\".\"job_fact_conflicts\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"job_fact_conflicts_jobId_fkey\" on \"job_fact_conflicts\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"job_fact_conflicts_jobId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"job_fact_conflicts\"\nADD CONSTRAINT \"job_fact_conflicts_jobId_fkey\"\nFOREIGN KEY (\"jobId\")\nREFERENCES \"public\".\"normalized_jobs\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"job_fact_conflicts_jobId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "job_fact_conflicts_jobId_fkey",
+          "public",
+          "\"public\".\"job_fact_conflicts\"",
+          "f",
+          "[\"jobId\"]",
+          "\"public\".\"normalized_jobs\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.job_fact_conflicts.job_fact_conflicts_extractionId_fkey",
+    "label": "Add foreign key \"job_fact_conflicts_extractionId_fkey\" on \"job_fact_conflicts\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "job_fact_conflicts_extractionId_fkey",
+        "table": "job_fact_conflicts"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"job_fact_conflicts_extractionId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "job_fact_conflicts_extractionId_fkey",
+          "public",
+          "\"public\".\"job_fact_conflicts\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"job_fact_conflicts_extractionId_fkey\" on \"job_fact_conflicts\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"job_fact_conflicts_extractionId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"job_fact_conflicts\"\nADD CONSTRAINT \"job_fact_conflicts_extractionId_fkey\"\nFOREIGN KEY (\"extractionId\")\nREFERENCES \"public\".\"job_extractions\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"job_fact_conflicts_extractionId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "job_fact_conflicts_extractionId_fkey",
+          "public",
+          "\"public\".\"job_fact_conflicts\"",
+          "f",
+          "[\"extractionId\"]",
+          "\"public\".\"job_extractions\"",
+          "[\"id\"]",
+          "r",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.job_facts.job_facts_jobId_fkey",
+    "label": "Add foreign key \"job_facts_jobId_fkey\" on \"job_facts\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "job_facts_jobId_fkey",
+        "table": "job_facts"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"job_facts_jobId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "job_facts_jobId_fkey",
+          "public",
+          "\"public\".\"job_facts\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"job_facts_jobId_fkey\" on \"job_facts\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"job_facts_jobId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"job_facts\"\nADD CONSTRAINT \"job_facts_jobId_fkey\"\nFOREIGN KEY (\"jobId\")\nREFERENCES \"public\".\"normalized_jobs\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"job_facts_jobId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "job_facts_jobId_fkey",
+          "public",
+          "\"public\".\"job_facts\"",
+          "f",
+          "[\"jobId\"]",
+          "\"public\".\"normalized_jobs\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.job_facts.job_facts_extractionId_fkey",
+    "label": "Add foreign key \"job_facts_extractionId_fkey\" on \"job_facts\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "job_facts_extractionId_fkey",
+        "table": "job_facts"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"job_facts_extractionId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "job_facts_extractionId_fkey",
+          "public",
+          "\"public\".\"job_facts\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"job_facts_extractionId_fkey\" on \"job_facts\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"job_facts_extractionId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"job_facts\"\nADD CONSTRAINT \"job_facts_extractionId_fkey\"\nFOREIGN KEY (\"extractionId\")\nREFERENCES \"public\".\"job_extractions\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"job_facts_extractionId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "job_facts_extractionId_fkey",
+          "public",
+          "\"public\".\"job_facts\"",
+          "f",
+          "[\"extractionId\"]",
+          "\"public\".\"job_extractions\"",
+          "[\"id\"]",
+          "r",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.job_fact_conflicts",
+    "label": "Enable row-level security on \"job_fact_conflicts\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "job_fact_conflicts"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"job_fact_conflicts\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "job_fact_conflicts"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"job_fact_conflicts\"",
+        "sql": "ALTER TABLE \"public\".\"job_fact_conflicts\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"job_fact_conflicts\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "job_fact_conflicts"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.job_facts",
+    "label": "Enable row-level security on \"job_facts\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "job_facts"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"job_facts\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "job_facts"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"job_facts\"",
+        "sql": "ALTER TABLE \"public\".\"job_facts\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"job_facts\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "job_facts"
+        ]
+      }
+    ]
+  }
+]
