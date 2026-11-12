@@ -109,6 +109,8 @@ export const workerProcessEnvironmentSchema = databaseEnvironmentSchema
   .extend({
     ...redisEnvironmentSchema.shape,
     ...storageEnvironmentShape,
+    /** In development, each collection worker runs one collection at startup. */
+    NODE_ENV: z.enum(EnvironmentType).default(EnvironmentType.development),
     APIFY_TOKEN: z.string().min(1).optional(),
     WORKER_CHANNEL: z.enum(Channel).optional(),
     WORKER_ROLE: z.enum(['ingest', 'processor', 'match', 'all']).optional(),

@@ -9,7 +9,12 @@ import {
 } from 'src/infrastructure/jobs/steps/collect';
 import { ingestConfig } from 'src/modules/ingest';
 import { StorageService } from 'src/modules/storage';
-import { RUN_SCHEDULES, syncCollectionScheduler } from './scheduler';
+import {
+  COLLECT_ON_START,
+  COLLECT_ON_START_JOB_ID,
+  RUN_SCHEDULES,
+  syncCollectionScheduler,
+} from './scheduler';
 import { WorkerRuntimeService } from './runtime.service';
 
 @Injectable()
@@ -21,6 +26,7 @@ export class CollectionWorkerService {
     private readonly collection: CollectionService,
     private readonly storage: StorageService,
     @Inject(RUN_SCHEDULES) private readonly runSchedules: boolean,
+    @Inject(COLLECT_ON_START) private readonly collectOnStart: boolean,
   ) {}
 
   /** Lets a running collect job finish its current segment and start no other. */
@@ -48,6 +54,20 @@ export class CollectionWorkerService {
       config.concurrency,
       connection,
     );
+    if (this.collectOnStart) {
+      // Dev only: run once now, then the cron (if any) takes over.
+      await queue.add(
+        COLLECT_JOB,
+        {},
+        {
+          jobId: COLLECT_ON_START_JOB_ID,
+          attempts: config.attempts,
+          removeOnComplete: true,
+          removeOnFail: true,
+        },
+      );
+      this.logger.log(`${channel}: development mode; collection queued now`);
+    }
     if (!this.runSchedules)
       this.logger.log(
         `${channel}: schedules off (XJOBS_RUN_SCHEDULES not set); scheduler removed`,

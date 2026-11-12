@@ -4,6 +4,7 @@ import {
   type WorkerProcessEnvironmentVariables,
   validateWorkerProcessEnvironment,
 } from 'src/config';
+import { EnvironmentType } from 'src/common/enums';
 import { DatabaseModule } from 'src/database';
 import { JobsModule } from 'src/infrastructure/jobs/jobs.module';
 import { MatchQueue } from 'src/infrastructure/jobs/steps/match';
@@ -19,7 +20,7 @@ import { IngestWorkerService } from './ingest.service';
 import { MatchWorkerService } from './match.service';
 import { ProcessorWorkerService } from './processor.service';
 import { WorkerRuntimeService } from './runtime.service';
-import { RUN_SCHEDULES } from './scheduler';
+import { COLLECT_ON_START, RUN_SCHEDULES } from './scheduler';
 import { WorkerService } from './worker.service';
 
 /**
@@ -50,6 +51,15 @@ import { WorkerService } from './worker.service';
       useFactory: (
         config: ConfigService<WorkerProcessEnvironmentVariables, true>,
       ) => config.get('XJOBS_RUN_SCHEDULES', { infer: true }),
+    },
+    {
+      provide: COLLECT_ON_START,
+      inject: [ConfigService],
+      useFactory: (
+        config: ConfigService<WorkerProcessEnvironmentVariables, true>,
+      ) =>
+        config.get('NODE_ENV', { infer: true }) ===
+        EnvironmentType.development,
     },
     WorkerService,
     WorkerRuntimeService,
