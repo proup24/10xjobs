@@ -73,7 +73,7 @@ describe('listingFacts', () => {
   });
 
   it('drops a salary with an unknown period', () => {
-    for (const salaryPeriod of ['WEEKLY', null]) {
+    for (const salaryPeriod of ['WEEKLY', 'ANNUAL', 'monthly', 'year', null]) {
       expect(
         listingFacts(row({ ...employerSalary, salaryPeriod }), vocab).salary,
       ).toBeNull();

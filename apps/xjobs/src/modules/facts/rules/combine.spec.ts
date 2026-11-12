@@ -9,8 +9,8 @@ import { combineFacts } from './combine';
 import type { ListingFacts } from './listing';
 
 const vocab: PlaceVocabulary = {
-  regions: new Set(['EU']),
-  countries: new Set(['FR', 'US']),
+  regions: new Set(['EU', 'EMEA', 'NORTH_AMERICA']),
+  countries: new Set(['FR', 'US', 'DE']),
   cities: new Map([
     ['FR|paris', 'c-paris'],
     ['FR|lyon', 'c-lyon'],
@@ -19,7 +19,11 @@ const vocab: PlaceVocabulary = {
     ['c-paris', 'Paris'],
     ['c-lyon', 'Lyon'],
   ]),
-  regionCountries: new Map([['EU', new Set(['FR'])]]),
+  regionCountries: new Map([
+    ['EU', new Set(['FR', 'DE'])],
+    ['EMEA', new Set(['FR', 'DE', 'MA'])],
+    ['NORTH_AMERICA', new Set(['US'])],
+  ]),
 };
 
 const NOW = new Date('2026-11-12T12:00:00Z');
@@ -75,7 +79,10 @@ describe('combineFacts', () => {
     const { facts, conflicts } = combine(
       doc({
         arrangementValue: 'hybrid',
-        openings: [opening({ arrangements: ['hybrid'] })],
+        openings: [
+          opening({ arrangements: ['hybrid'], quote: 'hybrid in Paris' }),
+          opening({ arrangements: ['unstated'], quote: 'also hiring' }),
+        ],
       }),
       listing({ arrangement: 'onsite' }),
     );
@@ -88,7 +95,7 @@ describe('combineFacts', () => {
         field: 'arrangement',
         listingValue: 'onsite',
         descriptionValue: ['hybrid'],
-        quote: 'hybrid quote',
+        quote: 'hybrid in Paris',
         winner: 'description',
       },
     ]);
@@ -266,7 +273,7 @@ describe('combineFacts', () => {
     }
   });
 
-  it('the listing opening is skipped when the description has a time zone', () => {
+  it('the listing place is skipped when the description has a time zone, but the arrangement is filled', () => {
     const tz = { fromUtc: -5, toUtc: -3, label: 'Americas' };
     const { facts } = combine(
       doc({
@@ -280,18 +287,136 @@ describe('combineFacts', () => {
     );
     expect(facts.openings).toEqual([
       {
-        arrangements: ['unstated'],
+        arrangements: ['remote'],
         places: [],
         placeStrictness: 'unstated',
         timezones: [tz],
         quote: '',
         confidence: 'sure',
-        source: 'description',
+        source: 'linkedin',
       },
     ]);
     expect(facts.arrangement).toMatchObject({
       value: 'remote',
       source: 'linkedin',
+    });
+  });
+
+  it('an unstated opening with places takes the listing arrangement and keeps its places', () => {
+    const { facts } = combine(
+      doc({
+        arrangementValue: 'unstated',
+        openings: [
+          opening({
+            places: [paris],
+            placeStrictness: 'limit',
+            quote: 'based in Paris',
+            confidence: 'unsure',
+          }),
+          opening({
+            arrangements: ['hybrid'],
+            places: [paris],
+            placeStrictness: 'label',
+          }),
+        ],
+      }),
+      listing({ arrangement: 'remote' }),
+    );
+    expect(facts.openings).toEqual([
+      {
+        arrangements: ['remote'],
+        places: [{ ...paris, cityId: 'c-paris' }],
+        placeStrictness: 'limit',
+        timezones: [],
+        quote: 'based in Paris',
+        confidence: 'unsure',
+        source: 'linkedin',
+      },
+      expect.objectContaining({
+        arrangements: ['hybrid'],
+        source: 'description',
+      }),
+    ]);
+  });
+
+  describe('place overlap', () => {
+    const placesConflicts = (
+      described: Opening['places'][number],
+      listed: NonNullable<ListingFacts['place']>,
+    ) =>
+      combine(
+        doc({
+          arrangementValue: 'remote',
+          openings: [
+            opening({
+              arrangements: ['remote'],
+              places: [described],
+              placeStrictness: 'limit',
+            }),
+          ],
+        }),
+        listing({ place: listed }),
+      ).conflicts.filter((c) => c.field === 'places');
+
+    it('regions overlap when they share a country, not when disjoint', () => {
+      expect(
+        placesConflicts(
+          { kind: 'region', code: 'EMEA' },
+          { kind: 'region', code: 'EU' },
+        ),
+      ).toEqual([]);
+      expect(
+        placesConflicts(
+          { kind: 'region', code: 'NORTH_AMERICA' },
+          { kind: 'region', code: 'EU' },
+        ),
+      ).toHaveLength(1);
+    });
+
+    it('a city with no id matches by country and folded name', () => {
+      const listed = {
+        kind: 'city' as const,
+        name: 'Vélizy-Villacoublay',
+        countryCode: 'FR',
+        cityId: 'c-velizy',
+      };
+      expect(
+        placesConflicts(
+          {
+            kind: 'city',
+            name: 'velizy villacoublay',
+            countryCode: 'FR',
+            cityId: null,
+          },
+          listed,
+        ),
+      ).toEqual([]);
+      expect(
+        placesConflicts(
+          { kind: 'city', name: 'Versailles', countryCode: 'FR', cityId: null },
+          listed,
+        ),
+      ).toHaveLength(1);
+      expect(
+        placesConflicts(
+          {
+            kind: 'city',
+            name: 'Vélizy-Villacoublay',
+            countryCode: 'BE',
+            cityId: null,
+          },
+          listed,
+        ),
+      ).toHaveLength(1);
+    });
+
+    it('a city with no country is not inside a country', () => {
+      expect(
+        placesConflicts(
+          { kind: 'city', name: 'Paris', countryCode: null, cityId: null },
+          { kind: 'country', code: 'FR' },
+        ),
+      ).toHaveLength(1);
     });
   });
 

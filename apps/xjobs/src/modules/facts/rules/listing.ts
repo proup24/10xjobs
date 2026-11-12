@@ -36,26 +36,22 @@ export interface ListingFacts {
   expiresAt: Date | null;
 }
 
+/** LinkedIn pay periods; any other period drops the salary. */
 const PERIODS: Record<string, FactSalary['period']> = {
-  hourly: 'hour',
-  hour: 'hour',
-  daily: 'day',
-  day: 'day',
-  monthly: 'month',
-  month: 'month',
-  yearly: 'year',
-  annually: 'year',
-  annual: 'year',
-  year: 'year',
+  HOURLY: 'hour',
+  DAILY: 'day',
+  MONTHLY: 'month',
+  YEARLY: 'year',
 };
 
 /** An employer-provided salary with a known period; an unknown currency becomes null. */
 function listingSalary(row: ListingRow): FactSalary | null {
   if (row.salaryProvidedByEmployer !== true) return null;
   if (row.salaryMin === null && row.salaryMax === null) return null;
-  const period = row.salaryPeriod
-    ? PERIODS[row.salaryPeriod.trim().toLowerCase()]
-    : undefined;
+  const period =
+    row.salaryPeriod !== null && Object.hasOwn(PERIODS, row.salaryPeriod)
+      ? PERIODS[row.salaryPeriod]
+      : undefined;
   if (!period) return null;
   return {
     min: row.salaryMin,

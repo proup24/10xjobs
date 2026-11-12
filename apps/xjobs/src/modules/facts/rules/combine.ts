@@ -111,13 +111,11 @@ function combineOpenings(
   const silent = described.every(
     (o) => o.places.length === 0 && o.timezones.length === 0,
   );
-  if (!silent || (listing.place === null && listing.arrangement === null))
-    return described;
-
   const stated = described.some((o) =>
     o.arrangements.some((a) => a !== UNSTATED),
   );
-  if (!stated) {
+  const listed = listing.place !== null || listing.arrangement !== null;
+  if (silent && listed && !stated) {
     return [
       {
         arrangements: [listing.arrangement ?? UNSTATED],
@@ -131,17 +129,30 @@ function combineOpenings(
     ];
   }
   const place = listing.place;
-  if (place === null) return described;
   // The listing supplies only the place; the description's arrangement and its confidence stand.
-  return described.map((o) => ({
-    ...o,
-    places: [place],
-    placeStrictness: 'label',
-    quote: [o.quote, listingQuote(listing.locationText)]
-      .filter(Boolean)
-      .join(' | '),
-    source: 'linkedin',
-  }));
+  const placed: FactOpening[] =
+    silent && place !== null
+      ? described.map((o) => ({
+          ...o,
+          places: [place],
+          placeStrictness: 'label',
+          quote: [o.quote, listingQuote(listing.locationText)]
+            .filter(Boolean)
+            .join(' | '),
+          source: 'linkedin',
+        }))
+      : described;
+  return placed.map((o) => fillArrangement(o, listing.arrangement));
+}
+
+/** An opening whose arrangement is only `unstated` takes the listing's (description, else LinkedIn). */
+function fillArrangement(
+  o: FactOpening,
+  arrangement: string | null,
+): FactOpening {
+  if (arrangement === null || o.arrangements.some((a) => a !== UNSTATED))
+    return o;
+  return { ...o, arrangements: [arrangement], source: 'linkedin' };
 }
 
 function combineArrangement(
@@ -178,7 +189,11 @@ function arrangementConflict(
     field: 'arrangement',
     listingValue: listing.arrangement,
     descriptionValue: stated,
-    quote: extraction.arrangement.quote,
+    quote: extraction.openings
+      .filter((o) => o.arrangements.some((a) => a !== UNSTATED))
+      .map((o) => o.quote)
+      .filter(Boolean)
+      .join(' | '),
     winner: 'description',
   };
 }
