@@ -233,7 +233,8 @@ export function classify(
   if (r.isError) {
     const status = r.apiErrorStatus;
     const detail = r.errorText ?? 'no error text';
-    if (parsed.usageLimitReached && status === 429) {
+    // The typed kind decides; the status may be missing or other than 429.
+    if (parsed.usageLimitReached) {
       const rejected = [...parsed.limits]
         .reverse()
         .find((l) => l.status === 'rejected');

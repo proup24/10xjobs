@@ -193,6 +193,19 @@ describe('parseStream and classify', () => {
     expect(classify(parseStream(stdout), ok)?.kind).toBe('transient');
   });
 
+  it('usage_limit_reached is a usage limit even without a 429', () => {
+    for (const status of [undefined, 500]) {
+      const stdout = edit('usage-limit', 'result', (o) => {
+        if (status === undefined) delete o.api_error_status;
+        else o.api_error_status = status;
+      });
+      expect(classify(parseStream(stdout), ok)).toMatchObject({
+        kind: 'usage_limit',
+        limit: { kind: 'five_hour', status: 'rejected' },
+      });
+    }
+  });
+
   it('a status-less api_error (connection error) is transient', () => {
     const stdout = fixture('auth-failure')
       .split('\n')
