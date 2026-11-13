@@ -8,14 +8,12 @@ import { randomUUID } from 'node:crypto';
 import type { ListTableRow } from '@xjobs/database';
 import { ModelOutputError } from '../models/errors';
 import type {
-  DecisionAnswer,
-  DecisionQuestion,
   GenerateRequest,
   JobForProcessing,
   ModelCallMeta,
   PostingInput,
 } from '../models/types';
-import { DecisionModel, ExtractionModel } from '../models/types';
+import { ExtractionModel } from '../models/types';
 import {
   type Claim,
   type FinishOutcome,
@@ -70,32 +68,6 @@ export function sequence<T>(...items: (T | Error)[]): () => T {
     if (item instanceof Error) throw item;
     return item;
   };
-}
-
-type DecisionResponder = (
-  input: PostingInput,
-  questions: DecisionQuestion[],
-) => DecisionAnswer[] | Promise<DecisionAnswer[]>;
-
-export class FakeDecisionModel extends DecisionModel {
-  readonly calls: { input: PostingInput; questions: DecisionQuestion[] }[] = [];
-
-  constructor(
-    private readonly respond: DecisionResponder,
-    private readonly model = 'typesafe/jev-1.14',
-    private readonly meta: Partial<ModelCallMeta> = {},
-  ) {
-    super();
-  }
-
-  async decide(
-    input: PostingInput,
-    questions: DecisionQuestion[],
-  ): Promise<{ answers: DecisionAnswer[]; meta: ModelCallMeta }> {
-    this.calls.push({ input, questions });
-    const answers = await this.respond(input, questions);
-    return { answers, meta: fakeMeta(this.model, this.meta) };
-  }
 }
 
 type ExtractionResponder = (

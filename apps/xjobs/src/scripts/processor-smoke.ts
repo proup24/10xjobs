@@ -5,13 +5,11 @@
  *   pnpm --filter @xjobs/xjobs processor:smoke
  *
  * Runs the worker's startup checks (key, extraction model listing, structured
- * outputs, pricing), then one Decisions call and one structured generation
- * (through the AI SDK) on
- * a sample posting, and prints the answers, the output and each call's cost.
+ * outputs, pricing), then one structured generation
+ * (through the AI SDK) on a sample posting, and prints the output and its cost.
  * Costs a few cents. Needs `OPENROUTER_API_KEY`; reads the PROCESSOR_* models.
  */
 import { loadEnvironmentFiles } from '@xjobs/database/env';
-import { OpenRouterDecisionModel } from 'src/modules/processor/models/decision.model';
 import { AiSdkExtractionModel } from 'src/modules/processor/models/extraction.model';
 import {
   assertApiKey,
@@ -20,9 +18,11 @@ import {
 } from 'src/modules/processor/models/client';
 import { ModelPricing } from 'src/modules/processor/models/pricing';
 import type { PostingInput } from 'src/modules/processor/models/types';
-import { buildVerificationQuestions } from 'src/modules/processor/rules/questions';
 import { systemPrompt } from 'src/modules/processor/prompts/prompt';
-import { modelOutputSchema } from 'src/modules/processor/schema';
+import {
+  type ListOptions,
+  modelOutputSchema,
+} from 'src/modules/processor/schema';
 import { SEED } from 'src/modules/processor/vocab/seed-data';
 import { LIST_NAMES } from 'src/modules/processor/vocab/lists';
 
@@ -43,7 +43,6 @@ async function main(): Promise<void> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) throw new Error('OPENROUTER_API_KEY is not set');
   const config = {
-    decisionModel: process.env.PROCESSOR_DECISION_MODEL ?? 'typesafe/jev-1.14',
     extractionModel:
       process.env.PROCESSOR_EXTRACTION_MODEL ?? 'anthropic/claude-opus-5.5',
   };
@@ -59,21 +58,7 @@ async function main(): Promise<void> {
 
   const options = Object.fromEntries(
     LIST_NAMES.map((list) => [list, SEED[list].map((t) => t.code)]),
-  ) as Parameters<typeof buildVerificationQuestions>[0];
-  const questions = buildVerificationQuestions(options);
-
-  const decision = await new OpenRouterDecisionModel(
-    client,
-    config.decisionModel,
-    pricing,
-  ).decide(POSTING, questions);
-  console.log(
-    `\n${config.decisionModel}: $${decision.meta.costUsd.toFixed(6)}`,
-  );
-  for (const a of decision.answers)
-    console.log(
-      `  ${a.key} = ${String(a.value)} (score ${a.score.toFixed(2)})`,
-    );
+  ) as ListOptions;
 
   const extraction = await new AiSdkExtractionModel(
     apiKey,

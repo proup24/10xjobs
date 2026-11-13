@@ -1,5 +1,4 @@
 import type { NewAttempt } from '../repositories/processor.repository';
-import { comparablePick, type FieldVerdict } from '../rules/verify';
 import type {
   Confidence,
   DecidedBy,
@@ -13,6 +12,25 @@ import type {
   GoldenPlace,
   GoldenRange,
 } from './golden';
+
+/**
+ * One verification verdict, as the removed `VerificationService` returned it.
+ * Kept here only until the eval is rewritten for the generator-only processor.
+ */
+export interface FieldVerdict {
+  key: string;
+  verdict: Verdict;
+  score: number | null;
+  jevPick: string | null;
+  generatorValue: string;
+  decidedBy: string;
+  round: number;
+}
+
+/** Jev's pick as compared with the generator's: on a junk flag, `unstated` counts as `no`. */
+function comparablePick(key: string, pick: string): string {
+  return key.startsWith('junk:') && pick === 'unstated' ? 'no' : pick;
+}
 
 export const FACT_NAMES = [
   'arrangement',

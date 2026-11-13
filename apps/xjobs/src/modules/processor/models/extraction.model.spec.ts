@@ -3,7 +3,6 @@ import { APICallError } from 'ai';
 import { MockLanguageModelV4 } from 'ai/test';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import type { FieldVerdict } from '../rules/verify';
 import {
   ModelOutputError,
   ModelRequestError,
@@ -13,7 +12,6 @@ import {
 import { GENERATION_MAX_OUTPUT_TOKENS } from './client';
 import {
   AiSdkExtractionModel,
-  feedbackMessage,
   openRouterLanguageModel,
 } from './extraction.model';
 import { ModelPricing } from './pricing';
@@ -220,74 +218,17 @@ describe('AiSdkExtractionModel', () => {
     expect(lm.doGenerateCalls).toHaveLength(1);
   });
 
-  it('adds the retry errors and the feedback as separate user messages', async () => {
+  it('adds the retry errors as their own user message', async () => {
     const lm = mock(answer('{"seniority":{"value":"senior"}}'));
-    const feedback: FieldVerdict[] = [
-      {
-        key: 'seniority',
-        verdict: 'rejected',
-        score: 0.91,
-        jevPick: 'junior',
-        generatorValue: 'senior',
-        decidedBy: 'generator',
-        round: 1,
-      },
-    ];
     await model(lm).generate(input, {
       ...req,
       retryErrors: ['seniority.value: Invalid option'],
-      feedback,
     });
     const prompt = lm.doGenerateCalls[0].prompt;
-    expect(prompt.map((m) => m.role)).toEqual([
-      'system',
-      'user',
-      'user',
-      'user',
-    ]);
-    expect(JSON.stringify(prompt[2])).toContain('re-read');
-    expect(JSON.stringify(prompt[3])).toContain(
+    expect(prompt.map((m) => m.role)).toEqual(['system', 'user', 'user']);
+    expect(JSON.stringify(prompt[2])).toContain(
       'seniority.value: Invalid option',
     );
-  });
-});
-
-describe('feedbackMessage', () => {
-  const verdicts: FieldVerdict[] = [
-    {
-      key: 'seniority',
-      verdict: 'rejected',
-      score: 0.91,
-      jevPick: 'mid',
-      generatorValue: 'senior',
-      decidedBy: 'generator',
-      round: 1,
-    },
-    {
-      key: 'junk:vague',
-      verdict: 'rejected',
-      score: 0.85,
-      jevPick: 'yes',
-      generatorValue: 'no',
-      decidedBy: 'generator',
-      round: 1,
-    },
-  ];
-
-  it('feedback renders a message naming the field, the generator value, Jev\'s pick and score, and not "use"/"adopt"', () => {
-    const text = feedbackMessage(verdicts);
-    expect(text).toContain('seniority');
-    expect(text).toContain('What seniority level does the posting ask for?');
-    expect(text).toContain('"senior"');
-    expect(text).toContain('"mid"');
-    expect(text).toContain('0.91');
-    expect(text).toContain('vague');
-    expect(text).toContain('0.85');
-    expect(text).toMatch(/re-read the posting/i);
-    expect(text).toContain('unstated');
-    expect(text).not.toMatch(/\buse\b/i);
-    expect(text).not.toMatch(/\badopt\b/i);
-    expect(text).not.toMatch(/\bcopy\b/i);
   });
 });
 

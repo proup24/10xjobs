@@ -3,13 +3,11 @@ import type { ProcessorConfig } from 'src/modules/processor';
 import { processProcessJob } from './processor';
 
 const config: ProcessorConfig = {
-  decisionModel: 'd',
   extractionModel: 'e',
   concurrency: 2,
   maxAttempts: 3,
   claimTimeoutMs: 900_000,
   dailyBudgetUsd: 10,
-  maxRegenerations: 2,
   generationTries: 3,
 };
 

@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { fixtureDocumentV3 as fixtureDocument } from '../schema/fixture-v3.testing';
-import type { FieldVerdict } from '../rules/verify';
 import type { Verdict, Verification } from '../schema/extraction-v3';
 import type { GoldenCase, GoldenRequirement } from './golden';
 import {
   callStats,
   type FactScores,
+  type FieldVerdict,
   questionLine,
   reportFileName,
   scoreCase,

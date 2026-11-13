@@ -1,11 +1,11 @@
 /**
- * Runs the golden set through generate -> verify -> regenerate and measures it:
+ * Runs the golden set through the generator and measures it:
  *
- *   pnpm --filter @xjobs/xjobs processor:eval -- [--generator m] [--decision-model m]
+ *   pnpm --filter @xjobs/xjobs processor:eval -- [--generator m]
  *
- * `--generator` defaults to `PROCESSOR_EXTRACTION_MODEL` (run once with Opus
- * and once with DeepSeek to compare them), `--decision-model` to
- * `PROCESSOR_DECISION_MODEL`. Calls paid APIs; never run in CI. Uses the real
+ * `--generator` defaults to `PROCESSOR_EXTRACTION_MODEL`. The verification
+ * columns of the report are empty until the eval is rewritten for the
+ * generator-only processor. Calls paid APIs; never run in CI. Uses the real
  * OpenRouter adapters with in-memory repositories seeded from `seed-data.ts`,
  * so the database is not touched. Attempts are recorded with `eval: true`.
  * Prints the report, writes `golden/last-report.<generator>.json` and exits 1
@@ -31,7 +31,6 @@ import {
   scoreCase,
   summarize,
 } from 'src/modules/processor/golden/score';
-import { OpenRouterDecisionModel } from 'src/modules/processor/models/decision.model';
 import { AiSdkExtractionModel } from 'src/modules/processor/models/extraction.model';
 import {
   checkModels,
@@ -39,9 +38,11 @@ import {
 } from 'src/modules/processor/models/client';
 import { ModelPricing } from 'src/modules/processor/models/pricing';
 import type { NewAttempt } from 'src/modules/processor/repositories/processor.repository';
-import { extractionDocumentV3Schema } from 'src/modules/processor/schema';
-import type { FieldVerdict } from 'src/modules/processor/rules/verify';
-import { VerificationService } from 'src/modules/processor/services/verification.service';
+import {
+  type ExtractionDocument,
+  type ExtractionDocumentV3,
+  extractionDocumentSchema,
+} from 'src/modules/processor/schema';
 import { createProcessorService } from 'src/modules/processor/services/processor.service';
 import {
   MemoryProcessorRepository,
@@ -51,18 +52,17 @@ import {
 const CONCURRENCY = 4;
 const MAX_TRIES = 3;
 
-/** Keeps what every verification round returned, per job, for the all-rounds scores. */
-class RecordingVerificationService extends VerificationService {
-  readonly rounds = new Map<string, FieldVerdict[][]>();
-  override async verify(
-    ...args: Parameters<VerificationService['verify']>
-  ): Promise<FieldVerdict[]> {
-    const verdicts = await super.verify(...args);
-    const jobId = args[1].jobId;
-    this.rounds.set(jobId, [...(this.rounds.get(jobId) ?? []), verdicts]);
-    return verdicts;
-  }
-}
+/** The scorer still reads the v3 shape; a v4 document has no verification, so it gets an empty one. */
+const forScoring = (doc: ExtractionDocument): ExtractionDocumentV3 =>
+  ({
+    ...doc,
+    verification: {
+      rounds: 1,
+      regenerationInvalid: false,
+      dropped: [],
+      missedJunkFlags: [],
+    },
+  }) as unknown as ExtractionDocumentV3;
 
 /** Every attempt this run records is an eval attempt. */
 class EvalProcessorRepository extends MemoryProcessorRepository {
@@ -133,35 +133,23 @@ async function main(): Promise<void> {
   if (!apiKey) throw new Error('OPENROUTER_API_KEY is not set');
   const env = processorEnvironmentSchema.parse(process.env);
   const config: ProcessorConfig = {
-    decisionModel: flag('decision-model') ?? env.PROCESSOR_DECISION_MODEL,
     extractionModel: flag('generator') ?? env.PROCESSOR_EXTRACTION_MODEL,
     concurrency: CONCURRENCY,
     maxAttempts: MAX_TRIES,
     claimTimeoutMs: env.PROCESSOR_CLAIM_TIMEOUT_MS,
     dailyBudgetUsd: Number.MAX_SAFE_INTEGER,
-    maxRegenerations: env.PROCESSOR_MAX_REGENERATIONS,
     generationTries: env.PROCESSOR_GENERATION_TRIES,
   };
-  console.log(
-    `verifier ${config.decisionModel}, generator ${config.extractionModel}`,
-  );
+  console.log(`generator ${config.extractionModel}`);
 
   const client = createOpenRouterClient(apiKey);
   // Cost per job is a bar: a response without a cost is estimated, not 0.
   const pricing = new ModelPricing();
   pricing.set(await checkModels(client, config));
-  const decision = new OpenRouterDecisionModel(
-    client,
-    config.decisionModel,
-    pricing,
-  );
-  const verification = new RecordingVerificationService(decision, config);
   const repo = new EvalProcessorRepository();
   const service = createProcessorService({
     repo,
     vocab: new MemoryVocabRepository(),
-    decision,
-    verification,
     extraction: new AiSdkExtractionModel(
       apiKey,
       config.extractionModel,
@@ -183,11 +171,7 @@ async function main(): Promise<void> {
   const queue = [...cases];
   const worker = async (): Promise<void> => {
     for (let c = queue.shift(); c; c = queue.shift()) {
-      // Only the rounds of the try that produced the stored document count.
-      const run = () => {
-        verification.rounds.delete(c.id);
-        return service.process(c.id);
-      };
+      const run = () => service.process(c.id);
       let outcome = await run();
       for (let i = 1; outcome === 'retry' && i < MAX_TRIES; i++)
         outcome = await run();
@@ -195,7 +179,7 @@ async function main(): Promise<void> {
       const stored = repo.extractions.find(
         (e) => e.id === job?.currentExtractionId,
       );
-      const parsed = extractionDocumentV3Schema.safeParse(stored?.data);
+      const parsed = extractionDocumentSchema.safeParse(stored?.data);
       if (!parsed.success) {
         failed.push(
           `${c.id} (${outcome}${job?.processingError ? `: ${job.processingError}` : ''})`,
@@ -204,12 +188,7 @@ async function main(): Promise<void> {
       }
       // Every try of the job counts toward its calls and cost.
       const calls = callStats(repo.attempts.filter((a) => a.jobId === c.id));
-      scores.push(
-        scoreCase(parsed.data, c, {
-          ...calls,
-          roundVerdicts: verification.rounds.get(c.id),
-        }),
-      );
+      scores.push(scoreCase(forScoring(parsed.data), c, calls));
       console.log(`  ${c.id}: ${outcome}`);
     }
   };
