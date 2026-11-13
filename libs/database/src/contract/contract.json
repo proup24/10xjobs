@@ -9901,8 +9901,8 @@
                   "prefix": "normalized_jobs_processing_reason"
                 },
                 {
-                  "expression": "\"processingStatus\" IS NULL OR \"processingStatus\" IN ('pending', 'processing', 'processed', 'failed')",
-                  "name": "normalized_jobs_processing_status_eba7bd28",
+                  "expression": "\"processingStatus\" IS NULL OR \"processingStatus\" IN ('pending', 'processing', 'processed', 'failed', 'archived')",
+                  "name": "normalized_jobs_processing_status_89abdf7d",
                   "prefix": "normalized_jobs_processing_status"
                 },
                 {
@@ -12799,7 +12799,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "881c039aef420519d4c8f137b88287c268d14c2afc804de5813e72c422847ce5"
+    "storageHash": "4127c182defde6c4757b9fb233d4eb83b044fa16fbcbaf6a7796087aaa804ee9"
   },
   "execution": {
     "executionHash": "d1afc78045007bb79eb075540ad58bb39a9183f73c152ea2601abe6ca2050fee",

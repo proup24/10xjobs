@@ -440,6 +440,7 @@ export class MemoryProcessorRepository extends ProcessorRepository {
       processing: 0,
       processed: 0,
       failed: 0,
+      archived: 0,
       unset: 0,
     };
     for (const job of this.jobs.values())

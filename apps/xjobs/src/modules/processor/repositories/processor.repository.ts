@@ -112,7 +112,7 @@ export function readStoredData(
 
 /** In-scope jobs per processing status; `unset` is a null status (never sent to the processor). */
 export type ProcessingCounts = Record<
-  'pending' | 'processing' | 'processed' | 'failed' | 'unset',
+  'pending' | 'processing' | 'processed' | 'failed' | 'archived' | 'unset',
   number
 >;
 
@@ -423,6 +423,7 @@ export class PrismaProcessorRepository extends ProcessorRepository {
       processing: 0,
       processed: 0,
       failed: 0,
+      archived: 0,
       unset: 0,
     };
     for (const row of rows)

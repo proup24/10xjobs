@@ -4,7 +4,8 @@ export type ProcessingStatus =
   | 'pending'
   | 'processing'
   | 'processed'
-  | 'failed';
+  | 'failed'
+  | 'archived';
 export type ProcessingReason = 'new' | 'reopened';
 
 export interface ProcessingState {
