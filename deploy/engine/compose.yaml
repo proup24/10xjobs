@@ -48,7 +48,7 @@ services:
     stop_grace_period: 7m
     command: ["node", "worker.js"]
     # Each claude call makes its own empty cwd and HOME under /tmp.
-    tmpfs: [/tmp]
+    tmpfs: ["/tmp:size=256m,mode=1777"]
     env_file: .env
     environment:
       <<: *engine-env
