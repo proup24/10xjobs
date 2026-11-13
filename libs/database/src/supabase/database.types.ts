@@ -472,7 +472,7 @@ export type Database = {
           countryCodes: string[];
           createdAt: string;
           data: NonNullable<Json>;
-          decisionModel: string;
+          decisionModel: string | null;
           engagement: string | null;
           extractionModel: string;
           id: string;
@@ -504,7 +504,7 @@ export type Database = {
           countryCodes: string[];
           createdAt?: string;
           data: NonNullable<Json>;
-          decisionModel: string;
+          decisionModel?: string | null;
           engagement?: string | null;
           extractionModel: string;
           id: string;
@@ -535,7 +535,7 @@ export type Database = {
           countryCodes?: string[];
           createdAt?: string;
           data?: NonNullable<Json>;
-          decisionModel?: string;
+          decisionModel?: string | null;
           engagement?: string | null;
           extractionModel?: string;
           id?: string;
