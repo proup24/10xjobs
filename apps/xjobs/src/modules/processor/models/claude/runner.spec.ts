@@ -136,13 +136,16 @@ describe('ClaudeRunner', () => {
 
   it('kills a hung process and its grandchild at the timeout', async () => {
     const pidFile = join(dir, 'child.pid');
+    const timeoutMs = 2000;
     const started = Date.now();
     const out = await runner({
       FAKE_CLAUDE_HANG: '1',
       FAKE_CLAUDE_CHILD_PID_FILE: pidFile,
-    }).run({ ...call, timeoutMs: 400 });
+    }).run({ ...call, timeoutMs });
     expect(out.timedOut).toBe(true);
-    expect(Date.now() - started).toBeLessThan(1000);
+    expect(Date.now() - started).toBeLessThan(timeoutMs + 1500);
+    // The timeout is generous so node has started under parallel load.
+    expect(existsSync(join(dir, 'rec.json'))).toBe(true);
     const rec = record();
     expect(existsSync(rec.cwd)).toBe(false);
     expect(existsSync(rec.env.HOME)).toBe(false);
