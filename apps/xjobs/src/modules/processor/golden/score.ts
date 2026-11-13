@@ -1,7 +1,12 @@
 import type { NewAttempt } from '../repositories/processor.repository';
 import { comparablePick, type FieldVerdict } from '../rules/verify';
-import type { Confidence, DecidedBy, ExtractionDocument } from '../schema';
-import type { Verdict, Verification } from '../schema/fact';
+import type {
+  Confidence,
+  DecidedBy,
+  ExtractionDocumentV3 as ExtractionDocument,
+  Verdict,
+  Verification,
+} from '../schema';
 import type {
   GoldenCase,
   GoldenFacts,

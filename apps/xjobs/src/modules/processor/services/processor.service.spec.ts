@@ -7,7 +7,10 @@ import {
   ProviderUnavailableError,
   TransientModelError,
 } from '../models/errors';
-import { extractionDocumentSchema } from '../schema';
+import {
+  type ExtractionDocumentV3,
+  extractionDocumentV3Schema,
+} from '../schema';
 import {
   FakeDecisionModel,
   FakeExtractionModel,
@@ -44,6 +47,9 @@ const config: ProcessorConfig = {
 /** A valid generator output for `DESCRIPTION`. */
 const opusOutput = (_req: unknown, patch: Record<string, unknown> = {}) =>
   generatorOutput(patch);
+
+/** The service still saves the verified (v3-shaped) document until the verification code is removed. */
+const v3 = (doc: unknown): ExtractionDocumentV3 => doc as ExtractionDocumentV3;
 
 describe('ProcessorService', () => {
   let repo: MemoryProcessorRepository;
@@ -97,8 +103,11 @@ describe('ProcessorService', () => {
       confidence: 'sure',
       verification: { verdict: 'confirmed', jevPick: 'senior', rounds: 1 },
     });
-    expect(saved.data.models).toEqual({ verifier: DEC, generator: EXT });
-    expect(saved.data.verification).toMatchObject({ rounds: 1, dropped: [] });
+    expect(v3(saved.data).models).toEqual({ verifier: DEC, generator: EXT });
+    expect(v3(saved.data).verification).toMatchObject({
+      rounds: 1,
+      dropped: [],
+    });
     for (const a of repo.attempts) {
       expect(a.extractionId).toBe(saved.id);
       expect(a.jobId).toBe('job-1');
@@ -187,7 +196,7 @@ describe('ProcessorService', () => {
     const saved = repo.extractions[0];
     expect(saved.seniority).toBe('mid');
     expect(saved.costUsd).toBeCloseTo(0.04);
-    expect(saved.data.verification.rounds).toBe(2);
+    expect(v3(saved.data).verification.rounds).toBe(2);
   });
 
   it('rejected in every round: dropped to unstated, also in its column, needs review', async () => {
@@ -204,7 +213,7 @@ describe('ProcessorService', () => {
     // The typed column is derived as today: a dropped list field is `unstated`.
     expect(saved.seniority).toBe('unstated');
     expect(saved.data.seniority.value).toBe('unstated');
-    expect(saved.data.verification.dropped).toEqual([
+    expect(v3(saved.data).verification.dropped).toEqual([
       { field: 'seniority', generatorValue: 'senior', jevPick: 'mid' },
     ]);
     expect(saved.needsReview).toBe(true);
@@ -253,7 +262,7 @@ describe('ProcessorService', () => {
     await expect(service().process('job-1')).resolves.toBe('processed');
     expect(extraction.calls[0].input.description).toBe('');
     const saved = repo.extractions[0];
-    expect(extractionDocumentSchema.safeParse(saved.data).success).toBe(true);
+    expect(extractionDocumentV3Schema.safeParse(saved.data).success).toBe(true);
     // Quotes from the description are not in the input: cleared and counted.
     expect(saved.data.arrangement.quote).toBe('');
     expect(repo.attempts[0].quoteFailures).toBeGreaterThan(0);
@@ -770,15 +779,15 @@ describe('ProcessorService', () => {
     it('returns the document, its columns and its calls, and saves no extraction', async () => {
       const result = await service().preview(posting);
 
-      expect(extractionDocumentSchema.safeParse(result.document).success).toBe(
-        true,
-      );
+      expect(
+        extractionDocumentV3Schema.safeParse(result.document).success,
+      ).toBe(true);
       expect(result.typedColumns.arrangement).toBe('remote');
       expect(result.calls.map((c) => [c.step, c.outcome])).toEqual([
         ['generation', 'ok'],
         ['verification', 'ok'],
       ]);
-      expect(result.document.models.verifier).toBe(DEC);
+      expect(v3(result.document).models.verifier).toBe(DEC);
       expect(repo.extractions).toEqual([]);
       expect(vocab.cities).toEqual([]);
     });

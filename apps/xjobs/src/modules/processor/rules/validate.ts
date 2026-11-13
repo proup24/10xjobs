@@ -37,7 +37,10 @@ type AnyFact = {
   value: unknown;
 };
 
-function invalidateQuote(holder: { quote: string; confidence: 'sure' | 'unsure' }): void {
+function invalidateQuote(holder: {
+  quote: string;
+  confidence: 'sure' | 'unsure';
+}): void {
   holder.quote = '';
   holder.confidence = 'unsure';
 }
@@ -107,7 +110,10 @@ function checkTechStackQuotes(
 }
 
 function checkEnvelopeListQuotes(
-  envelope: { confidence: 'sure' | 'unsure'; value: Array<{ quote: string }> | null },
+  envelope: {
+    confidence: 'sure' | 'unsure';
+    value: Array<{ quote: string }> | null;
+  },
   isBad: (quote: string) => boolean,
 ): number {
   let failures = 0;
@@ -191,7 +197,7 @@ export function checkConsistency(
   return out;
 }
 
-/** True when a fact qualify reads is unsure, or the verification dropped or missed something. */
+/** True when a fact qualify reads (or a main stack requirement) is unsure. */
 export function needsReview(doc: ExtractionDocument): boolean {
   return (
     doc.arrangement.confidence === 'unsure' ||
@@ -201,8 +207,6 @@ export function needsReview(doc: ExtractionDocument): boolean {
     doc.contractType.confidence === 'unsure' ||
     doc.engagement.confidence === 'unsure' ||
     doc.isSoftwareEngineeringRole.confidence === 'unsure' ||
-    doc.verification.dropped.length > 0 ||
-    doc.verification.missedJunkFlags.length > 0 ||
     (doc.techStack.value?.requirements ?? []).some(
       (r) => r.kind === 'main' && r.confidence === 'unsure',
     )

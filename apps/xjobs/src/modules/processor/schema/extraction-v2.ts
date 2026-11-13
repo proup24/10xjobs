@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { stackIssues } from '../rules/stack';
 import { LIST_NAMES } from '../vocab/lists';
-import { confidenceSchema, verificationSchema } from './fact';
+import { verificationSchema } from './extraction-v3';
+import { confidenceSchema } from './fact';
 import {
   PLACE_STRICTNESS,
   languageSchema,

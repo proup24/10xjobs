@@ -39,7 +39,7 @@ import {
 } from 'src/modules/processor/models/client';
 import { ModelPricing } from 'src/modules/processor/models/pricing';
 import type { NewAttempt } from 'src/modules/processor/repositories/processor.repository';
-import { extractionDocumentSchema } from 'src/modules/processor/schema';
+import { extractionDocumentV3Schema } from 'src/modules/processor/schema';
 import type { FieldVerdict } from 'src/modules/processor/rules/verify';
 import { VerificationService } from 'src/modules/processor/services/verification.service';
 import { createProcessorService } from 'src/modules/processor/services/processor.service';
@@ -195,7 +195,7 @@ async function main(): Promise<void> {
       const stored = repo.extractions.find(
         (e) => e.id === job?.currentExtractionId,
       );
-      const parsed = extractionDocumentSchema.safeParse(stored?.data);
+      const parsed = extractionDocumentV3Schema.safeParse(stored?.data);
       if (!parsed.success) {
         failed.push(
           `${c.id} (${outcome}${job?.processingError ? `: ${job.processingError}` : ''})`,

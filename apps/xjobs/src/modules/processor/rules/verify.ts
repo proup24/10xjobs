@@ -2,7 +2,8 @@ import { thresholdFor } from '../config/thresholds';
 import type { ClosedQuestionKey, DecisionAnswer } from '../models/types';
 import type { ListOptions } from '../schema';
 import type { ExtractionDocument } from '../schema/extraction';
-import type { DecidedBy, Verdict } from '../schema/fact';
+import type { DecidedBy } from '../schema/fact';
+import type { Verdict } from '../schema/extraction-v3';
 
 /** A field Jev can verify; the same keys as the closed questions. */
 export type VerifiedField = ClosedQuestionKey;

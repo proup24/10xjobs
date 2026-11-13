@@ -96,7 +96,7 @@ export interface JobState {
     needsReview: boolean;
     costUsd: number;
     /** The schema version the stored data reads as; null when none reads it. */
-    schemaVersion: 1 | 2 | 3 | null;
+    schemaVersion: 1 | 2 | 3 | 4 | null;
     data:
       | ExtractionDocument
       | ExtractionDocumentV2
@@ -105,7 +105,7 @@ export interface JobState {
   } | null;
 }
 
-/** A stored extraction's `data`, read as v3, else v2, else v1. */
+/** A stored extraction's `data`, read as v4, else v3, v2, else v1. */
 export function readStoredData(
   data: unknown,
 ): Pick<NonNullable<JobState['extraction']>, 'schemaVersion' | 'data'> {

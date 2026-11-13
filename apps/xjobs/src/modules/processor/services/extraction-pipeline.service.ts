@@ -3,9 +3,14 @@ import {
   PROCESSOR_CONFIG,
   type ProcessorConfig,
 } from '../config/processor.config';
+import type { ExtractionDocumentV3 } from '../schema/extraction-v3';
 import type { PostingInput } from '../models/types';
 import type { Vocabulary } from '../repositories/vocab.repository';
-import { applyVerdicts, carryVerdicts } from '../rules/finalize';
+import {
+  applyVerdicts,
+  carryVerdicts,
+  withVerification,
+} from '../rules/finalize';
 import { checkConsistency } from '../rules/validate';
 import { type FieldVerdict, generatorAnswers } from '../rules/verify';
 import type { AttemptLog } from './attempt-log';
@@ -133,13 +138,13 @@ export class ExtractionPipeline {
     log: AttemptLog,
   ): AssembledDocument {
     const doc = checkConsistency(
-      applyVerdicts(assembled.doc, verdicts, {
+      applyVerdicts(withVerification(assembled.doc), verdicts, {
         round,
         final: true,
         regenerationInvalid,
       }),
       vocabulary.engineeringRoleKinds,
-    );
+    ) as ExtractionDocumentV3;
     doc.models.verifier = this.config.decisionModel;
     log.debug(
       `verified in ${round} round${round === 1 ? '' : 's'}${doc.verification.dropped.length ? `, dropped ${doc.verification.dropped.map((d) => d.field).join(', ')}` : ''}`,

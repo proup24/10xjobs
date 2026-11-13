@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fixtureDocument } from '../schema/fixture.testing';
+import { fixtureDocumentV3 as fixtureDocument } from '../schema/fixture-v3.testing';
 import { applyVerdicts, carryVerdicts } from './finalize';
 import type { FieldVerdict } from './verify';
 

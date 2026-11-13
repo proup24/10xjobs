@@ -7,8 +7,8 @@ interface ModelFact<T> {
 }
 
 /**
- * The generator's output as an extraction document, before verification:
- * every fact is the generator's, unverified. The posting text is the only
+ * The generator's output as an extraction document, as the generator wrote it:
+ * every fact is the generator's. The posting text is the only
  * source, so a fact it leaves unstated stays unstated.
  */
 export function resolveFacts(args: {
@@ -24,7 +24,6 @@ export function resolveFacts(args: {
     score: null,
     quote: f.quote,
     model: generatorModel,
-    verification: null,
   });
 
   return {
@@ -55,20 +54,14 @@ export function resolveFacts(args: {
     unmatched: [],
     // The posting's truncation is the caller's to record: it knows the input.
     truncated: false,
-    verification: {
-      rounds: 1,
-      regenerationInvalid: false,
-      dropped: [],
-      missedJunkFlags: [],
-    },
-    models: { verifier: null, generator: generatorModel },
+    models: { generator: generatorModel },
   };
 }
 
 /**
  * The posting's work authorization, with a separately decided sponsorship
  * answer merged in when there is one. The generator states sponsorship inside
- * `workAuthorization`, so until verification supplies its own answer the
+ * `workAuthorization`, so until a separate sponsorship answer exists the
  * generator's stands.
  */
 function resolveSponsorship(
@@ -94,7 +87,6 @@ function resolveSponsorship(
     decidedBy: sponsorship.decidedBy,
     score: sponsorship.score,
     model: sponsorship.model,
-    verification: sponsorship.verification,
   };
 }
 
@@ -110,6 +102,5 @@ function resolveJunk(
     score: null,
     quote: output.junkFlags.quote,
     model,
-    verification: null,
   };
 }

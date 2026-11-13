@@ -1,14 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import { fixtureDocument } from '../schema/fixture.testing';
 import { fixtureDocumentV1 } from '../schema/fixture-v1.testing';
+import { fixtureDocumentV3 } from '../schema/fixture-v3.testing';
 import { fixtureDocumentV2 } from '../schema/fixture-v2.testing';
 import { readStoredData } from './processor.repository';
 
 describe('readStoredData', () => {
-  it('reads a current row as v3', () => {
+  it('reads a current row as v4', () => {
     expect(readStoredData(fixtureDocument())).toEqual({
-      schemaVersion: 3,
+      schemaVersion: 4,
       data: fixtureDocument(),
+    });
+  });
+
+  it('reads a row stored at v3 as v3', () => {
+    expect(readStoredData(fixtureDocumentV3())).toEqual({
+      schemaVersion: 3,
+      data: fixtureDocumentV3(),
     });
   });
 

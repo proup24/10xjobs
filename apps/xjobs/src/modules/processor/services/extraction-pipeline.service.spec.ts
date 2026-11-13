@@ -7,6 +7,7 @@ import type {
   DecisionQuestion,
   PostingInput,
 } from '../models/types';
+import type { ExtractionDocumentV3 } from '../schema/extraction-v3';
 import type { Vocabulary } from '../repositories/vocab.repository';
 import { needsReview } from '../rules/validate';
 import { FakeDecisionModel, FakeExtractionModel } from '../testing/fakes';
@@ -72,8 +73,11 @@ describe('ExtractionPipeline', () => {
       new VerificationService(decision, config),
       config,
     );
-  const run = (config?: ProcessorConfig) =>
-    pipeline(config).run(input, vocabulary, log);
+  /** The pipeline still returns the verified (v3-shaped) document until the verification code is removed. */
+  const run = async (config?: ProcessorConfig) => {
+    const result = await pipeline(config).run(input, vocabulary, log);
+    return { ...result, doc: result.doc as unknown as ExtractionDocumentV3 };
+  };
   const steps = () => log.entries().map((e) => [e.step, e.outcome]);
   const asked = (call: number) =>
     decision.calls[call].questions.map((q) => q.key).sort();

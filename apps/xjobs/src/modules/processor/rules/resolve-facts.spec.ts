@@ -63,7 +63,7 @@ const FACTS = [
 ] as const;
 
 describe('resolveFacts', () => {
-  it('takes every fact from the generator, unverified', () => {
+  it('takes every fact from the generator, ', () => {
     const doc = resolve(output());
     for (const name of FACTS) {
       expect([name, doc[name]]).toMatchObject([
@@ -71,7 +71,6 @@ describe('resolveFacts', () => {
         {
           decidedBy: 'generator',
           score: null,
-          verification: null,
           model: GEN,
         },
       ]);
@@ -80,15 +79,11 @@ describe('resolveFacts', () => {
     expect(doc.seniority.value).toBe('mid');
   });
 
-  it('records one round, nothing dropped, and no verifier', () => {
+  it('records the generator model and no verification', () => {
     const doc = resolve(output());
-    expect(doc.verification).toEqual({
-      rounds: 1,
-      regenerationInvalid: false,
-      dropped: [],
-      missedJunkFlags: [],
-    });
-    expect(doc.models).toEqual({ verifier: null, generator: GEN });
+    expect(doc).not.toHaveProperty('verification');
+    expect(doc.seniority).not.toHaveProperty('verification');
+    expect(doc.models).toEqual({ generator: GEN });
     expect(doc.truncated).toBe(false);
   });
 

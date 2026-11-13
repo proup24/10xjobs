@@ -1,6 +1,10 @@
 import type { ClosedQuestionKey } from '../models/types';
 import type { ExtractionDocument } from '../schema/extraction';
-import type { Verdict, Verification } from '../schema/fact';
+import type {
+  ExtractionDocumentV3,
+  Verdict,
+  Verification,
+} from '../schema/extraction-v3';
 import type { FieldVerdict } from './verify';
 
 export interface ApplyOptions {
@@ -29,10 +33,10 @@ type Envelope = {
  * A rejection before the final round only records the verdict.
  */
 export function applyVerdicts(
-  doc: ExtractionDocument,
+  doc: ExtractionDocumentV3,
   verdicts: FieldVerdict[],
   opts: ApplyOptions,
-): ExtractionDocument {
+): ExtractionDocumentV3 {
   const out = structuredClone(doc);
   const dropped = out.verification.dropped;
   const drop = (v: FieldVerdict, field = v.key as string): void => {
@@ -183,4 +187,34 @@ export function carryVerdicts(
     else toAsk.add(key);
   }
   return { kept, toAsk };
+}
+
+/**
+ * A generated (v4) document in the v3 shape the verification code works on:
+ * empty verification blocks, no verifier. Goes with the verification code.
+ */
+export function withVerification(
+  doc: ExtractionDocument,
+): ExtractionDocumentV3 {
+  const out: Record<string, unknown> = structuredClone(doc);
+  for (const [key, value] of Object.entries(out)) {
+    // A fact envelope: every one starts unverified.
+    if (
+      value &&
+      typeof value === 'object' &&
+      'quote' in value &&
+      'model' in value
+    )
+      out[key] = { ...value, verification: null };
+  }
+  return {
+    ...out,
+    verification: {
+      rounds: 1,
+      regenerationInvalid: false,
+      dropped: [],
+      missedJunkFlags: [],
+    },
+    models: { verifier: null, generator: doc.models.generator },
+  } as unknown as ExtractionDocumentV3;
 }
