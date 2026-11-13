@@ -46,8 +46,8 @@ Before this slice's brainstorm, dev needs a baseline on the description-only pro
 
 ## Left by slice 02, as built
 
-- **No baseline yet.** On dev, every processed job still has a v2 extraction. Before this slice's brainstorm:
-  - run 02's reprocess;
+- **No baseline yet.** On dev, every processed job still has a v2 extraction, and 02b archives them instead of reprocessing them (prerequisite 2). Before this slice's brainstorm:
+  - process the first harvestapi batch on Claude;
   - then `db:match-shares -- --days 7`, which gives the review share to bring down;
   - then `processor:eval` on the description-only prompt.
 - **Review share: position dominates the estimate.** Applying 02's rules to the 60 v2 jobs, about 7% of decisions land in review, almost all through the position rule.

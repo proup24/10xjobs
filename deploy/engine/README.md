@@ -163,7 +163,7 @@ The processor runs `claude -p` in the `worker` container, on the owner's Claude 
 1. On your laptop, run `claude setup-token` and copy the token it prints. It is valid for one year.
 2. On the server, in `~/engine`, set `CLAUDE_CODE_OAUTH_TOKEN=<token>` in `.env` (single-quote it if it contains `$`).
 3. `$C up -d worker`.
-4. Check: `$C logs worker | grep -i processor`. The processor must log that it started, not `processor not started` or a paused startup check.
+4. Check: `$C logs worker | grep -i processor`. Look for `processor ready`, which the startup check logs once the credential works (within about three minutes). Every boot first logs `Processing paused until … (startup): checking the Claude credential` at info level; that line is expected. `processor not started`, or a `(startup)` pause logged at error level with another detail, means the check failed.
 
 This is for the dogfooding period only. Before anyone else gets an account, do section 17.
 
@@ -182,8 +182,8 @@ An expired or revoked token shows as an auth error: the job goes back to `pendin
 The processor pauses on a usage limit (until the limit resets, or 15 minutes if unknown), on an auth error (10 minutes), and when the weekly share reaches `PROCESSOR_WEEKLY_STOP_AT` (default `0.85`, of any weekly limit).
 
 1. `$C logs worker | grep -i pause`.
-2. The log line reads `Processing paused until <time> (<reason>): <detail>`; the reason is `usage_limit`, `weekly_reserve`, `auth` or `startup` (auth and startup log at error level). `GET /processor/status` shows the same pause, but it is an operator endpoint (`XJOBS_OPERATOR_ENDPOINTS`) that the hosted API does not serve; use it only on a local engine.
-3. Nothing needs fixing for a usage limit or the weekly stop: jobs wait as `pending` and the processor resumes by itself. An auth error needs section 14.
+2. The log line reads `Processing paused until <time> (<reason>): <detail>`; the reason is `usage_limit`, `weekly_reserve`, `auth` or `startup` (auth and a failed startup check log at error level; the initial `checking the Claude credential` pause logs at info). `GET /processor/status` shows the same pause, but it is an operator endpoint (`XJOBS_OPERATOR_ENDPOINTS`) that the hosted API does not serve; use it only on a local engine.
+3. Nothing needs fixing for a usage limit or the weekly stop: jobs wait as `pending` and the processor resumes by itself. An auth error needs section 14. An `auth` pause whose detail starts `could not run claude:` is not the token: the `claude` binary could not be started (missing, or out of processes or file handles).
 
 ## 16. Measure worker memory
 

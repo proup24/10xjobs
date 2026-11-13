@@ -104,6 +104,8 @@ Before the switch, the builder proves isolation with a test call whose posting a
 
 The adapter distinguishes them from the structured fields (`is_error`, `api_error_status`, `rate_limit_event`), never by parsing message text, except where the docs give no field; the builder confirms each case against the installed version and pins the tests to it.
 
+**As built (Claude Code 2.1.314).** The recordings changed the flags above. There is no `--disallowedTools "*"`: it also denies the built-in `StructuredOutput` tool that `--json-schema` works through, and `--tools ""` alone leaves only that tool. `--verbose` is added (required for `stream-json` with `-p`), `--setting-sources ""` loads no settings, and `--max-turns` is 3, so the model can correct a text-only or schema-rejected answer within one call. A status-less `is_error` result (`terminal_reason: "api_error"`, such as a connection error) is transient; only a `max_turns` end is a `ModelOutputError`. The final argv, field names and error shapes are in `apps/xjobs/src/modules/processor/models/claude/fixtures/README.md`.
+
 ## 3. Credentials
 
 - **Now: the user's subscription.** The user runs `claude setup-token` once and puts the token in the server's `/home/deploy/engine/.env` as `CLAUDE_CODE_OAUTH_TOKEN`, the same way the other runtime secrets are set (engine hosting spec: runtime secrets live only on the server, CI never sees them). The token lasts one year.

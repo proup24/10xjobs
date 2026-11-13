@@ -17,7 +17,9 @@ The processor has been down since about 2026-11-09. Its OpenRouter credit ran ou
 
 Built. The design is `docs/superpowers/specs/2026-11-13-claude-models-design.md`. The first Claude batch is harvestapi's, once Apify has credit again.
 
-## Open questions (for this slice's brainstorm)
+## Open questions (resolved)
+
+The brainstorm answered all of these; the answers are the Decisions of the design spec (`docs/superpowers/specs/2026-11-13-claude-models-design.md`). They stay here as the record of what was asked.
 
 - **Subscription terms and limits.** A Claude subscription is tied to one person's account. Does running a shared, multi-tenant engine on it fit its terms? What throughput do its limits allow per day, measured in jobs?
 - **What survives.**
@@ -40,9 +42,9 @@ Built. The design is `docs/superpowers/specs/2026-11-13-claude-models-design.md`
 - **Detecting the limit.** How does the engine tell "usage limit reached, resets at T" from other failures? Where does it park waiting jobs until T: a delayed BullMQ job, or a processor-wide pause?
 - **Archiving the old jobs.**
   - Is it a new processing status (for example `archived`), or out-of-scope by channel or source?
-  - Can they be un-archived later by hand?
+  - Can they be un-archived later by hand? _Resolved: no; only a newer ingest sighting un-archives a job._
   - Does `db:reprocess` skip them?
-- **Reprocess order.** After the switch, how do the 60 processed jobs (slice 02's reprocess) and new harvestapi jobs get ahead of anything else? See slice 03's prerequisites.
+- **Reprocess order.** After the switch, how do the 60 processed jobs (slice 02's reprocess) and new harvestapi jobs get ahead of anything else? See slice 03's prerequisites. _Resolved: nothing is reprocessed. The 60 are archived with the other cheap_scraper jobs, and slice 03's baseline comes from the first harvestapi batch._
 - **Tests and eval.** How is `claude -p` faked in unit and e2e tests? Is `processor:eval` run against Claude once before the switch, to compare with DeepSeek and Jev on the golden set?
 
 ## Not in scope
