@@ -26,7 +26,6 @@ export type ReuseKey = {
   inputHash: string;
   schemaVersion: number;
   promptHash: string;
-  decisionModel: string;
   extractionModel: string;
 };
 
@@ -258,7 +257,6 @@ export class PrismaProcessorRepository extends ProcessorRepository {
       inputHash: key.inputHash,
       schemaVersion: key.schemaVersion,
       promptHash: key.promptHash,
-      decisionModel: key.decisionModel,
       extractionModel: key.extractionModel,
     })
       .orderBy((e) => e.createdAt.desc())
@@ -284,6 +282,7 @@ export class PrismaProcessorRepository extends ProcessorRepository {
   async saveExtraction(row: NewExtraction): Promise<string> {
     const created = await this.db.orm.public.JobExtraction.create({
       ...row,
+      decisionModel: null,
       data: row.data as unknown as Json,
       costUsd: toDecimal(row.costUsd),
     });

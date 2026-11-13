@@ -52,7 +52,6 @@ const key = (inputHash: string = randomUUID()): ReuseKey => ({
   inputHash,
   schemaVersion: 1,
   promptHash: 'prompt-hash',
-  decisionModel: 'typesafe/jev-1.14',
   extractionModel: 'anthropic/claude-opus-5.5',
 });
 
@@ -496,6 +495,38 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
   });
 
   describe('reuse', () => {
+    it('saves new extractions with a null decisionModel', async () => {
+      const id = await repo.saveExtraction(extraction(await job(), key()));
+      const row = await db.orm.public.JobExtraction.where({ id }).first();
+      expect(row?.decisionModel).toBeNull();
+    });
+
+    it('reuses on input, schema, prompt and generator only', async () => {
+      const reuse = key('only-these');
+      const id = await repo.saveExtraction(extraction(await job(), reuse));
+      const jobId = (await repo.findReusable(reuse))?.jobId;
+      expect(await repo.findReusable(reuse)).toEqual({ id, jobId });
+      for (const other of [
+        { inputHash: 'x' },
+        { schemaVersion: 9 },
+        { promptHash: 'x' },
+        { extractionModel: 'x' },
+      ])
+        expect(await repo.findReusable({ ...reuse, ...other })).toBeNull();
+    });
+
+    it('never reuses a v3 row', async () => {
+      const reuse = { ...key('v3-input'), schemaVersion: 3 };
+      const jobId = await job();
+      const id = await repo.saveExtraction(extraction(jobId, reuse));
+      await db.orm.public.JobExtraction.where({ id }).update({
+        decisionModel: 'typesafe/jev-1.14',
+      });
+      expect(
+        await repo.findReusable({ ...reuse, schemaVersion: 4 }),
+      ).toBeNull();
+    });
+
     it('finds an extraction by its reuse key and copies it to another job', async () => {
       const first = await job();
       const second = await job();

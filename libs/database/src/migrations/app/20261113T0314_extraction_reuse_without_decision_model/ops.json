@@ -1,0 +1,144 @@
+[
+  {
+    "id": "dropIndex.job_extractions.job_extractions_reuse",
+    "label": "Drop index \"job_extractions_reuse\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "job_extractions_reuse",
+        "table": "job_extractions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"job_extractions_reuse\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_reuse\""
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "index \"job_extractions_reuse\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop index \"job_extractions_reuse\"",
+        "sql": "DROP INDEX \"public\".\"job_extractions_reuse\"",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"job_extractions_reuse\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_reuse\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"job_extractions_reuse\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "alterNullability.dropNotNull.job_extractions.decisionModel",
+    "label": "Drop NOT NULL on \"job_extractions\".\"decisionModel\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "decisionModel",
+        "table": "job_extractions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"decisionModel\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "job_extractions",
+          "decisionModel"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"decisionModel\" on \"job_extractions\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop NOT NULL on \"decisionModel\"",
+        "sql": "ALTER TABLE \"public\".\"job_extractions\" ALTER COLUMN \"decisionModel\" DROP NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"decisionModel\" is nullable",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "job_extractions",
+          "decisionModel",
+          "YES"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.job_extractions.job_extractions_reuse",
+    "label": "Create index \"job_extractions_reuse\" on \"job_extractions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "job_extractions_reuse",
+        "table": "job_extractions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"job_extractions_reuse\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_reuse\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"job_extractions_reuse\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"job_extractions_reuse\"",
+        "sql": "CREATE INDEX \"job_extractions_reuse\" ON \"public\".\"job_extractions\" (\"inputHash\", \"schemaVersion\", \"promptHash\", \"extractionModel\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"job_extractions_reuse\" exists on \"job_extractions\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"job_extractions_reuse\"",
+          "i",
+          "I",
+          "\"public\".\"job_extractions\"",
+          "btree",
+          "[\"inputHash\",\"schemaVersion\",\"promptHash\",\"extractionModel\"]"
+        ]
+      }
+    ]
+  }
+]

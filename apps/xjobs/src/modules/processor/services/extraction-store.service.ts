@@ -22,9 +22,6 @@ import type { ListName } from '../vocab/lists';
 import type { AttemptLog } from './attempt-log';
 import type { AssembledDocument } from './fact-assembler.service';
 
-/** The `decisionModel` column is NOT NULL and part of the reuse index; no model decides any more. */
-const NO_DECISION_MODEL = '';
-
 /** Every write a processed job makes, and the reuse of an earlier extraction. */
 @Injectable()
 export class ExtractionStore {
@@ -40,7 +37,6 @@ export class ExtractionStore {
       inputHash: inputHash(input),
       schemaVersion: EXTRACTION_SCHEMA_VERSION,
       promptHash: promptHash(),
-      decisionModel: NO_DECISION_MODEL,
       extractionModel: this.config.extractionModel,
     };
   }

@@ -257,7 +257,6 @@ export class MemoryProcessorRepository extends ProcessorRepository {
         e.inputHash === key.inputHash &&
         e.schemaVersion === key.schemaVersion &&
         e.promptHash === key.promptHash &&
-        e.decisionModel === key.decisionModel &&
         e.extractionModel === key.extractionModel,
     );
     const latest = hits.at(-1);
