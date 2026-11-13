@@ -38,10 +38,10 @@ This slice runs right after 02 _(user)_. What 02 leaves it:
 
 Before this slice's brainstorm, dev needs a baseline on the description-only prompt:
 
-1. **A working LLM provider.** OpenRouter credit is out. The processor has failed every call with 402 since about 2026-11-09. An interim slice replaces OpenRouter first (see [README](README.md)).
+1. **A working LLM provider.** OpenRouter credit is out. The processor has failed every call with 402 since about 2026-11-09. Interim slice [02b](02b-claude-models.md) moves the engine to `claude -p` first.
 2. **The 60 processed jobs reprocessed,** with `db:reprocess -- --all-in-scope`, before about 2026-12-09, when they leave the 30-day match window.
    - **Queue order.** `db:reprocess` sets `processingRequestedAt = now()`, and the processor claims the oldest request first. So the 60 queue behind the 3,988-job cheap_scraper pending backlog, about $33 at OpenRouter prices.
-   - **Settle that first.** Decide whether the backlog is processed, set aside, or skipped. Or add a way to put chosen jobs at the front of the queue.
+   - **Settled by 02b:** the old cheap_scraper jobs are archived before Claude goes live, so they're not processed. A way to put chosen jobs at the front of the queue is one of 02b's open questions.
 3. **Measurements:**
    - `db:match-shares -- --days 7`, for the review share to bring down;
    - `processor:eval`, for the golden set on the description-only prompt.
