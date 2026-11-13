@@ -16,7 +16,7 @@ describe('nextProcessing', () => {
     expect(normalizeConfig.reopenAfterMs).toBe(21 * day);
   });
 
-  it('sends an archived job to pending on any new observation', () => {
+  it('sends an archived job to pending on a newer observation', () => {
     expect(
       nextProcessing({
         created: false,
@@ -26,6 +26,25 @@ describe('nextProcessing', () => {
         rebuild: false,
       }),
     ).toEqual({ status: 'pending', reason: 'reopened', requestedAt: seen });
+  });
+
+  it('leaves an archived job archived on a replay of an older or same batch', () => {
+    const archived: ProcessingState = {
+      status: 'archived',
+      reason: 'new',
+      requestedAt: seen,
+    };
+    for (const previousLastSeenAt of [after(1), seen]) {
+      expect(
+        nextProcessing({
+          created: false,
+          previousLastSeenAt,
+          observedAt: seen,
+          current: archived,
+          rebuild: false,
+        }),
+      ).toBe(archived);
+    }
   });
 
   it('leaves an archived job archived on a rebuild', () => {
