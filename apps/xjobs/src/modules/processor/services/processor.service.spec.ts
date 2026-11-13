@@ -845,7 +845,14 @@ describe('ProcessorService', () => {
 
       expect(await service().status()).toEqual({
         models: { decision: DEC, extraction: EXT },
-        jobs: { pending: 1, processing: 0, processed: 1, failed: 0, archived: 0, unset: 1 },
+        jobs: {
+          pending: 1,
+          processing: 0,
+          processed: 1,
+          failed: 0,
+          archived: 0,
+          unset: 1,
+        },
         spentTodayUsd: 1.5,
         dailyBudgetUsd: 20,
         paused: false,
