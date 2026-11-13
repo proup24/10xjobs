@@ -19,12 +19,12 @@ Same as Phases 1 and 2: each slice is a short brief covering the problem, the op
 
 ## Slices
 
-| #   | Slice                                              | Area    | Status           |
-| --- | -------------------------------------------------- | ------- | ---------------- |
-| 01  | [LinkedIn source data](01-linkedin-source-data.md) | Harvest | Done (PR 52)     |
-| 02  | [Listing facts](02-listing-facts.md)               | Enrich  | Done (PRs 53–60) |
-| 03  | [Processor quality](03-processor-quality.md)       | Enrich  | Next             |
-| 04  | [Search precision](04-search-precision.md)         | Harvest | Not started      |
+| #   | Slice                                              | Area    | Status                        |
+| --- | -------------------------------------------------- | ------- | ----------------------------- |
+| 01  | [LinkedIn source data](01-linkedin-source-data.md) | Harvest | Done (PR 52)                  |
+| 02  | [Listing facts](02-listing-facts.md)               | Enrich  | Done (PRs 53–60)              |
+| 03  | [Processor quality](03-processor-quality.md)       | Enrich  | Next, after its prerequisites |
+| 04  | [Search precision](04-search-precision.md)         | Harvest | Not started                   |
 
 ## Follow-ups from slice 02
 

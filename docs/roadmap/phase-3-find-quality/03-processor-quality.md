@@ -34,6 +34,18 @@ This slice runs right after 02 _(user)_. What 02 leaves it:
 - **Contract type is description-only for matching.** LinkedIn's `employmentType` is display only after 02, so an unstated `contractType` stays unknown. On dev, 43 of 60 contract types came from LinkedIn, so the description's own coverage matters more now.
 - **Salary:** 02 fills a silent description from LinkedIn's employer-provided salary. Whether descriptions state pay that the model misses (0 of 60 today) is still this slice's question.
 
+## Prerequisites
+
+Before this slice's brainstorm, dev needs a baseline on the description-only prompt:
+
+1. **A working LLM provider.** OpenRouter credit is out. The processor has failed every call with 402 since about 2026-11-09. An interim slice replaces OpenRouter first (see [README](README.md)).
+2. **The 60 processed jobs reprocessed,** with `db:reprocess -- --all-in-scope`, before about 2026-12-09, when they leave the 30-day match window.
+   - **Queue order.** `db:reprocess` sets `processingRequestedAt = now()`, and the processor claims the oldest request first. So the 60 queue behind the 3,988-job cheap_scraper pending backlog, about $33 at OpenRouter prices.
+   - **Settle that first.** Decide whether the backlog is processed, set aside, or skipped. Or add a way to put chosen jobs at the front of the queue.
+3. **Measurements:**
+   - `db:match-shares -- --days 7`, for the review share to bring down;
+   - `processor:eval`, for the golden set on the description-only prompt.
+
 ## Left by slice 02, as built
 
 - **No baseline yet.** On dev, every processed job still has a v2 extraction. Before this slice's brainstorm:
