@@ -25,6 +25,7 @@ import {
   type ProcessingCounts,
   ProcessorRepository,
   readStoredData,
+  type MarkPendingResult,
   type ReprocessFilter,
   type ReuseKey,
 } from '../repositories/processor.repository';
@@ -142,7 +143,13 @@ export interface MemoryJob extends JobForProcessing {
   kind: 'job' | 'post';
   /** Has a LinkedIn job board source. */
   linkedIn: boolean;
-  processingStatus: 'pending' | 'processing' | 'processed' | 'failed' | null;
+  processingStatus:
+    | 'pending'
+    | 'processing'
+    | 'processed'
+    | 'failed'
+    | 'archived'
+    | null;
   processingRequestedAt: Date | null;
   processingStartedAt: Date | null;
   processingAttempts: number;
@@ -380,10 +387,11 @@ export class MemoryProcessorRepository extends ProcessorRepository {
       .reduce((sum, a) => sum + a.costUsd, 0);
   }
 
-  async markPending(filter: ReprocessFilter): Promise<number> {
+  async markPending(filter: ReprocessFilter): Promise<MarkPendingResult> {
     this.log.push('markPending');
     const ids = new Set(filter.jobIds ?? []);
     let n = 0;
+    let skippedArchived = 0;
     for (const job of this.jobs.values()) {
       if (!this.inScope(job)) continue;
       const match =
@@ -392,6 +400,10 @@ export class MemoryProcessorRepository extends ProcessorRepository {
         (filter.failed && job.processingStatus === 'failed') ||
         ids.has(job.id);
       if (!match) continue;
+      if (job.processingStatus === 'archived') {
+        skippedArchived++;
+        continue;
+      }
       job.processingStatus = 'pending';
       job.processingRequestedAt = this.now();
       job.processingAttempts = 0;
@@ -399,7 +411,7 @@ export class MemoryProcessorRepository extends ProcessorRepository {
       job.processingStartedAt = null;
       n++;
     }
-    return n;
+    return { marked: n, skippedArchived };
   }
 
   async jobState(jobId: string): Promise<JobState | null> {

@@ -23,8 +23,10 @@ async function main(): Promise<void> {
   );
   try {
     const repo = new PrismaProcessorRepository({ db } as DatabaseService);
-    const count = await repo.markPending(filter);
-    logger.log(`Marked ${count} jobs pending`);
+    const { marked, skippedArchived } = await repo.markPending(filter);
+    logger.log(
+      `Marked ${marked} jobs pending; skipped ${skippedArchived} archived`,
+    );
   } finally {
     await db.close();
   }

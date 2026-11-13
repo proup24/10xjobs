@@ -602,7 +602,7 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       });
       const processed = await job({ processingStatus: 'processed' });
 
-      expect(await repo.markPending({ nullStatus: true })).toBe(1);
+      expect((await repo.markPending({ nullStatus: true })).marked).toBe(1);
       const row = await jobRow(target);
       expect(row).toMatchObject({
         processingStatus: 'pending',
@@ -625,7 +625,7 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       });
       const post = await job({ kind: 'post', processingStatus: 'processed' });
 
-      expect(await repo.markPending({ allInScope: true })).toBe(3);
+      expect((await repo.markPending({ allInScope: true })).marked).toBe(3);
       for (const id of [processed, failed, never])
         expect(await jobRow(id)).toMatchObject({
           processingStatus: 'pending',
@@ -642,11 +642,39 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       const named = await job({ processingStatus: 'processed' });
       await job({ processingStatus: 'processed' });
       expect(
-        await repo.markPending({ failed: true, jobIds: [named, failed] }),
+        (await repo.markPending({ failed: true, jobIds: [named, failed] }))
+          .marked,
       ).toBe(2);
       expect((await jobRow(failed)).processingStatus).toBe('pending');
       expect((await jobRow(named)).processingStatus).toBe('pending');
-      expect(await repo.markPending({})).toBe(0);
+      expect((await repo.markPending({})).marked).toBe(0);
+    });
+  });
+
+  describe('archived jobs', () => {
+    it('markPending skips archived under every selector', async () => {
+      const id = await job({ processingStatus: 'archived' });
+      expect(
+        await repo.markPending({ allInScope: true, jobIds: [id] }),
+      ).toEqual({ marked: 0, skippedArchived: 1 });
+      expect(await repo.markPending({ jobIds: [id] })).toEqual({
+        marked: 0,
+        skippedArchived: 1,
+      });
+      expect(
+        await repo.markPending({ nullStatus: true, failed: true }),
+      ).toEqual({ marked: 0, skippedArchived: 0 });
+      expect((await jobRow(id)).processingStatus).toBe('archived');
+    });
+
+    it('claim refuses an archived job', async () => {
+      const id = await job({ processingStatus: 'archived' });
+      expect(await repo.claim(id)).toBeNull();
+    });
+
+    it('listPendingInScope never lists an archived job', async () => {
+      await job({ processingStatus: 'archived' });
+      expect(await repo.listPendingInScope(10)).toEqual([]);
     });
   });
 
