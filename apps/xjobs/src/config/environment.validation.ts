@@ -70,9 +70,8 @@ function requireStorage(
  * skips the processor and the endpoints that call models refuse.
  */
 const processorEnvironmentShape = {
-  /** One key for both processor model roles (Jev decisions and extraction). */
+  /** The key for the processor's generator. */
   OPENROUTER_API_KEY: z.string().min(1).optional(),
-  PROCESSOR_DECISION_MODEL: z.string().min(1).default('typesafe/jev-1.14'),
   PROCESSOR_EXTRACTION_MODEL: z
     .string()
     .min(1)
@@ -85,9 +84,7 @@ const processorEnvironmentShape = {
     .positive()
     .default(900_000),
   PROCESSOR_DAILY_BUDGET_USD: z.coerce.number().positive().default(20),
-  /** Regenerations after the first generation when Jev rejects a field; capped, since each one is a paid generation. */
-  PROCESSOR_MAX_REGENERATIONS: z.coerce.number().int().min(0).max(5).default(2),
-  /** Schema tries per generation; capped like the regenerations. */
+  /** Schema tries per generation; capped, since each one is a paid call. */
   PROCESSOR_GENERATION_TRIES: z.coerce.number().int().min(1).max(5).default(3),
 };
 

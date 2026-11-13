@@ -281,18 +281,16 @@ describe('worker process configuration', () => {
         OPENROUTER_API_KEY: 'or-key',
       }),
     ).toMatchObject({
-      PROCESSOR_DECISION_MODEL: 'typesafe/jev-1.14',
       PROCESSOR_EXTRACTION_MODEL: 'deepseek/deepseek-v4.1-flash-1017',
       PROCESSOR_CONCURRENCY: 4,
       PROCESSOR_MAX_ATTEMPTS: 3,
       PROCESSOR_CLAIM_TIMEOUT_MS: 900_000,
       PROCESSOR_DAILY_BUDGET_USD: 20,
-      PROCESSOR_MAX_REGENERATIONS: 2,
       PROCESSOR_GENERATION_TRIES: 3,
     });
   });
 
-  it('allows zero regenerations but needs at least one generation try', () => {
+  it('needs at least one generation try and caps them at 5', () => {
     const processor = {
       ...worker,
       WORKER_ROLE: 'processor',
@@ -301,54 +299,21 @@ describe('worker process configuration', () => {
     expect(
       validateWorkerProcessEnvironment({
         ...processor,
-        PROCESSOR_MAX_REGENERATIONS: '0',
         PROCESSOR_GENERATION_TRIES: '1',
       }),
-    ).toMatchObject({
-      PROCESSOR_MAX_REGENERATIONS: 0,
-      PROCESSOR_GENERATION_TRIES: 1,
-    });
-    expect(() =>
-      validateWorkerProcessEnvironment({
-        ...processor,
-        PROCESSOR_MAX_REGENERATIONS: '-1',
-      }),
-    ).toThrow(/PROCESSOR_MAX_REGENERATIONS/);
-    expect(() =>
-      validateWorkerProcessEnvironment({
-        ...processor,
-        PROCESSOR_GENERATION_TRIES: '0',
-      }),
-    ).toThrow(/PROCESSOR_GENERATION_TRIES/);
-  });
-
-  it('caps regenerations and generation tries at 5', () => {
-    const processor = {
-      ...worker,
-      WORKER_ROLE: 'processor',
-      OPENROUTER_API_KEY: 'or-key',
-    };
+    ).toMatchObject({ PROCESSOR_GENERATION_TRIES: 1 });
     expect(
       validateWorkerProcessEnvironment({
         ...processor,
-        PROCESSOR_MAX_REGENERATIONS: '5',
         PROCESSOR_GENERATION_TRIES: '5',
       }),
-    ).toMatchObject({
-      PROCESSOR_MAX_REGENERATIONS: 5,
-      PROCESSOR_GENERATION_TRIES: 5,
-    });
-    expect(() =>
-      validateWorkerProcessEnvironment({
-        ...processor,
-        PROCESSOR_MAX_REGENERATIONS: '6',
-      }),
-    ).toThrow(/PROCESSOR_MAX_REGENERATIONS/);
-    expect(() =>
-      validateWorkerProcessEnvironment({
-        ...processor,
-        PROCESSOR_GENERATION_TRIES: '6',
-      }),
-    ).toThrow(/PROCESSOR_GENERATION_TRIES/);
+    ).toMatchObject({ PROCESSOR_GENERATION_TRIES: 5 });
+    for (const tries of ['0', '6'])
+      expect(() =>
+        validateWorkerProcessEnvironment({
+          ...processor,
+          PROCESSOR_GENERATION_TRIES: tries,
+        }),
+      ).toThrow(/PROCESSOR_GENERATION_TRIES/);
   });
 });

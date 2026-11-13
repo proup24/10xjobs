@@ -2,6 +2,10 @@ import { z } from 'zod';
 import { stackIssues } from '../rules/stack';
 import { LIST_NAMES } from '../vocab/lists';
 import {
+  type ExtractionDocumentV3,
+  extractionDocumentV3Schema,
+} from './extraction-v3';
+import {
   type ExtractionDocumentV1,
   extractionDocumentV1Schema,
 } from './extraction-v1';
@@ -22,7 +26,7 @@ import {
 } from './shared';
 
 /** Bump on any change to the document shape. Stored with each extraction. */
-export const EXTRACTION_SCHEMA_VERSION = 3;
+export const EXTRACTION_SCHEMA_VERSION = 4;
 
 export const placeSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('worldwide') }),
@@ -52,20 +56,6 @@ const unmatchedSchema = z.strictObject({
   at: z.string(),
 });
 
-/** How the verification went: rounds used, and per finally-rejected field what was dropped. */
-const documentVerificationSchema = z.strictObject({
-  rounds: z.number().int().min(1),
-  regenerationInvalid: z.boolean(),
-  dropped: z.array(
-    z.strictObject({
-      field: z.string(),
-      generatorValue: z.unknown(),
-      jevPick: z.string().nullable(),
-    }),
-  ),
-  missedJunkFlags: z.array(z.string()),
-});
-
 export const extractionDocumentSchema = z
   .strictObject({
     position: factSchema(
@@ -88,11 +78,7 @@ export const extractionDocumentSchema = z
     ),
     unmatched: z.array(unmatchedSchema),
     truncated: z.boolean(),
-    verification: documentVerificationSchema,
-    models: z.strictObject({
-      verifier: z.string().nullable(),
-      generator: z.string().min(1),
-    }),
+    models: z.strictObject({ generator: z.string().min(1) }),
   })
   .superRefine((doc, ctx) => {
     const years = doc.yearsRequired.value;
@@ -125,8 +111,11 @@ export function openingIssues(o: {
   placeStrictness: string;
   timezones: readonly { fromUtc: number; toUtc: number }[];
 }): { code: 'custom'; path: (string | number)[]; message: string }[] {
-  const issues: { code: 'custom'; path: (string | number)[]; message: string }[] =
-    [];
+  const issues: {
+    code: 'custom';
+    path: (string | number)[];
+    message: string;
+  }[] = [];
   if ((o.placeStrictness === 'unstated') !== (o.places.length === 0)) {
     issues.push({
       code: 'custom',
@@ -147,17 +136,19 @@ export function openingIssues(o: {
 }
 
 export type ExtractionDocument = z.infer<typeof extractionDocumentSchema>;
-export type DocumentVerification = z.infer<typeof documentVerificationSchema>;
 
 /** A stored `job_extractions.data`, read as the version it was written in. */
 export type StoredDocument =
-  | { version: 3; document: ExtractionDocument }
+  | { version: 4; document: ExtractionDocument }
+  | { version: 3; document: ExtractionDocumentV3 }
   | { version: 2; document: ExtractionDocumentV2 }
   | { version: 1; document: ExtractionDocumentV1 };
 
-/** Reads stored `data` as v3, then v2, then v1 for old rows; null when none reads it. */
+/** Reads stored `data` as v4, then v3, v2 and v1 for old rows; null when none reads it. */
 export function parseStoredDocument(data: unknown): StoredDocument | null {
-  const v3 = extractionDocumentSchema.safeParse(data);
+  const v4 = extractionDocumentSchema.safeParse(data);
+  if (v4.success) return { version: 4, document: v4.data };
+  const v3 = extractionDocumentV3Schema.safeParse(data);
   if (v3.success) return { version: 3, document: v3.data };
   const v2 = extractionDocumentV2Schema.safeParse(data);
   if (v2.success) return { version: 2, document: v2.data };

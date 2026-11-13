@@ -1,6 +1,6 @@
 /**
  * Read-only report on match quality: why jobs qualify with unknown checks,
- * how the processor fills position and tech stack, and which facts it drops.
+ * how the processor fills position and tech stack.
  *
  *   pnpm --filter @xjobs/xjobs db:analyze
  *
@@ -85,21 +85,18 @@ const SECTIONS: { title: string; sql: (raw: Raw) => ReturnType<Raw['sql']> }[] =
         GROUP BY 1, 2 ORDER BY 3 DESC) t`,
     },
     {
-      title:
-        '6. Position fact: value, Jev verdict and pick, confidence, empty quote',
+      title: '6. Position fact: value, decidedBy, confidence, empty quote',
       sql: (
         raw,
       ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
         SELECT coalesce(e.data->'position'->'value'->>'roleKind', '<null>') AS role_kind,
-          e.data->'position'->'verification'->>'verdict' AS verdict,
-          e.data->'position'->'verification'->>'jevPick' AS jev_pick,
           e.data->'position'->>'decidedBy' AS decided_by,
           e.data->'position'->>'confidence' AS confidence,
           (e.data->'position'->>'quote' = '') AS empty_quote,
           count(*)
         FROM job_extractions e JOIN normalized_jobs j ON j."currentExtractionId" = e.id
         WHERE e.data <> '{}'::jsonb
-        GROUP BY 1, 2, 3, 4, 5, 6 ORDER BY 7 DESC) t`,
+        GROUP BY 1, 2, 3, 4 ORDER BY 5 DESC) t`,
     },
     {
       title:
@@ -142,29 +139,13 @@ const SECTIONS: { title: string; sql: (raw: Raw) => ReturnType<Raw['sql']> }[] =
         GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 30) t`,
     },
     {
-      title: '9. Facts by final Jev verdict',
-      sql: (
-        raw,
-      ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
-        SELECT f.k AS fact, f.v->'verification'->>'verdict' AS verdict,
-          count(*) FILTER (WHERE f.v->'value' = 'null'::jsonb) AS value_null,
-          count(*)
-        FROM job_extractions e
-        JOIN normalized_jobs j ON j."currentExtractionId" = e.id,
-          jsonb_each(e.data) f(k, v)
-        WHERE jsonb_typeof(f.v) = 'object' AND f.v->'verification' <> 'null'::jsonb
-        GROUP BY 1, 2 ORDER BY 1, 4 DESC) t`,
-    },
-    {
-      title: '10. Qualified matches with BOTH position and stack unknown',
+      title: '9. Qualified matches with BOTH position and stack unknown',
       sql: (
         raw,
       ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
         SELECT j.id, left(j.title, 50) AS title, left(j."companyName", 25) AS company,
           length(j."descriptionText") AS desc_len,
           e.data->'isSoftwareEngineeringRole'->>'value' AS is_swe,
-          e.data->'position'->'verification'->>'verdict' AS pos_verdict,
-          e.data->'position'->'verification'->>'jevPick' AS jev_pick,
           e."needsReview" AS needs_review
         FROM job_matches m
         JOIN normalized_jobs j ON j.id = m."jobId"
@@ -177,7 +158,7 @@ const SECTIONS: { title: string; sql: (raw: Raw) => ReturnType<Raw['sql']> }[] =
         ORDER BY m."decidedAt" DESC LIMIT 40) t`,
     },
     {
-      title: '11. Processing attempts by step and outcome',
+      title: '10. Processing attempts by step and outcome',
       sql: (
         raw,
       ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
@@ -188,7 +169,7 @@ const SECTIONS: { title: string; sql: (raw: Raw) => ReturnType<Raw['sql']> }[] =
         GROUP BY 1, 2 ORDER BY 1, 2) t`,
     },
     {
-      title: '12. Most common processing errors',
+      title: '11. Most common processing errors',
       sql: (
         raw,
       ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (

@@ -4,7 +4,7 @@ import {
   type ProcessorConfig,
 } from '../config/processor.config';
 import { ProviderUnavailableError } from '../models/errors';
-import { DecisionModel, ExtractionModel } from '../models/types';
+import { ExtractionModel } from '../models/types';
 import {
   type Claim,
   type FinishOutcome,
@@ -24,7 +24,6 @@ import { FactAssembler } from './fact-assembler.service';
 import { GenerationService } from './generation.service';
 import { decideFailure, type FailureOutcome } from './failure-policy';
 import { type GuardBlock, ProcessorGuard } from './processor-guard.service';
-import { VerificationService } from './verification.service';
 
 export type ProcessOutcome =
   | 'processed'
@@ -57,7 +56,7 @@ export interface PreviewResult {
 }
 
 export interface ProcessorStatus {
-  models: { decision: string; extraction: string };
+  models: { extraction: string };
   jobs: ProcessingCounts;
   spentTodayUsd: number;
   dailyBudgetUsd: number;
@@ -196,7 +195,6 @@ export class ProcessorService {
   async status(): Promise<ProcessorStatus> {
     return {
       models: {
-        decision: this.config.decisionModel,
         extraction: this.config.extractionModel,
       },
       jobs: await this.jobs.processingCounts(),
@@ -240,7 +238,7 @@ export class ProcessorService {
       `input: "${job.title ?? '(no title)'}", ${input.description.length} characters${input.truncated ? ' (truncated)' : ''}`,
     );
     const vocabulary = await this.vocab.snapshot();
-    const key = this.store.reuseKey(input, vocabulary);
+    const key = this.store.reuseKey(input);
     const reused = await this.store.reuse(key, claim.jobId);
     if (reused) {
       log.info(`reused extraction ${reused}: same input, prompt and models`);
@@ -333,12 +331,9 @@ const usd = (n: number): string => `$${n.toFixed(6)}`;
 export interface ProcessorDependencies {
   repo: ProcessorRepository;
   vocab: VocabRepository;
-  decision: DecisionModel;
   extraction: ExtractionModel;
   config: ProcessorConfig;
   now?: () => Date;
-  /** Replaces the verification built from `decision` (the eval records its verdicts). */
-  verification?: VerificationService;
 }
 
 /** The service graph without Nest, for tests and scripts. */
@@ -352,8 +347,6 @@ export function createProcessorService(
     vocab,
     new ExtractionPipeline(
       new GenerationService(deps.extraction, new FactAssembler(), config),
-      deps.verification ?? new VerificationService(deps.decision, config),
-      config,
     ),
     new ExtractionStore(repo, vocab, config),
     config,

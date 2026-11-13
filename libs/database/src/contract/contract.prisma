@@ -873,7 +873,7 @@ model JobExtraction {
   inputHash                 String
   schemaVersion             Int
   promptHash                String
-  decisionModel             String
+  decisionModel             String?
   extractionModel           String
   data                      Jsonb
   needsReview               Boolean
@@ -910,7 +910,7 @@ model JobExtraction {
   factReports               FactReport[]
 
   @@index([jobId, createdAt], map: "job_extractions_job_created")
-  @@index([inputHash, schemaVersion, promptHash, decisionModel, extractionModel], map: "job_extractions_reuse")
+  @@index([inputHash, schemaVersion, promptHash, extractionModel], map: "job_extractions_reuse")
   @@index([arrangement])
   @@index([seniority])
   @@index([roleKind])

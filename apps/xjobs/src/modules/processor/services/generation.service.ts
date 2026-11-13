@@ -11,7 +11,6 @@ import {
 } from '../models/types';
 import { systemPrompt } from '../prompts/prompt';
 import type { Vocabulary } from '../repositories/vocab.repository';
-import type { FieldVerdict } from '../rules/verify';
 import { modelOutputSchema } from '../schema';
 import { zodErrors } from '../schema/errors';
 import type { AttemptLog } from './attempt-log';
@@ -40,26 +39,23 @@ export class GenerationService {
     @Inject(PROCESSOR_CONFIG) private readonly config: ProcessorConfig,
   ) {}
 
-  /** The first call is logged as `step`, every later try as `generation_retry`. */
+  /** The first call is logged as `generation`, every later try as `generation_retry`. */
   async generate(
     input: PostingInput,
     vocabulary: Vocabulary,
-    feedback: FieldVerdict[] | undefined,
-    step: 'generation' | 'generation_retry',
     log: AttemptLog,
   ): Promise<GenerationResult> {
     const model = this.config.extractionModel;
     const schema = modelOutputSchema(vocabulary.options);
     let errors: string[] = [];
     for (let attempt = 1; attempt <= this.config.generationTries; attempt++) {
-      const current = attempt === 1 ? step : 'generation_retry';
+      const current = attempt === 1 ? 'generation' : 'generation_retry';
       const retryErrors = attempt === 1 ? undefined : errors;
       log.calling(
         current,
         model,
         [
           `${kb(input.description)} posting${input.truncated ? ' (truncated)' : ''}`,
-          feedback?.length && `${feedback.length} rejected fields`,
           retryErrors && `retrying ${retryErrors.length} errors`,
           `try ${attempt} of ${this.config.generationTries}`,
         ]
@@ -72,7 +68,6 @@ export class GenerationService {
           systemPrompt: systemPrompt(),
           schema,
           ...(retryErrors ? { retryErrors } : {}),
-          ...(feedback?.length ? { feedback } : {}),
         });
       } catch (error) {
         if (!(error instanceof ModelOutputError)) {

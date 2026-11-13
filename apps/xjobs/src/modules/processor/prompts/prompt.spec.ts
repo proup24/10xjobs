@@ -1,40 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { buildVerificationQuestions } from '../rules/questions';
 import { seedOptions } from '../rules/options.testing';
 import { modelOutputSchema } from '../schema';
 import { promptHash, systemPrompt } from './prompt';
 import { SYSTEM_PROMPT } from './system.prompt';
 
 describe('promptHash', () => {
-  const options = seedOptions();
-
-  it('ignores option changes', () => {
-    const a = promptHash(buildVerificationQuestions(options));
-    const b = promptHash(
-      buildVerificationQuestions({
-        ...options,
-        seniorities: [...options.seniorities, 'fellow'],
-      }),
-    );
-    expect(a).toBe(b);
-  });
-
-  it('changes when a junk flag is added', () => {
-    const a = promptHash(buildVerificationQuestions(options));
-    const b = promptHash(
-      buildVerificationQuestions({
-        ...options,
-        junkFlags: [...options.junkFlags, 'new_flag'],
-      }),
-    );
-    expect(b).not.toBe(a);
-  });
-
-  it('changes when an instruction changes', () => {
-    const qs = buildVerificationQuestions(options);
-    const a = promptHash(qs);
-    qs[0] = { ...qs[0], instructions: qs[0].instructions + ' Changed.' };
-    expect(promptHash(qs)).not.toBe(a);
+  it('is stable and follows the system prompt', () => {
+    expect(promptHash()).toBe(promptHash());
+    expect(promptHash()).toMatch(/^[0-9a-f]{64}$/);
   });
 });
 

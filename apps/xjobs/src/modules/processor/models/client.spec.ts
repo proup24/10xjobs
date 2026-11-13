@@ -241,34 +241,19 @@ describe('checkModels', () => {
     pricing: { prompt: '0.000004', completion: '0.00002' },
   };
 
-  it('prices the extraction model and needs no listing for the decision model', async () => {
+  it('prices the extraction model', async () => {
     const prices = await checkModels(listed([opus]), {
-      decisionModel: 'typesafe/jev-1.14',
       extractionModel: opus.id,
     });
     expect(prices.get(opus.id)).toEqual({
       prompt: 0.000004,
       completion: 0.00002,
     });
-    expect(prices.has('typesafe/jev-1.14')).toBe(false);
-  });
-
-  it('also prices the decision model when OpenRouter lists it', async () => {
-    const jev = {
-      id: 'typesafe/jev-1.14',
-      pricing: { prompt: '0.00000004', completion: '0' },
-    };
-    const prices = await checkModels(listed([opus, jev]), {
-      decisionModel: jev.id,
-      extractionModel: opus.id,
-    });
-    expect(prices.get(jev.id)).toEqual({ prompt: 0.00000004, completion: 0 });
   });
 
   it('refuses an unlisted extraction model', async () => {
     await expect(
       checkModels(listed([]), {
-        decisionModel: 'typesafe/jev-1.14',
         extractionModel: opus.id,
       }),
     ).rejects.toThrow(/does not list/);
@@ -277,7 +262,6 @@ describe('checkModels', () => {
   it('refuses an extraction model without structured outputs', async () => {
     await expect(
       checkModels(listed([{ ...opus, supportedParameters: [] }]), {
-        decisionModel: 'typesafe/jev-1.14',
         extractionModel: opus.id,
       }),
     ).rejects.toThrow(/structured_outputs/);
@@ -288,7 +272,6 @@ describe('checkModels', () => {
       checkModels(
         listed([{ ...opus, supportedParameters: ['structured_outputs'] }]),
         {
-          decisionModel: 'typesafe/jev-1.14',
           extractionModel: opus.id,
         },
       ),
@@ -304,7 +287,7 @@ describe('checkModels', () => {
             supportedParameters: ['structured_outputs', 'response_format'],
           },
         ]),
-        { decisionModel: 'typesafe/jev-1.14', extractionModel: opus.id },
+        { extractionModel: opus.id },
       ),
     ).rejects.toThrow(/max_tokens/);
   });
@@ -313,7 +296,7 @@ describe('checkModels', () => {
     await expect(
       checkModels(
         listed([{ ...opus, pricing: { prompt: '', completion: 'x' } }]),
-        { decisionModel: 'typesafe/jev-1.14', extractionModel: opus.id },
+        { extractionModel: opus.id },
       ),
     ).rejects.toThrow(/pricing/);
   });

@@ -8,10 +8,15 @@ import {
 } from './extraction';
 import { extractionDocumentV1Schema } from './extraction-v1';
 import { extractionDocumentV2Schema } from './extraction-v2';
+import {
+  extractionDocumentV3Schema,
+  verificationSchema,
+} from './extraction-v3';
 import { factSchema } from './fact';
 import { fixtureDocument } from './fixture.testing';
 import { fixtureDocumentV1 } from './fixture-v1.testing';
 import { fixtureDocumentV2 } from './fixture-v2.testing';
+import { fixtureDocumentV3 } from './fixture-v3.testing';
 import {
   modelOutputJsonSchema,
   modelOutputSchema,
@@ -48,11 +53,11 @@ describe('extractionDocumentSchema', () => {
     expect(extractionDocumentSchema.safeParse(doc).success).toBe(false);
   });
 
-  it('is schema version 3', () => {
-    expect(EXTRACTION_SCHEMA_VERSION).toBe(3);
+  it('is schema version 4', () => {
+    expect(EXTRACTION_SCHEMA_VERSION).toBe(4);
   });
 
-  it('a v3 document has no conflicts key', () => {
+  it('a v4 document has no conflicts key', () => {
     const doc = fixtureDocument();
     expect(doc).not.toHaveProperty('conflicts');
     expect(extractionDocumentSchema.safeParse(doc).success).toBe(true);
@@ -67,22 +72,40 @@ describe('extractionDocumentSchema', () => {
     expect(extractionDocumentSchema.safeParse(doc).success).toBe(false);
   });
 
-  it('takes a document verification summary and the verifier and generator models', () => {
-    const doc = fixtureDocument();
-    doc.verification = {
-      rounds: 2,
-      regenerationInvalid: true,
-      dropped: [
-        { field: 'seniority', generatorValue: 'senior', jevPick: 'mid' },
-      ],
-      missedJunkFlags: ['spam'],
-    };
-    doc.models = { verifier: 'typesafe/jev-1.14', generator: 'm' };
-    expect(extractionDocumentSchema.safeParse(doc).success).toBe(true);
-    doc.verification.rounds = 0;
-    expect(extractionDocumentSchema.safeParse(doc).success).toBe(false);
+  it('rejects a document with a verification summary', () => {
+    expect(
+      extractionDocumentSchema.safeParse({
+        ...fixtureDocument(),
+        verification: {
+          rounds: 1,
+          regenerationInvalid: false,
+          dropped: [],
+          missedJunkFlags: [],
+        },
+      }).success,
+    ).toBe(false);
   });
 
+  it('rejects models.verifier, and takes only the generator model', () => {
+    const doc = fixtureDocument();
+    expect(doc.models).toEqual({ generator: 'm' });
+    expect(
+      extractionDocumentSchema.safeParse({
+        ...doc,
+        models: { verifier: null, generator: 'm' },
+      }).success,
+    ).toBe(false);
+  });
+
+  it('rejects a fact with a verification', () => {
+    const doc = fixtureDocument();
+    expect(
+      extractionDocumentSchema.safeParse({
+        ...doc,
+        seniority: { ...doc.seniority, verification: null },
+      }).success,
+    ).toBe(false);
+  });
   it('rejects a v1 document', () => {
     expect(
       extractionDocumentSchema.safeParse(fixtureDocumentV1()).success,
@@ -99,7 +122,6 @@ describe('fact envelope', () => {
     score: null,
     quote: '',
     model: 'm',
-    verification: null,
   };
 
   it('is decided by the generator only', () => {
@@ -113,29 +135,43 @@ describe('fact envelope', () => {
     );
   });
 
-  it("carries Jev's verification, checked", () => {
+  it('has no verification', () => {
+    expect(schema.safeParse({ ...fact, verification: null }).success).toBe(
+      false,
+    );
+  });
+});
+
+describe('extractionDocumentV3Schema', () => {
+  it('parses a document stored at version 3, verification included', () => {
+    expect(
+      extractionDocumentV3Schema.safeParse(fixtureDocumentV3()).success,
+    ).toBe(true);
+  });
+
+  it('rejects a v4 document', () => {
+    expect(
+      extractionDocumentV3Schema.safeParse(fixtureDocument()).success,
+    ).toBe(false);
+  });
+
+  it("checks Jev's verification", () => {
     const verification = {
       verdict: 'confirmed',
       score: 0.9,
       jevPick: 'senior',
       rounds: 1,
     };
-    expect(schema.safeParse({ ...fact, verification }).success).toBe(true);
+    expect(verificationSchema.safeParse(verification).success).toBe(true);
     expect(
-      schema.safeParse({
-        ...fact,
-        verification: { ...verification, verdict: 'maybe' },
-      }).success,
-    ).toBe(false);
-    expect(
-      schema.safeParse({ ...fact, verification: { ...verification, score: 2 } })
+      verificationSchema.safeParse({ ...verification, verdict: 'maybe' })
         .success,
     ).toBe(false);
     expect(
-      schema.safeParse({
-        ...fact,
-        verification: { ...verification, rounds: 0 },
-      }).success,
+      verificationSchema.safeParse({ ...verification, score: 2 }).success,
+    ).toBe(false);
+    expect(
+      verificationSchema.safeParse({ ...verification, rounds: 0 }).success,
     ).toBe(false);
   });
 });
@@ -175,10 +211,17 @@ describe('extractionDocumentV1Schema', () => {
 });
 
 describe('parseStoredDocument', () => {
-  it('reads a v3 document as version 3', () => {
+  it('reads a v4 document as version 4', () => {
     expect(parseStoredDocument(fixtureDocument())).toEqual({
-      version: 3,
+      version: 4,
       document: fixtureDocument(),
+    });
+  });
+
+  it('reads a stored v3 document as version 3', () => {
+    expect(parseStoredDocument(fixtureDocumentV3())).toEqual({
+      version: 3,
+      document: fixtureDocumentV3(),
     });
   });
 

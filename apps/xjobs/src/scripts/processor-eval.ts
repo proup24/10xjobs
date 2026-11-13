@@ -1,16 +1,14 @@
 /**
- * Runs the golden set through generate -> verify -> regenerate and measures it:
+ * Runs the golden set through the generator and measures it:
  *
- *   pnpm --filter @xjobs/xjobs processor:eval -- [--generator m] [--decision-model m]
+ *   pnpm --filter @xjobs/xjobs processor:eval -- [--generator m]
  *
- * `--generator` defaults to `PROCESSOR_EXTRACTION_MODEL` (run once with Opus
- * and once with DeepSeek to compare them), `--decision-model` to
- * `PROCESSOR_DECISION_MODEL`. Calls paid APIs; never run in CI. Uses the real
+ * `--generator` defaults to `PROCESSOR_EXTRACTION_MODEL`. Calls paid APIs;
+ * never run in CI. Uses the real
  * OpenRouter adapters with in-memory repositories seeded from `seed-data.ts`,
  * so the database is not touched. Attempts are recorded with `eval: true`.
  * Prints the report, writes `golden/last-report.<generator>.json` and exits 1
- * unless every bar holds. It only suggests thresholds: update
- * `config/thresholds.ts` by hand from the report.
+ * unless every bar holds.
  */
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -26,12 +24,10 @@ import {
   callStats,
   type EvalReport,
   type FactScores,
-  questionLine,
   reportFileName,
   scoreCase,
   summarize,
 } from 'src/modules/processor/golden/score';
-import { OpenRouterDecisionModel } from 'src/modules/processor/models/decision.model';
 import { AiSdkExtractionModel } from 'src/modules/processor/models/extraction.model';
 import {
   checkModels,
@@ -40,8 +36,6 @@ import {
 import { ModelPricing } from 'src/modules/processor/models/pricing';
 import type { NewAttempt } from 'src/modules/processor/repositories/processor.repository';
 import { extractionDocumentSchema } from 'src/modules/processor/schema';
-import type { FieldVerdict } from 'src/modules/processor/rules/verify';
-import { VerificationService } from 'src/modules/processor/services/verification.service';
 import { createProcessorService } from 'src/modules/processor/services/processor.service';
 import {
   MemoryProcessorRepository,
@@ -50,19 +44,6 @@ import {
 
 const CONCURRENCY = 4;
 const MAX_TRIES = 3;
-
-/** Keeps what every verification round returned, per job, for the all-rounds scores. */
-class RecordingVerificationService extends VerificationService {
-  readonly rounds = new Map<string, FieldVerdict[][]>();
-  override async verify(
-    ...args: Parameters<VerificationService['verify']>
-  ): Promise<FieldVerdict[]> {
-    const verdicts = await super.verify(...args);
-    const jobId = args[1].jobId;
-    this.rounds.set(jobId, [...(this.rounds.get(jobId) ?? []), verdicts]);
-    return verdicts;
-  }
-}
 
 /** Every attempt this run records is an eval attempt. */
 class EvalProcessorRepository extends MemoryProcessorRepository {
@@ -86,16 +67,6 @@ function print(report: EvalReport, failed: string[]): void {
     console.log(
       `${name.padEnd(26)} ${String(f.scored).padStart(5)}  ${pct(f.accuracy)}`,
     );
-  console.log(
-    '\nclosed field               verified  confirmed unconfirmed rejected',
-  );
-  for (const [name, v] of Object.entries(report.verdicts))
-    console.log(
-      `${name.padEnd(26)} ${String(v.verified).padStart(8)}  ${pct(v.confirmed)}    ${pct(v.unconfirmed)}   ${pct(v.rejected)}`,
-    );
-  console.log(
-    `\nJev rejection precision: ${pct(report.rejectionPrecision)} of ${report.rejections} final rejections, ${pct(report.rejectionPrecisionAllRounds)} of ${report.rejectionsAllRounds} rejections in every round, were wrong generator values`,
-  );
   const r = report.requirements;
   console.log(
     `\nrequirements: required recall ${pct(r.requiredRecall)} precision ${pct(r.requiredPrecision)}; nice recall ${pct(r.niceRecall)} precision ${pct(r.nicePrecision)}`,
@@ -104,25 +75,15 @@ function print(report: EvalReport, failed: string[]): void {
     `              kind ${pct(r.kindAccuracy)}  domain ${pct(r.domainAccuracy)}  years ${pct(r.yearsAccuracy)} (labeled cases only)`,
   );
   console.log(
-    '\nJev accuracy by score bucket (correct/total), suggested threshold (confirmations accepted):',
-  );
-  for (const [q, r] of Object.entries(report.questions))
-    console.log(questionLine(q, r));
-  console.log(
     `\nsure facts contradicted: ${pct(report.sureContradicted)} of ${report.sureFacts} (cases: ${report.casesWithSureContradiction})`,
   );
   console.log(
-    `per job: ${report.roundsPerJob.toFixed(2)} rounds, ${report.generatorCallsPerJob.toFixed(2)} generator calls, ${report.verifierCallsPerJob.toFixed(2)} Jev calls, ${report.costPerJob.toFixed(4)} USD`,
+    `per job: ${report.generatorCallsPerJob.toFixed(2)} generator calls, ${report.costPerJob.toFixed(4)} USD`,
   );
   console.log('\nbars:');
   for (const [name, ok] of Object.entries(report.bars))
     console.log(
       `  ${ok ? 'PASS' : 'FAIL'} ${name} (${name === 'sureContradicted' ? '<=' : '>='} ${BARS[name as keyof typeof BARS]})`,
-    );
-  console.log('\nsuggested thresholds for config/thresholds.ts (not applied):');
-  for (const [q, r] of Object.entries(report.questions))
-    console.log(
-      `  ${q}: ${r.suggestedThreshold ?? 'no safe threshold; keep the current one'},`,
     );
   console.log(`\noverall: ${report.pass ? 'PASS' : 'FAIL'}`);
 }
@@ -133,35 +94,23 @@ async function main(): Promise<void> {
   if (!apiKey) throw new Error('OPENROUTER_API_KEY is not set');
   const env = processorEnvironmentSchema.parse(process.env);
   const config: ProcessorConfig = {
-    decisionModel: flag('decision-model') ?? env.PROCESSOR_DECISION_MODEL,
     extractionModel: flag('generator') ?? env.PROCESSOR_EXTRACTION_MODEL,
     concurrency: CONCURRENCY,
     maxAttempts: MAX_TRIES,
     claimTimeoutMs: env.PROCESSOR_CLAIM_TIMEOUT_MS,
     dailyBudgetUsd: Number.MAX_SAFE_INTEGER,
-    maxRegenerations: env.PROCESSOR_MAX_REGENERATIONS,
     generationTries: env.PROCESSOR_GENERATION_TRIES,
   };
-  console.log(
-    `verifier ${config.decisionModel}, generator ${config.extractionModel}`,
-  );
+  console.log(`generator ${config.extractionModel}`);
 
   const client = createOpenRouterClient(apiKey);
   // Cost per job is a bar: a response without a cost is estimated, not 0.
   const pricing = new ModelPricing();
   pricing.set(await checkModels(client, config));
-  const decision = new OpenRouterDecisionModel(
-    client,
-    config.decisionModel,
-    pricing,
-  );
-  const verification = new RecordingVerificationService(decision, config);
   const repo = new EvalProcessorRepository();
   const service = createProcessorService({
     repo,
     vocab: new MemoryVocabRepository(),
-    decision,
-    verification,
     extraction: new AiSdkExtractionModel(
       apiKey,
       config.extractionModel,
@@ -183,11 +132,7 @@ async function main(): Promise<void> {
   const queue = [...cases];
   const worker = async (): Promise<void> => {
     for (let c = queue.shift(); c; c = queue.shift()) {
-      // Only the rounds of the try that produced the stored document count.
-      const run = () => {
-        verification.rounds.delete(c.id);
-        return service.process(c.id);
-      };
+      const run = () => service.process(c.id);
       let outcome = await run();
       for (let i = 1; outcome === 'retry' && i < MAX_TRIES; i++)
         outcome = await run();
@@ -204,12 +149,7 @@ async function main(): Promise<void> {
       }
       // Every try of the job counts toward its calls and cost.
       const calls = callStats(repo.attempts.filter((a) => a.jobId === c.id));
-      scores.push(
-        scoreCase(parsed.data, c, {
-          ...calls,
-          roundVerdicts: verification.rounds.get(c.id),
-        }),
-      );
+      scores.push(scoreCase(parsed.data, c, calls));
       console.log(`  ${c.id}: ${outcome}`);
     }
   };

@@ -15,7 +15,6 @@ import {
   type Vocabulary,
 } from '../repositories/vocab.repository';
 import { inputHash } from '../rules/input';
-import { buildVerificationQuestions } from '../rules/questions';
 import { deriveTypedColumns } from '../rules/typed-columns';
 import { needsReview } from '../rules/validate';
 import { EXTRACTION_SCHEMA_VERSION, type ExtractionDocument } from '../schema';
@@ -33,12 +32,11 @@ export class ExtractionStore {
   ) {}
 
   /** Same input, schema, prompt and configured models: same extraction. */
-  reuseKey(input: PostingInput, vocabulary: Vocabulary): ReuseKey {
+  reuseKey(input: PostingInput): ReuseKey {
     return {
       inputHash: inputHash(input),
       schemaVersion: EXTRACTION_SCHEMA_VERSION,
-      promptHash: promptHash(buildVerificationQuestions(vocabulary.options)),
-      decisionModel: this.config.decisionModel,
+      promptHash: promptHash(),
       extractionModel: this.config.extractionModel,
     };
   }

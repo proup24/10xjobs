@@ -46,22 +46,16 @@ vi.mock('bullmq', async (importOriginal) => {
 const checks = vi.hoisted(() => ({
   assertApiKey: vi.fn(async (_client: unknown) => undefined),
   checkModels: vi.fn(
-    async (
-      _client: unknown,
-      config: { decisionModel: string; extractionModel: string },
-    ) =>
+    async (_client: unknown, config: { extractionModel: string }) =>
       new Map([
         [config.extractionModel, { prompt: 0.000001, completion: 0.000002 }],
       ]),
   ),
 }));
-vi.mock(
-  'src/modules/processor/models/client',
-  async (importOriginal) => ({
-    ...(await importOriginal<object>()),
-    ...checks,
-  }),
-);
+vi.mock('src/modules/processor/models/client', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  ...checks,
+}));
 
 import { ModelPricing } from 'src/modules/processor';
 import { OPENROUTER_CLIENT } from 'src/modules/processor/models/client';
@@ -84,11 +78,12 @@ it('runs only the processor queue with its sweeper after the startup checks', as
     expect(checks.checkModels).toHaveBeenCalledWith(
       client,
       expect.objectContaining({
-        decisionModel: 'typesafe/jev-1.14',
         extractionModel: 'deepseek/deepseek-v4.1-flash-1017',
       }),
     );
-    expect(module.get(ModelPricing).get('deepseek/deepseek-v4.1-flash-1017')).toEqual({
+    expect(
+      module.get(ModelPricing).get('deepseek/deepseek-v4.1-flash-1017'),
+    ).toEqual({
       prompt: 0.000001,
       completion: 0.000002,
     });

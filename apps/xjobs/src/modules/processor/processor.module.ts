@@ -6,7 +6,6 @@ import {
   PROCESSOR_CONFIG,
   type ProcessorConfig,
 } from './config/processor.config';
-import { OpenRouterDecisionModel } from './models/decision.model';
 import { AiSdkExtractionModel } from './models/extraction.model';
 import {
   createOpenRouterClient,
@@ -14,7 +13,7 @@ import {
   type OpenRouterClient,
 } from './models/client';
 import { ModelPricing } from './models/pricing';
-import { DecisionModel, ExtractionModel } from './models/types';
+import { ExtractionModel } from './models/types';
 import {
   PrismaProcessorRepository,
   ProcessorRepository,
@@ -29,7 +28,6 @@ import { FactAssembler } from './services/fact-assembler.service';
 import { GenerationService } from './services/generation.service';
 import { ProcessorGuard } from './services/processor-guard.service';
 import { ProcessorService } from './services/processor.service';
-import { VerificationService } from './services/verification.service';
 
 type Env = ConfigService<ProcessorEnvironmentVariables, true>;
 
@@ -45,7 +43,6 @@ type Env = ConfigService<ProcessorEnvironmentVariables, true>;
     ProcessorGuard,
     ExtractionPipeline,
     GenerationService,
-    VerificationService,
     FactAssembler,
     ExtractionStore,
     ModelPricing,
@@ -55,7 +52,6 @@ type Env = ConfigService<ProcessorEnvironmentVariables, true>;
       provide: PROCESSOR_CONFIG,
       inject: [ConfigService],
       useFactory: (config: Env): ProcessorConfig => ({
-        decisionModel: config.get('PROCESSOR_DECISION_MODEL', { infer: true }),
         extractionModel: config.get('PROCESSOR_EXTRACTION_MODEL', {
           infer: true,
         }),
@@ -65,9 +61,6 @@ type Env = ConfigService<ProcessorEnvironmentVariables, true>;
           infer: true,
         }),
         dailyBudgetUsd: config.get('PROCESSOR_DAILY_BUDGET_USD', {
-          infer: true,
-        }),
-        maxRegenerations: config.get('PROCESSOR_MAX_REGENERATIONS', {
           infer: true,
         }),
         generationTries: config.get('PROCESSOR_GENERATION_TRIES', {
@@ -85,24 +78,11 @@ type Env = ConfigService<ProcessorEnvironmentVariables, true>;
         ),
     },
     {
-      provide: DecisionModel,
-      inject: [OPENROUTER_CLIENT, PROCESSOR_CONFIG, ModelPricing],
-      useFactory: (
-        client: OpenRouterClient,
-        config: ProcessorConfig,
-        pricing: ModelPricing,
-      ) => new OpenRouterDecisionModel(client, config.decisionModel, pricing),
-    },
-    {
       provide: ExtractionModel,
       inject: [ConfigService, PROCESSOR_CONFIG, ModelPricing],
-      // The generator goes through the AI SDK; Jev and the startup checks
-      // stay on the OpenRouter SDK client.
-      useFactory: (
-        env: Env,
-        config: ProcessorConfig,
-        pricing: ModelPricing,
-      ) =>
+      // The generator goes through the AI SDK; the startup checks stay on
+      // the OpenRouter SDK client.
+      useFactory: (env: Env, config: ProcessorConfig, pricing: ModelPricing) =>
         new AiSdkExtractionModel(
           env.get('OPENROUTER_API_KEY', { infer: true }) ?? '',
           config.extractionModel,

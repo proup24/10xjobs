@@ -7,7 +7,6 @@ const fact = <T>(value: T | null) => ({
   score: null,
   quote: '',
   model: 'm',
-  verification: null,
 });
 
 const requirement = (
@@ -62,12 +61,6 @@ export function fixtureDocument(): ExtractionDocument {
     junkFlags: fact([]),
     unmatched: [],
     truncated: false,
-    verification: {
-      rounds: 1,
-      regenerationInvalid: false,
-      dropped: [],
-      missedJunkFlags: [],
-    },
-    models: { verifier: null, generator: 'm' },
+    models: { generator: 'm' },
   };
 }

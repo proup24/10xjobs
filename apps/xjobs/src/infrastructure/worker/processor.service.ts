@@ -42,8 +42,7 @@ export class ProcessorWorkerService {
 
   /**
    * Fails startup, not every job, when the key is rejected, or the extraction
-   * model is not listed, not priced, or cannot do structured output. The
-   * decision model is priced only when OpenRouter lists it (see checkModels).
+   * model is not listed, not priced, or cannot do structured output.
    * Runs once; `start` runs it when nobody did before.
    */
   async checkStartup(): Promise<void> {

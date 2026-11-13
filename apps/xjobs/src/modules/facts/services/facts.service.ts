@@ -54,12 +54,12 @@ export class FactsService {
   async build(jobId: string): Promise<BuildResult> {
     const inputs = await this.repo.loadInputs(jobId);
     if (!inputs) return { status: 'skipped', reason: 'no_extraction' };
-    if (inputs.schemaVersion !== 3)
+    if (inputs.schemaVersion !== 3 && inputs.schemaVersion !== 4)
       return { status: 'skipped', reason: 'old_schema' };
     const stored = parseStoredDocument(inputs.extraction);
-    if (stored?.version !== 3) {
+    if (stored?.version !== 3 && stored?.version !== 4) {
       this.logger.warn(
-        `job ${jobId}: extraction ${inputs.extractionId} is schema v3 but its document is not a valid v3 document; no facts built`,
+        `job ${jobId}: extraction ${inputs.extractionId} is schema v${inputs.schemaVersion} but its document is not a valid document of that version; no facts built`,
       );
       return { status: 'skipped', reason: 'invalid_document' };
     }

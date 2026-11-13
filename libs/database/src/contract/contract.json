@@ -1802,7 +1802,7 @@
                 }
               },
               "decisionModel": {
-                "nullable": false,
+                "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
@@ -8478,7 +8478,7 @@
                 "decisionModel": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
-                  "nullable": false
+                  "nullable": true
                 },
                 "engagement": {
                   "codecId": "pg/text@1",
@@ -8831,7 +8831,6 @@
                     "inputHash",
                     "schemaVersion",
                     "promptHash",
-                    "decisionModel",
                     "extractionModel"
                   ],
                   "name": "job_extractions_reuse",
@@ -12799,7 +12798,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "4127c182defde6c4757b9fb233d4eb83b044fa16fbcbaf6a7796087aaa804ee9"
+    "storageHash": "5201f9230494207e174126f3348a3d6713e841a1997ba7f264ec11f62038f179"
   },
   "execution": {
     "executionHash": "d1afc78045007bb79eb075540ad58bb39a9183f73c152ea2601abe6ca2050fee",

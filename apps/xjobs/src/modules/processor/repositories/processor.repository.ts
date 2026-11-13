@@ -26,7 +26,6 @@ export type ReuseKey = {
   inputHash: string;
   schemaVersion: number;
   promptHash: string;
-  decisionModel: string;
   extractionModel: string;
 };
 
@@ -96,7 +95,7 @@ export interface JobState {
     needsReview: boolean;
     costUsd: number;
     /** The schema version the stored data reads as; null when none reads it. */
-    schemaVersion: 1 | 2 | 3 | null;
+    schemaVersion: 1 | 2 | 3 | 4 | null;
     data:
       | ExtractionDocument
       | ExtractionDocumentV2
@@ -105,7 +104,7 @@ export interface JobState {
   } | null;
 }
 
-/** A stored extraction's `data`, read as v3, else v2, else v1. */
+/** A stored extraction's `data`, read as v4, else v3, v2, else v1. */
 export function readStoredData(
   data: unknown,
 ): Pick<NonNullable<JobState['extraction']>, 'schemaVersion' | 'data'> {
@@ -258,7 +257,6 @@ export class PrismaProcessorRepository extends ProcessorRepository {
       inputHash: key.inputHash,
       schemaVersion: key.schemaVersion,
       promptHash: key.promptHash,
-      decisionModel: key.decisionModel,
       extractionModel: key.extractionModel,
     })
       .orderBy((e) => e.createdAt.desc())
@@ -284,6 +282,7 @@ export class PrismaProcessorRepository extends ProcessorRepository {
   async saveExtraction(row: NewExtraction): Promise<string> {
     const created = await this.db.orm.public.JobExtraction.create({
       ...row,
+      decisionModel: null,
       data: row.data as unknown as Json,
       costUsd: toDecimal(row.costUsd),
     });

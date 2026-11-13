@@ -12,8 +12,6 @@ import {
   type SystemModelMessage,
 } from 'ai';
 import { z } from 'zod';
-import { instructionsFor } from '../rules/questions';
-import type { FieldVerdict } from '../rules/verify';
 import { zodErrors } from '../schema/errors';
 import { flattenForStrict } from '../schema/model-output';
 import {
@@ -36,42 +34,6 @@ function postingText(input: PostingInput): string {
     .join('\n\n');
 }
 
-/** Where each verified field lives in the document, for the feedback message. */
-function fieldName(key: FieldVerdict['key']): string {
-  if (key.startsWith('junk:'))
-    return `junkFlags (the flag ${key.slice('junk:'.length)})`;
-  switch (key) {
-    case 'roleKind':
-      return 'position.value.roleKind';
-    case 'sponsorshipOffered':
-      return 'workAuthorization.value.sponsorship';
-    default:
-      return `${key}.value`;
-  }
-}
-
-const score = (s: number | null): string =>
-  s === null ? 'no score' : `score ${s.toFixed(2)}`;
-
-/**
- * The regeneration feedback (spec §2): per field the reviewer rejected, its
- * question, the generator's last value, the reviewer's own reading and its
- * score. It asks for a fresh reading of the posting, never for the reviewer's
- * reading: the reviewer judges, it does not write values.
- */
-export function feedbackMessage(feedback: FieldVerdict[]): string {
-  const lines = feedback.map(
-    (v) =>
-      `- ${fieldName(v.key)}. Question: "${instructionsFor(v.key)}" Your answer: "${v.generatorValue}". The reviewer's reading: "${v.jevPick ?? 'none'}" (${score(v.score)}).`,
-  );
-  return [
-    'An independent reviewer read the same posting and disagreed with some of your answers. The reviewer can be wrong too.',
-    'For each field below, re-read the posting and answer it again from the posting text alone, with a verbatim quote. Keep your answer when the posting supports it. When the posting does not state the fact, `unstated` (or null) is a valid answer.',
-    '',
-    ...lines,
-  ].join('\n');
-}
-
 /** The system prompt, cached (it is the same for every posting). */
 const instructions = (systemPrompt: string): SystemModelMessage => ({
   role: 'system',
@@ -79,11 +41,9 @@ const instructions = (systemPrompt: string): SystemModelMessage => ({
   providerOptions: { openrouter: { cacheControl: { type: 'ephemeral' } } },
 });
 
-/** The posting, then the regeneration feedback and the retry errors, each its own message. */
+/** The posting, then the retry errors, as their own message. */
 function messages(input: PostingInput, req: GenerateRequest): ModelMessage[] {
   const list: ModelMessage[] = [{ role: 'user', content: postingText(input) }];
-  if (req.feedback?.length)
-    list.push({ role: 'user', content: feedbackMessage(req.feedback) });
   if (req.retryErrors?.length)
     list.push({
       role: 'user',

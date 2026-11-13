@@ -162,7 +162,7 @@ function byStatus(
 
 /**
  * Runs one SDK call, measuring its latency and mapping its failure. `label`
- * names the call in the error (`Decisions API (typesafe/jev-1.14): ...`), so a
+ * names the call in the error (`Models API (some/model): ...`), so a
  * job's error says which model call failed.
  */
 export async function timed<T>(
@@ -224,13 +224,11 @@ export const GENERATION_MAX_OUTPUT_TOKENS = 32_768;
  *
  * The extraction model must be listed, support every parameter in
  * {@link EXTRACTION_PARAMETERS}, and have
- * numeric prices (to estimate a call whose response reports no cost). The
- * decision model is served by the Decisions API and may not be in the public
- * list; its responses report `usage.cost`, so it is priced only when listed.
+ * numeric prices (to estimate a call whose response reports no cost).
  */
 export async function checkModels(
   client: OpenRouterClient,
-  config: { decisionModel: string; extractionModel: string },
+  config: { extractionModel: string },
 ): Promise<Map<string, Price>> {
   const listed = (await client.models.list()).result.data;
   const find = (id: string) => listed.find((m) => m.id === id);
@@ -260,7 +258,5 @@ export async function checkModels(
     );
 
   const prices = new Map([[config.extractionModel, extractionPrice]]);
-  const decisionPrice = price(config.decisionModel);
-  if (decisionPrice) prices.set(config.decisionModel, decisionPrice);
   return prices;
 }
