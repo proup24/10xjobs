@@ -17,14 +17,14 @@ Precision over volume: prefer a tailored application over a fast one.
 - Nx 24 monorepo. NestJS engine in `apps/xjobs`, e2e tests in `apps/xjobs-e2e`.
 - TypeScript strict with nodenext. Tests use Vitest.
 - The Next.js web app and Supabase Postgres arrive in Phase 1.
-- LLMs are called from the engine through OpenRouter; which model plays each role is configuration. Claude does not orchestrate the engine.
+- LLMs are called from the engine through `claude -p` (Claude Code headless, version pinned in the repo), on the owner's Claude subscription for now. Claude does not orchestrate the engine.
 - LinkedIn data comes only through Apify. Ashby and Greenhouse are read from their public APIs.
 
 ## Commands
 
 - `npx nx serve xjobs`: run the engine.
-- `npx nx worker-all xjobs`: run every worker in one process: infrastructure, ingest, processor (when OPENROUTER_API_KEY is set), match, and each enabled channel's scheduled collection (registers schedules only with `XJOBS_RUN_SCHEDULES=1`, set on the hosted engine).
-- `npx nx worker-processor xjobs`: run the processor worker alone.
+- `npx nx worker-all xjobs`: run every worker in one process: infrastructure, ingest, processor (when `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY` is set), match, and each enabled channel's scheduled collection (registers schedules only with `XJOBS_RUN_SCHEDULES=1`, set on the hosted engine).
+- `npx nx worker-processor xjobs`: run the processor worker alone (needs `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY`).
 - `npx nx worker-match xjobs`: run the match worker alone.
 - `npx nx worker-<channel> xjobs` (`linkedin-job-board`, `linkedin-posts`, `greenhouse`, `ashby`): run one channel's scheduled collection worker (registers schedules only with `XJOBS_RUN_SCHEDULES=1`, set on the hosted engine).
 - `npx nx run-many -t lint test build typecheck`: what CI runs.

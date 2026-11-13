@@ -38,10 +38,8 @@ This slice runs right after 02 _(user)_. What 02 leaves it:
 
 Before this slice's brainstorm, dev needs a baseline on the description-only prompt:
 
-1. **A working LLM provider.** OpenRouter credit is out. The processor has failed every call with 402 since about 2026-11-09. Interim slice [02b](02b-claude-models.md) moves the engine to `claude -p` first.
-2. **The 60 processed jobs reprocessed,** with `db:reprocess -- --all-in-scope`, before about 2026-12-09, when they leave the 30-day match window.
-   - **Queue order.** `db:reprocess` sets `processingRequestedAt = now()`, and the processor claims the oldest request first. So the 60 queue behind the 3,988-job cheap_scraper pending backlog, about $33 at OpenRouter prices.
-   - **Settled by 02b:** the old cheap_scraper jobs are archived before Claude goes live, so they're not processed. A way to put chosen jobs at the front of the queue is one of 02b's open questions.
+1. **A working LLM provider.** OpenRouter credit is out. The processor has failed every call with 402 since about 2026-11-09. Interim slice [02b](02b-claude-models.md) moves the engine to `claude -p` first. The first Claude batch is harvestapi's, once Apify has credit again.
+2. **The 60 processed jobs archived, not reprocessed.** 02b archives all 4,048 cheap_scraper jobs, the 60 included, and deletes their matches. There is nothing to reprocess before 2026-12-09. The baseline comes from the first harvestapi batch, processed on Claude, once Apify has credit.
 3. **Measurements:**
    - `db:match-shares -- --days 7`, for the review share to bring down;
    - `processor:eval`, for the golden set on the description-only prompt.

@@ -8,9 +8,14 @@ The processor has been down since about 2026-11-09. Its OpenRouter credit ran ou
 
 - **`claude -p` (Claude Code, headless) on the user's Claude subscription becomes the engine's permanent way of calling models.** This is not a stopgap until API credit returns. OpenRouter leaves the engine.
 - **It runs on the hosted engine on Hetzner**, for every scheduled processor run. It doesn't run on a machine started by hand.
-- **Same two-step processor shape, on Claude.** The generator extracts the facts, then the verifier checks them. Both steps run on Claude. Which model plays each role stays configuration.
+- **Generator only, on Claude.** The processor has no verifier. One Claude call extracts the facts. The model is configuration (`PROCESSOR_EXTRACTION_MODEL`, Sonnet 5.5 to start).
 - **Usage limits: pause and retry.** When Claude's usage limit is hit partway through a batch, the waiting jobs stay waiting. They are retried after the limit resets. They are not failed, and their attempts are not used up.
-- **Old cheap_scraper jobs are archived, not processed.** The ~3,988 pending jobs collected through the old actor (cheap_scraper) must not be processed automatically by the first batch once Claude is live. Archive them, so they leave the processor's queue, before the switch.
+- **Old cheap_scraper jobs are archived, not processed.** All 4,048 jobs collected through the old actor (cheap_scraper) are archived with `db:archive-actor`, before the switch, so they leave the processor's queue. Their matches are deleted, and a new sighting un-archives a job.
+- **Subscription for dogfooding only.** Before any other person gets an account, the engine moves to an Anthropic API key. The roadmap README records this gate.
+
+## Status
+
+Built. The design is `docs/superpowers/specs/2026-11-13-claude-models-design.md`. The first Claude batch is harvestapi's, once Apify has credit again.
 
 ## Open questions (for this slice's brainstorm)
 

@@ -1,6 +1,6 @@
 # Processor
 
-The processor is the third stage of the pipeline (Collect → Ingest → **Process** → Match). It reads each in-scope normalized job, asks models for the facts the posting establishes, checks them against the text and the list tables, and stores one validated extraction document per run. It never guesses: a fact the posting does not state is `null` or `unstated`.
+The processor is the third stage of the pipeline (Collect → Ingest → **Process** → Match). It reads each in-scope normalized job, asks Claude for the facts the posting establishes, checks them against the text and the list tables, and stores one validated extraction document per run. It never guesses: a fact the posting does not state is `null` or `unstated`.
 
 Design: `docs/superpowers/specs/2026-11-01-processor-design.md`.
 
@@ -9,14 +9,14 @@ Design: `docs/superpowers/specs/2026-11-01-processor-design.md`.
 1. **Trigger.** Ingest sets a new or reopened job to `pending`. Once its batch is ingested, the ingest worker enqueues every job the batch left `pending` on the `process` queue (LinkedIn job board batches only, `PROCESSOR_CHANNEL`). The processor's sweeper (every 60 s) re-enqueues any pending job a nudge missed and returns stale claims to `pending`.
 2. **One job.** The worker calls `ProcessorService.process(jobId)`, which reads top to bottom:
 
-   | Step | Service                     | Does                                                                                                                                                                                                                                                                                                                                                                                |
-   | ---- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-   | 1    | `ProcessorGuard`            | Refuses while today's spend reached the budget, or after the provider refused the key (10-minute pause).                                                                                                                                                                                                                                                                            |
-   | 2    | `ProcessorRepository.claim` | `pending` → `processing`, atomically; nothing if another worker has it.                                                                                                                                                                                                                                                                                                             |
-   | 3    | `ExtractionStore.reuse`     | A closed job needs no call; the same input, schema, prompt and models reuse a stored extraction.                                                                                                                                                                                                                                                                                    |
-   | 4    | `ExtractionPipeline.run`    | `GenerationService` (the generator writes the whole document through the AI SDK; `FactAssembler` checks quotes, consistency, list codes and shape; up to `PROCESSOR_GENERATION_TRIES` tries) → the consistency rules run again on the final document. No verifier and no regeneration rounds: the generator's facts are final. Writes nothing.                                      |
-   | 5    | `ExtractionStore.save`      | Cities, proposed terms, the extraction with its typed columns, its attempts, code usage.                                                                                                                                                                                                                                                                                            |
-   | 6    | `decideFailure` + `finish`  | `processed`, or per the failure table: provider refused → `pending` with the attempt given back; request error or a first generation invalid on every try → `failed`; anything else → `pending` until `PROCESSOR_MAX_ATTEMPTS`, then `failed`. A job that ends `processed` with a current extraction (including a reused one) is handed to the match queue (see `modules/matcher`). |
+   | Step | Service                     | Does                                                                                                                                                                                                                                                                                                                                                                                                       |
+   | ---- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+   | 1    | `ProcessorGuard`            | Refuses while a pause is on (usage limit, weekly reserve, auth failure) or today's estimated spend reached the budget.                                                                                                                                                                                                                                                                                     |
+   | 2    | `ProcessorRepository.claim` | `pending` → `processing`, atomically; nothing if another worker has it.                                                                                                                                                                                                                                                                                                                                    |
+   | 3    | `ExtractionStore.reuse`     | A closed job needs no call; the same input, schema, prompt and model reuse a stored extraction.                                                                                                                                                                                                                                                                                                            |
+   | 4    | `ExtractionPipeline.run`    | `GenerationService` (the generator writes the whole document through one `claude -p` call; `FactAssembler` checks quotes, consistency, list codes and shape; up to `PROCESSOR_GENERATION_TRIES` tries) → the consistency rules run again on the final document. No verifier and no regeneration rounds: the generator's facts are final. Writes nothing.                                                   |
+   | 5    | `ExtractionStore.save`      | Cities, proposed terms, the extraction with its typed columns, its attempts, code usage.                                                                                                                                                                                                                                                                                                                   |
+   | 6    | `decideFailure` + `finish`  | `processed`, or per the failure table: usage limit or auth failure → `pending` with the attempt given back and a pause; request error or a first generation invalid on every try → `failed`; anything else → `pending` until `PROCESSOR_MAX_ATTEMPTS`, then `failed`. A job that ends `processed` with a current extraction (including a reused one) is handed to the match queue (see `modules/matcher`). |
 
    Every model call goes into an `AttemptLog` and is written once, whatever the outcome.
 
@@ -24,13 +24,15 @@ Design: `docs/superpowers/specs/2026-11-01-processor-design.md`.
 
 - `services/`: the execution path above. `processor.service.ts` is the entry point; `createProcessorService` builds the same graph without Nest (tests, scripts).
 - `rules/`: pure functions the services call (input and hashes, fact resolution, validation, typed columns).
-- `models/`: the generator interface and its adapter on the AI SDK with `@openrouter/ai-sdk-provider` (`extraction.model.ts`); the OpenRouter client for the startup checks (`client.ts`).
+- `models/`: the generator interface and its adapter on `claude -p` (`claude-extraction.model.ts`); `models/claude/` holds the child-process runner, the `stream-json` parser, the isolated environment, the pinned version and the startup checks.
 - `repositories/`: every database read and write. `schema/`, `vocab/`, `prompts/`: the document shape, the lists, the system prompt.
 - `controllers/`: the testing endpoints below (served by the API app only).
 
 ## Running it
 
-`WORKER_ROLE=processor` (`npx nx worker-processor xjobs`, the `processor-worker` container) always runs the processor and needs `OPENROUTER_API_KEY`. `WORKER_ROLE=all` (`worker-all`) runs it whenever `OPENROUTER_API_KEY` is set; without the key it warns `processor not started` and jobs wait in the queue. The daily budget (`PROCESSOR_DAILY_BUDGET_USD`) caps spend either way.
+`WORKER_ROLE=processor` (`npx nx worker-processor xjobs`, the `processor-worker` container) always runs the processor and needs a Claude credential: `CLAUDE_CODE_OAUTH_TOKEN` (the subscription; make it with `claude setup-token`) or `ANTHROPIC_API_KEY`. `WORKER_ROLE=all` (`worker-all`) runs it whenever one of them is set; without one it warns `processor not started` and jobs wait in the queue. The `claude` binary must be on `PATH` at the pinned version (`models/claude/version.ts`); a missing or different binary stops startup.
+
+**Locally.** Install Claude Code at the pinned version, set `CLAUDE_CODE_OAUTH_TOKEN` in an untracked `.env*` file, and run `pnpm --filter @xjobs/xjobs processor:smoke` (startup checks plus one real call). The local run uses your own subscription, so it shares its limits with your Claude use. `processor:eval` stops on a usage limit instead of waiting (see Eval).
 
 Jobs ingested before the processor existed have no processing status and are not processed automatically; send them once with `pnpm --filter @xjobs/xjobs db:reprocess -- --null-status`.
 
@@ -45,23 +47,35 @@ Served by the API (`npx nx serve xjobs`), local only, with `XJOBS_OPERATOR_ENDPO
 | `GET /processor/jobs/:jobId`      | The job's processing status, attempts, error and current extraction.                                                                                                                                                                                            |
 | `GET /processor/status`           | In-scope jobs per status (`unset` = never sent), today's spend against the budget, the models, and whether this process is paused.                                                                                                                              |
 
-Preview and run answer 503 when the app has no `OPENROUTER_API_KEY`, 429 once the budget is spent, 502 on a provider error, and 422 when the first generation was invalid on every try.
+Preview and run answer 503 when the app has no Claude credential, 429 once the budget is spent or while a pause is on, 502 on a Claude error, and 422 when the first generation was invalid on every try.
 
 ## Models and cost
 
-The processor is generator-only: one model, the configured `PROCESSOR_EXTRACTION_MODEL`, writes every fact, and nothing verifies it. It is called through the Vercel AI SDK (`ai`) with `@openrouter/ai-sdk-provider`: `generateText` with `Output.object` and a strict JSON schema, `maxRetries: 0` (`models/extraction.model.ts`). The SDK does not retry on its own; the processor's own tries (`PROCESSOR_GENERATION_TRIES` per generation) are the only retries.
+The processor is generator-only: one model, `PROCESSOR_EXTRACTION_MODEL` (default `claude-sonnet-5-5`), writes every fact, and nothing verifies it. Each try is one `claude -p` call (Claude Code headless) that returns the document as structured output against the strict JSON schema. The processor's own tries (`PROCESSOR_GENERATION_TRIES` per generation) are the only retries.
 
-`toModelError` maps SDK errors to the processor's classes (401/402/403 provider unavailable; 408, 429 and 5xx transient; other 4xx request errors; an unreadable response an output error), and messages never carry a response body.
+**The call is isolated.** The child runs in an empty working directory with an empty `HOME`, a stripped environment (only the credential and what Claude Code needs), and `--tools ""`. It has no tools, no files, no project `CLAUDE.md` or settings, and no session between jobs. A posting is untrusted text, so the model has nothing to act with. The exact flags are in `models/claude/fixtures/README.md` ("Final argv"). `PROCESSOR_EFFORT` (default `low`) sets the effort and `PROCESSOR_CALL_TIMEOUT_MS` (default 180000) kills a call that runs too long.
 
-Before any worker starts, the processor checks that OpenRouter accepts the key (`apiKeys.getCurrentKeyMetadata`), and that the extraction model is listed, supports every parameter the extraction request sends (`response_format`, `structured_outputs`; the request routes with `requireParameters`, so one unsupported parameter means no provider), and has a numeric prompt and completion price. Any failure stops startup; in `all` mode no other worker is left running. `pnpm --filter @xjobs/xjobs processor:smoke` runs the same checks plus one real call to the model.
+**Startup.** Before any worker starts, the processor checks that the `claude` binary exists at the pinned version and makes one small call with the credential. A missing or wrong binary stops startup (in `all` mode no other worker is left running). A failed credential call does not: the processor starts paused and rechecks every 10 minutes.
 
-**Cost.** The call reports `usage.cost` and token counts. When a successful response has no numeric cost, the cost is estimated as `inputTokens × prompt + outputTokens × completion` from the list prices loaded at startup, with one warning per model.
+**Cost.** `costUsd` on each attempt is Claude Code's own estimate at API prices. On a subscription nothing is billed per call, so it is a measure of use, not a charge. It still feeds `processor:eval`, slice 03's comparisons and `PROCESSOR_DAILY_BUDGET_USD` (default 0, no cap). Set a cap only to bound use; it counts the estimate.
 
-**Provider unavailable.** A 401, 402 or 403 (also as a 200 error body) means the key, credit or account is the problem, not the job. The attempt is recorded, the job goes back to `pending` with its `processingAttempts` given back, and this process stops claiming (and the sweep stops enqueueing) for 10 minutes, logged once as an error.
+## Usage limits and pauses
+
+The engine shares the subscription's 5-hour window and weekly limit with the owner's own Claude use. A pause stops claiming (and the sweep stops enqueueing) and loses no job:
+
+| Event                                               | What happens                                                                                                                                                                                   |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Usage limit hit                                     | The job goes back to `pending`, its attempt is given back, and the processor pauses until the reset time Claude reports (15 minutes if it reports none).                                       |
+| Weekly use reaches 85% (`PROCESSOR_WEEKLY_STOP_AT`) | The processor pauses until the weekly reset, to leave the rest of the week to the owner. The all-models weekly figure is always seen; the Sonnet weekly one only when it is the binding limit. |
+| Auth failure (expired token, bad key)               | The job goes back to `pending` with its attempt given back, and the processor pauses 10 minutes. The runbook says how to renew the token.                                                      |
+
+A call already running when a pause starts finishes normally. Pauses are logged once by the worker; `GET /processor/status` shows whether this process is paused. See the runbook (`deploy/engine/README.md`) for reading them.
+
+**Subscription gate.** The subscription is for the dogfooding period only. Before any other person gets an account, the engine moves to an Anthropic API key (runbook, "Switch to an API key").
 
 ## Scope
 
-A normalized job is in scope when it is `status='active'`, `kind='job'`, and at least one of its sources (`normalized_job_sources` → `raw_items`) has `channel='LINKEDIN_JOB_BOARD'`. A LinkedIn job merged with its Ashby or Greenhouse posting is in scope. Only in-scope jobs are listed, claimed or reprocessed; every other job is invisible to the processor. A closed in-scope job is claimed and marked `processed` with no model call and no extraction.
+A normalized job is in scope when it is `status='active'`, `kind='job'`, and at least one of its sources (`normalized_job_sources` → `raw_items`) has `channel='LINKEDIN_JOB_BOARD'`. A LinkedIn job merged with its Ashby or Greenhouse posting is in scope. Only in-scope jobs are listed, claimed or reprocessed; every other job is invisible to the processor. An `archived` job is never claimed. A closed in-scope job is claimed and marked `processed` with no model call and no extraction.
 
 ## Statuses
 
@@ -127,21 +141,30 @@ pnpm --filter @xjobs/xjobs db:reprocess -- --all-in-scope
 pnpm --filter @xjobs/xjobs db:reprocess -- --job <id> --job <id>
 ```
 
-At least one selector is required; selectors combine. Only in-scope jobs are touched. The script resets the status, attempts, error and `processingRequestedAt`; the worker then picks the jobs up. Rows whose reuse key still matches are reused without a model call.
+At least one selector is required; selectors combine. Only in-scope jobs are touched, and `archived` jobs are skipped under every selector (the script says how many). The script resets the status, attempts, error and `processingRequestedAt`; the worker then picks the jobs up. Rows whose reuse key still matches are reused without a model call.
+
+### Archiving a retired actor
+
+```sh
+pnpm --filter @xjobs/xjobs db:archive-actor -- --actor cheap_scraper/linkedin-job-scraper --dry-run
+pnpm --filter @xjobs/xjobs db:archive-actor -- --actor cheap_scraper/linkedin-job-scraper
+```
+
+Archives every job all of whose sources were seen only in that actor's batches, deletes their `job_matches`, clears `processingError` and keeps the extractions. It prints counts before and after, refuses a remote database without `XJOBS_ALLOW_REMOTE_DB=1`, and is safe to run twice. A new ingest sighting sends an archived job back to `pending` (`reopened`).
 
 ## Eval
 
 ```sh
-pnpm --filter @xjobs/xjobs processor:eval -- --generator <modelId>
+pnpm --filter @xjobs/xjobs processor:eval
 ```
 
-Runs the generator over the golden set in `golden/` (in memory, with the seed vocabulary, writing nothing to the database; attempts are tagged `eval`) and scores the results; it prints `generator <model>`. `--generator` defaults to `PROCESSOR_EXTRACTION_MODEL`; run it once per candidate model to compare them. It calls paid APIs and never runs in CI. The report is written to `golden/last-report.<generator slug>.json` (git-ignored, regenerable) and holds:
+Runs the generator over the golden set in `golden/` (in memory, with the seed vocabulary, writing nothing to the database; attempts are tagged `eval`) and scores the results. It uses `PROCESSOR_EXTRACTION_MODEL` and needs `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY`. It stops on a usage limit instead of waiting, and says where it stopped; run it again after the reset. It spends your subscription's use and never runs in CI. The report is written to `golden/last-report.<generator slug>.json` (git-ignored, regenerable) and holds:
 
 - fact scores, and the requirement scores (recall, precision, kind, domain, years);
 - the share of `sure` facts the golden value contradicts;
-- generator calls and cost per job.
+- generator calls and estimated cost per job.
 
-Exit code 1 means a bar failed (`BARS` in `golden/score.ts`). Run it after any prompt, schema or model change, before reprocessing. `processor:smoke` (startup checks plus one real call to the model) has not been run against this flow yet.
+Exit code 1 means a bar failed (`BARS` in `golden/score.ts`). Run it after any prompt, schema or model change, before reprocessing.
 
 ## The shared-tables exception
 
