@@ -4,7 +4,7 @@ Spec: [Resume storage](../../superpowers/specs/2026-11-06-resume-storage-design.
 
 ## Goal
 
-Each profile stores one resume PDF that Phase 3 sends with applications as it is. The engine already does this through its own resume endpoints and the service-role key; this slice moves it to the web app, acting as the signed-in user and protected by Storage policies and a database function.
+Each profile stores one resume PDF that Phase 4 sends with applications as it is. The engine already does this through its own resume endpoints and the service-role key; this slice moves it to the web app, acting as the signed-in user and protected by Storage policies and a database function.
 
 ## What already exists (on `main`)
 

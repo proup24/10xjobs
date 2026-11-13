@@ -93,7 +93,7 @@ Raised in the brainstorm and deferred _(user)_. Each gets its own brief when its
 
 ## Out of these slices
 
-- Applying, tailored resumes and emails (Phase 3).
+- Applying, tailored resumes and emails (Phase 4).
 - Notifications (email digests of new matches) _(my call; not raised)_.
 - Marking matches as fit or reject to refine preferences (the feedback loop from Phase 1's brainstorm).
 - Production Supabase and a production engine; `10xjobs-dev` only, until production is wanted.

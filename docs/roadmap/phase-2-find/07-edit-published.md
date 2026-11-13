@@ -35,6 +35,9 @@ A published profile stays editable, and saving a change takes effect. The user's
 - Whether the web app writes the change under RLS and then asks the engine to apply it, or sends the change to the engine to write and apply in one step. The first keeps one write path; the second avoids a saved-but-not-applied state. Either way, a failed apply must be visible and retryable, and the sweep should heal it.
 - How the profile version is recorded on each decision (a counter on the profile, a snapshot of the compared values in `checks`, or both), and how the matcher's sweep spots decisions made against an older version.
 - How changing a profile's resume (already allowed when published) fits in: it shouldn't trigger re-matching.
+- From Phase 3 slice 02: each decision already stores `job_matches.profileUpdatedAt`. A row decided before the profile's `updatedAt` is stale. That only works while published profiles are frozen, because only the engine's ORM moves `profiles.updatedAt`. Web edits, `profile_skills` changes and `set_profile_resume` don't.
+  - Before published profiles become editable, replace it with a profile version.
+  - The version should be bumped by a trigger on the matching columns and on `profile_skills` changes, and not on the resume columns.
 - Debouncing: several saves in a row on different preference pages shouldn't each trigger a full re-match.
 
 ## Done when

@@ -6,7 +6,7 @@ Status: draft. Closes with [Phase 2's launch check](../phase-2-find/10-launch-ch
 
 ## Intent
 
-Phase 1 builds the hosted, invite-only app where each job seeker gets an isolated account and records the inputs every later phase acts on: what jobs they want, what they're eligible for, and their resume. Phase 2 qualifies jobs against these inputs and Phase 3 applies with them, so the data has to be precise enough that a rejection can always name the rule that caused it.
+Phase 1 builds the hosted, invite-only app where each job seeker gets an isolated account and records the inputs every later phase acts on: what jobs they want, what they're eligible for, and their resume. Phase 2 qualifies jobs against these inputs and Phase 4 applies with them, so the data has to be precise enough that a rejection can always name the rule that caused it.
 
 **Backend and schema come first.** The UI slices come last and will be shaped as the earlier slices land. The UI foundation (the Next.js scaffold and the component baseline in slice 01) can start now.
 
@@ -82,7 +82,7 @@ Slices 04 and 05 share one spec, [Preferences and eligibility schema](../../supe
 
 **Resume**
 
-- One PDF per profile, replaced on upload, with no version history. It can be replaced at any time, on published profiles too. Phase 3 applications use this file as it is, and record its hash with each application.
+- One PDF per profile, replaced on upload, with no version history. It can be replaced at any time, on published profiles too. Phase 4 applications use this file as it is, and record its hash with each application.
 - Building, rendering and tailoring resumes are out of Phase 1. Tailoring per job comes after the MVP.
 
 ## Open, to settle before slice 07
@@ -107,7 +107,7 @@ The first draft of this phase assumed a `workspaces` table, a Supabase migration
 These came up while describing the full journey and belong to later phases. They're listed here so they aren't lost.
 
 - **A feedback loop:** the user marks matches as fit or reject, and that feedback refines their preferences. It needs matches first, so Phase 2 at the earliest. Not on the roadmap yet.
-- **More application channels:** applying through job sites and aggregators beyond LinkedIn, Ashby and Greenhouse. This would widen Phase 3's scope.
+- **More application channels:** applying through job sites and aggregators beyond LinkedIn, Ashby and Greenhouse. This would widen Phase 4's scope.
 - **Phase 2 qualify rules that follow from Phase 1's model:**
   - A job is a miss only when it _requires_ a tech outside the user's stack. Whether a "nice to have" mention counts is for the Phase 2 spec. Assumption going in: it doesn't.
   - When a posting is vague about how it hires (employee or contractor), the Phase 2 spec decides whether that's a match or a miss.
