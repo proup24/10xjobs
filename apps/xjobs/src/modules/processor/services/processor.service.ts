@@ -72,10 +72,15 @@ export interface ProcessorStatus {
 
 /** The guard refused to start model calls. */
 export class ProcessorBlockedError extends Error {
-  constructor(readonly reason: GuardBlock) {
+  constructor(
+    readonly reason: GuardBlock,
+    pause: PauseState | null = null,
+  ) {
     super(
       reason === 'paused'
-        ? 'Processing is paused after the provider refused the key or account'
+        ? pause
+          ? `Processing is paused until ${pause.until.toISOString()} (${pause.reason}): ${pause.detail}`
+          : 'Processing is paused'
         : "Today's processing budget is spent",
     );
     this.name = 'ProcessorBlockedError';
@@ -149,7 +154,8 @@ export class ProcessorService {
    */
   async preview(posting: PreviewPosting): Promise<PreviewResult> {
     const blocked = await this.guard.check();
-    if (blocked) throw new ProcessorBlockedError(blocked);
+    if (blocked)
+      throw new ProcessorBlockedError(blocked, this.guard.pauseState());
 
     const input = buildPostingInput({
       id: 'preview',

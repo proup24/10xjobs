@@ -3,7 +3,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ProcessorConfig } from '../config/processor.config';
 import type { LimitObservation } from '../models/claude/stream';
 import { MemoryProcessorRepository } from '../testing/fakes';
-import { PROVIDER_PAUSE_MS, ProcessorGuard } from './processor-guard.service';
+import {
+  PROVIDER_PAUSE_MS,
+  ProcessorGuard,
+  USAGE_LIMIT_FALLBACK_MS,
+} from './processor-guard.service';
 
 const NOW = new Date('2026-11-02T10:00:00Z');
 const at = (ms: number) => new Date(NOW.getTime() + ms);
@@ -108,6 +112,27 @@ describe('ProcessorGuard', () => {
       expect(guard.lastWeeklyUtilization()).toBe(0.85);
     });
 
+    it('the stored utilization follows the latest batch and falls after a reset', () => {
+      vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+      const guard = make();
+      guard.observeLimits([obs('weekly', 0.9)]);
+      expect(guard.lastWeeklyUtilization()).toBe(0.9);
+      guard.observeLimits([obs('weekly', 0.1)]);
+      expect(guard.lastWeeklyUtilization()).toBe(0.1);
+      // A batch with no weekly reading keeps the previous value.
+      guard.observeLimits([obs('five_hour', 0.5)]);
+      expect(guard.lastWeeklyUtilization()).toBe(0.1);
+      guard.observeLimits([obs('weekly', 0.3), obs('weekly_sonnet', 0.6)]);
+      expect(guard.lastWeeklyUtilization()).toBe(0.6);
+    });
+
+    it('a weekly reserve reset at or before now does not pause', () => {
+      const guard = make();
+      guard.observeLimits([obs('weekly', 0.95, NOW)]);
+      guard.observeLimits([obs('weekly', 0.95, at(-1000))]);
+      expect(guard.isPaused()).toBe(false);
+    });
+
     it('never pauses the five-hour window on utilization', () => {
       const guard = make();
       guard.observeLimits([obs('five_hour', 0.99)]);
@@ -136,6 +161,19 @@ describe('ProcessorGuard', () => {
     });
   });
 
+  describe('pauseForUsageLimit', () => {
+    it.each([
+      ['missing', null],
+      ['past', at(-1000)],
+      ['now', NOW],
+    ])('a %s reset falls back to 15 minutes', (_, resetsAt) => {
+      vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+      const guard = make();
+      guard.pauseForUsageLimit(resetsAt, 'limit');
+      expect(guard.pauseState()?.until).toEqual(at(USAGE_LIMIT_FALLBACK_MS));
+    });
+  });
+
   describe('check', () => {
     it('is over_budget once spend reaches the budget', async () => {
       vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
@@ -154,6 +192,18 @@ describe('ProcessorGuard', () => {
         () => NOW,
       );
       await expect(guard.check()).resolves.toBeNull();
+    });
+
+    it('does not read the spend when the budget is 0', async () => {
+      const repo = new MemoryProcessorRepository(() => NOW);
+      const spy = vi.spyOn(repo, 'spendSince');
+      const guard = new ProcessorGuard(
+        repo,
+        { ...config, dailyBudgetUsd: 0 },
+        () => NOW,
+      );
+      await guard.check();
+      expect(spy).not.toHaveBeenCalled();
     });
   });
 });

@@ -57,10 +57,10 @@ export class ProcessorGuard {
    */
   async check(): Promise<GuardBlock | null> {
     if (this.isPaused()) return 'paused';
-    const day = startOfUtcDay(this.now());
-    const spent = await this.repo.spendSince(day);
     // A budget of 0 means no cap (the subscription's limits stop first).
     if (this.config.dailyBudgetUsd === 0) return null;
+    const day = startOfUtcDay(this.now());
+    const spent = await this.repo.spendSince(day);
     if (spent < this.config.dailyBudgetUsd) return null;
     if (this.budgetWarnedDay !== day.getTime()) {
       this.budgetWarnedDay = day.getTime();
@@ -104,7 +104,9 @@ export class ProcessorGuard {
   /** A usage limit was hit: pause until its reset, or 15 minutes when unknown. */
   pauseForUsageLimit(resetsAt: Date | null, detail: string): void {
     this.pauseUntil(
-      resetsAt ?? new Date(this.now().getTime() + USAGE_LIMIT_FALLBACK_MS),
+      resetsAt && resetsAt.getTime() > this.now().getTime()
+        ? resetsAt
+        : new Date(this.now().getTime() + USAGE_LIMIT_FALLBACK_MS),
       'usage_limit',
       detail,
     );
@@ -121,15 +123,26 @@ export class ProcessorGuard {
    * utilization. An observation with no reset time cannot pause.
    */
   observeLimits(observations: LimitObservation[]): void {
-    for (const o of observations) {
-      if (o.kind !== 'weekly' && o.kind !== 'weekly_sonnet') continue;
-      if (o.utilization === null) continue;
-      this.weeklyUtilization = Math.max(
-        this.weeklyUtilization ?? 0,
-        o.utilization,
-      );
-      if (o.utilization < this.config.weeklyStopAt || !o.resetsAt) continue;
-      const pct = Math.round(o.utilization * 100);
+    const weekly = observations.filter(
+      (o) =>
+        (o.kind === 'weekly' || o.kind === 'weekly_sonnet') &&
+        o.utilization !== null,
+    );
+    if (weekly.length === 0) return;
+    // The latest batch replaces the stored value, so it falls after a reset.
+    this.weeklyUtilization = Math.max(
+      ...weekly.map((o) => o.utilization as number),
+    );
+    for (const o of weekly) {
+      const utilization = o.utilization as number;
+      // A reset at or before now carries no backoff: treat it as unknown.
+      if (
+        utilization < this.config.weeklyStopAt ||
+        !o.resetsAt ||
+        o.resetsAt.getTime() <= this.now().getTime()
+      )
+        continue;
+      const pct = Math.round(utilization * 100);
       this.pauseUntil(
         o.resetsAt,
         'weekly_reserve',
