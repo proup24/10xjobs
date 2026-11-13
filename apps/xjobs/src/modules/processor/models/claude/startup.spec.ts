@@ -19,7 +19,7 @@ function model(extraEnv: Record<string, string> = {}) {
     bin: FAKE,
     env: { PATH: process.env.PATH ?? '', CLAUDE_CODE_OAUTH_TOKEN: 'oauth' },
     extraEnv,
-    maxTurns: 1,
+    maxTurns: 3,
   });
   return new ClaudeExtractionModel(
     runner,

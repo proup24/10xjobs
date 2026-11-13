@@ -51,7 +51,7 @@ Preview and run answer 503 when the app has no Claude credential, 429 once the b
 
 ## Models and cost
 
-The processor is generator-only: one model, `PROCESSOR_EXTRACTION_MODEL` (default `claude-sonnet-5-5`), writes every fact, and nothing verifies it. Each try is one `claude -p` call (Claude Code headless) that returns the document as structured output against the strict JSON schema. The processor's own tries (`PROCESSOR_GENERATION_TRIES` per generation) are the only retries.
+The processor is generator-only: one model, `PROCESSOR_EXTRACTION_MODEL` (default `claude-sonnet-5-5`), writes every fact, and nothing verifies it. Each try is one `claude -p` call (Claude Code headless, `--max-turns 3`) that returns the document as structured output against the strict JSON schema; within the call the model may correct a text-only reply or a schema-rejected answer. The processor's own tries (`PROCESSOR_GENERATION_TRIES` per generation) are the only retries.
 
 **The call is isolated.** The child runs in an empty working directory with an empty `HOME`, a stripped environment (only the credential and what Claude Code needs), and `--tools ""`. It has no tools, no files, no project `CLAUDE.md` or settings, and no session between jobs. A posting is untrusted text, so the model has nothing to act with. The exact flags are in `models/claude/fixtures/README.md` ("Final argv"). `PROCESSOR_EFFORT` (default `low`) sets the effort and `PROCESSOR_CALL_TIMEOUT_MS` (default 180000) kills a call that runs too long.
 
