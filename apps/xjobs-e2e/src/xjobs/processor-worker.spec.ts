@@ -268,7 +268,7 @@ describe.skipIf(!url || !isLocalUrl(url))('processor worker', () => {
 
   beforeAll(() => {
     db = createDatabaseClient({
-      url: url!,
+      url: url as string,
       connectionTimeoutMs: 5000,
       idleTimeoutMs: 1000,
       slowQueryMs: 60_000,
@@ -279,8 +279,17 @@ describe.skipIf(!url || !isLocalUrl(url))('processor worker', () => {
 
   afterAll(async () => {
     if (worker) await exited(worker);
-    await queue?.obliterate({ force: true }).catch(() => undefined);
-    await queue?.close();
+    // Every queue the worker opens on its own prefix, the match nudge included.
+    const connection = {
+      url: process.env.REDIS_URL ?? 'redis://127.0.0.1:6379',
+    };
+    const others = ['match', 'ingest', 'infrastructure'].map(
+      (name) => new Queue(name, { connection, prefix }),
+    );
+    for (const q of [queue, ...others]) {
+      await q?.obliterate({ force: true }).catch(() => undefined);
+      await q?.close();
+    }
     if (jobId) await removeJob(db, jobId);
     await db?.close();
     rmSync(dir, { recursive: true, force: true });

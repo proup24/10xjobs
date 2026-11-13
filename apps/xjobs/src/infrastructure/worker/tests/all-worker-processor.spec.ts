@@ -44,8 +44,12 @@ vi.mock('bullmq', async (importOriginal) => {
 });
 
 const checks = vi.hoisted(() => ({
-  checkClaudeInstalled: vi.fn(async (_bin?: string) => undefined),
-  checkClaudeCall: vi.fn(async (_model: unknown): Promise<unknown> => null),
+  checkClaudeInstalled: vi.fn<(bin?: string) => Promise<void>>(
+    async () => undefined,
+  ),
+  checkClaudeCall: vi.fn<(model: unknown) => Promise<unknown>>(
+    async () => null,
+  ),
 }));
 vi.mock(
   'src/modules/processor/models/claude/startup',
@@ -57,6 +61,7 @@ vi.mock(
 
 import { Logger } from '@nestjs/common';
 import { ProcessorGuard } from 'src/modules/processor';
+import { ProcessorWorkerService } from '../processor.service';
 import { StorageService } from 'src/modules/storage';
 import { MemoryStorageService } from 'src/modules/storage/testing';
 import { WorkerRuntimeService } from '../runtime.service';
@@ -97,6 +102,7 @@ it('runs the processor with the others when a Claude credential is set', async (
   const { module, service } = await build();
   try {
     await service.onModuleInit();
+    await module.get(ProcessorWorkerService).pendingCheck;
     expect(checks.checkClaudeInstalled).toHaveBeenCalledTimes(1);
     expect(checks.checkClaudeCall).toHaveBeenCalledTimes(1);
     expect(created.workers).toEqual(everyWorker);
@@ -115,10 +121,30 @@ it('starts ingest, match and collection when the startup call fails, with the pr
   const { module, service } = await build();
   try {
     await service.onModuleInit();
+    await module.get(ProcessorWorkerService).pendingCheck;
     expect(created.workers).toEqual(everyWorker);
     expect(module.get(ProcessorGuard).pauseState()).toMatchObject({
       reason: 'startup',
     });
+  } finally {
+    await module.close();
+  }
+});
+
+it('does not wait for the startup call: every worker starts with the processor paused', async () => {
+  let finish!: (failure: unknown) => void;
+  checks.checkClaudeCall.mockImplementationOnce(
+    () => new Promise((done) => (finish = done)),
+  );
+  const { module, service } = await build();
+  try {
+    await service.onModuleInit();
+    expect(created.workers).toEqual(everyWorker);
+    const guard = module.get(ProcessorGuard);
+    expect(guard.pauseState()).toMatchObject({ reason: 'startup' });
+    finish(null);
+    await module.get(ProcessorWorkerService).pendingCheck;
+    expect(guard.isPaused()).toBe(false);
   } finally {
     await module.close();
   }

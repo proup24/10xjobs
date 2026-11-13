@@ -7,6 +7,7 @@ import {
   parseStream,
 } from './claude/stream';
 import {
+  ClaudeAuthError,
   ModelOutputError,
   ModelRequestError,
   ProviderUnavailableError,
@@ -68,10 +69,7 @@ export class ClaudeExtractionModel extends ExtractionModel {
             meta,
           );
         case 'auth':
-          throw new ProviderUnavailableError(
-            'claude authentication failed',
-            meta,
-          );
+          throw new ClaudeAuthError(meta);
         case 'transient':
           throw new TransientModelError(failure.reason, meta);
         case 'request':

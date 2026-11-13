@@ -34,7 +34,10 @@ import {
   hasClaudeCredential,
   NO_CLAUDE_CREDENTIAL,
 } from 'src/modules/processor/models/claude/startup';
-import { ProcessorGuard } from 'src/modules/processor/services/processor-guard.service';
+import {
+  type PauseState,
+  ProcessorGuard,
+} from 'src/modules/processor/services/processor-guard.service';
 import type { NewAttempt } from 'src/modules/processor/repositories/processor.repository';
 import { extractionDocumentSchema } from 'src/modules/processor/schema';
 import { createProcessorService } from 'src/modules/processor/services/processor.service';
@@ -132,6 +135,9 @@ async function main(): Promise<void> {
 
   const scores: FactScores[] = [];
   const failed: string[] = [];
+  /** Cases not run because a usage limit or the weekly reserve paused the run. */
+  const stopped: string[] = [];
+  let limitStop: PauseState | null = null;
   const queue = [...cases];
   const worker = async (): Promise<void> => {
     for (let c = queue.shift(); c; c = queue.shift()) {
@@ -139,6 +145,16 @@ async function main(): Promise<void> {
       let outcome = await run();
       for (let i = 1; outcome === 'retry' && i < MAX_TRIES; i++)
         outcome = await run();
+      const pause = guard.pauseState();
+      if (
+        (outcome === 'paused' || outcome === 'retry') &&
+        (pause?.reason === 'usage_limit' || pause?.reason === 'weekly_reserve')
+      ) {
+        // Not a quality failure: the subscription stopped the run.
+        limitStop ??= pause;
+        stopped.push(c.id, ...queue.splice(0).map((q) => q.id));
+        continue;
+      }
       const job = repo.jobs.get(c.id);
       const stored = repo.extractions.find(
         (e) => e.id === job?.currentExtractionId,
@@ -160,13 +176,18 @@ async function main(): Promise<void> {
 
   const report = summarize(scores);
   // A case that did not process proves nothing, so it fails the run.
-  const pass = report.pass && failed.length === 0;
+  const pass = report.pass && failed.length === 0 && stopped.length === 0;
   print({ ...report, pass }, failed);
   if (failed.length)
     console.log(`\nfailed cases:\n${failed.map((f) => `  ${f}`).join('\n')}`);
+  const limit = limitStop as PauseState | null;
+  if (limit)
+    console.log(
+      `\nSTOPPED ON A LIMIT (${limit.reason}, until ${limit.until.toISOString()}): ${limit.detail}\n${stopped.length} cases not run; the scores above cover only the ${scores.length + failed.length} that ran. Re-run after the reset.`,
+    );
   writeFileSync(
     join(GOLDEN_CASES_DIR, '..', reportFileName(config.extractionModel)),
-    `${JSON.stringify({ ...report, pass, failed, config }, null, 2)}\n`,
+    `${JSON.stringify({ ...report, pass, failed, stoppedOnLimit: limit, notRun: stopped, config }, null, 2)}\n`,
   );
   process.exit(pass ? 0 : 1);
 }

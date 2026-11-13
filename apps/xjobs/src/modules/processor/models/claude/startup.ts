@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { z } from 'zod';
 import {
+  ClaudeAuthError,
   ModelOutputError,
   ModelRequestError,
   ProviderUnavailableError,
@@ -113,10 +114,9 @@ export async function checkClaudeCall(
     const reason = error instanceof Error ? error.message : String(error);
     if (error instanceof UsageLimitError)
       return { kind: 'usage_limit', limit: error.limit };
+    if (error instanceof ClaudeAuthError) return { kind: 'auth' };
     if (error instanceof ProviderUnavailableError)
-      return reason === 'claude authentication failed'
-        ? { kind: 'auth' }
-        : { kind: 'request', reason };
+      return { kind: 'request', reason };
     if (error instanceof TransientModelError)
       return { kind: 'transient', reason };
     if (error instanceof ModelOutputError) return { kind: 'output', reason };

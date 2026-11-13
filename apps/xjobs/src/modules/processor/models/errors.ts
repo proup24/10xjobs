@@ -38,6 +38,14 @@ export class ProviderUnavailableError extends Error {
   }
 }
 
+/** Claude refused the credential (expired or revoked token, bad key). */
+export class ClaudeAuthError extends ProviderUnavailableError {
+  constructor(meta?: Partial<ModelCallMeta>) {
+    super('claude authentication failed', meta);
+    this.name = 'ClaudeAuthError';
+  }
+}
+
 /** Any other 4xx: the request itself is wrong. Not retried. */
 export class ModelRequestError extends Error {
   constructor(

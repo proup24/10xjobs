@@ -44,8 +44,12 @@ vi.mock('bullmq', async (importOriginal) => {
 });
 
 const checks = vi.hoisted(() => ({
-  checkClaudeInstalled: vi.fn(async (_bin?: string) => undefined),
-  checkClaudeCall: vi.fn(async (_model: unknown): Promise<unknown> => null),
+  checkClaudeInstalled: vi.fn<(bin?: string) => Promise<void>>(
+    async () => undefined,
+  ),
+  checkClaudeCall: vi.fn<(model: unknown) => Promise<unknown>>(
+    async () => null,
+  ),
 }));
 vi.mock(
   'src/modules/processor/models/claude/startup',
@@ -154,6 +158,61 @@ it('starts paused when the startup call fails, then rechecks every 10 minutes', 
     await module.get(WorkerService).beforeApplicationShutdown();
     await module.close();
     vi.useRealTimers();
+  }
+});
+
+it('stays paused while a recheck call is still running', async () => {
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
+  vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+  let finish!: (failure: unknown) => void;
+  checks.checkClaudeCall.mockResolvedValueOnce({ kind: 'auth' });
+  checks.checkClaudeCall.mockImplementationOnce(
+    () => new Promise((done) => (finish = done)),
+  );
+  const module = await build();
+  try {
+    await module.get(WorkerService).onModuleInit();
+    const guard = module.get(ProcessorGuard);
+    await vi.advanceTimersByTimeAsync(10 * 60_000);
+    expect(checks.checkClaudeCall).toHaveBeenCalledTimes(2);
+    // The call may take up to the call timeout; the pause outlasts it.
+    await vi.advanceTimersByTimeAsync(170_000);
+    expect(guard.pauseState()).toMatchObject({
+      reason: 'startup',
+      detail: expect.stringContaining('claude setup-token'),
+    });
+    finish(null);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(guard.isPaused()).toBe(false);
+  } finally {
+    await module.get(WorkerService).beforeApplicationShutdown();
+    await module.close();
+    vi.useRealTimers();
+  }
+});
+
+it('waits for the startup call before starting the processor worker', async () => {
+  let finish!: (failure: unknown) => void;
+  checks.checkClaudeCall.mockImplementationOnce(
+    () => new Promise((done) => (finish = done)),
+  );
+  const module = await build();
+  try {
+    const init = module.get(WorkerService).onModuleInit();
+    await vi.waitFor(() =>
+      expect(checks.checkClaudeCall).toHaveBeenCalledTimes(1),
+    );
+    expect(module.get(ProcessorGuard).pauseState()).toMatchObject({
+      reason: 'startup',
+    });
+    expect(created.workers).toEqual([]);
+    finish(null);
+    await init;
+    expect(created.workers).toEqual(['process']);
+    expect(module.get(ProcessorGuard).isPaused()).toBe(false);
+  } finally {
+    await module.get(WorkerService).beforeApplicationShutdown();
+    await module.close();
   }
 });
 

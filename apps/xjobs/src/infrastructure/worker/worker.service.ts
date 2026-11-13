@@ -51,8 +51,10 @@ export class WorkerService implements OnModuleInit, BeforeApplicationShutdown {
 
   async onModuleInit(): Promise<void> {
     // Before anything else starts, so a missing or wrong `claude` leaves
-    // nothing running. A failed credential check only pauses the processor.
-    if (this.runsProcessor()) await this.processor.checkStartup();
+    // nothing running. A failed credential check only pauses the processor;
+    // under `all` the other workers do not wait for it.
+    if (this.runsProcessor())
+      await this.processor.checkStartup({ wait: this.role === 'processor' });
     else if (this.role === 'all')
       this.logger.warn(`processor not started: ${NO_CLAUDE_CREDENTIAL}`);
 

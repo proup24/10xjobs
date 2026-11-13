@@ -24,7 +24,10 @@ import {
   hasClaudeCredential,
   NO_CLAUDE_CREDENTIAL,
 } from 'src/modules/processor/models/claude/startup';
+import { UsageLimitError } from 'src/modules/processor/models/errors';
 import type { PostingInput } from 'src/modules/processor/models/types';
+import { ProcessorGuard } from 'src/modules/processor/services/processor-guard.service';
+import { MemoryProcessorRepository } from 'src/modules/processor/testing/fakes';
 import { SEED } from 'src/modules/processor/vocab/seed-data';
 
 const KEYS: LabelKey[] = [
@@ -60,25 +63,51 @@ async function main(): Promise<void> {
   const env = processorEnvironmentSchema.parse(process.env);
   if (!hasClaudeCredential(env)) throw new Error(NO_CLAUDE_CREDENTIAL);
   const model = env.PROCESSOR_EXTRACTION_MODEL;
+  // The worker's guard rules: stop at the weekly reserve or a usage limit.
+  const guard = new ProcessorGuard(new MemoryProcessorRepository(), {
+    extractionModel: model,
+    concurrency: 1,
+    maxAttempts: 1,
+    claimTimeoutMs: env.PROCESSOR_CLAIM_TIMEOUT_MS,
+    dailyBudgetUsd: 0,
+    weeklyStopAt: env.PROCESSOR_WEEKLY_STOP_AT,
+    generationTries: 1,
+  });
   const extraction = createClaudeExtractionModel({
     model,
     effort: env.PROCESSOR_EFFORT,
     timeoutMs: env.PROCESSOR_CALL_TIMEOUT_MS,
     bin: claudeBin(process.env),
+    onLimits: (limits) => guard.observeLimits(limits),
   });
   const todo = loadGolden().filter((c) => KEYS.some((k) => !c.drafted[k]));
   console.log(`drafting ${todo.length} cases with ${model}`);
   let cost = 0;
   for (const c of todo) {
+    const pause = guard.pauseState();
+    if (pause) {
+      console.log(
+        `STOPPED ON A LIMIT (${pause.reason}, until ${pause.until.toISOString()}): ${pause.detail}. Drafted cases are saved; re-run after the reset.`,
+      );
+      break;
+    }
     const input: PostingInput = {
       jobId: c.id,
       ...c.input,
       truncated: false,
     };
-    const { output, meta } = await extraction.generate(input, {
-      systemPrompt: SYSTEM_PROMPT,
-      schema: SCHEMA,
-    });
+    let result: Awaited<ReturnType<typeof extraction.generate>>;
+    try {
+      result = await extraction.generate(input, {
+        systemPrompt: SYSTEM_PROMPT,
+        schema: SCHEMA,
+      });
+    } catch (error) {
+      if (!(error instanceof UsageLimitError)) throw error;
+      guard.pauseForUsageLimit(error.limit?.resetsAt ?? null, error.message);
+      continue;
+    }
+    const { output, meta } = result;
     cost += meta.costUsd;
     const answer = output as Record<LabelKey, unknown>;
     for (const key of KEYS)
