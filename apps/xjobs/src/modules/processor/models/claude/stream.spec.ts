@@ -193,6 +193,48 @@ describe('parseStream and classify', () => {
     expect(classify(parseStream(stdout), ok)?.kind).toBe('transient');
   });
 
+  it('a status-less api_error (connection error) is transient', () => {
+    const stdout = fixture('auth-failure')
+      .split('\n')
+      .filter(Boolean)
+      .map((l) => {
+        const o = JSON.parse(l);
+        delete o.error;
+        delete o.error_status;
+        delete o.api_error_status;
+        if (o.type === 'result') o.result = 'Connection error.';
+        return JSON.stringify(o);
+      })
+      .join('\n');
+    const parsed = parseStream(stdout);
+    expect(parsed.authSignal).toBe(false);
+    expect(parsed.result!.apiErrorStatus).toBeNull();
+    expect(parsed.result!.terminalReason).toBe('api_error');
+    expect(classify(parsed, { code: 1, timedOut: false })).toEqual({
+      kind: 'transient',
+      reason: 'Connection error.',
+    });
+  });
+
+  it('an unknown is_error result with no status is transient', () => {
+    const stdout = edit('auth-failure', 'result', (o) => {
+      delete o.api_error_status;
+      delete o.terminal_reason;
+      o.result = 'Request timed out.';
+    })
+      .split('\n')
+      .filter((l) => JSON.parse(l).type === 'result')
+      .join('\n');
+    expect(classify(parseStream(stdout), ok)?.kind).toBe('transient');
+  });
+
+  it('max_turns is an output failure even without errors text', () => {
+    const stdout = edit('no-structured-output', 'result', (o) => {
+      delete o.errors;
+    });
+    expect(classify(parseStream(stdout), ok)?.kind).toBe('output');
+  });
+
   it('529 is transient', () => {
     const stdout = edit('auth-failure', 'result', (o) => {
       o.api_error_status = 529;
