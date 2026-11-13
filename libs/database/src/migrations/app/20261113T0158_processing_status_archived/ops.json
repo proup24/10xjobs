@@ -1,0 +1,99 @@
+[
+  {
+    "id": "dropCheckConstraint.normalized_jobs.normalized_jobs_processing_status_eba7bd28",
+    "label": "Drop check constraint \"normalized_jobs_processing_status_eba7bd28\" on \"normalized_jobs\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "normalized_jobs_processing_status_eba7bd28",
+        "table": "normalized_jobs"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"normalized_jobs_processing_status_eba7bd28\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "normalized_jobs_processing_status_eba7bd28",
+          "public",
+          "\"public\".\"normalized_jobs\""
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "constraint \"normalized_jobs_processing_status_eba7bd28\" on \"normalized_jobs\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"normalized_jobs_processing_status_eba7bd28\"",
+        "sql": "ALTER TABLE \"public\".\"normalized_jobs\" DROP CONSTRAINT \"normalized_jobs_processing_status_eba7bd28\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"normalized_jobs_processing_status_eba7bd28\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "normalized_jobs_processing_status_eba7bd28",
+          "public",
+          "\"public\".\"normalized_jobs\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"normalized_jobs_processing_status_eba7bd28\" on \"normalized_jobs\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.normalized_jobs.normalized_jobs_processing_status_89abdf7d",
+    "label": "Add check constraint \"normalized_jobs_processing_status_89abdf7d\" on \"normalized_jobs\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "normalized_jobs_processing_status_89abdf7d",
+        "table": "normalized_jobs"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"normalized_jobs_processing_status_89abdf7d\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "normalized_jobs_processing_status_89abdf7d",
+          "public",
+          "\"public\".\"normalized_jobs\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"normalized_jobs_processing_status_89abdf7d\" on \"normalized_jobs\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"normalized_jobs_processing_status_89abdf7d\"",
+        "sql": "ALTER TABLE \"public\".\"normalized_jobs\" ADD CONSTRAINT \"normalized_jobs_processing_status_89abdf7d\" CHECK (\"processingStatus\" IS NULL OR \"processingStatus\" IN ('pending', 'processing', 'processed', 'failed', 'archived'))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify check constraint \"normalized_jobs_processing_status_89abdf7d\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4)) AS \"result\"",
+        "params": [
+          "normalized_jobs_processing_status_89abdf7d",
+          "public",
+          "\"public\".\"normalized_jobs\"",
+          "c"
+        ]
+      }
+    ]
+  }
+]

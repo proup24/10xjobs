@@ -631,7 +631,7 @@ model NormalizedJob {
   @@check(expression: sql`kind IN ('job', 'post')`, name: "normalized_jobs_kind")
   @@check(expression: sql`status IN ('active', 'merged')`, name: "normalized_jobs_status")
   @@check(expression: sql`(status = 'merged') = ("mergedIntoId" IS NOT NULL)`, name: "normalized_jobs_merged_into")
-  @@check(expression: sql`"processingStatus" IS NULL OR "processingStatus" IN ('pending', 'processing', 'processed', 'failed')`, name: "normalized_jobs_processing_status")
+  @@check(expression: sql`"processingStatus" IS NULL OR "processingStatus" IN ('pending', 'processing', 'processed', 'failed', 'archived')`, name: "normalized_jobs_processing_status")
   @@check(expression: sql`"processingReason" IS NULL OR "processingReason" IN ('new', 'reopened')`, name: "normalized_jobs_processing_reason")
   @@check(expression: sql`"processingAttempts" >= 0`, name: "normalized_jobs_processing_attempts")
   @@check(expression: sql`"firstSeenAt" <= "lastSeenAt"`, name: "normalized_jobs_seen_order")

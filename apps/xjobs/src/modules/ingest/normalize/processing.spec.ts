@@ -16,6 +16,35 @@ describe('nextProcessing', () => {
     expect(normalizeConfig.reopenAfterMs).toBe(21 * day);
   });
 
+  it('sends an archived job to pending on any new observation', () => {
+    expect(
+      nextProcessing({
+        created: false,
+        previousLastSeenAt: new Date(seen.getTime() - 60_000),
+        observedAt: seen,
+        current: { status: 'archived', reason: 'new', requestedAt: seen },
+        rebuild: false,
+      }),
+    ).toEqual({ status: 'pending', reason: 'reopened', requestedAt: seen });
+  });
+
+  it('leaves an archived job archived on a rebuild', () => {
+    const archived: ProcessingState = {
+      status: 'archived',
+      reason: 'new',
+      requestedAt: seen,
+    };
+    expect(
+      nextProcessing({
+        created: false,
+        previousLastSeenAt: new Date(seen.getTime() - 60_000),
+        observedAt: seen,
+        current: archived,
+        rebuild: true,
+      }),
+    ).toBe(archived);
+  });
+
   it('sends a new job to Process', () => {
     expect(
       nextProcessing({

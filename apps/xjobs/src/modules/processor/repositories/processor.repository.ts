@@ -60,6 +60,12 @@ export type FinishOutcome =
   | { status: 'pending'; error: string; refundAttempt?: boolean }
   | { status: 'failed'; error: string };
 
+/** What `markPending` did: jobs sent back, and archived jobs a selector matched but left alone. */
+export interface MarkPendingResult {
+  marked: number;
+  skippedArchived: number;
+}
+
 /** Which in-scope jobs `markPending` sends back to the processor; selectors add up. */
 export type ReprocessFilter = {
   allInScope?: boolean;
@@ -112,7 +118,7 @@ export function readStoredData(
 
 /** In-scope jobs per processing status; `unset` is a null status (never sent to the processor). */
 export type ProcessingCounts = Record<
-  'pending' | 'processing' | 'processed' | 'failed' | 'unset',
+  'pending' | 'processing' | 'processed' | 'failed' | 'archived' | 'unset',
   number
 >;
 
@@ -148,7 +154,7 @@ export abstract class ProcessorRepository {
   /** Spend of non-eval attempts since `since`, in USD. */
   abstract spendSince(since: Date): Promise<number>;
   /** Sets the matching in-scope jobs to `pending`; returns how many. */
-  abstract markPending(filter: ReprocessFilter): Promise<number>;
+  abstract markPending(filter: ReprocessFilter): Promise<MarkPendingResult>;
   abstract jobState(jobId: string): Promise<JobState | null>;
   abstract processingCounts(): Promise<ProcessingCounts>;
 }
@@ -423,6 +429,7 @@ export class PrismaProcessorRepository extends ProcessorRepository {
       processing: 0,
       processed: 0,
       failed: 0,
+      archived: 0,
       unset: 0,
     };
     for (const row of rows)
@@ -434,7 +441,7 @@ export class PrismaProcessorRepository extends ProcessorRepository {
    * One transaction; each selector is its own UPDATE, and a job two selectors
    * match is counted once.
    */
-  async markPending(filter: ReprocessFilter): Promise<number> {
+  async markPending(filter: ReprocessFilter): Promise<MarkPendingResult> {
     return inRetriedTransaction(this.database, async (tx) => {
       const touched = new Set<string>();
       const run = async (plan: Parameters<typeof tx.query>[0]) => {
@@ -443,11 +450,34 @@ export class PrismaProcessorRepository extends ProcessorRepository {
       };
       const { raw } = tx;
       const ids = () => linkedInJobIds(raw);
+      // Archived jobs are never touched; count the ones a selector would have matched.
+      let skippedArchived = 0;
+      const countArchived = async (plan: Parameters<typeof tx.query>[0]) => {
+        skippedArchived += (await tx.query(plan)).length;
+      };
+      if (filter.allInScope)
+        await countArchived(
+          raw.sql`SELECT id FROM normalized_jobs
+            WHERE status = 'active' AND kind = 'job' AND id IN (${ids()})
+              AND "processingStatus" = 'archived'`
+            .returnsRow({ id: UUID })
+            .build(),
+        );
+      else
+        for (const jobId of new Set(filter.jobIds ?? []))
+          await countArchived(
+            raw.sql`SELECT id FROM normalized_jobs
+              WHERE status = 'active' AND kind = 'job' AND id IN (${ids()})
+                AND "processingStatus" = 'archived' AND id = ${jobId}::uuid`
+              .returnsRow({ id: UUID })
+              .build(),
+          );
       // Every statement: in scope (active `job` with a LinkedIn source), then the selector.
       if (filter.allInScope)
         await run(
           raw.sql`UPDATE normalized_jobs SET ${pendingColumns(raw)}
             WHERE status = 'active' AND kind = 'job' AND id IN (${ids()})
+              AND "processingStatus" IS DISTINCT FROM 'archived'
             RETURNING id`
             .returnsRow({ id: UUID })
             .build(),
@@ -457,6 +487,7 @@ export class PrismaProcessorRepository extends ProcessorRepository {
           raw.sql`UPDATE normalized_jobs SET ${pendingColumns(raw)}
             WHERE status = 'active' AND kind = 'job' AND id IN (${ids()})
               AND "processingStatus" IS NULL
+              AND "processingStatus" IS DISTINCT FROM 'archived'
             RETURNING id`
             .returnsRow({ id: UUID })
             .build(),
@@ -466,6 +497,7 @@ export class PrismaProcessorRepository extends ProcessorRepository {
           raw.sql`UPDATE normalized_jobs SET ${pendingColumns(raw)}
             WHERE status = 'active' AND kind = 'job' AND id IN (${ids()})
               AND "processingStatus" = 'failed'
+              AND "processingStatus" IS DISTINCT FROM 'archived'
             RETURNING id`
             .returnsRow({ id: UUID })
             .build(),
@@ -475,11 +507,12 @@ export class PrismaProcessorRepository extends ProcessorRepository {
           raw.sql`UPDATE normalized_jobs SET ${pendingColumns(raw)}
             WHERE status = 'active' AND kind = 'job' AND id IN (${ids()})
               AND id = ${jobId}::uuid
+              AND "processingStatus" IS DISTINCT FROM 'archived'
             RETURNING id`
             .returnsRow({ id: UUID })
             .build(),
         );
-      return touched.size;
+      return { marked: touched.size, skippedArchived };
     });
   }
 }

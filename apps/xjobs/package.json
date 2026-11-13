@@ -9,6 +9,7 @@
     "db:renormalize": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/renormalize-jobs.ts",
     "db:rematch": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/rematch-jobs.ts",
     "db:reprocess": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/reprocess-jobs.ts",
+    "db:archive-actor": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/archive-actor-jobs.ts",
     "db:places": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/places-recheck.ts",
     "db:match-shares": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/match-shares.ts",
     "db:vocab": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/vocab.ts",
