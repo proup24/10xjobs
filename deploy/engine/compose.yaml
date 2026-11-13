@@ -26,9 +26,9 @@ services:
     stop_grace_period: 60s
     env_file: .env
     environment: *engine-env
-    # The hosted API has no operator endpoints, so it never needs the OpenRouter
-    # key. `.env` is shared with the worker, so drop the key before node starts.
-    command: ["sh", "-c", "unset OPENROUTER_API_KEY; exec node main.js"]
+    # The hosted API never runs the processor, so it needs no Claude credential.
+    # `.env` is shared with the worker, so drop both before node starts.
+    command: ["sh", "-c", "unset CLAUDE_CODE_OAUTH_TOKEN ANTHROPIC_API_KEY; exec node main.js"]
     expose: ["3000"]
     # Every route needs the key, health included. `$$` stops Compose
     # interpolating it; the container's own shell expands it from env_file.
@@ -47,6 +47,8 @@ services:
     # Room for a collection segment to finish its Apify run (up to 5 min) and store it.
     stop_grace_period: 7m
     command: ["node", "worker.js"]
+    # Each claude call makes its own empty cwd and HOME under /tmp.
+    tmpfs: [/tmp]
     env_file: .env
     environment:
       <<: *engine-env

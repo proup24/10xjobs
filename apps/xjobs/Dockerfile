@@ -20,4 +20,10 @@ COPY dist .
 
 RUN npm --omit=dev -f install
 
+# Claude Code runs the processor (`claude -p`). The version must equal
+# CLAUDE_CODE_VERSION in src/modules/processor/models/claude/version.ts
+# (a spec checks this line). Upgrading is a deliberate bump of both.
+RUN npm install -g @anthropic-ai/claude-code@2.1.314
+ENV DISABLE_AUTOUPDATER=1
+
 CMD [ "node", "main.js" ]
