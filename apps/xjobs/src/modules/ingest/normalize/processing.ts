@@ -17,8 +17,9 @@ export interface ProcessingState {
 /**
  * Whether this observation sends the job to Process: when it creates the job,
  * or when the job had gone unseen for `reopenAfterMs`. Uses observation time,
- * so replaying an old batch never reopens anything. Ingest only ever sets
- * `pending`; the other statuses belong to Process.
+ * so replaying an old batch never reopens anything. An `archived` job goes
+ * back to `pending` on any new observation (never on a rebuild). Ingest only
+ * ever sets `pending`; the other statuses belong to Process.
  */
 export function nextProcessing(input: {
   created: boolean;
@@ -30,6 +31,12 @@ export function nextProcessing(input: {
   if (input.rebuild) return input.current;
   if (input.created)
     return { status: 'pending', reason: 'new', requestedAt: input.observedAt };
+  if (input.current.status === 'archived')
+    return {
+      status: 'pending',
+      reason: 'reopened',
+      requestedAt: input.observedAt,
+    };
   if (
     input.previousLastSeenAt &&
     input.observedAt.getTime() - input.previousLastSeenAt.getTime() >=
