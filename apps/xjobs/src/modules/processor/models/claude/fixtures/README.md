@@ -18,7 +18,7 @@ Re-record these whenever `CLAUDE_CODE_VERSION` changes.
 | `usage-limit.jsonl`                               | // synthesized | a 5-hour usage-limit refusal                                                                                                                                |
 | `weekly-85.jsonl`                                 | // synthesized | `success.jsonl` with the weekly window at 86% (`allowed_warning`)                                                                                           |
 
-Scrubbing: the recordings contain no token, email, account UUID or org UUID, so nothing was replaced. a search for the token prefix over the fixtures finds nothing. What remains are per-call random ids (`session_id`, `uuid`, `request_id`, `msg_…`, `toolu_…`) and temp paths.
+Scrubbing: the recordings contain no token, email, account UUID or org UUID, so nothing was replaced. A search for the token prefix over the fixtures finds nothing. What remains are per-call random ids (`session_id`, `uuid`, `request_id`, `msg_…`, `toolu_…`) and temp paths.
 
 ## Final argv
 
@@ -51,19 +51,21 @@ Final line, `type: "result"`. Fields the adapter needs:
 | --------------------------------------------- | -------------------------------------------------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------- |
 | `subtype`                                     | `"success"`                                                                                  | `"error_max_turns"`                       | `"success"` (sic)                                                         |
 | `is_error`                                    | `false`                                                                                      | `true`                                    | `true`                                                                    |
-| `api_error_status`                            | `null`                                                                                       | `null`                                    | `401`                                                                     |
-| `structured_output`                           | the object                                                                                   | `null`                                    | absent                                                                    |
-| `result`                                      | the object as a JSON string                                                                  | `null`                                    | `"Failed to authenticate. API Error: 401 OAuth access token is invalid."` |
+| `api_error_status`                            | `null`                                                                                       | absent                                    | `401`                                                                     |
+| `structured_output`                           | the object                                                                                   | absent                                    | absent                                                                    |
+| `result`                                      | the object as a JSON string                                                                  | absent                                    | `"Failed to authenticate. API Error: 401 OAuth access token is invalid."` |
 | `terminal_reason`                             | `"completed"`                                                                                | `"max_turns"`                             | `"api_error"`                                                             |
-| `errors`                                      | `null`                                                                                       | `["Reached maximum number of turns (1)"]` | absent                                                                    |
+| `errors`                                      | absent                                                                                       | `["Reached maximum number of turns (1)"]` | absent                                                                    |
 | `usage`                                       | `input_tokens`, `output_tokens`, `cache_read_input_tokens`, `cache_creation_input_tokens`, … | same                                      | zeros                                                                     |
 | `total_cost_usd`                              | e.g. `0.0047`                                                                                | set                                       | `0`                                                                       |
 | `session_id`                                  | UUID                                                                                         | UUID                                      | UUID                                                                      |
 | `num_turns`, `duration_ms`, `duration_api_ms` | set                                                                                          | set                                       | set                                                                       |
 
+"Absent" means the key is missing from the line, not `null`. Parsers must use nullish checks (`== null` / `??`), never `=== null` or `in`.
+
 Do not trust `subtype` alone: the auth failure is `subtype: "success"` with `is_error: true`. Branch on `is_error` first.
 
-**Model id.** The result has no top-level model field. It is the key of `modelUsage` (`{"claude-sonnet-5-5": {…, "canonicalModel": "claude-sonnet-5-5", "costUSD": …}}`), and each assistant message's `message.model`. On an API error that is `"<synthetic>"`, so read `modelUsage`. The `init` line also has `model`.
+**Model id.** The result has no top-level model field. On a call that reached the model, it is the key of `modelUsage` (`{"claude-sonnet-5-5": {…, "canonicalModel": "claude-sonnet-5-5", "costUSD": …}}`) and each assistant message's `message.model`. On an `is_error` result from an API error, `modelUsage` is `{}` and `message.model` is `"<synthetic>"` (`auth-failure.jsonl`, `usage-limit.jsonl`), so take the model from the `init` line's `model`, or the configured model when there is no `init` line.
 
 **Auth failure, extra signals.** Before the result, `system/api_retry` lines carry `error_status: 401, error: "authentication_failed"`. The synthetic assistant message carries wrapper fields `error: "authentication_failed"`, `is_api_error_message: true`, `api_error_status: 401`, `api_error_origin: "first_party"`. The process exits 1.
 
@@ -107,7 +109,7 @@ The text is `You've hit your <limit name> · resets <time>`.
 
 ## Synthesized fixtures
 
-**`usage-limit.jsonl` // synthesized.** Built from `auth-failure.jsonl` with its `api_retry` lines removed. The assistant wrapper gets `error: "rate_limit"`, `api_error_status: 429`, `api_error: "usage_limit_reached"` and `api_error_params.rate_limit_info` (five-hour, `rejected`, `resetsAt` 1794553200). Text and `result` become `You've hit your 5-hour limit · resets 4am (UTC)`, and the result's `api_error_status` becomes 429.
+**`usage-limit.jsonl` // synthesized.** Built from `auth-failure.jsonl` with its `api_retry` lines removed. The assistant wrapper gets `error: "rate_limit"`, `api_error_status: 429`, `api_error: "usage_limit_reached"` and `api_error_params.rate_limit_info` (five-hour, `rejected`, `resetsAt` 1794553200). Text and `result` become `You've hit your 5-hour limit · resets 7am (UTC)` (1794553200 is 07:00 UTC), and the result's `api_error_status` becomes 429.
 
 It also has a `rate_limit_event` with `status: "rejected"` and `five_hour` at 1.0. 2.1.314 may not emit one on a refused request; that is unverified. A parser should take the reset from `api_error_params.rate_limit_info` first and fall back to the event. The `api_error`, `api_error_params` and `error: "rate_limit"` field names come from the 2.1.314 schema and the code that builds the message, not from a live refusal, because a real limit cannot be triggered on demand.
 
