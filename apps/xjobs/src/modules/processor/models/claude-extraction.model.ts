@@ -1,5 +1,5 @@
 import { zodErrors } from '../schema/errors';
-import type { ClaudeRunner } from './claude/runner';
+import { ClaudeRunner } from './claude/runner';
 import {
   classify,
   type ClaudeResult,
@@ -101,4 +101,23 @@ export class ClaudeExtractionModel extends ExtractionModel {
       latencyMs,
     };
   }
+}
+
+/**
+ * The generator as the worker, the operator endpoints and the processor
+ * scripts all build it: one `claude -p` turn per call (`--max-turns 1`).
+ */
+export function createClaudeExtractionModel(opts: {
+  model: string;
+  effort: string;
+  timeoutMs: number;
+  bin?: string;
+  onLimits?: (obs: LimitObservation[]) => void;
+}): ClaudeExtractionModel {
+  return new ClaudeExtractionModel(
+    new ClaudeRunner({ bin: opts.bin, maxTurns: 1 }),
+    opts.model,
+    { effort: opts.effort, timeoutMs: opts.timeoutMs },
+    opts.onLimits ?? (() => undefined),
+  );
 }

@@ -260,41 +260,91 @@ describe('worker process configuration', () => {
     ).toThrow(/APIFY_TOKEN/);
   });
 
-  it('refuses the processor role without an OpenRouter key', () => {
-    expect(() =>
-      validateWorkerProcessEnvironment({ ...worker, WORKER_ROLE: 'processor' }),
-    ).toThrow(/OPENROUTER_API_KEY/);
+  it.each([{}, { CLAUDE_CODE_OAUTH_TOKEN: '', ANTHROPIC_API_KEY: '' }])(
+    'refuses the processor role without a Claude credential (%j)',
+    (credentials) => {
+      expect(() =>
+        validateWorkerProcessEnvironment({
+          ...worker,
+          ...credentials,
+          WORKER_ROLE: 'processor',
+        }),
+      ).toThrow(
+        'processor not started: no Claude credential (CLAUDE_CODE_OAUTH_TOKEN or ANTHROPIC_API_KEY)',
+      );
+    },
+  );
+
+  it.each([{ CLAUDE_CODE_OAUTH_TOKEN: 'oauth' }, { ANTHROPIC_API_KEY: 'key' }])(
+    'accepts the processor role with %j',
+    (credentials) => {
+      expect(() =>
+        validateWorkerProcessEnvironment({
+          ...worker,
+          ...credentials,
+          WORKER_ROLE: 'processor',
+        }),
+      ).not.toThrow();
+    },
+  );
+
+  it('does not require a Claude credential in the all role: the processor then stays off', () => {
+    const all = {
+      ...worker,
+      WORKER_ROLE: 'all',
+      APIFY_TOKEN: 'apify-token',
+      CLAUDE_CODE_OAUTH_TOKEN: '',
+    };
+    expect(validateWorkerProcessEnvironment(all)).toMatchObject({
+      CLAUDE_CODE_OAUTH_TOKEN: '',
+    });
   });
 
-  it('does not require the OpenRouter key in the all role: the processor then stays off', () => {
-    const all = { ...worker, WORKER_ROLE: 'all', APIFY_TOKEN: 'apify-token' };
-    expect(validateWorkerProcessEnvironment(all).OPENROUTER_API_KEY).toBe(
-      undefined,
-    );
-  });
-
-  it('parses the processor defaults when the key is set', () => {
+  it('parses the processor defaults when a credential is set', () => {
     expect(
       validateWorkerProcessEnvironment({
         ...worker,
         WORKER_ROLE: 'processor',
-        OPENROUTER_API_KEY: 'or-key',
+        CLAUDE_CODE_OAUTH_TOKEN: 'oauth',
       }),
     ).toMatchObject({
-      PROCESSOR_EXTRACTION_MODEL: 'deepseek/deepseek-v4.1-flash-1017',
+      PROCESSOR_EXTRACTION_MODEL: 'claude-sonnet-5-5',
+      PROCESSOR_EFFORT: 'low',
+      PROCESSOR_CALL_TIMEOUT_MS: 180_000,
+      PROCESSOR_WEEKLY_STOP_AT: 0.85,
       PROCESSOR_CONCURRENCY: 4,
       PROCESSOR_MAX_ATTEMPTS: 3,
       PROCESSOR_CLAIM_TIMEOUT_MS: 900_000,
-      PROCESSOR_DAILY_BUDGET_USD: 20,
+      PROCESSOR_DAILY_BUDGET_USD: 0,
       PROCESSOR_GENERATION_TRIES: 3,
     });
+  });
+
+  it('takes a daily budget of 0 (no cap) and refuses a negative one', () => {
+    const processor = {
+      ...worker,
+      WORKER_ROLE: 'processor',
+      CLAUDE_CODE_OAUTH_TOKEN: 'oauth',
+    };
+    expect(
+      validateWorkerProcessEnvironment({
+        ...processor,
+        PROCESSOR_DAILY_BUDGET_USD: '0',
+      }),
+    ).toMatchObject({ PROCESSOR_DAILY_BUDGET_USD: 0 });
+    expect(() =>
+      validateWorkerProcessEnvironment({
+        ...processor,
+        PROCESSOR_DAILY_BUDGET_USD: '-1',
+      }),
+    ).toThrow(/PROCESSOR_DAILY_BUDGET_USD/);
   });
 
   it('needs at least one generation try and caps them at 5', () => {
     const processor = {
       ...worker,
       WORKER_ROLE: 'processor',
-      OPENROUTER_API_KEY: 'or-key',
+      CLAUDE_CODE_OAUTH_TOKEN: 'oauth',
     };
     expect(
       validateWorkerProcessEnvironment({

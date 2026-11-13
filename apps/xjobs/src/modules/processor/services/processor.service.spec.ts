@@ -572,17 +572,15 @@ describe('ProcessorService', () => {
     });
     addJob();
     extraction = new FakeExtractionModel(() => {
-      throw new ModelRequestError(
-        'chat completions (x): OpenRouter returned 422: bad schema',
-      );
+      throw new ModelRequestError('API 400: bad schema');
     }, EXT);
     await expect(service().process('job-1')).resolves.toBe('failed');
     expect(warnings).toEqual([
       expect.stringMatching(
-        /^\[job job-1\] generation failed after .*OpenRouter returned 422: bad schema$/,
+        /^\[job job-1\] generation failed after .*API 400: bad schema$/,
       ),
       expect.stringMatching(
-        /^\[job job-1\] failed for good after .*OpenRouter returned 422: bad schema$/,
+        /^\[job job-1\] failed for good after .*API 400: bad schema$/,
       ),
     ]);
   });
@@ -629,7 +627,7 @@ describe('ProcessorService', () => {
     it('pauses and still records the call when the provider refuses the key', async () => {
       vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
       extraction = new FakeExtractionModel(() => {
-        throw new ProviderUnavailableError('OpenRouter returned 401');
+        throw new ProviderUnavailableError('claude authentication failed');
       }, EXT);
       const svc = service();
       await expect(svc.preview(posting)).rejects.toBeInstanceOf(

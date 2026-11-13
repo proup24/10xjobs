@@ -8,6 +8,10 @@ import { ConfigService } from '@nestjs/config';
 import type { Redis } from 'ioredis';
 import { Channel } from 'src/common/enums';
 import type { WorkerProcessEnvironmentVariables } from 'src/config';
+import {
+  hasClaudeCredential,
+  NO_CLAUDE_CREDENTIAL,
+} from 'src/modules/processor';
 import { CollectionWorkerService } from './collection.service';
 import { InfrastructureWorkerService } from './infrastructure.service';
 import { IngestWorkerService } from './ingest.service';
@@ -21,8 +25,8 @@ export class WorkerService implements OnModuleInit, BeforeApplicationShutdown {
   private readonly logger = new Logger(WorkerService.name);
   private readonly channel?: Channel;
   private readonly role?: 'ingest' | 'processor' | 'match' | 'all';
-  /** In `all`, the processor runs whenever the OpenRouter key is set. */
-  private readonly hasProcessorKey: boolean;
+  /** In `all`, the processor runs whenever a Claude credential is set. */
+  private readonly hasCredential: boolean;
   /** False once the channel turned out to be disabled; the process should exit. */
   active = true;
 
@@ -37,18 +41,20 @@ export class WorkerService implements OnModuleInit, BeforeApplicationShutdown {
   ) {
     this.role = config.get('WORKER_ROLE', { infer: true });
     this.channel = config.get('WORKER_CHANNEL', { infer: true });
-    this.hasProcessorKey = Boolean(
-      config.get('OPENROUTER_API_KEY', { infer: true }),
-    );
+    this.hasCredential = hasClaudeCredential({
+      CLAUDE_CODE_OAUTH_TOKEN: config.get('CLAUDE_CODE_OAUTH_TOKEN', {
+        infer: true,
+      }),
+      ANTHROPIC_API_KEY: config.get('ANTHROPIC_API_KEY', { infer: true }),
+    });
   }
 
   async onModuleInit(): Promise<void> {
-    // Before anything else starts, so a failed check leaves nothing running.
+    // Before anything else starts, so a missing or wrong `claude` leaves
+    // nothing running. A failed credential check only pauses the processor.
     if (this.runsProcessor()) await this.processor.checkStartup();
     else if (this.role === 'all')
-      this.logger.warn(
-        'processor not started: OPENROUTER_API_KEY is not set, so new jobs wait in the process queue',
-      );
+      this.logger.warn(`processor not started: ${NO_CLAUDE_CREDENTIAL}`);
 
     const connection = this.runtime.connect();
 
@@ -65,19 +71,19 @@ export class WorkerService implements OnModuleInit, BeforeApplicationShutdown {
 
   private runsProcessor(): boolean {
     return (
-      this.role === 'processor' || (this.role === 'all' && this.hasProcessorKey)
+      this.role === 'processor' || (this.role === 'all' && this.hasCredential)
     );
   }
 
   /**
    * Every step in one process; a disabled channel is skipped, not fatal. The
-   * processor runs when the OpenRouter key is set (its daily budget caps spend);
-   * the matcher needs no key and always runs.
+   * processor runs when a Claude credential is set (the subscription's limits
+   * and the weekly reserve bound it); the matcher needs none and always runs.
    */
   private async startAll(connection: Redis): Promise<void> {
     this.infrastructure.start(connection);
     await this.ingest.start(connection);
-    if (this.hasProcessorKey) await this.processor.start(connection);
+    if (this.hasCredential) await this.processor.start(connection);
     await this.match.start(connection);
     for (const channel of Object.values(Channel))
       await this.collection.start(channel, connection);

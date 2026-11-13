@@ -20,6 +20,10 @@ import {
   ProviderUnavailableError,
   TransientModelError,
 } from '../models/errors';
+import {
+  hasClaudeCredential,
+  NO_CLAUDE_CREDENTIAL,
+} from '../models/claude/startup';
 import { ExtractionFailed } from '../services/extraction-pipeline.service';
 import {
   ProcessorBlockedError,
@@ -30,7 +34,7 @@ import { PreviewPostingDto } from '../dtos/preview.dto';
 /**
  * Manual entry points to the processor, for testing and inspection. Local
  * only, with `XJOBS_OPERATOR_ENDPOINTS=1`, and the engine key. Preview and run
- * call the paid models.
+ * call the model through `claude -p`.
  */
 @ApiTags('processor')
 @ApiErrorResponses(HttpStatus.UNAUTHORIZED, HttpStatus.INTERNAL_SERVER_ERROR)
@@ -61,7 +65,7 @@ export class ProcessorController {
   @HttpCode(HttpStatus.OK)
   @Post('preview')
   async preview(@Body() body: PreviewPostingDto) {
-    this.requireKey();
+    this.requireCredential();
     try {
       return await this.processor.preview({
         title: body.title,
@@ -85,7 +89,7 @@ export class ProcessorController {
   @HttpCode(HttpStatus.OK)
   @Post('jobs/:jobId/run')
   async run(@Param('jobId', ParseUUIDPipe) jobId: string) {
-    this.requireKey();
+    this.requireCredential();
     const state = await this.processor.jobState(jobId);
     if (!state) throw new NotFoundException(`No normalized job ${jobId}`);
     if (!state.inScope)
@@ -117,11 +121,20 @@ export class ProcessorController {
     return this.processor.status();
   }
 
-  /** Without a key every call would fail with 401 and pause processing. */
-  private requireKey(): void {
-    if (!this.config.get('OPENROUTER_API_KEY', { infer: true }))
+  /** Without a credential every call would fail and pause processing. */
+  private requireCredential(): void {
+    if (
+      !hasClaudeCredential({
+        CLAUDE_CODE_OAUTH_TOKEN: this.config.get('CLAUDE_CODE_OAUTH_TOKEN', {
+          infer: true,
+        }),
+        ANTHROPIC_API_KEY: this.config.get('ANTHROPIC_API_KEY', {
+          infer: true,
+        }),
+      })
+    )
       throw new ServiceUnavailableException(
-        'OPENROUTER_API_KEY is not set for this app',
+        `${NO_CLAUDE_CREDENTIAL} for this app`,
       );
   }
 }

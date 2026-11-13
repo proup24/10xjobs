@@ -3,9 +3,9 @@
  *
  *   pnpm --filter @xjobs/xjobs processor:eval -- [--generator m]
  *
- * `--generator` defaults to `PROCESSOR_EXTRACTION_MODEL`. Calls paid APIs;
- * never run in CI. Uses the real
- * OpenRouter adapters with in-memory repositories seeded from `seed-data.ts`,
+ * `--generator` defaults to `PROCESSOR_EXTRACTION_MODEL`. Calls `claude -p`
+ * (uses the Claude subscription's limits); never run in CI. Uses the same
+ * generator as the worker, with in-memory repositories seeded from `seed-data.ts`,
  * so the database is not touched. Attempts are recorded with `eval: true`.
  * Prints the report, writes `golden/last-report.<generator>.json` and exits 1
  * unless every bar holds.
@@ -28,12 +28,13 @@ import {
   scoreCase,
   summarize,
 } from 'src/modules/processor/golden/score';
-import { AiSdkExtractionModel } from 'src/modules/processor/models/extraction.model';
+import { createClaudeExtractionModel } from 'src/modules/processor/models/claude-extraction.model';
 import {
-  checkModels,
-  createOpenRouterClient,
-} from 'src/modules/processor/models/client';
-import { ModelPricing } from 'src/modules/processor/models/pricing';
+  claudeBin,
+  hasClaudeCredential,
+  NO_CLAUDE_CREDENTIAL,
+} from 'src/modules/processor/models/claude/startup';
+import { ProcessorGuard } from 'src/modules/processor/services/processor-guard.service';
 import type { NewAttempt } from 'src/modules/processor/repositories/processor.repository';
 import { extractionDocumentSchema } from 'src/modules/processor/schema';
 import { createProcessorService } from 'src/modules/processor/services/processor.service';
@@ -90,33 +91,34 @@ function print(report: EvalReport, failed: string[]): void {
 
 async function main(): Promise<void> {
   loadEnvironmentFiles();
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) throw new Error('OPENROUTER_API_KEY is not set');
   const env = processorEnvironmentSchema.parse(process.env);
+  if (!hasClaudeCredential(env)) throw new Error(NO_CLAUDE_CREDENTIAL);
   const config: ProcessorConfig = {
     extractionModel: flag('generator') ?? env.PROCESSOR_EXTRACTION_MODEL,
     concurrency: CONCURRENCY,
     maxAttempts: MAX_TRIES,
     claimTimeoutMs: env.PROCESSOR_CLAIM_TIMEOUT_MS,
-    dailyBudgetUsd: Number.MAX_SAFE_INTEGER,
-    weeklyStopAt: 1,
+    // No budget cap; the weekly reserve still stops the run.
+    dailyBudgetUsd: 0,
+    weeklyStopAt: env.PROCESSOR_WEEKLY_STOP_AT,
     generationTries: env.PROCESSOR_GENERATION_TRIES,
   };
   console.log(`generator ${config.extractionModel}`);
 
-  const client = createOpenRouterClient(apiKey);
-  // Cost per job is a bar: a response without a cost is estimated, not 0.
-  const pricing = new ModelPricing();
-  pricing.set(await checkModels(client, config));
   const repo = new EvalProcessorRepository();
+  const guard = new ProcessorGuard(repo, config);
   const service = createProcessorService({
     repo,
     vocab: new MemoryVocabRepository(),
-    extraction: new AiSdkExtractionModel(
-      apiKey,
-      config.extractionModel,
-      pricing,
-    ),
+    // The worker's generator; cost per job is the CLI's list-price figure.
+    extraction: createClaudeExtractionModel({
+      model: config.extractionModel,
+      effort: env.PROCESSOR_EFFORT,
+      timeoutMs: env.PROCESSOR_CALL_TIMEOUT_MS,
+      bin: claudeBin(process.env),
+      onLimits: (limits) => guard.observeLimits(limits),
+    }),
+    guard,
     config,
   });
 

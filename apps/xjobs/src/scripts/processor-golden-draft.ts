@@ -4,7 +4,7 @@
  *
  *   pnpm --filter @xjobs/xjobs processor:golden-draft
  *
- * Calls a paid API. For each case missing a `drafted` key it writes all four
+ * Calls `claude -p` (the Claude subscription). For each case missing a `drafted` key it writes all four
  * values with `reviewed: false`. A human then reads every one and sets
  * `reviewed: true` (or corrects the value); the eval ignores the rest.
  */
@@ -17,7 +17,13 @@ import {
   loadGolden,
 } from 'src/modules/processor/golden/golden';
 import { z } from 'zod';
-import { AiSdkExtractionModel } from 'src/modules/processor/models/extraction.model';
+import { processorEnvironmentSchema } from 'src/config/environment.validation';
+import { createClaudeExtractionModel } from 'src/modules/processor/models/claude-extraction.model';
+import {
+  claudeBin,
+  hasClaudeCredential,
+  NO_CLAUDE_CREDENTIAL,
+} from 'src/modules/processor/models/claude/startup';
 import type { PostingInput } from 'src/modules/processor/models/types';
 import { SEED } from 'src/modules/processor/vocab/seed-data';
 
@@ -51,11 +57,15 @@ const SCHEMA = z.strictObject({
 
 async function main(): Promise<void> {
   loadEnvironmentFiles();
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) throw new Error('OPENROUTER_API_KEY is not set');
-  const model =
-    process.env.PROCESSOR_EXTRACTION_MODEL ?? 'anthropic/claude-opus-5.5';
-  const extraction = new AiSdkExtractionModel(apiKey, model);
+  const env = processorEnvironmentSchema.parse(process.env);
+  if (!hasClaudeCredential(env)) throw new Error(NO_CLAUDE_CREDENTIAL);
+  const model = env.PROCESSOR_EXTRACTION_MODEL;
+  const extraction = createClaudeExtractionModel({
+    model,
+    effort: env.PROCESSOR_EFFORT,
+    timeoutMs: env.PROCESSOR_CALL_TIMEOUT_MS,
+    bin: claudeBin(process.env),
+  });
   const todo = loadGolden().filter((c) => KEYS.some((k) => !c.drafted[k]));
   console.log(`drafting ${todo.length} cases with ${model}`);
   let cost = 0;

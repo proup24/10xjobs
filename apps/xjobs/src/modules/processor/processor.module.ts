@@ -6,13 +6,8 @@ import {
   PROCESSOR_CONFIG,
   type ProcessorConfig,
 } from './config/processor.config';
-import { AiSdkExtractionModel } from './models/extraction.model';
-import {
-  createOpenRouterClient,
-  OPENROUTER_CLIENT,
-  type OpenRouterClient,
-} from './models/client';
-import { ModelPricing } from './models/pricing';
+import { createClaudeExtractionModel } from './models/claude-extraction.model';
+import { CLAUDE_BIN, claudeBin } from './models/claude/startup';
 import { ExtractionModel } from './models/types';
 import {
   PrismaProcessorRepository,
@@ -45,7 +40,6 @@ type Env = ConfigService<ProcessorEnvironmentVariables, true>;
     GenerationService,
     FactAssembler,
     ExtractionStore,
-    ModelPricing,
     { provide: ProcessorRepository, useClass: PrismaProcessorRepository },
     { provide: VocabRepository, useClass: PrismaVocabRepository },
     {
@@ -70,33 +64,37 @@ type Env = ConfigService<ProcessorEnvironmentVariables, true>;
       }),
     },
     {
-      provide: OPENROUTER_CLIENT,
-      inject: [ConfigService],
-      // The key is required only when the processor runs (startup validation).
-      useFactory: (config: Env): OpenRouterClient =>
-        createOpenRouterClient(
-          config.get('OPENROUTER_API_KEY', { infer: true }) ?? '',
-        ),
+      provide: CLAUDE_BIN,
+      // The fake binary only under NODE_ENV=test; `claude` from PATH otherwise.
+      useFactory: (): string => claudeBin(process.env),
     },
     {
       provide: ExtractionModel,
-      inject: [ConfigService, PROCESSOR_CONFIG, ModelPricing],
-      // The generator goes through the AI SDK; the startup checks stay on
-      // the OpenRouter SDK client.
-      useFactory: (env: Env, config: ProcessorConfig, pricing: ModelPricing) =>
-        new AiSdkExtractionModel(
-          env.get('OPENROUTER_API_KEY', { infer: true }) ?? '',
-          config.extractionModel,
-          pricing,
-        ),
+      inject: [ConfigService, PROCESSOR_CONFIG, CLAUDE_BIN, ProcessorGuard],
+      // The credential is required only when the processor runs (startup
+      // validation); the runner reads it from the process environment.
+      useFactory: (
+        env: Env,
+        config: ProcessorConfig,
+        bin: string,
+        guard: ProcessorGuard,
+      ) =>
+        createClaudeExtractionModel({
+          model: config.extractionModel,
+          effort: env.get('PROCESSOR_EFFORT', { infer: true }),
+          timeoutMs: env.get('PROCESSOR_CALL_TIMEOUT_MS', { infer: true }),
+          bin,
+          onLimits: (observations) => guard.observeLimits(observations),
+        }),
     },
   ],
   exports: [
-    OPENROUTER_CLIENT,
     ProcessorService,
+    ProcessorGuard,
     ProcessorRepository,
     PROCESSOR_CONFIG,
-    ModelPricing,
+    ExtractionModel,
+    CLAUDE_BIN,
   ],
 })
 export class ProcessorModule {}

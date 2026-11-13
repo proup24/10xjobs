@@ -20,4 +20,12 @@ export {
   linkedInJobIds,
   type ReprocessFilter,
 } from './repositories/processor.repository';
-export { ModelPricing, type Price } from './models/pricing';
+export { ExtractionModel } from './models/types';
+export {
+  CLAUDE_BIN,
+  checkClaudeCall,
+  checkClaudeInstalled,
+  describeFailure,
+  hasClaudeCredential,
+  NO_CLAUDE_CREDENTIAL,
+} from './models/claude/startup';

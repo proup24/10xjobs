@@ -49,7 +49,7 @@ describe('AttemptLog', () => {
     run.failed(
       'extraction_retry',
       meta.model,
-      new TransientModelError('OpenRouter call failed: terminated', {
+      new TransientModelError('claude call timed out', {
         latencyMs: 120_000,
       }),
     );
@@ -59,7 +59,7 @@ describe('AttemptLog', () => {
     );
     expect(warn).toHaveBeenNthCalledWith(
       2,
-      `[job ${JOB}] extraction_retry failed after 120.0s: OpenRouter call failed: terminated`,
+      `[job ${JOB}] extraction_retry failed after 120.0s: claude call timed out`,
     );
   });
 

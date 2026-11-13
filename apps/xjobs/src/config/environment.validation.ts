@@ -5,6 +5,10 @@ import {
   parseEnvironment,
 } from '@xjobs/database/env';
 import { Channel, EnvironmentType } from '../common/enums';
+import {
+  hasClaudeCredential,
+  NO_CLAUDE_CREDENTIAL,
+} from '../modules/processor/models/claude/startup';
 
 export {
   databaseEnvironmentSchema,
@@ -66,16 +70,24 @@ function requireStorage(
 
 /**
  * The processor's settings, read by the worker processes and by the API (its
- * testing endpoints). The key is optional here: without it, `worker-all`
- * skips the processor and the endpoints that call models refuse.
+ * testing endpoints). The credentials are optional here: without one,
+ * `worker-all` skips the processor and the endpoints that call models refuse.
+ * An empty value counts as unset.
  */
 const processorEnvironmentShape = {
-  /** The key for the processor's generator. */
-  OPENROUTER_API_KEY: z.string().min(1).optional(),
-  PROCESSOR_EXTRACTION_MODEL: z
-    .string()
-    .min(1)
-    .default('deepseek/deepseek-v4.1-flash-1017'),
+  /** The Claude subscription token from `claude setup-token`. */
+  CLAUDE_CODE_OAUTH_TOKEN: z.string().optional(),
+  /** An Anthropic API key; `claude -p` uses it instead of the token when set. */
+  ANTHROPIC_API_KEY: z.string().optional(),
+  PROCESSOR_EXTRACTION_MODEL: z.string().min(1).default('claude-sonnet-5-5'),
+  /** `claude -p --effort` for the generator. */
+  PROCESSOR_EFFORT: z.string().min(1).default('low'),
+  /** One `claude -p` call is killed after this long. */
+  PROCESSOR_CALL_TIMEOUT_MS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(180_000),
   PROCESSOR_CONCURRENCY: z.coerce.number().int().positive().default(4),
   PROCESSOR_MAX_ATTEMPTS: z.coerce.number().int().positive().default(3),
   PROCESSOR_CLAIM_TIMEOUT_MS: z.coerce
@@ -84,8 +96,9 @@ const processorEnvironmentShape = {
     .positive()
     .default(900_000),
   PROCESSOR_WEEKLY_STOP_AT: z.coerce.number().gt(0).max(1).default(0.85),
-  PROCESSOR_DAILY_BUDGET_USD: z.coerce.number().positive().default(20),
-  /** Schema tries per generation; capped, since each one is a paid call. */
+  /** 0 means no cap: the subscription's limits stop processing first. */
+  PROCESSOR_DAILY_BUDGET_USD: z.coerce.number().min(0).default(0),
+  /** Schema tries per generation; capped, since each one is a model call. */
   PROCESSOR_GENERATION_TRIES: z.coerce.number().int().min(1).max(5).default(3),
 };
 
@@ -93,11 +106,12 @@ export const processorEnvironmentSchema = z.object(processorEnvironmentShape);
 
 /**
  * A worker process. `WORKER_ROLE=ingest` runs the ingest worker,
- * `WORKER_ROLE=processor` runs the processor (needs `OPENROUTER_API_KEY`),
+ * `WORKER_ROLE=processor` runs the processor (needs `CLAUDE_CODE_OAUTH_TOKEN`
+ * or `ANTHROPIC_API_KEY`),
  * `WORKER_ROLE=match` runs the matcher, and
  * `WORKER_ROLE=all` runs the infrastructure, ingest and every channel's
  * collection worker and the matcher in one process, plus the processor whenever
- * `OPENROUTER_API_KEY` is set. Otherwise `WORKER_CHANNEL` unset runs the
+ * one of those credentials is set. Otherwise `WORKER_CHANNEL` unset runs the
  * infrastructure worker, and a channel runs that channel's collection job.
  * Collection needs an Apify token. An unknown role or
  * channel fails startup rather than falling back. Every worker needs Supabase
@@ -133,11 +147,11 @@ export const workerProcessEnvironmentSchema = databaseEnvironmentSchema
         path: ['APIFY_TOKEN'],
         message: 'Set APIFY_TOKEN to run channel collection workers',
       });
-    if (env.WORKER_ROLE === 'processor' && !env.OPENROUTER_API_KEY)
+    if (env.WORKER_ROLE === 'processor' && !hasClaudeCredential(env))
       ctx.addIssue({
         code: 'custom',
-        path: ['OPENROUTER_API_KEY'],
-        message: 'Set OPENROUTER_API_KEY to run the processor worker',
+        path: ['CLAUDE_CODE_OAUTH_TOKEN'],
+        message: `processor not started: ${NO_CLAUDE_CREDENTIAL}`,
       });
   });
 

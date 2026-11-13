@@ -1,0 +1,121 @@
+{
+  "description": "Senior Backend Engineer, remote in EMEA. Full-time employee role. We use Node.js and PostgreSQL.",
+  "output": {
+    "position": {
+      "value": {
+        "roleKind": "backend_engineer",
+        "title": "Backend Engineer"
+      },
+      "quote": "Senior Backend Engineer",
+      "confidence": "sure"
+    },
+    "isSoftwareEngineeringRole": {
+      "value": true,
+      "quote": "Backend Engineer",
+      "confidence": "sure"
+    },
+    "seniority": {
+      "value": "senior",
+      "quote": "Senior",
+      "confidence": "sure"
+    },
+    "yearsRequired": {
+      "value": null,
+      "quote": "",
+      "confidence": "sure"
+    },
+    "arrangement": {
+      "value": "remote",
+      "quote": "remote in EMEA",
+      "confidence": "sure"
+    },
+    "openings": [
+      {
+        "arrangements": ["remote"],
+        "places": [
+          {
+            "kind": "region",
+            "code": "EMEA"
+          }
+        ],
+        "placeStrictness": "limit",
+        "timezones": [],
+        "quote": "remote in EMEA",
+        "confidence": "sure"
+      }
+    ],
+    "contractType": {
+      "value": "full_time",
+      "quote": "Full-time",
+      "confidence": "sure"
+    },
+    "engagement": {
+      "value": "employee",
+      "quote": "employee",
+      "confidence": "sure"
+    },
+    "contractMonths": {
+      "value": null,
+      "quote": "",
+      "confidence": "sure"
+    },
+    "salary": {
+      "value": null,
+      "quote": "",
+      "confidence": "sure"
+    },
+    "techStack": {
+      "value": {
+        "requirements": [
+          {
+            "technology": {
+              "text": "Node.js",
+              "code": null
+            },
+            "kind": "main",
+            "importance": 9,
+            "domain": null,
+            "years": null,
+            "quote": "Node.js",
+            "confidence": "sure",
+            "group": null
+          },
+          {
+            "technology": {
+              "text": "PostgreSQL",
+              "code": "postgresql"
+            },
+            "kind": "nice",
+            "importance": 2,
+            "domain": null,
+            "years": null,
+            "quote": "PostgreSQL",
+            "confidence": "sure",
+            "group": null
+          }
+        ],
+        "groups": []
+      },
+      "quote": "",
+      "confidence": "sure"
+    },
+    "requiredLanguages": {
+      "value": [],
+      "quote": "",
+      "confidence": "sure"
+    },
+    "workAuthorization": {
+      "value": {
+        "requirements": [],
+        "sponsorship": "unstated"
+      },
+      "quote": "",
+      "confidence": "sure"
+    },
+    "junkFlags": {
+      "value": [],
+      "quote": "",
+      "confidence": "sure"
+    }
+  }
+}
