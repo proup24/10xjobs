@@ -28,6 +28,8 @@ const call: ClaudeCall = {
 interface Recorded {
   argv: string[];
   cwd: string;
+  cwdEntries: string[];
+  grandchildPid?: number;
   env: Record<string, string>;
   stdin: string;
 }
@@ -106,6 +108,7 @@ describe('ClaudeRunner', () => {
     await runner().run(call);
     const rec = record();
     expect(rec.cwd).not.toBe(process.cwd());
+    expect(rec.cwdEntries).toEqual([]);
     expect(rec.env.HOME).not.toBe(rec.cwd);
     expect(existsSync(rec.cwd)).toBe(false);
     expect(existsSync(rec.env.HOME)).toBe(false);
@@ -140,7 +143,11 @@ describe('ClaudeRunner', () => {
     }).run({ ...call, timeoutMs: 400 });
     expect(out.timedOut).toBe(true);
     expect(Date.now() - started).toBeLessThan(1000);
+    const rec = record();
+    expect(existsSync(rec.cwd)).toBe(false);
+    expect(existsSync(rec.env.HOME)).toBe(false);
     const grandchild = Number(readFileSync(pidFile, 'utf8'));
+    expect(grandchild).toBe(rec.grandchildPid);
     await new Promise((r) => setTimeout(r, 100));
     expect(() => process.kill(grandchild, 0)).toThrow();
   });
