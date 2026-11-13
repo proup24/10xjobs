@@ -19,6 +19,8 @@ export interface ClaudeResult {
   isError: boolean;
   apiErrorStatus: number | null;
   errorText: string | null;
+  /** `terminal_reason`: `completed`, `max_turns`, `api_error`, … */
+  terminalReason: string | null;
   model: string | null;
   sessionId: string | null;
   usage: { input: number; output: number; cachedInput: number };
@@ -196,6 +198,8 @@ function toResult(line: Json, initModel: string | null): ClaudeResult {
     isError,
     apiErrorStatus: num(line.api_error_status),
     errorText,
+    terminalReason:
+      typeof line.terminal_reason === 'string' ? line.terminal_reason : null,
     model: (isError ? (usedModel ?? initModel) : usedModel) ?? initModel,
     sessionId: typeof line.session_id === 'string' ? line.session_id : null,
     usage: {
@@ -229,7 +233,8 @@ export function classify(
   if (r.isError) {
     const status = r.apiErrorStatus;
     const detail = r.errorText ?? 'no error text';
-    if (parsed.usageLimitReached && status === 429) {
+    // The typed kind decides; the status may be missing or other than 429.
+    if (parsed.usageLimitReached) {
       const rejected = [...parsed.limits]
         .reverse()
         .find((l) => l.status === 'rejected');
@@ -248,7 +253,13 @@ export function classify(
         return { kind: 'request', reason: `API ${status}: ${detail}` };
       }
     }
-    return { kind: 'output', reason: detail };
+    // Only a turn-limit end (no output, or output the schema rejected) is
+    // the model's fault. A status-less API error (connection error, request
+    // timeout) and anything unknown are retried.
+    if (r.terminalReason === 'max_turns') {
+      return { kind: 'output', reason: detail };
+    }
+    return { kind: 'transient', reason: detail };
   }
 
   if (r.structuredOutput === undefined) {

@@ -8,11 +8,18 @@ The processor has been down since about 2026-11-09. Its OpenRouter credit ran ou
 
 - **`claude -p` (Claude Code, headless) on the user's Claude subscription becomes the engine's permanent way of calling models.** This is not a stopgap until API credit returns. OpenRouter leaves the engine.
 - **It runs on the hosted engine on Hetzner**, for every scheduled processor run. It doesn't run on a machine started by hand.
-- **Same two-step processor shape, on Claude.** The generator extracts the facts, then the verifier checks them. Both steps run on Claude. Which model plays each role stays configuration.
+- **Generator only, on Claude.** The processor has no verifier. One Claude call extracts the facts. The model is configuration (`PROCESSOR_EXTRACTION_MODEL`, Sonnet 5.5 to start).
 - **Usage limits: pause and retry.** When Claude's usage limit is hit partway through a batch, the waiting jobs stay waiting. They are retried after the limit resets. They are not failed, and their attempts are not used up.
-- **Old cheap_scraper jobs are archived, not processed.** The ~3,988 pending jobs collected through the old actor (cheap_scraper) must not be processed automatically by the first batch once Claude is live. Archive them, so they leave the processor's queue, before the switch.
+- **Old cheap_scraper jobs are archived, not processed.** All 4,048 jobs collected through the old actor (cheap_scraper) are archived with `db:archive-actor`, before the switch, so they leave the processor's queue. Their matches are deleted, and a new sighting un-archives a job.
+- **Subscription for dogfooding only.** Before any other person gets an account, the engine moves to an Anthropic API key. The roadmap README records this gate.
 
-## Open questions (for this slice's brainstorm)
+## Status
+
+Built. The design is `docs/superpowers/specs/2026-11-13-claude-models-design.md`. The first Claude batch is harvestapi's, once Apify has credit again.
+
+## Open questions (resolved)
+
+The brainstorm answered all of these; the answers are the Decisions of the design spec (`docs/superpowers/specs/2026-11-13-claude-models-design.md`). They stay here as the record of what was asked.
 
 - **Subscription terms and limits.** A Claude subscription is tied to one person's account. Does running a shared, multi-tenant engine on it fit its terms? What throughput do its limits allow per day, measured in jobs?
 - **What survives.**
@@ -35,9 +42,9 @@ The processor has been down since about 2026-11-09. Its OpenRouter credit ran ou
 - **Detecting the limit.** How does the engine tell "usage limit reached, resets at T" from other failures? Where does it park waiting jobs until T: a delayed BullMQ job, or a processor-wide pause?
 - **Archiving the old jobs.**
   - Is it a new processing status (for example `archived`), or out-of-scope by channel or source?
-  - Can they be un-archived later by hand?
+  - Can they be un-archived later by hand? _Resolved: no; only a newer ingest sighting un-archives a job._
   - Does `db:reprocess` skip them?
-- **Reprocess order.** After the switch, how do the 60 processed jobs (slice 02's reprocess) and new harvestapi jobs get ahead of anything else? See slice 03's prerequisites.
+- **Reprocess order.** After the switch, how do the 60 processed jobs (slice 02's reprocess) and new harvestapi jobs get ahead of anything else? See slice 03's prerequisites. _Resolved: nothing is reprocessed. The 60 are archived with the other cheap_scraper jobs, and slice 03's baseline comes from the first harvestapi batch._
 - **Tests and eval.** How is `claude -p` faked in unit and e2e tests? Is `processor:eval` run against Claude once before the switch, to compare with DeepSeek and Jev on the golden set?
 
 ## Not in scope

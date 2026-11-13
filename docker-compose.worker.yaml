@@ -52,13 +52,16 @@ services:
       <<: *worker-environment
       WORKER_ROLE: ingest
 
-  # Extracts structured fields from normalized jobs; needs an OpenRouter key.
+  # Extracts structured fields from normalized jobs through `claude -p` (the
+  # image installs the pinned Claude Code); needs a Claude credential:
+  # CLAUDE_CODE_OAUTH_TOKEN (from `claude setup-token`) or ANTHROPIC_API_KEY.
   processor-worker:
     <<: *worker
     environment:
       <<: *worker-environment
       WORKER_ROLE: processor
-      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
 
   ashby-worker:
     <<: *collection-worker

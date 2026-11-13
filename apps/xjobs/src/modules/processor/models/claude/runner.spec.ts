@@ -45,7 +45,7 @@ describe('ClaudeRunner', () => {
     return new ClaudeRunner({
       bin: FAKE,
       env: SOURCE,
-      maxTurns: 1,
+      maxTurns: 3,
       extraEnv: { FAKE_CLAUDE_RECORD: join(dir, 'rec.json'), ...extra },
     });
   }
@@ -78,7 +78,7 @@ describe('ClaudeRunner', () => {
       '--effort',
       'low',
       '--max-turns',
-      '1',
+      '3',
       '--tools',
       '',
     ]);
@@ -98,7 +98,7 @@ describe('ClaudeRunner', () => {
     await new ClaudeRunner({
       bin: wrapper,
       env: SOURCE,
-      maxTurns: 1,
+      maxTurns: 3,
       extraEnv: { FAKE_CLAUDE_RECORD: join(dir, 'rec.json') },
     }).run(call);
     expect(readFileSync(join(dir, 'prompt.txt'), 'utf8')).toBe('SYSTEM PROMPT');
@@ -160,7 +160,7 @@ describe('ClaudeRunner', () => {
       new ClaudeRunner({
         bin: join(dir, 'nope'),
         env: SOURCE,
-        maxTurns: 1,
+        maxTurns: 3,
       }).run(call),
     ).rejects.toThrow(/claude/i);
   });

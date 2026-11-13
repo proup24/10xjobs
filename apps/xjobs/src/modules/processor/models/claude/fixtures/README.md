@@ -32,7 +32,7 @@ claude -p \
   --json-schema '<schema JSON>' \
   --model claude-sonnet-5-5 \
   --effort low \
-  --max-turns 1 \
+  --max-turns 3 \
   --tools ""
 # user message on stdin
 ```
@@ -40,7 +40,7 @@ claude -p \
 - **`--disallowedTools "*"` must be dropped.** On 2.1.314 `--json-schema` works through a built-in `StructuredOutput` tool, and `"*"` denies it (`system/permission_denied`, `permission_denials` in the result, ends `error_max_turns`). `--allowedTools StructuredOutput` does not override it, because deny wins. `--tools ""` alone already leaves `init.tools == ["StructuredOutput"]`, and `isolation.jsonl` shows the model has nothing else to call.
 - **`--verbose`** is required for `--output-format stream-json` with `-p`.
 - **`--setting-sources ""`** (empty list) is accepted. An invalid value fails before any request (`Error processing --setting-sources: Invalid setting source: bogus. Valid options are: user, project, local`), so the empty string is really parsed. Managed and remote policy settings still load: the CLI writes `~/.claude/remote-settings.json` and `policy-limits.json` into the empty HOME.
-- **`--max-turns`** is accepted although `--help` does not list it. The lowest value that returns `structured_output` is **1**. The result still reports `num_turns: 2`, because the tool-result round counts. At 1 the model gets no second try: a first `StructuredOutput` that fails the schema, or a text-only reply, ends `error_max_turns`. The engine's own tries cover that.
+- **`--max-turns`** is accepted although `--help` does not list it. The lowest value that returns `structured_output` is **1**. The result still reports `num_turns: 2`, because the tool-result round counts. At 1 the model gets no second try: a first `StructuredOutput` that fails the schema, or a text-only reply, ends `error_max_turns`. The engine uses **3**: in the golden-set eval at 1, 91 of 149 calls ended `error_max_turns` (`Reached maximum number of turns (1)`), and a failed call costs about as much as a good one. The recorded fixtures are still the runs at 1.
 - The CLI writes `~/.claude.json`, `~/.claude/backups/…` and `~/.claude/plugins/store/…` into HOME. With `--no-session-persistence`, nothing is written to the working directory. Bundled skills and plugins are listed in `init`, but there is no Skill tool to call them.
 
 ## `result` message

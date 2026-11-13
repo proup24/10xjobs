@@ -94,7 +94,7 @@ export class ProcessorBlockedError extends Error {
  *   1. ProcessorGuard        may model calls start? (budget, provider pause)
  *   2. claim                 pending → processing, or someone else has it
  *   3. load + reuse          a closed job, or the same input seen before, needs no call
- *   4. ExtractionPipeline    generate → check → Jev verifies → regenerate on rejection
+ *   4. ExtractionPipeline    generate (schema-fix retries) → cross-fact checks
  *   5. ExtractionStore       save the extraction, its attempts and vocabulary
  *   6. finish                processed / pending (retry) / failed, per decideFailure
  */
@@ -192,8 +192,7 @@ export class ProcessorService {
       log.warn(
         `failed after ${elapsed(started)}: ${error instanceof Error ? error.message : String(error)}`,
       );
-      if (error instanceof ProviderUnavailableError)
-        this.guard.pause(error.message);
+      if (error instanceof ProviderUnavailableError) this.guard.pause(error);
       if (error instanceof UsageLimitError) this.pauseForLimit(error);
       throw error;
     } finally {
@@ -300,8 +299,7 @@ export class ProcessorService {
         `Processing ${claim.jobId} failed unexpectedly (${decision.outcome})`,
         error instanceof Error ? error.stack : String(error),
       );
-    if (error instanceof ProviderUnavailableError)
-      this.guard.pause(error.message);
+    if (error instanceof ProviderUnavailableError) this.guard.pause(error);
     if (error instanceof UsageLimitError) this.pauseForLimit(error);
     const next =
       decision.outcome === 'retry'

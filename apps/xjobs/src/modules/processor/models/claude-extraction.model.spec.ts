@@ -1,5 +1,6 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import type {
@@ -8,8 +9,12 @@ import type {
   ClaudeRunner,
 } from './claude/runner';
 import type { LimitObservation } from './claude/stream';
-import { ClaudeExtractionModel } from './claude-extraction.model';
 import {
+  ClaudeExtractionModel,
+  createClaudeExtractionModel,
+} from './claude-extraction.model';
+import {
+  ClaudeAuthError,
   ModelOutputError,
   ModelRequestError,
   ProviderUnavailableError,
@@ -122,10 +127,13 @@ describe('ClaudeExtractionModel', () => {
   });
 
   it('maps a spawn failure to ProviderUnavailableError, without onLimits', async () => {
-    const { model, onLimits } = setup(new Error('spawn claude ENOENT'));
-    await expect(model.generate(input, req)).rejects.toBeInstanceOf(
-      ProviderUnavailableError,
-    );
+    const spawnError = new Error('spawn claude ENOENT');
+    const { model, onLimits } = setup(spawnError);
+    const error = await model.generate(input, req).catch((e) => e);
+    expect(error).toBeInstanceOf(ProviderUnavailableError);
+    expect(error).not.toBeInstanceOf(ClaudeAuthError);
+    expect(error.message).toBe('could not run claude: spawn claude ENOENT');
+    expect(error.cause).toBe(spawnError);
     expect(onLimits).not.toHaveBeenCalled();
   });
 
@@ -158,5 +166,34 @@ describe('ClaudeExtractionModel', () => {
     expect(error).toBeInstanceOf(ModelOutputError);
     expect(error.message).toContain('remote');
     expect(error.meta?.model).toBe('claude-sonnet-5-5');
+  });
+});
+
+describe('createClaudeExtractionModel', () => {
+  it('runs claude -p with --max-turns 3', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'create-model-spec-'));
+    vi.stubEnv('CLAUDE_CODE_OAUTH_TOKEN', 'oauth');
+    try {
+      // The production env drops FAKE_CLAUDE_*, so a wrapper records argv.
+      const fake = resolve(__dirname, '../testing/fake-claude.mjs');
+      const wrapper = join(dir, 'wrap.sh');
+      writeFileSync(
+        wrapper,
+        `#!/bin/sh\nprintf '%s\\n' "$@" > "${dir}/argv.txt"\nexec "${fake}" "$@"\n`,
+        { mode: 0o755 },
+      );
+      const model = createClaudeExtractionModel({
+        model: 'claude-sonnet-5-5',
+        effort: 'low',
+        timeoutMs: 10_000,
+        bin: wrapper,
+      });
+      await model.generate(input, req);
+      const argv = readFileSync(join(dir, 'argv.txt'), 'utf8').split('\n');
+      expect(argv[argv.indexOf('--max-turns') + 1]).toBe('3');
+    } finally {
+      vi.unstubAllEnvs();
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

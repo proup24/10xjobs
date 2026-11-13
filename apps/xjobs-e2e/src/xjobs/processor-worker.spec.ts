@@ -353,7 +353,7 @@ describe.skipIf(!url || !isLocalUrl(url))('processor worker', () => {
     expect(calls.length).toBeGreaterThanOrEqual(2);
     for (const call of calls) {
       expect(call.args).toEqual(
-        expect.arrayContaining(['-p', '--max-turns', '1']),
+        expect.arrayContaining(['-p', '--max-turns', '3']),
       );
       expect(call.env.filter((k) => !ALLOWED_CHILD_ENV.includes(k))).toEqual(
         [],

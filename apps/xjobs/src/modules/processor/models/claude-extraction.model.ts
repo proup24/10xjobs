@@ -52,7 +52,9 @@ export class ClaudeExtractionModel extends ExtractionModel {
       });
     } catch (error) {
       throw new ProviderUnavailableError(
-        `claude could not be started: ${error instanceof Error ? error.message : String(error)}`,
+        `could not run claude: ${error instanceof Error ? error.message : String(error)}`,
+        undefined,
+        { cause: error },
       );
     }
 
@@ -103,7 +105,8 @@ export class ClaudeExtractionModel extends ExtractionModel {
 
 /**
  * The generator as the worker, the operator endpoints and the processor
- * scripts all build it: one `claude -p` turn per call (`--max-turns 1`).
+ * scripts all build it: `--max-turns 3`, so the model can correct a
+ * text-only reply or a schema-rejected `StructuredOutput` within one call.
  */
 export function createClaudeExtractionModel(opts: {
   model: string;
@@ -113,7 +116,7 @@ export function createClaudeExtractionModel(opts: {
   onLimits?: (obs: LimitObservation[]) => void;
 }): ClaudeExtractionModel {
   return new ClaudeExtractionModel(
-    new ClaudeRunner({ bin: opts.bin, maxTurns: 1 }),
+    new ClaudeRunner({ bin: opts.bin, maxTurns: 3 }),
     opts.model,
     { effort: opts.effort, timeoutMs: opts.timeoutMs },
     opts.onLimits ?? (() => undefined),

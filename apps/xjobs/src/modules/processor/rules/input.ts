@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { JobForProcessing, PostingInput } from '../models/types';
 
-/** Keeps Jev out of its long-context mode. */
+/** Keeps one posting a bounded share of the generator's context and cost. */
 export const DESCRIPTION_CAP_BYTES = 30_000;
 
 function cut(text: string): { text: string; truncated: boolean } {

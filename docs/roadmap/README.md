@@ -12,6 +12,7 @@
 - The code stays open source, so any engineer can also run their own copy.
 - Anthropic and Apify run on the platform's own keys, shared by every user; users don't bring keys. Gmail access (Phase 4) is per user.
 - Sign-up is invite-only for now.
+- **API-key gate:** the engine calls Claude on the owner's subscription during dogfooding. Before any other person gets an account, it moves to an Anthropic API key (slice [02b](phase-3-find-quality/02b-claude-models.md); runbook section "Switch to an API key").
 
 ## Anti-goals
 
@@ -43,7 +44,7 @@ Phase 1 closes with Phase 2's launch check, run on `10xjobs-dev`, because produc
 
 ### Phase 2: Find
 
-Collect jobs from LinkedIn (through Apify), Ashby and Greenhouse for each published profile. Normalize and deduplicate them, extract each job's facts, and qualify each job against the profile as qualified or rejected with a reason. LLMs enter the repo here, called through OpenRouter.
+Collect jobs from LinkedIn (through Apify), Ashby and Greenhouse for each published profile. Normalize and deduplicate them, extract each job's facts, and qualify each job against the profile as qualified or rejected with a reason. LLMs enter the repo here, called through `claude -p` (Claude Code headless).
 
 Engine work for this phase (search query generation, collection, ingest, the processor and the matcher) is already on `main`. The first set of slices hosts the engine, shows matches and rejections in the web app, then publishes profiles from the web app and keeps published profiles editable, for LinkedIn job-board jobs. Ashby-only and Greenhouse-only jobs and LinkedIn hiring posts follow in a later set.
 

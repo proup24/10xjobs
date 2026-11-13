@@ -6,7 +6,7 @@ One Hetzner server runs the engine against the `10xjobs-dev` database. Design: [
 
 Docker Compose project `xjobs-engine`, five services (`compose.yaml`):
 
-- `api`: the NestJS HTTP API on internal port 3000. Every route, health included, needs the `X-Engine-Key` header (`ENGINE_API_KEY`); the web app also sends a user token on user routes. The operator endpoints do not exist here (`XJOBS_OPERATOR_ENDPOINTS` is off, and the engine refuses it in production). The API container does not get `OPENROUTER_API_KEY`.
+- `api`: the NestJS HTTP API on internal port 3000. Every route, health included, needs the `X-Engine-Key` header (`ENGINE_API_KEY`); the web app also sends a user token on user routes. The operator endpoints do not exist here (`XJOBS_OPERATOR_ENDPOINTS` is off, and the engine refuses it in production). The API container gets neither Claude credential (`CLAUDE_CODE_OAUTH_TOKEN`, `ANTHROPIC_API_KEY`).
 - `worker`: one `worker-all` process (`WORKER_ROLE=all`). It is the only place schedules run (`XJOBS_RUN_SCHEDULES=1`).
 - `redis`: BullMQ queues, with append-only persistence and no eviction.
 - `redis-cache`: a 128 MB LRU cache, nothing persisted.
@@ -51,7 +51,7 @@ After bootstrap, SSH allows only `deploy` (`AllowUsers deploy`, `PermitRootLogin
 3. Set `ENGINE_HOSTNAME=api.<ip with dashes>.sslip.io`, for example `api.203-0-113-10.sslip.io`.
 4. Get `DATABASE_URL`, `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from the same places as the `DEV_*` secrets in [shared-dev-database.md](../../docs/shared-dev-database.md). `DATABASE_URL` is the session pooler on port 5432, never 6543.
 5. Generate the engine key with `openssl rand -base64 48` (at least 32 characters) and set it as `ENGINE_API_KEY`. The same value goes into Vercel (section 5a). The deploy's health check reads it from the running `api` container on the server; it never goes to GitHub.
-6. Set `APIFY_TOKEN` and `OPENROUTER_API_KEY` (only the `worker` container uses the latter).
+6. Set `APIFY_TOKEN` and `CLAUDE_CODE_OAUTH_TOKEN` (section 13; only the `worker` container uses the latter).
 7. Single-quote any value that contains `$`, because Compose interpolates `env_file` values. `openssl rand -base64 48` output has no `$`.
 
 Engine runtime secrets live only in this file. They never go to GitHub.
@@ -155,3 +155,50 @@ group by 1;
 ```
 
 3. Expect new rows, `processingStatus = 'processed'` for most, and `qualified` or `rejected` outcomes in `job_matches`.
+
+## 13. Set the Claude token
+
+The processor runs `claude -p` in the `worker` container, on the owner's Claude subscription for now. The image has Claude Code installed at the exact version pinned in `apps/xjobs/src/modules/processor/models/claude/version.ts`; its auto-updater is off.
+
+1. On your laptop, run `claude setup-token` and copy the token it prints. It is valid for one year.
+2. On the server, in `~/engine`, set `CLAUDE_CODE_OAUTH_TOKEN=<token>` in `.env` (single-quote it if it contains `$`).
+3. `$C up -d worker`.
+4. Check: `$C logs worker | grep -i processor`. Look for `processor ready`, which the startup check logs once the credential works (within about three minutes). Every boot first logs `Processing paused until … (startup): checking the Claude credential` at info level; that line is expected. `processor not started`, or a `(startup)` pause logged at error level with another detail, means the check failed.
+
+This is for the dogfooding period only. Before anyone else gets an account, do section 17.
+
+## 14. Renew the token
+
+The token expires one year after `claude setup-token`. Put a calendar reminder two weeks before that date.
+
+1. Run `claude setup-token` again.
+2. Replace the `CLAUDE_CODE_OAUTH_TOKEN` value in the server `.env`.
+3. `$C up -d worker`.
+
+An expired or revoked token shows as an auth error: the job goes back to `pending` without losing an attempt, the processor pauses for 10 minutes, and the log names this fix. Collection, ingest and match keep running.
+
+## 15. Read a pause
+
+The processor pauses on a usage limit (until the limit resets, or 15 minutes if unknown), on an auth error (10 minutes), and when the weekly share reaches `PROCESSOR_WEEKLY_STOP_AT` (default `0.85`, of any weekly limit).
+
+1. `$C logs worker | grep -i pause`.
+2. The log line reads `Processing paused until <time> (<reason>): <detail>`; the reason is `usage_limit`, `weekly_reserve`, `auth` or `startup` (auth and a failed startup check log at error level; the initial `checking the Claude credential` pause logs at info). `GET /processor/status` shows the same pause, but it is an operator endpoint (`XJOBS_OPERATOR_ENDPOINTS`) that the hosted API does not serve; use it only on a local engine.
+3. Nothing needs fixing for a usage limit or the weekly stop: jobs wait as `pending` and the processor resumes by itself. An auth error needs section 14. An `auth` pause whose detail starts `could not run claude:` is not the token: the `claude` binary could not be started (missing, or out of processes or file handles).
+
+## 16. Measure worker memory
+
+Four `claude` calls run at once by default (`PROCESSOR_CONCURRENCY=4`), each a Node process.
+
+1. With the processor busy (jobs pending), run `docker stats --no-stream` on the server and read the `worker` container's memory.
+2. The server has 4 GB RAM and also runs `api`, both Redis instances and Caddy. If the worker plus the rest leaves little headroom or the kernel kills processes, set a lower `PROCESSOR_CONCURRENCY` (for example 2) in `.env` and run `$C up -d worker`.
+
+## 17. Switch to an API key
+
+**Required before any other person gets an account.** Anthropic's terms do not allow serving other people from a Claude subscription, and the subscription limits assume one person's ordinary use. Do not give anyone an account until this is done.
+
+1. Create an Anthropic API key in the Anthropic Console.
+2. In the server `.env`, set `ANTHROPIC_API_KEY=<key>` and remove the `CLAUDE_CODE_OAUTH_TOKEN` line.
+3. Set a real `PROCESSOR_DAILY_BUDGET_USD` (the default `0` means no cap). Size it from the processor's real cost per job.
+4. `$C up -d worker`, then check `$C logs worker | grep -i processor`.
+
+No code change is needed: `claude -p` uses the key when it is set.

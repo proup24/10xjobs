@@ -4,6 +4,10 @@ import {
   type ProcessorConfig,
 } from '../config/processor.config';
 import type { LimitObservation } from '../models/claude/stream';
+import {
+  ClaudeAuthError,
+  type ProviderUnavailableError,
+} from '../models/errors';
 import { ProcessorRepository } from '../repositories/processor.repository';
 
 /** How long processing stops after a key, credit or account error. */
@@ -89,16 +93,22 @@ export class ProcessorGuard {
 
   /**
    * Pauses processing until `until`, keeping the later end of the current and
-   * the new pause. Logs only when the end moves later (`warn` for limits,
-   * `error` for auth and startup).
+   * the new pause. Logs only when the end moves later, at `level` when given,
+   * else `warn` for limits and `error` for auth and startup.
    */
-  pauseUntil(until: Date, reason: PauseReason, detail: string): void {
+  pauseUntil(
+    until: Date,
+    reason: PauseReason,
+    detail: string,
+    level?: 'log' | 'warn' | 'error',
+  ): void {
     const current = this.pauseState();
     if (current && until.getTime() <= current.until.getTime()) return;
     this.paused = { until, reason, detail };
     const line = `Processing paused until ${until.toISOString()} (${reason}): ${detail}`;
-    if (reason === 'auth' || reason === 'startup') this.logger.error(line);
-    else this.logger.warn(line);
+    this.logger[
+      level ?? (reason === 'auth' || reason === 'startup' ? 'error' : 'warn')
+    ](line);
   }
 
   /** A usage limit was hit: pause until its reset, or 15 minutes when unknown. */
@@ -152,14 +162,17 @@ export class ProcessorGuard {
   }
 
   /**
-   * Called when the provider refused the credential (auth failure): pauses
-   * for ten minutes.
+   * Called on a `ProviderUnavailableError`: pauses for ten minutes. A refused
+   * credential names the fix; anything else (`claude` could not run, no
+   * credential) keeps its own message.
    */
-  pause(reason: string): void {
+  pause(error: ProviderUnavailableError): void {
     this.pauseUntil(
       new Date(this.now().getTime() + PROVIDER_PAUSE_MS),
       'auth',
-      `Claude refused the credential (${reason}). Run \`claude setup-token\`, update the server .env, and restart the worker.`,
+      error instanceof ClaudeAuthError
+        ? 'Claude refused the credential. Run `claude setup-token`, update the server .env, and restart the worker.'
+        : error.message,
     );
   }
 

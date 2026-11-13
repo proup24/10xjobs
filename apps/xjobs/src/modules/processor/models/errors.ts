@@ -32,8 +32,9 @@ export class ProviderUnavailableError extends Error {
   constructor(
     message: string,
     readonly meta?: Partial<ModelCallMeta>,
+    options?: ErrorOptions,
   ) {
-    super(message);
+    super(message, options);
     this.name = 'ProviderUnavailableError';
   }
 }

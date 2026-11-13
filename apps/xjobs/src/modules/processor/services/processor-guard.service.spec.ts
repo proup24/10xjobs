@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ProcessorConfig } from '../config/processor.config';
 import type { LimitObservation } from '../models/claude/stream';
+import { ClaudeAuthError, ProviderUnavailableError } from '../models/errors';
 import { MemoryProcessorRepository } from '../testing/fakes';
 import {
   PROVIDER_PAUSE_MS,
@@ -75,16 +76,40 @@ describe('ProcessorGuard', () => {
     expect(guard.pauseState()).toBeNull();
   });
 
-  it('pause(reason) is the auth pause for ten minutes and names the fix', () => {
+  it('pause(error) on an auth failure pauses ten minutes and names the fix', () => {
     vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     const guard = make();
-    guard.pause('401');
+    guard.pause(new ClaudeAuthError());
     const state = guard.pauseState();
     expect(state).toMatchObject({
       until: at(PROVIDER_PAUSE_MS),
       reason: 'auth',
     });
     expect(state?.detail).toContain('claude setup-token');
+  });
+
+  it('pause(error) on another provider failure keeps its own detail', () => {
+    vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const guard = make();
+    guard.pause(
+      new ProviderUnavailableError('could not run claude: spawn claude EAGAIN'),
+    );
+    const state = guard.pauseState();
+    expect(state?.until).toEqual(at(PROVIDER_PAUSE_MS));
+    expect(state?.detail).toBe('could not run claude: spawn claude EAGAIN');
+    expect(state?.detail).not.toContain('setup-token');
+  });
+
+  it('pauseUntil logs at the level it is given', () => {
+    const error = vi
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
+    const log = vi
+      .spyOn(Logger.prototype, 'log')
+      .mockImplementation(() => undefined);
+    make().pauseUntil(at(1000), 'startup', 'checking', 'log');
+    expect(error).not.toHaveBeenCalled();
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('checking'));
   });
 
   it('clearPause ends the pause only for the same reason', () => {
