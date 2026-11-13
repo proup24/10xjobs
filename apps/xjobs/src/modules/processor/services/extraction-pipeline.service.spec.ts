@@ -23,6 +23,7 @@ const baseConfig: ProcessorConfig = {
   maxAttempts: 3,
   claimTimeoutMs: 900_000,
   dailyBudgetUsd: 20,
+  weeklyStopAt: 0.85,
   generationTries: 3,
 };
 

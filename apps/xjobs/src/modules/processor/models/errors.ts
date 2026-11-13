@@ -1,3 +1,4 @@
+import type { LimitObservation } from './claude/stream';
 import type { ModelCallMeta } from './types';
 
 /** The merged extraction cannot be saved: a code is not approved or the shape is wrong. */
@@ -37,6 +38,14 @@ export class ProviderUnavailableError extends Error {
   }
 }
 
+/** Claude refused the credential (expired or revoked token, bad key). */
+export class ClaudeAuthError extends ProviderUnavailableError {
+  constructor(meta?: Partial<ModelCallMeta>) {
+    super('claude authentication failed', meta);
+    this.name = 'ClaudeAuthError';
+  }
+}
+
 /** Any other 4xx: the request itself is wrong. Not retried. */
 export class ModelRequestError extends Error {
   constructor(
@@ -56,5 +65,17 @@ export class ModelOutputError extends Error {
   ) {
     super(message);
     this.name = 'ModelOutputError';
+  }
+}
+
+/** The Claude subscription's usage limit is reached: pause until `limit.resetsAt`. */
+export class UsageLimitError extends Error {
+  constructor(
+    message: string,
+    readonly limit: LimitObservation | null,
+    readonly meta?: Partial<ModelCallMeta>,
+  ) {
+    super(message);
+    this.name = 'UsageLimitError';
   }
 }

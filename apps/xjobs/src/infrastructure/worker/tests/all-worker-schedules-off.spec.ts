@@ -6,8 +6,9 @@ vi.hoisted(() => {
   process.env.SUPABASE_URL ??= 'http://127.0.0.1:1';
   process.env.SUPABASE_SERVICE_ROLE_KEY ??= 'service-key';
   process.env.APIFY_TOKEN ??= 'apify-token';
-  // No OpenRouter key: `all` runs every worker except the processor.
-  delete process.env.OPENROUTER_API_KEY;
+  // No Claude credential: `all` runs every worker except the processor.
+  delete process.env.CLAUDE_CODE_OAUTH_TOKEN;
+  delete process.env.ANTHROPIC_API_KEY;
   process.env.WORKER_ROLE = 'all';
   delete process.env.XJOBS_RUN_SCHEDULES;
   delete process.env.WORKER_CHANNEL;
@@ -61,13 +62,16 @@ vi.mock('bullmq', async (importOriginal) => {
 import { StorageService } from 'src/modules/storage';
 import { MemoryStorageService } from 'src/modules/storage/testing';
 const checks = vi.hoisted(() => ({
-  assertApiKey: vi.fn(async () => undefined),
-  checkModels: vi.fn(async () => new Map()),
+  checkClaudeInstalled: vi.fn(async () => undefined),
+  checkClaudeCall: vi.fn(async () => null),
 }));
-vi.mock('src/modules/processor/models/client', async (importOriginal) => ({
-  ...(await importOriginal<object>()),
-  ...checks,
-}));
+vi.mock(
+  'src/modules/processor/models/claude/startup',
+  async (importOriginal) => ({
+    ...(await importOriginal<object>()),
+    ...checks,
+  }),
+);
 
 import { WorkerModule } from '../worker.module';
 import { WorkerService } from '../worker.service';

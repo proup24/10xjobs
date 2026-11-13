@@ -3,12 +3,17 @@ import {
   ModelRequestError,
   ProviderUnavailableError,
   TransientModelError,
+  UsageLimitError,
 } from '../models/errors';
 import type { FinishOutcome } from '../repositories/processor.repository';
 import { ExtractionFailed } from './extraction-pipeline.service';
 import { invalidMessage } from './fact-assembler.service';
 
-export type FailureOutcome = 'retry' | 'failed' | 'provider_unavailable';
+export type FailureOutcome =
+  | 'retry'
+  | 'failed'
+  | 'provider_unavailable'
+  | 'usage_limit';
 
 /** What a failed run does to its job. */
 export interface FailureDecision {
@@ -24,6 +29,7 @@ export interface FailureDecision {
  * | Error                                        | Job                         |
  * | -------------------------------------------- | --------------------------- |
  * | ProviderUnavailableError (401/402/403)        | pending, attempt given back |
+ * | UsageLimitError                            | pending, attempt given back |
  * | ModelRequestError, ExtractionInvalidError,    | failed                      |
  * |   ExtractionFailed (first generation invalid) |                             |
  * | TransientModelError, anything else            | pending until maxAttempts,  |
@@ -39,6 +45,12 @@ export function decideFailure(
     return {
       finish: { status: 'pending', error: message, refundAttempt: true },
       outcome: 'provider_unavailable',
+      unexpected: false,
+    };
+  if (error instanceof UsageLimitError)
+    return {
+      finish: { status: 'pending', error: message, refundAttempt: true },
+      outcome: 'usage_limit',
       unexpected: false,
     };
   const permanent =

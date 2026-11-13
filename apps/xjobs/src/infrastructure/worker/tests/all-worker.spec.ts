@@ -6,8 +6,9 @@ vi.hoisted(() => {
   process.env.SUPABASE_URL ??= 'http://127.0.0.1:1';
   process.env.SUPABASE_SERVICE_ROLE_KEY ??= 'service-key';
   process.env.APIFY_TOKEN ??= 'apify-token';
-  // No OpenRouter key: `all` runs every worker except the processor.
-  delete process.env.OPENROUTER_API_KEY;
+  // No Claude credential: `all` runs every worker except the processor.
+  delete process.env.CLAUDE_CODE_OAUTH_TOKEN;
+  delete process.env.ANTHROPIC_API_KEY;
   process.env.WORKER_ROLE = 'all';
   process.env.XJOBS_RUN_SCHEDULES = '1';
   delete process.env.WORKER_CHANNEL;
@@ -65,19 +66,22 @@ import {
 import { StorageService } from 'src/modules/storage';
 import { MemoryStorageService } from 'src/modules/storage/testing';
 const checks = vi.hoisted(() => ({
-  assertApiKey: vi.fn(async () => undefined),
-  checkModels: vi.fn(async () => new Map()),
+  checkClaudeInstalled: vi.fn(async () => undefined),
+  checkClaudeCall: vi.fn(async () => null),
 }));
-vi.mock('src/modules/processor/models/client', async (importOriginal) => ({
-  ...(await importOriginal<object>()),
-  ...checks,
-}));
+vi.mock(
+  'src/modules/processor/models/claude/startup',
+  async (importOriginal) => ({
+    ...(await importOriginal<object>()),
+    ...checks,
+  }),
+);
 
 import { Logger } from '@nestjs/common';
 import { WorkerModule } from '../worker.module';
 import { WorkerService } from '../worker.service';
 
-// OPENROUTER_API_KEY is unset: the processor is off in `all`.
+// No Claude credential: the processor is off in `all`.
 // Only the job board is an active channel; the others remove their schedules.
 const allWorkers = [
   'infrastructure',
@@ -120,7 +124,7 @@ it('runs infrastructure, ingest and every active channel collection, and the mat
     expect(service.active).toBe(true);
     expect(created.workers).toEqual(allWorkers);
     expect(warn).toHaveBeenCalledWith(
-      'processor not started: OPENROUTER_API_KEY is not set, so new jobs wait in the process queue',
+      'processor not started: no Claude credential (CLAUDE_CODE_OAUTH_TOKEN or ANTHROPIC_API_KEY)',
     );
     for (const check of Object.values(checks))
       expect(check).not.toHaveBeenCalled();

@@ -11,7 +11,10 @@ export interface ProcessorConfig {
   concurrency: number;
   maxAttempts: number;
   claimTimeoutMs: number;
+  /** 0 means no cap. */
   dailyBudgetUsd: number;
+  /** Weekly utilization (0 to 1) at which processing stops until the reset. */
+  weeklyStopAt: number;
   /** Model calls per generation: the first and its schema-fix retries (spec §2). */
   generationTries: number;
 }

@@ -3,9 +3,9 @@
  *
  *   pnpm --filter @xjobs/xjobs processor:eval -- [--generator m]
  *
- * `--generator` defaults to `PROCESSOR_EXTRACTION_MODEL`. Calls paid APIs;
- * never run in CI. Uses the real
- * OpenRouter adapters with in-memory repositories seeded from `seed-data.ts`,
+ * `--generator` defaults to `PROCESSOR_EXTRACTION_MODEL`. Calls `claude -p`
+ * (uses the Claude subscription's limits); never run in CI. Uses the same
+ * generator as the worker, with in-memory repositories seeded from `seed-data.ts`,
  * so the database is not touched. Attempts are recorded with `eval: true`.
  * Prints the report, writes `golden/last-report.<generator>.json` and exits 1
  * unless every bar holds.
@@ -28,12 +28,16 @@ import {
   scoreCase,
   summarize,
 } from 'src/modules/processor/golden/score';
-import { AiSdkExtractionModel } from 'src/modules/processor/models/extraction.model';
+import { createClaudeExtractionModel } from 'src/modules/processor/models/claude-extraction.model';
 import {
-  checkModels,
-  createOpenRouterClient,
-} from 'src/modules/processor/models/client';
-import { ModelPricing } from 'src/modules/processor/models/pricing';
+  claudeBin,
+  hasClaudeCredential,
+  NO_CLAUDE_CREDENTIAL,
+} from 'src/modules/processor/models/claude/startup';
+import {
+  type PauseState,
+  ProcessorGuard,
+} from 'src/modules/processor/services/processor-guard.service';
 import type { NewAttempt } from 'src/modules/processor/repositories/processor.repository';
 import { extractionDocumentSchema } from 'src/modules/processor/schema';
 import { createProcessorService } from 'src/modules/processor/services/processor.service';
@@ -90,32 +94,34 @@ function print(report: EvalReport, failed: string[]): void {
 
 async function main(): Promise<void> {
   loadEnvironmentFiles();
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) throw new Error('OPENROUTER_API_KEY is not set');
   const env = processorEnvironmentSchema.parse(process.env);
+  if (!hasClaudeCredential(env)) throw new Error(NO_CLAUDE_CREDENTIAL);
   const config: ProcessorConfig = {
     extractionModel: flag('generator') ?? env.PROCESSOR_EXTRACTION_MODEL,
     concurrency: CONCURRENCY,
     maxAttempts: MAX_TRIES,
     claimTimeoutMs: env.PROCESSOR_CLAIM_TIMEOUT_MS,
-    dailyBudgetUsd: Number.MAX_SAFE_INTEGER,
+    // No budget cap; the weekly reserve still stops the run.
+    dailyBudgetUsd: 0,
+    weeklyStopAt: env.PROCESSOR_WEEKLY_STOP_AT,
     generationTries: env.PROCESSOR_GENERATION_TRIES,
   };
   console.log(`generator ${config.extractionModel}`);
 
-  const client = createOpenRouterClient(apiKey);
-  // Cost per job is a bar: a response without a cost is estimated, not 0.
-  const pricing = new ModelPricing();
-  pricing.set(await checkModels(client, config));
   const repo = new EvalProcessorRepository();
+  const guard = new ProcessorGuard(repo, config);
   const service = createProcessorService({
     repo,
     vocab: new MemoryVocabRepository(),
-    extraction: new AiSdkExtractionModel(
-      apiKey,
-      config.extractionModel,
-      pricing,
-    ),
+    // The worker's generator; cost per job is the CLI's list-price figure.
+    extraction: createClaudeExtractionModel({
+      model: config.extractionModel,
+      effort: env.PROCESSOR_EFFORT,
+      timeoutMs: env.PROCESSOR_CALL_TIMEOUT_MS,
+      bin: claudeBin(process.env),
+      onLimits: (limits) => guard.observeLimits(limits),
+    }),
+    guard,
     config,
   });
 
@@ -129,6 +135,9 @@ async function main(): Promise<void> {
 
   const scores: FactScores[] = [];
   const failed: string[] = [];
+  /** Cases not run because a usage limit or the weekly reserve paused the run. */
+  const stopped: string[] = [];
+  let limitStop: PauseState | null = null;
   const queue = [...cases];
   const worker = async (): Promise<void> => {
     for (let c = queue.shift(); c; c = queue.shift()) {
@@ -136,6 +145,16 @@ async function main(): Promise<void> {
       let outcome = await run();
       for (let i = 1; outcome === 'retry' && i < MAX_TRIES; i++)
         outcome = await run();
+      const pause = guard.pauseState();
+      if (
+        (outcome === 'paused' || outcome === 'retry') &&
+        (pause?.reason === 'usage_limit' || pause?.reason === 'weekly_reserve')
+      ) {
+        // Not a quality failure: the subscription stopped the run.
+        limitStop ??= pause;
+        stopped.push(c.id, ...queue.splice(0).map((q) => q.id));
+        continue;
+      }
       const job = repo.jobs.get(c.id);
       const stored = repo.extractions.find(
         (e) => e.id === job?.currentExtractionId,
@@ -157,13 +176,18 @@ async function main(): Promise<void> {
 
   const report = summarize(scores);
   // A case that did not process proves nothing, so it fails the run.
-  const pass = report.pass && failed.length === 0;
+  const pass = report.pass && failed.length === 0 && stopped.length === 0;
   print({ ...report, pass }, failed);
   if (failed.length)
     console.log(`\nfailed cases:\n${failed.map((f) => `  ${f}`).join('\n')}`);
+  const limit = limitStop as PauseState | null;
+  if (limit)
+    console.log(
+      `\nSTOPPED ON A LIMIT (${limit.reason}, until ${limit.until.toISOString()}): ${limit.detail}\n${stopped.length} cases not run; the scores above cover only the ${scores.length + failed.length} that ran. Re-run after the reset.`,
+    );
   writeFileSync(
     join(GOLDEN_CASES_DIR, '..', reportFileName(config.extractionModel)),
-    `${JSON.stringify({ ...report, pass, failed, config }, null, 2)}\n`,
+    `${JSON.stringify({ ...report, pass, failed, stoppedOnLimit: limit, notRun: stopped, config }, null, 2)}\n`,
   );
   process.exit(pass ? 0 : 1);
 }

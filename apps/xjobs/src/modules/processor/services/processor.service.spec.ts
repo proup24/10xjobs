@@ -6,7 +6,9 @@ import {
   ModelRequestError,
   ProviderUnavailableError,
   TransientModelError,
+  UsageLimitError,
 } from '../models/errors';
+import type { LimitObservation } from '../models/claude/stream';
 import { EXTRACTION_SCHEMA_VERSION, extractionDocumentSchema } from '../schema';
 import {
   FakeExtractionModel,
@@ -15,7 +17,11 @@ import {
   sequence,
 } from '../testing/fakes';
 import { DESCRIPTION, generatorOutput, mf } from '../testing/generator-output';
-import { PROVIDER_PAUSE_MS } from './processor-guard.service';
+import {
+  PROVIDER_PAUSE_MS,
+  ProcessorGuard,
+  USAGE_LIMIT_FALLBACK_MS,
+} from './processor-guard.service';
 import { createProcessorService } from './processor.service';
 
 const EXT = 'anthropic/claude-opus-5.5';
@@ -28,6 +34,7 @@ const config: ProcessorConfig = {
   maxAttempts: 3,
   claimTimeoutMs: 900_000,
   dailyBudgetUsd: 20,
+  weeklyStopAt: 0.85,
   generationTries: 3,
 };
 
@@ -565,17 +572,15 @@ describe('ProcessorService', () => {
     });
     addJob();
     extraction = new FakeExtractionModel(() => {
-      throw new ModelRequestError(
-        'chat completions (x): OpenRouter returned 422: bad schema',
-      );
+      throw new ModelRequestError('API 400: bad schema');
     }, EXT);
     await expect(service().process('job-1')).resolves.toBe('failed');
     expect(warnings).toEqual([
       expect.stringMatching(
-        /^\[job job-1\] generation failed after .*OpenRouter returned 422: bad schema$/,
+        /^\[job job-1\] generation failed after .*API 400: bad schema$/,
       ),
       expect.stringMatching(
-        /^\[job job-1\] failed for good after .*OpenRouter returned 422: bad schema$/,
+        /^\[job job-1\] failed for good after .*API 400: bad schema$/,
       ),
     ]);
   });
@@ -622,7 +627,7 @@ describe('ProcessorService', () => {
     it('pauses and still records the call when the provider refuses the key', async () => {
       vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
       extraction = new FakeExtractionModel(() => {
-        throw new ProviderUnavailableError('OpenRouter returned 401');
+        throw new ProviderUnavailableError('claude authentication failed');
       }, EXT);
       const svc = service();
       await expect(svc.preview(posting)).rejects.toBeInstanceOf(
@@ -672,9 +677,129 @@ describe('ProcessorService', () => {
           archived: 0,
           unset: 1,
         },
-        spentTodayUsd: 1.5,
+        estimatedCostTodayUsd: 1.5,
         dailyBudgetUsd: 20,
         paused: false,
+        pause: null,
+        weeklyUtilization: null,
+      });
+    });
+  });
+  describe('usage limits', () => {
+    const limit = (resetsAt: Date | null): LimitObservation => ({
+      kind: 'five_hour',
+      status: 'rejected',
+      utilization: 1,
+      resetsAt,
+    });
+    const at = (ms: number) => new Date(NOW.getTime() + ms);
+    const jobs = ['a', 'b', 'c', 'd'];
+
+    const limited = (resets: (Date | null)[]) => {
+      let i = 0;
+      extraction = new FakeExtractionModel(() => {
+        throw new UsageLimitError('limit reached', limit(resets[i++]));
+      }, EXT);
+    };
+    const expectPendingRefunded = () => {
+      for (const id of jobs) {
+        expect(job(id)).toMatchObject({
+          processingStatus: 'pending',
+          processingAttempts: 0,
+          processingError: 'limit reached',
+        });
+      }
+    };
+
+    it('in-flight calls with the same reset: pending, refunded, one warn line', async () => {
+      const warn = vi
+        .spyOn(Logger.prototype, 'warn')
+        .mockImplementation(() => undefined);
+      jobs.forEach((id) => addJob(id));
+      const reset = at(3_600_000);
+      limited([reset, reset, reset, reset]);
+      const svc = service();
+
+      const outcomes = await Promise.all(jobs.map((id) => svc.process(id)));
+
+      expect(outcomes).toEqual(Array(4).fill('usage_limit'));
+      expectPendingRefunded();
+      expect(svc.isPaused()).toBe(true);
+      expect((await svc.status()).pause).toMatchObject({
+        until: reset,
+        reason: 'usage_limit',
+      });
+      const pauseLines = warn.mock.calls.filter(([m]) =>
+        String(m).includes('paused until'),
+      );
+      expect(pauseLines).toHaveLength(1);
+    });
+
+    it('in-flight calls with different resets: paused until the latest', async () => {
+      jobs.forEach((id) => addJob(id));
+      const ends = [1, 2, 3, 4].map((h) => at(h * 3_600_000));
+      limited(ends);
+      const svc = service();
+
+      await Promise.all(jobs.map((id) => svc.process(id)));
+
+      expectPendingRefunded();
+      expect((await svc.status()).pause?.until).toEqual(ends[3]);
+    });
+
+    it('a limit with no reset time pauses 15 minutes', async () => {
+      addJob('a');
+      limited([null]);
+      const svc = service();
+      await expect(svc.process('a')).resolves.toBe('usage_limit');
+      expect((await svc.status()).pause?.until).toEqual(
+        at(USAGE_LIMIT_FALLBACK_MS),
+      );
+    });
+
+    it('a fresh guard (restart) that hits the limit pauses again', async () => {
+      addJob('a');
+      limited([at(60_000)]);
+      const svc = service();
+      expect(svc.isPaused()).toBe(false);
+      await expect(svc.process('a')).resolves.toBe('usage_limit');
+      expect(job('a')).toMatchObject({
+        processingStatus: 'pending',
+        processingAttempts: 0,
+      });
+      expect(svc.isPaused()).toBe(true);
+    });
+
+    it('a successful call that sees weekly 0.85: processed, then paused', async () => {
+      addJob('a');
+      const reset = at(86_400_000);
+      const guard = new ProcessorGuard(repo, config, now);
+      extraction = new FakeExtractionModel((_, req) => {
+        guard.observeLimits([
+          {
+            kind: 'weekly',
+            status: 'allowed_warning',
+            utilization: 0.85,
+            resetsAt: reset,
+          },
+        ]);
+        return opusOutput(req);
+      }, EXT);
+      const svc = createProcessorService({
+        repo,
+        vocab,
+        extraction,
+        config,
+        now,
+        guard,
+      });
+
+      await expect(svc.process('a')).resolves.toBe('processed');
+      expect(job('a').processingStatus).toBe('processed');
+      expect(await svc.status()).toMatchObject({
+        paused: true,
+        weeklyUtilization: 0.85,
+        pause: { until: reset, reason: 'weekly_reserve' },
       });
     });
   });

@@ -8,6 +8,7 @@ const config: ProcessorConfig = {
   maxAttempts: 3,
   claimTimeoutMs: 900_000,
   dailyBudgetUsd: 10,
+  weeklyStopAt: 0.85,
   generationTries: 3,
 };
 
@@ -112,6 +113,18 @@ describe('processProcessJob', () => {
     });
     expect(d.repo.listPendingInScope).not.toHaveBeenCalled();
     expect(d.queue.enqueue).not.toHaveBeenCalled();
+  });
+
+  it('sweeps with a budget of 0 (no cap): enqueues despite spend', async () => {
+    const d = {
+      ...deps('processed', 50),
+      config: { ...config, dailyBudgetUsd: 0 },
+    };
+    expect(await processProcessJob(job('sweep'), d as never)).toEqual({
+      released: 3,
+      enqueued: 2,
+    });
+    expect(d.queue.enqueue).toHaveBeenCalledTimes(2);
   });
 
   it('sweeps while paused: releases but enqueues nothing', async () => {

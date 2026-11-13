@@ -15,7 +15,7 @@ import { ProcessorController } from './processor.controller';
 
 const JOB = '0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b';
 
-function controller(service: Partial<ProcessorService>, key = 'or-key') {
+function controller(service: Partial<ProcessorService>, key = 'oauth') {
   const config = {
     get: () => key,
   } as unknown as ConfigService<ProcessorEnvironmentVariables, true>;
@@ -43,7 +43,7 @@ describe('ProcessorController', () => {
     });
   });
 
-  it('refuses to call models without a key, instead of pausing on a 401', async () => {
+  it('refuses to call models without a Claude credential, instead of pausing on a 401', async () => {
     const preview = vi.fn();
     expect(await statusOf(controller({ preview }, '').preview(body))).toBe(
       HttpStatus.SERVICE_UNAVAILABLE,
