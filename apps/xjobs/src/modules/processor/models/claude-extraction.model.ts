@@ -52,7 +52,9 @@ export class ClaudeExtractionModel extends ExtractionModel {
       });
     } catch (error) {
       throw new ProviderUnavailableError(
-        `claude could not be started: ${error instanceof Error ? error.message : String(error)}`,
+        `could not run claude: ${error instanceof Error ? error.message : String(error)}`,
+        undefined,
+        { cause: error },
       );
     }
 

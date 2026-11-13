@@ -14,6 +14,7 @@ import {
   createClaudeExtractionModel,
 } from './claude-extraction.model';
 import {
+  ClaudeAuthError,
   ModelOutputError,
   ModelRequestError,
   ProviderUnavailableError,
@@ -126,10 +127,13 @@ describe('ClaudeExtractionModel', () => {
   });
 
   it('maps a spawn failure to ProviderUnavailableError, without onLimits', async () => {
-    const { model, onLimits } = setup(new Error('spawn claude ENOENT'));
-    await expect(model.generate(input, req)).rejects.toBeInstanceOf(
-      ProviderUnavailableError,
-    );
+    const spawnError = new Error('spawn claude ENOENT');
+    const { model, onLimits } = setup(spawnError);
+    const error = await model.generate(input, req).catch((e) => e);
+    expect(error).toBeInstanceOf(ProviderUnavailableError);
+    expect(error).not.toBeInstanceOf(ClaudeAuthError);
+    expect(error.message).toBe('could not run claude: spawn claude ENOENT');
+    expect(error.cause).toBe(spawnError);
     expect(onLimits).not.toHaveBeenCalled();
   });
 

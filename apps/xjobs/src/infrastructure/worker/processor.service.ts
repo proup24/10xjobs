@@ -91,13 +91,14 @@ export class ProcessorWorkerService implements OnModuleDestroy {
   private async checkCall(): Promise<void> {
     this.recheck = null;
     // Covers the call itself: a pause ending mid-call would let jobs claim.
+    // The first check logs at info; a recheck keeps the failure's detail.
     const current = this.guard.pauseState();
+    const failing = current?.reason === 'startup';
     this.guard.pauseUntil(
       new Date(Date.now() + this.callTimeoutMs + CHECK_MARGIN_MS),
       'startup',
-      current?.reason === 'startup'
-        ? current.detail
-        : 'checking the Claude credential',
+      failing ? current.detail : 'checking the Claude credential',
+      failing ? undefined : 'log',
     );
     let failure: Awaited<ReturnType<typeof checkClaudeCall>>;
     try {

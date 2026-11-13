@@ -101,6 +101,56 @@ it('runs only the processor queue with its sweeper after the startup checks', as
   }
 });
 
+it('logs the initial checking pause at info, not error', async () => {
+  const log = vi.spyOn(Logger.prototype, 'log');
+  const error = vi.spyOn(Logger.prototype, 'error');
+  const module = await build();
+  try {
+    await module.get(WorkerService).onModuleInit();
+    expect(log).toHaveBeenCalledWith(
+      expect.stringMatching(/\(startup\): checking the Claude credential/),
+    );
+    expect(error).not.toHaveBeenCalled();
+  } finally {
+    await module.get(WorkerService).beforeApplicationShutdown();
+    await module.close();
+  }
+});
+
+it('stays paused for the weekly reserve when the startup call reports it', async () => {
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
+  vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+  const resetsAt = new Date(Date.now() + 2 * 24 * 60 * 60_000);
+  const module = await build();
+  const guard = module.get(ProcessorGuard);
+  // What the model's onLimits does with the check call's rate_limit_event.
+  checks.checkClaudeCall.mockImplementationOnce(async () => {
+    guard.observeLimits([
+      {
+        kind: 'weekly',
+        status: 'allowed_warning',
+        utilization: 0.86,
+        resetsAt,
+      },
+    ]);
+    return null;
+  });
+  try {
+    await module.get(WorkerService).onModuleInit();
+    expect(guard.pauseState()).toMatchObject({
+      reason: 'weekly_reserve',
+      until: resetsAt,
+    });
+    await vi.advanceTimersByTimeAsync(60 * 60_000);
+    expect(guard.pauseState()?.reason).toBe('weekly_reserve');
+    expect(checks.checkClaudeCall).toHaveBeenCalledTimes(1);
+  } finally {
+    await module.get(WorkerService).beforeApplicationShutdown();
+    await module.close();
+    vi.useRealTimers();
+  }
+});
+
 it('refuses to start when claude is missing or at another version', async () => {
   checks.checkClaudeInstalled.mockRejectedValueOnce(
     new Error(
