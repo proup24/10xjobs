@@ -20,19 +20,10 @@ import {
   toModelError,
 } from './client';
 import { ModelOutputError } from './errors';
+import { postingText, retryText } from './posting';
 import { ModelPricing } from './pricing';
 import type { GenerateRequest, ModelCallMeta, PostingInput } from './types';
 import { ExtractionModel } from './types';
-
-function postingText(input: PostingInput): string {
-  return [
-    input.title && `Title: ${input.title}`,
-    input.truncated && 'Note: the description was truncated.',
-    input.description,
-  ]
-    .filter(Boolean)
-    .join('\n\n');
-}
 
 /** The system prompt, cached (it is the same for every posting). */
 const instructions = (systemPrompt: string): SystemModelMessage => ({
@@ -47,7 +38,7 @@ function messages(input: PostingInput, req: GenerateRequest): ModelMessage[] {
   if (req.retryErrors?.length)
     list.push({
       role: 'user',
-      content: `Your previous answer was invalid. Fix these problems and answer again:\n${req.retryErrors.map((e) => `- ${e}`).join('\n')}`,
+      content: retryText(req.retryErrors),
     });
   return list;
 }
