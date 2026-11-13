@@ -31,7 +31,7 @@ export class ExtractionStore {
     @Inject(PROCESSOR_CONFIG) private readonly config: ProcessorConfig,
   ) {}
 
-  /** Same input, schema, prompt and configured models: same extraction. */
+  /** Same input, schema, prompt and generator model: same extraction. */
   reuseKey(input: PostingInput): ReuseKey {
     return {
       inputHash: inputHash(input),
