@@ -83,6 +83,7 @@ const processorEnvironmentShape = {
     .int()
     .positive()
     .default(900_000),
+  PROCESSOR_WEEKLY_STOP_AT: z.coerce.number().gt(0).max(1).default(0.85),
   PROCESSOR_DAILY_BUDGET_USD: z.coerce.number().positive().default(20),
   /** Schema tries per generation; capped, since each one is a paid call. */
   PROCESSOR_GENERATION_TRIES: z.coerce.number().int().min(1).max(5).default(3),

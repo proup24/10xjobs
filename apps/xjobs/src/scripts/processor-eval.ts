@@ -99,6 +99,7 @@ async function main(): Promise<void> {
     maxAttempts: MAX_TRIES,
     claimTimeoutMs: env.PROCESSOR_CLAIM_TIMEOUT_MS,
     dailyBudgetUsd: Number.MAX_SAFE_INTEGER,
+    weeklyStopAt: 1,
     generationTries: env.PROCESSOR_GENERATION_TRIES,
   };
   console.log(`generator ${config.extractionModel}`);

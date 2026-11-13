@@ -63,6 +63,7 @@ type Env = ConfigService<ProcessorEnvironmentVariables, true>;
         dailyBudgetUsd: config.get('PROCESSOR_DAILY_BUDGET_USD', {
           infer: true,
         }),
+        weeklyStopAt: config.get('PROCESSOR_WEEKLY_STOP_AT', { infer: true }),
         generationTries: config.get('PROCESSOR_GENERATION_TRIES', {
           infer: true,
         }),

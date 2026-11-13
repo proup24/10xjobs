@@ -3,6 +3,7 @@ import {
   ModelRequestError,
   ProviderUnavailableError,
   TransientModelError,
+  UsageLimitError,
 } from '../models/errors';
 import { ExtractionFailed } from './extraction-pipeline.service';
 import { decideFailure } from './failure-policy';
@@ -12,6 +13,14 @@ describe('decideFailure', () => {
     expect(decideFailure(new ProviderUnavailableError('401'), 3, 3)).toEqual({
       finish: { status: 'pending', error: '401', refundAttempt: true },
       outcome: 'provider_unavailable',
+      unexpected: false,
+    });
+  });
+
+  it('gives the attempt back on a usage limit', () => {
+    expect(decideFailure(new UsageLimitError('limit', null), 3, 3)).toEqual({
+      finish: { status: 'pending', error: 'limit', refundAttempt: true },
+      outcome: 'usage_limit',
       unexpected: false,
     });
   });

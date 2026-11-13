@@ -3,7 +3,7 @@ import {
   PROCESSOR_CONFIG,
   type ProcessorConfig,
 } from '../config/processor.config';
-import { ProviderUnavailableError } from '../models/errors';
+import { ProviderUnavailableError, UsageLimitError } from '../models/errors';
 import { ExtractionModel } from '../models/types';
 import {
   type Claim,
@@ -23,7 +23,11 @@ import { ExtractionStore } from './extraction-store.service';
 import { FactAssembler } from './fact-assembler.service';
 import { GenerationService } from './generation.service';
 import { decideFailure, type FailureOutcome } from './failure-policy';
-import { type GuardBlock, ProcessorGuard } from './processor-guard.service';
+import {
+  type GuardBlock,
+  type PauseState,
+  ProcessorGuard,
+} from './processor-guard.service';
 
 export type ProcessOutcome =
   | 'processed'
@@ -58,10 +62,12 @@ export interface PreviewResult {
 export interface ProcessorStatus {
   models: { extraction: string };
   jobs: ProcessingCounts;
-  spentTodayUsd: number;
+  estimatedCostTodayUsd: number;
   dailyBudgetUsd: number;
   /** Only this process's pause; another worker process may be paused too. */
   paused: boolean;
+  pause: PauseState | null;
+  weeklyUtilization: number | null;
 }
 
 /** The guard refused to start model calls. */
@@ -182,6 +188,7 @@ export class ProcessorService {
       );
       if (error instanceof ProviderUnavailableError)
         this.guard.pause(error.message);
+      if (error instanceof UsageLimitError) this.pauseForLimit(error);
       throw error;
     } finally {
       await this.store.recordAttempts(log);
@@ -198,9 +205,11 @@ export class ProcessorService {
         extraction: this.config.extractionModel,
       },
       jobs: await this.jobs.processingCounts(),
-      spentTodayUsd: await this.guard.spentToday(),
+      estimatedCostTodayUsd: await this.guard.spentToday(),
       dailyBudgetUsd: this.config.dailyBudgetUsd,
       paused: this.guard.isPaused(),
+      pause: this.guard.pauseState(),
+      weeklyUtilization: this.guard.lastWeeklyUtilization(),
     };
   }
 
@@ -287,10 +296,12 @@ export class ProcessorService {
       );
     if (error instanceof ProviderUnavailableError)
       this.guard.pause(error.message);
+    if (error instanceof UsageLimitError) this.pauseForLimit(error);
     const next =
       decision.outcome === 'retry'
         ? `back to pending for a retry (attempt ${claim.attempts} of ${this.config.maxAttempts})`
-        : decision.outcome === 'provider_unavailable'
+        : decision.outcome === 'provider_unavailable' ||
+            decision.outcome === 'usage_limit'
           ? 'back to pending, attempt given back'
           : 'failed for good';
     log.warn(
@@ -306,6 +317,10 @@ export class ProcessorService {
       );
       throw cleanup;
     }
+  }
+
+  private pauseForLimit(error: UsageLimitError): void {
+    this.guard.pauseForUsageLimit(error.limit?.resetsAt ?? null, error.message);
   }
 
   private async finish(
@@ -334,6 +349,8 @@ export interface ProcessorDependencies {
   extraction: ExtractionModel;
   config: ProcessorConfig;
   now?: () => Date;
+  /** A prepared guard, so a test can feed it limit observations. */
+  guard?: ProcessorGuard;
 }
 
 /** The service graph without Nest, for tests and scripts. */
@@ -342,7 +359,7 @@ export function createProcessorService(
 ): ProcessorService {
   const { repo, vocab, config } = deps;
   return new ProcessorService(
-    new ProcessorGuard(repo, config, deps.now),
+    deps.guard ?? new ProcessorGuard(repo, config, deps.now),
     repo,
     vocab,
     new ExtractionPipeline(

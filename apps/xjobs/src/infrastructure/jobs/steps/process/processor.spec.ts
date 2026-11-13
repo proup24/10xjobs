@@ -8,6 +8,7 @@ const config: ProcessorConfig = {
   maxAttempts: 3,
   claimTimeoutMs: 900_000,
   dailyBudgetUsd: 10,
+  weeklyStopAt: 0.85,
   generationTries: 3,
 };
 

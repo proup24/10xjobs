@@ -65,7 +65,8 @@ export async function processProcessJob(
     // Paused after a key, credit or account error: jobs would only bounce.
     if (deps.service.isPaused()) return { released, enqueued: 0 };
     const spent = await deps.repo.spendSince(startOfUtcDay(now));
-    if (spent >= deps.config.dailyBudgetUsd) return { released, enqueued: 0 };
+    if (deps.config.dailyBudgetUsd > 0 && spent >= deps.config.dailyBudgetUsd)
+      return { released, enqueued: 0 };
     const pending = await deps.repo.listPendingInScope(
       processSweepConfig.limit,
     );
