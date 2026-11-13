@@ -3,14 +3,12 @@
  *
  *   pnpm --filter @xjobs/xjobs processor:eval -- [--generator m]
  *
- * `--generator` defaults to `PROCESSOR_EXTRACTION_MODEL`. The verification
- * columns of the report are empty until the eval is rewritten for the
- * generator-only processor. Calls paid APIs; never run in CI. Uses the real
+ * `--generator` defaults to `PROCESSOR_EXTRACTION_MODEL`. Calls paid APIs;
+ * never run in CI. Uses the real
  * OpenRouter adapters with in-memory repositories seeded from `seed-data.ts`,
  * so the database is not touched. Attempts are recorded with `eval: true`.
  * Prints the report, writes `golden/last-report.<generator>.json` and exits 1
- * unless every bar holds. It only suggests thresholds: update
- * `config/thresholds.ts` by hand from the report.
+ * unless every bar holds.
  */
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -26,7 +24,6 @@ import {
   callStats,
   type EvalReport,
   type FactScores,
-  questionLine,
   reportFileName,
   scoreCase,
   summarize,
@@ -38,11 +35,7 @@ import {
 } from 'src/modules/processor/models/client';
 import { ModelPricing } from 'src/modules/processor/models/pricing';
 import type { NewAttempt } from 'src/modules/processor/repositories/processor.repository';
-import {
-  type ExtractionDocument,
-  type ExtractionDocumentV3,
-  extractionDocumentSchema,
-} from 'src/modules/processor/schema';
+import { extractionDocumentSchema } from 'src/modules/processor/schema';
 import { createProcessorService } from 'src/modules/processor/services/processor.service';
 import {
   MemoryProcessorRepository,
@@ -51,18 +44,6 @@ import {
 
 const CONCURRENCY = 4;
 const MAX_TRIES = 3;
-
-/** The scorer still reads the v3 shape; a v4 document has no verification, so it gets an empty one. */
-const forScoring = (doc: ExtractionDocument): ExtractionDocumentV3 =>
-  ({
-    ...doc,
-    verification: {
-      rounds: 1,
-      regenerationInvalid: false,
-      dropped: [],
-      missedJunkFlags: [],
-    },
-  }) as unknown as ExtractionDocumentV3;
 
 /** Every attempt this run records is an eval attempt. */
 class EvalProcessorRepository extends MemoryProcessorRepository {
@@ -86,16 +67,6 @@ function print(report: EvalReport, failed: string[]): void {
     console.log(
       `${name.padEnd(26)} ${String(f.scored).padStart(5)}  ${pct(f.accuracy)}`,
     );
-  console.log(
-    '\nclosed field               verified  confirmed unconfirmed rejected',
-  );
-  for (const [name, v] of Object.entries(report.verdicts))
-    console.log(
-      `${name.padEnd(26)} ${String(v.verified).padStart(8)}  ${pct(v.confirmed)}    ${pct(v.unconfirmed)}   ${pct(v.rejected)}`,
-    );
-  console.log(
-    `\nJev rejection precision: ${pct(report.rejectionPrecision)} of ${report.rejections} final rejections, ${pct(report.rejectionPrecisionAllRounds)} of ${report.rejectionsAllRounds} rejections in every round, were wrong generator values`,
-  );
   const r = report.requirements;
   console.log(
     `\nrequirements: required recall ${pct(r.requiredRecall)} precision ${pct(r.requiredPrecision)}; nice recall ${pct(r.niceRecall)} precision ${pct(r.nicePrecision)}`,
@@ -104,25 +75,15 @@ function print(report: EvalReport, failed: string[]): void {
     `              kind ${pct(r.kindAccuracy)}  domain ${pct(r.domainAccuracy)}  years ${pct(r.yearsAccuracy)} (labeled cases only)`,
   );
   console.log(
-    '\nJev accuracy by score bucket (correct/total), suggested threshold (confirmations accepted):',
-  );
-  for (const [q, r] of Object.entries(report.questions))
-    console.log(questionLine(q, r));
-  console.log(
     `\nsure facts contradicted: ${pct(report.sureContradicted)} of ${report.sureFacts} (cases: ${report.casesWithSureContradiction})`,
   );
   console.log(
-    `per job: ${report.roundsPerJob.toFixed(2)} rounds, ${report.generatorCallsPerJob.toFixed(2)} generator calls, ${report.verifierCallsPerJob.toFixed(2)} Jev calls, ${report.costPerJob.toFixed(4)} USD`,
+    `per job: ${report.generatorCallsPerJob.toFixed(2)} generator calls, ${report.costPerJob.toFixed(4)} USD`,
   );
   console.log('\nbars:');
   for (const [name, ok] of Object.entries(report.bars))
     console.log(
       `  ${ok ? 'PASS' : 'FAIL'} ${name} (${name === 'sureContradicted' ? '<=' : '>='} ${BARS[name as keyof typeof BARS]})`,
-    );
-  console.log('\nsuggested thresholds for config/thresholds.ts (not applied):');
-  for (const [q, r] of Object.entries(report.questions))
-    console.log(
-      `  ${q}: ${r.suggestedThreshold ?? 'no safe threshold; keep the current one'},`,
     );
   console.log(`\noverall: ${report.pass ? 'PASS' : 'FAIL'}`);
 }
@@ -188,7 +149,7 @@ async function main(): Promise<void> {
       }
       // Every try of the job counts toward its calls and cost.
       const calls = callStats(repo.attempts.filter((a) => a.jobId === c.id));
-      scores.push(scoreCase(forScoring(parsed.data), c, calls));
+      scores.push(scoreCase(parsed.data, c, calls));
       console.log(`  ${c.id}: ${outcome}`);
     }
   };

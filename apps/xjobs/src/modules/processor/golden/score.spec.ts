@@ -1,17 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { fixtureDocumentV3 as fixtureDocument } from '../schema/fixture-v3.testing';
-import type { Verdict, Verification } from '../schema/extraction-v3';
+import { fixtureDocument } from '../schema/fixture.testing';
 import type { GoldenCase, GoldenRequirement } from './golden';
-import {
-  callStats,
-  type FactScores,
-  type FieldVerdict,
-  questionLine,
-  reportFileName,
-  scoreCase,
-  suggestThreshold,
-  summarize,
-} from './score';
+import { BARS, callStats, reportFileName, scoreCase, summarize } from './score';
 
 const reviewed = <T>(value: T) => ({ value, reviewed: true });
 
@@ -28,12 +18,6 @@ const req = (
   years: null,
   group,
 });
-
-const verified = (
-  verdict: Verdict,
-  jevPick: string,
-  score = 0.9,
-): Verification => ({ verdict, score, jevPick, rounds: 1 });
 
 /** A case whose golden values equal `fixtureDocument()`. */
 function matchingCase(id = 'c1'): GoldenCase {
@@ -101,19 +85,6 @@ describe('scoreCase', () => {
     });
   });
 
-  it("reads Jev's answers from the facts' verification", () => {
-    const doc = fixtureDocument();
-    doc.seniority.verification = verified('confirmed', 'senior');
-    doc.arrangement.verification = verified('unconfirmed', 'onsite', 0.5);
-    const jev = scoreCase(doc, matchingCase()).jev;
-    expect(jev.seniority).toEqual({ score: 0.9, correct: true, agrees: true });
-    expect(jev.arrangement).toEqual({
-      score: 0.5,
-      correct: false,
-      agrees: false,
-    });
-  });
-
   it('scores yearsRequired as a range', () => {
     const doc = fixtureDocument();
     doc.yearsRequired.value = { min: 5, max: 8 };
@@ -121,26 +92,6 @@ describe('scoreCase', () => {
       correct: 0,
     });
   });
-});
-
-/** Scores for one case carrying one Jev answer to `seniority`. */
-const withJev = (
-  score: number,
-  correct: boolean,
-  agrees = true,
-): FactScores => ({
-  caseId: String(score),
-  facts: {},
-  jev: { seniority: { score, correct, agrees } },
-  junkAnswers: [],
-  verdicts: {},
-  rejections: [],
-  rejectionsAllRounds: [],
-  requirements: null,
-  rounds: 1,
-  generatorCalls: 1,
-  verifierCalls: 1,
-  costUsd: 0,
 });
 
 describe('openingPlaces confidence', () => {
@@ -195,133 +146,50 @@ describe('summarize', () => {
     expect(report.pass).toBe(false);
   });
 
-  it('suggests the lowest threshold whose accepted answers are 98% right', () => {
+  it('averages cost and generator calls per job', () => {
     const report = summarize([
-      ...Array.from({ length: 5 }, () => withJev(0.95, true)),
-      withJev(0.75, false),
-      ...Array.from({ length: 5 }, () => withJev(0.85, true)),
-    ]);
-    expect(report.questions.seniority.suggestedThreshold).toBe(0.85);
-    expect(report.questions.seniority.acceptedAtSuggested).toBe(10);
-    expect(questionLine('seniority', report.questions.seniority)).toMatch(
-      /-> 0\.85 \(accepted 10\)$/,
-    );
-  });
-
-  it('suggests nothing from fewer than 10 accepted answers', () => {
-    const nine = Array.from({ length: 9 }, () => ({
-      score: 0.9,
-      correct: true,
-    }));
-    expect(suggestThreshold(nine)).toEqual({ threshold: null, accepted: 0 });
-    expect(suggestThreshold([...nine, { score: 0.5, correct: true }])).toEqual({
-      threshold: 0.5,
-      accepted: 10,
-    });
-    const report = summarize([withJev(0.95, true), withJev(0.85, true)]);
-    expect(report.questions.seniority.suggestedThreshold).toBeNull();
-    expect(questionLine('seniority', report.questions.seniority)).toMatch(
-      /-> none \(accepted 0\)$/,
-    );
-  });
-
-  it('buckets Jev accuracy by score', () => {
-    const report = summarize([
-      withJev(0.95, true),
-      withJev(0.75, false),
-      withJev(0.85, true),
-      withJev(0.3, false),
-    ]);
-    const byRange = Object.fromEntries(
-      report.questions.seniority.buckets.map((b) => [b.range, b]),
-    );
-    expect(byRange['0–0.5']).toMatchObject({ total: 1, correct: 0 });
-    expect(byRange['0.7–0.8']).toMatchObject({ total: 1, correct: 0 });
-    expect(byRange['0.8–0.9']).toMatchObject({ total: 1, correct: 1 });
-    expect(byRange['0.9–1']).toMatchObject({ total: 1, correct: 1 });
-  });
-
-  it('averages cost, rounds and calls per job', () => {
-    const report = summarize([
-      { ...withJev(0.9, true), costUsd: 0.1, rounds: 1, generatorCalls: 1 },
-      {
-        ...withJev(0.9, true),
+      scoreCase(fixtureDocument(), matchingCase('a'), {
+        costUsd: 0.1,
+        generatorCalls: 1,
+      }),
+      scoreCase(fixtureDocument(), matchingCase('b'), {
         costUsd: 0.3,
-        rounds: 2,
         generatorCalls: 3,
-        verifierCalls: 2,
-      },
+      }),
     ]);
     expect(report.costPerJob).toBeCloseTo(0.2);
-    expect(report.roundsPerJob).toBe(1.5);
     expect(report.generatorCallsPerJob).toBe(2);
-    expect(report.verifierCallsPerJob).toBe(1.5);
   });
 
-  it('suggests a threshold from confirmations only', () => {
-    const report = summarize([
-      ...Array.from({ length: 10 }, () => withJev(0.9, true)),
-      // A disagreement is not a confirmation, whatever its score.
-      ...Array.from({ length: 5 }, () => withJev(0.6, false, false)),
-    ]);
-    expect(report.questions.seniority.suggestedThreshold).toBe(0.9);
-    expect(report.questions.seniority.buckets[1]).toMatchObject({ total: 5 });
-  });
-});
-
-describe('verification report', () => {
-  it('shares each closed field among confirmed, unconfirmed and rejected', () => {
-    const docs = (
-      ['confirmed', 'confirmed', 'unconfirmed', 'rejected'] as const
-    ).map((verdict) => {
-      const doc = fixtureDocument();
-      doc.seniority.verification = verified(verdict, 'senior');
-      return scoreCase(doc, matchingCase());
+  it('reports only generator metrics, with the bars unchanged', () => {
+    const report = summarize([scoreCase(fixtureDocument(), matchingCase())]);
+    for (const key of [
+      'questions',
+      'verdicts',
+      'rejectionPrecision',
+      'rejections',
+      'verifierCallsPerJob',
+      'roundsPerJob',
+    ])
+      expect(report).not.toHaveProperty(key);
+    expect(Object.keys(report.facts).length).toBeGreaterThanOrEqual(12);
+    expect(BARS).toEqual({
+      openingPlaces: 0.95,
+      arrangement: 0.97,
+      mainStack: 0.9,
+      sureContradicted: 0.02,
     });
-    expect(summarize(docs).verdicts.seniority).toEqual({
-      verified: 4,
-      confirmed: 0.5,
-      unconfirmed: 0.25,
-      rejected: 0.25,
-    });
+    expect(Object.keys(report.bars).sort()).toEqual(Object.keys(BARS).sort());
   });
 
-  it('measures rejection precision against the golden values', () => {
-    const right = fixtureDocument();
-    right.verification.dropped = [
-      { field: 'arrangement', generatorValue: 'remote', jevPick: 'onsite' },
-    ];
-    const wrong = fixtureDocument();
-    wrong.verification.dropped = [
-      { field: 'seniority', generatorValue: 'junior', jevPick: 'senior' },
-    ];
-    const report = summarize([
-      scoreCase(right, matchingCase('a')),
-      scoreCase(wrong, matchingCase('b')),
-    ]);
-    expect(report.rejections).toBe(2);
-    expect(report.rejectionPrecision).toBe(0.5);
-  });
-
-  it('counts a missed junk flag as a rejection of "no"', () => {
-    const doc = fixtureDocument();
-    doc.verification.missedJunkFlags = ['vague'];
-    const c = matchingCase();
-    c.expected.junkFlags = ['vague'];
-    expect(scoreCase(doc, c).rejections).toEqual([
-      { field: 'junk:vague', wrong: true },
-    ]);
-  });
-
-  it('counts generator and verifier calls from the attempt rows', () => {
+  it('counts generator calls from the attempt rows', () => {
     expect(
       callStats([
         { step: 'generation', costUsd: 0.1 },
         { step: 'generation_retry', costUsd: 0.05 },
-        { step: 'verification', costUsd: 0.01 },
         { step: 'generation', costUsd: 0.1 },
       ]),
-    ).toEqual({ generatorCalls: 3, verifierCalls: 1, costUsd: 0.26 });
+    ).toEqual({ generatorCalls: 3, costUsd: 0.25 });
   });
 });
 
@@ -402,91 +270,5 @@ describe('reportFileName', () => {
     expect(reportFileName('deepseek/deepseek-v4.1-flash-1017')).toBe(
       'last-report.deepseek-deepseek-v4-1-flash-1017.json',
     );
-  });
-});
-
-/** One round's verdict as `VerificationService.verify` returns it. */
-const round = (
-  key: FieldVerdict['key'],
-  verdict: Verdict,
-  generatorValue: string,
-  jevPick: string,
-  score = 0.9,
-): FieldVerdict => ({
-  key,
-  verdict,
-  score,
-  jevPick,
-  generatorValue,
-  decidedBy: 'generator',
-  round: 1,
-});
-
-describe('verdicts from every round', () => {
-  it('measures rejection precision over every round, apart from the final one', () => {
-    const c = matchingCase();
-    c.expected.junkFlags = [];
-    const rounds = [
-      // Round 1: a right rejection (golden is senior) and a wrong one (golden is remote).
-      [
-        round('seniority', 'rejected', 'junior', 'senior'),
-        round('arrangement', 'rejected', 'remote', 'onsite'),
-      ],
-      // Round 2: the regenerated seniority confirmed; a junk flag rightly rejected.
-      [
-        round('seniority', 'confirmed', 'senior', 'senior'),
-        round('junk:vague', 'rejected', 'yes', 'no'),
-      ],
-    ];
-    const scores = scoreCase(fixtureDocument(), c, { roundVerdicts: rounds });
-    expect(scores.rejectionsAllRounds).toEqual([
-      { field: 'seniority', wrong: true },
-      { field: 'arrangement', wrong: false },
-      { field: 'junk:vague', wrong: true },
-    ]);
-    const report = summarize([scores]);
-    expect(report.rejectionsAllRounds).toBe(3);
-    expect(report.rejectionPrecisionAllRounds).toBeCloseTo(2 / 3);
-    // The final document dropped nothing.
-    expect(report.rejectionPrecision).toBeNull();
-  });
-
-  it('suggests a junk threshold from the junk answers of every round', () => {
-    const c = matchingCase();
-    c.expected.junkFlags = ['vague'];
-    const scores = Array.from({ length: 10 }, (_, i) =>
-      scoreCase(
-        fixtureDocument(),
-        { ...c, id: String(i) },
-        {
-          roundVerdicts: [
-            [
-              round('junk:vague', 'confirmed', 'yes', 'yes', 0.85),
-              round('junk:multi_city_template', 'unconfirmed', 'no', 'no', 0.7),
-            ],
-          ],
-        },
-      ),
-    );
-    expect(scores[0].junkAnswers).toEqual([
-      { score: 0.85, correct: true, agrees: true },
-      { score: 0.7, correct: true, agrees: true },
-    ]);
-    const junk = summarize(scores).questions.junk;
-    expect(junk.suggestedThreshold).toBe(0.7);
-    expect(junk.acceptedAtSuggested).toBe(20);
-  });
-
-  it('scores a junk unstated as no, as the pipeline compares it', () => {
-    const c = matchingCase();
-    c.expected.junkFlags = [];
-    const scores = scoreCase(fixtureDocument(), c, {
-      roundVerdicts: [
-        [round('junk:vague', 'confirmed', 'no', 'unstated', 0.9)],
-      ],
-    });
-    expect(scores.junkAnswers).toEqual([
-      { score: 0.9, correct: true, agrees: true },
-    ]);
   });
 });
