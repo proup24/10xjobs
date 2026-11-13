@@ -10,7 +10,7 @@
 - The tenant is the user: a Supabase Auth account. There are no workspaces or teams. A user owns one or more job-search profiles.
 - Every record a user owns carries their user id and is isolated by Postgres row-level security (RLS). Records only the engine uses (search queries, raw jobs) are shared across users and hidden from them.
 - The code stays open source, so any engineer can also run their own copy.
-- Anthropic and Apify run on the platform's own keys, shared by every user; users don't bring keys. Gmail access (Phase 3) is per user.
+- Anthropic and Apify run on the platform's own keys, shared by every user; users don't bring keys. Gmail access (Phase 4) is per user.
 - Sign-up is invite-only for now.
 
 ## Anti-goals
@@ -53,14 +53,20 @@ Engine work for this phase (search query generation, collection, ingest, the pro
 
 **Slices:** [phase-2-find/](phase-2-find/README.md)
 
-### Phase 3: Apply
+### Phase 3: Find quality
+
+Make the jobs that reach a user the right ones, with correct details. The first real results on `10xjobs-dev` were poor: wrong places, facts guessed from the listing, and qualified jobs the profile doesn't want. This phase fixes harvest, enrichment and matching against the anti-goals: don't miss the right jobs, and don't let the wrong ones through.
+
+**Slices:** [phase-3-find-quality/](phase-3-find-quality/README.md)
+
+### Phase 4: Apply
 
 - Tailor a personalized one-page resume per qualified job, and render it.
 - Fill application forms from a personal fact bank.
 - Email hiring-post authors from the user's Gmail.
 
-How much a human reviews before anything is sent is decided in the Phase 3 spec. Default going in: nothing goes out without the user approving it.
+How much a human reviews before anything is sent is decided in the Phase 4 spec. Default going in: nothing goes out without the user approving it.
 
-### Phase 4: Track and report
+### Phase 5: Track and report
 
 Report what's new and how the pipeline is performing: volume and pass rates per stage and per source, plus application outcomes.

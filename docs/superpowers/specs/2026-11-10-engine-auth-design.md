@@ -18,13 +18,13 @@ A leaked API key alone cannot act as any user. A stolen user token alone cannot 
 - Every hosted engine route requires the API key, including health.
 - Every route that acts for a user also requires a valid Supabase access token and checks ownership of the named profile.
 - The engine rejects: no key, a wrong key, no token, an expired token, a token from another Supabase project, a malformed token, and a valid token for a user who doesn't own the profile.
-- A small server-only client in the web app calls the engine with the key and the user's token. Slices 03 and 04 use it.
+- A small server-only client in the web app calls the engine with the key and the user's token. Slices 06 and 07 use it.
 - The temporary CRUD endpoints (`users`, `contacts`, `profiles` CRUD) and Basic auth are gone.
 - The operator endpoints (processor, matcher, query-search read) exist only on a locally run engine, never on the hosted one.
 
 ## Non-goals
 
-- The publish, edit and delete flows in the UI (slices 03 and 04). This slice adds the client and the engine route; no screen calls it yet.
+- The publish, edit and delete flows in the UI (slices 06 and 07). This slice adds the client and the engine route; no screen calls it yet.
 - Rate limiting, IP allowlists or a private network between Vercel and Hetzner. The key and the token are the boundary.
 - Key rotation without downtime (see Decisions).
 - A production engine or production Supabase project (still deferred).
@@ -95,7 +95,7 @@ After this slice, the hosted engine serves only:
 | `POST /api/profiles/:profileId/publish` | yes | yes        | Calls `ProfilesService.publish(user, profileId)`. 200, 404 or 409 as today |
 
 - **(call)** The engine gives publish's two 409 cases distinct error codes (`PROFILE_PUBLISHED` and `ELIGIBILITY_REQUIRED`) instead of the shared `CONFLICT`, so the client can map them without reading message text.
-- **(call)** Publish is the one user route this slice ships, because the service already exists and it lets the tests prove ownership end to end. Slices 03 and 04 add their routes (for example a release or delete) in the same shape: `/api/profiles/:profileId/<action>`, user from the token.
+- **(call)** Publish is the one user route this slice ships, because the service already exists and it lets the tests prove ownership end to end. Slices 06 and 07 add their routes (for example a release or delete) in the same shape: `/api/profiles/:profileId/<action>`, user from the token.
 - **(roadmap)** Removed: the `users`, `contacts` and `profiles` CRUD controllers and their DTOs and e2e tests. Services and repositories stay where other code uses them (publish, regenerate, the `db:*` scripts, the resume service); the builder deletes what becomes dead.
 - **(call)** Response shape and error format stay as today (`ResponseInterceptor`, `HttpExceptionFilter`). Auth failures are a plain 401 with no `WWW-Authenticate` challenge, and the body doesn't say which check failed.
 - **(call)** No CORS on the hosted engine: only servers call it. CORS stays as today in development.
@@ -111,10 +111,10 @@ After this slice, the hosted engine serves only:
 
 - **(roadmap)** A small server-only client in the web app.
 - **(call)** `apps/web/src/lib/engine/` with `import 'server-only'`. It reads `ENGINE_URL` and `ENGINE_API_KEY` from `process.env` (server-only, never `NEXT_PUBLIC_`). It gets the access token from the request's Supabase session via `createSupabaseServerClient()` (first checking that a signed-in user exists with `getClaims()`/`getUser()`, so an anonymous call never reaches the network).
-- **(call)** It sends `X-Engine-Key` and `Authorization: Bearer`, with a timeout (about 10 seconds) and no retries (side effects; slices 03 and 04 decide retry and idempotency per action).
+- **(call)** It sends `X-Engine-Key` and `Authorization: Bearer`, with a timeout (about 10 seconds) and no retries (side effects; slices 06 and 07 decide retry and idempotency per action).
 - **(call)** It returns a typed result instead of throwing for expected outcomes: `ok` with the data, `not-found`, `conflict` with a `reason` (`already-published` or `incomplete`, the latter meaning the user hasn't set their country of residence or answered the visa sponsorship question), `invalid` with the engine's message (publish's 400 when no searchable technology has importance above 0), `unauthorized` (session missing or rejected), `unavailable` (engine down, timeout, 5xx, or `ENGINE_URL`/`ENGINE_API_KEY` unset). Callers turn `unavailable` into a "couldn't reach the server, try again" message. User data is never lost, because it was already saved through Supabase before any engine call.
 - **(call)** It logs only the action, the profile id, the outcome and the HTTP status. It never logs the key, the token or response bodies.
-- **(call)** This slice ships `publishProfile(profileId)` as its one method, with unit tests (mocked `fetch`) for each result. No UI calls it until slice 03.
+- **(call)** This slice ships `publishProfile(profileId)` as its one method, with unit tests (mocked `fetch`) for each result. No UI calls it until slice 06.
 
 ### Engine URL and key per environment
 
@@ -138,7 +138,7 @@ These touch files slice 01 creates, so **this slice's PR is branched from `main`
 - `deploy/engine/README.md` (runbook): generating the key, setting it on the server and in Vercel, rotating it, and the merge-day order below.
 - Slice 01's spec "Done when" item 2 is superseded: after this slice, every route without the key returns 401.
 
-**Merge-day order (runbook):** before merging this slice's PR, the owner adds `ENGINE_API_KEY` to the server's `.env` (removing `BASIC_AUTH_*` is optional, the engine ignores them) and sets `ENGINE_URL` / `ENGINE_API_KEY` in Vercel. Otherwise the new image fails env validation and crash-loops: the deploy's rollout replaces `api` before its health check, so the API stays down until the key is added to the server `.env` and `docker compose up -d` runs, or a rollback runs.
+**Merge-day order (runbook):** before merging this slice's PR, the owner adds `ENGINE_API_KEY` to the server's `.env` (removing `BASIC_AUTH_*` is optional, the engine ignores them) and sets `ENGINE_URL` / `ENGINE_API_KEY` in Vercel. Otherwise the deploy's health check fails and the old image keeps running, which is a safe failure.
 
 ### Local Supabase
 
