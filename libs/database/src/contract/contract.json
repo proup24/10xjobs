@@ -76,6 +76,10 @@
       "model": "JunkFlag",
       "namespace": "public"
     },
+    "linkedin_search_splits": {
+      "model": "LinkedinSearchSplit",
+      "namespace": "public"
+    },
     "match_reviews": {
       "model": "MatchReview",
       "namespace": "public"
@@ -2997,6 +3001,76 @@
               },
               "namespaceId": "public",
               "table": "junk_flags"
+            }
+          },
+          "LinkedinSearchSplit": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "groupKey": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "parts": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "splitAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "groupKey": {
+                  "column": "groupKey"
+                },
+                "parts": {
+                  "column": "parts"
+                },
+                "splitAt": {
+                  "column": "splitAt"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "linkedin_search_splits"
             }
           },
           "MatchReview": {
@@ -7198,6 +7272,11 @@
               "namespaceId": "public",
               "tableName": "junk_flags"
             },
+            "linkedin_search_splits": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "linkedin_search_splits"
+            },
             "match_reviews": {
               "kind": "rls",
               "namespaceId": "public",
@@ -9588,6 +9667,67 @@
               "primaryKey": {
                 "columns": [
                   "code"
+                ]
+              },
+              "uniques": []
+            },
+            "linkedin_search_splits": {
+              "checks": [
+                {
+                  "expression": "\"parts\" >= 1",
+                  "name": "linkedin_search_splits_parts_10bfeb33",
+                  "prefix": "linkedin_search_splits_parts"
+                }
+              ],
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "groupKey": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "parts": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "splitAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "groupKey"
                 ]
               },
               "uniques": []
@@ -12798,10 +12938,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "5201f9230494207e174126f3348a3d6713e841a1997ba7f264ec11f62038f179"
+    "storageHash": "bb8af43bca30e6471e52cd0c0d8d90c51a1f0c5ed462b52a7aad80dbed142948"
   },
   "execution": {
-    "executionHash": "d1afc78045007bb79eb075540ad58bb39a9183f73c152ea2601abe6ca2050fee",
+    "executionHash": "715e2532a0052464d22fb6f943fddbdf3fe9c05f913b908450f71476ac1bf9b8",
     "mutations": {
       "defaults": [
         {
@@ -12960,6 +13100,21 @@
           "ref": {
             "entry": "job_views",
             "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "linkedin_search_splits",
+            "field": "updatedAt",
             "namespace": "public"
           }
         },

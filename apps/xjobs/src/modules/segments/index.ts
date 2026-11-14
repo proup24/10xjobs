@@ -10,6 +10,10 @@ export {
   type SegmentRunStatus,
 } from './repositories/segments.repository';
 export {
+  LinkedinSearchSplitsRepository,
+  PrismaLinkedinSearchSplitsRepository,
+} from './repositories/splits.repository';
+export {
   SEGMENT_SIZE,
   buildSegments,
   segmentHash,

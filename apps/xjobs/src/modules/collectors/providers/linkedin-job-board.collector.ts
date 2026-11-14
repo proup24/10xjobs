@@ -8,13 +8,14 @@ import type {
 import { reachedChargeCap } from '../utils/collected-job';
 import { ApifyActorProvider } from './apify/apify.provider';
 import {
-  linkedinSearchKey,
+  linkedinGroupKey,
+  mergedLinkedinKeyword,
   toHarvestJobSearchInput,
 } from './mappers/linkedin-job-board.mapper';
 
 /**
  * Apify trigger for the LinkedIn job board: one actor run per search. Segments
- * group builders by their search (`linkedinSearchKey`), so a segment runs one
+ * group builders by their search (`linkedinGroupKey`), so a segment runs one
  * search and every item the run returns belongs to every member. The input
  * never depends on the segment's window: the actor is asked for the last hour.
  * Nothing is matched by text, and the run's `maxItems` and charge cap bound
@@ -28,6 +29,7 @@ export class LinkedinJobBoardCollector {
     // The cap only stops a runaway run.
     maxRunChargeUsd: 0.25,
     maxRowsPerSearch: 100,
+    maxRowsCeiling: 1000,
   };
 
   readonly channel = Channel.LINKEDIN_JOB_BOARD;
@@ -37,9 +39,7 @@ export class LinkedinJobBoardCollector {
     const config = LinkedinJobBoardCollector.config;
     // Throws for a place with no geoId; that failure must reach the caller.
     const searches = new Set(
-      segment.queries.map(({ keyword, params }) =>
-        linkedinSearchKey(keyword, params),
-      ),
+      segment.queries.map(({ params }) => linkedinGroupKey(params)),
     );
     if (searches.size !== 1)
       throw new Error(
@@ -47,16 +47,20 @@ export class LinkedinJobBoardCollector {
       );
     // Members may spell a geoId-pinned place differently; any one runs the search.
     const [first] = segment.queries;
+    // The charge cap grows with the rows asked for.
+    const rows = segment.maxItems ?? config.maxRowsPerSearch;
+    const maxChargeUsd =
+      (config.maxRunChargeUsd * rows) / config.maxRowsPerSearch;
     const { items, costUsd, runId } = await this.actor.run(
       config.actor,
       {
         ...toHarvestJobSearchInput(
-          first.keyword,
+          mergedLinkedinKeyword(segment.queries),
           first.params,
-          config.maxRowsPerSearch,
+          rows,
         ),
       },
-      { maxChargeUsd: config.maxRunChargeUsd },
+      { maxChargeUsd },
     );
 
     // The actor reports no position; dataset order is newest first.
@@ -64,7 +68,7 @@ export class LinkedinJobBoardCollector {
     const totals = searchTotals(items[0]);
     const total = (totals as { totalElements?: unknown } | null)?.totalElements;
     const truncated =
-      items.length >= config.maxRowsPerSearch ||
+      items.length >= rows ||
       (typeof total === 'number' && total > items.length);
     return {
       itemsByQuery: new Map(segment.queries.map(({ id }) => [id, [...found]])),
@@ -73,7 +77,7 @@ export class LinkedinJobBoardCollector {
       fetched: items.length,
       searchTotals: totals,
       costUsd,
-      capped: reachedChargeCap(costUsd, config.maxRunChargeUsd),
+      capped: reachedChargeCap(costUsd, maxChargeUsd),
       source: { actor: config.actor, apifyRunId: runId },
     };
   }

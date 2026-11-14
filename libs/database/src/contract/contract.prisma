@@ -1242,3 +1242,16 @@ policy_select iso_currencies_read_approved {
   roles = [authenticated]
   using = sql`true`
 }
+
+// How many parts a full LinkedIn search was last split into, kept by group key so
+// the collector starts the next run from it. Engine-only: RLS on, no policies.
+model LinkedinSearchSplit {
+  groupKey String               @id
+  parts    Int
+  splitAt  TimestamptzJsDate(3)
+  +Timestamps
+
+  @@check(expression: sql`"parts" >= 1`, name: "linkedin_search_splits_parts")
+  @@map("linkedin_search_splits")
+  @@rls
+}

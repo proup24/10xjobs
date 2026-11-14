@@ -4,6 +4,7 @@
  * input format lives here; the collector only runs it. Builders keep storing
  * LinkedIn's `f_E` and `f_WT` codes; this maps them to the actor's names.
  */
+import { linkedinKeyword } from 'src/modules/queries/channels/linkedin_keyword';
 import { locationKey } from 'src/modules/queries/steps/normalize';
 import {
   LINKEDIN_GEO_IDS,
@@ -88,21 +89,41 @@ export function toHarvestJobSearchInput(
 }
 
 /**
- * What one builder searches, comparable across builders: canonical JSON of its
- * keyword, place (its geoId) and
- * mapped filters. Builders with the same value run the same search; segments
- * group them by it.
+ * What a builder's search shares with others, comparable across builders:
+ * canonical JSON of its place (its geoId) and mapped filters, without the
+ * keyword. Segments group LinkedIn job board builders by it; their keywords
+ * merge into one search.
  */
-export function linkedinSearchKey(
-  keyword: string,
-  params: Record<string, unknown>,
-): string {
+export function linkedinGroupKey(params: Record<string, unknown>): string {
   const experienceLevel = mapCodes(params.experienceLevel, EXPERIENCE).sort();
   const workplaceType = mapCodes(params.workType, WORKPLACE).sort();
   return JSON.stringify({
-    keyword,
     place: { geoId: linkedinGeoId(params) },
     ...(experienceLevel.length ? { experienceLevel } : {}),
     ...(workplaceType.length ? { workplaceType } : {}),
   });
+}
+
+function stringList(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((v): v is string => typeof v === 'string')
+    : [];
+}
+
+/** The union of the members' role words and spellings. */
+export function linkedinMemberWords(
+  queries: readonly { params: Record<string, unknown> }[],
+): { roleWords: string[]; spellings: string[] } {
+  return {
+    roleWords: queries.flatMap(({ params }) => stringList(params.roleWords)),
+    spellings: queries.flatMap(({ params }) => stringList(params.spellings)),
+  };
+}
+
+/** One keyword for all members: `linkedinKeyword` over the union of their words. */
+export function mergedLinkedinKeyword(
+  queries: readonly { params: Record<string, unknown> }[],
+): string {
+  const { roleWords, spellings } = linkedinMemberWords(queries);
+  return linkedinKeyword(roleWords, spellings);
 }

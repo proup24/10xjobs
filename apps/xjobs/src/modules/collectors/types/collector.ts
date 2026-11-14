@@ -30,6 +30,8 @@ export interface SegmentSearch {
   since: Date;
   until: Date;
   queries: SegmentQuery[];
+  /** Rows this search may return; the LinkedIn collector uses it in place of `maxRowsPerSearch`. */
+  maxItems?: number;
 }
 
 /** What one segment run collected, per member builder, untouched. */
@@ -68,6 +70,8 @@ export interface LinkedinJobBoardRunConfig extends ActorRunConfig {
    * one search); a search that returns this many counts as truncated.
    */
   maxRowsPerSearch: number;
+  /** The most rows a segment's `maxItems` may ask for. */
+  maxRowsCeiling: number;
 }
 
 export interface LinkedinPostsRunConfig extends ActorRunConfig {

@@ -87,6 +87,15 @@ export abstract class SearchSegmentsRepository {
   ): Promise<void>;
   /** Sets each builder's `coveredUntil` to `until`; never moves a cursor back. */
   abstract advanceCursors(queryIds: string[], until: Date): Promise<void>;
+  /**
+   * The cost, in micro-USD, of the channel's runs started at or after `since`.
+   * A run with no recorded cost counts as `nullCostMicroUsd`.
+   */
+  abstract spentMicroUsd(
+    channel: Channel,
+    since: Date,
+    nullCostMicroUsd: number,
+  ): Promise<number>;
 }
 
 @Injectable()
@@ -196,6 +205,22 @@ export class PrismaSearchSegmentsRepository extends SearchSegmentsRepository {
 
   async advanceCursors(queryIds: string[], until: Date): Promise<void> {
     await moveCursors(this.database.db.orm, queryIds, until);
+  }
+
+  async spentMicroUsd(
+    channel: Channel,
+    since: Date,
+    nullCostMicroUsd: number,
+  ): Promise<number> {
+    const runs = await this.database.db.orm.public.SearchSegmentRun.where(
+      (row) => row.channel.eq(channel),
+    )
+      .where((row) => row.startedAt.gte(since))
+      .all();
+    return runs.reduce(
+      (total, run) => total + (run.costMicroUsd ?? nullCostMicroUsd),
+      0,
+    );
   }
 }
 

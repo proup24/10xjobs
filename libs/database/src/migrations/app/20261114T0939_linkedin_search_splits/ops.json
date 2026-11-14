@@ -1,0 +1,90 @@
+[
+  {
+    "id": "table.linkedin_search_splits",
+    "label": "Create table \"linkedin_search_splits\"",
+    "summary": "Creates table \"linkedin_search_splits\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "linkedin_search_splits"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"linkedin_search_splits\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"linkedin_search_splits\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"linkedin_search_splits\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"linkedin_search_splits\"",
+        "sql": "CREATE TABLE \"public\".\"linkedin_search_splits\" (\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"groupKey\" text NOT NULL,\n  \"parts\" int4 NOT NULL,\n  \"splitAt\" timestamptz(3) NOT NULL,\n  \"updatedAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  PRIMARY KEY (\"groupKey\"),\n  CONSTRAINT \"linkedin_search_splits_parts_10bfeb33\" CHECK (\"parts\" >= 1)\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"linkedin_search_splits\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"linkedin_search_splits\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"linkedin_search_splits\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.linkedin_search_splits",
+    "label": "Enable row-level security on \"linkedin_search_splits\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "linkedin_search_splits"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"linkedin_search_splits\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "linkedin_search_splits"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"linkedin_search_splits\"",
+        "sql": "ALTER TABLE \"public\".\"linkedin_search_splits\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"linkedin_search_splits\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "linkedin_search_splits"
+        ]
+      }
+    ]
+  }
+]

@@ -68,6 +68,11 @@ function requireStorage(
     });
 }
 
+/** Daily spend cap, in US dollars, on LinkedIn job board collection (Morocco day). */
+const collectionBudgetShape = {
+  COLLECTION_DAILY_BUDGET_USD: z.coerce.number().positive().finite().default(3),
+};
+
 /**
  * The processor's settings, read by the worker processes and by the API (its
  * testing endpoints). The credentials are optional here: without one,
@@ -124,6 +129,7 @@ export const workerProcessEnvironmentSchema = databaseEnvironmentSchema
     /** In development, each collection worker runs one collection at startup. */
     NODE_ENV: z.enum(EnvironmentType).default(EnvironmentType.development),
     APIFY_TOKEN: z.string().min(1).optional(),
+    ...collectionBudgetShape,
     WORKER_CHANNEL: z.enum(Channel).optional(),
     WORKER_ROLE: z.enum(['ingest', 'processor', 'match', 'all']).optional(),
     /**
@@ -173,6 +179,7 @@ export const environmentSchema = databaseEnvironmentSchema
     ...storageEnvironmentShape,
     /** Apify API token for the collectors. Optional so the API boots without collection. */
     APIFY_TOKEN: z.string().min(1).optional(),
+    ...collectionBudgetShape,
     ...processorEnvironmentShape,
     /** Mounts the operator routes (processor, matcher, query search); local only. */
     XJOBS_OPERATOR_ENDPOINTS: booleanFlag.default(false),

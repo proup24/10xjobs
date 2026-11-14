@@ -1,4 +1,5 @@
 /** In-memory segments repository for unit tests; not part of the application build. */
+import type { Channel } from 'src/common/enums';
 import {
   type ClaimResult,
   type ClaimWindow,
@@ -6,6 +7,7 @@ import {
   type NewSegmentRun,
   SearchSegmentsRepository,
 } from '../repositories/segments.repository';
+import { LinkedinSearchSplitsRepository } from '../repositories/splits.repository';
 
 interface FakeClaim {
   runId: string;
@@ -93,5 +95,33 @@ export class FakeSearchSegmentsRepository extends SearchSegmentsRepository {
       const current = this.cursors.get(id);
       if (!current || current < until) this.cursors.set(id, until);
     }
+  }
+
+  async spentMicroUsd(
+    channel: Channel,
+    since: Date,
+    nullCostMicroUsd: number,
+  ): Promise<number> {
+    return [...this.runs, ...this.collected.map(({ run }) => run)]
+      .filter((run) => run.channel === channel && run.startedAt >= since)
+      .reduce((sum, run) => sum + (run.costMicroUsd ?? nullCostMicroUsd), 0);
+  }
+}
+
+/** In-memory splits repository; `parts` of 1 forgets a key, as in Postgres. */
+export class FakeLinkedinSearchSplitsRepository extends LinkedinSearchSplitsRepository {
+  splits = new Map<string, { parts: number; splitAt: Date }>();
+
+  async parts(): Promise<Map<string, { parts: number; splitAt: Date }>> {
+    return new Map(this.splits);
+  }
+
+  async setParts(
+    groupKey: string,
+    parts: number,
+    splitAt: Date,
+  ): Promise<void> {
+    if (parts <= 1) this.splits.delete(groupKey);
+    else this.splits.set(groupKey, { parts, splitAt });
   }
 }

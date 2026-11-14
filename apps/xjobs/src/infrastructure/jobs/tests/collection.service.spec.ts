@@ -9,8 +9,11 @@ import type {
 import { linkedinGeoId } from 'src/modules/collectors/providers/mappers/linkedin-job-board.mapper';
 import { ingestConfig, parseBatchFile } from 'src/modules/ingest';
 import type { QuerySearchService } from 'src/modules/queries';
-import { segmentHash } from 'src/modules/segments';
-import { FakeSearchSegmentsRepository } from 'src/modules/segments/testing/fakes';
+import { segmentHash, segmentKey } from 'src/modules/segments';
+import {
+  FakeLinkedinSearchSplitsRepository,
+  FakeSearchSegmentsRepository,
+} from 'src/modules/segments/testing/fakes';
 import { MemoryStorageService } from 'src/modules/storage/testing';
 import { CollectionService, channelJobsConfig } from '../steps/collect';
 import type { IngestQueue } from '../steps/ingest/queue.service';
@@ -57,6 +60,7 @@ function setup(
   collect: (segment: SegmentSearch) => Promise<SegmentResult> = async (s) =>
     resultFor(s),
   channel: Channel = Channel.ASHBY,
+  budgetUsd = 3,
 ) {
   const queries = { listActive: vi.fn(async () => rows) };
   const collectors = Object.fromEntries(
@@ -73,6 +77,7 @@ function setup(
   const segments = new FakeSearchSegmentsRepository();
   for (const row of rows)
     if (row.coveredUntil) segments.cursors.set(row.id, row.coveredUntil);
+  const splits = new FakeLinkedinSearchSplitsRepository();
   const storage = new MemoryStorageService();
   const order: string[] = [];
   const put = storage.put.bind(storage);
@@ -99,8 +104,10 @@ function setup(
     collectors[Channel.LINKEDIN_POSTS] as never,
     queries as unknown as QuerySearchService,
     segments,
+    splits,
     storage,
     ingestQueue as unknown as IngestQueue,
+    { get: () => budgetUsd } as never,
   );
   const warn = vi
     .spyOn(Logger.prototype, 'warn')
@@ -113,6 +120,7 @@ function setup(
     queries,
     collector,
     segments,
+    splits,
     storage,
     ingestQueue,
     order,
@@ -503,6 +511,458 @@ describe('CollectionService.collect', () => {
     expect(collector.collect).not.toHaveBeenCalled();
     expect(segments.runs).toEqual([]);
     expect(segments.collected).toEqual([]);
+  });
+});
+
+describe('CollectionService LinkedIn search splits', () => {
+  const ROWS = 100;
+  const CEILING = 1000;
+  const linkedin = (count: number) =>
+    builders(count, {
+      channel: Channel.LINKEDIN_JOB_BOARD,
+      type: Arrangement.remote,
+      params: { location: 'emea' },
+    });
+  /** A full result: the row limit reached, every member truncated. */
+  const full = (s: SegmentSearch) =>
+    resultFor(s, () => [item(1)], {
+      fetched: s.maxItems ?? ROWS,
+      truncatedQueryIds: s.queries.map((q) => q.id),
+    });
+  const small = (s: SegmentSearch) =>
+    resultFor(s, () => [item(1)], { fetched: 3 });
+  const ids = (s: SegmentSearch) => s.queries.map((q) => q.id);
+  const run = (
+    rows: QuerySearchBuilderRow[],
+    collect: (s: SegmentSearch) => SegmentResult,
+  ) => setup(rows, async (s) => collect(s), Channel.LINKEDIN_JOB_BOARD);
+  const searches = (collector: ReturnType<typeof setup>['collector']) =>
+    collector.collect.mock.calls.map(([s]) => s);
+
+  it('uses the LinkedIn row limits', () => {
+    expect(channelJobsConfig[Channel.LINKEDIN_JOB_BOARD].run).toMatchObject({
+      maxRowsPerSearch: ROWS,
+      maxRowsCeiling: CEILING,
+    });
+  });
+
+  it('runs a full 2-member search again as two halves, and only the halves move cursors', async () => {
+    const rows = linkedin(2);
+    const [a, b] = rows.map((r) => r.id);
+    const { collection, collector, segments } = run(rows, (s) =>
+      s.queries.length > 1 ? full(s) : small(s),
+    );
+    const summary = await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+
+    expect(searches(collector).map(ids)).toEqual([[a, b], [a], [b]]);
+    expect(searches(collector).map((s) => s.maxItems)).toEqual([
+      undefined,
+      undefined,
+      undefined,
+    ]);
+    // Every run searches the same hour.
+    const windows = new Set(
+      searches(collector).map((s) => `${+s.since}-${+s.until}`),
+    );
+    expect(windows.size).toBe(1);
+    expect(segments.collected.map((c) => c.advance)).toEqual([[], [a], [b]]);
+    expect(segments.collected.map((c) => c.run.queryIds)).toEqual([
+      [a, b],
+      [a],
+      [b],
+    ]);
+    expect(segments.collected[1]?.run.segmentHash).toBe(
+      segmentHash(segmentKey(rows[0]), [a]),
+    );
+    expect(segments.cursors.get(a)).toEqual(
+      segments.collected[1]?.run.windowEnd,
+    );
+    expect(segments.cursors.get(b)).toEqual(
+      segments.collected[2]?.run.windowEnd,
+    );
+    expect(segments.claims.size).toBe(0);
+    expect(summary).toMatchObject({
+      segments: 2,
+      batches: 3,
+      segmentsFailed: 0,
+    });
+  });
+
+  it('remembers the split with setParts 2 for the group', async () => {
+    const rows = linkedin(2);
+    const { collection, splits } = run(rows, (s) =>
+      s.queries.length > 1 ? full(s) : small(s),
+    );
+    const setParts = vi.spyOn(splits, 'setParts');
+    await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+
+    expect(setParts).toHaveBeenCalledTimes(1);
+    expect(setParts).toHaveBeenCalledWith(
+      segmentKey(rows[0]),
+      2,
+      expect.any(Date),
+    );
+    expect(splits.splits.get(segmentKey(rows[0]))?.parts).toBe(2);
+  });
+
+  it('halves a full half again until it fits', async () => {
+    const rows = linkedin(4);
+    const [a, b, c, d] = rows.map((r) => r.id);
+    const { collection, collector, segments, splits } = run(rows, (s) =>
+      s.queries.length > 1 && ids(s).includes(a) ? full(s) : small(s),
+    );
+    const summary = await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+
+    expect(searches(collector).map(ids)).toEqual([
+      [a, b, c, d],
+      [a, b],
+      [a],
+      [b],
+      [c, d],
+    ]);
+    expect(segments.collected.map((x) => x.advance)).toEqual([
+      [],
+      [],
+      [a],
+      [b],
+      [c, d],
+    ]);
+    expect(summary).toMatchObject({ segments: 3, batches: 5 });
+    expect(splits.splits.get(segmentKey(rows[0]))?.parts).toBe(3);
+  });
+
+  it('reruns a full single member once with maxItems at the ceiling', async () => {
+    const rows = linkedin(1);
+    const [a] = rows.map((r) => r.id);
+    const { collection, collector, segments, splits, warn } = run(rows, (s) =>
+      s.maxItems === CEILING ? small(s) : full(s),
+    );
+    const summary = await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+
+    expect(searches(collector).map((s) => s.maxItems)).toEqual([
+      undefined,
+      CEILING,
+    ]);
+    expect(searches(collector).map(ids)).toEqual([[a], [a]]);
+    expect(segments.collected.map((x) => x.advance)).toEqual([[], [a]]);
+    expect(warn).not.toHaveBeenCalledWith(
+      expect.stringContaining('older postings in this hour are lost'),
+    );
+    expect(summary).toMatchObject({ segments: 1, batches: 2 });
+    // A rerun is not a split.
+    expect(splits.splits.size).toBe(0);
+  });
+
+  it('moves the cursors of a member still full at the ceiling, and says once that postings are lost', async () => {
+    const rows = linkedin(1);
+    const [a] = rows.map((r) => r.id);
+    const { collection, collector, segments, warn } = run(rows, full);
+    await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+
+    expect(collector.collect).toHaveBeenCalledTimes(2);
+    expect(segments.collected.map((x) => x.advance)).toEqual([[], [a]]);
+    expect(segments.cursors.get(a)).toEqual(
+      segments.collected[1]?.run.windowEnd,
+    );
+    const lost = warn.mock.calls.filter(([text]) =>
+      String(text).includes('older postings'),
+    );
+    expect(lost).toEqual([
+      [
+        `${segmentKey(rows[0])} is full at ${CEILING} rows; older postings in this hour are lost`,
+      ],
+    ]);
+  });
+
+  it('keeps cursors when a half fails, and moves the other half', async () => {
+    const rows = linkedin(2);
+    const [a, b] = rows.map((r) => r.id);
+    const { collection, segments } = run(rows, (s) => {
+      if (s.queries.length > 1) return full(s);
+      if (ids(s)[0] === a) throw new Error('down');
+      return small(s);
+    });
+    const summary = await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+
+    expect(segments.cursors.has(a)).toBe(false);
+    expect(segments.cursors.has(b)).toBe(true);
+    expect(segments.runs).toHaveLength(1);
+    expect(summary).toMatchObject({
+      segments: 2,
+      segmentsFailed: 1,
+      batches: 2,
+    });
+  });
+
+  it('starts no half once stopping, and moves no cursor', async () => {
+    const rows = linkedin(2);
+    let stop = () => undefined as void;
+    const { collection, collector, segments } = run(rows, (s) => {
+      stop();
+      return full(s);
+    });
+    stop = () => collection.stop();
+    const summary = await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+
+    expect(collector.collect).toHaveBeenCalledTimes(1);
+    expect(segments.cursors.size).toBe(0);
+    expect(segments.claims.size).toBe(0);
+    expect(summary).toMatchObject({
+      segments: 2,
+      segmentsDeferred: 2,
+      segmentsFailed: 0,
+    });
+  });
+
+  it('cuts a group into the remembered parts', async () => {
+    const rows = linkedin(4);
+    const { collection, collector, splits } = run(rows, small);
+    splits.splits.set(segmentKey(rows[0]), {
+      parts: 2,
+      splitAt: new Date(Date.now() - 10 * 60_000),
+    });
+    const setParts = vi.spyOn(splits, 'setParts');
+    await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+
+    expect(searches(collector).map(ids)).toEqual([
+      rows.slice(0, 2).map((r) => r.id),
+      rows.slice(2).map((r) => r.id),
+    ]);
+    // Split under an hour ago: kept.
+    expect(setParts).not.toHaveBeenCalled();
+  });
+
+  it('halves a remembered split over an hour old once its searches run small', async () => {
+    const rows = linkedin(4);
+    const { collection, splits } = run(rows, small);
+    const key = segmentKey(rows[0]);
+    splits.splits.set(key, {
+      parts: 2,
+      splitAt: new Date(Date.now() - 2 * HOUR),
+    });
+    await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+    expect(splits.splits.has(key)).toBe(false);
+  });
+
+  it('does not undo a split when a search failed, since its size is unknown', async () => {
+    const rows = linkedin(4);
+    const { collection, splits } = run(rows, (s) => {
+      if (ids(s).includes(rows[0].id)) throw new Error('down');
+      return small(s);
+    });
+    const key = segmentKey(rows[0]);
+    splits.splits.set(key, {
+      parts: 2,
+      splitAt: new Date(Date.now() - 2 * HOUR),
+    });
+    await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+    expect(splits.splits.get(key)?.parts).toBe(2);
+  });
+
+  it('collects without remembered splits when they cannot be read', async () => {
+    const rows = linkedin(2);
+    const { collection, collector, splits } = run(rows, small);
+    vi.spyOn(splits, 'parts').mockRejectedValue(new Error('db down'));
+    const summary = await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+    expect(collector.collect).toHaveBeenCalledTimes(1);
+    expect(summary).toMatchObject({ batches: 1, segmentsFailed: 0 });
+  });
+
+  it('never splits or reads splits for other channels', async () => {
+    const rows = builders(2);
+    const { collection, collector, segments, splits } = setup(rows, async (s) =>
+      resultFor(s, undefined, {
+        truncatedQueryIds: s.queries.map((q) => q.id),
+      }),
+    );
+    const parts = vi.spyOn(splits, 'parts');
+    const setParts = vi.spyOn(splits, 'setParts');
+    await collection.collect(Channel.ASHBY);
+
+    expect(collector.collect).toHaveBeenCalledTimes(1);
+    expect(segments.collected[0]!.advance).toEqual(rows.map((r) => r.id));
+    expect(parts).not.toHaveBeenCalled();
+    expect(setParts).not.toHaveBeenCalled();
+  });
+});
+
+describe('CollectionService daily budget', () => {
+  const linkedin = (count: number, location = 'emea') =>
+    builders(count, {
+      channel: Channel.LINKEDIN_JOB_BOARD,
+      type: Arrangement.remote,
+      params: { location },
+    });
+  const full = (s: SegmentSearch, costUsd: number | null = 0.15) =>
+    resultFor(s, () => [item(1)], {
+      fetched: s.maxItems ?? 100,
+      truncatedQueryIds: s.queries.map((q) => q.id),
+      costUsd,
+    });
+  const small = (s: SegmentSearch, costUsd: number | null = 0.15) =>
+    resultFor(s, () => [item(1)], { fetched: 3, costUsd });
+  const run = (
+    rows: QuerySearchBuilderRow[],
+    collect: (s: SegmentSearch) => SegmentResult,
+    budgetUsd: number,
+  ) =>
+    setup(rows, async (s) => collect(s), Channel.LINKEDIN_JOB_BOARD, budgetUsd);
+  const spend = (
+    segments: ReturnType<typeof setup>['segments'],
+    costMicroUsd: number | null,
+    channel = Channel.LINKEDIN_JOB_BOARD,
+  ) =>
+    segments.runs.push({
+      id: `spent-${segments.runs.length}`,
+      channel,
+      segmentKey: 'k',
+      segmentHash: 'h',
+      queryIds: [],
+      windowStart: new Date(),
+      windowEnd: new Date(),
+      startedAt: new Date(),
+      finishedAt: new Date(),
+      status: 'succeeded',
+      fetched: 0,
+      costMicroUsd,
+      capped: false,
+      truncatedQueryIds: [],
+      perQuery: {},
+      searchTotals: null,
+      error: null,
+    });
+
+  it('starts no run once the day has reached the cap, and says so once', async () => {
+    const rows = [...linkedin(1), ...linkedin(1, 'europe')];
+    const { collection, collector, segments, warn } = run(rows, small, 1);
+    spend(segments, 1_000_000);
+
+    const summary = await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+
+    expect(collector.collect).not.toHaveBeenCalled();
+    expect(summary).toMatchObject({ batches: 0, segmentsFailed: 0 });
+    expect(summary.segmentsDeferred).toBe(summary.segments);
+    expect(segments.cursors.size).toBe(0);
+    const budgetWarnings = warn.mock.calls.filter(([text]) =>
+      String(text).includes('daily budget'),
+    );
+    expect(budgetWarnings).toHaveLength(1);
+    expect(budgetWarnings[0]![0]).toMatch(
+      /^LINKEDIN_JOB_BOARD daily budget \$1 reached \(\$1 since \d{4}-\d\d-\d\dT[\d:.]+Z\); collection resumes tomorrow$/,
+    );
+  });
+
+  it('runs while the day is under the cap', async () => {
+    const { collection, collector, segments } = run(linkedin(1), small, 1);
+    spend(segments, 400_000);
+
+    const summary = await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+
+    expect(collector.collect).toHaveBeenCalledTimes(1);
+    expect(summary).toMatchObject({ batches: 1, segmentsDeferred: 0 });
+  });
+
+  it('counts a run with no reported cost at its charge cap', async () => {
+    const rows = [...linkedin(1), ...linkedin(1, 'europe')];
+    const { collection, collector, segments } = run(
+      rows,
+      (s) => small(s, null),
+      0.25,
+    );
+
+    const summary = await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+
+    expect(collector.collect).toHaveBeenCalledTimes(1);
+    expect(summary.segmentsDeferred).toBe(1);
+    expect(segments.collected).toHaveLength(1);
+  });
+
+  it('counts earlier runs with no recorded cost at the base charge cap', async () => {
+    const { collection, collector, segments } = run(linkedin(1), small, 0.5);
+    spend(segments, null);
+    spend(segments, null);
+
+    await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+
+    expect(collector.collect).not.toHaveBeenCalled();
+  });
+
+  it('stops a split rerun once the cap is reached, and moves no cursor for it', async () => {
+    const rows = linkedin(2);
+    const { collection, collector, segments, splits } = run(
+      rows,
+      (s) => (s.queries.length === 2 ? full(s) : small(s)),
+      0.25,
+    );
+
+    const summary = await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+
+    // The full search (0.15) and the first half (0.30 in all); the second half never starts.
+    expect(collector.collect).toHaveBeenCalledTimes(2);
+    expect(summary).toMatchObject({ segmentsFailed: 0, segmentsDeferred: 1 });
+    expect(segments.collected).toHaveLength(2);
+    expect(segments.collected[0]!.advance).toEqual([]);
+    expect(segments.collected[1]!.advance).toHaveLength(1);
+    expect(segments.cursors.size).toBe(1);
+    // The skipped half says nothing of the group's size: its split is kept.
+    expect(splits.splits.get(segmentKey(rows[0]!))?.parts).toBe(2);
+  });
+
+  it('does not throw when a segment fails and a full one succeeds but its halves are skipped', async () => {
+    // Groups run in key order: the failing one first.
+    const failing = linkedin(1, 'europe');
+    const splitting = linkedin(2);
+    const failingId = failing[0]!.id;
+    const { collection, collector } = run(
+      [...failing, ...splitting],
+      (s) => {
+        if (s.queries.some((q) => q.id === failingId))
+          throw new Error('apify down');
+        return full(s, 0.3);
+      },
+      0.5,
+    );
+
+    const summary = await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+
+    // The failed run counts at its charge cap (0.25), the full search (0.30) reaches the cap; both halves are skipped.
+    expect(collector.collect).toHaveBeenCalledTimes(2);
+    expect(summary).toMatchObject({
+      segmentsFailed: 1,
+      batches: 1,
+      segmentsDeferred: 2,
+    });
+  });
+
+  it('leaves cursors of a full search when its single-member ceiling rerun is skipped', async () => {
+    const { collection, collector, segments } = run(
+      linkedin(1),
+      (s) => full(s, 0.3),
+      0.25,
+    );
+
+    const summary = await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+
+    expect(collector.collect).toHaveBeenCalledTimes(1);
+    expect(summary.segmentsFailed).toBe(0);
+    expect(segments.cursors.size).toBe(0);
+  });
+
+  it('does not cap or read the spend of other channels', async () => {
+    const { collection, collector, segments } = setup(
+      builders(2, { channel: Channel.ASHBY }),
+      undefined,
+      Channel.ASHBY,
+      0.01,
+    );
+    spend(segments, 5_000_000, Channel.ASHBY);
+    const spent = vi.spyOn(segments, 'spentMicroUsd');
+
+    const summary = await collection.collect(Channel.ASHBY);
+
+    expect(collector.collect).toHaveBeenCalledTimes(1);
+    expect(summary.segmentsDeferred).toBe(0);
+    expect(spent).not.toHaveBeenCalled();
   });
 });
 
