@@ -1,11 +1,13 @@
 import { Logger } from '@nestjs/common';
 import { Arrangement, Channel, SkillDomain } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
-import type {
-  RawCollectedItem,
-  SegmentResult,
-  SegmentSearch,
+import {
+  LinkedinJobBoardCollector,
+  type RawCollectedItem,
+  type SegmentResult,
+  type SegmentSearch,
 } from 'src/modules/collectors';
+import type { ApifyActorProvider } from 'src/modules/collectors/providers/apify/apify.provider';
 import { linkedinGeoId } from 'src/modules/collectors/providers/mappers/linkedin-job-board.mapper';
 import { ingestConfig, parseBatchFile } from 'src/modules/ingest';
 import type { QuerySearchService } from 'src/modules/queries';
@@ -588,6 +590,13 @@ describe('CollectionService LinkedIn search splits', () => {
     });
   });
 
+  it('names the segment in each search, for the collector to log', async () => {
+    const rows = linkedin(1);
+    const { collection, collector } = run(rows, small);
+    await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+    expect(searches(collector)[0]!.segmentKey).toBe(segmentKey(rows[0]!));
+  });
+
   it('remembers the split with setParts 2 for the group', async () => {
     const rows = linkedin(2);
     const { collection, splits } = run(rows, (s) =>
@@ -946,6 +955,97 @@ describe('CollectionService daily budget', () => {
     expect(collector.collect).toHaveBeenCalledTimes(1);
     expect(summary.segmentsFailed).toBe(0);
     expect(segments.cursors.size).toBe(0);
+  });
+
+  it('never charges a place with no geoId: the other search keeps running across ticks, and spend grows by its cost alone', async () => {
+    const words = { roleWords: ['engineer'], spellings: ['go'] };
+    const good = builder({
+      channel: Channel.LINKEDIN_JOB_BOARD,
+      params: { location: 'europe', workType: '2', ...words },
+    });
+    const unresolved = builder({
+      channel: Channel.LINKEDIN_JOB_BOARD,
+      params: { location: 'asia pacific', workType: '2', ...words },
+    });
+    // The real collector over a fake actor: it fails the APAC place before any Apify call.
+    const actorRun = vi.fn(async () => ({
+      items: [{ id: 'j1', _meta: { pagination: { totalElements: 1 } } }],
+      costUsd: 0.1,
+      runId: 'apify-1',
+    }));
+    const real = new LinkedinJobBoardCollector({
+      run: actorRun,
+    } as unknown as ApifyActorProvider);
+    const { collection, segments, warn } = run(
+      [good, unresolved],
+      () => {
+        throw new Error('unused');
+      },
+      0.5,
+    );
+    const linkedinCollector = (
+      collection as unknown as {
+        linkedinJobs: { collect: (s: SegmentSearch) => unknown };
+      }
+    ).linkedinJobs;
+    vi.mocked(linkedinCollector.collect).mockImplementation((s) =>
+      real.collect(s),
+    );
+
+    for (let tick = 1; tick <= 4; tick++) {
+      // Each tick searches a new hour.
+      segments.cursors.clear();
+      const summary = await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+      expect(summary).toMatchObject({
+        batches: 1,
+        segmentsFailed: 1,
+        segmentsDeferred: 0,
+      });
+    }
+
+    expect(actorRun).toHaveBeenCalledTimes(4);
+    const spent = await segments.spentMicroUsd(
+      Channel.LINKEDIN_JOB_BOARD,
+      new Date(0),
+      250_000,
+    );
+    expect(spent).toBe(400_000);
+    const failed = segments.runs.filter((r) => r.status === 'failed');
+    expect(failed).toHaveLength(4);
+    for (const r of failed) {
+      expect(r.costMicroUsd).toBe(0);
+      expect(r.queryIds).toEqual([unresolved.id]);
+      expect(r.segmentKey).toContain('|unresolved:');
+      expect(r.error).toContain('asia pacific');
+    }
+    expect(
+      warn.mock.calls.filter(([text]) =>
+        /unresolved:.*failed: .*asia pacific/.test(String(text)),
+      ),
+    ).toHaveLength(4);
+    expect(
+      warn.mock.calls.some(([text]) => String(text).includes('daily budget')),
+    ).toBe(false);
+  });
+
+  it('still counts a failed Apify call with no reported cost at its charge cap', async () => {
+    const { collection, segments } = run(
+      linkedin(1),
+      () => {
+        throw new Error('apify down');
+      },
+      3,
+    );
+    await collection.collect(Channel.LINKEDIN_JOB_BOARD).catch(() => undefined);
+    expect(segments.runs).toHaveLength(1);
+    expect(segments.runs[0]!.costMicroUsd).toBeNull();
+    expect(
+      await segments.spentMicroUsd(
+        Channel.LINKEDIN_JOB_BOARD,
+        new Date(0),
+        250_000,
+      ),
+    ).toBe(250_000);
   });
 
   it('does not cap or read the spend of other channels', async () => {

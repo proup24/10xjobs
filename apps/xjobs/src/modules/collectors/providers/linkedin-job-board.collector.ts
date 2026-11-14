@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Channel } from 'src/common/enums';
 import type {
   LinkedinJobBoardRunConfig,
@@ -6,8 +6,10 @@ import type {
   SegmentSearch,
 } from '../types/collector';
 import { reachedChargeCap } from '../utils/collected-job';
+import { SearchNotStartedError } from '../utils/search-not-started';
 import { ApifyActorProvider } from './apify/apify.provider';
 import {
+  type HarvestJobSearchInput,
   linkedinGroupKey,
   mergedLinkedinKeyword,
   toHarvestJobSearchInput,
@@ -33,33 +35,49 @@ export class LinkedinJobBoardCollector {
   };
 
   readonly channel = Channel.LINKEDIN_JOB_BOARD;
+  private readonly logger = new Logger(LinkedinJobBoardCollector.name);
   constructor(private readonly actor: ApifyActorProvider) {}
+
+  /**
+   * The actor input, built before any Apify call. Anything wrong here (a place
+   * with no geoId, members that run different searches, no words to search)
+   * throws a {@link SearchNotStartedError}: no run started, nothing charged.
+   */
+  private input(segment: SegmentSearch, rows: number): HarvestJobSearchInput {
+    try {
+      const searches = new Set(
+        segment.queries.map(({ params }) => linkedinGroupKey(params)),
+      );
+      if (searches.size !== 1)
+        throw new Error(
+          `A LinkedIn job board segment runs one search; this one has ${searches.size}`,
+        );
+      // Members may spell a geoId-pinned place differently; any one runs the search.
+      const [first] = segment.queries;
+      return toHarvestJobSearchInput(
+        mergedLinkedinKeyword(segment.queries),
+        first.params,
+        rows,
+      );
+    } catch (error) {
+      throw new SearchNotStartedError(
+        error instanceof Error ? error.message : String(error),
+        { cause: error },
+      );
+    }
+  }
 
   async collect(segment: SegmentSearch): Promise<SegmentResult> {
     const config = LinkedinJobBoardCollector.config;
-    // Throws for a place with no geoId; that failure must reach the caller.
-    const searches = new Set(
-      segment.queries.map(({ params }) => linkedinGroupKey(params)),
-    );
-    if (searches.size !== 1)
-      throw new Error(
-        `A LinkedIn job board segment runs one search; this one has ${searches.size}`,
-      );
-    // Members may spell a geoId-pinned place differently; any one runs the search.
-    const [first] = segment.queries;
     // The charge cap grows with the rows asked for.
     const rows = segment.maxItems ?? config.maxRowsPerSearch;
     const maxChargeUsd =
       (config.maxRunChargeUsd * rows) / config.maxRowsPerSearch;
+    // Throws for a place with no geoId; that failure must reach the caller.
+    const input = this.input(segment, rows);
     const { items, costUsd, runId } = await this.actor.run(
       config.actor,
-      {
-        ...toHarvestJobSearchInput(
-          mergedLinkedinKeyword(segment.queries),
-          first.params,
-          rows,
-        ),
-      },
+      { ...input },
       { maxChargeUsd },
     );
 
@@ -67,9 +85,15 @@ export class LinkedinJobBoardCollector {
     const found = items.map((payload, i) => ({ rank: i + 1, payload }));
     const totals = searchTotals(items[0]);
     const total = (totals as { totalElements?: unknown } | null)?.totalElements;
-    const truncated =
-      items.length >= rows ||
-      (typeof total === 'number' && total > items.length);
+    const moreThanReturned =
+      typeof total === 'number' && total > items.length;
+    const truncated = items.length >= rows || moreThanReturned;
+    // Full by the spec's rule, though the row limit wasn't reached: logged so
+    // the week-one report can measure how often LinkedIn's total runs ahead.
+    if (moreThanReturned && items.length < rows)
+      this.logger.warn(
+        `LinkedIn search ${segment.segmentKey ?? '(no segment key)'} returned ${items.length} of ${rows} rows but reports ${total} in total`,
+      );
     return {
       itemsByQuery: new Map(segment.queries.map(({ id }) => [id, [...found]])),
       unattributed: [],

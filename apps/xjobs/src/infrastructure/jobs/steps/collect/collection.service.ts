@@ -8,6 +8,7 @@ import {
   GreenhouseCollector,
   LinkedinJobBoardCollector,
   LinkedinPostsCollector,
+  SearchNotStartedError,
   type SegmentSearch,
   type SegmentResult,
 } from 'src/modules/collectors';
@@ -419,6 +420,9 @@ export class CollectionService {
     let costUsd = 0;
     let owned: SearchSegment;
     let result: SegmentResult;
+    /** True once an Apify run may have started: only then does a failure cost anything. */
+    let started = false;
+    /** Started, and no cost reported yet. */
     let charged = false;
 
     try {
@@ -432,6 +436,7 @@ export class CollectionService {
       const search = buildSearch(channel, owned, window, options.maxItems);
       run = buildRun(runId, owned, search, startedAt);
       // From here a paid run may exist, whatever happens next.
+      started = true;
       charged = true;
       result = await this.fetch(search);
       costUsd = result.costUsd ?? 0;
@@ -461,18 +466,25 @@ export class CollectionService {
       collected = await this.saveBatch(batch, run, advance);
     } catch (error) {
       this.logger.warn(`Segment ${segment.key} failed: ${message(error)}`);
+      // The collector refused the search before calling Apify: nothing ran.
+      if (error instanceof SearchNotStartedError) {
+        started = false;
+        charged = false;
+      }
       // A fetch that threw reported no cost: count what it could have charged.
       if (charged) options.budget?.add(chargeCapMicroUsd(options.maxItems));
-      await this.recordFailure(
+      const failed =
         run ??
-          buildRun(
-            runId,
-            segment,
-            buildSearch(channel, segment, claimed),
-            startedAt,
-          ),
-        error,
-      );
+        buildRun(
+          runId,
+          segment,
+          buildSearch(channel, segment, claimed),
+          startedAt,
+        );
+      // No Apify run could have started: record a cost of 0, which the spend
+      // total counts as nothing (null would count at the charge cap).
+      if (!started) failed.costMicroUsd = 0;
+      await this.recordFailure(failed, error);
       return {
         skipped: false,
         queriesSkipped,
@@ -621,6 +633,7 @@ function buildSearch(
 ): SegmentSearch {
   return {
     channel,
+    segmentKey: segment.key,
     since: window.since,
     until: window.until,
     queries: segment.members.map((member) => ({
