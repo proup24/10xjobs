@@ -1,7 +1,7 @@
 # Search precision and shared LinkedIn searches (Phase 3, slice 04)
 
 Date: 2026-11-14
-Status: draft
+Status: built (PRs #66–#68 and the db:spellings PR)
 Roadmap: [04-search-precision](../../roadmap/phase-3-find-quality/04-search-precision.md)
 Builds on: [slice 01, harvestapi](2026-11-11-linkedin-source-harvestapi-design.md) (PR 52)
 Revises and replaces the planner of: [shared LinkedIn searches](2026-11-09-shared-linkedin-searches-design.md). Its Tasks 1–3 (Worldwide and the star) are built; its Tasks 4–9 are replaced by this spec.
