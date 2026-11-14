@@ -9,6 +9,7 @@ import { reachedChargeCap } from '../utils/collected-job';
 import { ApifyActorProvider } from './apify/apify.provider';
 import {
   linkedinGroupKey,
+  mergedLinkedinKeyword,
   toHarvestJobSearchInput,
 } from './mappers/linkedin-job-board.mapper';
 
@@ -28,6 +29,7 @@ export class LinkedinJobBoardCollector {
     // The cap only stops a runaway run.
     maxRunChargeUsd: 0.25,
     maxRowsPerSearch: 100,
+    maxRowsCeiling: 1000,
   };
 
   readonly channel = Channel.LINKEDIN_JOB_BOARD;
@@ -45,16 +47,20 @@ export class LinkedinJobBoardCollector {
       );
     // Members may spell a geoId-pinned place differently; any one runs the search.
     const [first] = segment.queries;
+    // The charge cap grows with the rows asked for.
+    const rows = segment.maxItems ?? config.maxRowsPerSearch;
+    const maxChargeUsd =
+      (config.maxRunChargeUsd * rows) / config.maxRowsPerSearch;
     const { items, costUsd, runId } = await this.actor.run(
       config.actor,
       {
         ...toHarvestJobSearchInput(
-          first.keyword,
+          mergedLinkedinKeyword(segment.queries),
           first.params,
-          config.maxRowsPerSearch,
+          rows,
         ),
       },
-      { maxChargeUsd: config.maxRunChargeUsd },
+      { maxChargeUsd },
     );
 
     // The actor reports no position; dataset order is newest first.
@@ -62,7 +68,7 @@ export class LinkedinJobBoardCollector {
     const totals = searchTotals(items[0]);
     const total = (totals as { totalElements?: unknown } | null)?.totalElements;
     const truncated =
-      items.length >= config.maxRowsPerSearch ||
+      items.length >= rows ||
       (typeof total === 'number' && total > items.length);
     return {
       itemsByQuery: new Map(segment.queries.map(({ id }) => [id, [...found]])),
@@ -71,7 +77,7 @@ export class LinkedinJobBoardCollector {
       fetched: items.length,
       searchTotals: totals,
       costUsd,
-      capped: reachedChargeCap(costUsd, config.maxRunChargeUsd),
+      capped: reachedChargeCap(costUsd, maxChargeUsd),
       source: { actor: config.actor, apifyRunId: runId },
     };
   }

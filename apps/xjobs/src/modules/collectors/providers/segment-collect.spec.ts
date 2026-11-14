@@ -4,7 +4,10 @@ import type { ApifyActorProvider } from './apify/apify.provider';
 import { GoogleJobsSearchProvider } from './apify/google-search.provider';
 import { LinkedinJobBoardCollector } from './linkedin-job-board.collector';
 import { boardQuery } from './mappers/google-search.mapper';
-import { toHarvestJobSearchInput } from './mappers/linkedin-job-board.mapper';
+import {
+  mergedLinkedinKeyword,
+  toHarvestJobSearchInput,
+} from './mappers/linkedin-job-board.mapper';
 import { LinkedinPostsCollector } from './linkedin-posts.collector';
 import { AshbyCollector } from './ashby.collector';
 import type { AshbyPostingProvider } from './extraction/ashby.provider';
@@ -47,8 +50,24 @@ const ashby: BoardSearchRunConfig = {
 
 describe('LinkedIn job board segment', () => {
   const queries = [
-    { id: 'qs-1', keyword: 'backend nestjs', params: { location: 'Germany' } },
-    { id: 'qs-2', keyword: 'backend nestjs', params: { location: 'Germany' } },
+    {
+      id: 'qs-1',
+      keyword: 'backend nestjs',
+      params: {
+        location: 'Germany',
+        roleWords: ['backend'],
+        spellings: ['nestjs'],
+      },
+    },
+    {
+      id: 'qs-2',
+      keyword: 'backend nestjs',
+      params: {
+        location: 'Germany',
+        roleWords: ['backend'],
+        spellings: ['nestjs'],
+      },
+    },
   ];
   const item = (id: number, totalElements = 40) => ({
     id: String(id),
@@ -71,7 +90,11 @@ describe('LinkedIn job board segment', () => {
     expect(run).toHaveBeenCalledTimes(1);
     expect(run.mock.calls[0][0]).toBe('harvestapi/linkedin-job-search');
     expect(run.mock.calls[0][1]).toEqual(
-      toHarvestJobSearchInput('backend nestjs', queries[0].params, 100),
+      toHarvestJobSearchInput(
+        mergedLinkedinKeyword(queries),
+        queries[0].params,
+        100,
+      ),
     );
     expect(run.mock.calls[0][2]).toEqual({ maxChargeUsd: 0.25 });
     const expected = [
@@ -106,12 +129,22 @@ describe('LinkedIn job board segment', () => {
       {
         id: 'qs-a',
         keyword: 'go',
-        params: { location: 'uae', geoId: '104305776' },
+        params: {
+          location: 'uae',
+          geoId: '104305776',
+          roleWords: ['backend'],
+          spellings: ['go'],
+        },
       },
       {
         id: 'qs-b',
         keyword: 'go',
-        params: { location: 'united arab emirates', geoId: '104305776' },
+        params: {
+          location: 'united arab emirates',
+          geoId: '104305776',
+          roleWords: ['backend'],
+          spellings: ['go'],
+        },
       },
     ];
     const { run, provider } = actor(() => [item(1, 1)]);
@@ -150,6 +183,67 @@ describe('LinkedIn job board segment', () => {
       ),
     ).rejects.toThrow(/one search/);
     expect(run).not.toHaveBeenCalled();
+  });
+
+  it("sends one jobTitles entry: the members' merged keyword", async () => {
+    const members = [
+      {
+        id: 'qs-1',
+        keyword: 'ignored',
+        params: {
+          location: 'Germany',
+          roleWords: ['backend'],
+          spellings: ['go', 'golang'],
+        },
+      },
+      {
+        id: 'qs-2',
+        keyword: 'ignored',
+        params: {
+          location: 'Germany',
+          roleWords: ['developer'],
+          spellings: ['go', 'rust'],
+        },
+      },
+    ];
+    const { run, provider } = actor(() => []);
+    await board_(provider).collect(
+      segment(Channel.LINKEDIN_JOB_BOARD, members),
+    );
+    const input = run.mock.calls[0][1] as { jobTitles: string[] };
+    expect(input.jobTitles).toEqual([mergedLinkedinKeyword(members)]);
+  });
+
+  it('refuses members with different experience levels', async () => {
+    const { run, provider } = actor(() => []);
+    await expect(
+      board_(provider).collect(
+        segment(Channel.LINKEDIN_JOB_BOARD, [
+          {
+            id: 'qs-a',
+            keyword: 'go',
+            params: { location: 'Germany', experienceLevel: '4' },
+          },
+          {
+            id: 'qs-b',
+            keyword: 'go',
+            params: { location: 'Germany', experienceLevel: '5' },
+          },
+        ]),
+      ),
+    ).rejects.toThrow(/one search/);
+    expect(run).not.toHaveBeenCalled();
+  });
+
+  it('scales maxItems and the charge cap with the segment row limit', async () => {
+    expect(board.maxRowsCeiling).toBe(1000);
+    const { run, provider } = actor(() => []);
+    await board_(provider).collect({
+      ...segment(Channel.LINKEDIN_JOB_BOARD, queries),
+      maxItems: 1000,
+    });
+    expect(run.mock.calls[0][1]).toMatchObject({ maxItems: 1000 });
+    expect(run.mock.calls[0][2]).toEqual({ maxChargeUsd: 2.5 });
   });
 
   it('counts the search as truncated at the row limit, or when LinkedIn reports more than came back', async () => {
