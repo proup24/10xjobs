@@ -9,7 +9,10 @@ import { FakeQuerySearchRepository } from '../testing/fakes';
 import { MOCK_PROFILES, summarize } from '../testing/profiles.fixture';
 import type { QuerySearchProfileInput, QuerySearchRecipe } from '../types';
 import { roleWords } from '../builders/role-words';
-import { linkedinKeyword } from '../channels/linkedin_keyword';
+import {
+  linkedinKeyword,
+  linkedinKeywordFits,
+} from '../channels/linkedin_keyword';
 import { QuerySearchService } from './queries.service';
 
 // These specs cover every channel's builder, inactive ones included.
@@ -499,6 +502,88 @@ describe('expand scenarios over mock profiles', () => {
       expect(hashSet(on(paris, Channel.LINKEDIN_JOB_BOARD))).toEqual(
         hashSet(on(lyon, Channel.LINKEDIN_JOB_BOARD)),
       );
+    });
+  });
+
+  describe('LinkedIn job board keyword length', () => {
+    const skill = (technology: string, importance: number) => ({
+      technology,
+      domain: SkillDomain.backend,
+      importance,
+      mastery: 5,
+    });
+    const profileWith = (
+      technologies: string[],
+      languages: string[],
+    ): QuerySearchProfileInput => ({
+      position: 'fullstack_engineer',
+      seniorities: [Seniority.senior],
+      languages,
+      locations: { ...empty, remote: ['Europe'], onsite: ['Morocco'] },
+      skills: technologies.map((t, i) => skill(t, 20 - i)),
+    });
+    const fits = (recipe: QuerySearchRecipe) => {
+      const params = recipe.params as { roleWords: string[]; spellings: string[] };
+      return linkedinKeywordFits(params.roleWords, params.spellings);
+    };
+    /** Board recipes per search place x work type x level. */
+    const perSearch = (recipes: QuerySearchRecipe[]) => {
+      const groups = new Map<string, QuerySearchRecipe[]>();
+      for (const recipe of on(recipes, Channel.LINKEDIN_JOB_BOARD)) {
+        const key = `${recipe.type}|${recipe.location}|${String(recipe.params.experienceLevel)}`;
+        groups.set(key, [...(groups.get(key) ?? []), recipe]);
+      }
+      return groups;
+    };
+
+    it('the dev profile (8 technologies, en and fr) gives one search per place, type and level, with all 8', () => {
+      const dev = [
+        'typescript',
+        'react',
+        'react_native',
+        'aws',
+        'postgresql',
+        'nodejs',
+        'nextjs',
+        'nestjs',
+      ];
+      const groups = perSearch(expand(profileWith(dev, ['en', 'fr'])));
+      // Europe remote and Morocco onsite, senior = level 4 only.
+      expect(groups.size).toBe(2);
+      for (const recipes of groups.values()) {
+        expect(recipes).toHaveLength(1);
+        expect([...recipes[0].technologies].sort()).toEqual([...dev].sort());
+        expect(fits(recipes[0])).toBe(true);
+      }
+    });
+
+    it('12 technologies with en and es: several builders per search, each keyword within the limit', () => {
+      const twelve = [
+        'typescript',
+        'javascript',
+        'react_native',
+        'kubernetes',
+        'postgresql',
+        'nodejs',
+        'nextjs',
+        'nestjs',
+        'elasticsearch',
+        'terraform',
+        'graphql',
+        'rabbitmq',
+      ];
+      const recipes = expand(profileWith(twelve, ['en', 'es']));
+      const groups = perSearch(recipes);
+      expect(groups.size).toBe(2);
+      for (const members of groups.values()) {
+        expect(members.length).toBeGreaterThan(1);
+        for (const recipe of members) expect(fits(recipe)).toBe(true);
+        // The sets are disjoint and together hold every technology.
+        const all = members.flatMap((recipe) => recipe.technologies);
+        expect(new Set(all).size).toBe(all.length);
+        expect([...all].sort()).toEqual([...twelve].sort());
+      }
+      expect(hashSet(recipes).size).toBe(recipes.length);
     });
   });
 });

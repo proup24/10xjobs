@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import type { Channel } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
 import { QUERY_SEARCH_RECIPE_VERSION, toRecipe } from '../builders';
+import { roleWords } from '../builders/role-words';
 import { technologySets } from '../sets/technology';
 import { QuerySearchRepository } from '../repositories/queries.repository';
 import {
@@ -32,8 +33,9 @@ export class QuerySearchService {
     assertHasLocations(profile);
     assertHasSeniorities(profile);
     assertHasSkills(profile);
+    const roles = roleWords(profile.position, profile.languages);
     const combinations = locationCombinations(profile, (channel) =>
-      technologySets(profile.skills, channel),
+      technologySets(profile.skills, channel, roles),
     );
     return dedupeBySearch(dedupeByHash(combinations.map(toRecipe)));
   }
