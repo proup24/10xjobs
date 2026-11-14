@@ -143,6 +143,72 @@ Title samples, 40 newest jobs each:
 - The jobs lost were architects (Solution, Lead, Integration), a consulting director, a Danish DevOps specialist, a French "Développeur principal", and two "EMEA" engineering management roles. The losses are within LinkedIn's own run-to-run noise (5–18%), so they can't all be blamed on the role word. Architect and management titles plausibly are, because neither word is in the list.
 - In the newest jobs, the stack alone already returns mostly engineering titles. The noise is concentrated in the long tail that `aws`, `typescript`, `react` and bare `nestjs` pull in.
 
+### 10. Final check (real filters, role words, spellings, keyword length)
+
+Run on 2026-11-14 with `pnpm -s apify:linkedin-region-test -- --sections final --campaign final --concurrency 4` (raw output in `apps/xjobs/tmp/linkedin-final-check.json`, gitignored). Real spend was $0.055 of the $1 `final` campaign cap. Every run carried the filters the planner will use: Europe remote is geoId 100506914 with `workplaceType: remote` and `experienceLevel: mid-senior`; Morocco is `workplaceType: hybrid, office` and `experienceLevel: associate, mid-senior`.
+
+**(a) Role words**, 24-hour samples of 40 rows, each AND the dev stack:
+
+| Place         | Narrow total | Extended total | Engineering titles in the sample (narrow / extended) |
+| ------------- | ------------ | -------------- | ---------------------------------------------------- |
+| Europe remote | 362          | 427 (+18%)     | 39 / 40 and 39 / 40                                  |
+| Morocco       | 8            | 8              | 8 / 8 and 8 / 8                                      |
+
+- The extended list found engineering jobs the narrow one lost: "Team Lead, Software Engineering", "Head of Engineering" (twice), "Senior Data Governance & Privacy Architect", "Agent Identity Engineer…" and "Senior Solution Architect, MSP".
+- It added no non-engineering noise in the sample. The one non-engineering flag, "Desarrollador Golang + GCP", is an engineering job whose title uses a word outside the English and French title check.
+
+**(b) Spellings**, week totals on Europe remote, each keyword alone:
+
+| Keyword                            | Total |
+| ---------------------------------- | ----- |
+| `nodejs`                           | 533   |
+| `"node.js"`                        | 33    |
+| `"node js"`                        | 33    |
+| `"node js" OR "node.js" OR nodejs` | 351   |
+| `nextjs`                           | 95    |
+| `"next.js"`                        | 3     |
+| `"next js"`                        | 3     |
+| `"next js" OR "next.js" OR nextjs` | 57    |
+| `nestjs`                           | 178   |
+| `"nest.js"`                        | 1     |
+| `"nest.js" OR nestjs`              | 19    |
+
+- A bare term with no operator or quote is matched loosely, which is why `nodejs` alone (533) returns more than the OR group that contains it (351). Our keywords always carry `AND`, so they are in the strict mode, and the bare totals are not comparable.
+- The dotted and spaced quoted forms give identical totals (33 and 33, 3 and 3): LinkedIn reads `.` as a space. One quoted form is enough.
+- In the strict mode the OR group finds far more than the quoted form alone (351 against 33), so the bare spelling matters. No spelling floods.
+
+**(c) Keyword length**, week totals on Europe remote, the dev role words AND the dev stack padded with other technologies:
+
+| Target (characters) | Actual | Terms | Total                 |
+| ------------------- | ------ | ----- | --------------------- |
+| 400                 | 398    | 34    | 51                    |
+| 800                 | 800    |       | 0 (no total returned) |
+| 1,200               | 1,199  |       | 0                     |
+| 1,600               | 1,595  |       | 0                     |
+
+- **A keyword can return results and still be silently broken.** The 398-character keyword holds every term of the dev keyword plus nine more, over a week, yet returns 51 where the dev keyword returns 430 in 24 hours. A larger OR over a longer window cannot return fewer, so between 319 and 398 characters (25 and 34 terms) LinkedIn degrades the query without an error, most likely by truncating it. From 800 characters it returns nothing.
+- **So "returns results" is not the limit. The limit is 319 characters and 25 terms, the largest keyword verified to behave:** the dev keyword (extended role words AND every spelling of the dev stack).
+
+**(d) Real volume**, 24-hour totals, the dev keyword with the extended role words:
+
+| Search                                              | 24 h total | Per hour |
+| --------------------------------------------------- | ---------- | -------- |
+| Europe remote, mid-senior                           | 430        | about 18 |
+| Morocco hybrid and office, associate and mid-senior | 8          | under 1  |
+
+- About 440 jobs a day is about $0.44 a day at $0.001 a job, plus start fees of $0.001 a run: well inside $3 a day. One tick's Europe search (about 18 jobs an hour) stays under 100 rows.
+
+**Gate:** passed.
+
+- `(…) AND (…)` with real filters works: 362 to 430 results and no error.
+- The dev keyword (319 characters) is verified to work, but the usable limit is 319 characters and 25 terms, not 400.
+
+**Values for the planner:**
+
+- Role words, engineer family: English `engineer, developer, engineering, architect, programmer, "tech lead", "technical lead"`; French `ingénieur, développeur, architecte`. The DevOps family adds `devops, sre`. Other families and Spanish and German follow the spec table.
+- Spellings: `nodejs: [nodejs, "node.js"]`, `nextjs: [nextjs, "next.js"]`, `nestjs: [nestjs, "nest.js"]`.
+- `LINKEDIN_KEYWORD_MAX_CHARS = 319` and `LINKEDIN_KEYWORD_MAX_TERMS = 25`; a keyword fits when both hold.
+
 ## Consequences for the planner
 
 - **No folding across places.** At most EU, EEA and UK into Europe, and that would need repeated runs to prove above the noise.
