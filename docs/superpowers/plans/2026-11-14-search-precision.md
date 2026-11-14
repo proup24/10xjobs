@@ -203,7 +203,7 @@
 - [ ] **Step 3: Implement.**
   - `locationCombinations`, for `LINKEDIN_JOB_BOARD`: expand each location text into `searchPlaces(text)`, and each seniority into `linkedinLevels(seniority)`, one combination each.
   - `LinkedinJobBoardBuilder.build` reads `experienceLevel`, `roleWords(position, languages)` and the spellings.
-  - Bump the recipe version. Remove `LINKEDIN_TERMS` and `linkedinTerm` from `linkedin_board.builder.ts`, and update the scripts that import them (`linkedin-plan-test/logic.ts`, `linkedin-source-parity.ts`) to inline their old values.
+  - Bump the recipe version. Remove `LINKEDIN_TERMS` and `linkedinTerm` from `linkedin_board.builder.ts`; nothing else imports them.
 - [ ] **Step 4: Run them.** `npx nx test xjobs` and `npx nx typecheck xjobs`. Expected: PASS.
 - [ ] **Step 5: Commit.** `feat(queries): LinkedIn builders search every tech by role word, search place and single level (recipe 12)`.
 
