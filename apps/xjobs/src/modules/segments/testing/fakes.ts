@@ -6,6 +6,7 @@ import {
   type NewSegmentRun,
   SearchSegmentsRepository,
 } from '../repositories/segments.repository';
+import { LinkedinSearchSplitsRepository } from '../repositories/splits.repository';
 
 interface FakeClaim {
   runId: string;
@@ -93,5 +94,23 @@ export class FakeSearchSegmentsRepository extends SearchSegmentsRepository {
       const current = this.cursors.get(id);
       if (!current || current < until) this.cursors.set(id, until);
     }
+  }
+}
+
+/** In-memory splits repository; `parts` of 1 forgets a key, as in Postgres. */
+export class FakeLinkedinSearchSplitsRepository extends LinkedinSearchSplitsRepository {
+  splits = new Map<string, { parts: number; splitAt: Date }>();
+
+  async parts(): Promise<Map<string, { parts: number; splitAt: Date }>> {
+    return new Map(this.splits);
+  }
+
+  async setParts(
+    groupKey: string,
+    parts: number,
+    splitAt: Date,
+  ): Promise<void> {
+    if (parts <= 1) this.splits.delete(groupKey);
+    else this.splits.set(groupKey, { parts, splitAt });
   }
 }
