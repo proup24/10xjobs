@@ -60,6 +60,7 @@ function setup(
   collect: (segment: SegmentSearch) => Promise<SegmentResult> = async (s) =>
     resultFor(s),
   channel: Channel = Channel.ASHBY,
+  budgetUsd = 3,
 ) {
   const queries = { listActive: vi.fn(async () => rows) };
   const collectors = Object.fromEntries(
@@ -106,6 +107,7 @@ function setup(
     splits,
     storage,
     ingestQueue as unknown as IngestQueue,
+    { get: () => budgetUsd } as never,
   );
   const warn = vi
     .spyOn(Logger.prototype, 'warn')
@@ -781,6 +783,160 @@ describe('CollectionService LinkedIn search splits', () => {
     expect(segments.collected[0]!.advance).toEqual(rows.map((r) => r.id));
     expect(parts).not.toHaveBeenCalled();
     expect(setParts).not.toHaveBeenCalled();
+  });
+});
+
+describe('CollectionService daily budget', () => {
+  const linkedin = (count: number, location = 'emea') =>
+    builders(count, {
+      channel: Channel.LINKEDIN_JOB_BOARD,
+      type: Arrangement.remote,
+      params: { location },
+    });
+  const full = (s: SegmentSearch, costUsd: number | null = 0.15) =>
+    resultFor(s, () => [item(1)], {
+      fetched: s.maxItems ?? 100,
+      truncatedQueryIds: s.queries.map((q) => q.id),
+      costUsd,
+    });
+  const small = (s: SegmentSearch, costUsd: number | null = 0.15) =>
+    resultFor(s, () => [item(1)], { fetched: 3, costUsd });
+  const run = (
+    rows: QuerySearchBuilderRow[],
+    collect: (s: SegmentSearch) => SegmentResult,
+    budgetUsd: number,
+  ) =>
+    setup(rows, async (s) => collect(s), Channel.LINKEDIN_JOB_BOARD, budgetUsd);
+  const spend = (
+    segments: ReturnType<typeof setup>['segments'],
+    costMicroUsd: number | null,
+    channel = Channel.LINKEDIN_JOB_BOARD,
+  ) =>
+    segments.runs.push({
+      id: `spent-${segments.runs.length}`,
+      channel,
+      segmentKey: 'k',
+      segmentHash: 'h',
+      queryIds: [],
+      windowStart: new Date(),
+      windowEnd: new Date(),
+      startedAt: new Date(),
+      finishedAt: new Date(),
+      status: 'succeeded',
+      fetched: 0,
+      costMicroUsd,
+      capped: false,
+      truncatedQueryIds: [],
+      perQuery: {},
+      searchTotals: null,
+      error: null,
+    });
+
+  it('starts no run once the day has reached the cap, and says so once', async () => {
+    const rows = [...linkedin(1), ...linkedin(1, 'europe')];
+    const { collection, collector, segments, warn } = run(rows, small, 1);
+    spend(segments, 1_000_000);
+
+    const summary = await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+
+    expect(collector.collect).not.toHaveBeenCalled();
+    expect(summary).toMatchObject({ batches: 0, segmentsFailed: 0 });
+    expect(summary.segmentsDeferred).toBe(summary.segments);
+    expect(segments.cursors.size).toBe(0);
+    const budgetWarnings = warn.mock.calls.filter(([text]) =>
+      String(text).includes('daily budget'),
+    );
+    expect(budgetWarnings).toHaveLength(1);
+    expect(budgetWarnings[0]![0]).toMatch(
+      /^LINKEDIN_JOB_BOARD daily budget \$1 reached \(\$1 since \d{4}-\d\d-\d\dT[\d:.]+Z\); collection resumes tomorrow$/,
+    );
+  });
+
+  it('runs while the day is under the cap', async () => {
+    const { collection, collector, segments } = run(linkedin(1), small, 1);
+    spend(segments, 400_000);
+
+    const summary = await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+
+    expect(collector.collect).toHaveBeenCalledTimes(1);
+    expect(summary).toMatchObject({ batches: 1, segmentsDeferred: 0 });
+  });
+
+  it('counts a run with no reported cost at its charge cap', async () => {
+    const rows = [...linkedin(1), ...linkedin(1, 'europe')];
+    const { collection, collector, segments } = run(
+      rows,
+      (s) => small(s, null),
+      0.25,
+    );
+
+    const summary = await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+
+    expect(collector.collect).toHaveBeenCalledTimes(1);
+    expect(summary.segmentsDeferred).toBe(1);
+    expect(segments.collected).toHaveLength(1);
+  });
+
+  it('counts earlier runs with no recorded cost at the base charge cap', async () => {
+    const { collection, collector, segments } = run(linkedin(1), small, 0.5);
+    spend(segments, null);
+    spend(segments, null);
+
+    await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+
+    expect(collector.collect).not.toHaveBeenCalled();
+  });
+
+  it('stops a split rerun once the cap is reached, and moves no cursor for it', async () => {
+    const rows = linkedin(2);
+    const { collection, collector, segments, splits } = run(
+      rows,
+      (s) => (s.queries.length === 2 ? full(s) : small(s)),
+      0.25,
+    );
+
+    const summary = await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+
+    // The full search (0.15) and the first half (0.30 in all); the second half never starts.
+    expect(collector.collect).toHaveBeenCalledTimes(2);
+    expect(summary).toMatchObject({ segmentsFailed: 0, segmentsDeferred: 1 });
+    expect(segments.collected).toHaveLength(2);
+    expect(segments.collected[0]!.advance).toEqual([]);
+    expect(segments.collected[1]!.advance).toHaveLength(1);
+    expect(segments.cursors.size).toBe(1);
+    // The skipped half says nothing of the group's size: its split is kept.
+    expect(splits.splits.get(segmentKey(rows[0]!))?.parts).toBe(2);
+  });
+
+  it('leaves cursors of a full search when its single-member ceiling rerun is skipped', async () => {
+    const { collection, collector, segments } = run(
+      linkedin(1),
+      (s) => full(s, 0.3),
+      0.25,
+    );
+
+    const summary = await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+
+    expect(collector.collect).toHaveBeenCalledTimes(1);
+    expect(summary.segmentsFailed).toBe(0);
+    expect(segments.cursors.size).toBe(0);
+  });
+
+  it('does not cap or read the spend of other channels', async () => {
+    const { collection, collector, segments } = setup(
+      builders(2, { channel: Channel.ASHBY }),
+      undefined,
+      Channel.ASHBY,
+      0.01,
+    );
+    spend(segments, 5_000_000, Channel.ASHBY);
+    const spent = vi.spyOn(segments, 'spentMicroUsd');
+
+    const summary = await collection.collect(Channel.ASHBY);
+
+    expect(collector.collect).toHaveBeenCalledTimes(1);
+    expect(summary.segmentsDeferred).toBe(0);
+    expect(spent).not.toHaveBeenCalled();
   });
 });
 

@@ -104,6 +104,53 @@ describe.skipIf(!url)('segment claims in PostgreSQL', () => {
     await sql`TRUNCATE collection_batches, search_segment_runs, query_search_builder CASCADE`;
   });
 
+  describe('spentMicroUsd', () => {
+    const since = new Date('2026-11-14T00:00:00Z');
+    const spent = (
+      id: string,
+      startedAt: Date,
+      costMicroUsd: number | null,
+      channel = Channel.LINKEDIN_JOB_BOARD,
+    ) =>
+      repo.recordRun({
+        ...run(id, []),
+        channel,
+        startedAt,
+        costMicroUsd,
+      });
+
+    it('sums the costs since the start, counting a null cost at the given amount', async () => {
+      await spent(randomUUID(), new Date('2026-11-14T09:00:00Z'), 120_000);
+      await spent(randomUUID(), new Date('2026-11-14T10:00:00Z'), 30_000);
+      await spent(randomUUID(), new Date('2026-11-14T11:00:00Z'), null);
+
+      expect(
+        await repo.spentMicroUsd(Channel.LINKEDIN_JOB_BOARD, since, 250_000),
+      ).toBe(400_000);
+    });
+
+    it('ignores a run before the start and a run of another channel', async () => {
+      await spent(randomUUID(), new Date('2026-11-13T23:59:59Z'), 500_000);
+      await spent(randomUUID(), since, 10_000);
+      await spent(
+        randomUUID(),
+        new Date('2026-11-14T10:00:00Z'),
+        900_000,
+        Channel.LINKEDIN_POSTS,
+      );
+
+      expect(
+        await repo.spentMicroUsd(Channel.LINKEDIN_JOB_BOARD, since, 250_000),
+      ).toBe(10_000);
+    });
+
+    it('is zero without runs', async () => {
+      expect(
+        await repo.spentMicroUsd(Channel.LINKEDIN_JOB_BOARD, since, 250_000),
+      ).toBe(0);
+    });
+  });
+
   it('claims every free member and returns its cursor', async () => {
     const a = await builder({ coveredUntil: t0 });
     const b = await builder();

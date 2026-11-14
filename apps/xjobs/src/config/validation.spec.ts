@@ -122,6 +122,28 @@ describe('collector and tooling configuration', () => {
     );
   });
 
+  it('caps daily collection spend at 3 dollars by default', () => {
+    const env = validateEnvironment({ ...minimal }) as Record<string, unknown>;
+    expect(env.COLLECTION_DAILY_BUDGET_USD).toBe(3);
+    expect(
+      (
+        validateEnvironment({
+          ...minimal,
+          COLLECTION_DAILY_BUDGET_USD: '1.5',
+        }) as Record<string, unknown>
+      ).COLLECTION_DAILY_BUDGET_USD,
+    ).toBe(1.5);
+  });
+
+  it.each(['0', '-1', 'abc'])(
+    'refuses a daily collection budget of %s',
+    (value) => {
+      expect(() =>
+        validateEnvironment({ ...minimal, COLLECTION_DAILY_BUDGET_USD: value }),
+      ).toThrow();
+    },
+  );
+
   it("exposes Nx's ready-signal socket through the app config", () => {
     expect(
       getAppConfig(configFor({ NX_READY_SIGNAL_SOCKET: '/tmp/nx.sock' }))

@@ -1,4 +1,5 @@
 /** In-memory segments repository for unit tests; not part of the application build. */
+import type { Channel } from 'src/common/enums';
 import {
   type ClaimResult,
   type ClaimWindow,
@@ -94,6 +95,16 @@ export class FakeSearchSegmentsRepository extends SearchSegmentsRepository {
       const current = this.cursors.get(id);
       if (!current || current < until) this.cursors.set(id, until);
     }
+  }
+
+  async spentMicroUsd(
+    channel: Channel,
+    since: Date,
+    nullCostMicroUsd: number,
+  ): Promise<number> {
+    return [...this.runs, ...this.collected.map(({ run }) => run)]
+      .filter((run) => run.channel === channel && run.startedAt >= since)
+      .reduce((sum, run) => sum + (run.costMicroUsd ?? nullCostMicroUsd), 0);
   }
 }
 

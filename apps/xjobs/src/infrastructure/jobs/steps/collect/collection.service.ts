@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Channel } from 'src/common/enums';
+import type { WorkerProcessEnvironmentVariables } from 'src/config';
 import {
   AshbyCollector,
   GreenhouseCollector,
@@ -32,6 +34,7 @@ import {
 import { StorageService } from 'src/modules/storage';
 import { channelJobsConfig } from './config';
 import { IngestQueue } from '../ingest';
+import { DailyBudget, moroccoDayStart } from './spend';
 import { halve, nextParts } from './splits';
 import { CollectionSummary, SegmentOutcome } from './types';
 /** Scheduler id and job name of a channel's recurring collect job. */
@@ -60,6 +63,8 @@ interface RunOptions {
   maxItems?: number;
   /** A full result is split or rerun: store it without moving cursors. */
   holdIfFull: boolean;
+  /** The day's budget, added to as the run ends; none for channels without a cap. */
+  budget?: DailyBudget;
 }
 
 const message = (error: unknown) =>
@@ -89,6 +94,10 @@ export class CollectionService {
     private readonly splits: LinkedinSearchSplitsRepository,
     private readonly storage: StorageService,
     private readonly ingestQueue: IngestQueue,
+    private readonly config: ConfigService<
+      WorkerProcessEnvironmentVariables,
+      true
+    >,
   ) {}
 
   /**
@@ -123,6 +132,7 @@ export class CollectionService {
       batches: 0,
       costUsd: 0,
     };
+    const budget = await this.dailyBudget(channel, until);
     const groups = new Map<string, GroupTally>();
     if (channel === Channel.LINKEDIN_JOB_BOARD)
       for (const { key } of segments) {
@@ -156,6 +166,7 @@ export class CollectionService {
         until,
         summary,
         groups.get(segment.key),
+        budget,
       );
     }
 
@@ -197,9 +208,17 @@ export class CollectionService {
     until: Date,
     summary: CollectionSummary,
     group: GroupTally | undefined,
+    budget: DailyBudget | undefined,
     maxItems?: number,
   ): Promise<void> {
     if (this.stopping) {
+      summary.segmentsDeferred += 1;
+      if (group) group.measured = false;
+      return;
+    }
+    if (budget?.reached) {
+      // Not a failure: no run started and no cursor moved, so the next tick re-covers the window.
+      this.logBudgetReached(channel, budget);
       summary.segmentsDeferred += 1;
       if (group) group.measured = false;
       return;
@@ -209,6 +228,7 @@ export class CollectionService {
     const outcome = await this.runSegment(channel, segment, until, {
       maxItems,
       holdIfFull: splittable && !atCeiling,
+      budget,
     });
     summary.queriesSkipped += outcome.queriesSkipped;
     if (outcome.skipped) {
@@ -242,7 +262,7 @@ export class CollectionService {
         group.split = true;
       }
       for (const half of halve(searched))
-        await this.collectSegment(channel, half, until, summary, group);
+        await this.collectSegment(channel, half, until, summary, group, budget);
       return;
     }
     await this.collectSegment(
@@ -251,7 +271,36 @@ export class CollectionService {
       until,
       summary,
       group,
+      budget,
       channelJobsConfig[Channel.LINKEDIN_JOB_BOARD].run.maxRowsCeiling,
+    );
+  }
+
+  /** The LinkedIn job board's spend today, read once per tick; other channels have no cap. */
+  private async dailyBudget(
+    channel: Channel,
+    now: Date,
+  ): Promise<DailyBudget | undefined> {
+    if (channel !== Channel.LINKEDIN_JOB_BOARD) return undefined;
+    const dayStart = moroccoDayStart(now);
+    const spent = await this.segments.spentMicroUsd(
+      channel,
+      dayStart,
+      baseChargeCapMicroUsd(),
+    );
+    return new DailyBudget(
+      this.config.get('COLLECTION_DAILY_BUDGET_USD', { infer: true }),
+      spent,
+      dayStart,
+    );
+  }
+
+  /** Says once per tick that the cap stopped collection. */
+  private logBudgetReached(channel: Channel, budget: DailyBudget): void {
+    if (budget.announced) return;
+    budget.announced = true;
+    this.logger.warn(
+      `${channel} daily budget $${budget.limitUsd} reached ($${budget.spentUsd} since ${budget.dayStart.toISOString()}); collection resumes tomorrow`,
     );
   }
 
@@ -370,6 +419,7 @@ export class CollectionService {
     let costUsd = 0;
     let owned: SearchSegment;
     let result: SegmentResult;
+    let charged = false;
 
     try {
       owned = narrow(segment, claim.claimed);
@@ -381,8 +431,16 @@ export class CollectionService {
         );
       const search = buildSearch(channel, owned, window, options.maxItems);
       run = buildRun(runId, owned, search, startedAt);
+      // From here a paid run may exist, whatever happens next.
+      charged = true;
       result = await this.fetch(search);
       costUsd = result.costUsd ?? 0;
+      options.budget?.add(
+        result.costUsd == null
+          ? chargeCapMicroUsd(options.maxItems)
+          : Math.round(result.costUsd * 1_000_000),
+      );
+      charged = false;
       Object.assign(run, {
         fetched: result.fetched,
         costMicroUsd:
@@ -403,6 +461,8 @@ export class CollectionService {
       collected = await this.saveBatch(batch, run, advance);
     } catch (error) {
       this.logger.warn(`Segment ${segment.key} failed: ${message(error)}`);
+      // A fetch that threw reported no cost: count what it could have charged.
+      if (charged) options.budget?.add(chargeCapMicroUsd(options.maxItems));
       await this.recordFailure(
         run ??
           buildRun(
@@ -532,6 +592,17 @@ export class CollectionService {
     }
   }
 }
+
+/** The most a LinkedIn job board run of `maxItems` rows (the default limit when absent) may charge. */
+function chargeCapMicroUsd(maxItems?: number): number {
+  const { maxRunChargeUsd, maxRowsPerSearch } =
+    channelJobsConfig[Channel.LINKEDIN_JOB_BOARD].run;
+  const rows = maxItems ?? maxRowsPerSearch;
+  return Math.round((maxRunChargeUsd * rows * 1_000_000) / maxRowsPerSearch);
+}
+
+/** The charge cap of a default run: what a run with no recorded cost counts as. */
+const baseChargeCapMicroUsd = () => chargeCapMicroUsd();
 
 function perQuery(result: SegmentResult): Record<string, SegmentQueryOutcome> {
   return Object.fromEntries(
