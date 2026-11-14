@@ -770,7 +770,7 @@ function finalReport(outcomes: RunOutcome[]) {
   return {
     runs: outcomes.map(summary),
     roles,
-    spellings: group('spelling'),
+    spellings: [...group('spelling:'), ...group('spellings:')],
     // A run that errors or returns 0 marks the length limit.
     lengths: group('length:'),
     volume: group('volume:'),
