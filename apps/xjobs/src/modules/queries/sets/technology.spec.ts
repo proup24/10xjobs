@@ -158,7 +158,16 @@ describe('technologySets for the LinkedIn job board, by keyword length', () => {
   const fits = (roles: string[], technologies: string[]) =>
     linkedinKeywordFits(roles, technologies.flatMap(searchSpellings));
   /** The 8 technologies of the dev-profile fixture above, best first. */
-  const eight = ['go', 'rust', 'nestjs', 'react', 'java', 'python', 'sql', 'aws'];
+  const eight = [
+    'go',
+    'rust',
+    'nestjs',
+    'react',
+    'java',
+    'python',
+    'sql',
+    'aws',
+  ];
   const ranked = (names: string[]) =>
     names.map((name, i) =>
       skill(
@@ -185,7 +194,11 @@ describe('technologySets for the LinkedIn job board, by keyword length', () => {
 
   it('keeps the dev profile (8 technologies, en and fr) in one set', () => {
     const roles = roleWords('backend_engineer', ['en', 'fr']);
-    const sets = technologySets(ranked(eight), Channel.LINKEDIN_JOB_BOARD, roles);
+    const sets = technologySets(
+      ranked(eight),
+      Channel.LINKEDIN_JOB_BOARD,
+      roles,
+    );
     expect(sets).toHaveLength(1);
     expect(sets[0].technologies).toHaveLength(8);
   });

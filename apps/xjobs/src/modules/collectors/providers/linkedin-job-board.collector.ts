@@ -85,8 +85,7 @@ export class LinkedinJobBoardCollector {
     const found = items.map((payload, i) => ({ rank: i + 1, payload }));
     const totals = searchTotals(items[0]);
     const total = (totals as { totalElements?: unknown } | null)?.totalElements;
-    const moreThanReturned =
-      typeof total === 'number' && total > items.length;
+    const moreThanReturned = typeof total === 'number' && total > items.length;
     const truncated = items.length >= rows || moreThanReturned;
     // Full by the spec's rule, though the row limit wasn't reached: logged so
     // the week-one report can measure how often LinkedIn's total runs ahead.

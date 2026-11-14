@@ -173,8 +173,9 @@ export function planSegments(
       if (chunks.length > even.length)
         plan.cuts.push({ key, members: members.length, chunks: chunks.length });
     } else
-      chunks = Array.from({ length: Math.ceil(members.length / size) }, (_, i) =>
-        members.slice(i * size, (i + 1) * size),
+      chunks = Array.from(
+        { length: Math.ceil(members.length / size) },
+        (_, i) => members.slice(i * size, (i + 1) * size),
       );
     for (const chunk of chunks) {
       const segment: SearchSegment = {

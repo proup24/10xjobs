@@ -523,7 +523,10 @@ describe('expand scenarios over mock profiles', () => {
       skills: technologies.map((t, i) => skill(t, 20 - i)),
     });
     const fits = (recipe: QuerySearchRecipe) => {
-      const params = recipe.params as { roleWords: string[]; spellings: string[] };
+      const params = recipe.params as {
+        roleWords: string[];
+        spellings: string[];
+      };
       return linkedinKeywordFits(params.roleWords, params.spellings);
     };
     /** Board recipes per search place x work type x level. */

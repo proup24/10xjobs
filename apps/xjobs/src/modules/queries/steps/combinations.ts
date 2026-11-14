@@ -26,7 +26,10 @@ function levelsFor(board: boolean, seniority: string): (string | undefined)[] {
  * sets whose keyword fits with `roles` (`packLinkedinTechnologies`). Sets
  * `technologySets` already packed with the same role words come back as they were.
  */
-function pack(sets: TechnologySet[], roles: readonly string[]): TechnologySet[] {
+function pack(
+  sets: TechnologySet[],
+  roles: readonly string[],
+): TechnologySet[] {
   const seen = new Set<string>();
   const ranked = sets.flatMap(({ technologies, domain }) =>
     technologies

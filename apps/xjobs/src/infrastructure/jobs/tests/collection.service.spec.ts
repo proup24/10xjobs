@@ -605,7 +605,9 @@ describe('CollectionService LinkedIn search splits', () => {
         params: { location: 'emea', roleWords: ['engineer'], spellings },
       });
     const rows = [
-      ...Array.from({ length: 30 }, (_, i) => worded([`technology-number-${i}`])),
+      ...Array.from({ length: 30 }, (_, i) =>
+        worded([`technology-number-${i}`]),
+      ),
       worded(Array.from({ length: 40 }, (_, i) => `technology-${i}`)),
     ];
     const { collection, warn } = run(rows, small);

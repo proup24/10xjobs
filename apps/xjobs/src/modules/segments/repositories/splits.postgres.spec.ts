@@ -64,7 +64,8 @@ describe.skipIf(!url)('search splits in PostgreSQL', () => {
   });
 
   it('prunes every split whose group key is not kept, JSON keys included', async () => {
-    const kept = 'LINKEDIN_JOB_BOARD|remote|group:{"place":{"geoId":"1"},"workplaceType":["remote"]}';
+    const kept =
+      'LINKEDIN_JOB_BOARD|remote|group:{"place":{"geoId":"1"},"workplaceType":["remote"]}';
     const stale = 'LINKEDIN_JOB_BOARD|remote|group:{"place":{"geoId":"2"}}';
     await repo.setParts(kept, 2, t0);
     await repo.setParts(stale, 3, t0);
