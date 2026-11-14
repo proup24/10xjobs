@@ -20,6 +20,7 @@
     "apify:probe-linkedin": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/probe-linkedin-search.ts",
     "apify:linkedin-plan-test": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/linkedin-plan-test.ts",
     "apify:linkedin-parity": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/linkedin-source-parity.ts",
+    "apify:linkedin-region-test": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/linkedin-region-test.ts",
     "start": "node dist/main.js",
     "start:dev": "tsx watch --conditions=@xjobs/source --tsconfig tsconfig.app.json src/main.ts",
     "worker:dev": "tsx watch --conditions=@xjobs/source --tsconfig tsconfig.app.json src/worker.ts",
