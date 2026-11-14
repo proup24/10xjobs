@@ -184,8 +184,12 @@ export class CollectionService {
       );
     }
 
-    if (channel === Channel.LINKEDIN_JOB_BOARD)
+    if (channel === Channel.LINKEDIN_JOB_BOARD) {
       await this.rememberSplits(groups, remembered, until);
+      // Only a tick that reached every group knows which splits are stale.
+      if (summary.segmentsDeferred === 0)
+        await this.pruneSplits([...groups.keys()]);
+    }
 
     const durationMs = Date.now() - until.getTime();
     this.logger.log(
@@ -363,6 +367,24 @@ export class CollectionService {
           `Split of ${groupKey} into ${parts} parts could not be saved: ${message(error)}`,
         );
       }
+    }
+  }
+
+  /**
+   * Forgets remembered splits of groups this tick did not build (a profile
+   * deleted or moved to another recipe); a failure is retried by the next tick.
+   */
+  private async pruneSplits(built: string[]): Promise<void> {
+    try {
+      const forgot = await this.splits.prune(built);
+      if (forgot > 0)
+        this.logger.log(
+          `Forgot ${forgot} remembered LinkedIn search splits of groups no longer searched`,
+        );
+    } catch (error) {
+      this.logger.warn(
+        `Remembered LinkedIn search splits could not be pruned: ${message(error)}`,
+      );
     }
   }
 

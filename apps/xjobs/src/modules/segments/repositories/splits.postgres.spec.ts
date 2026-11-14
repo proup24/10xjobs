@@ -63,6 +63,23 @@ describe.skipIf(!url)('search splits in PostgreSQL', () => {
     expect([...(await repo.parts()).keys()]).toEqual(['other']);
   });
 
+  it('prunes every split whose group key is not kept, JSON keys included', async () => {
+    const kept = 'LINKEDIN_JOB_BOARD|remote|group:{"place":{"geoId":"1"},"workplaceType":["remote"]}';
+    const stale = 'LINKEDIN_JOB_BOARD|remote|group:{"place":{"geoId":"2"}}';
+    await repo.setParts(kept, 2, t0);
+    await repo.setParts(stale, 3, t0);
+    await repo.setParts('other', 2, t0);
+    expect(await repo.prune([kept, 'absent'])).toBe(2);
+    expect([...(await repo.parts()).keys()]).toEqual([kept]);
+    expect(await repo.prune([kept])).toBe(0);
+  });
+
+  it('prunes every split when nothing is kept', async () => {
+    await repo.setParts('k', 2, t0);
+    expect(await repo.prune([])).toBe(1);
+    expect((await repo.parts()).size).toBe(0);
+  });
+
   it('refuses a stored split below 1 part at the database', async () => {
     await expect(
       db.execute(

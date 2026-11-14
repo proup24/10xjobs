@@ -788,6 +788,67 @@ describe('CollectionService LinkedIn search splits', () => {
     expect(splits.splits.has(key)).toBe(false);
   });
 
+  describe('stale remembered splits', () => {
+    const recent = () => ({
+      parts: 2,
+      splitAt: new Date(Date.now() - 10 * 60_000),
+    });
+    const STALE = 'LINKEDIN_JOB_BOARD|remote|group:{"place":{"geoId":"gone"}}';
+
+    it('forgets a split whose group was not built, once the tick reached every group', async () => {
+      const rows = linkedin(4);
+      const { collection, splits } = run(rows, small);
+      const key = segmentKey(rows[0]);
+      splits.splits.set(key, recent());
+      splits.splits.set(STALE, recent());
+      await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+      expect([...splits.splits.keys()]).toEqual([key]);
+    });
+
+    it('keeps it when the daily budget stopped the tick', async () => {
+      const rows = [...linkedin(1), ...linkedin(1)];
+      const { collection, splits } = setup(
+        rows,
+        async (s) => ({ ...small(s), costUsd: 1 }),
+        Channel.LINKEDIN_JOB_BOARD,
+        1,
+      );
+      splits.splits.set(segmentKey(rows[0]), recent());
+      splits.splits.set(STALE, recent());
+      const summary = await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+      expect(summary.segmentsDeferred).toBe(1);
+      expect(splits.splits.has(STALE)).toBe(true);
+    });
+
+    it('keeps it when shutdown deferred a segment', async () => {
+      const rows = [...linkedin(1), ...linkedin(1)];
+      let stop = () => undefined as void;
+      const { collection, splits } = run(rows, (s) => {
+        stop();
+        return small(s);
+      });
+      stop = () => collection.stop();
+      splits.splits.set(segmentKey(rows[0]), recent());
+      splits.splits.set(STALE, recent());
+      const summary = await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+      expect(summary.segmentsDeferred).toBe(1);
+      expect(splits.splits.has(STALE)).toBe(true);
+    });
+
+    it('keeps the tick going when pruning fails', async () => {
+      const rows = linkedin(1);
+      const { collection, splits, warn } = run(rows, small);
+      vi.spyOn(splits, 'prune').mockRejectedValue(new Error('db down'));
+      const summary = await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+      expect(summary.batches).toBe(1);
+      expect(
+        warn.mock.calls.some(([text]) =>
+          String(text).includes('could not be pruned'),
+        ),
+      ).toBe(true);
+    });
+  });
+
   it('does not undo a split when a search failed, since its size is unknown', async () => {
     const rows = linkedin(4);
     const { collection, splits } = run(rows, (s) => {
