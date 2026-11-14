@@ -8,6 +8,17 @@ describe('searchSpellings', () => {
     );
   });
 
+  it('lists both spellings of next.js and nest.js', () => {
+    expect(searchSpellings('nextjs')).toEqual(['nextjs', 'next.js']);
+    expect(searchSpellings('nestjs')).toEqual(['nestjs', 'nest.js']);
+  });
+
+  it('has an entry for every technology term', () => {
+    for (const key of Object.keys(TECHNOLOGY_TERMS)) {
+      expect(SEARCH_SPELLINGS).toHaveProperty(key);
+    }
+  });
+
   it('falls back to the technology term', () => {
     expect(searchSpellings('csharp')).toEqual(['c#']);
   });
