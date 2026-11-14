@@ -23,20 +23,31 @@
  * - countries (only when asked): the Middle East three times at once, and
  *   eight of its countries once each: are country searches steadier, and do
  *   they find what the region search misses?
+ * - final (only with --campaign final): the last check before the planner is
+ *   built, every run with its real filters (Europe remote mid-senior; Morocco
+ *   hybrid and onsite, associate and mid-senior): (a) narrow vs extended role
+ *   words AND the stack, sampled on both places; (b) each spelling of nodejs,
+ *   nextjs and nestjs alone, then OR'd, as totals; (c) the dev keyword padded
+ *   to 400, 800, 1,200 and 1,600 characters, as totals (an error or 0 marks
+ *   the keyword length limit); (d) the dev profile's real searches over 24
+ *   hours, as totals.
  * - control (only when asked): each CONTROL_PLACES search twice at the same
  *   time, judged against itself, to tell LinkedIn's own noise from real gaps;
  *   EU > Europe is judged again on the same runs.
  *
  * Money: every run carries an Apify charge cap (its start plus every row it
- * may return). A spend file (tmp/linkedin-region-test-spend.json, gitignored)
- * sums real spend across invocations, and an invocation refuses to start when
- * that spend plus its reserved caps would pass CAMPAIGN_BUDGET_USD ($2).
+ * may return). A spend file per campaign (gitignored) sums real spend across
+ * invocations, and an invocation refuses to start when that spend plus its
+ * reserved caps would pass the campaign cap: `region` $2
+ * (tmp/linkedin-region-test-spend.json), `final` $1
+ * (tmp/linkedin-final-check-spend.json).
  *
  * Needs APIFY_TOKEN only. JSON goes to stdout, progress to stderr.
  *
  * Flags:
  *   --dry-run          print the plan and reserved spend; no Apify calls
- *   --sections a,b     places,multi,or,control,countries,keywords (default: places,multi,or)
+ *   --sections a,b     places,multi,or,control,countries,keywords,final (default: places,multi,or)
+ *   --campaign <name>  region (default) or final: picks the cap and spend file; the final section requires final
  *   --keyword <text>   containment and multi keyword (default: react)
  *   --concurrency <n>  runs at once (default 3; Apify's free plan has little memory)
  */
@@ -46,7 +57,6 @@ import { dirname, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { ApifyClient } from 'apify-client';
 import {
-  CAMPAIGN_BUDGET_USD,
   CONTROL_PLACES,
   CONTROL_ROWS,
   CONTAINMENT_PLACES,
@@ -57,6 +67,13 @@ import {
   PLACE_ROWS,
   type PlaceRun,
   type TestJob,
+  DEV_KEYWORD,
+  EXTENDED_ROLE_WORDS,
+  FINAL_LENGTH_TARGETS,
+  NARROW_ROLE_WORDS,
+  andStack,
+  campaignOf,
+  finalKeywords,
   geoIdOf,
   jobFunctionStats,
   judgePair,
@@ -64,15 +81,14 @@ import {
   KEYWORD_SAMPLES,
   keywordTotals,
   orForms,
+  orTerms,
+  paddedKeyword,
+  DEV_STACK_TERMS,
   runCapUsd,
 } from './linkedin-region-test/logic';
 
 const ACTOR = 'harvestapi/linkedin-job-search';
 const MEMORY_MBYTES = 1024;
-const SPEND_FILE = resolve(
-  process.cwd(),
-  'tmp/linkedin-region-test-spend.json',
-);
 const SECTIONS = [
   'places',
   'multi',
@@ -80,6 +96,7 @@ const SECTIONS = [
   'control',
   'countries',
   'keywords',
+  'final',
 ] as const;
 
 /** Region copies and per-country rows for the countries section. */
@@ -87,6 +104,22 @@ const REGION_COPIES = 3;
 const REGION_ROWS = 80;
 const COUNTRY_ROWS = 40;
 const KEYWORD_SAMPLE_ROWS = 40;
+
+/** The dev profile's searches as the planner will make them: real filters on every run. */
+const FINAL_PLACES = {
+  'europe remote': {
+    geoIds: [geoIdOf('europe')],
+    filters: { workplaceType: ['remote'], experienceLevel: ['mid-senior'] },
+  },
+  morocco: {
+    geoIds: [geoIdOf('morocco')],
+    filters: {
+      workplaceType: ['hybrid', 'office'],
+      experienceLevel: ['associate', 'mid-senior'],
+    },
+  },
+} as const;
+const FINAL_STACK_OR = orTerms(DEV_STACK_TERMS);
 /**
  * Middle East countries, by geoId. Israel and Türkiye are not in
  * LINKEDIN_GEO_IDS: their ids are unverified, so their jobs' locations are
@@ -113,8 +146,13 @@ const { values } = parseArgs({
     sections: { type: 'string', default: DEFAULT_SECTIONS },
     keyword: { type: 'string', default: 'react' },
     concurrency: { type: 'string', default: '3' },
+    campaign: { type: 'string', default: 'region' },
   },
 });
+if (values.campaign !== 'region' && values.campaign !== 'final')
+  throw new Error('--campaign must be region or final');
+const CAMPAIGN = campaignOf(values.campaign);
+const SPEND_FILE = resolve(process.cwd(), CAMPAIGN.spendFile);
 
 /** One Apify run the invocation will make. */
 interface PlannedRun {
@@ -144,6 +182,7 @@ function input(
   geoIds: string[],
   rows: number,
   postedLimit: '24h' | 'week',
+  filters: Record<string, readonly string[]> = {},
 ) {
   return {
     jobTitles: [keyword],
@@ -151,6 +190,7 @@ function input(
     postedLimit,
     sortBy: 'date',
     maxItems: rows,
+    ...filters,
   };
 }
 
@@ -163,11 +203,12 @@ function plan(sections: Section[], keyword: string): PlannedRun[] {
     rows: number,
     k: string,
     postedLimit: '24h' | 'week',
+    filters: Record<string, readonly string[]> = {},
   ) =>
     runs.push({
       section,
       label,
-      input: input(k, geoIds, rows, postedLimit),
+      input: input(k, geoIds, rows, postedLimit, filters),
       rows,
       places: geoIds.length,
       capUsd: runCapUsd(rows, geoIds.length),
@@ -212,6 +253,57 @@ function plan(sections: Section[], keyword: string): PlannedRun[] {
           form.keyword,
           postedLimit,
         );
+  }
+  if (sections.includes('final')) {
+    const europe = FINAL_PLACES['europe remote'];
+    // (a) role words, sampled on both places.
+    for (const [place, { geoIds, filters }] of Object.entries(FINAL_PLACES))
+      for (const [name, roles] of [
+        ['narrow', NARROW_ROLE_WORDS],
+        ['extended', EXTENDED_ROLE_WORDS],
+      ] as const)
+        add(
+          'final',
+          `roles:${place}:${name}`,
+          [...geoIds],
+          KEYWORD_SAMPLE_ROWS,
+          andStack(roles, FINAL_STACK_OR),
+          '24h',
+          filters,
+        );
+    // (b) spellings, as week totals on Europe remote.
+    for (const form of finalKeywords())
+      add(
+        'final',
+        form.name,
+        [...europe.geoIds],
+        OR_ROWS,
+        form.keyword,
+        'week',
+        europe.filters,
+      );
+    // (c) keyword length limit.
+    for (const target of FINAL_LENGTH_TARGETS)
+      add(
+        'final',
+        `length:${target}`,
+        [...europe.geoIds],
+        OR_ROWS,
+        paddedKeyword(target),
+        'week',
+        europe.filters,
+      );
+    // (d) the dev profile's real searches over 24 hours.
+    for (const [place, { geoIds, filters }] of Object.entries(FINAL_PLACES))
+      add(
+        'final',
+        `volume:${place}`,
+        [...geoIds],
+        OR_ROWS,
+        DEV_KEYWORD,
+        '24h',
+        filters,
+      );
   }
   if (sections.includes('countries')) {
     for (let copy = 1; copy <= REGION_COPIES; copy++)
@@ -604,9 +696,88 @@ function countriesReport(outcomes: RunOutcome[]) {
   };
 }
 
+const jobsOf = (o: RunOutcome) =>
+  o.items.map(toJob).filter((j): j is TestJob => j !== null);
+
+const asRun = (o: RunOutcome): PlaceRun => ({
+  place: o.run.label,
+  ok: o.ok,
+  startedMs: o.startedMs,
+  rows: o.run.rows,
+  jobs: jobsOf(o),
+  total: o.total,
+});
+
+/** Engineering-titled jobs of `wide` that `narrow` should hold but doesn't. */
+function engineeringLost(wide: RunOutcome, narrow: RunOutcome) {
+  const wideRun = asRun(wide);
+  // The wide run keeps its full row count, so its cap floor stays honest.
+  return judgePair(
+    {
+      ...wideRun,
+      jobs: wideRun.jobs.filter((j) => ENGINEERING_TITLE.test(j.title)),
+      rows: wideRun.jobs.length < wide.run.rows ? Infinity : 0,
+    },
+    asRun(narrow),
+  );
+}
+
+function describeTitles(o: RunOutcome) {
+  const jobs = jobsOf(o);
+  return {
+    status: o.status,
+    returned: jobs.length,
+    total: o.total,
+    engineeringTitles: jobs.filter((j) => ENGINEERING_TITLE.test(j.title))
+      .length,
+    otherTitles: jobs
+      .filter((j) => !ENGINEERING_TITLE.test(j.title))
+      .map((j) => j.title),
+  };
+}
+
+function finalReport(outcomes: RunOutcome[]) {
+  const find = (label: string) => outcomes.find((o) => o.run.label === label);
+  const total = (o: RunOutcome) => ({
+    label: o.run.label,
+    keyword: (o.run.input.jobTitles as string[])[0],
+    keywordLength: (o.run.input.jobTitles as string[])[0].length,
+    status: o.status,
+    total: o.total,
+    returned: o.items.length,
+    ...(o.error ? { error: o.error } : {}),
+  });
+  const roles = Object.keys(FINAL_PLACES).map((place) => {
+    const narrow = find(`roles:${place}:narrow`);
+    const extended = find(`roles:${place}:extended`);
+    if (!narrow || !extended) return { place, error: 'missing run' };
+    const lost = engineeringLost(extended, narrow);
+    return {
+      place,
+      narrow: describeTitles(narrow),
+      extended: describeTitles(extended),
+      // Engineering titles the extended form finds that the narrow one loses.
+      engineeringJobsLostByNarrow: {
+        verdict: lost.verdict,
+        compared: lost.compared,
+        missing: lost.missing,
+        window: lost.window,
+      },
+    };
+  });
+  const group = (prefix: string) =>
+    outcomes.filter((o) => o.run.label.startsWith(prefix)).map(total);
+  return {
+    runs: outcomes.map(summary),
+    roles,
+    spellings: group('spelling'),
+    // A run that errors or returns 0 marks the length limit.
+    lengths: group('length:'),
+    volume: group('volume:'),
+  };
+}
+
 function keywordsReport(outcomes: RunOutcome[]) {
-  const jobsOf = (o: RunOutcome) =>
-    o.items.map(toJob).filter((j): j is TestJob => j !== null);
   const totals = outcomes
     .filter((o) => o.run.label.startsWith('total:'))
     .map((o) => ({
@@ -622,47 +793,13 @@ function keywordsReport(outcomes: RunOutcome[]) {
     const stack = sample(`sample:${place}:stack`);
     const role = sample(`sample:${place}:role AND stack`);
     if (!stack || !role) return { place, error: 'missing run' };
-    const describe = (o: RunOutcome) => {
-      const jobs = jobsOf(o);
-      const eng = jobs.filter((j) => ENGINEERING_TITLE.test(j.title));
-      return {
-        status: o.status,
-        returned: jobs.length,
-        total: o.total,
-        engineeringTitles: eng.length,
-        otherTitles: jobs
-          .filter((j) => !ENGINEERING_TITLE.test(j.title))
-          .map((j) => j.title),
-      };
-    };
-    const asRun = (o: RunOutcome, onlyEngineering: boolean): PlaceRun => ({
-      place: o.run.label,
-      ok: o.ok,
-      startedMs: o.startedMs,
-      rows: o.run.rows,
-      jobs: jobsOf(o).filter(
-        (j) => !onlyEngineering || ENGINEERING_TITLE.test(j.title),
-      ),
-      total: o.total,
-    });
     // Lost recall: engineering-titled stack jobs the role form should hold but doesn't.
     // The child keeps its full row count, so its cap floor stays honest.
-    const stackRun = asRun(stack, false);
-    const engineeringOnly = {
-      ...stackRun,
-      jobs: stackRun.jobs.filter((j) => ENGINEERING_TITLE.test(j.title)),
-    };
-    const lost = judgePair(
-      {
-        ...engineeringOnly,
-        rows: stackRun.jobs.length < stack.run.rows ? Infinity : 0,
-      },
-      asRun(role, false),
-    );
+    const lost = engineeringLost(stack, role);
     return {
       place,
-      stack: describe(stack),
-      roleAndStack: describe(role),
+      stack: describeTitles(stack),
+      roleAndStack: describeTitles(role),
       engineeringJobsLost: {
         verdict: lost.verdict,
         compared: lost.compared,
@@ -695,14 +832,17 @@ async function main(): Promise<void> {
   if (!Number.isInteger(concurrency) || concurrency < 1)
     throw new Error('--concurrency must be ≥ 1');
 
+  if (sections.includes('final') && values.campaign !== 'final')
+    throw new Error('The final section requires --campaign final');
   const runs = plan(sections, values.keyword);
   const reservedUsd = runs.reduce((sum, r) => sum + r.capUsd, 0);
   const spend = readSpend();
   const budget = {
-    campaignUsd: CAMPAIGN_BUDGET_USD,
+    campaign: values.campaign,
+    campaignUsd: CAMPAIGN.capUsd,
     alreadySpentUsd: spend.spentUsd,
     reservedThisInvocationUsd: Number(reservedUsd.toFixed(4)),
-    fits: spend.spentUsd + reservedUsd <= CAMPAIGN_BUDGET_USD,
+    fits: spend.spentUsd + reservedUsd <= CAMPAIGN.capUsd,
   };
   const planned = runs.map((r) => ({
     section: r.section,
@@ -710,6 +850,10 @@ async function main(): Promise<void> {
     keyword: (r.input.jobTitles as string[])[0],
     geoIds: r.input.geoIds,
     postedLimit: r.input.postedLimit,
+    filters: {
+      workplaceType: r.input.workplaceType,
+      experienceLevel: r.input.experienceLevel,
+    },
     rows: r.rows,
     capUsd: Number(r.capUsd.toFixed(4)),
   }));
@@ -722,7 +866,7 @@ async function main(): Promise<void> {
   }
   if (!budget.fits)
     throw new Error(
-      `Refusing to start: $${spend.spentUsd.toFixed(3)} spent + $${reservedUsd.toFixed(3)} reserved passes the $${CAMPAIGN_BUDGET_USD} campaign cap (${SPEND_FILE})`,
+      `Refusing to start: $${spend.spentUsd.toFixed(3)} spent + $${reservedUsd.toFixed(3)} reserved passes the $${CAMPAIGN.capUsd} campaign cap (${SPEND_FILE})`,
     );
   const token = process.env.APIFY_TOKEN;
   if (!token) throw new Error('APIFY_TOKEN is required');
@@ -739,6 +883,7 @@ async function main(): Promise<void> {
   if (sections.includes('or')) report.or = orReport(of('or'));
   if (sections.includes('keywords'))
     report.keywords = keywordsReport(of('keywords'));
+  if (sections.includes('final')) report.final = finalReport(of('final'));
   if (sections.includes('countries'))
     report.countries = countriesReport(of('countries'));
   if (sections.includes('control'))
@@ -748,7 +893,7 @@ async function main(): Promise<void> {
       outcomes.reduce((s, o) => s + o.costUsd, 0).toFixed(4),
     ),
     campaignTotalUsd: Number(spend.spentUsd.toFixed(4)),
-    campaignCapUsd: CAMPAIGN_BUDGET_USD,
+    campaignCapUsd: CAMPAIGN.capUsd,
   };
   console.log(JSON.stringify(report, null, 2));
 }

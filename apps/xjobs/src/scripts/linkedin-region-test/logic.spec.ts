@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { type PlaceRun, judgePair, runCapUsd } from './logic';
+import {
+  type PlaceRun,
+  FINAL_LENGTH_TARGETS,
+  FINAL_SPELLINGS,
+  campaignOf,
+  finalKeywords,
+  judgePair,
+  paddedKeyword,
+  runCapUsd,
+} from './logic';
 
 const HOUR = 3600 * 1000;
 const start = Date.parse('2026-11-14T12:00:00Z');
@@ -87,5 +96,47 @@ describe('runCapUsd', () => {
   it('covers the start and every row of every place', () => {
     expect(runCapUsd(150)).toBeCloseTo(0.156);
     expect(runCapUsd(15, 3)).toBeCloseTo(0.051);
+  });
+});
+
+describe('campaignOf', () => {
+  it('gives each campaign its own cap and spend file', () => {
+    expect(campaignOf('final')).toEqual({
+      capUsd: 1,
+      spendFile: 'tmp/linkedin-final-check-spend.json',
+    });
+    expect(campaignOf('region')).toEqual({
+      capUsd: 2,
+      spendFile: 'tmp/linkedin-region-test-spend.json',
+    });
+  });
+});
+
+describe('final keyword forms', () => {
+  it('quotes terms with a dot or a space, and ORs each technology', () => {
+    const forms = finalKeywords();
+    const names = forms.map((f) => f.name);
+    expect(names).toContain('spelling:"node.js"');
+    expect(names).toContain('spelling:nodejs');
+    expect(forms.find((f) => f.name === 'spelling:"next js"')?.keyword).toBe(
+      '"next js"',
+    );
+    expect(forms.find((f) => f.name === 'spellings:nodejs')?.keyword).toBe(
+      '"node js" OR "node.js" OR nodejs',
+    );
+    expect(Object.keys(FINAL_SPELLINGS)).toEqual([
+      'nodejs',
+      'nextjs',
+      'nestjs',
+    ]);
+  });
+
+  it('pads the dev keyword close to each target without passing it', () => {
+    for (const target of FINAL_LENGTH_TARGETS) {
+      const keyword = paddedKeyword(target);
+      expect(keyword.length).toBeLessThanOrEqual(target);
+      expect(keyword.length).toBeGreaterThan(target - 25);
+      expect(keyword).toContain(' AND ');
+    }
   });
 });

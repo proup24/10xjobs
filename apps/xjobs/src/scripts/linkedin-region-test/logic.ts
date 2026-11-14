@@ -277,3 +277,126 @@ export const KEYWORD_SAMPLES = [
   { name: 'stack', keyword: STACK_OR },
   { name: 'role AND stack', keyword: `(${ROLE_OR}) AND (${STACK_OR})` },
 ];
+
+/** The two keyword-check campaigns: each has its own cap and spend file, so the final check does not draw on the region test's budget. */
+export function campaignOf(name: 'region' | 'final'): {
+  capUsd: number;
+  spendFile: string;
+} {
+  return name === 'final'
+    ? { capUsd: 1, spendFile: 'tmp/linkedin-final-check-spend.json' }
+    : {
+        capUsd: CAMPAIGN_BUDGET_USD,
+        spendFile: 'tmp/linkedin-region-test-spend.json',
+      };
+}
+
+/** Today's role list against a wider one: the final check measures what the extra words recover. */
+export const NARROW_ROLE_WORDS = ROLE_WORDS;
+export const EXTENDED_ROLE_WORDS = [
+  'engineer',
+  'developer',
+  'engineering',
+  'architect',
+  'ingénieur',
+  'développeur',
+  'architecte',
+  'programmer',
+  '"tech lead"',
+  '"technical lead"',
+  'devops',
+  'sre',
+];
+
+/** Candidate spellings per technology, as a person or a posting may write them. */
+export const FINAL_SPELLINGS: Record<string, string[]> = {
+  nodejs: ['nodejs', 'node.js', 'node js'],
+  nextjs: ['nextjs', 'next.js', 'next js'],
+  nestjs: ['nestjs', 'nest.js'],
+};
+
+/** Terms with a space or a `.`, `#`, `+` are quoted. */
+export const quoteTerm = (t: string): string =>
+  /[\s.#+]/.test(t) ? `"${t}"` : t;
+
+/** Lowercased, deduped and sorted terms, quoted where needed, OR'd. */
+export function orTerms(terms: readonly string[]): string {
+  return [...new Set(terms.map((t) => t.toLowerCase()))]
+    .sort()
+    .map(quoteTerm)
+    .join(' OR ');
+}
+
+/** The dev profile's stack with every candidate spelling: the stack half of a run. */
+export const DEV_STACK_TERMS = [
+  'typescript',
+  'react',
+  'react native',
+  'aws',
+  'postgresql',
+  ...Object.values(FINAL_SPELLINGS).flat(),
+];
+
+export const andStack = (roles: readonly string[], stack: string): string =>
+  `(${roles.join(' OR ')}) AND (${stack})`;
+
+/** The dev profile's full keyword: extended role words AND every stack spelling. */
+export const DEV_KEYWORD = andStack(
+  EXTENDED_ROLE_WORDS,
+  orTerms(DEV_STACK_TERMS),
+);
+
+/** Totals-only forms of (b): each spelling alone, then each technology's spellings OR'd. */
+export function finalKeywords(): { name: string; keyword: string }[] {
+  return [
+    ...Object.values(FINAL_SPELLINGS).flatMap((spellings) =>
+      spellings.map((t) => ({
+        name: `spelling:${quoteTerm(t)}`,
+        keyword: quoteTerm(t),
+      })),
+    ),
+    ...Object.entries(FINAL_SPELLINGS).map(([tech, spellings]) => ({
+      name: `spellings:${tech}`,
+      keyword: orTerms(spellings),
+    })),
+  ];
+}
+
+/** (c): the keyword lengths, in characters, the limit is probed at. */
+export const FINAL_LENGTH_TARGETS = [400, 800, 1200, 1600];
+
+/** Other technologies, used only to lengthen the dev keyword. */
+const PAD_TECHNOLOGIES = (
+  'python java golang rust kotlin swift scala ruby php elixir haskell clojure erlang perl lua dart ' +
+  'django flask fastapi rails laravel symfony spring express koa hapi fastify svelte vue angular ember ' +
+  'solid qwik astro remix gatsby nuxt redux mobx zustand rxjs graphql grpc kafka rabbitmq redis memcached ' +
+  'mongodb mysql mariadb sqlite cassandra dynamodb elasticsearch opensearch clickhouse snowflake bigquery ' +
+  'redshift docker kubernetes helm terraform ansible pulumi jenkins gitlab circleci argocd prometheus grafana ' +
+  'datadog sentry nginx apache linux ubuntu debian bash zsh git webpack vite rollup esbuild babel eslint ' +
+  'prettier jest vitest mocha cypress playwright selenium puppeteer storybook tailwind bootstrap sass less ' +
+  'figma firebase supabase prisma typeorm sequelize knex drizzle mongoose hasura strapi contentful sanity ' +
+  'stripe twilio sendgrid auth0 okta keycloak oauth jwt openapi swagger postman azure gcp heroku vercel ' +
+  'netlify cloudflare fastly lambda ec2 s3 sqs sns cloudfront ecs eks fargate pytorch tensorflow pandas numpy ' +
+  'spark airflow dbt kubeflow mlflow unity unreal flutter ionic electron tauri cordova xamarin'
+).split(' ');
+
+/**
+ * The dev keyword with extra technologies OR'd into its stack half, as many as
+ * fit under `target` characters: probes where LinkedIn stops accepting a keyword.
+ */
+export function paddedKeyword(target: number): string {
+  const extras: string[] = [];
+  let best = DEV_KEYWORD;
+  for (const tech of PAD_TECHNOLOGIES) {
+    const next = andStack(
+      EXTENDED_ROLE_WORDS,
+      orTerms([...DEV_STACK_TERMS, ...extras, tech]),
+    );
+    if (next.length > target) continue;
+    extras.push(tech);
+    best = next;
+  }
+  if (best.length <= target - 25)
+    throw new Error(`Not enough padding terms to reach ${target} characters`);
+  return best;
+}
