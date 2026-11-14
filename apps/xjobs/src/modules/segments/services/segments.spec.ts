@@ -1,10 +1,12 @@
-import { Arrangement, Channel, SkillDomain } from 'src/common/enums';
+import { Arrangement, Channel, Seniority, SkillDomain } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
 import {
   linkedinGroupKey,
   mergedLinkedinKeyword,
 } from 'src/modules/collectors/providers/mappers/linkedin-job-board.mapper';
 import { linkedinKeywordFits } from 'src/modules/queries/channels/linkedin_keyword';
+import { LinkedinJobBoardBuilder } from 'src/modules/queries/channels/linkedin_board.builder';
+import { locationCombinations } from 'src/modules/queries/steps';
 import { buildSegments, segmentHash, segmentKey } from './segments';
 import { segmentWindow } from './window';
 
@@ -315,12 +317,64 @@ describe('buildSegments', () => {
     for (const s of segments) expect(s.members).toHaveLength(1);
   });
 
-  it('shares one segment between European Union and Europe preferences', () => {
-    const segments = buildSegments([
-      builder({ location: 'europe', params: { location: 'europe' } }),
-      builder({ location: 'european union', params: { location: 'europe' } }),
-    ]);
-    expect(segments).toHaveLength(1);
+  describe('European Union and Europe preferences', () => {
+    /** The LinkedIn job board builder a one-remote-place profile gets, through the real pipeline. */
+    const boardBuilder = (place: string) => {
+      const [combination] = locationCombinations(
+        {
+          position: 'backend_engineer',
+          seniorities: [Seniority.senior],
+          locations: { remote: [place], hybrid: [], onsite: [] },
+          skills: [],
+          languages: ['en'],
+        },
+        [{ technologies: ['nestjs'], domain: SkillDomain.backend }],
+      ).filter((c) => c.channel === Channel.LINKEDIN_JOB_BOARD);
+      return builder({
+        type: Arrangement.remote,
+        location: combination.location,
+        params: new LinkedinJobBoardBuilder().build(combination)
+          .params as QuerySearchBuilderRow['params'],
+      });
+    };
+
+    it('share one segment through the search map', () => {
+      const segments = buildSegments([
+        boardBuilder('European Union'),
+        boardBuilder('Europe'),
+      ]);
+      expect(segments).toHaveLength(1);
+      expect(segments[0].members).toHaveLength(2);
+    });
+
+    it('would not share one without the map: european union alone is another geoId', () => {
+      const eu = boardBuilder('Europe');
+      const { geoId: _geoId, ...rest } = eu.params as Record<string, string>;
+      const unmapped = builder({
+        type: Arrangement.remote,
+        params: { ...rest, location: 'european union' },
+      });
+      expect(buildSegments([eu, unmapped])).toHaveLength(2);
+    });
+  });
+
+  it('gives the same LinkedIn segments whatever the input order, halving included', () => {
+    const builders = Array.from({ length: 30 }, (_, i) =>
+      builder({
+        params: {
+          roleWords: ['backend'],
+          spellings: [`technology-number-${i}`],
+        },
+      }),
+    );
+    const shape = (rows: QuerySearchBuilderRow[]) =>
+      buildSegments(rows).map((s) => ({
+        hash: s.hash,
+        ids: s.members.map((m) => m.id),
+      }));
+    const expected = shape(builders);
+    expect(expected.length).toBeGreaterThan(1);
+    expect(shape([...builders].reverse())).toEqual(expected);
   });
 
   it('gives a LinkedIn builder with an unknown place a segment of its own, apart from real searches', () => {
