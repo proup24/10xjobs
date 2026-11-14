@@ -22,7 +22,12 @@ export class FakeQuerySearchRepository extends QuerySearchRepository {
     if (this.rows.some((row) => row.hash === recipe.hash)) {
       throw { sqlState: '23505' };
     }
-    const { position: _position, ...columns } = recipe;
+    const {
+      position: _position,
+      languages: _languages,
+      experienceLevel: _experienceLevel,
+      ...columns
+    } = recipe;
     const now = new Date();
     const row = {
       id: `qs-${this.rows.length + 1}`,

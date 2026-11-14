@@ -30,6 +30,8 @@ export type QuerySearchProfileInput = {
   locations: LocationsByArrangement;
   seniorities: string[];
   skills: RankedSkill[];
+  /** ISO codes from `profiles.languages[].lang`, lowercased and deduped. */
+  languages: string[];
 };
 
 export type QuerySearchCombination = {
@@ -42,6 +44,10 @@ export type QuerySearchCombination = {
   technologies: string[];
   /** The domain of the skill the technologies came from; part of the hash. */
   domain: SkillDomain;
+  /** ISO codes of the profile's languages; they pick the role words. */
+  languages: string[];
+  /** One LinkedIn `f_E` code, for the LinkedIn job board only; none when the seniority is unstated. */
+  experienceLevel?: string;
 };
 
 export type ChannelQuery = {

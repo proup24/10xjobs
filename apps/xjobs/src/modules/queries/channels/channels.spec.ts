@@ -7,7 +7,9 @@ import { AshbyQueryBuilder } from './ashbyhq.builder';
 import { GreenhouseQueryBuilder } from './greenhouse.builder';
 import { CHANNEL_QUERY_BUILDERS } from '.';
 import { isWorldwide, LINKEDIN_GEO_IDS } from './linkedin_geo';
-import { linkedinTerm } from './linkedin_board.builder';
+import { roleWords } from '../builders/role-words';
+import { linkedinLevels } from './linkedin_board.builder';
+import { linkedinKeyword } from './linkedin_keyword';
 
 const base: QuerySearchCombination = {
   channel: Channel.LINKEDIN_JOB_BOARD,
@@ -17,6 +19,7 @@ const base: QuerySearchCombination = {
   type: Arrangement.remote,
   technologies: ['nestjs', 'typescript'],
   domain: SkillDomain.backend,
+  languages: ['en'],
 };
 
 const build = (
@@ -29,26 +32,30 @@ const TITLES =
 const onsite = { type: Arrangement.onsite, location: 'casablanca, morocco' };
 
 describe('LinkedIn job board builder', () => {
-  it('searches the technologies alone as plain words, seniority only as f_E', () => {
-    const query = build(Channel.LINKEDIN_JOB_BOARD);
-    expect(query.keyword).toBe('nestjs typescript');
-    expect(query.keyword).not.toMatch(/["()]| AND | OR /);
+  const ROLES = roleWords('backend_engineer', ['en']);
+  const board = (overrides: Partial<QuerySearchCombination> = {}) =>
+    build(Channel.LINKEDIN_JOB_BOARD, { experienceLevel: '4', ...overrides });
+
+  it('searches role words AND spellings, seniority only as f_E', () => {
+    const query = board();
+    expect(query.keyword).toBe(
+      linkedinKeyword(ROLES, ['nest.js', 'nestjs', 'typescript']),
+    );
     expect(query.keyword).not.toContain('senior');
     expect(query.params).toEqual({
       experienceLevel: '4',
       workType: '2',
       location: 'emea',
       geoId: '91000007',
+      roleWords: ROLES,
+      spellings: ['nest.js', 'nestjs', 'typescript'],
     });
   });
 
   it('pins an onsite region by its verified geoId', () => {
     expect(
-      build(Channel.LINKEDIN_JOB_BOARD, {
-        type: Arrangement.onsite,
-        location: 'europe',
-      }).params,
-    ).toEqual({
+      board({ type: Arrangement.onsite, location: 'europe' }).params,
+    ).toMatchObject({
       experienceLevel: '4',
       workType: '1',
       location: 'europe',
@@ -57,21 +64,15 @@ describe('LinkedIn job board builder', () => {
   });
 
   it('passes worldwide as the location', () => {
-    expect(
-      build(Channel.LINKEDIN_JOB_BOARD, { location: 'worldwide' }).params
-        .location,
-    ).toBe('worldwide');
+    expect(board({ location: 'worldwide' }).params.location).toBe('worldwide');
   });
 
   it('pins a location by its verified geoId', () => {
     LINKEDIN_GEO_IDS['paris, france'] = '123';
     try {
       expect(
-        build(Channel.LINKEDIN_JOB_BOARD, {
-          type: Arrangement.hybrid,
-          location: 'paris, france',
-        }).params,
-      ).toEqual({
+        board({ type: Arrangement.hybrid, location: 'paris, france' }).params,
+      ).toMatchObject({
         experienceLevel: '4',
         workType: '3',
         location: 'paris, france',
@@ -83,23 +84,18 @@ describe('LinkedIn job board builder', () => {
   });
 
   it('pins Gulf and European tech-market countries, whatever their casing', () => {
-    expect(
-      build(Channel.LINKEDIN_JOB_BOARD, { location: 'united arab emirates' })
-        .params.geoId,
-    ).toBe('104305776');
-    expect(
-      build(Channel.LINKEDIN_JOB_BOARD, { location: 'germany' }).params.geoId,
-    ).toBe('101282230');
+    expect(board({ location: 'united arab emirates' }).params.geoId).toBe(
+      '104305776',
+    );
+    expect(board({ location: 'germany' }).params.geoId).toBe('101282230');
     for (const key of Object.keys(LINKEDIN_GEO_IDS))
       expect(key).toBe(key.trim().toLowerCase());
   });
 
   it('keeps the verified geoId of a country label', () => {
     expect(
-      build(Channel.LINKEDIN_JOB_BOARD, {
-        location: locationKey('United Kingdom'),
-      }).params,
-    ).toEqual({
+      board({ location: locationKey('United Kingdom') }).params,
+    ).toMatchObject({
       experienceLevel: '4',
       workType: '2',
       location: 'united kingdom',
@@ -107,54 +103,85 @@ describe('LinkedIn job board builder', () => {
     });
   });
 
-  it('searches a city label with no geoId by its lowercased text, not dropping it', () => {
-    expect(
-      build(Channel.LINKEDIN_JOB_BOARD, {
-        ...onsite,
-        location: locationKey('Rabat, Morocco'),
-      }).params,
-    ).toEqual({
-      experienceLevel: '4',
-      workType: '1',
-      location: 'rabat, morocco',
+  it('searches an unpinned place by its key, with no geoId, so collection fails for it alone', () => {
+    const { params } = board({
+      ...onsite,
+      location: locationKey('Rabat, Morocco'),
     });
+    expect(params).toMatchObject({ workType: '1', location: 'rabat, morocco' });
+    expect(params).not.toHaveProperty('geoId');
   });
 
-  it('uses the short spelling LinkedIn posters write', () => {
-    const keyword = (technologies: string[]) =>
-      build(Channel.LINKEDIN_JOB_BOARD, { technologies }).keyword;
-    expect(keyword(['nextjs'])).toBe('next js');
-    expect(keyword(['nodejs'])).toBe('node js');
-    expect(keyword(['spring'])).toBe('spring');
-    expect(keyword(['dotnet'])).toBe('dotnet');
-    expect(keyword(['csharp'])).toBe('csharp');
-    expect(keyword(['cpp'])).toBe('cpp');
-    expect(keyword(['go'])).toBe('golang');
+  it('searches every spelling of every technology', () => {
+    const spellings = (technologies: string[]) =>
+      board({ technologies }).params.spellings;
+    expect(spellings(['nextjs'])).toEqual(['next.js', 'nextjs']);
+    expect(spellings(['nodejs'])).toEqual(['node.js', 'nodejs']);
+    expect(spellings(['go'])).toEqual(['golang']);
   });
 
-  it('keeps every LinkedIn term free of quotes and symbols', () => {
-    for (const technology of Object.keys(TECHNOLOGY_TERMS))
-      expect(linkedinTerm(technology)).toMatch(/^[a-z0-9 ]+$/);
-  });
-
-  it('sends several f_E levels where posters tag a seniority loosely', () => {
-    const level = (experience: Seniority) =>
-      build(Channel.LINKEDIN_JOB_BOARD, { experience }).params.experienceLevel;
-    expect(level(Seniority.junior)).toBe('1,2');
-    expect(level(Seniority.mid)).toBe('3,4');
-    expect(level(Seniority.senior)).toBe('4');
-    expect(level(Seniority.staff)).toBe('4,5');
-    expect(level(Seniority.lead)).toBe('4,5');
-    expect(level(Seniority.principal)).toBe('4,5');
+  it('sends the one level it is given', () => {
+    for (const experienceLevel of ['1', '2', '3', '4', '5'])
+      expect(board({ experienceLevel }).params.experienceLevel).toBe(
+        experienceLevel,
+      );
   });
 
   it('omits filters it has no value for', () => {
-    const params = build(Channel.LINKEDIN_JOB_BOARD, {
-      experience: Seniority.unstated,
+    const params = board({
+      experienceLevel: undefined,
       type: Arrangement.unstated,
     }).params;
     expect(params).not.toHaveProperty('experienceLevel');
     expect(params).not.toHaveProperty('workType');
+  });
+});
+
+describe('linkedinLevels', () => {
+  it('splits a seniority into single f_E levels', () => {
+    expect(linkedinLevels(Seniority.junior)).toEqual(['1', '2']);
+    expect(linkedinLevels(Seniority.mid)).toEqual(['3', '4']);
+    expect(linkedinLevels(Seniority.senior)).toEqual(['4']);
+    expect(linkedinLevels(Seniority.staff)).toEqual(['4', '5']);
+    expect(linkedinLevels(Seniority.lead)).toEqual(['4', '5']);
+    expect(linkedinLevels(Seniority.principal)).toEqual(['4', '5']);
+  });
+
+  it('has none for an unstated seniority', () => {
+    expect(linkedinLevels(Seniority.unstated)).toEqual([]);
+  });
+});
+
+describe('LinkedIn job board builder, role words and spellings', () => {
+  it('builds the keyword from role words and spellings, one level, a pinned geoId', () => {
+    const query = build(Channel.LINKEDIN_JOB_BOARD, {
+      languages: ['en', 'fr'],
+      location: 'europe',
+      experienceLevel: '4',
+      technologies: ['nodejs', 'typescript'],
+    });
+    const params = query.params as Record<string, string[] | string>;
+    expect(params.roleWords).toContain('ingénieur');
+    expect(params.spellings).toContain('node.js');
+    expect(params.experienceLevel).toBe('4');
+    expect(params.geoId).toBe(LINKEDIN_GEO_IDS['europe']);
+    expect(query.keyword).toBe(
+      linkedinKeyword(
+        params.roleWords as string[],
+        params.spellings as string[],
+      ),
+    );
+  });
+
+  it('omits the level and the geoId when there are none', () => {
+    const { params } = build(Channel.LINKEDIN_JOB_BOARD, {
+      languages: ['en'],
+      location: 'asia pacific',
+      experienceLevel: undefined,
+    });
+    expect(params).not.toHaveProperty('experienceLevel');
+    expect(params).not.toHaveProperty('geoId');
+    expect(params.location).toBe('asia pacific');
   });
 });
 

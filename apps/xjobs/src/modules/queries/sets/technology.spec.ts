@@ -1,5 +1,6 @@
 import { SkillDomain } from 'src/common/enums';
 import type { RankedSkill } from '../types';
+import { Channel } from 'src/common/enums';
 import { technologySets, topTechnologies } from './technology';
 
 const skill = (
@@ -82,7 +83,7 @@ describe('technologySets', () => {
   ];
 
   it('returns one set per technology, with its domain', () => {
-    expect(technologySets(skills)).toEqual([
+    expect(technologySets(skills, Channel.ASHBY)).toEqual([
       { technologies: [a], domain: SkillDomain.backend },
       { technologies: [b], domain: SkillDomain.devops },
       { technologies: [c], domain: SkillDomain.backend },
@@ -90,22 +91,62 @@ describe('technologySets', () => {
   });
 
   it('returns 1 set for 1 technology', () => {
-    expect(technologySets(skills.slice(0, 1))).toEqual([
+    expect(technologySets(skills.slice(0, 1), Channel.ASHBY)).toEqual([
       { technologies: [a], domain: SkillDomain.backend },
     ]);
   });
 
   it('takes the domain of the best-ranked entry of a technology', () => {
     expect(
-      technologySets([
-        skill(a, 3, 9, SkillDomain.devops),
-        skill(a, 8, 1, SkillDomain.backend),
-      ]),
+      technologySets(
+        [
+          skill(a, 3, 9, SkillDomain.devops),
+          skill(a, 8, 1, SkillDomain.backend),
+        ],
+        Channel.ASHBY,
+      ),
     ).toEqual([{ technologies: [a], domain: SkillDomain.backend }]);
   });
 
   it('returns no sets without a ranked skill', () => {
-    expect(technologySets([])).toEqual([]);
-    expect(technologySets([skill(a, 0, 9)])).toEqual([]);
+    expect(technologySets([], Channel.ASHBY)).toEqual([]);
+    expect(technologySets([skill(a, 0, 9)], Channel.ASHBY)).toEqual([]);
+  });
+});
+
+describe('technologySets for the LinkedIn job board', () => {
+  it('returns one set holding every top technology, with the first top skill domain', () => {
+    const names = [
+      'go',
+      'rust',
+      'nestjs',
+      'react',
+      'java',
+      'python',
+      'sql',
+      'aws',
+    ];
+    const skills = names.map((name, i) =>
+      skill(
+        name,
+        i === 0 ? 9 : 5,
+        5,
+        i === 0 ? SkillDomain.devops : SkillDomain.backend,
+      ),
+    );
+    const sets = technologySets(skills, Channel.LINKEDIN_JOB_BOARD);
+    expect(sets).toHaveLength(1);
+    expect(sets[0].technologies).toEqual(topTechnologies(skills));
+    expect(sets[0].technologies).toHaveLength(8);
+    expect(sets[0].domain).toBe(SkillDomain.devops);
+  });
+
+  it('returns no set without a ranked skill', () => {
+    expect(technologySets([], Channel.LINKEDIN_JOB_BOARD)).toEqual([]);
+  });
+
+  it('keeps one set per technology on other channels', () => {
+    const skills = [skill('go', 5), skill('rust', 4)];
+    expect(technologySets(skills, Channel.ASHBY)).toHaveLength(2);
   });
 });

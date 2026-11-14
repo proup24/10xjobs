@@ -13,6 +13,7 @@ const input: QuerySearchProfileInput = {
   seniorities: [Seniority.senior],
   locations: { ...empty, remote: ['EMEA'] },
   skills: [],
+  languages: ['en'],
 };
 
 describe('displayLocation', () => {

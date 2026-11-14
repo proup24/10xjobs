@@ -26,6 +26,7 @@ const locations = (
 const remoteBackendMa: QuerySearchProfileInput = {
   position: 'backend_engineer',
   seniorities: ['senior'],
+  languages: ['en'],
   locations: locations({ remote: ['EMEA', 'European Union'] }),
   skills: [
     skill('nestjs', backend, 9, 8),
@@ -37,6 +38,7 @@ const remoteBackendMa: QuerySearchProfileInput = {
 const onsiteFrontendParis: QuerySearchProfileInput = {
   position: 'frontend_engineer',
   seniorities: ['mid'],
+  languages: ['en'],
   locations: locations({ onsite: ['Paris, France'] }),
   skills: [skill('react', frontend, 9, 8), skill('nextjs', frontend, 8, 7)],
 };
@@ -48,6 +50,7 @@ export const MOCK_PROFILES = {
   hybridAndRemoteDevops: {
     position: 'devops_engineer',
     seniorities: ['staff'],
+    languages: ['en'],
     locations: locations({
       hybrid: ['Austin, United States'],
       remote: ['North America'],
@@ -61,18 +64,21 @@ export const MOCK_PROFILES = {
   unstatedSeniority: {
     position: 'data_engineer',
     seniorities: ['unstated'],
+    languages: ['en'],
     locations: locations({ remote: ['Asia Pacific'] }),
     skills: [skill('python', data, 7, 7)],
   },
   onsiteOnlyCasablanca: {
     position: 'backend_engineer',
     seniorities: ['junior'],
+    languages: ['en'],
     locations: locations({ onsite: ['Casablanca, Morocco'] }),
     skills: [skill('go', backend, 8, 6), skill('nodejs', backend, 5, 5)],
   },
   remoteWorldwide: {
     position: 'ml_engineer',
     seniorities: ['principal'],
+    languages: ['en'],
     locations: locations({ remote: ['Worldwide'] }),
     skills: [skill('pytorch', ml, 9, 9), skill('python', ml, 8, 9)],
   },
@@ -80,6 +86,7 @@ export const MOCK_PROFILES = {
   noRankedSkills: {
     position: 'qa_engineer',
     seniorities: ['senior'],
+    languages: ['en'],
     locations: locations({ remote: ['Spain'], onsite: ['Madrid, Spain'] }),
     skills: [skill('python', qa, 0, 6)],
   },
@@ -87,6 +94,7 @@ export const MOCK_PROFILES = {
   conceptTagsOnly: {
     position: 'backend_engineer',
     seniorities: ['senior'],
+    languages: ['en'],
     locations: locations({ remote: ['EMEA'] }),
     skills: [
       skill('saas', backend, 10, 9),
@@ -96,12 +104,14 @@ export const MOCK_PROFILES = {
   leadTechLead: {
     position: 'tech_lead',
     seniorities: ['lead'],
+    languages: ['en'],
     locations: locations({ onsite: ['London, United Kingdom'] }),
     skills: [skill('typescript', fullstack, 9, 9)],
   },
   tiesAndDuplicates: {
     position: 'backend_engineer',
     seniorities: ['senior'],
+    languages: ['en'],
     locations: locations({ remote: ['European Union', 'european union '] }),
     skills: [
       skill('go', devops, 5, 5),

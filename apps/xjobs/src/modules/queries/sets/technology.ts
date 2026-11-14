@@ -1,4 +1,5 @@
 import { isSearchableTech } from '@xjobs/database/enums';
+import { Channel } from 'src/common/enums';
 import type { RankedSkill, TechnologySet } from '../types';
 
 /** Importance desc, mastery desc, then technology name asc. */
@@ -30,9 +31,27 @@ export function topTechnologies(skills: RankedSkill[]): string[] {
   return topSkills(skills).map((skill) => skill.technology);
 }
 
-/** Each top technology alone, never combined, under the domain of its best-ranked entry. */
-export function technologySets(skills: RankedSkill[]): TechnologySet[] {
-  return topSkills(skills).map(({ technology, domain }) => ({
+/**
+ * The technology sets a channel searches. The LinkedIn job board gets one set
+ * with every top technology (the keyword ORs their spellings), under the
+ * domain of the first top skill. Other channels get each technology alone,
+ * under the domain of its best-ranked entry.
+ */
+export function technologySets(
+  skills: RankedSkill[],
+  channel: Channel,
+): TechnologySet[] {
+  const top = topSkills(skills);
+  if (channel === Channel.LINKEDIN_JOB_BOARD)
+    return top.length === 0
+      ? []
+      : [
+          {
+            technologies: top.map((skill) => skill.technology),
+            domain: top[0].domain,
+          },
+        ];
+  return top.map(({ technology, domain }) => ({
     technologies: [technology],
     domain,
   }));

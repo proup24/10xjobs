@@ -13,6 +13,7 @@ const profile: QuerySearchProfileInput = {
   seniorities: [senior],
   locations: { remote: ['Europe'], hybrid: [], onsite: [] },
   skills: [],
+  languages: ['en'],
 };
 
 describe('normalizeSeniorities', () => {

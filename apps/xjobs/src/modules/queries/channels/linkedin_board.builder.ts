@@ -1,7 +1,9 @@
 import { Arrangement, Channel, Seniority } from 'src/common/enums';
 import type { ChannelQuery, QuerySearchCombination } from '../types';
 import type { ChannelQueryBuilder } from '../builders/channel.builder';
-import { TECHNOLOGY_TERMS } from '../builders/keywords';
+import { roleWords } from '../builders/role-words';
+import { searchSpellings } from '../builders/search-spellings';
+import { linkedinKeyword } from './linkedin_keyword';
 import { LINKEDIN_GEO_IDS } from './linkedin_geo';
 
 /**
@@ -28,49 +30,35 @@ const WORK_TYPES: Record<Arrangement, string | null> = {
   [Arrangement.unstated]: null,
 };
 
-/**
- * Short spellings for LinkedIn's keyword search, which matches loose words and
- * drops symbols: `next js`, not `"next.js"`. Technologies not listed use
- * {@link TECHNOLOGY_TERMS}; `golang` stays, a bare `go` matching everything.
- */
-export const LINKEDIN_TERMS: Readonly<Record<string, string>> = {
-  nodejs: 'node js',
-  nextjs: 'next js',
-  vue: 'vue js',
-  express: 'express js',
-  spring: 'spring',
-  spark: 'spark',
-  tailwindcss: 'tailwind',
-  rails: 'rails',
-  dotnet: 'dotnet',
-  csharp: 'csharp',
-  cpp: 'cpp',
-};
-
-/** The technology as LinkedIn posters write it. */
-export function linkedinTerm(technology: string): string {
-  return LINKEDIN_TERMS[technology] ?? TECHNOLOGY_TERMS[technology];
+/** The single LinkedIn `f_E` codes a seniority searches; none for an unstated one. */
+export function linkedinLevels(seniority: string): string[] {
+  return EXPERIENCE_LEVELS[seniority]?.split(',') ?? [];
 }
 
 /**
- * A plain keyword, the position's main title then the technologies
- * (`backend engineer golang`): no quotes or operators, so LinkedIn matches
- * loosely and the processor judges fit. Seniority, work type and location go
- * in LinkedIn's own filters, never in the keyword.
+ * `(role words) AND (spellings)`: the position's role words in English and the
+ * profile's languages, and every technology's spellings. Seniority, work type
+ * and location go in LinkedIn's own filters, never in the keyword; the
+ * processor judges fit.
  */
 export class LinkedinJobBoardBuilder implements ChannelQueryBuilder {
   readonly channel = Channel.LINKEDIN_JOB_BOARD;
 
   build(combination: QuerySearchCombination): ChannelQuery {
+    const roles = roleWords(combination.position, combination.languages);
+    const spellings = [
+      ...new Set(combination.technologies.flatMap(searchSpellings)),
+    ].sort();
     const params: Record<string, unknown> = {};
-    const experienceLevel = EXPERIENCE_LEVELS[combination.experience];
-    if (experienceLevel !== null) params.experienceLevel = experienceLevel;
+    if (combination.experienceLevel !== undefined)
+      params.experienceLevel = combination.experienceLevel;
     const workType = WORK_TYPES[combination.type];
     if (workType !== null) params.workType = workType;
     params.location = combination.location;
     const geoId = LINKEDIN_GEO_IDS[combination.location];
     if (geoId) params.geoId = geoId;
-    const keyword = combination.technologies.map(linkedinTerm).join(' ');
-    return { keyword, params };
+    params.roleWords = roles;
+    params.spellings = spellings;
+    return { keyword: linkedinKeyword(roles, spellings), params };
   }
 }

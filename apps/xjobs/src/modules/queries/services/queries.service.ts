@@ -32,8 +32,9 @@ export class QuerySearchService {
     assertHasLocations(profile);
     assertHasSeniorities(profile);
     assertHasSkills(profile);
-    const technologies = technologySets(profile.skills);
-    const combinations = locationCombinations(profile, technologies);
+    const combinations = locationCombinations(profile, (channel) =>
+      technologySets(profile.skills, channel),
+    );
     return dedupeBySearch(dedupeByHash(combinations.map(toRecipe)));
   }
 

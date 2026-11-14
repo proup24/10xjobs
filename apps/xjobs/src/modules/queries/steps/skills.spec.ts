@@ -8,6 +8,7 @@ const input: QuerySearchProfileInput = {
   locations: { remote: ['EMEA'], hybrid: [], onsite: [] },
   seniorities: [Seniority.senior],
   skills: [],
+  languages: ['en'],
 };
 const go = (importance: number) => ({
   technology: 'go',
