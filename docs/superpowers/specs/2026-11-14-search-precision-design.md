@@ -200,19 +200,18 @@ Merging technologies and role words is different. Separate searches per technolo
 
 A search is full when it returned its row limit, or when LinkedIn's `totalElements` is above what was returned (the existing `truncatedQueryIds` signal). Every search asks harvestapi for the past hour (`postedLimit: '1h'`), so a split on the next tick could never re-cover the hour that was cut. So a full search is split **at once, in the same tick**, and the halves rerun over the same past hour _(my call, from the builder check)_:
 
-1. halve its technology spellings (sorted, so the halves are stable) and run both halves;
+1. halve its member builders (sorted by hash, so the halves are stable) and run both halves;
 2. if a single technology is still full, rerun it with a higher row limit, up to harvestapi's 1,000 ceiling, and log it for review.
 
 The jobs the full run already returned are charged again when a half returns them. That cost counts against the spend cap. The split is also remembered for later ticks, so the same search doesn't fill and rerun every hour. Where split state lives, and when a split is undone, is the builder's call; it must never be undone on the tick right after the split.
 
-### 6. Coverage per search
+### 6. Coverage
 
-One builder can belong to several searches in the same tick: EMEA maps to three search places, and a split cuts a profile's technologies in two. A single per-builder `coveredUntil` would mark the builder covered after the first search and skip the others.
+Builders are generated per **search place × work type × single experience level** (the search map and the level split are applied when the recipe is built). So each builder belongs to exactly one search, and the existing per-builder claims and cursors keep working unchanged. Same-tick split halves are disjoint sets of builders.
 
-- Progress and claims are kept per builder **and** search place (and split half), not per builder alone. The schema change is the builder's call.
-- `query_search_builder.coveredUntil` stays, derived as the earliest of its per-search cursors. The web app doesn't read it.
+- A full run's batch is stored without advancing cursors; the halves that rerun advance them.
+- A single builder still full at the 1,000-row ceiling advances its cursors and logs that older postings in that hour are lost. Every search asks only for the past hour, so holding the cursor back can't recover them.
 - A re-plan must never move a cursor forward without a run that covered it.
-- A run that ends full after its same-tick splits (a single technology still at the 1,000 ceiling) moves its cursors only to the posted time of the oldest item returned, and logs it. If no item has a usable posted time, the cursors don't move.
 
 ### 7. Keyword length
 
@@ -257,8 +256,8 @@ Since the 2026-11-12 commit, `technologySets` returns every technology for every
   - adding user C (Java, onsite Casablanca, junior) adds its own Morocco onsite internship and entry searches;
   - an EU-only preference and a Europe preference share one Europe search;
   - the result is the same whatever the input order.
-- **Splitting:** a full search halves its spellings and both halves run in the same tick; a single full technology reruns with a higher row limit; a split is remembered across ticks; a run still full at the ceiling moves cursors only to the oldest returned item's posted time.
-- **Coverage:** a builder in three search places (EMEA) is collected by all three in one tick; its derived `coveredUntil` is the earliest of the three cursors.
+- **Splitting:** a full search halves its members and both halves run in the same tick; a single full technology reruns with a higher row limit; a split is remembered across ticks; a run still full at the ceiling moves cursors only to the oldest returned item's posted time.
+- **Coverage:** an EMEA preference gives three builders, one per search place, each collected by its own search.
 - **Spend cap:** at, under and over the cap, and across the Morocco day boundary.
 
 ## Task 1: the live check (first, a go/no-go)
@@ -282,7 +281,7 @@ None. The builder check raised four. Three are settled above as my calls: same-t
 
 - Builder granularity and how builders carry the structured place code.
 - The search map's format, and how the GCC and cities map.
-- Where split state lives, when a split is undone, and the per-search progress schema.
+- Where split state lives, and when a split is undone.
 - How APAC and Asia (excluding the GCC) are covered.
 - How the spend total is queried.
 - The spellings script's name, thresholds and output.
