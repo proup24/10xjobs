@@ -5,7 +5,11 @@ import {
   linkedinGroupKey,
   linkedinMemberWords,
 } from 'src/modules/collectors/providers/mappers/linkedin-job-board.mapper';
-import { linkedinKeywordFits } from 'src/modules/queries/channels/linkedin_keyword';
+import {
+  keywordTerm,
+  linkedinKeyword,
+  linkedinKeywordFits,
+} from 'src/modules/queries/channels/linkedin_keyword';
 
 /** Builders searched together in one Apify run. */
 export interface SearchSegment {
@@ -101,34 +105,79 @@ function fitChunks(
   ];
 }
 
+/** A LinkedIn job board group cut into more chunks than its parts because its keyword was too long. */
+export interface KeywordCut {
+  key: string;
+  members: number;
+  chunks: number;
+}
+
+/** A one-member LinkedIn job board segment whose own keyword is still over the limit. */
+export interface OversizedSegment {
+  key: string;
+  hash: string;
+  /** Characters of its keyword. */
+  length: number;
+  /** Distinct terms of its keyword. */
+  terms: number;
+}
+
+/** The segments of a tick, and what keyword length did to them, for the caller to log. */
+export interface SegmentPlan {
+  segments: SearchSegment[];
+  cuts: KeywordCut[];
+  oversized: OversizedSegment[];
+}
+
+/** The keyword's length and terms when a lone member's words don't fit; null when they do. */
+function overLimit(
+  member: QuerySearchBuilderRow,
+): { length: number; terms: number } | null {
+  if (keywordFits([member])) return null;
+  const { roleWords, spellings } = linkedinMemberWords([
+    { params: params(member) },
+  ]);
+  return {
+    length: linkedinKeyword(roleWords, spellings).length,
+    terms: new Set([...roleWords, ...spellings].map(keywordTerm)).size,
+  };
+}
+
 /**
  * Groups builders by segment key and orders each group by builder hash. A
  * LinkedIn job board group is cut into `parts.get(key) ?? 1` even chunks, then
  * any chunk whose merged keyword is too long is halved; `size` doesn't apply.
  * Other groups are cut into segments of at most `size`. The same builders
- * always give the same segments, whatever their input order.
+ * always give the same segments, whatever their input order. Pure: it reports
+ * the groups keyword length cut, and the lone builders still over the limit
+ * (sent anyway: they can't be cut), and the caller logs them.
  */
-export function buildSegments(
+export function planSegments(
   builders: readonly QuerySearchBuilderRow[],
   size = SEGMENT_SIZE,
   parts: ReadonlyMap<string, number> = new Map(),
-): SearchSegment[] {
+): SegmentPlan {
   const groups = new Map<string, QuerySearchBuilderRow[]>();
   for (const builder of builders) {
     const key = segmentKey(builder);
     groups.set(key, [...(groups.get(key) ?? []), builder]);
   }
-  const segments: SearchSegment[] = [];
+  const plan: SegmentPlan = { segments: [], cuts: [], oversized: [] };
   for (const key of [...groups.keys()].sort()) {
     const members = (groups.get(key) ?? []).sort(byHash);
-    const chunks: QuerySearchBuilderRow[][] =
-      members[0].channel === Channel.LINKEDIN_JOB_BOARD
-        ? evenChunks(members, parts.get(key) ?? 1).flatMap(fitChunks)
-        : Array.from({ length: Math.ceil(members.length / size) }, (_, i) =>
-            members.slice(i * size, (i + 1) * size),
-          );
-    for (const chunk of chunks)
-      segments.push({
+    const board = members[0].channel === Channel.LINKEDIN_JOB_BOARD;
+    let chunks: QuerySearchBuilderRow[][];
+    if (board) {
+      const even = evenChunks(members, parts.get(key) ?? 1);
+      chunks = even.flatMap(fitChunks);
+      if (chunks.length > even.length)
+        plan.cuts.push({ key, members: members.length, chunks: chunks.length });
+    } else
+      chunks = Array.from({ length: Math.ceil(members.length / size) }, (_, i) =>
+        members.slice(i * size, (i + 1) * size),
+      );
+    for (const chunk of chunks) {
+      const segment: SearchSegment = {
         key,
         hash: segmentHash(
           key,
@@ -136,7 +185,20 @@ export function buildSegments(
         ),
         channel: chunk[0].channel as Channel,
         members: chunk,
-      });
+      };
+      plan.segments.push(segment);
+      const over = board && chunk.length === 1 ? overLimit(chunk[0]) : null;
+      if (over) plan.oversized.push({ key, hash: segment.hash, ...over });
+    }
   }
-  return segments;
+  return plan;
+}
+
+/** The segments of {@link planSegments}, without its report. */
+export function buildSegments(
+  builders: readonly QuerySearchBuilderRow[],
+  size = SEGMENT_SIZE,
+  parts: ReadonlyMap<string, number> = new Map(),
+): SearchSegment[] {
+  return planSegments(builders, size, parts).segments;
 }

@@ -597,6 +597,41 @@ describe('CollectionService LinkedIn search splits', () => {
     expect(searches(collector)[0]!.segmentKey).toBe(segmentKey(rows[0]!));
   });
 
+  it('logs a group cut by keyword length once, and a lone over-long builder once', async () => {
+    const worded = (spellings: string[]) =>
+      builder({
+        channel: Channel.LINKEDIN_JOB_BOARD,
+        type: Arrangement.remote,
+        params: { location: 'emea', roleWords: ['engineer'], spellings },
+      });
+    const rows = [
+      ...Array.from({ length: 30 }, (_, i) => worded([`technology-number-${i}`])),
+      worded(Array.from({ length: 40 }, (_, i) => `technology-${i}`)),
+    ];
+    const { collection, warn } = run(rows, small);
+    const logs = vi.mocked(Logger.prototype.log);
+    const summary = await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+
+    const key = segmentKey(rows[0]!);
+    const cuts = logs.mock.calls.filter(([text]) =>
+      String(text).includes('keyword length'),
+    );
+    expect(cuts).toEqual([
+      [
+        `${key} cut into ${summary.segments} searches for keyword length (31 members, 1 part)`,
+      ],
+    ]);
+    const over = warn.mock.calls.filter(([text]) =>
+      String(text).includes('over the LinkedIn keyword limit'),
+    );
+    expect(over).toHaveLength(1);
+    const line = String(over[0]![0]);
+    expect(line.startsWith(`Segment ${key} (`)).toBe(true);
+    expect(line).toMatch(
+      / keyword is over the LinkedIn keyword limit: \d+ characters, 41 terms; it is sent alone, and LinkedIn may degrade it$/,
+    );
+  });
+
   it('remembers the split with setParts 2 for the group', async () => {
     const rows = linkedin(2);
     const { collection, splits } = run(rows, (s) =>

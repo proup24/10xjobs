@@ -28,7 +28,7 @@ import {
   SearchSegmentsRepository,
   type SegmentQueryOutcome,
   LinkedinSearchSplitsRepository,
-  buildSegments,
+  planSegments,
   segmentHash,
   segmentWindow,
 } from 'src/modules/segments';
@@ -116,11 +116,24 @@ export class CollectionService {
     const until = new Date();
     const builders = await this.queries.listActive(channel);
     const remembered = await this.rememberedSplits(channel);
-    const segments = buildSegments(
+    const plan = planSegments(
       builders,
       config.segmentSize,
       new Map([...remembered].map(([key, { parts }]) => [key, parts])),
     );
+    const { segments } = plan;
+    // Keyword length, not a full search, cut these groups: one line per group.
+    for (const cut of plan.cuts) {
+      const parts = remembered.get(cut.key)?.parts ?? 1;
+      this.logger.log(
+        `${cut.key} cut into ${cut.chunks} searches for keyword length (${cut.members} members, ${parts} ${parts === 1 ? 'part' : 'parts'})`,
+      );
+    }
+    // A lone builder can't be cut further: it is sent anyway, once warned.
+    for (const over of plan.oversized)
+      this.logger.warn(
+        `Segment ${over.key} (${over.hash.slice(0, 12)}) keyword is over the LinkedIn keyword limit: ${over.length} characters, ${over.terms} terms; it is sent alone, and LinkedIn may degrade it`,
+      );
     const summary: CollectionSummary = {
       channel,
       builders: builders.length,

@@ -16,9 +16,13 @@ export {
 export {
   SEGMENT_SIZE,
   buildSegments,
+  planSegments,
   segmentHash,
   segmentKey,
+  type KeywordCut,
+  type OversizedSegment,
   type SearchSegment,
+  type SegmentPlan,
 } from './services/segments';
 export {
   segmentWindow,
