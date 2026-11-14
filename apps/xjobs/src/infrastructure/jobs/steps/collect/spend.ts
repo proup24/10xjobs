@@ -28,7 +28,7 @@ function wallClockAsUtc(instant: Date): number {
   );
 }
 
-/** Milliseconds Morocco is ahead of UTC at `instant`; 0 during Ramadan, 1 hour otherwise. */
+/** Milliseconds Morocco is ahead of UTC at `instant`, from the tz data (UTC+1 with UTC+0 for Ramadan; tzdata 2026e has UTC+0 from 2026-09-20). */
 function offsetMs(instant: Date): number {
   const whole = Math.floor(instant.getTime() / 1000) * 1000;
   return wallClockAsUtc(new Date(whole)) - whole;

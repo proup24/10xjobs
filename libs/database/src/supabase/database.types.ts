@@ -868,6 +868,31 @@ export type Database = {
         };
         Relationships: [];
       };
+      linkedin_search_splits: {
+        Row: {
+          createdAt: string;
+          groupKey: string;
+          parts: number;
+          splitAt: string;
+          updatedAt: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          createdAt?: string;
+          groupKey: string;
+          parts: number;
+          splitAt: string;
+          updatedAt?: string;
+        };
+        Update: {
+          createdAt?: string;
+          groupKey?: string;
+          parts?: number;
+          splitAt?: string;
+          updatedAt?: string;
+        };
+        Relationships: [];
+      };
       match_reviews: {
         Row: {
           choice: string;
