@@ -8,6 +8,7 @@ import {
   GreenhouseCollector,
   LinkedinJobBoardCollector,
   LinkedinPostsCollector,
+  SearchNotStartedError,
   type SegmentSearch,
   type SegmentResult,
 } from 'src/modules/collectors';
@@ -27,7 +28,7 @@ import {
   SearchSegmentsRepository,
   type SegmentQueryOutcome,
   LinkedinSearchSplitsRepository,
-  buildSegments,
+  planSegments,
   segmentHash,
   segmentWindow,
 } from 'src/modules/segments';
@@ -115,11 +116,24 @@ export class CollectionService {
     const until = new Date();
     const builders = await this.queries.listActive(channel);
     const remembered = await this.rememberedSplits(channel);
-    const segments = buildSegments(
+    const plan = planSegments(
       builders,
       config.segmentSize,
       new Map([...remembered].map(([key, { parts }]) => [key, parts])),
     );
+    const { segments } = plan;
+    // Keyword length, not a full search, cut these groups: one line per group.
+    for (const cut of plan.cuts) {
+      const parts = remembered.get(cut.key)?.parts ?? 1;
+      this.logger.log(
+        `${cut.key} cut into ${cut.chunks} searches for keyword length (${cut.members} members, ${parts} ${parts === 1 ? 'part' : 'parts'})`,
+      );
+    }
+    // A lone builder can't be cut further: it is sent anyway, once warned.
+    for (const over of plan.oversized)
+      this.logger.warn(
+        `Segment ${over.key} (${over.hash.slice(0, 12)}) keyword is over the LinkedIn keyword limit: ${over.length} characters, ${over.terms} terms; it is sent alone, and LinkedIn may degrade it`,
+      );
     const summary: CollectionSummary = {
       channel,
       builders: builders.length,
@@ -170,8 +184,12 @@ export class CollectionService {
       );
     }
 
-    if (channel === Channel.LINKEDIN_JOB_BOARD)
+    if (channel === Channel.LINKEDIN_JOB_BOARD) {
       await this.rememberSplits(groups, remembered, until);
+      // Only a tick that reached every group knows which splits are stale.
+      if (summary.segmentsDeferred === 0)
+        await this.pruneSplits([...groups.keys()]);
+    }
 
     const durationMs = Date.now() - until.getTime();
     this.logger.log(
@@ -353,6 +371,24 @@ export class CollectionService {
   }
 
   /**
+   * Forgets remembered splits of groups this tick did not build (a profile
+   * deleted or moved to another recipe); a failure is retried by the next tick.
+   */
+  private async pruneSplits(built: string[]): Promise<void> {
+    try {
+      const forgot = await this.splits.prune(built);
+      if (forgot > 0)
+        this.logger.log(
+          `Forgot ${forgot} remembered LinkedIn search splits of groups no longer searched`,
+        );
+    } catch (error) {
+      this.logger.warn(
+        `Remembered LinkedIn search splits could not be pruned: ${message(error)}`,
+      );
+    }
+  }
+
+  /**
    * Claim the segment's members, then fetch and store the claimed ones. Only
    * the first run collects a query over an interval: members another run
    * holds, or already covered up to `until`, are dropped from the search.
@@ -419,6 +455,9 @@ export class CollectionService {
     let costUsd = 0;
     let owned: SearchSegment;
     let result: SegmentResult;
+    /** True once an Apify run may have started: only then does a failure cost anything. */
+    let started = false;
+    /** Started, and no cost reported yet. */
     let charged = false;
 
     try {
@@ -432,6 +471,7 @@ export class CollectionService {
       const search = buildSearch(channel, owned, window, options.maxItems);
       run = buildRun(runId, owned, search, startedAt);
       // From here a paid run may exist, whatever happens next.
+      started = true;
       charged = true;
       result = await this.fetch(search);
       costUsd = result.costUsd ?? 0;
@@ -461,18 +501,25 @@ export class CollectionService {
       collected = await this.saveBatch(batch, run, advance);
     } catch (error) {
       this.logger.warn(`Segment ${segment.key} failed: ${message(error)}`);
+      // The collector refused the search before calling Apify: nothing ran.
+      if (error instanceof SearchNotStartedError) {
+        started = false;
+        charged = false;
+      }
       // A fetch that threw reported no cost: count what it could have charged.
       if (charged) options.budget?.add(chargeCapMicroUsd(options.maxItems));
-      await this.recordFailure(
+      const failed =
         run ??
-          buildRun(
-            runId,
-            segment,
-            buildSearch(channel, segment, claimed),
-            startedAt,
-          ),
-        error,
-      );
+        buildRun(
+          runId,
+          segment,
+          buildSearch(channel, segment, claimed),
+          startedAt,
+        );
+      // No Apify run could have started: record a cost of 0, which the spend
+      // total counts as nothing (null would count at the charge cap).
+      if (!started) failed.costMicroUsd = 0;
+      await this.recordFailure(failed, error);
       return {
         skipped: false,
         queriesSkipped,
@@ -621,6 +668,7 @@ function buildSearch(
 ): SegmentSearch {
   return {
     channel,
+    segmentKey: segment.key,
     since: window.since,
     until: window.until,
     queries: segment.members.map((member) => ({

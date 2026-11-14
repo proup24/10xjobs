@@ -1,7 +1,7 @@
 # Shared LinkedIn searches (Phase 2, collection)
 
 Date: 2026-11-09
-Status: draft
+Status: Tasks 1–3 built. Tasks 4–9 superseded by [the 2026-11-14 search precision spec](2026-11-14-search-precision-design.md).
 
 ## Intent
 

@@ -32,6 +32,8 @@ export interface SegmentSearch {
   queries: SegmentQuery[];
   /** Rows this search may return; the LinkedIn collector uses it in place of `maxRowsPerSearch`. */
   maxItems?: number;
+  /** The segment's key, for log lines only. */
+  segmentKey?: string;
 }
 
 /** What one segment run collected, per member builder, untouched. */

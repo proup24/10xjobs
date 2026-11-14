@@ -7,7 +7,12 @@ import {
 import { linkedinKeywordFits } from 'src/modules/queries/channels/linkedin_keyword';
 import { LinkedinJobBoardBuilder } from 'src/modules/queries/channels/linkedin_board.builder';
 import { locationCombinations } from 'src/modules/queries/steps';
-import { buildSegments, segmentHash, segmentKey } from './segments';
+import {
+  buildSegments,
+  planSegments,
+  segmentHash,
+  segmentKey,
+} from './segments';
 import { segmentWindow } from './window';
 
 let n = 0;
@@ -263,6 +268,61 @@ describe('buildSegments', () => {
     expect(segments.find((s) => s.members.includes(long))?.members).toEqual([
       long,
     ]);
+  });
+
+  describe('planSegments: keyword-length cuts and over-long builders', () => {
+    const tooLong = (count: number) =>
+      Array.from({ length: count }, (_, i) =>
+        builder({
+          params: {
+            roleWords: ['backend'],
+            spellings: [`technology-number-${i}`],
+          },
+        }),
+      );
+
+    it('reports a group cut into more chunks than its parts, once per group', () => {
+      const builders = tooLong(30);
+      const key = segmentKey(builders[0]);
+      const plan = planSegments(builders, 10, new Map([[key, 2]]));
+      expect(plan.segments).toEqual(
+        buildSegments(builders, 10, new Map([[key, 2]])),
+      );
+      expect(plan.cuts).toEqual([
+        { key, members: 30, chunks: plan.segments.length },
+      ]);
+      expect(plan.segments.length).toBeGreaterThan(2);
+    });
+
+    it('reports no cut when the keyword fits, nor for other channels', () => {
+      const plan = planSegments([
+        ...many(3),
+        ...many(25, { channel: Channel.ASHBY }),
+      ]);
+      expect(plan.cuts).toEqual([]);
+      expect(plan.oversized).toEqual([]);
+    });
+
+    it('reports a lone builder whose own keyword is still over the limit', () => {
+      const long = builder({
+        params: {
+          roleWords: ['backend'],
+          spellings: Array.from({ length: 40 }, (_, i) => `technology-${i}`),
+        },
+      });
+      const plan = planSegments([long, builder()]);
+      const segment = plan.segments.find((s) => s.members.includes(long));
+      expect(plan.oversized).toEqual([
+        {
+          key: segment?.key,
+          hash: segment?.hash,
+          length: mergedLinkedinKeyword([
+            { params: long.params as Record<string, unknown> },
+          ]).length,
+          terms: 41,
+        },
+      ]);
+    });
   });
 
   it('merges the dev profile Europe remote builder with user B into one segment', () => {

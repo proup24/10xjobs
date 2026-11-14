@@ -13,6 +13,7 @@
     "db:places": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/places-recheck.ts",
     "db:match-shares": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/match-shares.ts",
     "db:vocab": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/vocab.ts",
+    "db:spellings": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/spellings.ts",
     "processor:golden-import": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/processor-golden-import.ts",
     "processor:golden-draft": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/processor-golden-draft.ts",
     "processor:eval": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/processor-eval.ts",

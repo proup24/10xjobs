@@ -1,5 +1,7 @@
 # 04: Search precision
 
+Spec: [Search precision](../../superpowers/specs/2026-11-14-search-precision-design.md). Plan: [Search precision](../../superpowers/plans/2026-11-14-search-precision.md).
+
 ## Problem
 
 Most of what LinkedIn searches return isn't the role anyone wants, and every one of those jobs is paid for twice: once to collect, and once, eight times over, to process.

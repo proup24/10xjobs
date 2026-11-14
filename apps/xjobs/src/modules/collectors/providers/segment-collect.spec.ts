@@ -1,4 +1,6 @@
+import { Logger } from '@nestjs/common';
 import { Channel } from 'src/common/enums';
+import { SearchNotStartedError } from '../utils/search-not-started';
 import type { BoardSearchRunConfig, SegmentSearch } from '../types/collector';
 import type { ApifyActorProvider } from './apify/apify.provider';
 import { GoogleJobsSearchProvider } from './apify/google-search.provider';
@@ -168,6 +170,39 @@ describe('LinkedIn job board segment', () => {
     expect(run).not.toHaveBeenCalled();
   });
 
+  it('says no Apify run started when a place has no geoId or members differ', async () => {
+    const { run, provider } = actor(() => [item(1)]);
+    const unresolved = board_(provider).collect(
+      segment(Channel.LINKEDIN_JOB_BOARD, [
+        { id: 'qs-a', keyword: 'go', params: { location: 'Atlantis' } },
+      ]),
+    );
+    await expect(unresolved).rejects.toBeInstanceOf(SearchNotStartedError);
+    const mixed = board_(provider).collect(
+      segment(Channel.LINKEDIN_JOB_BOARD, [
+        { id: 'qs-a', keyword: 'go', params: { location: 'Germany' } },
+        {
+          id: 'qs-b',
+          keyword: 'go',
+          params: { location: 'Germany', workType: '2' },
+        },
+      ]),
+    );
+    await expect(mixed).rejects.toBeInstanceOf(SearchNotStartedError);
+    expect(run).not.toHaveBeenCalled();
+  });
+
+  it('says the actor failed as a plain error, not as a search that never started', async () => {
+    const run = vi.fn(async () => {
+      throw new Error('apify down');
+    });
+    const failing = board_({ run } as unknown as ApifyActorProvider).collect(
+      segment(Channel.LINKEDIN_JOB_BOARD, queries),
+    );
+    await expect(failing).rejects.toThrow('apify down');
+    await expect(failing).rejects.not.toBeInstanceOf(SearchNotStartedError);
+  });
+
   it('refuses a segment whose members run different searches', async () => {
     const { run, provider } = actor(() => [item(1)]);
     await expect(
@@ -267,6 +302,39 @@ describe('LinkedIn job board segment', () => {
       segment(Channel.LINKEDIN_JOB_BOARD, queries),
     );
     expect(whole.truncatedQueryIds).toEqual([]);
+  });
+
+  it('warns when a run returned fewer rows than its limit while LinkedIn reports more', async () => {
+    const warn = vi
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
+    try {
+      const more = Array.from({ length: 30 }, (_, i) => item(i, 40));
+      await board_(actor(() => more).provider).collect({
+        ...segment(Channel.LINKEDIN_JOB_BOARD, queries),
+        segmentKey: 'seg-k',
+      });
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0][0]).toBe(
+        'LinkedIn search seg-k returned 30 of 100 rows but reports 40 in total',
+      );
+
+      warn.mockClear();
+      // At the row limit, or with the total matched, nothing is said.
+      const full = Array.from({ length: board.maxRowsPerSearch }, (_, i) =>
+        item(i, 500),
+      );
+      await board_(actor(() => full).provider).collect(
+        segment(Channel.LINKEDIN_JOB_BOARD, queries),
+      );
+      const whole = Array.from({ length: 30 }, (_, i) => item(i, 30));
+      await board_(actor(() => whole).provider).collect(
+        segment(Channel.LINKEDIN_JOB_BOARD, queries),
+      );
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   it("keeps the first item's pagination as the search totals, null with no items", async () => {

@@ -6,8 +6,10 @@ import type {
   TechnologySet,
 } from '../types';
 import { LOCATION_ARRANGEMENTS } from '../types';
+import { roleWords } from '../builders/role-words';
 import { linkedinLevels } from '../channels/linkedin_board.builder';
 import { searchPlaces } from '../channels/linkedin_search_map';
+import { packLinkedinTechnologies } from '../sets/technology';
 import { sortKeys } from '../utils';
 import { locationKey } from './normalize';
 
@@ -18,15 +20,23 @@ function levelsFor(board: boolean, seniority: string): (string | undefined)[] {
   return levels.length === 0 ? [undefined] : levels;
 }
 
-/** The LinkedIn job board searches every technology in one set. */
-function collapse(sets: TechnologySet[]): TechnologySet[] {
-  if (sets.length <= 1) return sets;
-  return [
-    {
-      technologies: [...new Set(sets.flatMap((set) => set.technologies))],
-      domain: sets[0].domain,
-    },
-  ];
+/**
+ * The LinkedIn job board's sets: every technology once, in the order given,
+ * each under the domain of the set it first came in, packed into the fewest
+ * sets whose keyword fits with `roles` (`packLinkedinTechnologies`). Sets
+ * `technologySets` already packed with the same role words come back as they were.
+ */
+function pack(
+  sets: TechnologySet[],
+  roles: readonly string[],
+): TechnologySet[] {
+  const seen = new Set<string>();
+  const ranked = sets.flatMap(({ technologies, domain }) =>
+    technologies
+      .filter((technology) => !seen.has(technology) && seen.add(technology))
+      .map((technology) => ({ technology, domain })),
+  );
+  return packLinkedinTechnologies(ranked, roles);
 }
 
 /**
@@ -36,8 +46,8 @@ function collapse(sets: TechnologySet[]): TechnologySet[] {
  *
  * The LinkedIn job board differs: each location expands into its LinkedIn
  * search places and each seniority into its single `f_E` levels (one
- * combination without a level when the seniority has none), over one
- * technology set holding every technology.
+ * combination without a level when the seniority has none), over the fewest
+ * technology sets whose keyword fits LinkedIn's limits (one for most profiles).
  */
 export function locationCombinations(
   profile: QuerySearchProfileInput,
@@ -46,7 +56,9 @@ export function locationCombinations(
   const setsFor = (channel: Channel): TechnologySet[] => {
     const sets =
       typeof technologies === 'function' ? technologies(channel) : technologies;
-    return channel === Channel.LINKEDIN_JOB_BOARD ? collapse(sets) : sets;
+    return channel === Channel.LINKEDIN_JOB_BOARD
+      ? pack(sets, roleWords(profile.position, profile.languages))
+      : sets;
   };
   return LOCATION_ARRANGEMENTS.flatMap((type) =>
     ACTIVE_CHANNELS.flatMap((channel) => {

@@ -3,9 +3,11 @@ import { type SearchSegment, segmentHash } from 'src/modules/segments';
 
 /**
  * How long a remembered split is kept before it may be made smaller: 1.5
- * hourly schedule steps, so a split survives at least the next tick whatever
- * the scheduler delay. The overnight gap (21:00 to 09:00) may undo an evening
- * split at the first morning tick; that is accepted.
+ * hourly schedule steps, so a split survives the next hourly tick with about
+ * 30 minutes of margin for scheduler jitter (not any delay). The schedule has
+ * two longer gaps, overnight (21:00 to 09:00) and the weekend (Friday 21:00 to
+ * Monday 09:00); either may undo a split at the first tick after it. That is
+ * accepted.
  */
 const KEEP_SPLIT_MS = 90 * 60_000;
 /** Searches that all return under this share of their row limit are small. */
