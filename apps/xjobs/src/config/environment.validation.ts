@@ -70,7 +70,7 @@ function requireStorage(
 
 /** Daily spend cap, in US dollars, on LinkedIn job board collection (Morocco day). */
 const collectionBudgetShape = {
-  COLLECTION_DAILY_BUDGET_USD: z.coerce.number().positive().default(3),
+  COLLECTION_DAILY_BUDGET_USD: z.coerce.number().positive().finite().default(3),
 };
 
 /**

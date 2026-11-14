@@ -28,11 +28,15 @@ describe('moroccoDayStart', () => {
     ).toBe('2026-11-12T23:00:00.000Z');
   });
 
-  it('finds the day start on the day the offset changes', () => {
-    // Ramadan 2026 starts around 18 February: midnight is still UTC+1, the clocks go back at 03:00.
-    const start = moroccoDayStart(new Date('2026-02-18T12:00:00Z'));
-    expect(['2026-02-17T23:00:00.000Z', '2026-02-18T00:00:00.000Z']).toContain(
-      start.toISOString(),
-    );
+  it('finds the day start when Ramadan begins, midnight still UTC+1', () => {
+    expect(
+      moroccoDayStart(new Date('2026-02-15T12:00:00Z')).toISOString(),
+    ).toBe('2026-02-14T23:00:00.000Z');
+  });
+
+  it('finds the day start when Ramadan ends, midnight still UTC+0', () => {
+    expect(
+      moroccoDayStart(new Date('2026-03-22T12:00:00Z')).toISOString(),
+    ).toBe('2026-03-22T00:00:00.000Z');
   });
 });

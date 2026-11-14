@@ -186,11 +186,11 @@ export class CollectionService {
       this.logger.warn(
         `${channel} collection took ${Math.round(durationMs / 60_000)} minutes, over 60: jobs may be missed, because each search asks only for the last hour`,
       );
-    const attempted =
-      summary.segments - summary.segmentsSkipped - summary.segmentsDeferred;
-    if (attempted > 0 && summary.segmentsFailed === attempted)
+    // Runs that happened: stored or failed. Skips and deferrals (shutdown, daily
+    // budget) are not runs, so they never cancel one that did happen.
+    if (summary.segmentsFailed > 0 && summary.batches === 0)
       throw new Error(
-        `${channel} collection failed for all ${attempted} segments`,
+        `${channel} collection failed for all ${summary.segmentsFailed} segments`,
       );
     return summary;
   }

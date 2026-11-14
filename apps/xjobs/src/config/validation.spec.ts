@@ -135,7 +135,7 @@ describe('collector and tooling configuration', () => {
     ).toBe(1.5);
   });
 
-  it.each(['0', '-1', 'abc'])(
+  it.each(['0', '-1', 'abc', 'Infinity'])(
     'refuses a daily collection budget of %s',
     (value) => {
       expect(() =>

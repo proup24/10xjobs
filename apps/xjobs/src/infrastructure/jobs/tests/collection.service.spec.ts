@@ -908,6 +908,32 @@ describe('CollectionService daily budget', () => {
     expect(splits.splits.get(segmentKey(rows[0]!))?.parts).toBe(2);
   });
 
+  it('does not throw when a segment fails and a full one succeeds but its halves are skipped', async () => {
+    // Groups run in key order: the failing one first.
+    const failing = linkedin(1, 'europe');
+    const splitting = linkedin(2);
+    const failingId = failing[0]!.id;
+    const { collection, collector } = run(
+      [...failing, ...splitting],
+      (s) => {
+        if (s.queries.some((q) => q.id === failingId))
+          throw new Error('apify down');
+        return full(s, 0.3);
+      },
+      0.5,
+    );
+
+    const summary = await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+
+    // The failed run counts at its charge cap (0.25), the full search (0.30) reaches the cap; both halves are skipped.
+    expect(collector.collect).toHaveBeenCalledTimes(2);
+    expect(summary).toMatchObject({
+      segmentsFailed: 1,
+      batches: 1,
+      segmentsDeferred: 2,
+    });
+  });
+
   it('leaves cursors of a full search when its single-member ceiling rerun is skipped', async () => {
     const { collection, collector, segments } = run(
       linkedin(1),
