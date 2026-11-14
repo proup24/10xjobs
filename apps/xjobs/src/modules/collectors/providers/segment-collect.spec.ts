@@ -141,7 +141,11 @@ describe('LinkedIn job board segment', () => {
       board_(provider).collect(
         segment(Channel.LINKEDIN_JOB_BOARD, [
           { id: 'qs-a', keyword: 'go', params: { location: 'Germany' } },
-          { id: 'qs-b', keyword: 'rust', params: { location: 'Germany' } },
+          {
+            id: 'qs-b',
+            keyword: 'rust',
+            params: { location: 'Germany', workType: '2' },
+          },
         ]),
       ),
     ).rejects.toThrow(/one search/);

@@ -1,6 +1,10 @@
 import { Arrangement, Channel, SkillDomain } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
-import { linkedinSearchKey } from 'src/modules/collectors/providers/mappers/linkedin-job-board.mapper';
+import {
+  linkedinGroupKey,
+  mergedLinkedinKeyword,
+} from 'src/modules/collectors/providers/mappers/linkedin-job-board.mapper';
+import { linkedinKeywordFits } from 'src/modules/queries/channels/linkedin_keyword';
 import { buildSegments, segmentHash, segmentKey } from './segments';
 import { segmentWindow } from './window';
 
@@ -16,8 +20,16 @@ const builder = (
     type: Arrangement.onsite,
     location: 'casablanca, morocco',
     keyword: 'backend',
-    params: {},
     ...overrides,
+    params:
+      (overrides.channel ?? Channel.LINKEDIN_JOB_BOARD) ===
+      Channel.LINKEDIN_JOB_BOARD
+        ? {
+            roleWords: ['backend'],
+            spellings: ['nestjs'],
+            ...(overrides.params as object),
+          }
+        : (overrides.params ?? {}),
   }) as QuerySearchBuilderRow;
 
 const many = (count: number, overrides: Partial<QuerySearchBuilderRow> = {}) =>
@@ -25,7 +37,7 @@ const many = (count: number, overrides: Partial<QuerySearchBuilderRow> = {}) =>
 
 describe('buildSegments', () => {
   it('cuts a group into segments of at most 10', () => {
-    const segments = buildSegments(many(25));
+    const segments = buildSegments(many(25, { channel: Channel.ASHBY }));
     expect(segments.map((s) => s.members.length)).toEqual([10, 10, 5]);
     expect(new Set(segments.map((s) => s.key)).size).toBe(1);
     expect(new Set(segments.map((s) => s.hash)).size).toBe(3);
@@ -41,8 +53,8 @@ describe('buildSegments', () => {
 
   it('keeps domains and locations apart', () => {
     const segments = buildSegments([
-      ...many(2),
-      ...many(2, { domain: SkillDomain.frontend }),
+      ...many(2, { channel: Channel.ASHBY }),
+      ...many(2, { channel: Channel.ASHBY, domain: SkillDomain.frontend }),
       ...many(2, { channel: Channel.ASHBY, location: 'rabat, morocco' }),
     ]);
     expect(segments).toHaveLength(3);
@@ -82,7 +94,7 @@ describe('buildSegments', () => {
   });
 
   it('gives the same segments whatever the input order', () => {
-    const builders = many(23);
+    const builders = many(23, { channel: Channel.ASHBY });
     const shuffled = [...builders].reverse();
     const shape = (rows: QuerySearchBuilderRow[]) =>
       buildSegments(rows).map((s) => ({
@@ -147,9 +159,9 @@ describe('buildSegments', () => {
     expect(segmentKey(b)).toBe(`${Channel.ASHBY}|backend|remote|mena`);
   });
 
-  it('keys a LinkedIn job board builder by its search, with the geoId before location text', () => {
+  it('keys a LinkedIn job board builder by its group, with the geoId before location text', () => {
     expect(segmentKey(builder({ params: { location: 'emea' } }))).toBe(
-      `${Channel.LINKEDIN_JOB_BOARD}|backend|onsite|search:${linkedinSearchKey('backend', { location: 'emea' })}`,
+      `${Channel.LINKEDIN_JOB_BOARD}|onsite|group:${linkedinGroupKey({ location: 'emea' })}`,
     );
     expect(
       segmentKey(
@@ -163,20 +175,152 @@ describe('buildSegments', () => {
         }),
       ),
     ).toBe(
-      `${Channel.LINKEDIN_JOB_BOARD}|backend|onsite|search:${linkedinSearchKey('backend', { location: 'emea', geoId: '91000000', experienceLevel: '4', workType: '2' })}`,
+      `${Channel.LINKEDIN_JOB_BOARD}|onsite|group:${linkedinGroupKey({ location: 'emea', geoId: '91000000', experienceLevel: '4', workType: '2' })}`,
     );
   });
 
-  it('keeps LinkedIn job board builders apart when any part of their search differs', () => {
+  it('groups LinkedIn builders of one search whatever their keyword', () => {
+    const base = { location: 'Germany' };
+    const segments = buildSegments([
+      builder({
+        params: { ...base, roleWords: ['backend'], spellings: ['go'] },
+      }),
+      builder({
+        params: { ...base, roleWords: ['developer'], spellings: ['rust'] },
+      }),
+    ]);
+    expect(segments).toHaveLength(1);
+    expect(segments[0].members).toHaveLength(2);
+  });
+
+  it('keeps levels and work types apart', () => {
     const base = { location: 'Germany' };
     const segments = buildSegments([
       builder({ params: base }),
-      builder({ keyword: 'frontend', params: base }),
       builder({ params: { ...base, experienceLevel: '4' } }),
       builder({ params: { ...base, workType: '2' } }),
       builder({ params: { location: 'France' } }),
     ]);
-    expect(segments).toHaveLength(5);
+    expect(segments).toHaveLength(4);
+  });
+
+  it('ignores domain for the LinkedIn job board', () => {
+    const segments = buildSegments([
+      builder({ domain: SkillDomain.backend }),
+      builder({ domain: SkillDomain.frontend }),
+    ]);
+    expect(segments).toHaveLength(1);
+  });
+
+  it('cuts a group into parts chunks, stable by hash', () => {
+    const builders = many(7);
+    const key = segmentKey(builders[0]);
+    const segments = buildSegments(builders, 10, new Map([[key, 3]]));
+    expect(segments.map((s) => s.members.length)).toEqual([3, 2, 2]);
+    const sorted = [...builders].sort((a, b) => (a.hash < b.hash ? -1 : 1));
+    expect(segments.flatMap((s) => s.members.map((m) => m.id))).toEqual(
+      sorted.map((m) => m.id),
+    );
+    const again = buildSegments(
+      [...builders].reverse(),
+      10,
+      new Map([[key, 3]]),
+    );
+    expect(again.map((s) => s.hash)).toEqual(segments.map((s) => s.hash));
+  });
+
+  it('cuts a group whose merged keyword is too long', () => {
+    const builders = Array.from({ length: 30 }, (_, i) =>
+      builder({
+        params: {
+          roleWords: ['backend'],
+          spellings: [`technology-number-${i}`],
+        },
+      }),
+    );
+    const segments = buildSegments(builders);
+    expect(segments.length).toBeGreaterThan(1);
+    expect(segments.flatMap((s) => s.members)).toHaveLength(30);
+    for (const s of segments)
+      expect(
+        linkedinKeywordFits(
+          ['backend'],
+          s.members.map((m) => (m.params as any).spellings[0]),
+        ),
+      ).toBe(true);
+  });
+
+  it('keeps a single over-long builder alone', () => {
+    const long = builder({
+      params: {
+        roleWords: ['backend'],
+        spellings: Array.from({ length: 40 }, (_, i) => `technology-${i}`),
+      },
+    });
+    const segments = buildSegments([long, builder()]);
+    expect(segments.find((s) => s.members.includes(long))?.members).toEqual([
+      long,
+    ]);
+  });
+
+  it('merges the dev profile Europe remote builder with user B into one segment', () => {
+    const europeRemote = (roleWords: string[], spellings: string[]) =>
+      builder({
+        type: Arrangement.remote,
+        location: 'europe',
+        params: {
+          location: 'europe',
+          workType: '2',
+          experienceLevel: '4',
+          roleWords,
+          spellings,
+        },
+      });
+    const dev = europeRemote(['backend'], ['nestjs', 'typescript']);
+    const userB = europeRemote(['backend'], ['python']);
+    const segments = buildSegments([dev, userB]);
+    expect(segments).toHaveLength(1);
+    expect(
+      mergedLinkedinKeyword(segments[0].members as { params: any }[]),
+    ).toContain('python');
+  });
+
+  it('keeps user C Morocco onsite levels apart from other segments', () => {
+    const casa = (level: string, spellings: string[]) =>
+      builder({
+        params: {
+          location: 'morocco',
+          workType: '1',
+          experienceLevel: level,
+          roleWords: ['developer'],
+          spellings,
+        },
+      });
+    const europe = builder({
+      type: Arrangement.remote,
+      params: {
+        location: 'europe',
+        workType: '2',
+        experienceLevel: '4',
+        roleWords: ['backend'],
+        spellings: ['nestjs'],
+      },
+    });
+    const segments = buildSegments([
+      europe,
+      casa('1', ['java']),
+      casa('2', ['java']),
+    ]);
+    expect(segments).toHaveLength(3);
+    for (const s of segments) expect(s.members).toHaveLength(1);
+  });
+
+  it('shares one segment between European Union and Europe preferences', () => {
+    const segments = buildSegments([
+      builder({ location: 'europe', params: { location: 'europe' } }),
+      builder({ location: 'european union', params: { location: 'europe' } }),
+    ]);
+    expect(segments).toHaveLength(1);
   });
 
   it('gives a LinkedIn builder with an unknown place a segment of its own, apart from real searches', () => {
@@ -186,7 +330,7 @@ describe('buildSegments', () => {
     expect(segments).toHaveLength(2);
     const unresolved = segments.find((s) => s.members[0].id === bad.id);
     expect(unresolved?.key).toBe(
-      `${Channel.LINKEDIN_JOB_BOARD}|backend|onsite|unresolved:${bad.id}`,
+      `${Channel.LINKEDIN_JOB_BOARD}|onsite|unresolved:${bad.id}`,
     );
     expect(unresolved?.members).toEqual([bad]);
   });
@@ -219,7 +363,7 @@ describe('buildSegments', () => {
 
 describe('segmentHash', () => {
   it('matches the hash buildSegments assigns', () => {
-    const segments = buildSegments(many(13));
+    const segments = buildSegments(many(13, { channel: Channel.ASHBY }));
     expect(segments.length).toBeGreaterThan(1);
     for (const segment of segments)
       expect(

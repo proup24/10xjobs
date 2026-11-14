@@ -1,5 +1,7 @@
+import { linkedinKeyword } from 'src/modules/queries/channels/linkedin_keyword';
 import {
-  linkedinSearchKey,
+  linkedinGroupKey,
+  mergedLinkedinKeyword,
   toHarvestJobSearchInput,
 } from './linkedin-job-board.mapper';
 
@@ -48,7 +50,7 @@ describe('toHarvestJobSearchInput', () => {
     expect(() =>
       toHarvestJobSearchInput('x', { location: 'atlantis' }, 1),
     ).toThrow(/No LinkedIn geoId for location "atlantis"/);
-    expect(() => linkedinSearchKey('x', { location: 'atlantis' })).toThrow(
+    expect(() => linkedinGroupKey({ location: 'atlantis' })).toThrow(
       /No LinkedIn geoId for location "atlantis"/,
     );
   });
@@ -80,38 +82,46 @@ describe('toHarvestJobSearchInput', () => {
   });
 });
 
-describe('linkedinSearchKey', () => {
+describe('linkedinGroupKey', () => {
   it('is equal whether the geoId is stored or resolved from the location', () => {
-    expect(linkedinSearchKey('x', { location: 'morocco' })).toBe(
-      linkedinSearchKey('x', { location: 'morocco', geoId: '102787409' }),
+    expect(linkedinGroupKey({ location: 'morocco' })).toBe(
+      linkedinGroupKey({ location: 'morocco', geoId: '102787409' }),
     );
   });
 
-  it('pins the key shape', () => {
+  it('pins the key shape, without the keyword', () => {
     expect(
-      linkedinSearchKey('x', {
+      linkedinGroupKey({
         location: 'morocco',
         experienceLevel: '5,4',
         workType: '2',
       }),
     ).toBe(
-      '{"keyword":"x","place":{"geoId":"102787409"},"experienceLevel":["director","mid-senior"],"workplaceType":["remote"]}',
+      '{"place":{"geoId":"102787409"},"experienceLevel":["director","mid-senior"],"workplaceType":["remote"]}',
     );
   });
 
   it('ignores the order of the experience codes', () => {
     expect(
-      linkedinSearchKey('x', { location: 'canada', experienceLevel: '4,5' }),
-    ).toBe(
-      linkedinSearchKey('x', { location: 'canada', experienceLevel: '5,4' }),
-    );
+      linkedinGroupKey({ location: 'canada', experienceLevel: '4,5' }),
+    ).toBe(linkedinGroupKey({ location: 'canada', experienceLevel: '5,4' }));
   });
 
-  it('differs when the work type or the keyword differs', () => {
+  it('differs when the work type differs', () => {
     const base = { location: 'canada' };
-    expect(linkedinSearchKey('x', { ...base, workType: '1' })).not.toBe(
-      linkedinSearchKey('x', { ...base, workType: '2' }),
+    expect(linkedinGroupKey({ ...base, workType: '1' })).not.toBe(
+      linkedinGroupKey({ ...base, workType: '2' }),
     );
-    expect(linkedinSearchKey('x', base)).not.toBe(linkedinSearchKey('y', base));
+  });
+});
+
+describe('mergedLinkedinKeyword', () => {
+  it('is the keyword of the union of the members role words and spellings', () => {
+    expect(
+      mergedLinkedinKeyword([
+        { params: { roleWords: ['backend'], spellings: ['go', 'golang'] } },
+        { params: { roleWords: ['developer'], spellings: ['go', 'rust'] } },
+      ]),
+    ).toBe(linkedinKeyword(['backend', 'developer'], ['go', 'golang', 'rust']));
   });
 });
