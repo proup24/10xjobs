@@ -117,7 +117,12 @@ export class PrismaQuerySearchRepository extends QuerySearchRepository {
         }).first();
         if (!builder) {
           // `position` only shapes the keyword and is not a column.
-          const { position: _position, ...columns } = recipe;
+          const {
+            position: _position,
+            languages: _languages,
+            experienceLevel: _experienceLevel,
+            ...columns
+          } = recipe;
           builder = await orm.QuerySearchBuilder.create({
             ...columns,
             // A seniority code; the column still holds the Seniority enum's values.

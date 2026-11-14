@@ -8,6 +8,8 @@ import {
 import { FakeQuerySearchRepository } from '../testing/fakes';
 import { MOCK_PROFILES, summarize } from '../testing/profiles.fixture';
 import type { QuerySearchProfileInput, QuerySearchRecipe } from '../types';
+import { roleWords } from '../builders/role-words';
+import { linkedinKeyword } from '../channels/linkedin_keyword';
 import { QuerySearchService } from './queries.service';
 
 // These specs cover every channel's builder, inactive ones included.
@@ -27,59 +29,46 @@ const ofType = (recipes: QuerySearchRecipe[], type: Arrangement) =>
 const hashSet = (recipes: QuerySearchRecipe[]) =>
   new Set(recipes.map((recipe) => recipe.hash));
 const empty = { remote: [], hybrid: [], onsite: [] };
+const roles = (position: string) => roleWords(position, ['en']);
+const BACKEND_ROLES = roles('backend_engineer');
+const LEVEL_4 = { experienceLevel: '4', workType: '2' };
+const notBoard = (recipes: QuerySearchRecipe[]) =>
+  recipes.filter((recipe) => recipe.channel !== Channel.LINKEDIN_JOB_BOARD);
 
 describe('expand scenarios over mock profiles', () => {
-  it('remote backend in two locations: every technology alone, one search per location', () => {
+  it('remote backend in two locations: the board searches every technology once per search place, other channels one technology each', () => {
     const recipes = expand(MOCK_PROFILES.remoteBackendMa);
-    expect(recipes).toHaveLength(24);
-    expect(hashSet(recipes).size).toBe(24);
+    // Other channels: 3 channels x 3 technologies x 2 locations = 18.
+    // Board, one level (senior = 4): EMEA gives africa, europe and middle east,
+    // European Union gives europe again (the same search), so 3. Total 21.
+    expect(recipes).toHaveLength(21);
+    expect(hashSet(recipes).size).toBe(21);
     expect(recipes.every((r) => r.type === Arrangement.remote)).toBe(true);
-    expect(recipes.every((r) => r.technologies.length === 1)).toBe(true);
+    expect(notBoard(recipes).every((r) => r.technologies.length === 1)).toBe(
+      true,
+    );
+    const spellings = ['nest.js', 'nestjs', 'postgresql', 'typescript'];
     expect(keywords(recipes, Channel.LINKEDIN_JOB_BOARD)).toEqual([
-      'nestjs',
-      'postgresql',
-      'typescript',
+      linkedinKeyword(BACKEND_ROLES, spellings),
     ]);
     expect(
+      on(recipes, Channel.LINKEDIN_JOB_BOARD).map((r) => r.technologies),
+    ).toEqual(Array(3).fill(['nestjs', 'typescript', 'postgresql']));
+    expect(
       on(recipes, Channel.LINKEDIN_JOB_BOARD).map((r) => r.params),
-    ).toEqual([
-      {
-        location: 'emea',
-        geoId: '91000007',
-        experienceLevel: '4',
-        workType: '2',
-      },
-      {
-        location: 'emea',
-        geoId: '91000007',
-        experienceLevel: '4',
-        workType: '2',
-      },
-      {
-        location: 'emea',
-        geoId: '91000007',
-        experienceLevel: '4',
-        workType: '2',
-      },
-      {
-        location: 'european union',
-        geoId: '91000000',
-        experienceLevel: '4',
-        workType: '2',
-      },
-      {
-        location: 'european union',
-        geoId: '91000000',
-        experienceLevel: '4',
-        workType: '2',
-      },
-      {
-        location: 'european union',
-        geoId: '91000000',
-        experienceLevel: '4',
-        workType: '2',
-      },
-    ]);
+    ).toEqual(
+      [
+        ['africa', '103537801'],
+        ['europe', '100506914'],
+        ['middle east', '91000001'],
+      ].map(([location, geoId]) => ({
+        location,
+        geoId,
+        ...LEVEL_4,
+        roleWords: BACKEND_ROLES,
+        spellings,
+      })),
+    );
     expect(keywords(recipes, Channel.LINKEDIN_POSTS)).toEqual([
       'hiring ("backend engineer" OR "backend developer" OR "backend software engineer") nestjs senior remote emea',
       'hiring ("backend engineer" OR "backend developer" OR "backend software engineer") nestjs senior remote european union',
@@ -92,25 +81,34 @@ describe('expand scenarios over mock profiles', () => {
 
   it('onsite frontend in Paris: one location, on every channel', () => {
     const recipes = expand(MOCK_PROFILES.onsiteFrontendParis);
+    // Other channels: 3 x 2 technologies = 6. Board: France, levels 3 and 4 = 2.
     expect(recipes).toHaveLength(8);
     for (const recipe of recipes) {
       expect(recipe).toMatchObject({
         type: Arrangement.onsite,
-        location: 'paris, france',
+        location:
+          recipe.channel === Channel.LINKEDIN_JOB_BOARD
+            ? 'france'
+            : 'paris, france',
       });
     }
+    const frontend = roles('frontend_engineer');
+    const spellings = ['next.js', 'nextjs', 'react'];
     expect(
       on(recipes, Channel.LINKEDIN_JOB_BOARD).map((r) => [r.keyword, r.params]),
-    ).toEqual([
-      [
-        'react',
-        { location: 'paris, france', experienceLevel: '3,4', workType: '1' },
-      ],
-      [
-        'next js',
-        { location: 'paris, france', experienceLevel: '3,4', workType: '1' },
-      ],
-    ]);
+    ).toEqual(
+      ['3', '4'].map((experienceLevel) => [
+        linkedinKeyword(frontend, spellings),
+        {
+          location: 'france',
+          geoId: '105015875',
+          experienceLevel,
+          workType: '1',
+          roleWords: frontend,
+          spellings,
+        },
+      ]),
+    );
     expect(keywords(recipes, Channel.LINKEDIN_POSTS)).toEqual([
       'hiring ("frontend engineer" OR "frontend developer" OR "front end engineer") "next.js" paris, france',
       'hiring ("frontend engineer" OR "frontend developer" OR "front end engineer") react paris, france',
@@ -125,19 +123,34 @@ describe('expand scenarios over mock profiles', () => {
 
   it('hybrid + remote devops: each arrangement in its own location', () => {
     const recipes = expand(MOCK_PROFILES.hybridAndRemoteDevops);
+    // Other channels: 3 x 3 technologies = 9 per arrangement. Board, levels 4
+    // and 5 (staff): hybrid Austin gives united states = 2; remote North America
+    // gives canada and united states = 4. Total 11 hybrid + 13 remote.
     expect(recipes).toHaveLength(24);
     const hybrid = ofType(recipes, Arrangement.hybrid);
     const remote = ofType(recipes, Arrangement.remote);
-    expect(hybrid).toHaveLength(12);
-    expect(remote).toHaveLength(12);
-    expect(hybrid.every((r) => r.location === 'austin, united states')).toBe(
+    expect(hybrid).toHaveLength(11);
+    expect(remote).toHaveLength(13);
+    expect(
+      notBoard(hybrid).every((r) => r.location === 'austin, united states'),
+    ).toBe(true);
+    expect(
+      on(hybrid, Channel.LINKEDIN_JOB_BOARD).map((r) => r.location),
+    ).toEqual(['united states', 'united states']);
+    expect(notBoard(remote).every((r) => r.location === 'north america')).toBe(
       true,
     );
-    expect(remote.every((r) => r.location === 'north america')).toBe(true);
+    expect(
+      on(remote, Channel.LINKEDIN_JOB_BOARD).map(
+        (r) => `${r.location}|${r.params.experienceLevel}`,
+      ),
+    ).toEqual(['canada|4', 'canada|5', 'united states|4', 'united states|5']);
     expect(keywords(recipes, Channel.LINKEDIN_JOB_BOARD)).toEqual([
-      'aws',
-      'kubernetes',
-      'terraform',
+      linkedinKeyword(roles('devops_engineer'), [
+        'aws',
+        'kubernetes',
+        'terraform',
+      ]),
     ]);
     expect(
       on(hybrid, Channel.LINKEDIN_JOB_BOARD).every(
@@ -162,12 +175,12 @@ describe('expand scenarios over mock profiles', () => {
           "GREEN_HOUSE | devops | remote | north america | ("devops engineer" OR "devops") aws staff "remote" "north america" | {"remote":true}",
           "GREEN_HOUSE | devops | remote | north america | ("devops engineer" OR "devops") kubernetes staff "remote" "north america" | {"remote":true}",
           "GREEN_HOUSE | devops | remote | north america | ("devops engineer" OR "devops") terraform staff "remote" "north america" | {"remote":true}",
-          "LINKEDIN_JOB_BOARD | devops | hybrid | austin, united states | aws | {"experienceLevel":"4,5","location":"austin, united states","workType":"3"}",
-          "LINKEDIN_JOB_BOARD | devops | hybrid | austin, united states | kubernetes | {"experienceLevel":"4,5","location":"austin, united states","workType":"3"}",
-          "LINKEDIN_JOB_BOARD | devops | hybrid | austin, united states | terraform | {"experienceLevel":"4,5","location":"austin, united states","workType":"3"}",
-          "LINKEDIN_JOB_BOARD | devops | remote | north america | aws | {"experienceLevel":"4,5","location":"north america","workType":"2"}",
-          "LINKEDIN_JOB_BOARD | devops | remote | north america | kubernetes | {"experienceLevel":"4,5","location":"north america","workType":"2"}",
-          "LINKEDIN_JOB_BOARD | devops | remote | north america | terraform | {"experienceLevel":"4,5","location":"north america","workType":"2"}",
+          "LINKEDIN_JOB_BOARD | devops | hybrid | united states | ("tech lead" OR "technical lead" OR architect OR developer OR devops OR engineer OR engineering OR programmer OR sre) AND (aws OR kubernetes OR terraform) | {"experienceLevel":"4","geoId":"103644278","location":"united states","roleWords":["architect","developer","devops","engineer","engineering","programmer","sre","tech lead","technical lead"],"spellings":["aws","kubernetes","terraform"],"workType":"3"}",
+          "LINKEDIN_JOB_BOARD | devops | hybrid | united states | ("tech lead" OR "technical lead" OR architect OR developer OR devops OR engineer OR engineering OR programmer OR sre) AND (aws OR kubernetes OR terraform) | {"experienceLevel":"5","geoId":"103644278","location":"united states","roleWords":["architect","developer","devops","engineer","engineering","programmer","sre","tech lead","technical lead"],"spellings":["aws","kubernetes","terraform"],"workType":"3"}",
+          "LINKEDIN_JOB_BOARD | devops | remote | canada | ("tech lead" OR "technical lead" OR architect OR developer OR devops OR engineer OR engineering OR programmer OR sre) AND (aws OR kubernetes OR terraform) | {"experienceLevel":"4","geoId":"101174742","location":"canada","roleWords":["architect","developer","devops","engineer","engineering","programmer","sre","tech lead","technical lead"],"spellings":["aws","kubernetes","terraform"],"workType":"2"}",
+          "LINKEDIN_JOB_BOARD | devops | remote | canada | ("tech lead" OR "technical lead" OR architect OR developer OR devops OR engineer OR engineering OR programmer OR sre) AND (aws OR kubernetes OR terraform) | {"experienceLevel":"5","geoId":"101174742","location":"canada","roleWords":["architect","developer","devops","engineer","engineering","programmer","sre","tech lead","technical lead"],"spellings":["aws","kubernetes","terraform"],"workType":"2"}",
+          "LINKEDIN_JOB_BOARD | devops | remote | united states | ("tech lead" OR "technical lead" OR architect OR developer OR devops OR engineer OR engineering OR programmer OR sre) AND (aws OR kubernetes OR terraform) | {"experienceLevel":"4","geoId":"103644278","location":"united states","roleWords":["architect","developer","devops","engineer","engineering","programmer","sre","tech lead","technical lead"],"spellings":["aws","kubernetes","terraform"],"workType":"2"}",
+          "LINKEDIN_JOB_BOARD | devops | remote | united states | ("tech lead" OR "technical lead" OR architect OR developer OR devops OR engineer OR engineering OR programmer OR sre) AND (aws OR kubernetes OR terraform) | {"experienceLevel":"5","geoId":"103644278","location":"united states","roleWords":["architect","developer","devops","engineer","engineering","programmer","sre","tech lead","technical lead"],"spellings":["aws","kubernetes","terraform"],"workType":"2"}",
           "LINKEDIN_POSTS | devops | hybrid | austin, united states | hiring ("devops engineer" OR "devops") aws staff austin, united states | {}",
           "LINKEDIN_POSTS | devops | hybrid | austin, united states | hiring ("devops engineer" OR "devops") kubernetes staff austin, united states | {}",
           "LINKEDIN_POSTS | devops | hybrid | austin, united states | hiring ("devops engineer" OR "devops") terraform staff austin, united states | {}",
@@ -183,7 +196,17 @@ describe('expand scenarios over mock profiles', () => {
     expect(recipes).toHaveLength(4);
     expect(
       on(recipes, Channel.LINKEDIN_JOB_BOARD).map((r) => [r.keyword, r.params]),
-    ).toEqual([['python', { location: 'asia pacific', workType: '2' }]]);
+    ).toEqual([
+      [
+        linkedinKeyword(roles('data_engineer'), ['python']),
+        {
+          location: 'asia pacific',
+          workType: '2',
+          roleWords: roles('data_engineer'),
+          spellings: ['python'],
+        },
+      ],
+    ]);
     expect(keywords(recipes, Channel.LINKEDIN_POSTS)).toEqual([
       'hiring ("data engineer" OR "data platform engineer") python remote asia pacific',
     ]);
@@ -200,8 +223,15 @@ describe('expand scenarios over mock profiles', () => {
     it('one search per seniority, shared across profiles', () => {
       const a = expand({ ...base, seniorities: [senior, staff] });
       const b = expand({ ...base, seniorities: [staff] });
-      expect(a).toHaveLength(2 * b.length);
-      expect([...hashSet(b)].every((hash) => hashSet(a).has(hash))).toBe(true);
+      // Other channels: 18 per seniority. Board: 3 places x levels {4, 5} = 6
+      // for senior + staff (4 is shared), and the same 6 for staff alone.
+      expect(a).toHaveLength(2 * 18 + 6);
+      expect(b).toHaveLength(18 + 6);
+      expect(
+        [...hashSet(notBoard(b))].every((hash) =>
+          hashSet(notBoard(a)).has(hash),
+        ),
+      ).toBe(true);
       const counts = levels(a).reduce<Record<string, number>>(
         (acc, level) => ({
           ...acc,
@@ -209,7 +239,7 @@ describe('expand scenarios over mock profiles', () => {
         }),
         {},
       );
-      expect(counts).toEqual({ '4': 6, '4,5': 6 });
+      expect(counts).toEqual({ '4': 3, '5': 3 });
     });
 
     it('the same set in another order gives the same recipes', () => {
@@ -275,11 +305,17 @@ describe('expand scenarios over mock profiles', () => {
       expect(
         on(recipes, Channel.LINKEDIN_JOB_BOARD).map((r) => r.experience),
       ).not.toContain(lead);
+      // senior keeps level 4 and staff level 5, over three search places each.
       expect(
         on(recipes, Channel.LINKEDIN_JOB_BOARD).filter(
           (r) => r.experience === staff,
         ),
-      ).toHaveLength(6);
+      ).toHaveLength(3);
+      expect(
+        on(recipes, Channel.LINKEDIN_JOB_BOARD).filter(
+          (r) => r.experience === senior,
+        ),
+      ).toHaveLength(3);
       // The other channels name each level, so every level keeps its search.
       expect(
         on(recipes, Channel.LINKEDIN_POSTS).filter(
@@ -309,9 +345,15 @@ describe('expand scenarios over mock profiles', () => {
     const recipes = expand(MOCK_PROFILES.onsiteOnlyCasablanca);
     expect(recipes).toHaveLength(8);
     expect(ofType(recipes, Arrangement.onsite)).toHaveLength(8);
-    expect(recipes.every((r) => r.location === 'casablanca, morocco')).toBe(
-      true,
-    );
+    // Other channels search the city; the board searches Morocco, levels 1 and 2.
+    expect(
+      notBoard(recipes).every((r) => r.location === 'casablanca, morocco'),
+    ).toBe(true);
+    expect(
+      on(recipes, Channel.LINKEDIN_JOB_BOARD).map(
+        (r) => `${r.location}|${r.params.experienceLevel}`,
+      ),
+    ).toEqual(['morocco|1', 'morocco|2']);
   });
 
   it('remote worldwide: LinkedIn searches worldwide, keyword channels add no place', () => {
@@ -362,22 +404,24 @@ describe('expand scenarios over mock profiles', () => {
 
   it('lead tech lead: the seniority word is not repeated', () => {
     const recipes = expand(MOCK_PROFILES.leadTechLead);
-    expect(recipes).toHaveLength(4);
+    // Other channels: 3. Board: united kingdom, levels 4 and 5 = 2.
+    expect(recipes).toHaveLength(5);
     expect(keywords(recipes, Channel.LINKEDIN_JOB_BOARD)).toEqual([
-      'typescript',
+      linkedinKeyword(roles('tech_lead'), ['typescript']),
     ]);
   });
 
   it('ties and duplicates: best rank wins, importance 0 dropped, locations deduped', () => {
     const recipes = expand(MOCK_PROFILES.tiesAndDuplicates);
-    expect(recipes).toHaveLength(8);
-    expect(hashSet(recipes).size).toBe(8);
+    // Other channels: 3 x 2 technologies = 6. Board: one set, europe, level 4 = 1.
+    expect(recipes).toHaveLength(7);
+    expect(hashSet(recipes).size).toBe(7);
     expect(
       on(recipes, Channel.LINKEDIN_JOB_BOARD).map((r) => r.technologies),
-    ).toEqual([['go'], ['rust']]);
+    ).toEqual([['go', 'rust']]);
     expect(
       on(recipes, Channel.LINKEDIN_JOB_BOARD).map((r) => r.domain),
-    ).toEqual([SkillDomain.backend, SkillDomain.backend]);
+    ).toEqual([SkillDomain.backend]);
     expect(recipes.some((r) => r.technologies.includes('java'))).toBe(false);
   });
 
@@ -396,8 +440,9 @@ describe('expand scenarios over mock profiles', () => {
     const recipes = expand(MOCK_PROFILES.sameLocationTwoArrangements);
     const hybrid = hashSet(ofType(recipes, Arrangement.hybrid));
     const onsite = hashSet(ofType(recipes, Arrangement.onsite));
-    expect(hybrid.size).toBe(12);
-    expect(onsite.size).toBe(12);
+    // 9 for the other channels plus the board's france, level 4.
+    expect(hybrid.size).toBe(10);
+    expect(onsite.size).toBe(10);
     expect([...hybrid].some((hash) => onsite.has(hash))).toBe(false);
   });
 
@@ -445,8 +490,14 @@ describe('expand scenarios over mock profiles', () => {
         ...MOCK_PROFILES.onsiteFrontendParis,
         locations: { ...empty, onsite: ['Lyon, France'] },
       });
-      expect([...hashSet(paris)].some((hash) => hashSet(lyon).has(hash))).toBe(
-        false,
+      expect(
+        [...hashSet(notBoard(paris))].some((hash) =>
+          hashSet(notBoard(lyon)).has(hash),
+        ),
+      ).toBe(false);
+      // The board searches the country, so Paris and Lyon share its builders.
+      expect(hashSet(on(paris, Channel.LINKEDIN_JOB_BOARD))).toEqual(
+        hashSet(on(lyon, Channel.LINKEDIN_JOB_BOARD)),
       );
     });
   });

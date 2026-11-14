@@ -20,6 +20,7 @@ const profile: QuerySearchProfileInput = {
     onsite: ['Casablanca, Morocco'],
   },
   seniorities: [Seniority.senior],
+  languages: ['en'],
   skills: [
     {
       technology: 'nestjs',
@@ -61,11 +62,14 @@ describe('QuerySearchService', () => {
     it('expands each arrangement by its own locations', async () => {
       const { service } = await setup();
       const recipes = service.expand(profile);
-      // remote: 4 channels x 2 locations x 3 sets; onsite: 4 channels x 1 location x 3 sets
-      expect(recipes).toHaveLength(36);
-      expect(new Set(hashes(recipes)).size).toBe(36);
+      // Other channels: 3 channels x 3 technologies x 3 locations = 27.
+      // LinkedIn job board, one level (senior = 4): remote EMEA gives africa, europe
+      // and middle east, remote MENA gives mena, onsite Casablanca, Morocco gives
+      // morocco, so 5.
+      expect(recipes).toHaveLength(32);
+      expect(new Set(hashes(recipes)).size).toBe(32);
       expect(recipes.filter((r) => r.type === Arrangement.onsite)).toHaveLength(
-        12,
+        10,
       );
     });
 
@@ -75,7 +79,12 @@ describe('QuerySearchService', () => {
       expect(recipes.length).toBeGreaterThan(0);
       for (const recipe of recipes) {
         expect(recipe.type).toBe(Arrangement.onsite);
-        expect(recipe.location).toBe('casablanca, morocco');
+        // LinkedIn searches the country; the other channels the city.
+        expect(recipe.location).toBe(
+          recipe.channel === Channel.LINKEDIN_JOB_BOARD
+            ? 'morocco'
+            : 'casablanca, morocco',
+        );
       }
     });
 
@@ -97,6 +106,19 @@ describe('QuerySearchService', () => {
         });
       expect(expand).toThrow(BadRequestException);
       expect(expand).toThrow(LOCATIONS_REQUIRED);
+    });
+
+    it('languages change the recipe hash', async () => {
+      const { service } = await setup();
+      const board = (languages: string[]) =>
+        service
+          .expand({ ...profile, languages })
+          .filter((r) => r.channel === Channel.LINKEDIN_JOB_BOARD)
+          .map((r) => r.hash);
+      const en = board(['en']);
+      const enEs = board(['en', 'es']);
+      expect(en.length).toBeGreaterThan(0);
+      expect(en.some((hash) => enEs.includes(hash))).toBe(false);
     });
 
     it('rejects a profile with no skill above importance 0', async () => {
@@ -161,15 +183,15 @@ describe('QuerySearchService', () => {
     it('creates shared builders once, then reuses them', async () => {
       const { service, repository, profileId } = await setup();
       expect(await service.generate(profileId, profile)).toEqual({
-        created: 36,
+        created: 32,
         existing: 0,
       });
       expect(await service.generate(profileId, profile)).toEqual({
         created: 0,
-        existing: 36,
+        existing: 32,
       });
-      expect(repository.rows).toHaveLength(36);
-      expect(repository.links).toHaveLength(36);
+      expect(repository.rows).toHaveLength(32);
+      expect(repository.links).toHaveLength(32);
       expect(new Set(counts(repository))).toEqual(new Set([1]));
       expect(repository.rows.every((row) => row.isActive)).toBe(true);
     });
@@ -187,10 +209,10 @@ describe('QuerySearchService', () => {
       await service.generate(profileId, profile);
       expect(await service.generate('profile-2', profile)).toEqual({
         created: 0,
-        existing: 36,
+        existing: 32,
       });
-      expect(repository.rows).toHaveLength(36);
-      expect(repository.links).toHaveLength(72);
+      expect(repository.rows).toHaveLength(32);
+      expect(repository.links).toHaveLength(64);
       expect(new Set(counts(repository))).toEqual(new Set([2]));
     });
 
@@ -198,7 +220,7 @@ describe('QuerySearchService', () => {
       const { service, repository, profileId } = await setup();
       await service.generate(profileId, profile);
       await service.generate(profileId, profile);
-      expect(repository.links).toHaveLength(36);
+      expect(repository.links).toHaveLength(32);
       expect(new Set(counts(repository))).toEqual(new Set([1]));
     });
 
@@ -232,13 +254,13 @@ describe('QuerySearchService', () => {
       const { service, repository, profileId } = await setup();
       await service.generate(profileId, profile);
       await service.generate('profile-2', profile);
-      expect(await service.detach(profileId)).toBe(36);
+      expect(await service.detach(profileId)).toBe(32);
       expect(new Set(counts(repository))).toEqual(new Set([1]));
       expect(repository.rows.every((row) => row.isActive)).toBe(true);
       await service.detach('profile-2');
       expect(new Set(counts(repository))).toEqual(new Set([0]));
       expect(repository.rows.some((row) => row.isActive)).toBe(false);
-      expect(repository.rows).toHaveLength(36);
+      expect(repository.rows).toHaveLength(32);
     });
   });
 
@@ -246,7 +268,7 @@ describe('QuerySearchService', () => {
     it('lists the builders of a profile and filters by channel', async () => {
       const { service, userId, profileId } = await setup();
       await service.generate(profileId, profile);
-      expect(await service.list(userId, profileId)).toHaveLength(36);
+      expect(await service.list(userId, profileId)).toHaveLength(32);
       const posts = await service.list(
         userId,
         profileId,
@@ -270,7 +292,7 @@ describe('QuerySearchService', () => {
       const { service, repository, userId, profileId } = await setup();
       await service.generate(profileId, profile);
       await service.softDelete(repository.rows[0].id);
-      expect(await service.list(userId, profileId)).toHaveLength(35);
+      expect(await service.list(userId, profileId)).toHaveLength(31);
     });
   });
   describe('listActive', () => {

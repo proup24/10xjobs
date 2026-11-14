@@ -57,6 +57,7 @@ describe('regeneratePublished', () => {
         id: 'p1',
         position: 'backend_engineer',
         seniorities: ['senior'],
+        languages: [{ lang: 'en', level: 'fluent' }],
         locations: { remote: [], hybrid: [], onsite },
         techStack: [
           {

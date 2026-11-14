@@ -86,6 +86,13 @@ export function toQuerySearchInput(
     position: profile.position,
     locations: placeTexts(profilePlaces(profile), labels),
     seniorities: [...profile.seniorities],
+    languages: [
+      ...new Set(
+        (profile.languages as SpokenLanguage[]).map(({ lang }) =>
+          lang.toLowerCase(),
+        ),
+      ),
+    ],
     skills: profile.techStack.map(
       ({ technology, domain, importance, mastery }) => ({
         technology,
@@ -234,7 +241,7 @@ export class ProfilesService {
         message: ELIGIBILITY_REQUIRED,
         code: ErrorCode.ELIGIBILITY_REQUIRED,
       });
-      
+
     const querySearches = await this.querySearch.generate(
       profile.id,
       toQuerySearchInput(profile, await labelsFor(this.profiles, profile)),

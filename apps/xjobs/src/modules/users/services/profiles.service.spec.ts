@@ -99,6 +99,27 @@ describe('ProfilesService', () => {
     expect(input.seniorities).toEqual([Seniority.senior, Seniority.staff]);
   });
 
+  it('passes the spoken languages to query search as lowercased codes', async () => {
+    const profile = await profiles.add(
+      userId,
+      {
+        ...profileInput,
+        languages: [
+          { lang: 'fr', level: 'fluent' },
+          { lang: 'EN', level: 'fluent' },
+          { lang: 'fr', level: 'working' },
+        ],
+      },
+      [skill('nodejs', 8)],
+    );
+    const input = toQuerySearchInput(profile, {
+      regions: new Map([['MENA', 'Middle East and North Africa']]),
+      countries: new Map([['MA', 'Morocco']]),
+      cities: new Map(),
+    });
+    expect(input.languages).toEqual(['fr', 'en']);
+  });
+
   it('passes the places to query search as their label texts', async () => {
     const profile = await profiles.add(
       userId,

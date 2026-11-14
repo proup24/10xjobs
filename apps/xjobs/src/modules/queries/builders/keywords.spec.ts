@@ -6,7 +6,6 @@ import {
   SENIORITY_WORDS,
   TECHNOLOGY_TERMS,
 } from './keywords';
-import { LINKEDIN_TERMS } from '../channels/linkedin_board.builder';
 
 describe('keywords', () => {
   // The maps are keyed by plain codes: a mistyped key would silently drop a
@@ -14,13 +13,13 @@ describe('keywords', () => {
   const seedCodes = (list: 'techTags' | 'roleKinds') =>
     new Set(SEED[list].map((term) => term.code));
 
-  it.each([
-    ['TECHNOLOGY_TERMS', TECHNOLOGY_TERMS],
-    ['LINKEDIN_TERMS', LINKEDIN_TERMS],
-  ])('keys %s by seeded tech_tags codes', (_name, terms) => {
-    const codes = seedCodes('techTags');
-    expect(Object.keys(terms).filter((key) => !codes.has(key))).toEqual([]);
-  });
+  it.each([['TECHNOLOGY_TERMS', TECHNOLOGY_TERMS]])(
+    'keys %s by seeded tech_tags codes',
+    (_name, terms) => {
+      const codes = seedCodes('techTags');
+      expect(Object.keys(terms).filter((key) => !codes.has(key))).toEqual([]);
+    },
+  );
 
   it('keys POSITION_TITLES by seeded role_kinds codes', () => {
     const codes = seedCodes('roleKinds');

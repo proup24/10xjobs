@@ -1,0 +1,81 @@
+import {
+  keywordTerm,
+  LINKEDIN_KEYWORD_MAX_CHARS,
+  LINKEDIN_KEYWORD_MAX_TERMS,
+  linkedinKeyword,
+  linkedinKeywordFits,
+} from './linkedin_keyword';
+
+describe('keywordTerm', () => {
+  it('lowercases and quotes only terms with a space or one of .#+', () => {
+    expect(keywordTerm('React')).toBe('react');
+    expect(keywordTerm('Node.js')).toBe('"node.js"');
+    expect(keywordTerm('Next JS')).toBe('"next js"');
+    expect(keywordTerm('C#')).toBe('"c#"');
+    expect(keywordTerm('C++')).toBe('"c++"');
+  });
+});
+
+describe('linkedinKeyword', () => {
+  it('joins role words AND spellings, each side sorted', () => {
+    expect(
+      linkedinKeyword(
+        ['developer', 'engineer'],
+        ['react', 'node.js', 'next js'],
+      ),
+    ).toBe('(developer OR engineer) AND ("next js" OR "node.js" OR react)');
+  });
+
+  it('does not depend on input order and dedupes after keywordTerm', () => {
+    expect(
+      linkedinKeyword(
+        ['engineer', 'Developer', 'developer'],
+        ['react', 'React'],
+      ),
+    ).toBe(linkedinKeyword(['developer', 'engineer'], ['react']));
+  });
+
+  it('keeps parentheses around a single term', () => {
+    expect(linkedinKeyword(['engineer'], ['react'])).toBe(
+      '(engineer) AND (react)',
+    );
+  });
+
+  it('throws when a side is empty', () => {
+    expect(() => linkedinKeyword([], ['react'])).toThrow();
+    expect(() => linkedinKeyword(['engineer'], [])).toThrow();
+  });
+});
+
+describe('linkedinKeywordFits', () => {
+  // A 398-character, 34-term superset of the 319-character, 25-term dev
+  // keyword returned 51 jobs against 430: LinkedIn silently degrades longer
+  // queries.
+  const terms = (n: number, len = 3) =>
+    Array.from({ length: n }, (_, i) => `t${String(i).padStart(len - 1, '0')}`);
+
+  it('is true at the term limit and false one term over', () => {
+    expect(
+      linkedinKeywordFits(['role'], terms(LINKEDIN_KEYWORD_MAX_TERMS - 1)),
+    ).toBe(true);
+    expect(
+      linkedinKeywordFits(['role'], terms(LINKEDIN_KEYWORD_MAX_TERMS)),
+    ).toBe(false);
+  });
+
+  it('counts distinct terms after keywordTerm, both sides', () => {
+    expect(linkedinKeywordFits(['Role', 'role'], [...terms(24), 'T00'])).toBe(
+      true,
+    );
+  });
+
+  it('is true at the character limit and false one character over', () => {
+    // "(a) AND (<spelling>)" is 10 characters plus the spelling.
+    const at = 'x'.repeat(LINKEDIN_KEYWORD_MAX_CHARS - 10);
+    expect(linkedinKeyword(['a'], [at]).length).toBe(
+      LINKEDIN_KEYWORD_MAX_CHARS,
+    );
+    expect(linkedinKeywordFits(['a'], [at])).toBe(true);
+    expect(linkedinKeywordFits(['a'], [at + 'x'])).toBe(false);
+  });
+});

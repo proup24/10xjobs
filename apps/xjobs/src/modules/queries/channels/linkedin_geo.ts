@@ -54,6 +54,10 @@ export const LINKEDIN_GEO_IDS: Record<string, string> = {
   morocco: '102787409',
   canada: '101174742',
   'united states': '103644278',
+  // Single countries, verified 2026-11-14.
+  israel: '101620260',
+  türkiye: '102105699',
+  turkey: '102105699',
 };
 
 /** The location that means "no place restriction". */
