@@ -98,7 +98,17 @@ describe('nextParts', () => {
     ).toBeNull();
   });
 
-  it('halves a split made over an hour ago once searches run small', () => {
+  it('keeps a split through the next hourly tick, even when its searches run small', () => {
+    expect(
+      nextParts(
+        { parts: 4, splitAt: ago(61) },
+        tick({ chunks: 4, maxReturned: 3 }),
+        now,
+      ),
+    ).toBeNull();
+  });
+
+  it('halves a split made two hours ago once searches run small', () => {
     expect(
       nextParts(
         { parts: 4, splitAt: ago(120) },
@@ -110,7 +120,7 @@ describe('nextParts', () => {
 
   it('forgets a split of 2 or 3 parts by returning 1', () => {
     expect(
-      nextParts({ parts: 3, splitAt: ago(60) }, tick({ chunks: 3 }), now),
+      nextParts({ parts: 3, splitAt: ago(120) }, tick({ chunks: 3 }), now),
     ).toBe(1);
   });
 

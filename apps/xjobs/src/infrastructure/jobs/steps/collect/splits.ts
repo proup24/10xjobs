@@ -1,8 +1,13 @@
 import type { QuerySearchBuilderRow } from 'src/database';
 import { type SearchSegment, segmentHash } from 'src/modules/segments';
 
-/** A remembered split hasn't been made smaller before it is this old. */
-const KEEP_SPLIT_MS = 60 * 60_000;
+/**
+ * How long a remembered split is kept before it may be made smaller: 1.5
+ * hourly schedule steps, so a split survives at least the next tick whatever
+ * the scheduler delay. The overnight gap (21:00 to 09:00) may undo an evening
+ * split at the first morning tick; that is accepted.
+ */
+const KEEP_SPLIT_MS = 90 * 60_000;
 /** Searches that all return under this share of their row limit are small. */
 const SMALL_SHARE = 0.25;
 
@@ -42,7 +47,7 @@ export function halve(segment: SearchSegment): [SearchSegment, SearchSegment] {
 /**
  * The parts to remember for a group after a tick, or null for no change. A
  * split in this tick that made more chunks than remembered is stored. A split
- * at least an hour old is halved once every search ran under a quarter of its
+ * at least 90 minutes old is halved once every search ran under a quarter of its
  * row limit; 1 forgets it.
  */
 export function nextParts(
