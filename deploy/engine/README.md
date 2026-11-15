@@ -116,7 +116,7 @@ Containers restart on failure by themselves.
 
 1. Pick a merge SHA: `git log main`. It must be the full 40-character SHA.
 2. Actions, Deploy engine, Run workflow, from branch `main`, with `image_tag` set to that SHA. Always run it from `main`: the `dev` environment only allows `main`, so a run from any other branch fails on the environment policy.
-3. The image must still exist in GHCR; that is what gets pulled. The server also prunes images created more than 168 hours ago from its disk.
+3. The image must still exist in GHCR; that is what gets pulled. The server keeps only two engine images on its disk: the running one and the one it replaced. Every deploy removes the rest, before the pull and again after the rollout.
 4. A dispatch with no `image_tag` builds and deploys `main`'s HEAD.
 5. A manual dispatch always deploys, even an older commit. That is what makes it a rollback.
 

@@ -281,6 +281,23 @@ jobs:
           ssh "$ENGINE_SSH_USER@$ENGINE_SSH_HOST" "bash -s $(printf '%q' "$SHA")" <<'REMOTE'
           set -euo pipefail
           cd ~/engine
+          ENGINE_IMAGE=ghcr.io/proup24/10xjobs-engine
+          # Remove every engine image whose tag isn't one of the arguments,
+          # then dangling layers. An image a container still uses is refused
+          # by `docker image rm`, so this never breaks what is running.
+          keep_engine_images() {
+            docker image ls "$ENGINE_IMAGE" --format '{{.Tag}}' | while read -r tag; do
+              case " $* " in
+                *" $tag "*) ;;
+                *) docker image rm "$ENGINE_IMAGE:$tag" > /dev/null 2>&1 || true ;;
+              esac
+            done
+            docker image prune -f > /dev/null
+          }
+          previous="$(sed -n 's/^ENGINE_IMAGE_TAG=//p' image.env 2> /dev/null || true)"
+          # Make room before the pull: on a full disk the pull fails, and the
+          # cleanup after the rollout never runs (2026-11-14).
+          keep_engine_images "$previous"
           ENGINE_IMAGE_TAG="$1" docker compose -p xjobs-engine -f .incoming/compose.yaml \
             --project-directory . --env-file .env pull api worker
           mv .incoming/compose.yaml compose.yaml
@@ -293,8 +310,9 @@ jobs:
           $C up -d --remove-orphans
           # `up` does not recreate caddy for a Caddyfile change; reload it.
           $C exec -T caddy caddy reload --config /etc/caddy/Caddyfile
-          # Remove images created more than a week ago (by image creation time, not pull time)
-          docker image prune -af --filter "until=168h"
+          # Keep the new image and the one it replaced, for a quick rollback;
+          # older ones are pulled again from GHCR when a rollback needs them.
+          keep_engine_images "$1" "$previous"
           REMOTE
 
       - name: Health check
