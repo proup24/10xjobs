@@ -1,7 +1,7 @@
 # Duplicate tech requirements
 
 Date: 2026-11-16
-Status: draft
+Status: approved 2026-11-16
 Builds on: [listing facts](2026-11-12-listing-facts-design.md), [models on Claude](2026-11-13-claude-models-design.md)
 
 ## Problem
