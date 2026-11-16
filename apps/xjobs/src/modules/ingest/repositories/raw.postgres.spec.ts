@@ -665,6 +665,57 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
           ].sort((a, b) => a.jobId.localeCompare(b.jobId)),
         );
       });
+
+      it('copies the decision from the end of a merge chain to a merged job that revives', async () => {
+        const { old, moved } = await mergeSetup();
+        await decide(old.id, 'applied', t1, null);
+        // A → B: the easy-apply job's item gets the apply URL.
+        await save(liJob('4483941772'), t2);
+        // B → C: both of B's items move to another apply URL, and the decision with them.
+        const other = 'https://sii.pl/en/job-ads/id/99999/';
+        await save(liJob('4483941772', { applyUrl: other }), t3);
+        await save(liJob('4483941773', { applyUrl: other }), t3);
+        const end = (await jobs()).find(
+          (j) => j.status === 'active' && j.id !== moved.id,
+        )!;
+        expect((await jobs()).find((j) => j.id === moved.id)).toMatchObject({
+          status: 'merged',
+          mergedIntoId: end.id,
+        });
+        expect(await decisions()).toEqual([
+          { jobId: end.id, status: 'applied', reason: null },
+        ]);
+        // A new item whose key names A brings it back.
+        await save(
+          liJob('4483941774', { applyType: 'EASY_APPLY', applyUrl: '' }),
+          t3,
+        );
+        const item = await rawItemId('id:4483941774');
+        await db.execute(
+          db.raw
+            .sql`UPDATE normalized_versions SET "jobKey" = 'linkedin-job:4483941772'
+            WHERE "rawVersionId" IN (SELECT id FROM raw_item_versions WHERE "rawItemId" = ${item}::uuid)`
+            .affectedCount()
+            .build(),
+        );
+        await save(
+          liJob('4483941774', { applyType: 'EASY_APPLY', applyUrl: '' }),
+          at(30),
+        );
+
+        const revived = await db.orm.public.NormalizedJob.where({
+          id: old.id,
+        }).first();
+        expect(revived).toMatchObject({ status: 'active', mergedIntoId: null });
+        expect(
+          (await decisions()).sort((a, b) => a.jobId.localeCompare(b.jobId)),
+        ).toEqual(
+          [
+            { jobId: old.id, status: 'applied', reason: null },
+            { jobId: end.id, status: 'applied', reason: null },
+          ].sort((a, b) => a.jobId.localeCompare(b.jobId)),
+        );
+      });
     });
 
     it('re-merges the old job when a moved item leaves other sources behind', async () => {

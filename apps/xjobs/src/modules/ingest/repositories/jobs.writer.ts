@@ -272,19 +272,30 @@ async function moveDecisions(
 
 /**
  * A merged job that revives gets a copy of the decisions it held when it
- * merged away, which moved to the job it merged into. Where the user already
- * decided on the revived job, that decision stays.
+ * merged away. They moved with each merge, so they sit on the end of its
+ * mergedIntoId chain (followed at most 10 steps, as in webhook_enqueue_match,
+ * stopping at a job that isn't merged). Where the user already decided on the
+ * revived job, that decision stays.
  */
 async function copyDecisionsBack(
   tx: DatabaseTransaction,
-  fromJobId: string,
-  toJobId: string,
+  jobId: string,
 ): Promise<void> {
   await tx.execute(
-    tx.raw.sql`INSERT INTO job_decisions
+    tx.raw.sql`WITH RECURSIVE chain AS (
+        SELECT j.id, j.status, j."mergedIntoId", 0 AS depth
+        FROM normalized_jobs j WHERE j.id = ${jobId}::uuid
+        UNION ALL
+        SELECT n.id, n.status, n."mergedIntoId", chain.depth + 1
+        FROM chain JOIN normalized_jobs n ON n.id = chain."mergedIntoId"
+        WHERE chain.status = 'merged' AND chain.depth < 10
+      ), root AS (
+        SELECT id FROM chain WHERE depth > 0 ORDER BY depth DESC LIMIT 1
+      )
+      INSERT INTO job_decisions
         ("userId", "jobId", status, reason, note, "decidedAt", "matchSnapshot")
-      SELECT "userId", ${toJobId}::uuid, status, reason, note, "decidedAt", "matchSnapshot"
-      FROM job_decisions WHERE "jobId" = ${fromJobId}::uuid
+      SELECT d."userId", ${jobId}::uuid, d.status, d.reason, d.note, d."decidedAt", d."matchSnapshot"
+      FROM job_decisions d JOIN root ON d."jobId" = root.id
       ON CONFLICT DO NOTHING`
       .affectedCount()
       .build(),
@@ -375,7 +386,7 @@ export async function linkJob(
   else if (job.status === 'merged') {
     // A job whose sources all left gets one back: it is a job again, with a
     // copy of the decisions that moved away with it.
-    if (job.mergedIntoId) await copyDecisionsBack(tx, job.mergedIntoId, job.id);
+    if (job.mergedIntoId) await copyDecisionsBack(tx, job.id);
     await orm.public.NormalizedJob.where({ id: job.id }).updateAll({
       status: 'active',
       mergedIntoId: null,
