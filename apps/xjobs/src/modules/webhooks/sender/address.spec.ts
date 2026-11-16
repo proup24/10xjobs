@@ -41,12 +41,20 @@ describe('isBlockedAddress', () => {
     'ff02::1',
     '::ffff:127.0.0.1',
     '::ffff:10.0.0.1',
+    // The same mapped addresses in hex, as some resolvers print them.
+    '::ffff:7f00:1',
+    '::ffff:a9fe:a9fe',
+    '::ffff:a00:1',
     '::127.0.0.1',
     '64:ff9b::a9fe:a9fe',
     '2002:7f00:1::1',
     '192.0.2.1',
     '198.51.100.1',
     '203.0.113.7',
+    '2001:db8::1',
+    '2001:db8:ffff::1',
+    '100::1',
+    '64:ff9b:1::a9fe:a9fe',
   ])('blocks %s', (ip) => expect(isBlockedAddress(ip)).toBe(true));
 
   it.each([
@@ -54,6 +62,8 @@ describe('isBlockedAddress', () => {
     '172.32.0.1',
     '100.128.0.1',
     '2606:4700::1',
+    '2001:4860::8888',
+    '100:0:0:1::1',
     '::ffff:8.8.8.8',
   ])('allows %s', (ip) => expect(isBlockedAddress(ip)).toBe(false));
 });
