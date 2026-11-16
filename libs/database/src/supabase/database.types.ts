@@ -463,6 +463,61 @@ export type Database = {
         };
         Relationships: [];
       };
+      job_decisions: {
+        Row: {
+          createdAt: string;
+          decidedAt: string;
+          id: string;
+          jobId: string;
+          matchSnapshot: Json | null;
+          note: string | null;
+          reason: string | null;
+          status: string;
+          updatedAt: string;
+          userId: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          createdAt?: string;
+          decidedAt?: string;
+          id?: string;
+          jobId: string;
+          matchSnapshot?: Json | null;
+          note?: string | null;
+          reason?: string | null;
+          status: string;
+          updatedAt?: string;
+          userId: string;
+        };
+        Update: {
+          createdAt?: string;
+          decidedAt?: string;
+          id?: string;
+          jobId?: string;
+          matchSnapshot?: Json | null;
+          note?: string | null;
+          reason?: string | null;
+          status?: string;
+          updatedAt?: string;
+          userId?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'job_decisions_jobId_fkey';
+            columns: ['jobId'];
+            isOneToOne: false;
+            referencedRelation: 'normalized_jobs';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'job_decisions_userId_fkey';
+            columns: ['userId'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       job_extractions: {
         Row: {
           arrangement: string | null;
@@ -2222,6 +2277,27 @@ export type Database = {
         Args: Record<PropertyKey, never>;
         Returns: number;
       };
+      job_decision_list: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          applyUrl: string;
+          channels: string[];
+          closed: boolean;
+          companyName: string;
+          decidedAt: string;
+          hasMatch: boolean;
+          jobId: string;
+          kind: string;
+          location: string;
+          note: string;
+          postedAt: string;
+          postingUrl: string;
+          publishedAt: string;
+          reason: string;
+          status: string;
+          title: string;
+        }[];
+      };
       match_details: {
         Args: {
           p_details?: boolean;
@@ -2239,6 +2315,7 @@ export type Database = {
           companyUrl: string;
           conflicts: Json;
           decidedAt: string;
+          decisionStatus: string;
           descriptionText: string;
           extractionId: string;
           facts: Json;

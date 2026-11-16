@@ -10,6 +10,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { notCheckedText } from '@/lib/matches/checks';
 import { groupByJob } from '@/lib/matches/group';
 import { MatchDetail } from './match-detail';
+import type { MatchRow } from '@/lib/matches/group';
 import { MatchRowLink } from './match-row';
 import {
   NOW,
@@ -95,6 +96,55 @@ const reviewRow = () =>
     },
     conflicts: [{ field: 'seniority', listingValue: 'Mid-Senior level' }],
   });
+
+const renderWithJobDecision = (
+  row: MatchRow,
+  onDecideJob = vi.fn().mockResolvedValue(true),
+) => {
+  render(
+    <MatchDetail
+      rows={[row]}
+      labels={labels}
+      profileLabels={PROFILE_LABELS}
+      now={new Date(NOW)}
+      userId="u1"
+      backHref="/"
+      onDecideJob={onDecideJob}
+    />,
+  );
+  return onDecideJob;
+};
+
+describe('MatchDetail job decisions', () => {
+  it('shows Applied and Not for me on a match', () => {
+    renderWithJobDecision(matchRow());
+    expect(screen.getByRole('button', { name: 'Applied' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Not for me' })).toBeTruthy();
+  });
+
+  it('hides them on a review row', () => {
+    renderWithJobDecision(reviewRow());
+    expect(screen.queryByRole('button', { name: 'Applied' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Not for me' })).toBeNull();
+  });
+
+  it("Applied calls onDecide('applied')", async () => {
+    const onDecideJob = renderWithJobDecision(matchRow());
+    fireEvent.click(screen.getByRole('button', { name: 'Applied' }));
+    await vi.waitFor(() => expect(onDecideJob).toHaveBeenCalledWith('applied'));
+  });
+
+  it('Not for me opens the dialog', async () => {
+    const onDecideJob = renderWithJobDecision(matchRow());
+    fireEvent.click(screen.getByRole('button', { name: 'Not for me' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(onDecideJob).not.toHaveBeenCalled();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Not for me' }));
+    await vi.waitFor(() =>
+      expect(onDecideJob).toHaveBeenCalledWith('dismissed', {}),
+    );
+  });
+});
 
 describe('MatchDetail', () => {
   it('offers one "Report a mismatch" under the facts only with a report handler', () => {

@@ -1,0 +1,10 @@
+{
+  "from": "23a126fe874387bd7fdd1898a4c88df9bf5fde05c8ca860d262c15d8865dfdda",
+  "to": "23a126fe874387bd7fdd1898a4c88df9bf5fde05c8ca860d262c15d8865dfdda",
+  "providedInvariants": [
+    "job-decision-list",
+    "match-details-decisions"
+  ],
+  "createdAt": "2026-11-16T22:29:01.396Z",
+  "migrationHash": "dcacc4891dd673045eba3dbc4c8b5560e23505b8c2452931c953f48b6a9acd09"
+}

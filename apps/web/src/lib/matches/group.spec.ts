@@ -4,6 +4,7 @@ import {
   publishedRows,
   selectJobs,
   sourceOptions,
+  undecidedRows,
   type MatchRow,
   type MatchedJob,
 } from './group';
@@ -45,6 +46,10 @@ describe('groupByJob', () => {
   });
   it('drops closed jobs', () => {
     expect(groupByJob([row({ closed: true })])).toEqual([]);
+  });
+  it('keeps closed jobs when asked', () => {
+    const [job] = groupByJob([row({ closed: true })], { keepClosed: true });
+    expect(job.rows).toHaveLength(1);
   });
   it('sorts by effective posted time, date-only at 00:00Z', () => {
     const jobs = groupByJob([
@@ -146,5 +151,17 @@ describe('publishedRows', () => {
     ]);
     expect(kept.map((r) => `${r.jobId}:${r.profileId}`)).toEqual(['a:P1']);
     expect(groupByJob(kept).map((j) => j.jobId)).toEqual(['a']);
+  });
+});
+
+describe('undecidedRows', () => {
+  it('drops decided jobs', () => {
+    const rows = [
+      row({ jobId: 'a', decisionStatus: null }),
+      row({ jobId: 'b', decisionStatus: 'applied' }),
+      row({ jobId: 'c', decisionStatus: 'dismissed' }),
+      row({ jobId: 'd' }),
+    ];
+    expect(undecidedRows(rows).map((r) => r.jobId)).toEqual(['a', 'd']);
   });
 });

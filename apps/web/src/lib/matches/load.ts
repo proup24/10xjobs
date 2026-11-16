@@ -31,15 +31,19 @@ export async function loadMatches(
   return r.data ?? [];
 }
 
-/** One job's full rows with that outcome, one per profile, regardless of age. */
+/**
+ * One job's full rows with that outcome, one per profile, regardless of age. A null
+ * outcome reads every outcome (Applications shows a decided job whatever the engine says).
+ */
 export async function loadMatch(
   supabase: Client,
   jobId: string,
-  outcome: ListOutcome = 'qualified',
+  outcome: ListOutcome | null = 'qualified',
 ): Promise<MatchRow[]> {
   const r = await supabase.rpc('match_details', {
     p_job_id: jobId,
-    p_outcome: outcome,
+    // The generated args type has no null, but the function takes null as "any outcome".
+    p_outcome: outcome as string,
   });
   if (r.error) throw loadError('match read', r.error);
   return r.data ?? [];

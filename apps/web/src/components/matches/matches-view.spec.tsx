@@ -17,17 +17,26 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push, refresh }),
 }));
 const decideReviewAction = vi.hoisted(() => vi.fn());
+const decideJobAction = vi.hoisted(() => vi.fn());
+const clearJobDecisionAction = vi.hoisted(() => vi.fn());
 vi.mock('@/app/(app)/actions', () => ({
   decideReviewAction,
+  decideJobAction,
+  clearJobDecisionAction,
   reportMismatchAction: vi.fn(),
 }));
-vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
+vi.mock('sonner', () => ({ toast }));
 
 afterEach(() => {
   cleanup();
   push.mockClear();
   refresh.mockClear();
   decideReviewAction.mockReset();
+  decideJobAction.mockReset();
+  clearJobDecisionAction.mockReset();
+  toast.success.mockReset();
+  toast.error.mockReset();
 });
 
 type Profile = { id: string; label: string; state: 'draft' | 'published' };
@@ -308,5 +317,51 @@ describe('MatchesView empty states', () => {
         .getByRole('link', { name: 'Back to matches' })
         .getAttribute('href'),
     ).toBe('/?tab=7d');
+  });
+});
+
+describe('MatchesView job decisions', () => {
+  const open = () => {
+    decideJobAction.mockResolvedValue({ status: 'saved' });
+    renderView({ initial: { job: 'fresh' }, selected: [ROWS[1]] });
+    fireEvent.click(screen.getByRole('button', { name: 'Applied' }));
+  };
+
+  it('selects the next job after marking one applied', async () => {
+    open();
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalled());
+    expect(decideJobAction).toHaveBeenCalledWith({
+      jobId: 'fresh',
+      status: 'applied',
+    });
+    // Newest first: fresh, mid, old.
+    expect(push).toHaveBeenCalledWith('/?job=mid');
+  });
+
+  it('offers Undo in the toast', async () => {
+    open();
+    await vi.waitFor(() =>
+      expect(toast.success).toHaveBeenCalledWith(
+        'Moved to Applications',
+        expect.objectContaining({
+          action: expect.objectContaining({ label: 'Undo' }),
+        }),
+      ),
+    );
+    clearJobDecisionAction.mockResolvedValue({ status: 'saved' });
+    refresh.mockClear();
+    await toast.success.mock.calls[0][1].action.onClick();
+    expect(clearJobDecisionAction).toHaveBeenCalledWith('fresh');
+    expect(refresh).toHaveBeenCalled();
+  });
+
+  it('toasts an error and stays put when the save is refused', async () => {
+    decideJobAction.mockResolvedValue({ status: 'failed' });
+    renderView({ initial: { job: 'fresh' }, selected: [ROWS[1]] });
+    fireEvent.click(screen.getByRole('button', { name: 'Applied' }));
+    await vi.waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith("Couldn't save. Try again."),
+    );
+    expect(push).not.toHaveBeenCalled();
   });
 });

@@ -52,6 +52,10 @@
       "model": "IsoLanguage",
       "namespace": "public"
     },
+    "job_decisions": {
+      "model": "JobDecision",
+      "namespace": "public"
+    },
     "job_extractions": {
       "model": "JobExtraction",
       "namespace": "public"
@@ -1751,6 +1755,159 @@
               },
               "namespaceId": "public",
               "table": "iso_languages"
+            }
+          },
+          "JobDecision": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "decidedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "jobId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "matchSnapshot": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
+              },
+              "note": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "reason": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "userId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "job": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "jobId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "NormalizedJob",
+                  "namespace": "public"
+                }
+              },
+              "user": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "decidedAt": {
+                  "column": "decidedAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "jobId": {
+                  "column": "jobId"
+                },
+                "matchSnapshot": {
+                  "column": "matchSnapshot"
+                },
+                "note": {
+                  "column": "note"
+                },
+                "reason": {
+                  "column": "reason"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                },
+                "userId": {
+                  "column": "userId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "job_decisions"
             }
           },
           "JobExtraction": {
@@ -3716,6 +3873,21 @@
                 },
                 "to": {
                   "model": "JobExtraction",
+                  "namespace": "public"
+                }
+              },
+              "decisions": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "jobId"
+                  ]
+                },
+                "to": {
+                  "model": "JobDecision",
                   "namespace": "public"
                 }
               },
@@ -6585,6 +6757,21 @@
                   "namespace": "public"
                 }
               },
+              "jobDecisions": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "userId"
+                  ]
+                },
+                "to": {
+                  "model": "JobDecision",
+                  "namespace": "public"
+                }
+              },
               "jobMatches": {
                 "cardinality": "1:N",
                 "on": {
@@ -7419,6 +7606,59 @@
               "tableName": "iso_languages",
               "using": "true"
             },
+            "job_decisions_owner_delete": {
+              "kind": "policy",
+              "name": "job_decisions_owner_delete_8d4763aa",
+              "namespaceId": "public",
+              "operation": "delete",
+              "permissive": true,
+              "prefix": "job_decisions_owner_delete",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "job_decisions",
+              "using": "\"userId\" = auth.uid()"
+            },
+            "job_decisions_owner_insert": {
+              "kind": "policy",
+              "name": "job_decisions_owner_insert_13839fbe",
+              "namespaceId": "public",
+              "operation": "insert",
+              "permissive": true,
+              "prefix": "job_decisions_owner_insert",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "job_decisions",
+              "withCheck": "\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.job_matches m WHERE m.\"userId\" = auth.uid() AND m.\"jobId\" = job_decisions.\"jobId\")"
+            },
+            "job_decisions_owner_read": {
+              "kind": "policy",
+              "name": "job_decisions_owner_read_ab58a1a7",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "job_decisions_owner_read",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "job_decisions",
+              "using": "\"userId\" = auth.uid()"
+            },
+            "job_decisions_owner_update": {
+              "kind": "policy",
+              "name": "job_decisions_owner_update_027386ad",
+              "namespaceId": "public",
+              "operation": "update",
+              "permissive": true,
+              "prefix": "job_decisions_owner_update",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "job_decisions",
+              "using": "\"userId\" = auth.uid()",
+              "withCheck": "\"userId\" = auth.uid()"
+            },
             "job_matches_owner_read": {
               "kind": "policy",
               "name": "job_matches_owner_read_ab58a1a7",
@@ -7810,6 +8050,11 @@
               "kind": "rls",
               "namespaceId": "public",
               "tableName": "iso_languages"
+            },
+            "job_decisions": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "job_decisions"
             },
             "job_extractions": {
               "kind": "rls",
@@ -9045,6 +9290,180 @@
                 ]
               },
               "uniques": []
+            },
+            "job_decisions": {
+              "checks": [
+                {
+                  "expression": "status = 'dismissed' OR (reason IS NULL AND note IS NULL AND \"matchSnapshot\" IS NULL)",
+                  "name": "job_decisions_applied_bare_3dd0d51a",
+                  "prefix": "job_decisions_applied_bare"
+                },
+                {
+                  "expression": "note IS NULL OR char_length(note) <= 500",
+                  "name": "job_decisions_note_length_73ec5843",
+                  "prefix": "job_decisions_note_length"
+                },
+                {
+                  "expression": "reason IS NULL OR reason IN ('role','seniority','location','stack','salary','contract','languages','work_authorization','company','other')",
+                  "name": "job_decisions_reason_f322f92c",
+                  "prefix": "job_decisions_reason"
+                },
+                {
+                  "expression": "status IN ('applied','dismissed')",
+                  "name": "job_decisions_status_87345d2c",
+                  "prefix": "job_decisions_status"
+                }
+              ],
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "decidedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "jobId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "matchSnapshot": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": true
+                },
+                "note": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "reason": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "userId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "job_decisions_userId_idx_a489d58a"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "job_decisions"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "users"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "job_decisions_jobId_idx_623c8f77"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "jobId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "job_decisions"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "normalized_jobs"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "jobId"
+                  ],
+                  "name": "job_decisions_jobId_idx_623c8f77",
+                  "prefix": "job_decisions_jobId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "userId"
+                  ],
+                  "name": "job_decisions_userId_idx_a489d58a",
+                  "prefix": "job_decisions_userId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "userId",
+                    "jobId"
+                  ]
+                }
+              ]
             },
             "job_extractions": {
               "checks": [
@@ -14002,10 +14421,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "9a48a4e77a746f4139019f4d84e5ccddfee3174d4b606a6626b8181d84715a60"
+    "storageHash": "23a126fe874387bd7fdd1898a4c88df9bf5fde05c8ca860d262c15d8865dfdda"
   },
   "execution": {
-    "executionHash": "3461eec8835c53ff559e82fbaaebc361cd1c3ca10478f13fc23cee0455aa77a9",
+    "executionHash": "7b5eaf1d91dcda38671ed0758e62b64e510de826d248ab15bddc3faa2e947c57",
     "mutations": {
       "defaults": [
         {
@@ -14090,6 +14509,32 @@
           "ref": {
             "entry": "fact_reports",
             "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv7",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "job_decisions",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "job_decisions",
+            "field": "updatedAt",
             "namespace": "public"
           }
         },

@@ -1,7 +1,13 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { decideReviewAction, reportMismatchAction } from '@/app/(app)/actions';
+import { toast } from 'sonner';
+import {
+  clearJobDecisionAction,
+  decideJobAction,
+  decideReviewAction,
+  reportMismatchAction,
+} from '@/app/(app)/actions';
 import type { Labels } from '@/lib/matches/checks';
 import {
   selectJobs,
@@ -15,8 +21,14 @@ import {
   viewStateHref,
   type ViewState,
 } from '@/lib/matches/view-state';
+import type { SaveResult } from '@/lib/setup/save-result';
 import { cn } from '@/lib/utils';
-import { BackLink, MatchDetail, type Decide } from './match-detail';
+import {
+  BackLink,
+  MatchDetail,
+  type Decide,
+  type DecideJob,
+} from './match-detail';
 import { MatchEmpty } from './match-empty';
 import { MatchFilters } from './match-filters';
 import { MatchList } from './match-list';
@@ -67,6 +79,56 @@ export function MatchesView({
     }
     return result;
   };
+
+  const wide = () =>
+    typeof window.matchMedia !== 'function' ||
+    window.matchMedia('(min-width: 768px)').matches;
+  const refused = (result: SaveResult) =>
+    toast.error(
+      result.status === 'invalid' && result.errors._form
+        ? result.errors._form
+        : "Couldn't save. Try again.",
+    );
+  // A decided job leaves Matches: open the next one in the list (none on a phone, where
+  // an open job hides the list), read the lists again, and offer to take it back.
+  const decideJob =
+    (visibleJobs: MatchedJob[]): DecideJob =>
+    async (status, extra) => {
+      const jobId = state.job;
+      if (jobId === null) return false;
+      let result: SaveResult;
+      try {
+        result = await decideJobAction({ jobId, status, ...extra });
+      } catch {
+        result = { status: 'failed' };
+      }
+      if (result.status !== 'saved') {
+        refused(result);
+        return false;
+      }
+      const at = visibleJobs.findIndex((j) => j.jobId === jobId);
+      const next = wide()
+        ? ((visibleJobs[at + 1] ?? visibleJobs[at - 1])?.jobId ?? null)
+        : null;
+      router.push(href({ ...state, job: next }));
+      router.refresh();
+      toast.success('Moved to Applications', {
+        action: {
+          label: 'Undo',
+          onClick: async () => {
+            let undone: SaveResult;
+            try {
+              undone = await clearJobDecisionAction(jobId);
+            } catch {
+              undone = { status: 'failed' };
+            }
+            if (undone.status === 'saved') router.refresh();
+            else refused(undone);
+          },
+        },
+      });
+      return true;
+    };
 
   if (profiles.length === 0) {
     return (
@@ -165,6 +227,7 @@ export function MatchesView({
         userId={userId}
         backHref={backHref}
         onDecide={review ? decide : undefined}
+        onDecideJob={decideJob(visible)}
         onReport={reportMismatchAction}
       />
     );

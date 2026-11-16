@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import type { DismissReason } from '@xjobs/database/enums';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -33,6 +34,7 @@ import type { ReportField } from '@/lib/matches/report';
 import { channelLabel } from '@/lib/matches/sources';
 import type { SaveResult } from '@/lib/setup/save-result';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { DismissDialog } from './dismiss-dialog';
 import { stackScoreText } from './match-row';
 import { ReportDialog, type Report } from './report-dialog';
 
@@ -201,7 +203,7 @@ function ReviewReason({
  * The links that leave for the job's own pages, in a new tab. Either one marks the job
  * viewed; the tab opens at once and the list refreshes once the write is done.
  */
-function PostLinks({
+export function PostLinks({
   postingUrl,
   applyUrl,
   userId,
@@ -246,6 +248,47 @@ function PostLinks({
   );
 }
 
+export type DecideJob = (
+  status: 'applied' | 'dismissed',
+  extra?: { reason?: DismissReason; note?: string },
+) => Promise<boolean>;
+
+/** "Applied" and "Not for me" on a match; the second asks for an optional reason first. */
+function JobDecision({ onDecideJob }: { onDecideJob: DecideJob }) {
+  const [pending, setPending] = useState(false);
+  const [asking, setAsking] = useState(false);
+  return (
+    <div className="flex flex-wrap gap-2">
+      <Button
+        variant="secondary"
+        loading={pending}
+        onClick={async () => {
+          setPending(true);
+          try {
+            await onDecideJob('applied');
+          } finally {
+            setPending(false);
+          }
+        }}
+      >
+        Applied
+      </Button>
+      <Button
+        variant="outline"
+        disabled={pending}
+        onClick={() => setAsking(true)}
+      >
+        Not for me
+      </Button>
+      <DismissDialog
+        open={asking}
+        onOpenChange={setAsking}
+        onConfirm={(extra) => onDecideJob('dismissed', extra)}
+      />
+    </div>
+  );
+}
+
 function Section({
   title,
   children,
@@ -276,14 +319,20 @@ function TechList({ title, items }: { title: string; items: string[] }) {
 }
 
 /** Below `md`, where the list is hidden while a job is open: the way back to it. */
-export function BackLink({ href }: { href: string }) {
+export function BackLink({
+  href,
+  label = 'Back to matches',
+}: {
+  href: string;
+  label?: string;
+}) {
   return (
     <Link
       href={href}
       className="inline-flex w-fit items-center gap-1 rounded-sm text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring md:hidden"
     >
       <ChevronLeft aria-hidden />
-      Back to matches
+      {label}
     </Link>
   );
 }
@@ -296,7 +345,10 @@ export function MatchDetail({
   now,
   userId,
   backHref,
+  backLabel,
+  actions,
   onDecide,
+  onDecideJob,
   onReport,
 }: {
   /** The job's rows, one per matching profile; non-empty. */
@@ -306,13 +358,20 @@ export function MatchDetail({
   now: Date;
   userId: string;
   backHref: string;
+  /** The back link's text; "Back to matches" by default. */
+  backLabel?: string;
+  /** The page's own actions on the job, under the post links (Applications). */
+  actions?: React.ReactNode;
   /** Records a decision on a review row; the buttons show only with it. */
   onDecide?: Decide;
+  /** Marks the job applied or not for me; the buttons show only with it, on matches. */
+  onDecideJob?: DecideJob;
   /** Logs a mismatch on a fact; the report buttons show only with it. */
   onReport?: Report;
 }) {
   const [profileId, setProfileId] = useState(rows[0]?.profileId);
-  const [job] = groupByJob(rows);
+  // The caller chose which rows to show; a closed job it passes still shows.
+  const [job] = groupByJob(rows, { keepClosed: true });
   if (!job) return null;
   const first = job.rows[0];
   const shown = job.rows.find((r) => r.profileId === profileId) ?? first;
@@ -347,7 +406,7 @@ export function MatchDetail({
 
   return (
     <article className="flex min-w-0 flex-col gap-6">
-      <BackLink href={backHref} />
+      <BackLink href={backHref} label={backLabel} />
 
       <header className="flex flex-col gap-1">
         <h2 className="text-title-3">{first.title}</h2>
@@ -378,6 +437,10 @@ export function MatchDetail({
         userId={userId}
         jobId={first.jobId}
       />
+
+      {onDecideJob && !inReview && <JobDecision onDecideJob={onDecideJob} />}
+
+      {actions}
 
       {inReview && (
         <ReviewReason

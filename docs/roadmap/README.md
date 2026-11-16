@@ -71,3 +71,5 @@ How much a human reviews before anything is sent is decided in the Phase 4 spec.
 ### Phase 5: Track and report
 
 Report what's new and how the pipeline is performing: volume and pass rates per stage and per source, plus application outcomes.
+
+Jobs can already be marked applied or not for me ([job decisions](../superpowers/specs/2026-11-16-job-decisions-design.md)).

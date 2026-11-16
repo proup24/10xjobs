@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation';
 import { MatchesView } from '@/components/matches/matches-view';
 import { loadMatches } from '@/lib/matches/load';
-import { selectedRows } from '@/lib/matches/selected';
-import { groupByJob, publishedRows } from '@/lib/matches/group';
+import { decidedJobHref, selectedRows } from '@/lib/matches/selected';
+import { groupByJob, publishedRows, undecidedRows } from '@/lib/matches/group';
 import {
   defaultProfile,
   knownProfile,
@@ -57,14 +57,17 @@ export default async function Page({
     preferenceLists(),
     selectedRows(supabase, asked.job, profilesRead, outcome),
   ]);
+  // A decided job opened by link (a match webhook's) shows where it now lives.
+  const decided = decidedJobHref(selected);
+  if (decided) redirect(decided);
   const read = readViewState(params, {
     tab: '24h',
     profile: defaultProfile(profiles),
   });
   // A stale or foreign profile link shows the default profile, not an empty one.
   const state = { ...read, profile: knownProfile(read.profile, profiles) };
-  const live = publishedRows(rows, profiles);
-  const liveReview = publishedRows(reviewRows, profiles);
+  const live = publishedRows(undecidedRows(rows), profiles);
+  const liveReview = publishedRows(undecidedRows(reviewRows), profiles);
 
   return (
     <MatchesView

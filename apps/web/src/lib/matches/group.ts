@@ -36,11 +36,22 @@ export function publishedRows(
   return rows.filter((r) => published.has(r.profileId));
 }
 
-/** Rows to one job each; closed jobs dropped; newest posted first, then by job id. */
-export function groupByJob(rows: MatchRow[]): MatchedJob[] {
+/** Rows of jobs the user has not decided on: an applied or dismissed job leaves Matches. */
+export function undecidedRows(rows: MatchRow[]): MatchRow[] {
+  return rows.filter((r) => r.decisionStatus == null);
+}
+
+/**
+ * Rows to one job each; newest posted first, then by job id. Closed jobs are dropped
+ * unless `keepClosed` (a decided job's detail still shows once it has closed).
+ */
+export function groupByJob(
+  rows: MatchRow[],
+  { keepClosed = false }: { keepClosed?: boolean } = {},
+): MatchedJob[] {
   const byJob = new Map<string, MatchRow[]>();
   for (const row of rows) {
-    if (row.closed) continue;
+    if (row.closed && !keepClosed) continue;
     const list = byJob.get(row.jobId);
     if (list) list.push(row);
     else byJob.set(row.jobId, [row]);

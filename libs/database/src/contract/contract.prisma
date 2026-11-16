@@ -125,6 +125,7 @@ model User {
   eligibilityVersion Int                    @default(0)
   jobMatches         JobMatch[]
   jobViews           JobView[]
+  jobDecisions       JobDecision[]
   matchReviews       MatchReview[]
   factReports        FactReport[]
   webhooks           Webhook[]
@@ -626,6 +627,7 @@ model NormalizedJob {
   facts                 JobFacts?
   factConflicts         JobFactConflict[]
   views                 JobView[]
+  decisions             JobDecision[]
   factReports           FactReport[]
   webhookDeliveries     WebhookDelivery[]
   +Timestamps
@@ -1088,6 +1090,59 @@ policy_insert job_views_owner_insert {
   target = JobView
   roles = [authenticated]
   withCheck = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.job_matches m WHERE m."userId" = auth.uid() AND m."jobId" = job_views."jobId")`
+}
+
+// A user's own mark on a job: applied, or dismissed ("Not for me") with an optional reason. One per user and job; hides the job from Matches and Review. Users write it; the engine only moves it on merges.
+model JobDecision {
+  id            Uuid                 @id @default(sql`gen_random_uuid()`) @onCreate(uuid(7))
+  userId        Uuid
+  user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobId         Uuid
+  job           NormalizedJob        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  status        String
+  reason        String?
+  note          String?
+  decidedAt     TimestamptzJsDate(3) @default(now())
+  matchSnapshot Jsonb?
+  +Timestamps
+
+  @@check(expression: sql`status IN ('applied','dismissed')`, name: "job_decisions_status")
+  @@check(expression: sql`reason IS NULL OR reason IN ('role','seniority','location','stack','salary','contract','languages','work_authorization','company','other')`, name: "job_decisions_reason")
+  @@check(expression: sql`note IS NULL OR char_length(note) <= 500`, name: "job_decisions_note_length")
+  @@check(expression: sql`status = 'dismissed' OR (reason IS NULL AND note IS NULL AND "matchSnapshot" IS NULL)`, name: "job_decisions_applied_bare")
+  @@unique([userId, jobId])
+  @@index([jobId])
+  @@map("job_decisions")
+  @@rls
+}
+
+// Owners read their decisions.
+policy_select job_decisions_owner_read {
+  target = JobDecision
+  roles = [authenticated]
+  using = sql`"userId" = auth.uid()`
+}
+
+// Owners mark a job they are matched with. Later changes need no match: an applied job
+// stays editable after the engine rejects it or the profile is deleted.
+policy_insert job_decisions_owner_insert {
+  target = JobDecision
+  roles = [authenticated]
+  withCheck = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.job_matches m WHERE m."userId" = auth.uid() AND m."jobId" = job_decisions."jobId")`
+}
+
+// Column grants (job-decisions-update-columns) keep the user and job fixed.
+policy_update job_decisions_owner_update {
+  target = JobDecision
+  roles = [authenticated]
+  using = sql`"userId" = auth.uid()`
+  withCheck = sql`"userId" = auth.uid()`
+}
+
+policy_delete job_decisions_owner_delete {
+  target = JobDecision
+  roles = [authenticated]
+  using = sql`"userId" = auth.uid()`
 }
 
 // A user's decision on a match in review: move it to Matches (qualified) or out (rejected).

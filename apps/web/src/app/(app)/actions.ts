@@ -1,5 +1,6 @@
 'use server';
 
+import { clearDecision, saveDecision } from '@/lib/applications/decide';
 import { saveReport } from '@/lib/matches/report';
 import { saveReview } from '@/lib/matches/review';
 import { FAILED, type SaveResult } from '@/lib/setup/save-result';
@@ -29,4 +30,26 @@ export async function reportMismatchAction(
   const userId = data?.claims.sub;
   if (!userId) return FAILED;
   return saveReport(supabase, userId, input);
+}
+
+/**
+ * Marks a job applied or dismissed for the signed-in user. The user comes from the
+ * session; RLS refuses a job the user has no match for.
+ */
+export async function decideJobAction(input: unknown): Promise<SaveResult> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.auth.getClaims();
+  const userId = data?.claims.sub;
+  if (!userId) return FAILED;
+  return saveDecision(supabase, userId, input);
+}
+
+/** Removes the signed-in user's decision on a job. */
+export async function clearJobDecisionAction(
+  jobId: unknown,
+): Promise<SaveResult> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.auth.getClaims();
+  if (!data?.claims.sub) return FAILED;
+  return clearDecision(supabase, jobId);
 }

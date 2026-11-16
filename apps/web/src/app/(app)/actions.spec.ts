@@ -1,11 +1,20 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { decideReviewAction, reportMismatchAction } from './actions';
+import {
+  clearJobDecisionAction,
+  decideJobAction,
+  decideReviewAction,
+  reportMismatchAction,
+} from './actions';
 
 const saveReview = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/matches/review', () => ({ saveReview }));
 const saveReport = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/matches/report', () => ({ saveReport }));
+
+const saveDecision = vi.hoisted(() => vi.fn());
+const clearDecision = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/applications/decide', () => ({ saveDecision, clearDecision }));
 
 const getClaims = vi.fn();
 const client = { auth: { getClaims } };
@@ -18,6 +27,8 @@ beforeEach(() => {
   getClaims.mockResolvedValue({ data: { claims: { sub: 'user-1' } } });
   saveReview.mockResolvedValue({ status: 'saved' });
   saveReport.mockResolvedValue({ status: 'saved' });
+  saveDecision.mockResolvedValue({ status: 'saved' });
+  clearDecision.mockResolvedValue({ status: 'saved' });
 });
 
 describe('decideReviewAction', () => {
@@ -50,5 +61,32 @@ describe('reportMismatchAction', () => {
     getClaims.mockResolvedValue({ data: null });
     expect(await reportMismatchAction({})).toEqual({ status: 'failed' });
     expect(saveReport).not.toHaveBeenCalled();
+  });
+});
+
+describe('decideJobAction', () => {
+  it('saves as the session user', async () => {
+    const input = { jobId: 'j', status: 'applied' };
+    expect(await decideJobAction(input)).toEqual({ status: 'saved' });
+    expect(saveDecision).toHaveBeenCalledWith(client, 'user-1', input);
+  });
+
+  it('fails without a session and saves nothing', async () => {
+    getClaims.mockResolvedValue({ data: null });
+    expect(await decideJobAction({})).toEqual({ status: 'failed' });
+    expect(saveDecision).not.toHaveBeenCalled();
+  });
+});
+
+describe('clearJobDecisionAction', () => {
+  it('clears as the session user', async () => {
+    expect(await clearJobDecisionAction('j')).toEqual({ status: 'saved' });
+    expect(clearDecision).toHaveBeenCalledWith(client, 'j');
+  });
+
+  it('fails without a session and clears nothing', async () => {
+    getClaims.mockResolvedValue({ data: null });
+    expect(await clearJobDecisionAction('j')).toEqual({ status: 'failed' });
+    expect(clearDecision).not.toHaveBeenCalled();
   });
 });

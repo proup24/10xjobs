@@ -1,0 +1,560 @@
+[
+  {
+    "id": "table.job_decisions",
+    "label": "Create table \"job_decisions\"",
+    "summary": "Creates table \"job_decisions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "job_decisions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"job_decisions\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"job_decisions\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"job_decisions\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"job_decisions\"",
+        "sql": "CREATE TABLE \"public\".\"job_decisions\" (\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"decidedAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"id\" uuid DEFAULT (gen_random_uuid()) NOT NULL,\n  \"jobId\" uuid NOT NULL,\n  \"matchSnapshot\" jsonb,\n  \"note\" text,\n  \"reason\" text,\n  \"status\" text NOT NULL,\n  \"updatedAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"userId\" uuid NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"job_decisions_applied_bare_3dd0d51a\" CHECK (status = 'dismissed' OR (reason IS NULL AND note IS NULL AND \"matchSnapshot\" IS NULL)),\n  CONSTRAINT \"job_decisions_note_length_73ec5843\" CHECK (note IS NULL OR char_length(note) <= 500),\n  CONSTRAINT \"job_decisions_reason_f322f92c\" CHECK (reason IS NULL OR reason IN ('role','seniority','location','stack','salary','contract','languages','work_authorization','company','other')),\n  CONSTRAINT \"job_decisions_status_87345d2c\" CHECK (status IN ('applied','dismissed'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"job_decisions\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"job_decisions\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"job_decisions\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "unique.job_decisions.job_decisions_userId_jobId_key",
+    "label": "Add unique constraint on \"job_decisions\" (userId, jobId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "job_decisions_userId_jobId_key",
+        "table": "job_decisions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"job_decisions_userId_jobId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "job_decisions_userId_jobId_key",
+          "public",
+          "\"public\".\"job_decisions\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"job_decisions_userId_jobId_key\" on \"job_decisions\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"job_decisions_userId_jobId_key\"",
+        "sql": "ALTER TABLE \"public\".\"job_decisions\" ADD CONSTRAINT \"job_decisions_userId_jobId_key\" UNIQUE (\"userId\", \"jobId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"job_decisions_userId_jobId_key\" exists on (userId, jobId)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "job_decisions_userId_jobId_key",
+          "public",
+          "\"public\".\"job_decisions\"",
+          "u",
+          "[\"userId\",\"jobId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.job_decisions.job_decisions_jobId_idx_623c8f77",
+    "label": "Create index \"job_decisions_jobId_idx_623c8f77\" on \"job_decisions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "job_decisions_jobId_idx_623c8f77",
+        "table": "job_decisions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"job_decisions_jobId_idx_623c8f77\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"job_decisions_jobId_idx_623c8f77\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"job_decisions_jobId_idx_623c8f77\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"job_decisions_jobId_idx_623c8f77\"",
+        "sql": "CREATE INDEX \"job_decisions_jobId_idx_623c8f77\" ON \"public\".\"job_decisions\" (\"jobId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"job_decisions_jobId_idx_623c8f77\" exists on \"job_decisions\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"job_decisions_jobId_idx_623c8f77\"",
+          "i",
+          "I",
+          "\"public\".\"job_decisions\"",
+          "btree",
+          "[\"jobId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.job_decisions.job_decisions_userId_idx_a489d58a",
+    "label": "Create index \"job_decisions_userId_idx_a489d58a\" on \"job_decisions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "job_decisions_userId_idx_a489d58a",
+        "table": "job_decisions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"job_decisions_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"job_decisions_userId_idx_a489d58a\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"job_decisions_userId_idx_a489d58a\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"job_decisions_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"job_decisions_userId_idx_a489d58a\" ON \"public\".\"job_decisions\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"job_decisions_userId_idx_a489d58a\" exists on \"job_decisions\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"job_decisions_userId_idx_a489d58a\"",
+          "i",
+          "I",
+          "\"public\".\"job_decisions\"",
+          "btree",
+          "[\"userId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.job_decisions.job_decisions_userId_fkey",
+    "label": "Add foreign key \"job_decisions_userId_fkey\" on \"job_decisions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "job_decisions_userId_fkey",
+        "table": "job_decisions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"job_decisions_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "job_decisions_userId_fkey",
+          "public",
+          "\"public\".\"job_decisions\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"job_decisions_userId_fkey\" on \"job_decisions\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"job_decisions_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"job_decisions\"\nADD CONSTRAINT \"job_decisions_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"users\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"job_decisions_userId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "job_decisions_userId_fkey",
+          "public",
+          "\"public\".\"job_decisions\"",
+          "f",
+          "[\"userId\"]",
+          "\"public\".\"users\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.job_decisions.job_decisions_jobId_fkey",
+    "label": "Add foreign key \"job_decisions_jobId_fkey\" on \"job_decisions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "job_decisions_jobId_fkey",
+        "table": "job_decisions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"job_decisions_jobId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "job_decisions_jobId_fkey",
+          "public",
+          "\"public\".\"job_decisions\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"job_decisions_jobId_fkey\" on \"job_decisions\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"job_decisions_jobId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"job_decisions\"\nADD CONSTRAINT \"job_decisions_jobId_fkey\"\nFOREIGN KEY (\"jobId\")\nREFERENCES \"public\".\"normalized_jobs\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"job_decisions_jobId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "job_decisions_jobId_fkey",
+          "public",
+          "\"public\".\"job_decisions\"",
+          "f",
+          "[\"jobId\"]",
+          "\"public\".\"normalized_jobs\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.job_decisions",
+    "label": "Enable row-level security on \"job_decisions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "job_decisions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"job_decisions\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "job_decisions"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"job_decisions\"",
+        "sql": "ALTER TABLE \"public\".\"job_decisions\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"job_decisions\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "job_decisions"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.job_decisions.job_decisions_owner_delete_8d4763aa",
+    "label": "Create RLS policy \"job_decisions_owner_delete_8d4763aa\" on \"job_decisions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "job_decisions_owner_delete_8d4763aa",
+        "table": "job_decisions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"job_decisions_owner_delete_8d4763aa\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "job_decisions",
+          "job_decisions_owner_delete_8d4763aa"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"job_decisions_owner_delete_8d4763aa\" on \"job_decisions\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"job_decisions_owner_delete_8d4763aa\"",
+        "sql": "CREATE POLICY \"job_decisions_owner_delete_8d4763aa\" ON \"public\".\"job_decisions\" AS PERMISSIVE FOR DELETE TO authenticated USING (\"userId\" = auth.uid())",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"job_decisions_owner_delete_8d4763aa\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "job_decisions",
+          "job_decisions_owner_delete_8d4763aa",
+          "DELETE",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.job_decisions.job_decisions_owner_insert_13839fbe",
+    "label": "Create RLS policy \"job_decisions_owner_insert_13839fbe\" on \"job_decisions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "job_decisions_owner_insert_13839fbe",
+        "table": "job_decisions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"job_decisions_owner_insert_13839fbe\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "job_decisions",
+          "job_decisions_owner_insert_13839fbe"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"job_decisions_owner_insert_13839fbe\" on \"job_decisions\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"job_decisions_owner_insert_13839fbe\"",
+        "sql": "CREATE POLICY \"job_decisions_owner_insert_13839fbe\" ON \"public\".\"job_decisions\" AS PERMISSIVE FOR INSERT TO authenticated WITH CHECK (\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.job_matches m WHERE m.\"userId\" = auth.uid() AND m.\"jobId\" = job_decisions.\"jobId\"))",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"job_decisions_owner_insert_13839fbe\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "job_decisions",
+          "job_decisions_owner_insert_13839fbe",
+          "INSERT",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.job_decisions.job_decisions_owner_read_ab58a1a7",
+    "label": "Create RLS policy \"job_decisions_owner_read_ab58a1a7\" on \"job_decisions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "job_decisions_owner_read_ab58a1a7",
+        "table": "job_decisions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"job_decisions_owner_read_ab58a1a7\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "job_decisions",
+          "job_decisions_owner_read_ab58a1a7"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"job_decisions_owner_read_ab58a1a7\" on \"job_decisions\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"job_decisions_owner_read_ab58a1a7\"",
+        "sql": "CREATE POLICY \"job_decisions_owner_read_ab58a1a7\" ON \"public\".\"job_decisions\" AS PERMISSIVE FOR SELECT TO authenticated USING (\"userId\" = auth.uid())",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"job_decisions_owner_read_ab58a1a7\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "job_decisions",
+          "job_decisions_owner_read_ab58a1a7",
+          "SELECT",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.job_decisions.job_decisions_owner_update_027386ad",
+    "label": "Create RLS policy \"job_decisions_owner_update_027386ad\" on \"job_decisions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "job_decisions_owner_update_027386ad",
+        "table": "job_decisions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"job_decisions_owner_update_027386ad\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "job_decisions",
+          "job_decisions_owner_update_027386ad"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"job_decisions_owner_update_027386ad\" on \"job_decisions\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"job_decisions_owner_update_027386ad\"",
+        "sql": "CREATE POLICY \"job_decisions_owner_update_027386ad\" ON \"public\".\"job_decisions\" AS PERMISSIVE FOR UPDATE TO authenticated USING (\"userId\" = auth.uid()) WITH CHECK (\"userId\" = auth.uid())",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"job_decisions_owner_update_027386ad\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "job_decisions",
+          "job_decisions_owner_update_027386ad",
+          "UPDATE",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "grants.job_decisions_update_columns",
+    "invariantId": "job-decisions-update-columns",
+    "label": "Limit authenticated updates on job_decisions to status, reason, note, decidedAt, matchSnapshot and updatedAt",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "job_decisions"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "revoke table-level updates, grant the user-editable columns",
+        "sql": "REVOKE UPDATE ON public.job_decisions FROM authenticated, anon;\nGRANT UPDATE (\"status\", \"reason\", \"note\", \"decidedAt\", \"matchSnapshot\", \"updatedAt\") ON public.job_decisions TO authenticated;"
+      }
+    ],
+    "postcheck": []
+  }
+]

@@ -1,6 +1,11 @@
 'use client';
 
-import { Briefcase, SlidersHorizontal, type LucideIcon } from 'lucide-react';
+import {
+  Briefcase,
+  ClipboardCheck,
+  SlidersHorizontal,
+  type LucideIcon,
+} from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -17,6 +22,7 @@ import {
 // Only routes that exist belong here.
 export const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/', label: 'Matches', icon: Briefcase },
+  { href: '/applications', label: 'Applications', icon: ClipboardCheck },
   { href: '/preferences', label: 'Preferences', icon: SlidersHorizontal },
 ];
 

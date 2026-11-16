@@ -237,6 +237,72 @@ async function carriedExtraction(
 }
 
 /**
+ * Moves every user's decision on a job that merged away to the job it merged
+ * into. A user with a decision on both keeps one: applied beats dismissed,
+ * otherwise the newer decision wins, and on a tie the target's stays.
+ */
+async function moveDecisions(
+  tx: DatabaseTransaction,
+  fromJobId: string,
+  toJobId: string,
+): Promise<void> {
+  await tx.execute(
+    tx.raw.sql`WITH moved AS (
+        DELETE FROM public.job_decisions WHERE "jobId" = ${fromJobId}::uuid
+        RETURNING "userId", status, reason, note, "decidedAt", "matchSnapshot"
+      )
+      INSERT INTO public.job_decisions
+        ("userId", "jobId", status, reason, note, "decidedAt", "matchSnapshot")
+      SELECT "userId", ${toJobId}::uuid, status, reason, note, "decidedAt", "matchSnapshot"
+      FROM moved
+      ON CONFLICT ("userId", "jobId") DO UPDATE SET
+        status = EXCLUDED.status,
+        reason = EXCLUDED.reason,
+        note = EXCLUDED.note,
+        "decidedAt" = EXCLUDED."decidedAt",
+        "matchSnapshot" = EXCLUDED."matchSnapshot",
+        "updatedAt" = now()
+      WHERE (EXCLUDED.status = 'applied' AND job_decisions.status = 'dismissed')
+        OR (EXCLUDED.status = job_decisions.status
+          AND EXCLUDED."decidedAt" > job_decisions."decidedAt")`
+      .affectedCount()
+      .build(),
+  );
+}
+
+/**
+ * A merged job that revives gets a copy of the decisions it held when it
+ * merged away. They moved with each merge, so they sit on the end of its
+ * mergedIntoId chain (followed at most 10 steps, as in webhook_enqueue_match,
+ * stopping at a job that isn't merged). Where the user already decided on the
+ * revived job, that decision stays.
+ */
+async function copyDecisionsBack(
+  tx: DatabaseTransaction,
+  jobId: string,
+): Promise<void> {
+  await tx.execute(
+    tx.raw.sql`WITH RECURSIVE chain AS (
+        SELECT j.id, j.status, j."mergedIntoId", 0 AS depth
+        FROM normalized_jobs j WHERE j.id = ${jobId}::uuid
+        UNION ALL
+        SELECT n.id, n.status, n."mergedIntoId", chain.depth + 1
+        FROM chain JOIN normalized_jobs n ON n.id = chain."mergedIntoId"
+        WHERE chain.status = 'merged' AND chain.depth < 10
+      ), root AS (
+        SELECT id FROM chain WHERE depth > 0 ORDER BY depth DESC LIMIT 1
+      )
+      INSERT INTO job_decisions
+        ("userId", "jobId", status, reason, note, "decidedAt", "matchSnapshot")
+      SELECT d."userId", ${jobId}::uuid, d.status, d.reason, d.note, d."decidedAt", d."matchSnapshot"
+      FROM job_decisions d JOIN root ON d."jobId" = root.id
+      ON CONFLICT DO NOTHING`
+      .affectedCount()
+      .build(),
+  );
+}
+
+/**
  * The key the item links under. A scrape can drop a field the item had (a
  * LinkedIn rescrape with no apply URL), so a raw item never falls back from a
  * key naming the posting to its own id: when the latest version only yields a
@@ -317,12 +383,15 @@ export async function linkJob(
       lastSeenAt: input.observedAt,
       normalizerVersion: NORMALIZER_VERSION,
     });
-  else if (job.status === 'merged')
-    // A job whose sources all left gets one back: it is a job again.
+  else if (job.status === 'merged') {
+    // A job whose sources all left gets one back: it is a job again, with a
+    // copy of the decisions that moved away with it.
+    if (job.mergedIntoId) await copyDecisionsBack(tx, job.id);
     await orm.public.NormalizedJob.where({ id: job.id }).updateAll({
       status: 'active',
       mergedIntoId: null,
     });
+  }
   const before = job;
   let current = processingOf(before);
   let previousLastSeenAt: Date | null = created ? null : before.lastSeenAt;
@@ -369,6 +438,7 @@ export async function linkJob(
           ? processingColumns({ status: null, reason: null, requestedAt: null })
           : {}),
       });
+      await moveDecisions(tx, old.id, job.id);
       const oldState = processingOf(old);
       if (created) {
         // Same job under a better key: it carries its processing state over.

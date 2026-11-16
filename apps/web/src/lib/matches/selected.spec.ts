@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { fakeSupabase } from '@/test/fake-supabase';
 import type { MatchRow } from './group';
-import { selectedRows } from './selected';
+import { decidedJobHref, selectedRows } from './selected';
 
 const J = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const row = (jobId: string, profileId = 'P1', closed = false) =>
@@ -72,5 +72,31 @@ describe('selectedRows', () => {
       expect(await selectedRows(f.supabase, bad, profiles)).toEqual([]);
     }
     expect(f.rpcs('match_details')).toHaveLength(0);
+  });
+});
+
+// A decided job opened by link (a match webhook points at `/?job=<id>`) belongs on the
+// Applications page: shown on Matches, its Undo would delete an earlier Applied mark.
+describe('decidedJobHref', () => {
+  const decided = (decisionStatus: string | null) =>
+    ({ jobId: J, profileId: 'P1', closed: false, decisionStatus }) as MatchRow;
+
+  it('is null without a job or rows', () => {
+    expect(decidedJobHref(null)).toBeNull();
+    expect(decidedJobHref([])).toBeNull();
+  });
+
+  it('is null for an undecided job', () => {
+    expect(decidedJobHref([decided(null), decided(null)])).toBeNull();
+  });
+
+  it('opens an applied job under Applied', () => {
+    expect(decidedJobHref([decided('applied')])).toBe(`/applications?job=${J}`);
+  });
+
+  it('opens a dismissed job under Not for me', () => {
+    expect(decidedJobHref([decided('dismissed')])).toBe(
+      `/applications?status=dismissed&job=${J}`,
+    );
   });
 });

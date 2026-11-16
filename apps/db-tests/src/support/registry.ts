@@ -4,7 +4,10 @@ import {
   clearSetupDraft,
   profileFields,
   seedContact,
+  publishProfile,
+  seedDetailedJob,
   seedJobMatch,
+  seedMatchOn,
   seedProfile,
   seedSetupDraft,
   seedSkill,
@@ -27,6 +30,15 @@ async function freshCountry(): Promise<string> {
   if (!code) throw new Error('No approved country left to seed');
   usedCountries.add(code);
   return code;
+}
+
+/** A fresh detailed job the user is matched with; the decision insert policy needs one. */
+async function seedMatchedJob(userId: string): Promise<string> {
+  const profileId = await seedProfile(userId);
+  await publishProfile(profileId);
+  const job = await seedDetailedJob();
+  await seedMatchOn(userId, profileId, job);
+  return job.jobId;
 }
 
 export type OwnedTable = {
@@ -133,6 +145,28 @@ export const ownedTables: OwnedTable[] = [
     insertPayload: null,
     patch: null,
     canDelete: false,
+  },
+  {
+    table: 'job_decisions',
+    ownerColumn: 'userId',
+    seed: async (userId) => {
+      const jobId = await seedMatchedJob(userId);
+      const { data, error } = await admin()
+        .from('job_decisions')
+        .insert({ userId, jobId, status: 'applied' })
+        .select('id')
+        .single();
+      if (error) throw new Error(error.message);
+      return data.id as string;
+    },
+    insertPayload: async (userId) => ({
+      id: randomUUID(),
+      userId,
+      jobId: await seedMatchedJob(userId),
+      status: 'applied',
+    }),
+    patch: { status: 'dismissed', reason: 'other' },
+    canDelete: true,
   },
   {
     // Users write their webhook only through the webhook_* RPCs.
