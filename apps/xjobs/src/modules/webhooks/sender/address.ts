@@ -29,6 +29,9 @@ for (const [net, prefix] of [
 }
 blocked.addSubnet('::', 96, 'ipv6');
 blocked.addSubnet('64:ff9b::', 96, 'ipv6');
+blocked.addSubnet('64:ff9b:1::', 48, 'ipv6'); // local-use NAT64
+blocked.addSubnet('100::', 64, 'ipv6'); // discard-only
+blocked.addSubnet('2001:db8::', 32, 'ipv6'); // documentation
 blocked.addSubnet('2002::', 16, 'ipv6');
 blocked.addSubnet('fc00::', 7, 'ipv6');
 blocked.addSubnet('fe80::', 10, 'ipv6');

@@ -4,6 +4,7 @@ import type { PayloadInput } from '../../payload/build';
 import {
   type Claim,
   type FailureRecord,
+  type LoadedMatch,
   retryDelayMs,
   WebhooksRepository,
 } from '../webhooks.repository';
@@ -34,6 +35,11 @@ export interface MemoryDelivery {
   payload: unknown;
   createdAt: Date;
   updatedAt: Date;
+  /** Match rows: what the stand-in rule of `loadPayloadInput` reads. Unset in most tests. */
+  profileId?: string | null;
+  jobId?: string | null;
+  /** null: the match was deleted, so `inputs` holds the merge root's match (a stand-in). */
+  matchId?: string | null;
 }
 
 const byAge = (a: MemoryDelivery, b: MemoryDelivery) =>
@@ -42,7 +48,12 @@ const byAge = (a: MemoryDelivery, b: MemoryDelivery) =>
 
 /** In-memory WebhooksRepository for unit tests, with the same rules as the SQL one. */
 export class MemoryWebhooksRepository extends WebhooksRepository {
+  /** Each match delivery's match as `loadPayloadInput` resolves it, by delivery id. */
   inputs = new Map<string, PayloadInput>();
+  /** That match's outcome, by delivery id; `qualified` when unset. */
+  outcomes = new Map<string, LoadedMatch['outcome']>();
+  /** Each merged job's merge root, by job id; a job missing here is its own root. */
+  roots = new Map<string, string>();
   samples = new Map<string, PayloadInput>();
   webhooks = new Map<string, MemoryWebhook>();
   deliveries = new Map<string, MemoryDelivery>();
@@ -97,8 +108,29 @@ export class MemoryWebhooksRepository extends WebhooksRepository {
     return delivery;
   }
 
-  loadPayloadInput(deliveryId: string): Promise<PayloadInput | null> {
-    return Promise.resolve(this.inputs.get(deliveryId) ?? null);
+  loadPayloadInput(deliveryId: string): Promise<LoadedMatch | null> {
+    const d = this.deliveries.get(deliveryId);
+    // A stand-in is refused when another live match delivery of the profile has the same root.
+    if (d?.matchId === null && d.jobId) {
+      const root = (job: string) => this.roots.get(job) ?? job;
+      const target = root(d.jobId);
+      const taken = [...this.deliveries.values()].some(
+        (o) =>
+          o.id !== d.id &&
+          o.kind === 'match' &&
+          o.status !== 'skipped' &&
+          o.profileId === d.profileId &&
+          o.jobId != null &&
+          root(o.jobId) === target,
+      );
+      if (taken) return Promise.resolve(null);
+    }
+    const input = this.inputs.get(deliveryId);
+    return Promise.resolve(
+      input
+        ? { input, outcome: this.outcomes.get(deliveryId) ?? 'qualified' }
+        : null,
+    );
   }
 
   loadLabels(): Promise<Labels> {
@@ -109,9 +141,15 @@ export class MemoryWebhooksRepository extends WebhooksRepository {
     return Promise.resolve(this.samples.get(userId) ?? null);
   }
 
-  private head(webhookId: string): MemoryDelivery | undefined {
+  /** The webhook's oldest pending match row: the only one that goes while it is failing. */
+  private matchHead(webhookId: string): MemoryDelivery | undefined {
     return [...this.deliveries.values()]
-      .filter((d) => d.webhookId === webhookId && d.status === 'pending')
+      .filter(
+        (d) =>
+          d.webhookId === webhookId &&
+          d.status === 'pending' &&
+          d.kind === 'match',
+      )
       .sort(byAge)[0];
   }
 
@@ -128,7 +166,11 @@ export class MemoryWebhooksRepository extends WebhooksRepository {
       (o) => o.webhookId === w.id && o.status === 'sending' && o.id !== d.id,
     );
     if (busy) return 'busy';
-    if (w.consecutiveFailures > 0 && this.head(w.id)?.id !== d.id)
+    if (
+      d.kind === 'match' &&
+      w.consecutiveFailures > 0 &&
+      this.matchHead(w.id)?.id !== d.id
+    )
       return 'held';
     if (d.nextAttemptAt.getTime() > now.getTime()) return null;
     d.status = 'sending';
@@ -189,6 +231,7 @@ export class MemoryWebhooksRepository extends WebhooksRepository {
       lastError: null,
       updatedAt: now,
     });
+    if (d.kind === 'test') return;
     w.consecutiveFailures = 0;
     w.lastSuccessAt = now;
     for (const o of this.deliveries.values())
@@ -217,6 +260,8 @@ export class MemoryWebhooksRepository extends WebhooksRepository {
     d.lastStatusCode = result.status;
     d.lastError = result.error.slice(0, WEBHOOK_CONFIG.maxErrorChars);
     d.updatedAt = now;
+    const outcome = delay === null ? 'failed' : 'retry';
+    if (d.kind === 'test') return { outcome, disabled: false };
     w.consecutiveFailures += 1;
     w.lastFailureAt = now;
     const disabled =
@@ -225,7 +270,7 @@ export class MemoryWebhooksRepository extends WebhooksRepository {
       w.enabled = false;
       w.disabledReason = 'failing';
     }
-    return { outcome: delay === null ? 'failed' : 'retry', disabled };
+    return { outcome, disabled };
   }
 
   /** The webhook's head, by the rule `listDue` documents; undefined when it has none due. */
@@ -233,17 +278,16 @@ export class MemoryWebhooksRepository extends WebhooksRepository {
     const w = this.webhooks.get(webhookId);
     if (!w) return undefined;
     const failing = w.enabled && w.consecutiveFailures > 0;
-    const head = [...this.deliveries.values()]
+    const matchHead = this.matchHead(webhookId);
+    return [...this.deliveries.values()]
       .filter(
         (d) =>
           d.webhookId === webhookId &&
           d.status === 'pending' &&
-          (failing || d.nextAttemptAt.getTime() <= now.getTime()),
+          d.nextAttemptAt.getTime() <= now.getTime() &&
+          (d.kind === 'test' || !failing || d.id === matchHead?.id),
       )
       .sort(byAge)[0];
-    return head && head.nextAttemptAt.getTime() <= now.getTime()
-      ? head
-      : undefined;
   }
 
   async listDue(now: Date, limit: number): Promise<string[]> {

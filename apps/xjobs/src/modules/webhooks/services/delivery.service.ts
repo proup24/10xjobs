@@ -25,8 +25,9 @@ export const WEBHOOK_CLOCK = Symbol('WEBHOOK_CLOCK');
 /**
  * `delivered`, `retry` (pending again on its backoff) and `failed` (gave up) follow a send.
  * Nothing was sent for the rest: `skipped` (the webhook is off or gone, or the match was
- * deleted), `busy` (another row of the webhook is sending), `held` (the webhook is failing and
- * this row waits behind its oldest one), `gone` (the row is gone, not pending or not due).
+ * deleted or is no longer qualified), `busy` (another row of the webhook is sending), `held`
+ * (the webhook is failing and this match row waits behind its oldest one), `gone` (the row is
+ * gone, not pending or not due).
  */
 export type DeliveryResult =
   | 'delivered'
@@ -102,9 +103,10 @@ export class DeliveryService {
     let payload = delivery.payload;
     if (payload === null) {
       const built = await this.build(delivery);
-      // The match was deleted before the first attempt: nothing to send.
-      if (!built) {
-        await this.repo.skip(delivery.id, 'match deleted', this.now());
+      // The match was deleted, or is no longer qualified, before the first attempt: nothing
+      // to send.
+      if ('skip' in built) {
+        await this.repo.skip(delivery.id, built.skip, this.now());
         return 'skipped';
       }
       // Send what was stored, so every attempt sends the same bytes.
@@ -138,10 +140,10 @@ export class DeliveryService {
     return record.outcome;
   }
 
-  /** The body for the row's first attempt; null when its match is gone. */
+  /** The body for the row's first attempt, or why the row is skipped instead. */
   private async build(
     delivery: ClaimedDelivery,
-  ): Promise<WebhookPayloadV1 | null> {
+  ): Promise<WebhookPayloadV1 | { skip: string }> {
     const ctx = {
       deliveryId: delivery.id,
       createdAt: delivery.createdAt,
@@ -154,8 +156,15 @@ export class DeliveryService {
       ]);
       return buildTestPayload(sample, labels, ctx);
     }
-    const input = await this.repo.loadPayloadInput(delivery.id);
-    if (!input) return null;
-    return buildMatchPayload(input, await this.repo.loadLabels(), ctx);
+    const loaded = await this.repo.loadPayloadInput(delivery.id);
+    if (!loaded) return { skip: 'match deleted' };
+    // A rematch during a backlog can turn a decision away; never send failing checks as
+    // match.qualified. An approved review stays `review`, so its trigger skips this rule.
+    if (
+      loaded.input.match.trigger === 'decision' &&
+      loaded.outcome !== 'qualified'
+    )
+      return { skip: 'match no longer qualified' };
+    return buildMatchPayload(loaded.input, await this.repo.loadLabels(), ctx);
   }
 }

@@ -1,0 +1,45 @@
+[
+  {
+    "id": "functions.match_reviews_webhook_never_blocks",
+    "invariantId": "webhook-hardening",
+    "label": "match_reviews_webhook: an enqueue error logs a warning instead of failing the review",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "match_reviews"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "replace match_reviews_webhook()",
+        "sql": "CREATE OR REPLACE FUNCTION public.match_reviews_webhook() RETURNS trigger\n  LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$\nBEGIN\n  BEGIN\n    PERFORM public.webhook_enqueue_match(NEW.\"matchId\", 'review');\n  EXCEPTION WHEN OTHERS THEN\n    RAISE WARNING 'match_reviews_webhook: no webhook delivery for match %: % (%)',\n      NEW.\"matchId\", SQLERRM, SQLSTATE;\n  END;\n  RETURN NULL;\nEND $$;"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "functions.webhook_url_ok_port",
+    "label": "webhook_url_ok: a port must be 1 to 65535",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "webhooks"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "replace webhook_url_ok(text)",
+        "sql": "-- Whether a webhook URL may be saved: https, no userinfo, at most 2048 characters, a port (if\n-- any) from 1 to 65535, and a host that is a DNS name (ASCII; IDNs in punycode) other than\n-- localhost, *.localhost, *.local and *.internal. Any IP literal is refused: IPv6 in brackets,\n-- and any host whose last label is a number (decimal, or hex with 0x), which URL parsers read\n-- as IPv4 (10.0.0.1, 2130706433, 0x7f.0.0.1). The engine checks what the name resolves to\n-- before each send.\nCREATE OR REPLACE FUNCTION public.webhook_url_ok(p_url text) RETURNS boolean\n  LANGUAGE plpgsql IMMUTABLE SECURITY DEFINER SET search_path = public AS $$\nDECLARE\n  v_authority text;\n  v_host text;\n  v_port text;\nBEGIN\n  IF p_url IS NULL OR length(p_url) > 2048 OR p_url !~* '^https://'\n     OR p_url ~ '[[:space:][:cntrl:]\\\\]' THEN\n    RETURN false;\n  END IF;\n  -- Everything between \"https://\" and the path, query or fragment.\n  v_authority := substring(substring(p_url from 9) from '^[^/?#]*');\n  IF v_authority LIKE '%@%' OR v_authority LIKE '[%' THEN\n    RETURN false;\n  END IF;\n  -- The host, without an optional port and trailing dots; null when the port is malformed.\n  v_host := rtrim(lower(substring(v_authority from '^([^:]*)(:[0-9]{1,5})?$')), '.');\n  IF v_host IS NULL OR v_host = '' OR v_host !~ '^[a-z0-9._-]+$' OR v_host ~ '(^\\.|\\.\\.)' THEN\n    RETURN false;\n  END IF;\n  v_port := substring(v_authority from '^[^:]*:([0-9]{1,5})$');\n  IF v_port IS NOT NULL AND v_port::int NOT BETWEEN 1 AND 65535 THEN\n    RETURN false;\n  END IF;\n  IF v_host = 'localhost' OR v_host ~ '\\.(localhost|local|internal)$' THEN\n    RETURN false;\n  END IF;\n  IF v_host ~ '(^|\\.)(0x[0-9a-f]*|[0-9]+)$' THEN\n    RETURN false;\n  END IF;\n  RETURN true;\nEND $$;"
+      }
+    ],
+    "postcheck": []
+  }
+]

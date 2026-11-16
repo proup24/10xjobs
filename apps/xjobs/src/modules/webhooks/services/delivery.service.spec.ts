@@ -212,6 +212,51 @@ describe('DeliveryService', () => {
     expect(warn).not.toHaveBeenCalled();
   });
 
+  it('a decision delivery whose match is no longer qualified is skipped with a reason', async () => {
+    const s = setup(200);
+    const id = s.add();
+    s.repo.outcomes.set(id, 'rejected');
+    expect(await s.deliver(id)).toBe('skipped');
+    expect(s.row(id)).toMatchObject({
+      status: 'skipped',
+      lastError: 'match no longer qualified',
+      payload: null,
+    });
+    expect(s.sender).not.toHaveBeenCalled();
+  });
+
+  it('a review delivery is sent whatever the match outcome', async () => {
+    const s = setup(200);
+    const id = s.add();
+    const review = input(id);
+    review.match.trigger = 'review';
+    s.repo.inputs.set(id, review);
+    s.repo.outcomes.set(id, 'review');
+    expect(await s.deliver(id)).toBe('delivered');
+  });
+
+  it('A merges into B with no delivery for B: the stand-in sends B', async () => {
+    const s = setup(200);
+    const a = s.add({ profileId: 'p1', jobId: 'jA', matchId: null });
+    s.repo.inputs.set(a, input('jB'));
+    s.repo.roots.set('jA', 'jB');
+    expect(await s.deliver(a)).toBe('delivered');
+    expect(JSON.parse(s.sent[0].body)).toMatchObject({ job: { id: 'jB' } });
+  });
+
+  it("B has its own delivery, A merges into B: A's pending row is skipped and only B's is sent", async () => {
+    const s = setup(200);
+    const a = s.add({ profileId: 'p1', jobId: 'jA', matchId: null });
+    s.repo.inputs.set(a, input('jB'));
+    const b = s.add({ profileId: 'p1', jobId: 'jB', matchId: 'm-jB' });
+    s.repo.inputs.set(b, input('jB'));
+    s.repo.roots.set('jA', 'jB');
+    expect(await s.deliver(a)).toBe('skipped');
+    expect(s.row(a).lastError).toBe('match deleted');
+    expect(await s.deliver(b)).toBe('delivered');
+    expect(s.sent.map((x) => x.deliveryId)).toEqual([b]);
+  });
+
   it('a delivery that no longer exists is gone', async () => {
     const s = setup(200);
     expect(await s.deliver('missing')).toBe('gone');
@@ -313,6 +358,35 @@ describe('DeliveryService', () => {
       deliveryId: id,
       job: { id: 'sample-job' },
     });
+  });
+
+  it('a test row is not held back by a failing webhook', async () => {
+    const s = setup(503);
+    const [a, b] = [s.add(), s.add()];
+    await s.deliver(a);
+    expect(await s.deliver(b)).toBe('held');
+    const test = s.add({ kind: 'test' });
+    expect(await s.repo.listDue(s.clock.now, 200)).toEqual([test]);
+    expect(await s.repo.nextDue(WEBHOOK, s.clock.now)).toBe(test);
+    s.reply.status = 200;
+    expect(await s.deliver(test)).toBe('delivered');
+    // The 2xx proves nothing about match order: the counter and the held rows stay.
+    expect(s.webhook()).toMatchObject({ consecutiveFailures: 1 });
+    expect(await s.deliver(b)).toBe('held');
+    expect(s.row(a).nextAttemptAt).toEqual(new Date(t0.getTime() + 60_000));
+  });
+
+  it('a failing test leaves the failure counter alone', async () => {
+    const s = setup(503);
+    s.webhook().consecutiveFailures = 9;
+    const test = s.add({ kind: 'test' });
+    expect(await s.deliver(test)).toBe('retry');
+    expect(s.webhook()).toMatchObject({
+      enabled: true,
+      consecutiveFailures: 9,
+      lastFailureAt: null,
+    });
+    expect(s.row(test)).toMatchObject({ status: 'pending', attempts: 1 });
   });
 
   it('logs the host of a failed send, never the path, query or secret', async () => {

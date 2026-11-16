@@ -143,6 +143,10 @@ describe('webhook RPCs', () => {
       'https://0x7f.0.0.1/a',
       'https://[::1]/a',
       'https://[fd00::1]:8443/a',
+      'https://hook.example.com:0/a',
+      'https://hook.example.com:65536/a',
+      'https://hook.example.com:99999/a',
+      'https://hook.example.com:/a',
       'https:///a',
       'https://hook.example.com/a b',
       'https://hook.example.com/' + 'x'.repeat(2048),
@@ -157,6 +161,8 @@ describe('webhook RPCs', () => {
     // Ports, queries and IP-looking paths are fine.
     for (const url of [
       'https://hook.example.com:8443/a?x=1#y',
+      'https://hook.example.com:1/a',
+      'https://hook.example.com:65535/a',
       'https://hooks.example.com/10.0.0.1',
       'HTTPS://Hook.Example.com/a',
     ]) {
