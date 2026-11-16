@@ -45,6 +45,9 @@ const storageEnvironmentShape = {
   SERVICE_ROLE_KEY: z.string().min(1).optional(),
 };
 
+/** The web app's public origin, for links in webhook payloads; payloads carry no link without it. */
+const webAppShape = { WEB_APP_URL: z.url().optional() };
+
 function requireStorage(
   env: {
     SUPABASE_URL?: string;
@@ -126,6 +129,7 @@ export const workerProcessEnvironmentSchema = databaseEnvironmentSchema
   .extend({
     ...redisEnvironmentSchema.shape,
     ...storageEnvironmentShape,
+    ...webAppShape,
     /** In development, each collection worker runs one collection at startup. */
     NODE_ENV: z.enum(EnvironmentType).default(EnvironmentType.development),
     APIFY_TOKEN: z.string().min(1).optional(),
@@ -177,6 +181,7 @@ export const environmentSchema = databaseEnvironmentSchema
       .string()
       .min(32, 'ENGINE_API_KEY must be at least 32 characters'),
     ...storageEnvironmentShape,
+    ...webAppShape,
     /** Apify API token for the collectors. Optional so the API boots without collection. */
     APIFY_TOKEN: z.string().min(1).optional(),
     ...collectionBudgetShape,
