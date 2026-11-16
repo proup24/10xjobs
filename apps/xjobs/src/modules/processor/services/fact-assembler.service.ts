@@ -3,7 +3,7 @@ import { ExtractionInvalidError } from '../models/errors';
 import type { ModelCallMeta, PostingInput } from '../models/types';
 import type { Vocabulary } from '../repositories/vocab.repository';
 import { resolveFacts } from '../rules/resolve-facts';
-import { stackIssues } from '../rules/stack';
+import { mergeDuplicateRequirements, stackIssues } from '../rules/stack';
 import { checkConsistency, checkQuotes } from '../rules/validate';
 import {
   type ExtractionDocument,
@@ -21,6 +21,8 @@ export interface AssembledDocument {
   proposals: TermResolution['proposals'];
   /** Cities to create or find, written only when the extraction is saved. */
   cities: TermResolution['cities'];
+  /** The duplicate requirements merged away, one entry per dropped copy; empty when none. */
+  mergedDuplicates: string[];
 }
 
 /**
@@ -49,12 +51,21 @@ export class FactAssembler {
       vocabulary.engineeringRoleKinds,
     );
     const terms = resolveTerms(consistent, vocabulary.vocab);
+    // terms.doc is already a fresh document, so it is safe to replace the stack in place.
+    let mergedDuplicates: string[] = [];
+    const stack = terms.doc.techStack.value;
+    if (stack) {
+      const merged = mergeDuplicateRequirements(stack);
+      terms.doc.techStack.value = merged.stack;
+      mergedDuplicates = merged.dropped;
+    }
     checkStack(terms.doc);
     return {
       doc: validDocument(terms.doc),
       quoteFailures: quoted.quoteFailures,
       proposals: terms.proposals,
       cities: terms.cities,
+      mergedDuplicates,
     };
   }
 }
