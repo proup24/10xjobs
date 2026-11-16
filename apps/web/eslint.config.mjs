@@ -13,9 +13,9 @@ export default [
         {
           patterns: [
             {
-              regex: '^@xjobs/database(?!/(enums|types)$)',
+              regex: '^@xjobs/database(?!/(enums|matches|types)$)',
               message:
-                'web may import only @xjobs/database/enums and @xjobs/database/types.',
+                'web may import only @xjobs/database/enums, @xjobs/database/matches and @xjobs/database/types.',
             },
           ],
         },

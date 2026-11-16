@@ -16,6 +16,11 @@
       "types": "./dist/enums/index.d.ts",
       "default": "./dist/enums/index.js"
     },
+    "./matches": {
+      "@xjobs/source": "./src/matches/index.ts",
+      "types": "./dist/matches/index.d.ts",
+      "default": "./dist/matches/index.js"
+    },
     "./env": {
       "@xjobs/source": "./src/env/index.ts",
       "types": "./dist/env/index.d.ts",

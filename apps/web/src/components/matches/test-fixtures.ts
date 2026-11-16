@@ -15,9 +15,9 @@ export const labels: Labels = {
   positions: [{ value: 'fullstack_engineer', label: 'Full-stack engineer' }],
   seniorities: [{ value: 'senior', label: 'Senior' }],
   techs: [
-    { value: 'typescript', label: 'TypeScript', searchable: true },
-    { value: 'react', label: 'React', searchable: true },
-    { value: 'go', label: 'Go', searchable: true },
+    { value: 'typescript', label: 'TypeScript' },
+    { value: 'react', label: 'React' },
+    { value: 'go', label: 'Go' },
   ],
   countries: [{ value: 'FR', label: 'France' }],
   regions: [{ value: 'EU', label: 'Europe' }],

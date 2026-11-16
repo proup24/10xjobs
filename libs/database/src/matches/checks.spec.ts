@@ -8,8 +8,8 @@ const labels: Labels = {
     { value: 'staff', label: 'Staff' },
   ],
   techs: [
-    { value: 'typescript', label: 'TypeScript', searchable: true },
-    { value: 'react', label: 'React', searchable: true },
+    { value: 'typescript', label: 'TypeScript' },
+    { value: 'react', label: 'React' },
   ],
   countries: [{ value: 'FR', label: 'France' }],
   regions: [{ value: 'EU', label: 'Europe' }],
