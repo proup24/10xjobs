@@ -141,7 +141,7 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
   beforeEach(async () => {
     await db.execute(
       db.raw
-        .sql`TRUNCATE normalized_job_sources, normalized_jobs, companies, normalized_versions, raw_item_sightings, raw_item_versions, raw_items, collection_batches, search_segment_runs, query_search_builder CASCADE`
+        .sql`TRUNCATE job_decisions, normalized_job_sources, normalized_jobs, companies, normalized_versions, raw_item_sightings, raw_item_versions, raw_items, collection_batches, search_segment_runs, query_search_builder CASCADE`
         .affectedCount()
         .build(),
     );
@@ -535,6 +535,116 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
       expect(await sources()).toEqual([
         expect.objectContaining({ jobId: moved.id }),
       ]);
+    });
+
+    describe('job decisions', () => {
+      const userId = randomUUID();
+      /** An easy-apply item whose later apply URL moves it to a new job. */
+      const mergeSetup = async () => {
+        await save(
+          liJob('4483941772', { applyType: 'EASY_APPLY', applyUrl: '' }),
+          t1,
+        );
+        const old = (await jobs())[0]!;
+        // The job the URL names already exists, from another item.
+        await save(liJob('4483941773'), t1);
+        const moved = (await jobs()).find((j) => j.jobKey.startsWith('url:'))!;
+        return { old, moved };
+      };
+      const decide = (
+        jobId: string,
+        status: string,
+        decidedAt: Date,
+        reason: string | null,
+      ) =>
+        db.orm.public.JobDecision.create({
+          userId,
+          jobId,
+          status,
+          reason,
+          decidedAt,
+        });
+      const decisions = async () =>
+        (await db.orm.public.JobDecision.all()).map((d) => ({
+          jobId: d.jobId,
+          status: d.status,
+          reason: d.reason,
+        }));
+
+      beforeEach(async () => {
+        await db.execute(
+          db.raw.sql`INSERT INTO auth.users (id, email)
+            VALUES (${userId}::uuid, ${`${userId}@example.com`})
+            ON CONFLICT DO NOTHING`
+            .affectedCount()
+            .build(),
+        );
+      });
+
+      it('moves a decision with the job it merged into', async () => {
+        const { old, moved } = await mergeSetup();
+        await decide(old.id, 'dismissed', t1, 'role');
+        await save(liJob('4483941772'), t2);
+        expect(await decisions()).toEqual([
+          { jobId: moved.id, status: 'dismissed', reason: 'role' },
+        ]);
+      });
+
+      it('keeps applied when an applied and a dismissed job merge', async () => {
+        const { old, moved } = await mergeSetup();
+        await decide(old.id, 'applied', t1, null);
+        await decide(moved.id, 'dismissed', t2, 'role');
+        await save(liJob('4483941772'), t3);
+        expect(await decisions()).toEqual([
+          { jobId: moved.id, status: 'applied', reason: null },
+        ]);
+      });
+
+      it('keeps the newer of two dismissals', async () => {
+        const { old, moved } = await mergeSetup();
+        await decide(old.id, 'dismissed', t2, 'stack');
+        await decide(moved.id, 'dismissed', t1, 'role');
+        await save(liJob('4483941772'), t3);
+        expect(await decisions()).toEqual([
+          { jobId: moved.id, status: 'dismissed', reason: 'stack' },
+        ]);
+      });
+
+      it('copies the decision back to a merged job that revives', async () => {
+        const { old, moved } = await mergeSetup();
+        await decide(old.id, 'dismissed', t1, 'role');
+        await save(liJob('4483941772'), t2);
+        // A new item whose key names the merged job brings it back.
+        await save(
+          liJob('4483941774', { applyType: 'EASY_APPLY', applyUrl: '' }),
+          t2,
+        );
+        const item = await rawItemId('id:4483941774');
+        await db.execute(
+          db.raw
+            .sql`UPDATE normalized_versions SET "jobKey" = 'linkedin-job:4483941772'
+            WHERE "rawVersionId" IN (SELECT id FROM raw_item_versions WHERE "rawItemId" = ${item}::uuid)`
+            .affectedCount()
+            .build(),
+        );
+        await save(
+          liJob('4483941774', { applyType: 'EASY_APPLY', applyUrl: '' }),
+          t3,
+        );
+
+        const revived = await db.orm.public.NormalizedJob.where({
+          id: old.id,
+        }).first();
+        expect(revived).toMatchObject({ status: 'active', mergedIntoId: null });
+        expect(
+          (await decisions()).sort((a, b) => a.jobId.localeCompare(b.jobId)),
+        ).toEqual(
+          [
+            { jobId: old.id, status: 'dismissed', reason: 'role' },
+            { jobId: moved.id, status: 'dismissed', reason: 'role' },
+          ].sort((a, b) => a.jobId.localeCompare(b.jobId)),
+        );
+      });
     });
 
     it('re-merges the old job when a moved item leaves other sources behind', async () => {
