@@ -74,6 +74,7 @@ const everyWorker = [
   'process',
   'match',
   'rates',
+  'webhook',
   'collect-linkedin-job-board',
 ];
 

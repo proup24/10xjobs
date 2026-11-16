@@ -88,6 +88,7 @@ const allWorkers = [
   'ingest',
   'match',
   'rates',
+  'webhook',
   'collect-linkedin-job-board',
 ];
 const inactiveSchedulers = [
@@ -132,6 +133,7 @@ it('runs infrastructure, ingest and every active channel collection, and the mat
       'ingest:sweep',
       'match:sweep',
       'rates:refresh',
+      'webhook:sweep',
       'collect-linkedin-job-board:collect',
     ]);
     expect(created.removedSchedulers).toEqual(inactiveSchedulers);

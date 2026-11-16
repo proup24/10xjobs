@@ -13,8 +13,10 @@ import {
   processSweepConfig,
 } from 'src/infrastructure/jobs/steps/process';
 import { RATES_REFRESH_JOB } from 'src/infrastructure/jobs/steps/rates';
+import { WEBHOOK_SWEEP_JOB } from 'src/infrastructure/jobs/steps/webhook';
 import { ingestConfig } from 'src/modules/ingest';
 import { RATES_REFRESH } from 'src/modules/rates';
+import { WEBHOOK_CONFIG } from 'src/modules/webhooks';
 
 type SchedulerQueue = Pick<Queue, 'upsertJobScheduler' | 'removeJobScheduler'>;
 
@@ -92,6 +94,23 @@ export async function syncMatchSweepScheduler(
     MATCH_SWEEP_JOB,
     { every: MATCH_SWEEP.everyMs },
     { name: MATCH_SWEEP_JOB, opts: { attempts: 1 } },
+  );
+  return 'scheduled';
+}
+
+/** Returns stuck deliveries, applies retention and re-enqueues due ones on an interval; idempotent. */
+export async function syncWebhookSweepScheduler(
+  queue: SchedulerQueue,
+  run: boolean,
+): Promise<'scheduled' | 'removed'> {
+  if (!run) {
+    await queue.removeJobScheduler(WEBHOOK_SWEEP_JOB);
+    return 'removed';
+  }
+  await queue.upsertJobScheduler(
+    WEBHOOK_SWEEP_JOB,
+    { every: WEBHOOK_CONFIG.sweep.everyMs },
+    { name: WEBHOOK_SWEEP_JOB, opts: { attempts: 1 } },
   );
   return 'scheduled';
 }

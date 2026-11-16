@@ -2,11 +2,13 @@ import { Channel } from 'src/common/enums';
 import { channelJobsConfig } from 'src/infrastructure/jobs/steps/collect';
 import { SWEEP_JOB } from 'src/infrastructure/jobs/steps/ingest/queue.service';
 import { MATCH_SWEEP_JOB } from 'src/infrastructure/jobs/steps/match';
+import { WEBHOOK_SWEEP_JOB } from 'src/infrastructure/jobs/steps/webhook';
 import { PROCESS_SWEEP_JOB } from 'src/infrastructure/jobs/steps/process';
 import { RATES_REFRESH_JOB } from 'src/infrastructure/jobs/steps/rates';
 import {
   syncCollectionScheduler,
   syncMatchSweepScheduler,
+  syncWebhookSweepScheduler,
   syncProcessSweepScheduler,
   syncRatesRefreshScheduler,
   syncSweepScheduler,
@@ -97,6 +99,7 @@ it('removes every scheduler when schedules are off', async () => {
     [syncSweepScheduler, SWEEP_JOB],
     [syncProcessSweepScheduler, PROCESS_SWEEP_JOB],
     [syncMatchSweepScheduler, MATCH_SWEEP_JOB],
+    [syncWebhookSweepScheduler, WEBHOOK_SWEEP_JOB],
     [syncRatesRefreshScheduler, RATES_REFRESH_JOB],
   ] as const) {
     const q = {

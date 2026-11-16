@@ -9,6 +9,7 @@ import { DatabaseModule } from 'src/database';
 import { JobsModule } from 'src/infrastructure/jobs/jobs.module';
 import { MatchQueue } from 'src/infrastructure/jobs/steps/match';
 import { ProcessQueue } from 'src/infrastructure/jobs/steps/process';
+import { WebhookQueue } from 'src/infrastructure/jobs/steps/webhook';
 import { RedisSettingsModule } from 'src/infrastructure/redis/settings.module';
 import { FactsModule } from 'src/modules/facts';
 import { IngestModule } from 'src/modules/ingest';
@@ -16,11 +17,13 @@ import { MatcherModule } from 'src/modules/matcher';
 import { ProcessorModule } from 'src/modules/processor';
 import { RatesModule } from 'src/modules/rates';
 import { StorageModule } from 'src/modules/storage';
+import { WebhooksModule } from 'src/modules/webhooks';
 import { CollectionWorkerService } from './collection.service';
 import { InfrastructureWorkerService } from './infrastructure.service';
 import { IngestWorkerService } from './ingest.service';
 import { MatchWorkerService } from './match.service';
 import { ProcessorWorkerService } from './processor.service';
+import { WebhookWorkerService } from './webhook.service';
 import { WorkerRuntimeService } from './runtime.service';
 import { COLLECT_ON_START, RUN_SCHEDULES } from './scheduler';
 import { WorkerService } from './worker.service';
@@ -47,6 +50,7 @@ import { WorkerService } from './worker.service';
     MatcherModule,
     RatesModule,
     StorageModule,
+    WebhooksModule,
   ],
   providers: [
     {
@@ -72,6 +76,8 @@ import { WorkerService } from './worker.service';
     ProcessQueue,
     MatchQueue,
     MatchWorkerService,
+    WebhookQueue,
+    WebhookWorkerService,
     InfrastructureWorkerService,
   ],
 })

@@ -12,6 +12,7 @@ import {
   RATES_REFRESH_ON_START_JOB_ID,
   processRatesJob,
 } from 'src/infrastructure/jobs/steps/rates';
+import { WebhookQueue } from 'src/infrastructure/jobs/steps/webhook';
 import { MatcherRepository, MatcherService } from 'src/modules/matcher';
 import { RatesService } from 'src/modules/rates';
 import { WorkerRuntimeService } from './runtime.service';
@@ -32,6 +33,7 @@ export class MatchWorkerService {
     private readonly service: MatcherService,
     private readonly repo: MatcherRepository,
     private readonly matchQueue: MatchQueue,
+    private readonly webhookQueue: WebhookQueue,
     private readonly rates: RatesService,
     @Inject(RUN_SCHEDULES) private readonly runSchedules: boolean,
   ) {}
@@ -47,8 +49,7 @@ export class MatchWorkerService {
           service: this.service,
           repo: this.repo,
           queue: this.matchQueue,
-          // The webhook worker task wires the real queue.
-          webhooks: { enqueue: async () => undefined },
+          webhooks: this.webhookQueue,
         });
         if (bullJob.name === 'sweep')
           this.logger.log(`Match sweep: ${JSON.stringify(result)}`);

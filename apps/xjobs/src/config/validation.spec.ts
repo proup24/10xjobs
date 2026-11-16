@@ -250,6 +250,12 @@ describe('worker process configuration', () => {
     ).toMatchObject({ WORKER_ROLE: 'match' });
   });
 
+  it('runs the webhook worker without keys', () => {
+    expect(
+      validateWorkerProcessEnvironment({ ...worker, WORKER_ROLE: 'webhook' }),
+    ).toMatchObject({ WORKER_ROLE: 'webhook' });
+  });
+
   it('refuses an unknown worker role', () => {
     expect(() =>
       validateWorkerProcessEnvironment({ ...worker, WORKER_ROLE: 'other' }),
