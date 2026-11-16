@@ -1,9 +1,104 @@
-import { IMPORTANCE_BANDS, type TechStack } from '../schema/shared';
+import {
+  IMPORTANCE_BANDS,
+  type Requirement,
+  type TechStack,
+} from '../schema/shared';
 
 export interface StackIssue {
   /** Path inside `techStack.value`. */
   path: (string | number)[];
   message: string;
+}
+
+/** The technology part of a requirement's duplicate key: its code, or its normalized text. */
+function technologyKey(r: Requirement): string {
+  return r.technology.code ?? `text:${r.technology.text.trim().toLowerCase()}`;
+}
+
+/** Two requirements with the same key are duplicates. */
+function requirementKey(r: Requirement): string {
+  return `${technologyKey(r)}|${r.domain ?? ''}`;
+}
+
+const KIND_RANK: Record<Requirement['kind'], number> = {
+  main: 3,
+  must: 2,
+  nice: 1,
+};
+
+/** True when `a` should be kept over `b`: stronger kind, then higher importance. */
+function isStronger(a: Requirement, b: Requirement): boolean {
+  if (a.kind !== b.kind) return KIND_RANK[a.kind] > KIND_RANK[b.kind];
+  return a.importance > b.importance;
+}
+
+export interface MergedStack {
+  stack: TechStack;
+  /** One entry per dropped copy: its key's technology, code or `text:<text>`. */
+  dropped: string[];
+}
+
+/**
+ * Collapses clear duplicate requirements (same key). Copies are merged only
+ * within one place: among the standalone ones (strongest kept, earlier on a
+ * tie) or inside a single group (first kept). A technology listed in two
+ * places is left for `stackIssues` to reject. The dropped copy is not merged
+ * into the kept one. A group left with one member is dissolved; a group's
+ * `min` is lowered to its member count. The input is not mutated.
+ */
+export function mergeDuplicateRequirements(stack: TechStack): MergedStack {
+  const buckets = new Map<string, number[]>();
+  stack.requirements.forEach((r, i) => {
+    const key = requirementKey(r);
+    buckets.set(key, [...(buckets.get(key) ?? []), i]);
+  });
+
+  const dropIndices = new Set<number>();
+  const touchedGroups = new Set<string>();
+  const dropped: string[] = [];
+  const drop = (i: number) => {
+    dropIndices.add(i);
+    dropped.push(technologyKey(stack.requirements[i]));
+  };
+
+  for (const indices of buckets.values()) {
+    if (indices.length < 2) continue;
+    const places = new Map<string | null, number[]>();
+    for (const i of indices) {
+      const place = stack.requirements[i].group;
+      places.set(place, [...(places.get(place) ?? []), i]);
+    }
+    for (const [place, members] of places) {
+      if (members.length < 2) continue;
+      let keep = members[0];
+      if (place === null) {
+        for (const i of members.slice(1)) {
+          if (isStronger(stack.requirements[i], stack.requirements[keep]))
+            keep = i;
+        }
+      } else {
+        touchedGroups.add(place);
+      }
+      members.filter((i) => i !== keep).forEach(drop);
+    }
+  }
+
+  if (dropIndices.size === 0) return { stack: structuredClone(stack), dropped };
+
+  const requirements = structuredClone(
+    stack.requirements.filter((_, i) => !dropIndices.has(i)),
+  );
+  const groups = structuredClone(stack.groups).filter((g) => {
+    if (!touchedGroups.has(g.id)) return true;
+    const members = requirements.filter((r) => r.group === g.id);
+    if (members.length < 2) {
+      members.forEach((m) => (m.group = null));
+      return false;
+    }
+    g.min = Math.min(g.min, members.length);
+    return true;
+  });
+  return { stack: { requirements, groups }, dropped };
 }
 
 /** The rules the stack's shape cannot express (spec §5a); empty means valid. */
@@ -44,9 +139,7 @@ export function stackIssues(stack: TechStack): StackIssue[] {
         message: `group "${r.group}" is not in groups`,
       });
     }
-    const tech =
-      r.technology.code ?? `text:${r.technology.text.trim().toLowerCase()}`;
-    const key = `${tech}|${r.domain ?? ''}`;
+    const key = requirementKey(r);
     if (seen.has(key)) {
       issues.push({
         path: ['requirements', i, 'technology'],
