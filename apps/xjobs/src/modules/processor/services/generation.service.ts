@@ -97,6 +97,12 @@ export class GenerationService {
         log.debug(
           `document assembled: ${assembled.doc.openings.length} openings, ${assembled.quoteFailures} unsupported quotes cleared, ${assembled.proposals.length} new terms, ${assembled.cities.length} cities`,
         );
+        const { mergedDuplicates } = assembled;
+        if (mergedDuplicates.length > 0) {
+          log.debug(
+            `merged ${mergedDuplicates.length} duplicate requirements (${mergedDuplicates.join(', ')})`,
+          );
+        }
         return { ok: true, assembled };
       } catch (error) {
         if (!(error instanceof ExtractionInvalidError)) throw error;

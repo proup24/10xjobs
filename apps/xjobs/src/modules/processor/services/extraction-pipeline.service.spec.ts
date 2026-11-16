@@ -184,4 +184,69 @@ describe('ExtractionPipeline', () => {
     expect(truncated.doc.truncated).toBe(true);
     expect(whole.doc.truncated).toBe(false);
   });
+
+  const req = (
+    text: string,
+    group: string | null,
+    domain = 'devops',
+    kind = 'must',
+    importance = 6,
+  ) => ({
+    technology: { text, code: null },
+    kind,
+    importance,
+    domain,
+    years: null,
+    quote: '',
+    confidence: 'sure',
+    group,
+  });
+
+  it('merges two aliases of one technology', async () => {
+    extraction = new FakeExtractionModel(
+      () =>
+        generatorOutput({
+          techStack: mf({
+            requirements: [
+              req('.NET Core', null, 'backend'),
+              req('ASP.NET', null, 'backend'),
+            ],
+            groups: [],
+          }),
+        }),
+      EXT,
+    );
+
+    const { doc } = await run();
+
+    expect(steps()).toEqual([['generation', 'ok']]);
+    const requirements = doc.techStack.value?.requirements ?? [];
+    expect(requirements).toHaveLength(1);
+    expect(requirements[0].technology.code).toBe('dotnet');
+    expect(requirements[0].technology.text).toBe('.NET Core');
+  });
+
+  it('retries a technology listed on its own and in a group, then fails', async () => {
+    extraction = new FakeExtractionModel(
+      () =>
+        generatorOutput({
+          techStack: mf({
+            requirements: [
+              req('AWS', null),
+              req('Amazon Web Services', 'g1'),
+              req('GCP', 'g1'),
+            ],
+            groups: [{ id: 'g1', min: 1 }],
+          }),
+        }),
+      EXT,
+    );
+
+    const error = await run().catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(ExtractionFailed);
+    expect(extraction.calls[1].req.retryErrors?.join('\n')).toContain(
+      'are the same technology (aws) in domain devops; list it once',
+    );
+  });
 });
