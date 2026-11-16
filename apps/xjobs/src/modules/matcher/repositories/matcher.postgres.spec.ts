@@ -342,7 +342,7 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
     await db?.close();
   });
   beforeEach(async () => {
-    await sql`TRUNCATE job_matches, work_authorizations, job_fact_conflicts, job_facts, profile_skills, profiles, processing_attempts, job_extractions, normalized_job_sources, normalized_jobs, normalized_versions, raw_item_sightings, raw_item_versions, raw_items, collection_batches, search_segment_runs CASCADE`;
+    await sql`TRUNCATE webhook_deliveries, webhooks, job_matches, work_authorizations, job_fact_conflicts, job_facts, profile_skills, profiles, processing_attempts, job_extractions, normalized_job_sources, normalized_jobs, normalized_versions, raw_item_sightings, raw_item_versions, raw_items, collection_batches, search_segment_runs CASCADE`;
   });
 
   describe('loadCandidate', () => {
@@ -806,7 +806,77 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
     });
 
     it('accepts an empty list', async () => {
-      await repo.upsertMatches([]);
+      expect(await repo.upsertMatches([])).toEqual({ deliveryIds: [] });
+    });
+  });
+
+  describe('upsertMatches and webhook deliveries', () => {
+    /** A profile with a webhook on, and a job first seen after both. */
+    async function watched() {
+      const p = await profile();
+      await db.execute(
+        db.raw
+          .sql`INSERT INTO webhooks (id, "userId", url, enabled, "enabledSince")
+            VALUES (${randomUUID()}::uuid, ${p.userId}::uuid, 'https://hook.example.com/x', true, now() - interval '1 day')`
+          .affectedCount()
+          .build(),
+      );
+      const j = await job();
+      await db.orm.public.NormalizedJob.where({ id: j.id }).updateAll({
+        firstSeenAt: new Date(),
+        lastSeenAt: new Date(),
+      });
+      return { p, j };
+    }
+    const deliveries = () => db.orm.public.WebhookDelivery.where({}).all();
+
+    it('a qualified upsert creates a delivery and returns its id', async () => {
+      const { p, j } = await watched();
+      const { deliveryIds } = await repo.upsertMatches([row(p, j)]);
+      const stored = await deliveries();
+      expect(stored).toHaveLength(1);
+      expect(deliveryIds).toEqual([stored[0]!.id]);
+      expect(stored[0]).toMatchObject({
+        trigger: 'decision',
+        status: 'pending',
+        profileId: p.id,
+        jobId: j.id,
+      });
+    });
+
+    it('a rejected upsert creates none', async () => {
+      const { p, j } = await watched();
+      const out = await repo.upsertMatches([
+        row(p, j, { outcome: 'rejected' }),
+      ]);
+      expect(out).toEqual({ deliveryIds: [] });
+      expect(await deliveries()).toHaveLength(0);
+    });
+
+    it('re-upserting the same qualified row returns no ids', async () => {
+      const { p, j } = await watched();
+      expect((await repo.upsertMatches([row(p, j)])).deliveryIds).toHaveLength(
+        1,
+      );
+      expect(await repo.upsertMatches([row(p, j)])).toEqual({
+        deliveryIds: [],
+      });
+      expect(await deliveries()).toHaveLength(1);
+    });
+
+    it('rejected to qualified after a sent delivery returns no ids', async () => {
+      const { p, j } = await watched();
+      await repo.upsertMatches([row(p, j)]);
+      await db.execute(
+        db.raw.sql`UPDATE webhook_deliveries SET status = 'delivered'`
+          .affectedCount()
+          .build(),
+      );
+      await repo.upsertMatches([row(p, j, { outcome: 'rejected' })]);
+      expect(await repo.upsertMatches([row(p, j)])).toEqual({
+        deliveryIds: [],
+      });
+      expect(await deliveries()).toHaveLength(1);
     });
   });
 

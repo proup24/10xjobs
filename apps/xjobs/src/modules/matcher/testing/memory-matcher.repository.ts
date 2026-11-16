@@ -23,12 +23,18 @@ export class MemoryMatcherRepository extends MatcherRepository {
   profiles: MatchProfile[] = [];
   rows: Stored[] = [];
   context: MatchContext = {
-    places: { countriesOfRegion: new Map(), countryOfCity: new Map(), countries: new Set() },
+    places: {
+      countriesOfRegion: new Map(),
+      countryOfCity: new Map(),
+      countries: new Set(),
+    },
     implies: new Map(),
     rates: new Map(),
   };
   contextLoads = 0;
   upserts: StoredMatch[][] = [];
+  /** The delivery ids `upsertMatches` reports; a test seeds them. */
+  deliveryIds: string[] = [];
 
   loadCandidate(jobId: string): Promise<MatchCandidate | null> {
     return Promise.resolve(this.candidates.get(jobId) ?? null);
@@ -64,7 +70,7 @@ export class MemoryMatcherRepository extends MatcherRepository {
     return Promise.resolve(this.context);
   }
 
-  upsertMatches(rows: StoredMatch[]): Promise<void> {
+  upsertMatches(rows: StoredMatch[]): Promise<{ deliveryIds: string[] }> {
     this.upserts.push(rows);
     for (const r of rows) {
       this.rows = this.rows.filter(
@@ -72,7 +78,7 @@ export class MemoryMatcherRepository extends MatcherRepository {
       );
       this.rows.push({ ...r, matcherVersion: MATCHER_VERSION });
     }
-    return Promise.resolve();
+    return Promise.resolve({ deliveryIds: this.deliveryIds });
   }
 
   async listStaleJobs(limit: number): Promise<string[]> {

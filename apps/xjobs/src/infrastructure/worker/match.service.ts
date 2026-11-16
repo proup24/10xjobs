@@ -47,6 +47,8 @@ export class MatchWorkerService {
           service: this.service,
           repo: this.repo,
           queue: this.matchQueue,
+          // The webhook worker task wires the real queue.
+          webhooks: { enqueue: async () => undefined },
         });
         if (bullJob.name === 'sweep')
           this.logger.log(`Match sweep: ${JSON.stringify(result)}`);

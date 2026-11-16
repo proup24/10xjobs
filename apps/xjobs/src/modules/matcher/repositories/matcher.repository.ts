@@ -56,7 +56,13 @@ export abstract class MatcherRepository {
     onlyStaleFor?: StaleFor;
   }): Promise<MatchProfile[]>;
   abstract loadContext(): Promise<MatchContext>;
-  abstract upsertMatches(rows: StoredMatch[]): Promise<void>;
+  /**
+   * Stores the decisions. For each qualified row it also asks the database for a webhook
+   * delivery, in the same transaction, and returns the ids of the deliveries created.
+   */
+  abstract upsertMatches(
+    rows: StoredMatch[],
+  ): Promise<{ deliveryIds: string[] }>;
   /**
    * Matchable jobs whose facts are stale (so building them may change them),
    * or whose open facts have a stale or missing row for a published profile.
@@ -305,11 +311,12 @@ export class PrismaMatcherRepository extends MatcherRepository {
   }
 
   /** `decidedAt` moves only when the outcome changes. */
-  async upsertMatches(rows: StoredMatch[]): Promise<void> {
-    if (rows.length === 0) return;
+  async upsertMatches(rows: StoredMatch[]): Promise<{ deliveryIds: string[] }> {
+    const deliveryIds: string[] = [];
+    if (rows.length === 0) return { deliveryIds };
     await this.db.transaction(async (tx) => {
-      for (const r of rows)
-        await tx.execute(
+      for (const r of rows) {
+        const [stored] = await tx.query(
           tx.raw.sql`INSERT INTO job_matches
               (id, "userId", "profileId", "jobId", "extractionId", "factsHash", "matcherVersion",
                "profileUpdatedAt", "eligibilityVersion",
@@ -332,11 +339,22 @@ export class PrismaMatcherRepository extends MatcherRepository {
               "reviewRule" = EXCLUDED."reviewRule", "reviewField" = EXCLUDED."reviewField",
               "stackScore" = EXCLUDED."stackScore", checks = EXCLUDED.checks, "updatedAt" = now(),
               "decidedAt" = CASE WHEN job_matches.outcome = EXCLUDED.outcome
-                                 THEN job_matches."decidedAt" ELSE now() END`
-            .affectedCount()
+                                 THEN job_matches."decidedAt" ELSE now() END
+            RETURNING id`
+            .returnsRow({ id: UUID })
             .build(),
         );
+        if (r.outcome !== 'qualified' || !stored) continue;
+        const [delivery] = await tx.query(
+          tx.raw
+            .sql`SELECT webhook_enqueue_match(${stored.id as string}::uuid, 'decision') AS id`
+            .returnsRow({ id: UUID })
+            .build(),
+        );
+        if (delivery?.id) deliveryIds.push(delivery.id as string);
+      }
     });
+    return { deliveryIds };
   }
 
   async listStaleJobs(limit: number): Promise<string[]> {

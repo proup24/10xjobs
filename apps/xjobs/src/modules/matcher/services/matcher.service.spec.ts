@@ -152,7 +152,12 @@ describe('MatcherService', () => {
     const { repo, service } = setup();
     await service.matchJob('job-1');
     const again = await service.matchJob('job-1');
-    expect(again).toEqual({ status: 'matched', profiles: 0, qualified: 0 });
+    expect(again).toEqual({
+      status: 'matched',
+      profiles: 0,
+      qualified: 0,
+      deliveryIds: [],
+    });
     const forced = await service.matchJob('job-1', { force: true });
     expect(forced).toMatchObject({ status: 'matched', profiles: 2 });
     expect(repo.upserts).toHaveLength(2);
@@ -226,6 +231,15 @@ describe('MatcherService', () => {
       status: 'matched',
       profiles: 2,
       qualified: stored.filter((r) => r.outcome === 'qualified').length,
+      deliveryIds: [],
+    });
+  });
+
+  it('returns the delivery ids the repository reports', async () => {
+    const { repo, service } = setup();
+    repo.deliveryIds = ['d1'];
+    expect(await service.matchJob('job-1')).toMatchObject({
+      deliveryIds: ['d1'],
     });
   });
 
