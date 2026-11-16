@@ -177,6 +177,47 @@ const SECTIONS: { title: string; sql: (raw: Raw) => ReturnType<Raw['sql']> }[] =
         FROM processing_attempts WHERE NOT eval AND error IS NOT NULL
         GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 15) t`,
     },
+    {
+      title: '12. "Not for me" reasons (last 30 days)',
+      sql: (
+        raw,
+      ) => raw.sql`SELECT coalesce(jsonb_agg(t ORDER BY t.jobs DESC, t.reason), '[]'::jsonb) AS rows FROM (
+        WITH rule_map(reason, rules) AS (VALUES
+          ('role', ARRAY['position']),
+          ('seniority', ARRAY['seniority']),
+          ('location', ARRAY['location']),
+          ('stack', ARRAY['stack']),
+          ('salary', ARRAY['salary', 'currency']),
+          ('contract', ARRAY['contractType']),
+          ('languages', ARRAY['languages', 'postingLanguage']),
+          ('work_authorization', ARRAY['workAuthorization'])),
+        decisions AS (
+          SELECT d.id, coalesce(d.reason, 'none') AS reason, m.rules,
+            coalesce(jsonb_typeof(d."matchSnapshot") = 'array'
+              AND jsonb_array_length(d."matchSnapshot") > 0, false) AS has_snapshot
+          FROM job_decisions d LEFT JOIN rule_map m ON m.reason = d.reason
+          WHERE d.status = 'dismissed' AND d."decidedAt" > now() - interval '30 days'),
+        seen AS (
+          SELECT d.id,
+            bool_or(c->>'outcome' = 'unknown') AS is_unknown,
+            bool_or(c->>'outcome' = 'pass') AS is_pass
+          FROM decisions d
+          JOIN job_decisions j ON j.id = d.id
+          CROSS JOIN LATERAL jsonb_array_elements(
+            CASE WHEN d.has_snapshot THEN j."matchSnapshot" ELSE '[]'::jsonb END) e
+          CROSS JOIN LATERAL jsonb_array_elements(coalesce(e->'checks', '[]'::jsonb)) c
+          WHERE d.rules IS NOT NULL AND e->>'outcome' = 'qualified'
+            AND c->>'rule' = ANY (d.rules)
+          GROUP BY d.id)
+        SELECT d.reason, count(*) AS jobs,
+          CASE WHEN d.rules IS NULL THEN NULL
+            ELSE count(*) FILTER (WHERE s.is_unknown) END AS "unknownOnRule",
+          CASE WHEN d.rules IS NULL THEN NULL
+            ELSE count(*) FILTER (WHERE s.is_pass) END AS "passOnRule",
+          count(*) FILTER (WHERE NOT d.has_snapshot) AS "noSnapshot"
+        FROM decisions d LEFT JOIN seen s ON s.id = d.id
+        GROUP BY d.reason, d.rules) t`,
+    },
   ];
 
 async function main(): Promise<void> {
