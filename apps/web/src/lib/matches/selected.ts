@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@xjobs/database/types';
+import { appViewHref } from '@/lib/applications/view-state';
 import { UUID } from '@/lib/setup/answers';
 import { publishedRows, type MatchRow } from './group';
 import { loadMatch, type ListOutcome } from './load';
@@ -30,4 +31,19 @@ export async function selectedRows(
     rows.filter((r) => !r.closed),
     known,
   );
+}
+
+/**
+ * Where a job opened on Matches belongs once the user has decided on it: its Applications
+ * detail, under the tab of its decision. Null for no job, no rows or an undecided job. A
+ * decided job shown on Matches would offer Applied / Not for me again, and their Undo
+ * would delete the earlier mark.
+ */
+export function decidedJobHref(rows: MatchRow[] | null): string | null {
+  const row = rows?.find((r) => r.decisionStatus != null);
+  if (!row) return null;
+  return appViewHref({
+    status: row.decisionStatus === 'dismissed' ? 'dismissed' : 'applied',
+    job: row.jobId,
+  });
 }
