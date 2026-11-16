@@ -333,11 +333,16 @@ describe.skipIf(!url)('webhooks repository in PostgreSQL', () => {
       repo.claim(a, now),
       repo2.claim(b, now),
     ]);
-    const won = results.filter((r) => typeof r === 'object' && r !== null);
+    const won = results.filter(
+      (r) => typeof r === 'object' && r !== null && 'delivery' in r,
+    );
     expect(won).toHaveLength(1);
     expect(results.filter((r) => r === 'busy')).toHaveLength(1);
 
-    const winner = won[0] as Exclude<(typeof results)[number], string | null>;
+    const winner = won[0] as Extract<
+      (typeof results)[number],
+      { delivery: unknown }
+    >;
     expect(winner.delivery).toMatchObject({
       kind: 'test',
       attempts: 1,
@@ -369,10 +374,14 @@ describe.skipIf(!url)('webhooks repository in PostgreSQL', () => {
     const c = await seedTestDelivery(userId, webhookId, ago(1000));
 
     const claim = await repo.claim(a, now);
-    if (typeof claim !== 'object' || claim === null)
+    if (typeof claim !== 'object' || claim === null || !('delivery' in claim))
       throw new Error('no claim');
     // The stored payload comes back as Postgres keeps it, so every attempt sends the same bytes.
-    const stored = await repo.savePayload(a, { z: 1, a: { y: 'x', b: 2 } });
+    const stored = await repo.savePayload(
+      a,
+      { z: 1, a: { y: 'x', b: 2 } },
+      now,
+    );
     expect(stored).toEqual({ z: 1, a: { y: 'x', b: 2 } });
 
     expect(await repo.recordFailure(a, fail503, now)).toEqual({
@@ -428,8 +437,12 @@ describe.skipIf(!url)('webhooks repository in PostgreSQL', () => {
       lastSuccessAt: later,
     });
     expect((await deliveryRow(c))?.nextAttemptAt).toEqual(later);
-    expect(await repo.listDue(later, 200)).toEqual([b, c]);
-    expect(await repo.listDue(later, 1)).toEqual([b]);
+    // One head per webhook: b, then c once b is done.
+    expect(await repo.listDue(later, 200)).toEqual([b]);
+    expect(await repo.nextDue(webhookId, later)).toBe(b);
+    await repo.claim(b, later);
+    await repo.recordSuccess(b, 200, later);
+    expect(await repo.nextDue(webhookId, later)).toBe(c);
   });
 
   it('gives up at the 7th attempt and disables at the 10th failure', async () => {
@@ -479,7 +492,7 @@ describe.skipIf(!url)('webhooks repository in PostgreSQL', () => {
     // Off: due rows are listed so they can be skipped.
     const due = new Date(now.getTime() + 60_000);
     expect(await repo.listDue(due, 200)).toEqual([b]);
-    expect(await repo.claim(b, due)).toBe('skip');
+    expect(await repo.claim(b, due)).toEqual({ skipped: true, webhookId });
     expect((await deliveryRow(b))?.status).toBe('skipped');
   });
 
@@ -497,7 +510,7 @@ describe.skipIf(!url)('webhooks repository in PostgreSQL', () => {
       disabled: false,
     });
     await expect(repo.recordSuccess(b, 200, now)).resolves.toBeUndefined();
-    await expect(repo.savePayload(a, { x: 1 })).resolves.toBeNull();
+    await expect(repo.savePayload(a, { x: 1 }, now)).resolves.toBeNull();
     await expect(repo.claim(a, now)).resolves.toBeNull();
     expect(await deliveryRow(a)).toBeUndefined();
   });
@@ -557,5 +570,76 @@ describe.skipIf(!url)('webhooks repository in PostgreSQL', () => {
     expect(await deliveryRow(oldTest)).toBeUndefined();
     expect(await deliveryRow(recentTest)).toBeDefined();
     expect(await repo.applyRetention(now)).toEqual({ cleared: 0, deleted: 0 });
+  });
+  it('lists one head per webhook, oldest first, and a failing head only once due', async () => {
+    const u1 = await seedUser();
+    const u2 = await seedUser();
+    const u3 = await seedUser();
+    const w1 = await seedWebhook(u1);
+    const w2 = await seedWebhook(u2);
+    const w3 = await seedWebhook(u3, { consecutiveFailures: 2 });
+    const a1 = await seedTestDelivery(u1, w1, ago(6000));
+    const b1 = await seedTestDelivery(u2, w2, ago(5000));
+    await seedTestDelivery(u1, w1, ago(4000));
+    await seedTestDelivery(u2, w2, ago(3000));
+    // w3 is failing: its oldest pending row waits for its retry, so nothing of w3 is due.
+    const c1 = await seedTestDelivery(u3, w3, ago(7000));
+    await seedTestDelivery(u3, w3, ago(2000));
+    await db.execute(
+      db.raw
+        .sql`UPDATE webhook_deliveries SET "nextAttemptAt" = ${new Date(now.getTime() + 60_000).toISOString()}::timestamptz
+        WHERE id = ${c1}::uuid`
+        .affectedCount()
+        .build(),
+    );
+    expect(await repo.listDue(now, 200)).toEqual([a1, b1]);
+    expect(await repo.listDue(now, 1)).toEqual([a1]);
+    expect(await repo.nextDue(w1, now)).toBe(a1);
+    expect(await repo.nextDue(w3, now)).toBeNull();
+    expect(await repo.nextDue(w3, new Date(now.getTime() + 60_000))).toBe(c1);
+  });
+
+  it('release gives the attempt back and retries after the first delay', async () => {
+    const userId = await seedUser();
+    const webhookId = await seedWebhook(userId);
+    const a = await seedTestDelivery(userId, webhookId, ago(1000));
+    await repo.claim(a, now);
+    await repo.release(a, now);
+    expect(await deliveryRow(a)).toMatchObject({
+      status: 'pending',
+      attempts: 0,
+      nextAttemptAt: new Date(now.getTime() + 60_000),
+    });
+    expect((await webhookRow(webhookId))?.consecutiveFailures).toBe(0);
+    // Only a sending row is released.
+    await repo.release(a, now);
+    expect((await deliveryRow(a))?.attempts).toBe(0);
+  });
+
+  it('a delivery insert is not blocked while a claim holds the webhook row', async () => {
+    const userId = await seedUser();
+    const webhookId = await seedWebhook(userId);
+    await db2.transaction(async (tx) => {
+      // What claim takes on the webhook row.
+      await tx.query(
+        tx.raw
+          .sql`SELECT id FROM webhooks WHERE id = ${webhookId}::uuid FOR NO KEY UPDATE`
+          .returnsRow({ id: 'pg/uuid@1' })
+          .build(),
+      );
+      // The foreign key check of a new delivery takes KEY SHARE, which NO KEY UPDATE allows.
+      await db.transaction(async (other) => {
+        await other.execute(
+          other.raw.sql`SET LOCAL lock_timeout = '2s'`.affectedCount().build(),
+        );
+        await other.execute(
+          other.raw
+            .sql`INSERT INTO webhook_deliveries ("userId", "webhookId", kind, status)
+            VALUES (${userId}::uuid, ${webhookId}::uuid, 'test', 'pending')`
+            .affectedCount()
+            .build(),
+        );
+      });
+    });
   });
 });

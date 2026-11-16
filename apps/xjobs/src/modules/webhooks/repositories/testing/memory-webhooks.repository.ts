@@ -122,7 +122,7 @@ export class MemoryWebhooksRepository extends WebhooksRepository {
     if (!w || !w.enabled) {
       d.status = 'skipped';
       d.updatedAt = now;
-      return 'skip';
+      return { skipped: true, webhookId: d.webhookId };
     }
     const busy = [...this.deliveries.values()].some(
       (o) => o.webhookId === w.id && o.status === 'sending' && o.id !== d.id,
@@ -148,11 +148,12 @@ export class MemoryWebhooksRepository extends WebhooksRepository {
     };
   }
 
-  async savePayload(id: string, payload: unknown): Promise<unknown> {
+  async savePayload(id: string, payload: unknown, now: Date): Promise<unknown> {
     const d = this.deliveries.get(id);
     if (!d || d.status !== 'sending') return null;
     // Stored as JSON, like the jsonb column.
     d.payload = JSON.parse(JSON.stringify(payload));
+    d.updatedAt = now;
     return d.payload;
   }
 
@@ -161,6 +162,15 @@ export class MemoryWebhooksRepository extends WebhooksRepository {
     if (!d || d.status !== 'sending') return;
     d.status = 'skipped';
     d.lastError = reason.slice(0, WEBHOOK_CONFIG.maxErrorChars);
+    d.updatedAt = now;
+  }
+
+  async release(id: string, now: Date): Promise<void> {
+    const d = this.deliveries.get(id);
+    if (!d || d.status !== 'sending') return;
+    d.status = 'pending';
+    d.attempts = Math.max(d.attempts - 1, 0);
+    d.nextAttemptAt = new Date(now.getTime() + WEBHOOK_CONFIG.retryDelaysMs[0]);
     d.updatedAt = now;
   }
 
@@ -218,22 +228,35 @@ export class MemoryWebhooksRepository extends WebhooksRepository {
     return { outcome: delay === null ? 'failed' : 'retry', disabled };
   }
 
+  /** The webhook's head, by the rule `listDue` documents; undefined when it has none due. */
+  private dueHead(webhookId: string, now: Date): MemoryDelivery | undefined {
+    const w = this.webhooks.get(webhookId);
+    if (!w) return undefined;
+    const failing = w.enabled && w.consecutiveFailures > 0;
+    const head = [...this.deliveries.values()]
+      .filter(
+        (d) =>
+          d.webhookId === webhookId &&
+          d.status === 'pending' &&
+          (failing || d.nextAttemptAt.getTime() <= now.getTime()),
+      )
+      .sort(byAge)[0];
+    return head && head.nextAttemptAt.getTime() <= now.getTime()
+      ? head
+      : undefined;
+  }
+
   async listDue(now: Date, limit: number): Promise<string[]> {
-    return [...this.deliveries.values()]
-      .filter((d) => {
-        if (d.status !== 'pending' || d.nextAttemptAt.getTime() > now.getTime())
-          return false;
-        const w = this.webhooks.get(d.webhookId);
-        if (!w) return false;
-        return (
-          !w.enabled ||
-          w.consecutiveFailures === 0 ||
-          this.head(w.id)?.id === d.id
-        );
-      })
+    return [...this.webhooks.keys()]
+      .map((id) => this.dueHead(id, now))
+      .filter((d): d is MemoryDelivery => d !== undefined)
       .sort(byAge)
       .slice(0, limit)
       .map((d) => d.id);
+  }
+
+  async nextDue(webhookId: string, now: Date): Promise<string | null> {
+    return this.dueHead(webhookId, now)?.id ?? null;
   }
 
   async recoverStuck(now: Date): Promise<number> {

@@ -10,6 +10,7 @@ export {
 export {
   DeliveryService,
   WEBHOOK_SETTINGS,
+  type DeliveryOutcome,
   type DeliveryResult,
   type WebhookSettings,
 } from './services/delivery.service';

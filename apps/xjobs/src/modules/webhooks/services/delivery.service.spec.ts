@@ -80,11 +80,13 @@ function setup(status: number | null = 200) {
   const advance = (ms: number) => {
     clock.now = new Date(clock.now.getTime() + ms);
   };
+  const deliver = async (id: string) => (await service.deliver(id)).result;
   const webhook = () => repo.webhooks.get(WEBHOOK)!;
   const row = (id: string) => repo.deliveries.get(id)!;
   return {
     repo,
     service,
+    deliver,
     sender,
     sent,
     reply,
@@ -107,7 +109,7 @@ describe('DeliveryService', () => {
     const s = setup(200);
     const id = s.add();
     s.webhook().consecutiveFailures = 3;
-    expect(await s.service.deliver(id)).toBe('delivered');
+    expect(await s.deliver(id)).toBe('delivered');
     expect(s.row(id)).toMatchObject({
       status: 'delivered',
       attempts: 1,
@@ -129,7 +131,7 @@ describe('DeliveryService', () => {
   it('a 503 schedules the next attempt after 60 000 ms, then 300 000 ms', async () => {
     const s = setup(503);
     const id = s.add();
-    expect(await s.service.deliver(id)).toBe('retry');
+    expect(await s.deliver(id)).toBe('retry');
     expect(s.row(id)).toMatchObject({
       status: 'pending',
       attempts: 1,
@@ -144,12 +146,12 @@ describe('DeliveryService', () => {
 
     // Not due yet: nothing is sent.
     s.advance(59_999);
-    expect(await s.service.deliver(id)).toBe('gone');
+    expect(await s.deliver(id)).toBe('gone');
     expect(s.sender).toHaveBeenCalledTimes(1);
 
     s.advance(1);
     const at = s.clock.now.getTime();
-    expect(await s.service.deliver(id)).toBe('retry');
+    expect(await s.deliver(id)).toBe('retry');
     expect(s.row(id).nextAttemptAt).toEqual(new Date(at + 300_000));
     expect(s.row(id).attempts).toBe(2);
   });
@@ -161,14 +163,14 @@ describe('DeliveryService', () => {
       60_000, 300_000, 1_800_000, 7_200_000, 21_600_000, 43_200_000,
     ];
     for (const delay of delays) {
-      expect(await s.service.deliver(id)).toBe('retry');
+      expect(await s.deliver(id)).toBe('retry');
       s.advance(delay);
     }
-    expect(await s.service.deliver(id)).toBe('failed');
+    expect(await s.deliver(id)).toBe('failed');
     expect(s.row(id)).toMatchObject({ status: 'failed', attempts: 7 });
     expect(s.sender).toHaveBeenCalledTimes(7);
     s.advance(86_400_000);
-    expect(await s.service.deliver(id)).toBe('gone');
+    expect(await s.deliver(id)).toBe('gone');
     expect(s.sender).toHaveBeenCalledTimes(7);
   });
 
@@ -176,13 +178,13 @@ describe('DeliveryService', () => {
     const s = setup(503);
     s.webhook().consecutiveFailures = 8;
     const id = s.add();
-    await s.service.deliver(id);
+    await s.deliver(id);
     expect(s.webhook()).toMatchObject({
       enabled: true,
       consecutiveFailures: 9,
     });
     s.advance(300_000);
-    await s.service.deliver(id);
+    await s.deliver(id);
     expect(s.webhook()).toMatchObject({
       enabled: false,
       disabledReason: 'failing',
@@ -195,7 +197,7 @@ describe('DeliveryService', () => {
     const id = s.add();
     s.webhook().enabled = false;
     s.webhook().disabledReason = 'user';
-    expect(await s.service.deliver(id)).toBe('skipped');
+    expect(await s.deliver(id)).toBe('skipped');
     expect(s.row(id).status).toBe('skipped');
     expect(s.sender).not.toHaveBeenCalled();
   });
@@ -204,7 +206,7 @@ describe('DeliveryService', () => {
     const s = setup(200);
     const id = s.add();
     s.repo.inputs.delete(id);
-    expect(await s.service.deliver(id)).toBe('skipped');
+    expect(await s.deliver(id)).toBe('skipped');
     expect(s.row(id).status).toBe('skipped');
     expect(s.sender).not.toHaveBeenCalled();
     expect(warn).not.toHaveBeenCalled();
@@ -212,7 +214,7 @@ describe('DeliveryService', () => {
 
   it('a delivery that no longer exists is gone', async () => {
     const s = setup(200);
-    expect(await s.service.deliver('missing')).toBe('gone');
+    expect(await s.deliver('missing')).toBe('gone');
     expect(s.sender).not.toHaveBeenCalled();
   });
 
@@ -221,9 +223,8 @@ describe('DeliveryService', () => {
     const ids = Array.from({ length: 10 }, () => s.add());
 
     // The head fails once; every other row is held without a send.
-    expect(await s.service.deliver(ids[0])).toBe('retry');
-    for (const id of ids.slice(1))
-      expect(await s.service.deliver(id)).toBe('held');
+    expect(await s.deliver(ids[0])).toBe('retry');
+    for (const id of ids.slice(1)) expect(await s.deliver(id)).toBe('held');
     expect(s.sender).toHaveBeenCalledTimes(1);
     expect(s.row(ids[1]).attempts).toBe(0);
 
@@ -231,7 +232,7 @@ describe('DeliveryService', () => {
     for (let tick = 0; tick < 40; tick++) {
       s.advance(43_200_000);
       for (const id of await s.repo.listDue(s.clock.now, 200))
-        await s.service.deliver(id);
+        await s.deliver(id);
     }
     expect(s.sender).toHaveBeenCalledTimes(10);
     expect(s.webhook()).toMatchObject({
@@ -248,32 +249,36 @@ describe('DeliveryService', () => {
   it('a 2xx after failures releases the rest oldest first', async () => {
     const s = setup(503);
     const [a, b, c] = [s.add(), s.add(), s.add()];
-    await s.service.deliver(a);
+    await s.deliver(a);
     // A row scheduled later is pulled forward by the release.
     s.row(c).nextAttemptAt = new Date(t0.getTime() + 3_600_000);
     s.advance(60_000);
     expect(await s.repo.listDue(s.clock.now, 200)).toEqual([a]);
 
     s.reply.status = 204;
-    expect(await s.service.deliver(a)).toBe('delivered');
+    expect(await s.deliver(a)).toBe('delivered');
     expect(s.row(c).nextAttemptAt).toEqual(s.clock.now);
-    expect(await s.repo.listDue(s.clock.now, 200)).toEqual([b, c]);
-    expect(await s.service.deliver(b)).toBe('delivered');
-    expect(await s.service.deliver(c)).toBe('delivered');
+    // One head per webhook: b, then c once b is done.
+    expect(await s.repo.listDue(s.clock.now, 200)).toEqual([b]);
+    expect(await s.repo.nextDue(WEBHOOK, s.clock.now)).toBe(b);
+    expect(await s.deliver(b)).toBe('delivered');
+    expect(await s.repo.nextDue(WEBHOOK, s.clock.now)).toBe(c);
+    expect(await s.deliver(c)).toBe('delivered');
+    expect(await s.repo.nextDue(WEBHOOK, s.clock.now)).toBeNull();
   });
 
   it('a URL change releases hold-back', async () => {
     const s = setup(503);
     const [a, b] = [s.add(), s.add()];
-    await s.service.deliver(a);
-    expect(await s.service.deliver(b)).toBe('held');
+    await s.deliver(a);
+    expect(await s.deliver(b)).toBe('held');
 
     // What webhook_save does on a new URL.
     s.webhook().url = 'https://new.example.com/hook';
     s.webhook().consecutiveFailures = 0;
     s.reply.status = 200;
     expect(await s.repo.listDue(s.clock.now, 200)).toEqual([b]);
-    expect(await s.service.deliver(b)).toBe('delivered');
+    expect(await s.deliver(b)).toBe('delivered');
     expect(s.sent.at(-1)?.url).toBe('https://new.example.com/hook');
   });
 
@@ -281,10 +286,10 @@ describe('DeliveryService', () => {
     const s = setup(503);
     const id = s.add();
     const load = vi.spyOn(s.repo, 'loadPayloadInput');
-    await s.service.deliver(id);
+    await s.deliver(id);
     s.advance(60_000);
     s.reply.status = 200;
-    await s.service.deliver(id);
+    await s.deliver(id);
     expect(load).toHaveBeenCalledTimes(1);
     expect(s.sent).toHaveLength(2);
     expect(s.sent[1].body).toBe(s.sent[0].body);
@@ -301,7 +306,7 @@ describe('DeliveryService', () => {
     const s = setup(200);
     s.repo.samples.set(USER, input('sample-job'));
     const id = s.add({ kind: 'test' });
-    expect(await s.service.deliver(id)).toBe('delivered');
+    expect(await s.deliver(id)).toBe('delivered');
     expect(s.sent[0].event).toBe('test');
     expect(JSON.parse(s.sent[0].body)).toMatchObject({
       event: 'test',
@@ -313,10 +318,73 @@ describe('DeliveryService', () => {
   it('logs the host of a failed send, never the path, query or secret', async () => {
     const s = setup(503);
     const id = s.add();
-    await s.service.deliver(id);
+    await s.deliver(id);
     expect(warn).toHaveBeenCalledTimes(1);
     const message = String(warn.mock.calls[0][0]);
     expect(message).toContain('hooks.example.com');
     expect(message).not.toMatch(/secret-token|key=abc|s3cret|\/path/);
+  });
+  it('returns the webhook id after a send or a skip, so the next row can go', async () => {
+    const s = setup(200);
+    const [a, b] = [s.add(), s.add()];
+    expect(await s.service.deliver(a)).toEqual({
+      result: 'delivered',
+      webhookId: WEBHOOK,
+    });
+    s.webhook().enabled = false;
+    expect(await s.service.deliver(b)).toEqual({
+      result: 'skipped',
+      webhookId: WEBHOOK,
+    });
+    expect(await s.service.deliver('missing')).toEqual({
+      result: 'gone',
+      webhookId: null,
+    });
+  });
+
+  it('busy and held return no webhook id', async () => {
+    const s = setup(503);
+    const [a, b] = [s.add(), s.add()];
+    await s.deliver(a);
+    expect(await s.service.deliver(b)).toEqual({
+      result: 'held',
+      webhookId: null,
+    });
+  });
+
+  it('an engine error after the claim gives the attempt back and retries after 60 s', async () => {
+    const s = setup(200);
+    const id = s.add();
+    vi.spyOn(s.repo, 'loadLabels').mockRejectedValueOnce(new Error('db down'));
+    expect(await s.service.deliver(id)).toEqual({
+      result: 'retry',
+      webhookId: WEBHOOK,
+    });
+    expect(s.row(id)).toMatchObject({
+      status: 'pending',
+      attempts: 0,
+      payload: null,
+      nextAttemptAt: new Date(t0.getTime() + 60_000),
+    });
+    expect(s.webhook().consecutiveFailures).toBe(0);
+    expect(s.sender).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledTimes(1);
+    const message = String(warn.mock.calls[0][0]);
+    expect(message).toContain('hooks.example.com');
+    expect(message).not.toMatch(/secret-token|key=abc|s3cret/);
+
+    s.advance(60_000);
+    expect(await s.deliver(id)).toBe('delivered');
+    expect(s.row(id).attempts).toBe(1);
+  });
+
+  it('an error while giving the attempt back is swallowed too', async () => {
+    const s = setup(200);
+    const id = s.add();
+    vi.spyOn(s.repo, 'savePayload').mockRejectedValueOnce(new Error('db down'));
+    vi.spyOn(s.repo, 'release').mockRejectedValueOnce(new Error('db down'));
+    expect((await s.service.deliver(id)).result).toBe('retry');
+    // Left sending; recoverStuck returns it.
+    expect(s.row(id).status).toBe('sending');
   });
 });

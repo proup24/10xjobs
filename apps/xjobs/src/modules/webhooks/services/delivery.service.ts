@@ -6,6 +6,7 @@ import {
 } from '../payload/build';
 import {
   type ClaimedDelivery,
+  type DeliveryTarget,
   WebhooksRepository,
 } from '../repositories/webhooks.repository';
 import { send } from '../sender/send';
@@ -36,6 +37,12 @@ export type DeliveryResult =
   | 'held'
   | 'gone';
 
+export interface DeliveryOutcome {
+  result: DeliveryResult;
+  /** The webhook whose next due row may go now; null when nothing was sent or skipped. */
+  webhookId: string | null;
+}
+
 /** Only the host is logged: a webhook URL's path and query may carry tokens. */
 function hostOf(url: string): string {
   try {
@@ -59,13 +66,39 @@ export class DeliveryService {
     private readonly now: () => Date = () => new Date(),
   ) {}
 
-  async deliver(deliveryId: string): Promise<DeliveryResult> {
+  /**
+   * Claims, sends and records one delivery. `webhookId` is set when this call ended a send or
+   * skipped the row, so the caller can queue that webhook's next due row; null otherwise.
+   * It never throws after the claim: an engine error gives the attempt back (see `release`).
+   */
+  async deliver(deliveryId: string): Promise<DeliveryOutcome> {
     const claim = await this.repo.claim(deliveryId, this.now());
-    if (claim === null) return 'gone';
-    if (claim === 'skip') return 'skipped';
-    if (claim === 'busy' || claim === 'held') return claim;
+    if (claim === null) return { result: 'gone', webhookId: null };
+    if (claim === 'busy' || claim === 'held')
+      return { result: claim, webhookId: null };
+    if ('skipped' in claim)
+      return { result: 'skipped', webhookId: claim.webhookId };
     const { delivery, webhook } = claim;
+    try {
+      const result = await this.sendClaimed(delivery, webhook);
+      return { result, webhookId: result === 'gone' ? null : webhook.id };
+    } catch (error) {
+      this.logger.warn(
+        `Webhook delivery ${delivery.id} to ${hostOf(webhook.url)} broke in the engine, retrying later: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      try {
+        await this.repo.release(delivery.id, this.now());
+      } catch {
+        // The row stays `sending`; the sweep returns it after `stuckSendingMs`.
+      }
+      return { result: 'retry', webhookId: webhook.id };
+    }
+  }
 
+  private async sendClaimed(
+    delivery: ClaimedDelivery,
+    webhook: DeliveryTarget,
+  ): Promise<DeliveryResult> {
     let payload = delivery.payload;
     if (payload === null) {
       const built = await this.build(delivery);
@@ -75,7 +108,7 @@ export class DeliveryService {
         return 'skipped';
       }
       // Send what was stored, so every attempt sends the same bytes.
-      payload = await this.repo.savePayload(delivery.id, built);
+      payload = await this.repo.savePayload(delivery.id, built, this.now());
       if (payload === null) return 'gone';
     }
 
@@ -97,9 +130,8 @@ export class DeliveryService {
       this.now(),
     );
     if (record.outcome === 'gone') return 'gone';
-    const host = hostOf(webhook.url);
     this.logger.warn(
-      `Webhook delivery ${delivery.id} to ${host} failed on attempt ${delivery.attempts}: ${result.error}` +
+      `Webhook delivery ${delivery.id} to ${hostOf(webhook.url)} failed on attempt ${delivery.attempts}: ${result.error}` +
         (record.outcome === 'failed' ? '; giving up' : '') +
         (record.disabled ? `; webhook ${webhook.id} turned off` : ''),
     );

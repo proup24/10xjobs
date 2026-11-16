@@ -25,13 +25,13 @@ export interface DeliveryTarget {
 }
 
 /**
- * `skip`: the webhook is off or gone, and the row is now `skipped`. `busy`: another row of
+ * `skipped`: the webhook is off or gone, and the row is now `skipped`. `busy`: another row of
  * the webhook is sending. `held`: the webhook is failing and this row is not its oldest
  * pending one. null: the row is gone, not pending, or not due.
  */
 export type Claim =
   | { delivery: ClaimedDelivery; webhook: DeliveryTarget }
-  | 'skip'
+  | { skipped: true; webhookId: string }
   | 'busy'
   | 'held'
   | null;
@@ -57,9 +57,18 @@ export abstract class WebhooksRepository {
    */
   abstract claim(deliveryId: string, now: Date): Promise<Claim>;
   /** Stores a sending row's body; returns it as stored (what every attempt sends), or null when the row is gone. */
-  abstract savePayload(id: string, payload: unknown): Promise<unknown>;
+  abstract savePayload(
+    id: string,
+    payload: unknown,
+    now: Date,
+  ): Promise<unknown>;
   /** A sending row that can't be sent (its match was deleted) becomes `skipped`. */
   abstract skip(id: string, reason: string, now: Date): Promise<void>;
+  /**
+   * A sending row whose send broke inside the engine (not the receiver) goes back to
+   * `pending`: the attempt is given back, and it is due again after the first retry delay.
+   */
+  abstract release(id: string, now: Date): Promise<void>;
   /** `delivered`; resets the webhook's failures and makes its other pending rows due now. */
   abstract recordSuccess(
     id: string,
@@ -72,8 +81,14 @@ export abstract class WebhooksRepository {
     result: { status: number | null; error: string },
     now: Date,
   ): Promise<FailureRecord>;
-  /** Ids of due pending rows, oldest first; of a failing webhook only its oldest pending row. */
+  /**
+   * At most one row per webhook, its head, oldest first across webhooks. The head is the
+   * oldest due pending row; for a failing (and enabled) webhook it is its oldest pending row,
+   * listed only once due. The send chain (`nextDue`) drains the rest.
+   */
   abstract listDue(now: Date, limit: number): Promise<string[]>;
+  /** The webhook's head by the same rule as `listDue`, or null. */
+  abstract nextDue(webhookId: string, now: Date): Promise<string | null>;
   /** Rows `sending` for longer than `stuckSendingMs` go back to `pending`, due now; returns how many. */
   abstract recoverStuck(now: Date): Promise<number>;
   /** Clears old match rows' payload and error, and deletes old test rows. */
@@ -263,12 +278,13 @@ export class PrismaWebhooksRepository extends WebhooksRepository {
     const at = now.toISOString();
     return this.db.transaction(async (tx): Promise<Claim> => {
       const { raw } = tx;
-      // The webhook row first: it serialises every claim and outcome of this webhook.
+      // The webhook row first: it serialises every claim and outcome of this webhook. NO KEY
+      // UPDATE, so the deliveries' foreign key checks (KEY SHARE) on new rows don't wait.
       const [webhook] = await tx.query(
         raw.sql`SELECT w.id, w.url, w.secret, w.enabled, w."consecutiveFailures"
           FROM webhooks w
           WHERE w.id = (SELECT "webhookId" FROM webhook_deliveries WHERE id = ${deliveryId}::uuid)
-          FOR UPDATE`
+          FOR NO KEY UPDATE`
           .returnsRow({
             id: UUID,
             url: TEXT,
@@ -300,7 +316,7 @@ export class PrismaWebhooksRepository extends WebhooksRepository {
             .returnsRow({ id: UUID })
             .build(),
         );
-        return 'skip';
+        return { skipped: true, webhookId: row.webhookId as string };
       }
       const [sending] = await tx.query(
         raw.sql`SELECT id FROM webhook_deliveries
@@ -349,10 +365,11 @@ export class PrismaWebhooksRepository extends WebhooksRepository {
     });
   }
 
-  async savePayload(id: string, payload: unknown): Promise<unknown> {
+  async savePayload(id: string, payload: unknown, now: Date): Promise<unknown> {
     const { raw } = this.db;
     const [row] = await this.db.query(
-      raw.sql`UPDATE webhook_deliveries SET payload = ${JSON.stringify(payload)}::jsonb, "updatedAt" = now()
+      raw.sql`UPDATE webhook_deliveries SET payload = ${JSON.stringify(payload)}::jsonb,
+          "updatedAt" = ${now.toISOString()}::timestamptz
         WHERE id = ${id}::uuid AND status = 'sending'
         RETURNING payload`
         .returnsRow({ payload: JSONB })
@@ -374,13 +391,30 @@ export class PrismaWebhooksRepository extends WebhooksRepository {
     );
   }
 
+  async release(id: string, now: Date): Promise<void> {
+    const { raw } = this.db;
+    const at = now.toISOString();
+    const next = new Date(
+      now.getTime() + WEBHOOK_CONFIG.retryDelaysMs[0],
+    ).toISOString();
+    await this.db.query(
+      raw.sql`UPDATE webhook_deliveries
+        SET status = 'pending', attempts = GREATEST(attempts - 1, 0),
+          "nextAttemptAt" = ${next}::timestamptz, "updatedAt" = ${at}::timestamptz
+        WHERE id = ${id}::uuid AND status = 'sending'
+        RETURNING id`
+        .returnsRow({ id: UUID })
+        .build(),
+    );
+  }
+
   /** Locks the delivery's webhook row, the same order as `claim`; null when either is gone. */
   private async lockWebhookOf(tx: DatabaseTransaction, id: string) {
     const [webhook] = await tx.query(
       tx.raw.sql`SELECT w.id, w.enabled, w."consecutiveFailures"
         FROM webhooks w
         WHERE w.id = (SELECT "webhookId" FROM webhook_deliveries WHERE id = ${id}::uuid)
-        FOR UPDATE`
+        FOR NO KEY UPDATE`
         .returnsRow({ id: UUID, enabled: BOOL, consecutiveFailures: INT })
         .build(),
     );
@@ -485,22 +519,44 @@ export class PrismaWebhooksRepository extends WebhooksRepository {
     });
   }
 
+  /** Each webhook's head (see `listDue`), optionally of one webhook only. */
+  private heads(raw: Raw, now: Date, webhookId: string | null) {
+    const at = now.toISOString();
+    return raw.sql`SELECT h.id, h."createdAt" FROM (
+        SELECT DISTINCT ON (d."webhookId") d.id, d."createdAt", d."nextAttemptAt"
+        FROM webhook_deliveries d
+        JOIN webhooks w ON w.id = d."webhookId"
+        WHERE d.status = 'pending'
+          AND (NULLIF(${webhookId ?? ''}::text, '') IS NULL
+            OR d."webhookId" = NULLIF(${webhookId ?? ''}::text, '')::uuid)
+          -- A failing webhook's head is its oldest pending row, due or not.
+          AND (d."nextAttemptAt" <= ${at}::timestamptz
+            OR (w.enabled AND w."consecutiveFailures" > 0))
+        ORDER BY d."webhookId", d."createdAt", d.id
+      ) h
+      WHERE h."nextAttemptAt" <= ${at}::timestamptz`.returns(TEXT);
+  }
+
   async listDue(now: Date, limit: number): Promise<string[]> {
     const { raw } = this.db;
     const rows = await this.db.query(
-      raw.sql`SELECT d.id FROM webhook_deliveries d
-        JOIN webhooks w ON w.id = d."webhookId"
-        WHERE d.status = 'pending' AND d."nextAttemptAt" <= ${now.toISOString()}::timestamptz
-          AND (NOT w.enabled OR w."consecutiveFailures" = 0
-            OR d.id = (SELECT h.id FROM webhook_deliveries h
-              WHERE h."webhookId" = d."webhookId" AND h.status = 'pending'
-              ORDER BY h."createdAt", h.id LIMIT 1))
-        ORDER BY d."createdAt", d.id
+      raw.sql`SELECT id FROM (${this.heads(raw, now, null)}) due
+        ORDER BY "createdAt", id
         LIMIT ${limit}::int`
         .returnsRow({ id: UUID })
         .build(),
     );
     return rows.map((r) => r.id as string);
+  }
+
+  async nextDue(webhookId: string, now: Date): Promise<string | null> {
+    const { raw } = this.db;
+    const [row] = await this.db.query(
+      raw.sql`${this.heads(raw, now, webhookId)}`
+        .returnsRow({ id: UUID, createdAt: TIMESTAMPTZ })
+        .build(),
+    );
+    return row ? (row.id as string) : null;
   }
 
   async recoverStuck(now: Date): Promise<number> {
