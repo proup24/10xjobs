@@ -256,6 +256,42 @@ describe('mergeDuplicateRequirements', () => {
     expect(stackErrors(result.stack)).toHaveLength(1);
   });
 
+  it('merges a standalone copy with a group that collapses to it', () => {
+    const result = mergeDuplicateRequirements(
+      stack(
+        [req('aws'), req('aws', { group: 'g1' }), req('aws', { group: 'g1' })],
+        [{ id: 'g1', min: 1 }],
+      ),
+    );
+    expect(result.stack.requirements).toHaveLength(1);
+    expect(result.stack.requirements[0].group).toBeNull();
+    expect(result.stack.groups).toEqual([]);
+    expect(result.dropped).toHaveLength(2);
+    expect(stackErrors(result.stack)).toEqual([]);
+  });
+
+  it('merges two groups that each collapse to one technology', () => {
+    const result = mergeDuplicateRequirements(
+      stack(
+        [
+          req('aws', { group: 'g1' }),
+          req('aws', { group: 'g1' }),
+          req('aws', { group: 'g2' }),
+          req('aws', { group: 'g2' }),
+        ],
+        [
+          { id: 'g1', min: 1 },
+          { id: 'g2', min: 1 },
+        ],
+      ),
+    );
+    expect(result.stack.requirements).toHaveLength(1);
+    expect(result.stack.requirements[0].group).toBeNull();
+    expect(result.stack.groups).toEqual([]);
+    expect(result.dropped).toHaveLength(3);
+    expect(stackErrors(result.stack)).toEqual([]);
+  });
+
   it('keeps the same code in different domains', () => {
     const s = stack([
       req('aws', { domain: 'backend' }),
@@ -291,5 +327,21 @@ describe('mergeDuplicateRequirements', () => {
     const before = structuredClone(s);
     mergeDuplicateRequirements(s);
     expect(s).toEqual(before);
+  });
+});
+
+describe('duplicate message', () => {
+  it('trims both quoted texts and names a null code and domain', () => {
+    const s = stack(
+      [
+        req('x', { technology: { text: ' Foo ', code: null } }),
+        req('x', { technology: { text: 'foo', code: null }, group: 'g1' }),
+        req('bar', { group: 'g1' }),
+      ],
+      [{ id: 'g1', min: 1 }],
+    );
+    expect(stackErrors(s)).toEqual([
+      'techStack.value.requirements.1.technology: "Foo" (requirements.0, on its own) and "foo" (requirements.1, group g1) are the same technology (Foo) with no domain; list it once',
+    ]);
   });
 });

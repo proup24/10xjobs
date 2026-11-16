@@ -226,6 +226,32 @@ describe('ExtractionPipeline', () => {
     expect(requirements[0].technology.text).toBe('.NET Core');
   });
 
+  it('merges a standalone copy with a group that collapses to it', async () => {
+    extraction = new FakeExtractionModel(
+      () =>
+        generatorOutput({
+          techStack: mf({
+            requirements: [
+              req('AWS', null),
+              req('Amazon Web Services', 'g1'),
+              req('Fargate', 'g1'),
+            ],
+            groups: [{ id: 'g1', min: 1 }],
+          }),
+        }),
+      EXT,
+    );
+
+    const { doc } = await run();
+
+    expect(steps()).toEqual([['generation', 'ok']]);
+    const requirements = doc.techStack.value?.requirements ?? [];
+    expect(
+      requirements.filter((r) => r.technology.code === 'aws'),
+    ).toHaveLength(1);
+    expect(requirements).toHaveLength(1);
+  });
+
   it('retries a technology listed on its own and in a group, then fails', async () => {
     extraction = new FakeExtractionModel(
       () =>

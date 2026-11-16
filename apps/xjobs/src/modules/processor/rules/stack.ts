@@ -47,48 +47,25 @@ export interface MergedStack {
  * `min` is lowered to its member count. The input is not mutated.
  */
 export function mergeDuplicateRequirements(stack: TechStack): MergedStack {
-  const buckets = new Map<string, number[]>();
-  stack.requirements.forEach((r, i) => {
-    const key = requirementKey(r);
-    buckets.set(key, [...(buckets.get(key) ?? []), i]);
-  });
-
-  const dropIndices = new Set<number>();
-  const touchedGroups = new Set<string>();
   const dropped: string[] = [];
-  const drop = (i: number) => {
-    dropIndices.add(i);
-    dropped.push(technologyKey(stack.requirements[i]));
-  };
+  let requirements = structuredClone(stack.requirements);
+  let groups = structuredClone(stack.groups);
 
-  for (const indices of buckets.values()) {
-    if (indices.length < 2) continue;
-    const places = new Map<string | null, number[]>();
-    for (const i of indices) {
-      const place = stack.requirements[i].group;
-      places.set(place, [...(places.get(place) ?? []), i]);
+  // Step 1: inside each group keep the first copy; dissolve groups left with one member.
+  const touchedGroups = new Set<string>();
+  const seenInGroup = new Set<string>();
+  requirements = requirements.filter((r) => {
+    if (r.group === null) return true;
+    const key = `${r.group}\u0000${requirementKey(r)}`;
+    if (!seenInGroup.has(key)) {
+      seenInGroup.add(key);
+      return true;
     }
-    for (const [place, members] of places) {
-      if (members.length < 2) continue;
-      let keep = members[0];
-      if (place === null) {
-        for (const i of members.slice(1)) {
-          if (isStronger(stack.requirements[i], stack.requirements[keep]))
-            keep = i;
-        }
-      } else {
-        touchedGroups.add(place);
-      }
-      members.filter((i) => i !== keep).forEach(drop);
-    }
-  }
-
-  if (dropIndices.size === 0) return { stack: structuredClone(stack), dropped };
-
-  const requirements = structuredClone(
-    stack.requirements.filter((_, i) => !dropIndices.has(i)),
-  );
-  const groups = structuredClone(stack.groups).filter((g) => {
+    touchedGroups.add(r.group);
+    dropped.push(technologyKey(r));
+    return false;
+  });
+  groups = groups.filter((g) => {
     if (!touchedGroups.has(g.id)) return true;
     const members = requirements.filter((r) => r.group === g.id);
     if (members.length < 2) {
@@ -98,6 +75,21 @@ export function mergeDuplicateRequirements(stack: TechStack): MergedStack {
     g.min = Math.min(g.min, members.length);
     return true;
   });
+
+  // Step 2: among the standalone copies (including dissolved members) keep the strongest.
+  const keepers = new Map<string, Requirement>();
+  for (const r of requirements) {
+    if (r.group !== null) continue;
+    const key = requirementKey(r);
+    const kept = keepers.get(key);
+    if (kept === undefined || isStronger(r, kept)) keepers.set(key, r);
+  }
+  requirements = requirements.filter((r) => {
+    if (r.group !== null || keepers.get(requirementKey(r)) === r) return true;
+    dropped.push(technologyKey(r));
+    return false;
+  });
+
   return { stack: { requirements, groups }, dropped };
 }
 
@@ -113,10 +105,10 @@ function duplicateMessage(
   later: Requirement,
   i: number,
 ): string {
-  const tech = later.technology.code ?? later.technology.text.trim();
+  const tech = later.technology.code ?? first.technology.text.trim();
   const domain =
     later.domain === null ? 'with no domain' : `in domain ${later.domain}`;
-  return `"${first.technology.text}" (requirements.${j}, ${placeOf(first)}) and "${later.technology.text}" (requirements.${i}, ${placeOf(later)}) are the same technology (${tech}) ${domain}; list it once`;
+  return `"${first.technology.text.trim()}" (requirements.${j}, ${placeOf(first)}) and "${later.technology.text.trim()}" (requirements.${i}, ${placeOf(later)}) are the same technology (${tech}) ${domain}; list it once`;
 }
 
 /** The rules the stack's shape cannot express (spec §5a); empty means valid. */
