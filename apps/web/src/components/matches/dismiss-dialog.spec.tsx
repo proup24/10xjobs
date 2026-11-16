@@ -57,4 +57,53 @@ describe('DismissDialog', () => {
     expect(onOpenChange).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeTruthy();
   });
+
+  it('opens on the saved reason and note when editing, and saves', async () => {
+    const onConfirm = vi.fn().mockResolvedValue(true);
+    render(
+      <DismissDialog
+        open
+        onOpenChange={vi.fn()}
+        onConfirm={onConfirm}
+        initial={{ reason: 'stack', note: 'No Go' }}
+      />,
+    );
+    expect(screen.getByRole('combobox').textContent).toContain('Tech stack');
+    expect((screen.getByLabelText(/note/i) as HTMLTextAreaElement).value).toBe(
+      'No Go',
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() =>
+      expect(onConfirm).toHaveBeenCalledWith({
+        reason: 'stack',
+        note: 'No Go',
+      }),
+    );
+  });
+
+  it('starts again from the saved values each time it opens', () => {
+    const props = {
+      onOpenChange: vi.fn(),
+      onConfirm: vi.fn().mockResolvedValue(true),
+    };
+    const { rerender } = render(
+      <DismissDialog {...props} open initial={{ reason: null, note: 'a' }} />,
+    );
+    fireEvent.change(screen.getByLabelText(/note/i), {
+      target: { value: 'typed' },
+    });
+    rerender(
+      <DismissDialog
+        {...props}
+        open={false}
+        initial={{ reason: null, note: 'b' }}
+      />,
+    );
+    rerender(
+      <DismissDialog {...props} open initial={{ reason: null, note: 'b' }} />,
+    );
+    expect((screen.getByLabelText(/note/i) as HTMLTextAreaElement).value).toBe(
+      'b',
+    );
+  });
 });

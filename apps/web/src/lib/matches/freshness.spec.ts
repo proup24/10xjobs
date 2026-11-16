@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { effectivePostedAt, isNew, postedAge, postedPhrase } from './freshness';
+import {
+  effectivePostedAt,
+  isNew,
+  postedAge,
+  postedPhrase,
+  timeAgo,
+} from './freshness';
 import type { MatchedJob } from './group';
 
 const now = new Date('2026-11-10T21:00:00Z');
@@ -65,11 +71,25 @@ describe('postedPhrase', () => {
   it('words an exact time as an approximate age', () => {
     expect(postedPhrase(job('2026-11-10T18:00:00Z'), now)).toBe('~3 hours ago');
     expect(postedPhrase(job('2026-11-10T20:00:00Z'), now)).toBe('~1 hour ago');
-    expect(postedPhrase(job('2026-11-10T20:30:00Z'), now)).toBe('~30 minutes ago');
+    expect(postedPhrase(job('2026-11-10T20:30:00Z'), now)).toBe(
+      '~30 minutes ago',
+    );
     expect(postedPhrase(job('2026-11-08T21:00:00Z'), now)).toBe('~2 days ago');
   });
   it('words a date-only post by its date', () => {
     const j = job('2026-11-09T00:00:00Z', { postedExact: false });
     expect(postedPhrase(j, now)).toBe('Nov 9');
+  });
+});
+
+describe('timeAgo', () => {
+  it('reads minutes, hours, then days', () => {
+    const now = new Date('2026-11-10T21:00:00Z');
+    const ago = (ms: number) => timeAgo(new Date(now.getTime() - ms), now);
+    expect(ago(10_000)).toBe('1 min ago');
+    expect(ago(12 * 60_000)).toBe('12 min ago');
+    expect(ago(5 * 3600_000)).toBe('5 h ago');
+    expect(ago(24 * 3600_000)).toBe('1 day ago');
+    expect(ago(72 * 3600_000)).toBe('3 days ago');
   });
 });

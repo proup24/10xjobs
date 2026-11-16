@@ -203,7 +203,7 @@ function ReviewReason({
  * The links that leave for the job's own pages, in a new tab. Either one marks the job
  * viewed; the tab opens at once and the list refreshes once the write is done.
  */
-function PostLinks({
+export function PostLinks({
   postingUrl,
   applyUrl,
   userId,
@@ -319,14 +319,20 @@ function TechList({ title, items }: { title: string; items: string[] }) {
 }
 
 /** Below `md`, where the list is hidden while a job is open: the way back to it. */
-export function BackLink({ href }: { href: string }) {
+export function BackLink({
+  href,
+  label = 'Back to matches',
+}: {
+  href: string;
+  label?: string;
+}) {
   return (
     <Link
       href={href}
       className="inline-flex w-fit items-center gap-1 rounded-sm text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring md:hidden"
     >
       <ChevronLeft aria-hidden />
-      Back to matches
+      {label}
     </Link>
   );
 }
@@ -339,6 +345,7 @@ export function MatchDetail({
   now,
   userId,
   backHref,
+  backLabel,
   onDecide,
   onDecideJob,
   onReport,
@@ -350,6 +357,8 @@ export function MatchDetail({
   now: Date;
   userId: string;
   backHref: string;
+  /** The back link's text; "Back to matches" by default. */
+  backLabel?: string;
   /** Records a decision on a review row; the buttons show only with it. */
   onDecide?: Decide;
   /** Marks the job applied or not for me; the buttons show only with it, on matches. */
@@ -358,7 +367,8 @@ export function MatchDetail({
   onReport?: Report;
 }) {
   const [profileId, setProfileId] = useState(rows[0]?.profileId);
-  const [job] = groupByJob(rows);
+  // The caller chose which rows to show; a closed job it passes still shows.
+  const [job] = groupByJob(rows, { keepClosed: true });
   if (!job) return null;
   const first = job.rows[0];
   const shown = job.rows.find((r) => r.profileId === profileId) ?? first;
@@ -398,7 +408,7 @@ export function MatchDetail({
 
   return (
     <article className="flex min-w-0 flex-col gap-6">
-      <BackLink href={backHref} />
+      <BackLink href={backHref} label={backLabel} />
 
       <header className="flex flex-col gap-1">
         <h2 className="text-title-3">{first.title}</h2>

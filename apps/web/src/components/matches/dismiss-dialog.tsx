@@ -36,19 +36,35 @@ const ITEMS = [
   })),
 ];
 
-/** "Not for me": an optional reason and note. A `false` from `onConfirm` keeps it open. */
+/**
+ * "Not for me": an optional reason and note. A `false` from `onConfirm` keeps it open.
+ * With `initial`, it edits an earlier dismissal: it opens on those values and saves.
+ */
 export function DismissDialog({
   open,
   onOpenChange,
   onConfirm,
+  initial,
 }: {
   open: boolean;
   onOpenChange(open: boolean): void;
   onConfirm(v: { reason?: DismissReason; note?: string }): Promise<boolean>;
+  initial?: { reason: DismissReason | null; note: string | null };
 }) {
-  const [reason, setReason] = useState(NO_REASON);
-  const [note, setNote] = useState('');
+  const initialReason = initial?.reason ?? NO_REASON;
+  const initialNote = initial?.note ?? '';
+  const [reason, setReason] = useState(initialReason);
+  const [note, setNote] = useState(initialNote);
   const [pending, setPending] = useState(false);
+  // Each opening starts from the saved values, which may have changed since the last.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setReason(initialReason);
+      setNote(initialNote);
+    }
+  }
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,11 +81,7 @@ export function DismissDialog({
     } finally {
       setPending(false);
     }
-    if (saved) {
-      setReason(NO_REASON);
-      setNote('');
-      onOpenChange(false);
-    }
+    if (saved) onOpenChange(false);
   };
 
   return (
@@ -84,8 +96,9 @@ export function DismissDialog({
           <DialogHeader>
             <DialogTitle>Not for me</DialogTitle>
             <DialogDescription>
-              This job moves to Applications as dismissed. A reason helps tune
-              your matches.
+              {initial
+                ? 'Change why this job is not for you. A reason helps tune your matches.'
+                : 'This job moves to Applications as dismissed. A reason helps tune your matches.'}
             </DialogDescription>
           </DialogHeader>
           <FieldGroup>
@@ -132,7 +145,7 @@ export function DismissDialog({
               Cancel
             </Button>
             <Button type="submit" loading={pending}>
-              Not for me
+              {initial ? 'Save' : 'Not for me'}
             </Button>
           </DialogFooter>
         </form>

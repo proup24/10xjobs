@@ -61,7 +61,19 @@ describe('AppNav', () => {
   });
 
   it('lists only routes that exist', () => {
-    expect(NAV_ITEMS.map((i) => i.href)).toEqual(['/', '/preferences']);
+    expect(NAV_ITEMS.map((i) => i.href)).toEqual([
+      '/',
+      '/applications',
+      '/preferences',
+    ]);
+  });
+
+  it('lists Matches, Applications, Preferences in that order', () => {
+    expect(NAV_ITEMS.map((i) => i.label)).toEqual([
+      'Matches',
+      'Applications',
+      'Preferences',
+    ]);
   });
 
   it('marks Preferences current on any page under /preferences', () => {
@@ -71,7 +83,9 @@ describe('AppNav', () => {
     expect(prefs.getAttribute('aria-current')).toBe('page');
     expect(prefs.getAttribute('href')).toBe('/preferences');
     expect(
-      screen.getByRole('link', { name: 'Matches' }).getAttribute('aria-current'),
+      screen
+        .getByRole('link', { name: 'Matches' })
+        .getAttribute('aria-current'),
     ).toBeNull();
   });
 

@@ -49,17 +49,22 @@ export function isNew(job: MatchedJob, now: Date): boolean {
   );
 }
 
-/** "12 min ago", "3 h ago", "2 days ago"; a date-only post reads "Nov 9". */
-export function postedAge(job: MatchedJob, now: Date): string {
-  const at = job.postedAt;
-  if (!job.postedExact) {
-    return `${MONTHS[at.getUTCMonth()]} ${at.getUTCDate()}`;
-  }
+/** "12 min ago", "3 h ago", "2 days ago". */
+export function timeAgo(at: Date, now: Date): string {
   const ms = Math.max(0, now.getTime() - at.getTime());
   if (ms < HOUR) return `${Math.max(1, Math.floor(ms / MIN))} min ago`;
   if (ms < DAY) return `${Math.floor(ms / HOUR)} h ago`;
   const days = Math.floor(ms / DAY);
   return `${days} ${days === 1 ? 'day' : 'days'} ago`;
+}
+
+/** `timeAgo` of the posted time; a date-only post reads "Nov 9". */
+export function postedAge(job: MatchedJob, now: Date): string {
+  const at = job.postedAt;
+  if (!job.postedExact) {
+    return `${MONTHS[at.getUTCMonth()]} ${at.getUTCDate()}`;
+  }
+  return timeAgo(at, now);
 }
 
 /** The detail's wording: "~3 hours ago", "~12 minutes ago", "~2 days ago"; a date-only post reads "Nov 9". */

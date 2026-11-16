@@ -47,6 +47,10 @@ describe('groupByJob', () => {
   it('drops closed jobs', () => {
     expect(groupByJob([row({ closed: true })])).toEqual([]);
   });
+  it('keeps closed jobs when asked', () => {
+    const [job] = groupByJob([row({ closed: true })], { keepClosed: true });
+    expect(job.rows).toHaveLength(1);
+  });
   it('sorts by effective posted time, date-only at 00:00Z', () => {
     const jobs = groupByJob([
       row({ jobId: 'A', postedAt: null, publishedAt: '2026-11-10' }),
