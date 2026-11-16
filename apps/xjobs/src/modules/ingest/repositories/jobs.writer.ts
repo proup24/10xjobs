@@ -247,10 +247,14 @@ async function moveDecisions(
   toJobId: string,
 ): Promise<void> {
   await tx.execute(
-    tx.raw.sql`INSERT INTO job_decisions
+    tx.raw.sql`WITH moved AS (
+        DELETE FROM public.job_decisions WHERE "jobId" = ${fromJobId}::uuid
+        RETURNING "userId", status, reason, note, "decidedAt", "matchSnapshot"
+      )
+      INSERT INTO public.job_decisions
         ("userId", "jobId", status, reason, note, "decidedAt", "matchSnapshot")
       SELECT "userId", ${toJobId}::uuid, status, reason, note, "decidedAt", "matchSnapshot"
-      FROM job_decisions WHERE "jobId" = ${fromJobId}::uuid
+      FROM moved
       ON CONFLICT ("userId", "jobId") DO UPDATE SET
         status = EXCLUDED.status,
         reason = EXCLUDED.reason,
@@ -261,11 +265,6 @@ async function moveDecisions(
       WHERE (EXCLUDED.status = 'applied' AND job_decisions.status = 'dismissed')
         OR (EXCLUDED.status = job_decisions.status
           AND EXCLUDED."decidedAt" > job_decisions."decidedAt")`
-      .affectedCount()
-      .build(),
-  );
-  await tx.execute(
-    tx.raw.sql`DELETE FROM job_decisions WHERE "jobId" = ${fromJobId}::uuid`
       .affectedCount()
       .build(),
   );

@@ -610,6 +610,26 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
         ]);
       });
 
+      it('keeps applied when the target is applied and the source holds a newer dismissal', async () => {
+        const { old, moved } = await mergeSetup();
+        await decide(moved.id, 'applied', t1, null);
+        await decide(old.id, 'dismissed', t2, 'role');
+        await save(liJob('4483941772'), t3);
+        expect(await decisions()).toEqual([
+          { jobId: moved.id, status: 'applied', reason: null },
+        ]);
+      });
+
+      it("keeps the target's row on a tie", async () => {
+        const { old, moved } = await mergeSetup();
+        await decide(moved.id, 'dismissed', t1, 'role');
+        await decide(old.id, 'dismissed', t1, 'stack');
+        await save(liJob('4483941772'), t3);
+        expect(await decisions()).toEqual([
+          { jobId: moved.id, status: 'dismissed', reason: 'role' },
+        ]);
+      });
+
       it('copies the decision back to a merged job that revives', async () => {
         const { old, moved } = await mergeSetup();
         await decide(old.id, 'dismissed', t1, 'role');
