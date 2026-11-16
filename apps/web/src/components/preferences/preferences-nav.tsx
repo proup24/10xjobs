@@ -39,6 +39,7 @@ export function PreferencesNav({ items, labels, draftInProgress }: Props) {
 
   const you: VerticalNavItem[] = [
     { href: `${BASE}/contacts`, label: SECTION_TITLES.contacts },
+    { href: `${BASE}/webhook`, label: SECTION_TITLES.webhook },
     { href: `${BASE}/eligibility`, label: SECTION_TITLES.eligibility },
   ].map((i) => ({ ...i, current: pathname === i.href }));
 

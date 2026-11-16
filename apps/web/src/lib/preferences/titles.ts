@@ -1,6 +1,7 @@
 /** The Preferences sections' titles, shared by the nav, the pages and their document titles. */
 export const SECTION_TITLES = {
   contacts: 'Contacts',
+  webhook: 'Webhook',
   eligibility: 'Where you can work',
   job: 'The job you want',
   terms: 'Location and terms',

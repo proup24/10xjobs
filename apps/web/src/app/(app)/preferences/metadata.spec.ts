@@ -10,10 +10,14 @@ vi.mock('./new/actions', () => ({}));
 vi.mock('@/components/preferences/start-chooser', () => ({}));
 vi.mock('@/components/preferences/new-profile-action', () => ({}));
 vi.mock('@/components/preferences/new-profile-steps', () => ({}));
+vi.mock('@/components/preferences/webhook-form', () => ({}));
+vi.mock('@/components/preferences/webhook-deliveries', () => ({}));
+vi.mock('@/lib/webhook/load', () => ({}));
 
 describe('preferences page titles', () => {
   it.each([
     ['Contacts · Preferences · 10xjobs', () => import('./contacts/page')],
+    ['Webhook · Preferences · 10xjobs', () => import('./webhook/page')],
     [
       'Where you can work · Preferences · 10xjobs',
       () => import('./eligibility/page'),

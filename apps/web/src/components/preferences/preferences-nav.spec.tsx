@@ -80,6 +80,7 @@ describe('PreferencesNav', () => {
     expect(within(nav()).getByRole('group', { name: 'You' })).toBeTruthy();
     expect(within(nav()).getByRole('group', { name: 'Profiles' })).toBeTruthy();
     expect(link('Contacts').getAttribute('href')).toBe('/preferences/contacts');
+    expect(link('Webhook').getAttribute('href')).toBe('/preferences/webhook');
     expect(link('Where you can work').getAttribute('href')).toBe(
       '/preferences/eligibility',
     );
