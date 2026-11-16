@@ -332,19 +332,14 @@ export function MatchDetail({
   const sources = job.channels.map(channelLabel).join(' and ');
   const profileLabel = (id: string) => profileLabels[id] ?? 'Profile';
 
-  const factRows: [
-    string,
-    FactLine | null,
-    ConflictField | null,
-    ReportField,
-  ][] = [
-    ['Role', facts.role, null, 'role'],
-    ['Seniority', facts.seniority, 'seniority', 'seniority'],
-    ['Arrangement', facts.arrangement, 'arrangement', 'arrangement'],
-    ['Places', facts.places, 'places', 'places'],
-    ['Contract type', facts.contractType, 'contractType', 'contractType'],
-    ['Engagement', facts.engagement, null, 'engagement'],
-    ['Salary', facts.salary, 'salary', 'salary'],
+  const factRows: [string, FactLine | null, ConflictField | null][] = [
+    ['Role', facts.role, null],
+    ['Seniority', facts.seniority, 'seniority'],
+    ['Arrangement', facts.arrangement, 'arrangement'],
+    ['Places', facts.places, 'places'],
+    ['Contract type', facts.contractType, 'contractType'],
+    ['Engagement', facts.engagement, null],
+    ['Salary', facts.salary, 'salary'],
   ];
   const noStack =
     stack.covered.length + stack.uncovered.length + stack.notCompared.length ===
@@ -394,7 +389,7 @@ export function MatchDetail({
       )}
 
       <dl className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
-        {factRows.map(([term, value, field, reportField]) => (
+        {factRows.map(([term, value, field]) => (
           <div key={term} className="flex flex-col items-start">
             <dt className="text-muted-foreground">{term}</dt>
             <dd className={value ? undefined : 'text-muted-foreground'}>
@@ -406,17 +401,14 @@ export function MatchDetail({
             {field && conflicts[field] && (
               <p className="text-muted-foreground">{conflicts[field]}</p>
             )}
-            {onReport && (
-              <ReportDialog
-                jobId={first.jobId}
-                field={reportField}
-                label={term}
-                onReport={onReport}
-              />
-            )}
           </div>
         ))}
       </dl>
+      {onReport && (
+        <div className="-mt-4">
+          <ReportDialog jobId={first.jobId} onReport={onReport} />
+        </div>
+      )}
 
       <Separator />
 
