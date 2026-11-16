@@ -29,7 +29,7 @@ const LABELS_TTL_MS = 10 * 60_000;
 const inputColumns = (raw: Raw) =>
   raw.sql`m.id AS "matchId", m.checks, m.unverified, m."stackScore",
   p.id AS "profileId", p.position,
-  j.id AS "jobId", j.title, COALESCE(c.name, j."companyName") AS "companyName",
+  j.id AS "jobId", j.title, COALESCE(j."companyName", c.name) AS "companyName",
   COALESCE(j."companyUrl", c.website, c."linkedinUrl") AS "companyUrl",
   j."postingUrl", j."applyUrl", j."postedAt", j."firstSeenAt", j."descriptionText",
   f.facts`.returns(TEXT);

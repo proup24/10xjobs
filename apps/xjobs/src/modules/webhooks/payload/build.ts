@@ -59,7 +59,7 @@ export interface WebhookPayloadV1 {
     applyUrl: string | null;
     postedAt: string | null;
     firstSeenAt: string;
-    locations: { arrangement: string; places: string[] }[] | null;
+    locations: { arrangement: string | null; places: string[] }[] | null;
     seniority: string | null;
     contractType: string | null;
     salary: {
@@ -80,6 +80,11 @@ const isObject = (v: unknown): v is Json =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
 const str = (v: unknown): string | null =>
   typeof v === 'string' && v !== '' ? v : null;
+/** The facts' "not stated" sentinel is an unknown, so it is null in the payload. */
+const known = (v: unknown): string | null => {
+  const s = str(v);
+  return s === 'unstated' ? null : s;
+};
 const num = (v: unknown): number | null =>
   typeof v === 'number' && Number.isFinite(v) ? v : null;
 
@@ -127,7 +132,10 @@ function locations(facts: unknown, labels: Labels) {
       .filter((p): p is string => p !== null);
     return o.arrangements
       .filter((a): a is string => typeof a === 'string')
-      .map((arrangement) => ({ arrangement, places }));
+      .map((arrangement) => ({
+        arrangement: known(arrangement),
+        places,
+      }));
   });
 }
 
@@ -169,10 +177,13 @@ function build(
   ctx: PayloadContext,
 ): WebhookPayloadV1 {
   const { job, match, profile, facts } = input;
-  const description = job.descriptionText?.slice(
+  let description = job.descriptionText?.slice(
     0,
     WEBHOOK_CONFIG.maxDescriptionChars,
   );
+  // Do not end on half of a surrogate pair.
+  if (description && /[\uD800-\uDBFF]$/.test(description))
+    description = description.slice(0, -1);
   return {
     version: 1,
     event,
@@ -205,8 +216,8 @@ function build(
       postedAt: job.postedAt?.toISOString() ?? null,
       firstSeenAt: job.firstSeenAt.toISOString(),
       locations: locations(facts, labels),
-      seniority: str(factValue(facts, 'seniority')),
-      contractType: str(factValue(facts, 'contractType')),
+      seniority: known(factValue(facts, 'seniority')),
+      contractType: known(factValue(facts, 'contractType')),
       salary: salary(facts),
       techStack: techStack(facts),
       languages: languages(facts),

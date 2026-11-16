@@ -190,3 +190,58 @@ describe('buildTestPayload', () => {
     expect(p.job.id).toBe('j1');
   });
 });
+
+describe('buildMatchPayload edge cases', () => {
+  it('maps the unstated sentinel to null', () => {
+    const p = buildMatchPayload(
+      input({
+        facts: {
+          seniority: { value: 'unstated' },
+          contractType: { value: 'unstated' },
+          openings: [
+            {
+              arrangements: ['unstated'],
+              places: [{ kind: 'country', code: 'DE' }],
+            },
+          ],
+        },
+      }),
+      labels,
+      ctx,
+    );
+    expect(p.job.seniority).toBeNull();
+    expect(p.job.contractType).toBeNull();
+    expect(p.job.locations).toEqual([
+      { arrangement: null, places: ['Germany'] },
+    ]);
+  });
+
+  it('empty openings give an empty list, not null', () => {
+    const p = buildMatchPayload(
+      input({ facts: { openings: [] } }),
+      labels,
+      ctx,
+    );
+    expect(p.job.locations).toEqual([]);
+  });
+
+  it('a position without a label has a null label', () => {
+    const p = buildMatchPayload(
+      input({ profile: { id: 'p1', position: 'mystery' } }),
+      labels,
+      ctx,
+    );
+    expect(p.profile.label).toBeNull();
+  });
+
+  it('does not cut a surrogate pair at the description cap', () => {
+    const max = WEBHOOK_CONFIG.maxDescriptionChars;
+    const text = 'x'.repeat(max - 1) + '\u{1F600}';
+    const p = buildMatchPayload(
+      input({ job: { ...input().job, descriptionText: text } }),
+      labels,
+      ctx,
+    );
+    expect(p.job.description).toBe('x'.repeat(max - 1));
+  });
+});
