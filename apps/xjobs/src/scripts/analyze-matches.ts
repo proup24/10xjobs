@@ -206,7 +206,8 @@ const SECTIONS: { title: string; sql: (raw: Raw) => ReturnType<Raw['sql']> }[] =
           CROSS JOIN LATERAL jsonb_array_elements(
             CASE WHEN d.has_snapshot THEN j."matchSnapshot" ELSE '[]'::jsonb END) e
           CROSS JOIN LATERAL jsonb_array_elements(coalesce(e->'checks', '[]'::jsonb)) c
-          WHERE d.rules IS NOT NULL AND e->>'outcome' = 'qualified'
+          -- Entries that reached the user's Matches: qualified, or review moved there.
+          WHERE d.rules IS NOT NULL AND e->>'outcome' IN ('qualified', 'review')
             AND c->>'rule' = ANY (d.rules)
           GROUP BY d.id)
         SELECT d.reason, count(*) AS jobs,
