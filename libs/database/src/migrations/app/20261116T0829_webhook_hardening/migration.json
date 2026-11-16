@@ -1,0 +1,9 @@
+{
+  "from": "9a48a4e77a746f4139019f4d84e5ccddfee3174d4b606a6626b8181d84715a60",
+  "to": "9a48a4e77a746f4139019f4d84e5ccddfee3174d4b606a6626b8181d84715a60",
+  "providedInvariants": [
+    "webhook-hardening"
+  ],
+  "createdAt": "2026-11-16T08:29:19.030Z",
+  "migrationHash": "62a810614ff0012e3be6faa6d47ffee837af1292d239eaa6820b1ac253331fd6"
+}

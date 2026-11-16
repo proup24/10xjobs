@@ -1,11 +1,11 @@
 /**
  * Why a webhook URL can't be saved, or null when it can: the client-side mirror of
- * `webhook_url_ok` (migration 20261116T0654_webhook_rpcs), used only for the message. The
- * RPC enforces the rule, so keep the two in step: https only, at most 2048 characters, no
- * spaces, control characters or backslashes, no userinfo, and a host that is an ASCII DNS
- * name other than localhost, *.localhost, *.local and *.internal and is not an IP literal
- * (bracketed IPv6, or a last label that is a decimal or 0x-hex number, which URL parsers
- * read as IPv4).
+ * `webhook_url_ok` (latest in migration 20261116T0829_webhook_hardening), used only for the
+ * message. The RPC enforces the rule, so keep the two in step: https only, at most 2048
+ * characters, no spaces, control characters or backslashes, no userinfo, a port (if any) from
+ * 1 to 65535, and a host that is an ASCII DNS name other than localhost, *.localhost, *.local
+ * and *.internal and is not an IP literal (bracketed IPv6, or a last label that is a decimal
+ * or 0x-hex number, which URL parsers read as IPv4).
  */
 export function urlProblem(url: string): string | null {
   if (!/^https:\/\//i.test(url)) return 'Use an https:// URL.';
@@ -26,6 +26,10 @@ export function urlProblem(url: string): string | null {
   const host = m ? m[1].toLowerCase().replace(/\.+$/, '') : '';
   if (!/^[a-z0-9._-]+$/.test(host) || /(^\.|\.\.)/.test(host)) {
     return 'Enter a full URL such as https://hooks.example.com/path.';
+  }
+  const port = m?.[2] ? Number(m[2].slice(1)) : null;
+  if (port !== null && (port < 1 || port > 65535)) {
+    return 'Use a port from 1 to 65535.';
   }
   if (host === 'localhost' || /\.(localhost|local|internal)$/.test(host)) {
     return 'Use a public host, not localhost or a local network name.';

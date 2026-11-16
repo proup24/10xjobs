@@ -337,6 +337,48 @@ describe('webhooks, webhook_deliveries and webhook_enqueue_match', () => {
     });
   });
 
+  it('a failing enqueue never blocks the review: it is saved and a warning logged', async () => {
+    const m = await matchOn('1 hour', 'review');
+    // Inside one rolled-back transaction, make webhook_enqueue_match raise, then insert the
+    // approved review the way the trigger sees it.
+    const result = await withCatalog(async (c) => {
+      const warnings: string[] = [];
+      c.on('notice', (n) => warnings.push(String(n.message)));
+      await c.query('BEGIN');
+      try {
+        await c.query(`CREATE OR REPLACE FUNCTION public.webhook_enqueue_match(p_match_id uuid, p_trigger text)
+          RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+          BEGIN RAISE EXCEPTION 'enqueue broke'; END $$`);
+        await c.query(
+          `INSERT INTO public.match_reviews ("userId", "profileId", "matchId", "jobId", choice, rule, field, "createdAt", "updatedAt")
+           VALUES ($1, $2, $3, $4, 'qualified', 'seniority', 'seniority', now(), now())`,
+          [a.id, profileA, m.matchId, m.job.jobId],
+        );
+        const { rows } = await c.query<{ n: number }>(
+          `SELECT count(*)::int AS n FROM public.match_reviews WHERE "matchId" = $1`,
+          [m.matchId],
+        );
+        return { reviews: rows[0].n, warnings };
+      } finally {
+        await c.query('ROLLBACK');
+      }
+    });
+    expect(result.reviews).toBe(1);
+    expect(result.warnings).toEqual([
+      expect.stringMatching(
+        /^match_reviews_webhook: no webhook delivery for match .*enqueue broke/,
+      ),
+    ]);
+    expect(await deliveriesOf(m.job.jobId)).toEqual([]);
+    // The rollback restored the real function.
+    const { rows } = await withCatalog((c) =>
+      c.query<{ src: string }>(
+        `SELECT prosrc AS src FROM pg_proc WHERE oid = 'public.webhook_enqueue_match(uuid, text)'::regprocedure`,
+      ),
+    );
+    expect(rows[0].src).not.toContain('enqueue broke');
+  });
+
   it('a rejected review creates nothing', async () => {
     const m = await matchOn('1 hour', 'review');
     expect((await review(m, 'rejected')).error).toBeNull();

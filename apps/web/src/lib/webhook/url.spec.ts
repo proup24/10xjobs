@@ -23,6 +23,10 @@ describe('urlProblem', () => {
     'https://0x7f.0.0.1/a',
     'https://[::1]/a',
     'https://[fd00::1]:8443/a',
+    'https://hook.example.com:0/a',
+    'https://hook.example.com:65536/a',
+    'https://hook.example.com:99999/a',
+    'https://hook.example.com:/a',
     'https:///a',
     'https://hook.example.com/a b',
     'https://hook.example.com/' + 'x'.repeat(2048),
@@ -34,7 +38,6 @@ describe('urlProblem', () => {
     'https://hook..example.com/a',
     'https://.hook.example.com/a',
     'https://hook.example.com:123456/a',
-    'https://hook.example.com:/a',
     'https://hook.example.com.0x/a',
     'https://hôok.example.com/a',
   ])('rejects %s', (url) => {
@@ -43,6 +46,8 @@ describe('urlProblem', () => {
 
   it.each([
     'https://hook.example.com:8443/a?x=1#y',
+    'https://hook.example.com:1/a',
+    'https://hook.example.com:65535/a',
     'https://hooks.example.com/10.0.0.1',
     'HTTPS://Hook.Example.com/a',
     'https://hooks.zapier.com/hooks/catch/1/abc/',
@@ -55,6 +60,9 @@ describe('urlProblem', () => {
   });
 
   it('names the reason', () => {
+    expect(urlProblem('https://hook.example.com:65536/a')).toBe(
+      'Use a port from 1 to 65535.',
+    );
     expect(urlProblem('http://hook.example.com/')).toBe('Use an https:// URL.');
     expect(urlProblem('https://10.0.0.1/')).toBe(
       'Use a host name, not an IP address.',
