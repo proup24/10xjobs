@@ -115,6 +115,17 @@ describe('ReportDialog', () => {
     ).toBe('true');
   });
 
+  it('clears the field error once a field is chosen', async () => {
+    open();
+    fillValue('Mid-level');
+    send();
+    expect(await screen.findByText('Choose a field.')).toBeTruthy();
+    await choose('Salary');
+    await waitFor(() =>
+      expect(screen.queryByText('Choose a field.')).toBeNull(),
+    );
+  });
+
   it('shows both errors when field and value are missing', async () => {
     const onReport = open();
     send();

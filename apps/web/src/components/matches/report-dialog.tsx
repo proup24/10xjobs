@@ -149,7 +149,10 @@ export function ReportDialog({
               <Select
                 items={REPORT_FIELD_OPTIONS}
                 value={chosen}
-                onValueChange={setChosen}
+                onValueChange={(next) => {
+                  setChosen(next);
+                  setFieldError(null);
+                }}
               >
                 <SelectTrigger
                   id={`${id}-field`}

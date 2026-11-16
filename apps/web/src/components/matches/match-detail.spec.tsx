@@ -118,8 +118,8 @@ describe('MatchDetail', () => {
       name: /report a mismatch/i,
     });
     expect(links).toHaveLength(1);
-    expect(links[0].getAttribute('aria-label') ?? links[0].textContent).toBe(
-      'Report a mismatch',
+    expect(screen.getByRole('button', { name: 'Report a mismatch' })).toBe(
+      links[0],
     );
   });
 

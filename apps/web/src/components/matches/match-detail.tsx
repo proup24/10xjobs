@@ -404,7 +404,11 @@ export function MatchDetail({
           </div>
         ))}
       </dl>
-      {onReport && <ReportDialog jobId={first.jobId} onReport={onReport} />}
+      {onReport && (
+        <div className="-mt-4">
+          <ReportDialog jobId={first.jobId} onReport={onReport} />
+        </div>
+      )}
 
       <Separator />
 
