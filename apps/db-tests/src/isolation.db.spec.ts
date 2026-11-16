@@ -2,7 +2,11 @@ import { randomUUID } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { admin, stack } from './support/admin.js';
-import { profileFields, seedProfile } from './support/fixtures.js';
+import {
+  cleanupDetailedJobs,
+  profileFields,
+  seedProfile,
+} from './support/fixtures.js';
 import { ownedTables } from './support/registry.js';
 import {
   cleanupTestUsers,
@@ -10,7 +14,11 @@ import {
   type TestUser,
 } from './support/test-users.js';
 
-afterAll(cleanupTestUsers);
+// Detailed jobs reference the users' profiles, so they go before the users.
+afterAll(async () => {
+  await cleanupDetailedJobs();
+  await cleanupTestUsers();
+});
 
 describe.each(ownedTables)('isolation: $table', (t) => {
   let a: TestUser;

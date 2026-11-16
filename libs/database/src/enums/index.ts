@@ -1,6 +1,11 @@
 export { Arrangement } from './arrangement.enum';
 export { ACTIVE_CHANNELS, Channel } from './channel.enum';
 export { ContactKind } from './contact-kind.enum';
+export {
+  DISMISS_REASON_LABELS,
+  DISMISS_REASONS,
+  type DismissReason,
+} from './dismiss-reason.enum';
 export { Engagement } from './engagement.enum';
 export { ProfileState } from './profile-state.enum';
 export { Seniority } from './seniority.enum';

@@ -1,0 +1,9 @@
+{
+  "from": "9a48a4e77a746f4139019f4d84e5ccddfee3174d4b606a6626b8181d84715a60",
+  "to": "23a126fe874387bd7fdd1898a4c88df9bf5fde05c8ca860d262c15d8865dfdda",
+  "providedInvariants": [
+    "job-decisions-update-columns"
+  ],
+  "createdAt": "2026-11-16T22:24:14.926Z",
+  "migrationHash": "7abb2ac4e39d6d501b2936fab55fbb01f4c93a0339efba48238c525cc58923df"
+}

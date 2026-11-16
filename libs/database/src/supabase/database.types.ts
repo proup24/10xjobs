@@ -463,6 +463,61 @@ export type Database = {
         };
         Relationships: [];
       };
+      job_decisions: {
+        Row: {
+          createdAt: string;
+          decidedAt: string;
+          id: string;
+          jobId: string;
+          matchSnapshot: Json | null;
+          note: string | null;
+          reason: string | null;
+          status: string;
+          updatedAt: string;
+          userId: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          createdAt?: string;
+          decidedAt?: string;
+          id?: string;
+          jobId: string;
+          matchSnapshot?: Json | null;
+          note?: string | null;
+          reason?: string | null;
+          status: string;
+          updatedAt?: string;
+          userId: string;
+        };
+        Update: {
+          createdAt?: string;
+          decidedAt?: string;
+          id?: string;
+          jobId?: string;
+          matchSnapshot?: Json | null;
+          note?: string | null;
+          reason?: string | null;
+          status?: string;
+          updatedAt?: string;
+          userId?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'job_decisions_jobId_fkey';
+            columns: ['jobId'];
+            isOneToOne: false;
+            referencedRelation: 'normalized_jobs';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'job_decisions_userId_fkey';
+            columns: ['userId'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       job_extractions: {
         Row: {
           arrangement: string | null;

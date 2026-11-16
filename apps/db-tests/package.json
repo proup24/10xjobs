@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",
+    "@xjobs/database": "workspace:*",
     "pg": "^8.23.1"
   },
   "nx": {
