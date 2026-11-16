@@ -9,6 +9,7 @@ import {
   type PaginatedList,
 } from 'apify-client';
 import { getApifyToken, type EnvironmentVariables } from 'src/config';
+import { SearchNotStartedError } from '../../utils/search-not-started';
 
 export type ApifyRunStatus = ActorRun['status'];
 
@@ -59,6 +60,20 @@ function isNotFound(error: unknown): boolean {
 }
 
 /**
+ * Apify refused the start request itself (a 4xx, such as actor permissions not
+ * approved or no credit), so no run exists. The start is the only POST `call`
+ * makes; a 5xx may still have created the run, so it does not count.
+ */
+function isRefusedStart(error: unknown): boolean {
+  return (
+    error instanceof ApifyApiError &&
+    error.httpMethod?.toLowerCase() === 'post' &&
+    error.statusCode >= 400 &&
+    error.statusCode < 500
+  );
+}
+
+/**
  * Thin wrapper over the official Apify client. The token comes from the config
  * service and the client is built on first use, so the API boots without one.
  * Transient: every Apify trigger that injects it gets its own client.
@@ -80,17 +95,27 @@ export class ApifyActorProvider {
   /**
    * Runs an actor to completion and returns every item of its default dataset
    * with the run's cost. A run still going after `waitSecs` is aborted so it
-   * stops spending.
+   * stops spending. A start Apify refused throws a {@link SearchNotStartedError}.
    */
   async run(
     actor: string,
     input: Record<string, unknown>,
     options: ApifyRunOptions,
   ): Promise<ApifyRunResult> {
-    const run = await this.client.actor(actor).call(input, {
-      ...this.startOptions(options),
-      waitSecs: options.waitSecs ?? DEFAULT_WAIT_SECS,
-    });
+    let run: ActorRun;
+    try {
+      run = await this.client.actor(actor).call(input, {
+        ...this.startOptions(options),
+        waitSecs: options.waitSecs ?? DEFAULT_WAIT_SECS,
+      });
+    } catch (error) {
+      if (isRefusedStart(error))
+        throw new SearchNotStartedError(
+          `Apify refused to start ${actor}: ${error instanceof Error ? error.message : String(error)}`,
+          { cause: error },
+        );
+      throw error;
+    }
     if (UNFINISHED.includes(run.status)) {
       await this.abortRun(run.id);
       throw new Error(

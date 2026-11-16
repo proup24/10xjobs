@@ -22,7 +22,10 @@ const sdk = vi.hoisted(() => {
     });
   });
   class ApifyApiError extends Error {
-    constructor(readonly statusCode: number) {
+    constructor(
+      readonly statusCode: number,
+      readonly httpMethod = 'get',
+    ) {
       super(`HTTP ${statusCode}`);
     }
   }
@@ -43,6 +46,7 @@ vi.mock('apify-client', () => ({
   ApifyApiError: sdk.ApifyApiError,
 }));
 
+import { SearchNotStartedError } from '../../utils/search-not-started';
 import { ApifyActorProvider } from './apify.provider';
 
 const configWith = (token?: string) =>
@@ -135,6 +139,27 @@ describe('ApifyActorProvider', () => {
     await expect(provider.run('a/b', {}, { maxChargeUsd: 1 })).rejects.toThrow(
       'run run-1 ended FAILED: Out of memory',
     );
+  });
+
+  it('reports a start Apify refused as a search that never started', async () => {
+    // Apify answers a 4xx to the start POST (here: actor permissions not approved).
+    sdk.actor.call.mockRejectedValue(new sdk.ApifyApiError(403, 'post'));
+    await expect(
+      provider.run('a/b', {}, { maxChargeUsd: 1 }),
+    ).rejects.toBeInstanceOf(SearchNotStartedError);
+  });
+
+  it('keeps failures that may follow a started run as ordinary errors', async () => {
+    // A server error on the start may still have created the run.
+    sdk.actor.call.mockRejectedValueOnce(new sdk.ApifyApiError(500, 'post'));
+    await expect(
+      provider.run('a/b', {}, { maxChargeUsd: 1 }),
+    ).rejects.not.toBeInstanceOf(SearchNotStartedError);
+    // Any failure while waiting comes after the run was created.
+    sdk.actor.call.mockRejectedValueOnce(new sdk.ApifyApiError(404, 'get'));
+    await expect(
+      provider.run('a/b', {}, { maxChargeUsd: 1 }),
+    ).rejects.not.toBeInstanceOf(SearchNotStartedError);
   });
 
   it('starts, finds, waits for and lists runs', async () => {
