@@ -21,11 +21,15 @@ for (const [net, prefix] of [
   ['198.18.0.0', 15],
   ['224.0.0.0', 4],
   ['240.0.0.0', 4],
+  ['192.0.2.0', 24],
+  ['198.51.100.0', 24],
+  ['203.0.113.0', 24],
 ] as const) {
   blocked.addSubnet(net, prefix, 'ipv4');
 }
-blocked.addAddress('::', 'ipv6');
-blocked.addAddress('::1', 'ipv6');
+blocked.addSubnet('::', 96, 'ipv6');
+blocked.addSubnet('64:ff9b::', 96, 'ipv6');
+blocked.addSubnet('2002::', 16, 'ipv6');
 blocked.addSubnet('fc00::', 7, 'ipv6');
 blocked.addSubnet('fe80::', 10, 'ipv6');
 blocked.addSubnet('ff00::', 8, 'ipv6');

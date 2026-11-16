@@ -12,7 +12,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 // refuses. The real resolvePublic still runs (so deps.lookup and the block
 // check are exercised); only a sentinel public address is rewritten to
 // loopback so the pinned connect lands on the test server.
-const SENTINEL = '203.0.113.7';
+const SENTINEL = '93.184.216.34';
 vi.mock('./address', async (orig) => {
   const actual = await orig<typeof import('./address')>();
   return {
@@ -159,6 +159,28 @@ describe('send', () => {
     expect(Date.now() - started).toBeLessThan(2000);
   });
 
+  it('a server trickling bytes cannot outlive the wall-clock timeout', async () => {
+    handler = (_q, res) => {
+      res.writeHead(200);
+      const t = setInterval(() => res.write('x'), 50);
+      res.on('close', () => clearInterval(t));
+    };
+    const started = Date.now();
+    const r = await send(input(), {
+      lookup: lookupTo(SENTINEL),
+      ca: cert,
+      timeoutMs: 200,
+    });
+    expect(r).toEqual({ ok: false, status: null, error: 'timeout' });
+    expect(Date.now() - started).toBeLessThan(1000);
+  });
+
+  it('a lookup that never resolves times out', async () => {
+    const hang = (() => undefined) as unknown as typeof dns.lookup;
+    const r = await send(input(), { lookup: hang, ca: cert, timeoutMs: 200 });
+    expect(r).toEqual({ ok: false, status: null, error: 'timeout' });
+  });
+
   it('a huge response body does not break a 200', async () => {
     handler = (_q, res) => res.writeHead(200).end('x'.repeat(100_000));
     expect(
@@ -197,5 +219,6 @@ describe('send', () => {
     const r = await send(input(), { lookup: lookupTo(SENTINEL) });
     expect(r.ok).toBe(false);
     expect((r as { status: unknown }).status).toBeNull();
+    expect((r as { error: string }).error).toMatch(/CERT|SELF_SIGNED/);
   });
 });

@@ -41,6 +41,12 @@ describe('isBlockedAddress', () => {
     'ff02::1',
     '::ffff:127.0.0.1',
     '::ffff:10.0.0.1',
+    '::127.0.0.1',
+    '64:ff9b::a9fe:a9fe',
+    '2002:7f00:1::1',
+    '192.0.2.1',
+    '198.51.100.1',
+    '203.0.113.7',
   ])('blocks %s', (ip) => expect(isBlockedAddress(ip)).toBe(true));
 
   it.each([

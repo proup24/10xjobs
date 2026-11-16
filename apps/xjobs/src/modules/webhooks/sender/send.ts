@@ -1,5 +1,6 @@
 import type dns from 'node:dns';
 import https from 'node:https';
+import { isIP } from 'node:net';
 import { BlockedAddressError, resolvePublic } from './address';
 import { signature } from './sign';
 import { WEBHOOK_CONFIG } from '../config/webhooks.config';
@@ -29,34 +30,48 @@ const fail = (status: number | null, error: string): SendResult => ({
   error: error.slice(0, WEBHOOK_CONFIG.maxErrorChars),
 });
 
-export async function send(
+const errorCode = (err: unknown): string => {
+  if (err instanceof BlockedAddressError) return 'blocked address';
+  const e = err as NodeJS.ErrnoException;
+  return e?.code ?? e?.name ?? 'error';
+};
+
+export function send(
   input: SendInput,
   deps: SendDeps = {},
 ): Promise<SendResult> {
-  try {
-    const url = new URL(input.url);
-    if (url.protocol !== 'https:') return fail(null, 'invalid url');
-    const hostname = url.hostname.replace(/^\[|\]$/g, '');
-    const pinned = await resolvePublic(hostname, deps.lookup);
-    const body = Buffer.from(input.body, 'utf8');
-    const timestamp = Math.floor(input.now.getTime() / 1000);
-    const timeoutMs = deps.timeoutMs ?? WEBHOOK_CONFIG.timeoutMs;
+  const timeoutMs = deps.timeoutMs ?? WEBHOOK_CONFIG.timeoutMs;
+  return new Promise<SendResult>((resolve) => {
+    let settled = false;
+    let req: ReturnType<typeof https.request> | undefined;
+    // One wall-clock budget for the whole send: DNS, connect, TLS, response.
+    const timer = setTimeout(() => {
+      done(fail(null, 'timeout'));
+      req?.destroy();
+    }, timeoutMs);
+    const done = (r: SendResult) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(r);
+    };
 
-    return await new Promise<SendResult>((resolve) => {
-      let settled = false;
-      const done = (r: SendResult) => {
-        if (settled) return;
-        settled = true;
-        resolve(r);
-      };
-      const req = https.request(
+    const run = async () => {
+      const url = new URL(input.url);
+      if (url.protocol !== 'https:') return done(fail(null, 'invalid url'));
+      const hostname = url.hostname.replace(/^\[|\]$/g, '');
+      const pinned = await resolvePublic(hostname, deps.lookup);
+      if (settled) return;
+      const body = Buffer.from(input.body, 'utf8');
+      const timestamp = Math.floor(input.now.getTime() / 1000);
+      req = https.request(
         {
           protocol: 'https:',
           hostname,
           port: url.port || 443,
           path: `${url.pathname}${url.search}`,
           method: 'POST',
-          servername: hostname,
+          ...(isIP(hostname) === 0 ? { servername: hostname } : {}),
           ca: deps.ca,
           agent: false,
           // Pinned: connect to the address already checked, never resolve again.
@@ -100,19 +115,9 @@ export async function send(
           res.on('error', finish);
         },
       );
-      req.setTimeout(timeoutMs, () => {
-        done(fail(null, 'timeout'));
-        req.destroy();
-      });
-      req.on('error', (err: NodeJS.ErrnoException) =>
-        done(fail(null, err.code ?? err.name ?? 'error')),
-      );
+      req.on('error', (err) => done(fail(null, errorCode(err))));
       req.end(body);
-    });
-  } catch (err) {
-    if (err instanceof BlockedAddressError)
-      return fail(null, 'blocked address');
-    const e = err as NodeJS.ErrnoException;
-    return fail(null, e?.code ?? e?.name ?? 'error');
-  }
+    };
+    run().catch((err) => done(fail(null, errorCode(err))));
+  });
 }
