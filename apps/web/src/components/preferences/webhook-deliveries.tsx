@@ -1,11 +1,12 @@
 'use client';
 
 import { Check, Clock, Minus, RotateCw, X } from 'lucide-react';
+import { useSyncExternalStore } from 'react';
 import type { DeliveryRow } from '@/lib/webhook/load';
 import { cn } from '@/lib/utils';
 
-/** Retries after the first try; a pending row with attempts shows "retry n of 7". */
-const MAX_RETRIES = 7;
+/** Attempts before a row fails; a pending row with attempts shows "attempt n of 7". */
+const MAX_ATTEMPTS = 7;
 
 type Tone = 'success' | 'destructive' | 'muted';
 
@@ -25,7 +26,7 @@ export function deliveryStatus(r: DeliveryRow): {
     case 'pending':
       return r.attempts > 0
         ? {
-            text: withDetail(`retry ${r.attempts} of ${MAX_RETRIES}`),
+            text: withDetail(`attempt ${r.attempts} of ${MAX_ATTEMPTS}`),
             tone: 'muted',
             icon: RotateCw,
           }
@@ -43,12 +44,40 @@ const TONES: Record<Tone, string> = {
   muted: 'text-muted-foreground',
 };
 
-const TIME = new Intl.DateTimeFormat(undefined, {
-  month: 'short',
-  day: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
-});
+/**
+ * "16 Nov, 10:02": a fixed locale, so the server and every browser spell it the same; in
+ * `timeZone`, or the runtime's own zone when unset.
+ */
+export function formatDeliveryTime(iso: string, timeZone?: string): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+    timeZone,
+  }).format(new Date(iso));
+}
+
+const noSubscribe = () => () => undefined;
+/**
+ * The server (and the hydration pass) render UTC, labelled; the browser then renders the
+ * viewer's zone. useSyncExternalStore switches after hydration, so the two never mismatch.
+ */
+function DeliveryTime({ iso }: { iso: string }) {
+  const local = useSyncExternalStore(
+    noSubscribe,
+    () => true,
+    () => false,
+  );
+  return (
+    <time dateTime={iso} className="shrink-0 font-mono text-muted-foreground">
+      {local
+        ? formatDeliveryTime(iso)
+        : `${formatDeliveryTime(iso, 'UTC')} UTC`}
+    </time>
+  );
+}
 
 function what(r: DeliveryRow): string {
   if (r.kind === 'test') return 'Test';
@@ -75,14 +104,7 @@ export function WebhookDeliveries({
             key={r.id}
             className="flex flex-wrap items-baseline gap-x-4 gap-y-1 py-2"
           >
-            {/* Local time: the server and the browser may format it differently. */}
-            <time
-              dateTime={r.createdAt}
-              suppressHydrationWarning
-              className="shrink-0 font-mono text-muted-foreground"
-            >
-              {TIME.format(new Date(r.createdAt))}
-            </time>
+            <DeliveryTime iso={r.createdAt} />
             <span className="min-w-0 flex-1 break-words">{what(r)}</span>
             {r.profileLabel && (
               <span className="text-muted-foreground">{r.profileLabel}</span>

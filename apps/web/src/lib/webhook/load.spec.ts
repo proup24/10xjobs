@@ -54,10 +54,17 @@ function client(opts: {
   webhook: Result;
   deliveries?: Result;
   matches?: Result;
+  reviews?: Result;
 }) {
   const webhooks = query(opts.webhook);
   const deliveries = query(opts.deliveries ?? { data: [], error: null });
-  const rpc = vi.fn(async () => opts.matches ?? { data: [], error: null });
+  const rpc = vi.fn(
+    async (_name: string, args: { p_outcome: string }) =>
+      (args.p_outcome === 'review' ? opts.reviews : opts.matches) ?? {
+        data: [],
+        error: null,
+      },
+  );
   const tables: string[] = [];
   const supabase = {
     from: (table: string) => {
@@ -151,12 +158,13 @@ describe('loadWebhook', () => {
       },
     });
     const r = await loadWebhook(c.supabase, { [P1]: 'Backend engineer' });
-    expect(c.rpc).toHaveBeenCalledWith('match_details', {
-      p_details: false,
-      p_outcome: 'qualified',
-      // A matched job was last seen within 30 days before its delivery was created.
-      p_since: '2026-10-10T09:00:00.000Z',
-    });
+    // A matched job was last seen within 30 days before its delivery was created.
+    for (const outcome of ['qualified', 'review'])
+      expect(c.rpc).toHaveBeenCalledWith('match_details', {
+        p_details: false,
+        p_outcome: outcome,
+        p_since: '2026-10-10T09:00:00.000Z',
+      });
     expect(
       r.deliveries.map((d) => [d.id, d.title, d.companyName, d.profileLabel]),
     ).toEqual([
@@ -165,6 +173,32 @@ describe('loadWebhook', () => {
       ['c', null, null, 'Backend engineer'],
       ['t', null, null, null],
     ]);
+  });
+
+  it('titles a review delivery whose match is back in review', async () => {
+    // An approval no longer applies (the match was re-decided onto another rule): the
+    // match reads as 'review', not 'qualified', and still names the sent job.
+    const c = client({
+      webhook: { data: WEBHOOK, error: null },
+      deliveries: { data: [delivery({ id: 'r' })], error: null },
+      reviews: {
+        data: [
+          {
+            matchId: M1,
+            profileId: P1,
+            jobId: J1,
+            title: 'Staff Engineer',
+            companyName: 'Initech',
+          },
+        ],
+        error: null,
+      },
+    });
+    const r = await loadWebhook(c.supabase);
+    expect(r.deliveries[0]).toMatchObject({
+      title: 'Staff Engineer',
+      companyName: 'Initech',
+    });
   });
 
   it('throws on a read error', async () => {

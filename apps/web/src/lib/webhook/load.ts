@@ -18,7 +18,7 @@ export type WebhookView = {
 export type DeliveryRow = {
   id: string;
   kind: string;
-  /** The job's title and company for a match row while it is still a match; else null. */
+  /** The job's title and company for a match row while it is a qualified or in-review match; else null. */
   title: string | null;
   companyName: string | null;
   /** The profile's nav label for a match row; null for a test. */
@@ -40,10 +40,12 @@ const MATCHABLE_DAYS = 30;
  * The user's webhook and its last 50 deliveries, newest first, read through RLS. Match rows
  * get the job's title and company and the profile's label (`labels`, from the Preferences
  * nav). `normalized_jobs` is engine-only (RLS with no policy), so the job comes from
- * `match_details`, the matches view's read: one list read (no details) of the qualified
- * matches whose job was seen since 30 days before the oldest match delivery, which covers
- * every delivered job, since a job is only matched while seen within 30 days. A delivery
- * whose job is no longer a qualified match has no title.
+ * `match_details`, the matches view's read: list reads (no details) of the qualified and the
+ * in-review matches whose job was seen since 30 days before the oldest match delivery, which
+ * covers every delivered job, since a job is only matched while seen within 30 days.
+ * `qualified` already includes reviews the user approved; `review` adds approved ones whose
+ * approval no longer applies (the match was re-decided onto another rule). A delivery whose
+ * job is now rejected, or no longer a match, has no title.
  */
 export async function loadWebhook(
   supabase: Client,
@@ -77,16 +79,23 @@ export async function loadWebhook(
     const oldest = Math.min(
       ...matchRows.map((r) => new Date(r.createdAt).getTime()),
     );
-    const m = await supabase.rpc('match_details', {
-      p_details: false,
-      p_outcome: 'qualified',
-      p_since: new Date(oldest - MATCHABLE_DAYS * DAY_MS).toISOString(),
-    });
-    if (m.error) throw loadError('webhook jobs read', m.error);
-    for (const j of m.data ?? []) {
-      const job = { title: j.title, companyName: j.companyName };
-      byMatch.set(j.matchId, job);
-      byJob.set(`${j.profileId} ${j.jobId}`, job);
+    const since = new Date(oldest - MATCHABLE_DAYS * DAY_MS).toISOString();
+    const reads = await Promise.all(
+      (['qualified', 'review'] as const).map((outcome) =>
+        supabase.rpc('match_details', {
+          p_details: false,
+          p_outcome: outcome,
+          p_since: since,
+        }),
+      ),
+    );
+    for (const m of reads) {
+      if (m.error) throw loadError('webhook jobs read', m.error);
+      for (const j of m.data ?? []) {
+        const job = { title: j.title, companyName: j.companyName };
+        byMatch.set(j.matchId, job);
+        byJob.set(`${j.profileId} ${j.jobId}`, job);
+      }
     }
   }
 
