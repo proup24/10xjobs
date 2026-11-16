@@ -17,6 +17,12 @@ export interface ClaimedDelivery {
   createdAt: Date;
 }
 
+/** A match delivery's match as it is now, and that match's current outcome. */
+export interface LoadedMatch {
+  input: PayloadInput;
+  outcome: 'qualified' | 'rejected' | 'review';
+}
+
 /** Where the claimed delivery goes. */
 export interface DeliveryTarget {
   id: string;
@@ -26,8 +32,8 @@ export interface DeliveryTarget {
 
 /**
  * `skipped`: the webhook is off or gone, and the row is now `skipped`. `busy`: another row of
- * the webhook is sending. `held`: the webhook is failing and this row is not its oldest
- * pending one. null: the row is gone, not pending, or not due.
+ * the webhook is sending. `held`: the webhook is failing and this match row is not its oldest
+ * pending match row (test rows are never held). null: the row is gone, not pending, or not due.
  */
 export type Claim =
   | { delivery: ClaimedDelivery; webhook: DeliveryTarget }
@@ -45,8 +51,13 @@ export interface FailureRecord {
 
 /** Every read and write of webhook deliveries. */
 export abstract class WebhooksRepository {
-  /** The delivery's match, profile and job as they are now; null when the delivery or its match is gone. */
-  abstract loadPayloadInput(deliveryId: string): Promise<PayloadInput | null>;
+  /**
+   * The delivery's match, profile and job as they are now. When the match was deleted
+   * (`matchId` null, e.g. its job merged into another and the sweep removed the old match),
+   * the profile's match on the root of the job's merge chain stands in. null when the
+   * delivery is gone or there is no such match.
+   */
+  abstract loadPayloadInput(deliveryId: string): Promise<LoadedMatch | null>;
   /** The code to label lookups the check wording needs, cached for 10 minutes. */
   abstract loadLabels(): Promise<Labels>;
   /** The user's most recently decided qualified match, for a test delivery's sample. */
@@ -69,13 +80,19 @@ export abstract class WebhooksRepository {
    * `pending`: the attempt is given back, and it is due again after the first retry delay.
    */
   abstract release(id: string, now: Date): Promise<void>;
-  /** `delivered`; resets the webhook's failures and makes its other pending rows due now. */
+  /**
+   * `delivered`. For a match row it also resets the webhook's failures and makes its other
+   * pending rows due now; a test row touches only itself.
+   */
   abstract recordSuccess(
     id: string,
     statusCode: number,
     now: Date,
   ): Promise<void>;
-  /** Back to `pending` on the next delay, or `failed` at the last attempt; counts the webhook's failure. */
+  /**
+   * Back to `pending` on the next delay, or `failed` at the last attempt. A match row counts
+   * the webhook's failure (and may turn it off); a test row touches only itself.
+   */
   abstract recordFailure(
     id: string,
     result: { status: number | null; error: string },
@@ -83,8 +100,9 @@ export abstract class WebhooksRepository {
   ): Promise<FailureRecord>;
   /**
    * At most one row per webhook, its head, oldest first across webhooks. The head is the
-   * oldest due pending row; for a failing (and enabled) webhook it is its oldest pending row,
-   * listed only once due. The send chain (`nextDue`) drains the rest.
+   * oldest due pending row; while the webhook is failing (and enabled), its match rows other
+   * than the oldest pending one are left out, so that one goes only once due. Test rows are
+   * never held back. The send chain (`nextDue`) drains the rest.
    */
   abstract listDue(now: Date, limit: number): Promise<string[]>;
   /** The webhook's head by the same rule as `listDue`, or null. */
@@ -183,21 +201,43 @@ export class PrismaWebhooksRepository extends WebhooksRepository {
     return this.database.db;
   }
 
-  async loadPayloadInput(deliveryId: string): Promise<PayloadInput | null> {
+  async loadPayloadInput(deliveryId: string): Promise<LoadedMatch | null> {
     const { raw } = this.db;
+    // The match is the delivery's own, or, once that was deleted, the profile's match on the
+    // root of the job's merge chain (mergedIntoId followed at most 10 steps, as in
+    // webhook_enqueue_match), so a job merged before its first send still reaches the user.
     const [row] = await this.db.query(
-      raw.sql`SELECT d."trigger", ${inputColumns(raw)}
-        FROM webhook_deliveries d
-        JOIN job_matches m ON m.id = d."matchId"
+      raw.sql`WITH RECURSIVE dl AS (
+          SELECT "trigger", "matchId", "profileId", "jobId" FROM webhook_deliveries
+          WHERE id = ${deliveryId}::uuid AND kind = 'match'
+        ), chain AS (
+          SELECT j.id, j."mergedIntoId", 0 AS depth
+          FROM normalized_jobs j JOIN dl ON j.id = dl."jobId"
+          WHERE dl."matchId" IS NULL
+          UNION ALL
+          SELECT n.id, n."mergedIntoId", chain.depth + 1
+          FROM chain JOIN normalized_jobs n ON n.id = chain."mergedIntoId"
+          WHERE chain.depth < 10
+        )
+        SELECT dl."trigger", m.outcome, ${inputColumns(raw)}
+        FROM dl
+        JOIN job_matches m ON m.id = COALESCE(dl."matchId", (
+          SELECT r.id FROM job_matches r
+          WHERE r."profileId" = dl."profileId"
+            AND r."jobId" = (SELECT id FROM chain ORDER BY depth DESC LIMIT 1)))
         JOIN profiles p ON p.id = m."profileId"
         JOIN normalized_jobs j ON j.id = m."jobId"
         LEFT JOIN companies c ON c.id = j."companyId"
-        LEFT JOIN job_facts f ON f."jobId" = j.id
-        WHERE d.id = ${deliveryId}::uuid AND d.kind = 'match'`
-        .returnsRow({ trigger: TEXT, ...INPUT_ROW })
+        LEFT JOIN job_facts f ON f."jobId" = j.id`
+        .returnsRow({ trigger: TEXT, outcome: TEXT, ...INPUT_ROW })
         .build(),
     );
-    return row ? toInput(row, row.trigger as 'decision' | 'review') : null;
+    return row
+      ? {
+          input: toInput(row, row.trigger as 'decision' | 'review'),
+          outcome: row.outcome as LoadedMatch['outcome'],
+        }
+      : null;
   }
 
   async latestQualifiedForUser(userId: string): Promise<PayloadInput | null> {
@@ -327,10 +367,12 @@ export class PrismaWebhooksRepository extends WebhooksRepository {
           .build(),
       );
       if (sending) return 'busy';
-      if ((webhook.consecutiveFailures as number) > 0) {
+      // Hold-back orders match rows only; a test goes past a failing head.
+      if (row.kind === 'match' && (webhook.consecutiveFailures as number) > 0) {
         const [head] = await tx.query(
           raw.sql`SELECT id FROM webhook_deliveries
             WHERE "webhookId" = ${webhook.id as string}::uuid AND status = 'pending'
+              AND kind = 'match'
             ORDER BY "createdAt", id LIMIT 1`
             .returnsRow({ id: UUID })
             .build(),
@@ -408,14 +450,23 @@ export class PrismaWebhooksRepository extends WebhooksRepository {
     );
   }
 
-  /** Locks the delivery's webhook row, the same order as `claim`; null when either is gone. */
+  /**
+   * Locks the delivery's webhook row, the same order as `claim`; null when either is gone.
+   * `test` is set for a test row, whose outcome never touches the webhook row.
+   */
   private async lockWebhookOf(tx: DatabaseTransaction, id: string) {
     const [webhook] = await tx.query(
-      tx.raw.sql`SELECT w.id, w.enabled, w."consecutiveFailures"
-        FROM webhooks w
-        WHERE w.id = (SELECT "webhookId" FROM webhook_deliveries WHERE id = ${id}::uuid)
-        FOR NO KEY UPDATE`
-        .returnsRow({ id: UUID, enabled: BOOL, consecutiveFailures: INT })
+      tx.raw.sql`SELECT w.id, w.enabled, w."consecutiveFailures", d.kind
+        FROM webhook_deliveries d
+        JOIN webhooks w ON w.id = d."webhookId"
+        WHERE d.id = ${id}::uuid
+        FOR NO KEY UPDATE OF w`
+        .returnsRow({
+          id: UUID,
+          enabled: BOOL,
+          consecutiveFailures: INT,
+          kind: TEXT,
+        })
         .build(),
     );
     return webhook
@@ -423,6 +474,7 @@ export class PrismaWebhooksRepository extends WebhooksRepository {
           id: webhook.id as string,
           enabled: webhook.enabled as boolean,
           consecutiveFailures: webhook.consecutiveFailures as number,
+          test: webhook.kind === 'test',
         }
       : null;
   }
@@ -446,7 +498,8 @@ export class PrismaWebhooksRepository extends WebhooksRepository {
           .returnsRow({ id: UUID })
           .build(),
       );
-      if (!row) return;
+      // A test proves nothing about match delivery order: no reset, no release.
+      if (!row || webhook.test) return;
       await tx.query(
         raw.sql`UPDATE webhooks
           SET "consecutiveFailures" = 0, "lastSuccessAt" = ${at}::timestamptz, "updatedAt" = now()
@@ -501,6 +554,9 @@ export class PrismaWebhooksRepository extends WebhooksRepository {
           .returnsRow({ id: UUID })
           .build(),
       );
+      const outcome = delay === null ? 'failed' : 'retry';
+      // A test's failure doesn't count toward auto-disable.
+      if (webhook.test) return { outcome, disabled: false };
       const failures = webhook.consecutiveFailures + 1;
       const disabled =
         webhook.enabled && failures >= WEBHOOK_CONFIG.autoDisableAfter;
@@ -515,7 +571,7 @@ export class PrismaWebhooksRepository extends WebhooksRepository {
           .returnsRow({ id: UUID })
           .build(),
       );
-      return { outcome: delay === null ? 'failed' : 'retry', disabled };
+      return { outcome, disabled };
     });
   }
 
@@ -523,18 +579,20 @@ export class PrismaWebhooksRepository extends WebhooksRepository {
   private heads(raw: Raw, now: Date, webhookId: string | null) {
     const at = now.toISOString();
     return raw.sql`SELECT h.id, h."createdAt" FROM (
-        SELECT DISTINCT ON (d."webhookId") d.id, d."createdAt", d."nextAttemptAt"
+        SELECT DISTINCT ON (d."webhookId") d.id, d."createdAt"
         FROM webhook_deliveries d
         JOIN webhooks w ON w.id = d."webhookId"
-        WHERE d.status = 'pending'
+        WHERE d.status = 'pending' AND d."nextAttemptAt" <= ${at}::timestamptz
           AND (NULLIF(${webhookId ?? ''}::text, '') IS NULL
             OR d."webhookId" = NULLIF(${webhookId ?? ''}::text, '')::uuid)
-          -- A failing webhook's head is its oldest pending row, due or not.
-          AND (d."nextAttemptAt" <= ${at}::timestamptz
-            OR (w.enabled AND w."consecutiveFailures" > 0))
+          -- While failing (and on), only the oldest pending match row may go, once due;
+          -- test rows are never held back.
+          AND (d.kind = 'test' OR NOT (w.enabled AND w."consecutiveFailures" > 0)
+            OR d.id = (SELECT o.id FROM webhook_deliveries o
+              WHERE o."webhookId" = d."webhookId" AND o.status = 'pending' AND o.kind = 'match'
+              ORDER BY o."createdAt", o.id LIMIT 1))
         ORDER BY d."webhookId", d."createdAt", d.id
-      ) h
-      WHERE h."nextAttemptAt" <= ${at}::timestamptz`.returns(TEXT);
+      ) h`.returns(TEXT);
   }
 
   async listDue(now: Date, limit: number): Promise<string[]> {

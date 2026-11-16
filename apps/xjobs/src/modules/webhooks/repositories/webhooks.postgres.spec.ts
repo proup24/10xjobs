@@ -3,6 +3,7 @@ import type { DatabaseService } from 'src/database';
 import { createDatabaseClient, type DatabaseClient } from '@xjobs/database';
 import { EXTRACTION_SCHEMA_VERSION } from 'src/modules/processor/schema';
 import { fixtureDocument } from 'src/modules/processor/schema/fixture.testing';
+import { DeliveryService } from '../services/delivery.service';
 import { PrismaWebhooksRepository } from './webhooks.repository';
 
 const TEXT = 'pg/text@1';
@@ -83,9 +84,8 @@ describe.skipIf(!url)('webhooks repository in PostgreSQL', () => {
     return userId;
   }
 
-  /** A user, a published profile, a job with facts, and a qualified match; returns their ids. */
-  async function seedMatch() {
-    const userId = await seedUser();
+  /** A published profile of the user; returns its id. */
+  async function seedProfile(userId: string): Promise<string> {
     const profile = await db.orm.public.Profile.create({
       userId,
       position: 'backend_engineer',
@@ -111,12 +111,17 @@ describe.skipIf(!url)('webhooks repository in PostgreSQL', () => {
       state: 'published',
       publishedAt: new Date(),
     } as never);
+    return profile.id;
+  }
+
+  /** An active job with an extraction and facts; returns their ids. */
+  async function seedJob(title = 'Backend Engineer') {
     const job = await db.orm.public.NormalizedJob.create({
       jobKey: randomUUID(),
       kind: 'job',
       status: 'active',
       mergedIntoId: null,
-      title: 'Backend Engineer',
+      title,
       companyName: 'Acme',
       companyUrl: 'https://acme.test',
       descriptionText: 'We build things.',
@@ -167,19 +172,42 @@ describe.skipIf(!url)('webhooks repository in PostgreSQL', () => {
         .affectedCount()
         .build(),
     );
+    return { jobId: job.id, extractionId: extraction.id };
+  }
+
+  /** The profile's match on the job, `qualified` unless `outcome` says otherwise; returns its id. */
+  async function seedMatchRow(
+    userId: string,
+    profileId: string,
+    job: { jobId: string; extractionId: string },
+    outcome: 'qualified' | 'rejected' | 'review' = 'qualified',
+  ): Promise<string> {
     const matchId = randomUUID();
+    const review = outcome === 'review';
     await db.execute(
       db.raw.sql`INSERT INTO job_matches
           (id, "userId", "profileId", "jobId", "extractionId", "matcherVersion",
-           outcome, unverified, "stackScore", checks, "decidedAt", "createdAt", "updatedAt")
-        VALUES (${matchId}::uuid, ${userId}::uuid, ${profile.id}::uuid, ${job.id}::uuid,
-          ${extraction.id}::uuid, 1, 'qualified', false, 0.725,
+           outcome, unverified, "reviewRule", "reviewField", "stackScore", checks,
+           "decidedAt", "createdAt", "updatedAt")
+        VALUES (${matchId}::uuid, ${userId}::uuid, ${profileId}::uuid, ${job.jobId}::uuid,
+          ${job.extractionId}::uuid, 1, ${outcome}::text, false,
+          NULLIF(${review ? 'seniority' : ''}::text, ''), NULLIF(${review ? 'seniority' : ''}::text, ''),
+          0.725,
           ${JSON.stringify([{ rule: 'position', outcome: 'pass', reason: 'fits' }])}::jsonb,
           now(), now(), now())`
         .affectedCount()
         .build(),
     );
-    return { userId, profileId: profile.id, jobId: job.id, matchId };
+    return matchId;
+  }
+
+  /** A user, a published profile, a job with facts, and a qualified match; returns their ids. */
+  async function seedMatch() {
+    const userId = await seedUser();
+    const profileId = await seedProfile(userId);
+    const job = await seedJob();
+    const matchId = await seedMatchRow(userId, profileId, job);
+    return { userId, profileId, jobId: job.jobId, matchId };
   }
 
   it('reads a delivery as the payload input', async () => {
@@ -202,7 +230,9 @@ describe.skipIf(!url)('webhooks repository in PostgreSQL', () => {
         .build(),
     );
 
-    const input = await repo.loadPayloadInput(deliveryId);
+    const loaded = await repo.loadPayloadInput(deliveryId);
+    expect(loaded?.outcome).toBe('qualified');
+    const input = loaded?.input;
     expect(input?.profile).toEqual({
       id: s.profileId,
       position: 'backend_engineer',
@@ -274,6 +304,33 @@ describe.skipIf(!url)('webhooks repository in PostgreSQL', () => {
       db.raw.sql`INSERT INTO webhook_deliveries
           (id, "userId", "webhookId", kind, status, "nextAttemptAt", "createdAt", "updatedAt")
         VALUES (${id}::uuid, ${userId}::uuid, ${webhookId}::uuid, 'test', 'pending',
+          ${createdAt.toISOString()}::timestamptz, ${createdAt.toISOString()}::timestamptz, now())`
+        .affectedCount()
+        .build(),
+    );
+    return id;
+  }
+
+  const profiles = new Map<string, string>();
+  /**
+   * A pending match delivery created at `createdAt`, for a new job and the user's profile
+   * (one per user); its match is not stored. Returns its id.
+   */
+  async function seedMatchDelivery(
+    userId: string,
+    webhookId: string,
+    createdAt: Date,
+  ): Promise<string> {
+    const profileId = profiles.get(userId) ?? (await seedProfile(userId));
+    profiles.set(userId, profileId);
+    const { jobId } = await seedJob();
+    const id = randomUUID();
+    await db.execute(
+      db.raw.sql`INSERT INTO webhook_deliveries
+          (id, "userId", "webhookId", kind, "profileId", "jobId", "trigger", status,
+           "nextAttemptAt", "createdAt", "updatedAt")
+        VALUES (${id}::uuid, ${userId}::uuid, ${webhookId}::uuid, 'match', ${profileId}::uuid,
+          ${jobId}::uuid, 'decision', 'pending',
           ${createdAt.toISOString()}::timestamptz, ${createdAt.toISOString()}::timestamptz, now())`
         .affectedCount()
         .build(),
@@ -369,9 +426,9 @@ describe.skipIf(!url)('webhooks repository in PostgreSQL', () => {
   it('claims, fails, holds back and releases in SQL', async () => {
     const userId = await seedUser();
     const webhookId = await seedWebhook(userId);
-    const a = await seedTestDelivery(userId, webhookId, ago(3000));
-    const b = await seedTestDelivery(userId, webhookId, ago(2000));
-    const c = await seedTestDelivery(userId, webhookId, ago(1000));
+    const a = await seedMatchDelivery(userId, webhookId, ago(3000));
+    const b = await seedMatchDelivery(userId, webhookId, ago(2000));
+    const c = await seedMatchDelivery(userId, webhookId, ago(1000));
 
     const claim = await repo.claim(a, now);
     if (typeof claim !== 'object' || claim === null || !('delivery' in claim))
@@ -448,8 +505,8 @@ describe.skipIf(!url)('webhooks repository in PostgreSQL', () => {
   it('gives up at the 7th attempt and disables at the 10th failure', async () => {
     const userId = await seedUser();
     const webhookId = await seedWebhook(userId, { consecutiveFailures: 3 });
-    const a = await seedTestDelivery(userId, webhookId, ago(2000));
-    const b = await seedTestDelivery(userId, webhookId, ago(1000));
+    const a = await seedMatchDelivery(userId, webhookId, ago(2000));
+    const b = await seedMatchDelivery(userId, webhookId, ago(1000));
     await db.execute(
       db.raw
         .sql`UPDATE webhook_deliveries SET attempts = 6 WHERE id = ${a}::uuid`
@@ -578,13 +635,13 @@ describe.skipIf(!url)('webhooks repository in PostgreSQL', () => {
     const w1 = await seedWebhook(u1);
     const w2 = await seedWebhook(u2);
     const w3 = await seedWebhook(u3, { consecutiveFailures: 2 });
-    const a1 = await seedTestDelivery(u1, w1, ago(6000));
-    const b1 = await seedTestDelivery(u2, w2, ago(5000));
-    await seedTestDelivery(u1, w1, ago(4000));
-    await seedTestDelivery(u2, w2, ago(3000));
-    // w3 is failing: its oldest pending row waits for its retry, so nothing of w3 is due.
-    const c1 = await seedTestDelivery(u3, w3, ago(7000));
-    await seedTestDelivery(u3, w3, ago(2000));
+    const a1 = await seedMatchDelivery(u1, w1, ago(6000));
+    const b1 = await seedMatchDelivery(u2, w2, ago(5000));
+    await seedMatchDelivery(u1, w1, ago(4000));
+    await seedMatchDelivery(u2, w2, ago(3000));
+    // w3 is failing: its oldest pending match row waits for its retry, so nothing of w3 is due.
+    const c1 = await seedMatchDelivery(u3, w3, ago(7000));
+    await seedMatchDelivery(u3, w3, ago(2000));
     await db.execute(
       db.raw
         .sql`UPDATE webhook_deliveries SET "nextAttemptAt" = ${new Date(now.getTime() + 60_000).toISOString()}::timestamptz
@@ -640,6 +697,171 @@ describe.skipIf(!url)('webhooks repository in PostgreSQL', () => {
             .build(),
         );
       });
+    });
+  });
+  it('a test row goes past a failing head and leaves the failure counter alone', async () => {
+    const userId = await seedUser();
+    const webhookId = await seedWebhook(userId, { consecutiveFailures: 9 });
+    const head = await seedMatchDelivery(userId, webhookId, ago(3000));
+    const held = await seedMatchDelivery(userId, webhookId, ago(2000));
+    await db.execute(
+      db.raw
+        .sql`UPDATE webhook_deliveries SET "nextAttemptAt" = ${new Date(now.getTime() + 60_000).toISOString()}::timestamptz
+        WHERE id = ${head}::uuid`
+        .affectedCount()
+        .build(),
+    );
+    const test = await seedTestDelivery(userId, webhookId, ago(1000));
+
+    expect(await repo.listDue(now, 200)).toEqual([test]);
+    expect(await repo.nextDue(webhookId, now)).toBe(test);
+    expect(await repo.claim(held, now)).toBe('held');
+    expect(await repo.claim(test, now)).toMatchObject({
+      delivery: { id: test, kind: 'test' },
+    });
+    // The 10th failure in a row, but a test's: no count, no auto-disable.
+    expect(await repo.recordFailure(test, fail503, now)).toEqual({
+      outcome: 'retry',
+      disabled: false,
+    });
+    expect(await webhookRow(webhookId)).toMatchObject({
+      enabled: true,
+      consecutiveFailures: 9,
+      lastFailureAt: null,
+    });
+    expect(await deliveryRow(test)).toMatchObject({
+      status: 'pending',
+      attempts: 1,
+      lastError: 'http 503',
+    });
+
+    // A test's 2xx neither resets the counter nor releases the held rows.
+    const later = new Date(now.getTime() + 60_000);
+    await repo.claim(test, later);
+    await repo.recordSuccess(test, 200, later);
+    expect((await deliveryRow(test))?.status).toBe('delivered');
+    expect(await webhookRow(webhookId)).toMatchObject({
+      consecutiveFailures: 9,
+      lastSuccessAt: null,
+    });
+    expect(await repo.claim(held, later)).toBe('held');
+  });
+
+  describe('a match delivery whose match was deleted', () => {
+    /** A pending decision delivery of job A, a qualified match on A, and the webhook. */
+    async function pendingOnA() {
+      const userId = await seedUser();
+      const profileId = await seedProfile(userId);
+      const a = await seedJob('Job A');
+      const matchA = await seedMatchRow(userId, profileId, a);
+      const webhookId = await seedWebhook(userId);
+      const id = randomUUID();
+      await db.execute(
+        db.raw.sql`INSERT INTO webhook_deliveries
+            (id, "userId", "webhookId", kind, "profileId", "jobId", "matchId", "trigger", status)
+          VALUES (${id}::uuid, ${userId}::uuid, ${webhookId}::uuid, 'match', ${profileId}::uuid,
+            ${a.jobId}::uuid, ${matchA}::uuid, 'decision', 'pending')`
+          .affectedCount()
+          .build(),
+      );
+      return { userId, profileId, a, id };
+    }
+
+    /** Ingest merges `from` into `into`; the match sweep's deleteInactive then drops `from`'s matches. */
+    async function mergeAndSweep(from: string, into: string) {
+      await db.execute(
+        db.raw
+          .sql`UPDATE normalized_jobs SET status = 'merged', "mergedIntoId" = ${into}::uuid
+          WHERE id = ${from}::uuid`
+          .affectedCount()
+          .build(),
+      );
+      await sql`DELETE FROM job_matches m USING normalized_jobs j
+        WHERE j.id = m."jobId" AND j.status <> 'active'`;
+    }
+
+    it("sends the merge root's qualified match when the job merged before its first send", async () => {
+      const s = await pendingOnA();
+      const b = await seedJob('Job B');
+      const matchB = await seedMatchRow(s.userId, s.profileId, b);
+      await mergeAndSweep(s.a.jobId, b.jobId);
+      const [row] = await db.query(
+        db.raw
+          .sql`SELECT "matchId" FROM webhook_deliveries WHERE id = ${s.id}::uuid`
+          .returnsRow({ matchId: 'pg/uuid@1' })
+          .build(),
+      );
+      expect(row.matchId).toBeNull();
+
+      const sent: { body: string }[] = [];
+      const service = new DeliveryService(
+        repo,
+        { webAppUrl: 'https://app.example.com' },
+        async (i) => {
+          sent.push(i);
+          return { ok: true, status: 200 };
+        },
+        () => now,
+      );
+      expect((await service.deliver(s.id)).result).toBe('delivered');
+      expect(sent).toHaveLength(1);
+      expect(JSON.parse(sent[0].body)).toMatchObject({
+        event: 'match.qualified',
+        deliveryId: s.id,
+        match: { id: matchB },
+        job: { id: b.jobId, title: 'Job B' },
+      });
+    });
+
+    it('follows the merge chain to its root', async () => {
+      const s = await pendingOnA();
+      const b = await seedJob('Job B');
+      const d = await seedJob('Job D');
+      const matchD = await seedMatchRow(s.userId, s.profileId, d);
+      await mergeAndSweep(s.a.jobId, b.jobId);
+      await mergeAndSweep(b.jobId, d.jobId);
+      const loaded = await repo.loadPayloadInput(s.id);
+      expect(loaded?.input.match.id).toBe(matchD);
+      expect(loaded?.input.job.id).toBe(d.jobId);
+    });
+
+    it("returns the root match's outcome, so a rejected one is not sent as qualified", async () => {
+      const s = await pendingOnA();
+      const b = await seedJob('Job B');
+      await seedMatchRow(s.userId, s.profileId, b, 'rejected');
+      await mergeAndSweep(s.a.jobId, b.jobId);
+      expect((await repo.loadPayloadInput(s.id))?.outcome).toBe('rejected');
+    });
+
+    it('is null when the root has no match for the profile', async () => {
+      const s = await pendingOnA();
+      const b = await seedJob('Job B');
+      await mergeAndSweep(s.a.jobId, b.jobId);
+      expect(await repo.loadPayloadInput(s.id)).toBeNull();
+    });
+  });
+
+  it("reads the match's current outcome after a rematch", async () => {
+    const s = await seedMatch();
+    const webhookId = await seedWebhook(s.userId);
+    const id = randomUUID();
+    await db.execute(
+      db.raw.sql`INSERT INTO webhook_deliveries
+          (id, "userId", "webhookId", kind, "profileId", "jobId", "matchId", "trigger", status)
+        VALUES (${id}::uuid, ${s.userId}::uuid, ${webhookId}::uuid, 'match',
+          ${s.profileId}::uuid, ${s.jobId}::uuid, ${s.matchId}::uuid, 'decision', 'pending')`
+        .affectedCount()
+        .build(),
+    );
+    await db.execute(
+      db.raw
+        .sql`UPDATE job_matches SET outcome = 'rejected' WHERE id = ${s.matchId}::uuid`
+        .affectedCount()
+        .build(),
+    );
+    expect(await repo.loadPayloadInput(id)).toMatchObject({
+      outcome: 'rejected',
+      input: { match: { id: s.matchId } },
     });
   });
 });
