@@ -264,13 +264,13 @@
 
 **Files:**
 
-- Modify: `libs/database/src/seeds/` (the dev seed that creates matches: add two applied jobs, two dismissed jobs (one with a reason and note, one without), one closed applied job, and one applied job whose profile was deleted)
+- Local check data only, not committed (`libs/database/src/seeds/` creates no matches). Write a SQL file in the scratchpad that inserts, on top of local matches: two applied jobs, two dismissed jobs (one with a reason and note, one without), one closed applied job, and one applied job whose profile was then deleted.
 - Modify: `docs/roadmap/README.md` (under Phase 5: "Jobs can already be marked applied or not for me ([job decisions](../superpowers/specs/2026-11-16-job-decisions-design.md)).")
 
-- [ ] **Step 1: Seed**, then `pnpm db:reset`.
+- [ ] **Step 1: Load the check data** into the local stack with `psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -f <file>`.
 
 - [ ] **Step 2: Check in the app** (`run` skill or `npx nx dev web`) at desktop width and at 360px. Mark a job Applied, Undo it, mark it Not for me with a reason, find it on Applications, edit the reason, Move back to Matches. Open the seeded job whose profile was deleted.
 
 - [ ] **Step 3: Run** `npx nx run-many -t lint test build typecheck` and `pnpm db:test` — Expected: all pass.
 
-- [ ] **Step 4: Commit** `chore: seed job decisions and note them in the roadmap`, then push with `git push -u origin feat/job-decisions` and `gh pr create --base main`. The PR body lists the post-merge step: the migrations apply on `10xjobs-dev` through the usual deploy.
+- [ ] **Step 4: Commit** `docs(roadmap): note job decisions under Phase 5`, then push with `git push -u origin feat/job-decisions` and `gh pr create --base main`. The PR body lists the post-merge step: the migrations apply on `10xjobs-dev` through the usual deploy.
