@@ -44,8 +44,9 @@ const MATCHABLE_DAYS = 30;
  * in-review matches whose job was seen since 30 days before the oldest match delivery, which
  * covers every delivered job, since a job is only matched while seen within 30 days.
  * `qualified` already includes reviews the user approved; `review` adds approved ones whose
- * approval no longer applies (the match was re-decided onto another rule). A delivery whose
- * job is now rejected, or no longer a match, has no title.
+ * approval no longer applies (the match was re-decided onto another rule). Otherwise the title
+ * and company come from the delivery's stored body (a stand-in send names the job its job
+ * merged into); a delivery with neither, e.g. after retention cleared the body, has no title.
  */
 export async function loadWebhook(
   supabase: Client,
@@ -64,7 +65,7 @@ export async function loadWebhook(
   const d = await supabase
     .from('webhook_deliveries')
     .select(
-      'id, kind, profileId, jobId, matchId, status, attempts, lastStatusCode, lastError, createdAt',
+      'id, kind, profileId, jobId, matchId, status, attempts, lastStatusCode, lastError, createdAt, payloadTitle:payload->job->>title, payloadCompany:payload->job->company->>name',
     )
     .order('createdAt', { ascending: false })
     .order('id', { ascending: false })
@@ -100,10 +101,16 @@ export async function loadWebhook(
   }
 
   const deliveries = rows.map((r): DeliveryRow => {
+    // Last, what the sent body named: a stand-in send (its job merged into another) has no
+    // match on its own job. Null once retention clears the payload.
+    const sent = r.payloadTitle
+      ? { title: r.payloadTitle, companyName: r.payloadCompany }
+      : undefined;
     const job =
       r.kind === 'match'
         ? ((r.matchId ? byMatch.get(r.matchId) : undefined) ??
-          byJob.get(`${r.profileId} ${r.jobId}`))
+          byJob.get(`${r.profileId} ${r.jobId}`) ??
+          sent)
         : undefined;
     return {
       id: r.id,

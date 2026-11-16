@@ -47,6 +47,8 @@ const delivery = (over: Record<string, unknown>) => ({
   lastStatusCode: 200,
   lastError: null,
   createdAt: '2026-11-16T10:02:00Z',
+  payloadTitle: null,
+  payloadCompany: null,
   ...over,
 });
 
@@ -199,6 +201,44 @@ describe('loadWebhook', () => {
       title: 'Staff Engineer',
       companyName: 'Initech',
     });
+  });
+
+  it("falls back to the sent payload's title and company", async () => {
+    // Sent through a stand-in (job A merged into B): no match on A, but the body names B.
+    const c = client({
+      webhook: { data: WEBHOOK, error: null },
+      deliveries: {
+        data: [
+          delivery({
+            id: 's',
+            matchId: null,
+            payloadTitle: 'Job B',
+            payloadCompany: 'Globex',
+          }),
+          delivery({
+            id: 'n',
+            jobId: J2,
+            matchId: null,
+            payloadTitle: 'Untitled company',
+            payloadCompany: null,
+          }),
+          delivery({ id: 'x', jobId: J2, matchId: null }),
+        ],
+        error: null,
+      },
+    });
+    const r = await loadWebhook(c.supabase);
+    expect(c.deliveries.calls[0][1]).toContain(
+      'payloadTitle:payload->job->>title',
+    );
+    expect(c.deliveries.calls[0][1]).toContain(
+      'payloadCompany:payload->job->company->>name',
+    );
+    expect(r.deliveries.map((d) => [d.id, d.title, d.companyName])).toEqual([
+      ['s', 'Job B', 'Globex'],
+      ['n', 'Untitled company', null],
+      ['x', null, null],
+    ]);
   });
 
   it('throws on a read error', async () => {
