@@ -16,6 +16,7 @@
     "match-details-list-rows",
     "match-details-job-facts",
     "users-update-columns",
-    "match-details-review"
+    "match-details-review",
+    "webhook-rpcs"
   ]
 }

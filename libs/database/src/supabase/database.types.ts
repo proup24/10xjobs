@@ -2285,10 +2285,19 @@ export type Database = {
         };
         Returns: string;
       };
+      webhook_delete: { Args: Record<PropertyKey, never>; Returns: undefined };
       webhook_enqueue_match: {
         Args: { p_match_id: string; p_trigger: string };
         Returns: string;
       };
+      webhook_rotate_secret: {
+        Args: Record<PropertyKey, never>;
+        Returns: undefined;
+      };
+      webhook_save: { Args: { p_url: string }; Returns: undefined };
+      webhook_send_test: { Args: Record<PropertyKey, never>; Returns: string };
+      webhook_set_enabled: { Args: { p_enabled: boolean }; Returns: undefined };
+      webhook_url_ok: { Args: { p_url: string }; Returns: boolean };
     };
     Enums: {
       [_ in never]: never;

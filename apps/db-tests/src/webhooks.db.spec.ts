@@ -272,6 +272,23 @@ describe('webhooks, webhook_deliveries and webhook_enqueue_match', () => {
     expect(await deliveriesOf(sibling.jobId)).toEqual([]);
   });
 
+  it('skips D when A was sent, then A merged into B and B into D', async () => {
+    // D first: cleanup deletes in reverse order, and B will point at D.
+    const d = await seedDetailedJob({ noFacts: true });
+    await seenAgo(d.jobId, '1 hour');
+    const p = await mergedPair();
+    expect(await enqueue(p.a)).not.toBeNull();
+    await withCatalog((c) =>
+      c.query(
+        `UPDATE public.normalized_jobs SET status = 'merged', "mergedIntoId" = $2 WHERE id = $1`,
+        [p.bJob, d.jobId],
+      ),
+    );
+    const matchD = await seedMatchOn(a.id, profileA, d);
+    expect(await enqueue(matchD)).toBeNull();
+    expect(await deliveriesOf(d.jobId)).toEqual([]);
+  });
+
   // The matcher's sweep (MatcherRepository.deleteInactive) deletes the matches of jobs that are
   // no longer active; the delivery must stay as the "already sent" record.
   it('keeps the delivery when the sweep deletes a merged job’s match', async () => {
@@ -475,7 +492,7 @@ describe('webhooks, webhook_deliveries and webhook_enqueue_match', () => {
     expect(await insert('other', null, 'pending')).toBe(CHECK);
     expect(await insert('test', 'other', 'pending')).toBe(CHECK);
     expect(await insert('test', null, 'other')).toBe(CHECK);
-    // A match row needs its profile, job, match and trigger.
+    // A match row needs its profile, job and trigger (matchId goes null when the match is deleted).
     expect(await insert('match', 'decision', 'pending')).toBe(CHECK);
     expect(await insert('test', null, 'pending')).toBeNull();
     // A delivery stays on its owner's webhook: (webhookId, userId) references webhooks.
