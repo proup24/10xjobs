@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { appViewHref, readAppView, type AppView } from './view-state';
+import {
+  appViewHref,
+  readAppView,
+  viewForJob,
+  type AppView,
+} from './view-state';
 
 const read = (q: string) => readAppView(new URLSearchParams(q));
 
@@ -37,5 +42,36 @@ describe('appViewHref', () => {
     expect(appViewHref({ status: 'dismissed', job: 'j1' })).toBe(
       '/applications?status=dismissed&job=j1',
     );
+  });
+});
+
+// A link can name a job under the wrong status (an old link, or one built by hand): the
+// tab follows the job, so it is not shown open under a list it isn't in.
+describe('viewForJob', () => {
+  const decisions = [
+    { jobId: 'a1', status: 'applied' },
+    { jobId: 'd1', status: 'dismissed' },
+  ];
+
+  it("shows the open job's status", () => {
+    expect(viewForJob({ status: 'applied', job: 'd1' }, decisions)).toEqual({
+      status: 'dismissed',
+      job: 'd1',
+    });
+    expect(viewForJob({ status: 'dismissed', job: 'a1' }, decisions)).toEqual({
+      status: 'applied',
+      job: 'a1',
+    });
+  });
+
+  it('keeps the view when it already matches, or has no known job', () => {
+    for (const v of [
+      { status: 'applied', job: 'a1' },
+      { status: 'dismissed', job: 'd1' },
+      { status: 'dismissed', job: null },
+      { status: 'dismissed', job: 'gone' },
+    ] satisfies AppView[]) {
+      expect(viewForJob(v, decisions)).toEqual(v);
+    }
   });
 });

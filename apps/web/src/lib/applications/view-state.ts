@@ -11,6 +11,19 @@ export function readAppView(params: URLSearchParams): AppView {
   };
 }
 
+/**
+ * The view with the open job's own status: a link naming a job under the other status (an
+ * old link, or one built by hand) shows the tab the job is listed in. A job the user has no
+ * decision on keeps the view, and the page says it isn't in Applications.
+ */
+export function viewForJob(
+  v: AppView,
+  decisions: { jobId: string; status: string }[],
+): AppView {
+  const status = decisions.find((d) => d.jobId === v.job)?.status;
+  return status === 'applied' || status === 'dismissed' ? { ...v, status } : v;
+}
+
 /** The Applications page URL for a state; the default status is left out. */
 export function appViewHref(v: AppView): string {
   const q = new URLSearchParams();

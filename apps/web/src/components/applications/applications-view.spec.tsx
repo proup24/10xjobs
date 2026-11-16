@@ -132,6 +132,17 @@ describe('ApplicationsView list', () => {
     expect(push).toHaveBeenCalledWith('/applications?status=dismissed');
   });
 
+  it('opens a job under its own status when the link names the other', () => {
+    renderView({ initial: { status: 'applied', job: 'd1' }, selected: [] });
+    expect(
+      screen
+        .getByRole('tab', { name: 'Not for me (1)' })
+        .getAttribute('aria-selected'),
+    ).toBe('true');
+    expect(within(list('Not for me')).getByText('Dismissed one')).toBeTruthy();
+    expect(screen.getByText('Wants a lead')).toBeTruthy();
+  });
+
   it('shows the reason on a not-for-me row', () => {
     renderView({ initial: { status: 'dismissed' } });
     const [row] = within(list('Not for me')).getAllByRole('link');

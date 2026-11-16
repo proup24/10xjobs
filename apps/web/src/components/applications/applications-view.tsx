@@ -27,6 +27,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { DecisionRow } from '@/lib/applications/load';
 import {
   appViewHref,
+  viewForJob,
   type AppStatus,
   type AppView,
 } from '@/lib/applications/view-state';
@@ -220,7 +221,7 @@ function DecisionActions({
  */
 export function ApplicationsView({
   decisions,
-  initial: state,
+  initial,
   now: nowIso,
   userId,
   labels,
@@ -239,6 +240,7 @@ export function ApplicationsView({
 }) {
   const router = useRouter();
   const now = new Date(nowIso);
+  const state = viewForJob(initial, decisions);
   const href = (next: Partial<AppView>) => appViewHref({ ...state, ...next });
 
   const byStatus: Record<AppStatus, DecisionRow[]> = {
