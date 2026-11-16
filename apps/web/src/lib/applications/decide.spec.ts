@@ -23,7 +23,10 @@ const MATCHES = [
  */
 function client(opts: {
   matches?: unknown[];
-  existing?: ({ status: string } | null)[] | { status: string } | null;
+  existing?:
+    | ({ status: string; matchSnapshot?: unknown } | null)[]
+    | { status: string; matchSnapshot?: unknown }
+    | null;
   writes?: Res[];
 }) {
   const calls = {
@@ -32,6 +35,7 @@ function client(opts: {
     delete: vi.fn(),
     eq: vi.fn(),
     tables: [] as string[],
+    order: [] as string[],
   };
   const writes = [...(opts.writes ?? [])];
   const reads = Array.isArray(opts.existing) ? [...opts.existing] : null;
@@ -51,17 +55,22 @@ function client(opts: {
     return {
       select: () => ({
         eq: () => ({
-          maybeSingle: async () => ({
-            data: reads ? (reads.shift() ?? null) : (opts.existing ?? null),
-            error: null,
-          }),
+          maybeSingle: async () => {
+            calls.order.push('read');
+            return {
+              data: reads ? (reads.shift() ?? null) : (opts.existing ?? null),
+              error: null,
+            };
+          },
         }),
       }),
       insert: async (row: unknown) => {
+        calls.order.push('insert');
         calls.insert(row);
         return nextWrite();
       },
       update: (row: unknown) => {
+        calls.order.push('update');
         calls.update(row);
         return {
           eq: async (col: string, v: unknown) => {
@@ -196,6 +205,26 @@ describe('saveDecision', () => {
     expect(result).toEqual({ status: 'saved' });
     expect(calls.insert).toHaveBeenCalledTimes(1);
     expect(calls.update).toHaveBeenCalledTimes(1);
+    expect(calls.update.mock.calls[0][0]).toMatchObject({
+      status: 'applied',
+      decidedAt: expect.any(String),
+    });
+    expect(calls.order).toEqual(['read', 'insert', 'read', 'update']);
+  });
+
+  it('keeps the earlier snapshot when the matches are gone', async () => {
+    const { supabase, calls } = client({
+      matches: [],
+      existing: { status: 'dismissed', matchSnapshot: MATCHES } as never,
+    });
+    await saveDecision(supabase, 'user-1', {
+      jobId: JOB,
+      status: 'dismissed',
+      reason: 'role',
+    });
+    const row = calls.update.mock.calls[0][0];
+    expect(row).toMatchObject({ reason: 'role' });
+    expect(row).not.toHaveProperty('matchSnapshot');
   });
 
   it('answers NOT_MATCHED when the insert is refused', async () => {

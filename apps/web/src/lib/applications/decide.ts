@@ -86,7 +86,7 @@ export async function saveDecision(
   const write = async (retry: boolean): Promise<SaveResult> => {
     const existing = await supabase
       .from('job_decisions')
-      .select('status')
+      .select('status, matchSnapshot')
       .eq('jobId', d.jobId)
       .maybeSingle();
     if (existing.error)
@@ -94,10 +94,17 @@ export async function saveDecision(
 
     if (existing.data) {
       const now = new Date().toISOString();
+      // Matches gone (profile deleted): the earlier snapshot is the only record, so keep it.
+      const { matchSnapshot, ...rest } = fields;
+      const keepSnapshot =
+        Array.isArray(matchSnapshot) &&
+        matchSnapshot.length === 0 &&
+        existing.data.matchSnapshot !== null;
       const update = await supabase
         .from('job_decisions')
         .update({
-          ...fields,
+          ...rest,
+          ...(keepSnapshot ? {} : { matchSnapshot }),
           updatedAt: now,
           ...(existing.data.status !== fields.status ? { decidedAt: now } : {}),
         })
