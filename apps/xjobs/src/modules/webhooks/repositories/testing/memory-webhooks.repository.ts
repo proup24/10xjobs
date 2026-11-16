@@ -35,6 +35,11 @@ export interface MemoryDelivery {
   payload: unknown;
   createdAt: Date;
   updatedAt: Date;
+  /** Match rows: what the stand-in rule of `loadPayloadInput` reads. Unset in most tests. */
+  profileId?: string | null;
+  jobId?: string | null;
+  /** null: the match was deleted, so `inputs` holds the merge root's match (a stand-in). */
+  matchId?: string | null;
 }
 
 const byAge = (a: MemoryDelivery, b: MemoryDelivery) =>
@@ -47,6 +52,8 @@ export class MemoryWebhooksRepository extends WebhooksRepository {
   inputs = new Map<string, PayloadInput>();
   /** That match's outcome, by delivery id; `qualified` when unset. */
   outcomes = new Map<string, LoadedMatch['outcome']>();
+  /** Each merged job's merge root, by job id; a job missing here is its own root. */
+  roots = new Map<string, string>();
   samples = new Map<string, PayloadInput>();
   webhooks = new Map<string, MemoryWebhook>();
   deliveries = new Map<string, MemoryDelivery>();
@@ -102,6 +109,22 @@ export class MemoryWebhooksRepository extends WebhooksRepository {
   }
 
   loadPayloadInput(deliveryId: string): Promise<LoadedMatch | null> {
+    const d = this.deliveries.get(deliveryId);
+    // A stand-in is refused when another live match delivery of the profile has the same root.
+    if (d?.matchId === null && d.jobId) {
+      const root = (job: string) => this.roots.get(job) ?? job;
+      const target = root(d.jobId);
+      const taken = [...this.deliveries.values()].some(
+        (o) =>
+          o.id !== d.id &&
+          o.kind === 'match' &&
+          o.status !== 'skipped' &&
+          o.profileId === d.profileId &&
+          o.jobId != null &&
+          root(o.jobId) === target,
+      );
+      if (taken) return Promise.resolve(null);
+    }
     const input = this.inputs.get(deliveryId);
     return Promise.resolve(
       input

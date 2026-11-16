@@ -813,6 +813,66 @@ describe.skipIf(!url)('webhooks repository in PostgreSQL', () => {
       });
     });
 
+    it("skips A's row when B has its own delivery: only B's is sent", async () => {
+      const s = await pendingOnA();
+      const b = await seedJob('Job B');
+      const matchB = await seedMatchRow(s.userId, s.profileId, b);
+      // A and B were separate roots at enqueue time, so each got a delivery.
+      const [{ webhookId }] = await db.query(
+        db.raw
+          .sql`SELECT "webhookId" FROM webhook_deliveries WHERE id = ${s.id}::uuid`
+          .returnsRow({ webhookId: 'pg/uuid@1' })
+          .build(),
+      );
+      const onB = randomUUID();
+      await db.execute(
+        db.raw.sql`INSERT INTO webhook_deliveries
+            (id, "userId", "webhookId", kind, "profileId", "jobId", "matchId", "trigger", status)
+          VALUES (${onB}::uuid, ${s.userId}::uuid, ${webhookId as string}::uuid, 'match',
+            ${s.profileId}::uuid, ${b.jobId}::uuid, ${matchB}::uuid, 'decision', 'pending')`
+          .affectedCount()
+          .build(),
+      );
+      await mergeAndSweep(s.a.jobId, b.jobId);
+      expect(await repo.loadPayloadInput(s.id)).toBeNull();
+
+      const sent: { deliveryId: string; body: string }[] = [];
+      const service = new DeliveryService(
+        repo,
+        { webAppUrl: null },
+        async (i) => {
+          sent.push(i);
+          return { ok: true, status: 200 };
+        },
+        () => now,
+      );
+      expect((await service.deliver(s.id)).result).toBe('skipped');
+      expect(await deliveryRow(s.id)).toMatchObject({
+        status: 'skipped',
+        lastError: 'match deleted',
+      });
+      expect((await service.deliver(onB)).result).toBe('delivered');
+      expect(sent.map((x) => x.deliveryId)).toEqual([onB]);
+      expect(JSON.parse(sent[0].body)).toMatchObject({ job: { id: b.jobId } });
+    });
+
+    it("a skipped delivery on B doesn't stop A's row", async () => {
+      const s = await pendingOnA();
+      const b = await seedJob('Job B');
+      const matchB = await seedMatchRow(s.userId, s.profileId, b);
+      await db.execute(
+        db.raw.sql`INSERT INTO webhook_deliveries
+            ("userId", "webhookId", kind, "profileId", "jobId", "matchId", "trigger", status)
+          SELECT "userId", "webhookId", 'match', "profileId", ${b.jobId}::uuid, ${matchB}::uuid,
+            'decision', 'skipped'
+          FROM webhook_deliveries WHERE id = ${s.id}::uuid`
+          .affectedCount()
+          .build(),
+      );
+      await mergeAndSweep(s.a.jobId, b.jobId);
+      expect((await repo.loadPayloadInput(s.id))?.input.job.id).toBe(b.jobId);
+    });
+
     it('follows the merge chain to its root', async () => {
       const s = await pendingOnA();
       const b = await seedJob('Job B');

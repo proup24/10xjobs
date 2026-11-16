@@ -15,7 +15,7 @@ Unverified matches are sent as well. Their payload has `match.unverified: true`.
 
 The body is built at the first attempt, from the match as it is then:
 
-- If the job was merged into another one before that, the delivery is sent with the job it was merged into and your match on that job.
+- If the job was merged into another one before that (and its own match was removed), the delivery is sent with the job it was merged into and your match on that job, unless that profile already has another delivery, not skipped, for a job of the same merged job. Then this one is skipped and only the other is sent, so you never get the same job under two delivery ids.
 - If the match is gone, or a `decision` delivery's match is no longer qualified (a rematch while the delivery waited), nothing is sent and the delivery shows as Skipped.
 
 New qualified matches go out right after the engine decides them. Review approvals and test sends go out on the next sweep, within about 60 s, or sooner when a send to your webhook has just finished.

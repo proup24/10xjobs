@@ -235,6 +235,28 @@ describe('DeliveryService', () => {
     expect(await s.deliver(id)).toBe('delivered');
   });
 
+  it('A merges into B with no delivery for B: the stand-in sends B', async () => {
+    const s = setup(200);
+    const a = s.add({ profileId: 'p1', jobId: 'jA', matchId: null });
+    s.repo.inputs.set(a, input('jB'));
+    s.repo.roots.set('jA', 'jB');
+    expect(await s.deliver(a)).toBe('delivered');
+    expect(JSON.parse(s.sent[0].body)).toMatchObject({ job: { id: 'jB' } });
+  });
+
+  it("B has its own delivery, A merges into B: A's pending row is skipped and only B's is sent", async () => {
+    const s = setup(200);
+    const a = s.add({ profileId: 'p1', jobId: 'jA', matchId: null });
+    s.repo.inputs.set(a, input('jB'));
+    const b = s.add({ profileId: 'p1', jobId: 'jB', matchId: 'm-jB' });
+    s.repo.inputs.set(b, input('jB'));
+    s.repo.roots.set('jA', 'jB');
+    expect(await s.deliver(a)).toBe('skipped');
+    expect(s.row(a).lastError).toBe('match deleted');
+    expect(await s.deliver(b)).toBe('delivered');
+    expect(s.sent.map((x) => x.deliveryId)).toEqual([b]);
+  });
+
   it('a delivery that no longer exists is gone', async () => {
     const s = setup(200);
     expect(await s.deliver('missing')).toBe('gone');

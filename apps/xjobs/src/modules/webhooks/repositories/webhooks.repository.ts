@@ -54,8 +54,9 @@ export abstract class WebhooksRepository {
   /**
    * The delivery's match, profile and job as they are now. When the match was deleted
    * (`matchId` null, e.g. its job merged into another and the sweep removed the old match),
-   * the profile's match on the root of the job's merge chain stands in. null when the
-   * delivery is gone or there is no such match.
+   * the profile's match on the root of the job's merge chain stands in, unless another match
+   * delivery of the profile (not skipped) has a job with that root. null when the delivery is
+   * gone, there is no such match, or that other delivery sends the job.
    */
   abstract loadPayloadInput(deliveryId: string): Promise<LoadedMatch | null>;
   /** The code to label lookups the check wording needs, cached for 10 minutes. */
@@ -206,6 +207,8 @@ export class PrismaWebhooksRepository extends WebhooksRepository {
     // The match is the delivery's own, or, once that was deleted, the profile's match on the
     // root of the job's merge chain (mergedIntoId followed at most 10 steps, as in
     // webhook_enqueue_match), so a job merged before its first send still reaches the user.
+    // No stand-in when another match delivery of the profile (not skipped) has a job with the
+    // same root: that one sends the job, and two delivery ids would defeat the receiver's dedupe.
     const [row] = await this.db.query(
       raw.sql`WITH RECURSIVE dl AS (
           SELECT "trigger", "matchId", "profileId", "jobId" FROM webhook_deliveries
@@ -218,13 +221,28 @@ export class PrismaWebhooksRepository extends WebhooksRepository {
           SELECT n.id, n."mergedIntoId", chain.depth + 1
           FROM chain JOIN normalized_jobs n ON n.id = chain."mergedIntoId"
           WHERE chain.depth < 10
+        ), others AS (
+          SELECT j.id, j."mergedIntoId", 0 AS depth
+          FROM webhook_deliveries o
+          JOIN dl ON o."profileId" = dl."profileId"
+          JOIN normalized_jobs j ON j.id = o."jobId"
+          WHERE dl."matchId" IS NULL AND o.kind = 'match' AND o.status <> 'skipped'
+            AND o.id <> ${deliveryId}::uuid
+          UNION ALL
+          SELECT n.id, n."mergedIntoId", others.depth + 1
+          FROM others JOIN normalized_jobs n ON n.id = others."mergedIntoId"
+          WHERE others.depth < 10
+        ), root AS (
+          SELECT id FROM chain ORDER BY depth DESC LIMIT 1
         )
         SELECT dl."trigger", m.outcome, ${inputColumns(raw)}
         FROM dl
         JOIN job_matches m ON m.id = COALESCE(dl."matchId", (
           SELECT r.id FROM job_matches r
-          WHERE r."profileId" = dl."profileId"
-            AND r."jobId" = (SELECT id FROM chain ORDER BY depth DESC LIMIT 1)))
+          WHERE r."profileId" = dl."profileId" AND r."jobId" = (SELECT id FROM root)
+            -- Each other chain's last node (no next) is its root.
+            AND NOT EXISTS (SELECT 1 FROM others
+              WHERE others."mergedIntoId" IS NULL AND others.id = (SELECT id FROM root))))
         JOIN profiles p ON p.id = m."profileId"
         JOIN normalized_jobs j ON j.id = m."jobId"
         LEFT JOIN companies c ON c.id = j."companyId"
