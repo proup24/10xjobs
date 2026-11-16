@@ -23,7 +23,6 @@ import {
   EmptyHeader,
   EmptyTitle,
 } from '@/components/ui/empty';
-import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { DecisionRow } from '@/lib/applications/load';
 import {
@@ -75,10 +74,12 @@ function JobHeader({
   row,
   userId,
   backHref,
+  actions,
 }: {
   row: DecisionRow;
   userId: string;
   backHref: string;
+  actions: React.ReactNode;
 }) {
   return (
     <article className="flex min-w-0 flex-col gap-6">
@@ -98,6 +99,7 @@ function JobHeader({
         userId={userId}
         jobId={row.jobId}
       />
+      {actions}
     </article>
   );
 }
@@ -311,33 +313,38 @@ export function ApplicationsView({
         />
       </div>
     );
-  else
-    detail = (
-      <div className="flex flex-col gap-6">
-        {selected && selected.length > 0 ? (
-          <MatchDetail
-            key={open.jobId}
-            rows={selected}
-            labels={labels}
-            profileLabels={profileLabels}
-            now={now}
-            userId={userId}
-            backHref={backHref}
-            backLabel={BACK_LABEL}
-          />
-        ) : (
-          <JobHeader row={open} userId={userId} backHref={backHref} />
-        )}
-        <Separator />
-        <DecisionActions
-          key={`${open.jobId}:${open.status}`}
-          row={open}
-          now={now}
-          onSave={save(open)}
-          onClear={clear(open)}
-        />
-      </div>
+  else {
+    const actions = (
+      <DecisionActions
+        key={`${open.jobId}:${open.status}`}
+        row={open}
+        now={now}
+        onSave={save(open)}
+        onClear={clear(open)}
+      />
     );
+    detail =
+      selected && selected.length > 0 ? (
+        <MatchDetail
+          key={open.jobId}
+          rows={selected}
+          labels={labels}
+          profileLabels={profileLabels}
+          now={now}
+          userId={userId}
+          backHref={backHref}
+          backLabel={BACK_LABEL}
+          actions={actions}
+        />
+      ) : (
+        <JobHeader
+          row={open}
+          userId={userId}
+          backHref={backHref}
+          actions={actions}
+        />
+      );
+  }
 
   return (
     <div className="flex flex-col gap-4">

@@ -346,6 +346,7 @@ export function MatchDetail({
   userId,
   backHref,
   backLabel,
+  actions,
   onDecide,
   onDecideJob,
   onReport,
@@ -359,6 +360,8 @@ export function MatchDetail({
   backHref: string;
   /** The back link's text; "Back to matches" by default. */
   backLabel?: string;
+  /** The page's own actions on the job, under the post links (Applications). */
+  actions?: React.ReactNode;
   /** Records a decision on a review row; the buttons show only with it. */
   onDecide?: Decide;
   /** Marks the job applied or not for me; the buttons show only with it, on matches. */
@@ -441,6 +444,8 @@ export function MatchDetail({
       />
 
       {onDecideJob && !inReview && <JobDecision onDecideJob={onDecideJob} />}
+
+      {actions}
 
       {inReview && (
         <ReviewReason

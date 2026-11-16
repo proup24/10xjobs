@@ -68,13 +68,13 @@ const decision = (over: Over = {}): DecisionRow =>
   }) as DecisionRow;
 
 const DECISIONS: DecisionRow[] = [
-  decision({ jobId: 'a1', title: 'Applied one' }),
+  decision({ jobId: 'a1', title: 'Applied one', decidedAt: hoursAgo(5) }),
   decision({
     jobId: 'a2',
     title: 'Applied two',
     companyName: 'Globex',
     location: 'Berlin, Germany',
-    decidedAt: hoursAgo(5),
+    decidedAt: hoursAgo(48),
   }),
   decision({
     jobId: 'd1',
@@ -121,8 +121,8 @@ describe('ApplicationsView list', () => {
     ]);
     expect(links[0].textContent).toContain('Acme · Paris, France');
     expect(links[0].textContent).toContain('LinkedIn');
-    expect(links[0].textContent).toContain('Applied 2 days ago');
-    expect(links[1].textContent).toContain('Applied 5 h ago');
+    expect(links[0].textContent).toContain('Applied 5 h ago');
+    expect(links[1].textContent).toContain('Applied 2 days ago');
     expect(links[0].getAttribute('href')).toBe('/applications?job=a1');
   });
 
@@ -177,6 +177,26 @@ describe('ApplicationsView detail', () => {
     expect(screen.queryByRole('button', { name: 'Applied' })).toBeNull();
   });
 
+  it('puts the actions under the post links, before the description', () => {
+    renderView({
+      initial: { job: 'a1' },
+      selected: [
+        matchRow({
+          jobId: 'a1',
+          title: 'Applied one',
+          descriptionText: 'The job description',
+        }),
+      ],
+    });
+    const open = screen.getByRole('link', { name: 'Open post' });
+    const move = screen.getByRole('button', { name: 'Move to Not for me' });
+    const description = screen.getByText('The job description');
+    const follows = (a: Node, b: Node) =>
+      Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(follows(open, move)).toBe(true);
+    expect(follows(move, description)).toBe(true);
+  });
+
   it('shows the job without Why it matched when its match is gone', () => {
     renderView({ initial: { job: 'a1' }, selected: [] });
     expect(
@@ -189,8 +209,14 @@ describe('ApplicationsView detail', () => {
       screen.getByRole('link', { name: 'Open post' }).getAttribute('href'),
     ).toBe('https://www.linkedin.com/jobs/view/1');
     expect(screen.queryByText(/Why it matched/)).toBeNull();
+    // The actions sit right under the links, inside the job's article.
+    const move = within(screen.getByRole('article')).getByRole('button', {
+      name: 'Move to Not for me',
+    });
     expect(
-      screen.getByRole('button', { name: 'Move to Not for me' }),
+      screen
+        .getByRole('link', { name: 'Open post' })
+        .compareDocumentPosition(move) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });
 
