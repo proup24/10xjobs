@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import type { DismissReason } from '@xjobs/database/enums';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -33,6 +34,7 @@ import type { ReportField } from '@/lib/matches/report';
 import { channelLabel } from '@/lib/matches/sources';
 import type { SaveResult } from '@/lib/setup/save-result';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { DismissDialog } from './dismiss-dialog';
 import { stackScoreText } from './match-row';
 import { ReportDialog, type Report } from './report-dialog';
 
@@ -246,6 +248,47 @@ function PostLinks({
   );
 }
 
+export type DecideJob = (
+  status: 'applied' | 'dismissed',
+  extra?: { reason?: DismissReason; note?: string },
+) => Promise<boolean>;
+
+/** "Applied" and "Not for me" on a match; the second asks for an optional reason first. */
+function JobDecision({ onDecideJob }: { onDecideJob: DecideJob }) {
+  const [pending, setPending] = useState(false);
+  const [asking, setAsking] = useState(false);
+  return (
+    <div className="flex flex-wrap gap-2">
+      <Button
+        variant="secondary"
+        loading={pending}
+        onClick={async () => {
+          setPending(true);
+          try {
+            await onDecideJob('applied');
+          } finally {
+            setPending(false);
+          }
+        }}
+      >
+        Applied
+      </Button>
+      <Button
+        variant="outline"
+        disabled={pending}
+        onClick={() => setAsking(true)}
+      >
+        Not for me
+      </Button>
+      <DismissDialog
+        open={asking}
+        onOpenChange={setAsking}
+        onConfirm={(extra) => onDecideJob('dismissed', extra)}
+      />
+    </div>
+  );
+}
+
 function Section({
   title,
   children,
@@ -297,6 +340,7 @@ export function MatchDetail({
   userId,
   backHref,
   onDecide,
+  onDecideJob,
   onReport,
 }: {
   /** The job's rows, one per matching profile; non-empty. */
@@ -308,6 +352,8 @@ export function MatchDetail({
   backHref: string;
   /** Records a decision on a review row; the buttons show only with it. */
   onDecide?: Decide;
+  /** Marks the job applied or not for me; the buttons show only with it, on matches. */
+  onDecideJob?: DecideJob;
   /** Logs a mismatch on a fact; the report buttons show only with it. */
   onReport?: Report;
 }) {
@@ -383,6 +429,8 @@ export function MatchDetail({
         userId={userId}
         jobId={first.jobId}
       />
+
+      {onDecideJob && !inReview && <JobDecision onDecideJob={onDecideJob} />}
 
       {inReview && (
         <ReviewReason

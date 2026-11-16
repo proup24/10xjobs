@@ -36,6 +36,11 @@ export function publishedRows(
   return rows.filter((r) => published.has(r.profileId));
 }
 
+/** Rows of jobs the user has not decided on: an applied or dismissed job leaves Matches. */
+export function undecidedRows(rows: MatchRow[]): MatchRow[] {
+  return rows.filter((r) => r.decisionStatus == null);
+}
+
 /** Rows to one job each; closed jobs dropped; newest posted first, then by job id. */
 export function groupByJob(rows: MatchRow[]): MatchedJob[] {
   const byJob = new Map<string, MatchRow[]>();

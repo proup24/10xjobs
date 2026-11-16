@@ -4,6 +4,7 @@ import {
   publishedRows,
   selectJobs,
   sourceOptions,
+  undecidedRows,
   type MatchRow,
   type MatchedJob,
 } from './group';
@@ -146,5 +147,17 @@ describe('publishedRows', () => {
     ]);
     expect(kept.map((r) => `${r.jobId}:${r.profileId}`)).toEqual(['a:P1']);
     expect(groupByJob(kept).map((j) => j.jobId)).toEqual(['a']);
+  });
+});
+
+describe('undecidedRows', () => {
+  it('drops decided jobs', () => {
+    const rows = [
+      row({ jobId: 'a', decisionStatus: null }),
+      row({ jobId: 'b', decisionStatus: 'applied' }),
+      row({ jobId: 'c', decisionStatus: 'dismissed' }),
+      row({ jobId: 'd' }),
+    ];
+    expect(undecidedRows(rows).map((r) => r.jobId)).toEqual(['a', 'd']);
   });
 });
