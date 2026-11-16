@@ -23,9 +23,10 @@ Precision over volume: prefer a tailored application over a fast one.
 ## Commands
 
 - `npx nx serve xjobs`: run the engine.
-- `npx nx worker-all xjobs`: run every worker in one process: infrastructure, ingest, processor (when `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY` is set), match, and each enabled channel's scheduled collection (registers schedules only with `XJOBS_RUN_SCHEDULES=1`, set on the hosted engine).
+- `npx nx worker-all xjobs`: run every worker in one process: infrastructure, ingest, processor (when `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY` is set), match, webhook, and each enabled channel's scheduled collection (registers schedules only with `XJOBS_RUN_SCHEDULES=1`, set on the hosted engine).
 - `npx nx worker-processor xjobs`: run the processor worker alone (needs `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY`).
 - `npx nx worker-match xjobs`: run the match worker alone.
+- `npx nx worker-webhook xjobs`: run the webhook worker alone (sends the users' match webhooks; registers its sweep only with `XJOBS_RUN_SCHEDULES=1`, set on the hosted engine).
 - `npx nx worker-<channel> xjobs` (`linkedin-job-board`, `linkedin-posts`, `greenhouse`, `ashby`): run one channel's scheduled collection worker (registers schedules only with `XJOBS_RUN_SCHEDULES=1`, set on the hosted engine).
 - `npx nx run-many -t lint test build typecheck`: what CI runs.
 - `npx nx test xjobs`: unit tests for the engine.

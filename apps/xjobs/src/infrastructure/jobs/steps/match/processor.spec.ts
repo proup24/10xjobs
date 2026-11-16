@@ -3,12 +3,20 @@ import { processMatchJob } from './processor';
 
 function deps() {
   return {
-    service: { matchJob: vi.fn(async () => ({ outcome: 'matched' })) },
+    service: {
+      matchJob: vi.fn(async () => ({
+        status: 'matched',
+        profiles: 2,
+        qualified: 2,
+        deliveryIds: ['d1', 'd2'],
+      })),
+    },
     repo: {
       listStaleJobs: vi.fn(async () => ['j1', 'j2']),
       deleteInactive: vi.fn(async () => 4),
     },
     queue: { enqueue: vi.fn(async () => undefined) },
+    webhooks: { enqueue: vi.fn(async (_id: string) => undefined) },
   };
 }
 const job = (name: string, data: unknown = {}) => ({ name, data });
@@ -27,6 +35,21 @@ describe('processMatchJob', () => {
       d as never,
     );
     expect(d.service.matchJob).toHaveBeenCalledWith('j1', { force: true });
+  });
+
+  it('enqueues each delivery id', async () => {
+    const d = deps();
+    await processMatchJob(job('match-job', { jobId: 'j1' }), d as never);
+    expect(d.webhooks.enqueue.mock.calls).toEqual([['d1'], ['d2']]);
+  });
+
+  it("a failed enqueue doesn't fail the match job", async () => {
+    const d = deps();
+    d.webhooks.enqueue.mockRejectedValueOnce(new Error('redis down'));
+    await expect(
+      processMatchJob(job('match-job', { jobId: 'j1' }), d as never),
+    ).resolves.toMatchObject({ status: 'matched' });
+    expect(d.webhooks.enqueue.mock.calls).toEqual([['d1'], ['d2']]);
   });
 
   it('refuses an invalid payload', async () => {

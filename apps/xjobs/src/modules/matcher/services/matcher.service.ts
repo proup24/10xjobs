@@ -11,7 +11,13 @@ export type MatchOutcome =
   | { status: 'not_matchable' }
   /** The job expired: it is not decided again, and its rows stay. */
   | { status: 'closed' }
-  | { status: 'matched'; profiles: number; qualified: number };
+  | {
+      status: 'matched';
+      profiles: number;
+      qualified: number;
+      /** Webhook deliveries created by this decision, to hand to the webhook queue. */
+      deliveryIds: string[];
+    };
 
 /** Clock token; defaults to Date.now. Tests provide their own. */
 export const MATCHER_CLOCK = Symbol('MATCHER_CLOCK');
@@ -63,7 +69,7 @@ export class MatcherService {
           },
     );
     if (profiles.length === 0)
-      return { status: 'matched', profiles: 0, qualified: 0 };
+      return { status: 'matched', profiles: 0, qualified: 0, deliveryIds: [] };
     const ctx = await this.loadContext();
     const rows: StoredMatch[] = profiles.map((profile) => ({
       ...decide(job, profile, ctx),
@@ -75,11 +81,12 @@ export class MatcherService {
       profileUpdatedAt: profile.updatedAt,
       eligibilityVersion: profile.eligibilityVersion,
     }));
-    await this.repo.upsertMatches(rows);
+    const { deliveryIds } = await this.repo.upsertMatches(rows);
     return {
       status: 'matched',
       profiles: rows.length,
       qualified: rows.filter((r) => r.outcome === 'qualified').length,
+      deliveryIds,
     };
   }
 

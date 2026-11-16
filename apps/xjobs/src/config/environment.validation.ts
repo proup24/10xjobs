@@ -116,9 +116,10 @@ export const processorEnvironmentSchema = z.object(processorEnvironmentShape);
  * A worker process. `WORKER_ROLE=ingest` runs the ingest worker,
  * `WORKER_ROLE=processor` runs the processor (needs `CLAUDE_CODE_OAUTH_TOKEN`
  * or `ANTHROPIC_API_KEY`),
- * `WORKER_ROLE=match` runs the matcher, and
+ * `WORKER_ROLE=match` runs the matcher,
+ * `WORKER_ROLE=webhook` sends the webhook deliveries, and
  * `WORKER_ROLE=all` runs the infrastructure, ingest and every channel's
- * collection worker and the matcher in one process, plus the processor whenever
+ * collection worker, the matcher and the webhook sender in one process, plus the processor whenever
  * one of those credentials is set. Otherwise `WORKER_CHANNEL` unset runs the
  * infrastructure worker, and a channel runs that channel's collection job.
  * Collection needs an Apify token. An unknown role or
@@ -135,7 +136,9 @@ export const workerProcessEnvironmentSchema = databaseEnvironmentSchema
     APIFY_TOKEN: z.string().min(1).optional(),
     ...collectionBudgetShape,
     WORKER_CHANNEL: z.enum(Channel).optional(),
-    WORKER_ROLE: z.enum(['ingest', 'processor', 'match', 'all']).optional(),
+    WORKER_ROLE: z
+      .enum(['ingest', 'processor', 'match', 'webhook', 'all'])
+      .optional(),
     /**
      * Registers the workers' cron and sweep schedulers. Set only on the hosted
      * engine; local workers remove theirs.

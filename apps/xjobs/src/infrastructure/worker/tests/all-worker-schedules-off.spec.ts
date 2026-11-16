@@ -107,6 +107,7 @@ it('registers no schedule and removes the old ones when schedules are off', asyn
       'ingest:sweep',
       'match:sweep',
       'rates:refresh',
+      'webhook:sweep',
       'collect-linkedin-job-board:collect',
       'collect-linkedin-posts:collect',
       'collect-greenhouse:collect',
@@ -117,6 +118,7 @@ it('registers no schedule and removes the old ones when schedules are off', asyn
       'ingest',
       'match',
       'rates',
+      'webhook',
       'collect-linkedin-job-board',
     ]);
   } finally {

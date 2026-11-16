@@ -2,9 +2,48 @@ import { Injectable } from '@nestjs/common';
 import { DatabaseService } from 'src/database';
 import type { DatabaseTransaction } from '@xjobs/database';
 import type { Labels } from '@xjobs/database/matches';
+import { WEBHOOK_CONFIG } from '../config/webhooks.config';
 import type { PayloadInput } from '../payload/build';
 
-/** Every read the webhook payload needs. */
+/** A delivery claimed for one send: its status is now `sending`, `attempts` counts this one. */
+export interface ClaimedDelivery {
+  id: string;
+  userId: string;
+  webhookId: string;
+  kind: 'match' | 'test';
+  attempts: number;
+  /** The body stored at the first attempt; null until then. */
+  payload: unknown;
+  createdAt: Date;
+}
+
+/** Where the claimed delivery goes. */
+export interface DeliveryTarget {
+  id: string;
+  url: string;
+  secret: string;
+}
+
+/**
+ * `skipped`: the webhook is off or gone, and the row is now `skipped`. `busy`: another row of
+ * the webhook is sending. `held`: the webhook is failing and this row is not its oldest
+ * pending one. null: the row is gone, not pending, or not due.
+ */
+export type Claim =
+  | { delivery: ClaimedDelivery; webhook: DeliveryTarget }
+  | { skipped: true; webhookId: string }
+  | 'busy'
+  | 'held'
+  | null;
+
+/** `gone`: the row was deleted or is no longer the one this send claimed; nothing was written. */
+export interface FailureRecord {
+  outcome: 'retry' | 'failed' | 'gone';
+  /** This failure reached the limit and turned the webhook off. */
+  disabled: boolean;
+}
+
+/** Every read and write of webhook deliveries. */
 export abstract class WebhooksRepository {
   /** The delivery's match, profile and job as they are now; null when the delivery or its match is gone. */
   abstract loadPayloadInput(deliveryId: string): Promise<PayloadInput | null>;
@@ -12,6 +51,57 @@ export abstract class WebhooksRepository {
   abstract loadLabels(): Promise<Labels>;
   /** The user's most recently decided qualified match, for a test delivery's sample. */
   abstract latestQualifiedForUser(userId: string): Promise<PayloadInput | null>;
+  /**
+   * In one transaction, with the webhook row locked: skips the row when the webhook is off,
+   * refuses it when busy or held back, and otherwise marks it `sending` and counts the attempt.
+   */
+  abstract claim(deliveryId: string, now: Date): Promise<Claim>;
+  /** Stores a sending row's body; returns it as stored (what every attempt sends), or null when the row is gone. */
+  abstract savePayload(
+    id: string,
+    payload: unknown,
+    now: Date,
+  ): Promise<unknown>;
+  /** A sending row that can't be sent (its match was deleted) becomes `skipped`. */
+  abstract skip(id: string, reason: string, now: Date): Promise<void>;
+  /**
+   * A sending row whose send broke inside the engine (not the receiver) goes back to
+   * `pending`: the attempt is given back, and it is due again after the first retry delay.
+   */
+  abstract release(id: string, now: Date): Promise<void>;
+  /** `delivered`; resets the webhook's failures and makes its other pending rows due now. */
+  abstract recordSuccess(
+    id: string,
+    statusCode: number,
+    now: Date,
+  ): Promise<void>;
+  /** Back to `pending` on the next delay, or `failed` at the last attempt; counts the webhook's failure. */
+  abstract recordFailure(
+    id: string,
+    result: { status: number | null; error: string },
+    now: Date,
+  ): Promise<FailureRecord>;
+  /**
+   * At most one row per webhook, its head, oldest first across webhooks. The head is the
+   * oldest due pending row; for a failing (and enabled) webhook it is its oldest pending row,
+   * listed only once due. The send chain (`nextDue`) drains the rest.
+   */
+  abstract listDue(now: Date, limit: number): Promise<string[]>;
+  /** The webhook's head by the same rule as `listDue`, or null. */
+  abstract nextDue(webhookId: string, now: Date): Promise<string | null>;
+  /** Rows `sending` for longer than `stuckSendingMs` go back to `pending`, due now; returns how many. */
+  abstract recoverStuck(now: Date): Promise<number>;
+  /** Clears old match rows' payload and error, and deletes old test rows. */
+  abstract applyRetention(
+    now: Date,
+  ): Promise<{ cleared: number; deleted: number }>;
+}
+
+/** The wait after a failed attempt number `attempts` (1-based); null when it was the last one. */
+export function retryDelayMs(attempts: number): number | null {
+  if (attempts >= WEBHOOK_CONFIG.maxAttempts) return null;
+  const delays = WEBHOOK_CONFIG.retryDelaysMs;
+  return delays[Math.min(attempts, delays.length) - 1];
 }
 
 type Raw = DatabaseTransaction['raw'];
@@ -22,6 +112,7 @@ const BOOL = 'pg/bool@1';
 const JSONB = 'pg/jsonb@1';
 const TIMESTAMPTZ = 'pg/timestamptz-date@1';
 const NUMERIC = 'pg/numeric@1';
+const INT = 'pg/int4@1';
 
 const LABELS_TTL_MS = 10 * 60_000;
 
@@ -181,5 +272,334 @@ export class PrismaWebhooksRepository extends WebhooksRepository {
     };
     this.labels = { at: now, value };
     return value;
+  }
+
+  async claim(deliveryId: string, now: Date): Promise<Claim> {
+    const at = now.toISOString();
+    return this.db.transaction(async (tx): Promise<Claim> => {
+      const { raw } = tx;
+      // The webhook row first: it serialises every claim and outcome of this webhook. NO KEY
+      // UPDATE, so the deliveries' foreign key checks (KEY SHARE) on new rows don't wait.
+      const [webhook] = await tx.query(
+        raw.sql`SELECT w.id, w.url, w.secret, w.enabled, w."consecutiveFailures"
+          FROM webhooks w
+          WHERE w.id = (SELECT "webhookId" FROM webhook_deliveries WHERE id = ${deliveryId}::uuid)
+          FOR NO KEY UPDATE`
+          .returnsRow({
+            id: UUID,
+            url: TEXT,
+            secret: TEXT,
+            enabled: BOOL,
+            consecutiveFailures: INT,
+          })
+          .build(),
+      );
+      const [row] = await tx.query(
+        raw.sql`SELECT id, "userId", "webhookId", kind, status, "nextAttemptAt", "createdAt"
+          FROM webhook_deliveries WHERE id = ${deliveryId}::uuid FOR UPDATE`
+          .returnsRow({
+            id: UUID,
+            userId: UUID,
+            webhookId: UUID,
+            kind: TEXT,
+            status: TEXT,
+            nextAttemptAt: TIMESTAMPTZ,
+            createdAt: TIMESTAMPTZ,
+          })
+          .build(),
+      );
+      if (!row || row.status !== 'pending') return null;
+      if (!webhook || !webhook.enabled) {
+        await tx.query(
+          raw.sql`UPDATE webhook_deliveries SET status = 'skipped', "updatedAt" = ${at}::timestamptz
+            WHERE id = ${deliveryId}::uuid RETURNING id`
+            .returnsRow({ id: UUID })
+            .build(),
+        );
+        return { skipped: true, webhookId: row.webhookId as string };
+      }
+      const [sending] = await tx.query(
+        raw.sql`SELECT id FROM webhook_deliveries
+          WHERE "webhookId" = ${webhook.id as string}::uuid AND status = 'sending'
+            AND id <> ${deliveryId}::uuid
+          LIMIT 1`
+          .returnsRow({ id: UUID })
+          .build(),
+      );
+      if (sending) return 'busy';
+      if ((webhook.consecutiveFailures as number) > 0) {
+        const [head] = await tx.query(
+          raw.sql`SELECT id FROM webhook_deliveries
+            WHERE "webhookId" = ${webhook.id as string}::uuid AND status = 'pending'
+            ORDER BY "createdAt", id LIMIT 1`
+            .returnsRow({ id: UUID })
+            .build(),
+        );
+        if (head?.id !== deliveryId) return 'held';
+      }
+      if ((row.nextAttemptAt as Date).getTime() > now.getTime()) return null;
+      const [claimed] = await tx.query(
+        raw.sql`UPDATE webhook_deliveries
+          SET status = 'sending', attempts = attempts + 1, "updatedAt" = ${at}::timestamptz
+          WHERE id = ${deliveryId}::uuid
+          RETURNING attempts, payload`
+          .returnsRow({ attempts: INT, payload: JSONB })
+          .build(),
+      );
+      return {
+        delivery: {
+          id: row.id as string,
+          userId: row.userId as string,
+          webhookId: row.webhookId as string,
+          kind: row.kind as 'match' | 'test',
+          attempts: claimed.attempts as number,
+          payload: claimed.payload ?? null,
+          createdAt: row.createdAt as Date,
+        },
+        webhook: {
+          id: webhook.id as string,
+          url: webhook.url as string,
+          secret: webhook.secret as string,
+        },
+      };
+    });
+  }
+
+  async savePayload(id: string, payload: unknown, now: Date): Promise<unknown> {
+    const { raw } = this.db;
+    const [row] = await this.db.query(
+      raw.sql`UPDATE webhook_deliveries SET payload = ${JSON.stringify(payload)}::jsonb,
+          "updatedAt" = ${now.toISOString()}::timestamptz
+        WHERE id = ${id}::uuid AND status = 'sending'
+        RETURNING payload`
+        .returnsRow({ payload: JSONB })
+        .build(),
+    );
+    return row ? row.payload : null;
+  }
+
+  async skip(id: string, reason: string, now: Date): Promise<void> {
+    const { raw } = this.db;
+    await this.db.query(
+      raw.sql`UPDATE webhook_deliveries
+        SET status = 'skipped', "lastError" = ${reason.slice(0, WEBHOOK_CONFIG.maxErrorChars)}::text,
+          "updatedAt" = ${now.toISOString()}::timestamptz
+        WHERE id = ${id}::uuid AND status = 'sending'
+        RETURNING id`
+        .returnsRow({ id: UUID })
+        .build(),
+    );
+  }
+
+  async release(id: string, now: Date): Promise<void> {
+    const { raw } = this.db;
+    const at = now.toISOString();
+    const next = new Date(
+      now.getTime() + WEBHOOK_CONFIG.retryDelaysMs[0],
+    ).toISOString();
+    await this.db.query(
+      raw.sql`UPDATE webhook_deliveries
+        SET status = 'pending', attempts = GREATEST(attempts - 1, 0),
+          "nextAttemptAt" = ${next}::timestamptz, "updatedAt" = ${at}::timestamptz
+        WHERE id = ${id}::uuid AND status = 'sending'
+        RETURNING id`
+        .returnsRow({ id: UUID })
+        .build(),
+    );
+  }
+
+  /** Locks the delivery's webhook row, the same order as `claim`; null when either is gone. */
+  private async lockWebhookOf(tx: DatabaseTransaction, id: string) {
+    const [webhook] = await tx.query(
+      tx.raw.sql`SELECT w.id, w.enabled, w."consecutiveFailures"
+        FROM webhooks w
+        WHERE w.id = (SELECT "webhookId" FROM webhook_deliveries WHERE id = ${id}::uuid)
+        FOR NO KEY UPDATE`
+        .returnsRow({ id: UUID, enabled: BOOL, consecutiveFailures: INT })
+        .build(),
+    );
+    return webhook
+      ? {
+          id: webhook.id as string,
+          enabled: webhook.enabled as boolean,
+          consecutiveFailures: webhook.consecutiveFailures as number,
+        }
+      : null;
+  }
+
+  async recordSuccess(
+    id: string,
+    statusCode: number,
+    now: Date,
+  ): Promise<void> {
+    const at = now.toISOString();
+    await this.db.transaction(async (tx) => {
+      const { raw } = tx;
+      const webhook = await this.lockWebhookOf(tx, id);
+      if (!webhook) return;
+      const [row] = await tx.query(
+        raw.sql`UPDATE webhook_deliveries
+          SET status = 'delivered', "deliveredAt" = ${at}::timestamptz,
+            "lastStatusCode" = ${statusCode}::int, "lastError" = NULL, "updatedAt" = ${at}::timestamptz
+          WHERE id = ${id}::uuid AND status = 'sending'
+          RETURNING id`
+          .returnsRow({ id: UUID })
+          .build(),
+      );
+      if (!row) return;
+      await tx.query(
+        raw.sql`UPDATE webhooks
+          SET "consecutiveFailures" = 0, "lastSuccessAt" = ${at}::timestamptz, "updatedAt" = now()
+          WHERE id = ${webhook.id}::uuid
+          RETURNING id`
+          .returnsRow({ id: UUID })
+          .build(),
+      );
+      // Release the rows held back while failing; the sweep sends them oldest first.
+      await tx.query(
+        raw.sql`UPDATE webhook_deliveries
+          SET "nextAttemptAt" = ${at}::timestamptz, "updatedAt" = ${at}::timestamptz
+          WHERE "webhookId" = ${webhook.id}::uuid AND status = 'pending'
+            AND "nextAttemptAt" > ${at}::timestamptz
+          RETURNING id`
+          .returnsRow({ id: UUID })
+          .build(),
+      );
+    });
+  }
+
+  async recordFailure(
+    id: string,
+    result: { status: number | null; error: string },
+    now: Date,
+  ): Promise<FailureRecord> {
+    const at = now.toISOString();
+    return this.db.transaction(async (tx): Promise<FailureRecord> => {
+      const { raw } = tx;
+      const gone: FailureRecord = { outcome: 'gone', disabled: false };
+      const webhook = await this.lockWebhookOf(tx, id);
+      if (!webhook) return gone;
+      const [row] = await tx.query(
+        raw.sql`SELECT attempts FROM webhook_deliveries
+          WHERE id = ${id}::uuid AND status = 'sending' FOR UPDATE`
+          .returnsRow({ attempts: INT })
+          .build(),
+      );
+      if (!row) return gone;
+      const delay = retryDelayMs(row.attempts as number);
+      const next =
+        delay === null ? null : new Date(now.getTime() + delay).toISOString();
+      await tx.query(
+        raw.sql`UPDATE webhook_deliveries
+          SET status = ${delay === null ? 'failed' : 'pending'}::text,
+            "nextAttemptAt" = COALESCE(NULLIF(${next ?? ''}::text, '')::timestamptz, "nextAttemptAt"),
+            "lastStatusCode" = NULLIF(${result.status === null ? '' : String(result.status)}::text, '')::int,
+            "lastError" = ${result.error.slice(0, WEBHOOK_CONFIG.maxErrorChars)}::text,
+            "updatedAt" = ${at}::timestamptz
+          WHERE id = ${id}::uuid
+          RETURNING id`
+          .returnsRow({ id: UUID })
+          .build(),
+      );
+      const failures = webhook.consecutiveFailures + 1;
+      const disabled =
+        webhook.enabled && failures >= WEBHOOK_CONFIG.autoDisableAfter;
+      await tx.query(
+        raw.sql`UPDATE webhooks
+          SET "consecutiveFailures" = ${failures}::int, "lastFailureAt" = ${at}::timestamptz,
+            enabled = enabled AND NOT ${disabled}::boolean,
+            "disabledReason" = CASE WHEN ${disabled}::boolean THEN 'failing' ELSE "disabledReason" END,
+            "updatedAt" = now()
+          WHERE id = ${webhook.id}::uuid
+          RETURNING id`
+          .returnsRow({ id: UUID })
+          .build(),
+      );
+      return { outcome: delay === null ? 'failed' : 'retry', disabled };
+    });
+  }
+
+  /** Each webhook's head (see `listDue`), optionally of one webhook only. */
+  private heads(raw: Raw, now: Date, webhookId: string | null) {
+    const at = now.toISOString();
+    return raw.sql`SELECT h.id, h."createdAt" FROM (
+        SELECT DISTINCT ON (d."webhookId") d.id, d."createdAt", d."nextAttemptAt"
+        FROM webhook_deliveries d
+        JOIN webhooks w ON w.id = d."webhookId"
+        WHERE d.status = 'pending'
+          AND (NULLIF(${webhookId ?? ''}::text, '') IS NULL
+            OR d."webhookId" = NULLIF(${webhookId ?? ''}::text, '')::uuid)
+          -- A failing webhook's head is its oldest pending row, due or not.
+          AND (d."nextAttemptAt" <= ${at}::timestamptz
+            OR (w.enabled AND w."consecutiveFailures" > 0))
+        ORDER BY d."webhookId", d."createdAt", d.id
+      ) h
+      WHERE h."nextAttemptAt" <= ${at}::timestamptz`.returns(TEXT);
+  }
+
+  async listDue(now: Date, limit: number): Promise<string[]> {
+    const { raw } = this.db;
+    const rows = await this.db.query(
+      raw.sql`SELECT id FROM (${this.heads(raw, now, null)}) due
+        ORDER BY "createdAt", id
+        LIMIT ${limit}::int`
+        .returnsRow({ id: UUID })
+        .build(),
+    );
+    return rows.map((r) => r.id as string);
+  }
+
+  async nextDue(webhookId: string, now: Date): Promise<string | null> {
+    const { raw } = this.db;
+    const [row] = await this.db.query(
+      raw.sql`${this.heads(raw, now, webhookId)}`
+        .returnsRow({ id: UUID, createdAt: TIMESTAMPTZ })
+        .build(),
+    );
+    return row ? (row.id as string) : null;
+  }
+
+  async recoverStuck(now: Date): Promise<number> {
+    const { raw } = this.db;
+    const at = now.toISOString();
+    const before = new Date(
+      now.getTime() - WEBHOOK_CONFIG.stuckSendingMs,
+    ).toISOString();
+    const rows = await this.db.query(
+      raw.sql`UPDATE webhook_deliveries
+        SET status = 'pending', "nextAttemptAt" = ${at}::timestamptz, "updatedAt" = ${at}::timestamptz
+        WHERE status = 'sending' AND "updatedAt" < ${before}::timestamptz
+        RETURNING id`
+        .returnsRow({ id: UUID })
+        .build(),
+    );
+    return rows.length;
+  }
+
+  async applyRetention(
+    now: Date,
+  ): Promise<{ cleared: number; deleted: number }> {
+    const { raw } = this.db;
+    const before = new Date(
+      now.getTime() - WEBHOOK_CONFIG.retentionDays * 86_400_000,
+    ).toISOString();
+    // Match rows stay as the "already sent" record; only finished ones are slimmed.
+    const cleared = await this.db.query(
+      raw.sql`UPDATE webhook_deliveries SET payload = NULL, "lastError" = NULL, "updatedAt" = now()
+        WHERE kind = 'match' AND status IN ('delivered', 'failed', 'skipped')
+          AND "createdAt" < ${before}::timestamptz
+          AND (payload IS NOT NULL OR "lastError" IS NOT NULL)
+        RETURNING id`
+        .returnsRow({ id: UUID })
+        .build(),
+    );
+    const deleted = await this.db.query(
+      raw.sql`DELETE FROM webhook_deliveries
+        WHERE kind = 'test' AND "createdAt" < ${before}::timestamptz
+        RETURNING id`
+        .returnsRow({ id: UUID })
+        .build(),
+    );
+    return { cleared: cleared.length, deleted: deleted.length };
   }
 }

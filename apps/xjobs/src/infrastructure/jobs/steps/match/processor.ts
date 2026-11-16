@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { UnrecoverableError } from 'bullmq';
 import { z } from 'zod';
 import type { MatcherRepository, MatcherService } from 'src/modules/matcher';
@@ -9,10 +10,16 @@ const jobPayload = z.object({
   force: z.boolean().optional(),
 });
 
+/** What the matcher needs of the webhook queue. */
+export type WebhookEnqueuer = { enqueue(deliveryId: string): Promise<void> };
+
+const logger = new Logger('MatchProcessor');
+
 export interface MatchJobDeps {
   service: Pick<MatcherService, 'matchJob'>;
   repo: Pick<MatcherRepository, 'listStaleJobs' | 'deleteInactive'>;
   queue: Pick<MatchQueue, 'enqueue'>;
+  webhooks: WebhookEnqueuer;
 }
 
 /** Runs one job of the `match` queue: a job to match, or a sweep. */
@@ -24,9 +31,21 @@ export async function processMatchJob(
     const payload = jobPayload.safeParse(job.data);
     if (!payload.success)
       throw new UnrecoverableError('Invalid match-job payload');
-    return deps.service.matchJob(payload.data.jobId, {
+    const outcome = await deps.service.matchJob(payload.data.jobId, {
       force: payload.data.force,
     });
+    if (outcome.status === 'matched')
+      for (const id of outcome.deliveryIds) {
+        // The delivery row is stored; the webhook sweeper picks it up if this enqueue fails.
+        try {
+          await deps.webhooks.enqueue(id);
+        } catch (error) {
+          logger.warn(
+            `Webhook delivery ${id} was not enqueued: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
+      }
+    return outcome;
   }
   if (job.name === MATCH_SWEEP_JOB) {
     const deleted = await deps.repo.deleteInactive();

@@ -21,6 +21,7 @@ describe('MatcherController', () => {
       status: 'matched' as const,
       profiles: 1,
       qualified: 1,
+      deliveryIds: [] as string[],
     }));
     const result = await controller(
       { matchJob },
@@ -31,6 +32,7 @@ describe('MatcherController', () => {
       status: 'matched',
       profiles: 1,
       qualified: 1,
+      deliveryIds: [],
       matches: rows,
     });
   });
