@@ -86,6 +86,32 @@ export const seedWorkAuthorization = (
   place: string,
 ) => insertOne('work_authorizations', { userId, kind, place });
 
+/** userId's webhook (one per user), replacing any existing one and its deliveries. */
+export async function seedWebhook(userId: string): Promise<string> {
+  const { error } = await admin()
+    .from('webhooks')
+    .delete()
+    .eq('userId', userId);
+  if (error) throw new Error(`Could not clear the webhook: ${error.message}`);
+  return insertOne('webhooks', {
+    userId,
+    url: 'https://hook.example.com/x',
+  });
+}
+
+/** A test delivery on userId's webhook, created if missing. */
+export async function seedWebhookDelivery(userId: string): Promise<string> {
+  const { data, error } = await admin()
+    .from('webhooks')
+    .select('id')
+    .eq('userId', userId)
+    .maybeSingle();
+  if (error) throw new Error(`Could not read the webhook: ${error.message}`);
+  const webhookId =
+    (data?.id as string | undefined) ?? (await seedWebhook(userId));
+  return insertOne('webhook_deliveries', { userId, webhookId, kind: 'test' });
+}
+
 /** A fresh key in the agreed layout: <userId>/<profileId>/<uuid>.pdf. */
 export const resumeKeyFor = (userId: string, profileId: string): string =>
   `${userId}/${profileId}/${randomUUID()}.pdf`;

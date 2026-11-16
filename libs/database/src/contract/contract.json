@@ -160,6 +160,14 @@
       "model": "User",
       "namespace": "public"
     },
+    "webhook_deliveries": {
+      "model": "WebhookDelivery",
+      "namespace": "public"
+    },
+    "webhooks": {
+      "model": "Webhook",
+      "namespace": "public"
+    },
     "work_authorizations": {
       "model": "WorkAuthorization",
       "namespace": "public"
@@ -2763,6 +2771,21 @@
                   "model": "User",
                   "namespace": "public"
                 }
+              },
+              "webhookDeliveries": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "matchId"
+                  ]
+                },
+                "to": {
+                  "model": "WebhookDelivery",
+                  "namespace": "public"
+                }
               }
             },
             "storage": {
@@ -3802,6 +3825,21 @@
                   "model": "JobView",
                   "namespace": "public"
                 }
+              },
+              "webhookDeliveries": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "jobId"
+                  ]
+                },
+                "to": {
+                  "model": "WebhookDelivery",
+                  "namespace": "public"
+                }
               }
             },
             "storage": {
@@ -4660,6 +4698,23 @@
                 },
                 "to": {
                   "model": "User",
+                  "namespace": "public"
+                }
+              },
+              "webhookDeliveries": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id",
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "profileId",
+                    "userId"
+                  ]
+                },
+                "to": {
+                  "model": "WebhookDelivery",
                   "namespace": "public"
                 }
               }
@@ -6574,6 +6629,36 @@
                   "model": "MatchReview",
                   "namespace": "public"
                 }
+              },
+              "webhookDeliveries": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "userId"
+                  ]
+                },
+                "to": {
+                  "model": "WebhookDelivery",
+                  "namespace": "public"
+                }
+              },
+              "webhooks": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "userId"
+                  ]
+                },
+                "to": {
+                  "model": "Webhook",
+                  "namespace": "public"
+                }
               }
             },
             "storage": {
@@ -6605,6 +6690,464 @@
               },
               "namespaceId": "public",
               "table": "users"
+            }
+          },
+          "Webhook": {
+            "fields": {
+              "consecutiveFailures": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "disabledReason": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "enabled": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "enabledSince": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "lastFailureAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "lastSuccessAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "secret": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "url": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "userId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "deliveries": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id",
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "webhookId",
+                    "userId"
+                  ]
+                },
+                "to": {
+                  "model": "WebhookDelivery",
+                  "namespace": "public"
+                }
+              },
+              "user": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "consecutiveFailures": {
+                  "column": "consecutiveFailures"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "disabledReason": {
+                  "column": "disabledReason"
+                },
+                "enabled": {
+                  "column": "enabled"
+                },
+                "enabledSince": {
+                  "column": "enabledSince"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "lastFailureAt": {
+                  "column": "lastFailureAt"
+                },
+                "lastSuccessAt": {
+                  "column": "lastSuccessAt"
+                },
+                "secret": {
+                  "column": "secret"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                },
+                "url": {
+                  "column": "url"
+                },
+                "userId": {
+                  "column": "userId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "webhooks"
+            }
+          },
+          "WebhookDelivery": {
+            "fields": {
+              "attempts": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "deliveredAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "jobId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "kind": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "lastError": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "lastStatusCode": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "matchId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "nextAttemptAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "payload": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
+              },
+              "profileId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "trigger": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "userId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "webhookId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "job": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "jobId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "NormalizedJob",
+                  "namespace": "public"
+                }
+              },
+              "match": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "matchId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "JobMatch",
+                  "namespace": "public"
+                }
+              },
+              "profile": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "profileId",
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id",
+                    "userId"
+                  ]
+                },
+                "to": {
+                  "model": "Profile",
+                  "namespace": "public"
+                }
+              },
+              "user": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              },
+              "webhook": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "webhookId",
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id",
+                    "userId"
+                  ]
+                },
+                "to": {
+                  "model": "Webhook",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "attempts": {
+                  "column": "attempts"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "deliveredAt": {
+                  "column": "deliveredAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "jobId": {
+                  "column": "jobId"
+                },
+                "kind": {
+                  "column": "kind"
+                },
+                "lastError": {
+                  "column": "lastError"
+                },
+                "lastStatusCode": {
+                  "column": "lastStatusCode"
+                },
+                "matchId": {
+                  "column": "matchId"
+                },
+                "nextAttemptAt": {
+                  "column": "nextAttemptAt"
+                },
+                "payload": {
+                  "column": "payload"
+                },
+                "profileId": {
+                  "column": "profileId"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "trigger": {
+                  "column": "trigger"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                },
+                "userId": {
+                  "column": "userId"
+                },
+                "webhookId": {
+                  "column": "webhookId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "webhook_deliveries"
             }
           },
           "WorkAuthorization": {
@@ -7166,6 +7709,32 @@
               "using": "id = auth.uid()",
               "withCheck": "id = auth.uid()"
             },
+            "webhook_deliveries_owner_read": {
+              "kind": "policy",
+              "name": "webhook_deliveries_owner_read_ab58a1a7",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "webhook_deliveries_owner_read",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "webhook_deliveries",
+              "using": "\"userId\" = auth.uid()"
+            },
+            "webhooks_owner_read": {
+              "kind": "policy",
+              "name": "webhooks_owner_read_ab58a1a7",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "webhooks_owner_read",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "webhooks",
+              "using": "\"userId\" = auth.uid()"
+            },
             "work_authorizations_owner": {
               "kind": "policy",
               "name": "work_authorizations_owner_6ea08fe5",
@@ -7376,6 +7945,16 @@
               "kind": "rls",
               "namespaceId": "public",
               "tableName": "users"
+            },
+            "webhook_deliveries": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "webhook_deliveries"
+            },
+            "webhooks": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "webhooks"
             },
             "work_authorizations": {
               "kind": "rls",
@@ -12755,6 +13334,491 @@
               },
               "uniques": []
             },
+            "webhook_deliveries": {
+              "checks": [
+                {
+                  "expression": "kind IN ('match', 'test')",
+                  "name": "webhook_deliveries_kind_0baf92e4",
+                  "prefix": "webhook_deliveries_kind"
+                },
+                {
+                  "expression": "kind <> 'match' OR (\"profileId\" IS NOT NULL AND \"jobId\" IS NOT NULL AND trigger IS NOT NULL)",
+                  "name": "webhook_deliveries_match_complete_1bd7afd2",
+                  "prefix": "webhook_deliveries_match_complete"
+                },
+                {
+                  "expression": "status IN ('pending', 'sending', 'delivered', 'failed', 'skipped')",
+                  "name": "webhook_deliveries_status_2748a05e",
+                  "prefix": "webhook_deliveries_status"
+                },
+                {
+                  "expression": "trigger IN ('decision', 'review')",
+                  "name": "webhook_deliveries_trigger_ae640364",
+                  "prefix": "webhook_deliveries_trigger"
+                }
+              ],
+              "columns": {
+                "attempts": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 0
+                  },
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "deliveredAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "jobId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "kind": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "lastError": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "lastStatusCode": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "matchId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "nextAttemptAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "payload": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": true
+                },
+                "profileId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "pending"
+                  },
+                  "nullable": false
+                },
+                "trigger": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "userId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "webhookId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "webhook_deliveries_userId_idx_a489d58a"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "webhook_deliveries"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "users"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "webhook_deliveries_webhookId_userId_idx_f48d66cb"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "webhookId",
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "webhook_deliveries"
+                  },
+                  "target": {
+                    "columns": [
+                      "id",
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "webhooks"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "webhook_deliveries_profileId_userId_idx_2d3ae1fb"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "profileId",
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "webhook_deliveries"
+                  },
+                  "target": {
+                    "columns": [
+                      "id",
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "profiles"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "webhook_deliveries_jobId_idx_623c8f77"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "jobId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "webhook_deliveries"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "normalized_jobs"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "webhook_deliveries_matchId_idx_4caf5ecc"
+                  },
+                  "onDelete": "setNull",
+                  "source": {
+                    "columns": [
+                      "matchId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "webhook_deliveries"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "job_matches"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "jobId"
+                  ],
+                  "name": "webhook_deliveries_jobId_idx_623c8f77",
+                  "prefix": "webhook_deliveries_jobId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "matchId"
+                  ],
+                  "name": "webhook_deliveries_matchId_idx_4caf5ecc",
+                  "prefix": "webhook_deliveries_matchId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "profileId",
+                    "jobId"
+                  ],
+                  "name": "webhook_deliveries_match_once_6bad34b8",
+                  "prefix": "webhook_deliveries_match_once",
+                  "unique": true,
+                  "where": "kind = 'match'"
+                },
+                {
+                  "columns": [
+                    "profileId",
+                    "userId"
+                  ],
+                  "name": "webhook_deliveries_profileId_userId_idx_2d3ae1fb",
+                  "prefix": "webhook_deliveries_profileId_userId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "userId"
+                  ],
+                  "name": "webhook_deliveries_userId_idx_a489d58a",
+                  "prefix": "webhook_deliveries_userId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "webhookId",
+                    "status",
+                    "createdAt"
+                  ],
+                  "name": "webhook_deliveries_webhookId_status_createdAt_idx_206ef646",
+                  "prefix": "webhook_deliveries_webhookId_status_createdAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "webhookId",
+                    "userId"
+                  ],
+                  "name": "webhook_deliveries_webhookId_userId_idx_f48d66cb",
+                  "prefix": "webhook_deliveries_webhookId_userId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "webhooks": {
+              "checks": [
+                {
+                  "expression": "\"disabledReason\" IN ('user', 'failing')",
+                  "name": "webhooks_disabled_reason_caba0ea2",
+                  "prefix": "webhooks_disabled_reason"
+                },
+                {
+                  "expression": "length(url) <= 2048",
+                  "name": "webhooks_url_length_a78745bf",
+                  "prefix": "webhooks_url_length"
+                }
+              ],
+              "columns": {
+                "consecutiveFailures": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 0
+                  },
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "disabledReason": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "enabled": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": true
+                  },
+                  "nullable": false
+                },
+                "enabledSince": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "lastFailureAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "lastSuccessAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "secret": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "expression": "translate(encode(gen_random_bytes(32), 'base64'::text), '+/='::text, '-_'::text)",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "url": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "userId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "unique": [
+                      "userId"
+                    ]
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "webhooks"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "users"
+                  }
+                }
+              ],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "userId"
+                  ]
+                },
+                {
+                  "columns": [
+                    "id",
+                    "userId"
+                  ]
+                }
+              ]
+            },
             "work_authorizations": {
               "checks": [
                 {
@@ -12938,10 +14002,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "bb8af43bca30e6471e52cd0c0d8d90c51a1f0c5ed462b52a7aad80dbed142948"
+    "storageHash": "9a48a4e77a746f4139019f4d84e5ccddfee3174d4b606a6626b8181d84715a60"
   },
   "execution": {
-    "executionHash": "715e2532a0052464d22fb6f943fddbdf3fe9c05f913b908450f71476ac1bf9b8",
+    "executionHash": "3461eec8835c53ff559e82fbaaebc361cd1c3ca10478f13fc23cee0455aa77a9",
     "mutations": {
       "defaults": [
         {
@@ -13373,6 +14437,58 @@
           },
           "ref": {
             "entry": "users",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv7",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "webhook_deliveries",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "webhook_deliveries",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv7",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "webhooks",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "webhooks",
             "field": "updatedAt",
             "namespace": "public"
           }

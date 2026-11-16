@@ -127,6 +127,8 @@ model User {
   jobViews           JobView[]
   matchReviews       MatchReview[]
   factReports        FactReport[]
+  webhooks           Webhook[]
+  webhookDeliveries  WebhookDelivery[]
   +Timestamps
 
   @@map("users")
@@ -232,6 +234,7 @@ model Profile {
   state              ProfileState          @default(draft)
   publishedAt        TimestamptzJsDate(3)?
   jobMatches         JobMatch[]
+  webhookDeliveries  WebhookDelivery[]
   +Timestamps
 
   @@check(expression: sql`"yearsOfExperience" BETWEEN 0 AND 60`, name: "profiles_years_range")
@@ -624,6 +627,7 @@ model NormalizedJob {
   factConflicts         JobFactConflict[]
   views                 JobView[]
   factReports           FactReport[]
+  webhookDeliveries     WebhookDelivery[]
   +Timestamps
 
   @@check(expression: sql`"workplaceType" IS NULL OR "workplaceType" IN ('remote', 'hybrid', 'onsite')`, name: "normalized_jobs_workplace_type")
@@ -1037,6 +1041,7 @@ model JobMatch {
   profileUpdatedAt   TimestamptzJsDate(3)?
   eligibilityVersion Int?
   reviews            MatchReview[]
+  webhookDeliveries  WebhookDelivery[]
   +Timestamps
 
   @@check(expression: sql`outcome IN ('qualified','rejected','review')`, name: "job_matches_outcome")
@@ -1131,6 +1136,99 @@ policy_insert match_reviews_owner_insert {
 // Owners delete their decisions. No update: a decision is history, a new one supersedes it.
 policy_delete match_reviews_owner_delete {
   target = MatchReview
+  roles = [authenticated]
+  using = sql`"userId" = auth.uid()`
+}
+
+// A user's webhook: where qualified matches are POSTed. One per user. Users read it and write
+// only through the webhook_* RPCs, which keep enabledSince, the secret and the failure counters
+// out of their hands. Only the engine and those RPCs write it.
+model Webhook {
+  // The RPCs insert from SQL, so the id has a database default too.
+  id                  Uuid                  @id @default(sql`gen_random_uuid()`) @onCreate(uuid(7))
+  userId              Uuid
+  user                User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // https only, checked on save.
+  url                 String
+  // 32 random bytes, base64url without padding; the receiver checks the signature with it.
+  // pgcrypto's gen_random_bytes, from the extensions schema; written as Postgres prints it back.
+  secret              String                @default(sql`translate(encode(gen_random_bytes(32), 'base64'::text), '+/='::text, '-_'::text)`)
+  enabled             Boolean               @default(true)
+  // Set on create and whenever the webhook goes from off to on: only jobs first seen since are sent.
+  enabledSince        TimestamptzJsDate(3)  @default(now())
+  // null, 'user' (turned off) or 'failing' (turned off by the engine after repeated failures).
+  disabledReason      String?
+  // Failed attempts since the last 2xx.
+  consecutiveFailures Int                   @default(0)
+  lastSuccessAt       TimestamptzJsDate(3)?
+  lastFailureAt       TimestamptzJsDate(3)?
+  deliveries          WebhookDelivery[]
+  +Timestamps
+
+  @@check(expression: sql`"disabledReason" IN ('user', 'failing')`, name: "webhooks_disabled_reason")
+  @@check(expression: sql`length(url) <= 2048`, name: "webhooks_url_length")
+  @@unique([userId])
+  // Target of the deliveries' (webhookId, userId) key, so a delivery stays on its owner's webhook.
+  @@unique([id, userId])
+  @@map("webhooks")
+  @@rls
+}
+
+// Owners read their webhook. No insert, update or delete policy: the RPCs write it.
+policy_select webhooks_owner_read {
+  target = Webhook
+  roles = [authenticated]
+  using = sql`"userId" = auth.uid()`
+}
+
+// One POST to a webhook, with its retries: a match (profile, job) or a test. Created by
+// webhook_enqueue_match (the engine's decision, the review trigger) or webhook_send_test();
+// only the engine updates it. Match rows are never deleted: the unique (profileId, jobId)
+// index is the permanent "already sent" record.
+model WebhookDelivery {
+  id             Uuid                  @id @default(sql`gen_random_uuid()`) @onCreate(uuid(7))
+  userId         Uuid
+  user           User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  webhookId      Uuid
+  webhook        Webhook               @relation(fields: [webhookId, userId], references: [id, userId], onDelete: Cascade)
+  // 'match' or 'test'.
+  kind           String
+  // Null for test rows.
+  profileId      Uuid?
+  profile        Profile?              @relation(fields: [profileId, userId], references: [id, userId], onDelete: Cascade)
+  jobId          Uuid?
+  job            NormalizedJob?        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  // Null for test rows, and once the match is deleted (the matcher's sweep deletes matches of
+  // jobs no longer active): the row stays as the "already sent" record.
+  matchId        Uuid?
+  match          JobMatch?             @relation(fields: [matchId], references: [id], onDelete: SetNull)
+  // 'decision' or 'review'; null for test rows.
+  trigger        String?
+  // 'pending', 'sending', 'delivered', 'failed' (gave up) or 'skipped' (webhook off or gone).
+  status         String                @default("pending")
+  attempts       Int                   @default(0)
+  nextAttemptAt  TimestamptzJsDate(3)  @default(now())
+  lastStatusCode Int?
+  // A short, truncated reason. The response body is never stored.
+  lastError      String?
+  deliveredAt    TimestamptzJsDate(3)?
+  // Null until the engine builds it on the first attempt; kept so retries send the same body.
+  payload        Jsonb?
+  +Timestamps
+
+  @@check(expression: sql`kind IN ('match', 'test')`, name: "webhook_deliveries_kind")
+  @@check(expression: sql`trigger IN ('decision', 'review')`, name: "webhook_deliveries_trigger")
+  @@check(expression: sql`status IN ('pending', 'sending', 'delivered', 'failed', 'skipped')`, name: "webhook_deliveries_status")
+  @@check(expression: sql`kind <> 'match' OR ("profileId" IS NOT NULL AND "jobId" IS NOT NULL AND trigger IS NOT NULL)`, name: "webhook_deliveries_match_complete")
+  @@index([profileId, jobId], where: sql`kind = 'match'`, unique: true, name: "webhook_deliveries_match_once")
+  @@index([webhookId, status, createdAt])
+  @@map("webhook_deliveries")
+  @@rls
+}
+
+// Owners read their deliveries. Only the engine and SECURITY DEFINER functions write them.
+policy_select webhook_deliveries_owner_read {
+  target = WebhookDelivery
   roles = [authenticated]
   using = sql`"userId" = auth.uid()`
 }
