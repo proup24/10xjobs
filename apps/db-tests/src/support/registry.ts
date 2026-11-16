@@ -8,6 +8,8 @@ import {
   seedProfile,
   seedSetupDraft,
   seedSkill,
+  seedWebhook,
+  seedWebhookDelivery,
   seedWorkAuthorization,
 } from './fixtures.js';
 
@@ -128,6 +130,23 @@ export const ownedTables: OwnedTable[] = [
     table: 'job_matches',
     ownerColumn: 'userId',
     seed: seedJobMatch,
+    insertPayload: null,
+    patch: null,
+    canDelete: false,
+  },
+  {
+    // Users write their webhook only through the webhook_* RPCs.
+    table: 'webhooks',
+    ownerColumn: 'userId',
+    seed: seedWebhook,
+    insertPayload: null,
+    patch: null,
+    canDelete: false,
+  },
+  {
+    table: 'webhook_deliveries',
+    ownerColumn: 'userId',
+    seed: seedWebhookDelivery,
     insertPayload: null,
     patch: null,
     canDelete: false,

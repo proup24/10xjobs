@@ -2006,6 +2006,157 @@ export type Database = {
         };
         Relationships: [];
       };
+      webhook_deliveries: {
+        Row: {
+          attempts: number;
+          createdAt: string;
+          deliveredAt: string | null;
+          id: string;
+          jobId: string | null;
+          kind: string;
+          lastError: string | null;
+          lastStatusCode: number | null;
+          matchId: string | null;
+          nextAttemptAt: string;
+          payload: Json | null;
+          profileId: string | null;
+          status: string;
+          trigger: string | null;
+          updatedAt: string;
+          userId: string;
+          webhookId: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          attempts?: number;
+          createdAt?: string;
+          deliveredAt?: string | null;
+          id?: string;
+          jobId?: string | null;
+          kind: string;
+          lastError?: string | null;
+          lastStatusCode?: number | null;
+          matchId?: string | null;
+          nextAttemptAt?: string;
+          payload?: Json | null;
+          profileId?: string | null;
+          status?: string;
+          trigger?: string | null;
+          updatedAt?: string;
+          userId: string;
+          webhookId: string;
+        };
+        Update: {
+          attempts?: number;
+          createdAt?: string;
+          deliveredAt?: string | null;
+          id?: string;
+          jobId?: string | null;
+          kind?: string;
+          lastError?: string | null;
+          lastStatusCode?: number | null;
+          matchId?: string | null;
+          nextAttemptAt?: string;
+          payload?: Json | null;
+          profileId?: string | null;
+          status?: string;
+          trigger?: string | null;
+          updatedAt?: string;
+          userId?: string;
+          webhookId?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'webhook_deliveries_jobId_fkey';
+            columns: ['jobId'];
+            isOneToOne: false;
+            referencedRelation: 'normalized_jobs';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'webhook_deliveries_matchId_fkey';
+            columns: ['matchId'];
+            isOneToOne: false;
+            referencedRelation: 'job_matches';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'webhook_deliveries_profileId_userId_fkey';
+            columns: ['profileId', 'userId'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id', 'userId'];
+          },
+          {
+            foreignKeyName: 'webhook_deliveries_userId_fkey';
+            columns: ['userId'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'webhook_deliveries_webhookId_fkey';
+            columns: ['webhookId'];
+            isOneToOne: false;
+            referencedRelation: 'webhooks';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      webhooks: {
+        Row: {
+          consecutiveFailures: number;
+          createdAt: string;
+          disabledReason: string | null;
+          enabled: boolean;
+          enabledSince: string;
+          id: string;
+          lastFailureAt: string | null;
+          lastSuccessAt: string | null;
+          secret: string;
+          updatedAt: string;
+          url: string;
+          userId: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          consecutiveFailures?: number;
+          createdAt?: string;
+          disabledReason?: string | null;
+          enabled?: boolean;
+          enabledSince?: string;
+          id?: string;
+          lastFailureAt?: string | null;
+          lastSuccessAt?: string | null;
+          secret?: string;
+          updatedAt?: string;
+          url: string;
+          userId: string;
+        };
+        Update: {
+          consecutiveFailures?: number;
+          createdAt?: string;
+          disabledReason?: string | null;
+          enabled?: boolean;
+          enabledSince?: string;
+          id?: string;
+          lastFailureAt?: string | null;
+          lastSuccessAt?: string | null;
+          secret?: string;
+          updatedAt?: string;
+          url?: string;
+          userId?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'webhooks_userId_fkey';
+            columns: ['userId'];
+            isOneToOne: true;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       work_authorizations: {
         Row: {
           createdAt: string;
@@ -2132,6 +2283,10 @@ export type Database = {
           profile_id: string;
           sha256: string;
         };
+        Returns: string;
+      };
+      webhook_enqueue_match: {
+        Args: { p_match_id: string; p_trigger: string };
         Returns: string;
       };
     };
