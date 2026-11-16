@@ -1168,6 +1168,8 @@ model Webhook {
   @@check(expression: sql`"disabledReason" IN ('user', 'failing')`, name: "webhooks_disabled_reason")
   @@check(expression: sql`length(url) <= 2048`, name: "webhooks_url_length")
   @@unique([userId])
+  // Target of the deliveries' (webhookId, userId) key, so a delivery stays on its owner's webhook.
+  @@unique([id, userId])
   @@map("webhooks")
   @@rls
 }
@@ -1188,7 +1190,7 @@ model WebhookDelivery {
   userId         Uuid
   user           User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   webhookId      Uuid
-  webhook        Webhook               @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  webhook        Webhook               @relation(fields: [webhookId, userId], references: [id, userId], onDelete: Cascade)
   // 'match' or 'test'.
   kind           String
   // Null for test rows.
@@ -1196,8 +1198,10 @@ model WebhookDelivery {
   profile        Profile?              @relation(fields: [profileId, userId], references: [id, userId], onDelete: Cascade)
   jobId          Uuid?
   job            NormalizedJob?        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  // Null for test rows, and once the match is deleted (the matcher's sweep deletes matches of
+  // jobs no longer active): the row stays as the "already sent" record.
   matchId        Uuid?
-  match          JobMatch?             @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  match          JobMatch?             @relation(fields: [matchId], references: [id], onDelete: SetNull)
   // 'decision' or 'review'; null for test rows.
   trigger        String?
   // 'pending', 'sending', 'delivered', 'failed' (gave up) or 'skipped' (webhook off or gone).
@@ -1215,7 +1219,7 @@ model WebhookDelivery {
   @@check(expression: sql`kind IN ('match', 'test')`, name: "webhook_deliveries_kind")
   @@check(expression: sql`trigger IN ('decision', 'review')`, name: "webhook_deliveries_trigger")
   @@check(expression: sql`status IN ('pending', 'sending', 'delivered', 'failed', 'skipped')`, name: "webhook_deliveries_status")
-  @@check(expression: sql`kind <> 'match' OR ("profileId" IS NOT NULL AND "jobId" IS NOT NULL AND "matchId" IS NOT NULL AND trigger IS NOT NULL)`, name: "webhook_deliveries_match_complete")
+  @@check(expression: sql`kind <> 'match' OR ("profileId" IS NOT NULL AND "jobId" IS NOT NULL AND trigger IS NOT NULL)`, name: "webhook_deliveries_match_complete")
   @@index([profileId, jobId], where: sql`kind = 'match'`, unique: true, name: "webhook_deliveries_match_once")
   @@index([webhookId, status, createdAt])
   @@map("webhook_deliveries")

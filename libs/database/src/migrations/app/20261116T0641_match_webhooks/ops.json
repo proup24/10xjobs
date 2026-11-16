@@ -49,7 +49,7 @@
     "execute": [
       {
         "description": "create table \"webhook_deliveries\"",
-        "sql": "CREATE TABLE \"public\".\"webhook_deliveries\" (\n  \"attempts\" int4 DEFAULT 0 NOT NULL,\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"deliveredAt\" timestamptz(3),\n  \"id\" uuid DEFAULT (gen_random_uuid()) NOT NULL,\n  \"jobId\" uuid,\n  \"kind\" text NOT NULL,\n  \"lastError\" text,\n  \"lastStatusCode\" int4,\n  \"matchId\" uuid,\n  \"nextAttemptAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"payload\" jsonb,\n  \"profileId\" uuid,\n  \"status\" text DEFAULT 'pending' NOT NULL,\n  \"trigger\" text,\n  \"updatedAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"userId\" uuid NOT NULL,\n  \"webhookId\" uuid NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"webhook_deliveries_kind_0baf92e4\" CHECK (kind IN ('match', 'test')),\n  CONSTRAINT \"webhook_deliveries_match_complete_72089b3b\" CHECK (kind <> 'match' OR (\"profileId\" IS NOT NULL AND \"jobId\" IS NOT NULL AND \"matchId\" IS NOT NULL AND trigger IS NOT NULL)),\n  CONSTRAINT \"webhook_deliveries_status_2748a05e\" CHECK (status IN ('pending', 'sending', 'delivered', 'failed', 'skipped')),\n  CONSTRAINT \"webhook_deliveries_trigger_ae640364\" CHECK (trigger IN ('decision', 'review'))\n)",
+        "sql": "CREATE TABLE \"public\".\"webhook_deliveries\" (\n  \"attempts\" int4 DEFAULT 0 NOT NULL,\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"deliveredAt\" timestamptz(3),\n  \"id\" uuid DEFAULT (gen_random_uuid()) NOT NULL,\n  \"jobId\" uuid,\n  \"kind\" text NOT NULL,\n  \"lastError\" text,\n  \"lastStatusCode\" int4,\n  \"matchId\" uuid,\n  \"nextAttemptAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"payload\" jsonb,\n  \"profileId\" uuid,\n  \"status\" text DEFAULT 'pending' NOT NULL,\n  \"trigger\" text,\n  \"updatedAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"userId\" uuid NOT NULL,\n  \"webhookId\" uuid NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"webhook_deliveries_kind_0baf92e4\" CHECK (kind IN ('match', 'test')),\n  CONSTRAINT \"webhook_deliveries_match_complete_1bd7afd2\" CHECK (kind <> 'match' OR (\"profileId\" IS NOT NULL AND \"jobId\" IS NOT NULL AND trigger IS NOT NULL)),\n  CONSTRAINT \"webhook_deliveries_status_2748a05e\" CHECK (status IN ('pending', 'sending', 'delivered', 'failed', 'skipped')),\n  CONSTRAINT \"webhook_deliveries_trigger_ae640364\" CHECK (trigger IN ('decision', 'review'))\n)",
         "params": []
       }
     ],
@@ -162,6 +162,54 @@
           "\"public\".\"webhooks\"",
           "u",
           "[\"userId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.webhooks.webhooks_id_userId_key",
+    "label": "Add unique constraint on \"webhooks\" (id, userId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "webhooks_id_userId_key",
+        "table": "webhooks"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"webhooks_id_userId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "webhooks_id_userId_key",
+          "public",
+          "\"public\".\"webhooks\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"webhooks_id_userId_key\" on \"webhooks\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"webhooks_id_userId_key\"",
+        "sql": "ALTER TABLE \"public\".\"webhooks\" ADD CONSTRAINT \"webhooks_id_userId_key\" UNIQUE (\"id\", \"userId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"webhooks_id_userId_key\" exists on (id, userId)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "webhooks_id_userId_key",
+          "public",
+          "\"public\".\"webhooks\"",
+          "u",
+          "[\"id\",\"userId\"]"
         ]
       }
     ]
@@ -407,54 +455,6 @@
     ]
   },
   {
-    "id": "index.webhook_deliveries.webhook_deliveries_webhookId_idx_16330c4e",
-    "label": "Create index \"webhook_deliveries_webhookId_idx_16330c4e\" on \"webhook_deliveries\"",
-    "operationClass": "additive",
-    "target": {
-      "id": "postgres",
-      "details": {
-        "schema": "public",
-        "objectType": "index",
-        "name": "webhook_deliveries_webhookId_idx_16330c4e",
-        "table": "webhook_deliveries"
-      }
-    },
-    "precheck": [
-      {
-        "description": "ensure index \"webhook_deliveries_webhookId_idx_16330c4e\" does not exist",
-        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"webhook_deliveries_webhookId_idx_16330c4e\""
-        ],
-        "expectation": {
-          "expects": "absent",
-          "object": "index \"webhook_deliveries_webhookId_idx_16330c4e\""
-        }
-      }
-    ],
-    "execute": [
-      {
-        "description": "create index \"webhook_deliveries_webhookId_idx_16330c4e\"",
-        "sql": "CREATE INDEX \"webhook_deliveries_webhookId_idx_16330c4e\" ON \"public\".\"webhook_deliveries\" (\"webhookId\")",
-        "params": []
-      }
-    ],
-    "postcheck": [
-      {
-        "description": "verify index \"webhook_deliveries_webhookId_idx_16330c4e\" exists on \"webhook_deliveries\" with the planned definition",
-        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
-        "params": [
-          "\"public\".\"webhook_deliveries_webhookId_idx_16330c4e\"",
-          "i",
-          "I",
-          "\"public\".\"webhook_deliveries\"",
-          "btree",
-          "[\"webhookId\"]"
-        ]
-      }
-    ]
-  },
-  {
     "id": "index.webhook_deliveries.webhook_deliveries_webhookId_status_createdAt_idx_206ef646",
     "label": "Create index \"webhook_deliveries_webhookId_status_createdAt_idx_206ef646\" on \"webhook_deliveries\"",
     "operationClass": "additive",
@@ -498,6 +498,54 @@
           "\"public\".\"webhook_deliveries\"",
           "btree",
           "[\"webhookId\",\"status\",\"createdAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.webhook_deliveries.webhook_deliveries_webhookId_userId_idx_f48d66cb",
+    "label": "Create index \"webhook_deliveries_webhookId_userId_idx_f48d66cb\" on \"webhook_deliveries\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "webhook_deliveries_webhookId_userId_idx_f48d66cb",
+        "table": "webhook_deliveries"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"webhook_deliveries_webhookId_userId_idx_f48d66cb\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"webhook_deliveries_webhookId_userId_idx_f48d66cb\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"webhook_deliveries_webhookId_userId_idx_f48d66cb\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"webhook_deliveries_webhookId_userId_idx_f48d66cb\"",
+        "sql": "CREATE INDEX \"webhook_deliveries_webhookId_userId_idx_f48d66cb\" ON \"public\".\"webhook_deliveries\" (\"webhookId\", \"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"webhook_deliveries_webhookId_userId_idx_f48d66cb\" exists on \"webhook_deliveries\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"webhook_deliveries_webhookId_userId_idx_f48d66cb\"",
+          "i",
+          "I",
+          "\"public\".\"webhook_deliveries\"",
+          "btree",
+          "[\"webhookId\",\"userId\"]"
         ]
       }
     ]
@@ -555,51 +603,51 @@
     ]
   },
   {
-    "id": "foreignKey.webhook_deliveries.webhook_deliveries_webhookId_fkey",
-    "label": "Add foreign key \"webhook_deliveries_webhookId_fkey\" on \"webhook_deliveries\"",
+    "id": "foreignKey.webhook_deliveries.webhook_deliveries_webhookId_userId_fkey",
+    "label": "Add foreign key \"webhook_deliveries_webhookId_userId_fkey\" on \"webhook_deliveries\"",
     "operationClass": "additive",
     "target": {
       "id": "postgres",
       "details": {
         "schema": "public",
         "objectType": "foreignKey",
-        "name": "webhook_deliveries_webhookId_fkey",
+        "name": "webhook_deliveries_webhookId_userId_fkey",
         "table": "webhook_deliveries"
       }
     },
     "precheck": [
       {
-        "description": "ensure FK \"webhook_deliveries_webhookId_fkey\" does not exist",
+        "description": "ensure FK \"webhook_deliveries_webhookId_userId_fkey\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
         "params": [
-          "webhook_deliveries_webhookId_fkey",
+          "webhook_deliveries_webhookId_userId_fkey",
           "public",
           "\"public\".\"webhook_deliveries\""
         ],
         "expectation": {
           "expects": "absent",
-          "object": "FK \"webhook_deliveries_webhookId_fkey\" on \"webhook_deliveries\""
+          "object": "FK \"webhook_deliveries_webhookId_userId_fkey\" on \"webhook_deliveries\""
         }
       }
     ],
     "execute": [
       {
-        "description": "add FK \"webhook_deliveries_webhookId_fkey\"",
-        "sql": "ALTER TABLE \"public\".\"webhook_deliveries\"\nADD CONSTRAINT \"webhook_deliveries_webhookId_fkey\"\nFOREIGN KEY (\"webhookId\")\nREFERENCES \"public\".\"webhooks\" (\"id\")\nON DELETE CASCADE"
+        "description": "add FK \"webhook_deliveries_webhookId_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"webhook_deliveries\"\nADD CONSTRAINT \"webhook_deliveries_webhookId_userId_fkey\"\nFOREIGN KEY (\"webhookId\", \"userId\")\nREFERENCES \"public\".\"webhooks\" (\"id\", \"userId\")\nON DELETE CASCADE"
       }
     ],
     "postcheck": [
       {
-        "description": "verify FK \"webhook_deliveries_webhookId_fkey\" exists with the planned columns, referenced table and actions",
+        "description": "verify FK \"webhook_deliveries_webhookId_userId_fkey\" exists with the planned columns, referenced table and actions",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
         "params": [
-          "webhook_deliveries_webhookId_fkey",
+          "webhook_deliveries_webhookId_userId_fkey",
           "public",
           "\"public\".\"webhook_deliveries\"",
           "f",
-          "[\"webhookId\"]",
+          "[\"webhookId\",\"userId\"]",
           "\"public\".\"webhooks\"",
-          "[\"id\"]",
+          "[\"id\",\"userId\"]",
           "c",
           "a"
         ]
@@ -741,7 +789,7 @@
     "execute": [
       {
         "description": "add FK \"webhook_deliveries_matchId_fkey\"",
-        "sql": "ALTER TABLE \"public\".\"webhook_deliveries\"\nADD CONSTRAINT \"webhook_deliveries_matchId_fkey\"\nFOREIGN KEY (\"matchId\")\nREFERENCES \"public\".\"job_matches\" (\"id\")\nON DELETE CASCADE"
+        "sql": "ALTER TABLE \"public\".\"webhook_deliveries\"\nADD CONSTRAINT \"webhook_deliveries_matchId_fkey\"\nFOREIGN KEY (\"matchId\")\nREFERENCES \"public\".\"job_matches\" (\"id\")\nON DELETE SET NULL"
       }
     ],
     "postcheck": [
@@ -756,7 +804,7 @@
           "[\"matchId\"]",
           "\"public\".\"job_matches\"",
           "[\"id\"]",
-          "c",
+          "n",
           "a"
         ]
       }
@@ -1008,7 +1056,7 @@
     "execute": [
       {
         "description": "create webhook_enqueue_match(), match_reviews_webhook() and its trigger on match_reviews",
-        "sql": "CREATE FUNCTION public.webhook_enqueue_match(p_match_id uuid, p_trigger text) RETURNS uuid\n  LANGUAGE sql SECURITY DEFINER SET search_path = public AS $$\n-- One pending delivery for the match's (profile, job) when the user's webhook is on, the job was\n-- first seen since both the profile was published and the webhook was turned on, and no match\n-- delivery exists for the profile on this job, the job it merged into, or a job merged into it.\nINSERT INTO webhook_deliveries (\"userId\", \"webhookId\", kind, \"profileId\", \"jobId\", \"matchId\", trigger, status, attempts, \"nextAttemptAt\")\nSELECT m.\"userId\", w.id, 'match', m.\"profileId\", m.\"jobId\", m.id, p_trigger, 'pending', 0, now()\nFROM job_matches m\nJOIN webhooks w ON w.\"userId\" = m.\"userId\" AND w.enabled\nJOIN profiles p ON p.id = m.\"profileId\" AND p.state = 'published'\nJOIN normalized_jobs j ON j.id = m.\"jobId\"\nWHERE m.id = p_match_id\n  AND j.\"firstSeenAt\" >= p.\"publishedAt\" AND j.\"firstSeenAt\" >= w.\"enabledSince\"\n  AND NOT EXISTS (\n    SELECT 1 FROM webhook_deliveries d JOIN normalized_jobs dj ON dj.id = d.\"jobId\"\n    WHERE d.kind = 'match' AND d.\"profileId\" = m.\"profileId\"\n      AND (d.\"jobId\" = j.id OR dj.\"mergedIntoId\" = j.id OR d.\"jobId\" = j.\"mergedIntoId\"))\nON CONFLICT DO NOTHING\nRETURNING id;\n$$;\nREVOKE EXECUTE ON FUNCTION public.webhook_enqueue_match(uuid, text) FROM PUBLIC, anon, authenticated;\nCREATE FUNCTION public.match_reviews_webhook() RETURNS trigger\n  LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$\nBEGIN\n  PERFORM public.webhook_enqueue_match(NEW.\"matchId\", 'review');\n  RETURN NULL;\nEND $$;\nREVOKE EXECUTE ON FUNCTION public.match_reviews_webhook() FROM PUBLIC, anon, authenticated;\nCREATE TRIGGER match_reviews_webhook AFTER INSERT ON public.match_reviews\n  FOR EACH ROW WHEN (NEW.choice = 'qualified')\n  EXECUTE FUNCTION public.match_reviews_webhook();"
+        "sql": "CREATE FUNCTION public.webhook_enqueue_match(p_match_id uuid, p_trigger text) RETURNS uuid\n  LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$\nDECLARE\n  v_profile uuid;\n  v_canonical uuid;\n  v_id uuid;\nBEGIN\n  SELECT m.\"profileId\", coalesce(j.\"mergedIntoId\", j.id) INTO v_profile, v_canonical\n    FROM job_matches m JOIN normalized_jobs j ON j.id = m.\"jobId\"\n   WHERE m.id = p_match_id;\n  IF NOT FOUND THEN\n    RETURN NULL;\n  END IF;\n  -- Serialise calls for the same (profile, canonical job) until commit; the next statement takes\n  -- a fresh snapshot, so a waiter sees the delivery the holder committed.\n  PERFORM pg_advisory_xact_lock(hashtextextended('webhook:' || v_profile || ':' || v_canonical, 0));\n  -- One pending delivery when the user's webhook is on, the job was first seen since both the\n  -- profile was published and the webhook was turned on, and the profile has no match delivery\n  -- on a job with the same canonical id (this job, its merge target or a merge sibling).\n  INSERT INTO webhook_deliveries (\"userId\", \"webhookId\", kind, \"profileId\", \"jobId\", \"matchId\", trigger, status, attempts, \"nextAttemptAt\")\n  SELECT m.\"userId\", w.id, 'match', m.\"profileId\", m.\"jobId\", m.id, p_trigger, 'pending', 0, now()\n  FROM job_matches m\n  JOIN webhooks w ON w.\"userId\" = m.\"userId\" AND w.enabled\n  JOIN profiles p ON p.id = m.\"profileId\" AND p.state = 'published'\n  JOIN normalized_jobs j ON j.id = m.\"jobId\"\n  WHERE m.id = p_match_id\n    AND j.\"firstSeenAt\" >= p.\"publishedAt\" AND j.\"firstSeenAt\" >= w.\"enabledSince\"\n    AND NOT EXISTS (\n      SELECT 1 FROM webhook_deliveries d JOIN normalized_jobs dj ON dj.id = d.\"jobId\"\n      WHERE d.kind = 'match' AND d.\"profileId\" = m.\"profileId\"\n        AND coalesce(dj.\"mergedIntoId\", dj.id) = coalesce(j.\"mergedIntoId\", j.id))\n  ON CONFLICT DO NOTHING\n  RETURNING id INTO v_id;\n  RETURN v_id;\nEND $$;\nREVOKE EXECUTE ON FUNCTION public.webhook_enqueue_match(uuid, text) FROM PUBLIC, anon, authenticated;\nCREATE FUNCTION public.match_reviews_webhook() RETURNS trigger\n  LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$\nBEGIN\n  PERFORM public.webhook_enqueue_match(NEW.\"matchId\", 'review');\n  RETURN NULL;\nEND $$;\nREVOKE EXECUTE ON FUNCTION public.match_reviews_webhook() FROM PUBLIC, anon, authenticated;\nCREATE TRIGGER match_reviews_webhook AFTER INSERT ON public.match_reviews\n  FOR EACH ROW WHEN (NEW.choice = 'qualified')\n  EXECUTE FUNCTION public.match_reviews_webhook();"
       }
     ],
     "postcheck": []

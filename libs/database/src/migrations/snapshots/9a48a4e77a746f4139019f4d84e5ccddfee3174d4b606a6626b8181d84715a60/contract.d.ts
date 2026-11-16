@@ -24,7 +24,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'126151f2ec71c506c55d9be96241e9ba422d9d0ebf3138deade182041a797796'>;
+  StorageHashBase<'9a48a4e77a746f4139019f4d84e5ccddfee3174d4b606a6626b8181d84715a60'>;
 export type ExecutionHash =
   ExecutionHashBase<'3461eec8835c53ff559e82fbaaebc361cd1c3ca10478f13fc23cee0455aa77a9'>;
 export type ProfileHash =
@@ -5507,15 +5507,15 @@ type ContractBase = Omit<
                   readonly unique: false;
                 },
                 {
-                  readonly name: 'webhook_deliveries_webhookId_idx_16330c4e';
-                  readonly prefix: 'webhook_deliveries_webhookId_idx';
-                  readonly columns: readonly ['webhookId'];
-                  readonly unique: false;
-                },
-                {
                   readonly name: 'webhook_deliveries_webhookId_status_createdAt_idx_206ef646';
                   readonly prefix: 'webhook_deliveries_webhookId_status_createdAt_idx';
                   readonly columns: readonly ['webhookId', 'status', 'createdAt'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'webhook_deliveries_webhookId_userId_idx_f48d66cb';
+                  readonly prefix: 'webhook_deliveries_webhookId_userId_idx';
+                  readonly columns: readonly ['webhookId', 'userId'];
                   readonly unique: false;
                 },
               ];
@@ -5536,12 +5536,12 @@ type ContractBase = Omit<
                   readonly source: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'webhook_deliveries';
-                    readonly columns: readonly ['webhookId'];
+                    readonly columns: readonly ['webhookId', 'userId'];
                   };
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'webhooks';
-                    readonly columns: readonly ['id'];
+                    readonly columns: readonly ['id', 'userId'];
                   };
                 },
                 {
@@ -5682,7 +5682,10 @@ type ContractBase = Omit<
                 };
               };
               primaryKey: { readonly columns: readonly ['id'] };
-              uniques: readonly [{ readonly columns: readonly ['userId'] }];
+              uniques: readonly [
+                { readonly columns: readonly ['userId'] },
+                { readonly columns: readonly ['id', 'userId'] },
+              ];
               indexes: readonly [];
               foreignKeys: readonly [
                 {
@@ -9879,8 +9882,8 @@ type ContractBase = Omit<
                 };
                 readonly cardinality: '1:N';
                 readonly on: {
-                  readonly localFields: readonly ['id'];
-                  readonly targetFields: readonly ['webhookId'];
+                  readonly localFields: readonly ['id', 'userId'];
+                  readonly targetFields: readonly ['webhookId', 'userId'];
                 };
               };
               readonly user: {
@@ -10053,8 +10056,8 @@ type ContractBase = Omit<
                 readonly cardinality: 'N:1';
                 readonly nullable: false;
                 readonly on: {
-                  readonly localFields: readonly ['webhookId'];
-                  readonly targetFields: readonly ['id'];
+                  readonly localFields: readonly ['webhookId', 'userId'];
+                  readonly targetFields: readonly ['id', 'userId'];
                 };
               };
             };

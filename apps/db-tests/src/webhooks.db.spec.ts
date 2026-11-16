@@ -256,6 +256,42 @@ describe('webhooks, webhook_deliveries and webhook_enqueue_match', () => {
     expect(await deliveriesOf(p.aJob)).toEqual([]);
   });
 
+  it('skips C when A was sent and A and C both merged into B', async () => {
+    const p = await mergedPair();
+    const sibling = await seedDetailedJob({ status: 'merged', noFacts: true });
+    await withCatalog((c) =>
+      c.query(
+        `UPDATE public.normalized_jobs SET "mergedIntoId" = $2 WHERE id = $1`,
+        [sibling.jobId, p.bJob],
+      ),
+    );
+    await seenAgo(sibling.jobId, '1 hour');
+    const matchC = await seedMatchOn(a.id, profileA, sibling);
+    expect(await enqueue(p.a)).not.toBeNull();
+    expect(await enqueue(matchC)).toBeNull();
+    expect(await deliveriesOf(sibling.jobId)).toEqual([]);
+  });
+
+  // The matcher's sweep (MatcherRepository.deleteInactive) deletes the matches of jobs that are
+  // no longer active; the delivery must stay as the "already sent" record.
+  it('keeps the delivery when the sweep deletes a merged job’s match', async () => {
+    const p = await mergedPair();
+    const sent = await enqueued(p.a);
+    // The sweep's statement, kept to this profile so it touches no other suite's rows.
+    await withCatalog((c) =>
+      c.query(
+        `DELETE FROM public.job_matches m USING public.normalized_jobs j
+          WHERE j.id = m."jobId" AND j.status <> 'active' AND m."profileId" = $1`,
+        [profileA],
+      ),
+    );
+    expect(await deliveriesOf(p.aJob)).toMatchObject([
+      { id: sent, matchId: null, kind: 'match', profileId: profileA },
+    ]);
+    expect(await enqueue(p.b)).toBeNull();
+    expect(await deliveriesOf(p.bJob)).toEqual([]);
+  });
+
   const review = (
     m: { job: SeededJob; matchId: string },
     choice: 'qualified' | 'rejected',
@@ -442,5 +478,12 @@ describe('webhooks, webhook_deliveries and webhook_enqueue_match', () => {
     // A match row needs its profile, job, match and trigger.
     expect(await insert('match', 'decision', 'pending')).toBe(CHECK);
     expect(await insert('test', null, 'pending')).toBeNull();
+    // A delivery stays on its owner's webhook: (webhookId, userId) references webhooks.
+    expect(
+      await refused(
+        `INSERT INTO public.webhook_deliveries ("userId", "webhookId", kind) VALUES ($1, $2, 'test')`,
+        [b.id, webhookA],
+      ),
+    ).toBe('23503');
   });
 });

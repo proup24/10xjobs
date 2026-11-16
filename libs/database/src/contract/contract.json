@@ -6799,10 +6799,12 @@
                 "cardinality": "1:N",
                 "on": {
                   "localFields": [
-                    "id"
+                    "id",
+                    "userId"
                   ],
                   "targetFields": [
-                    "webhookId"
+                    "webhookId",
+                    "userId"
                   ]
                 },
                 "to": {
@@ -7076,10 +7078,12 @@
                 "nullable": false,
                 "on": {
                   "localFields": [
-                    "webhookId"
+                    "webhookId",
+                    "userId"
                   ],
                   "targetFields": [
-                    "id"
+                    "id",
+                    "userId"
                   ]
                 },
                 "to": {
@@ -13338,8 +13342,8 @@
                   "prefix": "webhook_deliveries_kind"
                 },
                 {
-                  "expression": "kind <> 'match' OR (\"profileId\" IS NOT NULL AND \"jobId\" IS NOT NULL AND \"matchId\" IS NOT NULL AND trigger IS NOT NULL)",
-                  "name": "webhook_deliveries_match_complete_72089b3b",
+                  "expression": "kind <> 'match' OR (\"profileId\" IS NOT NULL AND \"jobId\" IS NOT NULL AND trigger IS NOT NULL)",
+                  "name": "webhook_deliveries_match_complete_1bd7afd2",
                   "prefix": "webhook_deliveries_match_complete"
                 },
                 {
@@ -13499,19 +13503,21 @@
                 },
                 {
                   "index": {
-                    "name": "webhook_deliveries_webhookId_idx_16330c4e"
+                    "name": "webhook_deliveries_webhookId_userId_idx_f48d66cb"
                   },
                   "onDelete": "cascade",
                   "source": {
                     "columns": [
-                      "webhookId"
+                      "webhookId",
+                      "userId"
                     ],
                     "namespaceId": "public",
                     "tableName": "webhook_deliveries"
                   },
                   "target": {
                     "columns": [
-                      "id"
+                      "id",
+                      "userId"
                     ],
                     "namespaceId": "public",
                     "tableName": "webhooks"
@@ -13563,7 +13569,7 @@
                   "index": {
                     "name": "webhook_deliveries_matchId_idx_4caf5ecc"
                   },
-                  "onDelete": "cascade",
+                  "onDelete": "setNull",
                   "source": {
                     "columns": [
                       "matchId"
@@ -13626,20 +13632,21 @@
                 },
                 {
                   "columns": [
-                    "webhookId"
-                  ],
-                  "name": "webhook_deliveries_webhookId_idx_16330c4e",
-                  "prefix": "webhook_deliveries_webhookId_idx",
-                  "unique": false
-                },
-                {
-                  "columns": [
                     "webhookId",
                     "status",
                     "createdAt"
                   ],
                   "name": "webhook_deliveries_webhookId_status_createdAt_idx_206ef646",
                   "prefix": "webhook_deliveries_webhookId_status_createdAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "webhookId",
+                    "userId"
+                  ],
+                  "name": "webhook_deliveries_webhookId_userId_idx_f48d66cb",
+                  "prefix": "webhook_deliveries_webhookId_userId_idx",
                   "unique": false
                 }
               ],
@@ -13801,6 +13808,12 @@
               "uniques": [
                 {
                   "columns": [
+                    "userId"
+                  ]
+                },
+                {
+                  "columns": [
+                    "id",
                     "userId"
                   ]
                 }
@@ -13989,7 +14002,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "126151f2ec71c506c55d9be96241e9ba422d9d0ebf3138deade182041a797796"
+    "storageHash": "9a48a4e77a746f4139019f4d84e5ccddfee3174d4b606a6626b8181d84715a60"
   },
   "execution": {
     "executionHash": "3461eec8835c53ff559e82fbaaebc361cd1c3ca10478f13fc23cee0455aa77a9",

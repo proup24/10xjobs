@@ -2095,11 +2095,11 @@ export type Database = {
             referencedColumns: ['id'];
           },
           {
-            foreignKeyName: 'webhook_deliveries_webhookId_fkey';
-            columns: ['webhookId'];
+            foreignKeyName: 'webhook_deliveries_webhookId_userId_fkey';
+            columns: ['webhookId', 'userId'];
             isOneToOne: false;
             referencedRelation: 'webhooks';
-            referencedColumns: ['id'];
+            referencedColumns: ['id', 'userId'];
           },
         ];
       };

@@ -1,6 +1,6 @@
 #!/usr/bin/env -S node
-import type { Contract as End } from '../../snapshots/126151f2ec71c506c55d9be96241e9ba422d9d0ebf3138deade182041a797796/contract';
-import endContract from '../../snapshots/126151f2ec71c506c55d9be96241e9ba422d9d0ebf3138deade182041a797796/contract.json' with { type: 'json' };
+import type { Contract as End } from '../../snapshots/9a48a4e77a746f4139019f4d84e5ccddfee3174d4b606a6626b8181d84715a60/contract';
+import endContract from '../../snapshots/9a48a4e77a746f4139019f4d84e5ccddfee3174d4b606a6626b8181d84715a60/contract.json' with { type: 'json' };
 import type { Contract as Start } from '../../snapshots/bb8af43bca30e6471e52cd0c0d8d90c51a1f0c5ed462b52a7aad80dbed142948/contract';
 import startContract from '../../snapshots/bb8af43bca30e6471e52cd0c0d8d90c51a1f0c5ed462b52a7aad80dbed142948/contract.json' with { type: 'json' };
 import {
@@ -21,8 +21,14 @@ import {
 //   pgcrypto in `extensions`; the bare processor_test database has neither, so both are created
 //   if missing.
 // - webhook_enqueue_match(match, trigger) applies the send rules ("What gets sent") and inserts
-//   at most one pending match delivery per (profile, job), returning its id or null. The engine
-//   calls it inside the matcher's upsert transaction; only the engine and the trigger below may.
+//   at most one pending match delivery per (profile, job), returning its id or null. Jobs are
+//   compared by canonical id (the job they merged into, else their own), so a job, its merge
+//   target and its merge siblings are sent once per profile. An advisory lock on (profile,
+//   canonical job) serialises concurrent calls for a merged pair, which the unique index alone
+//   would not. The engine calls it inside the matcher's upsert transaction; only the engine and
+//   the trigger below may.
+// - matchId is ON DELETE SET NULL: the matcher's sweep deletes matches of inactive (merged) jobs,
+//   and the delivery must outlive them as the "already sent" record.
 // - match_reviews_webhook: an approved review (choice = 'qualified') runs the same rules with
 //   trigger 'review'. The web app inserts match_reviews as the user, so it is SECURITY DEFINER.
 
@@ -130,8 +136,8 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;`,
             sql`kind IN ('match', 'test')`,
           ),
           checkExpression(
-            'webhook_deliveries_match_complete_72089b3b',
-            sql`kind <> 'match' OR ("profileId" IS NOT NULL AND "jobId" IS NOT NULL AND "matchId" IS NOT NULL AND trigger IS NOT NULL)`,
+            'webhook_deliveries_match_complete_1bd7afd2',
+            sql`kind <> 'match' OR ("profileId" IS NOT NULL AND "jobId" IS NOT NULL AND trigger IS NOT NULL)`,
           ),
           checkExpression(
             'webhook_deliveries_status_2748a05e',
@@ -233,6 +239,12 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;`,
         constraint: 'webhooks_userId_key',
         columns: ['userId'],
       }),
+      this.addUnique({
+        schema: 'public',
+        table: 'webhooks',
+        constraint: 'webhooks_id_userId_key',
+        columns: ['id', 'userId'],
+      }),
       this.createIndex({
         schema: 'public',
         table: 'webhook_deliveries',
@@ -267,14 +279,14 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;`,
       this.createIndex({
         schema: 'public',
         table: 'webhook_deliveries',
-        index: 'webhook_deliveries_webhookId_idx_16330c4e',
-        columns: ['webhookId'],
+        index: 'webhook_deliveries_webhookId_status_createdAt_idx_206ef646',
+        columns: ['webhookId', 'status', 'createdAt'],
       }),
       this.createIndex({
         schema: 'public',
         table: 'webhook_deliveries',
-        index: 'webhook_deliveries_webhookId_status_createdAt_idx_206ef646',
-        columns: ['webhookId', 'status', 'createdAt'],
+        index: 'webhook_deliveries_webhookId_userId_idx_f48d66cb',
+        columns: ['webhookId', 'userId'],
       }),
       this.addForeignKey({
         schema: 'public',
@@ -290,9 +302,13 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;`,
         schema: 'public',
         table: 'webhook_deliveries',
         foreignKey: {
-          name: 'webhook_deliveries_webhookId_fkey',
-          columns: ['webhookId'],
-          references: { schema: 'public', table: 'webhooks', columns: ['id'] },
+          name: 'webhook_deliveries_webhookId_userId_fkey',
+          columns: ['webhookId', 'userId'],
+          references: {
+            schema: 'public',
+            table: 'webhooks',
+            columns: ['id', 'userId'],
+          },
           onDelete: 'cascade',
         },
       }),
@@ -335,7 +351,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;`,
             table: 'job_matches',
             columns: ['id'],
           },
-          onDelete: 'cascade',
+          onDelete: 'setNull',
         },
       }),
       this.addForeignKey({
@@ -406,25 +422,40 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;`,
             description:
               'create webhook_enqueue_match(), match_reviews_webhook() and its trigger on match_reviews',
             sql: `CREATE FUNCTION public.webhook_enqueue_match(p_match_id uuid, p_trigger text) RETURNS uuid
-  LANGUAGE sql SECURITY DEFINER SET search_path = public AS $$
--- One pending delivery for the match's (profile, job) when the user's webhook is on, the job was
--- first seen since both the profile was published and the webhook was turned on, and no match
--- delivery exists for the profile on this job, the job it merged into, or a job merged into it.
-INSERT INTO webhook_deliveries ("userId", "webhookId", kind, "profileId", "jobId", "matchId", trigger, status, attempts, "nextAttemptAt")
-SELECT m."userId", w.id, 'match', m."profileId", m."jobId", m.id, p_trigger, 'pending', 0, now()
-FROM job_matches m
-JOIN webhooks w ON w."userId" = m."userId" AND w.enabled
-JOIN profiles p ON p.id = m."profileId" AND p.state = 'published'
-JOIN normalized_jobs j ON j.id = m."jobId"
-WHERE m.id = p_match_id
-  AND j."firstSeenAt" >= p."publishedAt" AND j."firstSeenAt" >= w."enabledSince"
-  AND NOT EXISTS (
-    SELECT 1 FROM webhook_deliveries d JOIN normalized_jobs dj ON dj.id = d."jobId"
-    WHERE d.kind = 'match' AND d."profileId" = m."profileId"
-      AND (d."jobId" = j.id OR dj."mergedIntoId" = j.id OR d."jobId" = j."mergedIntoId"))
-ON CONFLICT DO NOTHING
-RETURNING id;
-$$;
+  LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_profile uuid;
+  v_canonical uuid;
+  v_id uuid;
+BEGIN
+  SELECT m."profileId", coalesce(j."mergedIntoId", j.id) INTO v_profile, v_canonical
+    FROM job_matches m JOIN normalized_jobs j ON j.id = m."jobId"
+   WHERE m.id = p_match_id;
+  IF NOT FOUND THEN
+    RETURN NULL;
+  END IF;
+  -- Serialise calls for the same (profile, canonical job) until commit; the next statement takes
+  -- a fresh snapshot, so a waiter sees the delivery the holder committed.
+  PERFORM pg_advisory_xact_lock(hashtextextended('webhook:' || v_profile || ':' || v_canonical, 0));
+  -- One pending delivery when the user's webhook is on, the job was first seen since both the
+  -- profile was published and the webhook was turned on, and the profile has no match delivery
+  -- on a job with the same canonical id (this job, its merge target or a merge sibling).
+  INSERT INTO webhook_deliveries ("userId", "webhookId", kind, "profileId", "jobId", "matchId", trigger, status, attempts, "nextAttemptAt")
+  SELECT m."userId", w.id, 'match', m."profileId", m."jobId", m.id, p_trigger, 'pending', 0, now()
+  FROM job_matches m
+  JOIN webhooks w ON w."userId" = m."userId" AND w.enabled
+  JOIN profiles p ON p.id = m."profileId" AND p.state = 'published'
+  JOIN normalized_jobs j ON j.id = m."jobId"
+  WHERE m.id = p_match_id
+    AND j."firstSeenAt" >= p."publishedAt" AND j."firstSeenAt" >= w."enabledSince"
+    AND NOT EXISTS (
+      SELECT 1 FROM webhook_deliveries d JOIN normalized_jobs dj ON dj.id = d."jobId"
+      WHERE d.kind = 'match' AND d."profileId" = m."profileId"
+        AND coalesce(dj."mergedIntoId", dj.id) = coalesce(j."mergedIntoId", j.id))
+  ON CONFLICT DO NOTHING
+  RETURNING id INTO v_id;
+  RETURN v_id;
+END $$;
 REVOKE EXECUTE ON FUNCTION public.webhook_enqueue_match(uuid, text) FROM PUBLIC, anon, authenticated;
 CREATE FUNCTION public.match_reviews_webhook() RETURNS trigger
   LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
