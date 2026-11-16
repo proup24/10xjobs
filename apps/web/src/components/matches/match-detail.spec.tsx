@@ -97,7 +97,7 @@ const reviewRow = () =>
   });
 
 describe('MatchDetail', () => {
-  it('offers "Report a mismatch" on each fact only with a report handler', () => {
+  it('offers one "Report a mismatch" under the facts only with a report handler', () => {
     const { unmount } = renderDetail();
     expect(
       screen.queryByRole('button', { name: /report a mismatch/i }),
@@ -114,9 +114,44 @@ describe('MatchDetail', () => {
         onReport={vi.fn()}
       />,
     );
-    expect(
-      screen.getAllByRole('button', { name: /report a mismatch/i }),
-    ).toHaveLength(7);
+    const links = screen.getAllByRole('button', {
+      name: /report a mismatch/i,
+    });
+    expect(links).toHaveLength(1);
+    expect(links[0].getAttribute('aria-label') ?? links[0].textContent).toBe(
+      'Report a mismatch',
+    );
+  });
+
+  it('reports a fact from the single link', async () => {
+    const onReport = vi.fn().mockResolvedValue({ status: 'saved' });
+    render(
+      <MatchDetail
+        rows={[matchRow()]}
+        labels={labels}
+        profileLabels={PROFILE_LABELS}
+        now={new Date(NOW)}
+        userId="u1"
+        backHref="/"
+        onReport={onReport}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Report a mismatch' }));
+    fireEvent.click(screen.getByRole('combobox', { name: 'Field' }));
+    const item = await screen.findByRole('option', { name: 'Salary' });
+    fireEvent.pointerDown(item, { pointerType: 'mouse' });
+    fireEvent.click(item);
+    fireEvent.change(screen.getByLabelText(/what it should say/i), {
+      target: { value: '€80k' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Send report' }));
+    await waitFor(() =>
+      expect(onReport).toHaveBeenCalledWith({
+        jobId: matchRow().jobId,
+        field: 'salary',
+        proposedValue: '€80k',
+      }),
+    );
   });
 
   it('marks the job viewed, then refreshes, when "Open post" or "Apply" is clicked', async () => {
@@ -514,6 +549,24 @@ describe('MatchDetail', () => {
     if (!why) throw new Error('no section');
     return { why: within(why), onReport };
   };
+
+  it('a review row has the facts link and the review link', () => {
+    renderReview({
+      ...reviewRow(),
+      reviewRule: 'rule',
+      reviewField: 'seniority',
+    });
+    const names = screen
+      .getAllByRole('button', { name: /report a mismatch/i })
+      .map((b) => b.textContent);
+    expect(names).toHaveLength(2);
+    expect(
+      screen.getByRole('button', { name: 'Report a mismatch' }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Report a mismatch on Seniority' }),
+    ).toBeTruthy();
+  });
 
   it.each([
     ['techStack', 'Tech stack', 'techStack'],
