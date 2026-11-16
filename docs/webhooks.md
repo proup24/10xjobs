@@ -13,10 +13,17 @@ A delivery is created for a profile and a job when all of these hold:
 
 Unverified matches are sent as well. Their payload has `match.unverified: true`.
 
+The body is built at the first attempt, from the match as it is then:
+
+- If the job was merged into another one before that, the delivery is sent with the job it was merged into and your match on that job.
+- If the match is gone, or a `decision` delivery's match is no longer qualified (a rematch while the delivery waited), nothing is sent and the delivery shows as Skipped.
+
+New qualified matches go out right after the engine decides them. Review approvals and test sends go out on the next sweep, within about 60 s, or sooner when a send to your webhook has just finished.
+
 There are two events:
 
 - `match.qualified`: a new qualified match.
-- `test`: sent when you press "Send test". It carries a sample job from your latest qualified match, or a fixed example if you have none.
+- `test`: sent when you press "Send test". It carries a sample job from your latest qualified match, or a fixed example if you have none. The webhook must be on, and you can send one test every 10 seconds. A test is not held back by failing deliveries (see Hold-back) and doesn't count toward auto-disable: its success or failure doesn't change the failure count.
 
 ## Request
 
@@ -61,12 +68,13 @@ There are two events:
     "languages": ["en"],
     "description": "..."
   },
-  "links": { "match": "https://<app>/matches/..." }
+  "links": { "match": "https://<app>/?job=<job id>" }
 }
 ```
 
 - `trigger` is `decision` (the engine qualified it) or `review` (you approved it).
-- A fact we don't know is `null`, never left out. `links.match` is `null` when the engine has no web app address configured.
+- A fact we don't know is `null`, never left out.
+- `links.match` opens the job in the 10xjobs web app: `<web app address>/?job=<job.id>`. It is `null` when the engine has no web app address configured (`WEB_APP_URL`).
 - `description` is the listing text, cut at 20 000 characters.
 - The body is built once, at the first attempt, and every retry sends the same bytes.
 - New fields can appear within version 1. A removed or renamed field bumps `version`.
@@ -99,11 +107,22 @@ export function verify(rawBody, headers, secret) {
 - **Success** is any 2xx response. The response body is read up to 1 KB and dropped, never stored.
 - **Failure** is anything else: a non-2xx (3xx included), a timeout, a connection error, or an address we refuse to connect to (private, loopback, link-local and similar ranges; the Webhook page shows "blocked address").
 - **Retries.** A failed attempt is tried again after 1 min, 5 min, 30 min, 2 h, 6 h, then 12 h. After the 7th failed attempt (about 21 h in all) the delivery is marked `failed` and not tried again.
-- **Hold-back.** While your webhook has failed sends in a row, only its oldest waiting delivery is attempted, on its backoff. The others wait without using their attempts. The first 2xx releases them, oldest first. If the oldest gives up, the next one takes its place. So a burst of matches during a short outage does not add up to the auto-disable limit.
-- **Auto-disable.** After 10 failed attempts in a row, the webhook turns itself off and its waiting deliveries are skipped. Turning it back on sends only jobs first seen after that moment; what was missed is not sent. Changing the URL resets the failure count.
+- **Hold-back.** While your webhook has failed match sends in a row, only its oldest waiting match delivery is attempted, on its backoff. The others wait without using their attempts. The first 2xx of a match delivery releases them, oldest first. If the oldest gives up, the next one takes its place. So a burst of matches during a short outage does not add up to the auto-disable limit. Test sends are not held back, and their result doesn't change the failure count or release anything.
+- **Auto-disable.** After 10 failed match attempts in a row, the webhook turns itself off and its waiting deliveries are skipped. Turning it back on sends only jobs first seen after that moment; what was missed is not sent. Changing the URL or turning the webhook back on resets the failure count.
 - **One at a time.** Deliveries to one URL are sent one after another, never in parallel.
 - **At least once.** Delivery is at-least-once: if our engine crashes after your server answered but before we record it, the same delivery is sent again. Deduplicate on `X-10xjobs-Delivery`, which does not change between retries.
-- **History.** Delivery records are kept for 30 days (the payload of a match delivery is cleared after that; the record that it was sent stays, which is what stops a resend).
+- **History.** Match delivery records are kept: after 30 days their payload and error are cleared, and the record that the job was sent stays, which is what stops a resend. Test delivery records are deleted after 30 days. Deleting the webhook deletes its whole history.
+
+## Statuses on the Webhook page
+
+The page lists your last 50 deliveries, newest first, with the job (or "Test"), the profile and the status:
+
+- **Pending**: waiting for its first attempt.
+- **attempt n of 7**: attempt n failed, with its HTTP status or error; it will be tried again.
+- **Sending**: an attempt is in progress.
+- **Delivered**: your URL answered 2xx, with the status code.
+- **Failed**: all 7 attempts failed, with the last status or error.
+- **Skipped**: not sent: the webhook was off when its turn came, or the match was gone or no longer qualified.
 
 ## Safety
 

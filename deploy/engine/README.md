@@ -52,7 +52,8 @@ After bootstrap, SSH allows only `deploy` (`AllowUsers deploy`, `PermitRootLogin
 4. Get `DATABASE_URL`, `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from the same places as the `DEV_*` secrets in [shared-dev-database.md](../../docs/shared-dev-database.md). `DATABASE_URL` is the session pooler on port 5432, never 6543.
 5. Generate the engine key with `openssl rand -base64 48` (at least 32 characters) and set it as `ENGINE_API_KEY`. The same value goes into Vercel (section 5a). The deploy's health check reads it from the running `api` container on the server; it never goes to GitHub.
 6. Set `APIFY_TOKEN` and `CLAUDE_CODE_OAUTH_TOKEN` (section 13; only the `worker` container uses the latter).
-7. Single-quote any value that contains `$`, because Compose interpolates `env_file` values. `openssl rand -base64 48` output has no `$`.
+7. Set `WEB_APP_URL` to the web app's public origin, for example `https://app.example.com` (no trailing path). Match webhook payloads link to `<WEB_APP_URL>/?job=<id>`; without it their `links.match` is `null`. After adding it to a running server, `$C up -d` (section 8).
+8. Single-quote any value that contains `$`, because Compose interpolates `env_file` values. `openssl rand -base64 48` output has no `$`.
 
 Engine runtime secrets live only in this file. They never go to GitHub.
 
