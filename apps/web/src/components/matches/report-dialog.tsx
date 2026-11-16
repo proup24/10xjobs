@@ -111,10 +111,9 @@ export function ReportDialog({
       return;
     }
     if (result.status === 'invalid') {
-      setFieldError(result.errors.field ?? null);
-      setValueError(
-        result.errors.proposedValue ?? result.errors._form ?? FAILED_TEXT,
-      );
+      const { field: fieldMsg, proposedValue: valueMsg, _form } = result.errors;
+      setFieldError(fieldMsg ?? null);
+      setValueError(valueMsg ?? _form ?? (fieldMsg ? null : FAILED_TEXT));
       return;
     }
     toast.error(FAILED_TEXT);

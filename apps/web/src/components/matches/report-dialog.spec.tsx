@@ -212,24 +212,40 @@ describe('ReportDialog', () => {
 
   it('shows a server field error on the select', async () => {
     open({
-      onReport: vi
-        .fn()
-        .mockResolvedValue({
-          status: 'invalid',
-          errors: { field: 'Bad field' },
-        }),
+      onReport: vi.fn().mockResolvedValue({
+        status: 'invalid',
+        errors: { field: 'Bad field' },
+      }),
     });
     await choose('Role');
     fillValue('x');
     send();
     expect(await screen.findByText('Bad field')).toBeTruthy();
     expect(toast.error).not.toHaveBeenCalled();
+    expect(
+      screen.queryByText("Couldn't send your report. Try again."),
+    ).toBeNull();
+    expect(
+      screen.getByLabelText(/what it should say/i).getAttribute('aria-invalid'),
+    ).not.toBe('true');
   });
 
   it('the title is "Report a mismatch"', () => {
     open(SENIORITY);
     expect(
       screen.getByRole('heading', { name: 'Report a mismatch' }),
+    ).toBeTruthy();
+  });
+
+  it('falls back to the failed-send text under the value when the rejection names nothing', async () => {
+    open({
+      onReport: vi.fn().mockResolvedValue({ status: 'invalid', errors: {} }),
+    });
+    await choose('Role');
+    fillValue('x');
+    send();
+    expect(
+      await screen.findByText("Couldn't send your report. Try again."),
     ).toBeTruthy();
   });
 });
