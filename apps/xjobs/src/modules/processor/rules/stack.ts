@@ -101,6 +101,24 @@ export function mergeDuplicateRequirements(stack: TechStack): MergedStack {
   return { stack: { requirements, groups }, dropped };
 }
 
+/** Where a requirement sits: `on its own`, or its group id. */
+function placeOf(r: Requirement): string {
+  return r.group === null ? 'on its own' : `group ${r.group}`;
+}
+
+/** The duplicate message: names both texts, their places, and the shared technology and domain. */
+function duplicateMessage(
+  first: Requirement,
+  j: number,
+  later: Requirement,
+  i: number,
+): string {
+  const tech = later.technology.code ?? later.technology.text.trim();
+  const domain =
+    later.domain === null ? 'with no domain' : `in domain ${later.domain}`;
+  return `"${first.technology.text}" (requirements.${j}, ${placeOf(first)}) and "${later.technology.text}" (requirements.${i}, ${placeOf(later)}) are the same technology (${tech}) ${domain}; list it once`;
+}
+
 /** The rules the stack's shape cannot express (spec §5a); empty means valid. */
 export function stackIssues(stack: TechStack): StackIssue[] {
   const issues: StackIssue[] = [];
@@ -114,7 +132,7 @@ export function stackIssues(stack: TechStack): StackIssue[] {
     groupIds.add(g.id);
   });
 
-  const seen = new Set<string>();
+  const firstIndex = new Map<string, number>();
   stack.requirements.forEach((r, i) => {
     const [low, high] = IMPORTANCE_BANDS[r.kind];
     if (r.importance < low || r.importance > high) {
@@ -140,13 +158,15 @@ export function stackIssues(stack: TechStack): StackIssue[] {
       });
     }
     const key = requirementKey(r);
-    if (seen.has(key)) {
+    const first = firstIndex.get(key);
+    if (first !== undefined) {
       issues.push({
         path: ['requirements', i, 'technology'],
-        message: `"${r.technology.code ?? r.technology.text}" with domain ${r.domain ?? 'null'} appears twice`,
+        message: duplicateMessage(stack.requirements[first], first, r, i),
       });
+    } else {
+      firstIndex.set(key, i);
     }
-    seen.add(key);
   });
 
   stack.groups.forEach((g, j) => {

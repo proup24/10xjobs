@@ -66,6 +66,27 @@ describe('stackErrors', () => {
     expect(stackErrors(s)).not.toEqual([]);
   });
 
+  it('names both texts of a duplicate', () => {
+    const s = stack(
+      [
+        req('aws', {
+          technology: { text: 'AWS', code: 'aws' },
+          domain: 'devops',
+        }),
+        req('aws', {
+          technology: { text: 'Amazon Web Services', code: 'aws' },
+          domain: 'devops',
+          group: 'g1',
+        }),
+        req('gcp', { domain: 'devops', group: 'g1' }),
+      ],
+      [{ id: 'g1', min: 1 }],
+    );
+    expect(stackErrors(s)).toEqual([
+      'techStack.value.requirements.1.technology: "AWS" (requirements.0, on its own) and "Amazon Web Services" (requirements.1, group g1) are the same technology (aws) in domain devops; list it once',
+    ]);
+  });
+
   it('accepts the same code with different domains', () => {
     const s = stack([
       req('python', { domain: 'backend' }),
