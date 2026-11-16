@@ -2277,6 +2277,27 @@ export type Database = {
         Args: Record<PropertyKey, never>;
         Returns: number;
       };
+      job_decision_list: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          applyUrl: string;
+          channels: string[];
+          closed: boolean;
+          companyName: string;
+          decidedAt: string;
+          hasMatch: boolean;
+          jobId: string;
+          kind: string;
+          location: string;
+          note: string;
+          postedAt: string;
+          postingUrl: string;
+          publishedAt: string;
+          reason: string;
+          status: string;
+          title: string;
+        }[];
+      };
       match_details: {
         Args: {
           p_details?: boolean;
@@ -2294,6 +2315,7 @@ export type Database = {
           companyUrl: string;
           conflicts: Json;
           decidedAt: string;
+          decisionStatus: string;
           descriptionText: string;
           extractionId: string;
           facts: Json;

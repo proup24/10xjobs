@@ -19,6 +19,8 @@
     "match-details-review",
     "webhook-rpcs",
     "webhook-hardening",
-    "job-decisions-update-columns"
+    "job-decisions-update-columns",
+    "match-details-decisions",
+    "job-decision-list"
   ]
 }

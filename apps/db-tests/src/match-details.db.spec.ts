@@ -61,12 +61,13 @@ const COLUMNS = [
   'reviewField',
   'reviewChoice',
   'extractionId',
+  'decisionStatus',
 ];
 
 type Row = Record<string, unknown> & { jobId: string };
 type Params = {
   p_profile_id?: string;
-  p_outcome?: string;
+  p_outcome?: string | null;
   p_since?: string;
   p_job_id?: string;
   p_details?: boolean;
@@ -376,6 +377,27 @@ describe('match_details', () => {
         /Could not find the function/.test(error?.message ?? ''),
     ).toBe(true);
     expect(data).toBeNull();
+  });
+
+  it("returns the caller's decision status only", async () => {
+    const mark = await a.client
+      .from('job_decisions')
+      .insert({ userId: a.id, jobId: jobShared, status: 'applied' });
+    expect(mark.error).toBeNull();
+    const rowsA = await call(a, { p_job_id: jobShared });
+    expect(rowsA.length).toBeGreaterThan(0);
+    for (const row of rowsA) expect(row.decisionStatus).toBe('applied');
+    const [rowB] = await call(b, { p_job_id: jobShared });
+    expect(rowB.decisionStatus).toBeNull();
+    const [undecided] = await call(a, { p_job_id: jobA });
+    expect(undecided.decisionStatus).toBeNull();
+  });
+
+  it('returns any outcome for a null outcome', async () => {
+    const rows = await call(a, { p_job_id: jobRejected, p_outcome: null });
+    expect(jobIds(rows)).toEqual([jobRejected]);
+    expect(rows[0].outcome).toBe('rejected');
+    expect(await call(a, { p_job_id: jobRejected })).toEqual([]);
   });
 
   it('exposes only allowed columns', async () => {
