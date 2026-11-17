@@ -10,11 +10,7 @@ const profile: MatchProfile = {
   ],
 };
 
-const doc = (
-  codes: string[],
-  confident = true,
-  closeCalls: string[][] = [],
-) =>
+const doc = (codes: string[], confident = true, closeCalls: string[][] = []) =>
   factsDoc((d) => {
     d.postingLanguages = { codes, confident, closeCalls };
   });
@@ -114,6 +110,27 @@ describe('checkPostingLanguage', () => {
     expect(
       checkPostingLanguage(doc([], true, [['da', 'nb']]), only('no')).outcome,
     ).toBe('unknown');
+  });
+
+  it('a sure code the profile lacks beside a close call it speaks is unknown', () => {
+    expect(
+      checkPostingLanguage(doc(['es'], true, [['da', 'nb']]), only('da'))
+        .outcome,
+    ).toBe('unknown');
+  });
+
+  it('a sure code and a close call, neither spoken, fail naming both', () => {
+    const c = checkPostingLanguage(doc(['es'], true, [['da', 'nb']]), profile);
+    expect(c.outcome).toBe('fail');
+    expect(c.reason).toBe(
+      "posting is written in es, one of da/nb, which you don't speak",
+    );
+  });
+
+  it('not confident with a close call is unknown', () => {
+    const c = checkPostingLanguage(doc([], false, [['da', 'nb']]), only('da'));
+    expect(c.outcome).toBe('unknown');
+    expect(c.reason).toBe('posting language not detected with confidence');
   });
 
   it('not confident is unknown', () => {
