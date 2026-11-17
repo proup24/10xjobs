@@ -24,7 +24,8 @@ All measured with franc 6.2.0 and the detector's `only` list. The scripts were t
   - Malay is read as Indonesian every time, once by a 0.10 margin.
   - hr/sr/bs winners are arbitrary, with margins of 0.00 to 0.03.
   - Danish sentences are sometimes read as Norwegian (margin 0.03), and one Czech sentence as Slovak (0.04).
-  - Each wrong winner above is either inside the margin or comes from a pair that is never sure.
+  - Not every wrong winner is inside the margin: one Danish sentence ("Erfaring med Kubernetes, Terraform og cloudplatforme som AWS eller Azure er en fordel, men ikke et krav.") was measured surely Norwegian Bokmål, by 0.068. So whenever a sure language is kept and another member of its group is seen anywhere in the posting, the detector also adds that group's close call: a Danish speaker is then unknown, not rejected, and a Norwegian speaker still passes.
+  - One Czech sentence was once read as the hr/sr/bs group. This is franc noise, a residual risk that the margin does not cover; it is watched after merge.
 - **hr/sr/bs today:** the matcher treats them as one language, but the detector drops every Croatian paragraph first. Croatian postings are never detected.
 - **Lost line breaks** come from the LinkedIn actor's own `descriptionText`. `harvest-job.mapper.ts` prefers it over our `htmlToPlainText`. About 105 of the 1,196 dev jobs with HTML block structure have flat or nearly flat text.
 

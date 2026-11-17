@@ -187,6 +187,43 @@ describe('detectPostingLanguages', () => {
     });
   });
 
+  // franc scores this Danish sentence nob 1.000, dan 0.932: surely Bokmål by 0.068.
+  const KUBERNETES_DA =
+    'Erfaring med Kubernetes, Terraform og cloudplatforme som AWS eller Azure er en fordel, men ikke et krav.';
+
+  it.each([
+    // A {da, nb} close call, under the share filter on its own.
+    [
+      'a close call',
+      'Vi søger en erfaren udvikler til vores team i København.',
+    ],
+    // A sure Danish piece, under the share filter on its own.
+    [
+      'a sure piece',
+      'Vi tilbyder fleksible arbejdstider og mulighed for hjemmearbejde.',
+    ],
+  ])(
+    'a Danish posting surely read as Bokmål keeps Danish as a close call (%s)',
+    (_, danish) => {
+      const text = [KUBERNETES_DA, KUBERNETES_DA, danish].join('\n\n');
+      expect(text.length).toBeGreaterThanOrEqual(200);
+      const r = detectPostingLanguages(text);
+      expect(r.confident).toBe(true);
+      expect(
+        r.codes.every((c) => c === 'da') ||
+          r.closeCalls.some((s) => s.includes('da')),
+      ).toBe(true);
+      if (r.codes.includes('nb'))
+        expect(r.closeCalls.some((s) => s.includes('da'))).toBe(true);
+    },
+  );
+
+  it('a sure code with no other group member seen gains no close call', () => {
+    expect(
+      detectPostingLanguages([KUBERNETES_DA, KUBERNETES_DA].join('\n\n')),
+    ).toEqual({ codes: ['nb'], closeCalls: [], confident: true });
+  });
+
   it('splits flattened sentences but not Next.js', () => {
     const sentences = [
       'Buscamos un desarrollador con experiencia en Next.js y 2.5 años trabajando en productos reales.',

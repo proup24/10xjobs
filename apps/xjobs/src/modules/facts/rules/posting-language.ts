@@ -14,11 +14,17 @@ export interface PostingLanguages {
 // Any franc upgrade or change to these thresholds or the table below changes the detected
 // languages: bump FACTS_VERSION (facts/config/facts.config.ts) with it.
 
-/** Below this many characters (of the text, and of its detected sentence pieces) nothing is sure. */
+/**
+ * Below this many characters (of the text, and of its detected sentence pieces) nothing is
+ * sure.
+ */
 const MIN_TEXT = 200;
 /** A paragraph shorter than this is not detected (franc's `minLength`). */
 const MIN_PARAGRAPH = 50;
-/** A language is kept when its sentence pieces hold at least this share of the detected characters. */
+/**
+ * A language is kept when its sentence pieces hold at least this share of the detected
+ * characters.
+ */
 const MIN_SHARE = 0.25;
 /**
  * Margins are judged per sentence piece. A piece is sure of a language only when every
@@ -172,11 +178,11 @@ const NEVER_SURE_GROUPS: string[][] = [
 ];
 const NEVER_SURE = new Set(NEVER_SURE_GROUPS.flat());
 
-const NOT_CONFIDENT: PostingLanguages = {
+const notConfident = (): PostingLanguages => ({
   codes: [],
   closeCalls: [],
   confident: false,
-};
+});
 
 /**
  * The text's paragraphs: each line long enough to detect on its own, and each run of
@@ -259,11 +265,14 @@ function callPiece(piece: string): Call {
 /**
  * The languages a posting is written in. Each sentence piece of each paragraph is judged on
  * its own; a language (or close call) is kept when its pieces hold at least a quarter of the
- * detected characters, so a stray English line in a French posting does not count. Not
- * confident when the text, or the part of it detected with confidence, is under 200 characters.
+ * detected characters, so a stray English line in a French posting does not count. A kept
+ * sure language whose group shows any other member anywhere (franc reads some Danish
+ * sentences as surely Bokmål) also gives that group's close call, so a speaker of the other
+ * member is unknown rather than rejected. Not confident when the text, or the part of it
+ * detected with confidence, is under 200 characters.
  */
 export function detectPostingLanguages(text: string): PostingLanguages {
-  if (text.trim().length < MIN_TEXT) return NOT_CONFIDENT;
+  if (text.trim().length < MIN_TEXT) return notConfident();
   const sure = new Map<string, number>();
   const close = new Map<string, { members: Set<string>; chars: number }>();
   let detected = 0;
@@ -283,13 +292,32 @@ export function detectPostingLanguages(text: string): PostingLanguages {
       close.set(key, entry);
     }
   }
-  if (detected < MIN_TEXT) return NOT_CONFIDENT;
+  if (detected < MIN_TEXT) return notConfident();
   const codes = [...sure]
     .filter(([, n]) => n / detected >= MIN_SHARE)
     .sort(([, a], [, b]) => b - a)
     .map(([code]) => code);
-  const closeCalls = [...close.values()]
-    .filter((e) => e.chars / detected >= MIN_SHARE)
+  const kept = new Map(
+    [...close].filter(([, e]) => e.chars / detected >= MIN_SHARE),
+  );
+  for (const code of codes) {
+    const group = GROUPS.find((g) => g.includes(code));
+    if (!group) continue;
+    const key = group[0];
+    const seen = group.filter(
+      (m) => m !== code && (sure.has(m) || close.get(key)?.members.has(m)),
+    );
+    if (seen.length === 0) continue;
+    const entry = kept.get(key) ?? {
+      members: new Set<string>(),
+      chars:
+        (close.get(key)?.chars ?? 0) +
+        group.reduce((n, m) => n + (sure.get(m) ?? 0), 0),
+    };
+    [code, ...seen].forEach((m) => entry.members.add(m));
+    kept.set(key, entry);
+  }
+  const closeCalls = [...kept.values()]
     .sort((a, b) => b.chars - a.chars)
     .map((e) => [...e.members].sort());
   return { codes, closeCalls, confident: true };
