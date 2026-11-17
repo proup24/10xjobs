@@ -210,5 +210,5 @@ Caddy also serves sites that other projects ship. It imports every `/home/deploy
 
 1. `edge` and `/home/deploy/caddy-sites` must exist before this change deploys, or `$C up -d` fails. As `deploy`: `docker network create edge` and `mkdir -p /home/deploy/caddy-sites`.
 2. 10xapply ships `xapply.caddy` into that folder and reloads this Caddy itself.
-3. A 10xjobs deploy reloads the imported sites too, since Caddy reads the folder on every start.
+3. Every 10xjobs deploy runs `caddy reload`, which re-reads the imported site files too. A broken site file would make that reload fail the deploy step; the previous config keeps running.
 4. A broken site file is refused by 10xapply's validate step before it is installed, so it cannot break the engine's own site.
