@@ -60,7 +60,6 @@ export function MatchRowLink({
             </Badge>
           ))}
         <span>Stack {stackScoreText(job.bestStackScore)}</span>
-        {job.unverified && <Badge variant="warning">Unverified</Badge>}
         <span className="ml-auto">{postedAge(job, now)}</span>
       </div>
     </Link>

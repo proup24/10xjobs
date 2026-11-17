@@ -71,9 +71,9 @@ describe('MatchRowLink', () => {
     expect(within(link).getByText('Stack n/a')).toBeTruthy();
   });
 
-  it('shows "Unverified"', () => {
+  it('does not show "Unverified"', () => {
     const link = renderRow([matchRow({ unverified: true })]);
-    expect(within(link).getByText('Unverified')).toBeTruthy();
+    expect(within(link).queryByText('Unverified')).toBeNull();
   });
 
   it('shows the date for a date-only job', () => {

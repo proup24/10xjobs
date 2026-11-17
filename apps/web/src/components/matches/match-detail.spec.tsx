@@ -660,7 +660,7 @@ describe('MatchDetail', () => {
   });
 
   // R65: match_details returns unverified = true for a review row the user moved to Matches.
-  it('shows Unverified on a job moved from review, with the line that explains it', () => {
+  it('keeps the detail line for a job moved from review, with no Unverified badge on its row', () => {
     const accepted = {
       ...reviewRow(),
       reviewChoice: 'qualified',
@@ -676,7 +676,7 @@ describe('MatchDetail', () => {
         showProfiles={false}
       />,
     );
-    expect(screen.getByText('Unverified')).toBeTruthy();
+    expect(screen.queryByText('Unverified')).toBeNull();
     cleanup();
     renderDetail([accepted], vi.fn());
     expect(screen.getByText('You moved this from review.')).toBeTruthy();
