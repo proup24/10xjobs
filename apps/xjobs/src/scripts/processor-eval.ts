@@ -7,7 +7,8 @@
  * (uses the Claude subscription's limits); never run in CI. Uses the same
  * generator as the worker, with in-memory repositories seeded from `seed-data.ts`,
  * so the database is not touched. Attempts are recorded with `eval: true`.
- * Prints the report, writes `golden/last-report.<generator>.json` and exits 1
+ * Prints every miss by fact (golden value → the model's, with its quote) and
+ * the report, writes both to `golden/last-report.<generator>.json` and exits 1
  * unless every bar holds.
  */
 import { writeFileSync } from 'node:fs';
@@ -59,6 +60,65 @@ class EvalProcessorRepository extends MemoryProcessorRepository {
 function flag(name: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
   return i === -1 ? undefined : process.argv[i + 1];
+}
+
+/** One wrong fact in one case, to tell a model miss from a wrong label. */
+interface Miss {
+  caseId: string;
+  title: string;
+  fact: string;
+  confidence: string | null;
+  want: unknown;
+  got: unknown;
+  quote: string;
+}
+
+/** Facts scored below full marks, and required technologies missed or added. */
+function missesOf(score: FactScores, title: string): Miss[] {
+  const misses: Miss[] = Object.entries(score.facts).flatMap(([fact, f]) =>
+    f && f.correct < f.total
+      ? [
+          {
+            caseId: score.caseId,
+            title,
+            fact,
+            confidence: f.confidence,
+            want: f.want,
+            got: f.got,
+            quote: f.quote,
+          },
+        ]
+      : [],
+  );
+  const r = score.required;
+  if (r && (r.missing.length > 0 || r.extra.length > 0))
+    misses.push({
+      caseId: score.caseId,
+      title,
+      fact: 'requiredTechs',
+      confidence: null,
+      want: r.missing.map((code) => `-${code}`),
+      got: r.extra.map((code) => `+${code}`),
+      quote: '',
+    });
+  return misses;
+}
+
+const show = (v: unknown): string =>
+  v === undefined ? '-' : typeof v === 'string' ? v : JSON.stringify(v);
+
+function printMisses(misses: Miss[]): void {
+  if (misses.length === 0) return;
+  console.log('\nmisses by fact (want → got; requiredTechs: -missing +extra):');
+  const facts = [...new Set(misses.map((m) => m.fact))].sort();
+  for (const fact of facts) {
+    const rows = misses.filter((m) => m.fact === fact);
+    console.log(`\n  ${fact} (${rows.length})`);
+    for (const m of rows)
+      console.log(
+        `    ${m.caseId.padEnd(6)} ${m.title.slice(0, 50).padEnd(50)} ${show(m.want)} → ${show(m.got)}${m.confidence ? ` [${m.confidence}]` : ''}${m.quote ? `  "${m.quote.slice(0, 80)}"` : ''}`,
+      );
+  }
 }
 
 const pct = (n: number | null): string =>
@@ -134,6 +194,7 @@ async function main(): Promise<void> {
     });
 
   const scores: FactScores[] = [];
+  const misses: Miss[] = [];
   const failed: string[] = [];
   /** Cases not run because a usage limit or the weekly reserve paused the run. */
   const stopped: string[] = [];
@@ -168,7 +229,9 @@ async function main(): Promise<void> {
       }
       // Every try of the job counts toward its calls and cost.
       const calls = callStats(repo.attempts.filter((a) => a.jobId === c.id));
-      scores.push(scoreCase(parsed.data, c, calls));
+      const score = scoreCase(parsed.data, c, calls);
+      scores.push(score);
+      misses.push(...missesOf(score, c.input.title));
       console.log(`  ${c.id}: ${outcome}`);
     }
   };
@@ -177,6 +240,11 @@ async function main(): Promise<void> {
   const report = summarize(scores);
   // A case that did not process proves nothing, so it fails the run.
   const pass = report.pass && failed.length === 0 && stopped.length === 0;
+  printMisses(
+    misses.sort((a, b) =>
+      a.caseId.localeCompare(b.caseId, undefined, { numeric: true }),
+    ),
+  );
   print({ ...report, pass }, failed);
   if (failed.length)
     console.log(`\nfailed cases:\n${failed.map((f) => `  ${f}`).join('\n')}`);
@@ -187,7 +255,7 @@ async function main(): Promise<void> {
     );
   writeFileSync(
     join(GOLDEN_CASES_DIR, '..', reportFileName(config.extractionModel)),
-    `${JSON.stringify({ ...report, pass, failed, stoppedOnLimit: limit, notRun: stopped, config }, null, 2)}\n`,
+    `${JSON.stringify({ ...report, pass, failed, stoppedOnLimit: limit, notRun: stopped, config, misses }, null, 2)}\n`,
   );
   process.exit(pass ? 0 : 1);
 }

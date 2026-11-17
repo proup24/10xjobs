@@ -39,6 +39,11 @@ interface FactScore {
   total: number;
   decidedBy: DecidedBy | null;
   confidence: Confidence | null;
+  /** The golden value and the document's, as compared, to read a miss. */
+  want: unknown;
+  got: unknown;
+  /** The document's quote for the fact; empty when it has none. */
+  quote: string;
 }
 
 /** Per-case counts behind the requirement scores; summed over the run. */
@@ -57,10 +62,17 @@ export interface RequirementCounts {
   yearsTotal: number;
 }
 
+/** Required (main + must) technology codes one case missed or added. */
+export interface RequiredDiff {
+  missing: string[];
+  extra: string[];
+}
+
 export interface FactScores {
   caseId: string;
   facts: Partial<Record<FactName, FactScore>>;
   requirements: RequirementCounts | null;
+  required: RequiredDiff | null;
   generatorCalls: number;
   costUsd: number;
 }
@@ -86,7 +98,11 @@ export function callStats(
   };
 }
 
-type Envelope = { decidedBy: DecidedBy; confidence: Confidence };
+type Envelope = {
+  decidedBy: DecidedBy;
+  confidence: Confidence;
+  quote?: string;
+};
 
 const isUnstated = (v: unknown): boolean =>
   v === null || v === undefined || v === 'unstated';
@@ -161,6 +177,7 @@ export function scoreCase(
     caseId: c.id,
     facts,
     requirements: scoreRequirements(doc, c),
+    required: requiredDiff(doc, c),
     generatorCalls: extra.generatorCalls ?? 0,
     costUsd: extra.costUsd ?? 0,
   };
@@ -181,12 +198,17 @@ function put(
   name: FactName,
   ok: boolean,
   fact: Envelope,
+  want: unknown,
+  got: unknown,
 ): void {
   facts[name] = {
     correct: ok ? 1 : 0,
     total: 1,
     decidedBy: fact.decidedBy,
     confidence: fact.confidence,
+    want,
+    got,
+    quote: fact.quote ?? '',
   };
 }
 
@@ -205,7 +227,14 @@ function scoreScalars(
   ];
   for (const [name, fact] of scalars) {
     if (golden[name] === undefined) continue;
-    put(facts, name, sameScalar(fact.value, golden[name]), fact);
+    put(
+      facts,
+      name,
+      sameScalar(fact.value, golden[name]),
+      fact,
+      golden[name],
+      fact.value,
+    );
   }
   if (golden.yearsRequired !== undefined)
     put(
@@ -216,6 +245,8 @@ function scoreScalars(
         golden.yearsRequired as GoldenRange | null,
       ),
       doc.yearsRequired,
+      golden.yearsRequired,
+      doc.yearsRequired.value,
     );
 }
 
@@ -230,6 +261,8 @@ function scoreRoleKind(
     'roleKind',
     sameScalar(doc.position.value?.roleKind, golden.roleKind),
     doc.position,
+    golden.roleKind,
+    doc.position.value?.roleKind ?? null,
   );
 }
 
@@ -252,6 +285,9 @@ function scoreOpeningPlaces(
       doc.openings.every((opening) => opening.confidence === 'sure')
         ? 'sure'
         : 'unsure',
+    want: [...new Set(want)].sort(),
+    got: [...new Set(got)].sort(),
+    quote: doc.openings.map((opening) => opening.quote).join(' | '),
   };
 }
 
@@ -270,6 +306,9 @@ function scoreMainStack(
     total: want.size,
     decidedBy: doc.techStack.decidedBy,
     confidence: doc.techStack.confidence,
+    want: [...want].sort(),
+    got: [...got].sort(),
+    quote: '',
   };
 }
 
@@ -301,6 +340,20 @@ const codesOf = (
 
 const overlap = (a: Set<string>, b: Set<string>): number =>
   [...a].filter((code) => b.has(code)).length;
+
+/** Required codes the golden case lists and the document doesn't, and back. */
+function requiredDiff(
+  doc: ExtractionDocument,
+  c: GoldenCase,
+): RequiredDiff | null {
+  if (!c.expected.requirements) return null;
+  const want = codesOf(c.expected.requirements, ['main', 'must']);
+  const got = codesOf(docRequirements(doc), ['main', 'must']);
+  return {
+    missing: [...want].filter((code) => !got.has(code)).sort(),
+    extra: [...got].filter((code) => !want.has(code)).sort(),
+  };
+}
 
 /**
  * Technology recall and precision on required (main + must) and on nice, by
@@ -357,14 +410,17 @@ function scoreRequiredLanguages(
   facts: FactScores['facts'],
 ): void {
   if (!c.expected.requiredLanguages) return;
+  const want = c.expected.requiredLanguages.map((language) => language.lang);
+  const got = (doc.requiredLanguages.value ?? []).map(
+    (language) => language.lang,
+  );
   put(
     facts,
     'requiredLanguages',
-    sameSet(
-      c.expected.requiredLanguages.map((language) => language.lang),
-      (doc.requiredLanguages.value ?? []).map((language) => language.lang),
-    ),
+    sameSet(want, got),
     doc.requiredLanguages,
+    want,
+    got,
   );
 }
 
@@ -382,6 +438,8 @@ function scoreSponsorship(
       c.expected.sponsorship,
     ),
     doc.workAuthorization,
+    c.expected.sponsorship,
+    doc.workAuthorization.value?.sponsorship ?? null,
   );
 }
 
@@ -396,6 +454,8 @@ function scoreSalary(
     'salary',
     sameSalary(doc.salary.value, c.expected.salary),
     doc.salary,
+    c.expected.salary,
+    doc.salary.value,
   );
 }
 
@@ -405,14 +465,14 @@ function scoreJunkFlags(
   facts: FactScores['facts'],
 ): void {
   if (!c.expected.junkFlags) return;
+  const got = (doc.junkFlags.value ?? []).map((flag) => flag.code);
   put(
     facts,
     'junkFlags',
-    sameSet(
-      c.expected.junkFlags,
-      (doc.junkFlags.value ?? []).map((flag) => flag.code),
-    ),
+    sameSet(c.expected.junkFlags, got),
     doc.junkFlags,
+    c.expected.junkFlags,
+    got,
   );
 }
 
