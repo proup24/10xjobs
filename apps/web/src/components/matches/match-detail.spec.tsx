@@ -133,14 +133,37 @@ describe('MatchDetail job decisions', () => {
   it('Expired decides at once', async () => {
     const onDecideJob = renderWithJobDecision(matchRow());
     fireEvent.click(screen.getByRole('button', { name: 'Expired' }));
-    await vi.waitFor(() => expect(onDecideJob).toHaveBeenCalledWith('expired'));
+    await waitFor(() => expect(onDecideJob).toHaveBeenCalledWith('expired'));
     expect(screen.queryByRole('dialog')).toBeNull();
+    const btn = screen.getByRole('button', { name: 'Expired' });
+    await waitFor(() => expect(btn.getAttribute('aria-busy')).toBeNull());
+  });
+
+  it('while one of Applied and Expired saves, both are disabled and only the clicked one loads', async () => {
+    let resolve!: (ok: boolean) => void;
+    const pending = new Promise<boolean>((r) => {
+      resolve = r;
+    });
+    renderWithJobDecision(matchRow(), vi.fn().mockReturnValue(pending));
+    const applied = screen.getByRole('button', { name: 'Applied' });
+    const expired = screen.getByRole('button', { name: 'Expired' });
+    fireEvent.click(expired);
+    await waitFor(() => expect(expired.getAttribute('aria-busy')).toBe('true'));
+    expect((applied as HTMLButtonElement).disabled).toBe(true);
+    expect((expired as HTMLButtonElement).disabled).toBe(true);
+    expect(applied.getAttribute('aria-busy')).toBeNull();
+    resolve(true);
+    await waitFor(() => expect(expired.getAttribute('aria-busy')).toBeNull());
+    expect((applied as HTMLButtonElement).disabled).toBe(false);
+    expect((expired as HTMLButtonElement).disabled).toBe(false);
   });
 
   it("Applied calls onDecide('applied')", async () => {
     const onDecideJob = renderWithJobDecision(matchRow());
     fireEvent.click(screen.getByRole('button', { name: 'Applied' }));
-    await vi.waitFor(() => expect(onDecideJob).toHaveBeenCalledWith('applied'));
+    await waitFor(() => expect(onDecideJob).toHaveBeenCalledWith('applied'));
+    const btn = screen.getByRole('button', { name: 'Applied' });
+    await waitFor(() => expect(btn.getAttribute('aria-busy')).toBeNull());
   });
 
   it('Not for me opens the dialog', async () => {
