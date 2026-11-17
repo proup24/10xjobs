@@ -92,6 +92,40 @@ describe('scoreCase', () => {
       correct: 0,
     });
   });
+
+  it('keeps the golden value, the answer and its quote to read a miss', () => {
+    const doc = fixtureDocument();
+    doc.seniority.value = 'junior';
+    doc.seniority.quote = 'Junior developer';
+    expect(scoreCase(doc, matchingCase()).facts.seniority).toMatchObject({
+      want: 'senior',
+      got: 'junior',
+      quote: 'Junior developer',
+    });
+  });
+
+  it('lists opening places as compared, and required codes missed or added', () => {
+    const doc = fixtureDocument();
+    doc.openings[0].places = [{ kind: 'worldwide' }];
+    doc.techStack.value!.requirements = doc.techStack.value!.requirements.map(
+      (r) =>
+        r.technology.code === 'sql'
+          ? { ...r, technology: { code: 'go', text: 'Go' } }
+          : r,
+    );
+    const scores = scoreCase(doc, matchingCase());
+    expect(scores.facts.openingPlaces).toMatchObject({
+      want: ['region:EMEA'],
+      got: ['worldwide'],
+    });
+    expect(scores.required).toEqual({ missing: ['sql'], extra: ['go'] });
+  });
+
+  it('has no required diff without golden requirements', () => {
+    const c = matchingCase();
+    delete c.expected.requirements;
+    expect(scoreCase(fixtureDocument(), c).required).toBeNull();
+  });
 });
 
 describe('openingPlaces confidence', () => {
