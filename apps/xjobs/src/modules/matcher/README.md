@@ -100,7 +100,7 @@ for a place that covers the required one (codes compared upper-cased): a `GLOBAL
 | any other unmet requirement (silent sponsorship and `acceptsSponsorship` null count as no)            | `fail`    |
 | otherwise (a requirement can't be compared)                                                           | `unknown` |
 
-When the job offers no sponsorship and states no requirement, the facts derive `work-permit` requirements for the description's non-mention places, else the LinkedIn place. These are alternatives: any one met is enough, and neither residence nor sponsorship acceptance meets them. Reasons: `you meet work-permit US (the job offers no sponsorship)`, `you don't meet work-permit US (the job offers no sponsorship)`, `you don't meet work-permit in any of US, CA (the job offers no sponsorship)`; a no-sponsorship job with no place to derive passes with `the job offers no sponsorship but names no place to check`. A place the index cannot place is `unknown`.
+When the job offers no sponsorship and states no requirement, the facts derive `work-permit` requirements for the description's non-mention places, else the LinkedIn place. These are alternatives: any one met is enough, a work permit, citizenship or residency authorization for the place meets one, and neither residence alone nor sponsorship acceptance ever does. Reasons: `you meet work-permit US (the job offers no sponsorship)`, `you don't meet work-permit US (the job offers no sponsorship)`, `you don't meet work-permit in any of US, CA (the job offers no sponsorship)`; a no-sponsorship job with no place to derive passes with `the job offers no sponsorship but names no place to check`. A place the index cannot place is `unknown`.
 
 ## Matchable jobs
 

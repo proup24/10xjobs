@@ -431,6 +431,28 @@ describe('checkWorkAuthorization', () => {
       });
     });
 
+    it('a residency authorization meets a derived work permit', () => {
+      expect(
+        checkWorkAuthorization(
+          derivedDoc(['US']),
+          profile({ authorizations: [auth('residency', 'US')] }),
+          idx,
+        ),
+      ).toMatchObject({
+        outcome: 'pass',
+        reason: `you meet work-permit US ${NS}`,
+      });
+    });
+
+    it('a residency authorization does not meet an explicit work permit', () => {
+      expect(
+        outcome(
+          doc([['work-permit', 'US']]),
+          profile({ authorizations: [auth('residency', 'US')] }),
+        ),
+      ).toBe('fail');
+    });
+
     it('several unmet derived requirements fail naming each', () => {
       expect(
         checkWorkAuthorization(derivedDoc(['US', 'CA']), profile(), idx),

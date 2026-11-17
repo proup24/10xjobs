@@ -14,6 +14,13 @@ const MET_BY: Record<Requirement['kind'], string[]> = {
   clearance: ['clearance'],
 };
 
+/**
+ * The authorization kinds that meet a requirement derived from no sponsorship: the user must
+ * already be able to work there, by a permit, citizenship or residency. Residence alone and
+ * sponsorship acceptance never do.
+ */
+const DERIVED_MET_BY = ['work-permit', 'citizenship', 'residency'];
+
 /** Kinds a job's visa sponsorship can make up for. */
 const SPONSORABLE = new Set<string>(['work-permit', 'residency']);
 
@@ -60,9 +67,10 @@ function meets(
   req: Requirement,
   eligibility: MatchProfile['eligibility'],
   idx: PlaceIndex,
+  metBy: string[] = MET_BY[req.kind],
 ): Overlap {
   const held = eligibility.authorizations
-    .filter((a) => MET_BY[req.kind].includes(a.kind))
+    .filter((a) => metBy.includes(a.kind))
     .map((a) => a.place);
   if (req.kind === 'residency' && eligibility.residenceCountry !== null)
     held.push(eligibility.residenceCountry);
@@ -81,12 +89,13 @@ function classify(
   requirements: Requirement[],
   eligibility: MatchProfile['eligibility'],
   idx: PlaceIndex,
+  acceptedKinds?: string[],
 ) {
   const met: Requirement[] = [];
   const unmet: Requirement[] = [];
   const unclear: Requirement[] = [];
   for (const r of requirements) {
-    const o = meets(r, eligibility, idx);
+    const o = meets(r, eligibility, idx, acceptedKinds);
     if (o === 'no') unmet.push(r);
     else if (o === 'maybe') unclear.push(r);
     else met.push(r);
@@ -98,7 +107,9 @@ const NO_SPONSORSHIP = '(the job offers no sponsorship)';
 
 /**
  * Every work authorization the job requires, met by the user's authorizations (through
- * the place hierarchy) or `residenceCountry`, or made up for by sponsorship.
+ * the place hierarchy) or `residenceCountry`, or made up for by sponsorship. Requirements
+ * derived from no sponsorship are alternatives, met by a work permit, citizenship or residency
+ * authorization; sponsorship cannot rescue them.
  */
 export function checkWorkAuthorization(
   facts: JobFactsDocument,
@@ -124,8 +135,10 @@ export function checkWorkAuthorization(
       ? 'workAuthorization'
       : null,
   );
+  // Invariant: a job never has both explicit and derived requirements (derivation needs
+  // `requirements: []`), so a derived pass or fail below never skips explicit ones.
   if (derived.length > 0) {
-    const group = classify(derived, eligibility, idx);
+    const group = classify(derived, eligibility, idx, DERIVED_MET_BY);
     const detail = { unmet: group.unmet, unclear: group.unclear };
     const places = (rs: Requirement[]) =>
       rs.length === 1
