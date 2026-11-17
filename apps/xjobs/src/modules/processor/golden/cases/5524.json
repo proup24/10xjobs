@@ -8,12 +8,17 @@
     "openings": [
       {
         "arrangements": ["unstated"],
-        "places": [],
+        "places": [
+          {
+            "kind": "country",
+            "code": "US"
+          }
+        ],
         "placeStrictness": "unstated"
       }
     ],
     "roleKind": "frontend_engineer",
-    "seniority": "unstated",
+    "seniority": "staff",
     "yearsRequired": {
       "min": 10,
       "max": null

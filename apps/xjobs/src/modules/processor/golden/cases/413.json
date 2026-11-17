@@ -8,7 +8,12 @@
     "openings": [
       {
         "arrangements": ["unstated"],
-        "places": [],
+        "places": [
+          {
+            "kind": "region",
+            "code": "LATAM"
+          }
+        ],
         "placeStrictness": "unstated"
       }
     ],

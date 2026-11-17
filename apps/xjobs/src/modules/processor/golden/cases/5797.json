@@ -8,12 +8,17 @@
     "openings": [
       {
         "arrangements": ["unstated"],
-        "places": [],
+        "places": [
+          {
+            "kind": "country",
+            "code": "CA"
+          }
+        ],
         "placeStrictness": "unstated"
       }
     ],
     "roleKind": "backend_engineer",
-    "seniority": "unstated",
+    "seniority": "senior",
     "yearsRequired": {
       "min": 6,
       "max": null

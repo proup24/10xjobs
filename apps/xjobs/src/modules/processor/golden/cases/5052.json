@@ -8,7 +8,12 @@
     "openings": [
       {
         "arrangements": ["unstated"],
-        "places": [],
+        "places": [
+          {
+            "kind": "country",
+            "code": "FR"
+          }
+        ],
         "placeStrictness": "unstated"
       }
     ],
