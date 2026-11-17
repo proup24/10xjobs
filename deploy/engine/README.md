@@ -203,3 +203,13 @@ Four `claude` calls run at once by default (`PROCESSOR_CONCURRENCY=4`), each a N
 4. `$C up -d worker`, then check `$C logs worker | grep -i processor`.
 
 No code change is needed: `claude -p` uses the key when it is set.
+
+## 18. Other sites on this server
+
+Caddy also serves sites that other projects ship. It imports every `/home/deploy/caddy-sites/*.caddy` file (mounted read-only at `/etc/caddy/sites`) and joins the external Docker network `edge`, which those projects' containers also join.
+
+1. `edge` and `/home/deploy/caddy-sites` must exist before this change deploys. Without `edge`, `$C up -d` fails. A missing `/home/deploy/caddy-sites` would be created by Docker, owned by root, so the `deploy` user could not write site files into it. As `deploy`: `docker network create edge` and `mkdir -p /home/deploy/caddy-sites`.
+2. 10xapply ships `xapply.caddy` into that folder and reloads this Caddy itself.
+3. Every 10xjobs deploy runs `caddy reload`, which re-reads the imported site files too. A broken site file would make that reload fail the deploy step; the previous config keeps running.
+4. A broken site file is refused by 10xapply's validate step before it is installed.
+5. No service on `edge` may share a name or alias with a 10xjobs service: Compose adds each service name as a DNS name on every network it joins. 10xapply's are all `xapply-*`, and this Caddy proxies `xjobs-api` (an alias on the default network), not `api`.
