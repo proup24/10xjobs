@@ -471,6 +471,32 @@ describe('checkWorkAuthorization', () => {
       });
     });
 
+    it('no sponsorship with nothing derived on an unsure fact rests on it', () => {
+      expect(
+        checkWorkAuthorization(doc([], 'no', 'unsure'), profile(), idx),
+      ).toMatchObject({
+        outcome: 'pass',
+        unsure: true,
+        unsureField: 'workAuthorization',
+        reason: 'the job offers no sponsorship but names no place to check',
+      });
+    });
+
+    it('a derived pass on an unsure fact rests on it', () => {
+      expect(
+        checkWorkAuthorization(
+          derivedDoc(['US'], 'unsure'),
+          profile({ authorizations: [auth('citizenship', 'US')] }),
+          idx,
+        ),
+      ).toMatchObject({
+        outcome: 'pass',
+        unsure: true,
+        unsureField: 'workAuthorization',
+        reason: `you meet work-permit US ${NS}`,
+      });
+    });
+
     it('no sponsorship with nothing derived names no place', () => {
       expect(
         checkWorkAuthorization(doc([], 'no'), profile(), idx),
