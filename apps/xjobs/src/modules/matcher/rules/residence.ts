@@ -1,5 +1,10 @@
 import type { FactOpening } from 'src/modules/facts/schema/facts';
-import { countriesOf, type Overlap, type PlaceIndex } from './places';
+import {
+  countriesOf,
+  intersects,
+  type Overlap,
+  type PlaceIndex,
+} from './places';
 import type { MatchEligibility } from './types';
 
 /** Where the user lives: the residence country, then each residency authorization's place. Upper-cased, unique. */
@@ -48,17 +53,14 @@ export function livesIn(
   homes: string[],
   idx: PlaceIndex,
 ): Overlap {
+  const mine = homes.map((home) => homeCountries(home, idx));
   let result: Overlap = 'no';
   for (const place of places) {
     if (place.kind === 'worldwide') return 'yes';
     const job = countriesOf(place, idx);
-    for (const home of homes) {
-      const mine = homeCountries(home, idx);
-      if (!job || !mine) {
-        result = 'maybe';
-        continue;
-      }
-      for (const c of mine) if (job.has(c)) return 'yes';
+    for (const countries of mine) {
+      if (!job || !countries) result = 'maybe';
+      else if (intersects(job, countries)) return 'yes';
     }
   }
   return result;

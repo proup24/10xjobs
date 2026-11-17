@@ -113,6 +113,18 @@ describe('livesIn', () => {
     expect(livesIn([country('GB')], ['XX'], idx)).toBe('maybe');
     expect(livesIn([country('GB')], ['UK'], idx)).toBe('maybe');
   });
+  it('a city with no country and no known id is maybe', () => {
+    const nowhere = {
+      kind: 'city' as const,
+      name: 'Nowhere',
+      countryCode: null,
+      cityId: 'not-in-index',
+    };
+    expect(livesIn([nowhere], ['MA'], idx)).toBe('maybe');
+  });
+  it('one unplaceable home makes a miss maybe', () => {
+    expect(livesIn([country('GB')], ['XX', 'MA'], idx)).toBe('maybe');
+  });
   it('a home region covers its countries', () => {
     expect(livesIn([country('FR')], ['EU'], idx)).toBe('yes');
   });

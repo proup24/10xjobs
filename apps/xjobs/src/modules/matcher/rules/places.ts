@@ -63,7 +63,8 @@ export function overlaps(
   return job.kind === 'city' && job.cityId === null ? 'maybe' : 'yes';
 }
 
-function intersects(a: Set<string>, b: Set<string>): boolean {
+/** Whether two country sets share a country. */
+export function intersects(a: Set<string>, b: Set<string>): boolean {
   for (const c of a) if (b.has(c)) return true;
   return false;
 }

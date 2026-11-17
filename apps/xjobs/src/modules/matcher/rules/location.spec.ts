@@ -292,6 +292,58 @@ describe('residence', () => {
     expect((c.detail as { residence: unknown }[])[0].residence).toEqual({
       homes: ['MA'],
       fits: 'no',
+      decided: true,
+    });
+  });
+  it('a residence pass is stored as not deciding', () => {
+    const c = check([strict([country('GB')])], resident('GB'));
+    expect(c.outcome).toBe('pass');
+    expect((c.detail as { residence: unknown }[])[0].residence).toEqual({
+      homes: ['GB'],
+      fits: 'yes',
+      decided: false,
+    });
+  });
+  it('the residence reason names only the openings that failed on residence', () => {
+    const c = check(
+      [
+        strict([country('GB')]),
+        opening({
+          arrangements: ['onsite'],
+          places: [berlin],
+          placeStrictness: 'limit',
+          arrangementSource: 'linkedin',
+          placesSource: 'linkedin',
+        }),
+      ],
+      resident('MA'),
+    );
+    expect(c.outcome).toBe('fail');
+    expect(c.reason).toBe(
+      'job location (remote in GB, stated in the description) requires living there; you live in MA',
+    );
+  });
+  describe('unstated arrangements', () => {
+    const unstated = opening({
+      arrangements: ['unstated'],
+      places: [country('GB')],
+      placeStrictness: 'label',
+    });
+    it('fail surely for a remote-only profile', () => {
+      const p = resident('MA', [], (x) => {
+        x.locations.hybrid = [];
+        x.locations.onsite = [];
+      });
+      expect(check([unstated], p)).toMatchObject({
+        outcome: 'fail',
+        unsure: false,
+      });
+    });
+    it('are unknown when an on-site place fits', () => {
+      const p = resident('MA', [], (x) => {
+        x.locations.onsite = [country('GB')];
+      });
+      expect(check([unstated], p).outcome).toBe('unknown');
     });
   });
   it('limit is strict too', () => {
@@ -335,16 +387,18 @@ describe('residence', () => {
       x.locations.remote = [];
       x.locations.onsite = [country('GB')];
     });
-    expect(
-      outcomeOf(
+    const c = check(
+      [
         opening({
           arrangements: ['onsite'],
           places: [country('GB')],
           placeStrictness: 'limit',
         }),
-        p,
-      ),
-    ).toBe('pass');
+      ],
+      p,
+    );
+    expect(c.outcome).toBe('pass');
+    expect((c.detail as { residence: unknown }[])[0].residence).toBeNull();
   });
   it("an unsure opening's residence failure is unsure", () => {
     expect(
@@ -386,6 +440,8 @@ describe('residence', () => {
       resident('GB'),
     );
     expect(c.outcome).toBe('fail');
-    expect(c.reason).not.toContain('requires living there');
+    expect(c.reason).toBe(
+      'job location (remote in GB) does not fit your wanted arrangements (remote, hybrid, onsite)',
+    );
   });
 });
