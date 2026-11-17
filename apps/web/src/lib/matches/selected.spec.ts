@@ -99,4 +99,10 @@ describe('decidedJobHref', () => {
       `/applications?status=dismissed&job=${J}`,
     );
   });
+
+  it('opens an expired job under Expired', () => {
+    expect(decidedJobHref([decided('expired')])).toBe(
+      `/applications?status=expired&job=${J}`,
+    );
+  });
 });

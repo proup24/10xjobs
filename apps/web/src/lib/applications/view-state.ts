@@ -1,12 +1,23 @@
 /** Which of the user's decisions the Applications page lists. */
-export type AppStatus = 'applied' | 'dismissed';
+export type AppStatus = 'applied' | 'dismissed' | 'expired';
+
+export const APP_STATUSES: readonly AppStatus[] = [
+  'applied',
+  'dismissed',
+  'expired',
+];
+
+export function isAppStatus(s: unknown): s is AppStatus {
+  return APP_STATUSES.includes(s as AppStatus);
+}
 
 export type AppView = { status: AppStatus; job: string | null };
 
 /** The page's state from its URL; an unknown status reads as the default, `applied`. */
 export function readAppView(params: URLSearchParams): AppView {
+  const status = params.get('status');
   return {
-    status: params.get('status') === 'dismissed' ? 'dismissed' : 'applied',
+    status: isAppStatus(status) ? status : 'applied',
     job: params.get('job') || null,
   };
 }
@@ -21,7 +32,7 @@ export function viewForJob(
   decisions: { jobId: string; status: string }[],
 ): AppView {
   const status = decisions.find((d) => d.jobId === v.job)?.status;
-  return status === 'applied' || status === 'dismissed' ? { ...v, status } : v;
+  return isAppStatus(status) ? { ...v, status } : v;
 }
 
 /** The Applications page URL for a state; the default status is left out. */

@@ -14,6 +14,7 @@ import {
 
 export const Decision = z.discriminatedUnion('status', [
   z.object({ jobId: z.uuid(), status: z.literal('applied') }),
+  z.object({ jobId: z.uuid(), status: z.literal('expired') }),
   z.object({
     jobId: z.uuid(),
     status: z.literal('dismissed'),
@@ -39,7 +40,7 @@ type Fields = {
 const code = (e: unknown) => (e as { code?: unknown }).code;
 
 /**
- * Marks a job applied or dismissed for the user. A dismissal keeps a snapshot of every
+ * Marks a job applied, dismissed or expired for the user. A dismissal keeps a snapshot of every
  * current match so the verdict can be read later. Only a job the user has a current match
  * for can be decided (RLS checks it on insert). `decidedAt` moves only when the status
  * changes. Log lines carry ids and error codes only.
@@ -56,9 +57,10 @@ export async function saveDecision(
   const log = logger(deps);
 
   let fields: Fields;
-  if (d.status === 'applied') {
+  if (d.status !== 'dismissed') {
+    // Applied and expired are bare: no reason, note or snapshot, and no match read.
     fields = {
-      status: 'applied',
+      status: d.status,
       reason: null,
       note: null,
       matchSnapshot: null,
