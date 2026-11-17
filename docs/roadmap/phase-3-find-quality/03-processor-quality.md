@@ -67,7 +67,7 @@ The model misses that remain:
 
 ## Suggested path
 
-1. Review the remaining golden labels: roleKind against the current vocabulary, required techs, then arrangement and contract type. Re-run `processor:eval` for a real baseline.
+1. **During the brainstorm** _(user)_, review the remaining golden labels with the user: roleKind against the current vocabulary, required techs, then arrangement and contract type, and the open calls in problem 8. Then re-run `processor:eval` for a real baseline before any prompt change.
 2. Redefine `needsReview` and Unverified around the facts the matcher reads. Measure with `db:match-shares` and the Unverified share.
 3. Fix the main stack and AI-training cases first; they decide wrong matches.
 4. Add the vocabulary gaps with `db:vocab`.
