@@ -14,6 +14,7 @@ import {
   PostLinks,
 } from '@/components/matches/match-detail';
 import { DismissDialog } from '@/components/matches/dismiss-dialog';
+import { JobPostings, MergedBadge } from '@/components/matches/job-postings';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -36,6 +37,7 @@ import {
 import type { Labels } from '@/lib/matches/checks';
 import { timeAgo } from '@/lib/matches/freshness';
 import type { MatchRow } from '@/lib/matches/group';
+import type { JobPosting } from '@/lib/matches/postings';
 import type { SaveResult } from '@/lib/setup/save-result';
 import { cn } from '@/lib/utils';
 import { DecisionRowLink, dismissReason } from './decision-row';
@@ -80,17 +82,25 @@ function JobHeader({
   userId,
   backHref,
   actions,
+  postings,
+  now,
 }: {
   row: DecisionRow;
   userId: string;
   backHref: string;
   actions: React.ReactNode;
+  /** The postings merged into the job; the section shows for two or more. */
+  postings: JobPosting[];
+  now: Date;
 }) {
   return (
     <article className="flex min-w-0 flex-col gap-6">
       <BackLink href={backHref} label={BACK_LABEL} />
       <header className="flex flex-col gap-1">
-        <h2 className="text-title-3">{row.title}</h2>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <h2 className="min-w-0 text-title-3 break-words">{row.title}</h2>
+          <MergedBadge postings={postings} />
+        </div>
         <p>
           {row.companyName}
           {row.location && (
@@ -98,6 +108,7 @@ function JobHeader({
           )}
         </p>
       </header>
+      <JobPostings postings={postings} now={now} />
       <PostLinks
         postingUrl={row.postingUrl}
         applyUrl={row.applyUrl}
@@ -249,6 +260,7 @@ export function ApplicationsView({
   labels,
   profileLabels,
   selected,
+  postings,
 }: {
   /** Every decision of the user, newest first. */
   decisions: DecisionRow[];
@@ -259,6 +271,8 @@ export function ApplicationsView({
   profileLabels: Record<string, string>;
   /** The `job` param's match rows, any outcome; null without one, empty when it has none. */
   selected: MatchRow[] | null;
+  /** The postings merged into the open job; empty without one. */
+  postings: JobPosting[];
 }) {
   const router = useRouter();
   const now = new Date(nowIso);
@@ -358,6 +372,7 @@ export function ApplicationsView({
           backHref={backHref}
           backLabel={BACK_LABEL}
           actions={actions}
+          postings={postings}
         />
       ) : (
         <JobHeader
@@ -365,6 +380,8 @@ export function ApplicationsView({
           userId={userId}
           backHref={backHref}
           actions={actions}
+          postings={postings}
+          now={now}
         />
       );
   }

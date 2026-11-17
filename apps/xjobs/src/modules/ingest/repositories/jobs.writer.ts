@@ -33,6 +33,10 @@ export interface LinkJobInput {
 }
 
 type Json = RawItemVersionRow['payload'];
+
+const UUID = 'pg/uuid@1';
+const TEXT = 'pg/text@1';
+const JSONB = 'pg/jsonb@1';
 type JobPatch = Partial<Omit<NormalizedJobRow, 'id'>>;
 
 const min = (a: Date, b: Date) => (a < b ? a : b);
@@ -211,35 +215,67 @@ async function remerge(tx: DatabaseTransaction, jobId: string): Promise<void> {
 }
 
 /**
- * A re-keyed job's extraction, copied to the job that replaces it so the
- * processed job needs no new model call. The copy cost nothing.
+ * The item's old job under its new key, when every source of that job now
+ * keys there: a re-key renames the job, so it keeps its id, extraction,
+ * processing state and every user's marks. Each other source's key comes from
+ * its linked record by the item's own rule (jobKey, then effectiveKey). A job
+ * with a source keyed elsewhere stays as it is. When a concurrent link created
+ * the new key first, the rename's unique violation re-runs the link, which then
+ * merges into that job.
  */
-async function carriedExtraction(
+async function renamed(
   tx: DatabaseTransaction,
-  old: NormalizedJobRow,
   jobId: string,
-): Promise<JobPatch> {
-  if (!old.currentExtractionId) return {};
+  rawItemId: string,
+  key: string,
+): Promise<NormalizedJobRow | null> {
   const { orm } = tx;
-  const source = found(
-    await orm.public.JobExtraction.where({
-      id: old.currentExtractionId,
-    }).first(),
-    'previous extraction',
+  const old = await orm.public.NormalizedJob.where({ id: jobId })
+    .forNoKeyUpdate()
+    .first();
+  if (!old) return null;
+  const others = await tx.query(
+    tx.raw.sql`SELECT i.id, i.channel, i."sourceKey", i."latestVersionId",
+        v.record
+      FROM normalized_job_sources s
+      JOIN normalized_versions v ON v.id = s."normalizedVersionId"
+      JOIN raw_items i ON i.id = s."rawItemId"
+      WHERE s."jobId" = ${jobId}::uuid AND s."rawItemId" <> ${rawItemId}::uuid`
+      .returnsRow({
+        id: UUID,
+        channel: TEXT,
+        sourceKey: TEXT,
+        latestVersionId: UUID,
+        record: JSONB,
+      })
+      .build(),
   );
-  const { id: _id, createdAt: _createdAt, ...fields } = source;
-  const copy = await orm.public.JobExtraction.create({
-    ...fields,
-    jobId,
-    costUsd: '0',
+  for (const other of others) {
+    if (!other.record) return null;
+    const item = {
+      id: other.id as string,
+      channel: other.channel as Channel,
+      sourceKey: other.sourceKey as string,
+      latestVersionId: other.latestVersionId as string | null,
+    };
+    const own = jobKey(
+      item.channel,
+      item.sourceKey,
+      other.record as unknown as NormalizedRecord,
+    );
+    if ((await effectiveKey(tx, item, own)) !== key) return null;
+  }
+  await orm.public.NormalizedJob.where({ id: jobId }).updateAll({
+    jobKey: key,
   });
-  return { currentExtractionId: copy.id, processedAt: old.processedAt };
+  return { ...old, jobKey: key };
 }
 
 /**
  * Moves every user's decision on a job that merged away to the job it merged
- * into. A user with a decision on both keeps one: applied beats dismissed beats
- * expired, otherwise the newer decision wins, and on a tie the target's stays.
+ * into (viewed marks move too, see moveViews). A user with a decision on both
+ * keeps one: applied beats dismissed beats expired, otherwise the newer
+ * decision wins, and on a tie the target's stays.
  */
 async function moveDecisions(
   tx: DatabaseTransaction,
@@ -273,11 +309,36 @@ async function moveDecisions(
 }
 
 /**
+ * Moves every user's viewed mark on a job that merged away to the job it
+ * merged into. A user who viewed both keeps one row, at the earlier time: they
+ * first saw the job then.
+ */
+async function moveViews(
+  tx: DatabaseTransaction,
+  fromJobId: string,
+  toJobId: string,
+): Promise<void> {
+  await tx.execute(
+    tx.raw.sql`WITH moved AS (
+        DELETE FROM public.job_views WHERE "jobId" = ${fromJobId}::uuid
+        RETURNING "userId", "viewedAt"
+      )
+      INSERT INTO public.job_views ("userId", "jobId", "viewedAt")
+      SELECT "userId", ${toJobId}::uuid, "viewedAt" FROM moved
+      ON CONFLICT ("userId", "jobId") DO UPDATE SET
+        "viewedAt" = LEAST(job_views."viewedAt", EXCLUDED."viewedAt")`
+      .affectedCount()
+      .build(),
+  );
+}
+
+/**
  * A merged job that revives gets a copy of the decisions it held when it
- * merged away. They moved with each merge, so they sit on the end of its
- * mergedIntoId chain (followed at most 10 steps, as in webhook_enqueue_match,
- * stopping at a job that isn't merged). Where the user already decided on the
- * revived job, that decision stays.
+ * merged away (copyViewsBack does the same for viewed marks). They moved with
+ * each merge, so they sit on the end of its mergedIntoId chain (followed at
+ * most 10 steps, as in webhook_enqueue_match, stopping at a job that isn't
+ * merged). Where the user already decided on the revived job, that decision
+ * stays.
  */
 async function copyDecisionsBack(
   tx: DatabaseTransaction,
@@ -298,6 +359,36 @@ async function copyDecisionsBack(
         ("userId", "jobId", status, reason, note, "decidedAt", "matchSnapshot")
       SELECT d."userId", ${jobId}::uuid, d.status, d.reason, d.note, d."decidedAt", d."matchSnapshot"
       FROM job_decisions d JOIN root ON d."jobId" = root.id
+      ON CONFLICT DO NOTHING`
+      .affectedCount()
+      .build(),
+  );
+}
+
+/**
+ * A merged job that revives gets a copy of the viewed marks it held when it
+ * merged away, taken from the end of its mergedIntoId chain as in
+ * copyDecisionsBack. Where the user already viewed the revived job, that mark
+ * stays.
+ */
+async function copyViewsBack(
+  tx: DatabaseTransaction,
+  jobId: string,
+): Promise<void> {
+  await tx.execute(
+    tx.raw.sql`WITH RECURSIVE chain AS (
+        SELECT j.id, j.status, j."mergedIntoId", 0 AS depth
+        FROM normalized_jobs j WHERE j.id = ${jobId}::uuid
+        UNION ALL
+        SELECT n.id, n.status, n."mergedIntoId", chain.depth + 1
+        FROM chain JOIN normalized_jobs n ON n.id = chain."mergedIntoId"
+        WHERE chain.status = 'merged' AND chain.depth < 10
+      ), root AS (
+        SELECT id FROM chain WHERE depth > 0 ORDER BY depth DESC LIMIT 1
+      )
+      INSERT INTO job_views ("userId", "jobId", "viewedAt")
+      SELECT v."userId", ${jobId}::uuid, v."viewedAt"
+      FROM job_views v JOIN root ON v."jobId" = root.id
       ON CONFLICT DO NOTHING`
       .affectedCount()
       .build(),
@@ -342,9 +433,11 @@ async function effectiveKey(
 
 /**
  * Links a raw item to the job its latest version's job key names, inside the
- * raw item's transaction, and re-merges every job the link touched. Sends the
- * job to Process (`pending`) only when this observation creates it or finds
- * it after `reopenAfterMs` unseen. Idempotent: replaying changes nothing.
+ * raw item's transaction, and re-merges every job the link touched. A new key
+ * with no job renames the item's old job when all its sources key there.
+ * Sends the job to Process (`pending`) only when this observation creates it
+ * or finds it after `reopenAfterMs` unseen. Idempotent: replaying changes
+ * nothing.
  */
 export async function linkJob(
   tx: DatabaseTransaction,
@@ -368,9 +461,14 @@ export async function linkJob(
   const record = version.record as unknown as NormalizedRecord;
   const key = await effectiveKey(tx, item, version.jobKey);
 
-  let job = await orm.public.NormalizedJob.where({ jobKey: key })
-    .forNoKeyUpdate()
-    .first();
+  const link = await orm.public.NormalizedJobSource.where({
+    rawItemId: input.rawItemId,
+  }).first();
+  let job =
+    (await orm.public.NormalizedJob.where({ jobKey: key })
+      .forNoKeyUpdate()
+      .first()) ??
+    (link ? await renamed(tx, link.jobId, input.rawItemId, key) : null);
   const created = !job;
   if (!job)
     job = await orm.public.NormalizedJob.create({
@@ -387,8 +485,11 @@ export async function linkJob(
     });
   else if (job.status === 'merged') {
     // A job whose sources all left gets one back: it is a job again, with a
-    // copy of the decisions that moved away with it.
-    if (job.mergedIntoId) await copyDecisionsBack(tx, job.id);
+    // copy of the decisions and views that moved away with it.
+    if (job.mergedIntoId) {
+      await copyDecisionsBack(tx, job.id);
+      await copyViewsBack(tx, job.id);
+    }
     await orm.public.NormalizedJob.where({ id: job.id }).updateAll({
       status: 'active',
       mergedIntoId: null,
@@ -396,12 +497,8 @@ export async function linkJob(
   }
   const before = job;
   let current = processingOf(before);
-  let previousLastSeenAt: Date | null = created ? null : before.lastSeenAt;
-  let inherited = false;
+  const previousLastSeenAt: Date | null = created ? null : before.lastSeenAt;
 
-  const link = await orm.public.NormalizedJobSource.where({
-    rawItemId: input.rawItemId,
-  }).first();
   if (!link) {
     await orm.public.NormalizedJobSource.create({
       jobId: job.id,
@@ -441,20 +538,9 @@ export async function linkJob(
           : {}),
       });
       await moveDecisions(tx, old.id, job.id);
+      await moveViews(tx, old.id, job.id);
       const oldState = processingOf(old);
-      if (created) {
-        // Same job under a better key: it carries its processing state over.
-        inherited = true;
-        current = oldState;
-        previousLastSeenAt = old.lastSeenAt;
-        await orm.public.NormalizedJob.where({ id: job.id }).updateAll({
-          ...processingColumns(oldState),
-          ...(await carriedExtraction(tx, old, job.id)),
-        });
-      } else if (
-        oldState.status === 'pending' &&
-        current.status !== 'pending'
-      ) {
+      if (oldState.status === 'pending' && current.status !== 'pending') {
         current = oldState;
         await orm.public.NormalizedJob.where({ id: job.id }).updateAll(
           processingColumns(oldState),
@@ -466,7 +552,7 @@ export async function linkJob(
   await remerge(tx, job.id);
 
   const next = nextProcessing({
-    created: created && !inherited,
+    created,
     previousLastSeenAt,
     observedAt: input.observedAt,
     current,
@@ -479,7 +565,7 @@ export async function linkJob(
     );
   return {
     jobId: job.id,
-    created: created && !inherited,
+    created,
     reopened: changed && next.reason === 'reopened',
     pending: (changed ? next : current).status === 'pending',
   };

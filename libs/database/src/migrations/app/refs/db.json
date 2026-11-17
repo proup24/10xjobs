@@ -21,6 +21,7 @@
     "webhook-hardening",
     "job-decisions-update-columns",
     "match-details-decisions",
-    "job-decision-list"
+    "job-decision-list",
+    "job-postings"
   ]
 }

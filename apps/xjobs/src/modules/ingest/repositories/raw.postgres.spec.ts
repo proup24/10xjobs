@@ -429,6 +429,34 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
       });
     const rawItemId = async (sourceKey: string) =>
       (await db.orm.public.RawItem.where({ sourceKey }).first())!.id;
+    /** Marks the job processed by an extraction of its own. */
+    const processWith = async (jobId: string, data: { doc: string }) => {
+      const extraction = await db.orm.public.JobExtraction.create({
+        jobId,
+        inputHash: 'test',
+        schemaVersion: 2,
+        promptHash: 'test',
+        decisionModel: 'test',
+        extractionModel: 'test',
+        data,
+        needsReview: false,
+        worldwide: false,
+        regionCodes: [],
+        countryCodes: [],
+        cityIds: [],
+        techTags: ['node'],
+        mainStackTags: [],
+        costUsd: '0.25',
+      });
+      await db.orm.public.NormalizedJob.where({ id: jobId }).updateAll({
+        processingStatus: 'processed',
+        processingReason: null,
+        processingRequestedAt: null,
+        currentExtractionId: extraction.id,
+        processedAt: t1,
+      });
+      return extraction;
+    };
 
     it('unifies LinkedIn copies of one ad into one pending new job', async () => {
       for (const [i, city] of ['Cracow', 'Poznań', 'Katowice'].entries())
@@ -437,8 +465,7 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
       const [only, ...rest] = await jobs();
       expect(rest).toHaveLength(0);
       expect(only).toMatchObject({
-        jobKey:
-          'url:https://sii.pl/en/job-ads/id/38247?sii_source=10|Senior Backend Engineer',
+        jobKey: 'url:https://sii.pl/en/job-ads/id/38247?sii_source=10',
         status: 'active',
         processingStatus: 'pending',
         processingReason: 'new',
@@ -515,29 +542,64 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
       });
     });
 
-    it('moves an item whose apply URL appears later, merging its old job', async () => {
+    it("keeps the job when an item's apply URL appears later", async () => {
       await save(
         liJob('4483941772', { applyType: 'EASY_APPLY', applyUrl: '' }),
         t1,
       );
       await markProcessed();
+      const before = (await jobs())[0]!;
       const result = await save(liJob('4483941772'), t2);
 
-      expect(result.job).toMatchObject({ created: false });
-      const all = await jobs();
-      const old = all.find((j) => j.jobKey === 'linkedin-job:4483941772')!;
-      const moved = all.find((j) => j.jobKey.startsWith('url:'))!;
-      expect(old).toMatchObject({ status: 'merged', mergedIntoId: moved.id });
-      expect(moved).toMatchObject({
+      expect(result.job).toMatchObject({
+        jobId: before.id,
+        created: false,
+        pending: false,
+      });
+      const [only, ...rest] = await jobs();
+      expect(rest).toHaveLength(0);
+      expect(only).toMatchObject({
+        id: before.id,
+        jobKey: expect.stringMatching(/^url:/),
         status: 'active',
         processingStatus: 'processed',
       });
       expect(await sources()).toEqual([
-        expect.objectContaining({ jobId: moved.id }),
+        expect.objectContaining({ jobId: before.id }),
       ]);
     });
 
-    describe('job decisions', () => {
+    it('merges into the job a concurrent item created under the new key', async () => {
+      for (let round = 0; round < 5; round++) {
+        const applyUrl = `https://acme.com/jobs/8888${round}`;
+        const easy = `44839600${round}`;
+        await save(liJob(easy, { applyType: 'EASY_APPLY', applyUrl: '' }), t1);
+        const old = (await jobs()).find(
+          (j) => j.jobKey === `linkedin-job:${easy}`,
+        )!;
+        const [b1, b2] = [await batch(), await batch()];
+        await Promise.all([
+          repo.saveItem(input(b1, liJob(easy, { applyUrl }), t2)),
+          repo.saveItem(input(b2, liJob(`44839700${round}`, { applyUrl }), t2)),
+        ]);
+
+        const keyed = (await jobs()).filter(
+          (j) => j.jobKey === `url:${applyUrl}`,
+        );
+        expect(keyed).toHaveLength(1);
+        expect(keyed[0]).toMatchObject({ status: 'active' });
+        const linked = (await sources()).filter(
+          (s) => s.jobId === keyed[0]!.id,
+        );
+        expect(linked).toHaveLength(2);
+        if (keyed[0]!.id !== old.id)
+          expect(
+            await db.orm.public.NormalizedJob.where({ id: old.id }).first(),
+          ).toMatchObject({ status: 'merged', mergedIntoId: keyed[0]!.id });
+      }
+    });
+
+    describe('job decisions and views', () => {
       const userId = randomUUID();
       /** An easy-apply item whose later apply URL moves it to a new job. */
       const mergeSetup = async () => {
@@ -564,6 +626,13 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
           reason,
           decidedAt,
         });
+      const view = (jobId: string, viewedAt: Date) =>
+        db.orm.public.JobView.create({ userId, jobId, viewedAt });
+      const views = async () =>
+        (await db.orm.public.JobView.all()).map((v) => ({
+          jobId: v.jobId,
+          viewedAt: v.viewedAt,
+        }));
       const decisions = async () =>
         (await db.orm.public.JobDecision.all()).map((d) => ({
           jobId: d.jobId,
@@ -579,6 +648,29 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
             .affectedCount()
             .build(),
         );
+      });
+
+      it('keeps decisions and views on a job that is only re-keyed', async () => {
+        await save(
+          liJob('4483941772', { applyType: 'EASY_APPLY', applyUrl: '' }),
+          t1,
+        );
+        const old = (await jobs())[0]!;
+        await decide(old.id, 'applied', t1, null);
+        await view(old.id, t1);
+
+        await save(liJob('4483941772'), t2);
+
+        expect(await decisions()).toEqual([
+          { jobId: old.id, status: 'applied', reason: null },
+        ]);
+        expect((await views()).map((v) => v.jobId)).toEqual([old.id]);
+        expect(
+          await db.orm.public.NormalizedJob.where({ id: old.id }).first(),
+        ).toMatchObject({
+          status: 'active',
+          jobKey: expect.stringMatching(/^url:/),
+        });
       });
 
       it('moves a decision with the job it merged into', async () => {
@@ -660,6 +752,21 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
         ]);
       });
 
+      it('moves a view with the job it merged into', async () => {
+        const { old, moved } = await mergeSetup();
+        await view(old.id, t1);
+        await save(liJob('4483941772'), t2);
+        expect(await views()).toEqual([{ jobId: moved.id, viewedAt: t1 }]);
+      });
+
+      it('keeps one view when both merged jobs were viewed', async () => {
+        const { old, moved } = await mergeSetup();
+        await view(old.id, t1);
+        await view(moved.id, t2);
+        await save(liJob('4483941772'), t3);
+        expect(await views()).toEqual([{ jobId: moved.id, viewedAt: t1 }]);
+      });
+
       it('copies the decision back to a merged job that revives', async () => {
         const { old, moved } = await mergeSetup();
         await decide(old.id, 'dismissed', t1, 'role');
@@ -692,6 +799,42 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
           [
             { jobId: old.id, status: 'dismissed', reason: 'role' },
             { jobId: moved.id, status: 'dismissed', reason: 'role' },
+          ].sort((a, b) => a.jobId.localeCompare(b.jobId)),
+        );
+      });
+
+      it('copies the view back to a merged job that revives', async () => {
+        const { old, moved } = await mergeSetup();
+        await view(old.id, t1);
+        await save(liJob('4483941772'), t2);
+        // A new item whose key names the merged job brings it back.
+        await save(
+          liJob('4483941774', { applyType: 'EASY_APPLY', applyUrl: '' }),
+          t2,
+        );
+        const item = await rawItemId('id:4483941774');
+        await db.execute(
+          db.raw
+            .sql`UPDATE normalized_versions SET "jobKey" = 'linkedin-job:4483941772'
+            WHERE "rawVersionId" IN (SELECT id FROM raw_item_versions WHERE "rawItemId" = ${item}::uuid)`
+            .affectedCount()
+            .build(),
+        );
+        await save(
+          liJob('4483941774', { applyType: 'EASY_APPLY', applyUrl: '' }),
+          t3,
+        );
+
+        const revived = await db.orm.public.NormalizedJob.where({
+          id: old.id,
+        }).first();
+        expect(revived).toMatchObject({ status: 'active', mergedIntoId: null });
+        expect(
+          (await views()).sort((a, b) => a.jobId.localeCompare(b.jobId)),
+        ).toEqual(
+          [
+            { jobId: old.id, viewedAt: t1 },
+            { jobId: moved.id, viewedAt: t1 },
           ].sort((a, b) => a.jobId.localeCompare(b.jobId)),
         );
       });
@@ -772,7 +915,7 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
         ),
       ).toBe(true);
       const moved = await db.orm.public.NormalizedJob.where({
-        jobKey: 'url:https://acme.com/jobs/99999|Senior Backend Engineer',
+        jobKey: 'url:https://acme.com/jobs/99999',
       }).first();
       expect(moved).toMatchObject({
         processingStatus: 'pending',
@@ -780,21 +923,66 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
       });
     });
 
-    it('keeps different roles on one listing page as separate jobs', async () => {
-      const listing =
-        'https://recruiting.paylocity.com/Recruiting/Jobs/All/7a3e1b2c-0000-4000-8000-000000000001';
+    it('splits a job whose sources now name different apply links', async () => {
+      const key = 'url:https://sii.pl/en/job-ads/id/38247?sii_source=10';
+      await save(liJob('4483900001'), t1);
+      await save(liJob('4483900002'), t1);
+      const shared = (await jobs())[0]!;
+      // Keyed before the title left the key.
+      await db.orm.public.NormalizedJob.where({ id: shared.id }).updateAll({
+        jobKey: `${key}|${shared.title}`,
+      });
+      const extraction = await processWith(shared.id, { doc: 'shared' });
+
       await save(
-        liJob('4483900001', { applyUrl: listing, title: 'Backend Engineer' }),
-        t1,
+        liJob('4483900001', { applyUrl: 'https://acme.com/jobs/55555' }),
+        t2,
       );
-      await save(
-        liJob('4483900002', { applyUrl: listing, title: 'Frontend Engineer' }),
-        t1,
-      );
-      expect((await jobs()).map((j) => j.title).sort()).toEqual([
-        'Backend Engineer',
-        'Frontend Engineer',
+
+      expect(
+        await db.orm.public.NormalizedJob.where({ id: shared.id }).first(),
+      ).toMatchObject({
+        status: 'active',
+        currentExtractionId: extraction.id,
+        processingStatus: 'processed',
+      });
+      expect((await sources()).filter((s) => s.jobId === shared.id)).toEqual([
+        expect.objectContaining({
+          rawItemId: await rawItemId('id:4483900002'),
+        }),
       ]);
+      expect(
+        await db.orm.public.NormalizedJob.where({
+          jobKey: 'url:https://acme.com/jobs/55555',
+        }).first(),
+      ).toMatchObject({
+        status: 'active',
+        processingStatus: 'pending',
+        processingReason: 'new',
+        currentExtractionId: null,
+      });
+    });
+
+    it('merges copies of one apply link posted under different titles', async () => {
+      const applyUrl = 'https://applicants.bairesdev.com/job/615/287041/apply';
+      await save(
+        liJob('4483900001', {
+          applyUrl,
+          title: 'Front-End Developer (Angular) - Remote Work',
+        }),
+        t1,
+      );
+      await save(
+        liJob('4483900002', {
+          applyUrl,
+          title: 'Desarrollador Front-End (Angular) - Trabajo Remoto',
+        }),
+        t1,
+      );
+      const all = await jobs();
+      expect(all).toHaveLength(1);
+      expect(all[0]).toMatchObject({ status: 'active' });
+      expect(await sources()).toHaveLength(2);
     });
 
     it('keeps an item on its apply-URL job when a rescrape drops the URL', async () => {
@@ -806,7 +994,7 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
       expect(all).toHaveLength(1);
       expect(all[0]).toMatchObject({
         status: 'active',
-        jobKey: `url:https://sii.pl/en/job-ads/id/38247?sii_source=10|Senior Backend Engineer`,
+        jobKey: `url:https://sii.pl/en/job-ads/id/38247?sii_source=10`,
       });
     });
 
@@ -821,7 +1009,7 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
       );
       await new RenormalizeService({ db } as DatabaseService).run();
       expect((await jobs()).map((j) => j.jobKey)).toEqual([
-        `url:https://sii.pl/en/job-ads/id/38247?sii_source=10|Senior Backend Engineer`,
+        `url:https://sii.pl/en/job-ads/id/38247?sii_source=10`,
       ]);
     });
 
@@ -854,8 +1042,7 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
       const all = await jobs();
       expect(all).toHaveLength(1);
       expect(all[0]).toMatchObject({
-        jobKey:
-          'url:https://sii.pl/en/job-ads/id/38247?sii_source=10|Senior Backend Engineer',
+        jobKey: 'url:https://sii.pl/en/job-ads/id/38247?sii_source=10',
         processingStatus: 'processed',
       });
     });
@@ -952,9 +1139,7 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
         const job = await db.orm.public.NormalizedJob.where({
           id: link!.jobId,
         }).first();
-        expect(job!.jobKey).toBe(
-          `url:https://acme.com/jobs/7777${round}|Senior Backend Engineer`,
-        );
+        expect(job!.jobKey).toBe(`url:https://acme.com/jobs/7777${round}`);
       }
     });
 
@@ -984,35 +1169,6 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
       const ashbyKey = `ats:ashby/acme/${ashby.posting.id}`;
       const jobByKey = async (jobKey: string) =>
         (await db.orm.public.NormalizedJob.where({ jobKey }).first())!;
-      /** Marks the job processed by an extraction of its own. */
-      const processWith = async (jobId: string, data: { doc: string }) => {
-        const extraction = await db.orm.public.JobExtraction.create({
-          jobId,
-          inputHash: 'test',
-          schemaVersion: 2,
-          promptHash: 'test',
-          decisionModel: 'test',
-          extractionModel: 'test',
-          data,
-          needsReview: false,
-          worldwide: false,
-          regionCodes: [],
-          countryCodes: [],
-          cityIds: [],
-          techTags: ['node'],
-          mainStackTags: [],
-          costUsd: '0.25',
-        });
-        await db.orm.public.NormalizedJob.where({ id: jobId }).updateAll({
-          processingStatus: 'processed',
-          processingReason: null,
-          processingRequestedAt: null,
-          currentExtractionId: extraction.id,
-          processedAt: t1,
-        });
-        return extraction;
-      };
-
       it('stores the listing fields and links the company', async () => {
         await save(harvest(), t1);
 
@@ -1113,35 +1269,24 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
         ]);
       });
 
-      it('carries the extraction over when a re-key creates the job', async () => {
+      it('keeps the job and its extraction when a re-key finds no job', async () => {
         await save(cheap(), t1);
         const old = await jobByKey(linkedinKey);
         const extraction = await processWith(old.id, { doc: 'old' });
 
         await save(viaAshby(), t2);
 
-        const merged = await jobByKey(linkedinKey);
-        const moved = await jobByKey(ashbyKey);
-        expect(merged).toMatchObject({
-          status: 'merged',
-          mergedIntoId: moved.id,
-        });
-        expect(moved).toMatchObject({
+        const [only, ...rest] = await jobs();
+        expect(rest).toHaveLength(0);
+        expect(only).toMatchObject({
+          id: old.id,
+          jobKey: ashbyKey,
           status: 'active',
           processingStatus: 'processed',
+          currentExtractionId: extraction.id,
           processedAt: t1,
         });
-        expect(moved.currentExtractionId).not.toBe(extraction.id);
-        const copy = await db.orm.public.JobExtraction.where({
-          id: moved.currentExtractionId!,
-        }).first();
-        expect(copy).toMatchObject({
-          jobId: moved.id,
-          data: { doc: 'old' },
-          techTags: ['node'],
-          inputHash: extraction.inputHash,
-        });
-        expect(Number(copy!.costUsd)).toBe(0);
+        expect(await db.orm.public.JobExtraction.all()).toHaveLength(1);
       });
 
       it('keeps the extraction of the job a re-key moves into', async () => {
@@ -1163,13 +1308,18 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
         });
       });
 
-      it('carries no extraction when the re-keyed job was still pending', async () => {
+      it('keeps a pending job pending when it is re-keyed', async () => {
         await save(cheap(), t1);
+        const old = await jobByKey(linkedinKey);
 
-        await save(viaAshby(), t2);
+        const result = await save(viaAshby(), t2);
 
-        expect(await jobByKey(linkedinKey)).toMatchObject({ status: 'merged' });
-        expect(await jobByKey(ashbyKey)).toMatchObject({
+        expect(result.job).toMatchObject({ jobId: old.id, created: false });
+        const [only, ...rest] = await jobs();
+        expect(rest).toHaveLength(0);
+        expect(only).toMatchObject({
+          id: old.id,
+          jobKey: ashbyKey,
           status: 'active',
           processingStatus: 'pending',
           currentExtractionId: null,
@@ -1226,6 +1376,115 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
         expect((await jobs()).every((j) => j.processingStatus === null)).toBe(
           true,
         );
+      });
+
+      const sharedKey = 'url:https://sii.pl/en/job-ads/id/38247?sii_source=10';
+      /** Seeds a user who decided on and viewed the job. */
+      const mark = async (jobId: string) => {
+        const userId = randomUUID();
+        await db.execute(
+          db.raw.sql`INSERT INTO auth.users (id, email)
+            VALUES (${userId}::uuid, ${`${userId}@example.com`})`
+            .affectedCount()
+            .build(),
+        );
+        await db.orm.public.JobDecision.create({
+          userId,
+          jobId,
+          status: 'applied',
+          reason: null,
+          decidedAt: t1,
+        });
+        await db.orm.public.JobView.create({ userId, jobId, viewedAt: t1 });
+      };
+
+      it('renames a job with many sources in place when the title leaves its key', async () => {
+        const shared = (await jobs()).find((j) => j.jobKey === sharedKey)!;
+        expect(
+          (await sources()).filter((s) => s.jobId === shared.id),
+        ).toHaveLength(2);
+        await db.orm.public.NormalizedJob.where({ id: shared.id }).updateAll({
+          jobKey: `${sharedKey}|${shared.title}`,
+        });
+        const extraction = await processWith(shared.id, { doc: 'shared' });
+        await mark(shared.id);
+
+        expect(await rebuild()).toMatchObject({ jobs: 3 });
+
+        expect(
+          await db.orm.public.NormalizedJob.where({
+            jobKey: sharedKey,
+          }).first(),
+        ).toMatchObject({
+          id: shared.id,
+          status: 'active',
+          processingStatus: 'processed',
+          currentExtractionId: extraction.id,
+        });
+        expect(
+          (await sources()).filter((s) => s.jobId === shared.id),
+        ).toHaveLength(2);
+        expect(await db.orm.public.JobDecision.all()).toEqual([
+          expect.objectContaining({ jobId: shared.id, status: 'applied' }),
+        ]);
+        expect(await db.orm.public.JobView.all()).toEqual([
+          expect.objectContaining({ jobId: shared.id }),
+        ]);
+      });
+
+      it('keeps the renamed job with many sources when another title of its link merges in', async () => {
+        await save(liJob('4483900004', { location: 'Gdańsk' }), t2);
+        const shared = (await jobs()).find((j) => j.jobKey === sharedKey)!;
+        const ids = (await sources())
+          .filter((s) => s.jobId === shared.id)
+          .map((s) => s.rawItemId)
+          .sort();
+        expect(ids).toHaveLength(3);
+        // The last item to relink sits alone on a job keyed under another title.
+        const other = await db.orm.public.NormalizedJob.create({
+          jobKey: `${sharedKey}|Other title`,
+          kind: 'job',
+          status: 'active',
+          mergedIntoId: null,
+          postingUrl: shared.postingUrl,
+          closed: false,
+          fieldSources: {},
+          firstSeenAt: t1,
+          lastSeenAt: t1,
+          normalizerVersion: 1,
+        });
+        await db.orm.public.NormalizedJobSource.where({
+          rawItemId: ids[2]!,
+        }).updateAll({ jobId: other.id });
+        await db.orm.public.NormalizedJob.where({ id: shared.id }).updateAll({
+          jobKey: `${sharedKey}|${shared.title}`,
+        });
+        const extraction = await processWith(shared.id, { doc: 'shared' });
+        await processWith(other.id, { doc: 'other' });
+        await mark(other.id);
+
+        await rebuild();
+
+        const keyed = (await jobs()).filter((j) =>
+          j.jobKey.startsWith(sharedKey),
+        );
+        expect(keyed.filter((j) => j.status === 'active')).toEqual([
+          expect.objectContaining({
+            id: shared.id,
+            jobKey: sharedKey,
+            currentExtractionId: extraction.id,
+            processingStatus: 'processed',
+          }),
+        ]);
+        expect(
+          await db.orm.public.NormalizedJob.where({ id: other.id }).first(),
+        ).toMatchObject({ status: 'merged', mergedIntoId: shared.id });
+        expect(
+          (await sources()).filter((s) => s.jobId === shared.id),
+        ).toHaveLength(3);
+        expect(await db.orm.public.JobDecision.all()).toEqual([
+          expect.objectContaining({ jobId: shared.id, status: 'applied' }),
+        ]);
       });
 
       it('changes nothing when run twice, and keeps processing status', async () => {
