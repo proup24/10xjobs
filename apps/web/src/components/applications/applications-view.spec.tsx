@@ -8,6 +8,7 @@ import {
 } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AppView } from '@/lib/applications/view-state';
+import type { JobPosting } from '@/lib/matches/postings';
 import type { DecisionRow } from '@/lib/applications/load';
 import type { MatchRow } from '@/lib/matches/group';
 import {
@@ -97,6 +98,7 @@ function renderView(
     decisions?: DecisionRow[];
     initial?: Partial<AppView>;
     selected?: MatchRow[] | null;
+    postings?: JobPosting[];
   } = {},
 ) {
   render(
@@ -108,7 +110,7 @@ function renderView(
       labels={labels}
       profileLabels={{ [P1]: 'Full-stack engineer' }}
       selected={opts.selected ?? null}
-      postings={[]}
+      postings={opts.postings ?? []}
     />,
   );
 }
@@ -256,6 +258,40 @@ describe('ApplicationsView detail', () => {
         .getByRole('link', { name: 'Open post' })
         .compareDocumentPosition(move) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+  });
+
+  it('shows the merged postings of a decided job whose match is gone', () => {
+    const posting = (rawItemId: string, title: string, shown: boolean) => ({
+      rawItemId,
+      channel: 'linkedin-job-board',
+      title,
+      location: 'Berlin',
+      postedAt: '2026-11-17T09:00:00Z',
+      postingUrl: `https://www.linkedin.com/jobs/view/${rawItemId}`,
+      shown,
+      titleDiffers: !shown,
+      placeDiffers: false,
+      descriptionDiffers: false,
+    });
+    renderView({
+      initial: { job: 'a1' },
+      selected: [],
+      postings: [
+        posting('1', 'Applied one', true),
+        posting('2', 'Other', false),
+      ],
+    });
+    const article = screen.getByRole('article');
+    expect(within(article).getByText('Merged · 2 postings')).toBeTruthy();
+    expect(
+      within(article).getByText('2 postings share this apply link'),
+    ).toBeTruthy();
+  });
+
+  it('shows no merged postings for a decided job with one posting', () => {
+    renderView({ initial: { job: 'a1' }, selected: [] });
+    expect(screen.queryByText(/Merged ·/)).toBeNull();
+    expect(screen.queryByText(/share this apply link/)).toBeNull();
   });
 
   it('shows a closed job that still has its match', () => {

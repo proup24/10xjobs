@@ -14,6 +14,7 @@ import {
   PostLinks,
 } from '@/components/matches/match-detail';
 import { DismissDialog } from '@/components/matches/dismiss-dialog';
+import { JobPostings, MergedBadge } from '@/components/matches/job-postings';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -81,17 +82,25 @@ function JobHeader({
   userId,
   backHref,
   actions,
+  postings,
+  now,
 }: {
   row: DecisionRow;
   userId: string;
   backHref: string;
   actions: React.ReactNode;
+  /** The postings merged into the job; the section shows for two or more. */
+  postings: JobPosting[];
+  now: Date;
 }) {
   return (
     <article className="flex min-w-0 flex-col gap-6">
       <BackLink href={backHref} label={BACK_LABEL} />
       <header className="flex flex-col gap-1">
-        <h2 className="text-title-3">{row.title}</h2>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <h2 className="min-w-0 text-title-3 break-words">{row.title}</h2>
+          <MergedBadge postings={postings} />
+        </div>
         <p>
           {row.companyName}
           {row.location && (
@@ -99,6 +108,7 @@ function JobHeader({
           )}
         </p>
       </header>
+      <JobPostings postings={postings} now={now} />
       <PostLinks
         postingUrl={row.postingUrl}
         applyUrl={row.applyUrl}
@@ -370,6 +380,8 @@ export function ApplicationsView({
           userId={userId}
           backHref={backHref}
           actions={actions}
+          postings={postings}
+          now={now}
         />
       );
   }
