@@ -49,6 +49,15 @@ const factOpeningSchema = openingSchema.omit({ decidedBy: true }).extend({
   placesSource: factSourceSchema,
 });
 
+/** The processor's work authorization; a requirement may be derived by code from no sponsorship. */
+export const factWorkAuthorizationSchema = workAuthorizationSchema.extend({
+  requirements: z.array(
+    workAuthorizationSchema.shape.requirements.element.extend({
+      derived: z.literal('no-sponsorship').optional(),
+    }),
+  ),
+});
+
 /** A salary whose currency may be unknown (dropped by `cleanCurrency`); amounts are kept. */
 const factSalarySchema = salarySchema.extend({
   currency: salarySchema.shape.currency.nullable(),
@@ -69,7 +78,7 @@ export const jobFactsDocumentSchema = z
     /** Display only: the matcher never reads it. */
     contractMonths: sourcedFactSchema(z.number().positive()),
     requiredLanguages: sourcedFactSchema(z.array(languageSchema)),
-    workAuthorization: sourcedFactSchema(workAuthorizationSchema),
+    workAuthorization: sourcedFactSchema(factWorkAuthorizationSchema),
     techStack: sourcedFactSchema(techStackSchema),
     arrangement: sourcedFactSchema(z.string().min(1)),
     openings: z.array(factOpeningSchema).min(1),
@@ -113,3 +122,4 @@ export const jobFactsDocumentSchema = z
 export type JobFactsDocument = z.infer<typeof jobFactsDocumentSchema>;
 export type FactOpening = z.infer<typeof factOpeningSchema>;
 export type FactSalary = z.infer<typeof factSalarySchema>;
+export type FactWorkAuthorization = z.infer<typeof factWorkAuthorizationSchema>;

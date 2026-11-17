@@ -838,7 +838,7 @@ describe('combineFacts', () => {
   it('copies the other matcher facts from the description', () => {
     const d = doc();
     const { facts } = combine(d, listing());
-    expect(facts.version).toBe(4);
+    expect(facts.version).toBe(5);
     for (const key of [
       'position',
       'isSoftwareEngineeringRole',
@@ -854,6 +854,54 @@ describe('combineFacts', () => {
         quote: d[key].quote,
       });
     }
+  });
+
+  it('derives a work permit from no sponsorship and the listing place', () => {
+    const d = doc({
+      workAuthorization: {
+        value: { requirements: [], sponsorship: 'no' },
+        quote: 'no sponsorship available',
+        confidence: 'sure',
+      },
+      openings: [
+        opening({
+          timezones: [{ fromUtc: -8, toUtc: -5, label: 'US time zones' }],
+        }),
+      ],
+    });
+    const { facts } = combine(
+      d,
+      listing({ place: { kind: 'country', code: 'US' } }),
+    );
+    expect(facts.workAuthorization).toEqual({
+      value: {
+        requirements: [
+          { kind: 'work-permit', place: 'US', derived: 'no-sponsorship' },
+        ],
+        sponsorship: 'no',
+      },
+      quote: 'no sponsorship available',
+      confidence: 'sure',
+      source: 'description',
+    });
+    expect(jobFactsDocumentSchema.parse(facts)).toEqual(facts);
+  });
+
+  it('parses requirements with no derived key', () => {
+    const { facts } = combine(
+      doc({
+        workAuthorization: {
+          value: {
+            requirements: [{ kind: 'citizenship', place: 'US' }],
+            sponsorship: 'no',
+          },
+          quote: 'q',
+          confidence: 'sure',
+        },
+      }),
+      listing(),
+    );
+    expect(jobFactsDocumentSchema.parse(facts)).toEqual(facts);
   });
 
   it('the result parses with jobFactsDocumentSchema', () => {
