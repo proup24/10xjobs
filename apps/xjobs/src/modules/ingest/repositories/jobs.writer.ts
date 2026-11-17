@@ -33,6 +33,10 @@ export interface LinkJobInput {
 }
 
 type Json = RawItemVersionRow['payload'];
+
+const UUID = 'pg/uuid@1';
+const TEXT = 'pg/text@1';
+const JSONB = 'pg/jsonb@1';
 type JobPatch = Partial<Omit<NormalizedJobRow, 'id'>>;
 
 const min = (a: Date, b: Date) => (a < b ? a : b);
@@ -211,15 +215,18 @@ async function remerge(tx: DatabaseTransaction, jobId: string): Promise<void> {
 }
 
 /**
- * The item's old job under its new key, when the item is that job's only
- * source: a re-key renames the job, so it keeps its id, extraction, processing
- * state and every user's marks. A job with other sources stays as it is. When
- * a concurrent link created the new key first, the rename's unique violation
- * re-runs the link, which then merges into that job.
+ * The item's old job under its new key, when every source of that job now
+ * keys there: a re-key renames the job, so it keeps its id, extraction,
+ * processing state and every user's marks. Each other source's key comes from
+ * its linked record by the item's own rule (jobKey, then effectiveKey). A job
+ * with a source keyed elsewhere stays as it is. When a concurrent link created
+ * the new key first, the rename's unique violation re-runs the link, which then
+ * merges into that job.
  */
 async function renamed(
   tx: DatabaseTransaction,
   jobId: string,
+  rawItemId: string,
   key: string,
 ): Promise<NormalizedJobRow | null> {
   const { orm } = tx;
@@ -227,8 +234,37 @@ async function renamed(
     .forNoKeyUpdate()
     .first();
   if (!old) return null;
-  const sources = await orm.public.NormalizedJobSource.where({ jobId }).all();
-  if (sources.length !== 1) return null;
+  const others = await tx.query(
+    tx.raw.sql`SELECT i.id, i.channel, i."sourceKey", i."latestVersionId",
+        v.record
+      FROM normalized_job_sources s
+      JOIN normalized_versions v ON v.id = s."normalizedVersionId"
+      JOIN raw_items i ON i.id = s."rawItemId"
+      WHERE s."jobId" = ${jobId}::uuid AND s."rawItemId" <> ${rawItemId}::uuid`
+      .returnsRow({
+        id: UUID,
+        channel: TEXT,
+        sourceKey: TEXT,
+        latestVersionId: UUID,
+        record: JSONB,
+      })
+      .build(),
+  );
+  for (const other of others) {
+    if (!other.record) return null;
+    const item = {
+      id: other.id as string,
+      channel: other.channel as Channel,
+      sourceKey: other.sourceKey as string,
+      latestVersionId: other.latestVersionId as string | null,
+    };
+    const own = jobKey(
+      item.channel,
+      item.sourceKey,
+      other.record as unknown as NormalizedRecord,
+    );
+    if ((await effectiveKey(tx, item, own)) !== key) return null;
+  }
   await orm.public.NormalizedJob.where({ id: jobId }).updateAll({
     jobKey: key,
   });
@@ -237,8 +273,9 @@ async function renamed(
 
 /**
  * Moves every user's decision on a job that merged away to the job it merged
- * into (viewed marks move too, see moveViews). A user with a decision on both keeps one: applied beats dismissed beats
- * expired, otherwise the newer decision wins, and on a tie the target's stays.
+ * into (viewed marks move too, see moveViews). A user with a decision on both
+ * keeps one: applied beats dismissed beats expired, otherwise the newer
+ * decision wins, and on a tie the target's stays.
  */
 async function moveDecisions(
   tx: DatabaseTransaction,
@@ -297,10 +334,11 @@ async function moveViews(
 
 /**
  * A merged job that revives gets a copy of the decisions it held when it
- * merged away (copyViewsBack does the same for viewed marks). They moved with each merge, so they sit on the end of its
- * mergedIntoId chain (followed at most 10 steps, as in webhook_enqueue_match,
- * stopping at a job that isn't merged). Where the user already decided on the
- * revived job, that decision stays.
+ * merged away (copyViewsBack does the same for viewed marks). They moved with
+ * each merge, so they sit on the end of its mergedIntoId chain (followed at
+ * most 10 steps, as in webhook_enqueue_match, stopping at a job that isn't
+ * merged). Where the user already decided on the revived job, that decision
+ * stays.
  */
 async function copyDecisionsBack(
   tx: DatabaseTransaction,
@@ -396,7 +434,7 @@ async function effectiveKey(
 /**
  * Links a raw item to the job its latest version's job key names, inside the
  * raw item's transaction, and re-merges every job the link touched. A new key
- * with no job renames the item's old job when the item is its only source.
+ * with no job renames the item's old job when all its sources key there.
  * Sends the job to Process (`pending`) only when this observation creates it
  * or finds it after `reopenAfterMs` unseen. Idempotent: replaying changes
  * nothing.
@@ -429,7 +467,8 @@ export async function linkJob(
   let job =
     (await orm.public.NormalizedJob.where({ jobKey: key })
       .forNoKeyUpdate()
-      .first()) ?? (link ? await renamed(tx, link.jobId, key) : null);
+      .first()) ??
+    (link ? await renamed(tx, link.jobId, input.rawItemId, key) : null);
   const created = !job;
   if (!job)
     job = await orm.public.NormalizedJob.create({
