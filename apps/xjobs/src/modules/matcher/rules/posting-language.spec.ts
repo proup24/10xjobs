@@ -12,7 +12,7 @@ const profile: MatchProfile = {
 
 const doc = (codes: string[], confident = true) =>
   factsDoc((d) => {
-    d.postingLanguages = { codes, confident };
+    d.postingLanguages = { codes, confident, closeCalls: [] };
   });
 
 describe('checkPostingLanguage', () => {

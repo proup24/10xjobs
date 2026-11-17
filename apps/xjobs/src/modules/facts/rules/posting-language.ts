@@ -1,8 +1,13 @@
 import { francAll } from 'franc';
 
-/** The languages a posting is written in (ISO 639-1), and whether the detector is sure of them. */
+/**
+ * The languages a posting is written in (ISO 639-1), and whether the detector is sure of them.
+ * `codes` are the languages it is sure of. `closeCalls` are sets of close relatives it could
+ * not tell apart (each sorted, ordered by detected characters, descending).
+ */
 export interface PostingLanguages {
   codes: string[];
+  closeCalls: string[][];
   confident: boolean;
 }
 
@@ -16,8 +21,9 @@ const MIN_PARAGRAPH = 50;
 /** A language is kept when its paragraphs hold at least this share of the detected characters. */
 const MIN_SHARE = 0.25;
 /**
- * A paragraph counts only when the runner-up scores at least this far below the winner
- * (franc scores the winner 1). A paragraph mixing French and English sentences scores the
+ * A sentence piece is sure of a language only when every rival scores at least this far
+ * below the winner (franc scores the winner 1); margins are judged per sentence piece, and
+ * a close relative within the margin makes the piece a close call instead. Text mixing French and English sentences scores the
  * two within 0.004 to 0.056, and a bare list of tool names within 0.002; single-language
  * prose leaves a clear gap to its nearest unrelated rival.
  */
@@ -149,7 +155,28 @@ const ISO_639_1: Record<string, string> = {
  */
 const ONLY = Object.keys(ISO_639_1);
 
-const NOT_CONFIDENT: PostingLanguages = { codes: [], confident: false };
+/** Close relatives franc confuses, which a margin cannot separate. ISO 639-1. */
+const GROUPS: string[][] = [
+  ['da', 'nb', 'nn'],
+  ['id', 'ms'],
+  ['hr', 'sr', 'bs'],
+  ['cs', 'sk'],
+  ['ca', 'es'],
+  ['nl', 'af'],
+];
+
+/** Groups whose members franc never tells apart reliably: always reported as a whole. */
+const NEVER_SURE_GROUPS: string[][] = [
+  ['id', 'ms'],
+  ['hr', 'sr', 'bs'],
+];
+const NEVER_SURE = new Set(NEVER_SURE_GROUPS.flat());
+
+const NOT_CONFIDENT: PostingLanguages = {
+  codes: [],
+  closeCalls: [],
+  confident: false,
+};
 
 /**
  * The text's paragraphs: each line long enough to detect on its own, and each run of
@@ -174,37 +201,96 @@ function paragraphs(text: string): string[] {
   return out;
 }
 
-/** The paragraph's language (ISO 639-1) when franc is sure of it and it maps; else null. */
-function detectParagraph(paragraph: string): string | null {
-  const [best, next] = francAll(paragraph, {
+/**
+ * The paragraph's sentence pieces. Sentences are split after `.`, `!` or `?` before a capital
+ * (also when the text was flattened with no space), but not inside `Next.js` or `2.5`. A piece
+ * under MIN_PARAGRAPH joins the next one; a short last piece joins the previous one.
+ */
+export function sentencePieces(paragraph: string): string[] {
+  const raw = paragraph.split(
+    /(?<=[.!?])\s*(?=[\p{Lu}¡¿\p{Extended_Pictographic}])/u,
+  );
+  const pieces: string[] = [];
+  let carry = '';
+  for (const part of raw) {
+    carry = carry ? `${carry} ${part}` : part;
+    if (carry.trim().length >= MIN_PARAGRAPH) {
+      pieces.push(carry.trim());
+      carry = '';
+    }
+  }
+  if (carry.trim()) {
+    if (pieces.length) pieces[pieces.length - 1] += ` ${carry.trim()}`;
+    else pieces.push(carry.trim());
+  }
+  return pieces;
+}
+
+type Call = { sure: string } | { group: string[]; members: string[] } | null;
+
+/** One piece's call: a sure language, a close call within a group, or null when unsure. */
+function callPiece(piece: string): Call {
+  const seen = new Set<string>();
+  const scores: [string, number][] = [];
+  for (const [iso3, score] of francAll(piece, {
     minLength: MIN_PARAGRAPH,
     only: ONLY,
-  });
-  if (!best || best[0] === 'und') return null;
-  if (next && best[1] - next[1] < MIN_MARGIN) return null;
-  return ISO_639_1[best[0]] ?? null;
+  })) {
+    const code = ISO_639_1[iso3];
+    if (!code || seen.has(code)) continue;
+    seen.add(code);
+    scores.push([code, score]);
+  }
+  if (scores.length === 0) return null;
+  const [winner, top] = scores[0];
+  const group = GROUPS.find((g) => g.includes(winner)) ?? [winner];
+  const outside = scores.find(([c]) => !group.includes(c));
+  if (outside && top - outside[1] < MIN_MARGIN) return null;
+  if (NEVER_SURE.has(winner)) {
+    return { group, members: [...group].sort() };
+  }
+  const near = scores
+    .filter(([c, s]) => group.includes(c) && top - s < MIN_MARGIN)
+    .map(([c]) => c);
+  if (near.length === 1) return { sure: winner };
+  return { group, members: [...near].sort() };
 }
 
 /**
- * The languages a posting is written in. Each paragraph is detected on its own; a language
- * is kept when its paragraphs hold at least a quarter of the detected characters, so a
- * stray English line in a French posting does not count. Not confident when the text, or
- * the part of it detected with confidence, is under 200 characters.
+ * The languages a posting is written in. Each sentence piece of each paragraph is judged on
+ * its own; a language (or close call) is kept when its pieces hold at least a quarter of the
+ * detected characters, so a stray English line in a French posting does not count. Not
+ * confident when the text, or the part of it detected with confidence, is under 200 characters.
  */
 export function detectPostingLanguages(text: string): PostingLanguages {
   if (text.trim().length < MIN_TEXT) return NOT_CONFIDENT;
-  const chars = new Map<string, number>();
+  const sure = new Map<string, number>();
+  const close = new Map<string, { members: Set<string>; chars: number }>();
   let detected = 0;
-  for (const p of paragraphs(text)) {
-    const code = detectParagraph(p);
-    if (code === null) continue;
-    chars.set(code, (chars.get(code) ?? 0) + p.length);
-    detected += p.length;
+  for (const paragraph of paragraphs(text)) {
+    for (const piece of sentencePieces(paragraph)) {
+      const call = callPiece(piece);
+      if (call === null) continue;
+      detected += piece.length;
+      if ('sure' in call) {
+        sure.set(call.sure, (sure.get(call.sure) ?? 0) + piece.length);
+        continue;
+      }
+      const key = call.group[0];
+      const entry = close.get(key) ?? { members: new Set<string>(), chars: 0 };
+      call.members.forEach((m) => entry.members.add(m));
+      entry.chars += piece.length;
+      close.set(key, entry);
+    }
   }
   if (detected < MIN_TEXT) return NOT_CONFIDENT;
-  const codes = [...chars]
+  const codes = [...sure]
     .filter(([, n]) => n / detected >= MIN_SHARE)
     .sort(([, a], [, b]) => b - a)
     .map(([code]) => code);
-  return { codes, confident: true };
+  const closeCalls = [...close.values()]
+    .filter((e) => e.chars / detected >= MIN_SHARE)
+    .sort((a, b) => b.chars - a.chars)
+    .map((e) => [...e.members].sort());
+  return { codes, closeCalls, confident: true };
 }

@@ -86,7 +86,11 @@ describe('decide', () => {
     const d = decide(
       job(
         passingDoc((x) => {
-          x.postingLanguages = { codes: ['de'], confident: true };
+          x.postingLanguages = {
+            codes: ['de'],
+            closeCalls: [],
+            confident: true,
+          };
         }),
       ),
       exampleProfile(),
@@ -119,7 +123,11 @@ describe('decide', () => {
     const d = decide(
       job(
         passingDoc((x) => {
-          x.postingLanguages = { codes: ['en'], confident: true };
+          x.postingLanguages = {
+            codes: ['en'],
+            closeCalls: [],
+            confident: true,
+          };
         }),
       ),
       exampleProfile(),
@@ -135,7 +143,7 @@ describe('decide', () => {
 
   it('is not unverified when there is nothing to check: no minimum, no currency, languages or authorization stated', () => {
     const doc = passingDoc((x) => {
-      x.postingLanguages = { codes: ['en'], confident: true };
+      x.postingLanguages = { codes: ['en'], closeCalls: [], confident: true };
       x.salary.value = null;
       x.requiredLanguages.value = [];
       x.workAuthorization.value = null;
@@ -154,7 +162,7 @@ describe('decide', () => {
       (x: JobFactsDocument) => (x.workAuthorization.confidence = 'unsure'),
     ]) {
       const doc = passingDoc((x) => {
-        x.postingLanguages = { codes: ['en'], confident: true };
+        x.postingLanguages = { codes: ['en'], closeCalls: [], confident: true };
         x.salary.value = null;
         x.requiredLanguages.value = [];
         x.workAuthorization.value = null;
