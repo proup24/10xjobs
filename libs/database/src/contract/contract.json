@@ -9309,8 +9309,8 @@
                   "prefix": "job_decisions_reason"
                 },
                 {
-                  "expression": "status IN ('applied','dismissed')",
-                  "name": "job_decisions_status_87345d2c",
+                  "expression": "status IN ('applied','dismissed','expired')",
+                  "name": "job_decisions_status_b69754e0",
                   "prefix": "job_decisions_status"
                 }
               ],
@@ -14421,7 +14421,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "23a126fe874387bd7fdd1898a4c88df9bf5fde05c8ca860d262c15d8865dfdda"
+    "storageHash": "6445f1a93dc43f67978d3e8df96ba5087d849227003d05e95a754d8d62b6d06f"
   },
   "execution": {
     "executionHash": "7b5eaf1d91dcda38671ed0758e62b64e510de826d248ab15bddc3faa2e947c57",

@@ -355,6 +355,27 @@ describe('MatchesView job decisions', () => {
     expect(refresh).toHaveBeenCalled();
   });
 
+  it('Expired moves the job to Applications with Undo', async () => {
+    decideJobAction.mockResolvedValue({ status: 'saved' });
+    renderView({ initial: { job: 'fresh' }, selected: [ROWS[1]] });
+    fireEvent.click(screen.getByRole('button', { name: 'Expired' }));
+    await vi.waitFor(() =>
+      expect(toast.success).toHaveBeenCalledWith(
+        'Moved to Applications',
+        expect.objectContaining({
+          action: expect.objectContaining({ label: 'Undo' }),
+        }),
+      ),
+    );
+    expect(decideJobAction).toHaveBeenCalledWith({
+      jobId: 'fresh',
+      status: 'expired',
+    });
+    clearJobDecisionAction.mockResolvedValue({ status: 'saved' });
+    await toast.success.mock.calls[0][1].action.onClick();
+    expect(clearJobDecisionAction).toHaveBeenCalledWith('fresh');
+  });
+
   it('toasts an error and stays put when the save is refused', async () => {
     decideJobAction.mockResolvedValue({ status: 'failed' });
     renderView({ initial: { job: 'fresh' }, selected: [ROWS[1]] });

@@ -36,7 +36,7 @@ export function publishedRows(
   return rows.filter((r) => published.has(r.profileId));
 }
 
-/** Rows of jobs the user has not decided on: an applied or dismissed job leaves Matches. */
+/** Rows of jobs the user has not decided on: any decided job (applied, dismissed or expired) leaves Matches. */
 export function undecidedRows(rows: MatchRow[]): MatchRow[] {
   return rows.filter((r) => r.decisionStatus == null);
 }

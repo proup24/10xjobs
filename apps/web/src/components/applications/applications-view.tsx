@@ -26,7 +26,9 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { DecisionRow } from '@/lib/applications/load';
 import {
+  APP_STATUSES,
   appViewHref,
+  isAppStatus,
   viewForJob,
   type AppStatus,
   type AppView,
@@ -41,11 +43,13 @@ import { DecisionRowLink, dismissReason } from './decision-row';
 const STATUS_LABELS: Record<AppStatus, string> = {
   applied: 'Applied',
   dismissed: 'Not for me',
+  expired: 'Expired',
 };
 
 const EMPTY_TEXT: Record<AppStatus, string> = {
   applied: 'Jobs you mark applied show here',
   dismissed: 'Jobs you mark not for me show here',
+  expired: 'Jobs you mark expired show here',
 };
 
 const BACK_LABEL = 'Back to applications';
@@ -108,6 +112,7 @@ function JobHeader({
 type Save = (
   input:
     | { status: 'applied' }
+    | { status: 'expired' }
     | { status: 'dismissed'; reason?: DismissReason; note?: string },
 ) => Promise<boolean>;
 
@@ -126,10 +131,16 @@ function DecisionActions({
 }) {
   const [pending, setPending] = useState(false);
   const [dismissing, setDismissing] = useState(false);
-  const applied = row.status === 'applied';
+  const { status } = row;
   const reason = dismissReason(row);
   const note = row.note as string | null;
   const ago = timeAgo(new Date(row.decidedAt), now);
+
+  const heading = {
+    applied: `Applied ${ago}`,
+    dismissed: `Not for me · ${ago}`,
+    expired: `Marked expired ${ago}`,
+  }[status];
 
   const moveBack = (
     <ConfirmDialog
@@ -146,15 +157,40 @@ function DecisionActions({
     />
   );
 
+  const markApplied = (
+    <Button
+      variant="secondary"
+      loading={pending}
+      onClick={async () => {
+        setPending(true);
+        try {
+          await onSave({ status: 'applied' });
+        } finally {
+          setPending(false);
+        }
+      }}
+    >
+      Mark applied
+    </Button>
+  );
+
+  const moveToNotForMe = (variant: 'secondary' | 'outline') => (
+    <Button
+      variant={variant}
+      disabled={pending}
+      onClick={() => setDismissing(true)}
+    >
+      Move to Not for me
+    </Button>
+  );
+
   return (
     <section className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
-        <h3 className="text-title-5">
-          {applied ? `Applied ${ago}` : `Not for me · ${ago}`}
-        </h3>
+        <h3 className="text-title-5">{heading}</h3>
         {row.closed && <Badge variant="secondary">Closed</Badge>}
       </div>
-      {!applied && (
+      {status === 'dismissed' && (
         <dl className="flex flex-col gap-2">
           <div className="flex flex-col">
             <dt className="text-muted-foreground">Reason</dt>
@@ -169,15 +205,8 @@ function DecisionActions({
         </dl>
       )}
       <div className="flex flex-wrap gap-2">
-        {applied ? (
-          <Button
-            variant="secondary"
-            disabled={pending}
-            onClick={() => setDismissing(true)}
-          >
-            Move to Not for me
-          </Button>
-        ) : (
+        {status === 'applied' && moveToNotForMe('secondary')}
+        {status === 'dismissed' && (
           <>
             <Button
               variant="outline"
@@ -186,20 +215,13 @@ function DecisionActions({
             >
               Edit reason
             </Button>
-            <Button
-              variant="secondary"
-              loading={pending}
-              onClick={async () => {
-                setPending(true);
-                try {
-                  await onSave({ status: 'applied' });
-                } finally {
-                  setPending(false);
-                }
-              }}
-            >
-              Mark applied
-            </Button>
+            {markApplied}
+          </>
+        )}
+        {status === 'expired' && (
+          <>
+            {markApplied}
+            {moveToNotForMe('outline')}
           </>
         )}
         {moveBack}
@@ -207,7 +229,7 @@ function DecisionActions({
       <DismissDialog
         open={dismissing}
         onOpenChange={setDismissing}
-        initial={applied ? undefined : { reason, note }}
+        initial={status === 'dismissed' ? { reason, note } : undefined}
         onConfirm={(extra) => onSave({ status: 'dismissed', ...extra })}
       />
     </section>
@@ -215,7 +237,7 @@ function DecisionActions({
 }
 
 /**
- * The Applications page: the user's applied or not-for-me jobs beside the selected one from
+ * The Applications page: the user's applied, not-for-me or expired jobs beside the selected one from
  * `md` up, one or the other below it. The choice lives in the URL; the server reloads on
  * navigation.
  */
@@ -243,10 +265,9 @@ export function ApplicationsView({
   const state = viewForJob(initial, decisions);
   const href = (next: Partial<AppView>) => appViewHref({ ...state, ...next });
 
-  const byStatus: Record<AppStatus, DecisionRow[]> = {
-    applied: decisions.filter((d) => d.status === 'applied'),
-    dismissed: decisions.filter((d) => d.status === 'dismissed'),
-  };
+  const byStatus = Object.fromEntries(
+    APP_STATUSES.map((s) => [s, decisions.filter((d) => d.status === s)]),
+  ) as Record<AppStatus, DecisionRow[]>;
   const visible = byStatus[state.status];
   const open = decisions.find((d) => d.jobId === state.job) ?? null;
 
@@ -363,17 +384,15 @@ export function ApplicationsView({
           <Tabs
             value={state.status}
             onValueChange={(v) => {
-              if (v === 'applied' || v === 'dismissed')
-                router.push(href({ status: v, job: null }));
+              if (isAppStatus(v)) router.push(href({ status: v, job: null }));
             }}
           >
             <TabsList aria-label="Status" className="w-full">
-              <TabsTrigger value="applied">
-                {STATUS_LABELS.applied} ({byStatus.applied.length})
-              </TabsTrigger>
-              <TabsTrigger value="dismissed">
-                {STATUS_LABELS.dismissed} ({byStatus.dismissed.length})
-              </TabsTrigger>
+              {APP_STATUSES.map((status) => (
+                <TabsTrigger key={status} value={status}>
+                  {STATUS_LABELS[status]} ({byStatus[status].length})
+                </TabsTrigger>
+              ))}
             </TabsList>
           </Tabs>
           {visible.length > 0 ? (

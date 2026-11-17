@@ -120,18 +120,50 @@ describe('MatchDetail job decisions', () => {
     renderWithJobDecision(matchRow());
     expect(screen.getByRole('button', { name: 'Applied' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Not for me' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Expired' })).toBeTruthy();
   });
 
   it('hides them on a review row', () => {
     renderWithJobDecision(reviewRow());
     expect(screen.queryByRole('button', { name: 'Applied' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Not for me' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Expired' })).toBeNull();
+  });
+
+  it('Expired decides at once', async () => {
+    const onDecideJob = renderWithJobDecision(matchRow());
+    fireEvent.click(screen.getByRole('button', { name: 'Expired' }));
+    await waitFor(() => expect(onDecideJob).toHaveBeenCalledWith('expired'));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    const btn = screen.getByRole('button', { name: 'Expired' });
+    await waitFor(() => expect(btn.getAttribute('aria-busy')).toBeNull());
+  });
+
+  it('while one of Applied and Expired saves, both are disabled and only the clicked one loads', async () => {
+    let resolve!: (ok: boolean) => void;
+    const pending = new Promise<boolean>((r) => {
+      resolve = r;
+    });
+    renderWithJobDecision(matchRow(), vi.fn().mockReturnValue(pending));
+    const applied = screen.getByRole('button', { name: 'Applied' });
+    const expired = screen.getByRole('button', { name: 'Expired' });
+    fireEvent.click(expired);
+    await waitFor(() => expect(expired.getAttribute('aria-busy')).toBe('true'));
+    expect((applied as HTMLButtonElement).disabled).toBe(true);
+    expect((expired as HTMLButtonElement).disabled).toBe(true);
+    expect(applied.getAttribute('aria-busy')).toBeNull();
+    resolve(true);
+    await waitFor(() => expect(expired.getAttribute('aria-busy')).toBeNull());
+    expect((applied as HTMLButtonElement).disabled).toBe(false);
+    expect((expired as HTMLButtonElement).disabled).toBe(false);
   });
 
   it("Applied calls onDecide('applied')", async () => {
     const onDecideJob = renderWithJobDecision(matchRow());
     fireEvent.click(screen.getByRole('button', { name: 'Applied' }));
-    await vi.waitFor(() => expect(onDecideJob).toHaveBeenCalledWith('applied'));
+    await waitFor(() => expect(onDecideJob).toHaveBeenCalledWith('applied'));
+    const btn = screen.getByRole('button', { name: 'Applied' });
+    await waitFor(() => expect(btn.getAttribute('aria-busy')).toBeNull());
   });
 
   it('Not for me opens the dialog', async () => {
@@ -534,7 +566,7 @@ describe('MatchDetail', () => {
     expect(toast.success).not.toHaveBeenCalled();
   });
 
-  it('marks a check that passes on an unsure value, so the Unverified badge has its reason', () => {
+  it('marks a check that passes on an unsure value, so the unverified state has its reason', () => {
     renderDetail([
       matchRow({
         unverified: true,
@@ -660,7 +692,7 @@ describe('MatchDetail', () => {
   });
 
   // R65: match_details returns unverified = true for a review row the user moved to Matches.
-  it('shows Unverified on a job moved from review, with the line that explains it', () => {
+  it('keeps the detail line for a job moved from review, with no Unverified badge on its row', () => {
     const accepted = {
       ...reviewRow(),
       reviewChoice: 'qualified',
@@ -676,7 +708,7 @@ describe('MatchDetail', () => {
         showProfiles={false}
       />,
     );
-    expect(screen.getByText('Unverified')).toBeTruthy();
+    expect(screen.queryByText('Unverified')).toBeNull();
     cleanup();
     renderDetail([accepted], vi.fn());
     expect(screen.getByText('You moved this from review.')).toBeTruthy();

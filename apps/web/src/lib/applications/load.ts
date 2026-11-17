@@ -6,7 +6,7 @@ export type DecisionRow =
   Database['public']['Functions']['job_decision_list']['Returns'][number];
 
 /**
- * The user's applied and not-for-me jobs, newest decision first. The jobs are read through
+ * The user's applied, not-for-me and expired jobs, newest decision first. The jobs are read through
  * the decisions, so a job stays listed after its match is gone.
  */
 export async function loadDecisions(

@@ -600,6 +600,36 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
         ]);
       });
 
+      it('keeps dismissed when a dismissed and a newer expired job merge', async () => {
+        const { old, moved } = await mergeSetup();
+        await decide(moved.id, 'dismissed', t1, 'role');
+        await decide(old.id, 'expired', t2, null);
+        await save(liJob('4483941772'), t3);
+        expect(await decisions()).toEqual([
+          { jobId: moved.id, status: 'dismissed', reason: 'role' },
+        ]);
+      });
+
+      it('replaces expired with a dismissal from the merged job', async () => {
+        const { old, moved } = await mergeSetup();
+        await decide(moved.id, 'expired', t2, null);
+        await decide(old.id, 'dismissed', t1, 'stack');
+        await save(liJob('4483941772'), t3);
+        expect(await decisions()).toEqual([
+          { jobId: moved.id, status: 'dismissed', reason: 'stack' },
+        ]);
+      });
+
+      it('replaces expired with applied from the merged job', async () => {
+        const { old, moved } = await mergeSetup();
+        await decide(moved.id, 'expired', t2, null);
+        await decide(old.id, 'applied', t1, null);
+        await save(liJob('4483941772'), t3);
+        expect(await decisions()).toEqual([
+          { jobId: moved.id, status: 'applied', reason: null },
+        ]);
+      });
+
       it('keeps the newer of two dismissals', async () => {
         const { old, moved } = await mergeSetup();
         await decide(old.id, 'dismissed', t2, 'stack');

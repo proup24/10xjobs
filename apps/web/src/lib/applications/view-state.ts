@@ -1,18 +1,24 @@
 /** Which of the user's decisions the Applications page lists. */
-export type AppStatus = 'applied' | 'dismissed';
+export const APP_STATUSES = ['applied', 'dismissed', 'expired'] as const;
+export type AppStatus = (typeof APP_STATUSES)[number];
+
+export function isAppStatus(s: unknown): s is AppStatus {
+  return (APP_STATUSES as readonly unknown[]).includes(s);
+}
 
 export type AppView = { status: AppStatus; job: string | null };
 
 /** The page's state from its URL; an unknown status reads as the default, `applied`. */
 export function readAppView(params: URLSearchParams): AppView {
+  const status = params.get('status');
   return {
-    status: params.get('status') === 'dismissed' ? 'dismissed' : 'applied',
+    status: isAppStatus(status) ? status : 'applied',
     job: params.get('job') || null,
   };
 }
 
 /**
- * The view with the open job's own status: a link naming a job under the other status (an
+ * The view with the open job's own status: a link naming a job under another status (an
  * old link, or one built by hand) shows the tab the job is listed in. A job the user has no
  * decision on keeps the view, and the page says it isn't in Applications.
  */
@@ -21,7 +27,7 @@ export function viewForJob(
   decisions: { jobId: string; status: string }[],
 ): AppView {
   const status = decisions.find((d) => d.jobId === v.job)?.status;
-  return status === 'applied' || status === 'dismissed' ? { ...v, status } : v;
+  return isAppStatus(status) ? { ...v, status } : v;
 }
 
 /** The Applications page URL for a state; the default status is left out. */

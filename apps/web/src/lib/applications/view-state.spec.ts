@@ -13,6 +13,10 @@ describe('readAppView', () => {
     expect(read('')).toEqual({ status: 'applied', job: null });
   });
 
+  it('reads the expired status', () => {
+    expect(read('status=expired')).toEqual({ status: 'expired', job: null });
+  });
+
   it('reads an unknown status as applied', () => {
     expect(read('status=rejected&job=j1')).toEqual({
       status: 'applied',
@@ -42,6 +46,9 @@ describe('appViewHref', () => {
     expect(appViewHref({ status: 'dismissed', job: 'j1' })).toBe(
       '/applications?status=dismissed&job=j1',
     );
+    expect(appViewHref({ status: 'expired', job: 'j1' })).toBe(
+      '/applications?status=expired&job=j1',
+    );
   });
 });
 
@@ -62,6 +69,14 @@ describe('viewForJob', () => {
       status: 'applied',
       job: 'a1',
     });
+  });
+
+  it('follows an expired job to its tab', () => {
+    expect(
+      viewForJob({ status: 'applied', job: 'j1' }, [
+        { jobId: 'j1', status: 'expired' },
+      ]),
+    ).toEqual({ status: 'expired', job: 'j1' });
   });
 
   it('keeps the view when it already matches, or has no known job', () => {

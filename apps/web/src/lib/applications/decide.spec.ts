@@ -108,6 +108,50 @@ describe('saveDecision', () => {
     });
   });
 
+  it('inserts an expired mark bare', async () => {
+    const { supabase, calls } = client({});
+    const result = await saveDecision(supabase, 'user-1', {
+      jobId: JOB,
+      status: 'expired',
+    });
+    expect(result).toEqual({ status: 'saved' });
+    expect(calls.insert).toHaveBeenCalledWith({
+      userId: 'user-1',
+      jobId: JOB,
+      status: 'expired',
+      reason: null,
+      note: null,
+      matchSnapshot: null,
+    });
+    expect(calls.tables).not.toContain('job_matches');
+  });
+
+  it('stores expired bare even when a reason is sent', async () => {
+    const { supabase, calls } = client({});
+    await saveDecision(supabase, 'user-1', {
+      jobId: JOB,
+      status: 'expired',
+      reason: 'role',
+    });
+    expect(calls.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'expired', reason: null }),
+    );
+  });
+
+  it('moving a dismissal to expired clears reason, note and snapshot', async () => {
+    const { supabase, calls } = client({
+      existing: { status: 'dismissed', matchSnapshot: MATCHES } as never,
+    });
+    await saveDecision(supabase, 'user-1', { jobId: JOB, status: 'expired' });
+    expect(calls.update.mock.calls[0][0]).toMatchObject({
+      status: 'expired',
+      reason: null,
+      note: null,
+      matchSnapshot: null,
+      decidedAt: expect.any(String),
+    });
+  });
+
   it('stores a dismissal with reason, trimmed note and a snapshot of every match', async () => {
     const { supabase, calls } = client({});
     await saveDecision(supabase, 'user-1', {

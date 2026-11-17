@@ -157,6 +157,27 @@ describe('job_decisions', () => {
     expect(error?.code).toBe('23514');
   });
 
+  it('an expired decision inserts bare on a matched job', async () => {
+    await clear();
+    const { error } = await a.client
+      .from('job_decisions')
+      .insert({ userId: a.id, jobId: job, status: 'expired' });
+    expect(error).toBeNull();
+    expect(await decisionsOf(a)).toMatchObject([{ status: 'expired' }]);
+  });
+
+  it('expired carries no reason or note', async () => {
+    await clear();
+    const withReason = await a.client
+      .from('job_decisions')
+      .insert({ userId: a.id, jobId: job, status: 'expired', reason: 'stack' });
+    expect(withReason.error?.code).toBe('23514');
+    const withNote = await a.client
+      .from('job_decisions')
+      .insert({ userId: a.id, jobId: job, status: 'expired', note: 'gone' });
+    expect(withNote.error?.code).toBe('23514');
+  });
+
   it('rejects an unknown reason and a note over 500 characters', async () => {
     await clear();
     const unknown = await a.client.from('job_decisions').insert({
