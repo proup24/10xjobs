@@ -49,6 +49,26 @@ describe('normalize harvestapi LinkedIn jobs', () => {
     expect(r.descriptionText).toBeTruthy();
   });
 
+  it('builds the description text from the HTML, keeping its breaks', () => {
+    const r = map({
+      ...remote,
+      descriptionHtml:
+        '<p>Buscamos un desarrollador.</p><ul><li>React y Next.js</li><li>Python</li></ul>',
+      descriptionText: 'Buscamos un desarrollador.React y Next.jsPython',
+    });
+    expect(r.descriptionText).toContain('Buscamos un desarrollador.\n');
+    expect(r.descriptionText).toMatch(/React y Next\.js\n[^\n]*Python/);
+  });
+
+  it("falls back to the actor's text when there is no HTML", () => {
+    const r = map({
+      ...remote,
+      descriptionHtml: null,
+      descriptionText: 'Plain text only',
+    });
+    expect(r.descriptionText).toBe('Plain text only');
+  });
+
   it('maps the shared facts of every item', () => {
     for (const item of items) {
       const r = map(item);

@@ -140,9 +140,12 @@ export function mapHarvestJob(
     publishedAt: datePart(postedDate),
     postedAt: isoDatetime(postedDate),
     descriptionHtml,
+    // Built from the HTML when there is some: the actor's own descriptionText
+    // sometimes drops every line break ("reales.Buscamos"), which merges a
+    // posting into one paragraph for the facts and the reader.
     descriptionText:
-      cleanText(p.descriptionText) ??
-      (descriptionHtml ? cleanText(htmlToPlainText(descriptionHtml)) : null),
+      (descriptionHtml ? cleanText(htmlToPlainText(descriptionHtml)) : null) ??
+      cleanText(p.descriptionText),
     applyUrl: outsideUrl(objectAt(p.applyMethod).companyApplyUrl),
     postingUrl: linkedinJobUrl(p.id, p.linkedinUrl) as string,
     poster: jobPoster(team.name, team.linkedinUrl),
