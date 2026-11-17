@@ -571,7 +571,7 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
       }
     });
 
-    describe('job decisions', () => {
+    describe('job decisions and views', () => {
       const userId = randomUUID();
       /** An easy-apply item whose later apply URL moves it to a new job. */
       const mergeSetup = async () => {
@@ -598,6 +598,13 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
           reason,
           decidedAt,
         });
+      const view = (jobId: string, viewedAt: Date) =>
+        db.orm.public.JobView.create({ userId, jobId, viewedAt });
+      const views = async () =>
+        (await db.orm.public.JobView.all()).map((v) => ({
+          jobId: v.jobId,
+          viewedAt: v.viewedAt,
+        }));
       const decisions = async () =>
         (await db.orm.public.JobDecision.all()).map((d) => ({
           jobId: d.jobId,
@@ -622,20 +629,14 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
         );
         const old = (await jobs())[0]!;
         await decide(old.id, 'applied', t1, null);
-        await db.orm.public.JobView.create({
-          userId,
-          jobId: old.id,
-          viewedAt: t1,
-        });
+        await view(old.id, t1);
 
         await save(liJob('4483941772'), t2);
 
         expect(await decisions()).toEqual([
           { jobId: old.id, status: 'applied', reason: null },
         ]);
-        expect((await db.orm.public.JobView.all()).map((v) => v.jobId)).toEqual(
-          [old.id],
-        );
+        expect((await views()).map((v) => v.jobId)).toEqual([old.id]);
         expect(
           await db.orm.public.NormalizedJob.where({ id: old.id }).first(),
         ).toMatchObject({
@@ -723,6 +724,21 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
         ]);
       });
 
+      it('moves a view with the job it merged into', async () => {
+        const { old, moved } = await mergeSetup();
+        await view(old.id, t1);
+        await save(liJob('4483941772'), t2);
+        expect(await views()).toEqual([{ jobId: moved.id, viewedAt: t1 }]);
+      });
+
+      it('keeps one view when both merged jobs were viewed', async () => {
+        const { old, moved } = await mergeSetup();
+        await view(old.id, t1);
+        await view(moved.id, t2);
+        await save(liJob('4483941772'), t3);
+        expect(await views()).toEqual([{ jobId: moved.id, viewedAt: t1 }]);
+      });
+
       it('copies the decision back to a merged job that revives', async () => {
         const { old, moved } = await mergeSetup();
         await decide(old.id, 'dismissed', t1, 'role');
@@ -755,6 +771,42 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
           [
             { jobId: old.id, status: 'dismissed', reason: 'role' },
             { jobId: moved.id, status: 'dismissed', reason: 'role' },
+          ].sort((a, b) => a.jobId.localeCompare(b.jobId)),
+        );
+      });
+
+      it('copies the view back to a merged job that revives', async () => {
+        const { old, moved } = await mergeSetup();
+        await view(old.id, t1);
+        await save(liJob('4483941772'), t2);
+        // A new item whose key names the merged job brings it back.
+        await save(
+          liJob('4483941774', { applyType: 'EASY_APPLY', applyUrl: '' }),
+          t2,
+        );
+        const item = await rawItemId('id:4483941774');
+        await db.execute(
+          db.raw
+            .sql`UPDATE normalized_versions SET "jobKey" = 'linkedin-job:4483941772'
+            WHERE "rawVersionId" IN (SELECT id FROM raw_item_versions WHERE "rawItemId" = ${item}::uuid)`
+            .affectedCount()
+            .build(),
+        );
+        await save(
+          liJob('4483941774', { applyType: 'EASY_APPLY', applyUrl: '' }),
+          t3,
+        );
+
+        const revived = await db.orm.public.NormalizedJob.where({
+          id: old.id,
+        }).first();
+        expect(revived).toMatchObject({ status: 'active', mergedIntoId: null });
+        expect(
+          (await views()).sort((a, b) => a.jobId.localeCompare(b.jobId)),
+        ).toEqual(
+          [
+            { jobId: old.id, viewedAt: t1 },
+            { jobId: moved.id, viewedAt: t1 },
           ].sort((a, b) => a.jobId.localeCompare(b.jobId)),
         );
       });

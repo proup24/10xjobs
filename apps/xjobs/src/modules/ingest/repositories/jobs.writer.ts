@@ -237,7 +237,7 @@ async function renamed(
 
 /**
  * Moves every user's decision on a job that merged away to the job it merged
- * into. A user with a decision on both keeps one: applied beats dismissed beats
+ * into (viewed marks move too, see moveViews). A user with a decision on both keeps one: applied beats dismissed beats
  * expired, otherwise the newer decision wins, and on a tie the target's stays.
  */
 async function moveDecisions(
@@ -272,8 +272,32 @@ async function moveDecisions(
 }
 
 /**
+ * Moves every user's viewed mark on a job that merged away to the job it
+ * merged into. A user who viewed both keeps one row, at the earlier time: they
+ * first saw the job then.
+ */
+async function moveViews(
+  tx: DatabaseTransaction,
+  fromJobId: string,
+  toJobId: string,
+): Promise<void> {
+  await tx.execute(
+    tx.raw.sql`WITH moved AS (
+        DELETE FROM public.job_views WHERE "jobId" = ${fromJobId}::uuid
+        RETURNING "userId", "viewedAt"
+      )
+      INSERT INTO public.job_views ("userId", "jobId", "viewedAt")
+      SELECT "userId", ${toJobId}::uuid, "viewedAt" FROM moved
+      ON CONFLICT ("userId", "jobId") DO UPDATE SET
+        "viewedAt" = LEAST(job_views."viewedAt", EXCLUDED."viewedAt")`
+      .affectedCount()
+      .build(),
+  );
+}
+
+/**
  * A merged job that revives gets a copy of the decisions it held when it
- * merged away. They moved with each merge, so they sit on the end of its
+ * merged away (copyViewsBack does the same for viewed marks). They moved with each merge, so they sit on the end of its
  * mergedIntoId chain (followed at most 10 steps, as in webhook_enqueue_match,
  * stopping at a job that isn't merged). Where the user already decided on the
  * revived job, that decision stays.
@@ -297,6 +321,36 @@ async function copyDecisionsBack(
         ("userId", "jobId", status, reason, note, "decidedAt", "matchSnapshot")
       SELECT d."userId", ${jobId}::uuid, d.status, d.reason, d.note, d."decidedAt", d."matchSnapshot"
       FROM job_decisions d JOIN root ON d."jobId" = root.id
+      ON CONFLICT DO NOTHING`
+      .affectedCount()
+      .build(),
+  );
+}
+
+/**
+ * A merged job that revives gets a copy of the viewed marks it held when it
+ * merged away, taken from the end of its mergedIntoId chain as in
+ * copyDecisionsBack. Where the user already viewed the revived job, that mark
+ * stays.
+ */
+async function copyViewsBack(
+  tx: DatabaseTransaction,
+  jobId: string,
+): Promise<void> {
+  await tx.execute(
+    tx.raw.sql`WITH RECURSIVE chain AS (
+        SELECT j.id, j.status, j."mergedIntoId", 0 AS depth
+        FROM normalized_jobs j WHERE j.id = ${jobId}::uuid
+        UNION ALL
+        SELECT n.id, n.status, n."mergedIntoId", chain.depth + 1
+        FROM chain JOIN normalized_jobs n ON n.id = chain."mergedIntoId"
+        WHERE chain.status = 'merged' AND chain.depth < 10
+      ), root AS (
+        SELECT id FROM chain WHERE depth > 0 ORDER BY depth DESC LIMIT 1
+      )
+      INSERT INTO job_views ("userId", "jobId", "viewedAt")
+      SELECT v."userId", ${jobId}::uuid, v."viewedAt"
+      FROM job_views v JOIN root ON v."jobId" = root.id
       ON CONFLICT DO NOTHING`
       .affectedCount()
       .build(),
@@ -392,8 +446,11 @@ export async function linkJob(
     });
   else if (job.status === 'merged') {
     // A job whose sources all left gets one back: it is a job again, with a
-    // copy of the decisions that moved away with it.
-    if (job.mergedIntoId) await copyDecisionsBack(tx, job.id);
+    // copy of the decisions and views that moved away with it.
+    if (job.mergedIntoId) {
+      await copyDecisionsBack(tx, job.id);
+      await copyViewsBack(tx, job.id);
+    }
     await orm.public.NormalizedJob.where({ id: job.id }).updateAll({
       status: 'active',
       mergedIntoId: null,
@@ -442,6 +499,7 @@ export async function linkJob(
           : {}),
       });
       await moveDecisions(tx, old.id, job.id);
+      await moveViews(tx, old.id, job.id);
       const oldState = processingOf(old);
       if (oldState.status === 'pending' && current.status !== 'pending') {
         current = oldState;
