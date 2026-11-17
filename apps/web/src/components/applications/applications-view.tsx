@@ -36,6 +36,7 @@ import {
 import type { Labels } from '@/lib/matches/checks';
 import { timeAgo } from '@/lib/matches/freshness';
 import type { MatchRow } from '@/lib/matches/group';
+import type { JobPosting } from '@/lib/matches/postings';
 import type { SaveResult } from '@/lib/setup/save-result';
 import { cn } from '@/lib/utils';
 import { DecisionRowLink, dismissReason } from './decision-row';
@@ -249,6 +250,7 @@ export function ApplicationsView({
   labels,
   profileLabels,
   selected,
+  postings,
 }: {
   /** Every decision of the user, newest first. */
   decisions: DecisionRow[];
@@ -259,6 +261,8 @@ export function ApplicationsView({
   profileLabels: Record<string, string>;
   /** The `job` param's match rows, any outcome; null without one, empty when it has none. */
   selected: MatchRow[] | null;
+  /** The postings merged into the open job; empty without one. */
+  postings: JobPosting[];
 }) {
   const router = useRouter();
   const now = new Date(nowIso);
@@ -358,6 +362,7 @@ export function ApplicationsView({
           backHref={backHref}
           backLabel={BACK_LABEL}
           actions={actions}
+          postings={postings}
         />
       ) : (
         <JobHeader

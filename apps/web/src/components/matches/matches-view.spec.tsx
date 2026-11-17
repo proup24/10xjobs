@@ -81,6 +81,7 @@ function renderView(
       now={NOW}
       userId="u1"
       selected={opts.selected ?? null}
+      postings={[]}
     />,
   );
 }

@@ -30,11 +30,13 @@ import {
 import { postedPhrase } from '@/lib/matches/freshness';
 import { groupByJob, type MatchRow } from '@/lib/matches/group';
 import { markViewed } from '@/lib/matches/mark-viewed';
+import type { JobPosting } from '@/lib/matches/postings';
 import type { ReportField } from '@/lib/matches/report';
 import { channelLabel } from '@/lib/matches/sources';
 import type { SaveResult } from '@/lib/setup/save-result';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { DismissDialog } from './dismiss-dialog';
+import { JobPostings, MergedBadge } from './job-postings';
 import { stackScoreText } from './match-row';
 import { ReportDialog, type Report } from './report-dialog';
 
@@ -364,6 +366,7 @@ export function MatchDetail({
   onDecide,
   onDecideJob,
   onReport,
+  postings = [],
 }: {
   /** The job's rows, one per matching profile; non-empty. */
   rows: MatchRow[];
@@ -382,6 +385,8 @@ export function MatchDetail({
   onDecideJob?: DecideJob;
   /** Logs a mismatch on a fact; the report buttons show only with it. */
   onReport?: Report;
+  /** The postings merged into the job; the section shows for two or more. */
+  postings?: JobPosting[];
 }) {
   const [profileId, setProfileId] = useState(rows[0]?.profileId);
   // The caller chose which rows to show; a closed job it passes still shows.
@@ -423,7 +428,10 @@ export function MatchDetail({
       <BackLink href={backHref} label={backLabel} />
 
       <header className="flex flex-col gap-1">
-        <h2 className="text-title-3">{first.title}</h2>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <h2 className="min-w-0 text-title-3 break-words">{first.title}</h2>
+          <MergedBadge postings={postings} />
+        </div>
         <p>
           {first.companyUrl ? (
             <TextLink
@@ -444,6 +452,8 @@ export function MatchDetail({
           {`posted ${postedPhrase(job, now)}${sources ? ` on ${sources}` : ''}`}
         </p>
       </header>
+
+      <JobPostings postings={postings} now={now} />
 
       <PostLinks
         postingUrl={first.postingUrl}

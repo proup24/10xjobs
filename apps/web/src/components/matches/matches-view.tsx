@@ -15,6 +15,7 @@ import {
   type MatchedJob,
   type MatchRow,
 } from '@/lib/matches/group';
+import type { JobPosting } from '@/lib/matches/postings';
 import { channelLabel } from '@/lib/matches/sources';
 import {
   defaultProfile,
@@ -48,6 +49,7 @@ export function MatchesView({
   now: nowIso,
   userId,
   selected,
+  postings,
 }: {
   /** Grouped matches of the last 7 days, published profiles only. */
   jobs: MatchedJob[];
@@ -61,6 +63,8 @@ export function MatchesView({
   userId: string;
   /** The `job` param's rows; null without one, empty when it isn't a match. */
   selected: MatchRow[] | null;
+  /** The postings merged into the selected job; empty without one. */
+  postings: JobPosting[];
 }) {
   const router = useRouter();
   const now = new Date(nowIso);
@@ -229,6 +233,7 @@ export function MatchesView({
         onDecide={review ? decide : undefined}
         onDecideJob={decideJob(visible)}
         onReport={reportMismatchAction}
+        postings={postings}
       />
     );
 

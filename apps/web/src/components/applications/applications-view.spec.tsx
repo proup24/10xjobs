@@ -108,6 +108,7 @@ function renderView(
       labels={labels}
       profileLabels={{ [P1]: 'Full-stack engineer' }}
       selected={opts.selected ?? null}
+      postings={[]}
     />,
   );
 }
