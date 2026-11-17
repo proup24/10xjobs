@@ -131,6 +131,28 @@ describe('job_postings', () => {
     expect(rows.map((r) => r.descriptionDiffers)).toEqual([false, false]);
   });
 
+  it('lists the shown posting first even when another is older', async () => {
+    const { jobId, ids } = await matchedJob([
+      { ...ANGULAR_EN, postedAt: '2026-11-12T09:00:00.000Z' },
+      {
+        ...ANGULAR_EN,
+        title: 'Angular Developer',
+        postedAt: '2026-11-09T09:00:00.000Z',
+      },
+      {
+        ...ANGULAR_EN,
+        title: 'Frontend Developer',
+        postedAt: '2026-11-11T09:00:00.000Z',
+      },
+    ]);
+    const rows = await postings(a, jobId);
+    expect(rows.map((r) => [r.rawItemId, r.shown])).toEqual([
+      [ids[0], true],
+      [ids[1], false],
+      [ids[2], false],
+    ]);
+  });
+
   it('returns one row for a single posting', async () => {
     const { jobId, ids } = await matchedJob([ANGULAR_EN]);
     const rows = await postings(a, jobId);
@@ -163,12 +185,15 @@ describe('job_postings', () => {
     expect(await postings(b, jobId)).toEqual([]);
   });
 
-  it('returns nothing to anon', async () => {
+  it('refuses anon', async () => {
     const { jobId } = await matchedJob([ANGULAR_EN]);
     const { data, error } = await anon().rpc('job_postings', {
       p_job_id: jobId,
     });
-    if (!error) expect(data).toEqual([]);
-    else expect(error).not.toBeNull();
+    expect(data).toBeNull();
+    expect(error).toMatchObject({
+      code: '42501',
+      message: 'permission denied for function job_postings',
+    });
   });
 });
