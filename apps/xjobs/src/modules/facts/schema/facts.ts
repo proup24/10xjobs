@@ -79,6 +79,8 @@ export const jobFactsDocumentSchema = z
     postingLanguages: z.strictObject({
       /** ISO 639-1. */
       codes: z.array(z.string().length(2)),
+      /** Sets of close relatives the detector could not tell apart, each sorted. */
+      closeCalls: z.array(z.array(z.string().length(2)).min(1)).default([]),
       confident: z.boolean(),
     }),
   })

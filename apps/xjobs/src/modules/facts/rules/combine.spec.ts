@@ -818,11 +818,19 @@ describe('combineFacts', () => {
     }).facts;
     expect(withText.postingLanguages).toEqual({
       codes: ['en'],
+      closeCalls: [],
       confident: true,
     });
     expect(jobFactsDocumentSchema.safeParse(withText).success).toBe(true);
+    // Facts stored before closeCalls existed still parse.
+    const { codes, confident } = withText.postingLanguages;
+    const old = { ...withText, postingLanguages: { codes, confident } };
+    const parsed = jobFactsDocumentSchema.safeParse(old);
+    expect(parsed.success).toBe(true);
+    expect(parsed.data?.postingLanguages.closeCalls).toEqual([]);
     expect(combine(doc(), listing()).facts.postingLanguages).toEqual({
       codes: [],
+      closeCalls: [],
       confident: false,
     });
   });
@@ -830,7 +838,7 @@ describe('combineFacts', () => {
   it('copies the other matcher facts from the description', () => {
     const d = doc();
     const { facts } = combine(d, listing());
-    expect(facts.version).toBe(3);
+    expect(facts.version).toBe(4);
     for (const key of [
       'position',
       'isSoftwareEngineeringRole',

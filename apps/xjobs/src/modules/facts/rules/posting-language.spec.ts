@@ -1,4 +1,10 @@
-import { detectPostingLanguages } from './posting-language';
+import { htmlToPlainText } from '../../ingest/normalize/text';
+import { detectPostingLanguages, sentencePieces } from './posting-language';
+import {
+  CLEAN,
+  LESVEXA_HTML,
+  LESVEXA_STORED,
+} from './posting-language.fixtures.testing';
 
 const ENGLISH = [
   'We are looking for a senior backend engineer to join our payments team. You will design and build the services that move money between our customers and their banks.',
@@ -44,6 +50,7 @@ describe('detectPostingLanguages', () => {
   it('detects an English posting', () => {
     expect(detectPostingLanguages(ENGLISH)).toEqual({
       codes: ['en'],
+      closeCalls: [],
       confident: true,
     });
   });
@@ -51,6 +58,7 @@ describe('detectPostingLanguages', () => {
   it('detects a Spanish posting', () => {
     expect(detectPostingLanguages(SPANISH)).toEqual({
       codes: ['es'],
+      closeCalls: [],
       confident: true,
     });
   });
@@ -59,6 +67,7 @@ describe('detectPostingLanguages', () => {
     const text = `${FRENCH}\n\nPlease apply with your resume in English or French.`;
     expect(detectPostingLanguages(text)).toEqual({
       codes: ['fr'],
+      closeCalls: [],
       confident: true,
     });
   });
@@ -70,17 +79,17 @@ describe('detectPostingLanguages', () => {
     expect([...result.codes].sort()).toEqual(['en', 'fr']);
   });
 
-  it('a paragraph alternating French and English sentences is not confident', () => {
+  it('a paragraph alternating French and English never gives another language', () => {
     expect(ALTERNATING.length).toBeGreaterThan(200);
-    expect(detectPostingLanguages(ALTERNATING)).toEqual({
-      codes: [],
-      confident: false,
-    });
+    const r = detectPostingLanguages(ALTERNATING);
+    expect(r.codes.every((c) => c === 'fr' || c === 'en')).toBe(true);
+    expect(r.closeCalls).toEqual([]);
   });
 
   it('a Portuguese posting is Portuguese, never Galician', () => {
     expect(detectPostingLanguages(PORTUGUESE)).toEqual({
       codes: ['pt'],
+      closeCalls: [],
       confident: true,
     });
     expect(detectPostingLanguages(PORTUGUESE_SHORT).codes).not.toContain('gl');
@@ -89,9 +98,10 @@ describe('detectPostingLanguages', () => {
   it('a short text is not confident', () => {
     expect(
       detectPostingLanguages('Senior backend engineer, Go, remote in Europe.'),
-    ).toEqual({ codes: [], confident: false });
+    ).toEqual({ codes: [], closeCalls: [], confident: false });
     expect(detectPostingLanguages('')).toEqual({
       codes: [],
+      closeCalls: [],
       confident: false,
     });
   });
@@ -104,7 +114,135 @@ describe('detectPostingLanguages', () => {
     expect(text.length).toBeGreaterThan(200);
     expect(detectPostingLanguages(text)).toEqual({
       codes: [],
+      closeCalls: [],
       confident: false,
     });
+  });
+
+  it('Lesvexa as stored is Spanish', () => {
+    expect(detectPostingLanguages(LESVEXA_STORED)).toEqual({
+      codes: ['es'],
+      closeCalls: [],
+      confident: true,
+    });
+  });
+
+  it('Lesvexa with its breaks restored is Spanish', () => {
+    expect(detectPostingLanguages(htmlToPlainText(LESVEXA_HTML))).toEqual({
+      codes: ['es'],
+      closeCalls: [],
+      confident: true,
+    });
+  });
+
+  it.each([
+    ['es', 'es'],
+    ['pt_pt', 'pt'],
+    ['pt_br', 'pt'],
+    ['it', 'it'],
+    ['ro', 'ro'],
+    ['fr', 'fr'],
+    ['pl', 'pl'],
+    ['sv', 'sv'],
+    ['de', 'de'],
+    ['en', 'en'],
+  ] as const)(
+    'a clean %s posting in a clearly separated language is sure',
+    (key, code) => {
+      expect(detectPostingLanguages(CLEAN[key])).toEqual({
+        codes: [code],
+        closeCalls: [],
+        confident: true,
+      });
+    },
+  );
+
+  it.each(Object.keys(CLEAN) as (keyof typeof CLEAN)[])(
+    'a clean %s posting is never surely another language',
+    (key) => {
+      const L = key.slice(0, 2);
+      const r = detectPostingLanguages(CLEAN[key]);
+      expect(r.confident).toBe(true);
+      expect(r.codes.every((c) => c === L)).toBe(true);
+      expect(r.closeCalls.every((s) => s.includes(L))).toBe(true);
+      expect(r.codes.length + r.closeCalls.length).toBeGreaterThan(0);
+    },
+  );
+
+  it('Malay and Croatian are always a close call of their whole group', () => {
+    expect(detectPostingLanguages(CLEAN.ms)).toEqual({
+      codes: [],
+      closeCalls: [['id', 'ms']],
+      confident: true,
+    });
+    expect(detectPostingLanguages(CLEAN.id)).toEqual({
+      codes: [],
+      closeCalls: [['id', 'ms']],
+      confident: true,
+    });
+    expect(detectPostingLanguages(CLEAN.hr)).toEqual({
+      codes: [],
+      closeCalls: [['bs', 'hr', 'sr']],
+      confident: true,
+    });
+  });
+
+  // franc scores this Danish sentence nob 1.000, dan 0.932: surely Bokmål by 0.068.
+  const KUBERNETES_DA =
+    'Erfaring med Kubernetes, Terraform og cloudplatforme som AWS eller Azure er en fordel, men ikke et krav.';
+
+  it.each([
+    // A {da, nb} close call, under the share filter on its own.
+    [
+      'a close call',
+      'Vi søger en erfaren udvikler til vores team i København.',
+    ],
+    // A sure Danish piece, under the share filter on its own.
+    [
+      'a sure piece',
+      'Vi tilbyder fleksible arbejdstider og mulighed for hjemmearbejde.',
+    ],
+  ])(
+    'a Danish posting surely read as Bokmål keeps Danish as a close call (%s)',
+    (_, danish) => {
+      const text = [KUBERNETES_DA, KUBERNETES_DA, danish].join('\n\n');
+      expect(text.length).toBeGreaterThanOrEqual(200);
+      const r = detectPostingLanguages(text);
+      expect(r.confident).toBe(true);
+      expect(
+        r.codes.every((c) => c === 'da') ||
+          r.closeCalls.some((s) => s.includes('da')),
+      ).toBe(true);
+      if (r.codes.includes('nb'))
+        expect(r.closeCalls.some((s) => s.includes('da'))).toBe(true);
+    },
+  );
+
+  it('a sure code with no other group member seen gains no close call', () => {
+    expect(
+      detectPostingLanguages([KUBERNETES_DA, KUBERNETES_DA].join('\n\n')),
+    ).toEqual({ codes: ['nb'], closeCalls: [], confident: true });
+  });
+
+  it('splits flattened sentences but not Next.js', () => {
+    const sentences = [
+      'Buscamos un desarrollador con experiencia en Next.js y 2.5 años trabajando en productos reales.',
+      'Trabajarás de cerca con el equipo de producto para decidir qué construimos cada semana.',
+      'Ofrecemos un salario competitivo, horario flexible y formación continua para todo el equipo.',
+      'También ofrecemos la posibilidad de trabajar desde casa varios días a la semana.',
+    ];
+    const text = sentences.join('');
+    expect(sentencePieces(text)).toEqual(sentences);
+    expect(detectPostingLanguages(text)).toEqual({
+      codes: ['es'],
+      closeCalls: [],
+      confident: true,
+    });
+  });
+
+  it('a runner-up with the same ISO code is the same language', () => {
+    const text =
+      'ما به دنبال یک مهندس نرم افزار با تجربه برای پیوستن به تیم پشتیبان خود هستیم. شما مسئول طراحی و نگهداری سرویس هایی خواهید بود که هر روز هزاران مشتری از آن ها استفاده می کنند. ما حقوق مناسب و ساعت کاری انعطاف پذیر ارائه می دهیم و امکان کار از خانه را فراهم می کنیم.';
+    expect(detectPostingLanguages(text).codes).toEqual(['fa']);
   });
 });

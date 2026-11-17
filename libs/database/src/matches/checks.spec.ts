@@ -227,6 +227,74 @@ describe('checkLines', () => {
       'Job contract Contractor is not in your contract types: Full-time',
     ]);
   });
+  describe('posting language close calls', () => {
+    const withNordic: Labels = {
+      ...labels,
+      languages: [
+        ...labels.languages,
+        { value: 'es', label: 'Spanish' },
+        { value: 'da', label: 'Danish' },
+        { value: 'nb', label: 'Norwegian Bokmål' },
+        { value: 'hr', label: 'Croatian' },
+        { value: 'sr', label: 'Serbian' },
+      ],
+    };
+    const line = (check: Record<string, unknown>) =>
+      checkLines([{ rule: 'postingLanguage', ...check }], withNordic)[0];
+
+    it('words a close call the profile speaks a member of as unknown', () => {
+      const l = line({
+        outcome: 'unknown',
+        jobValue: { codes: [], closeCalls: [['da', 'nb']], confident: true },
+        profileValue: ['da'],
+        reason: "posting is in one of da, nb; can't tell which",
+      });
+      expect(l.mark).toBe('unknown');
+      expect(l.text).toBe(
+        "Posting is in one of Danish, Norwegian Bokmål; can't tell which",
+      );
+    });
+
+    it('keeps the reason when the detector was not confident', () => {
+      expect(
+        line({
+          outcome: 'unknown',
+          jobValue: { codes: [], closeCalls: [['da', 'nb']], confident: false },
+          profileValue: ['da'],
+          reason: 'posting language not detected with confidence',
+        }).text,
+      ).toBe('Posting language not detected with confidence');
+    });
+
+    it('words a sure code and a close call, neither spoken, as a fail', () => {
+      expect(
+        line({
+          outcome: 'fail',
+          jobValue: {
+            codes: ['es'],
+            closeCalls: [['da', 'nb']],
+            confident: true,
+          },
+          profileValue: ['en'],
+          reason:
+            "posting is written in es, one of da/nb, which you don't speak",
+        }).text,
+      ).toBe(
+        "Posting is written in Spanish, one of Danish/Norwegian Bokmål, which you don't speak",
+      );
+    });
+
+    it('does not count Serbian as the Croatian a posting is written in', () => {
+      expect(
+        line({
+          outcome: 'pass',
+          jobValue: { codes: ['hr', 'en'], closeCalls: [], confident: true },
+          profileValue: ['sr', 'en'],
+          reason: 'posting is written in en, which you speak',
+        }).text,
+      ).toBe('Posting is written in English, which you speak');
+    });
+  });
   it('keeps the reason when a code has no label or the value is not structured', () => {
     const [line] = checkLines(
       [

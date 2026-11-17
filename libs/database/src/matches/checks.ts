@@ -64,13 +64,11 @@ export function fieldLabel(field: string): string {
   return FIELD_LABELS[field] ?? field;
 }
 
+/** Norwegian `no`/`nb`/`nn` name one language, as in the matcher; every other code is exact. */
 const SAME_LANGUAGE: Record<string, string> = {
   no: 'no',
   nb: 'no',
   nn: 'no',
-  hr: 'hbs',
-  sr: 'hbs',
-  bs: 'hbs',
 };
 const family = (code: string) => SAME_LANGUAGE[code] ?? code;
 
@@ -125,11 +123,38 @@ function structuredText(
     return null;
   }
   if (rule === 'postingLanguage') {
-    const codes = (jobValue as { codes?: unknown } | null)?.codes;
-    if (!isCodes(codes) || codes.length === 0) return null;
+    const value = jobValue as {
+      codes?: unknown;
+      closeCalls?: unknown;
+      confident?: unknown;
+    } | null;
+    const codes = value?.codes;
+    // Not confident: the matcher's reason says so, whatever was detected.
+    if (value?.confident === false) return null;
+    // Rows written before close calls existed have none.
+    const closeCalls =
+      Array.isArray(value?.closeCalls) && value.closeCalls.every(isCodes)
+        ? value.closeCalls
+        : [];
+    if (!isCodes(codes) || (codes.length === 0 && closeCalls.length === 0))
+      return null;
     const lang = name(labels.languages);
-    if (outcome === 'fail')
-      return `posting is written in ${codes.map(lang).join(', ')}, which you don't speak`;
+    if (outcome === 'fail') {
+      const written = [
+        ...codes.map(lang),
+        ...closeCalls.map((set) => `one of ${set.map(lang).join('/')}`),
+      ];
+      return `posting is written in ${written.join(', ')}, which you don't speak`;
+    }
+    if (outcome === 'unknown' && isCodes(profileValue)) {
+      const spoken = new Set(profileValue.map(family));
+      const doubtful = closeCalls.find((set) =>
+        set.some((x) => spoken.has(family(x))),
+      );
+      return doubtful
+        ? `posting is in one of ${doubtful.map(lang).join(', ')}; can't tell which`
+        : null;
+    }
     if (outcome === 'pass' && isCodes(profileValue)) {
       const spoken = new Set(profileValue.map(family));
       const shared = codes.filter((x) => spoken.has(family(x)));
