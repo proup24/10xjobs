@@ -238,8 +238,8 @@ async function carriedExtraction(
 
 /**
  * Moves every user's decision on a job that merged away to the job it merged
- * into. A user with a decision on both keeps one: applied beats dismissed,
- * otherwise the newer decision wins, and on a tie the target's stays.
+ * into. A user with a decision on both keeps one: applied beats dismissed beats
+ * expired, otherwise the newer decision wins, and on a tie the target's stays.
  */
 async function moveDecisions(
   tx: DatabaseTransaction,
@@ -262,8 +262,10 @@ async function moveDecisions(
         "decidedAt" = EXCLUDED."decidedAt",
         "matchSnapshot" = EXCLUDED."matchSnapshot",
         "updatedAt" = now()
-      WHERE (EXCLUDED.status = 'applied' AND job_decisions.status = 'dismissed')
-        OR (EXCLUDED.status = job_decisions.status
+      WHERE (CASE EXCLUDED.status WHEN 'applied' THEN 3 WHEN 'dismissed' THEN 2 ELSE 1 END)
+          > (CASE job_decisions.status WHEN 'applied' THEN 3 WHEN 'dismissed' THEN 2 ELSE 1 END)
+        OR ((CASE EXCLUDED.status WHEN 'applied' THEN 3 WHEN 'dismissed' THEN 2 ELSE 1 END)
+          = (CASE job_decisions.status WHEN 'applied' THEN 3 WHEN 'dismissed' THEN 2 ELSE 1 END)
           AND EXCLUDED."decidedAt" > job_decisions."decidedAt")`
       .affectedCount()
       .build(),
