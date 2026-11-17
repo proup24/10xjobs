@@ -823,8 +823,8 @@ describe('combineFacts', () => {
     });
     expect(jobFactsDocumentSchema.safeParse(withText).success).toBe(true);
     // Facts stored before closeCalls existed still parse.
-    const old = structuredClone(withText) as Record<string, any>;
-    delete old.postingLanguages.closeCalls;
+    const { codes, confident } = withText.postingLanguages;
+    const old = { ...withText, postingLanguages: { codes, confident } };
     const parsed = jobFactsDocumentSchema.safeParse(old);
     expect(parsed.success).toBe(true);
     expect(parsed.data?.postingLanguages.closeCalls).toEqual([]);

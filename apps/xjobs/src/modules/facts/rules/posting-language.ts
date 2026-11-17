@@ -14,18 +14,18 @@ export interface PostingLanguages {
 // Any franc upgrade or change to these thresholds or the table below changes the detected
 // languages: bump FACTS_VERSION (facts/config/facts.config.ts) with it.
 
-/** Below this many characters (of the text, and of its detected paragraphs) nothing is sure. */
+/** Below this many characters (of the text, and of its detected sentence pieces) nothing is sure. */
 const MIN_TEXT = 200;
 /** A paragraph shorter than this is not detected (franc's `minLength`). */
 const MIN_PARAGRAPH = 50;
-/** A language is kept when its paragraphs hold at least this share of the detected characters. */
+/** A language is kept when its sentence pieces hold at least this share of the detected characters. */
 const MIN_SHARE = 0.25;
 /**
- * A sentence piece is sure of a language only when every rival scores at least this far
- * below the winner (franc scores the winner 1); margins are judged per sentence piece, and
- * a close relative within the margin makes the piece a close call instead. Text mixing French and English sentences scores the
- * two within 0.004 to 0.056, and a bare list of tool names within 0.002; single-language
- * prose leaves a clear gap to its nearest unrelated rival.
+ * Margins are judged per sentence piece. A piece is sure of a language only when every
+ * unrelated rival scores at least this far below the winner (franc scores the winner 1);
+ * a close relative within the margin makes it a close call instead. Within one piece,
+ * single-language prose leaves a clear gap to its nearest unrelated rival, while a mix of
+ * languages or a bare list of tool names leaves almost none.
  */
 const MIN_MARGIN = 0.06;
 

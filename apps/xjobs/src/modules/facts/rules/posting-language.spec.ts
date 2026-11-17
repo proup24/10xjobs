@@ -188,13 +188,14 @@ describe('detectPostingLanguages', () => {
   });
 
   it('splits flattened sentences but not Next.js', () => {
-    const text = [
+    const sentences = [
       'Buscamos un desarrollador con experiencia en Next.js y 2.5 años trabajando en productos reales.',
       'Trabajarás de cerca con el equipo de producto para decidir qué construimos cada semana.',
       'Ofrecemos un salario competitivo, horario flexible y formación continua para todo el equipo.',
       'También ofrecemos la posibilidad de trabajar desde casa varios días a la semana.',
-    ].join('');
-    expect(sentencePieces(text)).toHaveLength(4);
+    ];
+    const text = sentences.join('');
+    expect(sentencePieces(text)).toEqual(sentences);
     expect(detectPostingLanguages(text)).toEqual({
       codes: ['es'],
       closeCalls: [],
