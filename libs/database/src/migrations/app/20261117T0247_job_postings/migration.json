@@ -1,0 +1,9 @@
+{
+  "from": "6445f1a93dc43f67978d3e8df96ba5087d849227003d05e95a754d8d62b6d06f",
+  "to": "6445f1a93dc43f67978d3e8df96ba5087d849227003d05e95a754d8d62b6d06f",
+  "providedInvariants": [
+    "job-postings"
+  ],
+  "createdAt": "2026-11-17T02:47:40.731Z",
+  "migrationHash": "ccca9d045519324db4f38b63630c4f1b257a7927ce5e88b5e6e1207ea966c483"
+}

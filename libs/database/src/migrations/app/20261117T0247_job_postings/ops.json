@@ -1,0 +1,24 @@
+[
+  {
+    "id": "functions.job_postings",
+    "invariantId": "job-postings",
+    "label": "job_postings: a job's postings and what differs from the job",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "normalized_job_sources"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create job_postings(p_job_id) for authenticated",
+        "sql": "CREATE FUNCTION public.job_postings(p_job_id uuid)\nRETURNS TABLE(\n  \"rawItemId\" uuid, channel text, title text, location text,\n  \"postedAt\" timestamptz, \"postingUrl\" text, shown boolean,\n  \"titleDiffers\" boolean, \"placeDiffers\" boolean, \"descriptionDiffers\" boolean\n)\n  LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$\nSELECT\n  p.\"rawItemId\", p.channel, p.title, p.location, p.\"postedAt\", p.\"postingUrl\", p.shown,\n  p.\"titleDiffers\", p.\"placeDiffers\", p.\"descriptionDiffers\"\nFROM (\n  SELECT\n    s.\"rawItemId\",\n    r.channel::text AS channel,\n    v.record->>'title' AS title,\n    v.record->>'location' AS location,\n    (v.record->>'postedAt')::timestamptz AS \"postedAt\",\n    v.record->>'postingUrl' AS \"postingUrl\",\n    -- The posting the job's title came from is the one the job shows.\n    COALESCE(s.\"rawItemId\"::text = j.\"fieldSources\"->>'title', false) AS shown,\n    (v.record->>'title') IS DISTINCT FROM j.title AS \"titleDiffers\",\n    (v.record->>'location') IS DISTINCT FROM j.location\n      OR (v.record->>'countryCode') IS DISTINCT FROM j.\"countryCode\"\n      OR (v.record->>'city') IS DISTINCT FROM j.city AS \"placeDiffers\",\n    pg_catalog.btrim(pg_catalog.regexp_replace(v.record->>'descriptionText', '\\s+', ' ', 'g'))\n      IS DISTINCT FROM pg_catalog.btrim(pg_catalog.regexp_replace(j.\"descriptionText\", '\\s+', ' ', 'g')) AS \"descriptionDiffers\"\n  FROM public.normalized_jobs j\n  JOIN public.normalized_job_sources s ON s.\"jobId\" = j.id\n  JOIN public.raw_items r ON r.id = s.\"rawItemId\"\n  JOIN public.normalized_versions v ON v.id = s.\"normalizedVersionId\"\n  WHERE j.id = p_job_id\n    -- Only a job the caller has a match or a decision on; a null uid matches none.\n    AND (EXISTS (\n          SELECT 1 FROM public.job_matches m\n           WHERE m.\"jobId\" = p_job_id AND m.\"userId\" = (SELECT auth.uid()))\n      OR EXISTS (\n          SELECT 1 FROM public.job_decisions d\n           WHERE d.\"jobId\" = p_job_id AND d.\"userId\" = (SELECT auth.uid())))\n) p\nORDER BY p.shown DESC, p.\"postedAt\" ASC NULLS LAST, p.\"rawItemId\"\n$$;\nREVOKE EXECUTE ON FUNCTION public.job_postings(uuid) FROM PUBLIC, anon;\nGRANT EXECUTE ON FUNCTION public.job_postings(uuid) TO authenticated;"
+      }
+    ],
+    "postcheck": []
+  }
+]

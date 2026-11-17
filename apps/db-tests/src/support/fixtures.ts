@@ -405,13 +405,17 @@ export function detailedDocument(): Record<string, unknown> {
   };
 }
 
-/** One channel's source chain for a job, down to the `normalized_job_sources` link. */
+/**
+ * One channel's source chain for a job, down to the `normalized_job_sources` link; returns
+ * the raw item id. `record` is the normalized version's record.
+ */
 async function seedSourceChain(
   jobId: string,
   jobKey: string,
   channel: Channel,
   now: string,
-): Promise<void> {
+  record: Record<string, unknown> = {},
+): Promise<string> {
   const queryId = await insertTracked('query_search_builder', {
     channel,
     location: 'remote',
@@ -468,7 +472,7 @@ async function seedSourceChain(
     rawVersionId,
     normalizerVersion: 1,
     status: 'valid',
-    record: {},
+    record,
     jobKey,
   });
   await insertTracked('normalized_job_sources', {
@@ -477,6 +481,73 @@ async function seedSourceChain(
     normalizedVersionId,
     linkedAt: now,
   });
+  return rawItemId;
+}
+
+export type Posting = {
+  title: string;
+  location?: string | null;
+  countryCode?: string | null;
+  city?: string | null;
+  descriptionText?: string | null;
+  postedAt?: string | null;
+};
+
+/**
+ * One LinkedIn job board posting per entry on a job (a raw item, version, normalized version
+ * and source link each), the record built from the entry. The job's title, place, description
+ * and fieldSources.title become the first posting's. Returns the raw item ids in order.
+ */
+export async function seedPostings(
+  jobId: string,
+  postings: Posting[],
+): Promise<string[]> {
+  const { data, error } = await admin()
+    .from('normalized_jobs')
+    .select('jobKey, fieldSources')
+    .eq('id', jobId)
+    .single();
+  if (error) throw new Error(`Could not read the job: ${error.message}`);
+  const now = new Date().toISOString();
+  const ids: string[] = [];
+  for (const posting of postings) {
+    const record = {
+      title: posting.title,
+      location: posting.location ?? null,
+      countryCode: posting.countryCode ?? null,
+      city: posting.city ?? null,
+      descriptionText: posting.descriptionText ?? null,
+      postedAt: posting.postedAt ?? null,
+      postingUrl: `https://www.linkedin.com/jobs/view/${Math.floor(Math.random() * 1e10)}`,
+    };
+    ids.push(
+      await seedSourceChain(
+        jobId,
+        data.jobKey as string,
+        'LINKEDIN_JOB_BOARD',
+        now,
+        record,
+      ),
+    );
+  }
+  const first = postings[0];
+  const updated = await admin()
+    .from('normalized_jobs')
+    .update({
+      title: first.title,
+      location: first.location ?? null,
+      countryCode: first.countryCode ?? null,
+      city: first.city ?? null,
+      descriptionText: first.descriptionText ?? null,
+      fieldSources: {
+        ...(data.fieldSources as Record<string, unknown>),
+        title: ids[0],
+      },
+    })
+    .eq('id', jobId);
+  if (updated.error)
+    throw new Error(`Could not update the job: ${updated.error.message}`);
+  return ids;
 }
 
 async function insertDetailedJob(
