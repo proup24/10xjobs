@@ -211,29 +211,28 @@ async function remerge(tx: DatabaseTransaction, jobId: string): Promise<void> {
 }
 
 /**
- * A re-keyed job's extraction, copied to the job that replaces it so the
- * processed job needs no new model call. The copy cost nothing.
+ * The item's old job under its new key, when the item is that job's only
+ * source: a re-key renames the job, so it keeps its id, extraction, processing
+ * state and every user's marks. A job with other sources stays as it is. When
+ * a concurrent link created the new key first, the rename's unique violation
+ * re-runs the link, which then merges into that job.
  */
-async function carriedExtraction(
+async function renamed(
   tx: DatabaseTransaction,
-  old: NormalizedJobRow,
   jobId: string,
-): Promise<JobPatch> {
-  if (!old.currentExtractionId) return {};
+  key: string,
+): Promise<NormalizedJobRow | null> {
   const { orm } = tx;
-  const source = found(
-    await orm.public.JobExtraction.where({
-      id: old.currentExtractionId,
-    }).first(),
-    'previous extraction',
-  );
-  const { id: _id, createdAt: _createdAt, ...fields } = source;
-  const copy = await orm.public.JobExtraction.create({
-    ...fields,
-    jobId,
-    costUsd: '0',
+  const old = await orm.public.NormalizedJob.where({ id: jobId })
+    .forNoKeyUpdate()
+    .first();
+  if (!old) return null;
+  const sources = await orm.public.NormalizedJobSource.where({ jobId }).all();
+  if (sources.length !== 1) return null;
+  await orm.public.NormalizedJob.where({ id: jobId }).updateAll({
+    jobKey: key,
   });
-  return { currentExtractionId: copy.id, processedAt: old.processedAt };
+  return { ...old, jobKey: key };
 }
 
 /**
@@ -342,9 +341,11 @@ async function effectiveKey(
 
 /**
  * Links a raw item to the job its latest version's job key names, inside the
- * raw item's transaction, and re-merges every job the link touched. Sends the
- * job to Process (`pending`) only when this observation creates it or finds
- * it after `reopenAfterMs` unseen. Idempotent: replaying changes nothing.
+ * raw item's transaction, and re-merges every job the link touched. A new key
+ * with no job renames the item's old job when the item is its only source.
+ * Sends the job to Process (`pending`) only when this observation creates it
+ * or finds it after `reopenAfterMs` unseen. Idempotent: replaying changes
+ * nothing.
  */
 export async function linkJob(
   tx: DatabaseTransaction,
@@ -368,9 +369,13 @@ export async function linkJob(
   const record = version.record as unknown as NormalizedRecord;
   const key = await effectiveKey(tx, item, version.jobKey);
 
-  let job = await orm.public.NormalizedJob.where({ jobKey: key })
-    .forNoKeyUpdate()
-    .first();
+  const link = await orm.public.NormalizedJobSource.where({
+    rawItemId: input.rawItemId,
+  }).first();
+  let job =
+    (await orm.public.NormalizedJob.where({ jobKey: key })
+      .forNoKeyUpdate()
+      .first()) ?? (link ? await renamed(tx, link.jobId, key) : null);
   const created = !job;
   if (!job)
     job = await orm.public.NormalizedJob.create({
@@ -396,12 +401,8 @@ export async function linkJob(
   }
   const before = job;
   let current = processingOf(before);
-  let previousLastSeenAt: Date | null = created ? null : before.lastSeenAt;
-  let inherited = false;
+  const previousLastSeenAt: Date | null = created ? null : before.lastSeenAt;
 
-  const link = await orm.public.NormalizedJobSource.where({
-    rawItemId: input.rawItemId,
-  }).first();
   if (!link) {
     await orm.public.NormalizedJobSource.create({
       jobId: job.id,
@@ -442,19 +443,7 @@ export async function linkJob(
       });
       await moveDecisions(tx, old.id, job.id);
       const oldState = processingOf(old);
-      if (created) {
-        // Same job under a better key: it carries its processing state over.
-        inherited = true;
-        current = oldState;
-        previousLastSeenAt = old.lastSeenAt;
-        await orm.public.NormalizedJob.where({ id: job.id }).updateAll({
-          ...processingColumns(oldState),
-          ...(await carriedExtraction(tx, old, job.id)),
-        });
-      } else if (
-        oldState.status === 'pending' &&
-        current.status !== 'pending'
-      ) {
+      if (oldState.status === 'pending' && current.status !== 'pending') {
         current = oldState;
         await orm.public.NormalizedJob.where({ id: job.id }).updateAll(
           processingColumns(oldState),
@@ -466,7 +455,7 @@ export async function linkJob(
   await remerge(tx, job.id);
 
   const next = nextProcessing({
-    created: created && !inherited,
+    created,
     previousLastSeenAt,
     observedAt: input.observedAt,
     current,
@@ -479,7 +468,7 @@ export async function linkJob(
     );
   return {
     jobId: job.id,
-    created: created && !inherited,
+    created,
     reopened: changed && next.reason === 'reopened',
     pending: (changed ? next : current).status === 'pending',
   };

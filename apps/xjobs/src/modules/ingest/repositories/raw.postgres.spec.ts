@@ -514,26 +514,61 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
       });
     });
 
-    it('moves an item whose apply URL appears later, merging its old job', async () => {
+    it("keeps the job when an item's apply URL appears later", async () => {
       await save(
         liJob('4483941772', { applyType: 'EASY_APPLY', applyUrl: '' }),
         t1,
       );
       await markProcessed();
+      const before = (await jobs())[0]!;
       const result = await save(liJob('4483941772'), t2);
 
-      expect(result.job).toMatchObject({ created: false });
-      const all = await jobs();
-      const old = all.find((j) => j.jobKey === 'linkedin-job:4483941772')!;
-      const moved = all.find((j) => j.jobKey.startsWith('url:'))!;
-      expect(old).toMatchObject({ status: 'merged', mergedIntoId: moved.id });
-      expect(moved).toMatchObject({
+      expect(result.job).toMatchObject({
+        jobId: before.id,
+        created: false,
+        pending: false,
+      });
+      const [only, ...rest] = await jobs();
+      expect(rest).toHaveLength(0);
+      expect(only).toMatchObject({
+        id: before.id,
+        jobKey: expect.stringMatching(/^url:/),
         status: 'active',
         processingStatus: 'processed',
       });
       expect(await sources()).toEqual([
-        expect.objectContaining({ jobId: moved.id }),
+        expect.objectContaining({ jobId: before.id }),
       ]);
+    });
+
+    it('merges into the job a concurrent item created under the new key', async () => {
+      for (let round = 0; round < 5; round++) {
+        const applyUrl = `https://acme.com/jobs/8888${round}`;
+        const easy = `44839600${round}`;
+        await save(liJob(easy, { applyType: 'EASY_APPLY', applyUrl: '' }), t1);
+        const old = (await jobs()).find(
+          (j) => j.jobKey === `linkedin-job:${easy}`,
+        )!;
+        const [b1, b2] = [await batch(), await batch()];
+        await Promise.all([
+          repo.saveItem(input(b1, liJob(easy, { applyUrl }), t2)),
+          repo.saveItem(input(b2, liJob(`44839700${round}`, { applyUrl }), t2)),
+        ]);
+
+        const keyed = (await jobs()).filter(
+          (j) => j.jobKey === `url:${applyUrl}`,
+        );
+        expect(keyed).toHaveLength(1);
+        expect(keyed[0]).toMatchObject({ status: 'active' });
+        const linked = (await sources()).filter(
+          (s) => s.jobId === keyed[0]!.id,
+        );
+        expect(linked).toHaveLength(2);
+        if (keyed[0]!.id !== old.id)
+          expect(
+            await db.orm.public.NormalizedJob.where({ id: old.id }).first(),
+          ).toMatchObject({ status: 'merged', mergedIntoId: keyed[0]!.id });
+      }
     });
 
     describe('job decisions', () => {
@@ -578,6 +613,35 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
             .affectedCount()
             .build(),
         );
+      });
+
+      it('keeps decisions and views on a job that is only re-keyed', async () => {
+        await save(
+          liJob('4483941772', { applyType: 'EASY_APPLY', applyUrl: '' }),
+          t1,
+        );
+        const old = (await jobs())[0]!;
+        await decide(old.id, 'applied', t1, null);
+        await db.orm.public.JobView.create({
+          userId,
+          jobId: old.id,
+          viewedAt: t1,
+        });
+
+        await save(liJob('4483941772'), t2);
+
+        expect(await decisions()).toEqual([
+          { jobId: old.id, status: 'applied', reason: null },
+        ]);
+        expect((await db.orm.public.JobView.all()).map((v) => v.jobId)).toEqual(
+          [old.id],
+        );
+        expect(
+          await db.orm.public.NormalizedJob.where({ id: old.id }).first(),
+        ).toMatchObject({
+          status: 'active',
+          jobKey: expect.stringMatching(/^url:/),
+        });
       });
 
       it('moves a decision with the job it merged into', async () => {
@@ -1114,35 +1178,24 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
         ]);
       });
 
-      it('carries the extraction over when a re-key creates the job', async () => {
+      it('keeps the job and its extraction when a re-key finds no job', async () => {
         await save(cheap(), t1);
         const old = await jobByKey(linkedinKey);
         const extraction = await processWith(old.id, { doc: 'old' });
 
         await save(viaAshby(), t2);
 
-        const merged = await jobByKey(linkedinKey);
-        const moved = await jobByKey(ashbyKey);
-        expect(merged).toMatchObject({
-          status: 'merged',
-          mergedIntoId: moved.id,
-        });
-        expect(moved).toMatchObject({
+        const [only, ...rest] = await jobs();
+        expect(rest).toHaveLength(0);
+        expect(only).toMatchObject({
+          id: old.id,
+          jobKey: ashbyKey,
           status: 'active',
           processingStatus: 'processed',
+          currentExtractionId: extraction.id,
           processedAt: t1,
         });
-        expect(moved.currentExtractionId).not.toBe(extraction.id);
-        const copy = await db.orm.public.JobExtraction.where({
-          id: moved.currentExtractionId!,
-        }).first();
-        expect(copy).toMatchObject({
-          jobId: moved.id,
-          data: { doc: 'old' },
-          techTags: ['node'],
-          inputHash: extraction.inputHash,
-        });
-        expect(Number(copy!.costUsd)).toBe(0);
+        expect(await db.orm.public.JobExtraction.all()).toHaveLength(1);
       });
 
       it('keeps the extraction of the job a re-key moves into', async () => {
@@ -1164,13 +1217,18 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
         });
       });
 
-      it('carries no extraction when the re-keyed job was still pending', async () => {
+      it('keeps a pending job pending when it is re-keyed', async () => {
         await save(cheap(), t1);
+        const old = await jobByKey(linkedinKey);
 
-        await save(viaAshby(), t2);
+        const result = await save(viaAshby(), t2);
 
-        expect(await jobByKey(linkedinKey)).toMatchObject({ status: 'merged' });
-        expect(await jobByKey(ashbyKey)).toMatchObject({
+        expect(result.job).toMatchObject({ jobId: old.id, created: false });
+        const [only, ...rest] = await jobs();
+        expect(rest).toHaveLength(0);
+        expect(only).toMatchObject({
+          id: old.id,
+          jobKey: ashbyKey,
           status: 'active',
           processingStatus: 'pending',
           currentExtractionId: null,
