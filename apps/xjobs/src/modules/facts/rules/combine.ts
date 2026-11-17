@@ -20,6 +20,7 @@ import type {
 } from '../schema/facts';
 import { cleanCurrency } from './currency';
 import type { ListingFacts } from './listing';
+import { deriveFromNoSponsorship } from './no-sponsorship';
 import { detectPostingLanguages } from './posting-language';
 
 export interface FactConflict {
@@ -397,7 +398,14 @@ export function combineFacts(args: {
     engagement: fromDescription(extraction.engagement),
     contractMonths: fromDescription(extraction.contractMonths),
     requiredLanguages: fromDescription(extraction.requiredLanguages),
-    workAuthorization: fromDescription(extraction.workAuthorization),
+    workAuthorization: {
+      ...fromDescription(extraction.workAuthorization),
+      value: deriveFromNoSponsorship(
+        extraction.workAuthorization.value,
+        described,
+        listing.place,
+      ),
+    },
     techStack: fromDescription(extraction.techStack),
     arrangement: combineArrangement(extraction, listing),
     openings: combineOpenings(

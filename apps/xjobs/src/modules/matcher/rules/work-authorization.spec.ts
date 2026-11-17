@@ -49,6 +49,23 @@ const doc = (
     };
   });
 
+const derivedDoc = (places: string[], confidence: 'sure' | 'unsure' = 'sure') =>
+  factsDoc((d) => {
+    d.workAuthorization = {
+      value: {
+        requirements: places.map((place) => ({
+          kind: 'work-permit' as const,
+          place,
+          derived: 'no-sponsorship' as const,
+        })),
+        sponsorship: 'no',
+      },
+      confidence,
+      source: 'description',
+      quote: '',
+    };
+  });
+
 const outcome = (d: JobFactsDocument, p: MatchProfile) =>
   checkWorkAuthorization(d, p, idx).outcome;
 
@@ -178,7 +195,10 @@ describe('checkWorkAuthorization', () => {
   });
 
   it('no requirements on an unsure fact still passes, but rests on it', () => {
-    for (const d of [doc(null, 'unstated', 'unsure'), doc([], 'no', 'unsure')])
+    for (const d of [
+      doc(null, 'unstated', 'unsure'),
+      doc([], 'unstated', 'unsure'),
+    ])
       expect(checkWorkAuthorization(d, profile(), idx)).toMatchObject({
         outcome: 'pass',
         unsure: true,
@@ -362,6 +382,149 @@ describe('checkWorkAuthorization', () => {
         outcome: 'pass',
         unsure: true,
         unsureField: 'workAuthorization',
+      });
+    });
+  });
+
+  describe('derived from no sponsorship', () => {
+    const NS = '(the job offers no sponsorship)';
+
+    it('a derived requirement the user meets passes', () => {
+      expect(
+        checkWorkAuthorization(
+          derivedDoc(['US']),
+          profile({ authorizations: [auth('citizenship', 'US')] }),
+          idx,
+        ),
+      ).toMatchObject({
+        outcome: 'pass',
+        reason: `you meet work-permit US ${NS}`,
+      });
+    });
+
+    it('derived requirements are alternatives: one met is enough', () => {
+      expect(
+        checkWorkAuthorization(
+          derivedDoc(['US', 'CA']),
+          profile({ authorizations: [auth('work-permit', 'CA')] }),
+          idx,
+        ),
+      ).toMatchObject({
+        outcome: 'pass',
+        reason: `you meet work-permit CA ${NS}`,
+      });
+    });
+
+    it('an unmet derived requirement fails', () => {
+      expect(
+        checkWorkAuthorization(
+          derivedDoc(['US']),
+          profile({
+            residenceCountry: 'MA',
+            authorizations: [auth('residency', 'MA')],
+          }),
+          idx,
+        ),
+      ).toMatchObject({
+        outcome: 'fail',
+        reason: `you don't meet work-permit US ${NS}`,
+      });
+    });
+
+    it('a residency authorization meets a derived work permit', () => {
+      expect(
+        checkWorkAuthorization(
+          derivedDoc(['US']),
+          profile({ authorizations: [auth('residency', 'US')] }),
+          idx,
+        ),
+      ).toMatchObject({
+        outcome: 'pass',
+        reason: `you meet work-permit US ${NS}`,
+      });
+    });
+
+    it('a residency authorization does not meet an explicit work permit', () => {
+      expect(
+        outcome(
+          doc([['work-permit', 'US']]),
+          profile({ authorizations: [auth('residency', 'US')] }),
+        ),
+      ).toBe('fail');
+    });
+
+    it('several unmet derived requirements fail naming each', () => {
+      expect(
+        checkWorkAuthorization(derivedDoc(['US', 'CA']), profile(), idx),
+      ).toMatchObject({
+        outcome: 'fail',
+        reason: `you don't meet work-permit in any of US, CA ${NS}`,
+      });
+    });
+
+    it('residence alone never meets a derived work permit', () => {
+      expect(
+        outcome(derivedDoc(['US']), profile({ residenceCountry: 'US' })),
+      ).toBe('fail');
+    });
+
+    it('sponsorship acceptance does not rescue a derived requirement', () => {
+      expect(
+        outcome(derivedDoc(['US']), profile({ acceptsSponsorship: true })),
+      ).toBe('fail');
+    });
+
+    it('a derived requirement the index cannot place is unknown', () => {
+      expect(
+        outcome(
+          derivedDoc(['XX']),
+          profile({ authorizations: [auth('work-permit', 'FR')] }),
+        ),
+      ).toBe('unknown');
+    });
+
+    it('an unmet derived requirement on an unsure fact is an unsure failure', () => {
+      expect(
+        checkWorkAuthorization(derivedDoc(['US'], 'unsure'), profile(), idx),
+      ).toMatchObject({
+        outcome: 'fail',
+        unsure: true,
+        unsureField: 'workAuthorization',
+      });
+    });
+
+    it('no sponsorship with nothing derived on an unsure fact rests on it', () => {
+      expect(
+        checkWorkAuthorization(doc([], 'no', 'unsure'), profile(), idx),
+      ).toMatchObject({
+        outcome: 'pass',
+        unsure: true,
+        unsureField: 'workAuthorization',
+        reason: 'the job offers no sponsorship but names no place to check',
+      });
+    });
+
+    it('a derived pass on an unsure fact rests on it', () => {
+      expect(
+        checkWorkAuthorization(
+          derivedDoc(['US'], 'unsure'),
+          profile({ authorizations: [auth('citizenship', 'US')] }),
+          idx,
+        ),
+      ).toMatchObject({
+        outcome: 'pass',
+        unsure: true,
+        unsureField: 'workAuthorization',
+        reason: `you meet work-permit US ${NS}`,
+      });
+    });
+
+    it('no sponsorship with nothing derived names no place', () => {
+      expect(
+        checkWorkAuthorization(doc([], 'no'), profile(), idx),
+      ).toMatchObject({
+        outcome: 'pass',
+        reason: 'the job offers no sponsorship but names no place to check',
       });
     });
   });
