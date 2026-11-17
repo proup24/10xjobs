@@ -215,3 +215,177 @@ describe('checkLocation', () => {
     });
   });
 });
+
+describe('residence', () => {
+  const ridx: PlaceIndex = {
+    countriesOfRegion: new Map([
+      ['EU', new Set(['FR', 'DE'])],
+      ['EUROPE', new Set(['FR', 'DE', 'GB'])],
+      ['EMEA', new Set(['FR', 'DE', 'GB', 'MA'])],
+      ['UK', new Set(['GB'])],
+    ]),
+    countryOfCity: new Map(),
+    countries: new Set(['MA', 'FR', 'DE', 'GB', 'US', 'CA']),
+  };
+  const country = (code: string) => ({ kind: 'country' as const, code });
+  const region = (code: string) => ({ kind: 'region' as const, code });
+  const berlinDE = {
+    kind: 'city' as const,
+    name: 'Berlin',
+    countryCode: 'DE',
+    cityId: null,
+  };
+  const strict = (
+    places: Opening['places'],
+    placeStrictness: Opening['placeStrictness'] = 'label',
+  ) => opening({ places, placeStrictness });
+  const resident = (
+    residenceCountry: string | null,
+    authorizations: { kind: string; place: string }[] = [],
+    edit?: (p: ReturnType<typeof exampleProfile>) => void,
+  ) => {
+    const p = exampleProfile();
+    p.eligibility = { ...p.eligibility, residenceCountry, authorizations };
+    edit?.(p);
+    return p;
+  };
+  const check = (openings: Opening[], p: ReturnType<typeof exampleProfile>) =>
+    checkLocation(openings, p, ridx);
+  const outcomeOf = (o: Opening, p: ReturnType<typeof exampleProfile>) =>
+    check([o], p).outcome;
+
+  const columns: Opening['places'][] = [
+    [country('US')],
+    [country('US'), country('CA')],
+    [region('EUROPE')],
+    [region('EU')],
+    [region('EMEA')],
+    [berlinDE],
+  ];
+  const table: [string, string[]][] = [
+    ['MA', ['fail', 'fail', 'fail', 'fail', 'pass', 'fail']],
+    ['DE', ['fail', 'fail', 'pass', 'pass', 'pass', 'pass']],
+    ['US', ['pass', 'pass', 'fail', 'fail', 'fail', 'fail']],
+    ['GB', ['fail', 'fail', 'pass', 'fail', 'pass', 'fail']],
+  ];
+  it.each(table)(
+    'a %s resident fits only places that include home',
+    (home, expected) => {
+      const p = resident(home);
+      expect(columns.map((places) => outcomeOf(strict(places), p))).toEqual(
+        expected,
+      );
+    },
+  );
+
+  it('the Solvex case fails with the residence reason', () => {
+    const p = resident('MA', [], (x) => {
+      x.locations.remote = [region('UK')];
+    });
+    const c = check([strict([country('GB')])], p);
+    expect(c).toMatchObject({
+      outcome: 'fail',
+      unsure: false,
+      reason:
+        'job location (remote in GB, stated in the description) requires living there; you live in MA',
+    });
+    expect((c.detail as { residence: unknown }[])[0].residence).toEqual({
+      homes: ['MA'],
+      fits: 'no',
+    });
+  });
+  it('limit is strict too', () => {
+    expect(outcomeOf(strict([country('GB')], 'limit'), resident('MA'))).toBe(
+      'fail',
+    );
+  });
+  it("no residence keeps today's outcome", () => {
+    const c = check([strict([country('GB')])], resident(null));
+    expect(c.outcome).toBe('pass');
+    expect((c.detail as { residence: unknown }[])[0].residence).toBeNull();
+  });
+  it('a residency authorization counts, citizenship does not', () => {
+    expect(
+      outcomeOf(
+        strict([country('GB')]),
+        resident('MA', [{ kind: 'residency', place: 'GB' }]),
+      ),
+    ).toBe('pass');
+    expect(
+      outcomeOf(
+        strict([country('GB')]),
+        resident('MA', [{ kind: 'citizenship', place: 'GB' }]),
+      ),
+    ).toBe('fail');
+  });
+  it('mention and LinkedIn places are not checked', () => {
+    const p = resident('MA');
+    expect(outcomeOf(strict([country('GB')], 'mention'), p)).toBe('pass');
+    expect(
+      outcomeOf({ ...strict([country('GB')]), placesSource: 'linkedin' }, p),
+    ).toBe('pass');
+  });
+  it('an unknown region goes to review, not reject', () => {
+    expect(outcomeOf(strict([region('NORDICS')]), resident('MA'))).toBe(
+      'unknown',
+    );
+  });
+  it('onsite and hybrid are not checked', () => {
+    const p = resident('MA', [], (x) => {
+      x.locations.remote = [];
+      x.locations.onsite = [country('GB')];
+    });
+    expect(
+      outcomeOf(
+        opening({
+          arrangements: ['onsite'],
+          places: [country('GB')],
+          placeStrictness: 'limit',
+        }),
+        p,
+      ),
+    ).toBe('pass');
+  });
+  it("an unsure opening's residence failure is unsure", () => {
+    expect(
+      check(
+        [{ ...strict([country('GB')]), confidence: 'unsure' }],
+        resident('MA'),
+      ),
+    ).toMatchObject({ outcome: 'fail', unsure: true, unsureField: 'openings' });
+  });
+  it('another opening still fits', () => {
+    const p = resident('MA');
+    expect(
+      check([strict([country('GB')]), strict([country('MA')])], p).outcome,
+    ).toBe('pass');
+    expect(
+      check([strict([country('GB')]), strict([country('GB')], 'mention')], p)
+        .outcome,
+    ).toBe('pass');
+  });
+  it('a fitting hybrid side survives a remote residence failure', () => {
+    const p = resident('MA', [], (x) => {
+      x.locations.hybrid = [country('GB')];
+    });
+    const c = check(
+      [{ ...strict([country('GB')]), arrangements: ['remote', 'hybrid'] }],
+      p,
+    );
+    expect(c.outcome).toBe('pass');
+    expect((c.detail as { decidedBy: unknown }[])[0].decidedBy).toBe('hybrid');
+  });
+  it('time zones still fail after a residence pass', () => {
+    const c = check(
+      [
+        {
+          ...strict([country('GB')]),
+          timezones: [{ fromUtc: 9, toUtc: 10, label: 'x' }],
+        },
+      ],
+      resident('GB'),
+    );
+    expect(c.outcome).toBe('fail');
+    expect(c.reason).not.toContain('requires living there');
+  });
+});

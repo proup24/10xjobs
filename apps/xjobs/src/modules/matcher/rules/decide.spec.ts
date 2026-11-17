@@ -263,6 +263,41 @@ describe('decide', () => {
     expect(by.location).toBe('unknown');
   });
 
+  it('rejects a UK-only remote job for a Moroccan resident', () => {
+    const ukCtx: MatchContext = {
+      ...ctx,
+      places: {
+        countriesOfRegion: new Map([['UK', new Set(['GB'])]]),
+        countryOfCity: new Map(),
+        countries: new Set(['GB', 'MA']),
+      },
+    };
+    const p = exampleProfile();
+    p.locations.remote = [{ kind: 'region', code: 'UK' }];
+    p.eligibility = { ...p.eligibility, residenceCountry: 'MA' };
+    const d = decide(
+      job(
+        passingDoc((x) => {
+          x.openings = [
+            {
+              ...structuredClone(worldwide),
+              places: [{ kind: 'country', code: 'GB' }],
+              placeStrictness: 'label',
+            },
+          ];
+        }),
+      ),
+      p,
+      ukCtx,
+    );
+    expect(d.outcome).toBe('rejected');
+    expect(d.checks.find((c) => c.rule === 'location')).toMatchObject({
+      outcome: 'fail',
+      reason:
+        'job location (remote in GB, stated in the description) requires living there; you live in MA',
+    });
+  });
+
   describe('review', () => {
     const berlinOnsite = {
       ...structuredClone(worldwide),
