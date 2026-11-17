@@ -1,80 +1,74 @@
 # 03: Processor quality
 
-## Problem
+Revised: 2026-11-17, from the first Claude batch on `10xjobs-dev` and the golden eval. The first version described the 60 DeepSeek jobs from 2026-11-09; those were archived in 02b, and most of their problems are gone.
 
-The processor's output on the first 60 jobs isn't reliable enough to match on, and its review flag is too noisy to show which jobs need a look.
+## Where it stands
 
-- **`needsReview` is set on 59 of 60 jobs.**
-  - It's true when any fact the matcher reads is `unsure`, a verification dropped a field, or any opening is `unsure`.
-  - Openings built from the listing are `unsure` by construction, and `engagement` is `unsure` on 44 of 60.
-  - So the flag fires on almost every job, and a job that really needs a look can't be told apart.
-- **Facts the verifier dropped:** `engagement` on 29 jobs, `roleKind` on 3, `contractType` on 2, `seniority` and `isSoftwareEngineeringRole` on 1 each.
-- **Facts marked `unsure`:** `junkFlags` on all 60, `seniority` on 42, `position` on 26, `isSoftwareEngineeringRole` on 16, `requiredLanguages` on 14, `arrangement` on 11.
-- **No tech stack on 29 of 60.** The stack check is then `unknown`, and it can't reject.
-- **No salary on 60 of 60,** although 836 of 4,048 LinkedIn jobs carry salary text.
-- **Wrong places from the model.** It quoted "Lieu : Casablanca – Centre-ville" and still produced a Worldwide opening.
-- **Cost:** about $0.0084 per job, eight times the collection price per job ($0.001).
+Slice 02b moved the processor to `claude -p` (Sonnet 5.5, schema v4, generator only, no verifier). On 2026-11-16 it processed 1,183 harvestapi jobs on dev.
 
-The user is rebuilding processing and matching, so this slice feeds that rebuild rather than patching the current processor.
+| Measure                   | DeepSeek, 60 jobs (2026-11-09) | Claude, 1,183 jobs (2026-11-16) |
+| ------------------------- | ------------------------------ | ------------------------------- |
+| `needsReview` set         | 59 (98%)                       | 489 (41%)                       |
+| Seniority `unsure`        | 42 (70%)                       | 137 (12%)                       |
+| Position `unsure`         | 26 (43%)                       | 139 (12%)                       |
+| No tech stack at all      | 29 (48%)                       | 89 (8%)                         |
+| Salary found              | 0                              | 416 (35%)                       |
+| Cost per job (list price) | $0.0084                        | $0.0386                         |
+| Failed to process         | n/a                            | 13 (1.1%)                       |
 
-## From slice 02 (listing facts)
+Matching, one published profile, 1,177 decisions: 66 qualified, 1,049 rejected, 62 review.
 
-This slice runs right after 02 _(user)_. What 02 leaves it:
+- **Review share is 5.3%** (position 55, location 7). That's within "review stays the exception", the target 02 set.
+- **65 of the 66 qualified matches are Unverified.** The causes are contract type unknown (48), seniority unknown (31), stack unknown (4) and location unknown (3), plus `needsReview` on the job.
 
-- **The prompt is description-only.** 02 removes the listing metadata block, the "listing as a last resort" opening rule and the listing parts of `resolve-facts`. This slice starts from that prompt.
-- **The unsure rate now decides how long the review list is.** In 02, a job that would be rejected only on `unsure` facts goes to the user's review list instead. The list must stay the exception, not the norm _(user)_. The unsure values come from the model, not the listing (dev, first 60 jobs):
-  - `seniority`: 41 of 60 unsure, all from the generator;
-  - `engagement`: 44 of 60 unsure, 29 dropped;
-  - `position`: 26 of 60;
-  - `isSoftwareEngineeringRole`: 16;
-  - `requiredLanguages`: 14;
-  - `arrangement`: 11.
-- **02's review-share measure** (the share of decided jobs that land in review, per rule) is this slice's target. Each prompt change should show it going down in `processor:eval` and on dev.
-- **Out of matching until they're reliable:** `engagement` and `junkFlags`. 02 leaves them unread by the matcher _(user)_. This slice decides whether they come back, or whether `engagement` is worth extracting at all.
-- **Contract type is description-only for matching.** LinkedIn's `employmentType` is display only after 02, so an unstated `contractType` stays unknown. On dev, 43 of 60 contract types came from LinkedIn, so the description's own coverage matters more now.
-- **Salary:** 02 fills a silent description from LinkedIn's employer-provided salary. Whether descriptions state pay that the model misses (0 of 60 today) is still this slice's question.
+### Golden eval, 2026-11-17
 
-## Prerequisites
+`processor:eval` on 73 cases fails all four bars: openingPlaces 74%, mainStack 87%, sure facts contradicted 9.7%, and arrangement can't be scored. The per-case list (PR #89) showed that most misses were wrong labels from the career-hub import, not model errors. PR #90 fixed the clear-cut ones (16 places, 16 seniorities, 3 salaries). Expected after the fix, not yet re-run: openingPlaces about 96%, seniority about 95%, salary about 99%.
 
-Before this slice's brainstorm, dev needs a baseline on the description-only prompt:
+The model misses that remain:
 
-1. **A working LLM provider.** OpenRouter credit is out. The processor has failed every call with 402 since about 2026-11-09. Interim slice [02b](02b-claude-models.md) moves the engine to `claude -p` first. The first Claude batch is harvestapi's, once Apify has credit again.
-2. **The 60 processed jobs archived, not reprocessed.** 02b archives all 4,048 cheap_scraper jobs, the 60 included, and deletes their matches. There is nothing to reprocess before 2026-12-09. The baseline comes from the first harvestapi batch, processed on Claude, once Apify has credit.
-3. **Measurements:**
-   - `db:match-shares -- --days 7`, for the review share to bring down;
-   - `processor:eval`, for the golden set on the description-only prompt.
+- **Main stack:** 12 cases miss main technologies. #8826, #1393, #1568 and #10365 have an empty or partial main stack.
+- **AI-training gigs:** #36 ("Full Stack Software Engineer | €65/hr", a remote AI-training project) is tagged `fullstack_engineer`. That's the "wrong job" anti-goal.
+- **Non-English postings:** #24 misses "> 3 Jahre" and a 2026–2029 contract period; #7941 misses "solid English".
+- **Seniority:** #24, #10365 and #1667 come out `unstated` against a labeled level.
 
-## Left by slice 02, as built
+## Problems
 
-- **No baseline yet.** On dev, every processed job still has a v2 extraction, and 02b archives them instead of reprocessing them (prerequisite 2). Before this slice's brainstorm:
-  - process the first harvestapi batch on Claude;
-  - then `db:match-shares -- --days 7`, which gives the review share to bring down;
-  - then `processor:eval` on the description-only prompt.
-- **Review share: position dominates the estimate.** Applying 02's rules to the 60 v2 jobs, about 7% of decisions land in review, almost all through the position rule.
-  - The latent risk is seniority: 29 of 60 state a seniority marked `unsure`, so a profile with a narrow seniority range could send many jobs to review.
-  - These numbers come from v2 confidences, which still saw LinkedIn's values, so v3 may differ.
-- **Work-authorization requirements are AND-ed.** The prompt has no way to say "or", so "authorized to work in the US or Canada" can come out as two requirements and sure-reject a US citizen.
-- **15 golden cases expect no place although the description names one:** 10317, 10372, 1546, 5524, 8262, 5036, 5052, 5148, 5797, 7824, 8235, 997, 392, 1748 and 8826. With description-only input, `processor:eval` may now count a correct place as wrong.
+1. **`needsReview` doesn't single out jobs worth a look.** It's set on 41% of jobs, and every flagged job has some unsure fact or opening. The most common unsure facts aren't ones the matcher rejects on: `isSoftwareEngineeringRole` 158, `arrangement` 101, `engagement` 53, `junkFlags` 22. Unsure openings add 136.
+2. **Unverified is on almost every match.** `unverified` is true when any check is unknown or unsure, or the job has `needsReview`. Most postings don't state contract type or seniority, so nearly every qualified job carries the badge, and it tells the user nothing.
+3. **Main stack.** 285 engineering jobs have requirements but no `main` technology, so the stack check rests on must-haves alone, and it came out `unknown` 121 times. The eval shows main technologies missed.
+4. **AI-training and data-labeling gigs pass as engineering roles** (#36).
+5. **Vocabulary gaps.** Unmatched terms: Git (160), CI/CD (101), Databricks (44), PowerShell (35), PySpark (28), SQL Server (25), OpenTelemetry, Helm, Datadog, CloudFormation, DynamoDB, Azure DevOps, Oracle.
+6. **Failures.**
+   - 12 jobs failed on a duplicate technology. #77 fixed the cause after the batch ran, so `db:reprocess -- --failed` recovers them.
+   - "Reached maximum number of turns (3)" hit 42 first attempts, and 1 job failed on it in the end.
+7. **Cost** is 4.6 times DeepSeek's. It's notional on the subscription, and real once the engine moves to an API key (the gate before other users).
+8. **The golden set can't judge the processor yet.**
+   - Labels are still unreviewed drafts for roleKind, required techs and year ranges.
+   - No case has an `arrangement`, `contractType`, `engagement` or `isSoftwareEngineeringRole` label, so the arrangement bar can't pass.
+   - roleKind labels use career-hub's taxonomy: `devops_engineer` where the vocabulary splits platform and SRE, and codes like `ai_training`, `seo_marketing_web` and `ux_engineering`.
+   - Open label calls: #10372 (a USD and a CAD salary range), #7824 ("eligible to work from France, Belgium or Spain": a place or work authorization?). The 16 openings #90 gave a place still have `placeStrictness: unstated`.
+
+## Still open from slice 02
+
+- **Work-authorization requirements are AND-ed.** The schema has no "or", so "authorized to work in the US or Canada" can come out as two requirements and sure-reject a US citizen.
+- **Wrong-but-sure contract types reject on their own.** On dev in 02: a senior Java role tagged `internship/sure`. Only 8 contract-type rejections in this batch; check whether any are wrong.
 - **`needsReview` still feeds the Unverified badge,** and the matches page can't say why, because `match_details` doesn't return the flag.
-- **An unsure whole `techStack` fact** makes every stack outcome unsure, which sends stack failures on that job to review. Dev had 0 of 60 like this.
-- **Wrong-but-sure contract types now reject on their own.** Seen on dev:
-  - "Fullstack Java/Angular - Sénior" tagged `internship/sure`;
-  - "Quantitative Developer (Graduates…)" tagged `volunteer/sure`.
-- **Posting language comes out `unknown` more often** after the stricter 0.06 margin. Watch the unknown rate on real postings.
-- **Salary:** a job that states no salary, against a profile with a minimum, is `unknown` and marks the match Unverified. Most postings state no salary.
+- **`engagement` and `junkFlags` stay out of matching** _(user, in 02)_. Engagement is now unstated on 77% of jobs and unsure on 4%. Whether it's worth extracting is still this slice's call.
 
 ## Open questions
 
 - What should `needsReview` mean: "a fact the matcher relies on is doubtful", or "a human should look"? Which facts count?
-- Why does no stack come out on half the jobs: no stack in the text (non-engineering roles), the description cut short, or a vocabulary miss (terms `proposed`, not approved)?
-- Is `engagement` worth extracting at all, given it's dropped or unsure on most jobs and no match rule reads it?
-- Should a place the model produced be checked against its own quote by code: a city in the quote, but Worldwide in the output?
-- Salary: are the text-only salaries parseable, or should they wait for listing salary (02)?
-- Does the golden set (`processor:eval`) cover these cases? Without it, a rebuild can't show it improved anything.
+- When should a match be Unverified? Should an unstated contract type or seniority count, when most postings state neither?
+- How does the processor pick `main` technologies, and should a job with must-haves but no main still be judged on its stack?
+- Should AI-training and data-labeling gigs be a junk flag, a roleKind the matcher rejects, or both?
+- Which golden labels does the user review first, and against which roleKind taxonomy?
+- Is Sonnet needed for every fact, or can a cheaper model or fewer output tokens hold the bars?
 
 ## Suggested path
 
-1. Break down the 60 by cause: for each `unsure`, dropped or missing fact, whether the text states it, the model missed it, or the verifier rejected a right answer.
-2. Add the cases that failed to the golden set, Casablanca → Worldwide among them.
-3. Redefine `needsReview` around the facts the matcher reads, after 02 removes listing openings from the prompt.
-4. Fix the largest causes first. Measure each change with `processor:eval` and the cost per job.
+1. Review the remaining golden labels: roleKind against the current vocabulary, required techs, then arrangement and contract type. Re-run `processor:eval` for a real baseline.
+2. Redefine `needsReview` and Unverified around the facts the matcher reads. Measure with `db:match-shares` and the Unverified share.
+3. Fix the main stack and AI-training cases first; they decide wrong matches.
+4. Add the vocabulary gaps with `db:vocab`.
+5. Measure cost per job with each change, ahead of the API-key switch.
