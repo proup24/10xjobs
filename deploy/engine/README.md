@@ -203,3 +203,12 @@ Four `claude` calls run at once by default (`PROCESSOR_CONCURRENCY=4`), each a N
 4. `$C up -d worker`, then check `$C logs worker | grep -i processor`.
 
 No code change is needed: `claude -p` uses the key when it is set.
+
+## 18. Other sites on this server
+
+Caddy also serves sites that other projects ship. It imports every `/home/deploy/caddy-sites/*.caddy` file (mounted read-only at `/etc/caddy/sites`) and joins the external Docker network `edge`, which those projects' containers also join.
+
+1. `edge` and `/home/deploy/caddy-sites` must exist before this change deploys, or `$C up -d` fails. As `deploy`: `docker network create edge` and `mkdir -p /home/deploy/caddy-sites`.
+2. 10xapply ships `xapply.caddy` into that folder and reloads this Caddy itself.
+3. A 10xjobs deploy reloads the imported sites too, since Caddy reads the folder on every start.
+4. A broken site file is refused by 10xapply's validate step before it is installed, so it cannot break the engine's own site.

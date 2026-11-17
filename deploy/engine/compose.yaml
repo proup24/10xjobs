@@ -95,8 +95,10 @@ services:
       ENGINE_HOSTNAME: ${ENGINE_HOSTNAME:?}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - /home/deploy/caddy-sites:/etc/caddy/sites:ro
       - caddy-data:/data
       - caddy-config:/config
+    networks: [default, edge]
     depends_on:
       api:
         condition: service_healthy
@@ -106,3 +108,8 @@ volumes:
   redis-data:
   caddy-data:
   caddy-config:
+
+networks:
+  default: {}
+  edge:
+    external: true
