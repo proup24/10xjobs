@@ -437,8 +437,7 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
       const [only, ...rest] = await jobs();
       expect(rest).toHaveLength(0);
       expect(only).toMatchObject({
-        jobKey:
-          'url:https://sii.pl/en/job-ads/id/38247?sii_source=10|Senior Backend Engineer',
+        jobKey: 'url:https://sii.pl/en/job-ads/id/38247?sii_source=10',
         status: 'active',
         processingStatus: 'pending',
         processingReason: 'new',
@@ -772,7 +771,7 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
         ),
       ).toBe(true);
       const moved = await db.orm.public.NormalizedJob.where({
-        jobKey: 'url:https://acme.com/jobs/99999|Senior Backend Engineer',
+        jobKey: 'url:https://acme.com/jobs/99999',
       }).first();
       expect(moved).toMatchObject({
         processingStatus: 'pending',
@@ -780,21 +779,26 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
       });
     });
 
-    it('keeps different roles on one listing page as separate jobs', async () => {
-      const listing =
-        'https://recruiting.paylocity.com/Recruiting/Jobs/All/7a3e1b2c-0000-4000-8000-000000000001';
+    it('merges copies of one apply link posted under different titles', async () => {
+      const applyUrl = 'https://applicants.bairesdev.com/job/615/287041/apply';
       await save(
-        liJob('4483900001', { applyUrl: listing, title: 'Backend Engineer' }),
+        liJob('4483900001', {
+          applyUrl,
+          title: 'Front-End Developer (Angular) - Remote Work',
+        }),
         t1,
       );
       await save(
-        liJob('4483900002', { applyUrl: listing, title: 'Frontend Engineer' }),
+        liJob('4483900002', {
+          applyUrl,
+          title: 'Desarrollador Front-End (Angular) - Trabajo Remoto',
+        }),
         t1,
       );
-      expect((await jobs()).map((j) => j.title).sort()).toEqual([
-        'Backend Engineer',
-        'Frontend Engineer',
-      ]);
+      const all = await jobs();
+      expect(all).toHaveLength(1);
+      expect(all[0]).toMatchObject({ status: 'active' });
+      expect(await sources()).toHaveLength(2);
     });
 
     it('keeps an item on its apply-URL job when a rescrape drops the URL', async () => {
@@ -806,7 +810,7 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
       expect(all).toHaveLength(1);
       expect(all[0]).toMatchObject({
         status: 'active',
-        jobKey: `url:https://sii.pl/en/job-ads/id/38247?sii_source=10|Senior Backend Engineer`,
+        jobKey: `url:https://sii.pl/en/job-ads/id/38247?sii_source=10`,
       });
     });
 
@@ -821,7 +825,7 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
       );
       await new RenormalizeService({ db } as DatabaseService).run();
       expect((await jobs()).map((j) => j.jobKey)).toEqual([
-        `url:https://sii.pl/en/job-ads/id/38247?sii_source=10|Senior Backend Engineer`,
+        `url:https://sii.pl/en/job-ads/id/38247?sii_source=10`,
       ]);
     });
 
@@ -854,8 +858,7 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
       const all = await jobs();
       expect(all).toHaveLength(1);
       expect(all[0]).toMatchObject({
-        jobKey:
-          'url:https://sii.pl/en/job-ads/id/38247?sii_source=10|Senior Backend Engineer',
+        jobKey: 'url:https://sii.pl/en/job-ads/id/38247?sii_source=10',
         processingStatus: 'processed',
       });
     });
@@ -952,9 +955,7 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
         const job = await db.orm.public.NormalizedJob.where({
           id: link!.jobId,
         }).first();
-        expect(job!.jobKey).toBe(
-          `url:https://acme.com/jobs/7777${round}|Senior Backend Engineer`,
-        );
+        expect(job!.jobKey).toBe(`url:https://acme.com/jobs/7777${round}`);
       }
     });
 
