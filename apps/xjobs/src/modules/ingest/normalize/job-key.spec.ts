@@ -70,7 +70,7 @@ describe('jobKey', () => {
       'https://ibmglobal.avature.net/en_us/careers/jobdetail?jobId=67890',
     );
     expect(a).toBe(
-      'url:https://ibmglobal.avature.net/en_us/careers/jobdetail?jobId=12345|Engineer',
+      'url:https://ibmglobal.avature.net/en_us/careers/jobdetail?jobId=12345',
     );
     expect(a).not.toBe(b);
   });
@@ -81,7 +81,7 @@ describe('jobKey', () => {
       '1',
     );
     expect(tracked).toBe(
-      'url:https://sii.pl/en/job-ads/id/38247?sii_source=10|Engineer',
+      'url:https://sii.pl/en/job-ads/id/38247?sii_source=10',
     );
     expect(liJob('https://SII.pl/en/job-ads/id/38247?sii_source=10', '2')).toBe(
       tracked,
@@ -125,7 +125,7 @@ describe('jobKey', () => {
     ).toBe(`ats:ashby/acme/${ashbyId}`);
   });
 
-  it('keeps different roles behind one listing URL apart by their exact title', () => {
+  it('gives one key to copies of one apply URL under different titles', () => {
     const listing =
       'https://recruiting.paylocity.com/Recruiting/Jobs/All/7a3e1b2c-0000-4000-8000-000000000001';
     const keyFor = (title: string | null, id: string) =>
@@ -140,18 +140,14 @@ describe('jobKey', () => {
           postingUrl: `https://www.linkedin.com/jobs/view/${id}`,
         }),
       );
-    expect(keyFor('Backend Engineer', '1')).toBe(
-      `url:${listing}|Backend Engineer`,
-    );
-    expect(keyFor('Frontend Engineer', '2')).not.toBe(
-      keyFor('Backend Engineer', '1'),
-    );
-    expect(keyFor('Backend Engineer', '3')).toBe(
+    expect(keyFor('Backend Engineer', '1')).toBe(`url:${listing}`);
+    expect(keyFor('Frontend Engineer', '2')).toBe(
       keyFor('Backend Engineer', '1'),
     );
   });
 
-  it('falls back to the LinkedIn id for a URL key without a title', () => {
+  it('keys a URL without a title by the URL', () => {
+    const listing = 'https://acme.com/jobs/99999';
     expect(
       jobKey(
         Channel.LINKEDIN_JOB_BOARD,
@@ -160,11 +156,11 @@ describe('jobKey', () => {
           kind: 'job',
           title: null,
           descriptionText: 'x',
-          applyUrl: 'https://acme.com/jobs/99999',
+          applyUrl: listing,
           postingUrl: 'https://www.linkedin.com/jobs/view/4483908744',
         }),
       ),
-    ).toBe('linkedin-job:4483908744');
+    ).toBe(`url:${listing}`);
   });
 
   it('never adds the title to an ATS key', () => {

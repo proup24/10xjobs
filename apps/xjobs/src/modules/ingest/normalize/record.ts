@@ -4,10 +4,12 @@ import { z } from 'zod';
  * Bump on any change to a mapper or the job key; then run `db:renormalize`.
  * Version 5 adds city, state, geoId and salary.providedByEmployer. No
  * `db:renormalize` is needed for old items: they stay null until re-collected.
- * Version 6 builds LinkedIn job-board description text from the HTML, so its
+ * Version 6 keys a LinkedIn job by its apply URL alone (the title is no longer
+ * part of a `url:` key); run `db:renormalize`.
+ * Version 7 builds LinkedIn job-board description text from the HTML, so its
  * line breaks survive; run `db:renormalize` once (it sends nothing to Process).
  */
-export const NORMALIZER_VERSION = 6;
+export const NORMALIZER_VERSION = 7;
 
 const text = z.string().min(1).nullable();
 const url = z.url({ protocol: /^https?$/ });

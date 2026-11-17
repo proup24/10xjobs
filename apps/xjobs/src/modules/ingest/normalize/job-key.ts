@@ -54,8 +54,7 @@ function sourceId(sourceKey: string): string {
 /**
  * The job's real id, from exact facts only. An Ashby or Greenhouse item is its
  * posting. A LinkedIn job is the posting its apply URL names, else that URL
- * plus its exact title when the URL carries an identifier, else its own
- * LinkedIn id. A post is always
+ * when it carries an identifier, else its own LinkedIn id. A post is always
  * its own: it may hold several jobs or none, so it never absorbs another.
  */
 export function jobKey(
@@ -79,13 +78,8 @@ export function jobKey(
         const canonical = canonicalApplyUrl(apply);
         if (canonical) {
           const { pathname, search } = new URL(canonical);
-          // A listing page can serve several roles: the exact title keeps
-          // them apart. Without a title the URL alone is not trusted.
-          if (
-            record.title &&
-            normalizeConfig.identifierPattern.test(pathname + search)
-          )
-            return `url:${canonical}|${record.title}`;
+          if (normalizeConfig.identifierPattern.test(pathname + search))
+            return `url:${canonical}`;
         }
       }
       return `linkedin-job:${sourceId(sourceKey)}`;

@@ -44,7 +44,7 @@ Each raw item's **latest** version is mapped (`normalize/`) to one unified recor
 - `companies`: one row per LinkedIn company id, written from LinkedIn job items; `normalized_jobs.companyId` points at it.
 - `normalized_job_sources`: which job each raw item belongs to (exactly one).
 
-**Job key** (`normalize/job-key.ts`): an Ashby or Greenhouse posting is `ats:<provider>/<tenant>/<id>`, also when a LinkedIn job applies to it. Another external apply URL is `url:<canonical>|<exact title>` (no fragment, no `utm_*`/`trk*`/`gh_src`/`refId`/`ref`/`src`/`source`, other parameters kept and sorted) if it carries an identifier; the title keeps different roles on one listing page apart. Otherwise the item's own id: `linkedin-job:<id>`. A post is always `linkedin-post:<id>`. A raw item never falls back from an `ats:`/`url:` key to its own id: if a rescrape drops the apply URL, its most recent version with a posting key decides.
+**Job key** (`normalize/job-key.ts`): an Ashby or Greenhouse posting is `ats:<provider>/<tenant>/<id>`, also when a LinkedIn job applies to it. Another external apply URL is `url:<canonical>` (no fragment, no `utm_*`/`trk*`/`gh_src`/`refId`/`ref`/`src`/`source`, other parameters kept and sorted) if it carries an identifier; copies of one ad posted under different titles are one job. Otherwise the item's own id: `linkedin-job:<id>`. A post is always `linkedin-post:<id>`. A raw item never falls back from an `ats:`/`url:` key to its own id: if a rescrape drops the apply URL, its most recent version with a posting key decides.
 
 **Merging:** per field, the first non-null value from the employer's ATS posting, then the LinkedIn job, then a post; the most recently seen source wins within a rank. The job is `closed` when every ATS posting behind it is. `postedAt` is the exception: the earliest non-null value among open sources.
 
@@ -52,9 +52,9 @@ Each raw item's **latest** version is mapped (`normalize/`) to one unified recor
 
 **Processing status:** ingest sets `processingStatus = 'pending'` only when an observation creates a job (`new`) or finds it after 21 days unseen (`reopened`, `config/normalize.ts`). A new source or a content change updates the columns and leaves the status alone. `processing`, `processed` and `failed` belong to Process. After a batch is marked `ingested`, `ingestBatch` reports the jobs it left `pending` to its `onPending` hook; the ingest worker uses it to enqueue them on the processor's `process` queue (LinkedIn job board batches only). That is a nudge: a failure is logged, the batch stays `ingested`, and Process's sweeper finds the jobs anyway.
 
-**Re-key:** when a job's key changes (for example an outside apply URL with a posting id arrives), its processor extraction carries over to the new key.
+**Re-key:** when an item's key changes (for example an outside apply URL with a posting id arrives) and no job has the new key yet, its old job is renamed in place, provided every source of that job now has the new key: it keeps its id, extraction, processing state, matches and every user's decisions and viewed marks, and isn't sent to Process. Otherwise the item moves: into the job that has the key, or into a new job when another source of the old job keys elsewhere. A job left with no sources is `merged` into the job its last source moved to, and its decisions and viewed marks move with it.
 
-**Normalizer version:** `NORMALIZER_VERSION` is 4 (harvestapi). Don't run `db:renormalize` for it: old cheap_scraper items stay as they are, and an item seen again is normalized at the new version anyway.
+**Normalizer version:** `NORMALIZER_VERSION` is 6: a LinkedIn job is keyed by its apply URL alone (the title left the `url:` key). Run `db:renormalize` once after it deploys, so copies of one apply link become one job; jobs that are only re-keyed keep their id.
 
 **Rebuild:** after a `NORMALIZER_VERSION` bump, `pnpm --filter @xjobs/xjobs db:renormalize` re-normalizes every raw item and rebuilds links and merges. It never changes processing status; jobs it creates have none until Process decides. It needs only the database variables and is safe to run while ingest runs.
 

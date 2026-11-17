@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { MatchesView } from '@/components/matches/matches-view';
 import { loadMatches } from '@/lib/matches/load';
+import { loadPostings } from '@/lib/matches/postings';
 import { decidedJobHref, selectedRows } from '@/lib/matches/selected';
 import { groupByJob, publishedRows, undecidedRows } from '@/lib/matches/group';
 import {
@@ -50,13 +51,15 @@ export default async function Page({
   const since = new Date(now.getTime() - WEEK_MS);
   const asked = readViewState(params);
   const outcome = asked.list === 'review' ? 'review' : 'qualified';
-  const [rows, reviewRows, profiles, lists, selected] = await Promise.all([
-    loadMatches(supabase, { since, outcome: 'qualified' }),
-    loadMatches(supabase, { since, outcome: 'review' }),
-    profilesRead,
-    preferenceLists(),
-    selectedRows(supabase, asked.job, profilesRead, outcome),
-  ]);
+  const [rows, reviewRows, profiles, lists, selected, postings] =
+    await Promise.all([
+      loadMatches(supabase, { since, outcome: 'qualified' }),
+      loadMatches(supabase, { since, outcome: 'review' }),
+      profilesRead,
+      preferenceLists(),
+      selectedRows(supabase, asked.job, profilesRead, outcome),
+      loadPostings(supabase, asked.job),
+    ]);
   // A decided job opened by link (a match webhook's) shows where it now lives.
   const decided = decidedJobHref(selected);
   if (decided) redirect(decided);
@@ -89,6 +92,7 @@ export default async function Page({
       now={now.toISOString()}
       userId={userId}
       selected={selected}
+      postings={postings}
     />
   );
 }

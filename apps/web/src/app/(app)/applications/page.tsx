@@ -3,6 +3,7 @@ import { ApplicationsView } from '@/components/applications/applications-view';
 import { loadDecisions } from '@/lib/applications/load';
 import { readAppView } from '@/lib/applications/view-state';
 import { loadMatch } from '@/lib/matches/load';
+import { loadPostings } from '@/lib/matches/postings';
 import { UUID } from '@/lib/setup/answers';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { preferenceLists, preferenceProfiles } from '../preferences/data';
@@ -41,11 +42,12 @@ export default async function Page({
       : UUID.test(view.job)
         ? loadMatch(supabase, view.job, null)
         : Promise.resolve([]);
-  const [decisions, lists, profiles, selected] = await Promise.all([
+  const [decisions, lists, profiles, selected, postings] = await Promise.all([
     loadDecisions(supabase),
     preferenceLists(),
     preferenceProfiles(),
     selectedRead,
+    loadPostings(supabase, view.job),
   ]);
 
   return (
@@ -69,6 +71,7 @@ export default async function Page({
         profiles.items.map((p) => [p.id, profiles.labels[p.id] ?? p.position]),
       )}
       selected={selected}
+      postings={postings}
     />
   );
 }

@@ -2298,6 +2298,21 @@ export type Database = {
           title: string;
         }[];
       };
+      job_postings: {
+        Args: { p_job_id: string };
+        Returns: {
+          channel: string;
+          descriptionDiffers: boolean;
+          location: string;
+          placeDiffers: boolean;
+          postedAt: string;
+          postingUrl: string;
+          rawItemId: string;
+          shown: boolean;
+          title: string;
+          titleDiffers: boolean;
+        }[];
+      };
       match_details: {
         Args: {
           p_details?: boolean;

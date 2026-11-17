@@ -177,7 +177,7 @@ describe('normalize harvestapi LinkedIn jobs', () => {
     expect(
       jobKey(Channel.LINKEDIN_JOB_BOARD, `id:${nullWorkplace.id}`, r),
     ).toBe(
-      'url:https://wd1.myworkdaysite.com/en-US/recruiting/snapchat/snap/job/Paris-France/Research-Engineer_R0046981-1|Research Engineer',
+      'url:https://wd1.myworkdaysite.com/en-US/recruiting/snapchat/snap/job/Paris-France/Research-Engineer_R0046981-1',
     );
   });
 
