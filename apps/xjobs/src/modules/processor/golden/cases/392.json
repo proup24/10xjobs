@@ -8,12 +8,21 @@
     "openings": [
       {
         "arrangements": ["unstated"],
-        "places": [],
+        "places": [
+          {
+            "kind": "country",
+            "code": "CZ"
+          },
+          {
+            "kind": "region",
+            "code": "EU"
+          }
+        ],
         "placeStrictness": "unstated"
       }
     ],
     "roleKind": "frontend_engineer",
-    "seniority": "unstated",
+    "seniority": "staff",
     "yearsRequired": {
       "min": 6,
       "max": null

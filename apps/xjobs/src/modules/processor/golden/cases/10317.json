@@ -8,12 +8,17 @@
     "openings": [
       {
         "arrangements": ["unstated"],
-        "places": [],
+        "places": [
+          {
+            "kind": "country",
+            "code": "PL"
+          }
+        ],
         "placeStrictness": "unstated"
       }
     ],
     "roleKind": "fullstack_engineer",
-    "seniority": "unstated",
+    "seniority": "senior",
     "yearsRequired": null,
     "contractMonths": null,
     "requirements": [

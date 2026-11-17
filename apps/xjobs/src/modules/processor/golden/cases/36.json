@@ -20,7 +20,12 @@
     "groups": [],
     "requiredLanguages": [],
     "sponsorship": "unstated",
-    "salary": null,
+    "salary": {
+      "min": 65,
+      "max": 65,
+      "currency": "EUR",
+      "period": "hour"
+    },
     "junkFlags": []
   },
   "drafted": {
