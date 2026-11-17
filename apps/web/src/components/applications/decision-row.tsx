@@ -16,10 +16,11 @@ export function dismissReason(row: DecisionRow): DismissReason | null {
   return DISMISS_REASONS.find((r) => r === reason) ?? null;
 }
 
-/** "Applied 2 days ago", or "Not for me · Wrong seniority · 3 days ago". */
+/** "Applied 2 days ago", "Marked expired 2 days ago", or "Not for me · Wrong seniority · 3 days ago". */
 export function decisionLine(row: DecisionRow, now: Date): string {
   const ago = timeAgo(new Date(row.decidedAt), now);
   if (row.status === 'applied') return `Applied ${ago}`;
+  if (row.status === 'expired') return `Marked expired ${ago}`;
   const reason = dismissReason(row);
   return ['Not for me', reason && DISMISS_REASON_LABELS[reason], ago]
     .filter(Boolean)

@@ -84,6 +84,12 @@ const DECISIONS: DecisionRow[] = [
     note: 'Wants a lead',
     decidedAt: hoursAgo(72),
   }),
+  decision({
+    jobId: 'x1',
+    title: 'Expired one',
+    status: 'expired',
+    decidedAt: hoursAgo(48),
+  }),
 ];
 
 function renderView(
@@ -109,11 +115,12 @@ function renderView(
 const list = (name: string) => screen.getByRole('list', { name });
 
 describe('ApplicationsView list', () => {
-  it('lists applied jobs by default with counts on both switches', () => {
+  it('lists applied jobs by default with counts on the three switches', () => {
     renderView();
     const tabs = within(screen.getByRole('tablist', { name: 'Status' }));
     expect(tabs.getByRole('tab', { name: 'Applied (2)' })).toBeTruthy();
     expect(tabs.getByRole('tab', { name: 'Not for me (1)' })).toBeTruthy();
+    expect(tabs.getByRole('tab', { name: 'Expired (1)' })).toBeTruthy();
     const links = within(list('Applied')).getAllByRole('link');
     expect(links.map((l) => l.querySelector('h3')?.textContent)).toEqual([
       'Applied one',
@@ -130,6 +137,22 @@ describe('ApplicationsView list', () => {
     renderView({ initial: { job: 'a1' }, selected: [] });
     fireEvent.click(screen.getByRole('tab', { name: 'Not for me (1)' }));
     expect(push).toHaveBeenCalledWith('/applications?status=dismissed');
+  });
+
+  it('switches to Expired in the URL, closing the open job', () => {
+    renderView({ initial: { job: 'a1' }, selected: [] });
+    fireEvent.click(screen.getByRole('tab', { name: 'Expired (1)' }));
+    expect(push).toHaveBeenCalledWith('/applications?status=expired');
+  });
+
+  it('shows "Marked expired" on an expired row', () => {
+    renderView({ initial: { status: 'expired' } });
+    const [row] = within(list('Expired')).getAllByRole('link');
+    expect(row.textContent).toContain('Expired one');
+    expect(row.textContent).toContain('Marked expired 2 days ago');
+    expect(row.getAttribute('href')).toBe(
+      '/applications?status=expired&job=x1',
+    );
   });
 
   it('opens a job under its own status when the link names the other', () => {
@@ -173,6 +196,9 @@ describe('ApplicationsView list', () => {
     cleanup();
     renderView({ decisions: [], initial: { status: 'dismissed' } });
     expect(screen.getByText('Jobs you mark not for me show here')).toBeTruthy();
+    cleanup();
+    renderView({ decisions: [], initial: { status: 'expired' } });
+    expect(screen.getByText('Jobs you mark expired show here')).toBeTruthy();
   });
 });
 
@@ -339,6 +365,56 @@ describe('ApplicationsView detail', () => {
       }),
     );
     expect(refresh).toHaveBeenCalled();
+  });
+
+  it('an expired job offers Mark applied, Move to Not for me and Move back', () => {
+    renderView({ initial: { status: 'expired', job: 'x1' }, selected: [] });
+    expect(
+      screen.getByRole('heading', { name: 'Marked expired 2 days ago' }),
+    ).toBeTruthy();
+    expect(screen.queryByText('Reason')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Mark applied' })).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Move to Not for me' }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Move back to Matches' }),
+    ).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Edit reason' })).toBeNull();
+  });
+
+  it('Mark applied on an expired job moves it to Applied', async () => {
+    decideJobAction.mockResolvedValue({ status: 'saved' });
+    renderView({ initial: { status: 'expired', job: 'x1' }, selected: [] });
+    fireEvent.click(screen.getByRole('button', { name: 'Mark applied' }));
+    await waitFor(() =>
+      expect(decideJobAction).toHaveBeenCalledWith({
+        jobId: 'x1',
+        status: 'applied',
+      }),
+    );
+    await waitFor(() =>
+      expect(push).toHaveBeenCalledWith('/applications?job=x1'),
+    );
+    expect(toast.success).toHaveBeenCalledWith('Moved to Applied');
+  });
+
+  it('Move to Not for me on an expired job saves a dismissal', async () => {
+    decideJobAction.mockResolvedValue({ status: 'saved' });
+    renderView({ initial: { status: 'expired', job: 'x1' }, selected: [] });
+    fireEvent.click(screen.getByRole('button', { name: 'Move to Not for me' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Not for me' }));
+    await waitFor(() =>
+      expect(decideJobAction).toHaveBeenCalledWith({
+        jobId: 'x1',
+        status: 'dismissed',
+      }),
+    );
+    await waitFor(() =>
+      expect(push).toHaveBeenCalledWith(
+        '/applications?status=dismissed&job=x1',
+      ),
+    );
   });
 
   it('reports a refused save with a toast', async () => {
