@@ -4,6 +4,7 @@ import {
   type LocationArrangement,
 } from 'src/modules/queries';
 import { overlaps, type Overlap, type PlaceIndex } from './places';
+import { homePlaces, livesIn, residenceApplies } from './residence';
 import {
   bestOutcome,
   restsOn,
@@ -18,14 +19,21 @@ function isArrangement(value: string): value is LocationArrangement {
   return (ALL_ARRANGEMENTS as readonly string[]).includes(value);
 }
 
-/** What made an arrangement fail: the opening's places, or its time zones. */
-type FailedOn = 'places' | 'timezones' | null;
+/** What made an arrangement fail: the opening's places, where the user lives, or its time zones. */
+type FailedOn = 'places' | 'residence' | 'timezones' | null;
+
+/** Whether the user lives inside the opening's strict places, when that is checked. */
+type Residence = { homes: string[]; fits: Overlap } | null;
+
+/** The stored residence detail: also whether the check decided the remote arrangement. */
+type ResidenceDetail = (NonNullable<Residence> & { decided: boolean }) | null;
 
 function checkArrangement(
   opening: Opening,
   arrangement: LocationArrangement,
   profile: MatchProfile,
   idx: PlaceIndex,
+  residence: Residence,
 ): { outcome: CheckOutcome; failedOn: FailedOn } {
   let outcome: CheckOutcome;
   if (opening.places.length === 0) {
@@ -39,6 +47,14 @@ function checkArrangement(
     else if (found.has('maybe')) outcome = 'unknown';
     else outcome = opening.placeStrictness === 'mention' ? 'unknown' : 'fail';
   }
+  // A remote job limited to places stated in the description wants someone living there.
+  let failedOnResidence = false;
+  if (arrangement === 'remote' && residence && outcome !== 'fail') {
+    if (residence.fits === 'no') {
+      outcome = 'fail';
+      failedOnResidence = true;
+    } else if (residence.fits === 'maybe') outcome = 'unknown';
+  }
   if (arrangement === 'remote' && opening.timezones.length > 0) {
     const fits = opening.timezones.some(
       (tz) =>
@@ -47,6 +63,7 @@ function checkArrangement(
     );
     if (!fits) return { outcome: 'fail', failedOn: 'timezones' };
   }
+  if (failedOnResidence) return { outcome, failedOn: 'residence' };
   return { outcome, failedOn: outcome === 'fail' ? 'places' : null };
 }
 
@@ -69,7 +86,10 @@ function openingUnsure(
   const places = opening.placesSource === 'description';
   if (outcome === 'pass') return arrangement || places;
   return (
-    failedOn.some((f) => f === 'timezones' || (f === 'places' && places)) ||
+    failedOn.some(
+      (f) =>
+        f === 'timezones' || f === 'residence' || (f === 'places' && places),
+    ) ||
     (ruledOut && arrangement && fitsUnstated())
   );
 }
@@ -78,11 +98,13 @@ function checkOpening(
   opening: Opening,
   profile: MatchProfile,
   idx: PlaceIndex,
+  homes: string[],
 ): {
   outcome: CheckOutcome;
   deciding: LocationArrangement | null;
   kept: LocationArrangement[];
   unsure: boolean;
+  residence: ResidenceDetail;
 } {
   // The most favourable arrangement: the opening checked as if it stated none. Not a
   // sure failure means the ruled-out arrangement might be what fails. Nothing is ruled
@@ -92,6 +114,7 @@ function checkOpening(
       { ...opening, arrangements: ['unstated'] },
       profile,
       idx,
+      homes,
     );
     return r.outcome !== 'fail' || r.unsure;
   };
@@ -105,17 +128,21 @@ function checkOpening(
   const ruledOut = ALL_ARRANGEMENTS.some(
     (a) => wanted(a) && !expanded.includes(a),
   );
+  const residence: Residence = residenceApplies(opening, homes)
+    ? { homes, fits: livesIn(opening.places, homes, idx) }
+    : null;
   if (kept.length === 0) {
     return {
       outcome: 'fail',
       deciding: null,
       kept,
       unsure: openingUnsure(opening, 'fail', ruledOut, [], fitsUnstated),
+      residence: null,
     };
   }
   const results = kept.map((a) => ({
     arrangement: a,
-    ...checkArrangement(opening, a, profile, idx),
+    ...checkArrangement(opening, a, profile, idx, residence),
   }));
   const best = bestOutcome(results.map((r) => r.outcome));
   const outcome = onlyUnstated && best === 'pass' ? 'unknown' : best;
@@ -131,6 +158,13 @@ function checkOpening(
       results.map((r) => r.failedOn),
       fitsUnstated,
     ),
+    residence:
+      residence && kept.some((a) => a === 'remote')
+        ? {
+            ...residence,
+            decided: results.some((r) => r.failedOn === 'residence'),
+          }
+        : null,
   };
 }
 
@@ -140,9 +174,10 @@ export function checkLocation(
   profile: MatchProfile,
   idx: PlaceIndex,
 ): Check {
+  const homes = homePlaces(profile.eligibility);
   const per = openings.map((opening) => ({
     opening,
-    ...checkOpening(opening, profile, idx),
+    ...checkOpening(opening, profile, idx, homes),
   }));
   const outcome = bestOutcome(per.map((p) => p.outcome));
   // A failure is unsure when any opening's failure is: that opening might fit.
@@ -160,6 +195,7 @@ export function checkLocation(
     decidedBy: p.deciding,
     outcome: p.outcome,
     unsure: p.unsure,
+    residence: p.residence,
   }));
   const jobValue = openings.map((o) => ({
     arrangements: o.arrangements,
@@ -170,12 +206,17 @@ export function checkLocation(
   );
 
   const arrangementsText = (list: string[]) => list.join('/');
-  const jobText = openings
-    .map(
-      (o) =>
-        `${arrangementsText(o.arrangements)}${o.places.length ? ` in ${o.places.map(placeText).join(', ')}` : ''}`,
-    )
-    .join('; ');
+  const textOf = (list: Opening[]) =>
+    list
+      .map(
+        (o) =>
+          `${arrangementsText(o.arrangements)}${o.places.length ? ` in ${o.places.map(placeText).join(', ')}` : ''}`,
+      )
+      .join('; ');
+  const jobText = textOf(openings);
+  const residenceFailed = per
+    .filter((p) => p.residence?.decided)
+    .map((p) => p.opening);
   const profileText = ALL_ARRANGEMENTS.filter(
     (a) => profile.locations[a].length > 0,
   ).join(', ');
@@ -185,7 +226,10 @@ export function checkLocation(
       : outcome === 'unknown'
         ? 'may fit'
         : 'does not fit';
-  const reason = `job location (${jobText || 'not stated'}) ${verb} your wanted arrangements (${profileText || 'none'})`;
+  const reason =
+    outcome === 'fail' && residenceFailed.length > 0
+      ? `job location (${textOf(residenceFailed)}, stated in the description) requires living there; you live in ${homes.join(', ')}`
+      : `job location (${jobText || 'not stated'}) ${verb} your wanted arrangements (${profileText || 'none'})`;
   return {
     rule: 'location',
     outcome,

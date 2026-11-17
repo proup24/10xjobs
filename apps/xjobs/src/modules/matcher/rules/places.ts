@@ -13,7 +13,7 @@ export interface PlaceIndex {
 export type Overlap = 'yes' | 'maybe' | 'no';
 
 /** The countries a place covers, or null when the index cannot say. */
-function countriesOf(
+export function countriesOf(
   place: JobPlace | ProfilePlace,
   idx: PlaceIndex,
 ): Set<string> | null {
@@ -63,7 +63,8 @@ export function overlaps(
   return job.kind === 'city' && job.cityId === null ? 'maybe' : 'yes';
 }
 
-function intersects(a: Set<string>, b: Set<string>): boolean {
+/** Whether two country sets share a country. */
+export function intersects(a: Set<string>, b: Set<string>): boolean {
   for (const c of a) if (b.has(c)) return true;
   return false;
 }
