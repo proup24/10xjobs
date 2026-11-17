@@ -1,5 +1,5 @@
 /** Bump when a rule changes, so stored decisions can be told apart. */
-export const MATCHER_VERSION = 8;
+export const MATCHER_VERSION = 9;
 /** Years above the profile's experience that a job may ask before it fails. */
 export const SENIORITY_YEARS_MARGIN = 2;
 /** The lowest stack score that still qualifies. */

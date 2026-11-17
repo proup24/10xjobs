@@ -859,6 +859,7 @@ describe('combineFacts', () => {
   it('derives a work permit from no sponsorship and the listing place', () => {
     const d = doc({
       workAuthorization: {
+        ...fixtureDocument().workAuthorization,
         value: { requirements: [], sponsorship: 'no' },
         quote: 'no sponsorship available',
         confidence: 'sure',
@@ -891,6 +892,7 @@ describe('combineFacts', () => {
     const { facts } = combine(
       doc({
         workAuthorization: {
+          ...fixtureDocument().workAuthorization,
           value: {
             requirements: [{ kind: 'citizenship', place: 'US' }],
             sponsorship: 'no',

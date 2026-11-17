@@ -76,6 +76,26 @@ function meets(
 
 const label = (r: Requirement) => `${r.kind} ${r.place}`;
 
+/** Sorts requirements into those the user meets, cannot meet, and cannot be told about. */
+function classify(
+  requirements: Requirement[],
+  eligibility: MatchProfile['eligibility'],
+  idx: PlaceIndex,
+) {
+  const met: Requirement[] = [];
+  const unmet: Requirement[] = [];
+  const unclear: Requirement[] = [];
+  for (const r of requirements) {
+    const o = meets(r, eligibility, idx);
+    if (o === 'no') unmet.push(r);
+    else if (o === 'maybe') unclear.push(r);
+    else met.push(r);
+  }
+  return { met, unmet, unclear };
+}
+
+const NO_SPONSORSHIP = '(the job offers no sponsorship)';
+
 /**
  * Every work authorization the job requires, met by the user's authorizations (through
  * the place hierarchy) or `residenceCountry`, or made up for by sponsorship.
@@ -92,7 +112,11 @@ export function checkWorkAuthorization(
     jobValue: value,
     profileValue: eligibility,
   };
-  const requirements = value?.requirements ?? [];
+  const all = value?.requirements ?? [];
+  // Requirements derived from no sponsorship are alternatives (one place is enough), unlike
+  // the ones the posting states, which must all be met.
+  const requirements = all.filter((r) => !r.derived);
+  const derived = all.filter((r) => r.derived);
   // Requirements and sponsorship share one confidence: when it is unsure either may be
   // wrong, so a failure could pass and a pass could fail.
   const sureness = restsOn(
@@ -100,6 +124,39 @@ export function checkWorkAuthorization(
       ? 'workAuthorization'
       : null,
   );
+  if (derived.length > 0) {
+    const group = classify(derived, eligibility, idx);
+    const detail = { unmet: group.unmet, unclear: group.unclear };
+    const places = (rs: Requirement[]) =>
+      rs.length === 1
+        ? label(rs[0])
+        : `work-permit in any of ${rs.map((r) => r.place).join(', ')}`;
+    if (group.met.length === 0) {
+      if (group.unclear.length > 0)
+        return {
+          ...base,
+          outcome: 'unknown',
+          reason: `cannot tell whether you meet ${places(group.unclear)} ${NO_SPONSORSHIP}`,
+          detail,
+          ...restsOn(null),
+        };
+      return {
+        ...base,
+        outcome: 'fail',
+        reason: `you don't meet ${places(group.unmet)} ${NO_SPONSORSHIP}`,
+        detail,
+        ...sureness,
+      };
+    }
+    if (requirements.length === 0)
+      return {
+        ...base,
+        outcome: 'pass',
+        reason: `you meet ${label(group.met[0])} ${NO_SPONSORSHIP}`,
+        detail,
+        ...sureness,
+      };
+  }
   if (!value || requirements.length === 0)
     return {
       ...base,
@@ -107,16 +164,13 @@ export function checkWorkAuthorization(
       // location check covers. On an unsure fact a requirement may have been missed,
       // so the pass rests on it and marks the match unverified.
       outcome: 'pass',
-      reason: 'job states no work authorization requirement',
+      reason:
+        value?.sponsorship === 'no'
+          ? `the job offers no sponsorship but names no place to check`
+          : 'job states no work authorization requirement',
       ...sureness,
     };
-  const unmet: Requirement[] = [];
-  const unclear: Requirement[] = [];
-  for (const r of requirements) {
-    const o = meets(r, eligibility, idx);
-    if (o === 'no') unmet.push(r);
-    else if (o === 'maybe') unclear.push(r);
-  }
+  const { unmet, unclear } = classify(requirements, eligibility, idx);
   const detail = { unmet, unclear };
 
   if (unmet.length > 0) {
