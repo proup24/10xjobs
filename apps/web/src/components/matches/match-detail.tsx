@@ -249,27 +249,33 @@ export function PostLinks({
 }
 
 export type DecideJob = (
-  status: 'applied' | 'dismissed',
+  status: 'applied' | 'dismissed' | 'expired',
   extra?: { reason?: DismissReason; note?: string },
 ) => Promise<boolean>;
 
-/** "Applied" and "Not for me" on a match; the second asks for an optional reason first. */
+/**
+ * "Applied", "Not for me" and "Expired" on a match. Applied and Expired decide at once
+ * and share one saving state; Not for me asks for an optional reason first.
+ */
 function JobDecision({ onDecideJob }: { onDecideJob: DecideJob }) {
-  const [pending, setPending] = useState(false);
+  const [saving, setSaving] = useState<'applied' | 'expired' | null>(null);
   const [asking, setAsking] = useState(false);
+  const pending = saving !== null;
+  const decide = async (status: 'applied' | 'expired') => {
+    setSaving(status);
+    try {
+      await onDecideJob(status);
+    } finally {
+      setSaving(null);
+    }
+  };
   return (
     <div className="flex flex-wrap gap-2">
       <Button
         variant="secondary"
-        loading={pending}
-        onClick={async () => {
-          setPending(true);
-          try {
-            await onDecideJob('applied');
-          } finally {
-            setPending(false);
-          }
-        }}
+        loading={saving === 'applied'}
+        disabled={pending}
+        onClick={() => decide('applied')}
       >
         Applied
       </Button>
@@ -279,6 +285,14 @@ function JobDecision({ onDecideJob }: { onDecideJob: DecideJob }) {
         onClick={() => setAsking(true)}
       >
         Not for me
+      </Button>
+      <Button
+        variant="outline"
+        loading={saving === 'expired'}
+        disabled={pending}
+        onClick={() => decide('expired')}
+      >
+        Expired
       </Button>
       <DismissDialog
         open={asking}

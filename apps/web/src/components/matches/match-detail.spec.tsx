@@ -120,12 +120,21 @@ describe('MatchDetail job decisions', () => {
     renderWithJobDecision(matchRow());
     expect(screen.getByRole('button', { name: 'Applied' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Not for me' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Expired' })).toBeTruthy();
   });
 
   it('hides them on a review row', () => {
     renderWithJobDecision(reviewRow());
     expect(screen.queryByRole('button', { name: 'Applied' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Not for me' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Expired' })).toBeNull();
+  });
+
+  it('Expired decides at once', async () => {
+    const onDecideJob = renderWithJobDecision(matchRow());
+    fireEvent.click(screen.getByRole('button', { name: 'Expired' }));
+    await vi.waitFor(() => expect(onDecideJob).toHaveBeenCalledWith('expired'));
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   it("Applied calls onDecide('applied')", async () => {
@@ -534,7 +543,7 @@ describe('MatchDetail', () => {
     expect(toast.success).not.toHaveBeenCalled();
   });
 
-  it('marks a check that passes on an unsure value, so the Unverified badge has its reason', () => {
+  it('marks a check that passes on an unsure value, so the unverified state has its reason', () => {
     renderDetail([
       matchRow({
         unverified: true,
