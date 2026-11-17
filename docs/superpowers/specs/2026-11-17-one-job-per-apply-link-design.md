@@ -68,7 +68,7 @@ Update `job-key.spec.ts`: two titles under one URL give one key, and the listing
 
 The user's requirement: nothing they marked is lost. Today `linkJob` never renames a key: a new key with no job creates a new job, and the old one becomes `merged` into it. With the title dropped, that would give every `url:` job a new id (547 active on dev), deleting their matches, review choices and viewed marks.
 
-**Rename in place.** In `linkJob`, when the item's new key has no job yet, and the item is linked to an old job of which it is the only source, update that old job's `jobKey` to the new key and keep linking to it. The old job keeps its id, matches, extraction, processing state, decisions, review choices and viewed marks. It is not counted as created, so it isn't sent to Process. On dev, 528 of the 547 `url:` jobs take this path. This applies to every re-key, not only the title drop: an easy-apply job that later gains an apply URL, or a LinkedIn job whose URL turns out to name an Ashby posting, also keeps its id. Today's "a re-key creates the job and carries the extraction over" path (`inherited`, `carriedExtraction`) can then no longer be reached, and is removed. When the new key already has a job, the old job is emptied and merged into it as today. When the old job still has other sources, the item moves and the old job is re-merged as today.
+**Rename in place.** In `linkJob`, when the item's new key has no job yet, and the item is linked to an old job of which every source now has the new key, update that old job's `jobKey` to the new key and keep linking to it. Each other source's key is worked out by the item's own rule (`jobKey`, then `effectiveKey`) from the record its link points at. The old job keeps its id, matches, extraction, processing state, decisions, review choices and viewed marks. It is not counted as created, so it isn't sent to Process. On dev on 2026-11-17, 476 of the 547 active `url:` jobs have one source and 71 have 2 to 22, all 71 with an extraction and matches; every one whose sources all keep one apply link takes this path. This applies to every re-key, not only the title drop: an easy-apply job that later gains an apply URL, or a LinkedIn job whose URL turns out to name an Ashby posting, also keeps its id. Today's "a re-key creates the job and carries the extraction over" path (`inherited`, `carriedExtraction`) can then no longer be reached, and is removed. When the new key already has a job, the old job is emptied and merged into it as today. When a source of the old job now has a different key, the item moves to a new job and the old job is re-merged as today.
 
 **A real merge moves every mark.** When an old job is emptied and becomes `merged` into an existing job:
 
@@ -133,14 +133,17 @@ BairesDev · Colombia · Remote
 
 After merge and deploy (the migration applies at deploy):
 
-1. Run `pnpm --filter @xjobs/xjobs db:renormalize` against dev (`XJOBS_ALLOW_REMOTE_DB=1`).
-2. Check:
+1. Before the run, read-only: count active `url:` jobs, how many of them have more than one source, how many of those have a `currentExtractionId`, and how many active `url:` jobs have `currentExtractionId IS NULL` (on 2026-11-17: 547 active, 71 with more than one source, all 71 with an extraction, 3 without an extraction; 0 active jobs anywhere with both a null processing status and a null `currentExtractionId`).
+2. Run `pnpm --filter @xjobs/xjobs db:renormalize` against dev (`XJOBS_ALLOW_REMOTE_DB=1`).
+3. Check:
+   - No job lost its extraction: the count of active `url:` jobs with `currentExtractionId IS NULL` is not above the count before the run, and no active job has both a null processing status and a null `currentExtractionId` (a job the rebuild created instead of renaming).
+   - The count of active `url:` jobs drops by exactly 15 from the count before the run.
    - The 4 groups in the brief are 4 active jobs; the other 15 are `merged` into them. Every other `url:` job kept its id (count of active `url:` jobs drops by exactly 15, and the 14 viewed marks and 13 decisions on `url:` jobs are all still on active jobs).
    - No other `url:` key grouped more than one distinct title, or if one did, the titles name the same role. Query: active jobs with a `url:` key and more than one source with different titles.
    - Decisions on the merged-away jobs are on the job they merged into.
    - The merged-away jobs have no matches, and the 4 merged jobs still have theirs.
-3. Nothing is reprocessed (user's decision). The regrouping run sends nothing to Process and touches no marked job: on 2026-11-17 none of the 19 copies had a decision, a viewed mark or a qualified match.
-4. Further checks:
+4. Nothing is reprocessed (user's decision). The regrouping run sends nothing to Process and touches no marked job: on 2026-11-17 none of the 19 copies had a decision, a viewed mark or a qualified match.
+5. Further checks:
    - The Angular pair's page shows the label and both titles, with "title differs".
    - Processor jobs-per-day drops over the next days, as new copies join existing jobs instead of being processed.
 

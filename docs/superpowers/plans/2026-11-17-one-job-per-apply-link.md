@@ -70,6 +70,7 @@
 
 - Consumes: Task 1's key.
 - Produces: `linkJob` behaviour. When no job has the item's key, the item is linked to an old job, and the item is that job's only source, the old job's `jobKey` is updated to the new key, and that job is linked and re-merged. `LinkOutcome.created` is false and processing state is unchanged. Otherwise as today.
+- Amended 2026-11-17 (final review): the rename applies whenever every source of the old job now has the new key, not only to a sole source. Each other source's key comes from its linked `normalized_versions` record through `jobKey` then `effectiveKey`, as for the item itself. On dev 71 of the 547 active `url:` jobs have 2 to 22 sources, all with an extraction; renaming only sole sources would have re-created them without it.
 
 - [ ] **Step 1: Rewrite the re-key tests to the new behaviour.**
   - `moves an item whose apply URL appears later, merging its old job` → `keeps the job when an item's apply URL appears later`. Expect one job, with the same id as before, `jobKey` starting `url:`, `status: 'active'`, `processingStatus: 'processed'`, and `result.job` `{ created: false, pending: false }`.
@@ -79,7 +80,7 @@
   - Add `keeps decisions and views on a job that is only re-keyed`: save the easy-apply item, then `decide(old.id, 'applied', t1, null)` and insert a `job_views` row for `userId` on `old.id`. Then save it with the apply URL. Expect the decision and the view still on `old.id`, and `old.id` active with the `url:` key.
   - Add `merges into the job a concurrent item created under the new key`: run in parallel the re-key save of an easy-apply item and the first save of another item with the same apply URL. Expect exactly one active `url:` job with both sources. If the easy-apply job was emptied, it is `merged` into that job.
 - [ ] **Step 2:** `INGEST_TEST_DATABASE_URL=… npx nx test xjobs -- raw.postgres` → the rewritten and new tests FAIL; the rest pass.
-- [ ] **Step 3: Implement the rename in `linkJob`.** Before the `NormalizedJob.create`, when no job has `key` and a source link exists for the item on another job: lock that job (`forNoKeyUpdate`) and count its sources. If the item is the only one, `updateAll({ jobKey: key })` on it, use it as `job`, and leave `created` false. The existing `link.jobId === job.id` branch then just refreshes `normalizedVersionId`. Remove `carriedExtraction`, `inherited`, and the `if (created)` arm in the emptied-old-job branch. The `else if` arm, which takes over a pending state, stays for merges into an existing job. A unique violation from the rename is left to `linkJobSafely`'s retry.
+- [ ] **Step 3: Implement the rename in `linkJob`.** Before the `NormalizedJob.create`, when no job has `key` and a source link exists for the item on another job: lock that job (`forNoKeyUpdate`) and count its sources. If the item is the only one (amended 2026-11-17: if every other source's linked record also keys to `key`, read in one query), `updateAll({ jobKey: key })` on it, use it as `job`, and leave `created` false. The existing `link.jobId === job.id` branch then just refreshes `normalizedVersionId`. Remove `carriedExtraction`, `inherited`, and the `if (created)` arm in the emptied-old-job branch. The `else if` arm, which takes over a pending state, stays for merges into an existing job. A unique violation from the rename is left to `linkJobSafely`'s retry.
 - [ ] **Step 4:** Re-run → all PASS, including `rebuild` (`changes nothing when run twice`) and `never leaves an active job without sources when a rebuild races a move`.
 - [ ] **Step 5:** Commit `feat(ingest): a re-keyed job keeps its id, matches and marks`.
 
@@ -197,11 +198,22 @@ public.job_postings(p_job_id uuid) RETURNS TABLE(
 
 **After merge and deploy (the user runs these; Claude has no remote write):**
 
-1. `XJOBS_ALLOW_REMOTE_DB=1 pnpm --filter @xjobs/xjobs db:renormalize` against dev.
-2. Check with read-only SQL:
+1. Before the run, with read-only SQL, record: active `url:` jobs; how many have more than one source and how many of those have a `currentExtractionId`; active `url:` jobs with `currentExtractionId IS NULL`. On 2026-11-17: 547 active, 71 with more than one source, all 71 with an extraction, 3 without an extraction, and 0 active jobs anywhere with both a null processing status and a null `currentExtractionId`.
+   ```sql
+   SELECT count(*) AS active,
+     count(*) FILTER (WHERE s.n > 1) AS multi_source,
+     count(*) FILTER (WHERE s.n > 1 AND j."currentExtractionId" IS NOT NULL) AS multi_with_extraction,
+     count(*) FILTER (WHERE j."currentExtractionId" IS NULL) AS without_extraction
+   FROM normalized_jobs j
+   JOIN (SELECT "jobId", count(*) AS n FROM normalized_job_sources GROUP BY "jobId") s ON s."jobId" = j.id
+   WHERE j.status = 'active' AND j."jobKey" LIKE 'url:%';
+   ```
+2. `XJOBS_ALLOW_REMOTE_DB=1 pnpm --filter @xjobs/xjobs db:renormalize` against dev.
+3. Check with read-only SQL (the same query as step 1, plus):
+   - `without_extraction` is not above its count before the run, and no active job has both `"processingStatus" IS NULL` and `"currentExtractionId" IS NULL` (a job the rebuild created instead of renaming).
    - Active `url:` jobs drop by exactly 15, and the 4 brief groups are 4 active jobs.
    - The 13 decisions and 14 views on `url:` jobs are all on active jobs.
    - The merged-away jobs have no matches, and the 4 kept jobs still have theirs.
    - No active `url:` job has sources with different titles other than those 4, or if one does, they name the same role.
-3. The Angular pair's page shows "Merged · 2 postings", and "title differs" on the Spanish posting.
-4. Over the next days, the processor's jobs per day drop.
+4. The Angular pair's page shows "Merged · 2 postings", and "title differs" on the Spanish posting.
+5. Over the next days, the processor's jobs per day drop.
