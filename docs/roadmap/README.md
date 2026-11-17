@@ -72,4 +72,4 @@ How much a human reviews before anything is sent is decided in the Phase 4 spec.
 
 Report what's new and how the pipeline is performing: volume and pass rates per stage and per source, plus application outcomes.
 
-Jobs can already be marked applied or not for me ([job decisions](../superpowers/specs/2026-11-16-job-decisions-design.md)).
+Jobs can already be marked applied, not for me or expired ([job decisions](../superpowers/specs/2026-11-16-job-decisions-design.md)).

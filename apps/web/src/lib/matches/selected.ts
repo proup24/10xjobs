@@ -36,7 +36,7 @@ export async function selectedRows(
 /**
  * Where a job opened on Matches belongs once the user has decided on it: its Applications
  * detail, under the tab of its decision. Null for no job, no rows or an undecided job. A
- * decided job shown on Matches would offer Applied / Not for me again, and their Undo
+ * decided job shown on Matches would offer Applied / Not for me / Expired again, and their Undo
  * would delete the earlier mark.
  */
 export function decidedJobHref(rows: MatchRow[] | null): string | null {

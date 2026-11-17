@@ -237,7 +237,7 @@ function DecisionActions({
 }
 
 /**
- * The Applications page: the user's applied or not-for-me jobs beside the selected one from
+ * The Applications page: the user's applied, not-for-me or expired jobs beside the selected one from
  * `md` up, one or the other below it. The choice lives in the URL; the server reloads on
  * navigation.
  */

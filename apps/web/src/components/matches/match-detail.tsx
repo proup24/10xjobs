@@ -378,7 +378,7 @@ export function MatchDetail({
   actions?: React.ReactNode;
   /** Records a decision on a review row; the buttons show only with it. */
   onDecide?: Decide;
-  /** Marks the job applied or not for me; the buttons show only with it, on matches. */
+  /** Marks the job applied, not for me or expired; the buttons show only with it, on matches. */
   onDecideJob?: DecideJob;
   /** Logs a mismatch on a fact; the report buttons show only with it. */
   onReport?: Report;

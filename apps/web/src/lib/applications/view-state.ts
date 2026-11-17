@@ -1,14 +1,9 @@
 /** Which of the user's decisions the Applications page lists. */
-export type AppStatus = 'applied' | 'dismissed' | 'expired';
-
-export const APP_STATUSES: readonly AppStatus[] = [
-  'applied',
-  'dismissed',
-  'expired',
-];
+export const APP_STATUSES = ['applied', 'dismissed', 'expired'] as const;
+export type AppStatus = (typeof APP_STATUSES)[number];
 
 export function isAppStatus(s: unknown): s is AppStatus {
-  return APP_STATUSES.includes(s as AppStatus);
+  return (APP_STATUSES as readonly unknown[]).includes(s);
 }
 
 export type AppView = { status: AppStatus; job: string | null };
@@ -23,7 +18,7 @@ export function readAppView(params: URLSearchParams): AppView {
 }
 
 /**
- * The view with the open job's own status: a link naming a job under the other status (an
+ * The view with the open job's own status: a link naming a job under another status (an
  * old link, or one built by hand) shows the tab the job is listed in. A job the user has no
  * decision on keeps the view, and the page says it isn't in Applications.
  */
