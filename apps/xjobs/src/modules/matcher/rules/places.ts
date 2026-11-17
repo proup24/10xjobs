@@ -13,7 +13,7 @@ export interface PlaceIndex {
 export type Overlap = 'yes' | 'maybe' | 'no';
 
 /** The countries a place covers, or null when the index cannot say. */
-function countriesOf(
+export function countriesOf(
   place: JobPlace | ProfilePlace,
   idx: PlaceIndex,
 ): Set<string> | null {
