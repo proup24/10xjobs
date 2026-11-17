@@ -19,13 +19,15 @@ Same as Phases 1 and 2: each slice is a short brief covering the problem, the op
 
 ## Slices
 
-| #   | Slice                                              | Area    | Status                                |
-| --- | -------------------------------------------------- | ------- | ------------------------------------- |
-| 01  | [LinkedIn source data](01-linkedin-source-data.md) | Harvest | Done (PR 52)                          |
-| 02  | [Listing facts](02-listing-facts.md)               | Enrich  | Done (PRs 53–60)                      |
-| 02b | [Models on Claude](02b-claude-models.md) (interim) | Enrich  | Next                                  |
-| 03  | [Processor quality](03-processor-quality.md)       | Enrich  | After 02b and its prerequisites       |
-| 04  | [Search precision](04-search-precision.md)         | Harvest | Built, PRs #66–#68 open; PR D follows |
+| #   | Slice                                                                          | Area    | Status                                |
+| --- | ------------------------------------------------------------------------------ | ------- | ------------------------------------- |
+| 01  | [LinkedIn source data](01-linkedin-source-data.md)                             | Harvest | Done (PR 52)                          |
+| 02  | [Listing facts](02-listing-facts.md)                                           | Enrich  | Done (PRs 53–60)                      |
+| 02b | [Models on Claude](02b-claude-models.md) (interim)                             | Enrich  | Next                                  |
+| 03  | [Processor quality](03-processor-quality.md)                                   | Enrich  | After 02b and its prerequisites       |
+| 04  | [Search precision](04-search-precision.md)                                     | Harvest | Built, PRs #66–#68 open; PR D follows |
+| 05  | [Posting language for close languages](05-posting-language-close-languages.md) | Enrich  | Brief; spec next                      |
+| 06  | [One job per apply link](06-one-job-per-apply-link.md)                         | Harvest | Brief; spec next                      |
 
 ## Follow-ups from slice 02
 
