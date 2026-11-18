@@ -36,11 +36,16 @@ export function parseLocationText(
   const last = parts[parts.length - 1];
   const country = vocab.countryNames.get(foldPlaceName(last));
   if (country) {
-    return {
-      countryCode: country,
-      city: parts.length >= 3 ? parts[0] : null,
-      named: true,
-    };
+    // `City, Region, Country` names a city first; in `X, Country`, X is a
+    // city only when the vocabulary knows one by that name in that country
+    // (`Berlin, Germany`), else a region (`Île-de-France, France`).
+    const city =
+      parts.length >= 3 ||
+      (parts.length === 2 &&
+        vocab.cityCountries.get(foldPlaceName(parts[0]))?.has(country))
+        ? parts[0]
+        : null;
+    return { countryCode: country, city, named: true };
   }
   if (parts.length === 2 && US_STATE_CODES.has(last.toUpperCase())) {
     return { countryCode: 'US', city: parts[0], named: true };

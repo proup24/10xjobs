@@ -10,12 +10,14 @@ const countryNames = new Map(
     ['Netherlands', 'NL'],
     ['United States', 'US'],
     ['Canada', 'CA'],
+    ['Germany', 'DE'],
   ].map(([n, c]) => [foldPlaceName(n), c]),
 );
 const cityCountries = new Map(
   (
     [
       ['Casablanca', ['MA']],
+      ['Berlin', ['DE']],
       ['Amsterdam', ['NL']],
       ['Agadir', ['MA']],
       ['Austin', ['US']],
@@ -38,6 +40,8 @@ describe('parseLocationText', () => {
     ['Casablanca, Casablanca-Settat, Morocco', 'MA', 'Casablanca', true],
     ['Rabat, Rabat-Salé-Kénitra, Morocco', 'MA', 'Rabat', true],
     ['Île-de-France, France', 'FR', null, true],
+    ['Berlin, Germany', 'DE', 'Berlin', true],
+    ['Amsterdam, Germany', 'DE', null, true],
     ['Austria', 'AT', null, true],
     ['Amsterdam Area', 'NL', 'Amsterdam', true],
     ['Greater Amsterdam Area', 'NL', 'Amsterdam', true],
