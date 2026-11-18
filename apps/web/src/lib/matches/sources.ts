@@ -15,9 +15,16 @@ export const ACTOR_LABELS: Record<string, string> = {
   LINKEDIN_JOB_BOARD_CHEAP: 'cheap_scraper',
 };
 
+/** harvestapi's channel: the LinkedIn job board's main actor. */
+export const HARVEST_CHANNEL = 'LINKEDIN_JOB_BOARD';
+
+/** Whether a channel is a LinkedIn job-board actor's (harvestapi or a trial). */
+export const isLinkedinJobBoard = (channel: string): boolean =>
+  channel in ACTOR_LABELS;
+
 /** The filter value for a channel: both LinkedIn job-board channels are one source. */
 export const sourceOf = (channel: string): string =>
-  channel in ACTOR_LABELS ? 'LINKEDIN_JOB_BOARD' : channel;
+  isLinkedinJobBoard(channel) ? HARVEST_CHANNEL : channel;
 
 const badgeText = (channel: string): string =>
   ACTOR_LABELS[channel]

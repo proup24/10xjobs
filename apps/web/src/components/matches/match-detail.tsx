@@ -32,7 +32,11 @@ import { groupByJob, type MatchRow } from '@/lib/matches/group';
 import { markViewed } from '@/lib/matches/mark-viewed';
 import type { JobPosting } from '@/lib/matches/postings';
 import type { ReportField } from '@/lib/matches/report';
-import { sourceText } from '@/lib/matches/sources';
+import {
+  channelBadges,
+  isLinkedinJobBoard,
+  sourceText,
+} from '@/lib/matches/sources';
 import type { SaveResult } from '@/lib/setup/save-result';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { DismissDialog } from './dismiss-dialog';
@@ -408,6 +412,8 @@ export function MatchDetail({
   const accepted =
     shown.outcome === 'review' && shown.reviewChoice === 'qualified';
   const sources = sourceText(job.channels);
+  // Which LinkedIn actors saw the job; the source line names the rest.
+  const actorBadges = channelBadges(job.channels.filter(isLinkedinJobBoard));
   const profileLabel = (id: string) => profileLabels[id] ?? 'Profile';
 
   const factRows: [string, FactLine | null, ConflictField | null][] = [
@@ -451,6 +457,15 @@ export function MatchDetail({
         <p className="text-muted-foreground">
           {`posted ${postedPhrase(job, now)}${sources ? ` on ${sources}` : ''}`}
         </p>
+        {actorBadges.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+            {actorBadges.map((text) => (
+              <Badge key={text} variant="outline">
+                {text}
+              </Badge>
+            ))}
+          </div>
+        )}
       </header>
 
       <JobPostings postings={postings} now={now} />

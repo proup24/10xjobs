@@ -42,13 +42,80 @@ describe('actor badge', () => {
       <JobPostings
         postings={[
           two[0],
-          posting({ rawItemId: 'c', channel: 'LINKEDIN_JOB_BOARD_CHEAP' }),
+          posting({
+            rawItemId: 'c',
+            channel: 'LINKEDIN_JOB_BOARD_CHEAP',
+            postingUrl: 'https://www.linkedin.com/jobs/view/3',
+          }),
         ]}
         now={now}
       />,
     );
     fireEvent.click(screen.getByRole('button'));
     expect(screen.getByText('LinkedIn · cheap_scraper')).toBeTruthy();
+  });
+});
+
+describe('one LinkedIn job seen by both actors', () => {
+  const harvest = posting({
+    rawItemId: 'h',
+    channel: 'LINKEDIN_JOB_BOARD',
+    title: 'Backend Engineer',
+    location: 'Berlin, Germany',
+    shown: true,
+    postingUrl: 'https://www.linkedin.com/jobs/view/1',
+  });
+  // The trial's copy of the same LinkedIn job: its text and place differ.
+  const cheap = posting({
+    rawItemId: 'c',
+    channel: 'LINKEDIN_JOB_BOARD_CHEAP',
+    title: 'Backend Engineer (trial copy)',
+    location: 'Berlin',
+    placeDiffers: true,
+    descriptionDiffers: true,
+    titleDiffers: true,
+    postingUrl: 'https://www.linkedin.com/jobs/view/1',
+  });
+  const other = posting({
+    rawItemId: 'o',
+    channel: 'LINKEDIN_JOB_BOARD',
+    title: 'Backend Developer',
+    titleDiffers: true,
+    postingUrl: 'https://www.linkedin.com/jobs/view/2',
+  });
+
+  it('is one posting, not a merge', () => {
+    const { container } = render(
+      <>
+        <MergedBadge postings={[cheap, harvest]} />
+        <JobPostings postings={[cheap, harvest]} now={now} />
+      </>,
+    );
+    expect(container.innerHTML).toBe('');
+  });
+
+  it('counts it once among other postings', () => {
+    render(<MergedBadge postings={[harvest, cheap, other]} />);
+    expect(screen.getByText('Merged · 2 postings')).toBeTruthy();
+  });
+
+  it("shows one row with harvestapi's fields and a badge per actor, harvestapi first", () => {
+    render(<JobPostings postings={[cheap, harvest, other]} now={now} />);
+    fireEvent.click(
+      screen.getByRole('button', { name: '2 postings share this apply link' }),
+    );
+    const [first, second] = screen.getAllByRole('listitem');
+    expect(first.textContent).toContain('Backend Engineer');
+    expect(first.textContent).not.toContain('trial copy');
+    expect(first.textContent).toContain('Berlin, Germany');
+    expect(first.textContent).toContain('shown above');
+    expect(first.textContent).not.toContain('differs');
+    const text = first.textContent ?? '';
+    expect(text.indexOf('LinkedIn · harvestapi')).toBeGreaterThan(-1);
+    expect(text.indexOf('LinkedIn · cheap_scraper')).toBeGreaterThan(
+      text.indexOf('LinkedIn · harvestapi'),
+    );
+    expect(second.textContent).toContain('Backend Developer');
   });
 });
 

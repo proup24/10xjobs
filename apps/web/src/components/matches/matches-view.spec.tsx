@@ -237,6 +237,12 @@ describe('MatchesView', () => {
     expect(await options('Source')).toEqual(['All sources', 'LinkedIn']);
   });
 
+  it('reads a trial-channel source as LinkedIn, with no extra option', async () => {
+    renderView({ initial: { source: 'LINKEDIN_JOB_BOARD_CHEAP' } });
+    expect(screen.queryByText('No matches for this filter')).toBeNull();
+    expect(await options('Source')).toEqual(['All sources', 'LinkedIn']);
+  });
+
   it('has no profile switcher for a single profile', () => {
     renderView();
     expect(screen.queryByRole('combobox', { name: 'Profile' })).toBeNull();

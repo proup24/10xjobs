@@ -55,7 +55,7 @@ export function DecisionRowLink({
       </div>
       {meta && <p className="text-muted-foreground">{meta}</p>}
       <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-        {channelBadges((row.channels ?? [])).map((text) => (
+        {channelBadges(row.channels ?? []).map((text) => (
           <Badge key={text} variant="outline">
             {text}
           </Badge>
