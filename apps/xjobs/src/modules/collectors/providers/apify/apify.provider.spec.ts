@@ -162,6 +162,35 @@ describe('ApifyActorProvider', () => {
     expect(error).toMatchObject({ runId: 'run-1' });
   });
 
+  it('keeps the run id when aborting a run that outlived the wait fails', async () => {
+    sdk.actor.call.mockResolvedValue(run('RUNNING'));
+    const cause = new sdk.ApifyApiError(500, 'post');
+    sdk.run.abort.mockRejectedValue(cause);
+    const error = await provider
+      .run('a/b', {}, { maxChargeUsd: 1, waitSecs: 10 })
+      .catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ApifyRunError);
+    expect(error).toMatchObject({ runId: 'run-1', cause });
+    expect((error as Error).message).toContain('could not be aborted');
+  });
+
+  it('keeps the run id when a succeeded run dataset cannot be read', async () => {
+    sdk.actor.call.mockResolvedValue(run('SUCCEEDED'));
+    const cause = new sdk.ApifyApiError(502);
+    sdk.dataset.listItems.mockReturnValue({
+      // eslint-disable-next-line require-yield
+      async *[Symbol.asyncIterator]() {
+        throw cause;
+      },
+    });
+    const error = await provider
+      .run('a/b', {}, { maxChargeUsd: 1 })
+      .catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ApifyRunError);
+    expect(error).toMatchObject({ runId: 'run-1', cause });
+    expect((error as Error).message).toContain('dataset could not be read');
+  });
+
   it('reports a start Apify refused as a search that never started', async () => {
     // Apify answers a 4xx to the start POST (here: actor permissions not approved).
     sdk.actor.call.mockRejectedValue(new sdk.ApifyApiError(403, 'post'));
