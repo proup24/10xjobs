@@ -60,6 +60,10 @@ export interface OverlapRow {
   both: number;
   harvestOnly: number;
   trialOnly: number;
+  /** Shared jobs harvestapi saw first (ties count for neither). */
+  harvestFirst: number;
+  /** Shared jobs a trial actor saw first. */
+  trialFirst: number;
   /** Median minutes harvestapi saw a shared job before the trial (negative: after). */
   medianLeadMinutes: number | null;
 }
@@ -74,6 +78,24 @@ export interface OutcomeRow {
   undecided: number;
   applied: number;
   dismissed: number;
+}
+
+export interface RejectionRow {
+  label: string;
+  group: Group;
+  /** The first failing rule of the rejected match; `(unknown)` when none was recorded. */
+  rule: string;
+  jobs: number;
+}
+
+export interface GroupCoverageRow {
+  label: string;
+  group: Group;
+  jobs: number;
+  workplaceType: number;
+  place: number;
+  salary: number;
+  applyLink: number;
 }
 
 export interface CostRow {
@@ -118,6 +140,8 @@ export interface ActorReport {
   harvestActor: string;
   overlap: OverlapRow[];
   outcomes: OutcomeRow[];
+  rejections: RejectionRow[];
+  groupCoverage: GroupCoverageRow[];
   cost: CostRow[];
   coverage: CoverageRow[];
   aiSearch: AiSearchRow[];
@@ -206,6 +230,8 @@ export function buildActorReport(
   const overlap: OverlapRow[] = [];
   const outcomeRows: OutcomeRow[] = [];
   const joinedRows: JoinedRow[] = [];
+  const rejectionRows: RejectionRow[] = [];
+  const groupCoverage: GroupCoverageRow[] = [];
   for (const label of labels) {
     const set = [...jobs.values()].filter((j) => inLabel(label, j.first));
     const row: OverlapRow = {
@@ -215,6 +241,8 @@ export function buildActorReport(
       both: 0,
       harvestOnly: 0,
       trialOnly: 0,
+      harvestFirst: 0,
+      trialFirst: 0,
       medianLeadMinutes: null,
     };
     const leads: number[] = [];
@@ -234,6 +262,21 @@ export function buildActorReport(
         },
       ]),
     );
+    const rules = new Map<string, number>();
+    const cover = new Map<Group, GroupCoverageRow>(
+      GROUPS.map((group) => [
+        group,
+        {
+          label,
+          group,
+          jobs: 0,
+          workplaceType: 0,
+          place: 0,
+          salary: 0,
+          applyLink: 0,
+        },
+      ]),
+    );
     const joined: JoinedRow = { label, joined: 0, reused: 0, ranClaude: 0 };
     for (const job of set) {
       const group = groupOf(job);
@@ -247,7 +290,10 @@ export function buildActorReport(
             .filter(([a]) => isTrial(a))
             .map(([, d]) => d.getTime()),
         );
-        leads.push((t - h.getTime()) / 60_000);
+        const lead = (t - h.getTime()) / 60_000;
+        leads.push(lead);
+        if (lead > 0) row.harvestFirst++;
+        else if (lead < 0) row.trialFirst++;
       } else if (group === 'harvest only') row.harvestOnly++;
       else row.trialOnly++;
 
@@ -256,6 +302,16 @@ export function buildActorReport(
       out.jobs++;
       if (o?.outcome) out[o.outcome]++;
       else out.undecided++;
+      if (o?.outcome === 'rejected') {
+        const key = `${group}\u0000${o.firstFailRule ?? '(unknown)'}`;
+        rules.set(key, (rules.get(key) ?? 0) + 1);
+      }
+      const cv = cover.get(group) as GroupCoverageRow;
+      cv.jobs++;
+      if (o?.workplaceType) cv.workplaceType++;
+      if (o?.place) cv.place++;
+      if (o?.salary) cv.salary++;
+      if (o?.applyLink) cv.applyLink++;
       out.applied += o?.applied ?? 0;
       out.dismissed += o?.dismissed ?? 0;
       if (o?.joined) {
@@ -268,6 +324,16 @@ export function buildActorReport(
     overlap.push(row);
     outcomeRows.push(...GROUPS.map((g) => byGroup.get(g) as OutcomeRow));
     joinedRows.push(joined);
+    groupCoverage.push(...GROUPS.map((g) => cover.get(g) as GroupCoverageRow));
+    for (const g of GROUPS) {
+      rejectionRows.push(
+        ...[...rules]
+          .map(([k, jobs]) => ({ k: k.split('\u0000'), jobs }))
+          .filter(({ k }) => k[0] === g)
+          .map(({ k, jobs }) => ({ label, group: g, rule: k[1], jobs }))
+          .sort((a, b) => b.jobs - a.jobs || a.rule.localeCompare(b.rule)),
+      );
+    }
   }
 
   const cost: CostRow[] = [];
@@ -333,6 +399,8 @@ export function buildActorReport(
     harvestActor,
     overlap,
     outcomes: outcomeRows,
+    rejections: rejectionRows,
+    groupCoverage,
     cost,
     coverage,
     aiSearch,
@@ -380,6 +448,8 @@ export function formatActorReport(report: ActorReport): string {
         'both',
         'harvest only',
         'trial only',
+        'shared: harvest first',
+        'shared: trial first',
         'median lead',
       ],
       report.overlap.map((r) => [
@@ -389,6 +459,8 @@ export function formatActorReport(report: ActorReport): string {
         r.both,
         r.harvestOnly,
         r.trialOnly,
+        r.harvestFirst,
+        r.trialFirst,
         r.medianLeadMinutes === null ? '—' : `${r.medianLeadMinutes} min`,
       ]),
     ),
@@ -415,6 +487,24 @@ export function formatActorReport(report: ActorReport): string {
         r.undecided,
         r.applied,
         r.dismissed,
+      ]),
+    ),
+    table(
+      'Rejections by first failing rule (per group)',
+      ['day', 'group', 'rule', 'jobs'],
+      report.rejections.map((r) => [r.label, r.group, r.rule, r.jobs]),
+    ),
+    table(
+      "Coverage by group (share of the group's jobs with the field set)",
+      ['day', 'group', 'jobs', 'workplace', 'place', 'salary', 'apply link'],
+      report.groupCoverage.map((r) => [
+        r.label,
+        r.group,
+        r.jobs,
+        pct(r.workplaceType, r.jobs),
+        pct(r.place, r.jobs),
+        pct(r.salary, r.jobs),
+        pct(r.applyLink, r.jobs),
       ]),
     ),
     table(

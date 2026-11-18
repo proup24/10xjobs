@@ -83,8 +83,26 @@ describe('overlap', () => {
       both: 3,
       harvestOnly: 1,
       trialOnly: 1,
+      harvestFirst: 3,
+      trialFirst: 0,
       medianLeadMinutes: 5,
     });
+  });
+
+  it('counts who saw shared jobs first', () => {
+    const total = buildActorReport(
+      [
+        sighting('a', H, '2026-11-18T10:00:00Z'),
+        sighting('a', T, '2026-11-18T10:03:00Z'),
+        sighting('b', T, '2026-11-18T10:00:00Z'),
+        sighting('b', H, '2026-11-18T10:04:00Z'),
+        sighting('c', T, '2026-11-18T10:00:00Z'),
+        sighting('c', H, '2026-11-18T10:06:00Z'),
+      ],
+      [],
+      [],
+    ).overlap.find((r) => r.label === 'total');
+    expect(total).toMatchObject({ harvestFirst: 1, trialFirst: 2 });
   });
 
   it('groups by Morocco day', () => {
@@ -111,6 +129,55 @@ describe('outcomes', () => {
       (r) => r.label === 'total' && r.group === 'trial only',
     );
     expect(row).toMatchObject({ jobs: 1, qualified: 1, applied: 1 });
+  });
+});
+
+describe('rejections and coverage by group', () => {
+  const sightings = [
+    sighting('a', H, '2026-11-18T10:00:00Z'),
+    sighting('b', H, '2026-11-18T10:00:00Z'),
+    sighting('c', T, '2026-11-18T10:00:00Z'),
+    sighting('d', H, '2026-11-18T10:00:00Z'),
+    sighting('d', T, '2026-11-18T10:01:00Z'),
+  ];
+  const outcomes = [
+    outcome('a', { outcome: 'rejected', firstFailRule: 'location' }),
+    outcome('b', { outcome: 'rejected', firstFailRule: 'location' }),
+    outcome('c', {
+      outcome: 'rejected',
+      firstFailRule: 'seniority',
+      place: true,
+    }),
+    outcome('d', { outcome: 'qualified', workplaceType: true, salary: true }),
+  ];
+  const report = buildActorReport(sightings, outcomes, []);
+
+  it('counts rejected jobs by first failing rule per group', () => {
+    const rows = report.rejections.filter((r) => r.label === 'total');
+    expect(rows).toEqual([
+      { label: 'total', group: 'harvest only', rule: 'location', jobs: 2 },
+      { label: 'total', group: 'trial only', rule: 'seniority', jobs: 1 },
+    ]);
+    expect(formatActorReport(report)).toContain(
+      'Rejections by first failing rule',
+    );
+  });
+
+  it('reports field coverage per group', () => {
+    const row = (g: string) =>
+      report.groupCoverage.find((r) => r.label === 'total' && r.group === g);
+    expect(row('both')).toMatchObject({
+      jobs: 1,
+      workplaceType: 1,
+      salary: 1,
+      place: 0,
+    });
+    expect(row('trial only')).toMatchObject({
+      jobs: 1,
+      place: 1,
+      workplaceType: 0,
+    });
+    expect(row('harvest only')).toMatchObject({ jobs: 2, place: 0 });
   });
 });
 
