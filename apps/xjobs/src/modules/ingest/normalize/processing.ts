@@ -32,8 +32,10 @@ export function nextProcessing(input: {
   observedAt: Date;
   current: ProcessingState;
   rebuild: boolean;
+  /** A trial actor's sighting of a job harvestapi has: it never changes processing. */
+  sightingOnly: boolean;
 }): ProcessingState {
-  if (input.rebuild) return input.current;
+  if (input.rebuild || input.sightingOnly) return input.current;
   if (input.created)
     return { status: 'pending', reason: 'new', requestedAt: input.observedAt };
   if (input.current.status === 'archived') {

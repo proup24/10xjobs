@@ -8,7 +8,7 @@ import {
   PrismaSearchSegmentsRepository,
 } from 'src/modules/segments/repositories/segments.repository';
 import { MemoryStorageService } from 'src/modules/storage/testing';
-import { ingestConfig } from '../config';
+import { ingestConfig, normalizeConfig } from '../config';
 import { BatchFileReaderService } from '../services/batch-file-reader.service';
 import { BatchItemWriterService } from '../services/batch-item-writer.service';
 import { BatchIngestService } from '../services/batch.service';
@@ -1325,6 +1325,65 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
           currentExtractionId: null,
         });
         expect(await db.orm.public.JobExtraction.all()).toHaveLength(0);
+      });
+
+      describe('a trial sighting of a harvestapi job', () => {
+        /** The cheap_scraper copy, saved on its own channel under the same id. */
+        const trial = () => ({ ...cheap() });
+        const saveTrial = (observedAt: Date) =>
+          save(trial(), observedAt, Channel.LINKEDIN_JOB_BOARD_CHEAP);
+        const reopenAfter = (t: Date) =>
+          new Date(t.getTime() + normalizeConfig.reopenAfterMs + 60_000);
+
+        // A harvestapi payload with no employer apply link keys the same
+        // linkedin-job:<id> as the cheap item, so both land on one job today.
+        it('leaves seen times, processing and fields as harvestapi set them', async () => {
+          await save(harvest(), t1);
+          const before = await jobByKey(linkedinKey);
+          await processWith(before.id, { doc: 'harvest' });
+          const processed = await jobByKey(linkedinKey);
+
+          const later = reopenAfter(t1);
+          const result = await saveTrial(later);
+
+          expect(await jobs()).toHaveLength(1);
+          expect(await sources()).toHaveLength(2);
+          const after = await jobByKey(linkedinKey);
+          expect(after).toMatchObject({
+            lastSeenAt: t1,
+            firstSeenAt: t1,
+            processingStatus: 'processed',
+            processingReason: null,
+            currentExtractionId: processed.currentExtractionId,
+            salaryText: before.salaryText,
+            location: before.location,
+          });
+          expect(result.job).toMatchObject({
+            created: false,
+            reopened: false,
+            pending: false,
+          });
+        });
+
+        it('keeps an archived harvestapi job archived', async () => {
+          await save(harvest(), t1);
+          const job = await jobByKey(linkedinKey);
+          await db.orm.public.NormalizedJob.where({ id: job.id }).updateAll({
+            processingStatus: 'archived',
+          });
+
+          await saveTrial(t2);
+
+          expect(await jobByKey(linkedinKey)).toMatchObject({
+            processingStatus: 'archived',
+            lastSeenAt: t1,
+          });
+        });
+
+        // Task 6: the trial item keys onto harvestapi's ats:/url: job.
+        it.todo(
+          'task 6: a trial item joins a harvestapi job that has an apply URL, adding nothing',
+        );
       });
     });
 

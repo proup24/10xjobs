@@ -9,7 +9,12 @@ export {
   RECORD_FIELDS,
 } from './record';
 export { canonicalApplyUrl, isStrongJobKey, jobKey } from './job-key';
-export { type MergedJob, type MergeSource, mergeSources } from './merge';
+export {
+  boardSources,
+  type MergedJob,
+  type MergeSource,
+  mergeSources,
+} from './merge';
 export {
   nextProcessing,
   type ProcessingReason,

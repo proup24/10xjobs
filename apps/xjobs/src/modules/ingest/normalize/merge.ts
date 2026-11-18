@@ -1,4 +1,4 @@
-import { Channel } from 'src/common/enums';
+import { Channel, isTrialChannel } from 'src/common/enums';
 import { type NormalizedRecord, RECORD_FIELDS } from './record';
 
 /** One raw item's current normalized record, as a candidate for its job. */
@@ -22,12 +22,26 @@ const precedence: Record<Channel, number> = {
   [Channel.ASHBY]: 1,
   [Channel.GREEN_HOUSE]: 1,
   [Channel.LINKEDIN_JOB_BOARD]: 2,
-  // Placeholder; final in Task 5.
+  // Trial actors rank below harvestapi in the planned order curious_coder 2.1,
+  // bebity 2.2, cheap_scraper 2.4; they count only when no harvestapi source is
+  // present (boardSources).
   [Channel.LINKEDIN_JOB_BOARD_CHEAP]: 2.4,
   [Channel.LINKEDIN_POSTS]: 3,
 };
 
 const isAts = (channel: Channel) => precedence[channel] === 1;
+
+/**
+ * The sources that count for a job: trial sources are dropped whenever a
+ * harvestapi source is there, so a trial actor adds nothing to such a job.
+ */
+export function boardSources<T extends { channel: Channel }>(
+  sources: T[],
+): T[] {
+  if (!sources.some((s) => s.channel === Channel.LINKEDIN_JOB_BOARD))
+    return sources;
+  return sources.filter((s) => !isTrialChannel(s.channel));
+}
 
 function compare(a: MergeSource, b: MergeSource): number {
   return (
@@ -45,7 +59,7 @@ function compare(a: MergeSource, b: MergeSource): number {
  */
 export function mergeSources(sources: MergeSource[]): MergedJob {
   if (sources.length === 0) throw new Error('a job needs at least one source');
-  const ordered = [...sources].sort(compare);
+  const ordered = [...boardSources(sources)].sort(compare);
   const open = ordered.filter((s) => !s.record.closed);
   const ats = ordered.filter((s) => isAts(s.channel));
   const first = ordered[0] as MergeSource;

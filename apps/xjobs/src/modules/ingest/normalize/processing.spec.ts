@@ -24,6 +24,7 @@ describe('nextProcessing', () => {
         observedAt: seen,
         current: { status: 'archived', reason: 'new', requestedAt: seen },
         rebuild: false,
+        sightingOnly: false,
       }),
     ).toEqual({ status: 'pending', reason: 'reopened', requestedAt: seen });
   });
@@ -42,6 +43,7 @@ describe('nextProcessing', () => {
           observedAt: seen,
           current: archived,
           rebuild: false,
+          sightingOnly: false,
         }),
       ).toBe(archived);
     }
@@ -60,6 +62,7 @@ describe('nextProcessing', () => {
         observedAt: seen,
         current: archived,
         rebuild: true,
+        sightingOnly: false,
       }),
     ).toBe(archived);
   });
@@ -72,6 +75,7 @@ describe('nextProcessing', () => {
         observedAt: seen,
         current: none,
         rebuild: false,
+        sightingOnly: false,
       }),
     ).toEqual({ status: 'pending', reason: 'new', requestedAt: seen });
   });
@@ -84,6 +88,7 @@ describe('nextProcessing', () => {
         observedAt: after(20),
         current: processed,
         rebuild: false,
+        sightingOnly: false,
       }),
     ).toBe(processed);
   });
@@ -96,6 +101,7 @@ describe('nextProcessing', () => {
         observedAt: after(21),
         current: processed,
         rebuild: false,
+        sightingOnly: false,
       }),
     ).toEqual({
       status: 'pending',
@@ -112,6 +118,7 @@ describe('nextProcessing', () => {
         observedAt: seen,
         current: processed,
         rebuild: false,
+        sightingOnly: false,
       }),
     ).toBe(processed);
   });
@@ -124,6 +131,7 @@ describe('nextProcessing', () => {
         observedAt: after(22),
         current: { ...processed, status: 'processing' },
         rebuild: false,
+        sightingOnly: false,
       }).status,
     ).toBe('pending');
   });
@@ -136,7 +144,38 @@ describe('nextProcessing', () => {
         observedAt: seen,
         current: none,
         rebuild: true,
+        sightingOnly: false,
       }),
     ).toBe(none);
+  });
+
+  describe('sightingOnly', () => {
+    const base = {
+      created: false,
+      observedAt: after(30),
+      rebuild: false,
+      sightingOnly: true,
+    };
+
+    it('leaves an archived job archived on a newer sighting', () => {
+      const current: ProcessingState = {
+        status: 'archived',
+        reason: 'new',
+        requestedAt: seen,
+      };
+      expect(
+        nextProcessing({ ...base, previousLastSeenAt: seen, current }),
+      ).toBe(current);
+    });
+
+    it('does not reopen a processed job unseen past the threshold', () => {
+      expect(
+        nextProcessing({
+          ...base,
+          previousLastSeenAt: seen,
+          current: processed,
+        }),
+      ).toBe(processed);
+    });
   });
 });

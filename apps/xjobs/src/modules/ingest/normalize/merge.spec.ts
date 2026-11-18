@@ -1,6 +1,6 @@
 import { Channel } from 'src/common/enums';
 import { emptyRecord, type NormalizedRecord } from '.';
-import { type MergeSource, mergeSources } from './merge';
+import { boardSources, type MergeSource, mergeSources } from './merge';
 
 const t = (day: number) => new Date(Date.UTC(2026, 9, day));
 const source = (
@@ -155,5 +155,52 @@ describe('mergeSources', () => {
     expect(merged.record.regionCode).toBe('EU');
     expect(merged.record.company).toBeNull();
     expect(merged.fieldSources.workplaceType).toBe('li-2');
+  });
+});
+
+describe('trial sources', () => {
+  const harvest = (record: Partial<NormalizedRecord>) =>
+    source('hv-1', Channel.LINKEDIN_JOB_BOARD, record);
+  const cheap = (record: Partial<NormalizedRecord>) =>
+    source('ch-1', Channel.LINKEDIN_JOB_BOARD_CHEAP, record);
+
+  it('ignores the trial source whenever harvestapi is there', () => {
+    const merged = mergeSources([
+      cheap({ salary: { text: '$1' } as never, location: 'Lyon' }),
+      harvest({ salary: null, location: 'Paris' }),
+    ]);
+    expect(merged.record.salary).toBeNull();
+    expect(merged.record.location).toBe('Paris');
+    expect(Object.values(merged.fieldSources)).not.toContain('ch-1');
+  });
+
+  it('uses the trial source alone', () => {
+    const merged = mergeSources([cheap({ location: 'Lyon' })]);
+    expect(merged.record.location).toBe('Lyon');
+    expect(merged.fieldSources.location).toBe('ch-1');
+  });
+
+  it('ranks the ATS first and lets the trial fill its gaps', () => {
+    const merged = mergeSources([
+      cheap({ location: 'Lyon', companyName: 'Cheap Co' }),
+      ashby,
+    ]);
+    expect(merged.record.location).toBe('Remote (United States | Canada)');
+    expect(merged.record.companyName).toBe('Cheap Co');
+    expect(merged.fieldSources.companyName).toBe('ch-1');
+  });
+
+  it('ranks harvestapi below the trial, and posts last', () => {
+    const post = source('po-1', Channel.LINKEDIN_POSTS, { location: 'Post' });
+    const merged = mergeSources([post, cheap({ location: 'Lyon' })]);
+    expect(merged.record.location).toBe('Lyon');
+  });
+
+  it('boardSources drops trial sources only beside harvestapi', () => {
+    const c = cheap({});
+    const h = harvest({});
+    expect(boardSources([c, h, ashby])).toEqual([h, ashby]);
+    expect(boardSources([c, ashby])).toEqual([c, ashby]);
+    expect(boardSources([c])).toEqual([c]);
   });
 });

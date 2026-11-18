@@ -1,7 +1,8 @@
-import type { Channel } from 'src/common/enums';
+import { Channel, isTrialChannel } from 'src/common/enums';
 import type { NormalizedJobRow, RawItemVersionRow } from 'src/database';
 import type { DatabaseTransaction } from '@xjobs/database';
 import {
+  boardSources,
   isStrongJobKey,
   jobKey,
   type MergeSource,
@@ -196,6 +197,10 @@ async function remerge(tx: DatabaseTransaction, jobId: string): Promise<void> {
     };
   });
   const merged = mergeSources(merge);
+  // Trial sightings of a harvestapi job do not move its seen times.
+  const counted = boardSources(
+    items.map((i) => ({ ...i, channel: i.channel as Channel })),
+  );
   // The company's facts are as recent as the source they came from.
   const companySource = merge.find(
     (s) => s.rawItemId === merged.fieldSources.company,
@@ -208,10 +213,23 @@ async function remerge(tx: DatabaseTransaction, jobId: string): Promise<void> {
     ...fieldColumns(merged.record),
     companyId,
     fieldSources: merged.fieldSources as unknown as Json,
-    firstSeenAt: items.map((i) => i.firstSeenAt).reduce(min),
-    lastSeenAt: items.map((i) => i.lastSeenAt).reduce(max),
+    firstSeenAt: counted.map((i) => i.firstSeenAt).reduce(min),
+    lastSeenAt: counted.map((i) => i.lastSeenAt).reduce(max),
     normalizerVersion: NORMALIZER_VERSION,
   });
+}
+
+/** Whether a LINKEDIN_JOB_BOARD (harvestapi) item is among the job's sources. */
+async function hasHarvestSource(
+  tx: DatabaseTransaction,
+  jobId: string,
+): Promise<boolean> {
+  const links = await tx.orm.public.NormalizedJobSource.where({ jobId }).all();
+  if (links.length === 0) return false;
+  const items = await tx.orm.public.RawItem.where((row) =>
+    row.id.in(links.map((l) => l.rawItemId)),
+  ).all();
+  return items.some((i) => i.channel === Channel.LINKEDIN_JOB_BOARD);
 }
 
 /**
@@ -557,6 +575,8 @@ export async function linkJob(
     observedAt: input.observedAt,
     current,
     rebuild: input.rebuild,
+    sightingOnly:
+      isTrialChannel(item.channel) && (await hasHarvestSource(tx, job.id)),
   });
   const changed = !sameProcessing(next, current);
   if (changed)
