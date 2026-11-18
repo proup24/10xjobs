@@ -55,10 +55,41 @@ function run(extra: Partial<RunRow> = {}): RunRow {
   };
 }
 
+/**
+ * The calendar day in Africa/Casablanca, computed from the zone's offset at that
+ * instant. Morocco's offset (UTC+0 or UTC+1) depends on the runtime's tz data,
+ * so the tests must not hard-code it.
+ */
+function casablancaDay(iso: string): string {
+  const at = new Date(iso);
+  const name = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Africa/Casablanca',
+    timeZoneName: 'shortOffset',
+  })
+    .formatToParts(at)
+    .find((p) => p.type === 'timeZoneName')?.value;
+  const m = /^GMT(?:([+-])(\d{1,2})(?::(\d{2}))?)?$/.exec(name ?? '');
+  if (!m) throw new Error(`unexpected offset name ${name}`);
+  const minutes = m[1]
+    ? (m[1] === '-' ? -1 : 1) * (Number(m[2]) * 60 + Number(m[3] ?? 0))
+    : 0;
+  return new Date(at.getTime() + minutes * 60_000).toISOString().slice(0, 10);
+}
+
 describe('moroccoDay', () => {
-  it('moves 23:30 UTC to the next Morocco day', () => {
-    expect(moroccoDay(new Date('2026-11-18T23:30:00Z'))).toBe('2026-11-19');
-    expect(moroccoDay(new Date('2026-11-18T22:30:00Z'))).toBe('2026-11-18');
+  it('uses the Morocco calendar day, not the UTC one', () => {
+    for (const iso of [
+      '2026-11-18T23:30:00Z',
+      '2026-11-18T22:30:00Z',
+      '2026-11-19T00:30:00Z',
+      '2026-03-01T23:30:00Z',
+    ]) {
+      expect(moroccoDay(new Date(iso))).toBe(casablancaDay(iso));
+    }
+  });
+
+  it('keeps midday on the same day', () => {
+    expect(moroccoDay(new Date('2026-11-18T12:00:00Z'))).toBe('2026-11-18');
   });
 });
 
@@ -111,7 +142,10 @@ describe('overlap', () => {
       [],
       [],
     );
-    expect(report.overlap.map((r) => r.label)).toEqual(['2026-11-19', 'total']);
+    expect(report.overlap.map((r) => r.label)).toEqual([
+      casablancaDay('2026-11-18T23:30:00Z'),
+      'total',
+    ]);
   });
 });
 
