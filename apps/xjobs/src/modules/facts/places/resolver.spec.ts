@@ -179,6 +179,8 @@ describe('resolveListingPlace against the seeded Moroccan cities', () => {
       cities: cityForms(used),
       cityNames: new Map(used.map((r) => [r.id, r.name])),
       regionCountries: new Map(),
+      countryNames: new Map(),
+      cityCountries: new Map(),
     };
   };
   const cityOf = (city: string) => {
