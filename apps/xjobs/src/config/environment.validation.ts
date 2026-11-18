@@ -73,7 +73,7 @@ function requireStorage(
 
 /**
  * Daily spend caps, in US dollars, on LinkedIn job board collection (Morocco
- * day): harvestapi's, and the cheap_scraper trial's own. And the trial
+ * day): harvestapi's, and the cheap_scraper and bebity trials' own. And the trial
  * channels that collect (comma-separated channel values; none by default).
  */
 const collectionBudgetShape = {
@@ -83,6 +83,11 @@ const collectionBudgetShape = {
     .positive()
     .finite()
     .default(3),
+  COLLECTION_DAILY_BUDGET_USD_LINKEDIN_JOB_BOARD_BEBITY: z.coerce
+    .number()
+    .positive()
+    .finite()
+    .default(1),
   COLLECTION_TRIAL_CHANNELS: z
     .string()
     .default('')

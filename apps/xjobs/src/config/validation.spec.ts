@@ -140,6 +140,22 @@ describe('collector and tooling configuration', () => {
     expect(env.COLLECTION_DAILY_BUDGET_USD_LINKEDIN_JOB_BOARD_CHEAP).toBe(3);
   });
 
+  it('caps the bebity trial at 1 dollar by default', () => {
+    const env = validateEnvironment({ ...minimal }) as Record<string, unknown>;
+    expect(env.COLLECTION_DAILY_BUDGET_USD_LINKEDIN_JOB_BOARD_BEBITY).toBe(1);
+  });
+
+  it('accepts the bebity trial channel', () => {
+    expect(
+      (
+        validateEnvironment({
+          ...minimal,
+          COLLECTION_TRIAL_CHANNELS: 'LINKEDIN_JOB_BOARD_BEBITY',
+        }) as Record<string, unknown>
+      ).COLLECTION_TRIAL_CHANNELS,
+    ).toEqual(['LINKEDIN_JOB_BOARD_BEBITY']);
+  });
+
   it('parses COLLECTION_TRIAL_CHANNELS into trial channels only', () => {
     const parse = (value: string) =>
       (

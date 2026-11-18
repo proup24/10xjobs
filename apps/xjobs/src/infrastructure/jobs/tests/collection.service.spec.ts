@@ -105,6 +105,7 @@ function setup(
     collectors[Channel.GREEN_HOUSE] as never,
     collectors[Channel.LINKEDIN_JOB_BOARD] as never,
     collectors[Channel.LINKEDIN_JOB_BOARD_CHEAP] as never,
+    collectors[Channel.LINKEDIN_JOB_BOARD_BEBITY] as never,
     collectors[Channel.LINKEDIN_POSTS] as never,
     queries as unknown as QuerySearchService,
     segments,
@@ -136,12 +137,7 @@ function setup(
 afterEach(() => vi.restoreAllMocks());
 
 describe('channel selection', () => {
-  // bebity has no collector yet (Task 2), so it is not in the service constructor.
-  it.each(
-    Object.values(Channel).filter(
-      (channel) => channel !== Channel.LINKEDIN_JOB_BOARD_BEBITY,
-    ),
-  )(
+  it.each(Object.values(Channel))(
     'collects %s with its matching collector and limits',
     async (channel) => {
       const { collection, collectors, queries } = setup(
@@ -1421,6 +1417,31 @@ describe('channelJobsConfig', () => {
         },
       });
     }
+  });
+});
+
+describe('CollectionService trial channel (bebity)', () => {
+  it('reads its own budget setting', async () => {
+    const BEBITY = Channel.LINKEDIN_JOB_BOARD_BEBITY;
+    const { collection, collector, configGet } = setup(
+      builders(1, {
+        channel: BEBITY,
+        type: Arrangement.remote,
+        params: { location: 'emea' },
+      }),
+      async (s) => resultFor(s, () => [item(1)], { fetched: 3 }),
+      BEBITY,
+    );
+    await collection.collect(BEBITY);
+    expect(configGet).toHaveBeenCalledWith(
+      'COLLECTION_DAILY_BUDGET_USD_LINKEDIN_JOB_BOARD_BEBITY',
+      expect.anything(),
+    );
+    expect(configGet).not.toHaveBeenCalledWith(
+      'COLLECTION_DAILY_BUDGET_USD',
+      expect.anything(),
+    );
+    expect(collector.collect).toHaveBeenCalledTimes(1);
   });
 });
 

@@ -6,6 +6,7 @@ import {
   type LinkedinPostsRunConfig,
   AshbyCollector,
   GreenhouseCollector,
+  LinkedinJobBoardBebityCollector,
   LinkedinJobBoardCheapCollector,
   LinkedinJobBoardCollector,
   LinkedinPostsCollector,
@@ -79,12 +80,11 @@ export const channelJobsConfig = {
     enabled: ACTIVE_CHANNELS.includes(Channel.LINKEDIN_JOB_BOARD_CHEAP),
     run: LinkedinJobBoardCheapCollector.config,
   },
-  // Temporary: Task 2 gives bebity its own collector and run config.
   [Channel.LINKEDIN_JOB_BOARD_BEBITY]: {
     queueName: 'collect-linkedin-job-board-bebity',
     ...linkedinJobBoard,
-    enabled: false,
-    run: LinkedinJobBoardCheapCollector.config,
+    enabled: ACTIVE_CHANNELS.includes(Channel.LINKEDIN_JOB_BOARD_BEBITY),
+    run: LinkedinJobBoardBebityCollector.config,
   },
   [Channel.LINKEDIN_POSTS]: {
     queueName: 'collect-linkedin-posts',

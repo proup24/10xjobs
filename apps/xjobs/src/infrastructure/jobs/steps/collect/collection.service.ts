@@ -7,6 +7,7 @@ import {
   AshbyCollector,
   GreenhouseCollector,
   LinkedinJobBoardCheapCollector,
+  LinkedinJobBoardBebityCollector,
   LinkedinJobBoardCollector,
   type LinkedinJobBoardRunConfig,
   runChargeCapUsd,
@@ -93,6 +94,7 @@ export class CollectionService {
     private readonly greenhouse: GreenhouseCollector,
     private readonly linkedinJobs: LinkedinJobBoardCollector,
     private readonly linkedinJobsCheap: LinkedinJobBoardCheapCollector,
+    private readonly linkedinJobsBebity: LinkedinJobBoardBebityCollector,
     private readonly linkedinPosts: LinkedinPostsCollector,
     private readonly queries: QuerySearchService,
     private readonly segments: SearchSegmentsRepository,
@@ -642,8 +644,7 @@ export class CollectionService {
       case Channel.LINKEDIN_JOB_BOARD_CHEAP:
         return this.linkedinJobsCheap.collect(segment);
       case Channel.LINKEDIN_JOB_BOARD_BEBITY:
-        // Temporary: Task 2 builds the bebity collector.
-        throw new SearchNotStartedError('bebity collector not built');
+        return this.linkedinJobsBebity.collect(segment);
       case Channel.LINKEDIN_POSTS:
         return this.linkedinPosts.collect(segment);
     }
@@ -667,10 +668,13 @@ function budgetSetting(
   channel: Channel,
 ):
   | 'COLLECTION_DAILY_BUDGET_USD'
-  | 'COLLECTION_DAILY_BUDGET_USD_LINKEDIN_JOB_BOARD_CHEAP' {
-  return channel === Channel.LINKEDIN_JOB_BOARD_CHEAP
-    ? 'COLLECTION_DAILY_BUDGET_USD_LINKEDIN_JOB_BOARD_CHEAP'
-    : 'COLLECTION_DAILY_BUDGET_USD';
+  | 'COLLECTION_DAILY_BUDGET_USD_LINKEDIN_JOB_BOARD_CHEAP'
+  | 'COLLECTION_DAILY_BUDGET_USD_LINKEDIN_JOB_BOARD_BEBITY' {
+  if (channel === Channel.LINKEDIN_JOB_BOARD_CHEAP)
+    return 'COLLECTION_DAILY_BUDGET_USD_LINKEDIN_JOB_BOARD_CHEAP';
+  if (channel === Channel.LINKEDIN_JOB_BOARD_BEBITY)
+    return 'COLLECTION_DAILY_BUDGET_USD_LINKEDIN_JOB_BOARD_BEBITY';
+  return 'COLLECTION_DAILY_BUDGET_USD';
 }
 
 /**
