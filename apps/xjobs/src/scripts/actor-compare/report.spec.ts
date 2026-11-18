@@ -78,8 +78,20 @@ function run(runId: string, extra: Partial<RunRow> = {}): RunRow {
   };
 }
 
-function builder(id: string, channel: string, group: string): BuilderRow {
-  return { id, channel, group };
+function builder(
+  id: string,
+  channel: string,
+  group: string,
+  extra: Partial<BuilderRow> = {},
+): BuilderRow {
+  return {
+    id,
+    channel,
+    group,
+    createdAt: new Date('2026-01-01T00:00:00Z'),
+    activeUntil: null,
+    ...extra,
+  };
 }
 
 /** One group G that each actor ran in one tick: runs h, c, b; builders h-q, c-q, b-q. */
@@ -276,6 +288,53 @@ describe('coverage', () => {
       });
       const cells = coverage([ceiling], [builder('h1', HC, 'G')]);
       expect(cells.get(H)?.get(`G|${tick}`)).toBe('ran');
+    });
+  });
+
+  describe('builder history', () => {
+    const hour = 3_600_000;
+    const t1 = new Date(AT);
+    const t2 = new Date(t1.getTime() + 2 * hour);
+    const t3 = new Date(t1.getTime() + 4 * hour);
+
+    it('does not require a builder created after an earlier tick', () => {
+      const cells = coverage(
+        [
+          run('h1', { queryIds: ['h1'], startedAt: t1 }),
+          run('c1', { queryIds: ['c1'], startedAt: t1 }),
+          run('h2', { queryIds: ['h1', 'h2'], startedAt: t2 }),
+          run('c2', { queryIds: ['c1', 'c2'], startedAt: t2 }),
+        ],
+        [
+          builder('h1', HC, 'G'),
+          builder('c1', CC, 'G'),
+          builder('h2', HC, 'G', { createdAt: new Date(t1.getTime() + hour) }),
+          builder('c2', CC, 'G', { createdAt: new Date(t1.getTime() + hour) }),
+        ],
+      );
+      for (const actor of [H, C]) {
+        expect(cells.get(actor)?.get(`G|${tickOf(t1)}`)).toBe('ran');
+        expect(cells.get(actor)?.get(`G|${tickOf(t2)}`)).toBe('ran');
+      }
+    });
+
+    it('requires a builder deactivated later in the ticks while it was active', () => {
+      const retired = builder('h2', HC, 'G', {
+        activeUntil: new Date(t2.getTime() + hour),
+      });
+      const cells = coverage(
+        [
+          run('h1', { queryIds: ['h1'], startedAt: t1 }),
+          run('h1b', { queryIds: ['h1'], startedAt: t3 }),
+          run('c1', { queryIds: ['c1'], startedAt: t1 }),
+          run('c3', { queryIds: ['c1'], startedAt: t3 }),
+        ],
+        [builder('h1', HC, 'G'), retired, builder('c1', CC, 'G')],
+      );
+      // h2 was active at t1 but not in its run: harvestapi didn't run G then.
+      expect(cells.get(H)?.get(`G|${tickOf(t1)}`)).toBe('skipped');
+      // Retired before t3: h1 alone covers G.
+      expect(cells.get(H)?.get(`G|${tickOf(t3)}`)).toBe('ran');
     });
   });
 

@@ -217,18 +217,32 @@ function ceilingRows(channel: string): number {
 }
 
 /**
- * The collected builders (active, not deleted) of the compared channels, with
+ * The builders of the compared channels a tick since `since` may require, with
  * their group: the segment key without its channel (`<type>|group:<place and
  * filters>`), so twins on every channel share it.
+ *
+ * Active builders count from `createdAt`. Retired ones (inactive, or deleted
+ * by a recipe bump) count from `createdAt` until `updatedAt`, the best stored
+ * signal of when they were retired: only state changes (profiles, active,
+ * deleted) write it, never claims or cursors. A retired builder counts only if
+ * it was ever collected (`coveredUntil` set), so one that never ran isn't
+ * required anywhere.
  */
-export async function loadBuilders(tx: Tx): Promise<BuilderRow[]> {
+export async function loadBuilders(
+  tx: Tx,
+  since: string,
+): Promise<BuilderRow[]> {
   const [row] = await tx.query(
     tx.raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
       SELECT q.id::text AS id, q.channel::text AS channel, q.type::text AS type,
-        q.params
+        q.params, q."createdAt",
+        CASE WHEN q."isActive" AND NOT q."isDeleted" THEN NULL
+          ELSE q."updatedAt" END AS "activeUntil"
       FROM query_search_builder q
-      WHERE q."isActive" AND NOT q."isDeleted"
-        AND q.channel::text IN ('LINKEDIN_JOB_BOARD', 'LINKEDIN_JOB_BOARD_CHEAP', 'LINKEDIN_JOB_BOARD_BEBITY')) t`
+      WHERE q.channel::text IN ('LINKEDIN_JOB_BOARD', 'LINKEDIN_JOB_BOARD_CHEAP', 'LINKEDIN_JOB_BOARD_BEBITY')
+        AND ((q."isActive" AND NOT q."isDeleted")
+          OR (q."coveredUntil" IS NOT NULL
+            AND q."updatedAt" >= ${since}::timestamptz))) t`
       .returnsRow({ rows: JSONB })
       .build(),
   );
@@ -237,11 +251,15 @@ export async function loadBuilders(tx: Tx): Promise<BuilderRow[]> {
     channel: string;
     type: string;
     params: Record<string, unknown> | null;
+    createdAt: string;
+    activeUntil: string | null;
   };
   return ((row?.rows ?? []) as Raw[]).map((b) => ({
     id: b.id,
     channel: b.channel,
     group: builderGroup(b.type, b.id, b.params ?? {}),
+    createdAt: new Date(b.createdAt),
+    activeUntil: b.activeUntil === null ? null : new Date(b.activeUntil),
   }));
 }
 

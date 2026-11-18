@@ -101,6 +101,14 @@ export interface BuilderRow {
   id: string;
   channel: string;
   group: string;
+  /** A tick requires the builder only from its creation. */
+  createdAt: Date;
+  /**
+   * Null while it is active. For an inactive or deleted builder, its
+   * `updatedAt`: the last change of its state, which is when it was retired
+   * (claims and cursors don't touch `updatedAt`). A tick requires it until then.
+   */
+  activeUntil: Date | null;
 }
 
 export type NotRunReason = 'skipped' | 'not started' | 'failed' | 'capped';
@@ -316,20 +324,37 @@ function cells(
     }
   }
   // Builders per actor per group.
-  const members = new Map<string, Map<string, string[]>>();
+  const members = new Map<string, Map<string, BuilderRow[]>>();
   for (const b of builders) {
     const actor = ACTOR_BY_CHANNEL[b.channel] ?? b.channel;
-    const groups = members.get(actor) ?? new Map<string, string[]>();
-    groups.set(b.group, [...(groups.get(b.group) ?? []), b.id]);
+    const groups = members.get(actor) ?? new Map<string, BuilderRow[]>();
+    groups.set(b.group, [...(groups.get(b.group) ?? []), b]);
     members.set(actor, groups);
   }
-  const ticks = [...new Set(own.map((r) => tickOf(r.startedAt)))];
+  // Each tick starts at its earliest run: a builder is required in a tick when
+  // it existed and was still active then.
+  const tickStart = new Map<string, number>();
+  for (const r of own) {
+    const tick = tickOf(r.startedAt);
+    const at = r.startedAt.getTime();
+    if (at < (tickStart.get(tick) ?? Infinity)) tickStart.set(tick, at);
+  }
+  const ticks = [...tickStart.keys()];
+  const requiredIn = (b: BuilderRow, tick: string) => {
+    const start = tickStart.get(tick) as number;
+    return (
+      b.createdAt.getTime() <= start &&
+      (b.activeUntil === null || b.activeUntil.getTime() >= start)
+    );
+  };
 
   const status = new Map<string, Map<string, Cell>>();
   for (const [actor, groups] of members) {
     const mine = new Map<string, Cell>();
-    for (const [group, ids] of groups)
+    for (const [group, all] of groups)
       for (const tick of ticks) {
+        const ids = all.filter((b) => requiredIn(b, tick)).map((b) => b.id);
+        if (ids.length === 0) continue;
         const runIds = new Set<string>();
         const missing: SegmentRunRow[][] = [];
         for (const id of ids) {

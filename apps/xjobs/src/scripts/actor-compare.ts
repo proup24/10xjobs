@@ -74,7 +74,7 @@ async function main(): Promise<void> {
         await loadSightings(tx, iso),
         await loadOutcomes(tx, iso),
         await loadSegmentRuns(tx, iso),
-        await loadBuilders(tx),
+        await loadBuilders(tx, iso),
       ];
       console.log(
         `Actor comparison since ${iso} (Morocco days, Morocco-hour ticks), ${sightings.length} sightings, ${runs.length} runs, ${builders.length} builders, matcher version >= ${MATCHER_VERSION}`,
