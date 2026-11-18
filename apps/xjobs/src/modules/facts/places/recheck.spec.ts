@@ -42,4 +42,20 @@ describe('unmappedPlaces', () => {
       { text: 'XYZ', result: 'none', count: 1 },
     ]);
   });
+
+  it('lists a job that has only location text, as trial actors give', () => {
+    const rows = [
+      row({ location: 'Gotham, Narnia' }),
+      row({ location: 'Europe', regionCode: 'EU' }),
+    ];
+    expect(unmappedPlaces(rows, vocab)).toEqual([
+      { text: 'Gotham, Narnia', result: 'none', count: 1 },
+    ]);
+  });
+
+  it('leaves out a job with no place at all', () => {
+    expect(unmappedPlaces([row({}), row({ location: '  ' })], vocab)).toEqual(
+      [],
+    );
+  });
 });

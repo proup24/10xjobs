@@ -5,17 +5,15 @@
  *   pnpm --filter @xjobs/xjobs db:places -- --days 7
  *
  * Reads LinkedIn job board jobs seen in the last N days (default 7) that carry
- * harvest location fields, and prints `count<TAB>result<TAB>text`.
+ * any place field (harvestapi's location fields or a trial actor's location
+ * text), and prints `count<TAB>result<TAB>text`.
  */
 import { Logger } from '@nestjs/common';
 import { loadDatabaseEnvironment, toDatabaseConfig } from 'src/config';
 import { createDatabaseClient, DatabaseService } from 'src/database';
-import {
-  unmappedPlaces,
-  type PlaceRow,
-} from 'src/modules/facts/places/recheck';
+import { unmappedPlaces } from 'src/modules/facts/places/recheck';
 import { PrismaPlaceVocabularyRepository } from 'src/modules/facts/places/place-vocabulary.repository';
-import { linkedInJobIds } from 'src/modules/processor/repositories/processor.repository';
+import { recentPlaceRows } from './places-recheck/rows';
 
 function parseDays(args: string[]): number {
   const i = args.indexOf('--days');
@@ -35,23 +33,10 @@ async function main(): Promise<void> {
     logger,
   );
   try {
-    const { raw } = db;
-    const text = 'pg/text@1';
-    const rows = (await db.query(
-      raw.sql`SELECT j.location, j."countryCode", j."regionCode", j.city, j."geoId"
-        FROM normalized_jobs j
-        WHERE j."lastSeenAt" >= now() - make_interval(days => ${days}::int)
-          AND (j."countryCode" IS NOT NULL OR j."regionCode" IS NOT NULL OR j."geoId" IS NOT NULL)
-          AND j.id IN (${linkedInJobIds(raw)})`
-        .returnsRow({
-          location: text,
-          countryCode: text,
-          regionCode: text,
-          city: text,
-          geoId: text,
-        })
-        .build(),
-    )) as PlaceRow[];
+    const rows = await recentPlaceRows(
+      db,
+      new Date(Date.now() - days * 86_400_000),
+    );
     const vocab = await new PrismaPlaceVocabularyRepository({
       db,
     } as DatabaseService).load();

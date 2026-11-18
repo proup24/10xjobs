@@ -34,7 +34,9 @@ export interface JobOutcome {
   joined: boolean;
   /**
    * For a joined job with a current extraction: true when it has no extraction
-   * attempt of its own (the extraction was copied), false when it ran Claude.
+   * attempt since the join (the extraction was copied), false when it ran
+   * Claude. A same-key join keeps the trial's job, so the trial's own earlier
+   * attempt does not count.
    * Null when the job is not joined or has no extraction yet.
    */
   joinedReused: boolean | null;
