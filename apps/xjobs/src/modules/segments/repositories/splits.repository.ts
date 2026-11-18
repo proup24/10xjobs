@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import type { Channel } from 'src/common/enums';
 import { DatabaseService } from 'src/database';
 
 const TEXT = 'pg/text@1';
@@ -15,8 +16,12 @@ export abstract class LinkedinSearchSplitsRepository {
     parts: number,
     splitAt: Date,
   ): Promise<void>;
-  /** Forgets every split whose group key is not in `keep`; returns how many it forgot. */
-  abstract prune(keep: readonly string[]): Promise<number>;
+  /**
+   * Forgets every split of `channel` (group keys start `<channel>|`) whose
+   * group key is not in `keep`; returns how many it forgot. Other channels'
+   * splits are never touched.
+   */
+  abstract prune(channel: Channel, keep: readonly string[]): Promise<number>;
 }
 
 @Injectable()
@@ -66,12 +71,15 @@ export class PrismaLinkedinSearchSplitsRepository extends LinkedinSearchSplitsRe
     );
   }
 
-  async prune(keep: readonly string[]): Promise<number> {
+  async prune(channel: Channel, keep: readonly string[]): Promise<number> {
     const { db } = this.database;
+    // Compare the prefix with left(), not LIKE: `_` is a LIKE wildcard.
+    const prefix = `${channel}|`;
     // Group keys hold JSON (quotes, commas, braces): pass them as a jsonb array.
     const rows = await db.query(
       db.raw.sql`DELETE FROM linkedin_search_splits
-        WHERE "groupKey" NOT IN (
+        WHERE left("groupKey", length(${prefix}::text)) = ${prefix}::text
+          AND "groupKey" NOT IN (
           SELECT jsonb_array_elements_text(${JSON.stringify(keep)}::jsonb)
         )
         RETURNING "groupKey"`

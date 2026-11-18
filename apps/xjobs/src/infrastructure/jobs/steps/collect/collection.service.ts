@@ -1,12 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Channel } from 'src/common/enums';
+import { Channel, isLinkedinJobBoard } from 'src/common/enums';
 import type { WorkerProcessEnvironmentVariables } from 'src/config';
 import {
   AshbyCollector,
   GreenhouseCollector,
+  LinkedinJobBoardCheapCollector,
   LinkedinJobBoardCollector,
+  type LinkedinJobBoardRunConfig,
   LinkedinPostsCollector,
   SearchNotStartedError,
   type SegmentSearch,
@@ -89,6 +91,7 @@ export class CollectionService {
     private readonly ashby: AshbyCollector,
     private readonly greenhouse: GreenhouseCollector,
     private readonly linkedinJobs: LinkedinJobBoardCollector,
+    private readonly linkedinJobsCheap: LinkedinJobBoardCheapCollector,
     private readonly linkedinPosts: LinkedinPostsCollector,
     private readonly queries: QuerySearchService,
     private readonly segments: SearchSegmentsRepository,
@@ -148,7 +151,7 @@ export class CollectionService {
     };
     const budget = await this.dailyBudget(channel, until);
     const groups = new Map<string, GroupTally>();
-    if (channel === Channel.LINKEDIN_JOB_BOARD)
+    if (isLinkedinJobBoard(channel))
       for (const { key } of segments) {
         const group = groups.get(key);
         if (group) group.chunks += 1;
@@ -184,11 +187,11 @@ export class CollectionService {
       );
     }
 
-    if (channel === Channel.LINKEDIN_JOB_BOARD) {
-      await this.rememberSplits(groups, remembered, until);
+    if (isLinkedinJobBoard(channel)) {
+      await this.rememberSplits(channel, groups, remembered, until);
       // Only a tick that reached every group knows which splits are stale.
       if (summary.segmentsDeferred === 0)
-        await this.pruneSplits([...groups.keys()]);
+        await this.pruneSplits(channel, [...groups.keys()]);
     }
 
     const durationMs = Date.now() - until.getTime();
@@ -198,7 +201,7 @@ export class CollectionService {
         .join(' '),
     );
     if (
-      channel === Channel.LINKEDIN_JOB_BOARD &&
+      isLinkedinJobBoard(channel) &&
       durationMs > LINKEDIN_JOB_BOARD_TICK_LIMIT_MS
     )
       this.logger.warn(
@@ -241,7 +244,7 @@ export class CollectionService {
       if (group) group.measured = false;
       return;
     }
-    const splittable = channel === Channel.LINKEDIN_JOB_BOARD;
+    const splittable = isLinkedinJobBoard(channel);
     const atCeiling = maxItems !== undefined;
     const outcome = await this.runSegment(channel, segment, until, {
       maxItems,
@@ -290,24 +293,24 @@ export class CollectionService {
       summary,
       group,
       budget,
-      channelJobsConfig[Channel.LINKEDIN_JOB_BOARD].run.maxRowsCeiling,
+      boardRun(channel).maxRowsCeiling,
     );
   }
 
-  /** The LinkedIn job board's spend today, read once per tick; other channels have no cap. */
+  /** A LinkedIn job board channel's spend today, read once per tick; other channels have no cap. */
   private async dailyBudget(
     channel: Channel,
     now: Date,
   ): Promise<DailyBudget | undefined> {
-    if (channel !== Channel.LINKEDIN_JOB_BOARD) return undefined;
+    if (!isLinkedinJobBoard(channel)) return undefined;
     const dayStart = moroccoDayStart(now);
     const spent = await this.segments.spentMicroUsd(
       channel,
       dayStart,
-      baseChargeCapMicroUsd(),
+      chargeCapMicroUsd(channel),
     );
     return new DailyBudget(
-      this.config.get('COLLECTION_DAILY_BUDGET_USD', { infer: true }),
+      this.config.get(budgetSetting(channel), { infer: true }),
       spent,
       dayStart,
     );
@@ -326,7 +329,7 @@ export class CollectionService {
   private async rememberedSplits(
     channel: Channel,
   ): Promise<Map<string, { parts: number; splitAt: Date }>> {
-    if (channel !== Channel.LINKEDIN_JOB_BOARD) return new Map();
+    if (!isLinkedinJobBoard(channel)) return new Map();
     try {
       return await this.splits.parts();
     } catch (error) {
@@ -339,12 +342,12 @@ export class CollectionService {
 
   /** Stores each group's next parts; a write that fails is retried by the next tick. */
   private async rememberSplits(
+    channel: Channel,
     groups: ReadonlyMap<string, GroupTally>,
     remembered: ReadonlyMap<string, { parts: number; splitAt: Date }>,
     now: Date,
   ): Promise<void> {
-    const rowLimit =
-      channelJobsConfig[Channel.LINKEDIN_JOB_BOARD].run.maxRowsPerSearch;
+    const rowLimit = boardRun(channel).maxRowsPerSearch;
     for (const [groupKey, group] of groups) {
       if (groupKey.includes('|unresolved:')) continue;
       const parts = nextParts(
@@ -374,9 +377,9 @@ export class CollectionService {
    * Forgets remembered splits of groups this tick did not build (a profile
    * deleted or moved to another recipe); a failure is retried by the next tick.
    */
-  private async pruneSplits(built: string[]): Promise<void> {
+  private async pruneSplits(channel: Channel, built: string[]): Promise<void> {
     try {
-      const forgot = await this.splits.prune(built);
+      const forgot = await this.splits.prune(channel, built);
       if (forgot > 0)
         this.logger.log(
           `Forgot ${forgot} remembered LinkedIn search splits of groups no longer searched`,
@@ -477,7 +480,7 @@ export class CollectionService {
       costUsd = result.costUsd ?? 0;
       options.budget?.add(
         result.costUsd == null
-          ? chargeCapMicroUsd(options.maxItems)
+          ? chargeCapMicroUsd(channel, options.maxItems)
           : Math.round(result.costUsd * 1_000_000),
       );
       charged = false;
@@ -507,7 +510,8 @@ export class CollectionService {
         charged = false;
       }
       // A fetch that threw reported no cost: count what it could have charged.
-      if (charged) options.budget?.add(chargeCapMicroUsd(options.maxItems));
+      if (charged)
+        options.budget?.add(chargeCapMicroUsd(channel, options.maxItems));
       const failed =
         run ??
         buildRun(
@@ -635,23 +639,43 @@ export class CollectionService {
       case Channel.LINKEDIN_JOB_BOARD:
         return this.linkedinJobs.collect(segment);
       case Channel.LINKEDIN_JOB_BOARD_CHEAP:
-        throw new SearchNotStartedError('trial collector not built');
+        return this.linkedinJobsCheap.collect(segment);
       case Channel.LINKEDIN_POSTS:
         return this.linkedinPosts.collect(segment);
     }
   }
 }
 
-/** The most a LinkedIn job board run of `maxItems` rows (the default limit when absent) may charge. */
-function chargeCapMicroUsd(maxItems?: number): number {
-  const { maxRunChargeUsd, maxRowsPerSearch } =
-    channelJobsConfig[Channel.LINKEDIN_JOB_BOARD].run;
+/** The run config of a LinkedIn job board channel (harvestapi or a trial actor). */
+function boardRun(channel: Channel): LinkedinJobBoardRunConfig {
+  if (!isLinkedinJobBoard(channel))
+    throw new Error(`${channel} is not a LinkedIn job board channel`);
+  return channelJobsConfig[
+    channel as Channel.LINKEDIN_JOB_BOARD | Channel.LINKEDIN_JOB_BOARD_CHEAP
+  ].run;
+}
+
+/** The environment setting holding a channel's daily budget in dollars. */
+function budgetSetting(
+  channel: Channel,
+):
+  | 'COLLECTION_DAILY_BUDGET_USD'
+  | 'COLLECTION_DAILY_BUDGET_USD_LINKEDIN_JOB_BOARD_CHEAP' {
+  return channel === Channel.LINKEDIN_JOB_BOARD_CHEAP
+    ? 'COLLECTION_DAILY_BUDGET_USD_LINKEDIN_JOB_BOARD_CHEAP'
+    : 'COLLECTION_DAILY_BUDGET_USD';
+}
+
+/**
+ * The most a run of a LinkedIn job board channel of `maxItems` rows (the
+ * default limit when absent) may charge; with no `maxItems` it is also what a
+ * run with no recorded cost counts as.
+ */
+function chargeCapMicroUsd(channel: Channel, maxItems?: number): number {
+  const { maxRunChargeUsd, maxRowsPerSearch } = boardRun(channel);
   const rows = maxItems ?? maxRowsPerSearch;
   return Math.round((maxRunChargeUsd * rows * 1_000_000) / maxRowsPerSearch);
 }
-
-/** The charge cap of a default run: what a run with no recorded cost counts as. */
-const baseChargeCapMicroUsd = () => chargeCapMicroUsd();
 
 function perQuery(result: SegmentResult): Record<string, SegmentQueryOutcome> {
   return Object.fromEntries(

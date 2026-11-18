@@ -27,7 +27,7 @@ Precision over volume: prefer a tailored application over a fast one.
 - `npx nx worker-processor xjobs`: run the processor worker alone (needs `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY`).
 - `npx nx worker-match xjobs`: run the match worker alone.
 - `npx nx worker-webhook xjobs`: run the webhook worker alone (sends the users' match webhooks; registers its sweep only with `XJOBS_RUN_SCHEDULES=1`, set on the hosted engine).
-- `npx nx worker-<channel> xjobs` (`linkedin-job-board`, `linkedin-posts`, `greenhouse`, `ashby`): run one channel's scheduled collection worker (registers schedules only with `XJOBS_RUN_SCHEDULES=1`, set on the hosted engine).
+- `npx nx worker-<channel> xjobs` (`linkedin-job-board`, `linkedin-job-board-cheap`, `linkedin-posts`, `greenhouse`, `ashby`): run one channel's scheduled collection worker (registers schedules only with `XJOBS_RUN_SCHEDULES=1`, set on the hosted engine; `linkedin-job-board-cheap` is a trial that also needs `COLLECTION_TRIAL_CHANNELS=LINKEDIN_JOB_BOARD_CHEAP`).
 - `npx nx run-many -t lint test build typecheck`: what CI runs.
 - `npx nx test xjobs`: unit tests for the engine.
 - `npx nx e2e xjobs-e2e`: e2e tests.

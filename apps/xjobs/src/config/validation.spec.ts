@@ -135,6 +135,36 @@ describe('collector and tooling configuration', () => {
     ).toBe(1.5);
   });
 
+  it('caps the cheap_scraper trial at 3 dollars by default', () => {
+    const env = validateEnvironment({ ...minimal }) as Record<string, unknown>;
+    expect(env.COLLECTION_DAILY_BUDGET_USD_LINKEDIN_JOB_BOARD_CHEAP).toBe(3);
+  });
+
+  it('parses COLLECTION_TRIAL_CHANNELS into trial channels only', () => {
+    const parse = (value: string) =>
+      (
+        validateEnvironment({
+          ...minimal,
+          COLLECTION_TRIAL_CHANNELS: value,
+        }) as Record<string, unknown>
+      ).COLLECTION_TRIAL_CHANNELS;
+    expect(parse('LINKEDIN_JOB_BOARD_CHEAP')).toEqual([
+      'LINKEDIN_JOB_BOARD_CHEAP',
+    ]);
+    expect(parse(' LINKEDIN_JOB_BOARD_CHEAP , ')).toEqual([
+      'LINKEDIN_JOB_BOARD_CHEAP',
+    ]);
+    expect(parse('')).toEqual([]);
+    expect(
+      (validateEnvironment({ ...minimal }) as Record<string, unknown>)
+        .COLLECTION_TRIAL_CHANNELS,
+    ).toEqual([]);
+    expect(() => parse('LINKEDIN_JOB_BOARD')).toThrow(
+      /COLLECTION_TRIAL_CHANNELS/,
+    );
+    expect(() => parse('NOPE')).toThrow(/COLLECTION_TRIAL_CHANNELS/);
+  });
+
   it.each(['0', '-1', 'abc', 'Infinity'])(
     'refuses a daily collection budget of %s',
     (value) => {

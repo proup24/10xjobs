@@ -1,11 +1,14 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { UnrecoverableError } from 'bullmq';
 import type { Redis } from 'ioredis';
-import { Channel } from 'src/common/enums';
+import { Channel, isTrialChannel } from 'src/common/enums';
+import type { WorkerProcessEnvironmentVariables } from 'src/config';
 import {
   COLLECT_JOB,
   CollectionService,
   channelJobsConfig,
+  collectsNow,
 } from 'src/infrastructure/jobs/steps/collect';
 import { ingestConfig } from 'src/modules/ingest';
 import { StorageService } from 'src/modules/storage';
@@ -25,6 +28,10 @@ export class CollectionWorkerService {
     private readonly runtime: WorkerRuntimeService,
     private readonly collection: CollectionService,
     private readonly storage: StorageService,
+    private readonly env: ConfigService<
+      WorkerProcessEnvironmentVariables,
+      true
+    >,
     @Inject(RUN_SCHEDULES) private readonly runSchedules: boolean,
     @Inject(COLLECT_ON_START) private readonly collectOnStart: boolean,
   ) {}
@@ -34,14 +41,27 @@ export class CollectionWorkerService {
     this.collection.stop();
   }
 
-  /** Returns false when the channel is disabled. With schedules off it still starts the worker. */
+  /** Returns false when the channel is disabled, or is a trial channel not listed in `COLLECTION_TRIAL_CHANNELS`. With schedules off it still starts the worker. */
   async start(channel: Channel, connection: Redis): Promise<boolean> {
     await this.storage.ensureBucket(ingestConfig.bucket);
     const config = channelJobsConfig[channel];
     const queue = await this.runtime.createQueue(config.queueName, connection);
-    await syncCollectionScheduler(queue, config, this.runSchedules);
-    if (!config.enabled) {
-      this.logger.log(`${channel} disabled; scheduler removed`);
+    // A trial channel also needs to be listed in COLLECTION_TRIAL_CHANNELS.
+    const collects = collectsNow(
+      channel,
+      this.env.get('COLLECTION_TRIAL_CHANNELS', { infer: true }),
+    );
+    await syncCollectionScheduler(
+      queue,
+      { ...config, enabled: collects },
+      this.runSchedules,
+    );
+    if (!collects) {
+      this.logger.log(
+        isTrialChannel(channel) && config.enabled
+          ? `${channel} trial collection off (COLLECTION_TRIAL_CHANNELS); scheduler removed`
+          : `${channel} disabled; scheduler removed`,
+      );
       return false;
     }
     this.runtime.startWorker(

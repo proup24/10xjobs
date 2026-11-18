@@ -1,4 +1,5 @@
 import { createDatabaseClient, type DatabaseClient } from '@xjobs/database';
+import { Channel } from 'src/common/enums';
 import type { DatabaseService } from 'src/database';
 import { PrismaLinkedinSearchSplitsRepository } from './splits.repository';
 
@@ -69,15 +70,29 @@ describe.skipIf(!url)('search splits in PostgreSQL', () => {
     const stale = 'LINKEDIN_JOB_BOARD|remote|group:{"place":{"geoId":"2"}}';
     await repo.setParts(kept, 2, t0);
     await repo.setParts(stale, 3, t0);
-    await repo.setParts('other', 2, t0);
-    expect(await repo.prune([kept, 'absent'])).toBe(2);
+    await repo.setParts('LINKEDIN_JOB_BOARD|other', 2, t0);
+    expect(await repo.prune(Channel.LINKEDIN_JOB_BOARD, [kept, 'absent'])).toBe(
+      2,
+    );
     expect([...(await repo.parts()).keys()]).toEqual([kept]);
-    expect(await repo.prune([kept])).toBe(0);
+    expect(await repo.prune(Channel.LINKEDIN_JOB_BOARD, [kept])).toBe(0);
   });
 
-  it('prunes every split when nothing is kept', async () => {
-    await repo.setParts('k', 2, t0);
-    expect(await repo.prune([])).toBe(1);
+  it('prunes only the splits of the given channel', async () => {
+    const first = 'LINKEDIN_JOB_BOARD|remote|group:X';
+    const second = 'LINKEDIN_JOB_BOARD_CHEAP|remote|group:X';
+    await repo.setParts(first, 2, t0);
+    await repo.setParts(second, 2, t0);
+    expect(await repo.prune(Channel.LINKEDIN_JOB_BOARD, [])).toBe(1);
+    expect([...(await repo.parts()).keys()]).toEqual([second]);
+    await repo.setParts(first, 2, t0);
+    expect(await repo.prune(Channel.LINKEDIN_JOB_BOARD_CHEAP, [])).toBe(1);
+    expect([...(await repo.parts()).keys()]).toEqual([first]);
+  });
+
+  it('prunes every split of the channel when nothing is kept', async () => {
+    await repo.setParts('LINKEDIN_JOB_BOARD|k', 2, t0);
+    expect(await repo.prune(Channel.LINKEDIN_JOB_BOARD, [])).toBe(1);
     expect((await repo.parts()).size).toBe(0);
   });
 

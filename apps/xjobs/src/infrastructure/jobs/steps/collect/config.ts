@@ -1,4 +1,4 @@
-import { ACTIVE_CHANNELS, Channel } from 'src/common/enums';
+import { ACTIVE_CHANNELS, Channel, isTrialChannel } from 'src/common/enums';
 import {
   type ActorRunConfig,
   type BoardSearchRunConfig,
@@ -6,6 +6,7 @@ import {
   type LinkedinPostsRunConfig,
   AshbyCollector,
   GreenhouseCollector,
+  LinkedinJobBoardCheapCollector,
   LinkedinJobBoardCollector,
   LinkedinPostsCollector,
 } from 'src/modules/collectors';
@@ -72,12 +73,11 @@ export const channelJobsConfig = {
     enabled: ACTIVE_CHANNELS.includes(Channel.LINKEDIN_JOB_BOARD),
     run: LinkedinJobBoardCollector.config,
   },
-  // Temporary; Task 3 replaces it.
   [Channel.LINKEDIN_JOB_BOARD_CHEAP]: {
     queueName: 'collect-linkedin-job-board-cheap',
     ...linkedinJobBoard,
-    enabled: false,
-    run: LinkedinJobBoardCollector.config,
+    enabled: ACTIVE_CHANNELS.includes(Channel.LINKEDIN_JOB_BOARD_CHEAP),
+    run: LinkedinJobBoardCheapCollector.config,
   },
   [Channel.LINKEDIN_POSTS]: {
     queueName: 'collect-linkedin-posts',
@@ -104,3 +104,17 @@ export const channelJobsConfig = {
   [Channel.GREEN_HOUSE]: ChannelJobConfig<BoardSearchRunConfig>;
   [Channel.ASHBY]: ChannelJobConfig<BoardSearchRunConfig>;
 };
+
+/**
+ * Whether a channel's worker collects now: it is enabled and, when it is a
+ * trial channel, listed in `COLLECTION_TRIAL_CHANNELS`.
+ */
+export function collectsNow(
+  channel: Channel,
+  trialChannels: readonly Channel[],
+): boolean {
+  return (
+    channelJobsConfig[channel].enabled &&
+    (!isTrialChannel(channel) || trialChannels.includes(channel))
+  );
+}

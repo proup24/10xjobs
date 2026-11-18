@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 
 // The worker module validates the environment when it is imported.
@@ -66,6 +67,7 @@ import {
 } from 'src/infrastructure/jobs/steps/collect';
 import { StorageService } from 'src/modules/storage';
 import { MemoryStorageService } from 'src/modules/storage/testing';
+import { CollectionWorkerService } from '../collection.service';
 import { WorkerRuntimeService } from '../runtime.service';
 import { COLLECT_ON_START } from '../scheduler';
 import { WorkerModule } from '../worker.module';
@@ -206,4 +208,67 @@ it('does not queue a startup collection outside development', async () => {
     await module.get(WorkerService).beforeApplicationShutdown();
     await module.close();
   }
+});
+
+describe('trial channel start', () => {
+  const trial = Channel.LINKEDIN_JOB_BOARD_CHEAP;
+  const make = (trialChannels: Channel[]) => {
+    const queue = {
+      upsertJobScheduler: vi.fn(async () => undefined),
+      removeJobScheduler: vi.fn(async () => true),
+      add: vi.fn(),
+    };
+    const runtime = {
+      createQueue: vi.fn(async () => queue),
+      startWorker: vi.fn(),
+    };
+    const service = new CollectionWorkerService(
+      runtime as never,
+      { collect: vi.fn(), stop: vi.fn() } as never,
+      { ensureBucket: vi.fn(async () => undefined) } as never,
+      { get: vi.fn(() => trialChannels) } as never,
+      true,
+      false,
+    );
+    return { service, queue, runtime };
+  };
+
+  it('stays off and removes its schedule when COLLECTION_TRIAL_CHANNELS is empty', async () => {
+    const log = vi
+      .spyOn(Logger.prototype, 'log')
+      .mockImplementation(() => undefined);
+    const { service, queue, runtime } = make([]);
+    expect(await service.start(trial, {} as never)).toBe(false);
+    expect(queue.removeJobScheduler).toHaveBeenCalledWith('collect');
+    expect(queue.upsertJobScheduler).not.toHaveBeenCalled();
+    expect(runtime.startWorker).not.toHaveBeenCalled();
+    expect(log).toHaveBeenCalledWith(
+      `${trial} trial collection off (COLLECTION_TRIAL_CHANNELS); scheduler removed`,
+    );
+  });
+
+  it('starts and schedules when listed', async () => {
+    vi.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+    const { service, queue, runtime } = make([trial]);
+    expect(await service.start(trial, {} as never)).toBe(true);
+    expect(runtime.createQueue).toHaveBeenCalledWith(
+      'collect-linkedin-job-board-cheap',
+      {},
+    );
+    expect(queue.upsertJobScheduler).toHaveBeenCalledWith(
+      'collect',
+      { pattern: '0 9-21 * * 1-5', tz: 'Africa/Casablanca' },
+      { name: 'collect', opts: { attempts: 1 } },
+    );
+    expect(runtime.startWorker).toHaveBeenCalledTimes(1);
+  });
+
+  it('starts harvestapi whatever the setting says', async () => {
+    vi.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+    const { service, runtime } = make([]);
+    expect(await service.start(Channel.LINKEDIN_JOB_BOARD, {} as never)).toBe(
+      true,
+    );
+    expect(runtime.startWorker).toHaveBeenCalledTimes(1);
+  });
 });

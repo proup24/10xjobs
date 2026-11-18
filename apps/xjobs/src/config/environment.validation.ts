@@ -4,7 +4,7 @@ import {
   databaseEnvironmentSchema,
   parseEnvironment,
 } from '@xjobs/database/env';
-import { Channel, EnvironmentType } from '../common/enums';
+import { Channel, EnvironmentType, TRIAL_CHANNELS } from '../common/enums';
 import {
   hasClaudeCredential,
   NO_CLAUDE_CREDENTIAL,
@@ -71,9 +71,28 @@ function requireStorage(
     });
 }
 
-/** Daily spend cap, in US dollars, on LinkedIn job board collection (Morocco day). */
+/**
+ * Daily spend caps, in US dollars, on LinkedIn job board collection (Morocco
+ * day): harvestapi's, and the cheap_scraper trial's own. And the trial
+ * channels that collect (comma-separated channel values; none by default).
+ */
 const collectionBudgetShape = {
   COLLECTION_DAILY_BUDGET_USD: z.coerce.number().positive().finite().default(3),
+  COLLECTION_DAILY_BUDGET_USD_LINKEDIN_JOB_BOARD_CHEAP: z.coerce
+    .number()
+    .positive()
+    .finite()
+    .default(3),
+  COLLECTION_TRIAL_CHANNELS: z
+    .string()
+    .default('')
+    .transform((value) =>
+      value
+        .split(',')
+        .map((part) => part.trim())
+        .filter(Boolean),
+    )
+    .pipe(z.array(z.enum(TRIAL_CHANNELS as [Channel, ...Channel[]]))),
 };
 
 /**

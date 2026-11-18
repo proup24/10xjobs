@@ -113,6 +113,14 @@ Always use `$C`, for logs, ps and restart too. `ENGINE_IMAGE_TAG` (from `image.e
 
 Containers restart on failure by themselves.
 
+## 8a. Trial actors
+
+A trial actor runs beside harvestapi to compare them. `cheap_scraper` (channel `LINKEDIN_JOB_BOARD_CHEAP`) is off until it is listed in `.env`:
+
+1. Turn it on: set `COLLECTION_TRIAL_CHANNELS=LINKEDIN_JOB_BOARD_CHEAP`. Turn it off: remove the line or empty it. Then `$C up -d worker`. The worker removes the schedule of a trial that is not listed.
+2. It has its own daily spend cap, `COLLECTION_DAILY_BUDGET_USD_LINKEDIN_JOB_BOARD_CHEAP` (default 3 dollars, Morocco day), apart from harvestapi's `COLLECTION_DAILY_BUDGET_USD`. Its spend is counted from its own runs only.
+3. It runs hourly 09-21 Morocco time, Monday to Friday, like harvestapi, on its own queue (`collect-linkedin-job-board-cheap`).
+
 ## 9. Roll back
 
 1. Pick a merge SHA: `git log main`. It must be the full 40-character SHA.
