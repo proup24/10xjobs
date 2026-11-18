@@ -64,6 +64,8 @@ export interface ActorRunConfig {
   actor: string;
   /** Spend cap of one segment run, in USD. */
   maxRunChargeUsd: number;
+  /** The run's memory in MB; absent means the actor's default. Apify charges some actors' start fee per GB of memory. */
+  memoryMbytes?: number;
 }
 
 export interface LinkedinJobBoardRunConfig extends ActorRunConfig {

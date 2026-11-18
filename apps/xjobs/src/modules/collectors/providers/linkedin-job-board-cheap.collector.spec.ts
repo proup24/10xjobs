@@ -13,7 +13,7 @@ function actor(count: number, costUsd: number | null = 0.1) {
     (
       actor: string,
       input: Record<string, unknown>,
-      options?: { maxChargeUsd: number },
+      options?: { maxChargeUsd: number; memoryMbytes?: number },
     ) => Promise<{ items: unknown[]; costUsd: number | null; runId: string }>
   >(async () => ({
     items: Array.from({ length: count }, (_, i) => ({ id: `j${i}` })),
@@ -54,6 +54,7 @@ describe('LinkedinJobBoardCheapCollector', () => {
     expect(LinkedinJobBoardCheapCollector.config).toEqual({
       actor: 'cheap_scraper/linkedin-job-scraper',
       maxRunChargeUsd: 0.15,
+      memoryMbytes: 1024,
       maxRowsPerSearch: 100,
       maxRowsCeiling: 1000,
     });
@@ -67,7 +68,7 @@ describe('LinkedinJobBoardCheapCollector', () => {
     expect(run).toHaveBeenCalledTimes(1);
     const [name, input, options] = run.mock.calls[0]!;
     expect(name).toBe('cheap_scraper/linkedin-job-scraper');
-    expect(options).toEqual({ maxChargeUsd: 0.15 });
+    expect(options).toEqual({ maxChargeUsd: 0.15, memoryMbytes: 1024 });
     expect(input).toEqual({
       startUrls: [{ url: expect.any(String) }],
       maxItems: 100,
@@ -119,7 +120,10 @@ describe('LinkedinJobBoardCheapCollector', () => {
       segment([member('a')], { maxItems: 1000 }),
     );
     expect(run.mock.calls[0]![1].maxItems).toBe(1000);
-    expect(run.mock.calls[0]![2]).toEqual({ maxChargeUsd: 1.5 });
+    expect(run.mock.calls[0]![2]).toEqual({
+      maxChargeUsd: 1.5,
+      memoryMbytes: 1024,
+    });
     expect(result.truncatedQueryIds).toEqual(['a']);
   });
 
