@@ -214,6 +214,10 @@
                 "value": "LINKEDIN_JOB_BOARD_CHEAP"
               },
               {
+                "name": "LINKEDIN_JOB_BOARD_BEBITY",
+                "value": "LINKEDIN_JOB_BOARD_BEBITY"
+              },
+              {
                 "name": "LINKEDIN_POSTS",
                 "value": "LINKEDIN_POSTS"
               },
@@ -6241,6 +6245,13 @@
           },
           "SearchSegmentRun": {
             "fields": {
+              "apifyRunId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "capped": {
                 "nullable": false,
                 "type": {
@@ -6259,6 +6270,16 @@
                   "entityName": "Channel",
                   "namespaceId": "public",
                   "plane": "domain"
+                }
+              },
+              "costFinalAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
                 }
               },
               "costMicroUsd": {
@@ -6388,11 +6409,17 @@
             "relations": {},
             "storage": {
               "fields": {
+                "apifyRunId": {
+                  "column": "apifyRunId"
+                },
                 "capped": {
                   "column": "capped"
                 },
                 "channel": {
                   "column": "channel"
+                },
+                "costFinalAt": {
+                  "column": "costFinalAt"
                 },
                 "costMicroUsd": {
                   "column": "costMicroUsd"
@@ -8416,8 +8443,8 @@
                   "prefix": "collection_batches_attempts"
                 },
                 {
-                  "expression": "\"channel\" IN ('LINKEDIN_JOB_BOARD', 'LINKEDIN_JOB_BOARD_CHEAP', 'LINKEDIN_POSTS', 'GREEN_HOUSE', 'ASHBY')",
-                  "name": "collection_batches_channel_check_09701322",
+                  "expression": "\"channel\" IN ('LINKEDIN_JOB_BOARD', 'LINKEDIN_JOB_BOARD_CHEAP', 'LINKEDIN_JOB_BOARD_BEBITY', 'LINKEDIN_POSTS', 'GREEN_HOUSE', 'ASHBY')",
+                  "name": "collection_batches_channel_check_6c2cc154",
                   "prefix": "collection_batches_channel_check"
                 },
                 {
@@ -12461,8 +12488,8 @@
                   "prefix": "query_search_builder_associated_profiles"
                 },
                 {
-                  "expression": "\"channel\" IN ('LINKEDIN_JOB_BOARD', 'LINKEDIN_JOB_BOARD_CHEAP', 'LINKEDIN_POSTS', 'GREEN_HOUSE', 'ASHBY')",
-                  "name": "query_search_builder_channel_check_09701322",
+                  "expression": "\"channel\" IN ('LINKEDIN_JOB_BOARD', 'LINKEDIN_JOB_BOARD_CHEAP', 'LINKEDIN_JOB_BOARD_BEBITY', 'LINKEDIN_POSTS', 'GREEN_HOUSE', 'ASHBY')",
+                  "name": "query_search_builder_channel_check_6c2cc154",
                   "prefix": "query_search_builder_channel_check"
                 },
                 {
@@ -13031,8 +13058,8 @@
             "raw_items": {
               "checks": [
                 {
-                  "expression": "\"channel\" IN ('LINKEDIN_JOB_BOARD', 'LINKEDIN_JOB_BOARD_CHEAP', 'LINKEDIN_POSTS', 'GREEN_HOUSE', 'ASHBY')",
-                  "name": "raw_items_channel_check_09701322",
+                  "expression": "\"channel\" IN ('LINKEDIN_JOB_BOARD', 'LINKEDIN_JOB_BOARD_CHEAP', 'LINKEDIN_JOB_BOARD_BEBITY', 'LINKEDIN_POSTS', 'GREEN_HOUSE', 'ASHBY')",
+                  "name": "raw_items_channel_check_6c2cc154",
                   "prefix": "raw_items_channel_check"
                 },
                 {
@@ -13348,8 +13375,8 @@
             "search_segment_runs": {
               "checks": [
                 {
-                  "expression": "\"channel\" IN ('LINKEDIN_JOB_BOARD', 'LINKEDIN_JOB_BOARD_CHEAP', 'LINKEDIN_POSTS', 'GREEN_HOUSE', 'ASHBY')",
-                  "name": "search_segment_runs_channel_check_09701322",
+                  "expression": "\"channel\" IN ('LINKEDIN_JOB_BOARD', 'LINKEDIN_JOB_BOARD_CHEAP', 'LINKEDIN_JOB_BOARD_BEBITY', 'LINKEDIN_POSTS', 'GREEN_HOUSE', 'ASHBY')",
+                  "name": "search_segment_runs_channel_check_6c2cc154",
                   "prefix": "search_segment_runs_channel_check"
                 },
                 {
@@ -13374,6 +13401,11 @@
                 }
               ],
               "columns": {
+                "apifyRunId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
                 "capped": {
                   "codecId": "pg/bool@1",
                   "dataType": "pg/bool",
@@ -13388,6 +13420,14 @@
                     "entityName": "Channel",
                     "namespaceId": "public",
                     "plane": "storage"
+                  }
+                },
+                "costFinalAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
                   }
                 },
                 "costMicroUsd": {
@@ -14359,6 +14399,7 @@
               "values": [
                 "LINKEDIN_JOB_BOARD",
                 "LINKEDIN_JOB_BOARD_CHEAP",
+                "LINKEDIN_JOB_BOARD_BEBITY",
                 "LINKEDIN_POSTS",
                 "GREEN_HOUSE",
                 "ASHBY"
@@ -14426,7 +14467,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "b6e24147863b710157ffe6c6e5b71d5724098742ee41d4f8ebef331e1d55401f"
+    "storageHash": "1d9c360ab7e1f94820c35389f4fc5e6779dadfbab7e6b3c330e3d9ce6e1fd55f"
   },
   "execution": {
     "executionHash": "7b5eaf1d91dcda38671ed0758e62b64e510de826d248ab15bddc3faa2e947c57",

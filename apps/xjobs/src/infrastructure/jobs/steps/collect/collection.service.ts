@@ -641,6 +641,9 @@ export class CollectionService {
         return this.linkedinJobs.collect(segment);
       case Channel.LINKEDIN_JOB_BOARD_CHEAP:
         return this.linkedinJobsCheap.collect(segment);
+      case Channel.LINKEDIN_JOB_BOARD_BEBITY:
+        // Temporary: Task 2 builds the bebity collector.
+        throw new SearchNotStartedError('bebity collector not built');
       case Channel.LINKEDIN_POSTS:
         return this.linkedinPosts.collect(segment);
     }
@@ -652,7 +655,10 @@ function boardRun(channel: Channel): LinkedinJobBoardRunConfig {
   if (!isLinkedinJobBoard(channel))
     throw new Error(`${channel} is not a LinkedIn job board channel`);
   return channelJobsConfig[
-    channel as Channel.LINKEDIN_JOB_BOARD | Channel.LINKEDIN_JOB_BOARD_CHEAP
+    channel as
+      | Channel.LINKEDIN_JOB_BOARD
+      | Channel.LINKEDIN_JOB_BOARD_CHEAP
+      | Channel.LINKEDIN_JOB_BOARD_BEBITY
   ].run;
 }
 

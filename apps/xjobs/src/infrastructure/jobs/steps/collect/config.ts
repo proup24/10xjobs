@@ -79,6 +79,13 @@ export const channelJobsConfig = {
     enabled: ACTIVE_CHANNELS.includes(Channel.LINKEDIN_JOB_BOARD_CHEAP),
     run: LinkedinJobBoardCheapCollector.config,
   },
+  // Temporary: Task 2 gives bebity its own collector and run config.
+  [Channel.LINKEDIN_JOB_BOARD_BEBITY]: {
+    queueName: 'collect-linkedin-job-board-bebity',
+    ...linkedinJobBoard,
+    enabled: false,
+    run: LinkedinJobBoardCheapCollector.config,
+  },
   [Channel.LINKEDIN_POSTS]: {
     queueName: 'collect-linkedin-posts',
     ...hourly,
@@ -100,6 +107,7 @@ export const channelJobsConfig = {
 } satisfies {
   [Channel.LINKEDIN_JOB_BOARD]: ChannelJobConfig<LinkedinJobBoardRunConfig>;
   [Channel.LINKEDIN_JOB_BOARD_CHEAP]: ChannelJobConfig<LinkedinJobBoardRunConfig>;
+  [Channel.LINKEDIN_JOB_BOARD_BEBITY]: ChannelJobConfig<LinkedinJobBoardRunConfig>;
   [Channel.LINKEDIN_POSTS]: ChannelJobConfig<LinkedinPostsRunConfig>;
   [Channel.GREEN_HOUSE]: ChannelJobConfig<BoardSearchRunConfig>;
   [Channel.ASHBY]: ChannelJobConfig<BoardSearchRunConfig>;

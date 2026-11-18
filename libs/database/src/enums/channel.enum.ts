@@ -2,6 +2,7 @@
 export enum Channel {
   LINKEDIN_JOB_BOARD = 'LINKEDIN_JOB_BOARD',
   LINKEDIN_JOB_BOARD_CHEAP = 'LINKEDIN_JOB_BOARD_CHEAP',
+  LINKEDIN_JOB_BOARD_BEBITY = 'LINKEDIN_JOB_BOARD_BEBITY',
   LINKEDIN_POSTS = 'LINKEDIN_POSTS',
   GREEN_HOUSE = 'GREEN_HOUSE',
   ASHBY = 'ASHBY',
@@ -14,11 +15,13 @@ export enum Channel {
 export const ACTIVE_CHANNELS: readonly Channel[] = [
   Channel.LINKEDIN_JOB_BOARD,
   Channel.LINKEDIN_JOB_BOARD_CHEAP,
+  Channel.LINKEDIN_JOB_BOARD_BEBITY,
 ];
 
 /** Trial channels: LinkedIn job-board actors run beside the main one to compare them. */
 export const TRIAL_CHANNELS: readonly Channel[] = [
   Channel.LINKEDIN_JOB_BOARD_CHEAP,
+  Channel.LINKEDIN_JOB_BOARD_BEBITY,
 ];
 
 /** True for the LinkedIn job board and every trial actor channel. */

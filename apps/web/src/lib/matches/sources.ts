@@ -1,6 +1,7 @@
 export const CHANNEL_LABELS: Record<string, string> = {
   LINKEDIN_JOB_BOARD: 'LinkedIn',
   LINKEDIN_JOB_BOARD_CHEAP: 'LinkedIn',
+  LINKEDIN_JOB_BOARD_BEBITY: 'LinkedIn',
   LINKEDIN_POSTS: 'LinkedIn posts',
   GREEN_HOUSE: 'Greenhouse',
   ASHBY: 'Ashby',

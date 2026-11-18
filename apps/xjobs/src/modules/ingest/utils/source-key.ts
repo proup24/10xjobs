@@ -124,6 +124,7 @@ export function sourceKey(channel: Channel, payload: unknown): SourceKeyResult {
   switch (channel) {
     case Channel.LINKEDIN_JOB_BOARD:
     case Channel.LINKEDIN_JOB_BOARD_CHEAP:
+    case Channel.LINKEDIN_JOB_BOARD_BEBITY:
       return linkedinKey('board', payload);
     case Channel.LINKEDIN_POSTS:
       return linkedinKey('posts', payload);

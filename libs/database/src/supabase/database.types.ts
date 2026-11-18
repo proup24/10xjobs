@@ -1900,8 +1900,10 @@ export type Database = {
       };
       search_segment_runs: {
         Row: {
+          apifyRunId: string | null;
           capped: boolean;
           channel: string;
+          costFinalAt: string | null;
           costMicroUsd: number | null;
           error: string | null;
           fetched: number;
@@ -1920,8 +1922,10 @@ export type Database = {
         };
         ComputedFields: never;
         Insert: {
+          apifyRunId?: string | null;
           capped: boolean;
           channel: string;
+          costFinalAt?: string | null;
           costMicroUsd?: number | null;
           error?: string | null;
           fetched: number;
@@ -1939,8 +1943,10 @@ export type Database = {
           windowStart: string;
         };
         Update: {
+          apifyRunId?: string | null;
           capped?: boolean;
           channel?: string;
+          costFinalAt?: string | null;
           costMicroUsd?: number | null;
           error?: string | null;
           fetched?: number;

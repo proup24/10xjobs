@@ -136,7 +136,12 @@ function setup(
 afterEach(() => vi.restoreAllMocks());
 
 describe('channel selection', () => {
-  it.each(Object.values(Channel))(
+  // bebity has no collector yet (Task 2), so it is not in the service constructor.
+  it.each(
+    Object.values(Channel).filter(
+      (channel) => channel !== Channel.LINKEDIN_JOB_BOARD_BEBITY,
+    ),
+  )(
     'collects %s with its matching collector and limits',
     async (channel) => {
       const { collection, collectors, queries } = setup(

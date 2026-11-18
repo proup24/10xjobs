@@ -23,6 +23,7 @@ type Mapper = (
 const mappers: Record<Channel, Mapper> = {
   [Channel.LINKEDIN_JOB_BOARD]: mapLinkedinJob,
   [Channel.LINKEDIN_JOB_BOARD_CHEAP]: mapLinkedinJob,
+  [Channel.LINKEDIN_JOB_BOARD_BEBITY]: mapLinkedinJob,
   [Channel.LINKEDIN_POSTS]: mapLinkedinPost,
   [Channel.ASHBY]: mapAshby,
   [Channel.GREEN_HOUSE]: mapGreenhouse,

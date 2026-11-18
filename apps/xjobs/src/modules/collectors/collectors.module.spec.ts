@@ -31,7 +31,12 @@ it('provides one collector per channel without an Apify token', async () => {
       ]
         .map((collector) => module.get(collector).channel)
         .sort(),
-    ).toEqual(Object.values(Channel).sort());
+    ).toEqual(
+      // bebity has no collector yet (Task 2).
+      Object.values(Channel)
+        .filter((channel) => channel !== Channel.LINKEDIN_JOB_BOARD_BEBITY)
+        .sort(),
+    );
   } finally {
     await module.close();
   }

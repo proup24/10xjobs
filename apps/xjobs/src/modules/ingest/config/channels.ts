@@ -42,6 +42,7 @@ export const channelIngestConfig: Record<Channel, ChannelIngestConfig> = {
   [Channel.LINKEDIN_JOB_BOARD]: linkedinJobBoardIngest,
   // The trial actor feeds the same fields as the main board.
   [Channel.LINKEDIN_JOB_BOARD_CHEAP]: linkedinJobBoardIngest,
+  [Channel.LINKEDIN_JOB_BOARD_BEBITY]: linkedinJobBoardIngest,
   [Channel.LINKEDIN_POSTS]: {
     kind: 'post',
     volatileKeys: [

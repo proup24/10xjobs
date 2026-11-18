@@ -73,6 +73,7 @@ enum Channel {
   @@type("pg/text@1")
   LINKEDIN_JOB_BOARD = "LINKEDIN_JOB_BOARD"
   LINKEDIN_JOB_BOARD_CHEAP = "LINKEDIN_JOB_BOARD_CHEAP"
+  LINKEDIN_JOB_BOARD_BEBITY = "LINKEDIN_JOB_BOARD_BEBITY"
   LINKEDIN_POSTS = "LINKEDIN_POSTS"
   GREEN_HOUSE = "GREEN_HOUSE"
   ASHBY = "ASHBY"
@@ -429,6 +430,10 @@ model SearchSegmentRun {
   status            String
   fetched           Int
   costMicroUsd      Int?
+  // The Apify run, for every run Apify started (also failed ones), so its final cost can be read again.
+  apifyRunId        String?
+  // When costMicroUsd was read at least 5 minutes after the run finished; null while late Apify charges may still arrive.
+  costFinalAt       TimestamptzJsDate(3)?
   capped            Boolean
   truncatedQueryIds Uuid[]
   perQuery          Jsonb
