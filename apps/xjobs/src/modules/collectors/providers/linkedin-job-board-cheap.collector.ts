@@ -32,6 +32,8 @@ export class LinkedinJobBoardCheapCollector {
     actor: CHEAP_SCRAPER_ACTOR,
     // The cap only stops a runaway run.
     maxRunChargeUsd: 0.15,
+    // Its start fee is $0.005 per GB, and its 4 GB default made every run cost $0.02 before any row.
+    memoryMbytes: 1024,
     maxRowsPerSearch: 100,
     maxRowsCeiling: 1000,
   };
@@ -64,6 +66,7 @@ export class LinkedinJobBoardCheapCollector {
       input,
       {
         maxChargeUsd,
+        memoryMbytes: config.memoryMbytes,
       },
     );
 
