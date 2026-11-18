@@ -28,6 +28,10 @@ Same as Phases 1 and 2: each slice is a short brief covering the problem, the op
 | 04  | [Search precision](04-search-precision.md)                                     | Harvest | Done (PRs 66–70)               |
 | 05  | [Posting language for close languages](05-posting-language-close-languages.md) | Enrich  | Done (PR 84)                   |
 | 06  | [One job per apply link](06-one-job-per-apply-link.md)                         | Harvest | Done (PR 86)                   |
+| 07  | [Trial LinkedIn actors](07-trial-linkedin-actors.md)                           | Harvest | Designed; plan next            |
+| 08  | [Seniority to LinkedIn level](08-seniority-levels.md)                          | Harvest | Brief; brainstorm next         |
+| 09  | [Non-remote jobs from remote searches](09-non-remote-leak.md)                  | Match   | Brief; investigate first       |
+| 10  | [Search yield](10-search-yield.md)                                             | Harvest | Findings; not yet discussed    |
 
 ## Follow-ups from slice 02
 
