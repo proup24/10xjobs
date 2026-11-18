@@ -1443,6 +1443,106 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
           await db.orm.public.JobView.create({ userId, jobId, viewedAt: t1 });
         };
 
+        /** One active job holds both items, with the trial job's applied mark. */
+        const expectJoinedOnto = async (jobId: string) => {
+          expect(await active()).toEqual([
+            expect.objectContaining({
+              id: jobId,
+              processingStatus: 'pending',
+              processingReason: 'joined',
+            }),
+          ]);
+          expect((await sources()).map((s) => s.jobId)).toEqual([jobId, jobId]);
+          expect(await db.orm.public.JobDecision.all()).toEqual([
+            expect.objectContaining({ jobId, status: 'applied' }),
+          ]);
+        };
+
+        it('trial first, latest trial version invalid: harvestapi still takes the trial source and its decision', async () => {
+          await saveTrial(t1);
+          const trialJob = await jobByKey(linkedinKey);
+          await mark(trialJob.id);
+          // A rescrape in no known shape: its own link is invalid, so the
+          // trial item stays linked under its first version.
+          const unreadable = await save(
+            { jobId: remote.id, unknownField: 'x' },
+            t2,
+            trialChannel,
+          );
+          expect(unreadable.job).toMatchObject({ invalid: expect.any(String) });
+
+          const result = await save(viaAshby(), t3);
+
+          const harvested = await jobByKey(ashbyKey);
+          expect(result.job).toMatchObject({
+            jobId: harvested.id,
+            pending: true,
+          });
+          await expectJoinedOnto(harvested.id);
+          expect(await jobByKey(linkedinKey)).toMatchObject({
+            status: 'merged',
+            mergedIntoId: harvested.id,
+          });
+        });
+
+        it('trial first, latest trial version throws: harvestapi still takes the trial source and its decision', async () => {
+          await saveTrial(t1);
+          const trialJob = await jobByKey(linkedinKey);
+          await mark(trialJob.id);
+          // Normalizing the trial's next version throws, so its own link
+          // aborts and no normalized row of that version is ever saved.
+          await db.execute(
+            db.raw
+              .sql`CREATE OR REPLACE FUNCTION test_refuse_version() RETURNS trigger
+              LANGUAGE plpgsql AS $$
+              BEGIN
+                IF NEW."rawVersionId" IN (
+                  SELECT v.id FROM raw_item_versions v
+                  JOIN raw_items i ON i.id = v."rawItemId"
+                  WHERE i.channel = 'LINKEDIN_JOB_BOARD_CHEAP'
+                    AND v.payload ? 'refuseMe'
+                ) THEN RAISE EXCEPTION 'mapper failed'; END IF;
+                RETURN NEW;
+              END $$`
+              .affectedCount()
+              .build(),
+          );
+          await db.execute(
+            db.raw.sql`CREATE TRIGGER test_refuse_version
+              BEFORE INSERT ON normalized_versions
+              FOR EACH ROW EXECUTE FUNCTION test_refuse_version()`
+              .affectedCount()
+              .build(),
+          );
+          try {
+            const failed = await save(
+              { ...trial(), refuseMe: true },
+              t2,
+              trialChannel,
+            );
+            expect(failed.job).toMatchObject({
+              invalid: expect.stringContaining('mapper failed'),
+            });
+
+            const result = await save(viaAshby(), t3);
+
+            const harvested = await jobByKey(ashbyKey);
+            expect(result.job).toMatchObject({
+              jobId: harvested.id,
+              pending: true,
+            });
+            await expectJoinedOnto(harvested.id);
+          } finally {
+            await db.execute(
+              db.raw
+                .sql`DROP TRIGGER IF EXISTS test_refuse_version ON normalized_versions;
+                DROP FUNCTION IF EXISTS test_refuse_version()`
+                .affectedCount()
+                .build(),
+            );
+          }
+        });
+
         it('harvestapi first, same key: one job, two sources', async () => {
           await save(harvest(), t1);
           await saveTrial(t2);

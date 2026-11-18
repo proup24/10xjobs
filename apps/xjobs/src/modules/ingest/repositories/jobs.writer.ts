@@ -292,24 +292,28 @@ export async function twinJobKey(
   return (row?.jobKey as string | undefined) ?? null;
 }
 
-/** Trial-channel raw items with this LinkedIn id linked to a job other than `jobId`. */
+/** Source rows of trial-channel items with this LinkedIn id on a job other than `jobId`. */
 async function strayTwins(
   tx: DatabaseTransaction,
   sourceKey: string,
   jobId: string,
-): Promise<string[]> {
+): Promise<{ id: string; jobId: string; normalizedVersionId: string }[]> {
   const rows = await tx.query(
-    tx.raw.sql`SELECT i.id
+    tx.raw.sql`SELECT s.id, s."jobId", s."normalizedVersionId"
       FROM raw_items i
       JOIN normalized_job_sources s ON s."rawItemId" = i.id
       WHERE i.channel = ANY(${`{${TRIAL_CHANNELS.join(',')}}`}::text[])
         AND i."sourceKey" = ${sourceKey}
         AND s."jobId" <> ${jobId}::uuid
       ORDER BY i.id`
-      .returnsRow({ id: UUID })
+      .returnsRow({ id: UUID, jobId: UUID, normalizedVersionId: UUID })
       .build(),
   );
-  return rows.map((r) => r.id as string);
+  return rows.map((r) => ({
+    id: r.id as string,
+    jobId: r.jobId as string,
+    normalizedVersionId: r.normalizedVersionId as string,
+  }));
 }
 
 /**
@@ -544,6 +548,54 @@ async function effectiveKey(
 }
 
 /**
+ * Moves one source row from its job to `toJobId`, then settles the job it
+ * left: re-merged when other sources remain, else merged into `toJobId` with
+ * every user's decisions and views. Returns the left job's processing state
+ * when it was `pending`, for the caller to carry over; the target is not
+ * re-merged here.
+ */
+async function leaveJob(
+  tx: DatabaseTransaction,
+  input: {
+    link: { id: string; jobId: string };
+    toJobId: string;
+    normalizedVersionId: string;
+    linkedAt: Date;
+  },
+): Promise<ProcessingState | null> {
+  const { orm } = tx;
+  const old = found(
+    await orm.public.NormalizedJob.where({ id: input.link.jobId })
+      .forNoKeyUpdate()
+      .first(),
+    'previous job',
+  );
+  await orm.public.NormalizedJobSource.where({ id: input.link.id }).updateAll({
+    jobId: input.toJobId,
+    normalizedVersionId: input.normalizedVersionId,
+    linkedAt: input.linkedAt,
+  });
+  const left = await orm.public.NormalizedJobSource.where({
+    jobId: old.id,
+  }).all();
+  if (left.length > 0) {
+    await remerge(tx, old.id);
+    return null;
+  }
+  await orm.public.NormalizedJob.where({ id: old.id }).updateAll({
+    status: 'merged',
+    mergedIntoId: input.toJobId,
+    ...(old.processingStatus === 'pending'
+      ? processingColumns({ status: null, reason: null, requestedAt: null })
+      : {}),
+  });
+  await moveDecisions(tx, old.id, input.toJobId);
+  await moveViews(tx, old.id, input.toJobId);
+  const oldState = processingOf(old);
+  return oldState.status === 'pending' ? oldState : null;
+}
+
+/**
  * Links a raw item to the job its latest version's job key names, inside the
  * raw item's transaction, and re-merges every job the link touched. A new key
  * with no job renames the item's old job when all its sources key there.
@@ -638,60 +690,43 @@ export async function linkJob(
       });
   } else {
     // The item's job key changed: it leaves its old job for this one.
-    const old = found(
-      await orm.public.NormalizedJob.where({ id: link.jobId })
-        .forNoKeyUpdate()
-        .first(),
-      'previous job',
-    );
-    await orm.public.NormalizedJobSource.where({ id: link.id }).updateAll({
-      jobId: job.id,
+    const carried = await leaveJob(tx, {
+      link,
+      toJobId: job.id,
       normalizedVersionId: version.id,
       linkedAt: input.observedAt,
     });
-    const left = await orm.public.NormalizedJobSource.where({
-      jobId: old.id,
-    }).all();
-    if (left.length > 0) {
-      await remerge(tx, old.id);
-    } else {
-      await orm.public.NormalizedJob.where({ id: old.id }).updateAll({
-        status: 'merged',
-        mergedIntoId: job.id,
-        ...(old.processingStatus === 'pending'
-          ? processingColumns({ status: null, reason: null, requestedAt: null })
-          : {}),
-      });
-      await moveDecisions(tx, old.id, job.id);
-      await moveViews(tx, old.id, job.id);
-      const oldState = processingOf(old);
-      if (oldState.status === 'pending' && current.status !== 'pending') {
-        current = oldState;
-        await orm.public.NormalizedJob.where({ id: job.id }).updateAll(
-          processingColumns(oldState),
-        );
-      }
+    if (carried && current.status !== 'pending') {
+      current = carried;
+      await orm.public.NormalizedJob.where({ id: job.id }).updateAll(
+        processingColumns(carried),
+      );
     }
   }
 
   await remerge(tx, job.id);
 
   if (isBoard) {
-    // Trial items with this LinkedIn id elsewhere follow it here: their key now
-    // resolves to this job's through twinJobKey, so each moves by the "key
-    // changed" path above, and a trial-only job left empty merges into this one.
-    for (const rawItemId of await strayTwins(tx, item.sourceKey, job.id))
-      await linkJob(tx, {
-        rawItemId,
-        observedAt: input.observedAt,
-        rebuild: input.rebuild,
+    // Trial items with this LinkedIn id elsewhere follow it here, under the
+    // version they are linked with: a trial source adds nothing to a harvestapi
+    // job, so its latest version (perhaps unreadable) is never read. A
+    // trial-only job left empty merges into this one, with its marks.
+    const strays = await strayTwins(tx, item.sourceKey, job.id);
+    for (const stray of strays) {
+      const carried = await leaveJob(tx, {
+        link: stray,
+        toJobId: job.id,
+        normalizedVersionId: stray.normalizedVersionId,
+        linkedAt: input.observedAt,
       });
-    current = processingOf(
-      found(
-        await orm.public.NormalizedJob.where({ id: job.id }).first(),
-        'job',
-      ),
-    );
+      if (carried && current.status !== 'pending') {
+        current = carried;
+        await orm.public.NormalizedJob.where({ id: job.id }).updateAll(
+          processingColumns(carried),
+        );
+      }
+    }
+    if (strays.length > 0) await remerge(tx, job.id);
   }
 
   const joined =
