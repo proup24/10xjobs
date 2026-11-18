@@ -1,16 +1,11 @@
 import { ENGINEERING_ROLE_KINDS } from '@xjobs/database';
-import {
-  Arrangement,
-  Channel,
-  Seniority,
-  SkillDomain,
-  isTrialChannel,
-} from 'src/common/enums';
+import { Arrangement, Channel, Seniority, SkillDomain } from 'src/common/enums';
 import { locationKey } from '../steps/normalize';
 import type { QuerySearchCombination } from '../types';
 import { TECHNOLOGY_TERMS } from '../builders/keywords';
 import { AshbyQueryBuilder } from './ashbyhq.builder';
 import { GreenhouseQueryBuilder } from './greenhouse.builder';
+import { toRecipe } from '../builders/recipe';
 import { CHANNEL_QUERY_BUILDERS } from '.';
 import { isWorldwide, LINKEDIN_GEO_IDS } from './linkedin_geo';
 import { roleWords } from '../builders/role-words';
@@ -288,10 +283,7 @@ describe('Greenhouse and Ashby builders', () => {
 
 describe('channel query builders', () => {
   it('registers a builder for every channel', () => {
-    // The trial channel's builder arrives with its own task.
-    for (const channel of Object.values(Channel).filter(
-      (c) => !isTrialChannel(c),
-    )) {
+    for (const channel of Object.values(Channel)) {
       expect(CHANNEL_QUERY_BUILDERS[channel].channel).toBe(channel);
     }
   });
@@ -305,6 +297,38 @@ describe('channel query builders', () => {
     );
     expect(build(Channel.GREEN_HOUSE, onsite)).toEqual(
       build(Channel.ASHBY, onsite),
+    );
+  });
+
+  it('builds the trial channel exactly like the LinkedIn job board, except channel and hash', () => {
+    const combination = {
+      ...base,
+      location: 'casablanca, morocco',
+      type: Arrangement.onsite,
+      experienceLevel: '4',
+    };
+    const main = toRecipe({
+      ...combination,
+      channel: Channel.LINKEDIN_JOB_BOARD,
+    });
+    const trial = toRecipe({
+      ...combination,
+      channel: Channel.LINKEDIN_JOB_BOARD_CHEAP,
+    });
+    expect(trial.channel).toBe(Channel.LINKEDIN_JOB_BOARD_CHEAP);
+    expect(trial.hash).not.toBe(main.hash);
+    expect({ ...trial, channel: main.channel, hash: main.hash }).toEqual(main);
+  });
+
+  it('keeps the LinkedIn job board recipe hash it had before the trial channel', () => {
+    // Literal taken on the code before the trial channel existed.
+    const recipe = toRecipe({
+      ...base,
+      channel: Channel.LINKEDIN_JOB_BOARD,
+      experienceLevel: '4',
+    });
+    expect(recipe.hash).toBe(
+      '3be04a3aaa389a4bbdd79eb56832247d0e59a2ae52bc92a9319ace16eae37427',
     );
   });
 });

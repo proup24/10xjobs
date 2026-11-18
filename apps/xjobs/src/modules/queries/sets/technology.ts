@@ -1,5 +1,5 @@
 import { isSearchableTech } from '@xjobs/database/enums';
-import { Channel } from 'src/common/enums';
+import { Channel, isLinkedinJobBoard } from 'src/common/enums';
 import { searchSpellings } from '../builders/search-spellings';
 import { linkedinKeywordFits } from '../channels/linkedin_keyword';
 import type { RankedSkill, TechnologySet } from '../types';
@@ -78,8 +78,7 @@ export function technologySets(
   roles: readonly string[] = [],
 ): TechnologySet[] {
   const top = topSkills(skills);
-  if (channel === Channel.LINKEDIN_JOB_BOARD)
-    return packLinkedinTechnologies(top, roles);
+  if (isLinkedinJobBoard(channel)) return packLinkedinTechnologies(top, roles);
   return top.map(({ technology, domain }) => ({
     technologies: [technology],
     domain,

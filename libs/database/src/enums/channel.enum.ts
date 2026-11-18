@@ -8,10 +8,13 @@ export enum Channel {
 }
 
 /**
- * The channels queries are built for and collected from. The others keep
- * their builders and collectors but get no searches and no collect schedule.
+ * The channels searches are built for. The others keep their builders and
+ * collectors but get no searches. Whether a channel collects is `collectsNow`.
  */
-export const ACTIVE_CHANNELS: readonly Channel[] = [Channel.LINKEDIN_JOB_BOARD];
+export const ACTIVE_CHANNELS: readonly Channel[] = [
+  Channel.LINKEDIN_JOB_BOARD,
+  Channel.LINKEDIN_JOB_BOARD_CHEAP,
+];
 
 /** Trial channels: LinkedIn job-board actors run beside the main one to compare them. */
 export const TRIAL_CHANNELS: readonly Channel[] = [

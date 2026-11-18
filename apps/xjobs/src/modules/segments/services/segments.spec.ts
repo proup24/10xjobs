@@ -1,4 +1,10 @@
-import { Arrangement, Channel, Seniority, SkillDomain } from 'src/common/enums';
+import {
+  Arrangement,
+  Channel,
+  Seniority,
+  SkillDomain,
+  isLinkedinJobBoard,
+} from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
 import {
   linkedinGroupKey,
@@ -28,15 +34,13 @@ const builder = (
     location: 'casablanca, morocco',
     keyword: 'backend',
     ...overrides,
-    params:
-      (overrides.channel ?? Channel.LINKEDIN_JOB_BOARD) ===
-      Channel.LINKEDIN_JOB_BOARD
-        ? {
-            roleWords: ['backend'],
-            spellings: ['nestjs'],
-            ...(overrides.params as object),
-          }
-        : (overrides.params ?? {}),
+    params: isLinkedinJobBoard(overrides.channel ?? Channel.LINKEDIN_JOB_BOARD)
+      ? {
+          roleWords: ['backend'],
+          spellings: ['nestjs'],
+          ...(overrides.params as object),
+        }
+      : (overrides.params ?? {}),
   }) as QuerySearchBuilderRow;
 
 const many = (count: number, overrides: Partial<QuerySearchBuilderRow> = {}) =>
@@ -184,6 +188,45 @@ describe('buildSegments', () => {
     ).toBe(
       `${Channel.LINKEDIN_JOB_BOARD}|onsite|group:${linkedinGroupKey({ location: 'emea', geoId: '91000000', experienceLevel: '4', workType: '2' })}`,
     );
+  });
+
+  it('keys the trial channel apart from the LinkedIn job board, by the same group', () => {
+    const params = { location: 'emea', experienceLevel: '4' };
+    const main = segmentKey(builder({ params }));
+    const trial = segmentKey(
+      builder({ channel: Channel.LINKEDIN_JOB_BOARD_CHEAP, params }),
+    );
+    expect(main.startsWith('LINKEDIN_JOB_BOARD|')).toBe(true);
+    expect(trial.startsWith('LINKEDIN_JOB_BOARD_CHEAP|')).toBe(true);
+    expect(trial).toBe(
+      `${Channel.LINKEDIN_JOB_BOARD_CHEAP}|onsite|group:${linkedinGroupKey(params)}`,
+    );
+    expect(trial).not.toBe(main);
+  });
+
+  it('plans the trial channel with the LinkedIn job board chunking', () => {
+    const long = (channel: Channel) =>
+      Array.from({ length: 30 }, (_, i) =>
+        builder({
+          channel,
+          params: {
+            roleWords: ['backend'],
+            spellings: [`technology-number-${i}`],
+          },
+        }),
+      );
+    const shape = (channel: Channel) => {
+      const builders = long(channel);
+      const key = segmentKey(builders[0]);
+      const plan = planSegments(builders, 10, new Map([[key, 2]]));
+      return {
+        chunks: plan.segments.map((s) => s.members.length),
+        cuts: plan.cuts.map((c) => ({ members: c.members, chunks: c.chunks })),
+      };
+    };
+    const main = shape(Channel.LINKEDIN_JOB_BOARD);
+    expect(main.cuts).toHaveLength(1);
+    expect(shape(Channel.LINKEDIN_JOB_BOARD_CHEAP)).toEqual(main);
   });
 
   it('groups LinkedIn builders of one search whatever their keyword', () => {
