@@ -1,4 +1,4 @@
-import { Channel } from 'src/common/enums';
+import { Channel, isTrialChannel } from 'src/common/enums';
 import { normalizeConfig } from '../config';
 import { atsIdentity } from '../utils/identity';
 import { httpUrl, isLinkedinHost } from './linkedin';
@@ -54,7 +54,8 @@ function sourceId(sourceKey: string): string {
 /**
  * The job's real id, from exact facts only. An Ashby or Greenhouse item is its
  * posting. A LinkedIn job is the posting its apply URL names, else that URL
- * when it carries an identifier, else its own LinkedIn id. A post is always
+ * when it carries an identifier, else its own LinkedIn id. A trial actor's
+ * item is always its LinkedIn id. A post is always
  * its own: it may hold several jobs or none, so it never absorbs another.
  */
 export function jobKey(
@@ -73,6 +74,9 @@ export function jobKey(
     case Channel.LINKEDIN_JOB_BOARD:
     case Channel.LINKEDIN_JOB_BOARD_CHEAP:
     case Channel.LINKEDIN_JOB_BOARD_BEBITY: {
+      // A trial actor never names the posting by its apply URL: it always
+      // keys by LinkedIn id so it joins harvestapi's job later.
+      if (isTrialChannel(channel)) return `linkedin-job:${sourceId(sourceKey)}`;
       const apply = record.applyUrl;
       if (apply) {
         const ats = atsKey(apply);

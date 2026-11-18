@@ -19,6 +19,7 @@ import ashbyFailed from '../utils/fixtures/ashby-failed.json';
 import ashby from '../utils/fixtures/ashby.json';
 import greenhouse from '../utils/fixtures/greenhouse.json';
 import linkedinJob from '../utils/fixtures/linkedin-job.json';
+import bebityJob from '../utils/fixtures/linkedin-job-bebity.json';
 import cheapJob from '../utils/fixtures/linkedin-job-cheap.json';
 import harvestJobs from '../utils/fixtures/linkedin-job-harvest.json';
 import {
@@ -1615,6 +1616,68 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
             processingReason: 'joined',
             processingRequestedAt: t2,
             workplaceType: 'remote',
+          });
+          expect(await sources()).toHaveLength(2);
+        });
+
+        it('joins two trial actors and then harvestapi', async () => {
+          const bebity = () => ({
+            ...structuredClone(bebityJob),
+            id: remote.id,
+            jobUrl: `https://www.linkedin.com/jobs/view/${remote.id}`,
+          });
+          await save(bebity(), t1, Channel.LINKEDIN_JOB_BOARD_BEBITY);
+          await saveTrial(t1);
+          expect(await jobs()).toHaveLength(1);
+          expect(await sources()).toHaveLength(2);
+          const trialJob = await jobByKey(linkedinKey);
+
+          const result = await save(viaAshby(), t2);
+
+          const harvested = await jobByKey(ashbyKey);
+          expect(result.job).toMatchObject({ jobId: harvested.id });
+          // Both trial items and harvestapi's own are linked to its job.
+          expect((await sources()).map((s) => s.jobId)).toEqual([
+            harvested.id,
+            harvested.id,
+            harvested.id,
+          ]);
+          expect(await jobByKey(linkedinKey)).toMatchObject({
+            id: trialJob.id,
+            status: 'merged',
+            mergedIntoId: harvested.id,
+          });
+          expect(await active()).toEqual([
+            expect.objectContaining({
+              id: harvested.id,
+              processingReason: 'joined',
+            }),
+          ]);
+        });
+
+        it('bebity first, harvestapi same key: harvestapi links onto the bebity job, which is joined', async () => {
+          const bebity = {
+            ...structuredClone(bebityJob),
+            id: remote.id,
+            jobUrl: `https://www.linkedin.com/jobs/view/${remote.id}`,
+          };
+          await save(bebity, t1, Channel.LINKEDIN_JOB_BOARD_BEBITY);
+          const trialJob = await jobByKey(linkedinKey);
+          await processWith(trialJob.id, { doc: 'trial' });
+
+          const result = await save(harvest(), t2);
+
+          expect(result.job).toMatchObject({
+            jobId: trialJob.id,
+            created: false,
+            pending: true,
+          });
+          const [only, ...rest] = await jobs();
+          expect(rest).toHaveLength(0);
+          expect(only).toMatchObject({
+            id: trialJob.id,
+            processingStatus: 'pending',
+            processingReason: 'joined',
           });
           expect(await sources()).toHaveLength(2);
         });

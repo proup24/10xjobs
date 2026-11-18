@@ -1,5 +1,6 @@
 import { Channel } from 'src/common/enums';
 import linkedinJob from '../utils/fixtures/linkedin-job.json';
+import bebityCurrent from '../utils/fixtures/linkedin-job-bebity.json';
 import cheapJob from '../utils/fixtures/linkedin-job-cheap.json';
 import harvestJobs from '../utils/fixtures/linkedin-job-harvest.json';
 import linkedinPost from '../utils/fixtures/linkedin-post.json';
@@ -219,8 +220,24 @@ describe('normalize LinkedIn job board, item format', () => {
     ).toBeNull();
   });
 
-  it('has no posted time for a bebity item, which states a date only', () => {
-    expect(record(job()).postedAt).toBeNull();
+  it('maps an old bebity item as before', () => {
+    // No `postedTime`: such an item states a date only.
+    const { postedTime: _unused, ...old } = linkedinJob;
+    expect(
+      record(normalize(Channel.LINKEDIN_JOB_BOARD, old)).postedAt,
+    ).toBeNull();
+  });
+
+  it('maps a current bebity item', () => {
+    const r = record(normalize(Channel.LINKEDIN_JOB_BOARD, bebityCurrent));
+    expect(r).toMatchObject({
+      title: bebityCurrent.title,
+      companyName: bebityCurrent.companyName,
+      location: bebityCurrent.location,
+      applyUrl: null,
+      postingUrl: `https://www.linkedin.com/jobs/view/${bebityCurrent.id}`,
+      postedAt: new Date(scrapedAt.getTime() - 46 * 60_000).toISOString(),
+    });
   });
 
   it('maps a bebity item by bebity names even when it carries a jobId', () => {
