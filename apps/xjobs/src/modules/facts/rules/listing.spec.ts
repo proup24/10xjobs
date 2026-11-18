@@ -8,6 +8,8 @@ const vocab: PlaceVocabulary = {
   regions: new Set(['EU']),
   countries: new Set(['FR', 'US', 'MA']),
   cities: new Map([['FR|paris', 'c-paris']]),
+  countryNames: new Map(),
+  cityCountries: new Map(),
   cityNames: new Map([['c-paris', 'Paris']]),
   regionCountries: new Map([['EU', new Set(['FR'])]]),
 };

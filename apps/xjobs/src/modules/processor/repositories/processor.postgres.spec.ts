@@ -944,6 +944,9 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       expect(places.cityNames.get(fes.id)).toBe('Fès');
       expect(places.countries.has('DE')).toBe(true);
       expect(places.regionCountries.get('EMEA')?.has('DE')).toBe(true);
+      expect(places.countryNames.get('germany')).toBe('DE');
+      expect(places.cityCountries.get('fes')).toEqual(new Set(['MA']));
+      expect(places.cityCountries.get('fez')).toEqual(new Set(['MA']));
     });
 
     it('bumps the occurrences of approved codes', async () => {

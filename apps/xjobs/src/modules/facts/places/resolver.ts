@@ -4,6 +4,7 @@ import {
   WORLDWIDE,
 } from '../config/linkedin-places';
 import { placeCityKey } from './city-forms';
+import { parseLocationText } from './location-text';
 
 export interface PlaceVocabulary {
   /** Approved region codes. */
@@ -16,6 +17,10 @@ export interface PlaceVocabulary {
   cityNames: Map<string, string>;
   /** Region code -> its country codes (region_countries). */
   regionCountries: Map<string, Set<string>>;
+  /** `foldPlaceName(label or alias)` -> country code (approved countries only). */
+  countryNames: Map<string, string>;
+  /** `foldPlaceName(city name or alias)` -> the country codes that have such a city. */
+  cityCountries: Map<string, Set<string>>;
 }
 
 export type ResolvedPlace =
@@ -29,6 +34,8 @@ export interface ListingLocation {
   regionCode: string | null;
   city: string | null;
   geoId: string | null;
+  /** LinkedIn's location text; read only when every field above is empty. */
+  location: string | null;
 }
 
 export interface ResolvedListingPlace {
@@ -73,8 +80,15 @@ export function resolveListingPlace(
   }
 
   const geoId = loc.geoId?.trim();
-  const country = loc.countryCode?.trim().toUpperCase();
-  const city = loc.city?.trim();
+  let country = loc.countryCode?.trim().toUpperCase();
+  let city = loc.city?.trim();
+  // Location text is the fallback only when nothing structured is there.
+  if (!code && !geoId && !country && !city && loc.location?.trim()) {
+    const parsed = parseLocationText(loc.location, vocab);
+    country = parsed.countryCode ?? undefined;
+    city = parsed.city ?? undefined;
+    if (!country) named = parsed.named;
+  }
   if (geoId) {
     const place = regionPlace(LINKEDIN_REGION_GEO_IDS[geoId], vocab);
     if (place) return { place, fellBack: false };

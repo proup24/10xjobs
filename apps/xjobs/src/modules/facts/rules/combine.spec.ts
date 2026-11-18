@@ -15,6 +15,8 @@ const vocab: PlaceVocabulary = {
     ['FR|paris', 'c-paris'],
     ['FR|lyon', 'c-lyon'],
   ]),
+  countryNames: new Map(),
+  cityCountries: new Map(),
   cityNames: new Map([
     ['c-paris', 'Paris'],
     ['c-lyon', 'Lyon'],

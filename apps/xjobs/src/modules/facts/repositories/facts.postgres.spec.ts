@@ -103,6 +103,8 @@ describe.skipIf(!url)('facts repository in PostgreSQL', () => {
       regions: new Set(['EMEA']),
       countries: new Set(['FR']),
       cities: new Map(),
+      countryNames: new Map(),
+      cityCountries: new Map(),
       cityNames: new Map(),
       regionCountries: new Map([['EMEA', new Set(['FR'])]]),
     };
