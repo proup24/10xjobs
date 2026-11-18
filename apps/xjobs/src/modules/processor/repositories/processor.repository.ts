@@ -19,6 +19,8 @@ export interface Claim {
   requestedAt: Date;
   /** `processingAttempts` after the claim; also identifies the claim. */
   attempts: number;
+  /** Why the job was queued; `joined` allows reusing a trial extraction. */
+  reason: 'new' | 'reopened' | 'joined' | null;
 }
 
 /** Two runs with the same key would produce the same extraction. */
@@ -135,6 +137,14 @@ export abstract class ProcessorRepository {
   abstract findReusable(
     key: ReuseKey,
   ): Promise<{ id: string; jobId: string } | null>;
+  /**
+   * The newest extraction with this schema, prompt and model made for `jobId`
+   * or for a job merged into it (the trial's copy of the same posting).
+   */
+  abstract findJoinedReusable(
+    jobId: string,
+    key: Omit<ReuseKey, 'inputHash'>,
+  ): Promise<{ id: string; jobId: string } | null>;
   /** A new row for `jobId` with the same document; returns its id. */
   abstract copyExtraction(extractionId: string, jobId: string): Promise<string>;
   abstract saveExtraction(row: NewExtraction): Promise<string>;
@@ -224,8 +234,12 @@ export class PrismaProcessorRepository extends ProcessorRepository {
         WHERE id = ${jobId}::uuid
           AND "processingStatus" = 'pending' AND status = 'active' AND kind = 'job'
           AND id IN (${linkedInJobIds(raw)})
-        RETURNING "processingRequestedAt" AS "requestedAt", "processingAttempts" AS attempts`
-        .returnsRow({ requestedAt: TIMESTAMP, attempts: 'pg/int4@1' })
+        RETURNING "processingRequestedAt" AS "requestedAt", "processingAttempts" AS attempts, "processingReason" AS reason`
+        .returnsRow({
+          requestedAt: TIMESTAMP,
+          attempts: 'pg/int4@1',
+          reason: 'pg/text@1',
+        })
         .build(),
     );
     const row = rows[0];
@@ -234,6 +248,7 @@ export class PrismaProcessorRepository extends ProcessorRepository {
       jobId,
       requestedAt: row.requestedAt as Date,
       attempts: row.attempts as number,
+      reason: row.reason as Claim['reason'],
     };
   }
 
@@ -262,6 +277,27 @@ export class PrismaProcessorRepository extends ProcessorRepository {
       .orderBy((e) => e.createdAt.desc())
       .first();
     return row ? { id: row.id, jobId: row.jobId } : null;
+  }
+
+  async findJoinedReusable(
+    jobId: string,
+    key: Omit<ReuseKey, 'inputHash'>,
+  ): Promise<{ id: string; jobId: string } | null> {
+    const { raw } = this.db;
+    const rows = await this.db.query(
+      raw.sql`SELECT e.id, e."jobId" FROM job_extractions e
+        WHERE e."schemaVersion" = ${key.schemaVersion}
+          AND e."promptHash" = ${key.promptHash}
+          AND e."extractionModel" = ${key.extractionModel}
+          AND (e."jobId" = ${jobId}::uuid
+            OR e."jobId" IN (SELECT id FROM normalized_jobs WHERE "mergedIntoId" = ${jobId}::uuid))
+        ORDER BY e."createdAt" DESC LIMIT 1`
+        .returnsRow({ id: UUID, jobId: UUID })
+        .build(),
+    );
+    return rows[0]
+      ? { id: rows[0].id as string, jobId: rows[0].jobId as string }
+      : null;
   }
 
   /** The copy cost nothing: no model was called for it. */

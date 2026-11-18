@@ -154,6 +154,9 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
     requestedAt?: Date | null;
     closed?: boolean;
     descriptionText?: string | null;
+    reason?: 'new' | 'reopened' | 'joined';
+    status?: 'active' | 'merged';
+    mergedIntoId?: string;
   }
 
   /** A normalized job with one source per channel (LinkedIn job board by default). */
@@ -163,8 +166,8 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
     const row = await db.orm.public.NormalizedJob.create({
       jobKey: randomUUID(),
       kind: spec.kind ?? 'job',
-      status: 'active',
-      mergedIntoId: null,
+      status: spec.status ?? 'active',
+      mergedIntoId: spec.mergedIntoId ?? null,
       title: 'Backend Engineer',
       companyName: 'Acme',
       location: 'Berlin, Germany',
@@ -185,7 +188,7 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       firstSeenAt: t0,
       lastSeenAt: t0,
       processingStatus: status,
-      processingReason: status === 'pending' ? 'new' : null,
+      processingReason: status === 'pending' ? (spec.reason ?? 'new') : null,
       processingRequestedAt:
         spec.requestedAt === undefined
           ? status === null
@@ -294,7 +297,17 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
     it('moves a pending job to processing and counts the attempt', async () => {
       const id = await job();
       const claim = await repo.claim(id);
-      expect(claim).toEqual({ jobId: id, requestedAt: t0, attempts: 1 });
+      expect(claim).toEqual({
+        jobId: id,
+        requestedAt: t0,
+        attempts: 1,
+        reason: 'new',
+      });
+    });
+
+    it('returns the processing reason', async () => {
+      const id = await job({ reason: 'joined' });
+      expect((await repo.claim(id))?.reason).toBe('joined');
       const row = await jobRow(id);
       expect(row.processingStatus).toBe('processing');
       expect(row.processingAttempts).toBe(1);
@@ -556,6 +569,41 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       expect(copy?.jobId).toBe(second);
       expect(copy?.data).toEqual(fixtureDocument());
       expect(copy?.inputHash).toBe('same-input');
+    });
+  });
+
+  describe('findJoinedReusable', () => {
+    const { inputHash: _ignored, ...joinKey } = key('x');
+
+    it('returns an extraction of a job merged into the joined job', async () => {
+      const target = await job();
+      const merged = await job({ status: 'merged', mergedIntoId: target });
+      const id = await repo.saveExtraction(extraction(merged, key('a')));
+      expect(await repo.findJoinedReusable(target, joinKey)).toEqual({
+        id,
+        jobId: merged,
+      });
+    });
+
+    it("returns the job's own older extraction", async () => {
+      const target = await job();
+      const id = await repo.saveExtraction(extraction(target, key('old')));
+      expect(await repo.findJoinedReusable(target, joinKey)).toEqual({
+        id,
+        jobId: target,
+      });
+    });
+
+    it('returns null for another prompt hash and for an unrelated job', async () => {
+      const target = await job();
+      const merged = await job({ status: 'merged', mergedIntoId: target });
+      const unrelated = await job();
+      await repo.saveExtraction(extraction(merged, key('a')));
+      await repo.saveExtraction(extraction(unrelated, key('b')));
+      expect(
+        await repo.findJoinedReusable(target, { ...joinKey, promptHash: 'x' }),
+      ).toBeNull();
+      expect(await repo.findJoinedReusable(await job(), joinKey)).toBeNull();
     });
   });
 

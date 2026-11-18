@@ -122,6 +122,9 @@ export interface MemoryJob extends JobForProcessing {
     | 'failed'
     | 'archived'
     | null;
+  processingReason: 'new' | 'reopened' | 'joined' | null;
+  /** Set when `status` is `merged`. */
+  mergedIntoId: string | null;
   processingRequestedAt: Date | null;
   processingStartedAt: Date | null;
   processingAttempts: number;
@@ -162,6 +165,8 @@ export class MemoryProcessorRepository extends ProcessorRepository {
       kind: 'job',
       linkedIn: true,
       processingStatus: 'pending',
+      processingReason: 'new',
+      mergedIntoId: null,
       processingRequestedAt: this.now(),
       processingStartedAt: null,
       processingAttempts: 0,
@@ -178,6 +183,7 @@ export class MemoryProcessorRepository extends ProcessorRepository {
   reopen(jobId: string): void {
     const job = this.mustGet(jobId);
     job.processingStatus = 'pending';
+    job.processingReason = 'reopened';
     job.processingRequestedAt = new Date(
       (job.processingRequestedAt?.getTime() ?? this.now().getTime()) + 1,
     );
@@ -233,6 +239,7 @@ export class MemoryProcessorRepository extends ProcessorRepository {
       jobId,
       requestedAt: job.processingRequestedAt,
       attempts: job.processingAttempts,
+      reason: job.processingReason,
     };
   }
 
@@ -260,6 +267,24 @@ export class MemoryProcessorRepository extends ProcessorRepository {
         e.extractionModel === key.extractionModel,
     );
     const latest = hits.at(-1);
+    return latest ? { id: latest.id, jobId: latest.jobId } : null;
+  }
+
+  async findJoinedReusable(
+    jobId: string,
+    key: Omit<ReuseKey, 'inputHash'>,
+  ): Promise<{ id: string; jobId: string } | null> {
+    this.log.push('findJoinedReusable');
+    const latest = this.extractions
+      .filter(
+        (e) =>
+          (e.jobId === jobId ||
+            this.jobs.get(e.jobId)?.mergedIntoId === jobId) &&
+          e.schemaVersion === key.schemaVersion &&
+          e.promptHash === key.promptHash &&
+          e.extractionModel === key.extractionModel,
+      )
+      .at(-1);
     return latest ? { id: latest.id, jobId: latest.jobId } : null;
   }
 
