@@ -1,12 +1,18 @@
 /**
  * The read-only queries behind `db:actor-compare`. Credit is by
- * `collection_batches.actor`; the aggregation is in ./report.
+ * `collection_batches.actor` (a run with no batch by its channel's actor); the
+ * aggregation is in ./report.
  */
 import type { DatabaseTransaction } from '@xjobs/database';
-import { mergedLinkedinKeyword } from 'src/modules/collectors/providers/mappers/linkedin-job-board.mapper';
+import {
+  linkedinGroupKey,
+  mergedLinkedinKeyword,
+} from 'src/modules/collectors/providers/mappers/linkedin-job-board.mapper';
 import { MATCHER_VERSION } from 'src/modules/matcher/config/matcher.config';
 import {
   HARVEST_ACTOR,
+  runActor,
+  type BuilderRow,
   type JobOutcome,
   type RunRow,
   type Sighting,
@@ -33,7 +39,7 @@ export async function resolveSince(
     tx.raw.sql`SELECT min(b."observedAt") AS first
       FROM collection_batches b
       WHERE b.actor <> ${HARVEST_ACTOR}::text
-        AND b.channel::text = 'LINKEDIN_JOB_BOARD_CHEAP'`
+        AND b.channel::text IN ('LINKEDIN_JOB_BOARD_CHEAP', 'LINKEDIN_JOB_BOARD_BEBITY')`
       .returnsRow({ first: 'pg/timestamptz-date@1' })
       .build(),
   );
@@ -47,6 +53,7 @@ export async function loadSightings(
   const [row] = await tx.query(
     tx.raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
       SELECT coalesce(j."mergedIntoId", j.id)::text AS "jobId", b.actor,
+        b."segmentRunId"::text AS "runId",
         s."observedAt" AS "seenAt",
         q.params->>'workType' AS "filterWorkType",
         nv.record->>'workplaceType' AS "itemWorkplaceType"
@@ -60,7 +67,7 @@ export async function loadSightings(
         WHERE v."rawVersionId" = s."versionId" AND v.status = 'valid'
         ORDER BY v."normalizerVersion" DESC LIMIT 1) nv ON true
       WHERE s."observedAt" >= ${since}::timestamptz
-        AND b.channel::text IN ('LINKEDIN_JOB_BOARD', 'LINKEDIN_JOB_BOARD_CHEAP')) t`
+        AND b.channel::text IN ('LINKEDIN_JOB_BOARD', 'LINKEDIN_JOB_BOARD_CHEAP', 'LINKEDIN_JOB_BOARD_BEBITY')) t`
       .returnsRow({ rows: JSONB })
       .build(),
   );
@@ -81,7 +88,7 @@ export async function loadOutcomes(
         JOIN normalized_job_sources njs ON njs."rawItemId" = s."rawItemId"
         JOIN normalized_jobs j ON j.id = njs."jobId"
         WHERE s."observedAt" >= ${since}::timestamptz
-          AND b.channel::text IN ('LINKEDIN_JOB_BOARD', 'LINKEDIN_JOB_BOARD_CHEAP'))
+          AND b.channel::text IN ('LINKEDIN_JOB_BOARD', 'LINKEDIN_JOB_BOARD_CHEAP', 'LINKEDIN_JOB_BOARD_BEBITY'))
       SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
         SELECT j.id::text AS "jobId",
           (SELECT m.outcome FROM job_matches m
@@ -130,10 +137,20 @@ function sentKeyword(members: { [key: string]: unknown }[]): string | null {
   }
 }
 
-export async function loadRuns(tx: Tx, since: string): Promise<RunRow[]> {
+/**
+ * Every run of the compared channels since `since`, with or without a batch
+ * (a run that failed or never started has none). Costs are as stored: the
+ * collection service has already re-read Apify's final cost.
+ */
+export async function loadSegmentRuns(
+  tx: Tx,
+  since: string,
+): Promise<RunRow[]> {
   const [row] = await tx.query(
     tx.raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
-      SELECT b.actor, r."startedAt", r.fetched AS rows, r."costMicroUsd",
+      SELECT r.id::text AS "runId", b.actor AS "batchActor",
+        r.channel::text AS channel, r."startedAt", r.status, r.capped,
+        r.fetched AS rows, r."costMicroUsd",
         r."queryIds"::text[] AS "queryIds",
         (SELECT coalesce(jsonb_agg(q.params), '[]'::jsonb)
           FROM query_search_builder q WHERE q.id = ANY(r."queryIds")) AS members,
@@ -141,27 +158,82 @@ export async function loadRuns(tx: Tx, since: string): Promise<RunRow[]> {
           FROM raw_item_sightings s
           JOIN raw_item_versions v ON v.id = s."versionId"
           WHERE s."batchId" = b.id AND v.payload->>'searchString' IS NOT NULL) AS echoed
-      FROM collection_batches b
-      JOIN search_segment_runs r ON r.id = b."segmentRunId"
+      FROM search_segment_runs r
+      LEFT JOIN collection_batches b ON b."segmentRunId" = r.id
       WHERE r."startedAt" >= ${since}::timestamptz
-        AND b.channel::text IN ('LINKEDIN_JOB_BOARD', 'LINKEDIN_JOB_BOARD_CHEAP')) t`
+        AND r.channel::text IN ('LINKEDIN_JOB_BOARD', 'LINKEDIN_JOB_BOARD_CHEAP', 'LINKEDIN_JOB_BOARD_BEBITY')) t`
       .returnsRow({ rows: JSONB })
       .build(),
   );
   type Raw = {
-    actor: string;
+    runId: string;
+    batchActor: string | null;
+    channel: string;
     startedAt: string;
+    status: string;
+    capped: boolean;
     rows: number;
     costMicroUsd: number | null;
+    queryIds: string[];
     members: { [key: string]: unknown }[];
     echoed: string[];
   };
-  return ((row?.rows ?? []) as Raw[]).map((r) => ({
-    actor: r.actor,
-    startedAt: new Date(r.startedAt),
-    rows: r.rows,
-    costMicroUsd: r.costMicroUsd,
-    sentKeyword: r.actor === HARVEST_ACTOR ? null : sentKeyword(r.members),
-    echoedKeywords: [...new Set(r.echoed.map(stripLocation))],
+  return ((row?.rows ?? []) as Raw[]).map((r) => {
+    const actor = runActor(r.batchActor, r.channel);
+    return {
+      runId: r.runId,
+      actor,
+      channel: r.channel,
+      startedAt: new Date(r.startedAt),
+      status: r.status,
+      capped: r.capped,
+      costMicroUsd: r.costMicroUsd,
+      queryIds: r.queryIds,
+      rows: r.rows,
+      sentKeyword: actor === HARVEST_ACTOR ? null : sentKeyword(r.members),
+      echoedKeywords: [...new Set(r.echoed.map(stripLocation))],
+    };
+  });
+}
+
+/**
+ * The collected builders (active, not deleted) of the compared channels, with
+ * their group: the segment key without its channel (`<type>|group:<place and
+ * filters>`), so twins on every channel share it.
+ */
+export async function loadBuilders(tx: Tx): Promise<BuilderRow[]> {
+  const [row] = await tx.query(
+    tx.raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
+      SELECT q.id::text AS id, q.channel::text AS channel, q.type::text AS type,
+        q.params
+      FROM query_search_builder q
+      WHERE q."isActive" AND NOT q."isDeleted"
+        AND q.channel::text IN ('LINKEDIN_JOB_BOARD', 'LINKEDIN_JOB_BOARD_CHEAP', 'LINKEDIN_JOB_BOARD_BEBITY')) t`
+      .returnsRow({ rows: JSONB })
+      .build(),
+  );
+  type Raw = {
+    id: string;
+    channel: string;
+    type: string;
+    params: Record<string, unknown> | null;
+  };
+  return ((row?.rows ?? []) as Raw[]).map((b) => ({
+    id: b.id,
+    channel: b.channel,
+    group: builderGroup(b.type, b.id, b.params ?? {}),
   }));
+}
+
+/** As `segmentKey` without `<channel>|`: an unresolved place is a group of its own. */
+function builderGroup(
+  type: string,
+  id: string,
+  params: Record<string, unknown>,
+): string {
+  try {
+    return `${type}|group:${linkedinGroupKey(params)}`;
+  } catch {
+    return `${type}|unresolved:${id}`;
+  }
 }
