@@ -107,6 +107,26 @@ const REVIEW: MatchRow[] = [
   }),
 ];
 
+describe('MatchesView actor badges', () => {
+  it('shows both actors on a job found by both, harvestapi first', () => {
+    renderView({
+      rows: [
+        matchRow({
+          jobId: 'both',
+          title: 'Both job',
+          postedAt: hoursAgo(1),
+          channels: ['LINKEDIN_JOB_BOARD_CHEAP', 'LINKEDIN_JOB_BOARD'],
+        }),
+      ],
+    });
+    const a = screen.getByText('LinkedIn · harvestapi');
+    const b = screen.getByText('LinkedIn · cheap_scraper');
+    expect(
+      a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+});
+
 describe('MatchesView lists', () => {
   it('counts both lists on the List tabs', () => {
     renderView({ reviewRows: REVIEW });

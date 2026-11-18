@@ -5,6 +5,7 @@ import { useId, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TextLink } from '@/components/ui/text';
+import { channelBadges } from '@/lib/matches/sources';
 import { timeAgo } from '@/lib/matches/freshness';
 import type { JobPosting } from '@/lib/matches/postings';
 
@@ -72,6 +73,11 @@ export function JobPostings({
                     >
                       View on LinkedIn
                     </TextLink>
+                  )}
+                  {p.channel && (
+                    <Badge variant="outline">
+                      {channelBadges([p.channel])[0]}
+                    </Badge>
                   )}
                   {marks(p).map((m) => (
                     <Badge key={m} variant="secondary">

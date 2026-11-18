@@ -36,6 +36,22 @@ const two = [
 
 afterEach(cleanup);
 
+describe('actor badge', () => {
+  it('names the actor on a cheap posting', () => {
+    render(
+      <JobPostings
+        postings={[
+          two[0],
+          posting({ rawItemId: 'c', channel: 'LINKEDIN_JOB_BOARD_CHEAP' }),
+        ]}
+        now={now}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button'));
+    expect(screen.getByText('LinkedIn · cheap_scraper')).toBeTruthy();
+  });
+});
+
 describe('merged postings', () => {
   it('shows nothing for one posting', () => {
     const { container } = render(

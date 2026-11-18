@@ -34,7 +34,7 @@ describe('MatchRowLink', () => {
     expect(
       within(link).getByText('Acme · Paris, France · Remote'),
     ).toBeTruthy();
-    expect(within(link).getByText('LinkedIn')).toBeTruthy();
+    expect(within(link).getByText('LinkedIn · harvestapi')).toBeTruthy();
     expect(within(link).getByText('Stack 71%')).toBeTruthy();
     expect(within(link).getByText('3 h ago')).toBeTruthy();
     expect(link.getAttribute('aria-current')).toBeNull();

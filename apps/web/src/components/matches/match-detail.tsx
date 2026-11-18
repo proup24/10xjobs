@@ -32,7 +32,7 @@ import { groupByJob, type MatchRow } from '@/lib/matches/group';
 import { markViewed } from '@/lib/matches/mark-viewed';
 import type { JobPosting } from '@/lib/matches/postings';
 import type { ReportField } from '@/lib/matches/report';
-import { channelLabel } from '@/lib/matches/sources';
+import { sourceText } from '@/lib/matches/sources';
 import type { SaveResult } from '@/lib/setup/save-result';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { DismissDialog } from './dismiss-dialog';
@@ -407,7 +407,7 @@ export function MatchDetail({
     Boolean(shown.reviewRule);
   const accepted =
     shown.outcome === 'review' && shown.reviewChoice === 'qualified';
-  const sources = job.channels.map(channelLabel).join(' and ');
+  const sources = sourceText(job.channels);
   const profileLabel = (id: string) => profileLabels[id] ?? 'Profile';
 
   const factRows: [string, FactLine | null, ConflictField | null][] = [
