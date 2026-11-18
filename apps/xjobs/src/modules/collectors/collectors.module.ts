@@ -24,6 +24,7 @@ import { GreenhousePostingProvider } from './providers/extraction/greenhouse.pro
     LinkedinPostsCollector,
   ],
   exports: [
+    ApifyActorProvider,
     AshbyCollector,
     GreenhouseCollector,
     LinkedinJobBoardCollector,

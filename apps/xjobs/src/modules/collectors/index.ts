@@ -5,6 +5,7 @@ export { LinkedinJobBoardCollector } from './providers/linkedin-job-board.collec
 export { LinkedinJobBoardCheapCollector } from './providers/linkedin-job-board-cheap.collector';
 export { LinkedinJobBoardBebityCollector } from './providers/linkedin-job-board-bebity.collector';
 export { LinkedinPostsCollector } from './providers/linkedin-posts.collector';
+export { ApifyRunError } from './providers/apify/apify.provider';
 export { runChargeCapUsd } from './utils/linkedin-board-run';
 export { SearchNotStartedError } from './utils/search-not-started';
 export type {

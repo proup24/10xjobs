@@ -41,6 +41,17 @@ export interface NewSegmentRun {
   /** What the source said matched each search, untouched; null when not reported. */
   searchTotals: unknown;
   error: string | null;
+  /** The Apify run, once one started; null for a search that never started. */
+  apifyRunId: string | null;
+  /** When the cost was last read as final; null on write. */
+  costFinalAt: Date | null;
+}
+
+/** A run whose cost Apify may still revise. */
+export interface UnsettledCost {
+  id: string;
+  apifyRunId: string;
+  finishedAt: Date;
 }
 
 /** Why a member was not claimed. */
@@ -96,6 +107,20 @@ export abstract class SearchSegmentsRepository {
     since: Date,
     nullCostMicroUsd: number,
   ): Promise<number>;
+  /**
+   * The channel's runs with an Apify run id whose cost is not yet final and
+   * that finished at or after `finishedSince`.
+   */
+  abstract unsettledCosts(
+    channel: Channel,
+    finishedSince: Date,
+  ): Promise<UnsettledCost[]>;
+  /** Stores a run's re-read cost; `finalAt` is null while Apify may still revise it. */
+  abstract settleCost(
+    id: string,
+    costMicroUsd: number,
+    finalAt: Date | null,
+  ): Promise<void>;
 }
 
 @Injectable()
@@ -221,6 +246,34 @@ export class PrismaSearchSegmentsRepository extends SearchSegmentsRepository {
       (total, run) => total + (run.costMicroUsd ?? nullCostMicroUsd),
       0,
     );
+  }
+
+  async unsettledCosts(
+    channel: Channel,
+    finishedSince: Date,
+  ): Promise<UnsettledCost[]> {
+    const runs = await this.database.db.orm.public.SearchSegmentRun.where(
+      (row) => row.channel.eq(channel),
+    )
+      .where((row) => row.apifyRunId.isNotNull())
+      .where((row) => row.costFinalAt.isNull())
+      .where((row) => row.finishedAt.gte(finishedSince))
+      .all();
+    return runs.map((run) => ({
+      id: run.id,
+      apifyRunId: run.apifyRunId as string,
+      finishedAt: run.finishedAt,
+    }));
+  }
+
+  async settleCost(
+    id: string,
+    costMicroUsd: number,
+    finalAt: Date | null,
+  ): Promise<void> {
+    await this.database.db.orm.public.SearchSegmentRun.where((row) =>
+      row.id.eq(id),
+    ).updateAll({ costMicroUsd, costFinalAt: finalAt });
   }
 }
 

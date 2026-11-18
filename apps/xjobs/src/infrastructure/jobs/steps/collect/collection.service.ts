@@ -15,7 +15,9 @@ import {
   SearchNotStartedError,
   type SegmentSearch,
   type SegmentResult,
+  ApifyRunError,
 } from 'src/modules/collectors';
+import { ApifyActorProvider } from 'src/modules/collectors/providers/apify/apify.provider';
 import {
   type BatchFile,
   batchStorageKey,
@@ -72,6 +74,11 @@ interface RunOptions {
   budget?: DailyBudget;
 }
 
+/** Apify may revise a run's cost for a while after it ends. */
+const COST_FINAL_AFTER_MS = 5 * 60_000;
+/** Runs that finished within this long are re-read for their final cost. */
+const COST_REREAD_WINDOW_MS = 24 * 60 * 60_000;
+
 const message = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
 
@@ -101,6 +108,7 @@ export class CollectionService {
     private readonly splits: LinkedinSearchSplitsRepository,
     private readonly storage: StorageService,
     private readonly ingestQueue: IngestQueue,
+    private readonly apify: ApifyActorProvider,
     private readonly config: ConfigService<
       WorkerProcessEnvironmentVariables,
       true
@@ -152,6 +160,8 @@ export class CollectionService {
       batches: 0,
       costUsd: 0,
     };
+    // Real spend first, so the daily cap counts final costs.
+    await this.settleCosts(channel, until);
     const budget = await this.dailyBudget(channel, until);
     const groups = new Map<string, GroupTally>();
     if (isLinkedinJobBoard(channel))
@@ -298,6 +308,43 @@ export class CollectionService {
       budget,
       boardRun(channel).maxRowsCeiling,
     );
+  }
+
+  /**
+   * Re-reads the cost Apify now reports for the channel's recent runs, so the
+   * daily cap counts what was charged, not the charge cap a missing cost counts
+   * at. A cost read five minutes or more after the run finished is final. A
+   * read that fails keeps the stored cost and is retried by the next tick.
+   */
+  private async settleCosts(channel: Channel, now: Date): Promise<void> {
+    if (!isLinkedinJobBoard(channel)) return;
+    try {
+      const unsettled = await this.segments.unsettledCosts(
+        channel,
+        new Date(now.getTime() - COST_REREAD_WINDOW_MS),
+      );
+      for (const { id, apifyRunId, finishedAt } of unsettled) {
+        try {
+          const usd = (await this.apify.findRun(apifyRunId))?.usageTotalUsd;
+          if (typeof usd !== 'number') continue;
+          const final =
+            now.getTime() - finishedAt.getTime() >= COST_FINAL_AFTER_MS;
+          await this.segments.settleCost(
+            id,
+            Math.round(usd * 1_000_000),
+            final ? now : null,
+          );
+        } catch (error) {
+          this.logger.warn(
+            `Could not re-read the cost of Apify run ${apifyRunId}: ${message(error)}`,
+          );
+        }
+      }
+    } catch (error) {
+      this.logger.warn(
+        `${channel} run costs could not be re-read: ${message(error)}`,
+      );
+    }
   }
 
   /** A LinkedIn job board channel's spend today, read once per tick; other channels have no cap. */
@@ -493,6 +540,7 @@ export class CollectionService {
           result.costUsd == null
             ? null
             : Math.round(result.costUsd * 1_000_000),
+        apifyRunId: result.source.apifyRunId,
         capped: result.capped,
         truncatedQueryIds: result.truncatedQueryIds,
         perQuery: perQuery(result),
@@ -526,6 +574,7 @@ export class CollectionService {
       // No Apify run could have started: record a cost of 0, which the spend
       // total counts as nothing (null would count at the charge cap).
       if (!started) failed.costMicroUsd = 0;
+      if (error instanceof ApifyRunError) failed.apifyRunId = error.runId;
       await this.recordFailure(failed, error);
       return {
         skipped: false,
@@ -767,6 +816,8 @@ function buildRun(
     perQuery: {},
     searchTotals: null,
     error: null,
+    apifyRunId: null,
+    costFinalAt: null,
   };
 }
 

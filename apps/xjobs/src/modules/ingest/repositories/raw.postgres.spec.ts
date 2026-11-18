@@ -334,6 +334,8 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
       perQuery: { [queryId]: { returned: 1 } },
       searchTotals: null,
       error: null,
+      apifyRunId: null,
+      costFinalAt: null,
     });
     const batch = (
       overrides: Partial<NewCollectionBatch> = {},

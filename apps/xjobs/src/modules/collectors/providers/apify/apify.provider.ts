@@ -55,6 +55,17 @@ export interface ApifyListItemsOptions {
 const DEFAULT_WAIT_SECS = 300;
 const UNFINISHED: readonly ApifyRunStatus[] = ['READY', 'RUNNING'];
 
+/** A started Apify run that did not finish in time or ended other than SUCCEEDED. */
+export class ApifyRunError extends Error {
+  constructor(
+    message: string,
+    readonly runId: string,
+  ) {
+    super(message);
+    this.name = 'ApifyRunError';
+  }
+}
+
 function isNotFound(error: unknown): boolean {
   return error instanceof ApifyApiError && error.statusCode === 404;
 }
@@ -118,13 +129,15 @@ export class ApifyActorProvider {
     }
     if (UNFINISHED.includes(run.status)) {
       await this.abortRun(run.id);
-      throw new Error(
+      throw new ApifyRunError(
         `Apify actor ${actor} run ${run.id} did not finish in time and was aborted`,
+        run.id,
       );
     }
     if (run.status !== 'SUCCEEDED') {
-      throw new Error(
+      throw new ApifyRunError(
         `Apify actor ${actor} run ${run.id} ended ${run.status}${run.statusMessage ? `: ${run.statusMessage}` : ''}`,
+        run.id,
       );
     }
     return {

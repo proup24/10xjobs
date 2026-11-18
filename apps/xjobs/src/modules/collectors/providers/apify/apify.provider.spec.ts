@@ -47,7 +47,7 @@ vi.mock('apify-client', () => ({
 }));
 
 import { SearchNotStartedError } from '../../utils/search-not-started';
-import { ApifyActorProvider } from './apify.provider';
+import { ApifyActorProvider, ApifyRunError } from './apify.provider';
 
 const configWith = (token?: string) =>
   ({
@@ -139,6 +139,27 @@ describe('ApifyActorProvider', () => {
     await expect(provider.run('a/b', {}, { maxChargeUsd: 1 })).rejects.toThrow(
       'run run-1 ended FAILED: Out of memory',
     );
+  });
+
+  it('throws ApifyRunError with the run id when a run fails', async () => {
+    sdk.actor.call.mockResolvedValue(
+      run('FAILED', { statusMessage: 'Out of memory' }),
+    );
+    const error = await provider
+      .run('a/b', {}, { maxChargeUsd: 1 })
+      .catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ApifyRunError);
+    expect(error).toMatchObject({ runId: 'run-1' });
+  });
+
+  it('throws ApifyRunError with the run id when a run is aborted for time', async () => {
+    sdk.actor.call.mockResolvedValue(run('RUNNING'));
+    sdk.run.abort.mockResolvedValue(run('ABORTING'));
+    const error = await provider
+      .run('a/b', {}, { maxChargeUsd: 1, waitSecs: 10 })
+      .catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ApifyRunError);
+    expect(error).toMatchObject({ runId: 'run-1' });
   });
 
   it('reports a start Apify refused as a search that never started', async () => {

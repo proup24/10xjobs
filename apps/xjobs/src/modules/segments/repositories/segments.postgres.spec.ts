@@ -71,6 +71,8 @@ describe.skipIf(!url)('segment claims in PostgreSQL', () => {
       perQuery: {},
       searchTotals: null,
       error: null,
+      apifyRunId: null,
+      costFinalAt: null,
     };
   }
 
