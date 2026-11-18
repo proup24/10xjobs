@@ -21,6 +21,18 @@ const vocab: PlaceVocabulary = {
     ['c-fes', 'Fès'],
   ]),
   regionCountries: new Map(),
+  countryNames: new Map([
+    ['france', 'FR'],
+    ['austria', 'AT'],
+    ['morocco', 'MA'],
+  ]),
+  cityCountries: new Map([['casablanca', new Set(['MA'])]]),
+};
+
+const vocab2: PlaceVocabulary = {
+  ...vocab,
+  cities: new Map([['MA|casablanca', 'c-casa']]),
+  cityNames: new Map([['c-casa', 'Casablanca']]),
 };
 
 const loc = (p: Partial<ListingLocation>): ListingLocation => ({
@@ -28,6 +40,7 @@ const loc = (p: Partial<ListingLocation>): ListingLocation => ({
   regionCode: null,
   city: null,
   geoId: null,
+  location: null,
   ...p,
 });
 
@@ -43,6 +56,27 @@ describe('resolveListingPlace', () => {
       place: { kind: 'region', code: 'NORTH_AMERICA' },
       fellBack: false,
     });
+  });
+  it('resolves a place from location text when no structured field is set', () => {
+    const r = resolveListingPlace(
+      loc({ location: 'Casablanca, Casablanca-Settat, Morocco' }),
+      vocab2,
+    );
+    expect(r.fellBack).toBe(false);
+    expect(r.place?.kind).toBe('city');
+  });
+  it('gives no place and fellBack for unreadable location text', () => {
+    expect(
+      resolveListingPlace(loc({ location: 'Atlantis, Lemuria' }), vocab2),
+    ).toEqual({ place: null, fellBack: true });
+  });
+  it('ignores location text when a structured field is set', () => {
+    expect(
+      resolveListingPlace(
+        loc({ countryCode: 'FR', location: 'Austria' }),
+        vocab2,
+      ),
+    ).toEqual({ place: { kind: 'country', code: 'FR' }, fellBack: false });
   });
   it('gives null for an unknown region code', () => {
     expect(resolveListingPlace(loc({ regionCode: 'XYZ' }), vocab)).toEqual({
@@ -145,6 +179,8 @@ describe('resolveListingPlace against the seeded Moroccan cities', () => {
       cities: cityForms(used),
       cityNames: new Map(used.map((r) => [r.id, r.name])),
       regionCountries: new Map(),
+      countryNames: new Map(),
+      cityCountries: new Map(),
     };
   };
   const cityOf = (city: string) => {

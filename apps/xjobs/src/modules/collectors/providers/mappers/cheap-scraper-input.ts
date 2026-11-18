@@ -1,9 +1,4 @@
-/**
- * Old actor input, used only by the parity and plan-test scripts. Delete when
- * the shared-searches planner is revised.
- */
-
-/** The old actor these inputs are for; the engine now runs harvestapi. */
+/** The trial actor these inputs are for. */
 export const CHEAP_SCRAPER_ACTOR = 'cheap_scraper/linkedin-job-scraper';
 
 /** LinkedIn has no `GLOBAL` location; its worldwide search is `Worldwide`. */
@@ -13,8 +8,8 @@ function linkedinLocation(value: unknown): string | null {
 }
 
 /**
- * The job search URL of one builder: its keyword, location (pinned by `geoId`
- * when the builder has one), `f_E` (experience) and `f_WT` (work type) when it
+ * The job search URL of one builder: its keyword, place (its `geoId` when the
+ * builder has one, else its text location), `f_E` (experience) and `f_WT` (work type) when it
  * has them, newest first (`sortBy=DD`, so a search that reaches its row limit
  * loses its oldest jobs), posted within the last `seconds` (`f_TPR`).
  */
@@ -24,9 +19,11 @@ export function linkedinJobSearchUrl(
   seconds: number,
 ): string {
   const query = new URLSearchParams({ keywords: keyword });
-  const location = linkedinLocation(params.location);
-  if (location) query.set('location', location);
   if (typeof params.geoId === 'string') query.set('geoId', params.geoId);
+  else {
+    const location = linkedinLocation(params.location);
+    if (location) query.set('location', location);
+  }
   if (typeof params.experienceLevel === 'string')
     query.set('f_E', params.experienceLevel);
   if (typeof params.workType === 'string') query.set('f_WT', params.workType);

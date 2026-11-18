@@ -111,6 +111,19 @@ describe('selectJobs', () => {
       ),
     ).toEqual(['b']);
   });
+  it('keeps a cheap-only job under the LinkedIn source', () => {
+    const jobs = [
+      job({ jobId: 'c', channels: ['LINKEDIN_JOB_BOARD_CHEAP'] }),
+      job({ jobId: 'g', channels: ['GREEN_HOUSE'] }),
+    ];
+    expect(
+      selectJobs(jobs, {
+        ...all,
+        source: 'LINKEDIN_JOB_BOARD',
+        tab: '7d',
+      }).map((j) => j.jobId),
+    ).toEqual(['c']);
+  });
   it('filters by source', () => {
     const jobs = [
       job({ jobId: 'a', channels: ['ASHBY', 'LINKEDIN_JOB_BOARD'] }),
@@ -121,6 +134,18 @@ describe('selectJobs', () => {
         (j) => j.jobId,
       ),
     ).toEqual(['a']);
+  });
+});
+
+describe('one LinkedIn source', () => {
+  it('lists a single LinkedIn option for both channels', () => {
+    const jobs = [
+      { channels: ['LINKEDIN_JOB_BOARD', 'LINKEDIN_JOB_BOARD_CHEAP'] },
+      { channels: ['LINKEDIN_JOB_BOARD_CHEAP'] },
+    ] as MatchedJob[];
+    expect(sourceOptions(jobs)).toEqual([
+      { value: 'LINKEDIN_JOB_BOARD', label: 'LinkedIn' },
+    ]);
   });
 });
 

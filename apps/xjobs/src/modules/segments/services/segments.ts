@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { Channel } from 'src/common/enums';
+import { Channel, isLinkedinJobBoard } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
 import {
   linkedinGroupKey,
@@ -52,8 +52,7 @@ function params(builder: QuerySearchBuilderRow): Record<string, unknown> {
  * domain: their keywords merge into one search.
  */
 export function segmentKey(builder: QuerySearchBuilderRow): string {
-  if (builder.channel === Channel.LINKEDIN_JOB_BOARD)
-    return linkedinJobBoardKey(builder);
+  if (isLinkedinJobBoard(builder.channel)) return linkedinJobBoardKey(builder);
   return [builder.channel, builder.domain, builder.type, builder.location].join(
     '|',
   );
@@ -165,7 +164,7 @@ export function planSegments(
   const plan: SegmentPlan = { segments: [], cuts: [], oversized: [] };
   for (const key of [...groups.keys()].sort()) {
     const members = (groups.get(key) ?? []).sort(byHash);
-    const board = members[0].channel === Channel.LINKEDIN_JOB_BOARD;
+    const board = isLinkedinJobBoard(members[0].channel);
     let chunks: QuerySearchBuilderRow[][];
     if (board) {
       const even = evenChunks(members, parts.get(key) ?? 1);

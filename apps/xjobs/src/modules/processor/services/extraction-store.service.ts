@@ -7,6 +7,7 @@ import type { PostingInput } from '../models/types';
 import { promptHash } from '../prompts/prompt';
 import {
   ProcessorRepository,
+  type Claim,
   type ReuseKey,
 } from '../repositories/processor.repository';
 import {
@@ -42,8 +43,18 @@ export class ExtractionStore {
   }
 
   /** An earlier extraction for this key, linked to the job (copied when it was another job's). */
-  async reuse(key: ReuseKey, jobId: string): Promise<string | null> {
-    const found = await this.repo.findReusable(key);
+  async reuse(
+    key: ReuseKey,
+    jobId: string,
+    reason: Claim['reason'],
+  ): Promise<string | null> {
+    // A joined job (harvestapi's first source for a trial-seen posting) is the
+    // same posting the trial already extracted, even if the text differs a little.
+    const found =
+      (await this.repo.findReusable(key)) ??
+      (reason === 'joined'
+        ? await this.repo.findJoinedReusable(jobId, key)
+        : null);
     if (!found) return null;
     return found.jobId === jobId
       ? found.id

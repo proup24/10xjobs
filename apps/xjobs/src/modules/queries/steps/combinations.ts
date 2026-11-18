@@ -1,4 +1,4 @@
-import { ACTIVE_CHANNELS, Channel } from 'src/common/enums';
+import { ACTIVE_CHANNELS, Channel, isLinkedinJobBoard } from 'src/common/enums';
 import type {
   QuerySearchCombination,
   QuerySearchProfileInput,
@@ -56,13 +56,13 @@ export function locationCombinations(
   const setsFor = (channel: Channel): TechnologySet[] => {
     const sets =
       typeof technologies === 'function' ? technologies(channel) : technologies;
-    return channel === Channel.LINKEDIN_JOB_BOARD
+    return isLinkedinJobBoard(channel)
       ? pack(sets, roleWords(profile.position, profile.languages))
       : sets;
   };
   return LOCATION_ARRANGEMENTS.flatMap((type) =>
     ACTIVE_CHANNELS.flatMap((channel) => {
-      const board = channel === Channel.LINKEDIN_JOB_BOARD;
+      const board = isLinkedinJobBoard(channel);
       return profile.locations[type].flatMap((text) =>
         (board ? searchPlaces(text) : [locationKey(text)]).flatMap((location) =>
           setsFor(channel).flatMap(({ technologies: set, domain }) =>

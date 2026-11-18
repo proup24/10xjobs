@@ -5,15 +5,19 @@ import { useId, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TextLink } from '@/components/ui/text';
+import { channelBadges } from '@/lib/matches/sources';
 import { timeAgo } from '@/lib/matches/freshness';
+import { groupPostings } from '@/lib/matches/posting-groups';
 import type { JobPosting } from '@/lib/matches/postings';
 
-/** "Merged · 2 postings" beside the title; nothing for a single posting. */
+/**
+ * "Merged · 2 postings" beside the title; nothing for a single posting. Both
+ * LinkedIn actors' copies of one LinkedIn job count as one posting.
+ */
 export function MergedBadge({ postings }: { postings: JobPosting[] }) {
-  if (postings.length < 2) return null;
-  return (
-    <Badge variant="secondary">{`Merged · ${postings.length} postings`}</Badge>
-  );
+  const count = groupPostings(postings).length;
+  if (count < 2) return null;
+  return <Badge variant="secondary">{`Merged · ${count} postings`}</Badge>;
 }
 
 /** What differs from the posting shown above, as marks. */
@@ -36,7 +40,8 @@ export function JobPostings({
 }) {
   const [open, setOpen] = useState(false);
   const listId = useId();
-  if (postings.length < 2) return null;
+  const groups = groupPostings(postings);
+  if (groups.length < 2) return null;
   const Chevron = open ? ChevronDown : ChevronRight;
   return (
     <section className="flex flex-col gap-2">
@@ -48,11 +53,11 @@ export function JobPostings({
         onClick={() => setOpen((o) => !o)}
       >
         <Chevron aria-hidden />
-        {`${postings.length} postings share this apply link`}
+        {`${groups.length} postings share this apply link`}
       </Button>
       <ul id={listId} hidden={!open} className="flex flex-col gap-3">
         {open &&
-          postings.map((p) => {
+          groups.map((p) => {
             const details = [
               p.location,
               p.postedAt
@@ -73,6 +78,11 @@ export function JobPostings({
                       View on LinkedIn
                     </TextLink>
                   )}
+                  {channelBadges(p.channels).map((b) => (
+                    <Badge key={b} variant="outline">
+                      {b}
+                    </Badge>
+                  ))}
                   {marks(p).map((m) => (
                     <Badge key={m} variant="secondary">
                       {m}

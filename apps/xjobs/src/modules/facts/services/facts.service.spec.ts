@@ -11,6 +11,8 @@ const vocab: PlaceVocabulary = {
   regions: new Set(['EMEA']),
   countries: new Set(['FR']),
   cities: new Map(),
+  countryNames: new Map(),
+  cityCountries: new Map(),
   cityNames: new Map(),
   regionCountries: new Map([['EMEA', new Set(['FR'])]]),
 };

@@ -42,7 +42,7 @@ export function linkedinLevels(seniority: string): string[] {
  * processor judges fit.
  */
 export class LinkedinJobBoardBuilder implements ChannelQueryBuilder {
-  readonly channel = Channel.LINKEDIN_JOB_BOARD;
+  constructor(readonly channel: Channel = Channel.LINKEDIN_JOB_BOARD) {}
 
   build(combination: QuerySearchCombination): ChannelQuery {
     const roles = roleWords(combination.position, combination.languages);

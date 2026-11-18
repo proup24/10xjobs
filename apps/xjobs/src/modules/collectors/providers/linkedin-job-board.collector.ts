@@ -6,11 +6,10 @@ import type {
   SegmentSearch,
 } from '../types/collector';
 import { reachedChargeCap } from '../utils/collected-job';
-import { SearchNotStartedError } from '../utils/search-not-started';
+import { oneSearchInput, runChargeCapUsd } from '../utils/linkedin-board-run';
 import { ApifyActorProvider } from './apify/apify.provider';
 import {
   type HarvestJobSearchInput,
-  linkedinGroupKey,
   mergedLinkedinKeyword,
   toHarvestJobSearchInput,
 } from './mappers/linkedin-job-board.mapper';
@@ -38,41 +37,22 @@ export class LinkedinJobBoardCollector {
   private readonly logger = new Logger(LinkedinJobBoardCollector.name);
   constructor(private readonly actor: ApifyActorProvider) {}
 
-  /**
-   * The actor input, built before any Apify call. Anything wrong here (a place
-   * with no geoId, members that run different searches, no words to search)
-   * throws a {@link SearchNotStartedError}: no run started, nothing charged.
-   */
+  /** The actor input, built before any Apify call (see {@link oneSearchInput}). */
   private input(segment: SegmentSearch, rows: number): HarvestJobSearchInput {
-    try {
-      const searches = new Set(
-        segment.queries.map(({ params }) => linkedinGroupKey(params)),
-      );
-      if (searches.size !== 1)
-        throw new Error(
-          `A LinkedIn job board segment runs one search; this one has ${searches.size}`,
-        );
-      // Members may spell a geoId-pinned place differently; any one runs the search.
-      const [first] = segment.queries;
-      return toHarvestJobSearchInput(
+    return oneSearchInput(segment, (first) =>
+      toHarvestJobSearchInput(
         mergedLinkedinKeyword(segment.queries),
         first.params,
         rows,
-      );
-    } catch (error) {
-      throw new SearchNotStartedError(
-        error instanceof Error ? error.message : String(error),
-        { cause: error },
-      );
-    }
+      ),
+    );
   }
 
   async collect(segment: SegmentSearch): Promise<SegmentResult> {
     const config = LinkedinJobBoardCollector.config;
     // The charge cap grows with the rows asked for.
     const rows = segment.maxItems ?? config.maxRowsPerSearch;
-    const maxChargeUsd =
-      (config.maxRunChargeUsd * rows) / config.maxRowsPerSearch;
+    const maxChargeUsd = runChargeCapUsd(config, rows);
     // Throws for a place with no geoId; that failure must reach the caller.
     const input = this.input(segment, rows);
     const { items, costUsd, runId } = await this.actor.run(

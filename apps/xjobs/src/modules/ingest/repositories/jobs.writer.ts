@@ -1,7 +1,13 @@
-import type { Channel } from 'src/common/enums';
+import {
+  Channel,
+  isLinkedinJobBoard,
+  isTrialChannel,
+  TRIAL_CHANNELS,
+} from 'src/common/enums';
 import type { NormalizedJobRow, RawItemVersionRow } from 'src/database';
 import type { DatabaseTransaction } from '@xjobs/database';
 import {
+  boardSources,
   isStrongJobKey,
   jobKey,
   type MergeSource,
@@ -196,6 +202,10 @@ async function remerge(tx: DatabaseTransaction, jobId: string): Promise<void> {
     };
   });
   const merged = mergeSources(merge);
+  // Trial sightings of a harvestapi job do not move its seen times.
+  const counted = boardSources(
+    items.map((i) => ({ ...i, channel: i.channel as Channel })),
+  );
   // The company's facts are as recent as the source they came from.
   const companySource = merge.find(
     (s) => s.rawItemId === merged.fieldSources.company,
@@ -208,25 +218,119 @@ async function remerge(tx: DatabaseTransaction, jobId: string): Promise<void> {
     ...fieldColumns(merged.record),
     companyId,
     fieldSources: merged.fieldSources as unknown as Json,
-    firstSeenAt: items.map((i) => i.firstSeenAt).reduce(min),
-    lastSeenAt: items.map((i) => i.lastSeenAt).reduce(max),
+    firstSeenAt: counted.map((i) => i.firstSeenAt).reduce(min),
+    lastSeenAt: counted.map((i) => i.lastSeenAt).reduce(max),
     normalizerVersion: NORMALIZER_VERSION,
   });
+}
+
+/** Whether a LINKEDIN_JOB_BOARD (harvestapi) item is among the job's sources. */
+async function hasHarvestSource(
+  tx: DatabaseTransaction,
+  jobId: string,
+): Promise<boolean> {
+  const links = await tx.orm.public.NormalizedJobSource.where({ jobId }).all();
+  if (links.length === 0) return false;
+  const items = await tx.orm.public.RawItem.where((row) =>
+    row.id.in(links.map((l) => l.rawItemId)),
+  ).all();
+  return items.some((i) => i.channel === Channel.LINKEDIN_JOB_BOARD);
+}
+
+/** Whether a trial-channel item is among the job's sources. */
+async function hasTrialSource(
+  tx: DatabaseTransaction,
+  jobId: string,
+): Promise<boolean> {
+  const links = await tx.orm.public.NormalizedJobSource.where({ jobId }).all();
+  if (links.length === 0) return false;
+  const items = await tx.orm.public.RawItem.where((row) =>
+    row.id.in(links.map((l) => l.rawItemId)),
+  ).all();
+  return items.some((i) => isTrialChannel(i.channel));
+}
+
+/**
+ * Serializes every link of one LinkedIn job id, across harvestapi and the
+ * trial channels, until the transaction ends: the twin lookup and the re-link
+ * of trial items then always see each other's rows. Reentrant in a session.
+ */
+export async function lockLinkedinId(
+  tx: DatabaseTransaction,
+  sourceKey: string,
+): Promise<void> {
+  await tx.query(
+    tx.raw
+      .sql`SELECT pg_advisory_xact_lock(hashtext(${'linkedin-job-id|' + sourceKey}))::text AS locked`
+      .returnsRow({ locked: TEXT })
+      .build(),
+  );
+}
+
+/**
+ * For a trial-channel item, the key of the job its harvestapi twin (the
+ * LINKEDIN_JOB_BOARD raw item with the same source key) is linked to, else
+ * null. Reads stored rows only, so a rebuild that links harvestapi's items
+ * first gives the same answer.
+ */
+export async function twinJobKey(
+  tx: DatabaseTransaction,
+  item: { channel: string; sourceKey: string },
+): Promise<string | null> {
+  if (!isTrialChannel(item.channel)) return null;
+  const [row] = await tx.query(
+    tx.raw.sql`SELECT j."jobKey"
+      FROM raw_items i
+      JOIN normalized_job_sources s ON s."rawItemId" = i.id
+      JOIN normalized_jobs j ON j.id = s."jobId"
+      WHERE i.channel = ${Channel.LINKEDIN_JOB_BOARD}
+        AND i."sourceKey" = ${item.sourceKey}
+      LIMIT 1`
+      .returnsRow({ jobKey: TEXT })
+      .build(),
+  );
+  return (row?.jobKey as string | undefined) ?? null;
+}
+
+/** Source rows of trial-channel items with this LinkedIn id on a job other than `jobId`. */
+async function strayTwins(
+  tx: DatabaseTransaction,
+  sourceKey: string,
+  jobId: string,
+): Promise<{ id: string; jobId: string; normalizedVersionId: string }[]> {
+  const rows = await tx.query(
+    tx.raw.sql`SELECT s.id, s."jobId", s."normalizedVersionId"
+      FROM raw_items i
+      JOIN normalized_job_sources s ON s."rawItemId" = i.id
+      WHERE i.channel = ANY(${`{${TRIAL_CHANNELS.join(',')}}`}::text[])
+        AND i."sourceKey" = ${sourceKey}
+        AND s."jobId" <> ${jobId}::uuid
+      ORDER BY i.id`
+      .returnsRow({ id: UUID, jobId: UUID, normalizedVersionId: UUID })
+      .build(),
+  );
+  return rows.map((r) => ({
+    id: r.id as string,
+    jobId: r.jobId as string,
+    normalizedVersionId: r.normalizedVersionId as string,
+  }));
 }
 
 /**
  * The item's old job under its new key, when every source of that job now
  * keys there: a re-key renames the job, so it keeps its id, extraction,
  * processing state and every user's marks. Each other source's key comes from
- * its linked record by the item's own rule (jobKey, then effectiveKey). A job
- * with a source keyed elsewhere stays as it is. When a concurrent link created
+ * its linked record by the item's own rule (jobKey, then effectiveKey). A
+ * trial-channel source follows its harvestapi twin (the linking item or another
+ * LINKEDIN_JOB_BOARD source with its LinkedIn id), so it never blocks a rename.
+ * A job with a source keyed elsewhere stays as it is. When a concurrent link created
  * the new key first, the rename's unique violation re-runs the link, which then
  * merges into that job.
  */
 async function renamed(
   tx: DatabaseTransaction,
   jobId: string,
-  rawItemId: string,
+  linking: { id: string; sourceKey: string },
   key: string,
 ): Promise<NormalizedJobRow | null> {
   const { orm } = tx;
@@ -240,7 +344,7 @@ async function renamed(
       FROM normalized_job_sources s
       JOIN normalized_versions v ON v.id = s."normalizedVersionId"
       JOIN raw_items i ON i.id = s."rawItemId"
-      WHERE s."jobId" = ${jobId}::uuid AND s."rawItemId" <> ${rawItemId}::uuid`
+      WHERE s."jobId" = ${jobId}::uuid AND s."rawItemId" <> ${linking.id}::uuid`
       .returnsRow({
         id: UUID,
         channel: TEXT,
@@ -250,7 +354,19 @@ async function renamed(
       })
       .build(),
   );
+  // A trial source keys where its twin does; the twin's own key is checked.
+  const twins = new Set([
+    linking.sourceKey,
+    ...others
+      .filter((o) => o.channel === Channel.LINKEDIN_JOB_BOARD)
+      .map((o) => o.sourceKey as string),
+  ]);
   for (const other of others) {
+    if (
+      isTrialChannel(other.channel as string) &&
+      twins.has(other.sourceKey as string)
+    )
+      continue;
     if (!other.record) return null;
     const item = {
       id: other.id as string,
@@ -432,6 +548,54 @@ async function effectiveKey(
 }
 
 /**
+ * Moves one source row from its job to `toJobId`, then settles the job it
+ * left: re-merged when other sources remain, else merged into `toJobId` with
+ * every user's decisions and views. Returns the left job's processing state
+ * when it was `pending`, for the caller to carry over; the target is not
+ * re-merged here.
+ */
+async function leaveJob(
+  tx: DatabaseTransaction,
+  input: {
+    link: { id: string; jobId: string };
+    toJobId: string;
+    normalizedVersionId: string;
+    linkedAt: Date;
+  },
+): Promise<ProcessingState | null> {
+  const { orm } = tx;
+  const old = found(
+    await orm.public.NormalizedJob.where({ id: input.link.jobId })
+      .forNoKeyUpdate()
+      .first(),
+    'previous job',
+  );
+  await orm.public.NormalizedJobSource.where({ id: input.link.id }).updateAll({
+    jobId: input.toJobId,
+    normalizedVersionId: input.normalizedVersionId,
+    linkedAt: input.linkedAt,
+  });
+  const left = await orm.public.NormalizedJobSource.where({
+    jobId: old.id,
+  }).all();
+  if (left.length > 0) {
+    await remerge(tx, old.id);
+    return null;
+  }
+  await orm.public.NormalizedJob.where({ id: old.id }).updateAll({
+    status: 'merged',
+    mergedIntoId: input.toJobId,
+    ...(old.processingStatus === 'pending'
+      ? processingColumns({ status: null, reason: null, requestedAt: null })
+      : {}),
+  });
+  await moveDecisions(tx, old.id, input.toJobId);
+  await moveViews(tx, old.id, input.toJobId);
+  const oldState = processingOf(old);
+  return oldState.status === 'pending' ? oldState : null;
+}
+
+/**
  * Links a raw item to the job its latest version's job key names, inside the
  * raw item's transaction, and re-merges every job the link touched. A new key
  * with no job renames the item's old job when all its sources key there.
@@ -444,6 +608,12 @@ export async function linkJob(
   input: LinkJobInput,
 ): Promise<LinkOutcome> {
   const { orm } = tx;
+  // One LinkedIn id links one item at a time, harvestapi's or a trial's, so
+  // the twin lookup below and the re-link of trial items never race. Channel
+  // and source key never change, so they are read before any lock.
+  const head = await orm.public.RawItem.where({ id: input.rawItemId }).first();
+  if (head && isLinkedinJobBoard(head.channel))
+    await lockLinkedinId(tx, head.sourceKey);
   // The raw item lock serializes every link of this item (ingest and rebuild),
   // and its latest version is read under it, so a link never follows a stale one.
   const item = await orm.public.RawItem.where({ id: input.rawItemId })
@@ -459,7 +629,11 @@ export async function linkJob(
   if (version.status !== 'valid' || !version.jobKey || !version.record)
     return { invalid: version.reason ?? 'normalize: invalid' };
   const record = version.record as unknown as NormalizedRecord;
-  const key = await effectiveKey(tx, item, version.jobKey);
+  // A trial item joins the job its harvestapi twin is on.
+  const key =
+    (await twinJobKey(tx, item)) ??
+    (await effectiveKey(tx, item, version.jobKey));
+  const isBoard = item.channel === Channel.LINKEDIN_JOB_BOARD;
 
   const link = await orm.public.NormalizedJobSource.where({
     rawItemId: input.rawItemId,
@@ -467,8 +641,7 @@ export async function linkJob(
   let job =
     (await orm.public.NormalizedJob.where({ jobKey: key })
       .forNoKeyUpdate()
-      .first()) ??
-    (link ? await renamed(tx, link.jobId, input.rawItemId, key) : null);
+      .first()) ?? (link ? await renamed(tx, link.jobId, item, key) : null);
   const created = !job;
   if (!job)
     job = await orm.public.NormalizedJob.create({
@@ -496,6 +669,10 @@ export async function linkJob(
     });
   }
   const before = job;
+  // harvestapi's first sighting of this posting: its item was never linked,
+  // and the job holds no other LINKEDIN_JOB_BOARD source.
+  const firstBoardSource =
+    isBoard && !link && (created || !(await hasHarvestSource(tx, job.id)));
   let current = processingOf(before);
   const previousLastSeenAt: Date | null = created ? null : before.lastSeenAt;
 
@@ -513,51 +690,58 @@ export async function linkJob(
       });
   } else {
     // The item's job key changed: it leaves its old job for this one.
-    const old = found(
-      await orm.public.NormalizedJob.where({ id: link.jobId })
-        .forNoKeyUpdate()
-        .first(),
-      'previous job',
-    );
-    await orm.public.NormalizedJobSource.where({ id: link.id }).updateAll({
-      jobId: job.id,
+    const carried = await leaveJob(tx, {
+      link,
+      toJobId: job.id,
       normalizedVersionId: version.id,
       linkedAt: input.observedAt,
     });
-    const left = await orm.public.NormalizedJobSource.where({
-      jobId: old.id,
-    }).all();
-    if (left.length > 0) {
-      await remerge(tx, old.id);
-    } else {
-      await orm.public.NormalizedJob.where({ id: old.id }).updateAll({
-        status: 'merged',
-        mergedIntoId: job.id,
-        ...(old.processingStatus === 'pending'
-          ? processingColumns({ status: null, reason: null, requestedAt: null })
-          : {}),
-      });
-      await moveDecisions(tx, old.id, job.id);
-      await moveViews(tx, old.id, job.id);
-      const oldState = processingOf(old);
-      if (oldState.status === 'pending' && current.status !== 'pending') {
-        current = oldState;
-        await orm.public.NormalizedJob.where({ id: job.id }).updateAll(
-          processingColumns(oldState),
-        );
-      }
+    if (carried && current.status !== 'pending') {
+      current = carried;
+      await orm.public.NormalizedJob.where({ id: job.id }).updateAll(
+        processingColumns(carried),
+      );
     }
   }
 
   await remerge(tx, job.id);
 
-  const next = nextProcessing({
-    created,
-    previousLastSeenAt,
-    observedAt: input.observedAt,
-    current,
-    rebuild: input.rebuild,
-  });
+  if (isBoard) {
+    // Trial items with this LinkedIn id elsewhere follow it here, under the
+    // version they are linked with: a trial source adds nothing to a harvestapi
+    // job, so its latest version (perhaps unreadable) is never read. A
+    // trial-only job left empty merges into this one, with its marks.
+    const strays = await strayTwins(tx, item.sourceKey, job.id);
+    for (const stray of strays) {
+      const carried = await leaveJob(tx, {
+        link: stray,
+        toJobId: job.id,
+        normalizedVersionId: stray.normalizedVersionId,
+        linkedAt: input.observedAt,
+      });
+      if (carried && current.status !== 'pending') {
+        current = carried;
+        await orm.public.NormalizedJob.where({ id: job.id }).updateAll(
+          processingColumns(carried),
+        );
+      }
+    }
+    if (strays.length > 0) await remerge(tx, job.id);
+  }
+
+  const joined =
+    !input.rebuild && firstBoardSource && (await hasTrialSource(tx, job.id));
+  const next: ProcessingState = joined
+    ? { status: 'pending', reason: 'joined', requestedAt: input.observedAt }
+    : nextProcessing({
+        created,
+        previousLastSeenAt,
+        observedAt: input.observedAt,
+        current,
+        rebuild: input.rebuild,
+        sightingOnly:
+          isTrialChannel(item.channel) && (await hasHarvestSource(tx, job.id)),
+      });
   const changed = !sameProcessing(next, current);
   if (changed)
     await orm.public.NormalizedJob.where({ id: job.id }).updateAll(

@@ -17,6 +17,8 @@ import {
 import { PrismaPlaceVocabularyRepository } from 'src/modules/facts/places/place-vocabulary.repository';
 import { PrismaVocabRepository } from './vocab.repository';
 import type { SeedEnvironmentVariables } from 'src/config';
+import { loadOutcomes } from 'src/scripts/actor-compare/queries';
+import { recentPlaceRows } from 'src/scripts/places-recheck/rows';
 
 /**
  * Needs PROCESSOR_TEST_DATABASE_URL: a disposable `processor_test` database on
@@ -154,6 +156,9 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
     requestedAt?: Date | null;
     closed?: boolean;
     descriptionText?: string | null;
+    reason?: 'new' | 'reopened' | 'joined';
+    status?: 'active' | 'merged';
+    mergedIntoId?: string;
   }
 
   /** A normalized job with one source per channel (LinkedIn job board by default). */
@@ -163,8 +168,8 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
     const row = await db.orm.public.NormalizedJob.create({
       jobKey: randomUUID(),
       kind: spec.kind ?? 'job',
-      status: 'active',
-      mergedIntoId: null,
+      status: spec.status ?? 'active',
+      mergedIntoId: spec.mergedIntoId ?? null,
       title: 'Backend Engineer',
       companyName: 'Acme',
       location: 'Berlin, Germany',
@@ -185,7 +190,7 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       firstSeenAt: t0,
       lastSeenAt: t0,
       processingStatus: status,
-      processingReason: status === 'pending' ? 'new' : null,
+      processingReason: status === 'pending' ? (spec.reason ?? 'new') : null,
       processingRequestedAt:
         spec.requestedAt === undefined
           ? status === null
@@ -275,6 +280,11 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       expect(new Set(ids)).toEqual(new Set([inScope, merged]));
     });
 
+    it('lists a job whose only source is on the trial channel', async () => {
+      const id = await job({ channels: [Channel.LINKEDIN_JOB_BOARD_CHEAP] });
+      expect(await repo.listPendingInScope(10)).toContain(id);
+    });
+
     it('orders by processingRequestedAt and respects the limit', async () => {
       const later = await job({
         requestedAt: new Date(t0.getTime() + minutes(5)),
@@ -289,11 +299,21 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
     it('moves a pending job to processing and counts the attempt', async () => {
       const id = await job();
       const claim = await repo.claim(id);
-      expect(claim).toEqual({ jobId: id, requestedAt: t0, attempts: 1 });
+      expect(claim).toEqual({
+        jobId: id,
+        requestedAt: t0,
+        attempts: 1,
+        reason: 'new',
+      });
       const row = await jobRow(id);
       expect(row.processingStatus).toBe('processing');
       expect(row.processingAttempts).toBe(1);
       expect(row.processingStartedAt).toBeInstanceOf(Date);
+    });
+
+    it('returns the processing reason', async () => {
+      const id = await job({ reason: 'joined' });
+      expect((await repo.claim(id))?.reason).toBe('joined');
     });
 
     it('stamps processingRequestedAt when a pending row has none', async () => {
@@ -327,6 +347,11 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       });
       expect(await repo.claim(id)).toBeNull();
       expect((await jobRow(id)).processingStatus).toBe('pending');
+    });
+
+    it('claims a job whose only source is on the trial channel', async () => {
+      const id = await job({ channels: [Channel.LINKEDIN_JOB_BOARD_CHEAP] });
+      expect(await repo.claim(id)).not.toBeNull();
     });
 
     it('refuses out-of-scope and non-pending jobs', async () => {
@@ -549,6 +574,41 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
     });
   });
 
+  describe('findJoinedReusable', () => {
+    const { inputHash: _ignored, ...joinKey } = key('x');
+
+    it('returns an extraction of a job merged into the joined job', async () => {
+      const target = await job();
+      const merged = await job({ status: 'merged', mergedIntoId: target });
+      const id = await repo.saveExtraction(extraction(merged, key('a')));
+      expect(await repo.findJoinedReusable(target, joinKey)).toEqual({
+        id,
+        jobId: merged,
+      });
+    });
+
+    it("returns the job's own older extraction", async () => {
+      const target = await job();
+      const id = await repo.saveExtraction(extraction(target, key('old')));
+      expect(await repo.findJoinedReusable(target, joinKey)).toEqual({
+        id,
+        jobId: target,
+      });
+    });
+
+    it('returns null for another prompt hash and for an unrelated job', async () => {
+      const target = await job();
+      const merged = await job({ status: 'merged', mergedIntoId: target });
+      const unrelated = await job();
+      await repo.saveExtraction(extraction(merged, key('a')));
+      await repo.saveExtraction(extraction(unrelated, key('b')));
+      expect(
+        await repo.findJoinedReusable(target, { ...joinKey, promptHash: 'x' }),
+      ).toBeNull();
+      expect(await repo.findJoinedReusable(await job(), joinKey)).toBeNull();
+    });
+  });
+
   describe('attempts and spend', () => {
     it('sums the cost of non-eval attempts since a date', async () => {
       const id = await job();
@@ -679,6 +739,93 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       expect((await jobRow(failed)).processingStatus).toBe('pending');
       expect((await jobRow(named)).processingStatus).toBe('pending');
       expect((await repo.markPending({})).marked).toBe(0);
+    });
+  });
+
+  // Read-only script queries over the same tables; they live here so no two
+  // files share this database.
+  describe('db:places rows', () => {
+    it('lists a LinkedIn job that has only location text', async () => {
+      const id = await job({ channels: [Channel.LINKEDIN_JOB_BOARD_CHEAP] });
+      const rows = await recentPlaceRows(
+        db,
+        new Date(t0.getTime() - minutes(1)),
+      );
+      expect(rows).toEqual([
+        {
+          location: 'Berlin, Germany',
+          countryCode: null,
+          regionCode: null,
+          city: null,
+          geoId: null,
+        },
+      ]);
+      await db.orm.public.NormalizedJob.where({ id }).updateAll({
+        location: null,
+      });
+      expect(
+        await recentPlaceRows(db, new Date(t0.getTime() - minutes(1))),
+      ).toEqual([]);
+    });
+  });
+
+  describe('db:actor-compare outcomes', () => {
+    /** A sighting of the job's raw item in its source's batch, at t0. */
+    async function sight(jobId: string): Promise<void> {
+      await db.execute(
+        db.raw.sql`INSERT INTO raw_item_sightings
+            (id, "batchId", "rawItemId", "versionId", "queryId", attribution, rank, "observedAt")
+          SELECT gen_random_uuid(), v."firstBatchId", i.id, v.id, NULL, 'none', 1, ${t0.toISOString()}::timestamptz
+          FROM normalized_job_sources s
+          JOIN raw_items i ON i.id = s."rawItemId"
+          JOIN raw_item_versions v ON v.id = i."latestVersionId"
+          WHERE s."jobId" = ${jobId}::uuid`
+          .affectedCount()
+          .build(),
+      );
+    }
+
+    /** A trial job that harvestapi joined at `joinedAt`, with an extraction. */
+    async function joinedJob(joinedAt: Date): Promise<string> {
+      const id = await job({
+        channels: [
+          Channel.LINKEDIN_JOB_BOARD_CHEAP,
+          Channel.LINKEDIN_JOB_BOARD,
+        ],
+      });
+      await sight(id);
+      const extractionId = await repo.saveExtraction(extraction(id));
+      await db.orm.public.NormalizedJob.where({ id }).updateAll({
+        processingStatus: 'processed',
+        processingReason: 'joined',
+        processingRequestedAt: joinedAt,
+        currentExtractionId: extractionId,
+      });
+      return id;
+    }
+
+    const attemptAt = (jobId: string, createdAt: Date) =>
+      db.orm.public.ProcessingAttempt.create({
+        ...attempt({ jobId }),
+        costUsd: '0.01',
+        createdAt,
+      });
+
+    it("counts a same-key joined job as reused when only the trial's earlier attempt is on it", async () => {
+      const joinedAt = new Date(t0.getTime() + minutes(60));
+      const reused = await joinedJob(joinedAt);
+      await attemptAt(reused, t0);
+      const ran = await joinedJob(joinedAt);
+      await attemptAt(ran, t0);
+      await attemptAt(ran, new Date(joinedAt.getTime() + minutes(1)));
+
+      const outcomes = await db.transaction((tx) =>
+        loadOutcomes(tx, new Date(t0.getTime() - minutes(1)).toISOString()),
+      );
+
+      expect(
+        Object.fromEntries(outcomes.map((o) => [o.jobId, o.joinedReused])),
+      ).toEqual({ [reused]: true, [ran]: false });
     });
   });
 
@@ -886,6 +1033,9 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       expect(places.cityNames.get(fes.id)).toBe('Fès');
       expect(places.countries.has('DE')).toBe(true);
       expect(places.regionCountries.get('EMEA')?.has('DE')).toBe(true);
+      expect(places.countryNames.get('germany')).toBe('DE');
+      expect(places.cityCountries.get('fes')).toEqual(new Set(['MA']));
+      expect(places.cityCountries.get('fez')).toEqual(new Set(['MA']));
     });
 
     it('bumps the occurrences of approved codes', async () => {

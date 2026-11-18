@@ -5,6 +5,8 @@ const vocab: PlaceVocabulary = {
   regions: new Set(['EU']),
   countries: new Set(['FR']),
   cities: new Map([['FR|paris', 'c-paris']]),
+  countryNames: new Map(),
+  cityCountries: new Map(),
   cityNames: new Map([['c-paris', 'Paris']]),
   regionCountries: new Map(),
 };
@@ -39,5 +41,21 @@ describe('unmappedPlaces', () => {
       },
       { text: 'XYZ', result: 'none', count: 1 },
     ]);
+  });
+
+  it('lists a job that has only location text, as trial actors give', () => {
+    const rows = [
+      row({ location: 'Gotham, Narnia' }),
+      row({ location: 'Europe', regionCode: 'EU' }),
+    ];
+    expect(unmappedPlaces(rows, vocab)).toEqual([
+      { text: 'Gotham, Narnia', result: 'none', count: 1 },
+    ]);
+  });
+
+  it('leaves out a job with no place at all', () => {
+    expect(unmappedPlaces([row({}), row({ location: '  ' })], vocab)).toEqual(
+      [],
+    );
   });
 });

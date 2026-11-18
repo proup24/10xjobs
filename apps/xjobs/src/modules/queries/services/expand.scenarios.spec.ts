@@ -15,10 +15,15 @@ import {
 } from '../channels/linkedin_keyword';
 import { QuerySearchService } from './queries.service';
 
-// These specs cover every channel's builder, inactive ones included.
+// These scenarios document every channel's expansion, inactive ones included,
+// with the LinkedIn job board (harvestapi) as the one board. The trial channel
+// expands like it (pinned in queries.service.spec), so these leave it out.
 vi.mock('src/common/enums', async (importOriginal) => {
   const enums = await importOriginal<typeof import('src/common/enums')>();
-  return { ...enums, ACTIVE_CHANNELS: Object.values(enums.Channel) };
+  return (await import('../testing/all-channels.js')).withAllChannelsActive(
+    enums,
+    [enums.Channel.LINKEDIN_JOB_BOARD_CHEAP],
+  );
 });
 
 const service = new QuerySearchService(new FakeQuerySearchRepository());

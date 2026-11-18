@@ -22,19 +22,28 @@ describe('linkedinJobSearchUrl', () => {
     });
   });
 
-  it('pins the location with a geoId when the builder has one', () => {
+  it('pins the place with a geoId alone, with no text location', () => {
     const url = new URL(
       linkedinJobSearchUrl(
-        '("backend engineer" OR "backend developer") AND nestjs',
-        { location: 'EMEA', geoId: '91000007' },
-        60,
+        'a OR b',
+        {
+          location: 'morocco',
+          geoId: '102787409',
+          experienceLevel: '4',
+          workType: '2',
+        },
+        3600,
       ),
     );
-    expect(url.searchParams.get('geoId')).toBe('91000007');
-    expect(url.searchParams.get('location')).toBe('EMEA');
-    expect(url.searchParams.get('keywords')).toBe(
-      '("backend engineer" OR "backend developer") AND nestjs',
-    );
+    expect(Object.fromEntries(url.searchParams)).toEqual({
+      keywords: 'a OR b',
+      geoId: '102787409',
+      f_E: '4',
+      f_WT: '2',
+      sortBy: 'DD',
+      f_TPR: 'r3600',
+    });
+    expect(url.searchParams.has('location')).toBe(false);
   });
 
   it('sends GLOBAL as Worldwide and omits missing filters', () => {

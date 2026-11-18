@@ -14,6 +14,8 @@ const vocab: PlaceVocabulary = {
   regions: new Set(),
   countries: new Set(),
   cities: new Map(),
+  countryNames: new Map(),
+  cityCountries: new Map(),
   cityNames: new Map(),
   regionCountries: new Map(),
 };

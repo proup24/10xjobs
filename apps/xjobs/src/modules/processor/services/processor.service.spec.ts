@@ -128,6 +128,45 @@ describe('ProcessorService', () => {
     expect(extraction.calls).toHaveLength(1);
   });
 
+  describe('joined job', () => {
+    /** The trial job processed with a different description, merged into job-2. */
+    async function trialExtracted() {
+      addJob('trial', { descriptionText: `${DESCRIPTION} (trial text)` });
+      await service().process('trial');
+      repo.addJob({
+        id: 'job-2',
+        descriptionText: DESCRIPTION,
+        processingReason: 'joined',
+      });
+      repo.jobs.get('trial')!.status = 'merged';
+      repo.jobs.get('trial')!.mergedIntoId = 'job-2';
+    }
+
+    it('reuses the merged trial job extraction with no model call', async () => {
+      await trialExtracted();
+      await expect(service().process('job-2')).resolves.toBe('reused');
+      expect(extraction.calls).toHaveLength(1);
+      expect(repo.extractions).toHaveLength(2);
+      expect(repo.extractions[1].jobId).toBe('job-2');
+      expect(repo.extractions[1].costUsd).toBe(0);
+      expect(job('job-2').processingStatus).toBe('processed');
+      expect(job('job-2').currentExtractionId).toBe(repo.extractions[1].id);
+    });
+
+    it('calls the generator for a new job in the same situation', async () => {
+      await trialExtracted();
+      job('job-2').processingReason = 'new';
+      await expect(service().process('job-2')).resolves.toBe('processed');
+      expect(extraction.calls).toHaveLength(2);
+    });
+
+    it('calls the generator once when nothing is reusable', async () => {
+      addJob('job-2', { processingReason: 'joined' });
+      await expect(service().process('job-2')).resolves.toBe('processed');
+      expect(extraction.calls).toHaveLength(1);
+    });
+  });
+
   it('closed job: processed with no extraction and no model call', async () => {
     addJob('job-1', { closed: true });
     await expect(service().process('job-1')).resolves.toBe('closed');

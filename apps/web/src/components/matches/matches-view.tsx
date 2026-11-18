@@ -16,7 +16,7 @@ import {
   type MatchRow,
 } from '@/lib/matches/group';
 import type { JobPosting } from '@/lib/matches/postings';
-import { channelLabel } from '@/lib/matches/sources';
+import { channelLabel, sourceOf } from '@/lib/matches/sources';
 import {
   defaultProfile,
   viewStateHref,
@@ -162,11 +162,13 @@ export function MatchesView({
   const isDraft =
     profiles.find((p) => p.id === state.profile)?.state === 'draft';
 
-  const base = { profileId: state.profile, source: state.source, now };
+  // A trial channel in the URL is the LinkedIn source it belongs to.
+  const source = state.source === 'all' ? 'all' : sourceOf(state.source);
+  const base = { profileId: state.profile, source, now };
   const inProfile = selectJobs(jobs, { ...base, source: 'all', tab: '7d' });
   const sources = sourceOptions(inProfile);
-  if (state.source !== 'all' && !sources.some((s) => s.value === state.source))
-    sources.push({ value: state.source, label: channelLabel(state.source) });
+  if (source !== 'all' && !sources.some((s) => s.value === source))
+    sources.push({ value: source, label: channelLabel(source) });
   const counts = {
     '24h': selectJobs(jobs, { ...base, tab: '24h' }).length,
     '7d': selectJobs(jobs, { ...base, tab: '7d' }).length,
@@ -261,7 +263,7 @@ export function MatchesView({
                 ? null
                 : [{ value: 'all', label: 'All sources' }, ...sources]
             }
-            source={state.source}
+            source={source}
             onSource={(source) => go({ source })}
             tab={state.tab}
             counts={counts}

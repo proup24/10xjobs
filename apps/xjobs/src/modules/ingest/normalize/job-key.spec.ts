@@ -163,6 +163,21 @@ describe('jobKey', () => {
     ).toBe(`url:${listing}`);
   });
 
+  it('keys a trial-channel job with no apply URL by its LinkedIn id', () => {
+    expect(
+      jobKey(
+        Channel.LINKEDIN_JOB_BOARD_CHEAP,
+        'id:4123',
+        emptyRecord({
+          kind: 'job',
+          title: 'Engineer',
+          applyUrl: null,
+          postingUrl: 'https://www.linkedin.com/jobs/view/4123',
+        }),
+      ),
+    ).toBe('linkedin-job:4123');
+  });
+
   it('never adds the title to an ATS key', () => {
     expect(liJob(`https://jobs.ashbyhq.com/acme/${ashbyId}`)).toBe(
       `ats:ashby/acme/${ashbyId}`,

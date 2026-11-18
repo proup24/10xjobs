@@ -253,9 +253,18 @@ export class ProcessorService {
     );
     const vocabulary = await this.vocab.snapshot();
     const key = this.store.reuseKey(input);
-    const reused = await this.store.reuse(key, claim.jobId);
+    const exact = await this.store.reuse(key, claim.jobId, null);
+    const joined =
+      exact || claim.reason !== 'joined'
+        ? null
+        : await this.store.reuse(key, claim.jobId, claim.reason);
+    const reused = exact ?? joined;
     if (reused) {
-      log.info(`reused extraction ${reused}: same input, prompt and models`);
+      log.info(
+        exact
+          ? `reused extraction ${reused}: same input, prompt and models`
+          : `reused extraction ${reused}: joined job, same posting`,
+      );
       return this.finish(
         claim,
         { status: 'processed', extractionId: reused },

@@ -107,6 +107,26 @@ const REVIEW: MatchRow[] = [
   }),
 ];
 
+describe('MatchesView actor badges', () => {
+  it('shows both actors on a job found by both, harvestapi first', () => {
+    renderView({
+      rows: [
+        matchRow({
+          jobId: 'both',
+          title: 'Both job',
+          postedAt: hoursAgo(1),
+          channels: ['LINKEDIN_JOB_BOARD_CHEAP', 'LINKEDIN_JOB_BOARD'],
+        }),
+      ],
+    });
+    const a = screen.getByText('LinkedIn · harvestapi');
+    const b = screen.getByText('LinkedIn · cheap_scraper');
+    expect(
+      a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+});
+
 describe('MatchesView lists', () => {
   it('counts both lists on the List tabs', () => {
     renderView({ reviewRows: REVIEW });
@@ -214,6 +234,12 @@ describe('MatchesView', () => {
 
   it('lists only LinkedIn as a source for LinkedIn-only data', async () => {
     renderView();
+    expect(await options('Source')).toEqual(['All sources', 'LinkedIn']);
+  });
+
+  it('reads a trial-channel source as LinkedIn, with no extra option', async () => {
+    renderView({ initial: { source: 'LINKEDIN_JOB_BOARD_CHEAP' } });
+    expect(screen.queryByText('No matches for this filter')).toBeNull();
     expect(await options('Source')).toEqual(['All sources', 'LinkedIn']);
   });
 

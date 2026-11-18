@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { arrangementLine } from '@/lib/matches/facts';
 import { isNew, postedAge } from '@/lib/matches/freshness';
 import type { MatchedJob } from '@/lib/matches/group';
-import { channelLabel } from '@/lib/matches/sources';
+import { channelBadges } from '@/lib/matches/sources';
 import { cn } from '@/lib/utils';
 
 export const stackScoreText = (score: number | null): string =>
@@ -48,9 +48,9 @@ export function MatchRowLink({
       </div>
       {meta && <p className="text-muted-foreground">{meta}</p>}
       <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-        {job.channels.map((c) => (
-          <Badge key={c} variant="outline">
-            {channelLabel(c)}
+        {channelBadges(job.channels).map((text) => (
+          <Badge key={text} variant="outline">
+            {text}
           </Badge>
         ))}
         {showProfiles &&

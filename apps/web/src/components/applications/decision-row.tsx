@@ -7,7 +7,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import type { DecisionRow } from '@/lib/applications/load';
 import { timeAgo } from '@/lib/matches/freshness';
-import { channelLabel } from '@/lib/matches/sources';
+import { channelBadges } from '@/lib/matches/sources';
 import { cn } from '@/lib/utils';
 
 /** The row's reason as a known code; null for none (the column is nullable). */
@@ -55,9 +55,9 @@ export function DecisionRowLink({
       </div>
       {meta && <p className="text-muted-foreground">{meta}</p>}
       <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-        {(row.channels ?? []).map((c) => (
-          <Badge key={c} variant="outline">
-            {channelLabel(c)}
+        {channelBadges(row.channels ?? []).map((text) => (
+          <Badge key={text} variant="outline">
+            {text}
           </Badge>
         ))}
         <span className="ml-auto">{decisionLine(row, now)}</span>

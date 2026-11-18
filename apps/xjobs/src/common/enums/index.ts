@@ -7,6 +7,9 @@ export {
   ProfileState,
   Seniority,
   SkillDomain,
+  TRIAL_CHANNELS,
+  isLinkedinJobBoard,
+  isTrialChannel,
 } from '@xjobs/database/enums';
 export { EnvironmentType } from '@xjobs/database/env';
 export { ErrorCode } from './error-code.enum';

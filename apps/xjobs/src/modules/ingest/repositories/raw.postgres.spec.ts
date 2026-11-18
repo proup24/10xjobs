@@ -8,7 +8,7 @@ import {
   PrismaSearchSegmentsRepository,
 } from 'src/modules/segments/repositories/segments.repository';
 import { MemoryStorageService } from 'src/modules/storage/testing';
-import { ingestConfig } from '../config';
+import { ingestConfig, normalizeConfig } from '../config';
 import { BatchFileReaderService } from '../services/batch-file-reader.service';
 import { BatchItemWriterService } from '../services/batch-item-writer.service';
 import { BatchIngestService } from '../services/batch.service';
@@ -1325,6 +1325,475 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
           currentExtractionId: null,
         });
         expect(await db.orm.public.JobExtraction.all()).toHaveLength(0);
+      });
+
+      describe('a trial sighting of a harvestapi job', () => {
+        /** The cheap_scraper copy, saved on its own channel under the same id. */
+        const trial = () => ({ ...cheap() });
+        const saveTrial = (observedAt: Date) =>
+          save(trial(), observedAt, Channel.LINKEDIN_JOB_BOARD_CHEAP);
+        const reopenAfter = (t: Date) =>
+          new Date(t.getTime() + normalizeConfig.reopenAfterMs + 60_000);
+
+        // A harvestapi payload with no employer apply link keys the same
+        // linkedin-job:<id> as the cheap item, so both land on one job today.
+        it('leaves seen times, processing and fields as harvestapi set them', async () => {
+          await save(harvest(), t1);
+          const before = await jobByKey(linkedinKey);
+          await processWith(before.id, { doc: 'harvest' });
+          const processed = await jobByKey(linkedinKey);
+
+          const later = reopenAfter(t1);
+          const result = await saveTrial(later);
+
+          expect(await jobs()).toHaveLength(1);
+          expect(await sources()).toHaveLength(2);
+          const after = await jobByKey(linkedinKey);
+          expect(after).toMatchObject({
+            lastSeenAt: t1,
+            firstSeenAt: t1,
+            processingStatus: 'processed',
+            processingReason: null,
+            currentExtractionId: processed.currentExtractionId,
+            salaryText: before.salaryText,
+            location: before.location,
+          });
+          expect(result.job).toMatchObject({
+            created: false,
+            reopened: false,
+            pending: false,
+          });
+        });
+
+        it('keeps an archived harvestapi job archived', async () => {
+          await save(harvest(), t1);
+          const job = await jobByKey(linkedinKey);
+          await db.orm.public.NormalizedJob.where({ id: job.id }).updateAll({
+            processingStatus: 'archived',
+          });
+
+          await saveTrial(t2);
+
+          expect(await jobByKey(linkedinKey)).toMatchObject({
+            processingStatus: 'archived',
+            lastSeenAt: t1,
+          });
+        });
+
+        it('a trial item joins a harvestapi job that has an apply URL, adding nothing', async () => {
+          await save(viaAshby(), t1);
+          const harvested = await jobByKey(ashbyKey);
+          await processWith(harvested.id, { doc: 'harvest' });
+
+          const result = await saveTrial(t2);
+
+          expect(result.job).toMatchObject({
+            jobId: harvested.id,
+            created: false,
+            pending: false,
+          });
+          expect(await jobs()).toHaveLength(1);
+          expect(await sources()).toEqual([
+            expect.objectContaining({ jobId: harvested.id }),
+            expect.objectContaining({ jobId: harvested.id }),
+          ]);
+          expect(await jobByKey(ashbyKey)).toMatchObject({
+            status: 'active',
+            lastSeenAt: t1,
+            processingStatus: 'processed',
+            processingReason: null,
+          });
+        });
+      });
+
+      describe('one job per LinkedIn id', () => {
+        const trialChannel = Channel.LINKEDIN_JOB_BOARD_CHEAP;
+        const trial = () => ({ ...cheap() });
+        const saveTrial = (observedAt: Date) =>
+          save(trial(), observedAt, trialChannel);
+        const active = async () =>
+          (await jobs()).filter((j) => j.status === 'active');
+        const hour = 60 * 60 * 1000;
+        const employerUrl = 'https://acme.example/careers/4488222855';
+        /** harvestapi's copy applied to on the employer's own site: a url: key. */
+        const viaEmployer = () =>
+          harvest({
+            applyMethod: {
+              ...remote.applyMethod,
+              companyApplyUrl: employerUrl,
+            },
+          });
+        const userId = randomUUID();
+        /** A user applied to and viewed the job. */
+        const mark = async (jobId: string) => {
+          await db.execute(
+            db.raw.sql`INSERT INTO auth.users (id, email)
+              VALUES (${userId}::uuid, ${`${userId}@example.com`})
+              ON CONFLICT DO NOTHING`
+              .affectedCount()
+              .build(),
+          );
+          await db.orm.public.JobDecision.create({
+            userId,
+            jobId,
+            status: 'applied',
+            reason: null,
+            decidedAt: t1,
+          });
+          await db.orm.public.JobView.create({ userId, jobId, viewedAt: t1 });
+        };
+
+        /** One active job holds both items, with the trial job's applied mark. */
+        const expectJoinedOnto = async (jobId: string) => {
+          expect(await active()).toEqual([
+            expect.objectContaining({
+              id: jobId,
+              processingStatus: 'pending',
+              processingReason: 'joined',
+            }),
+          ]);
+          expect((await sources()).map((s) => s.jobId)).toEqual([jobId, jobId]);
+          expect(await db.orm.public.JobDecision.all()).toEqual([
+            expect.objectContaining({ jobId, status: 'applied' }),
+          ]);
+        };
+
+        it('trial first, latest trial version invalid: harvestapi still takes the trial source and its decision', async () => {
+          await saveTrial(t1);
+          const trialJob = await jobByKey(linkedinKey);
+          await mark(trialJob.id);
+          // A rescrape in no known shape: its own link is invalid, so the
+          // trial item stays linked under its first version.
+          const unreadable = await save(
+            { jobId: remote.id, unknownField: 'x' },
+            t2,
+            trialChannel,
+          );
+          expect(unreadable.job).toMatchObject({ invalid: expect.any(String) });
+
+          const result = await save(viaAshby(), t3);
+
+          const harvested = await jobByKey(ashbyKey);
+          expect(result.job).toMatchObject({
+            jobId: harvested.id,
+            pending: true,
+          });
+          await expectJoinedOnto(harvested.id);
+          expect(await jobByKey(linkedinKey)).toMatchObject({
+            status: 'merged',
+            mergedIntoId: harvested.id,
+          });
+        });
+
+        it('trial first, latest trial version throws: harvestapi still takes the trial source and its decision', async () => {
+          await saveTrial(t1);
+          const trialJob = await jobByKey(linkedinKey);
+          await mark(trialJob.id);
+          // Normalizing the trial's next version throws, so its own link
+          // aborts and no normalized row of that version is ever saved.
+          await db.execute(
+            db.raw
+              .sql`CREATE OR REPLACE FUNCTION test_refuse_version() RETURNS trigger
+              LANGUAGE plpgsql AS $$
+              BEGIN
+                IF NEW."rawVersionId" IN (
+                  SELECT v.id FROM raw_item_versions v
+                  JOIN raw_items i ON i.id = v."rawItemId"
+                  WHERE i.channel = 'LINKEDIN_JOB_BOARD_CHEAP'
+                    AND v.payload ? 'refuseMe'
+                ) THEN RAISE EXCEPTION 'mapper failed'; END IF;
+                RETURN NEW;
+              END $$`
+              .affectedCount()
+              .build(),
+          );
+          await db.execute(
+            db.raw.sql`CREATE TRIGGER test_refuse_version
+              BEFORE INSERT ON normalized_versions
+              FOR EACH ROW EXECUTE FUNCTION test_refuse_version()`
+              .affectedCount()
+              .build(),
+          );
+          try {
+            const failed = await save(
+              { ...trial(), refuseMe: true },
+              t2,
+              trialChannel,
+            );
+            expect(failed.job).toMatchObject({
+              invalid: expect.stringContaining('mapper failed'),
+            });
+
+            const result = await save(viaAshby(), t3);
+
+            const harvested = await jobByKey(ashbyKey);
+            expect(result.job).toMatchObject({
+              jobId: harvested.id,
+              pending: true,
+            });
+            await expectJoinedOnto(harvested.id);
+          } finally {
+            await db.execute(
+              db.raw
+                .sql`DROP TRIGGER IF EXISTS test_refuse_version ON normalized_versions;
+                DROP FUNCTION IF EXISTS test_refuse_version()`
+                .affectedCount()
+                .build(),
+            );
+          }
+        });
+
+        it('harvestapi first, same key: one job, two sources', async () => {
+          await save(harvest(), t1);
+          await saveTrial(t2);
+
+          const [only, ...rest] = await jobs();
+          expect(rest).toHaveLength(0);
+          expect(only).toMatchObject({ jobKey: linkedinKey, status: 'active' });
+          expect(await sources()).toHaveLength(2);
+        });
+
+        it('trial first, different key: the trial job merges into harvestapi’s, with decisions and views', async () => {
+          await saveTrial(t1);
+          const trialJob = await jobByKey(linkedinKey);
+          await processWith(trialJob.id, { doc: 'trial' });
+          await mark(trialJob.id);
+
+          const result = await save(viaAshby(), t2);
+
+          const harvested = await jobByKey(ashbyKey);
+          expect(result.job).toMatchObject({
+            jobId: harvested.id,
+            pending: true,
+          });
+          expect(await active()).toEqual([
+            expect.objectContaining({
+              id: harvested.id,
+              processingStatus: 'pending',
+              processingReason: 'joined',
+              processingRequestedAt: t2,
+            }),
+          ]);
+          expect(await jobByKey(linkedinKey)).toMatchObject({
+            status: 'merged',
+            mergedIntoId: harvested.id,
+          });
+          expect((await sources()).map((s) => s.jobId)).toEqual([
+            harvested.id,
+            harvested.id,
+          ]);
+          expect(await db.orm.public.JobDecision.all()).toEqual([
+            expect.objectContaining({
+              jobId: harvested.id,
+              status: 'applied',
+            }),
+          ]);
+          expect(await db.orm.public.JobView.all()).toEqual([
+            expect.objectContaining({ jobId: harvested.id }),
+          ]);
+        });
+
+        it('trial first, same key: harvestapi links onto the trial job, which is joined', async () => {
+          await saveTrial(t1);
+          const trialJob = await jobByKey(linkedinKey);
+          expect(trialJob.workplaceType).toBeNull();
+          await processWith(trialJob.id, { doc: 'trial' });
+
+          const result = await save(harvest(), t2);
+
+          expect(result.job).toMatchObject({
+            jobId: trialJob.id,
+            created: false,
+            pending: true,
+          });
+          const [only, ...rest] = await jobs();
+          expect(rest).toHaveLength(0);
+          expect(only).toMatchObject({
+            id: trialJob.id,
+            status: 'active',
+            processingStatus: 'pending',
+            processingReason: 'joined',
+            processingRequestedAt: t2,
+            workplaceType: 'remote',
+          });
+          expect(await sources()).toHaveLength(2);
+        });
+
+        it('joins once: harvestapi seeing the job again changes nothing', async () => {
+          for (const harvested of [harvest, viaAshby]) {
+            await db.execute(
+              db.raw
+                .sql`TRUNCATE normalized_job_sources, normalized_jobs, normalized_versions, raw_item_sightings, raw_item_versions, raw_items CASCADE`
+                .affectedCount()
+                .build(),
+            );
+            await saveTrial(t1);
+            await save(harvested(), t2);
+            const [joined] = await active();
+            await processWith(joined!.id, { doc: 'joined' });
+
+            const result = await save(
+              harvested(),
+              new Date(t2.getTime() + hour),
+            );
+
+            expect(result.job).toMatchObject({ pending: false });
+            expect(await active()).toEqual([
+              expect.objectContaining({
+                id: joined!.id,
+                processingStatus: 'processed',
+                processingReason: null,
+              }),
+            ]);
+          }
+        });
+
+        it('a rebuild never joins', async () => {
+          await saveTrial(t1);
+          await save(harvest(), t2);
+          const [joined] = await active();
+          await processWith(joined!.id, { doc: 'joined' });
+          // harvestapi's item unlinked, as if it had not been linked yet.
+          const harvestItem = (await db.orm.public.RawItem.where({
+            channel: Channel.LINKEDIN_JOB_BOARD,
+          }).first())!;
+          await db.orm.public.NormalizedJobSource.where({
+            rawItemId: harvestItem.id,
+          }).deleteAll();
+
+          const result = await linkJobSafely({ db } as DatabaseService, {
+            rawItemId: harvestItem.id,
+            observedAt: t3,
+            rebuild: true,
+          });
+
+          expect(result).toMatchObject({ jobId: joined!.id, pending: false });
+          expect(await active()).toEqual([
+            expect.objectContaining({
+              id: joined!.id,
+              processingStatus: 'processed',
+              processingReason: null,
+            }),
+          ]);
+        });
+
+        it(
+          'keeps one job when the trial and harvestapi items link concurrently',
+          { timeout: 60_000 },
+          async () => {
+            for (let round = 0; round < 20; round++) {
+              const id = `44882299${String(round).padStart(2, '0')}`;
+              const trialItem = {
+                ...trial(),
+                jobId: id,
+                jobUrl: `https://www.linkedin.com/jobs/view/${id}`,
+              };
+              const harvestItem = harvest({
+                id,
+                linkedinUrl: `https://www.linkedin.com/jobs/view/${id}`,
+                applyMethod: {
+                  ...remote.applyMethod,
+                  companyApplyUrl: `https://acme.example/careers/${id}`,
+                },
+              });
+              const [b1, b2] = [await batch(trialChannel), await batch()];
+              await Promise.all([
+                repo.saveItem(input(b1, trialItem, t1, q1, trialChannel)),
+                repo.saveItem(input(b2, harvestItem, t1)),
+              ]);
+
+              const items = await db.orm.public.RawItem.where({
+                sourceKey: `id:${id}`,
+              }).all();
+              expect(items).toHaveLength(2);
+              const linked = (await sources()).filter((s) =>
+                items.some((i) => i.id === s.rawItemId),
+              );
+              expect(linked).toHaveLength(2);
+              expect(linked[0]!.jobId).toBe(linked[1]!.jobId);
+              const holders = (await active()).filter(
+                (j) =>
+                  j.id === linked[0]!.jobId ||
+                  j.jobKey === `linkedin-job:${id}`,
+              );
+              expect(holders).toEqual([
+                expect.objectContaining({
+                  jobKey: expect.stringMatching(/^url:/),
+                }),
+              ]);
+            }
+          },
+        );
+
+        it('the trial source follows harvestapi when it is re-keyed', async () => {
+          await saveTrial(t1);
+          await save(harvest(), t2);
+          const [joined] = await active();
+
+          await save(viaEmployer(), t3);
+
+          expect(await active()).toEqual([
+            expect.objectContaining({
+              id: joined!.id,
+              jobKey: expect.stringMatching(/^url:https:\/\/acme\.example/),
+            }),
+          ]);
+          expect((await sources()).map((s) => s.jobId)).toEqual([
+            joined!.id,
+            joined!.id,
+          ]);
+        });
+
+        it('the trial source follows harvestapi into the job its new key names', async () => {
+          await saveTrial(t1);
+          await save(harvest(), t2);
+          const [joined] = await active();
+          // Another LinkedIn item already holds the employer's apply URL.
+          await save(liJob('4483999999', { applyUrl: employerUrl }), t2);
+          const target = (await active()).find((j) =>
+            j.jobKey.startsWith('url:'),
+          )!;
+
+          await save(viaEmployer(), t3);
+
+          expect(await active()).toEqual([
+            expect.objectContaining({ id: target.id }),
+          ]);
+          expect(
+            await db.orm.public.NormalizedJob.where({ id: joined!.id }).first(),
+          ).toMatchObject({ status: 'merged', mergedIntoId: target.id });
+          expect(
+            (await sources()).filter((s) => s.jobId === target.id),
+          ).toHaveLength(3);
+        });
+
+        it('a rebuild links harvestapi before a trial item with a lower id', async () => {
+          await saveTrial(t1);
+          await save(viaAshby(), t2);
+          const trialId = await db.orm.public.RawItem.where({
+            channel: trialChannel,
+          }).first();
+          const harvestId = await db.orm.public.RawItem.where({
+            channel: Channel.LINKEDIN_JOB_BOARD,
+          }).first();
+          expect(trialId!.id < harvestId!.id).toBe(true);
+          await db.execute(
+            db.raw
+              .sql`TRUNCATE normalized_job_sources, normalized_jobs, normalized_versions CASCADE`
+              .affectedCount()
+              .build(),
+          );
+
+          expect(
+            await new RenormalizeService({ db } as DatabaseService).run(),
+          ).toEqual({ items: 2, invalid: 0, jobs: 1 });
+
+          // Linked in order, so no trial-only job was made and merged away.
+          const [only, ...rest] = await jobs();
+          expect(rest).toHaveLength(0);
+          expect(only).toMatchObject({ jobKey: ashbyKey, status: 'active' });
+          expect(await sources()).toHaveLength(2);
+        });
       });
     });
 

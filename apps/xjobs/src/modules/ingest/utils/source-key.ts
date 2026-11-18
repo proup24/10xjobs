@@ -56,28 +56,30 @@ function idFromLinkedinUrl(channel: Channel, value: string): string | null {
   }
 }
 
-const linkedinFields: Record<
-  Channel.LINKEDIN_JOB_BOARD | Channel.LINKEDIN_POSTS,
-  { ids: string[]; urls: string[] }
-> = {
-  [Channel.LINKEDIN_JOB_BOARD]: {
-    ids: ['id', 'jobId'],
-    urls: ['jobUrl', 'url', 'link'],
-  },
-  [Channel.LINKEDIN_POSTS]: {
-    ids: ['id'],
-    urls: ['linkedinUrl', 'url', 'postUrl'],
-  },
-};
+type LinkedinKind = 'board' | 'posts';
+
+const linkedinFields: Record<LinkedinKind, { ids: string[]; urls: string[] }> =
+  {
+    board: {
+      ids: ['id', 'jobId'],
+      urls: ['jobUrl', 'url', 'link'],
+    },
+    posts: {
+      ids: ['id'],
+      urls: ['linkedinUrl', 'url', 'postUrl'],
+    },
+  };
 
 function linkedinKey(
-  channel: Channel.LINKEDIN_JOB_BOARD | Channel.LINKEDIN_POSTS,
+  kind: LinkedinKind,
   item: Record<string, unknown>,
 ): SourceKeyResult {
-  const fields = linkedinFields[channel];
+  const fields = linkedinFields[kind];
+  const channel =
+    kind === 'board' ? Channel.LINKEDIN_JOB_BOARD : Channel.LINKEDIN_POSTS;
   const id = firstText(item, fields.ids);
   if (id) return { key: `id:${id}` };
-  if (channel === Channel.LINKEDIN_POSTS) {
+  if (kind === 'posts') {
     const urn = idText(item.urn);
     const activity = urn && /^urn:li:[a-zA-Z]+:(\d+)$/.exec(urn)?.[1];
     if (activity) return { key: `id:${activity}` };
@@ -121,8 +123,10 @@ export function sourceKey(channel: Channel, payload: unknown): SourceKeyResult {
   if (!isObject(payload)) return { invalid: 'payload is not a JSON object' };
   switch (channel) {
     case Channel.LINKEDIN_JOB_BOARD:
+    case Channel.LINKEDIN_JOB_BOARD_CHEAP:
+      return linkedinKey('board', payload);
     case Channel.LINKEDIN_POSTS:
-      return linkedinKey(channel, payload);
+      return linkedinKey('posts', payload);
     case Channel.ASHBY:
     case Channel.GREEN_HOUSE:
       return postingKey(channel, payload);

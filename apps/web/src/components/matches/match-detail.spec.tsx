@@ -282,6 +282,21 @@ describe('MatchDetail', () => {
     expect(screen.getByText('posted ~3 hours ago on LinkedIn')).toBeTruthy();
   });
 
+  it('shows a badge per LinkedIn actor that saw the job, harvestapi first', () => {
+    renderDetail([
+      matchRow({
+        channels: ['LINKEDIN_JOB_BOARD_CHEAP', 'LINKEDIN_JOB_BOARD'],
+      }),
+    ]);
+    const header = screen.getByRole('banner');
+    const text = header.textContent ?? '';
+    expect(within(header).getByText('LinkedIn · harvestapi')).toBeTruthy();
+    expect(within(header).getByText('LinkedIn · cheap_scraper')).toBeTruthy();
+    expect(text.indexOf('LinkedIn · harvestapi')).toBeLessThan(
+      text.indexOf('LinkedIn · cheap_scraper'),
+    );
+  });
+
   it('words a date-only post by its date', () => {
     renderDetail([matchRow({ postedAt: null, publishedAt: '2026-11-09' })]);
     expect(screen.getByText('posted Nov 9 on LinkedIn')).toBeTruthy();

@@ -125,11 +125,11 @@ export class FakeLinkedinSearchSplitsRepository extends LinkedinSearchSplitsRepo
     else this.splits.set(groupKey, { parts, splitAt });
   }
 
-  async prune(keep: readonly string[]): Promise<number> {
+  async prune(channel: Channel, keep: readonly string[]): Promise<number> {
     const kept = new Set(keep);
     let forgot = 0;
     for (const key of [...this.splits.keys()])
-      if (!kept.has(key)) {
+      if (key.startsWith(`${channel}|`) && !kept.has(key)) {
         this.splits.delete(key);
         forgot += 1;
       }

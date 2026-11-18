@@ -92,6 +92,7 @@ const allWorkers = [
   'collect-linkedin-job-board',
 ];
 const inactiveSchedulers = [
+  'collect-linkedin-job-board-cheap:collect',
   'collect-linkedin-posts:collect',
   'collect-greenhouse:collect',
   'collect-ashby:collect',

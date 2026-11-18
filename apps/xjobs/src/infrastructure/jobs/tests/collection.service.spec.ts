@@ -64,6 +64,7 @@ function setup(
   channel: Channel = Channel.ASHBY,
   budgetUsd = 3,
 ) {
+  const configGet = vi.fn((_key: string) => budgetUsd);
   const queries = { listActive: vi.fn(async () => rows) };
   const collectors = Object.fromEntries(
     Object.values(Channel).map((value) => [
@@ -103,13 +104,14 @@ function setup(
     collectors[Channel.ASHBY] as never,
     collectors[Channel.GREEN_HOUSE] as never,
     collectors[Channel.LINKEDIN_JOB_BOARD] as never,
+    collectors[Channel.LINKEDIN_JOB_BOARD_CHEAP] as never,
     collectors[Channel.LINKEDIN_POSTS] as never,
     queries as unknown as QuerySearchService,
     segments,
     splits,
     storage,
     ingestQueue as unknown as IngestQueue,
-    { get: () => budgetUsd } as never,
+    { get: configGet } as never,
   );
   const warn = vi
     .spyOn(Logger.prototype, 'warn')
@@ -119,6 +121,7 @@ function setup(
   return {
     collection,
     collectors,
+    configGet,
     queries,
     collector,
     segments,
@@ -1413,5 +1416,177 @@ describe('channelJobsConfig', () => {
         },
       });
     }
+  });
+});
+
+describe('CollectionService trial channel (cheap_scraper)', () => {
+  const CHEAP = Channel.LINKEDIN_JOB_BOARD_CHEAP;
+  const cheapRows = (count: number) =>
+    builders(count, {
+      channel: CHEAP,
+      type: Arrangement.remote,
+      params: { location: 'emea' },
+    });
+  const full = (s: SegmentSearch, costUsd: number | null = 0.15) =>
+    resultFor(s, () => [item(1)], {
+      fetched: s.maxItems ?? 100,
+      truncatedQueryIds: s.queries.map((q) => q.id),
+      costUsd,
+    });
+  const small = (s: SegmentSearch, costUsd: number | null = 0.15) =>
+    resultFor(s, () => [item(1)], { fetched: 3, costUsd });
+
+  it("runs the cheap collector, never harvestapi's", async () => {
+    const { collection, collectors } = setup(
+      cheapRows(1),
+      async (s) => small(s),
+      CHEAP,
+    );
+    await collection.collect(CHEAP);
+    expect(collectors[CHEAP]!.collect).toHaveBeenCalledTimes(1);
+    expect(
+      collectors[Channel.LINKEDIN_JOB_BOARD]!.collect,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('reads its own budget setting and counts a null cost at $0.15', async () => {
+    const rows = [
+      ...cheapRows(1),
+      ...builders(1, {
+        channel: CHEAP,
+        type: Arrangement.remote,
+        params: { location: 'europe' },
+      }),
+    ];
+    // Between the trial's cap ($0.15) and harvestapi's ($0.25): the second
+    // segment runs only if the null-cost first run counted at $0.15.
+    const { collection, collector, configGet, segments } = setup(
+      rows,
+      async (s) => small(s, null),
+      CHEAP,
+      0.2,
+    );
+    const spent = vi.spyOn(segments, 'spentMicroUsd');
+    const summary = await collection.collect(CHEAP);
+    expect(configGet).toHaveBeenCalledWith(
+      'COLLECTION_DAILY_BUDGET_USD_LINKEDIN_JOB_BOARD_CHEAP',
+      expect.anything(),
+    );
+    expect(configGet).not.toHaveBeenCalledWith(
+      'COLLECTION_DAILY_BUDGET_USD',
+      expect.anything(),
+    );
+    expect(spent).toHaveBeenCalledWith(CHEAP, expect.any(Date), 150_000);
+    expect(collector.collect).toHaveBeenCalledTimes(2);
+    expect(summary.segmentsDeferred).toBe(0);
+  });
+
+  it('counts a null cost at harvestapi cap of $0.25 on its own channel', async () => {
+    const { collection, segments } = setup(
+      builders(1, {
+        channel: Channel.LINKEDIN_JOB_BOARD,
+        type: Arrangement.remote,
+        params: { location: 'emea' },
+      }),
+      async (s) => small(s),
+      Channel.LINKEDIN_JOB_BOARD,
+    );
+    const spent = vi.spyOn(segments, 'spentMicroUsd');
+    await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+    expect(spent).toHaveBeenCalledWith(
+      Channel.LINKEDIN_JOB_BOARD,
+      expect.any(Date),
+      250_000,
+    );
+  });
+
+  it("counts only the trial channel's own spend", async () => {
+    const { collection, collector, segments } = setup(
+      cheapRows(1),
+      async (s) => small(s),
+      CHEAP,
+      0.15,
+    );
+    segments.runs.push({
+      id: 'other',
+      channel: Channel.LINKEDIN_JOB_BOARD,
+      segmentKey: 'k',
+      segmentHash: 'h',
+      queryIds: [],
+      windowStart: new Date(),
+      windowEnd: new Date(),
+      startedAt: new Date(),
+      finishedAt: new Date(),
+      status: 'succeeded',
+      fetched: 0,
+      costMicroUsd: 5_000_000,
+      capped: false,
+      truncatedQueryIds: [],
+      perQuery: {},
+      searchTotals: null,
+      error: null,
+    });
+    await collection.collect(CHEAP);
+    expect(collector.collect).toHaveBeenCalledTimes(1);
+  });
+
+  it('the harvestapi tick still reads COLLECTION_DAILY_BUDGET_USD', async () => {
+    const { collection, configGet } = setup(
+      builders(1, {
+        channel: Channel.LINKEDIN_JOB_BOARD,
+        type: Arrangement.remote,
+        params: { location: 'emea' },
+      }),
+      async (s) => small(s),
+      Channel.LINKEDIN_JOB_BOARD,
+    );
+    await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+    expect(configGet).toHaveBeenCalledWith(
+      'COLLECTION_DAILY_BUDGET_USD',
+      expect.anything(),
+    );
+  });
+
+  it('splits a full result, then reruns one member at 1000 rows', async () => {
+    const rows = cheapRows(2);
+    const { collection, collector } = setup(
+      rows,
+      async (s) =>
+        s.queries.length > 1 || s.maxItems === undefined ? full(s) : small(s),
+      CHEAP,
+    );
+    await collection.collect(CHEAP);
+    const calls = collector.collect.mock.calls.map(([s]) => [
+      s.queries.length,
+      s.maxItems,
+    ]);
+    expect(calls).toEqual([
+      [2, undefined],
+      [1, undefined],
+      [1, 1000],
+      [1, undefined],
+      [1, 1000],
+    ]);
+  });
+
+  it('remembers splits with the channel row limit and prunes its own channel', async () => {
+    const rows = cheapRows(2);
+    const { collection, splits } = setup(
+      rows,
+      async (s) => (s.queries.length > 1 ? full(s) : small(s)),
+      CHEAP,
+    );
+    const setParts = vi.spyOn(splits, 'setParts');
+    const prune = vi.spyOn(splits, 'prune');
+    await collection.collect(CHEAP);
+    expect(prune).toHaveBeenCalledWith(CHEAP, [segmentKey(rows[0]!)]);
+    expect(setParts).toHaveBeenCalledWith(
+      segmentKey(rows[0]!),
+      expect.any(Number),
+      expect.any(Date),
+    );
+    expect(segmentKey(rows[0]!).startsWith('LINKEDIN_JOB_BOARD_CHEAP|')).toBe(
+      true,
+    );
   });
 });

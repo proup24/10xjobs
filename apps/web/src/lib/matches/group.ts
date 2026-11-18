@@ -1,6 +1,6 @@
 import type { Database } from '@xjobs/database/types';
 import { effectivePostedAt } from './freshness';
-import { CHANNEL_LABELS } from './sources';
+import { CHANNEL_LABELS, sourceOf } from './sources';
 
 export type MatchRow =
   Database['public']['Functions']['match_details']['Returns'][number];
@@ -94,7 +94,8 @@ export function selectJobs(
       !j.rows.some((r) => r.profileId === f.profileId)
     )
       return false;
-    if (f.source !== 'all' && !j.channels.includes(f.source)) return false;
+    if (f.source !== 'all' && !j.channels.some((c) => sourceOf(c) === f.source))
+      return false;
     return true;
   });
 }
@@ -103,7 +104,7 @@ export function selectJobs(
 export function sourceOptions(
   jobs: MatchedJob[],
 ): { value: string; label: string }[] {
-  const present = new Set(jobs.flatMap((j) => j.channels));
+  const present = new Set(jobs.flatMap((j) => j.channels.map(sourceOf)));
   return [...present]
     .map((value) => ({ value, label: CHANNEL_LABELS[value] ?? value }))
     .sort((a, b) => a.label.localeCompare(b.label));

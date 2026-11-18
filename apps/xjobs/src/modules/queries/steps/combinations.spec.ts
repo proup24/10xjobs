@@ -4,6 +4,7 @@ import {
   Channel,
   Seniority,
   SkillDomain,
+  isLinkedinJobBoard,
 } from 'src/common/enums';
 import { toRecipe } from '../builders';
 import type { QuerySearchProfileInput, QuerySearchRecipe } from '../types';
@@ -14,10 +15,11 @@ import {
 } from './combinations';
 
 // Cover every channel's expansion, inactive ones included.
-vi.mock('src/common/enums', async (importOriginal) => {
-  const enums = await importOriginal<typeof import('src/common/enums')>();
-  return { ...enums, ACTIVE_CHANNELS: Object.values(enums.Channel) };
-});
+vi.mock('src/common/enums', async (importOriginal) =>
+  (await import('../testing/all-channels.js')).withAllChannelsActive(
+    await importOriginal<typeof import('src/common/enums')>(),
+  ),
+);
 
 const profile: QuerySearchProfileInput = {
   position: 'backend_engineer',
@@ -32,14 +34,28 @@ const sets = [
 ];
 /** Technology sets over all active channels: the LinkedIn job board has one set, the others one per technology. */
 const setTotal = ACTIVE_CHANNELS.reduce(
-  (total, channel) =>
-    total + (channel === Channel.LINKEDIN_JOB_BOARD ? 1 : sets.length),
+  (total, channel) => total + (isLinkedinJobBoard(channel) ? 1 : sets.length),
   0,
 );
 const others = (combinations: ReturnType<typeof locationCombinations>) =>
-  combinations.filter((c) => c.channel !== Channel.LINKEDIN_JOB_BOARD);
+  combinations.filter((c) => !isLinkedinJobBoard(c.channel));
 
 describe('locationCombinations', () => {
+  it('expands the trial channel exactly like the LinkedIn job board, except channel', () => {
+    const single: QuerySearchProfileInput = {
+      ...profile,
+      seniorities: [Seniority.senior],
+      locations: { remote: [], hybrid: [], onsite: ['Casablanca, Morocco'] },
+    };
+    const on = (channel: Channel) =>
+      locationCombinations(single, sets)
+        .filter((c) => c.channel === channel)
+        .map((c) => ({ ...c, channel: Channel.LINKEDIN_JOB_BOARD }));
+    const main = on(Channel.LINKEDIN_JOB_BOARD);
+    expect(main.length).toBeGreaterThan(0);
+    expect(on(Channel.LINKEDIN_JOB_BOARD_CHEAP)).toEqual(main);
+  });
+
   it('expands arrangement x active channel x location x technology set', () => {
     expect(locationCombinations(profile, sets)).toHaveLength(3 * setTotal);
   });
@@ -66,7 +82,7 @@ describe('locationCombinations', () => {
     const [first, second] = others(locationCombinations(profile, sets));
     expect(first).toMatchObject({
       type: Arrangement.remote,
-      channel: ACTIVE_CHANNELS.find((c) => c !== Channel.LINKEDIN_JOB_BOARD),
+      channel: ACTIVE_CHANNELS.find((c) => !isLinkedinJobBoard(c)),
       location: 'europe',
       technologies: ['nestjs'],
       domain: SkillDomain.backend,
@@ -94,7 +110,7 @@ describe('locationCombinations', () => {
       ),
     );
     const otherChannels = ACTIVE_CHANNELS.filter(
-      (c) => c !== Channel.LINKEDIN_JOB_BOARD,
+      (c) => !isLinkedinJobBoard(c),
     ).length;
     expect(both).toHaveLength(3 * otherChannels * 2 * 2);
     const tuple = (c: (typeof both)[number]) =>

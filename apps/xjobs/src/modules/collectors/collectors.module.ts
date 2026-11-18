@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AshbyCollector } from './providers/ashby.collector';
 import { GreenhouseCollector } from './providers/greenhouse.collector';
 import { LinkedinJobBoardCollector } from './providers/linkedin-job-board.collector';
+import { LinkedinJobBoardCheapCollector } from './providers/linkedin-job-board-cheap.collector';
 import { LinkedinPostsCollector } from './providers/linkedin-posts.collector';
 import { ApifyActorProvider } from './providers/apify/apify.provider';
 import { GoogleJobsSearchProvider } from './providers/apify/google-search.provider';
@@ -17,12 +18,14 @@ import { GreenhousePostingProvider } from './providers/extraction/greenhouse.pro
     AshbyCollector,
     GreenhouseCollector,
     LinkedinJobBoardCollector,
+    LinkedinJobBoardCheapCollector,
     LinkedinPostsCollector,
   ],
   exports: [
     AshbyCollector,
     GreenhouseCollector,
     LinkedinJobBoardCollector,
+    LinkedinJobBoardCheapCollector,
     LinkedinPostsCollector,
   ],
 })

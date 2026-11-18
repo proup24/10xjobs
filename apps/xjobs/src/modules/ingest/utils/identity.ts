@@ -1,4 +1,4 @@
-import { Channel } from 'src/common/enums';
+import { Channel, isLinkedinJobBoard } from 'src/common/enums';
 import { InvalidIngestItem } from '../types';
 
 /** A posting identified exactly by its ATS provider, tenant and posting id. */
@@ -162,7 +162,7 @@ function canonicalLinkedInSource(
     throw new InvalidIngestItem('Unsupported LinkedIn host');
   }
 
-  if (channel === Channel.LINKEDIN_JOB_BOARD) {
+  if (isLinkedinJobBoard(channel)) {
     const result = canonicalLinkedInJob(parsed);
     if (result) return result;
   } else if (channel === Channel.LINKEDIN_POSTS) {
