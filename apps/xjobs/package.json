@@ -12,6 +12,7 @@
     "db:archive-actor": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/archive-actor-jobs.ts",
     "db:places": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/places-recheck.ts",
     "db:match-shares": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/match-shares.ts",
+    "db:actor-compare": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/actor-compare.ts",
     "db:vocab": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/vocab.ts",
     "db:spellings": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/spellings.ts",
     "processor:golden-import": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/processor-golden-import.ts",
