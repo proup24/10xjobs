@@ -196,6 +196,31 @@ describe('trial sources', () => {
     expect(merged.record.location).toBe('Lyon');
   });
 
+  it('lets bebity (2.2) win a field over cheap_scraper (2.4) without harvestapi', () => {
+    const bebity = source(
+      'be-1',
+      Channel.LINKEDIN_JOB_BOARD_BEBITY,
+      { location: 'Casablanca' },
+      t(1),
+    );
+    // cheap_scraper is seen later: rank, not recency, decides.
+    const later = source(
+      'ch-2',
+      Channel.LINKEDIN_JOB_BOARD_CHEAP,
+      { location: 'Rabat', companyName: 'Cheap Co' },
+      t(5),
+    );
+    for (const order of [
+      [bebity, later],
+      [later, bebity],
+    ]) {
+      const merged = mergeSources(order);
+      expect(merged.record.location).toBe('Casablanca');
+      expect(merged.fieldSources.location).toBe('be-1');
+      expect(merged.record.companyName).toBe('Cheap Co');
+    }
+  });
+
   it('boardSources drops trial sources only beside harvestapi', () => {
     const c = cheap({});
     const h = harvest({});

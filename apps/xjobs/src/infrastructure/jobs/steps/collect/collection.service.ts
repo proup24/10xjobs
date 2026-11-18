@@ -15,9 +15,9 @@ import {
   SearchNotStartedError,
   type SegmentSearch,
   type SegmentResult,
+  ApifyActorProvider,
   ApifyRunError,
 } from 'src/modules/collectors';
-import { ApifyActorProvider } from 'src/modules/collectors/providers/apify/apify.provider';
 import {
   type BatchFile,
   batchStorageKey,

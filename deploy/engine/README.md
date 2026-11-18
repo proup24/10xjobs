@@ -127,7 +127,8 @@ A trial actor runs beside harvestapi to compare them. `cheap_scraper` (channel `
 1. Its daily spend cap is `COLLECTION_DAILY_BUDGET_USD_LINKEDIN_JOB_BOARD_BEBITY` (default 1 dollar, Morocco day), counted from its own runs only. Its run charge cap is $0.15 per 100 rows, like cheap_scraper's.
 2. It runs on its own queue (`collect-linkedin-job-board-bebity`), on harvestapi's schedule.
 3. It names places, not LinkedIn geoIds, and has no name for MENA. A MENA search does not start: no Apify call, a failed run row with cost 0, shown as "not started" in the report.
-4. End the trial: turn it off, then `db:archive-actor -- --actor bebity/linkedin-jobs-scraper --dry-run`, read it, then run it without `--dry-run`.
+
+To end the bebity trial, turn it off, then `pnpm --filter @xjobs/xjobs db:archive-actor -- --actor bebity/linkedin-jobs-scraper --dry-run`, read it, then run it without `--dry-run`. The actor name is the same as the old bebity runs on `LINKEDIN_JOB_BOARD` from before cheap_scraper replaced it there (early November 2026), so it also archives those jobs when they were seen only in bebity batches. Read the dry run before the real one.
 
 ## 9. Roll back
 
