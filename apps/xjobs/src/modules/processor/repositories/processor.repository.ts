@@ -4,7 +4,7 @@ import { DatabaseService } from 'src/database';
 import type { DatabaseTransaction, JobExtractionRow } from '@xjobs/database';
 import { inRetriedTransaction } from 'src/modules/ingest/repositories/raw.repository';
 import type { JobForProcessing, ModelCallMeta } from '../models/types';
-import { PROCESSOR_CHANNEL } from '../config/processor.config';
+import { PROCESSOR_CHANNELS } from '../config/processor.config';
 import type { TypedColumns } from '../rules/typed-columns';
 import {
   type ExtractionDocument,
@@ -167,12 +167,12 @@ const UUID = 'pg/uuid@1';
 type LinkedInJobIds = ReturnType<ReturnType<Raw['sql']>['returnsRow']>;
 
 /**
- * Ids of jobs with a LinkedIn job board source. Spliced into the statements
+ * Ids of jobs with a LinkedIn job board source (harvestapi or trial channel). Spliced into the statements
  * below as `id IN (…)`; the job's own columns are checked on the updated row
  * itself, so a concurrent change to them is seen (see `claim`).
  */
 export function linkedInJobIds(raw: Raw): LinkedInJobIds {
-  return raw.sql`SELECT s."jobId" FROM normalized_job_sources s JOIN raw_items r ON r.id = s."rawItemId" WHERE r.channel = ${PROCESSOR_CHANNEL}`.returnsRow(
+  return raw.sql`SELECT s."jobId" FROM normalized_job_sources s JOIN raw_items r ON r.id = s."rawItemId" WHERE r.channel = ANY(${`{${PROCESSOR_CHANNELS.join(',')}}`}::text[])`.returnsRow(
     { jobId: UUID },
   );
 }

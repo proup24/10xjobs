@@ -1,10 +1,13 @@
-import { Channel } from 'src/common/enums';
+import { Channel, TRIAL_CHANNELS } from 'src/common/enums';
 
 /**
- * The channel whose jobs this version processes (spec §1). A job is in scope
- * when one of its sources comes from it.
+ * The channels whose jobs this version processes (spec §1). A job is in scope
+ * when one of its sources comes from one of them.
  */
-export const PROCESSOR_CHANNEL = Channel.LINKEDIN_JOB_BOARD;
+export const PROCESSOR_CHANNELS: readonly Channel[] = [
+  Channel.LINKEDIN_JOB_BOARD,
+  ...TRIAL_CHANNELS,
+];
 
 export interface ProcessorConfig {
   extractionModel: string;

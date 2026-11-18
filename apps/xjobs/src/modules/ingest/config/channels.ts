@@ -40,7 +40,7 @@ const linkedinJobBoardIngest: ChannelIngestConfig = {
 
 export const channelIngestConfig: Record<Channel, ChannelIngestConfig> = {
   [Channel.LINKEDIN_JOB_BOARD]: linkedinJobBoardIngest,
-  // Placeholder: copies the main board; final in Task 4.
+  // The trial actor feeds the same fields as the main board.
   [Channel.LINKEDIN_JOB_BOARD_CHEAP]: linkedinJobBoardIngest,
   [Channel.LINKEDIN_POSTS]: {
     kind: 'post',

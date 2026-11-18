@@ -275,6 +275,11 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       expect(new Set(ids)).toEqual(new Set([inScope, merged]));
     });
 
+    it('lists a job whose only source is on the trial channel', async () => {
+      const id = await job({ channels: [Channel.LINKEDIN_JOB_BOARD_CHEAP] });
+      expect(await repo.listPendingInScope(10)).toContain(id);
+    });
+
     it('orders by processingRequestedAt and respects the limit', async () => {
       const later = await job({
         requestedAt: new Date(t0.getTime() + minutes(5)),
@@ -327,6 +332,11 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       });
       expect(await repo.claim(id)).toBeNull();
       expect((await jobRow(id)).processingStatus).toBe('pending');
+    });
+
+    it('claims a job whose only source is on the trial channel', async () => {
+      const id = await job({ channels: [Channel.LINKEDIN_JOB_BOARD_CHEAP] });
+      expect(await repo.claim(id)).not.toBeNull();
     });
 
     it('refuses out-of-scope and non-pending jobs', async () => {

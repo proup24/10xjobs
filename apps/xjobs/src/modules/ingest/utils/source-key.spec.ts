@@ -28,6 +28,20 @@ describe('sourceKey', () => {
       });
     });
 
+    it('keys a trial-channel item by its jobId, or by the jobUrl without one', () => {
+      const payload = {
+        jobId: '4123',
+        jobUrl: 'https://de.linkedin.com/jobs/view/x-4123',
+      };
+      expect(sourceKey(Channel.LINKEDIN_JOB_BOARD_CHEAP, payload)).toEqual({
+        key: 'id:4123',
+      });
+      const { jobId: _jobId, ...noId } = payload;
+      expect(sourceKey(Channel.LINKEDIN_JOB_BOARD_CHEAP, noId)).toEqual({
+        key: 'id:4123',
+      });
+    });
+
     it('takes the id from the posting URL when the item has none', () => {
       const { id: _id, ...noId } = linkedinJob;
       expect(sourceKey(Channel.LINKEDIN_JOB_BOARD, noId)).toEqual({
