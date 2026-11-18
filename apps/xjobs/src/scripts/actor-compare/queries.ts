@@ -4,6 +4,7 @@
  * aggregation is in ./report.
  */
 import type { DatabaseTransaction } from '@xjobs/database';
+import { channelJobsConfig } from 'src/infrastructure/jobs/steps/collect/config';
 import {
   linkedinGroupKey,
   mergedLinkedinKeyword,
@@ -152,6 +153,7 @@ export async function loadSegmentRuns(
         r.channel::text AS channel, r."startedAt", r.status, r.capped,
         r.fetched AS rows, r."costMicroUsd",
         r."queryIds"::text[] AS "queryIds",
+        r."truncatedQueryIds"::text[] AS "truncatedQueryIds",
         (SELECT coalesce(jsonb_agg(q.params), '[]'::jsonb)
           FROM query_search_builder q WHERE q.id = ANY(r."queryIds")) AS members,
         (SELECT coalesce(jsonb_agg(DISTINCT v.payload->>'searchString'), '[]'::jsonb)
@@ -175,6 +177,7 @@ export async function loadSegmentRuns(
     rows: number;
     costMicroUsd: number | null;
     queryIds: string[];
+    truncatedQueryIds: string[];
     members: { [key: string]: unknown }[];
     echoed: string[];
   };
@@ -189,11 +192,28 @@ export async function loadSegmentRuns(
       capped: r.capped,
       costMicroUsd: r.costMicroUsd,
       queryIds: r.queryIds,
+      truncatedQueryIds: r.truncatedQueryIds,
+      atCeiling: r.rows >= ceilingRows(r.channel),
       rows: r.rows,
       sentKeyword: actor === HARVEST_ACTOR ? null : sentKeyword(r.members),
       echoedKeywords: [...new Set(r.echoed.map(stripLocation))],
     };
   });
+}
+
+/**
+ * The channel's `maxRowsCeiling`. A run row stores what it fetched, not the
+ * rows it asked for; a run held for splitting asks `maxRowsPerSearch`, far
+ * below the ceiling, so only a ceiling run can fetch this many.
+ */
+function ceilingRows(channel: string): number {
+  const config = (
+    channelJobsConfig as Record<
+      string,
+      { run?: { maxRowsCeiling?: number } } | undefined
+    >
+  )[channel];
+  return config?.run?.maxRowsCeiling ?? Number.POSITIVE_INFINITY;
 }
 
 /**

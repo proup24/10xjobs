@@ -69,6 +69,8 @@ function run(runId: string, extra: Partial<RunRow> = {}): RunRow {
     capped: false,
     costMicroUsd: 100_000,
     queryIds: [`${runId}-q`],
+    truncatedQueryIds: [],
+    atCeiling: false,
     rows: 10,
     sentKeyword: actor === C ? 'react' : null,
     echoedKeywords: actor === C ? ['react'] : [],
@@ -204,6 +206,77 @@ describe('coverage', () => {
       [builder('h1', HC, 'G'), builder('h2', HC, 'G')],
     );
     expect(cells.get(H)?.get(`G|${tick}`)).toBe('ran');
+  });
+
+  describe('a full run held for splitting', () => {
+    const later = new Date(new Date(AT).getTime() + 10 * 60_000);
+    const full = run('h0', {
+      queryIds: ['h1', 'h2'],
+      truncatedQueryIds: ['h1', 'h2'],
+      rows: 100,
+    });
+    // cheap_scraper ran G in the tick, so harvestapi's status is kept.
+    const cheap = run('c', { queryIds: ['c1'] });
+    const members = [
+      builder('h1', HC, 'G'),
+      builder('h2', HC, 'G'),
+      builder('c1', CC, 'G'),
+    ];
+
+    it('is skipped when the cap skips its halves', () => {
+      const cells = coverage([full, cheap], members);
+      expect(cells.get(H)?.get(`G|${tick}`)).toBe('skipped');
+    });
+
+    it('takes a failed half as the reason', () => {
+      const cells = coverage(
+        [
+          full,
+          run('h1', { queryIds: ['h1'], startedAt: later }),
+          run('h2', {
+            queryIds: ['h2'],
+            startedAt: later,
+            status: 'failed',
+            costMicroUsd: null,
+          }),
+          cheap,
+        ],
+        members,
+      );
+      expect(cells.get(H)?.get(`G|${tick}`)).toBe('failed');
+    });
+
+    it('ran when its same-tick halves both succeeded, with every run its jobs', () => {
+      const runs = [
+        full,
+        run('h1', { queryIds: ['h1'], startedAt: later }),
+        run('h2', { queryIds: ['h2'], startedAt: later }),
+        run('c', { queryIds: ['c1'] }),
+      ];
+      const world = { runs, builders: members };
+      expect(coverage(runs, world.builders).get(H)?.get(`G|${tick}`)).toBe(
+        'ran',
+      );
+      const r = report(
+        [sighting('x', 'h0', AT), sighting('x', 'c', AT)],
+        [],
+        world,
+      );
+      expect(
+        r.pairs.find((p) => p.label === 'total' && p.a === H && p.b === C),
+      ).toMatchObject({ both: 1 });
+    });
+
+    it('ran when full at the ceiling alone', () => {
+      const ceiling = run('h0', {
+        queryIds: ['h1'],
+        truncatedQueryIds: ['h1'],
+        rows: 1000,
+        atCeiling: true,
+      });
+      const cells = coverage([ceiling], [builder('h1', HC, 'G')]);
+      expect(cells.get(H)?.get(`G|${tick}`)).toBe('ran');
+    });
   });
 
   it('labels not-run reasons', () => {

@@ -7,7 +7,9 @@
  * Overlap is fair: the unit is a search group in a tick (the Morocco-time hour
  * a run started), and a pair counts only the (group, tick) cells both actors
  * ran. An actor ran a cell when every one of its builders in that group is in a
- * run of that tick that succeeded and was not stopped at its charge cap.
+ * run of that tick that succeeded, was not stopped at its charge cap, and did
+ * not come back full below the ceiling (such a run is searched again in
+ * splits, which must cover the builder instead).
  *
  * Days are Morocco days. Pair and three-way tables place a job on the day of
  * its first sighting in the cells they count; the per-actor tables (cost,
@@ -82,6 +84,10 @@ export interface SegmentRunRow {
   /** As stored (Apify's final cost once re-read); 0 for a run never started, null when unknown. */
   costMicroUsd: number | null;
   queryIds: string[];
+  /** Members the run came back full for: searched again in splits, or lost at the ceiling. */
+  truncatedQueryIds: string[];
+  /** The run returned its channel's ceiling of rows (`maxRowsCeiling`): nothing splits further. */
+  atCeiling: boolean;
 }
 
 export interface RunRow extends SegmentRunRow {
@@ -280,7 +286,7 @@ function reasonOf(runs: SegmentRunRow[]): NotRunReason {
 
 interface Cell {
   status: CellStatus;
-  /** The succeeded, uncapped runs covering the group: its jobs for the actor. */
+  /** The group's succeeded, uncapped runs (full ones held for splitting too): its jobs for the actor. */
   runIds: Set<string>;
 }
 
@@ -331,8 +337,13 @@ function cells(
           const good = tried.filter(
             (r) => r.status === 'succeeded' && !r.capped,
           );
+          // A full run held for splitting covers a member only through its
+          // same-tick splits; a full run at the ceiling is the whole group.
+          const covering = good.filter(
+            (r) => r.atCeiling || !r.truncatedQueryIds.includes(id),
+          );
           for (const r of good) runIds.add(r.runId);
-          if (good.length === 0) missing.push(tried);
+          if (covering.length === 0) missing.push(tried);
         }
         if (missing.length === 0) {
           mine.set(cellKey(group, tick), { status: 'ran', runIds });
