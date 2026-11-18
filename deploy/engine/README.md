@@ -120,6 +120,7 @@ A trial actor runs beside harvestapi to compare them. `cheap_scraper` (channel `
 1. Turn it on: set `COLLECTION_TRIAL_CHANNELS=LINKEDIN_JOB_BOARD_CHEAP`. Turn it off: remove the line or empty it. Then `$C up -d worker`. The worker removes the schedule of a trial that is not listed.
 2. It has its own daily spend cap, `COLLECTION_DAILY_BUDGET_USD_LINKEDIN_JOB_BOARD_CHEAP` (default 3 dollars, Morocco day), apart from harvestapi's `COLLECTION_DAILY_BUDGET_USD`. Its spend is counted from its own runs only.
 3. It runs hourly 09-21 Morocco time, Monday to Friday, like harvestapi, on its own queue (`collect-linkedin-job-board-cheap`).
+4. End the trial: turn it off (step 1), then `pnpm --filter @xjobs/xjobs db:archive-actor -- --actor cheap_scraper/linkedin-job-scraper --dry-run` and, once the counts look right, the same without `--dry-run`. The actor name is the same as the old `cheap_scraper` runs on `LINKEDIN_JOB_BOARD` from before 2026-11-11, so it also archives those jobs when they were seen only in cheap_scraper batches. Read the dry run before the real one.
 
 ## 9. Roll back
 

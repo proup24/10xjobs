@@ -190,7 +190,7 @@ describe('trial sources', () => {
     expect(merged.fieldSources.companyName).toBe('ch-1');
   });
 
-  it('ranks harvestapi below the trial, and posts last', () => {
+  it('ranks a trial source above a post', () => {
     const post = source('po-1', Channel.LINKEDIN_POSTS, { location: 'Post' });
     const merged = mergeSources([post, cheap({ location: 'Lyon' })]);
     expect(merged.record.location).toBe('Lyon');

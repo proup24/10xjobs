@@ -305,15 +305,15 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
         attempts: 1,
         reason: 'new',
       });
+      const row = await jobRow(id);
+      expect(row.processingStatus).toBe('processing');
+      expect(row.processingAttempts).toBe(1);
+      expect(row.processingStartedAt).toBeInstanceOf(Date);
     });
 
     it('returns the processing reason', async () => {
       const id = await job({ reason: 'joined' });
       expect((await repo.claim(id))?.reason).toBe('joined');
-      const row = await jobRow(id);
-      expect(row.processingStatus).toBe('processing');
-      expect(row.processingAttempts).toBe(1);
-      expect(row.processingStartedAt).toBeInstanceOf(Date);
     });
 
     it('stamps processingRequestedAt when a pending row has none', async () => {

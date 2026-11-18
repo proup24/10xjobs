@@ -6,7 +6,7 @@ Design: `docs/superpowers/specs/2026-11-01-processor-design.md`.
 
 ## Flow
 
-1. **Trigger.** Ingest sets a new or reopened job to `pending`. Once its batch is ingested, the ingest worker enqueues every job the batch left `pending` on the `process` queue (LinkedIn job board batches only, `PROCESSOR_CHANNEL`). The processor's sweeper (every 60 s) re-enqueues any pending job a nudge missed and returns stale claims to `pending`.
+1. **Trigger.** Ingest sets a new or reopened job to `pending`. Once its batch is ingested, the ingest worker enqueues every job the batch left `pending` on the `process` queue (LinkedIn job-board batches only, harvestapi's `LINKEDIN_JOB_BOARD` and the trial channels: `isLinkedinJobBoard`, the same channels as `PROCESSOR_CHANNELS`). The processor's sweeper (every 60 s) re-enqueues any pending job a nudge missed and returns stale claims to `pending`.
 2. **One job.** The worker calls `ProcessorService.process(jobId)`, which reads top to bottom:
 
    | Step | Service                     | Does                                                                                                                                                                                                                                                                                                                                                                                                       |
@@ -19,6 +19,10 @@ Design: `docs/superpowers/specs/2026-11-01-processor-design.md`.
    | 6    | `decideFailure` + `finish`  | `processed`, or per the failure table: usage limit or auth failure → `pending` with the attempt given back and a pause; request error or a first generation invalid on every try → `failed`; anything else → `pending` until `PROCESSOR_MAX_ATTEMPTS`, then `failed`. A job that ends `processed` with a current extraction (including a reused one) is handed to the match queue (see `modules/matcher`). |
 
    Every model call goes into an `AttemptLog` and is written once, whatever the outcome.
+
+### Joined jobs
+
+When harvestapi first sees a posting a trial actor already brought in, ingest sets the job `pending` with reason `joined` (`modules/ingest`). Step 3 then also accepts an extraction of that job, or of a job merged into it, under the same schema, prompt and model but another input (`findJoinedReusable`): the trial already extracted this posting, and harvestapi's text differs only a little. A copied joined extraction keeps the trial's `inputHash`, so when the job is later reopened (reason `reopened`, harvestapi's input) the exact reuse key usually misses and Claude may run once for it.
 
 ## Code map
 
@@ -75,7 +79,7 @@ A call already running when a pause starts finishes normally. Pauses are logged 
 
 ## Scope
 
-A normalized job is in scope when it is `status='active'`, `kind='job'`, and at least one of its sources (`normalized_job_sources` → `raw_items`) has `channel='LINKEDIN_JOB_BOARD'`. A LinkedIn job merged with its Ashby or Greenhouse posting is in scope. Only in-scope jobs are listed, claimed or reprocessed; every other job is invisible to the processor. An `archived` job is never claimed. A closed in-scope job is claimed and marked `processed` with no model call and no extraction.
+A normalized job is in scope when it is `status='active'`, `kind='job'`, and at least one of its sources (`normalized_job_sources` → `raw_items`) has a channel in `PROCESSOR_CHANNELS` (`processor.config.ts`): harvestapi's `LINKEDIN_JOB_BOARD` and the trial channels (`TRIAL_CHANNELS`, today `LINKEDIN_JOB_BOARD_CHEAP`). A LinkedIn job merged with its Ashby or Greenhouse posting is in scope. Only in-scope jobs are listed, claimed or reprocessed; every other job is invisible to the processor. An `archived` job is never claimed. A closed in-scope job is claimed and marked `processed` with no model call and no extraction.
 
 ## Statuses
 
