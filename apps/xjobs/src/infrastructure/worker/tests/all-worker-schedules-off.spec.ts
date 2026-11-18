@@ -109,6 +109,7 @@ it('registers no schedule and removes the old ones when schedules are off', asyn
       'rates:refresh',
       'webhook:sweep',
       'collect-linkedin-job-board:collect',
+      'collect-linkedin-job-board-cheap:collect',
       'collect-linkedin-posts:collect',
       'collect-greenhouse:collect',
       'collect-ashby:collect',

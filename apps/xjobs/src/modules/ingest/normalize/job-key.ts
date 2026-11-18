@@ -70,7 +70,8 @@ export function jobKey(
     }
     case Channel.LINKEDIN_POSTS:
       return `linkedin-post:${sourceId(sourceKey)}`;
-    case Channel.LINKEDIN_JOB_BOARD: {
+    case Channel.LINKEDIN_JOB_BOARD:
+    case Channel.LINKEDIN_JOB_BOARD_CHEAP: {
       const apply = record.applyUrl;
       if (apply) {
         const ats = atsKey(apply);

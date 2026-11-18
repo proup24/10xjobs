@@ -1,5 +1,10 @@
 import { Logger } from '@nestjs/common';
-import { Arrangement, Channel, SkillDomain } from 'src/common/enums';
+import {
+  Arrangement,
+  Channel,
+  SkillDomain,
+  isTrialChannel,
+} from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
 import {
   LinkedinJobBoardCollector,
@@ -133,7 +138,7 @@ function setup(
 afterEach(() => vi.restoreAllMocks());
 
 describe('channel selection', () => {
-  it.each(Object.values(Channel))(
+  it.each(Object.values(Channel).filter((c) => !isTrialChannel(c)))(
     'collects %s with its matching collector and limits',
     async (channel) => {
       const { collection, collectors, queries } = setup(

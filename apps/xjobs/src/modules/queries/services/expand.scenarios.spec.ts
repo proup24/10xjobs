@@ -18,7 +18,12 @@ import { QuerySearchService } from './queries.service';
 // These specs cover every channel's builder, inactive ones included.
 vi.mock('src/common/enums', async (importOriginal) => {
   const enums = await importOriginal<typeof import('src/common/enums')>();
-  return { ...enums, ACTIVE_CHANNELS: Object.values(enums.Channel) };
+  return {
+    ...enums,
+    ACTIVE_CHANNELS: Object.values(enums.Channel).filter(
+      (channel) => !enums.isTrialChannel(channel),
+    ),
+  };
 });
 
 const service = new QuerySearchService(new FakeQuerySearchRepository());

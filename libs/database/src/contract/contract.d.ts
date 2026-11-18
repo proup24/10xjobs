@@ -24,7 +24,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'6445f1a93dc43f67978d3e8df96ba5087d849227003d05e95a754d8d62b6d06f'>;
+  StorageHashBase<'b6e24147863b710157ffe6c6e5b71d5724098742ee41d4f8ebef331e1d55401f'>;
 export type ExecutionHash =
   ExecutionHashBase<'7b5eaf1d91dcda38671ed0758e62b64e510de826d248ab15bddc3faa2e947c57'>;
 export type ProfileHash =
@@ -291,8 +291,18 @@ type FieldTypeOverrides = {
     readonly models: {
       readonly CollectionBatch: {
         readonly channel: {
-          readonly output: 'LINKEDIN_JOB_BOARD' | 'LINKEDIN_POSTS' | 'GREEN_HOUSE' | 'ASHBY';
-          readonly input: 'LINKEDIN_JOB_BOARD' | 'LINKEDIN_POSTS' | 'GREEN_HOUSE' | 'ASHBY';
+          readonly output:
+            | 'LINKEDIN_JOB_BOARD'
+            | 'LINKEDIN_JOB_BOARD_CHEAP'
+            | 'LINKEDIN_POSTS'
+            | 'GREEN_HOUSE'
+            | 'ASHBY';
+          readonly input:
+            | 'LINKEDIN_JOB_BOARD'
+            | 'LINKEDIN_JOB_BOARD_CHEAP'
+            | 'LINKEDIN_POSTS'
+            | 'GREEN_HOUSE'
+            | 'ASHBY';
         };
       };
       readonly Contact: {
@@ -349,8 +359,18 @@ type FieldTypeOverrides = {
       };
       readonly QuerySearchBuilder: {
         readonly channel: {
-          readonly output: 'LINKEDIN_JOB_BOARD' | 'LINKEDIN_POSTS' | 'GREEN_HOUSE' | 'ASHBY';
-          readonly input: 'LINKEDIN_JOB_BOARD' | 'LINKEDIN_POSTS' | 'GREEN_HOUSE' | 'ASHBY';
+          readonly output:
+            | 'LINKEDIN_JOB_BOARD'
+            | 'LINKEDIN_JOB_BOARD_CHEAP'
+            | 'LINKEDIN_POSTS'
+            | 'GREEN_HOUSE'
+            | 'ASHBY';
+          readonly input:
+            | 'LINKEDIN_JOB_BOARD'
+            | 'LINKEDIN_JOB_BOARD_CHEAP'
+            | 'LINKEDIN_POSTS'
+            | 'GREEN_HOUSE'
+            | 'ASHBY';
         };
         readonly domain: {
           readonly output:
@@ -386,14 +406,34 @@ type FieldTypeOverrides = {
       };
       readonly RawItem: {
         readonly channel: {
-          readonly output: 'LINKEDIN_JOB_BOARD' | 'LINKEDIN_POSTS' | 'GREEN_HOUSE' | 'ASHBY';
-          readonly input: 'LINKEDIN_JOB_BOARD' | 'LINKEDIN_POSTS' | 'GREEN_HOUSE' | 'ASHBY';
+          readonly output:
+            | 'LINKEDIN_JOB_BOARD'
+            | 'LINKEDIN_JOB_BOARD_CHEAP'
+            | 'LINKEDIN_POSTS'
+            | 'GREEN_HOUSE'
+            | 'ASHBY';
+          readonly input:
+            | 'LINKEDIN_JOB_BOARD'
+            | 'LINKEDIN_JOB_BOARD_CHEAP'
+            | 'LINKEDIN_POSTS'
+            | 'GREEN_HOUSE'
+            | 'ASHBY';
         };
       };
       readonly SearchSegmentRun: {
         readonly channel: {
-          readonly output: 'LINKEDIN_JOB_BOARD' | 'LINKEDIN_POSTS' | 'GREEN_HOUSE' | 'ASHBY';
-          readonly input: 'LINKEDIN_JOB_BOARD' | 'LINKEDIN_POSTS' | 'GREEN_HOUSE' | 'ASHBY';
+          readonly output:
+            | 'LINKEDIN_JOB_BOARD'
+            | 'LINKEDIN_JOB_BOARD_CHEAP'
+            | 'LINKEDIN_POSTS'
+            | 'GREEN_HOUSE'
+            | 'ASHBY';
+          readonly input:
+            | 'LINKEDIN_JOB_BOARD'
+            | 'LINKEDIN_JOB_BOARD_CHEAP'
+            | 'LINKEDIN_POSTS'
+            | 'GREEN_HOUSE'
+            | 'ASHBY';
         };
       };
     };
@@ -417,8 +457,18 @@ type ColumnTypeOverrides = {
   readonly public: {
     readonly collection_batches: {
       readonly channel: {
-        readonly output: 'LINKEDIN_JOB_BOARD' | 'LINKEDIN_POSTS' | 'GREEN_HOUSE' | 'ASHBY';
-        readonly input: 'LINKEDIN_JOB_BOARD' | 'LINKEDIN_POSTS' | 'GREEN_HOUSE' | 'ASHBY';
+        readonly output:
+          | 'LINKEDIN_JOB_BOARD'
+          | 'LINKEDIN_JOB_BOARD_CHEAP'
+          | 'LINKEDIN_POSTS'
+          | 'GREEN_HOUSE'
+          | 'ASHBY';
+        readonly input:
+          | 'LINKEDIN_JOB_BOARD'
+          | 'LINKEDIN_JOB_BOARD_CHEAP'
+          | 'LINKEDIN_POSTS'
+          | 'GREEN_HOUSE'
+          | 'ASHBY';
       };
     };
     readonly contacts: {
@@ -461,8 +511,18 @@ type ColumnTypeOverrides = {
     };
     readonly query_search_builder: {
       readonly channel: {
-        readonly output: 'LINKEDIN_JOB_BOARD' | 'LINKEDIN_POSTS' | 'GREEN_HOUSE' | 'ASHBY';
-        readonly input: 'LINKEDIN_JOB_BOARD' | 'LINKEDIN_POSTS' | 'GREEN_HOUSE' | 'ASHBY';
+        readonly output:
+          | 'LINKEDIN_JOB_BOARD'
+          | 'LINKEDIN_JOB_BOARD_CHEAP'
+          | 'LINKEDIN_POSTS'
+          | 'GREEN_HOUSE'
+          | 'ASHBY';
+        readonly input:
+          | 'LINKEDIN_JOB_BOARD'
+          | 'LINKEDIN_JOB_BOARD_CHEAP'
+          | 'LINKEDIN_POSTS'
+          | 'GREEN_HOUSE'
+          | 'ASHBY';
       };
       readonly domain: {
         readonly output:
@@ -497,14 +557,34 @@ type ColumnTypeOverrides = {
     };
     readonly raw_items: {
       readonly channel: {
-        readonly output: 'LINKEDIN_JOB_BOARD' | 'LINKEDIN_POSTS' | 'GREEN_HOUSE' | 'ASHBY';
-        readonly input: 'LINKEDIN_JOB_BOARD' | 'LINKEDIN_POSTS' | 'GREEN_HOUSE' | 'ASHBY';
+        readonly output:
+          | 'LINKEDIN_JOB_BOARD'
+          | 'LINKEDIN_JOB_BOARD_CHEAP'
+          | 'LINKEDIN_POSTS'
+          | 'GREEN_HOUSE'
+          | 'ASHBY';
+        readonly input:
+          | 'LINKEDIN_JOB_BOARD'
+          | 'LINKEDIN_JOB_BOARD_CHEAP'
+          | 'LINKEDIN_POSTS'
+          | 'GREEN_HOUSE'
+          | 'ASHBY';
       };
     };
     readonly search_segment_runs: {
       readonly channel: {
-        readonly output: 'LINKEDIN_JOB_BOARD' | 'LINKEDIN_POSTS' | 'GREEN_HOUSE' | 'ASHBY';
-        readonly input: 'LINKEDIN_JOB_BOARD' | 'LINKEDIN_POSTS' | 'GREEN_HOUSE' | 'ASHBY';
+        readonly output:
+          | 'LINKEDIN_JOB_BOARD'
+          | 'LINKEDIN_JOB_BOARD_CHEAP'
+          | 'LINKEDIN_POSTS'
+          | 'GREEN_HOUSE'
+          | 'ASHBY';
+        readonly input:
+          | 'LINKEDIN_JOB_BOARD'
+          | 'LINKEDIN_JOB_BOARD_CHEAP'
+          | 'LINKEDIN_POSTS'
+          | 'GREEN_HOUSE'
+          | 'ASHBY';
       };
     };
   };
@@ -5921,6 +6001,7 @@ type ContractBase = Omit<
               readonly kind: 'valueSet';
               readonly values: readonly [
                 'LINKEDIN_JOB_BOARD',
+                'LINKEDIN_JOB_BOARD_CHEAP',
                 'LINKEDIN_POSTS',
                 'GREEN_HOUSE',
                 'ASHBY',
@@ -10451,6 +10532,10 @@ type ContractBase = Omit<
             readonly codecId: 'pg/text@1';
             readonly members: readonly [
               { readonly name: 'LINKEDIN_JOB_BOARD'; readonly value: 'LINKEDIN_JOB_BOARD' },
+              {
+                readonly name: 'LINKEDIN_JOB_BOARD_CHEAP';
+                readonly value: 'LINKEDIN_JOB_BOARD_CHEAP';
+              },
               { readonly name: 'LINKEDIN_POSTS'; readonly value: 'LINKEDIN_POSTS' },
               { readonly name: 'GREEN_HOUSE'; readonly value: 'GREEN_HOUSE' },
               { readonly name: 'ASHBY'; readonly value: 'ASHBY' },
@@ -10522,6 +10607,10 @@ type ContractBase = Omit<
           ];
           readonly Channel: readonly [
             { readonly name: 'LINKEDIN_JOB_BOARD'; readonly value: 'LINKEDIN_JOB_BOARD' },
+            {
+              readonly name: 'LINKEDIN_JOB_BOARD_CHEAP';
+              readonly value: 'LINKEDIN_JOB_BOARD_CHEAP';
+            },
             { readonly name: 'LINKEDIN_POSTS'; readonly value: 'LINKEDIN_POSTS' },
             { readonly name: 'GREEN_HOUSE'; readonly value: 'GREEN_HOUSE' },
             { readonly name: 'ASHBY'; readonly value: 'ASHBY' },

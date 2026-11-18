@@ -22,6 +22,8 @@ const precedence: Record<Channel, number> = {
   [Channel.ASHBY]: 1,
   [Channel.GREEN_HOUSE]: 1,
   [Channel.LINKEDIN_JOB_BOARD]: 2,
+  // Placeholder; final in Task 5.
+  [Channel.LINKEDIN_JOB_BOARD_CHEAP]: 2.4,
   [Channel.LINKEDIN_POSTS]: 3,
 };
 

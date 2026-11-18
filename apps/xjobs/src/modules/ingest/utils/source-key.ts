@@ -120,6 +120,9 @@ function postingKey(
 export function sourceKey(channel: Channel, payload: unknown): SourceKeyResult {
   if (!isObject(payload)) return { invalid: 'payload is not a JSON object' };
   switch (channel) {
+    case Channel.LINKEDIN_JOB_BOARD_CHEAP:
+      // Placeholder: same id fields as the main board; final in Task 4.
+      return linkedinKey(Channel.LINKEDIN_JOB_BOARD, payload);
     case Channel.LINKEDIN_JOB_BOARD:
     case Channel.LINKEDIN_POSTS:
       return linkedinKey(channel, payload);

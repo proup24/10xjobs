@@ -1,5 +1,11 @@
 export { Arrangement } from './arrangement.enum';
-export { ACTIVE_CHANNELS, Channel } from './channel.enum';
+export {
+  ACTIVE_CHANNELS,
+  Channel,
+  TRIAL_CHANNELS,
+  isLinkedinJobBoard,
+  isTrialChannel,
+} from './channel.enum';
 export { ContactKind } from './contact-kind.enum';
 export {
   DISMISS_REASON_LABELS,

@@ -634,6 +634,8 @@ export class CollectionService {
         return this.greenhouse.collect(segment);
       case Channel.LINKEDIN_JOB_BOARD:
         return this.linkedinJobs.collect(segment);
+      case Channel.LINKEDIN_JOB_BOARD_CHEAP:
+        throw new SearchNotStartedError('trial collector not built');
       case Channel.LINKEDIN_POSTS:
         return this.linkedinPosts.collect(segment);
     }

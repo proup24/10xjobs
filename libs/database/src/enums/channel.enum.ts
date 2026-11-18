@@ -1,6 +1,7 @@
 /** Where a query search runs: one job source per value. Mirrors the `Channel` enum in the data contract. */
 export enum Channel {
   LINKEDIN_JOB_BOARD = 'LINKEDIN_JOB_BOARD',
+  LINKEDIN_JOB_BOARD_CHEAP = 'LINKEDIN_JOB_BOARD_CHEAP',
   LINKEDIN_POSTS = 'LINKEDIN_POSTS',
   GREEN_HOUSE = 'GREEN_HOUSE',
   ASHBY = 'ASHBY',
@@ -11,3 +12,20 @@ export enum Channel {
  * their builders and collectors but get no searches and no collect schedule.
  */
 export const ACTIVE_CHANNELS: readonly Channel[] = [Channel.LINKEDIN_JOB_BOARD];
+
+/** Trial channels: LinkedIn job-board actors run beside the main one to compare them. */
+export const TRIAL_CHANNELS: readonly Channel[] = [
+  Channel.LINKEDIN_JOB_BOARD_CHEAP,
+];
+
+/** True for the LinkedIn job board and every trial actor channel. */
+export function isLinkedinJobBoard(channel: Channel | string): boolean {
+  return (
+    channel === Channel.LINKEDIN_JOB_BOARD ||
+    TRIAL_CHANNELS.includes(channel as Channel)
+  );
+}
+
+export function isTrialChannel(channel: Channel | string): boolean {
+  return TRIAL_CHANNELS.includes(channel as Channel);
+}

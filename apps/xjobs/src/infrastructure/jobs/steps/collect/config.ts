@@ -72,6 +72,13 @@ export const channelJobsConfig = {
     enabled: ACTIVE_CHANNELS.includes(Channel.LINKEDIN_JOB_BOARD),
     run: LinkedinJobBoardCollector.config,
   },
+  // Temporary; Task 3 replaces it.
+  [Channel.LINKEDIN_JOB_BOARD_CHEAP]: {
+    queueName: 'collect-linkedin-job-board-cheap',
+    ...linkedinJobBoard,
+    enabled: false,
+    run: LinkedinJobBoardCollector.config,
+  },
   [Channel.LINKEDIN_POSTS]: {
     queueName: 'collect-linkedin-posts',
     ...hourly,
@@ -92,6 +99,7 @@ export const channelJobsConfig = {
   },
 } satisfies {
   [Channel.LINKEDIN_JOB_BOARD]: ChannelJobConfig<LinkedinJobBoardRunConfig>;
+  [Channel.LINKEDIN_JOB_BOARD_CHEAP]: ChannelJobConfig<LinkedinJobBoardRunConfig>;
   [Channel.LINKEDIN_POSTS]: ChannelJobConfig<LinkedinPostsRunConfig>;
   [Channel.GREEN_HOUSE]: ChannelJobConfig<BoardSearchRunConfig>;
   [Channel.ASHBY]: ChannelJobConfig<BoardSearchRunConfig>;

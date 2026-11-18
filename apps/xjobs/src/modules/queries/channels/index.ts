@@ -12,6 +12,8 @@ export { LinkedinPostsBuilder } from './linkedin_posts.builder';
 
 export const CHANNEL_QUERY_BUILDERS: Record<Channel, ChannelQueryBuilder> = {
   [Channel.LINKEDIN_JOB_BOARD]: new LinkedinJobBoardBuilder(),
+  // Placeholder; final in Task 2.
+  [Channel.LINKEDIN_JOB_BOARD_CHEAP]: new LinkedinJobBoardBuilder(),
   [Channel.LINKEDIN_POSTS]: new LinkedinPostsBuilder(),
   [Channel.GREEN_HOUSE]: new GreenhouseQueryBuilder(),
   [Channel.ASHBY]: new AshbyQueryBuilder(),

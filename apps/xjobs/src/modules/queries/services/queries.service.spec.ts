@@ -1,4 +1,10 @@
-import { Arrangement, Channel, Seniority, SkillDomain } from 'src/common/enums';
+import {
+  Arrangement,
+  Channel,
+  Seniority,
+  SkillDomain,
+  isTrialChannel,
+} from 'src/common/enums';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { LOCATIONS_REQUIRED, SKILLS_REQUIRED } from '../steps';
 import type { QuerySearchProfileInput, QuerySearchRecipe } from '../types';
@@ -9,7 +15,12 @@ import { QuerySearchService } from './queries.service';
 // These specs cover every channel's builder, inactive ones included.
 vi.mock('src/common/enums', async (importOriginal) => {
   const enums = await importOriginal<typeof import('src/common/enums')>();
-  return { ...enums, ACTIVE_CHANNELS: Object.values(enums.Channel) };
+  return {
+    ...enums,
+    ACTIVE_CHANNELS: Object.values(enums.Channel).filter(
+      (channel) => !enums.isTrialChannel(channel),
+    ),
+  };
 });
 
 const profile: QuerySearchProfileInput = {
@@ -175,7 +186,9 @@ describe('QuerySearchService', () => {
             .map((r) => r.channel),
         ),
       ];
-      expect(channels).toEqual(Object.values(Channel));
+      expect(channels).toEqual(
+        Object.values(Channel).filter((channel) => !isTrialChannel(channel)),
+      );
     });
   });
 

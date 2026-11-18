@@ -1,5 +1,11 @@
 import { ENGINEERING_ROLE_KINDS } from '@xjobs/database';
-import { Arrangement, Channel, Seniority, SkillDomain } from 'src/common/enums';
+import {
+  Arrangement,
+  Channel,
+  Seniority,
+  SkillDomain,
+  isTrialChannel,
+} from 'src/common/enums';
 import { locationKey } from '../steps/normalize';
 import type { QuerySearchCombination } from '../types';
 import { TECHNOLOGY_TERMS } from '../builders/keywords';
@@ -282,7 +288,10 @@ describe('Greenhouse and Ashby builders', () => {
 
 describe('channel query builders', () => {
   it('registers a builder for every channel', () => {
-    for (const channel of Object.values(Channel)) {
+    // The trial channel's builder arrives with its own task.
+    for (const channel of Object.values(Channel).filter(
+      (c) => !isTrialChannel(c),
+    )) {
       expect(CHANNEL_QUERY_BUILDERS[channel].channel).toBe(channel);
     }
   });

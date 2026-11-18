@@ -1,6 +1,6 @@
 import { ConfigModule } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
-import { Channel } from 'src/common/enums';
+import { Channel, isTrialChannel } from 'src/common/enums';
 import { CollectorsModule } from './collectors.module';
 import { GoogleJobsSearchProvider } from './providers/apify/google-search.provider';
 import { AshbyCollector } from './providers/ashby.collector';
@@ -29,7 +29,12 @@ it('provides one collector per channel without an Apify token', async () => {
       ]
         .map((collector) => module.get(collector).channel)
         .sort(),
-    ).toEqual(Object.values(Channel).sort());
+    ).toEqual(
+      // The trial channel's collector arrives with its own task.
+      Object.values(Channel)
+        .filter((channel) => !isTrialChannel(channel))
+        .sort(),
+    );
   } finally {
     await module.close();
   }

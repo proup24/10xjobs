@@ -12,32 +12,36 @@ export interface ChannelIngestConfig {
   volatileKeys: readonly string[];
 }
 
+const linkedinJobBoardIngest: ChannelIngestConfig = {
+  kind: 'job',
+  volatileKeys: [
+    // bebity's search echo; cheap_scraper's is `searchString`.
+    'scrapingInfo',
+    'searchString',
+    'postedTime',
+    'applicationsCount',
+    'companyLogo',
+    // harvestapi: signed image URLs, counters and the search echo change
+    // between scrapes of an unchanged posting.
+    'company.logo',
+    'company.logos',
+    'company.backgroundCover',
+    'company.backgroundCovers',
+    'company.followerCount',
+    'company.employeeCount',
+    'applicants',
+    'views',
+    'new',
+    '_meta',
+    'query',
+    'headerCaptionText',
+  ],
+};
+
 export const channelIngestConfig: Record<Channel, ChannelIngestConfig> = {
-  [Channel.LINKEDIN_JOB_BOARD]: {
-    kind: 'job',
-    volatileKeys: [
-      // bebity's search echo; cheap_scraper's is `searchString`.
-      'scrapingInfo',
-      'searchString',
-      'postedTime',
-      'applicationsCount',
-      'companyLogo',
-      // harvestapi: signed image URLs, counters and the search echo change
-      // between scrapes of an unchanged posting.
-      'company.logo',
-      'company.logos',
-      'company.backgroundCover',
-      'company.backgroundCovers',
-      'company.followerCount',
-      'company.employeeCount',
-      'applicants',
-      'views',
-      'new',
-      '_meta',
-      'query',
-      'headerCaptionText',
-    ],
-  },
+  [Channel.LINKEDIN_JOB_BOARD]: linkedinJobBoardIngest,
+  // Placeholder: copies the main board; final in Task 4.
+  [Channel.LINKEDIN_JOB_BOARD_CHEAP]: linkedinJobBoardIngest,
   [Channel.LINKEDIN_POSTS]: {
     kind: 'post',
     volatileKeys: [

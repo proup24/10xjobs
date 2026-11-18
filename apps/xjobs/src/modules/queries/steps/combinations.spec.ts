@@ -16,7 +16,12 @@ import {
 // Cover every channel's expansion, inactive ones included.
 vi.mock('src/common/enums', async (importOriginal) => {
   const enums = await importOriginal<typeof import('src/common/enums')>();
-  return { ...enums, ACTIVE_CHANNELS: Object.values(enums.Channel) };
+  return {
+    ...enums,
+    ACTIVE_CHANNELS: Object.values(enums.Channel).filter(
+      (channel) => !enums.isTrialChannel(channel),
+    ),
+  };
 });
 
 const profile: QuerySearchProfileInput = {

@@ -6,7 +6,11 @@ export type ProcessingStatus =
   | 'processed'
   | 'failed'
   | 'archived';
-export type ProcessingReason = 'new' | 'reopened';
+/**
+ * 'joined': harvestapi's first source joined a job only trial actors had seen;
+ * the processor may reuse the trial's extraction.
+ */
+export type ProcessingReason = 'new' | 'reopened' | 'joined';
 
 export interface ProcessingState {
   status: ProcessingStatus | null;
