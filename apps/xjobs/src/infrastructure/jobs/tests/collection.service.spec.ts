@@ -1458,12 +1458,15 @@ describe('CollectionService trial channel (cheap_scraper)', () => {
         params: { location: 'europe' },
       }),
     ];
+    // Between the trial's cap ($0.15) and harvestapi's ($0.25): the second
+    // segment runs only if the null-cost first run counted at $0.15.
     const { collection, collector, configGet, segments } = setup(
       rows,
       async (s) => small(s, null),
       CHEAP,
-      0.15,
+      0.2,
     );
+    const spent = vi.spyOn(segments, 'spentMicroUsd');
     const summary = await collection.collect(CHEAP);
     expect(configGet).toHaveBeenCalledWith(
       'COLLECTION_DAILY_BUDGET_USD_LINKEDIN_JOB_BOARD_CHEAP',
@@ -1473,10 +1476,27 @@ describe('CollectionService trial channel (cheap_scraper)', () => {
       'COLLECTION_DAILY_BUDGET_USD',
       expect.anything(),
     );
-    expect(collector.collect).toHaveBeenCalledTimes(1);
-    expect(summary.segmentsDeferred).toBe(1);
-    expect(await segments.spentMicroUsd(CHEAP, new Date(0), 150_000)).toBe(
-      150_000,
+    expect(spent).toHaveBeenCalledWith(CHEAP, expect.any(Date), 150_000);
+    expect(collector.collect).toHaveBeenCalledTimes(2);
+    expect(summary.segmentsDeferred).toBe(0);
+  });
+
+  it('counts a null cost at harvestapi cap of $0.25 on its own channel', async () => {
+    const { collection, segments } = setup(
+      builders(1, {
+        channel: Channel.LINKEDIN_JOB_BOARD,
+        type: Arrangement.remote,
+        params: { location: 'emea' },
+      }),
+      async (s) => small(s),
+      Channel.LINKEDIN_JOB_BOARD,
+    );
+    const spent = vi.spyOn(segments, 'spentMicroUsd');
+    await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+    expect(spent).toHaveBeenCalledWith(
+      Channel.LINKEDIN_JOB_BOARD,
+      expect.any(Date),
+      250_000,
     );
   });
 

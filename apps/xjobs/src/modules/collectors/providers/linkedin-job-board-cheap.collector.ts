@@ -6,7 +6,7 @@ import type {
   SegmentSearch,
 } from '../types/collector';
 import { reachedChargeCap } from '../utils/collected-job';
-import { SearchNotStartedError } from '../utils/search-not-started';
+import { oneSearchInput, runChargeCapUsd } from '../utils/linkedin-board-run';
 import { ApifyActorProvider } from './apify/apify.provider';
 import {
   CHEAP_SCRAPER_ACTOR,
@@ -15,7 +15,6 @@ import {
 } from './mappers/cheap-scraper-input';
 import {
   linkedinGeoId,
-  linkedinGroupKey,
   mergedLinkedinKeyword,
 } from './mappers/linkedin-job-board.mapper';
 
@@ -40,42 +39,25 @@ export class LinkedinJobBoardCheapCollector {
   readonly channel = Channel.LINKEDIN_JOB_BOARD_CHEAP;
   constructor(private readonly actor: ApifyActorProvider) {}
 
-  /**
-   * The actor input, built before any Apify call. Anything wrong here (a place
-   * with no geoId, members that run different searches) throws a
-   * {@link SearchNotStartedError}: no run started, nothing charged.
-   */
+  /** The actor input, built before any Apify call (see {@link oneSearchInput}). */
   private input(segment: SegmentSearch, rows: number): Record<string, unknown> {
-    try {
-      const searches = new Set(
-        segment.queries.map(({ params }) => linkedinGroupKey(params)),
-      );
-      if (searches.size !== 1)
-        throw new Error(
-          `A LinkedIn job board segment runs one search; this one has ${searches.size}`,
-        );
-      // Members may spell a geoId-pinned place differently; any one runs the search.
-      const [first] = segment.queries;
-      const url = linkedinJobSearchUrl(
-        mergedLinkedinKeyword(segment.queries),
-        { ...first.params, geoId: linkedinGeoId(first.params) },
-        3600,
-      );
-      return toLinkedinJobBoardInput(url, rows);
-    } catch (error) {
-      throw new SearchNotStartedError(
-        error instanceof Error ? error.message : String(error),
-        { cause: error },
-      );
-    }
+    return oneSearchInput(segment, (first) =>
+      toLinkedinJobBoardInput(
+        linkedinJobSearchUrl(
+          mergedLinkedinKeyword(segment.queries),
+          { ...first.params, geoId: linkedinGeoId(first.params) },
+          3600,
+        ),
+        rows,
+      ),
+    );
   }
 
   async collect(segment: SegmentSearch): Promise<SegmentResult> {
     const config = LinkedinJobBoardCheapCollector.config;
     // The charge cap grows with the rows asked for.
     const rows = segment.maxItems ?? config.maxRowsPerSearch;
-    const maxChargeUsd =
-      (config.maxRunChargeUsd * rows) / config.maxRowsPerSearch;
+    const maxChargeUsd = runChargeCapUsd(config, rows);
     const input = this.input(segment, rows);
     const { items, costUsd, runId } = await this.actor.run(
       config.actor,

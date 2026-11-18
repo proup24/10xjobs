@@ -9,6 +9,7 @@ import {
   LinkedinJobBoardCheapCollector,
   LinkedinJobBoardCollector,
   type LinkedinJobBoardRunConfig,
+  runChargeCapUsd,
   LinkedinPostsCollector,
   SearchNotStartedError,
   type SegmentSearch,
@@ -672,9 +673,10 @@ function budgetSetting(
  * run with no recorded cost counts as.
  */
 function chargeCapMicroUsd(channel: Channel, maxItems?: number): number {
-  const { maxRunChargeUsd, maxRowsPerSearch } = boardRun(channel);
-  const rows = maxItems ?? maxRowsPerSearch;
-  return Math.round((maxRunChargeUsd * rows * 1_000_000) / maxRowsPerSearch);
+  const run = boardRun(channel);
+  return Math.round(
+    runChargeCapUsd(run, maxItems ?? run.maxRowsPerSearch) * 1_000_000,
+  );
 }
 
 function perQuery(result: SegmentResult): Record<string, SegmentQueryOutcome> {
