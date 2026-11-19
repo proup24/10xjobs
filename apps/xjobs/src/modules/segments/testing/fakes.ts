@@ -6,6 +6,7 @@ import {
   type NewCollectionBatch,
   type NewSegmentRun,
   SearchSegmentsRepository,
+  type UnsettledCost,
 } from '../repositories/segments.repository';
 import { LinkedinSearchSplitsRepository } from '../repositories/splits.repository';
 
@@ -32,6 +33,11 @@ export class FakeSearchSegmentsRepository extends SearchSegmentsRepository {
     batch: NewCollectionBatch;
     advance: string[];
   }[] = [];
+
+  /** Every recorded run, failed or collected. */
+  private allRuns(): (NewSegmentRun & { id: string })[] {
+    return [...this.runs, ...this.collected.map(({ run }) => run)];
+  }
 
   async claim(
     runId: string,
@@ -102,9 +108,37 @@ export class FakeSearchSegmentsRepository extends SearchSegmentsRepository {
     since: Date,
     nullCostMicroUsd: number,
   ): Promise<number> {
-    return [...this.runs, ...this.collected.map(({ run }) => run)]
+    return this.allRuns()
       .filter((run) => run.channel === channel && run.startedAt >= since)
       .reduce((sum, run) => sum + (run.costMicroUsd ?? nullCostMicroUsd), 0);
+  }
+
+  async unsettledCosts(
+    channel: Channel,
+    finishedSince: Date,
+  ): Promise<UnsettledCost[]> {
+    return this.allRuns()
+      .filter(
+        (run) =>
+          run.channel === channel &&
+          run.apifyRunId !== null &&
+          run.costFinalAt === null &&
+          run.finishedAt >= finishedSince,
+      )
+      .map((run) => ({
+        id: run.id,
+        apifyRunId: run.apifyRunId as string,
+        finishedAt: run.finishedAt,
+      }));
+  }
+
+  async settleCost(
+    id: string,
+    costMicroUsd: number,
+    finalAt: Date | null,
+  ): Promise<void> {
+    const run = this.allRuns().find((candidate) => candidate.id === id);
+    if (run) Object.assign(run, { costMicroUsd, costFinalAt: finalAt });
   }
 }
 

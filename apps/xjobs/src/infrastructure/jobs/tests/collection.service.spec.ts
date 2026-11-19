@@ -7,7 +7,10 @@ import {
   type SegmentResult,
   type SegmentSearch,
 } from 'src/modules/collectors';
-import type { ApifyActorProvider } from 'src/modules/collectors/providers/apify/apify.provider';
+import {
+  ApifyRunError,
+  type ApifyActorProvider,
+} from 'src/modules/collectors/providers/apify/apify.provider';
 import { linkedinGeoId } from 'src/modules/collectors/providers/mappers/linkedin-job-board.mapper';
 import { ingestConfig, parseBatchFile } from 'src/modules/ingest';
 import type { QuerySearchService } from 'src/modules/queries';
@@ -95,6 +98,7 @@ function setup(
       return recordCollectedRun(...args);
     },
   );
+  const apify = { findRun: vi.fn(async (_runId: string) => null as unknown) };
   const ingestQueue = {
     enqueue: vi.fn(async (_batchId: string) => {
       order.push('enqueue');
@@ -105,12 +109,14 @@ function setup(
     collectors[Channel.GREEN_HOUSE] as never,
     collectors[Channel.LINKEDIN_JOB_BOARD] as never,
     collectors[Channel.LINKEDIN_JOB_BOARD_CHEAP] as never,
+    collectors[Channel.LINKEDIN_JOB_BOARD_BEBITY] as never,
     collectors[Channel.LINKEDIN_POSTS] as never,
     queries as unknown as QuerySearchService,
     segments,
     splits,
     storage,
     ingestQueue as unknown as IngestQueue,
+    apify as unknown as ApifyActorProvider,
     { get: configGet } as never,
   );
   const warn = vi
@@ -128,6 +134,7 @@ function setup(
     splits,
     storage,
     ingestQueue,
+    apify,
     order,
     warn,
   };
@@ -940,6 +947,8 @@ describe('CollectionService daily budget', () => {
       perQuery: {},
       searchTotals: null,
       error: null,
+      apifyRunId: null,
+      costFinalAt: null,
     });
 
   it('starts no run once the day has reached the cap, and says so once', async () => {
@@ -1419,6 +1428,31 @@ describe('channelJobsConfig', () => {
   });
 });
 
+describe('CollectionService trial channel (bebity)', () => {
+  it('reads its own budget setting', async () => {
+    const BEBITY = Channel.LINKEDIN_JOB_BOARD_BEBITY;
+    const { collection, collector, configGet } = setup(
+      builders(1, {
+        channel: BEBITY,
+        type: Arrangement.remote,
+        params: { location: 'emea' },
+      }),
+      async (s) => resultFor(s, () => [item(1)], { fetched: 3 }),
+      BEBITY,
+    );
+    await collection.collect(BEBITY);
+    expect(configGet).toHaveBeenCalledWith(
+      'COLLECTION_DAILY_BUDGET_USD_LINKEDIN_JOB_BOARD_BEBITY',
+      expect.anything(),
+    );
+    expect(configGet).not.toHaveBeenCalledWith(
+      'COLLECTION_DAILY_BUDGET_USD',
+      expect.anything(),
+    );
+    expect(collector.collect).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('CollectionService trial channel (cheap_scraper)', () => {
   const CHEAP = Channel.LINKEDIN_JOB_BOARD_CHEAP;
   const cheapRows = (count: number) =>
@@ -1525,6 +1559,8 @@ describe('CollectionService trial channel (cheap_scraper)', () => {
       perQuery: {},
       searchTotals: null,
       error: null,
+      apifyRunId: null,
+      costFinalAt: null,
     });
     await collection.collect(CHEAP);
     expect(collector.collect).toHaveBeenCalledTimes(1);
@@ -1588,5 +1624,175 @@ describe('CollectionService trial channel (cheap_scraper)', () => {
     expect(segmentKey(rows[0]!).startsWith('LINKEDIN_JOB_BOARD_CHEAP|')).toBe(
       true,
     );
+  });
+});
+
+describe('CollectionService run ids and final costs', () => {
+  const BOARD = Channel.LINKEDIN_JOB_BOARD;
+  const rows = (channel: Channel = BOARD) =>
+    builders(1, {
+      channel,
+      type: Arrangement.remote,
+      params: { location: 'emea' },
+    });
+  const small = async (s: SegmentSearch) =>
+    resultFor(s, () => [item(1)], { fetched: 3 });
+  const minutesAgo = (minutes: number) =>
+    new Date(Date.now() - minutes * 60_000);
+  const recorded = (
+    segments: FakeSearchSegmentsRepository,
+    over: Partial<(typeof segments.runs)[number]> = {},
+  ) =>
+    segments.runs.push({
+      id: 'earlier',
+      channel: BOARD,
+      segmentKey: 'k',
+      segmentHash: 'h',
+      queryIds: [],
+      windowStart: minutesAgo(70),
+      windowEnd: minutesAgo(10),
+      startedAt: minutesAgo(11),
+      finishedAt: minutesAgo(10),
+      status: 'succeeded',
+      fetched: 0,
+      costMicroUsd: 147_200,
+      capped: false,
+      truncatedQueryIds: [],
+      perQuery: {},
+      searchTotals: null,
+      error: null,
+      apifyRunId: 'run-earlier',
+      costFinalAt: null,
+      ...over,
+    });
+
+  it('stores the Apify run id of a succeeded run', async () => {
+    const { collection, segments } = setup(rows(), small, BOARD);
+    await collection.collect(BOARD);
+    expect(segments.collected[0]!.run).toMatchObject({
+      apifyRunId: 'run-1',
+      costFinalAt: null,
+    });
+  });
+
+  it('stores the run id of a run that failed after starting', async () => {
+    const { collection, segments } = setup(
+      rows(),
+      async () => {
+        throw new ApifyRunError('ended FAILED', 'run-9');
+      },
+      BOARD,
+    );
+    await expect(collection.collect(BOARD)).rejects.toThrow();
+    expect(segments.runs[0]).toMatchObject({
+      status: 'failed',
+      apifyRunId: 'run-9',
+      costMicroUsd: null,
+    });
+  });
+
+  it('re-reads unsettled costs before reading the daily budget', async () => {
+    const { collection, segments, apify } = setup(rows(), small, BOARD);
+    recorded(segments);
+    apify.findRun.mockResolvedValue({ usageTotalUsd: 0.1514 });
+    const order: string[] = [];
+    vi.spyOn(segments, 'settleCost').mockImplementation(async (...args) => {
+      order.push('settle');
+      return FakeSearchSegmentsRepository.prototype.settleCost.apply(
+        segments,
+        args,
+      );
+    });
+    vi.spyOn(segments, 'spentMicroUsd').mockImplementation(async () => {
+      order.push('spent');
+      return 0;
+    });
+
+    await collection.collect(BOARD);
+
+    expect(apify.findRun).toHaveBeenCalledWith('run-earlier');
+    expect(segments.settleCost).toHaveBeenCalledWith(
+      'earlier',
+      151_400,
+      expect.any(Date),
+    );
+    expect(order.slice(0, 2)).toEqual(['settle', 'spent']);
+    expect(segments.runs[0]).toMatchObject({ costMicroUsd: 151_400 });
+    expect(segments.runs[0]!.costFinalAt).toBeInstanceOf(Date);
+  });
+
+  it('does not mark a cost final within 5 minutes of the run finishing', async () => {
+    const { collection, segments, apify } = setup(rows(), small, BOARD);
+    recorded(segments, { finishedAt: minutesAgo(4) });
+    apify.findRun.mockResolvedValue({ usageTotalUsd: 0.1514 });
+    vi.spyOn(segments, 'settleCost');
+
+    await collection.collect(BOARD);
+
+    expect(segments.settleCost).toHaveBeenCalledWith('earlier', 151_400, null);
+  });
+
+  it('keeps the stored cost when the re-read fails', async () => {
+    const { collection, segments, apify, collector, warn } = setup(
+      rows(),
+      small,
+      BOARD,
+    );
+    recorded(segments);
+    apify.findRun.mockRejectedValue(new Error('apify down'));
+    vi.spyOn(segments, 'settleCost');
+
+    const summary = await collection.collect(BOARD);
+
+    expect(segments.settleCost).not.toHaveBeenCalled();
+    expect(segments.runs[0]).toMatchObject({ costMicroUsd: 147_200 });
+    expect(collector.collect).toHaveBeenCalledTimes(1);
+    expect(summary.batches).toBe(1);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('apify down'));
+  });
+
+  it('re-reads runs finished in the last 24 hours', async () => {
+    const { collection, segments } = setup(rows(), small, BOARD);
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      const now = new Date('2026-11-18T12:00:00Z');
+      vi.setSystemTime(now);
+      vi.spyOn(segments, 'unsettledCosts');
+      await collection.collect(BOARD);
+      expect(segments.unsettledCosts).toHaveBeenCalledWith(
+        BOARD,
+        new Date(now.getTime() - 24 * 3_600_000),
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not re-read costs of other channels', async () => {
+    const { collection, segments, apify } = setup(
+      builders(1),
+      undefined,
+      Channel.ASHBY,
+    );
+    recorded(segments, { channel: Channel.ASHBY });
+    vi.spyOn(segments, 'unsettledCosts');
+
+    await collection.collect(Channel.ASHBY);
+
+    expect(segments.unsettledCosts).not.toHaveBeenCalled();
+    expect(apify.findRun).not.toHaveBeenCalled();
+  });
+
+  it("re-reads only the tick's own channel", async () => {
+    const { collection, segments, apify } = setup(rows(), small, BOARD);
+    recorded(segments, {
+      id: 'other',
+      channel: Channel.LINKEDIN_JOB_BOARD_BEBITY,
+      apifyRunId: 'run-other',
+    });
+
+    await collection.collect(BOARD);
+
+    expect(apify.findRun).not.toHaveBeenCalled();
   });
 });

@@ -55,6 +55,22 @@ export interface ApifyListItemsOptions {
 const DEFAULT_WAIT_SECS = 300;
 const UNFINISHED: readonly ApifyRunStatus[] = ['READY', 'RUNNING'];
 
+/** A started Apify run that did not finish in time or ended other than SUCCEEDED. */
+export class ApifyRunError extends Error {
+  constructor(
+    message: string,
+    readonly runId: string,
+    options?: { cause?: unknown },
+  ) {
+    super(message, options);
+    this.name = 'ApifyRunError';
+  }
+}
+
+function errorText(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 function isNotFound(error: unknown): boolean {
   return error instanceof ApifyApiError && error.statusCode === 404;
 }
@@ -111,24 +127,45 @@ export class ApifyActorProvider {
     } catch (error) {
       if (isRefusedStart(error))
         throw new SearchNotStartedError(
-          `Apify refused to start ${actor}: ${error instanceof Error ? error.message : String(error)}`,
+          `Apify refused to start ${actor}: ${errorText(error)}`,
           { cause: error },
         );
       throw error;
     }
     if (UNFINISHED.includes(run.status)) {
-      await this.abortRun(run.id);
-      throw new Error(
+      try {
+        await this.abortRun(run.id);
+      } catch (error) {
+        // The run exists either way: keep its id so its cost can be read again.
+        throw new ApifyRunError(
+          `Apify actor ${actor} run ${run.id} did not finish in time and could not be aborted: ${errorText(error)}`,
+          run.id,
+          { cause: error },
+        );
+      }
+      throw new ApifyRunError(
         `Apify actor ${actor} run ${run.id} did not finish in time and was aborted`,
+        run.id,
       );
     }
     if (run.status !== 'SUCCEEDED') {
-      throw new Error(
+      throw new ApifyRunError(
         `Apify actor ${actor} run ${run.id} ended ${run.status}${run.statusMessage ? `: ${run.statusMessage}` : ''}`,
+        run.id,
+      );
+    }
+    let items: unknown[];
+    try {
+      items = await this.items(run.defaultDatasetId);
+    } catch (error) {
+      throw new ApifyRunError(
+        `Apify actor ${actor} run ${run.id} succeeded but its dataset could not be read: ${errorText(error)}`,
+        run.id,
+        { cause: error },
       );
     }
     return {
-      items: await this.items(run.defaultDatasetId),
+      items,
       costUsd: typeof run.usageTotalUsd === 'number' ? run.usageTotalUsd : null,
       runId: run.id,
       keyValueStoreId: run.defaultKeyValueStoreId ?? null,

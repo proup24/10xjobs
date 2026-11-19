@@ -3,6 +3,7 @@ import { AshbyCollector } from './providers/ashby.collector';
 import { GreenhouseCollector } from './providers/greenhouse.collector';
 import { LinkedinJobBoardCollector } from './providers/linkedin-job-board.collector';
 import { LinkedinJobBoardCheapCollector } from './providers/linkedin-job-board-cheap.collector';
+import { LinkedinJobBoardBebityCollector } from './providers/linkedin-job-board-bebity.collector';
 import { LinkedinPostsCollector } from './providers/linkedin-posts.collector';
 import { ApifyActorProvider } from './providers/apify/apify.provider';
 import { GoogleJobsSearchProvider } from './providers/apify/google-search.provider';
@@ -19,13 +20,16 @@ import { GreenhousePostingProvider } from './providers/extraction/greenhouse.pro
     GreenhouseCollector,
     LinkedinJobBoardCollector,
     LinkedinJobBoardCheapCollector,
+    LinkedinJobBoardBebityCollector,
     LinkedinPostsCollector,
   ],
   exports: [
+    ApifyActorProvider,
     AshbyCollector,
     GreenhouseCollector,
     LinkedinJobBoardCollector,
     LinkedinJobBoardCheapCollector,
+    LinkedinJobBoardBebityCollector,
     LinkedinPostsCollector,
   ],
 })

@@ -192,3 +192,22 @@ describe('canonicalApplyUrl', () => {
     );
   });
 });
+
+describe('jobKey for trial channels', () => {
+  const record = emptyRecord({
+    kind: 'job',
+    title: 'Engineer',
+    applyUrl: 'https://boards.greenhouse.io/acme/jobs/9',
+    postingUrl: 'https://www.linkedin.com/jobs/view/123',
+  });
+  it('keys a trial item by its LinkedIn id even with an ATS apply URL', () => {
+    for (const channel of [
+      Channel.LINKEDIN_JOB_BOARD_CHEAP,
+      Channel.LINKEDIN_JOB_BOARD_BEBITY,
+    ])
+      expect(jobKey(channel, 'id:123', record)).toBe('linkedin-job:123');
+    expect(jobKey(Channel.LINKEDIN_JOB_BOARD, 'id:123', record)).toBe(
+      'ats:greenhouse/acme/9',
+    );
+  });
+});

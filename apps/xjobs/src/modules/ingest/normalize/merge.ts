@@ -26,6 +26,7 @@ const precedence: Record<Channel, number> = {
   // bebity 2.2, cheap_scraper 2.4; they count only when no harvestapi source is
   // present (boardSources).
   [Channel.LINKEDIN_JOB_BOARD_CHEAP]: 2.4,
+  [Channel.LINKEDIN_JOB_BOARD_BEBITY]: 2.2,
   [Channel.LINKEDIN_POSTS]: 3,
 };
 

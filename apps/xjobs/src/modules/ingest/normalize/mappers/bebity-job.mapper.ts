@@ -1,3 +1,5 @@
+import { postedAtFromAgo } from '../posted-at';
+import type { NormalizeContext } from '../normalize';
 import { emptyRecord, type NormalizedRecord } from '../record';
 import { cleanText, datePart, htmlToPlainText } from '../text';
 import {
@@ -10,10 +12,8 @@ import {
 } from '../linkedin';
 
 /**
- * One `bebity/linkedin-jobs-scraper` dataset item, the fields we read. The
- * actor is no longer collected from (it stopped returning jobs on
- * 2026-11-03); this mapper stays because raw storage holds its items and
- * `db:renormalize` reads them again.
+ * One `bebity/linkedin-jobs-scraper` dataset item, the fields we read.
+ * Items stored before it returned `postedTime` still map, with no posted time.
  */
 export interface BebityJobItem {
   id: string | null;
@@ -22,6 +22,8 @@ export interface BebityJobItem {
   companyName: string | null;
   companyUrl: string | null;
   location: string | null;
+  /** Relative, e.g. `"46 minutes ago"`; volatile. */
+  postedTime: string | null;
   /** `YYYY-MM-DD`. */
   publishedAt: string | null;
   description: string | null;
@@ -56,6 +58,7 @@ export function isBebityJob(p: Record<string, unknown>): boolean {
 
 export function mapBebityJob(
   payload: Record<string, unknown>,
+  ctx: NormalizeContext,
 ): NormalizedRecord {
   const p = payload as Partial<Record<keyof BebityJobItem, unknown>>;
   const descriptionHtml = cleanText(p.descriptionHtml);
@@ -83,7 +86,11 @@ export function mapBebityJob(
           }
         : null,
     publishedAt: datePart(p.publishedAt),
-    postedAt: null,
+    postedAt: postedAtFromAgo(
+      cleanText(p.postedTime),
+      ctx.scrapedAt,
+      datePart(p.publishedAt),
+    ),
     descriptionHtml,
     descriptionText:
       cleanText(p.description) ??

@@ -1,11 +1,14 @@
 /**
- * Compares the LinkedIn job-board actors (harvestapi and the trial actors) on
- * real outcomes: overlap, qualified jobs, decisions, cost per qualified job,
- * field coverage, AI-search behaviour and joined jobs.
+ * Compares the LinkedIn job-board actors (harvestapi, cheap_scraper, bebity),
+ * every pair of them, on real outcomes: overlap on the (search group, tick)
+ * cells both actors ran, cells not run and why, jobs seen by one, two or three,
+ * qualified jobs, decisions, cost per qualified job, field coverage, AI-search
+ * behaviour and joined jobs.
  *
  *   pnpm --filter @xjobs/xjobs db:actor-compare -- [--since <iso> | --days <n>]
  *
- * Credit is by `collection_batches.actor`, not channel. `--since` defaults to
+ * Credit is by `collection_batches.actor`, not channel (a run with no batch by
+ * its channel's actor). `--since` defaults to
  * the first batch of a trial actor; with none yet, it says so and stops. Only
  * SELECTs, inside a READ ONLY transaction.
  */
@@ -18,8 +21,9 @@ import {
 import { createDatabaseClient } from 'src/database';
 import { MATCHER_VERSION } from 'src/modules/matcher/config/matcher.config';
 import {
+  loadBuilders,
   loadOutcomes,
-  loadRuns,
+  loadSegmentRuns,
   loadSightings,
   resolveSince,
 } from './actor-compare/queries';
@@ -66,16 +70,19 @@ async function main(): Promise<void> {
         return;
       }
       const iso = since.toISOString();
-      const [sightings, outcomes, runs] = [
+      const [sightings, outcomes, runs, builders] = [
         await loadSightings(tx, iso),
         await loadOutcomes(tx, iso),
-        await loadRuns(tx, iso),
+        await loadSegmentRuns(tx, iso),
+        await loadBuilders(tx, iso),
       ];
       console.log(
-        `Actor comparison since ${iso} (Morocco days), ${sightings.length} sightings, ${runs.length} runs, matcher version >= ${MATCHER_VERSION}`,
+        `Actor comparison since ${iso} (Morocco days, Morocco-hour ticks), ${sightings.length} sightings, ${runs.length} runs, ${builders.length} builders, matcher version >= ${MATCHER_VERSION}`,
       );
       console.log(
-        formatActorReport(buildActorReport(sightings, outcomes, runs)),
+        formatActorReport(
+          buildActorReport(sightings, outcomes, runs, builders),
+        ),
       );
     });
   } finally {

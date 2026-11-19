@@ -11,6 +11,19 @@ describe('channelBadges', () => {
       ]),
     ).toEqual(['LinkedIn · harvestapi', 'LinkedIn · cheap_scraper', 'Ashby']);
   });
+  it('names the bebity trial actor between harvestapi and cheap_scraper', () => {
+    expect(
+      channelBadges([
+        'LINKEDIN_JOB_BOARD_CHEAP',
+        'LINKEDIN_JOB_BOARD_BEBITY',
+        'LINKEDIN_JOB_BOARD',
+      ]),
+    ).toEqual([
+      'LinkedIn · harvestapi',
+      'LinkedIn · bebity',
+      'LinkedIn · cheap_scraper',
+    ]);
+  });
   it('dedupes', () => {
     expect(channelBadges(['ASHBY', 'ASHBY'])).toEqual(['Ashby']);
   });
@@ -32,6 +45,7 @@ describe('sourceText', () => {
 describe('sourceOf', () => {
   it('folds both job-board channels into one source', () => {
     expect(sourceOf('LINKEDIN_JOB_BOARD_CHEAP')).toBe('LINKEDIN_JOB_BOARD');
+    expect(sourceOf('LINKEDIN_JOB_BOARD_BEBITY')).toBe('LINKEDIN_JOB_BOARD');
     expect(sourceOf('ASHBY')).toBe('ASHBY');
   });
 });

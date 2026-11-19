@@ -24,7 +24,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'b6e24147863b710157ffe6c6e5b71d5724098742ee41d4f8ebef331e1d55401f'>;
+  StorageHashBase<'1d9c360ab7e1f94820c35389f4fc5e6779dadfbab7e6b3c330e3d9ce6e1fd55f'>;
 export type ExecutionHash =
   ExecutionHashBase<'7b5eaf1d91dcda38671ed0758e62b64e510de826d248ab15bddc3faa2e947c57'>;
 export type ProfileHash =
@@ -294,12 +294,14 @@ type FieldTypeOverrides = {
           readonly output:
             | 'LINKEDIN_JOB_BOARD'
             | 'LINKEDIN_JOB_BOARD_CHEAP'
+            | 'LINKEDIN_JOB_BOARD_BEBITY'
             | 'LINKEDIN_POSTS'
             | 'GREEN_HOUSE'
             | 'ASHBY';
           readonly input:
             | 'LINKEDIN_JOB_BOARD'
             | 'LINKEDIN_JOB_BOARD_CHEAP'
+            | 'LINKEDIN_JOB_BOARD_BEBITY'
             | 'LINKEDIN_POSTS'
             | 'GREEN_HOUSE'
             | 'ASHBY';
@@ -362,12 +364,14 @@ type FieldTypeOverrides = {
           readonly output:
             | 'LINKEDIN_JOB_BOARD'
             | 'LINKEDIN_JOB_BOARD_CHEAP'
+            | 'LINKEDIN_JOB_BOARD_BEBITY'
             | 'LINKEDIN_POSTS'
             | 'GREEN_HOUSE'
             | 'ASHBY';
           readonly input:
             | 'LINKEDIN_JOB_BOARD'
             | 'LINKEDIN_JOB_BOARD_CHEAP'
+            | 'LINKEDIN_JOB_BOARD_BEBITY'
             | 'LINKEDIN_POSTS'
             | 'GREEN_HOUSE'
             | 'ASHBY';
@@ -409,12 +413,14 @@ type FieldTypeOverrides = {
           readonly output:
             | 'LINKEDIN_JOB_BOARD'
             | 'LINKEDIN_JOB_BOARD_CHEAP'
+            | 'LINKEDIN_JOB_BOARD_BEBITY'
             | 'LINKEDIN_POSTS'
             | 'GREEN_HOUSE'
             | 'ASHBY';
           readonly input:
             | 'LINKEDIN_JOB_BOARD'
             | 'LINKEDIN_JOB_BOARD_CHEAP'
+            | 'LINKEDIN_JOB_BOARD_BEBITY'
             | 'LINKEDIN_POSTS'
             | 'GREEN_HOUSE'
             | 'ASHBY';
@@ -425,12 +431,14 @@ type FieldTypeOverrides = {
           readonly output:
             | 'LINKEDIN_JOB_BOARD'
             | 'LINKEDIN_JOB_BOARD_CHEAP'
+            | 'LINKEDIN_JOB_BOARD_BEBITY'
             | 'LINKEDIN_POSTS'
             | 'GREEN_HOUSE'
             | 'ASHBY';
           readonly input:
             | 'LINKEDIN_JOB_BOARD'
             | 'LINKEDIN_JOB_BOARD_CHEAP'
+            | 'LINKEDIN_JOB_BOARD_BEBITY'
             | 'LINKEDIN_POSTS'
             | 'GREEN_HOUSE'
             | 'ASHBY';
@@ -460,12 +468,14 @@ type ColumnTypeOverrides = {
         readonly output:
           | 'LINKEDIN_JOB_BOARD'
           | 'LINKEDIN_JOB_BOARD_CHEAP'
+          | 'LINKEDIN_JOB_BOARD_BEBITY'
           | 'LINKEDIN_POSTS'
           | 'GREEN_HOUSE'
           | 'ASHBY';
         readonly input:
           | 'LINKEDIN_JOB_BOARD'
           | 'LINKEDIN_JOB_BOARD_CHEAP'
+          | 'LINKEDIN_JOB_BOARD_BEBITY'
           | 'LINKEDIN_POSTS'
           | 'GREEN_HOUSE'
           | 'ASHBY';
@@ -514,12 +524,14 @@ type ColumnTypeOverrides = {
         readonly output:
           | 'LINKEDIN_JOB_BOARD'
           | 'LINKEDIN_JOB_BOARD_CHEAP'
+          | 'LINKEDIN_JOB_BOARD_BEBITY'
           | 'LINKEDIN_POSTS'
           | 'GREEN_HOUSE'
           | 'ASHBY';
         readonly input:
           | 'LINKEDIN_JOB_BOARD'
           | 'LINKEDIN_JOB_BOARD_CHEAP'
+          | 'LINKEDIN_JOB_BOARD_BEBITY'
           | 'LINKEDIN_POSTS'
           | 'GREEN_HOUSE'
           | 'ASHBY';
@@ -560,12 +572,14 @@ type ColumnTypeOverrides = {
         readonly output:
           | 'LINKEDIN_JOB_BOARD'
           | 'LINKEDIN_JOB_BOARD_CHEAP'
+          | 'LINKEDIN_JOB_BOARD_BEBITY'
           | 'LINKEDIN_POSTS'
           | 'GREEN_HOUSE'
           | 'ASHBY';
         readonly input:
           | 'LINKEDIN_JOB_BOARD'
           | 'LINKEDIN_JOB_BOARD_CHEAP'
+          | 'LINKEDIN_JOB_BOARD_BEBITY'
           | 'LINKEDIN_POSTS'
           | 'GREEN_HOUSE'
           | 'ASHBY';
@@ -576,12 +590,14 @@ type ColumnTypeOverrides = {
         readonly output:
           | 'LINKEDIN_JOB_BOARD'
           | 'LINKEDIN_JOB_BOARD_CHEAP'
+          | 'LINKEDIN_JOB_BOARD_BEBITY'
           | 'LINKEDIN_POSTS'
           | 'GREEN_HOUSE'
           | 'ASHBY';
         readonly input:
           | 'LINKEDIN_JOB_BOARD'
           | 'LINKEDIN_JOB_BOARD_CHEAP'
+          | 'LINKEDIN_JOB_BOARD_BEBITY'
           | 'LINKEDIN_POSTS'
           | 'GREEN_HOUSE'
           | 'ASHBY';
@@ -1203,8 +1219,10 @@ export namespace Models {
     readonly [RelationKeys]?: 'extractions';
   };
   export type public_SearchSegmentRun = {
+    apifyRunId: FieldOutputTypes['public']['SearchSegmentRun']['apifyRunId'];
     capped: FieldOutputTypes['public']['SearchSegmentRun']['capped'];
     channel: FieldOutputTypes['public']['SearchSegmentRun']['channel'];
+    costFinalAt: FieldOutputTypes['public']['SearchSegmentRun']['costFinalAt'];
     costMicroUsd: FieldOutputTypes['public']['SearchSegmentRun']['costMicroUsd'];
     error: FieldOutputTypes['public']['SearchSegmentRun']['error'];
     fetched: FieldOutputTypes['public']['SearchSegmentRun']['fetched'];
@@ -5249,6 +5267,12 @@ type ContractBase = Omit<
             };
             readonly search_segment_runs: {
               columns: {
+                readonly apifyRunId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly capped: {
                   readonly dataType: 'pg/bool';
                   readonly codecId: 'pg/bool@1';
@@ -5259,6 +5283,13 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly costFinalAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
                   readonly many: false;
                 };
                 readonly costMicroUsd: {
@@ -6002,6 +6033,7 @@ type ContractBase = Omit<
               readonly values: readonly [
                 'LINKEDIN_JOB_BOARD',
                 'LINKEDIN_JOB_BOARD_CHEAP',
+                'LINKEDIN_JOB_BOARD_BEBITY',
                 'LINKEDIN_POSTS',
                 'GREEN_HOUSE',
                 'ASHBY',
@@ -9763,6 +9795,10 @@ type ContractBase = Omit<
           };
           readonly SearchSegmentRun: {
             readonly fields: {
+              readonly apifyRunId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly capped: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
@@ -9770,6 +9806,14 @@ type ContractBase = Omit<
               readonly channel: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly costFinalAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
               };
               readonly costMicroUsd: {
                 readonly nullable: true;
@@ -9855,8 +9899,10 @@ type ContractBase = Omit<
               readonly table: 'search_segment_runs';
               readonly namespaceId: 'public';
               readonly fields: {
+                readonly apifyRunId: { readonly column: 'apifyRunId' };
                 readonly capped: { readonly column: 'capped' };
                 readonly channel: { readonly column: 'channel' };
+                readonly costFinalAt: { readonly column: 'costFinalAt' };
                 readonly costMicroUsd: { readonly column: 'costMicroUsd' };
                 readonly error: { readonly column: 'error' };
                 readonly fetched: { readonly column: 'fetched' };
@@ -10536,6 +10582,10 @@ type ContractBase = Omit<
                 readonly name: 'LINKEDIN_JOB_BOARD_CHEAP';
                 readonly value: 'LINKEDIN_JOB_BOARD_CHEAP';
               },
+              {
+                readonly name: 'LINKEDIN_JOB_BOARD_BEBITY';
+                readonly value: 'LINKEDIN_JOB_BOARD_BEBITY';
+              },
               { readonly name: 'LINKEDIN_POSTS'; readonly value: 'LINKEDIN_POSTS' },
               { readonly name: 'GREEN_HOUSE'; readonly value: 'GREEN_HOUSE' },
               { readonly name: 'ASHBY'; readonly value: 'ASHBY' },
@@ -10610,6 +10660,10 @@ type ContractBase = Omit<
             {
               readonly name: 'LINKEDIN_JOB_BOARD_CHEAP';
               readonly value: 'LINKEDIN_JOB_BOARD_CHEAP';
+            },
+            {
+              readonly name: 'LINKEDIN_JOB_BOARD_BEBITY';
+              readonly value: 'LINKEDIN_JOB_BOARD_BEBITY';
             },
             { readonly name: 'LINKEDIN_POSTS'; readonly value: 'LINKEDIN_POSTS' },
             { readonly name: 'GREEN_HOUSE'; readonly value: 'GREEN_HOUSE' },

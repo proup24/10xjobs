@@ -122,6 +122,14 @@ A trial actor runs beside harvestapi to compare them. `cheap_scraper` (channel `
 3. It runs hourly 09-21 Morocco time, Monday to Friday, like harvestapi, on its own queue (`collect-linkedin-job-board-cheap`).
 4. End the trial: turn it off (step 1), then `pnpm --filter @xjobs/xjobs db:archive-actor -- --actor cheap_scraper/linkedin-job-scraper --dry-run` and, once the counts look right, the same without `--dry-run`. The actor name is the same as the old `cheap_scraper` runs on `LINKEDIN_JOB_BOARD` from before 2026-11-11, so it also archives those jobs when they were seen only in cheap_scraper batches. Read the dry run before the real one.
 
+`bebity` (`bebity/linkedin-jobs-scraper`, channel `LINKEDIN_JOB_BOARD_BEBITY`) is a second trial, turned on the same way: add `LINKEDIN_JOB_BOARD_BEBITY` to `COLLECTION_TRIAL_CHANNELS` (comma-separated beside the other). It differs in three ways:
+
+1. Its daily spend cap is `COLLECTION_DAILY_BUDGET_USD_LINKEDIN_JOB_BOARD_BEBITY` (default 1 dollar, Morocco day), counted from its own runs only. Its run charge cap is $0.15 per 100 rows, like cheap_scraper's.
+2. It runs on its own queue (`collect-linkedin-job-board-bebity`), on harvestapi's schedule.
+3. It names places, not LinkedIn geoIds, and has no name for MENA. A MENA search does not start: no Apify call, a failed run row with cost 0, shown as "not started" in the report.
+
+To end the bebity trial, turn it off, then `pnpm --filter @xjobs/xjobs db:archive-actor -- --actor bebity/linkedin-jobs-scraper --dry-run`, read it, then run it without `--dry-run`. The actor name is the same as the old bebity runs on `LINKEDIN_JOB_BOARD` from before cheap_scraper replaced it there (early November 2026), so it also archives those jobs when they were seen only in bebity batches. Read the dry run before the real one.
+
 ## 9. Roll back
 
 1. Pick a merge SHA: `git log main`. It must be the full 40-character SHA.

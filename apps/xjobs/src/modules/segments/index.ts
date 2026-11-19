@@ -8,6 +8,7 @@ export {
   type NewSegmentRun,
   type SegmentQueryOutcome,
   type SegmentRunStatus,
+  type UnsettledCost,
 } from './repositories/segments.repository';
 export {
   LinkedinSearchSplitsRepository,
