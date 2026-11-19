@@ -60,15 +60,22 @@ Make the jobs that reach a user the right ones, with correct details. The first 
 
 **Slices:** [phase-3-find-quality/](phase-3-find-quality/README.md)
 
-### Phase 4: Apply
+### Phase 4: Social posts
+
+Collect LinkedIn hiring posts for each published profile, clean and pre-filter them, extract their facts with Claude, qualify them like listings, and email the author from the user's Gmail with the profile's resume attached. Sending is fully automatic for a qualified post that states a contact email, within safeguards (one email per address, a daily cap, a kill switch).
+
+**Exit criteria:** see the phase README.
+
+**Slices:** [phase-4-social-posts/](phase-4-social-posts/README.md)
+
+### Phase 5: Apply
 
 - Tailor a personalized one-page resume per qualified job, and render it.
 - Fill application forms from a personal fact bank.
-- Email hiring-post authors from the user's Gmail.
 
-How much a human reviews before anything is sent is decided in the Phase 4 spec. Default going in: nothing goes out without the user approving it.
+How much a human reviews before anything is sent is decided in this phase's spec.
 
-### Phase 5: Track and report
+### Phase 6: Track and report
 
 Report what's new and how the pipeline is performing: volume and pass rates per stage and per source, plus application outcomes.
 
