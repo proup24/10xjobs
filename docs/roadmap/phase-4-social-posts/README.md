@@ -21,6 +21,7 @@ Same as Phases 1 to 3: each slice is a short brief covering the goal, what exist
 | 02  | [Prepare](02-prepare.md)                       | Brief                                                                      |
 | 03  | [Extract](03-extract.md)                       | Brief                                                                      |
 | 04  | [Ingest and qualify](04-ingest-and-qualify.md) | Brief                                                                      |
+| 04b | [Open post search](04b-open-post-search.md)    | Brief                                                                      |
 | 05  | [Send email](05-send-email.md)                 | Brief                                                                      |
 
 ## The pipeline
