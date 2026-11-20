@@ -5,6 +5,7 @@ import {
   PrismaProfilesRepository,
   ProfilesRepository,
 } from './repositories/profiles.repository';
+import { PostSearchAccess } from './services/post-search-access';
 import { ProfilesService } from './services/profiles.service';
 import {
   PrismaUsersRepository,
@@ -18,6 +19,7 @@ import { UsersService } from './services/users.service';
   providers: [
     UsersService,
     { provide: UsersRepository, useClass: PrismaUsersRepository },
+    PostSearchAccess,
     ProfilesService,
     { provide: ProfilesRepository, useClass: PrismaProfilesRepository },
   ],

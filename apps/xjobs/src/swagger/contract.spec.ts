@@ -103,8 +103,10 @@ describe('API contract', () => {
         .sort(),
     ).toEqual([
       'GET /api/health',
+      'GET /api/profiles/{profileId}/post-search',
       'GET /api/users/{userId}/profiles/{profileId}/query-search',
       'POST /api/profiles/{profileId}/publish',
+      'PUT /api/profiles/{profileId}/post-search',
     ]);
   });
 

@@ -18,6 +18,7 @@ describe('regeneratePublished', () => {
     ] as never[];
     const result = await regeneratePublished(
       {
+        postsAllowed: () => false,
         profiles: {
           listPublished: async () => published,
           placeLabels: noLabels,
@@ -72,6 +73,7 @@ describe('regeneratePublished', () => {
     const asked: unknown[] = [];
     const inputs: QuerySearchProfileInput[] = [];
     await regeneratePublished({
+      postsAllowed: () => false,
       profiles: {
         listPublished: async () => published,
         placeLabels: async (places) => {

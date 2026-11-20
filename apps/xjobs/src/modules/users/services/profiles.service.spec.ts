@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
 import { Engagement, Seniority, SkillDomain } from 'src/common/enums';
@@ -20,6 +21,8 @@ import {
 import { FakeQuerySearchRepository } from 'src/modules/queries/testing/fakes';
 import { FakeProfilesRepository, FakeUsersRepository } from '../testing/fakes';
 import { UsersService } from './users.service';
+import { PostSearchAccess } from './post-search-access';
+import { Channel } from 'src/common/enums';
 import type { ProfileInput, SkillInput } from '../types';
 
 const profileInput: ProfileInput = {
@@ -59,6 +62,7 @@ describe('ProfilesService', () => {
   let profiles: FakeProfilesRepository;
   let querySearches: FakeQuerySearchRepository;
   let service: ProfilesService;
+  let listed: string[];
   let userId: string;
   let otherUserId: string;
 
@@ -71,8 +75,10 @@ describe('ProfilesService', () => {
       users,
       profiles,
       new QuerySearchService(querySearches),
+      { allows: (id: string) => listed.includes(id) } as PostSearchAccess,
     );
     userId = userRows.add('A').id;
+    listed = [userId];
     otherUserId = userRows.add('B').id;
     for (const id of [userId, otherUserId])
       userRows.setEligibility(id, {
@@ -394,6 +400,155 @@ describe('ProfilesService', () => {
       await service.regeneratePublished();
 
       expect(kept).toMatchObject({ isActive: true, isDeleted: false });
+    });
+  });
+
+  describe('post search switch', () => {
+    const ownerInput: ProfileInput = {
+      ...profileInput,
+      position: 'fullstack_engineer',
+      languages: [
+        { lang: 'en', level: 'fluent' },
+        { lang: 'fr', level: 'fluent' },
+      ],
+      locations: {
+        remote: [{ kind: 'region', code: 'EMEA' }],
+        hybrid: [{ kind: 'country', code: 'MA' }],
+        onsite: [{ kind: 'country', code: 'MA' }],
+      },
+    };
+    const ownerSkills = [
+      'typescript',
+      'nodejs',
+      'react',
+      'react_native',
+      'nextjs',
+      'nestjs',
+      'aws',
+      'postgresql',
+    ].map((t) => ({
+      technology: t,
+      domain: SkillDomain.fullstack,
+      mastery: 10,
+      importance: 5,
+    }));
+    const createOwner = () => profiles.add(userId, ownerInput, ownerSkills);
+    const linkedPosts = (id: string) =>
+      querySearches.links.filter(
+        (link) =>
+          link.profileId === id &&
+          querySearches.rows.find((row) => row.id === link.queryId)?.channel ===
+            Channel.LINKEDIN_POSTS,
+      );
+
+    it('refuses a user who is not allow-listed', async () => {
+      const { id } = await createOwner();
+      listed = [];
+      await expect(service.setPostSearch(userId, id, true)).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect((await profiles.findById(userId, id))?.postSearch).toBe(false);
+      expect(querySearches.links).toHaveLength(0);
+    });
+
+    it('404s a profile that is not the callers before checking the list', async () => {
+      const { id } = await createOwner();
+      listed = [];
+      await expect(
+        service.setPostSearch(otherUserId, id, true),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('attaches post builders when turned on for a published profile', async () => {
+      const { id } = await createOwner();
+      await service.publish(userId, id);
+      expect(linkedPosts(id)).toHaveLength(0);
+      await expect(service.setPostSearch(userId, id, true)).resolves.toEqual({
+        enabled: true,
+        allowed: true,
+        searches: 4,
+      });
+      expect(linkedPosts(id)).toHaveLength(4);
+      expect((await profiles.findById(userId, id))?.postSearch).toBe(true);
+    });
+
+    it('detaches only post builders when turned off', async () => {
+      const { id } = await createOwner();
+      await service.publish(userId, id);
+      await service.setPostSearch(userId, id, true);
+      const before = querySearches.links.length;
+      await expect(service.setPostSearch(userId, id, false)).resolves.toEqual({
+        enabled: false,
+        allowed: true,
+        searches: 4,
+      });
+      expect(linkedPosts(id)).toHaveLength(0);
+      expect(querySearches.links.length).toBe(before - 4);
+      expect(
+        querySearches.links.filter((link) => link.profileId === id).length,
+      ).toBeGreaterThan(0);
+    });
+
+    it('only stores the flag on a draft', async () => {
+      const { id } = await createOwner();
+      await service.setPostSearch(userId, id, true);
+      expect((await profiles.findById(userId, id))?.postSearch).toBe(true);
+      expect(querySearches.links).toHaveLength(0);
+    });
+
+    it('publishes with post builders when the switch is on', async () => {
+      const { id } = await createOwner();
+      await service.setPostSearch(userId, id, true);
+      await service.publish(userId, id);
+      expect(linkedPosts(id)).toHaveLength(4);
+    });
+
+    it('publishes without post builders when the owner is not listed', async () => {
+      const { id } = await createOwner();
+      await service.setPostSearch(userId, id, true);
+      listed = [];
+      await service.publish(userId, id);
+      expect(linkedPosts(id)).toHaveLength(0);
+    });
+
+    it('regenerates without post builders for a user no longer listed', async () => {
+      const { id } = await createOwner();
+      await service.setPostSearch(userId, id, true);
+      await service.publish(userId, id);
+      expect(linkedPosts(id)).toHaveLength(4);
+      await service.regeneratePublished();
+      expect(linkedPosts(id)).toHaveLength(4);
+      listed = [];
+      await service.regeneratePublished();
+      expect(linkedPosts(id)).toHaveLength(0);
+      expect(
+        querySearches.links.filter((link) => link.profileId === id).length,
+      ).toBeGreaterThan(0);
+    });
+
+    it('reports how many searches the profile would get', async () => {
+      const { id } = await createOwner();
+      await expect(service.postSearchStatus(userId, id)).resolves.toEqual({
+        enabled: false,
+        allowed: true,
+        searches: 4,
+      });
+      const english = await profiles.add(
+        userId,
+        {
+          ...profileInput,
+          locations: {
+            remote: [],
+            hybrid: [],
+            onsite: [{ kind: 'country', code: 'MA' }],
+          },
+        },
+        [skill('nodejs', 8)],
+      );
+      listed = [];
+      await expect(
+        service.postSearchStatus(userId, english.id),
+      ).resolves.toEqual({ enabled: false, allowed: false, searches: 0 });
     });
   });
 });

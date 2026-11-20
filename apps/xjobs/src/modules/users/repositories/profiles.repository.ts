@@ -21,6 +21,12 @@ export abstract class ProfilesRepository {
     profileId: string,
     publishedAt: Date,
   ): Promise<ProfileWithSkills | null>;
+  /** Stores the post search switch; null when the profile is not the user's. Allowed on published profiles. */
+  abstract setPostSearch(
+    userId: string,
+    profileId: string,
+    enabled: boolean,
+  ): Promise<ProfileWithSkills | null>;
   /** The labels of the regions, countries and cities given, a city's country included. */
   abstract placeLabels(places: Place[]): Promise<PlaceLabels>;
 }
@@ -92,6 +98,18 @@ export class PrismaProfilesRepository extends ProfilesRepository {
       userId,
       state: ProfileState.draft,
     }).update({ state: ProfileState.published, publishedAt });
+    return profile ? this.withSkills(profile) : null;
+  }
+
+  async setPostSearch(
+    userId: string,
+    profileId: string,
+    enabled: boolean,
+  ): Promise<ProfileWithSkills | null> {
+    const profile = await this.orm.Profile.where({
+      id: profileId,
+      userId,
+    }).update({ postSearch: enabled });
     return profile ? this.withSkills(profile) : null;
   }
 

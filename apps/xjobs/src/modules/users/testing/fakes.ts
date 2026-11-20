@@ -154,6 +154,12 @@ export class FakeProfilesRepository extends ProfilesRepository {
     });
   }
 
+  async setPostSearch(userId: string, profileId: string, enabled: boolean) {
+    const profile = await this.findById(userId, profileId);
+    if (!profile) return null;
+    return Object.assign(profile, { postSearch: enabled });
+  }
+
   /** The labels of `labels` the places name, a city's country included; unknown ones are left out. */
   async placeLabels(places: Place[]): Promise<PlaceLabels> {
     const named = new Set(

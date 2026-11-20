@@ -108,6 +108,25 @@ const collectionBudgetShape = {
 };
 
 /**
+ * Supabase user ids allowed to turn LinkedIn post search on, comma separated.
+ * Empty (the default) allows nobody.
+ */
+const postSearchShape = {
+  POST_SEARCH_USERS: z
+    .string()
+    .default('')
+    .transform((value) =>
+      value
+        .split(',')
+        .map((part) => part.trim())
+        .filter(Boolean),
+    ),
+};
+
+/** Just the post search allow-list, for scripts that load no other settings. */
+export const postSearchEnvironmentSchema = z.object(postSearchShape);
+
+/**
  * The processor's settings, read by the worker processes and by the API (its
  * testing endpoints). The credentials are optional here: without one,
  * `worker-all` skips the processor and the endpoints that call models refuse.
@@ -176,6 +195,7 @@ export const workerProcessEnvironmentSchema = databaseEnvironmentSchema
      */
     XJOBS_RUN_SCHEDULES: booleanFlag.default(false),
     ...processorEnvironmentShape,
+    ...postSearchShape,
   })
   .superRefine((env, ctx) => {
     requireStorage(env, ctx);
@@ -220,6 +240,7 @@ export const environmentSchema = databaseEnvironmentSchema
     APIFY_TOKEN: z.string().min(1).optional(),
     ...collectionBudgetShape,
     ...processorEnvironmentShape,
+    ...postSearchShape,
     /** Mounts the operator routes (processor, matcher, query search); local only. */
     XJOBS_OPERATOR_ENDPOINTS: booleanFlag.default(false),
     /** Set by Nx in development to receive the server's ready signal. */

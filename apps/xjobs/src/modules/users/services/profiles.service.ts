@@ -1,19 +1,28 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ErrorCode, ProfileState, SkillDomain } from 'src/common/enums';
+import {
+  Channel,
+  ErrorCode,
+  ProfileState,
+  SkillDomain,
+} from 'src/common/enums';
 import {
   QuerySearchService,
   type QuerySearchProfileInput,
 } from 'src/modules/queries';
 import { ProfilesRepository } from '../repositories/profiles.repository';
+import { postRecipes } from 'src/modules/queries/posts';
+import { PostSearchAccess } from './post-search-access';
 import { UsersService } from './users.service';
 import { allPlaces, placeTexts } from './place-labels';
 import type {
   PlaceLabels,
   PlacesByArrangement,
+  PostSearchView,
   ProfileView,
   ProfileWithSkills,
   PublishedProfileView,
@@ -148,6 +157,8 @@ function publishedConflict(): ConflictException {
 /** What regenerating published profiles needs. */
 export interface RegenerateDeps {
   profiles: Pick<ProfilesRepository, 'listPublished' | 'placeLabels'>;
+  /** Whether the user may have post builders; a switched-on profile of anyone else gets none. */
+  postsAllowed: (userId: string) => boolean;
   querySearch: Pick<
     QuerySearchService,
     'detach' | 'generate' | 'retireOutdated'
@@ -171,7 +182,9 @@ export async function regeneratePublished(
     // Labels first: a missing one throws before the profile loses its builders.
     const labels = await labelsFor(deps.profiles, profile);
     await deps.querySearch.detach(profile.id);
-    await deps.querySearch.generate(profile.id, toInput(profile, labels));
+    await deps.querySearch.generate(profile.id, toInput(profile, labels), {
+      posts: profile.postSearch && deps.postsAllowed(profile.userId),
+    });
   }
   return {
     profiles: published.length,
@@ -186,6 +199,7 @@ export class ProfilesService {
     private readonly users: UsersService,
     private readonly profiles: ProfilesRepository,
     private readonly querySearch: QuerySearchService,
+    private readonly postSearch: PostSearchAccess,
   ) {}
 
   /** 404s an unknown user, or a profile that is not this user's. */
@@ -225,6 +239,7 @@ export class ProfilesService {
     return regeneratePublished({
       profiles: this.profiles,
       querySearch: this.querySearch,
+      postsAllowed: (userId) => this.postSearch.allows(userId),
     });
   }
 
@@ -248,6 +263,7 @@ export class ProfilesService {
     const querySearches = await this.querySearch.generate(
       profile.id,
       toQuerySearchInput(profile, await labelsFor(this.profiles, profile)),
+      { posts: profile.postSearch && this.postSearch.allows(userId) },
     );
     const published = await this.profiles.publish(
       userId,
@@ -262,5 +278,66 @@ export class ProfilesService {
       return this.rejectWrite(userId, profile.id);
     }
     return { ...toProfileView(published), querySearches };
+  }
+
+  /** The switch, for any owner: stored value, whether the owner may turn it on, and the searches it gives. */
+  async postSearchStatus(
+    userId: string,
+    profileId: string,
+  ): Promise<PostSearchView> {
+    const profile = await this.getOrThrow(userId, profileId);
+    return this.postSearchView(userId, profile);
+  }
+
+  /**
+   * Turns post search on or off, the one change a published profile accepts.
+   * Only allow-listed users; on a published profile the post builders are
+   * attached or detached at once (a draft gets them when published).
+   */
+  async setPostSearch(
+    userId: string,
+    profileId: string,
+    enabled: boolean,
+  ): Promise<PostSearchView> {
+    await this.getOrThrow(userId, profileId);
+    if (!this.postSearch.allows(userId))
+      throw new ForbiddenException({
+        message: 'Post search is not available for this account',
+        code: ErrorCode.POST_SEARCH_NOT_ALLOWED,
+      });
+    const profile = await this.profiles.setPostSearch(
+      userId,
+      profileId,
+      enabled,
+    );
+    if (!profile) throw new NotFoundException(PROFILE_NOT_FOUND);
+    if (profile.state === ProfileState.published) {
+      if (enabled)
+        await this.querySearch.attachPosts(
+          profile.id,
+          toQuerySearchInput(profile, await labelsFor(this.profiles, profile)),
+        );
+      else
+        await this.querySearch.detachChannel(
+          profile.id,
+          Channel.LINKEDIN_POSTS,
+        );
+    }
+    return this.postSearchView(userId, profile);
+  }
+
+  private async postSearchView(
+    userId: string,
+    profile: ProfileWithSkills,
+  ): Promise<PostSearchView> {
+    const input = toQuerySearchInput(
+      profile,
+      await labelsFor(this.profiles, profile),
+    );
+    return {
+      enabled: profile.postSearch,
+      allowed: this.postSearch.allows(userId),
+      searches: postRecipes(input).length,
+    };
   }
 }
