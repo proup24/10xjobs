@@ -110,6 +110,7 @@ function checkOpening(
   profile: MatchProfile,
   idx: PlaceIndex,
   homes: string[],
+  limitsBindPerson: boolean,
   unstatedAs: 'office' | 'any' = 'office',
 ): {
   outcome: CheckOutcome;
@@ -127,6 +128,7 @@ function checkOpening(
       profile,
       idx,
       homes,
+      limitsBindPerson,
       'any',
     );
     return r.outcome !== 'fail' || r.unsure;
@@ -146,7 +148,11 @@ function checkOpening(
   const ruledOut = ALL_ARRANGEMENTS.some(
     (a) => wanted(a) && !expanded.includes(a),
   );
-  const residence: Residence = residenceApplies(opening, homes)
+  const residence: Residence = residenceApplies(
+    opening,
+    homes,
+    limitsBindPerson,
+  )
     ? { homes, fits: livesIn(opening.places, homes, idx) }
     : null;
   if (kept.length === 0) {
@@ -190,16 +196,20 @@ function checkOpening(
   };
 }
 
-/** Whether any opening's arrangement, place and time zone fit where the profile works. */
+/**
+ * Whether any opening's arrangement, place and time zone fit where the profile works.
+ * `limitsBindPerson` is the facts' own: which places bind where the user lives.
+ */
 export function checkLocation(
   openings: Opening[],
   profile: MatchProfile,
   idx: PlaceIndex,
+  limitsBindPerson: boolean,
 ): Check {
   const homes = homePlaces(profile.eligibility);
   const per = openings.map((opening) => ({
     opening,
-    ...checkOpening(opening, profile, idx, homes),
+    ...checkOpening(opening, profile, idx, homes, limitsBindPerson),
   }));
   const outcome = bestOutcome(per.map((p) => p.outcome));
   // A failure is unsure when any opening's failure is: that opening might fit.

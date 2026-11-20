@@ -60,6 +60,7 @@ function setup(
     extractionId: 'ext-1',
     extraction: over.extraction ?? fixtureDocument(),
     schemaVersion: over.schemaVersion ?? 3,
+    extractedAt: NOW,
     jobUpdatedAt: NOW,
     descriptionText: null,
     listing: over.listing ?? listing(),

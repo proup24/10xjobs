@@ -3,6 +3,7 @@ import type {
   Opening,
 } from '../../processor/schema/extraction';
 import { fixtureDocument } from '../../processor/schema/fixture.testing';
+import { LIMITS_BIND_PERSON_SINCE } from '../config/facts.config';
 import type { PlaceVocabulary } from '../places/resolver';
 import { jobFactsDocumentSchema } from '../schema/facts';
 import { combineFacts } from './combine';
@@ -73,12 +74,17 @@ function doc(
   return { ...base, ...rest };
 }
 
-const combine = (extraction: ExtractionDocument, l: ListingFacts) =>
+const combine = (
+  extraction: ExtractionDocument,
+  l: ListingFacts,
+  extractedAt = NOW,
+) =>
   combineFacts({
     extraction,
     listing: l,
     vocab,
     now: NOW,
+    extractedAt,
     descriptionText: null,
   });
 
@@ -868,6 +874,7 @@ describe('combineFacts', () => {
       listing: listing(),
       vocab,
       now: NOW,
+      extractedAt: NOW,
       descriptionText: text,
     }).facts;
     expect(withText.postingLanguages).toEqual({
@@ -892,7 +899,7 @@ describe('combineFacts', () => {
   it('copies the other matcher facts from the description', () => {
     const d = doc();
     const { facts } = combine(d, listing());
-    expect(facts.version).toBe(6);
+    expect(facts.version).toBe(7);
     for (const key of [
       'position',
       'isSoftwareEngineeringRole',
@@ -978,5 +985,25 @@ describe('combineFacts', () => {
     }
     const bad = { ...cases[0].facts, extra: 1 };
     expect(jobFactsDocumentSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it('limitsBindPerson is set from the extraction time, from the cut-over on', () => {
+    const at = (ms: number) =>
+      combine(doc(), listing(), new Date(ms)).facts.limitsBindPerson;
+    const since = LIMITS_BIND_PERSON_SINCE.getTime();
+    expect(LIMITS_BIND_PERSON_SINCE.toISOString()).toBe(
+      '2026-11-20T14:50:00.000Z',
+    );
+    expect(at(since - 1000)).toBe(false);
+    expect(at(since)).toBe(true);
+  });
+
+  it('facts stored before limitsBindPerson existed parse as from before the cut-over', () => {
+    const { facts } = combine(doc(), listing(), LIMITS_BIND_PERSON_SINCE);
+    const old: Partial<typeof facts> = { ...facts };
+    delete old.limitsBindPerson;
+    const parsed = jobFactsDocumentSchema.safeParse(old);
+    expect(parsed.success).toBe(true);
+    expect(parsed.data?.limitsBindPerson).toBe(false);
   });
 });

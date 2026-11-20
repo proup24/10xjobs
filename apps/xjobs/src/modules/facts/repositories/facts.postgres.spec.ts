@@ -131,6 +131,7 @@ describe.skipIf(!url)('facts repository in PostgreSQL', () => {
       ),
       vocab,
       now: t0,
+      extractedAt: t0,
       descriptionText: null,
     });
     return {
@@ -199,6 +200,13 @@ describe.skipIf(!url)('facts repository in PostgreSQL', () => {
         .build(),
     );
     expect(inputs?.jobUpdatedAt).toEqual(updatedAt);
+    const [{ createdAt }] = await db.query(
+      db.raw
+        .sql`SELECT "createdAt" FROM job_extractions WHERE id = ${j.extractionId}::uuid`
+        .returnsRow({ createdAt: 'pg/timestamptz-date@1' })
+        .build(),
+    );
+    expect(inputs?.extractedAt).toEqual(createdAt);
   });
 
   it('save stores the given builtAt, not the time of the save', async () => {

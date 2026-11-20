@@ -32,6 +32,7 @@ async function stored(
     extractionId: `e-${jobId}`,
     extraction: {},
     schemaVersion: 3,
+    extractedAt: new Date(0),
     jobUpdatedAt: new Date(0),
     descriptionText: null,
     listing: listing(country),

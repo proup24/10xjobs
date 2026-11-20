@@ -70,6 +70,7 @@ export class FactsService {
       listing: listingFacts(inputs.listing, vocab),
       vocab,
       now,
+      extractedAt: inputs.extractedAt,
       descriptionText: inputs.descriptionText,
     });
     const factsHash = hashFacts(facts);

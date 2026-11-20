@@ -1,6 +1,9 @@
 import { Logger } from '@nestjs/common';
 import { fixtureDocument } from '../../processor/schema/fixture.testing';
-import { FACTS_VERSION } from '../config/facts.config';
+import {
+  FACTS_VERSION,
+  LIMITS_BIND_PERSON_SINCE,
+} from '../config/facts.config';
 import { PlaceVocabularyRepository } from '../places/place-vocabulary.repository';
 import type { PlaceVocabulary } from '../places/resolver';
 import type { ListingRow } from '../rules/listing';
@@ -51,6 +54,7 @@ function setup(
     schemaVersion?: number;
     listing?: ListingRow;
     extraction?: unknown;
+    extractedAt?: Date;
   } = {},
 ) {
   const repo = new MemoryFactsRepository();
@@ -61,6 +65,7 @@ function setup(
     extractionId: 'e1',
     extraction: over.extraction ?? fixtureDocument(),
     schemaVersion: over.schemaVersion ?? 3,
+    extractedAt: over.extractedAt ?? new Date('2026-11-12T11:00:00Z'),
     jobUpdatedAt: UPDATED_AT,
     descriptionText: null,
     listing: over.listing ?? listing({ workplaceType: 'onsite' }),
@@ -88,6 +93,17 @@ describe('FactsService', () => {
     expect(repo.conflictsByJob.get(JOB)?.map((c) => c.field)).toEqual([
       'arrangement',
     ]);
+  });
+
+  it("stamps limitsBindPerson from the extraction's createdAt", async () => {
+    const before = await setup().service.build(JOB);
+    const after = await setup({
+      extractedAt: LIMITS_BIND_PERSON_SINCE,
+    }).service.build(JOB);
+    expect(before.status === 'built' && before.facts.limitsBindPerson).toBe(
+      false,
+    );
+    expect(after.status === 'built' && after.facts.limitsBindPerson).toBe(true);
   });
 
   it('skips a job whose extraction is v2', async () => {

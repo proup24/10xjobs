@@ -10,6 +10,8 @@ export interface FactsInputs {
   /** The stored `job_extractions.data`, not yet parsed. */
   extraction: unknown;
   schemaVersion: number;
+  /** The extraction's `createdAt`: which reading of place strictness it had. */
+  extractedAt: Date;
   /** The job row's `updatedAt` as read: the facts are built as of it. */
   jobUpdatedAt: Date;
   listing: ListingRow;
@@ -72,6 +74,7 @@ export class PrismaFactsRepository extends FactsRepository {
     const { raw } = this.db;
     const [row] = await this.db.query(
       raw.sql`SELECT e.id AS "extractionId", e."schemaVersion", e.data,
+          e."createdAt" AS "extractedAt",
           j."workplaceType", j."countryCode", j."regionCode", j.city, j."geoId",
           j.location, j."salaryMin", j."salaryMax", j."salaryCurrency",
           j."salaryPeriod", j."salaryProvidedByEmployer", j."experienceLevel",
@@ -82,6 +85,7 @@ export class PrismaFactsRepository extends FactsRepository {
           extractionId: UUID,
           schemaVersion: INT,
           data: JSONB,
+          extractedAt: TIMESTAMP,
           workplaceType: TEXT,
           countryCode: TEXT,
           regionCode: TEXT,
@@ -107,6 +111,7 @@ export class PrismaFactsRepository extends FactsRepository {
       extractionId: row.extractionId as string,
       extraction: row.data,
       schemaVersion: row.schemaVersion as number,
+      extractedAt: row.extractedAt as Date,
       jobUpdatedAt: row.updatedAt as Date,
       descriptionText: row.descriptionText as string | null,
       listing: {
