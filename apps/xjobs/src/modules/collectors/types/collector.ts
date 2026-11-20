@@ -34,6 +34,8 @@ export interface SegmentSearch {
   maxItems?: number;
   /** The segment's key, for log lines only. */
   segmentKey?: string;
+  /** The run's charge limit in USD; the posts collector refuses to start without it. */
+  maxChargeUsd?: number;
 }
 
 /** What one segment run collected, per member builder, untouched. */
@@ -57,6 +59,11 @@ export interface SegmentResult {
   capped: boolean;
   /** Members whose search reached its row limit. */
   truncatedQueryIds: string[];
+  /**
+   * Why the results may be missing some posts (a failure the actor logged but
+   * did not report); set, the run is stored but no cursor moves.
+   */
+  incomplete?: string | null;
 }
 
 /** How a channel's actor runs; the values live in the channel's job config. */
@@ -66,6 +73,11 @@ export interface ActorRunConfig {
   maxRunChargeUsd: number;
   /** The run's memory in MB; absent means the actor's default. Apify charges some actors' start fee per GB of memory. */
   memoryMbytes?: number;
+}
+
+export interface LinkedinPostsRunConfig extends ActorRunConfig {
+  /** How long to wait for the run before aborting it, in seconds. */
+  waitSecs: number;
 }
 
 export interface LinkedinJobBoardRunConfig extends ActorRunConfig {

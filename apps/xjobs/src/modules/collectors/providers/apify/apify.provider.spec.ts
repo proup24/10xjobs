@@ -8,6 +8,7 @@ const sdk = vi.hoisted(() => {
     get: vi.fn(),
     runs: vi.fn(),
   };
+  const log = { get: vi.fn() };
   const run = { get: vi.fn(), abort: vi.fn(), waitForFinish: vi.fn() };
   const runs = { list: vi.fn() };
   const dataset = { listItems: vi.fn() };
@@ -17,6 +18,7 @@ const sdk = vi.hoisted(() => {
       options,
       actor: vi.fn(() => actor),
       run: vi.fn(() => run),
+      log: vi.fn(() => log),
       dataset: vi.fn(() => dataset),
       keyValueStore: vi.fn(() => keyValueStore),
     });
@@ -35,6 +37,7 @@ const sdk = vi.hoisted(() => {
     ApifyApiError,
     actor,
     run,
+    log,
     runs,
     dataset,
     keyValueStore,
@@ -264,5 +267,14 @@ describe('ApifyActorProvider', () => {
     sdk.dataset.listItems.mockReturnValue(listing([]));
     const result = await provider.run('a/b', {}, { maxChargeUsd: 1 });
     expect(result.keyValueStoreId).toBe('kv-1');
+  });
+
+  it("runLog returns null when the log can't be read", async () => {
+    sdk.log.get.mockRejectedValue(new Error('boom'));
+    expect(await provider.runLog('run-1')).toBeNull();
+    sdk.log.get.mockResolvedValue('line');
+    expect(await provider.runLog('run-1')).toBe('line');
+    sdk.log.get.mockResolvedValue(undefined);
+    expect(await provider.runLog('run-1')).toBeNull();
   });
 });
