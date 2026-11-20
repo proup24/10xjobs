@@ -137,7 +137,7 @@ function checkOpening(
   // failure is sure: nothing says it could be remote.
   const asOffice = onlyUnstated && unstatedAs === 'office';
   const expanded: LocationArrangement[] = asOffice
-    ? ['onsite', 'hybrid']
+    ? ALL_ARRANGEMENTS.filter((a) => a === 'onsite' || a === 'hybrid')
     : opening.arrangements.includes('unstated')
       ? [...new Set([...stated, ...ALL_ARRANGEMENTS])]
       : stated;
@@ -239,9 +239,6 @@ export function checkLocation(
   const residenceFailed = per
     .filter((p) => p.residence?.decided)
     .map((p) => p.opening);
-  const profileText = ALL_ARRANGEMENTS.filter(
-    (a) => profile.locations[a].length > 0,
-  ).join(', ');
   const verb =
     outcome === 'pass'
       ? 'fits'
@@ -251,10 +248,14 @@ export function checkLocation(
   const noArrangement =
     openings.length > 0 &&
     openings.every((o) => o.arrangements.every((a) => a === 'unstated'));
+  const officeBased = outcome === 'fail' && noArrangement;
+  const profileText = ALL_ARRANGEMENTS.filter(
+    (a) => profile.locations[a].length > 0 && !(officeBased && a === 'remote'),
+  ).join(', ');
   const reason =
     outcome === 'fail' && residenceFailed.length > 0
       ? `job location (${textOf(residenceFailed)}, stated in the description) requires living there; you live in ${homes.join(', ')}`
-      : `${outcome === 'fail' && noArrangement ? 'no source states the arrangement, so it is checked as office-based: ' : ''}job location (${jobText || 'not stated'}) ${verb} your wanted arrangements (${profileText || 'none'})`;
+      : `${officeBased ? 'no source states the arrangement, so it is checked as office-based: ' : ''}job location (${jobText || 'not stated'}) ${verb} your wanted arrangements (${profileText || 'none'})`;
   return {
     rule: 'location',
     outcome,

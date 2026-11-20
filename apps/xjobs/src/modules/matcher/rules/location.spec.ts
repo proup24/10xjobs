@@ -113,7 +113,26 @@ describe('checkLocation', () => {
     );
     expect(c).toMatchObject({ outcome: 'fail', unsure: false });
     expect(c.reason).toBe(
-      'no source states the arrangement, so it is checked as office-based: job location (unstated in Berlin) does not fit your wanted arrangements (remote, hybrid, onsite)',
+      'no source states the arrangement, so it is checked as office-based: job location (unstated in Berlin) does not fit your wanted arrangements (hybrid, onsite)',
+    );
+    const noHybrid = exampleProfile();
+    noHybrid.locations.hybrid = [];
+    expect(
+      checkLocation(
+        [
+          opening({
+            arrangements: ['unstated'],
+            places: [berlin],
+            placeStrictness: 'label',
+            placesSource: 'linkedin',
+            confidence: 'unsure',
+          }),
+        ],
+        noHybrid,
+        idx,
+      ).reason,
+    ).toBe(
+      'no source states the arrangement, so it is checked as office-based: job location (unstated in Berlin) does not fit your wanted arrangements (onsite)',
     );
   });
   it('an opening with no arrangement and no place is unknown with office places, fail without', () => {
@@ -207,6 +226,19 @@ describe('checkLocation', () => {
           }),
         ]),
       ).toMatchObject({ outcome: 'fail', unsure: false, unsureField: null });
+    });
+    it('a mentioned hybrid place that fails stays unsure when the remote route fails on unsure time zones', () => {
+      expect(
+        check([
+          opening({
+            arrangements: ['hybrid', 'remote'],
+            places: [berlin],
+            placeStrictness: 'mention',
+            timezones: [{ fromUtc: 9, toUtc: 10, label: 'x' }],
+            confidence: 'unsure',
+          }),
+        ]),
+      ).toMatchObject({ outcome: 'fail', unsure: true });
     });
     it('a sure opening that does not fit is sure', () => {
       expect(check([limited({})])).toMatchObject({
