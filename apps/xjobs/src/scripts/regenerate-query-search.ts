@@ -34,16 +34,24 @@ async function main(): Promise<void> {
   // The repositories only read `db` from the database service.
   const database = { db } as DatabaseService;
   try {
-    const { profiles, retired } = await regeneratePublished({
-      profiles: new PrismaProfilesRepository(database),
-      postsAllowed,
-      querySearch: new QuerySearchService(
-        new PrismaQuerySearchRepository(database),
-      ),
-    });
+    const { profiles, retired, postsKept, postsDropped } =
+      await regeneratePublished({
+        profiles: new PrismaProfilesRepository(database),
+        postsAllowed,
+        querySearch: new QuerySearchService(
+          new PrismaQuerySearchRepository(database),
+        ),
+      });
     logger.log(
       `Regenerated ${profiles} published profiles; retired ${retired} outdated builders`,
     );
+    logger.log(
+      `Post search on: ${postsKept} profiles kept their post builders, ${postsDropped} did not`,
+    );
+    if (postsDropped > 0)
+      logger.warn(
+        `${postsDropped} profiles have post search on but their owner is not in POST_SEARCH_USERS: their post builders were not attached. Set POST_SEARCH_USERS where you run this and run it again.`,
+      );
   } finally {
     await db.close();
   }

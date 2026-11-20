@@ -350,7 +350,12 @@ describe('ProfilesService', () => {
 
       const result = await service.regeneratePublished();
 
-      expect(result).toEqual({ profiles: 1, retired: old });
+      expect(result).toEqual({
+        profiles: 1,
+        retired: old,
+        postsKept: 0,
+        postsDropped: 0,
+      });
       expect(new Set(linkedVersions(id))).toEqual(
         new Set([QUERY_SEARCH_RECIPE_VERSION]),
       );
@@ -374,6 +379,8 @@ describe('ProfilesService', () => {
       expect(await service.regeneratePublished()).toEqual({
         profiles: 1,
         retired: 0,
+        postsKept: 0,
+        postsDropped: 0,
       });
       expect(querySearches.rows).toHaveLength(rows);
       expect(querySearches.links).toHaveLength(links);
@@ -384,6 +391,8 @@ describe('ProfilesService', () => {
       expect(await service.regeneratePublished()).toEqual({
         profiles: 0,
         retired: 0,
+        postsKept: 0,
+        postsDropped: 0,
       });
       expect(linkedVersions(id)).toEqual([]);
     });
@@ -524,6 +533,38 @@ describe('ProfilesService', () => {
       expect(
         querySearches.links.filter((link) => link.profileId === id).length,
       ).toBeGreaterThan(0);
+    });
+
+    it('counts switched-on profiles that kept or lost their post builders', async () => {
+      const { id } = await createOwner();
+      await service.setPostSearch(userId, id, true);
+      await service.publish(userId, id);
+      expect(await service.regeneratePublished()).toMatchObject({
+        postsKept: 1,
+        postsDropped: 0,
+      });
+      listed = [];
+      expect(await service.regeneratePublished()).toMatchObject({
+        postsKept: 0,
+        postsDropped: 1,
+      });
+    });
+
+    it('puts the flag back when attaching the post builders fails', async () => {
+      const { id } = await createOwner();
+      await service.publish(userId, id);
+      const spy = vi
+        .spyOn(QuerySearchService.prototype, 'attachPosts')
+        .mockRejectedValueOnce(new Error('attach failed'));
+      try {
+        await expect(service.setPostSearch(userId, id, true)).rejects.toThrow(
+          'attach failed',
+        );
+      } finally {
+        spy.mockRestore();
+      }
+      expect((await profiles.findById(userId, id))?.postSearch).toBe(false);
+      expect(linkedPosts(id)).toHaveLength(0);
     });
 
     it('reports how many searches the profile would get', async () => {

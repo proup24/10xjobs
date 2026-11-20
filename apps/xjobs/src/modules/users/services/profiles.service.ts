@@ -165,6 +165,15 @@ export interface RegenerateDeps {
   >;
 }
 
+export interface RegenerateResult {
+  profiles: number;
+  retired: number;
+  /** Profiles with post search on that kept their post builders. */
+  postsKept: number;
+  /** Profiles with post search on whose owner is not listed: their post builders were not attached. */
+  postsDropped: number;
+}
+
 /**
  * Moves every published profile to the query search builders of the current
  * recipe, then retires the builders no profile uses any more. A plain
@@ -176,19 +185,26 @@ export async function regeneratePublished(
     profile: ProfileWithSkills,
     labels: PlaceLabels,
   ) => QuerySearchProfileInput = toQuerySearchInput,
-): Promise<{ profiles: number; retired: number }> {
+): Promise<RegenerateResult> {
   const published = await deps.profiles.listPublished();
+  let postsKept = 0;
+  let postsDropped = 0;
   for (const profile of published) {
     // Labels first: a missing one throws before the profile loses its builders.
     const labels = await labelsFor(deps.profiles, profile);
+    const posts = profile.postSearch && deps.postsAllowed(profile.userId);
+    if (posts) postsKept += 1;
+    else if (profile.postSearch) postsDropped += 1;
     await deps.querySearch.detach(profile.id);
     await deps.querySearch.generate(profile.id, toInput(profile, labels), {
-      posts: profile.postSearch && deps.postsAllowed(profile.userId),
+      posts,
     });
   }
   return {
     profiles: published.length,
     retired: await deps.querySearch.retireOutdated(),
+    postsKept,
+    postsDropped,
   };
 }
 
@@ -235,7 +251,7 @@ export class ProfilesService {
    * then retires the outdated builders nothing uses any more. Run once after a
    * recipe version bump; running it again changes nothing.
    */
-  async regeneratePublished(): Promise<{ profiles: number; retired: number }> {
+  async regeneratePublished(): Promise<RegenerateResult> {
     return regeneratePublished({
       profiles: this.profiles,
       querySearch: this.querySearch,
@@ -299,7 +315,7 @@ export class ProfilesService {
     profileId: string,
     enabled: boolean,
   ): Promise<PostSearchView> {
-    await this.getOrThrow(userId, profileId);
+    const { postSearch: previous } = await this.getOrThrow(userId, profileId);
     if (!this.postSearch.allows(userId))
       throw new ForbiddenException({
         message: 'Post search is not available for this account',
@@ -312,16 +328,25 @@ export class ProfilesService {
     );
     if (!profile) throw new NotFoundException(PROFILE_NOT_FOUND);
     if (profile.state === ProfileState.published) {
-      if (enabled)
-        await this.querySearch.attachPosts(
-          profile.id,
-          toQuerySearchInput(profile, await labelsFor(this.profiles, profile)),
-        );
-      else
-        await this.querySearch.detachChannel(
-          profile.id,
-          Channel.LINKEDIN_POSTS,
-        );
+      try {
+        if (enabled)
+          await this.querySearch.attachPosts(
+            profile.id,
+            toQuerySearchInput(
+              profile,
+              await labelsFor(this.profiles, profile),
+            ),
+          );
+        else
+          await this.querySearch.detachChannel(
+            profile.id,
+            Channel.LINKEDIN_POSTS,
+          );
+      } catch (error) {
+        // Keep the flag true to the builders: put it back before failing.
+        await this.profiles.setPostSearch(userId, profileId, previous);
+        throw error;
+      }
     }
     return this.postSearchView(userId, profile);
   }
