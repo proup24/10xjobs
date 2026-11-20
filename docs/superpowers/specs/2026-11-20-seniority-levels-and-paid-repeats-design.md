@@ -17,7 +17,8 @@ Why: precision of spend without losing the right jobs. The project's anti-goal "
 ## Goals
 
 - Each seniority searches the LinkedIn levels its jobs are tagged with on LinkedIn (table below).
-- Every LinkedIn job-board run asks for 1,000 rows from the start, with no second run in the same tick.
+- Every LinkedIn job-board run asks for 1,000 rows from the start. The only second runs in a tick are the halves of a full multi-member group.
+- A paid check shows whether halving keeps at least 95% of the merged search's jobs.
 - A profile that picks MENA searches Middle East and Africa, not LinkedIn's MENA place.
 - `db:place-coverage` shows, per search place, what it finds that no other place finds.
 
@@ -40,26 +41,26 @@ Why: precision of spend without losing the right jobs. The project's anti-goal "
 
 LinkedIn codes: 1 internship, 2 entry, 3 associate, 4 mid-senior, 5 director.
 
-| Seniority  | Today      | New                       |
-| ---------- | ---------- | ------------------------- |
-| junior     | 1, 2       | **2** (entry)             |
-| mid        | 3, 4       | 3, 4                      |
-| senior     | 4          | 4                         |
-| staff      | 4, 5       | **4** (mid-senior)        |
-| lead       | 4, 5       | 4, 5                      |
-| principal  | 4, 5       | 4, 5                      |
-| unstated   | none       | none                      |
+| Seniority | Today | New                |
+| --------- | ----- | ------------------ |
+| junior    | 1, 2  | **2** (entry)      |
+| mid       | 3, 4  | 3, 4               |
+| senior    | 4     | 4                  |
+| staff     | 4, 5  | **4** (mid-senior) |
+| lead      | 4, 5  | 4, 5               |
+| principal | 4, 5  | 4, 5               |
+| unstated  | none  | none               |
 
 Each level stays its own search, deduplicated across seniorities as today (`dedupeBySearch`).
 
 Why this map _(user: "go with the data map")_: the user first said junior is entry and staff is director. The data agreed on junior and disagreed on staff. LinkedIn's level is a tag the poster picks. For jobs where the processor read the seniority from the description, the LinkedIn tag was:
 
-| Read seniority | Mid-senior | Director | Associate | Not applicable |
-| -------------- | ---------- | -------- | --------- | -------------- |
-| lead (349)     | 62%        | 6%       | 8%        | 20%            |
-| staff (126)    | 67%        | 1%       | 14%       | 17%            |
-| principal (126)| 52%        | 14%      | 16%       | 17%            |
-| senior (1,552) | 71%        | 1%       | 11%       | 15%            |
+| Read seniority  | Mid-senior | Director | Associate | Not applicable |
+| --------------- | ---------- | -------- | --------- | -------------- |
+| lead (349)      | 62%        | 6%       | 8%        | 20%            |
+| staff (126)     | 67%        | 1%       | 14%       | 17%            |
+| principal (126) | 52%        | 14%      | 16%       | 17%            |
+| senior (1,552)  | 71%        | 1%       | 11%       | 15%            |
 
 LinkedIn barely honours `f_E` outside mid-senior. Of returned jobs with a level, internship searches returned 2% internship jobs, director searches 14% director, mid-senior searches 96% mid-senior. Over 7 days, internship searches found 60 jobs no other level found, 1 qualified. The roadmap's question "measure how often a returned job's level matches the searched one" is answered by these numbers; nothing is built for it.
 
@@ -70,19 +71,29 @@ For the published dev profile (junior, mid, senior, staff), the only change is t
 Today a LinkedIn job-board run asks for 100 rows (`maxRowsPerSearch`). A run is "full" when it returns 100 rows or when LinkedIn's `totalElements` is above the rows returned. A full one-member segment is rerun at once at 1,000 rows (`maxRowsCeiling`); a full multi-member segment is halved, and the split is remembered (`linkedin_search_splits`).
 
 What dev showed over 3 days: 884 searches ran once, and 66 ran twice.
+
 - 21 were full at 100 rows. Their reruns returned 1,498 rows, with 1,030 jobs new to that tick. The largest was 461 rows, and none came near 1,000.
 - 45 were full only by `totalElements`. Their reruns returned 246 rows, 24 came back empty, and 43 jobs were new for $0.27. None of those 43 was seen in a later tick; 1 qualified and 1 went to review. **The user accepts losing these.**
-- Halving reruns the identical search: a segment's members all share one search (`oneSearchInput` enforces it), so halving only pays for the same rows again. No split happened in 3 days, and the splits table is empty.
+- Halving is what lets a full group get past the row limit. A group's members share the place, level and work type (`linkedinGroupKey`), but their keywords merge (`mergedLinkedinKeyword`), so each half runs a narrower search, and the two halves together cover the merged one. No split happened in 3 days on dev: almost every group has one member (2,984 one-member runs, 104 two-member runs in 7 days), and the splits table is empty. Groups grow as users join, so splitting stays.
 
 The new behaviour, for every LinkedIn job-board actor (harvestapi, cheap_scraper, bebity) _(user: both trial actors follow the same rule, though both are off now and may be dropped)_:
 
 - Each run asks for 1,000 rows. The run config keeps one row limit; `maxRowsCeiling` goes.
 - A run is full only when it returns its row limit. The `totalElements` rule and its warning go. `searchTotals` is still stored.
-- A full run is stored, moves its cursors like any other run, and logs a warning (as the ceiling warning does today: older postings in that hour are lost). No second run.
-- The halving, the remembered splits (`LinkedinSearchSplitsRepository`, `splits.ts`, the group tallies in `collection.service.ts`) and the `linkedin_search_splits` table are removed. The table drop is a migration in the Prisma contract (advance the migration ref hash, or the migration silently never applies).
+- **A full run with more than one member** is stored without moving cursors and halved, and each half runs at 1,000 rows, down to one member, as today _(user: option A)_. The split is remembered as today (`linkedin_search_splits`, `nextParts`), and its "searches run small" threshold follows the new row limit: 25% of 1,000 is 250 rows.
+- **A full run with one member** is stored, moves its cursors like any other run, and logs a warning (as the ceiling warning does today: older postings in that hour are lost). There is no second run, so the 100-row-then-ceiling rerun goes. `SegmentSearch.maxItems` and the `maxItems` path through `collection.service.ts` go with it.
 - The per-run charge cap covers 1,000 rows plus margin _(my call)_: harvestapi $1.10 (1,000 × $0.001 + $0.001 start), cheap_scraper and bebity $1.50 (bebity is $0.00125 per job). The cap only stops a runaway run; the daily budget bounds the day.
-- **Runs with an unknown cost** _(my call)_. Today the daily budget counts a run with no reported cost at its charge cap. Raised to $1.10, that would let three failed runs use up the default $3 budget and stop collection for the day. On 2026-11-13, 1,560 harvestapi runs failed with no cost and no Apify run id (the free-plan block), and 12 more did on 2026-11-16. A run with no Apify run id never started on Apify and was charged nothing, so it counts as $0. A run with a run id but no cost yet still counts at the cap until `settleCosts` reads its real cost. Tests cover both cases.
-- `db:actor-compare` counts a cell as capped by this single row limit (`ceilingRows` and its "a run held for splitting" comment change).
+- **Runs with an unknown cost.** The daily budget counts a run with no recorded cost at its charge cap, and $1.10 makes that weigh more. A start Apify refuses is already recorded at $0 (`SearchNotStartedError` from `isRefusedStart`, commit `4b26ac2`, 2026-11-16). That covers the free-plan block, whose 1,560 null-cost runs on 2026-11-12 and 2026-11-13 predate the fix, and the 12 permission refusals on 2026-11-16, which were recorded at $0. Only a fetch that throws after a run may have started still counts at the cap until `settleCosts` reads its cost, and that is correct. No change is needed. Rollout checks for null-cost runs.
+- `db:actor-compare` treats a run as "at the ceiling" when it returns the single row limit (`ceilingRows` reads `maxRowsPerSearch`), and its comments about 100-row held runs change.
+
+### 2b. Live split check: `db:split-check`
+
+The tests cover the split logic with a fake actor. They can't show whether LinkedIn returns, for two narrower keywords, the jobs it returns for the merged one. Its AI search rewrites keywords (slice 07). Splitting has never fired on dev. So this slice adds a one-off paid check _(user: include it; bar 95%)_, built like `db:spellings --check-totals`:
+
+- `pnpm --filter @xjobs/xjobs db:split-check -- [--group <segment key>] [--dry-run]`. It needs `APIFY_TOKEN`, is off unless run, and is run only by the maintainer. `--dry-run` prints the plan and the reserved spend without any Apify call.
+- **Group** _(my call)_. `--group` names an active harvestapi group (`LINKEDIN_JOB_BOARD` segment key). By default, the script picks the group with the most rows over the last 24 hours among those under 120. With two or more members, it halves them with `halve`. With one member, it halves that member's spellings, the same mechanism, since the merged keyword is role words AND the union of spellings.
+- **Runs.** Three harvestapi runs on the group's filters with `postedLimit: '24h'`: the merged keyword, then each half. Each asks for 150 rows with a $0.16 charge cap, so the total reserved is under $0.50, and the script refuses to start above that.
+- **Result.** If the merged run returns its 150-row limit, or nothing, the check is inconclusive and the halves don't run. Otherwise it reports coverage (merged jobs found by either half ÷ merged jobs), the jobs only the halves found, and pass at 95% coverage or more. A fail means splitting doesn't protect recall, and we go back to removing it (option B).
 
 ### 3. MENA searches Middle East and Africa
 
@@ -99,6 +110,7 @@ Decisions 1 and 3 change built searches: bump `QUERY_SEARCH_RECIPE_VERSION` (12 
 `pnpm --filter @xjobs/xjobs db:place-coverage -- [--days <n>] [--actor <name>]`, read-only, default 7 days and harvestapi _(my call: its own command, since `db:actor-compare` is about actors)_. Credit goes by batch actor, as in `db:actor-compare`.
 
 Per search place (`query_search_builder.location`) and work type, one row with:
+
 - runs and cost in the window,
 - distinct jobs returned,
 - jobs found only by this place, meaning no other place's search by the same actor returned them in the window, at any level or work type,
@@ -108,14 +120,17 @@ A second table gives the same per place and level. Countries are places too, so 
 
 ## Rollout on dev
 
-1. Merge, let the Deploy engine workflow deploy, and the table-drop migration applies.
+1. Merge, and let the Deploy engine workflow deploy. No migration is needed.
 2. Run `db:regenerate` once.
 3. Over the next weekday ticks, check:
    - No internship (`f_E` 1) and no MENA builders are active.
    - No LinkedIn search runs twice in the same tick.
    - Any "full at 1,000 rows" warning.
+   - Any run recorded with a null cost, each of which counts at the full cap.
    - harvestapi spend per day against the 3-day baseline. Same-tick repeats were 1,966 of 7,428 paid rows (26%).
+   - Split log lines ("cut into ... parts", the halving), to see whether splits fire at 1,000 rows.
 4. Run `db:place-coverage` after a few weekdays.
+5. Run `db:split-check -- --dry-run`, then `db:split-check`. Report coverage. Under 95% reopens option B.
 
 ## After rollout
 
