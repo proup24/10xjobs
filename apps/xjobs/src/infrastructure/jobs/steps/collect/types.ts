@@ -31,6 +31,8 @@ export interface SegmentOutcome {
   costUsd: number;
   /** The stored run was full: it returned its row limit, or the source reported more. */
   truncated: boolean;
+  /** The run stopped at its cost cap, so it kept its cursors. Absent when nothing was stored. */
+  capped?: boolean;
   /** Rows the stored run returned. */
   fetched: number;
   /** The members actually searched, once claimed; null when nothing was searched. */

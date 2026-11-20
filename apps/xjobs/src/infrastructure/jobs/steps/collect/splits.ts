@@ -21,9 +21,9 @@ export interface GroupTick {
   chunks: number;
   /** A full search of the group was halved in this tick. */
   split: boolean;
-  /** Most rows returned by a run that ended a branch (not full, or at the ceiling). */
+  /** Most rows returned by a run that ended a branch (not held for halving). */
   maxReturned: number;
-  /** Rows one search may return by default. */
+  /** Rows one search may return. */
   rowLimit: number;
 }
 

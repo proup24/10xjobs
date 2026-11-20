@@ -140,10 +140,10 @@ describe('LinkedIn job board builder', () => {
 
 describe('linkedinLevels', () => {
   it('splits a seniority into single f_E levels', () => {
-    expect(linkedinLevels(Seniority.junior)).toEqual(['1', '2']);
+    expect(linkedinLevels(Seniority.junior)).toEqual(['2']);
     expect(linkedinLevels(Seniority.mid)).toEqual(['3', '4']);
     expect(linkedinLevels(Seniority.senior)).toEqual(['4']);
-    expect(linkedinLevels(Seniority.staff)).toEqual(['4', '5']);
+    expect(linkedinLevels(Seniority.staff)).toEqual(['4']);
     expect(linkedinLevels(Seniority.lead)).toEqual(['4', '5']);
     expect(linkedinLevels(Seniority.principal)).toEqual(['4', '5']);
   });
@@ -320,15 +320,15 @@ describe('channel query builders', () => {
     expect({ ...trial, channel: main.channel, hash: main.hash }).toEqual(main);
   });
 
-  it('keeps the LinkedIn job board recipe hash it had before the trial channel', () => {
-    // Literal taken on the code before the trial channel existed.
+  it('pins the LinkedIn job board recipe hash', () => {
+    // A literal: it changes only when the recipe or its version does.
     const recipe = toRecipe({
       ...base,
       channel: Channel.LINKEDIN_JOB_BOARD,
       experienceLevel: '4',
     });
     expect(recipe.hash).toBe(
-      '3be04a3aaa389a4bbdd79eb56832247d0e59a2ae52bc92a9319ace16eae37427',
+      'd9ffdcc8d4f6f6b41bd02e0263f116829922b1f2a93ff1c3154122bf496f29f8',
     );
   });
 });

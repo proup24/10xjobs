@@ -11,7 +11,7 @@ describe('toHarvestJobSearchInput', () => {
       toHarvestJobSearchInput(
         'backend golang',
         { location: 'Germany', experienceLevel: '4,5', workType: '2' },
-        100,
+        1000,
       ),
     ).toEqual({
       jobTitles: ['backend golang'],
@@ -20,7 +20,7 @@ describe('toHarvestJobSearchInput', () => {
       workplaceType: ['remote'],
       postedLimit: '1h',
       sortBy: 'date',
-      maxItems: 100,
+      maxItems: 1000,
     });
   });
 

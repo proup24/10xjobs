@@ -71,13 +71,32 @@ describe('QuerySearchService', () => {
       const recipes = service.expand(profile);
       // Other channels: 3 channels x 3 technologies x 3 locations = 27.
       // Each LinkedIn job-board channel (main and trial), one level (senior = 4):
-      // remote EMEA gives africa, europe and middle east, remote MENA gives mena,
-      // onsite Casablanca, Morocco gives morocco, so 5 each, 15 in all.
-      expect(recipes).toHaveLength(42);
-      expect(new Set(hashes(recipes)).size).toBe(42);
+      // remote EMEA gives africa, europe and middle east, remote MENA gives
+      // africa and middle east again (no new place), onsite Casablanca, Morocco
+      // gives morocco, so 4 each, 12 in all.
+      expect(recipes).toHaveLength(39);
+      expect(new Set(hashes(recipes)).size).toBe(39);
       expect(recipes.filter((r) => r.type === Arrangement.onsite)).toHaveLength(
         12,
       );
+    });
+
+    it('searches a MENA-only profile as Africa and the Middle East', async () => {
+      const { service } = await setup();
+      const recipes = service.expand({
+        ...profile,
+        locations: { remote: ['MENA'], hybrid: [], onsite: [] },
+      });
+      const board = recipes.filter((r) => isLinkedinJobBoard(r.channel));
+      expect(board.length).toBeGreaterThan(0);
+      for (const channel of new Set(board.map((r) => r.channel))) {
+        const locations = board
+          .filter((r) => r.channel === channel)
+          .map((r) => r.location)
+          .sort();
+        expect(locations).toEqual(['africa', 'middle east']);
+      }
+      expect(board.some((r) => r.location === 'mena')).toBe(false);
     });
 
     it('creates only onsite recipes for an onsite-only profile', async () => {
@@ -207,15 +226,15 @@ describe('QuerySearchService', () => {
     it('creates shared builders once, then reuses them', async () => {
       const { service, repository, profileId } = await setup();
       expect(await service.generate(profileId, profile)).toEqual({
-        created: 42,
+        created: 39,
         existing: 0,
       });
       expect(await service.generate(profileId, profile)).toEqual({
         created: 0,
-        existing: 42,
+        existing: 39,
       });
-      expect(repository.rows).toHaveLength(42);
-      expect(repository.links).toHaveLength(42);
+      expect(repository.rows).toHaveLength(39);
+      expect(repository.links).toHaveLength(39);
       expect(new Set(counts(repository))).toEqual(new Set([1]));
       expect(repository.rows.every((row) => row.isActive)).toBe(true);
     });
@@ -233,10 +252,10 @@ describe('QuerySearchService', () => {
       await service.generate(profileId, profile);
       expect(await service.generate('profile-2', profile)).toEqual({
         created: 0,
-        existing: 42,
+        existing: 39,
       });
-      expect(repository.rows).toHaveLength(42);
-      expect(repository.links).toHaveLength(84);
+      expect(repository.rows).toHaveLength(39);
+      expect(repository.links).toHaveLength(78);
       expect(new Set(counts(repository))).toEqual(new Set([2]));
     });
 
@@ -244,7 +263,7 @@ describe('QuerySearchService', () => {
       const { service, repository, profileId } = await setup();
       await service.generate(profileId, profile);
       await service.generate(profileId, profile);
-      expect(repository.links).toHaveLength(42);
+      expect(repository.links).toHaveLength(39);
       expect(new Set(counts(repository))).toEqual(new Set([1]));
     });
 
@@ -278,13 +297,13 @@ describe('QuerySearchService', () => {
       const { service, repository, profileId } = await setup();
       await service.generate(profileId, profile);
       await service.generate('profile-2', profile);
-      expect(await service.detach(profileId)).toBe(42);
+      expect(await service.detach(profileId)).toBe(39);
       expect(new Set(counts(repository))).toEqual(new Set([1]));
       expect(repository.rows.every((row) => row.isActive)).toBe(true);
       await service.detach('profile-2');
       expect(new Set(counts(repository))).toEqual(new Set([0]));
       expect(repository.rows.some((row) => row.isActive)).toBe(false);
-      expect(repository.rows).toHaveLength(42);
+      expect(repository.rows).toHaveLength(39);
     });
   });
 
@@ -292,7 +311,7 @@ describe('QuerySearchService', () => {
     it('lists the builders of a profile and filters by channel', async () => {
       const { service, userId, profileId } = await setup();
       await service.generate(profileId, profile);
-      expect(await service.list(userId, profileId)).toHaveLength(42);
+      expect(await service.list(userId, profileId)).toHaveLength(39);
       const posts = await service.list(
         userId,
         profileId,
@@ -316,7 +335,7 @@ describe('QuerySearchService', () => {
       const { service, repository, userId, profileId } = await setup();
       await service.generate(profileId, profile);
       await service.softDelete(repository.rows[0].id);
-      expect(await service.list(userId, profileId)).toHaveLength(41);
+      expect(await service.list(userId, profileId)).toHaveLength(38);
     });
   });
   describe('listActive', () => {

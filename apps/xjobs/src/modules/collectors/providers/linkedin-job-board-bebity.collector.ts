@@ -6,7 +6,7 @@ import type {
   SegmentSearch,
 } from '../types/collector';
 import { reachedChargeCap } from '../utils/collected-job';
-import { oneSearchInput, runChargeCapUsd } from '../utils/linkedin-board-run';
+import { oneSearchInput } from '../utils/linkedin-board-run';
 import { ApifyActorProvider } from './apify/apify.provider';
 import { BEBITY_ACTOR, toBebityInput } from './mappers/bebity-input';
 import {
@@ -26,12 +26,12 @@ export class LinkedinJobBoardBebityCollector {
   /** The actor and its limits; fixed for every run of this collector. */
   static readonly config: Readonly<LinkedinJobBoardRunConfig> = {
     actor: BEBITY_ACTOR,
-    // The cap only stops a runaway run.
-    maxRunChargeUsd: 0.15,
+    // 1,000 rows plus the start fee, with margin (bebity charges $0.00125 a
+    // job); the cap only stops a runaway run.
+    maxRunChargeUsd: 1.5,
     // Fixed at 1 GB, like cheap_scraper, to keep its start fee low.
     memoryMbytes: 1024,
-    maxRowsPerSearch: 100,
-    maxRowsCeiling: 1000,
+    maxRowsPerSearch: 1000,
   };
 
   readonly channel = Channel.LINKEDIN_JOB_BOARD_BEBITY;
@@ -50,9 +50,8 @@ export class LinkedinJobBoardBebityCollector {
 
   async collect(segment: SegmentSearch): Promise<SegmentResult> {
     const config = LinkedinJobBoardBebityCollector.config;
-    // The charge cap grows with the rows asked for.
-    const rows = segment.maxItems ?? config.maxRowsPerSearch;
-    const maxChargeUsd = runChargeCapUsd(config, rows);
+    const rows = config.maxRowsPerSearch;
+    const maxChargeUsd = config.maxRunChargeUsd;
     const input = this.input(segment, rows);
     const { items, costUsd, runId } = await this.actor.run(
       config.actor,

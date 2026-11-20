@@ -21,6 +21,7 @@ export const LINKEDIN_SEARCH_MAP: Readonly<Record<string, readonly string[]>> =
     'united kingdom': ['europe'],
     dach: ['europe'],
     emea: ['africa', 'europe', 'middle east'],
+    mena: ['africa', 'middle east'],
     'north africa': ['africa'],
     'sub-saharan africa': ['africa'],
     'north america': ['canada', 'united states'],
