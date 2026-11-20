@@ -6,7 +6,7 @@ import type {
   SegmentSearch,
 } from '../types/collector';
 import { reachedChargeCap } from '../utils/collected-job';
-import { oneSearchInput, runChargeCapUsd } from '../utils/linkedin-board-run';
+import { oneSearchInput } from '../utils/linkedin-board-run';
 import { ApifyActorProvider } from './apify/apify.provider';
 import {
   CHEAP_SCRAPER_ACTOR,
@@ -30,12 +30,12 @@ export class LinkedinJobBoardCheapCollector {
   /** The actor and its limits; fixed for every run of this collector. */
   static readonly config: Readonly<LinkedinJobBoardRunConfig> = {
     actor: CHEAP_SCRAPER_ACTOR,
-    // The cap only stops a runaway run.
-    maxRunChargeUsd: 0.15,
+    // 1,000 rows plus the start fee, with margin (bebity charges $0.00125 a
+    // job); the cap only stops a runaway run.
+    maxRunChargeUsd: 1.5,
     // Its start fee is $0.005 per GB, and its 4 GB default made every run cost $0.02 before any row.
     memoryMbytes: 1024,
-    maxRowsPerSearch: 100,
-    maxRowsCeiling: 1000,
+    maxRowsPerSearch: 1000,
   };
 
   readonly channel = Channel.LINKEDIN_JOB_BOARD_CHEAP;
@@ -57,9 +57,8 @@ export class LinkedinJobBoardCheapCollector {
 
   async collect(segment: SegmentSearch): Promise<SegmentResult> {
     const config = LinkedinJobBoardCheapCollector.config;
-    // The charge cap grows with the rows asked for.
-    const rows = segment.maxItems ?? config.maxRowsPerSearch;
-    const maxChargeUsd = runChargeCapUsd(config, rows);
+    const rows = config.maxRowsPerSearch;
+    const maxChargeUsd = config.maxRunChargeUsd;
     const input = this.input(segment, rows);
     const { items, costUsd, runId } = await this.actor.run(
       config.actor,

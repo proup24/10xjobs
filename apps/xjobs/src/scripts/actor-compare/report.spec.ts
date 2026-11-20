@@ -11,6 +11,7 @@ import {
   type RunRow,
   type Sighting,
 } from './report';
+import { atCeiling } from './queries';
 
 const H = 'harvestapi/linkedin-job-search';
 const C = 'cheap_scraper/linkedin-job-scraper';
@@ -193,6 +194,15 @@ describe('runActor', () => {
     expect(cost).toMatchObject({ runs: 1, costUsd: 0 });
     const notRun = r.notRun.find((x) => x.label === 'total' && x.actor === B);
     expect(notRun).toMatchObject({ notStarted: 1, ran: 0 });
+  });
+});
+
+describe('atCeiling', () => {
+  it('is true for a run of 1000 rows, the row limit, and false for 100', () => {
+    for (const channel of [HC, CC, BC]) {
+      expect(atCeiling(channel, 1000)).toBe(true);
+      expect(atCeiling(channel, 100)).toBe(false);
+    }
   });
 });
 

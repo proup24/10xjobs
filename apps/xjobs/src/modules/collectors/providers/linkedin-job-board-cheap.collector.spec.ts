@@ -35,15 +35,11 @@ const member = (id: string, params: Record<string, unknown> = {}) => ({
   },
 });
 
-const segment = (
-  queries = [member('a'), member('b')],
-  extra: Partial<SegmentSearch> = {},
-): SegmentSearch => ({
+const segment = (queries = [member('a'), member('b')]): SegmentSearch => ({
   channel: Channel.LINKEDIN_JOB_BOARD_CHEAP,
   since,
   until,
   queries,
-  ...extra,
 });
 
 describe('LinkedinJobBoardCheapCollector', () => {
@@ -53,10 +49,9 @@ describe('LinkedinJobBoardCheapCollector', () => {
     );
     expect(LinkedinJobBoardCheapCollector.config).toEqual({
       actor: 'cheap_scraper/linkedin-job-scraper',
-      maxRunChargeUsd: 0.15,
+      maxRunChargeUsd: 1.5,
       memoryMbytes: 1024,
-      maxRowsPerSearch: 100,
-      maxRowsCeiling: 1000,
+      maxRowsPerSearch: 1000,
     });
   });
 
@@ -68,10 +63,10 @@ describe('LinkedinJobBoardCheapCollector', () => {
     expect(run).toHaveBeenCalledTimes(1);
     const [name, input, options] = run.mock.calls[0]!;
     expect(name).toBe('cheap_scraper/linkedin-job-scraper');
-    expect(options).toEqual({ maxChargeUsd: 0.15, memoryMbytes: 1024 });
+    expect(options).toEqual({ maxChargeUsd: 1.5, memoryMbytes: 1024 });
     expect(input).toEqual({
       startUrls: [{ url: expect.any(String) }],
-      maxItems: 100,
+      maxItems: 1000,
       saveOnlyUniqueItems: false,
       enrichCompanyData: false,
     });
@@ -98,7 +93,7 @@ describe('LinkedinJobBoardCheapCollector', () => {
   });
 
   it('marks every member truncated when the row limit is reached, and reports no totals', async () => {
-    const { provider } = actor(100);
+    const { provider } = actor(1000);
     const result = await new LinkedinJobBoardCheapCollector(provider).collect(
       segment(),
     );
@@ -107,24 +102,11 @@ describe('LinkedinJobBoardCheapCollector', () => {
   });
 
   it('does not truncate below the row limit', async () => {
-    const { provider } = actor(40);
+    const { provider } = actor(999);
     const result = await new LinkedinJobBoardCheapCollector(provider).collect(
       segment(),
     );
     expect(result.truncatedQueryIds).toEqual([]);
-  });
-
-  it('raises the rows and the charge cap with the segment maxItems', async () => {
-    const { run, provider } = actor(1000);
-    const result = await new LinkedinJobBoardCheapCollector(provider).collect(
-      segment([member('a')], { maxItems: 1000 }),
-    );
-    expect(run.mock.calls[0]![1].maxItems).toBe(1000);
-    expect(run.mock.calls[0]![2]).toEqual({
-      maxChargeUsd: 1.5,
-      memoryMbytes: 1024,
-    });
-    expect(result.truncatedQueryIds).toEqual(['a']);
   });
 
   it('refuses a place with no geoId before any Apify call', async () => {

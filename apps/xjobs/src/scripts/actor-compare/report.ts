@@ -8,8 +8,9 @@
  * a run started), and a pair counts only the (group, tick) cells both actors
  * ran. An actor ran a cell when every one of its builders in that group is in a
  * run of that tick that succeeded, was not stopped at its charge cap, and did
- * not come back full below the ceiling (such a run is searched again in
- * splits, which must cover the builder instead).
+ * not come back full below the ceiling (such a run, held before 2026-11-20 at
+ * 100 rows, is searched again in splits, which must cover the builder
+ * instead).
  *
  * Days are Morocco days. Pair and three-way tables place a job on the day of
  * its first sighting in the cells they count; the per-actor tables (cost,
@@ -84,9 +85,9 @@ export interface SegmentRunRow {
   /** As stored (Apify's final cost once re-read); 0 for a run never started, null when unknown. */
   costMicroUsd: number | null;
   queryIds: string[];
-  /** Members the run came back full for: searched again in splits, or lost at the ceiling. */
+  /** Members the run came back full for: searched again in halves, or lost at the row limit. */
   truncatedQueryIds: string[];
-  /** The run returned its channel's ceiling of rows (`maxRowsCeiling`): nothing splits further. */
+  /** The run returned its channel's one row limit (`maxRowsPerSearch`, 1,000 rows; 100-row runs before 2026-11-20 were held for splitting or rerun at 1,000). */
   atCeiling: boolean;
 }
 
@@ -362,8 +363,9 @@ function cells(
           const good = tried.filter(
             (r) => r.status === 'succeeded' && !r.capped,
           );
-          // A full run held for splitting covers a member only through its
-          // same-tick splits; a full run at the ceiling is the whole group.
+          // A full run held for splitting (100 rows, before 2026-11-20) covers a
+          // member only through its same-tick splits; a full run at the row
+          // limit is the whole group.
           const covering = good.filter(
             (r) => r.atCeiling || !r.truncatedQueryIds.includes(id),
           );
