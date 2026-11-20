@@ -34,6 +34,15 @@ describe('systemPrompt', () => {
     expect(text).not.toMatch(/fallback/i);
   });
 
+  it('states what counts as an arrangement and who limiting words bind', () => {
+    expect(text).toContain('"flexibility" on its own');
+    expect(text).toContain('commuting distance');
+    expect(text).toContain('"the position is based in Herndon"');
+    expect(text).toContain('"open to PL based candidates"');
+    expect(text).toContain('An authorization line is not a place');
+    expect(text).toContain('hybrid and remote options');
+  });
+
   it('gives must-have alternatives their own example, not the main one', () => {
     const must = text.slice(text.indexOf('`kind: "must"`'));
     expect(must).toContain('"PostgreSQL or MySQL"');

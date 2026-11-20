@@ -1,0 +1,161 @@
+{
+  "id": "01a1e517-afc1-75a2-81f8-abf5402fa3d0",
+  "input": {
+    "title": "Data Engineer – Generative AI",
+    "description": "¿Quiénes somos?\n\nSomos una compañía tecnológica especializada en Inteligencia Artificial, IA Generativa, Analytics, Gobierno del Dato, Cloud y arquitecturas Event Driven, pero sobre todo somos un equipo con conocimiento, criterio y muchas ganas de hacer las cosas bien.\n\nTrabajamos con talento altamente especializado, esté donde esté, y apostamos por una forma de crecer basada en la confianza, la autonomía y la participación. Nos mueve la excelencia tecnológica, la orientación a negocio y el sentido común, pero también el entusiasmo, la creatividad y la convicción de que la tecnología necesita alma, propósito y personas capaces de convertir la complejidad en soluciones reales.\n\nCreemos en una cultura horizontal, sin egos, en un entorno donde se valoran tanto las ideas como las personas.\n\n\n¿Qué buscamos?\n\nBuscamos Data Engineer con 3 a 5 años de experiencia con un perfil técnico para participar en la recta final de un proyecto de migración de un sistema legacy (AS400) a una arquitectura moderna en AWS. Tu foco principal estará en completar los procesos pendientes, refactorizar código (eliminando funciones obsoletas) y desarrollar mejoras evolutivas para el cliente.\n\nA nivel técnico:\n\n * Grado en Ingeniería Informática, Telecomunicaciones, Matemáticas o similar, o CFGS (DAM/DAW/ASIR) con experiencia equivalente.\n * Nivel avanzado de PySpark y AWS Glue. Sirve conocimiento avanzado en Azure.\n * Conocimientos de Git - familiarizado con componentes de desarrollo\n * Conocimiento avanzado en SQL y dbt sobre Athena/Trino.\n * Experiencia en AWS Step Functions, S3, IAM y Lambda. Sirve conocimiento equivalente en Azure\n * Conocimiento medio en el desarrollo con agentes de IA (Claude Code, Amazon Bedrock, MCP, Skills, Tools)\n * Nivel intermedio-alto de inglés.\n\n\nSerá un plus:\n\n * Formación valorable: Certificación AWS (Data Engineer – Associate o Solutions Architect – Associate) // Certificación dbt // Formación en IA Generativa aplicada al desarrollo.\n * Conocimientos de CI/CD en AWS\n * Conocimiento básico en IBM i / AS400: lectura de RPG, CL y DB2\n * Experiencia en integración de APIs REST y orquestación de cargas (Lambda, EventBridge)\n\n\n¿Qué ofrecemos?\n\nPertenecer a una empresa a la vanguardia tecnológica y centrada en las Personas, ponemos al trabajador en el centro de todo lo que hacemos. Creemos en una cultura horizontal, sin egos, en un entorno donde se valoran tanto las ideas como las personas.\n\n * Contrato indefinido | 32.000–36.000 € brutos/año según experiencia, con revisiones anuales\n * Horario flexible y facilidades para teletrabajar\n * Plan de formación especializado y participación en los beneficios de Mática\n * Seguro de salud + retribución flexible con Cobee\n * Wetaca gratuito en oficina dos días a la semana\n * Semana extra en Navidad y tres días adicionales en Semana Santa\n * Welcome Kit: portátil (Mac o Windows), móvil, auriculares bluetooth y más\n * Oficinas pet-friendly en el centro de Barcelona y Madrid\n\n\nSi te interesa, escríbenos por LinkedIn o envía tu CV a [email]\n\n\nDo you want to be Mática?\n\nBe Mática!"
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["hybrid"],
+        "places": [
+          {
+            "kind": "city",
+            "name": "Barcelona",
+            "countryCode": "ES"
+          },
+          {
+            "kind": "city",
+            "name": "Madrid",
+            "countryCode": "ES"
+          }
+        ],
+        "placeStrictness": "mention"
+      }
+    ],
+    "roleKind": "data_engineer",
+    "seniority": "mid",
+    "yearsRequired": {
+      "min": 3,
+      "max": 5
+    },
+    "contractMonths": null,
+    "requirements": [
+      {
+        "text": "PySpark",
+        "code": null,
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "AWS Glue",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Git",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "SQL",
+        "code": "sql",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "dbt",
+        "code": "dbt",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "AWS Step Functions",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "S3",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "IAM",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Lambda",
+        "code": "aws_lambda",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "CI/CD en AWS",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "EventBridge",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      }
+    ],
+    "groups": [],
+    "requiredLanguages": [
+      {
+        "lang": "en",
+        "level": "working"
+      }
+    ],
+    "sponsorship": "unstated",
+    "salary": {
+      "min": 32000,
+      "max": 36000,
+      "currency": "EUR",
+      "period": "year"
+    },
+    "junkFlags": []
+  },
+  "drafted": {
+    "arrangement": {
+      "value": "hybrid",
+      "reviewed": true
+    },
+    "contractType": {
+      "value": "full_time",
+      "reviewed": false
+    },
+    "isSoftwareEngineeringRole": {
+      "value": true,
+      "reviewed": false
+    },
+    "engagement": {
+      "value": "employee",
+      "reviewed": false
+    },
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
+}

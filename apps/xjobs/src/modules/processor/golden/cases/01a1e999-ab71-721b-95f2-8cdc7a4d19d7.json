@@ -1,0 +1,52 @@
+{
+  "id": "01a1e999-ab71-721b-95f2-8cdc7a4d19d7",
+  "input": {
+    "title": "Solutions Engineer",
+    "description": "For more than 30 years, SonicWall has delivered a partner-first unified cybersecurity portfolio that helps SMBs, MSPs, and IT teams consolidate network security, endpoint security, security service edge (SSE), and threat response across hybrid environments. By bringing connected technology, real-time threat intelligence, automation, and expert services together, SonicWall helps organizations simplify security operations, achieve better security outcomes, and lower total cost of ownership. Backed by a global ecosystem of more than 17,000 partners, SonicWall delivers enterprise-grade protection built for SMB and mid-market realities.\n\nFor more information, visit www.sonicwall.com or follow us on X, LinkedIn, Facebook, and Instagram.\n\nLocation: This role supports the South England region. Candidates should be located within the territory or be willing to travel extensively throughout South England to support customers, partners, and business objectives.\n\nWe are seeking a Solution Engineer for a role that typically offers 70% remote work within your designated regional country, supporting both sales and channel technical activities, with the potential for up to 30% travel.\n\nThis position is ideal for a self-starter who is passionate about technology, enjoys enabling teams, and excels at connecting with individuals to address their needs. The successful candidate will possess proven hands-on experience with cybersecurity products, along with outstanding communication and presentation skills. This opportunity is well-suited for individuals with a track record in Pre-Sales, Support, or Professional Services within a Vendor, Channel, Customer, or Distribution context, who are eager to engage in a balanced mix of channel and technical sales activities while fostering trusted relationships with partners.\n\nKey Responsibilities:\n\n * Proactive leader of technical discovery conversations to qualify and validate the customer requirements and use cases to build out a bill of materials that meets the customer needs and aligns to the desired outcomes\n * Conduct technical sales presentations, product, and solution demonstrations across the SonicWall portfolio to an audience typically between 1-100 persons, keeping partners and customers informed of our new solutions and industry trends\n * Talk to and demonstrate SonicWall's unique value proposition and know our key competitive offerings in this space\n * Builds out a minimum of 10 trusted relationships with channel partners, holding recurring meetings with their channel technical decision makers\n * Builds out and maintains a personal lab for the most common demo requests and personal development\n * Support remote partner product trials\n * Technical lead for proof of concepts that are either with a partner or direct with a customer\n * Participate in beta testing and feedback of products, working alongside the product management teams\n * Teaming with support where necessary to preserve relationships with partners and customers\n * Support key technical marketing initiatives, build out collateral, presenting on virtual or external events\n * Develop expertise to a PoC level between 3-6 x SonicWall product areas and be a subject matter expert and go-to person for region\n * Shares best practices with fellow peers\n * Provides support for onboarding new solutions engineers\n * Keeps regional sales informed of roadmap insights, product updates, and technical best practices\n * Adheres to the company values, guidelines, and solution engineering regional reporting tasks\n * Works with VARs, MSPs, and MSSPs on managed service sales, deployment, and support\n\nRequired Skills:\n\n * Demonstrates a balance of business and technical acumen, proactively seeks to take a technical sales lead without instruction\n * Develops skills and uses experience in business-focused discussions to envision and describe how a technical solution compliments existing customer and partner business practices\n * Proven ability using formal best practice methods to present a convincing presentation, solution selling, demonstrate whiteboarding skills, objection handling and excellent time management\n * Receives little instruction on day-to-day work and general instructions on new assignments.\n * Working in an effective way that maximizes the available time, optimize teaming discussions to deliver the required outcomes on time and to the required ask\n * Exhibits advanced wide-ranging experience, using in-depth professional knowledge, acumen, concepts, and company objectives to develop, resolve complex models and procedures\n * Exercises judgment in selecting methods, evaluating, adapting of complex techniques and evaluation criteria for obtaining results.\n * Work is reviewed upon completion and is consistent with departmental objectives.\n * Networks with key contacts including product management, support, marketing, and peers within the Solution engineering organization.\n * Adapts style and uses persuasion in delivering messages that relate to the wider firm business. Frequently advises others on complex matters\n * Must reside in the UK.\n\nEducation and Experience:\n\n * Typically requires a minimum of 8 years of related experience with a bachelor’s degree or 5 years’ experience with MBA.\n * Cybersecurity CISSP Certified\n * Microsoft Azure or AWS Associate desired\n * Retaining specialist knowledge across SonicWall products to the desired level\n * SNSA & SNSP SonicWall Certified*Training will be provided\n * Familiarity with governance and compliance issues and management/reporting solutions and requirements. Working knowledge of HIPAA, PCI, SOX, FERPA, CIPA, GDPR, etc.\n * In addition, the candidate must have experience with the following technologies: Full range of L2-L7 networking technologies and protocols, NAT, stateful firewall, IDS/IPS, web and content filtering, proxies, email security gateways, VPN and encryption (IPsec/SSL), PKI and key management, 802.11/WLAN, Syslog, NetFlow/IPFIX, Active Directory and LDAP, reading, interpreting and creating scripts, regular expressions and/or custom signatures, virtualization platforms including VMware, Hyper-V, AWS and Azure.\n\n#cybersecurity #solutions engineer\n\n\n\n\n\n\n\n\n\nSonicWall is an equal opportunity employer.\n\nWe are committed to creating a diverse environment and are an equal opportunity employer. All qualified applicants receive consideration for employment without regard to race, color, ethnicity, religion, sex, gender, gender identity and expression, sexual orientation, national origin, disability, age, marital status, veteran status, pregnancy, or any other basis prohibited by applicable law.\n\n\n\nAt SonicWall, we pride ourselves on recruiting a diverse mix of talented people and providing active security solutions in 100+ countries.\n\nApplicant Privacy Notice"
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["remote"],
+        "places": [
+          {
+            "kind": "country",
+            "code": "GB"
+          }
+        ],
+        "placeStrictness": "limit"
+      }
+    ],
+    "roleKind": "other",
+    "seniority": "senior",
+    "yearsRequired": {
+      "min": 8,
+      "max": null
+    },
+    "contractMonths": null,
+    "requirements": [],
+    "groups": [],
+    "requiredLanguages": [],
+    "sponsorship": "unstated",
+    "salary": null,
+    "junkFlags": []
+  },
+  "drafted": {
+    "arrangement": {
+      "value": "remote",
+      "reviewed": true
+    },
+    "contractType": {
+      "value": "unstated",
+      "reviewed": false
+    },
+    "isSoftwareEngineeringRole": {
+      "value": false,
+      "reviewed": false
+    },
+    "engagement": {
+      "value": "unstated",
+      "reviewed": false
+    }
+  }
+}
