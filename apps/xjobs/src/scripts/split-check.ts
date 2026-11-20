@@ -137,13 +137,16 @@ async function runPaid(
           .map(String),
       ),
     );
-    if (ids.length === 1) {
-      const reason = inconclusive(ids[0].size);
-      if (reason) {
-        throw new Error(
-          `Inconclusive: the merged search returned ${ids[0].size} rows (${reason}); stopped after $${costUsd.toFixed(3)}`,
-        );
-      }
+    const role = ids.length === 1 ? 'merged' : 'half';
+    const reason = inconclusive(
+      items.length,
+      finished.usageTotalUsd ?? 0,
+      role,
+    );
+    if (reason) {
+      throw new Error(
+        `Inconclusive: the ${role} search (${keyword}) returned ${items.length} rows (${reason}); stopped after $${costUsd.toFixed(3)}`,
+      );
     }
   }
   return { ids, costUsd };

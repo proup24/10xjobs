@@ -124,10 +124,19 @@ export function coverage(
   };
 }
 
-/** Why the merged run cannot judge halving: it hit the row limit, or found nothing. */
-export function inconclusive(mergedRows: number): 'full' | 'empty' | null {
-  if (mergedRows >= RUN_ROWS) return 'full';
-  if (mergedRows === 0) return 'empty';
+/**
+ * Why a run cannot be judged: it returned the row limit (counted on items, not
+ * distinct ids), it spent its cost cap (it may have stopped early and still
+ * ended SUCCEEDED), or the merged run found nothing. An empty half is fine.
+ */
+export function inconclusive(
+  itemCount: number,
+  runCostUsd: number,
+  role: 'merged' | 'half',
+): 'full' | 'capped' | 'empty' | null {
+  if (itemCount >= RUN_ROWS) return 'full';
+  if (runCostUsd >= RUN_CAP_USD) return 'capped';
+  if (role === 'merged' && itemCount === 0) return 'empty';
   return null;
 }
 

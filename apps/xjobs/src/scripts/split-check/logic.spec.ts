@@ -1,5 +1,6 @@
 import { linkedinKeyword } from 'src/modules/queries/channels/linkedin_keyword';
 import {
+  RUN_CAP_USD,
   checkPlan,
   coverage,
   halfKeywords,
@@ -103,9 +104,31 @@ describe('coverage', () => {
 
 describe('inconclusive', () => {
   it('flags a full or empty merged run', () => {
-    expect(inconclusive(150)).toBe('full');
-    expect(inconclusive(0)).toBe('empty');
-    expect(inconclusive(80)).toBeNull();
+    expect(inconclusive(150, 0.05, 'merged')).toBe('full');
+    expect(inconclusive(0, 0.05, 'merged')).toBe('empty');
+    expect(inconclusive(80, 0.05, 'merged')).toBeNull();
+  });
+
+  it('flags a half that returned the full row limit', () => {
+    expect(inconclusive(150, 0.05, 'half')).toBe('full');
+  });
+
+  it('accepts an empty half', () => {
+    expect(inconclusive(0, 0.05, 'half')).toBeNull();
+  });
+
+  it('flags a run that spent its cost cap, whatever it returned', () => {
+    expect(inconclusive(80, RUN_CAP_USD, 'merged')).toBe('capped');
+    expect(inconclusive(80, RUN_CAP_USD + 0.01, 'half')).toBe('capped');
+    expect(inconclusive(80, RUN_CAP_USD - 0.01, 'half')).toBeNull();
+  });
+
+  it('judges fullness on the item count, so a duplicate id still counts as full', () => {
+    const items = Array.from({ length: 150 }, (_, i) => ({
+      id: String(Math.min(i, 148)),
+    }));
+    expect(new Set(items.map((i) => i.id)).size).toBe(149);
+    expect(inconclusive(items.length, 0.05, 'merged')).toBe('full');
   });
 });
 
