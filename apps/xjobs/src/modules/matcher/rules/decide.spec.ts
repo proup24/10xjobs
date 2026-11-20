@@ -306,6 +306,43 @@ describe('decide', () => {
     });
   });
 
+  it("passes the facts' limitsBindPerson to the location check", () => {
+    const ukCtx: MatchContext = {
+      ...ctx,
+      places: {
+        countriesOfRegion: new Map([['UK', new Set(['GB'])]]),
+        countryOfCity: new Map(),
+        countries: new Set(['GB', 'MA']),
+      },
+    };
+    const p = exampleProfile();
+    p.locations.remote = [{ kind: 'region', code: 'UK' }];
+    p.eligibility = { ...p.eligibility, residenceCountry: 'MA' };
+    const location = (limitsBindPerson: boolean) =>
+      decide(
+        job(
+          passingDoc((x) => {
+            x.limitsBindPerson = limitsBindPerson;
+            x.openings = [
+              {
+                ...structuredClone(worldwide),
+                places: [{ kind: 'country', code: 'GB' }],
+                placeStrictness: 'label',
+              },
+            ];
+          }),
+        ),
+        p,
+        ukCtx,
+      ).checks.find((c) => c.rule === 'location');
+    expect(location(true)?.outcome).toBe('pass');
+    expect(location(false)).toMatchObject({
+      outcome: 'fail',
+      reason:
+        'job location (remote in GB, stated in the description) requires living there; you live in MA',
+    });
+  });
+
   describe('review', () => {
     const berlinOnsite = {
       ...structuredClone(worldwide),
