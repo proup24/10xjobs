@@ -319,6 +319,8 @@ it('states what counts as an arrangement and who limiting words bind', () => {
 
 ### PR 3 rollout
 
+**Amended 2026-11-20 (_user_): no reprocess.** Steps 3–4 are replaced by: after a day or two of new jobs, compare new-prompt extractions (`job_extractions.promptHash` of the deployed prompt, `createdAt >= 2026-11-20T14:50:00Z`) with old ones on Q2 and Q5, and post the numbers on #105.
+
 - [ ] **Step 1:** On dev, run Q1, Q2, Q5 (arrangement conflicts without arrangement words); record them.
 - [ ] **Step 2:** Push, `gh pr create` with the numbers and the eval summary. Stop for merge and deploy.
 - [ ] **Step 3:** After deploy, reprocess the affected jobs only. Q6 lists their ids: jobs with an arrangement conflict, jobs with a `label` or `limit` description place on a remote search, and the 50 leak jobs. Save the ids to a scratch file, then run `xargs -a ids.txt -n 50 sh -c 'XJOBS_ALLOW_REMOTE_DB=1 pnpm --filter @xjobs/xjobs db:reprocess -- $(printf -- "--job %s " "$@")' _`, in batches the daily processor budget allows.
@@ -328,18 +330,19 @@ it('states what counts as an arrangement and who limiting words bind', () => {
 
 ## PR 4: residence binds only on `limit` (branch `feat/residence-limit-only`)
 
-Start only after PR 3's reprocess finished.
+**Amended 2026-11-20 (_user_): no reprocess; PR 4 is gated by extraction date** (spec "PR 4"). Build it after PR 3 deploys; merge after PR 3 is measured on new jobs.
 
-### Task 6: `residenceApplies` limit only
+### Task 6: `residenceApplies` limit only, for extractions after the cut-over
 
 **Files:**
 
-- Modify: `apps/xjobs/src/modules/matcher/rules/residence.ts` (`residenceApplies`), `apps/xjobs/src/modules/matcher/config/matcher.config.ts` (`MATCHER_VERSION = 11`), `docs/superpowers/specs/2026-11-17-residence-location-design.md` (line "Treating `label` as strict is the user's call." gets "Reversed 2026-11-20: only `limit` binds, see 2026-11-20-non-remote-leak-design.md."), `docs/roadmap/phase-3-find-quality/README.md` (row 09 `Done (PRs …)`)
+- Modify: `apps/xjobs/src/modules/facts/repositories/facts.repository.ts` (`loadInputs` also returns the extraction's `createdAt`), `apps/xjobs/src/modules/facts/services/facts.service.ts` and `apps/xjobs/src/modules/facts/rules/combine.ts` (`combineFacts` takes `extractedAt`; the facts document gets `limitsBindPerson: boolean`, true when `extractedAt >= LIMITS_BIND_PERSON_SINCE = 2026-11-20T14:50:00Z`, a constant in `facts.config.ts`), the facts document schema/type, `apps/xjobs/src/modules/facts/config/facts.config.ts` (`FACTS_VERSION = 7`), `apps/xjobs/src/modules/matcher/rules/residence.ts` (`residenceApplies`) and whatever carries the flag from the facts to `checkLocation`, `apps/xjobs/src/modules/matcher/config/matcher.config.ts` (`MATCHER_VERSION = 11`), `docs/superpowers/specs/2026-11-17-residence-location-design.md` (line "Treating `label` as strict is the user's call." gets "Reversed 2026-11-20 for extractions after 2026-11-20 14:50 UTC: only `limit` binds, see 2026-11-20-non-remote-leak-design.md."), `docs/roadmap/phase-3-find-quality/README.md` (row 09 `Done (PRs …)`)
 - Test: `apps/xjobs/src/modules/matcher/rules/residence.spec.ts`, `apps/xjobs/src/modules/matcher/rules/location.spec.ts`
 
 - [ ] **Step 1: Write the failing tests.**
-  - `residence.spec.ts`: `applies to description label and limit` becomes `applies to description limit only`, expecting `true` for `limit` and `false` for `label`.
-  - `location.spec.ts › residence`: the `strict` helper defaults to `'limit'`, so the residence table keeps its expected values. `the Solvex case fails with the residence reason` becomes:
+  - `residence.spec.ts`: `applies to description label and limit` becomes `a label applies only to facts from before the cut-over`: with `limitsBindPerson: true`, `true` for `limit` and `false` for `label`; with `limitsBindPerson: false`, `true` for both (today's behaviour).
+  - `combine.spec.ts`: `limitsBindPerson` is `false` for `extractedAt` one second before `LIMITS_BIND_PERSON_SINCE` and `true` at it.
+  - `location.spec.ts › residence`: the `strict` helper defaults to `'limit'`, so the residence table keeps its expected values. The tests below run with `limitsBindPerson: true`; add one asserting that the same `label` case still fails on residence with `limitsBindPerson: false`. `the Solvex case fails with the residence reason` becomes:
 
 ```ts
 it('the Solvex case (a label) passes; the same place as a limit fails on residence', () => {
@@ -356,16 +359,16 @@ it('the Solvex case (a label) passes; the same place as a limit fails on residen
 
 - Rename `limit is strict too` to `a label is not checked against residence`, expecting `pass` for `strict([country('GB')], 'label')` with `resident('MA')`.
 - [ ] **Step 2:** Run `npx nx test xjobs -- residence location`. Expected: the changed tests FAIL.
-- [ ] **Step 3:** In `residenceApplies`, require `opening.placeStrictness === 'limit'`.
-- [ ] **Step 4:** Set `MATCHER_VERSION = 11`; edit the two docs.
+- [ ] **Step 3:** Stamp `limitsBindPerson` in the facts combine from the extraction's `createdAt`. In `residenceApplies`, a `label` place binds only when `limitsBindPerson` is false; a `limit` always binds.
+- [ ] **Step 4:** Set `FACTS_VERSION = 7` and `MATCHER_VERSION = 11`; edit the two docs.
 - [ ] **Step 5:** Run `npx nx test xjobs`. Expected: PASS.
-- [ ] **Step 6:** Commit `fix(matcher): residence binds only on limit places`.
+- [ ] **Step 6:** Commit `fix(matcher): residence binds only on limit places for new extractions`.
 
 ### PR 4 rollout
 
-- [ ] **Step 1:** On dev, run Q1, Q2, Q7 (jobs failing residence only on a `label`); record them.
-- [ ] **Step 2:** Push, `gh pr create`. Stop for merge and deploy.
-- [ ] **Step 3:** After deploy, `db:rematch -- --all`; rerun Q1, Q2, Q7 and `db:match-shares -- --days 7`; post the after numbers. Expected: Q7 near 0; the label-only jobs (Remote Europe, Remote (US)…) qualify; review share not higher.
+- [ ] **Step 1:** On dev, run Q1, Q2 and Q7 split by extraction before/after the cut-over; record them.
+- [ ] **Step 2:** Push, `gh pr create`. Stop for merge (after PR 3 is measured) and deploy.
+- [ ] **Step 3:** After deploy the sweep rebuilds facts (v7) and re-decides; no command, no LLM. Rerun Q1, Q2, Q7 (split) and `db:match-shares -- --days 7`; post the after numbers. Expected: new-prompt Q7 near 0; old-prompt Q7 unchanged; review share not higher.
 
 ---
 

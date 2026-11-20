@@ -123,15 +123,17 @@ Examples to add, each with its reading:
 
 Rollout: bump the prompt or extraction version the processor uses to mark jobs for reprocessing; run `processor:eval`; deploy; `db:reprocess` for the affected jobs (at least: jobs with an arrangement conflict, jobs with a `label` or `limit` description place, and the 50 leak jobs). New extractions are re-decided by the sweep as they land. Measure: how many of the ~34 place-only jobs become remote and why they're rejected (residence, authorization, or still qualified); review share.
 
+**Amended 2026-11-20 (_user_): no reprocess.** The new prompt applies only to jobs extracted from its deploy on (2026-11-20 14:50 UTC); old extractions keep their readings. PR 3 is measured on new-prompt extractions only (`job_extractions.promptHash`), against the old ones over the same days.
+
 ### PR 4: residence binds only on `limit`
 
-Opens once PR 3's reprocess has finished on dev.
+**Amended 2026-11-20 (_user_): gated by extraction, not by a reprocess.** With no reprocess, old extractions still store person-binding lines as `label` ("opportunity for PL based candidates"), so a plain limit-only check would let them leak. The facts combine stamps each facts document with whether its extraction was made after the PR 3 cut-over (`job_extractions."createdAt" >= 2026-11-20T14:50:00Z`). The limit-only rule below applies only to stamped facts; older facts keep `label` and `limit` binding. A date, not a list of prompt hashes, so later prompt edits keep the new reading. Merge only after PR 3 is measured on new jobs, so the two effects can be told apart.
 
 **Matcher** (`apps/xjobs/src/modules/matcher/rules/residence.ts`, `residenceApplies`): the residence check applies only to description places with `placeStrictness: 'limit'`. A `label` is the job's location and is checked only against the user's open-to places _(user)_. This reverses the residence spec's call that `label` is strict (2026-11-17, Solvex "100% Remote opportunity (All over UK)", which will qualify again for a Morocco resident who lists UK). Update that spec's line with a pointer here.
 
 On dev today, 773 jobs fail the residence check on a `label`; for 56 of them it is the only failing rule. Sample: "Location: Remote Europe", "Remote from Romania", "Fully remote (US)", "Job Location – Remote (USA & Canada)", "Location: UK". The owner accepts that some of these employers hire only residents without saying so _(user)_.
 
-Rollout: bump `MATCHER_VERSION` (10 → 11), deploy, `db:rematch -- --all`. Measure: how many of the 56 label-only residence failures qualify (after PR 3's re-reading), and review share.
+Rollout: bump `FACTS_VERSION` (6 → 7) and `MATCHER_VERSION` (10 → 11), deploy; the sweep rebuilds facts and re-decides (no LLM). Measure on new-prompt jobs: label-only residence failures before and after, and review share. Old jobs must not move.
 
 ### Measuring
 
