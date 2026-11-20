@@ -81,6 +81,18 @@ export class FakeQuerySearchRepository extends QuerySearchRepository {
     return mine.length;
   }
 
+  async detachChannel(profileId: string, channel: Channel): Promise<number> {
+    const onChannel = new Set(
+      this.rows.filter((row) => row.channel === channel).map((row) => row.id),
+    );
+    const mine = this.links.filter(
+      (link) => link.profileId === profileId && onChannel.has(link.queryId),
+    );
+    this.links = this.links.filter((link) => !mine.includes(link));
+    for (const link of mine) this.adjust(link.queryId, -1);
+    return mine.length;
+  }
+
   async list(
     userId: string,
     profileId: string,

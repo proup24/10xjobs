@@ -290,6 +290,52 @@ describe('QuerySearchService', () => {
     });
   });
 
+  describe('posts', () => {
+    it('generate attaches post recipes only with posts: true', async () => {
+      const { service, repository, profileId } = await setup();
+      const board = await service.generate(profileId, profile);
+      const posts = () =>
+        repository.rows.filter((row) => row.channel === Channel.LINKEDIN_POSTS);
+      expect(board.created).toBe(33);
+      expect(posts()).toHaveLength(0);
+      const withPosts = await service.generate(profileId, profile, {
+        posts: true,
+      });
+      expect(withPosts).toEqual({ created: 1, existing: 33 });
+      expect(posts()).toHaveLength(1);
+      expect(posts()[0].associatedProfiles).toBe(1);
+    });
+
+    it('attachPosts attaches only the post recipes', async () => {
+      const { service, repository, profileId } = await setup();
+      expect(await service.attachPosts(profileId, profile)).toEqual({
+        created: 1,
+        existing: 0,
+      });
+      expect(repository.rows.map((row) => row.channel)).toEqual([
+        Channel.LINKEDIN_POSTS,
+      ]);
+    });
+
+    it('detachChannel leaves other channels attached', async () => {
+      const { service, repository, profileId } = await setup();
+      await service.generate(profileId, profile, { posts: true });
+      expect(
+        await service.detachChannel(profileId, Channel.LINKEDIN_POSTS),
+      ).toBe(1);
+      const posts = repository.rows.find(
+        (row) => row.channel === Channel.LINKEDIN_POSTS,
+      );
+      expect(posts).toMatchObject({ associatedProfiles: 0, isActive: false });
+      expect(repository.links).toHaveLength(33);
+      expect(
+        repository.rows.filter((row) => row.channel !== Channel.LINKEDIN_POSTS),
+      ).toSatisfy((rows: { isActive: boolean }[]) =>
+        rows.every((row) => row.isActive),
+      );
+    });
+  });
+
   describe('list', () => {
     it('lists the builders of a profile and filters by channel', async () => {
       const { service, userId, profileId } = await setup();
