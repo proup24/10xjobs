@@ -83,7 +83,7 @@ describe('checkLocation', () => {
   it('is unknown without places', () => {
     expect(outcome([opening({})])).toBe('unknown');
   });
-  it('caps a match on only unstated arrangements to unknown', () => {
+  it('an opening with no arrangement passes on an office place that fits', () => {
     expect(
       outcome([
         opening({
@@ -91,7 +91,59 @@ describe('checkLocation', () => {
           places: [
             { kind: 'city', name: 'A', countryCode: 'MA', cityId: CITY_A },
           ],
-          placeStrictness: 'limit',
+          placeStrictness: 'label',
+          placesSource: 'linkedin',
+        }),
+      ]),
+    ).toBe('pass');
+  });
+  it('an opening with no arrangement fails surely outside the office places, with its cause', () => {
+    const c = checkLocation(
+      [
+        opening({
+          arrangements: ['unstated'],
+          places: [berlin],
+          placeStrictness: 'label',
+          placesSource: 'linkedin',
+          confidence: 'unsure',
+        }),
+      ],
+      profile,
+      idx,
+    );
+    expect(c).toMatchObject({ outcome: 'fail', unsure: false });
+    expect(c.reason).toBe(
+      'no source states the arrangement, so it is checked as office-based: job location (unstated in Berlin) does not fit your wanted arrangements (remote, hybrid, onsite)',
+    );
+  });
+  it('an opening with no arrangement and no place is unknown with office places, fail without', () => {
+    const remoteOnly = exampleProfile();
+    remoteOnly.locations.hybrid = [];
+    remoteOnly.locations.onsite = [];
+    const bare = opening({ arrangements: ['unstated'] });
+    expect(outcome([bare])).toBe('unknown');
+    expect(outcome([bare], remoteOnly)).toBe('fail');
+  });
+  it('stated plus unstated keeps every arrangement', () => {
+    expect(
+      outcome([
+        opening({
+          arrangements: ['remote', 'unstated'],
+          places: [berlin],
+          placeStrictness: 'label',
+        }),
+      ]),
+    ).toBe('pass');
+  });
+  it('an opening with no arrangement and an unplaceable city is unknown', () => {
+    expect(
+      outcome([
+        opening({
+          arrangements: ['unstated'],
+          places: [
+            { kind: 'city', name: 'Nowhere', countryCode: null, cityId: null },
+          ],
+          placeStrictness: 'label',
         }),
       ]),
     ).toBe('unknown');
@@ -368,11 +420,11 @@ describe('residence', () => {
         unsure: false,
       });
     });
-    it('are unknown when an on-site place fits', () => {
+    it('pass when an on-site place fits', () => {
       const p = resident('MA', [], (x) => {
         x.locations.onsite = [country('GB')];
       });
-      expect(check([unstated], p).outcome).toBe('unknown');
+      expect(check([unstated], p).outcome).toBe('pass');
     });
   });
   it('limit is strict too', () => {

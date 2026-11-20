@@ -110,6 +110,7 @@ function checkOpening(
   profile: MatchProfile,
   idx: PlaceIndex,
   homes: string[],
+  unstatedAs: 'office' | 'any' = 'office',
 ): {
   outcome: CheckOutcome;
   deciding: LocationArrangement | null;
@@ -119,21 +120,27 @@ function checkOpening(
 } {
   // The most favourable arrangement: the opening checked as if it stated none. Not a
   // sure failure means the ruled-out arrangement might be what fails. Nothing is ruled
-  // out of an unstated opening, so this does not recurse further.
+  // out of an unstated opening checked as 'any', so this does not recurse further.
   const fitsUnstated = () => {
     const r = checkOpening(
       { ...opening, arrangements: ['unstated'] },
       profile,
       idx,
       homes,
+      'any',
     );
     return r.outcome !== 'fail' || r.unsure;
   };
   const stated = opening.arrangements.filter(isArrangement);
   const onlyUnstated = !opening.arrangements.some((a) => a !== 'unstated');
-  const expanded = opening.arrangements.includes('unstated')
-    ? [...new Set([...stated, ...ALL_ARRANGEMENTS])]
-    : stated;
+  // An opening no source gives an arrangement is checked as office-based, and its
+  // failure is sure: nothing says it could be remote.
+  const asOffice = onlyUnstated && unstatedAs === 'office';
+  const expanded: LocationArrangement[] = asOffice
+    ? ['onsite', 'hybrid']
+    : opening.arrangements.includes('unstated')
+      ? [...new Set([...stated, ...ALL_ARRANGEMENTS])]
+      : stated;
   const wanted = (a: LocationArrangement) => profile.locations[a].length > 0;
   const kept = expanded.filter(wanted);
   const ruledOut = ALL_ARRANGEMENTS.some(
@@ -147,7 +154,8 @@ function checkOpening(
       outcome: 'fail',
       deciding: null,
       kept,
-      unsure: openingUnsure(opening, 'fail', ruledOut, [], fitsUnstated),
+      unsure:
+        !asOffice && openingUnsure(opening, 'fail', ruledOut, [], fitsUnstated),
       residence: null,
     };
   }
@@ -156,19 +164,22 @@ function checkOpening(
     ...checkArrangement(opening, a, profile, idx, residence),
   }));
   const best = bestOutcome(results.map((r) => r.outcome));
-  const outcome = onlyUnstated && best === 'pass' ? 'unknown' : best;
+  const outcome =
+    onlyUnstated && !asOffice && best === 'pass' ? 'unknown' : best;
   const deciding = results.find((r) => r.outcome === best);
   return {
     outcome,
     deciding: deciding?.arrangement ?? null,
     kept,
-    unsure: openingUnsure(
-      opening,
-      outcome,
-      ruledOut,
-      results.map((r) => r.failedOn),
-      fitsUnstated,
-    ),
+    unsure:
+      !asOffice &&
+      openingUnsure(
+        opening,
+        outcome,
+        ruledOut,
+        results.map((r) => r.failedOn),
+        fitsUnstated,
+      ),
     residence:
       residence && kept.some((a) => a === 'remote')
         ? {
@@ -237,10 +248,13 @@ export function checkLocation(
       : outcome === 'unknown'
         ? 'may fit'
         : 'does not fit';
+  const noArrangement =
+    openings.length > 0 &&
+    openings.every((o) => o.arrangements.every((a) => a === 'unstated'));
   const reason =
     outcome === 'fail' && residenceFailed.length > 0
       ? `job location (${textOf(residenceFailed)}, stated in the description) requires living there; you live in ${homes.join(', ')}`
-      : `job location (${jobText || 'not stated'}) ${verb} your wanted arrangements (${profileText || 'none'})`;
+      : `${outcome === 'fail' && noArrangement ? 'no source states the arrangement, so it is checked as office-based: ' : ''}job location (${jobText || 'not stated'}) ${verb} your wanted arrangements (${profileText || 'none'})`;
   return {
     rule: 'location',
     outcome,
