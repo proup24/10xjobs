@@ -27,6 +27,7 @@ import {
   halfKeywords,
   inconclusive,
   pickGroup,
+  runFailure,
   type GroupCandidate,
 } from './split-check/logic';
 
@@ -68,11 +69,12 @@ async function loadGroups(logger: Logger): Promise<GroupCandidate[]> {
       params: unknown;
     }[];
     const runs = (await db.query(
-      raw.sql`SELECT "segmentKey" AS key, COALESCE(sum(fetched), 0)::int AS rows
-        FROM search_segment_runs
-        WHERE channel = 'LINKEDIN_JOB_BOARD'
-          AND "startedAt" >= now() - interval '24 hours'
-        GROUP BY "segmentKey"`
+      raw.sql`SELECT r."segmentKey" AS key, COALESCE(sum(r.fetched), 0)::int AS rows
+        FROM search_segment_runs r
+        JOIN collection_batches b ON b."segmentRunId" = r.id AND b.actor = ${ACTOR}
+        WHERE r.channel = 'LINKEDIN_JOB_BOARD'
+          AND r."startedAt" >= now() - interval '24 hours'
+        GROUP BY r."segmentKey"`
         .returnsRow({ key: text, rows: int })
         .build(),
     )) as { key: string; rows: number }[];
@@ -112,21 +114,21 @@ async function runPaid(
   const ids: Set<string>[] = [];
   let costUsd = 0;
   for (const keyword of keywords) {
-    const started = await client
-      .actor(ACTOR)
-      .start(
-        {
-          ...toHarvestJobSearchInput(keyword, params, RUN_ROWS),
-          postedLimit: '24h',
-        },
-        { maxTotalChargeUsd: RUN_CAP_USD, memory: MEMORY_MBYTES },
-      );
+    const started = await client.actor(ACTOR).start(
+      {
+        ...toHarvestJobSearchInput(keyword, params, RUN_ROWS),
+        postedLimit: '24h',
+      },
+      { maxTotalChargeUsd: RUN_CAP_USD, memory: MEMORY_MBYTES },
+    );
     const finished = await client
       .run(started.id)
       .waitForFinish({ waitSecs: 900 });
+    costUsd += finished.usageTotalUsd ?? RUN_CAP_USD;
+    const failure = runFailure(finished.id, finished.status, costUsd);
+    if (failure) throw new Error(failure);
     const items = (await client.dataset(finished.defaultDatasetId).listItems())
       .items as Record<string, unknown>[];
-    costUsd += finished.usageTotalUsd ?? RUN_CAP_USD;
     ids.push(
       new Set(
         items

@@ -5,6 +5,7 @@ import {
   halfKeywords,
   inconclusive,
   pickGroup,
+  runFailure,
   type GroupCandidate,
 } from './logic';
 
@@ -105,5 +106,19 @@ describe('inconclusive', () => {
     expect(inconclusive(150)).toBe('full');
     expect(inconclusive(0)).toBe('empty');
     expect(inconclusive(80)).toBeNull();
+  });
+});
+
+describe('runFailure', () => {
+  it('accepts only a succeeded run', () => {
+    expect(runFailure('r1', 'SUCCEEDED', 0.1)).toBeNull();
+  });
+
+  it('names the run, its status and the spend so far', () => {
+    const message = runFailure('r1', 'TIMED-OUT', 0.123);
+    expect(message).toContain('r1');
+    expect(message).toContain('TIMED-OUT');
+    expect(message).toContain('$0.123');
+    expect(runFailure('r2', 'RUNNING', 0)).toContain('RUNNING');
   });
 });

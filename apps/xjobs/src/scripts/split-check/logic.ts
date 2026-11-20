@@ -130,3 +130,13 @@ export function inconclusive(mergedRows: number): 'full' | 'empty' | null {
   if (mergedRows === 0) return 'empty';
   return null;
 }
+
+/** An error message for a run that did not succeed (a partial dataset must not be judged), else null. */
+export function runFailure(
+  runId: string,
+  status: string,
+  costUsd: number,
+): string | null {
+  if (status === 'SUCCEEDED') return null;
+  return `Apify run ${runId} ended ${status}, not SUCCEEDED; spend so far $${costUsd.toFixed(3)}`;
+}
