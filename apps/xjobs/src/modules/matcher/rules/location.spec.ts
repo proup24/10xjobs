@@ -57,11 +57,28 @@ describe('checkLocation', () => {
       ]),
     ).toBe('pass');
   });
-  it('fails an unwanted city when limited, unknown when merely mentioned', () => {
-    const o = (placeStrictness: Opening['placeStrictness']) =>
-      opening({ arrangements: ['onsite'], places: [berlin], placeStrictness });
-    expect(outcome([o('limit')])).toBe('fail');
-    expect(outcome([o('mention')])).toBe('unknown');
+  it('a mentioned place binds hybrid and onsite, not remote', () => {
+    const o = (arrangements: Opening['arrangements']) =>
+      opening({ arrangements, places: [berlin], placeStrictness: 'mention' });
+    const p = exampleProfile();
+    p.locations.remote = [{ kind: 'country', code: 'MA' }];
+    expect(outcome([o(['onsite'])], p)).toBe('fail');
+    expect(outcome([o(['hybrid'])], p)).toBe('fail');
+    expect(outcome([o(['remote'])], p)).toBe('unknown');
+  });
+  it('a mentioned office that fits passes', () => {
+    expect(
+      outcome([
+        opening({
+          arrangements: ['hybrid'],
+          places: [
+            berlin,
+            { kind: 'city', name: 'A', countryCode: 'MA', cityId: CITY_A },
+          ],
+          placeStrictness: 'mention',
+        }),
+      ]),
+    ).toBe('pass');
   });
   it('is unknown without places', () => {
     expect(outcome([opening({})])).toBe('unknown');
@@ -126,6 +143,18 @@ describe('checkLocation', () => {
         unsure: true,
         unsureField: 'openings',
       });
+    });
+    it('a mentioned hybrid place that fails is sure, even on an unsure opening', () => {
+      expect(
+        check([
+          opening({
+            arrangements: ['hybrid'],
+            places: [berlin],
+            placeStrictness: 'mention',
+            confidence: 'unsure',
+          }),
+        ]),
+      ).toMatchObject({ outcome: 'fail', unsure: false, unsureField: null });
     });
     it('a sure opening that does not fit is sure', () => {
       expect(check([limited({})])).toMatchObject({

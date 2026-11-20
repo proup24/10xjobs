@@ -19,8 +19,11 @@ function isArrangement(value: string): value is LocationArrangement {
   return (ALL_ARRANGEMENTS as readonly string[]).includes(value);
 }
 
-/** What made an arrangement fail: the opening's places, where the user lives, or its time zones. */
-type FailedOn = 'places' | 'residence' | 'timezones' | null;
+/**
+ * What made an arrangement fail: the opening's places, a place it merely mentions (binding
+ * a hybrid or onsite opening), where the user lives, or its time zones.
+ */
+type FailedOn = 'places' | 'mention' | 'residence' | 'timezones' | null;
 
 /** Whether the user lives inside the opening's strict places, when that is checked. */
 type Residence = { homes: string[]; fits: Overlap } | null;
@@ -36,6 +39,7 @@ function checkArrangement(
   residence: Residence,
 ): { outcome: CheckOutcome; failedOn: FailedOn } {
   let outcome: CheckOutcome;
+  let mentionFailed = false;
   if (opening.places.length === 0) {
     outcome = 'unknown';
   } else {
@@ -45,7 +49,12 @@ function checkArrangement(
         found.add(overlaps(jobPlace, profilePlace, idx));
     if (found.has('yes')) outcome = 'pass';
     else if (found.has('maybe')) outcome = 'unknown';
-    else outcome = opening.placeStrictness === 'mention' ? 'unknown' : 'fail';
+    else if (opening.placeStrictness === 'mention' && arrangement === 'remote')
+      outcome = 'unknown';
+    else {
+      outcome = 'fail';
+      mentionFailed = opening.placeStrictness === 'mention';
+    }
   }
   // A remote job limited to places stated in the description wants someone living there.
   let failedOnResidence = false;
@@ -64,7 +73,8 @@ function checkArrangement(
     if (!fits) return { outcome: 'fail', failedOn: 'timezones' };
   }
   if (failedOnResidence) return { outcome, failedOn: 'residence' };
-  return { outcome, failedOn: outcome === 'fail' ? 'places' : null };
+  if (outcome !== 'fail') return { outcome, failedOn: null };
+  return { outcome, failedOn: mentionFailed ? 'mention' : 'places' };
 }
 
 /**
@@ -72,7 +82,8 @@ function checkArrangement(
  * description-sourced parts (time zones always are); a part from LinkedIn is sure.
  * A failure rests on the arrangement when the profile wants one the opening rules out
  * and the opening might fit with its arrangement unstated (`fitsUnstated`), and on each
- * part that failed a kept arrangement.
+ * part that failed a kept arrangement. A mentioned place that failed a hybrid or onsite
+ * opening is sure, so it never counts as unsure and settles the arrangement too.
  */
 function openingUnsure(
   opening: Opening,
@@ -90,7 +101,7 @@ function openingUnsure(
       (f) =>
         f === 'timezones' || f === 'residence' || (f === 'places' && places),
     ) ||
-    (ruledOut && arrangement && fitsUnstated())
+    (ruledOut && arrangement && !failedOn.includes('mention') && fitsUnstated())
   );
 }
 
