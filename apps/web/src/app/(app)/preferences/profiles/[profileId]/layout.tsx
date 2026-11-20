@@ -1,6 +1,6 @@
 import { DeleteProfileButton } from '@/components/preferences/delete-profile-button';
-import { PostSearchSwitch } from '@/components/preferences/post-search-switch';
-import { engineClient } from '@/lib/engine/server';
+import { Suspense } from 'react';
+import { PostSearchSection } from '@/components/preferences/post-search-section';
 import { requireOwnProfile } from '../../guard';
 import { preferenceProfiles } from '../../data';
 
@@ -22,14 +22,6 @@ export default async function ProfileLayout({
       : mine?.hasResume && !items.some((i) => i.id !== profileId && i.hasResume)
         ? 'only-resume'
         : null;
-  let postSearch: Awaited<
-    ReturnType<Awaited<ReturnType<typeof engineClient>>['postSearchStatus']>
-  > = { kind: 'unavailable' };
-  try {
-    postSearch = await (await engineClient()).postSearchStatus(profileId);
-  } catch {
-    // The switch is optional: the page renders without it.
-  }
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -42,9 +34,9 @@ export default async function ProfileLayout({
           blockedReason={blockedReason}
         />
       </div>
-      {postSearch.kind === 'ok' && postSearch.data.allowed && (
-        <PostSearchSwitch profileId={profileId} initial={postSearch.data} />
-      )}
+      <Suspense fallback={null}>
+        <PostSearchSection profileId={profileId} />
+      </Suspense>
       {children}
     </div>
   );

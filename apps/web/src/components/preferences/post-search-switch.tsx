@@ -5,7 +5,12 @@ import { toast } from 'sonner';
 import type { PostSearchView } from '@xjobs/engine-client';
 import { setPostSearchAction } from '@/app/(app)/preferences/actions';
 import { notifySaveFailed } from '@/components/setup/step-frame';
-import { Label } from '@/components/ui/label';
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldLabel,
+} from '@/components/ui/field';
 import { Switch } from '@/components/ui/switch';
 
 type Props = { profileId: string; initial: PostSearchView };
@@ -37,21 +42,23 @@ export function PostSearchSwitch({ profileId, initial }: Props) {
   }
 
   return (
-    <div className="flex items-start gap-3">
+    <Field orientation="horizontal">
       <Switch id={id} checked={enabled} onCheckedChange={change} />
-      <div className="flex min-w-0 flex-col gap-1">
-        <Label htmlFor={id}>Search LinkedIn posts</Label>
-        <p className="text-sm text-muted-foreground">
-          Looks every hour for hiring posts that match this profile. English
-          posts are searched for remote work only.
-        </p>
-        {initial.searches === 0 && (
-          <p className="text-sm text-muted-foreground">
-            No post searches for this profile: English posts are searched for
-            remote work only, and it has no remote places.
-          </p>
-        )}
-      </div>
-    </div>
+      <FieldContent>
+        <FieldLabel htmlFor={id}>Search LinkedIn posts</FieldLabel>
+        <FieldDescription>
+          <span>
+            Looks every hour for hiring posts that match this profile. English
+            posts are searched for remote work only.
+          </span>
+          {initial.searches === 0 && (
+            <span className="mt-1 block">
+              No post searches for this profile: English posts are searched for
+              remote work only, and it has no remote places.
+            </span>
+          )}
+        </FieldDescription>
+      </FieldContent>
+    </Field>
   );
 }
