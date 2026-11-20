@@ -72,9 +72,10 @@ function requireStorage(
 }
 
 /**
- * Daily spend caps, in US dollars, on LinkedIn job board collection (Morocco
- * day): harvestapi's, and the cheap_scraper and bebity trials' own. And the trial
- * channels that collect (comma-separated channel values; none by default).
+ * Daily spend caps, in US dollars, on LinkedIn collection (Morocco day):
+ * harvestapi's job board, the cheap_scraper and bebity trials' own, and posts'.
+ * And the trial channels that collect (comma-separated channel values; none by
+ * default).
  */
 const collectionBudgetShape = {
   COLLECTION_DAILY_BUDGET_USD: z.coerce.number().positive().finite().default(3),
@@ -88,6 +89,12 @@ const collectionBudgetShape = {
     .positive()
     .finite()
     .default(1),
+  /** LinkedIn posts' own cap; each posts run may charge at most what is left of it. */
+  COLLECTION_DAILY_BUDGET_USD_LINKEDIN_POSTS: z.coerce
+    .number()
+    .positive()
+    .finite()
+    .default(1.5),
   COLLECTION_TRIAL_CHANNELS: z
     .string()
     .default('')

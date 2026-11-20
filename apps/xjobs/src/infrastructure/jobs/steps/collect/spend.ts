@@ -69,6 +69,14 @@ export class DailyBudget {
     return this.spentMicroUsd >= this.limitUsd * 1_000_000;
   }
 
+  /** Dollars still to spend today; never below 0. */
+  get leftUsd(): number {
+    return Math.max(
+      0,
+      (this.limitUsd * 1_000_000 - this.spentMicroUsd) / 1_000_000,
+    );
+  }
+
   get spentUsd(): number {
     return Math.round(this.spentMicroUsd) / 1_000_000;
   }
