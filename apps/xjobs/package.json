@@ -14,6 +14,7 @@
     "db:match-shares": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/match-shares.ts",
     "db:actor-compare": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/actor-compare.ts",
     "db:place-coverage": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/place-coverage.ts",
+    "db:split-check": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/split-check.ts",
     "db:vocab": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/vocab.ts",
     "db:spellings": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/spellings.ts",
     "processor:golden-import": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/processor-golden-import.ts",
