@@ -1,5 +1,18 @@
 # 08: Seniority to LinkedIn level, and paid repeats
 
+## Decided
+
+Spec: [seniority levels and paid repeats](../../superpowers/specs/2026-11-20-seniority-levels-and-paid-repeats-design.md), 2026-11-20.
+
+- **Map:** junior searches entry; mid searches associate and mid-senior; senior and staff search mid-senior; lead and principal search mid-senior and director. This is the data map, not the user's first correction: the data agreed on junior and disagreed on staff _(user: "go with the data map")_.
+- **Staff and mid-senior:** staff keeps mid-senior only, since 67% of staff jobs are tagged mid-senior and 1% director.
+- **How much the search narrows:** only the internship search stops. Preferences stay precise in the matcher; only the search mapping changes. LinkedIn barely honours `f_E` outside mid-senior (internship searches returned 2% internship jobs), and nothing is built to measure it further.
+- **Ceiling:** every LinkedIn job-board run starts at 1,000 rows. Halving stays, but only for a full group with more than one member. The `totalElements` "full" rule goes.
+- **MENA:** a profile that picks MENA searches Middle East and Africa. Other places stay, and no "skip a country" rule is added.
+- **Place checks:** `db:place-coverage` reports what each place finds alone. `db:split-check` is a paid one-off run by the maintainer that tests halving at a 95% coverage bar; under 95% reopens removing the split.
+- **Repeats across ticks:** deferred. harvestapi has no skip-known-ids input and no repost filter, and a shorter window would lose new jobs.
+- **Recipe:** version 12 to 13; run `db:regenerate` once after deploy.
+
 Found 2026-11-18 on `10xjobs-dev`. The user says the map is wrong. It gets its own brainstorm and spec.
 
 ## Problem

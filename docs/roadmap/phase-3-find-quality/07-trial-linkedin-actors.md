@@ -198,3 +198,4 @@ The user picked **A**.
   - `curious_coder/linkedin-jobs-scraper` and harvestapi take searches only.
   - Revisit if an actor with an apply link turns up.
 - **Reposts.** The user wants only fresh jobs, not reposts. Neither harvestapi nor cheap_scraper documents a repost filter or field (checked 2026-11-18). If LinkedIn has a URL parameter for it, cheap_scraper would pass it through; test that with one run.
+  - Matching quality: a repost of a job we have never seen arrives as a new job. Slice 08 found about 560 reposted rows in 3 days (the posted time moved forward between two runs of the same search); a repost of a known job is still counted as seen. Decide how to tell a repost from a fresh job, or whether to drop it.
