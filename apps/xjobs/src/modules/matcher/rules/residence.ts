@@ -23,15 +23,20 @@ export function homePlaces(eligibility: MatchEligibility): string[] {
   return homes;
 }
 
-/** Whether the residence check is relevant to an opening; the caller checks for `remote`. */
+/**
+ * Whether the residence check is relevant to an opening; the caller checks for `remote`.
+ * A `limit` binds the person; a `label` (the job's location) binds only on facts from
+ * before `limitsBindPerson`, whose extractions also read person-binding lines as `label`.
+ */
 export function residenceApplies(
   opening: FactOpening,
   homes: string[],
+  limitsBindPerson: boolean,
 ): boolean {
   return (
     opening.placesSource === 'description' &&
-    (opening.placeStrictness === 'label' ||
-      opening.placeStrictness === 'limit') &&
+    (opening.placeStrictness === 'limit' ||
+      (opening.placeStrictness === 'label' && !limitsBindPerson)) &&
     opening.places.length > 0 &&
     homes.length > 0
   );

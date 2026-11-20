@@ -4,7 +4,10 @@ import type {
   Opening,
   Place,
 } from '../../processor/schema/extraction';
-import { FACTS_VERSION } from '../config/facts.config';
+import {
+  FACTS_VERSION,
+  LIMITS_BIND_PERSON_SINCE,
+} from '../config/facts.config';
 import {
   EXPERIENCE_LEVEL_SENIORITY,
   LINKEDIN_CONTRACT_TYPES,
@@ -376,6 +379,7 @@ function codeConflict(
  * the listing fills only arrangement, place and salary, and sets `closed`.
  * Engagement and contract months are carried for display only. The posting's languages
  * are detected from `descriptionText` (null or short text is not confident).
+ * `extractedAt` (the extraction's `createdAt`) sets `limitsBindPerson`.
  * Every disagreement is returned as a conflict.
  */
 export function combineFacts(args: {
@@ -383,9 +387,11 @@ export function combineFacts(args: {
   listing: ListingFacts;
   vocab: PlaceVocabulary;
   now: Date;
+  extractedAt: Date;
   descriptionText: string | null;
 }): { facts: JobFactsDocument; conflicts: FactConflict[] } {
-  const { extraction, listing, vocab, now, descriptionText } = args;
+  const { extraction, listing, vocab, now, extractedAt, descriptionText } =
+    args;
   const described = extraction.openings.map((o) =>
     descriptionOpening(o, vocab),
   );
@@ -420,6 +426,8 @@ export function combineFacts(args: {
     ),
     salary: salary.fact,
     closed: listing.expiresAt !== null && listing.expiresAt <= now,
+    limitsBindPerson:
+      extractedAt.getTime() >= LIMITS_BIND_PERSON_SINCE.getTime(),
     postingLanguages: detectPostingLanguages(descriptionText ?? ''),
   };
 

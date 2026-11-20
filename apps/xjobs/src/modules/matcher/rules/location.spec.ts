@@ -31,7 +31,7 @@ const berlin = {
   cityId: 'berlin-id',
 };
 const outcome = (openings: Opening[], p = profile) =>
-  checkLocation(openings, p, idx).outcome;
+  checkLocation(openings, p, idx, true).outcome;
 
 describe('checkLocation', () => {
   it('passes remote anywhere because the profile is worldwide', () => {
@@ -110,6 +110,7 @@ describe('checkLocation', () => {
       ],
       profile,
       idx,
+      true,
     );
     expect(c).toMatchObject({ outcome: 'fail', unsure: false });
     expect(c.reason).toBe(
@@ -130,6 +131,7 @@ describe('checkLocation', () => {
         ],
         noHybrid,
         idx,
+        true,
       ).reason,
     ).toBe(
       'no source states the arrangement, so it is checked as office-based: job location (unstated in Berlin) does not fit your wanted arrangements (onsite)',
@@ -192,7 +194,7 @@ describe('checkLocation', () => {
   it('fails when the profile does not want the arrangement', () => {
     const p = exampleProfile();
     p.locations.remote = [];
-    const check = checkLocation([opening({})], p, idx);
+    const check = checkLocation([opening({})], p, idx, true);
     expect(check.outcome).toBe('fail');
     expect(check.reason).toContain('remote');
   });
@@ -206,7 +208,7 @@ describe('checkLocation', () => {
         ...edit,
       });
     const check = (openings: Opening[], p = profile) =>
-      checkLocation(openings, p, idx);
+      checkLocation(openings, p, idx, true);
 
     it('an unsure description place that does not fit is unsure', () => {
       expect(check([limited({ confidence: 'unsure' })])).toMatchObject({
@@ -350,7 +352,7 @@ describe('residence', () => {
   };
   const strict = (
     places: Opening['places'],
-    placeStrictness: Opening['placeStrictness'] = 'label',
+    placeStrictness: Opening['placeStrictness'] = 'limit',
   ) => opening({ places, placeStrictness });
   const resident = (
     residenceCountry: string | null,
@@ -362,8 +364,11 @@ describe('residence', () => {
     edit?.(p);
     return p;
   };
-  const check = (openings: Opening[], p: ReturnType<typeof exampleProfile>) =>
-    checkLocation(openings, p, ridx);
+  const check = (
+    openings: Opening[],
+    p: ReturnType<typeof exampleProfile>,
+    limitsBindPerson = true,
+  ) => checkLocation(openings, p, ridx, limitsBindPerson);
   const outcomeOf = (o: Opening, p: ReturnType<typeof exampleProfile>) =>
     check([o], p).outcome;
 
@@ -391,7 +396,18 @@ describe('residence', () => {
     },
   );
 
-  it('the Solvex case fails with the residence reason', () => {
+  it('the Solvex case (a label) passes; the same place as a limit fails on residence', () => {
+    const p = resident('MA', [], (x) => {
+      x.locations.remote = [region('UK')];
+    });
+    expect(check([strict([country('GB')], 'label')], p).outcome).toBe('pass');
+    expect(check([strict([country('GB')], 'limit')], p)).toMatchObject({
+      outcome: 'fail',
+      reason:
+        'job location (remote in GB, stated in the description) requires living there; you live in MA',
+    });
+  });
+  it('a limit fails with the residence reason and detail', () => {
     const p = resident('MA', [], (x) => {
       x.locations.remote = [region('UK')];
     });
@@ -459,10 +475,18 @@ describe('residence', () => {
       expect(check([unstated], p).outcome).toBe('pass');
     });
   });
-  it('limit is strict too', () => {
-    expect(outcomeOf(strict([country('GB')], 'limit'), resident('MA'))).toBe(
-      'fail',
+  it('a label is not checked against residence', () => {
+    expect(outcomeOf(strict([country('GB')], 'label'), resident('MA'))).toBe(
+      'pass',
     );
+  });
+  it('a label still binds residence on facts from before the cut-over', () => {
+    const c = check([strict([country('GB')], 'label')], resident('MA'), false);
+    expect(c).toMatchObject({
+      outcome: 'fail',
+      reason:
+        'job location (remote in GB, stated in the description) requires living there; you live in MA',
+    });
   });
   it("no residence keeps today's outcome", () => {
     const c = check([strict([country('GB')])], resident(null));

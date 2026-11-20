@@ -84,6 +84,11 @@ export const jobFactsDocumentSchema = z
     openings: z.array(factOpeningSchema).min(1),
     salary: sourcedFactSchema(factSalarySchema),
     closed: z.boolean(),
+    /**
+     * Whether the extraction was made after `LIMITS_BIND_PERSON_SINCE`: only its `limit`
+     * places bind where the person lives. False on facts stored before it existed.
+     */
+    limitsBindPerson: z.boolean().default(false),
     /** Detected from the description text by code; never from a model. */
     postingLanguages: z.strictObject({
       /** ISO 639-1. */

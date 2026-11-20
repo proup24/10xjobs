@@ -59,26 +59,41 @@ describe('homePlaces', () => {
 
 describe('residenceApplies', () => {
   const places = [country('GB')];
-  it('applies to description label and limit', () => {
-    for (const placeStrictness of ['label', 'limit'] as const) {
-      expect(
-        residenceApplies(opening({ places, placeStrictness }), ['MA']),
-      ).toBe(true);
-    }
+  it('a label applies only to facts from before the cut-over', () => {
+    const applies = (
+      placeStrictness: 'label' | 'limit',
+      limitsBindPerson: boolean,
+    ) =>
+      residenceApplies(
+        opening({ places, placeStrictness }),
+        ['MA'],
+        limitsBindPerson,
+      );
+    expect(applies('limit', true)).toBe(true);
+    expect(applies('label', true)).toBe(false);
+    expect(applies('limit', false)).toBe(true);
+    expect(applies('label', false)).toBe(true);
   });
   it('skips mention, LinkedIn places, no places, no homes', () => {
     expect(
-      residenceApplies(opening({ places, placeStrictness: 'mention' }), ['MA']),
+      residenceApplies(
+        opening({ places, placeStrictness: 'mention' }),
+        ['MA'],
+        false,
+      ),
     ).toBe(false);
     expect(
       residenceApplies(
         opening({ places, placeStrictness: 'limit', placesSource: 'linkedin' }),
         ['MA'],
+        false,
       ),
     ).toBe(false);
-    expect(residenceApplies(opening({ places: [] }), ['MA'])).toBe(false);
+    expect(residenceApplies(opening({ places: [] }), ['MA'], false)).toBe(
+      false,
+    );
     expect(
-      residenceApplies(opening({ places, placeStrictness: 'limit' }), []),
+      residenceApplies(opening({ places, placeStrictness: 'limit' }), [], true),
     ).toBe(false);
   });
 });
