@@ -10,6 +10,11 @@ import {
   linkedinKeyword,
   linkedinKeywordFits,
 } from 'src/modules/queries/channels/linkedin_keyword';
+import { postKeywordFits } from 'src/modules/queries/posts/keyword';
+import {
+  postMemberWords,
+  postSegmentKey,
+} from 'src/modules/queries/posts/merge';
 
 /** Builders searched together in one Apify run. */
 export interface SearchSegment {
@@ -53,6 +58,8 @@ function params(builder: QuerySearchBuilderRow): Record<string, unknown> {
  */
 export function segmentKey(builder: QuerySearchBuilderRow): string {
   if (isLinkedinJobBoard(builder.channel)) return linkedinJobBoardKey(builder);
+  if (builder.channel === Channel.LINKEDIN_POSTS)
+    return postSegmentKey(params(builder));
   return [builder.channel, builder.domain, builder.type, builder.location].join(
     '|',
   );
@@ -92,15 +99,23 @@ function keywordFits(members: readonly QuerySearchBuilderRow[]): boolean {
   return linkedinKeywordFits(roleWords, spellings);
 }
 
+/** Whether the post builders' merged words fit the operator and length limits. */
+function postsFit(members: readonly QuerySearchBuilderRow[]): boolean {
+  return postKeywordFits(
+    postMemberWords(members.map((member) => ({ params: params(member) }))),
+  );
+}
+
 /** Halves a chunk until its merged keyword fits or it holds one member. */
 function fitChunks(
   members: QuerySearchBuilderRow[],
+  fits: (members: readonly QuerySearchBuilderRow[]) => boolean,
 ): QuerySearchBuilderRow[][] {
-  if (members.length <= 1 || keywordFits(members)) return [members];
+  if (members.length <= 1 || fits(members)) return [members];
   const half = Math.ceil(members.length / 2);
   return [
-    ...fitChunks(members.slice(0, half)),
-    ...fitChunks(members.slice(half)),
+    ...fitChunks(members.slice(0, half), fits),
+    ...fitChunks(members.slice(half), fits),
   ];
 }
 
@@ -168,10 +183,12 @@ export function planSegments(
     let chunks: QuerySearchBuilderRow[][];
     if (board) {
       const even = evenChunks(members, parts.get(key) ?? 1);
-      chunks = even.flatMap(fitChunks);
+      chunks = even.flatMap((chunk) => fitChunks(chunk, keywordFits));
       if (chunks.length > even.length)
         plan.cuts.push({ key, members: members.length, chunks: chunks.length });
-    } else
+    } else if (members[0].channel === Channel.LINKEDIN_POSTS)
+      chunks = fitChunks(members, postsFit);
+    else
       chunks = Array.from(
         { length: Math.ceil(members.length / size) },
         (_, i) => members.slice(i * size, (i + 1) * size),

@@ -19,6 +19,7 @@ import {
   segmentHash,
   segmentKey,
 } from './segments';
+import { mergedPostKeyword } from 'src/modules/queries/posts/merge';
 import { segmentWindow } from './window';
 
 let n = 0;
@@ -529,5 +530,55 @@ describe('segmentHash', () => {
           segment.members.map((member) => member.id),
         ),
       ).toBe(segment.hash);
+  });
+});
+
+describe('post segments', () => {
+  const post = (
+    spellings: string[],
+    over: { language?: string; position?: string } = {},
+  ) => {
+    const language = over.language ?? 'en';
+    return builder({
+      channel: Channel.LINKEDIN_POSTS,
+      params: {
+        language,
+        position: over.position ?? 'fullstack',
+        hiringWord: language === 'en' ? 'hiring' : 'recrute',
+        positionWords: ['fullstack', 'full stack'],
+        spellings,
+        remote: language === 'en',
+      },
+    });
+  };
+  const words = (prefix: string, count: number) =>
+    Array.from({ length: count }, (_, i) => `${prefix}${i}`);
+
+  it('groups post builders by language, position and remote', () => {
+    const segments = buildSegments([
+      post(['react']),
+      post(['react'], { language: 'fr' }),
+      post(['react'], { position: 'backend' }),
+    ]);
+    expect(segments).toHaveLength(3);
+  });
+
+  it('merges post builders whose words fit', () => {
+    const segments = buildSegments([post(['a', 'b', 'c']), post(['c', 'd'])]);
+    expect(segments).toHaveLength(1);
+    expect(segments[0].members).toHaveLength(2);
+  });
+
+  it('splits a group whose merged words exceed five operators', () => {
+    const segments = buildSegments([post(words('x', 5)), post(words('y', 5))]);
+    expect(segments).toHaveLength(2);
+    for (const segment of segments) {
+      const keyword = mergedPostKeyword(
+        segment.members.map((m) => ({
+          params: m.params as Record<string, unknown>,
+        })),
+      );
+      expect(keyword.match(/ OR /g)?.length ?? 0).toBeLessThanOrEqual(5);
+    }
   });
 });
