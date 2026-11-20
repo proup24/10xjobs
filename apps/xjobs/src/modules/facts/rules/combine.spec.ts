@@ -290,34 +290,86 @@ describe('combineFacts', () => {
     }
   });
 
-  it('the listing place is skipped when the description has a time zone, but the arrangement is filled', () => {
-    const tz = { fromUtc: -5, toUtc: -3, label: 'Americas' };
-    const { facts } = combine(
+  it('the listing place fills an opening that has only a time zone (Mo Works)', () => {
+    const tz = { fromUtc: 8, toUtc: 11, label: 'Australia' };
+    const { facts, conflicts } = combine(
       doc({
         arrangementValue: 'unstated',
         openings: [opening({ timezones: [tz] })],
       }),
       listing({
-        arrangement: 'remote',
-        place: { kind: 'country', code: 'US' },
+        arrangement: 'onsite',
+        place: { kind: 'country', code: 'EG' },
+        locationText: 'Cairo, Egypt',
       }),
     );
     expect(facts.openings).toEqual([
       {
-        arrangements: ['remote'],
-        places: [],
-        placeStrictness: 'unstated',
+        arrangements: ['onsite'],
+        places: [{ kind: 'country', code: 'EG' }],
+        placeStrictness: 'label',
         timezones: [tz],
-        quote: '',
+        quote: 'LinkedIn: Cairo, Egypt',
         confidence: 'sure',
         arrangementSource: 'linkedin',
-        placesSource: 'description',
+        placesSource: 'linkedin',
       },
     ]);
-    expect(facts.arrangement).toMatchObject({
-      value: 'remote',
-      source: 'linkedin',
-    });
+    expect(conflicts.filter((c) => c.field === 'places')).toEqual([]);
+  });
+
+  it('the listing place fills a placeless opening beside a placed one (Nourish)', () => {
+    const { facts } = combine(
+      doc({
+        arrangementValue: 'hybrid',
+        openings: [
+          opening({
+            arrangements: ['hybrid'],
+            places: [paris],
+            placeStrictness: 'label',
+            quote: 'hybrid out of Paris',
+          }),
+          opening({
+            arrangements: ['remote'],
+            quote: 'also welcomes remote candidacy',
+          }),
+        ],
+      }),
+      listing({
+        arrangement: 'remote',
+        place: { kind: 'country', code: 'US' },
+        locationText: 'New York, NY',
+      }),
+    );
+    expect(facts.openings).toMatchObject([
+      {
+        arrangements: ['hybrid'],
+        places: [{ name: 'Paris' }],
+        placesSource: 'description',
+      },
+      {
+        arrangements: ['remote'],
+        places: [{ kind: 'country', code: 'US' }],
+        placeStrictness: 'label',
+        placesSource: 'linkedin',
+        quote: 'also welcomes remote candidacy | LinkedIn: New York, NY',
+      },
+    ]);
+  });
+
+  it('a time-zone-only opening stays placeless when the listing has no place', () => {
+    const tz = { fromUtc: 0, toUtc: 2, label: 'European time zones' };
+    const { facts, conflicts } = combine(
+      doc({
+        arrangementValue: 'remote',
+        openings: [opening({ arrangements: ['remote'], timezones: [tz] })],
+      }),
+      listing({ arrangement: 'remote' }),
+    );
+    expect(facts.openings).toMatchObject([
+      { places: [], placeStrictness: 'unstated', placesSource: 'description' },
+    ]);
+    expect(conflicts.filter((c) => c.field === 'places')).toEqual([]);
   });
 
   it('an unstated opening with places takes the listing arrangement and keeps its places', () => {
@@ -840,7 +892,7 @@ describe('combineFacts', () => {
   it('copies the other matcher facts from the description', () => {
     const d = doc();
     const { facts } = combine(d, listing());
-    expect(facts.version).toBe(5);
+    expect(facts.version).toBe(6);
     for (const key of [
       'position',
       'isSoftwareEngineeringRole',

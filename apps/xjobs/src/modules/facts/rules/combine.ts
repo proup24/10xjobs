@@ -160,18 +160,23 @@ function combineOpenings(
       },
     ];
   }
-  // The listing supplies only the place; the description's arrangement and its confidence stand.
+  // The listing supplies only the place, to each opening with none; the description's
+  // arrangement, confidence and time zones stand.
   const placed: FactOpening[] =
-    silent && place !== null
-      ? described.map((o) => ({
-          ...o,
-          places: [place],
-          placeStrictness: 'label',
-          quote: [o.quote, listingQuote(listing.locationText)]
-            .filter(Boolean)
-            .join(' | '),
-          placesSource: 'linkedin',
-        }))
+    place !== null
+      ? described.map((o) =>
+          o.places.length > 0
+            ? o
+            : {
+                ...o,
+                places: [place],
+                placeStrictness: 'label',
+                quote: [o.quote, listingQuote(listing.locationText)]
+                  .filter(Boolean)
+                  .join(' | '),
+                placesSource: 'linkedin',
+              },
+        )
       : described;
   return placed.map((o) => fillArrangement(o, top, listing.arrangement));
 }
