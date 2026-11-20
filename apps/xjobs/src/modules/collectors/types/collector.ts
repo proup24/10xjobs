@@ -78,10 +78,6 @@ export interface LinkedinJobBoardRunConfig extends ActorRunConfig {
   maxRowsCeiling: number;
 }
 
-export interface LinkedinPostsRunConfig extends ActorRunConfig {
-  maxPostsPerQuery: number;
-}
-
 /** Greenhouse and Ashby postings are discovered through Google. */
 export interface BoardSearchRunConfig extends ActorRunConfig {
   site: string;

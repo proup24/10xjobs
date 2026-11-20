@@ -248,49 +248,10 @@ describe('normalize LinkedIn job board, item format', () => {
 });
 
 describe('normalize LinkedIn posts', () => {
-  it('takes the exact posted time when the post carries one', () => {
-    expect(record(post()).postedAt).toBe('2026-10-31T10:00:00.000Z');
-  });
-
-  it('estimates the posted time from the "ago" text when the date is absent', () => {
-    const r = record(
-      post({
-        postedAt: { postedAgoText: '2 hours ago • Visible to anyone' },
-      }),
-    );
-    expect(r.postedAt).toBe('2026-11-10T18:32:26.671Z');
-  });
-
-  it('maps a post without inventing job facts', () => {
-    const r = record(post());
-    expect(r).toMatchObject({
-      kind: 'post',
-      title: null,
-      companyName: null,
-      location: null,
-      descriptionText: "We're hiring a senior Node.js engineer. DM me.",
-      publishedAt: '2026-10-31',
-      postingUrl: linkedinPost.linkedinUrl,
-      applyUrl: null,
-      closed: false,
+  it('does not normalize a post: it is stored raw', () => {
+    expect(post()).toEqual({
+      invalid: 'normalize: LINKEDIN_POSTS is not normalized',
     });
-    expect(r.poster).toEqual({
-      name: 'Jane Doe',
-      profileUrl: 'https://www.linkedin.com/in/jane-doe',
-      type: 'person',
-    });
-  });
-
-  it('keeps a company author as the poster, never the employer', () => {
-    const r = record(
-      post({ author: { ...linkedinPost.author, type: 'company' } }),
-    );
-    expect(r.poster?.type).toBe('company');
-    expect(r.companyName).toBeNull();
-  });
-
-  it('is invalid without a post URL', () => {
-    expect('invalid' in post({ linkedinUrl: null })).toBe(true);
   });
 });
 

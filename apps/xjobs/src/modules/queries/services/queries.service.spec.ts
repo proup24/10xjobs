@@ -73,10 +73,10 @@ describe('QuerySearchService', () => {
       // Each LinkedIn job-board channel (main and trial), one level (senior = 4):
       // remote EMEA gives africa, europe and middle east, remote MENA gives mena,
       // onsite Casablanca, Morocco gives morocco, so 5 each, 15 in all.
-      expect(recipes).toHaveLength(42);
-      expect(new Set(hashes(recipes)).size).toBe(42);
+      expect(recipes).toHaveLength(33);
+      expect(new Set(hashes(recipes)).size).toBe(33);
       expect(recipes.filter((r) => r.type === Arrangement.onsite)).toHaveLength(
-        12,
+        9,
       );
     });
 
@@ -199,7 +199,9 @@ describe('QuerySearchService', () => {
             .map((r) => r.channel),
         ),
       ];
-      expect(channels).toEqual(Object.values(Channel));
+      expect(channels).toEqual(
+        Object.values(Channel).filter((c) => c !== Channel.LINKEDIN_POSTS),
+      );
     });
   });
 
@@ -207,15 +209,15 @@ describe('QuerySearchService', () => {
     it('creates shared builders once, then reuses them', async () => {
       const { service, repository, profileId } = await setup();
       expect(await service.generate(profileId, profile)).toEqual({
-        created: 42,
+        created: 33,
         existing: 0,
       });
       expect(await service.generate(profileId, profile)).toEqual({
         created: 0,
-        existing: 42,
+        existing: 33,
       });
-      expect(repository.rows).toHaveLength(42);
-      expect(repository.links).toHaveLength(42);
+      expect(repository.rows).toHaveLength(33);
+      expect(repository.links).toHaveLength(33);
       expect(new Set(counts(repository))).toEqual(new Set([1]));
       expect(repository.rows.every((row) => row.isActive)).toBe(true);
     });
@@ -233,10 +235,10 @@ describe('QuerySearchService', () => {
       await service.generate(profileId, profile);
       expect(await service.generate('profile-2', profile)).toEqual({
         created: 0,
-        existing: 42,
+        existing: 33,
       });
-      expect(repository.rows).toHaveLength(42);
-      expect(repository.links).toHaveLength(84);
+      expect(repository.rows).toHaveLength(33);
+      expect(repository.links).toHaveLength(66);
       expect(new Set(counts(repository))).toEqual(new Set([2]));
     });
 
@@ -244,7 +246,7 @@ describe('QuerySearchService', () => {
       const { service, repository, profileId } = await setup();
       await service.generate(profileId, profile);
       await service.generate(profileId, profile);
-      expect(repository.links).toHaveLength(42);
+      expect(repository.links).toHaveLength(33);
       expect(new Set(counts(repository))).toEqual(new Set([1]));
     });
 
@@ -278,13 +280,13 @@ describe('QuerySearchService', () => {
       const { service, repository, profileId } = await setup();
       await service.generate(profileId, profile);
       await service.generate('profile-2', profile);
-      expect(await service.detach(profileId)).toBe(42);
+      expect(await service.detach(profileId)).toBe(33);
       expect(new Set(counts(repository))).toEqual(new Set([1]));
       expect(repository.rows.every((row) => row.isActive)).toBe(true);
       await service.detach('profile-2');
       expect(new Set(counts(repository))).toEqual(new Set([0]));
       expect(repository.rows.some((row) => row.isActive)).toBe(false);
-      expect(repository.rows).toHaveLength(42);
+      expect(repository.rows).toHaveLength(33);
     });
   });
 
@@ -292,16 +294,10 @@ describe('QuerySearchService', () => {
     it('lists the builders of a profile and filters by channel', async () => {
       const { service, userId, profileId } = await setup();
       await service.generate(profileId, profile);
-      expect(await service.list(userId, profileId)).toHaveLength(42);
-      const posts = await service.list(
-        userId,
-        profileId,
-        Channel.LINKEDIN_POSTS,
-      );
+      expect(await service.list(userId, profileId)).toHaveLength(33);
+      const posts = await service.list(userId, profileId, Channel.ASHBY);
       expect(posts).toHaveLength(9);
-      expect(posts.every((row) => row.channel === Channel.LINKEDIN_POSTS)).toBe(
-        true,
-      );
+      expect(posts.every((row) => row.channel === Channel.ASHBY)).toBe(true);
     });
 
     it("404s another user's profile", async () => {
@@ -316,7 +312,7 @@ describe('QuerySearchService', () => {
       const { service, repository, userId, profileId } = await setup();
       await service.generate(profileId, profile);
       await service.softDelete(repository.rows[0].id);
-      expect(await service.list(userId, profileId)).toHaveLength(41);
+      expect(await service.list(userId, profileId)).toHaveLength(32);
     });
   });
   describe('listActive', () => {

@@ -1,6 +1,5 @@
 import { Channel } from 'src/common/enums';
 import { mapAshby, mapGreenhouse } from './ats';
-import { mapLinkedinPost } from './linkedin';
 import { mapLinkedinJob } from './mappers/linkedin-job.mapper';
 import {
   type NormalizedRecord,
@@ -20,11 +19,10 @@ type Mapper = (
   ctx: NormalizeContext,
 ) => NormalizedRecord | { invalid: string };
 
-const mappers: Record<Channel, Mapper> = {
+const mappers: Partial<Record<Channel, Mapper>> = {
   [Channel.LINKEDIN_JOB_BOARD]: mapLinkedinJob,
   [Channel.LINKEDIN_JOB_BOARD_CHEAP]: mapLinkedinJob,
   [Channel.LINKEDIN_JOB_BOARD_BEBITY]: mapLinkedinJob,
-  [Channel.LINKEDIN_POSTS]: mapLinkedinPost,
   [Channel.ASHBY]: mapAshby,
   [Channel.GREEN_HOUSE]: mapGreenhouse,
 };
@@ -38,7 +36,9 @@ export function normalize(
   payload: unknown,
   ctx: NormalizeContext,
 ): NormalizeResult {
-  const mapped = mappers[channel](objectAt(payload), ctx);
+  const mapper = mappers[channel];
+  if (!mapper) return { invalid: `normalize: ${channel} is not normalized` };
+  const mapped = mapper(objectAt(payload), ctx);
   if ('invalid' in mapped) return mapped;
   const parsed = normalizedRecordSchema.safeParse(mapped);
   if (parsed.success) return { record: mapped };

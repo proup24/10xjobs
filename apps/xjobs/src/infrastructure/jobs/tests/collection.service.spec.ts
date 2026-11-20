@@ -110,7 +110,6 @@ function setup(
     collectors[Channel.LINKEDIN_JOB_BOARD] as never,
     collectors[Channel.LINKEDIN_JOB_BOARD_CHEAP] as never,
     collectors[Channel.LINKEDIN_JOB_BOARD_BEBITY] as never,
-    collectors[Channel.LINKEDIN_POSTS] as never,
     queries as unknown as QuerySearchService,
     segments,
     splits,
@@ -143,7 +142,7 @@ function setup(
 afterEach(() => vi.restoreAllMocks());
 
 describe('channel selection', () => {
-  it.each(Object.values(Channel))(
+  it.each(Object.values(Channel).filter((c) => c !== Channel.LINKEDIN_POSTS))(
     'collects %s with its matching collector and limits',
     async (channel) => {
       const { collection, collectors, queries } = setup(
@@ -1275,19 +1274,23 @@ describe('CollectionService claims', () => {
   });
 
   it('recomputes the window from the cursor returned by the claim', async () => {
-    const rows = builders(2, { channel: Channel.LINKEDIN_POSTS });
+    const rows = builders(2, { channel: Channel.LINKEDIN_JOB_BOARD });
     const { collection, collector, segments } = setup(
       rows,
       undefined,
-      Channel.LINKEDIN_POSTS,
+      Channel.LINKEDIN_JOB_BOARD,
     );
     const fresh = new Date(Date.now() - HOUR);
     for (const row of rows) segments.cursors.set(row.id, fresh);
 
-    await collection.collect(Channel.LINKEDIN_POSTS);
+    await collection.collect(Channel.LINKEDIN_JOB_BOARD);
 
     const [search] = collector.collect.mock.calls[0];
-    expect(search.since.getTime()).toBe(fresh.getTime() - 15 * 60_000);
+    const { overlapMinutes } =
+      channelJobsConfig[Channel.LINKEDIN_JOB_BOARD].window;
+    expect(search.since.getTime()).toBe(
+      fresh.getTime() - overlapMinutes * 60_000,
+    );
   });
 
   it('releases claims and moves cursors on success', async () => {

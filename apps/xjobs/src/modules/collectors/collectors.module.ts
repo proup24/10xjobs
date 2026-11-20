@@ -4,7 +4,6 @@ import { GreenhouseCollector } from './providers/greenhouse.collector';
 import { LinkedinJobBoardCollector } from './providers/linkedin-job-board.collector';
 import { LinkedinJobBoardCheapCollector } from './providers/linkedin-job-board-cheap.collector';
 import { LinkedinJobBoardBebityCollector } from './providers/linkedin-job-board-bebity.collector';
-import { LinkedinPostsCollector } from './providers/linkedin-posts.collector';
 import { ApifyActorProvider } from './providers/apify/apify.provider';
 import { GoogleJobsSearchProvider } from './providers/apify/google-search.provider';
 import { AshbyPostingProvider } from './providers/extraction/ashby.provider';
@@ -21,7 +20,6 @@ import { GreenhousePostingProvider } from './providers/extraction/greenhouse.pro
     LinkedinJobBoardCollector,
     LinkedinJobBoardCheapCollector,
     LinkedinJobBoardBebityCollector,
-    LinkedinPostsCollector,
   ],
   exports: [
     ApifyActorProvider,
@@ -30,7 +28,6 @@ import { GreenhousePostingProvider } from './providers/extraction/greenhouse.pro
     LinkedinJobBoardCollector,
     LinkedinJobBoardCheapCollector,
     LinkedinJobBoardBebityCollector,
-    LinkedinPostsCollector,
   ],
 })
 export class CollectorsModule {}

@@ -150,6 +150,23 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
     q2 = await builder();
   });
 
+  it('saves a post without a normalized job', async () => {
+    const b = await batch(Channel.LINKEDIN_POSTS);
+    const post = { id: '7001', content: 'We are hiring a backend engineer' };
+    const saved = await repo.saveItem({
+      ...input(b, post, t1, q1, Channel.LINKEDIN_POSTS),
+      kind: 'post',
+    });
+
+    expect(saved).toEqual({ newItem: true, newVersion: true, job: null });
+    const items = await db.orm.public.RawItem.where({
+      channel: Channel.LINKEDIN_POSTS,
+    }).all();
+    expect(items.map((row) => row.kind)).toEqual(['post']);
+    expect(await db.orm.public.NormalizedJob.all()).toHaveLength(0);
+    expect(await db.orm.public.NormalizedVersion.all()).toHaveLength(0);
+  });
+
   it('stores a first sighting as an item, a version and a sighting', async () => {
     const b = await batch();
     expect(await repo.saveItem(input(b, job('a'), t1))).toMatchObject({

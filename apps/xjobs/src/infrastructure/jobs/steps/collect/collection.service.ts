@@ -11,7 +11,6 @@ import {
   LinkedinJobBoardCollector,
   type LinkedinJobBoardRunConfig,
   runChargeCapUsd,
-  LinkedinPostsCollector,
   SearchNotStartedError,
   type SegmentSearch,
   type SegmentResult,
@@ -102,7 +101,6 @@ export class CollectionService {
     private readonly linkedinJobs: LinkedinJobBoardCollector,
     private readonly linkedinJobsCheap: LinkedinJobBoardCheapCollector,
     private readonly linkedinJobsBebity: LinkedinJobBoardBebityCollector,
-    private readonly linkedinPosts: LinkedinPostsCollector,
     private readonly queries: QuerySearchService,
     private readonly segments: SearchSegmentsRepository,
     private readonly splits: LinkedinSearchSplitsRepository,
@@ -695,7 +693,7 @@ export class CollectionService {
       case Channel.LINKEDIN_JOB_BOARD_BEBITY:
         return this.linkedinJobsBebity.collect(segment);
       case Channel.LINKEDIN_POSTS:
-        return this.linkedinPosts.collect(segment);
+        throw new Error('LINKEDIN_POSTS collector arrives in a later task');
     }
   }
 }

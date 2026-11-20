@@ -3,13 +3,11 @@ import {
   type ActorRunConfig,
   type BoardSearchRunConfig,
   type LinkedinJobBoardRunConfig,
-  type LinkedinPostsRunConfig,
   AshbyCollector,
   GreenhouseCollector,
   LinkedinJobBoardBebityCollector,
   LinkedinJobBoardCheapCollector,
   LinkedinJobBoardCollector,
-  LinkedinPostsCollector,
 } from 'src/modules/collectors';
 import type { WindowConfig } from 'src/modules/segments';
 
@@ -90,7 +88,7 @@ export const channelJobsConfig = {
     queueName: 'collect-linkedin-posts',
     ...hourly,
     enabled: ACTIVE_CHANNELS.includes(Channel.LINKEDIN_POSTS),
-    run: LinkedinPostsCollector.config,
+    run: { actor: 'harvestapi/linkedin-post-search', maxRunChargeUsd: 0 },
   },
   [Channel.GREEN_HOUSE]: {
     queueName: 'collect-greenhouse',
@@ -108,7 +106,7 @@ export const channelJobsConfig = {
   [Channel.LINKEDIN_JOB_BOARD]: ChannelJobConfig<LinkedinJobBoardRunConfig>;
   [Channel.LINKEDIN_JOB_BOARD_CHEAP]: ChannelJobConfig<LinkedinJobBoardRunConfig>;
   [Channel.LINKEDIN_JOB_BOARD_BEBITY]: ChannelJobConfig<LinkedinJobBoardRunConfig>;
-  [Channel.LINKEDIN_POSTS]: ChannelJobConfig<LinkedinPostsRunConfig>;
+  [Channel.LINKEDIN_POSTS]: ChannelJobConfig<ActorRunConfig>;
   [Channel.GREEN_HOUSE]: ChannelJobConfig<BoardSearchRunConfig>;
   [Channel.ASHBY]: ChannelJobConfig<BoardSearchRunConfig>;
 };

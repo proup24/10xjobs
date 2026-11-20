@@ -16,7 +16,9 @@ export interface RenormalizeSummary {
  * other channel links first, then the trial channels.
  */
 const PASSES: readonly (readonly Channel[])[] = [
-  Object.values(Channel).filter((c) => !isTrialChannel(c)),
+  Object.values(Channel).filter(
+    (c) => c !== Channel.LINKEDIN_POSTS && !isTrialChannel(c),
+  ),
   TRIAL_CHANNELS,
 ];
 
