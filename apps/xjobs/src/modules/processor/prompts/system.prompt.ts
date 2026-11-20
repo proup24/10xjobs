@@ -43,7 +43,7 @@ Codes: \`remote\`, \`hybrid\`, \`onsite\`, \`unstated\`.
 - A choice gives several values in one opening: "work remotely, from our office in Cologne, or a mix of both" -> \`["remote", "hybrid"]\`.
 - "Remote" in the title counts.
 - Office visits less often than weekly (monthly, quarterly) don't make a job \`hybrid\`; keep the arrangement the posting gives for the daily work.
-- What states an arrangement: explicit words (remote, fully remote, work from home / WFH, distributed, hybrid, onsite, on-site, in-office, in person, office days, home office, telework, in any language), or obvious office evidence: commuting distance to an office or hub, relocation to an office or hub, "work out of this location", daily work at customer sites (not travel to them), physical or hands-on work on site (hardware, labs, equipment), a share of office or mobile days when the rest is office days ("40% mobilem Arbeiten"). A remote share whose rest is travel to customers or events stays \`remote\` ("70% remote, up to 30% travel"). A place, a residence rule, a work-permit or citizenship rule, or "flexible" / "flexibility" on its own states no arrangement: the opening's arrangements are \`["unstated"]\` and any place it gives is still recorded (an authorization or citizenship rule gives none; see placeStrictness). "Hands-on" experience or coding is not office evidence.
+- What states an arrangement: explicit words (remote, fully remote, work from home / WFH, distributed (a distributed team or company; "distributed systems" is a skill), hybrid, onsite, on-site, in-office, in person, office days, home office, telework, in any language), or obvious office evidence: commuting distance to an office or hub, relocation to an office or hub, "work out of this location", daily work at customer sites (not travel to them), physical or hands-on work on site (hardware, labs, equipment), a share of office days, or a share of mobile or remote days whose rest, stated or implied, is office days ("40% mobilem Arbeiten", "60% in the office"). A remote share whose rest is travel to customers or events stays \`remote\` ("70% remote, up to 30% travel"). A place, a residence rule, a work-permit or citizenship rule, or "flexible" / "flexibility" on its own states no arrangement: the opening's arrangements are \`["unstated"]\` and any place it gives is still recorded (an authorization or citizenship rule gives none; see placeStrictness). "Hands-on" experience or coding is not office evidence. Words about interviews, onboarding, offsites or other occasional events are not the daily work: "on-site interviews", "meet in person at our annual offsite" state no arrangement.
 - The top-level \`arrangement\` is the overall arrangement and must be one of the openings' arrangements, unless it is \`unstated\`.
 
 ### places
@@ -68,7 +68,7 @@ Limiting words win: "Location: Portugal only" is a \`limit\`.
 
 Limiting words are about the person hired: where they live or are based. Words about the job or the team make a \`label\`: "the position is based in Herndon", "join our Vancouver based team", "Location: Brazil", "Remote (US)".
 
-An authorization line is not a place. "Authorized to work in X", citizenship and clearance lines add a \`workAuthorization\` requirement only. They don't make a \`limit\` or any place: the work-authorization check already compares them with the candidate's permits and citizenship, and a \`limit\` would also fail a candidate who holds a US permit but lives elsewhere.
+An authorization line is not a place. "Authorized to work in X", "eligible to work in X", citizenship and clearance lines add a \`workAuthorization\` requirement only. They don't make a \`limit\` or any place: the work-authorization check already compares them with the candidate's permits and citizenship, and a \`limit\` would also fail a candidate who holds a US permit but lives elsewhere.
 
 A sentence that only says where the job is, with no limiting words, is a \`label\`: "This job can be filled in Lyon" -> \`{ ["unstated"], [city Lyon, FR], label }\`. Pay ranges listed per country ("US employees (any location)", "Canadian employees (any location)") name the countries the company hires in: a \`limit\` on those countries, \`sure\`.
 
@@ -95,17 +95,17 @@ A time zone is never a place: "remote from anywhere within the European time zon
 - A location line or a title place is a label. "Location - Remote India" -> \`{ ["remote"], [country IN], label }\`. "Senior Engineer - Brazil" -> \`{ ..., [country BR], label }\`.
 - A list of terms per place -> one opening per term. "Costa Rica (Remote); Toronto, Ontario (Hybrid/Remote)" -> \`{ ["remote"], [country CR], limit }\` and \`{ ["hybrid", "remote"], [city Toronto, CA], limit }\`.
 - A choice of places on the same terms -> one opening, several places. "Remote within Canada or the US" -> \`{ ["remote"], [CA, US], limit }\`.
-These readings are for the line on its own. An arrangement stated elsewhere in the posting goes in the same opening: "70% remote work ... Must reside in the UK." -> \`{ ["remote"], [GB], limit }\`, not a placeless remote opening plus an \`["unstated"]\` GB one.
-
 - "Location: Flexible / Hybrid (depending on candidate)" -> \`["hybrid"]\`, not remote.
 - "flexibility over rigid rules" with office hubs named and no arrangement words -> \`["unstated"]\`, the hubs as \`mention\`.
-- "We offer flexible working, including hybrid and remote options" -> \`["hybrid", "remote"]\`.
+- "We offer flexible working, including hybrid and remote options" -> \`["hybrid", "remote"]\`, any hubs named as \`mention\`.
 - "Candidates must reside within a reasonable commuting distance of one of our IT hubs" -> \`["hybrid"]\` or \`["onsite"]\` per the rest of the posting, the hubs as \`limit\`.
 - "This position is based in Herndon, Virginia" -> \`["unstated"]\`, Herndon as \`label\`.
 - "Must reside in the UK." -> \`["unstated"]\`, GB as \`limit\`.
 - "Only able to consider candidates who are authorized to work in the United States" -> \`["unstated"]\`, a US \`work-permit\` requirement, and no place from this line.
 - "opportunity for PL based candidates" -> PL as \`limit\`.
 - A time-zone condition belongs to the opening it qualifies; a posting-wide one goes on every opening. "Remote, within two hours of the UK time zone" -> \`{ ["remote"], [], unstated, [{ -2, 2, "within two hours of the UK time zone" }] }\`.
+
+Each reading above is for the line on its own. An arrangement the posting states for the whole role goes in the same opening: "70% remote work ... Must reside in the UK." -> \`{ ["remote"], [GB], limit }\`, not a placeless remote opening plus an \`["unstated"]\` GB one.
 
 ## Work authorization
 
