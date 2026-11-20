@@ -9,7 +9,6 @@ import {
   mergedLinkedinKeyword,
   toHarvestJobSearchInput,
 } from './mappers/linkedin-job-board.mapper';
-import { LinkedinPostsCollector } from './linkedin-posts.collector';
 import { AshbyCollector } from './ashby.collector';
 import type { AshbyPostingProvider } from './extraction/ashby.provider';
 
@@ -40,7 +39,6 @@ const segment = (
 ): SegmentSearch => ({ channel, since, until, queries });
 
 const board = LinkedinJobBoardCollector.config;
-const posts = LinkedinPostsCollector.config;
 const ashby: BoardSearchRunConfig = {
   actor: 'apify/google-search-scraper',
   maxRunChargeUsd: 1,
@@ -320,56 +318,6 @@ describe('LinkedIn job board segment', () => {
       segment(Channel.LINKEDIN_JOB_BOARD, queries),
     );
     expect(unknown).toMatchObject({ costUsd: null, capped: false });
-  });
-});
-
-describe('LinkedIn posts segment', () => {
-  it('runs once with every query from the window start and attributes posts', async () => {
-    const queries = [
-      { id: 'qs-1', keyword: 'hiring backend nestjs remote', params: {} },
-      { id: 'qs-2', keyword: 'hiring backend go remote', params: {} },
-      { id: 'qs-3', keyword: 'hiring backend java remote', params: {} },
-    ];
-    const post = (id: string, search: string) => ({
-      id,
-      linkedinUrl: `https://www.linkedin.com/feed/update/urn:li:activity:${id}/`,
-      content: '\nWe are hiring\nengineers',
-      author: {
-        name: 'Jane',
-        type: 'profile',
-        linkedinUrl: 'https://www.linkedin.com/in/jane',
-      },
-      postedAt: { date: '2026-10-31T11:00:00Z' },
-      query: { search },
-    });
-    // qs-2 fills its post limit, so it is reported truncated.
-    const full = Array.from({ length: posts.maxPostsPerQuery }, (_, i) =>
-      post(String(100 + i), queries[1].keyword),
-    );
-    const { run, provider } = actor(() => [
-      ...full,
-      post('9', 'unknown query'),
-    ]);
-    const result = await new LinkedinPostsCollector(provider).collect(
-      segment(Channel.LINKEDIN_POSTS, queries),
-    );
-    expect(run).toHaveBeenCalledTimes(1);
-    expect(run.mock.calls[0][1]).toMatchObject({
-      searchQueries: queries.map((q) => q.keyword),
-      maxPosts: posts.maxPostsPerQuery,
-      postedLimitDate: since.toISOString(),
-      sortBy: 'date',
-    });
-    expect(result.itemsByQuery.get('qs-2')).toEqual(
-      full.map((payload) => ({ rank: null, payload })),
-    );
-    expect(result.itemsByQuery.get('qs-1')).toEqual([]);
-    expect(result.unattributed).toEqual([
-      { rank: null, payload: post('9', 'unknown query') },
-    ]);
-    expect(result.truncatedQueryIds).toEqual(['qs-2']);
-    expect(result.fetched).toBe(posts.maxPostsPerQuery + 1);
-    expect(result.source).toEqual({ actor: posts.actor, apifyRunId: 'run-1' });
   });
 });
 

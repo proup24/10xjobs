@@ -27,14 +27,14 @@ Precision over volume: prefer a tailored application over a fast one.
 - `npx nx worker-processor xjobs`: run the processor worker alone (needs `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY`).
 - `npx nx worker-match xjobs`: run the match worker alone.
 - `npx nx worker-webhook xjobs`: run the webhook worker alone (sends the users' match webhooks; registers its sweep only with `XJOBS_RUN_SCHEDULES=1`, set on the hosted engine).
-- `npx nx worker-<channel> xjobs` (`linkedin-job-board`, `linkedin-job-board-cheap`, `linkedin-job-board-bebity`, `linkedin-posts`, `greenhouse`, `ashby`): run one channel's scheduled collection worker (registers schedules only with `XJOBS_RUN_SCHEDULES=1`, set on the hosted engine; `linkedin-job-board-cheap` and `linkedin-job-board-bebity` are trials that also need their channel in `COLLECTION_TRIAL_CHANNELS`).
+- `npx nx worker-<channel> xjobs` (`linkedin-job-board`, `linkedin-job-board-cheap`, `linkedin-job-board-bebity`, `linkedin-posts`, `greenhouse`, `ashby`): run one channel's scheduled collection worker (registers schedules only with `XJOBS_RUN_SCHEDULES=1`, set on the hosted engine; `linkedin-job-board-cheap` and `linkedin-job-board-bebity` are trials that also need their channel in `COLLECTION_TRIAL_CHANNELS`; `linkedin-posts` runs hourly, every day, and needs a published profile with post search on whose owner is in `POST_SEARCH_USERS`).
 - `npx nx run-many -t lint test build typecheck`: what CI runs.
 - `npx nx test xjobs`: unit tests for the engine.
 - `npx nx e2e xjobs-e2e`: e2e tests.
 - `pnpm db:migrate`: apply migrations (local only unless `XJOBS_ALLOW_REMOTE_DB=1`).
 - `pnpm db:seed`: seed the database (same guard).
 - `pnpm users link <email>`: print a sign-in link without sending email.
-- `pnpm --filter @xjobs/xjobs db:regenerate`: move published profiles to the current query recipe; run once after a recipe version bump.
+- `pnpm --filter @xjobs/xjobs db:regenerate`: move published profiles to the current query recipe; run once after a recipe version bump; needs `POST_SEARCH_USERS` set where you run it, or switched-on profiles lose their post builders.
 - `pnpm --filter @xjobs/xjobs db:renormalize`: rebuild normalized jobs from raw storage; run once after a `NORMALIZER_VERSION` bump.
 - `pnpm --filter @xjobs/xjobs db:reprocess -- <flags>`: send in-scope jobs back to the processor (`--null-status`, `--failed`, `--all-in-scope`, `--job <id>`); run after a prompt, schema or model change.
 - `pnpm --filter @xjobs/xjobs db:archive-actor -- --actor <name> [--dry-run]`: archive every job seen only in that Apify actor's batches and delete their matches (one transaction; run `--dry-run` first; remote needs `XJOBS_ALLOW_REMOTE_DB=1`). Nothing un-archives a job except a new ingest observation.

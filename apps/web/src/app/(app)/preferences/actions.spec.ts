@@ -6,6 +6,7 @@ import {
   saveProfileJobAction,
   saveProfileTermsAction,
   deleteProfileAction,
+  setPostSearchAction,
 } from './actions';
 
 const save = vi.hoisted(() => ({
@@ -27,6 +28,11 @@ const redirect = vi.hoisted(() => vi.fn());
 vi.mock('next/navigation', () => ({ redirect }));
 const revalidatePath = vi.hoisted(() => vi.fn());
 vi.mock('next/cache', () => ({ revalidatePath }));
+
+const setPostSearch = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/engine/server', () => ({
+  engineClient: async () => ({ setPostSearch }),
+}));
 
 const getClaims = vi.fn();
 const client = { auth: { getClaims } };
@@ -123,5 +129,44 @@ describe('deleteProfileAction', () => {
     getClaims.mockResolvedValue({ data: null });
     expect(await deleteProfileAction(ID)).toBe('failed');
     expect(del.deleteProfile).not.toHaveBeenCalled();
+  });
+});
+
+describe('setPostSearchAction', () => {
+  it('maps ok to saved and passes the id and flag', async () => {
+    setPostSearch.mockResolvedValue({
+      kind: 'ok',
+      data: { enabled: true, allowed: true, searches: 1 },
+    });
+    expect(await setPostSearchAction(ID, true)).toBe('saved');
+    expect(setPostSearch).toHaveBeenCalledWith(ID, true);
+  });
+
+  it('maps forbidden to forbidden', async () => {
+    setPostSearch.mockResolvedValue({ kind: 'forbidden' });
+    expect(await setPostSearchAction(ID, true)).toBe('forbidden');
+  });
+
+  it.each([
+    { kind: 'not-found' },
+    { kind: 'unauthorized' },
+    { kind: 'unavailable' },
+    { kind: 'invalid', message: 'x' },
+  ])('maps $kind to failed', async (result) => {
+    setPostSearch.mockResolvedValue(result);
+    expect(await setPostSearchAction(ID, false)).toBe('failed');
+  });
+
+  it('maps a thrown call to failed', async () => {
+    setPostSearch.mockRejectedValue(new Error('boom'));
+    expect(await setPostSearchAction(ID, true)).toBe('failed');
+  });
+
+  it('fails bad input without calling the engine', async () => {
+    expect(await setPostSearchAction('not-a-uuid', true)).toBe('failed');
+    expect(await setPostSearchAction(ID, 'yes' as unknown as boolean)).toBe(
+      'failed',
+    );
+    expect(setPostSearch).not.toHaveBeenCalled();
   });
 });

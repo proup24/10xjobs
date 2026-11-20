@@ -122,6 +122,7 @@ it('registers no schedule and removes the old ones when schedules are off', asyn
       'rates',
       'webhook',
       'collect-linkedin-job-board',
+      'collect-linkedin-posts',
     ]);
   } finally {
     await module.close();

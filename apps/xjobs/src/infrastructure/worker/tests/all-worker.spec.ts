@@ -82,7 +82,7 @@ import { WorkerModule } from '../worker.module';
 import { WorkerService } from '../worker.service';
 
 // No Claude credential: the processor is off in `all`.
-// Only the job board is an active channel; the others remove their schedules.
+// The job board and posts collect; the other channels remove their schedules.
 const allWorkers = [
   'infrastructure',
   'ingest',
@@ -90,11 +90,11 @@ const allWorkers = [
   'rates',
   'webhook',
   'collect-linkedin-job-board',
+  'collect-linkedin-posts',
 ];
 const inactiveSchedulers = [
   'collect-linkedin-job-board-cheap:collect',
   'collect-linkedin-job-board-bebity:collect',
-  'collect-linkedin-posts:collect',
   'collect-greenhouse:collect',
   'collect-ashby:collect',
 ];
@@ -137,6 +137,7 @@ it('runs infrastructure, ingest and every active channel collection, and the mat
       'rates:refresh',
       'webhook:sweep',
       'collect-linkedin-job-board:collect',
+      'collect-linkedin-posts:collect',
     ]);
     expect(created.removedSchedulers).toEqual(inactiveSchedulers);
     // Schedules on: one rates refresh at startup, under a fixed id.
@@ -160,7 +161,9 @@ it('skips a disabled channel and keeps running the others', async () => {
   const { module, service } = await startAll();
   try {
     expect(service.active).toBe(true);
-    expect(created.workers).toEqual(allWorkers.slice(0, -1));
+    expect(created.workers).toEqual(
+      allWorkers.filter((name) => name !== 'collect-linkedin-job-board'),
+    );
     expect(created.removedSchedulers).toEqual([
       'collect-linkedin-job-board:collect',
       ...inactiveSchedulers,

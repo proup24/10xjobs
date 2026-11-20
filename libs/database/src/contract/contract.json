@@ -4709,6 +4709,13 @@
                   "kind": "scalar"
                 }
               },
+              "postSearch": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "publishedAt": {
                 "nullable": true,
                 "type": {
@@ -4930,6 +4937,9 @@
                 },
                 "position": {
                   "column": "position"
+                },
+                "postSearch": {
+                  "column": "postSearch"
                 },
                 "publishedAt": {
                   "column": "publishedAt"
@@ -12322,6 +12332,15 @@
                   "dataType": "pg/text",
                   "nullable": false
                 },
+                "postSearch": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
                 "publishedAt": {
                   "codecId": "pg/timestamptz-date@1",
                   "dataType": "pg/timestamptz",
@@ -14467,7 +14486,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "1d9c360ab7e1f94820c35389f4fc5e6779dadfbab7e6b3c330e3d9ce6e1fd55f"
+    "storageHash": "e7b08e363baaa0a3e156ae4de9f711a51863b987540910924cedef23bf467e55"
   },
   "execution": {
     "executionHash": "7b5eaf1d91dcda38671ed0758e62b64e510de826d248ab15bddc3faa2e947c57",

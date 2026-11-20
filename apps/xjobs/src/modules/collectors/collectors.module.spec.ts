@@ -7,8 +7,8 @@ import { AshbyCollector } from './providers/ashby.collector';
 import { GreenhouseCollector } from './providers/greenhouse.collector';
 import { LinkedinJobBoardCollector } from './providers/linkedin-job-board.collector';
 import { LinkedinJobBoardCheapCollector } from './providers/linkedin-job-board-cheap.collector';
-import { LinkedinJobBoardBebityCollector } from './providers/linkedin-job-board-bebity.collector';
 import { LinkedinPostsCollector } from './providers/linkedin-posts.collector';
+import { LinkedinJobBoardBebityCollector } from './providers/linkedin-job-board-bebity.collector';
 
 async function compile() {
   return Test.createTestingModule({

@@ -1,11 +1,9 @@
-import type { NormalizeContext } from './normalize';
-import { exactPostedAt, postedAtFromAgo } from './posted-at';
-import { emptyRecord, type NormalizedRecord } from './record';
-import { cleanNumber, cleanText, datePart, objectAt } from './text';
+import { type NormalizedRecord } from './record';
+import { cleanNumber, cleanText } from './text';
 
 /*
  * Field helpers shared by the LinkedIn mappers. A LinkedIn job board item is
- * mapped by its actor's mapper in `mappers/`; posts are mapped here.
+ * mapped by its actor's mapper in `mappers/`; posts are stored raw.
  */
 
 /** The largest salary bound the job columns hold (PostgreSQL `integer`). */
@@ -81,46 +79,4 @@ export function jobPoster(
   return posterName || posterUrl
     ? { name: posterName, profileUrl: posterUrl, type: 'person' }
     : null;
-}
-
-/** `"2 hours ago • Visible to anyone on or off LinkedIn"` → `"2 hours ago"`. */
-function agoPart(value: unknown): string | null {
-  return cleanText(value)?.split('•')[0]?.trim() ?? null;
-}
-
-/**
- * A post is not a job: it may hold none (an #OpenToWork post) or several (a
- * digest), so only the body and the author are kept. The author is never the
- * employer; Process extracts jobs from the body.
- */
-export function mapLinkedinPost(
-  p: Record<string, unknown>,
-  ctx: NormalizeContext,
-): NormalizedRecord {
-  const posted = objectAt(p.postedAt);
-  const publishedAt = datePart(posted.date);
-  const author = objectAt(p.author);
-  const name = cleanText(author.name);
-  const profileUrl = httpUrl(author.linkedinUrl)?.toString() ?? null;
-  return emptyRecord({
-    kind: 'post',
-    publishedAt,
-    postedAt:
-      exactPostedAt(posted.date) ??
-      postedAtFromAgo(
-        agoPart(posted.postedAgoText),
-        ctx.scrapedAt,
-        publishedAt,
-      ),
-    descriptionText: cleanText(p.content),
-    postingUrl: cleanText(p.linkedinUrl) as string,
-    poster:
-      name || profileUrl
-        ? {
-            name,
-            profileUrl,
-            type: author.type === 'company' ? 'company' : 'person',
-          }
-        : null,
-  });
 }

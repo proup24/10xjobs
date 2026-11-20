@@ -1499,6 +1499,7 @@ export type Database = {
           locations: NonNullable<Json>;
           noticePeriodDays: number;
           position: string;
+          postSearch: boolean;
           publishedAt: string | null;
           resumeFilename: string | null;
           resumeKey: string | null;
@@ -1529,6 +1530,7 @@ export type Database = {
           locations: NonNullable<Json>;
           noticePeriodDays: number;
           position: string;
+          postSearch?: boolean;
           publishedAt?: string | null;
           resumeFilename?: string | null;
           resumeKey?: string | null;
@@ -1558,6 +1560,7 @@ export type Database = {
           locations?: NonNullable<Json>;
           noticePeriodDays?: number;
           position?: string;
+          postSearch?: boolean;
           publishedAt?: string | null;
           resumeFilename?: string | null;
           resumeKey?: string | null;

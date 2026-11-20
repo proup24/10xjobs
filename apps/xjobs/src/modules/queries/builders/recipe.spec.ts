@@ -22,7 +22,7 @@ describe('recipe', () => {
   });
 
   it.each<[string, Partial<QuerySearchCombination>]>([
-    ['channel', { channel: Channel.LINKEDIN_POSTS }],
+    ['channel', { channel: Channel.ASHBY }],
     ['location', { location: 'rabat, morocco' }],
     ['experience', { experience: Seniority.staff }],
     ['type', { type: Arrangement.hybrid }],
@@ -50,9 +50,15 @@ describe('recipe', () => {
   });
 
   it('keeps boolean operators uppercase in the stored keyword', () => {
-    expect(
-      toRecipe({ ...base, channel: Channel.LINKEDIN_POSTS }).keyword,
-    ).toContain(' OR ');
+    expect(toRecipe({ ...base, channel: Channel.ASHBY }).keyword).toContain(
+      ' OR ',
+    );
+  });
+
+  it('does not build a post recipe', () => {
+    expect(() =>
+      toRecipe({ ...base, channel: Channel.LINKEDIN_POSTS }),
+    ).toThrow('Post recipes are built by postRecipes');
   });
 
   it('ignores params key order', () => {
@@ -80,10 +86,6 @@ describe('recipe', () => {
     [
       Channel.LINKEDIN_JOB_BOARD,
       '7b3648b52e3b89e7901bce1ff5a4ce4186cfe74a33f9e1b6a85bd277ba90d534',
-    ],
-    [
-      Channel.LINKEDIN_POSTS,
-      '874ab641367344c4ea1e950621f1409928ceb2b04b995ff081099841ea8ad790',
     ],
     [
       Channel.GREEN_HOUSE,

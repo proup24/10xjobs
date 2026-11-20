@@ -28,6 +28,8 @@ export abstract class QuerySearchRepository {
    * and goes inactive at 0. Returns how many links were removed.
    */
   abstract detach(profileId: string): Promise<number>;
+  /** Like `detach`, only for the builders on `channel`; the other links stay. */
+  abstract detachChannel(profileId: string, channel: Channel): Promise<number>;
   /**
    * The profile's linked, non-deleted builders, oldest first, optionally for one
    * channel; null when the profile is not this user's.
@@ -165,6 +167,27 @@ export class PrismaQuerySearchRepository extends QuerySearchRepository {
         await PrismaQuerySearchRepository.adjust(tx, link.queryId, -1);
       }
       return links.length;
+    });
+  }
+
+  detachChannel(profileId: string, channel: Channel): Promise<number> {
+    return this.transaction(async (tx) => {
+      const orm = tx.orm.public;
+      const links = await orm.ProfileQuerySearchBuilder.where({ profileId })
+        .orderBy((link) => link.queryId.asc())
+        .all();
+      const builders = links.length
+        ? await orm.QuerySearchBuilder.where({ channel })
+            .where((row) => row.id.in(links.map((link) => link.queryId)))
+            .all()
+        : [];
+      const onChannel = new Set(builders.map((builder) => builder.id));
+      const dropped = links.filter((link) => onChannel.has(link.queryId));
+      for (const link of dropped) {
+        await orm.ProfileQuerySearchBuilder.where({ id: link.id }).delete();
+        await PrismaQuerySearchRepository.adjust(tx, link.queryId, -1);
+      }
+      return dropped.length;
     });
   }
 

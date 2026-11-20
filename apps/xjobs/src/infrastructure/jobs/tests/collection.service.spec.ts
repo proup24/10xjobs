@@ -1200,6 +1200,213 @@ describe('CollectionService daily budget', () => {
   });
 });
 
+describe('CollectionService posts budget and incomplete runs', () => {
+  const POSTS = Channel.LINKEDIN_POSTS;
+  const posts = (count: number, position = 'fullstack') =>
+    builders(count, {
+      channel: POSTS,
+      params: {
+        language: 'en',
+        position,
+        hiringWord: 'hiring',
+        positionWords: [position],
+        spellings: ['react'],
+        remote: true,
+      },
+    });
+  const spend = (
+    segments: ReturnType<typeof setup>['segments'],
+    costMicroUsd: number | null,
+  ) =>
+    segments.runs.push({
+      id: `spent-${segments.runs.length}`,
+      channel: POSTS,
+      segmentKey: 'k',
+      segmentHash: 'h',
+      queryIds: [],
+      windowStart: new Date(),
+      windowEnd: new Date(),
+      startedAt: new Date(),
+      finishedAt: new Date(),
+      status: 'succeeded',
+      fetched: 0,
+      costMicroUsd,
+      capped: false,
+      truncatedQueryIds: [],
+      perQuery: {},
+      searchTotals: null,
+      error: null,
+      apifyRunId: null,
+      costFinalAt: null,
+    });
+
+  it('reads its own budget setting', async () => {
+    const { collection, configGet } = setup(posts(1), undefined, POSTS, 1.5);
+    await collection.collect(POSTS);
+    expect(configGet).toHaveBeenCalledWith(
+      'COLLECTION_DAILY_BUDGET_USD_LINKEDIN_POSTS',
+      expect.anything(),
+    );
+  });
+
+  it('caps each posts run at the budget left', async () => {
+    const { collection, collector, segments } = setup(
+      posts(1),
+      undefined,
+      POSTS,
+      1.5,
+    );
+    spend(segments, 1_200_000);
+
+    await collection.collect(POSTS);
+
+    expect(collector.collect).toHaveBeenCalledTimes(1);
+    const [search] = collector.collect.mock.calls[0];
+    expect(Math.abs(search.maxChargeUsd! - 0.3)).toBeLessThan(1e-9);
+  });
+
+  it('lowers the next run of the tick by what the last one cost', async () => {
+    const { collection, collector } = setup(
+      [...posts(1), ...posts(1, 'backend')],
+      async (s) => resultFor(s, undefined, { costUsd: 1 }),
+      POSTS,
+      1.5,
+    );
+
+    await collection.collect(POSTS);
+
+    expect(collector.collect).toHaveBeenCalledTimes(2);
+    const limits = collector.collect.mock.calls.map(([s]) => s.maxChargeUsd!);
+    expect(limits[0]).toBeCloseTo(1.5, 9);
+    expect(limits[1]).toBeCloseTo(0.5, 9);
+  });
+
+  it('skips posts segments once less than a cent is left', async () => {
+    const { collection, collector, segments } = setup(
+      posts(1),
+      undefined,
+      POSTS,
+      1.5,
+    );
+    spend(segments, 1_495_000);
+
+    const summary = await collection.collect(POSTS);
+
+    expect(collector.collect).not.toHaveBeenCalled();
+    expect(summary).toMatchObject({
+      segmentsDeferred: 1,
+      batches: 0,
+      segmentsFailed: 0,
+    });
+    expect(segments.cursors.size).toBe(0);
+  });
+
+  it('starts no further run once a run left less than a cent', async () => {
+    const { collection, collector } = setup(
+      [...posts(1), ...posts(1, 'backend')],
+      async (s) => resultFor(s, undefined, { costUsd: 1.495 }),
+      POSTS,
+      1.5,
+    );
+
+    const summary = await collection.collect(POSTS);
+
+    expect(collector.collect).toHaveBeenCalledTimes(1);
+    expect(summary.segmentsDeferred).toBe(1);
+  });
+
+  it('stores an incomplete run without moving cursors', async () => {
+    const rows = posts(1);
+    const covered = new Date(Date.now() - 2 * 3_600_000);
+    rows[0]!.coveredUntil = covered;
+    const { collection, segments, ingestQueue, storage } = setup(
+      rows,
+      async (s) =>
+        resultFor(s, () => [item(1), item(2), item(3)], {
+          unattributed: [],
+          fetched: 3,
+          incomplete: 'no available resource',
+        }),
+      POSTS,
+      1.5,
+    );
+
+    const summary = await collection.collect(POSTS);
+
+    expect(summary).toMatchObject({ batches: 1, segmentsFailed: 0 });
+    expect(segments.collected).toHaveLength(1);
+    const { run, batch } = segments.collected[0]!;
+    expect(batch.itemCount).toBe(3);
+    expect(run).toMatchObject({
+      status: 'partial',
+      error: 'no available resource',
+    });
+    expect(ingestQueue.enqueue).toHaveBeenCalledWith(batch.id);
+    const file = parseBatchFile(
+      await storage.get(ingestConfig.bucket, batch.storageKey),
+    );
+    expect(file.itemsByQuery[rows[0]!.id]).toHaveLength(3);
+    expect(segments.cursors.get(rows[0]!.id)).toEqual(covered);
+    expect(segments.claims.size).toBe(0);
+  });
+
+  it('counts a posts run with no cost at 25 cents', async () => {
+    const { collection, segments } = setup(posts(1), undefined, POSTS, 1.5);
+    const spent = vi.spyOn(segments, 'spentMicroUsd');
+
+    await collection.collect(POSTS);
+
+    expect(spent).toHaveBeenCalledWith(POSTS, expect.any(Date), 250_000);
+  });
+
+  it('counts a posts fetch that throws at its full charge limit for the rest of the tick', async () => {
+    let calls = 0;
+    const { collection, collector, segments } = setup(
+      [...posts(1), ...posts(1, 'backend')],
+      async (s) => {
+        calls += 1;
+        if (calls === 1) throw new Error('apify down');
+        return resultFor(s);
+      },
+      POSTS,
+      1.5,
+    );
+    spend(segments, 1_000_000);
+
+    // Every run that happened failed, so the job fails too.
+    await expect(collection.collect(POSTS)).rejects.toThrow(
+      'LINKEDIN_POSTS collection failed for all 1 segments',
+    );
+
+    // The first run could have charged all $0.50 left: the second never starts.
+    expect(collector.collect).toHaveBeenCalledTimes(1);
+    expect(segments.runs).toHaveLength(2);
+    const failed = segments.runs.find((r) => r.status === 'failed')!;
+    expect(failed.costMicroUsd).toBeNull();
+  });
+
+  it('never splits or reruns a full posts run', async () => {
+    const rows = posts(2);
+    const { collection, collector, segments } = setup(
+      rows,
+      async (s) =>
+        resultFor(s, undefined, {
+          truncatedQueryIds: s.queries.map((q) => q.id),
+        }),
+      POSTS,
+      1.5,
+    );
+
+    const summary = await collection.collect(POSTS);
+
+    expect(collector.collect).toHaveBeenCalledTimes(1);
+    expect(summary.segments).toBe(1);
+    const { run } = segments.collected[0]!;
+    for (const row of rows)
+      expect(segments.cursors.get(row.id)).toEqual(run.windowEnd);
+  });
+});
+
 describe('CollectionService.stop', () => {
   it('finishes the segment in flight and leaves the rest unclaimed for the next run', async () => {
     const rows = builders(25);
@@ -1311,7 +1518,11 @@ describe('CollectionService claims', () => {
     await collection.collect(Channel.LINKEDIN_POSTS);
 
     const [search] = collector.collect.mock.calls[0];
-    expect(search.since.getTime()).toBe(fresh.getTime() - 15 * 60_000);
+    const { overlapMinutes } = channelJobsConfig[Channel.LINKEDIN_POSTS].window;
+    expect(overlapMinutes).toBeGreaterThan(0);
+    expect(search.since.getTime()).toBe(
+      fresh.getTime() - overlapMinutes * 60_000,
+    );
   });
 
   it('releases claims and moves cursors on success', async () => {
@@ -1427,14 +1638,21 @@ describe('channelJobsConfig', () => {
     });
   });
 
-  it('collects LinkedIn posts hourly over a day at most', () => {
+  it('collects posts hourly every day', () => {
     expect(channelJobsConfig[Channel.LINKEDIN_POSTS]).toMatchObject({
-      schedule: { pattern: '0 8-22 * * 1-5', timezone: 'UTC' },
-      window: { initialHours: 24, overlapMinutes: 15, maximumHours: 24 },
+      queueName: 'collect-linkedin-posts',
+      enabled: true,
+      schedule: { pattern: '0 * * * *', timezone: 'Africa/Casablanca' },
+      concurrency: 1,
+      attempts: 1,
+      claimLeaseMinutes: 30,
+      run: { actor: 'harvestapi/linkedin-post-search', waitSecs: 900 },
     });
-    expect(channelJobsConfig[Channel.LINKEDIN_POSTS].window).not.toHaveProperty(
-      'minimumHours',
-    );
+    expect(channelJobsConfig[Channel.LINKEDIN_POSTS].window).toEqual({
+      initialHours: 24,
+      overlapMinutes: 5,
+      maximumHours: 24,
+    });
   });
 
   it('collects Google boards daily over at least three days', () => {

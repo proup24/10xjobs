@@ -1,4 +1,6 @@
 import { DeleteProfileButton } from '@/components/preferences/delete-profile-button';
+import { Suspense } from 'react';
+import { PostSearchSection } from '@/components/preferences/post-search-section';
 import { requireOwnProfile } from '../../guard';
 import { preferenceProfiles } from '../../data';
 
@@ -32,6 +34,9 @@ export default async function ProfileLayout({
           blockedReason={blockedReason}
         />
       </div>
+      <Suspense fallback={null}>
+        <PostSearchSection profileId={profileId} />
+      </Suspense>
       {children}
     </div>
   );

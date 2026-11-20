@@ -72,6 +72,7 @@ function storedRow(over: Partial<ProfileRow> = {}): ProfileRow {
     userId: 'u1',
     state: 'draft',
     publishedAt: null,
+    postSearch: false,
     resumeFilename: null,
     resumeKey: null,
     resumeSha256: null,

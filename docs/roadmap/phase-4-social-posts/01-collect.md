@@ -1,5 +1,7 @@
 # 01: Collect
 
+Status: built. Spec: [posts collect design](../../superpowers/specs/2026-11-20-posts-collect-design.md).
+
 ## Goal
 
 Hiring posts for every published profile are collected on the hosted schedule and stored as raw items, at a known and capped cost.

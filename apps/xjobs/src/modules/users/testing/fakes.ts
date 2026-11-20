@@ -136,6 +136,7 @@ export class FakeProfilesRepository extends ProfilesRepository {
       resumeUploadedAt: null,
       state: ProfileState.draft,
       publishedAt: null,
+      postSearch: false,
       createdAt: now,
       updatedAt: now,
       techStack: FakeProfilesRepository.techStack(userId, id, skills),
@@ -151,6 +152,12 @@ export class FakeProfilesRepository extends ProfilesRepository {
       state: ProfileState.published,
       publishedAt,
     });
+  }
+
+  async setPostSearch(userId: string, profileId: string, enabled: boolean) {
+    const profile = await this.findById(userId, profileId);
+    if (!profile) return null;
+    return Object.assign(profile, { postSearch: enabled });
   }
 
   /** The labels of `labels` the places name, a city's country included; unknown ones are left out. */

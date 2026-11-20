@@ -15,6 +15,7 @@ import {
   saveProfileTerms,
   type SaveResult,
 } from '@/lib/setup/save';
+import { engineClient } from '@/lib/engine/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { isProfileId } from './guard';
 
@@ -87,4 +88,26 @@ export async function deleteProfileAction(
   // The nav lists profiles: re-read it before landing on the next one.
   revalidatePath('/preferences', 'layout');
   redirect(hrefAfterDelete(list, profileId));
+}
+
+/**
+ * Turns LinkedIn post search on or off for one of the user's profiles. Only the engine
+ * writes `postSearch`; the web app has no grant on it.
+ */
+export async function setPostSearchAction(
+  profileId: string,
+  enabled: boolean,
+): Promise<'saved' | 'forbidden' | 'failed'> {
+  if (!isProfileId(profileId) || typeof enabled !== 'boolean') return 'failed';
+  try {
+    const result = await (await engineClient()).setPostSearch(
+      profileId,
+      enabled,
+    );
+    if (result.kind === 'ok') return 'saved';
+    if (result.kind === 'forbidden') return 'forbidden';
+    return 'failed';
+  } catch {
+    return 'failed';
+  }
 }
