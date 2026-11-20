@@ -30,8 +30,8 @@ export class LinkedinJobBoardCheapCollector {
   /** The actor and its limits; fixed for every run of this collector. */
   static readonly config: Readonly<LinkedinJobBoardRunConfig> = {
     actor: CHEAP_SCRAPER_ACTOR,
-    // 1,000 rows plus the start fee, with margin (bebity charges $0.00125 a
-    // job); the cap only stops a runaway run.
+    // 1,000 rows plus the start fee, with margin; the cap only stops a
+    // runaway run.
     maxRunChargeUsd: 1.5,
     // Its start fee is $0.005 per GB, and its 4 GB default made every run cost $0.02 before any row.
     memoryMbytes: 1024,
