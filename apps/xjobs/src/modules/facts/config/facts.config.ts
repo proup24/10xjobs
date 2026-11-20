@@ -3,4 +3,4 @@
  * posting-language thresholds, or a change to how requirements are derived from no
  * sponsorship. Stored with each `job_facts` row.
  */
-export const FACTS_VERSION = 5;
+export const FACTS_VERSION = 6;
