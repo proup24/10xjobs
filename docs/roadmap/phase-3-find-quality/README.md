@@ -30,7 +30,7 @@ Same as Phases 1 and 2: each slice is a short brief covering the problem, the op
 | 06  | [One job per apply link](06-one-job-per-apply-link.md)                         | Harvest | Done (PR 86)                   |
 | 07  | [Trial LinkedIn actors](07-trial-linkedin-actors.md)                           | Harvest | Designed; plan next            |
 | 08  | [Seniority to LinkedIn level, and paid repeats](08-seniority-levels.md)        | Harvest | Brief; brainstorm next         |
-| 09  | [Non-remote jobs from remote searches](09-non-remote-leak.md)                  | Match   | Brief; investigate first       |
+| 09  | [Non-remote jobs from remote searches](09-non-remote-leak.md)                  | Match   | Designed; plan written         |
 | 10  | [Search yield](10-search-yield.md)                                             | Harvest | Findings; not yet discussed    |
 
 ## Follow-ups from slice 02
