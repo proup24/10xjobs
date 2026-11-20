@@ -9,9 +9,8 @@ import { LINKEDIN_GEO_IDS } from './linkedin_geo';
 /**
  * LinkedIn `f_E` codes, comma-joined when a seniority spans several:
  * 1 internship, 2 entry, 3 associate, 4 mid-senior, 5 director. Posters tag
- * loosely (most mid-level jobs say mid-senior), so each seniority takes its
- * neighbours too, but
- * entry-level and staff searches stay narrow: 2 only for junior, 4 only for staff.
+ * loosely (most mid-level jobs say mid-senior), so mid adds associate and lead
+ * and principal add director, while junior (2) and staff (4) stay narrow.
  */
 const EXPERIENCE_LEVELS: Readonly<Record<string, string | null>> = {
   [Seniority.junior]: '2',

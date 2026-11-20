@@ -13,18 +13,18 @@ Spec: [seniority levels and paid repeats](../../superpowers/specs/2026-11-20-sen
 - **Repeats across ticks:** deferred. harvestapi has no skip-known-ids input and no repost filter, and a shorter window would lose new jobs.
 - **Recipe:** version 12 to 13; run `db:regenerate` once after deploy.
 
-Found 2026-11-18 on `10xjobs-dev`. The user says the map is wrong. It gets its own brainstorm and spec.
+Found 2026-11-18 on `10xjobs-dev`. The user says the map is wrong. It was brainstormed and specced on 2026-11-20 (see Decided above).
 
 ## Problem
 
 Each profile seniority is searched as LinkedIn experience levels (`f_E`). The builder deliberately takes neighbouring levels too, because posters tag loosely (`queries/channels/linkedin_board.builder.ts`, `EXPERIENCE_LEVELS`):
 
-| Seniority              | Levels searched today |
-| ---------------------- | --------------------- |
-| junior                 | internship, entry     |
-| mid                    | associate, mid-senior |
-| senior                 | mid-senior            |
-| staff, lead, principal | mid-senior, director  |
+| Seniority              | Levels searched before slice 08 |
+| ---------------------- | ------------------------------- |
+| junior                 | internship, entry               |
+| mid                    | associate, mid-senior           |
+| senior                 | mid-senior                      |
+| staff, lead, principal | mid-senior, director            |
 
 The user's correction: **junior is entry, not internship; staff is director, not mid-senior** _(user)_.
 
@@ -36,7 +36,7 @@ The user's correction: **junior is entry, not internship; staff is director, not
 - 11 searches returned nothing in all 19 runs. 10 of them are director or internship searches; the other is Morocco remote entry.
 - They cost almost nothing, because the actor charges per row.
 
-## Open questions
+## Open questions (answered in Decided above)
 
 - The full map per seniority: what do mid, senior, lead and principal search?
 - Staff to director only would drop the mid-senior search for staff. On LinkedIn, most staff engineer jobs are tagged mid-senior. Is that loss wanted, or does staff keep mid-senior through the senior search when a profile picks both?

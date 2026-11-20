@@ -232,7 +232,7 @@ export class CollectionService {
    * one member was stored without moving cursors: it is halved and each half
    * run at once over the same hour, down to one member. A full run of one
    * member moved its cursors like any other, and older postings of that hour
-   * are lost. Every run of a tick starts here, so a check before each run
+   * are lost (unless it was capped, which keeps its cursors). Every run of a tick starts here, so a check before each run
    * (shutdown, spend) covers splits too.
    */
   private async collectSegment(
@@ -293,7 +293,8 @@ export class CollectionService {
       return;
     }
     if (group) group.maxReturned = Math.max(group.maxReturned, outcome.fetched);
-    if (splittable && outcome.truncated)
+    // A capped run kept its cursors, so the next tick re-covers the hour: nothing is lost.
+    if (splittable && outcome.truncated && !outcome.capped)
       this.logger.warn(
         `${segment.key} is full at ${boardRun(channel).maxRowsPerSearch} rows; older postings in this hour are lost`,
       );
@@ -584,6 +585,7 @@ export class CollectionService {
       collected,
       costUsd,
       truncated: result.truncatedQueryIds.length > 0,
+      capped: run.capped,
       fetched: result.fetched,
       searched: owned,
     };

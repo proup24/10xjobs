@@ -320,8 +320,8 @@ describe('channel query builders', () => {
     expect({ ...trial, channel: main.channel, hash: main.hash }).toEqual(main);
   });
 
-  it('keeps the LinkedIn job board recipe hash it had before the trial channel', () => {
-    // Literal taken on the code before the trial channel existed.
+  it('pins the LinkedIn job board recipe hash', () => {
+    // A literal: it changes only when the recipe or its version does.
     const recipe = toRecipe({
       ...base,
       channel: Channel.LINKEDIN_JOB_BOARD,

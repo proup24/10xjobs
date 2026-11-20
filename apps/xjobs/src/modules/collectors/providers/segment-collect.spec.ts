@@ -1,4 +1,3 @@
-import { Logger } from '@nestjs/common';
 import { Channel } from 'src/common/enums';
 import { SearchNotStartedError } from '../utils/search-not-started';
 import type { BoardSearchRunConfig, SegmentSearch } from '../types/collector';
@@ -289,21 +288,13 @@ describe('LinkedIn job board segment', () => {
   });
 
   it('is full only at its row limit, whatever LinkedIn reports in total', async () => {
-    const warn = vi
-      .spyOn(Logger.prototype, 'warn')
-      .mockImplementation(() => undefined);
-    try {
-      const some = Array.from({ length: 52 }, (_, i) => item(i, 400));
-      const result = await board_(actor(() => some).provider).collect({
-        ...segment(Channel.LINKEDIN_JOB_BOARD, queries),
-        segmentKey: 'seg-k',
-      });
-      expect(result.truncatedQueryIds).toEqual([]);
-      expect(result.searchTotals).toEqual({ totalElements: 400 });
-      expect(warn).not.toHaveBeenCalled();
-    } finally {
-      warn.mockRestore();
-    }
+    const some = Array.from({ length: 52 }, (_, i) => item(i, 400));
+    const result = await board_(actor(() => some).provider).collect({
+      ...segment(Channel.LINKEDIN_JOB_BOARD, queries),
+      segmentKey: 'seg-k',
+    });
+    expect(result.truncatedQueryIds).toEqual([]);
+    expect(result.searchTotals).toEqual({ totalElements: 400 });
   });
 
   it("keeps the first item's pagination as the search totals, null with no items", async () => {

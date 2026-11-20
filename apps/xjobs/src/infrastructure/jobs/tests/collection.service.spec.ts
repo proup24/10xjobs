@@ -709,6 +709,25 @@ describe('CollectionService LinkedIn search splits', () => {
     expect(splits.splits.size).toBe(0);
   });
 
+  it('does not say postings are lost when a full single member was capped, and keeps its cursors', async () => {
+    const rows = linkedin(1);
+    const { collection, segments, warn } = run(rows, (s) =>
+      resultFor(s, () => [item(1)], {
+        fetched: ROWS,
+        truncatedQueryIds: s.queries.map((q) => q.id),
+        capped: true,
+      }),
+    );
+    await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+
+    expect(segments.collected.map((x) => x.advance)).toEqual([[]]);
+    expect(
+      warn.mock.calls.filter(([text]) =>
+        String(text).includes('older postings'),
+      ),
+    ).toEqual([]);
+  });
+
   it('treats a full run narrowed to one member by its claim as a single member', async () => {
     const rows = linkedin(2);
     const [a, b] = rows.map((r) => r.id);
@@ -1025,7 +1044,7 @@ describe('CollectionService daily budget', () => {
     expect(collector.collect).not.toHaveBeenCalled();
   });
 
-  it('stops a split rerun once the cap is reached, and moves no cursor for it', async () => {
+  it('stops a split half once the cap is reached, and moves no cursor for it', async () => {
     const rows = linkedin(2);
     const { collection, collector, segments, splits } = run(
       rows,

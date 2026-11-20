@@ -111,8 +111,9 @@ function searchKey(recipe: QuerySearchRecipe): string {
 
 /**
  * The first recipe of each distinct search, in order. Seniorities can build
- * the same search (senior and staff share LinkedIn's f_E 4, lead and principal share 4,5; mid
- * and unstated add no word), and running it twice adds cost, not recall.
+ * the same search (senior and staff share LinkedIn's f_E 4, lead and
+ * principal share 4,5; mid and unstated add no word), and running it twice
+ * adds cost, not recall.
  * Combinations list seniorities in enum order, so the lowest level is kept.
  */
 export function dedupeBySearch(
