@@ -1,0 +1,174 @@
+{
+  "id": "01a1efa3-4b6f-755f-885d-5d4e96dcd69c",
+  "input": {
+    "title": "DevOps Engineer",
+    "description": "Job Title: AWS DevOps Engineer\n\nCompany: Clinisol Tech Inc.\n\nEmployment Type: Full-Time, W2 (deployed to client projects)\n\nExperience: 3–4 years\n\nCompensation: $65,000 – $90,000 per year\n\nWork Mode: On-Site / Hybrid\n\nWork Authorization\n\nAt this time, we are only able to consider candidates who are authorized to work in the United States without sponsorship.\n\nWhy This Role?\n\nModern businesses run on cloud infrastructure — and DevOps engineers who can automate, scale, secure, and optimize AWS environments are in high demand. Build expertise in cloud automation, CI/CD, Infrastructure as Code, containers, and Kubernetes while working on real-world client environments and modern cloud transformation initiatives.\n\nJob Summary\n\nClinisol Tech Inc. is looking for a hands-on AWS DevOps Engineer to support cloud infrastructure, deployment automation, and production operations across client environments.\n\nThe ideal candidate will have practical experience building and maintaining AWS infrastructure, CI/CD pipelines, Infrastructure as Code, containerized applications, and automated deployment processes. You will work closely with development, cloud, security, and operations teams to improve application delivery, reliability, scalability, and security.\n\nThis is a hands-on engineering role suited for someone who enjoys automation, troubleshooting, cloud infrastructure, and continuous improvement.\n\nKey Responsibilities\n\nAWS Cloud & Infrastructure\n\n * Design, deploy, configure, and maintain AWS infrastructure across development, QA, staging, and production environments.\n * Work with AWS services including EC2, VPC, S3, IAM, RDS, Route 53, CloudWatch, ELB/ALB, ECR, ECS and/or EKS.\n * Support highly available, scalable, and secure cloud environments.\n * Assist with cloud migrations and modernization of existing infrastructure.\n\nInfrastructure as Code & Automation\n\n * Develop and maintain reusable infrastructure using Terraform and/or AWS CloudFormation.\n * Create Terraform modules and follow Infrastructure as Code best practices.\n * Automate repetitive infrastructure and operational tasks using Python, Bash, or Shell scripting.\n * Manage configuration and environment-specific deployments through version-controlled code.\n\nCI/CD & Release Automation\n\n * Build, maintain, and optimize CI/CD pipelines for application build, testing, security scanning, and deployment.\n * Work with one or more CI/CD platforms such as Jenkins, GitHub Actions, GitLab CI/CD, AWS CodePipeline/CodeBuild, or similar tools.\n * Implement automated deployment strategies across multiple environments.\n * Troubleshoot failed builds, deployments, and release issues.\n * Support rollback and release-management processes.\n\nContainers & Kubernetes\n\n * Build and manage containerized applications using Docker.\n * Deploy and manage applications using Kubernetes, preferably AWS EKS, and/or Amazon ECS.\n * Work with Kubernetes resources, deployments, services, ingress, namespaces, ConfigMaps, and Secrets.\n * Use Helm or similar tools for application deployment and configuration.\n * Exposure to GitOps tools such as Argo CD or Flux is a plus.\n\nMonitoring, Observability & Reliability\n\n * Implement monitoring, logging, alerting, and performance tracking for cloud and application environments.\n * Work with tools such as AWS CloudWatch, Prometheus, Grafana, Datadog, ELK/Elastic, or similar platforms.\n * Troubleshoot infrastructure, application, deployment, networking, and performance issues.\n * Participate in production support, incident response, root-cause analysis, and preventive-action activities.\n\nSecurity & Cost Optimization\n\n * Implement AWS security best practices involving IAM, least-privilege access, security groups, network segmentation, encryption, secrets management, and secure deployments.\n * Integrate security and vulnerability scanning into CI/CD pipelines where applicable.\n * Monitor AWS resource utilization and identify opportunities for cost and performance optimization.\n * Follow organizational security, compliance, and cloud governance standards.\n\nCollaboration\n\n * Work closely with developers, QA, architects, security teams, and operations teams.\n * Participate in code reviews, infrastructure reviews, deployment planning, and technical discussions.\n * Document infrastructure, deployment procedures, troubleshooting steps, and operational processes.\n\nQualifications\n\n * 3+ years of hands-on experience in DevOps, Cloud Engineering, Platform Engineering, or SRE roles.\n * Strong hands-on experience with AWS.\n * Experience with Terraform and/or CloudFormation for Infrastructure as Code.\n * Hands-on experience building and managing CI/CD pipelines.\n * Experience with Docker and Kubernetes/EKS and/or ECS.\n * Strong Linux/Unix administration and troubleshooting skills.\n * Strong scripting/automation experience using Python, Bash, or Shell.\n * Good understanding of Git/GitHub/GitLab/Bitbucket and source-code management.\n * Strong understanding of AWS networking, including VPCs, subnets, security groups, load balancers, routing, and DNS.\n * Understanding of AWS IAM and cloud security fundamentals.\n * Experience troubleshooting production infrastructure and deployment issues.\n * Strong communication, analytical, and problem-solving skills.\n\n\n\nTools & Technologies You Will Use\n\n * AWS Cloud Services: EC2, S3, IAM, Lambda, ECS, EKS, VPC, Route53, CloudFront, RDS, DynamoDB.\n * Infrastructure as Code (IaC): Terraform, AWS CloudFormation.\n * CI/CD & Automation: Jenkins, GitLab CI/CD, AWS CodePipeline, AWS CodeBuild, GitHub Actions.\n * Containerization & Orchestration: Docker, Kubernetes (EKS), Helm.\n * Monitoring, Logging & Observability: AWS CloudWatch, Datadog, ELK Stack (Elasticsearch, Logstash, Kibana), Prometheus, Grafana.\n * Scripting & Configuration Management: Python, Bash, Shell Scripting, Ansible.\n * Version Control & Collaboration: Git, GitHub, GitLab, Jira, Confluence.\n * Security & Compliance: AWS KMS, AWS Secrets Manager, HashiCorp Vault, SonarQube, IAM policies.\n\nPreferred Skills\n\n * AWS Certified Solutions Architect – Associate/Professional or AWS Certified DevOps Engineer.\n * Experience implementing GitOps and automated deployment strategies.\n * Exposure to Argo CD, Flux, or similar GitOps platforms.\n * Experience implementing DevSecOps, vulnerability scanning, and secrets management.\n * Experience with AWS cost optimization and FinOps practices.\n * Exposure to microservices and cloud-native application architectures.\n * Experience supporting production environments, incident response, and root-cause analysis.\n * Familiarity with high availability, disaster recovery, and reliability engineering practices.\n\nGood to have:\n\n * Advanced EKS operations: Cluster upgrades, node groups, autoscaling, RBAC/IRSA, network policies, persistent storage, and disaster recovery.\n * AWS multi-account governance: AWS Organizations, Control Tower, cross-account IAM roles, SCPs, CloudTrail, Config, GuardDuty, and Security Hub.\n\n\nAbout Clinisol Tech Inc.\n\nClinisol Tech Inc connects businesses with skilled professionals who drive results. We combine industry expertise with a personalized approach to deliver the right talent quickly and efficiently. Our mission is to accelerate careers and companies by connecting exceptional technology talent with innovative organizations that value people."
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["onsite", "hybrid"],
+        "places": [],
+        "placeStrictness": "unstated"
+      }
+    ],
+    "roleKind": "devops_engineer",
+    "seniority": "mid",
+    "yearsRequired": {
+      "min": 3,
+      "max": 4
+    },
+    "contractMonths": null,
+    "requirements": [
+      {
+        "text": "AWS",
+        "code": "aws",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Terraform",
+        "code": "terraform",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "CloudFormation",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "Docker",
+        "code": "docker",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Kubernetes",
+        "code": "kubernetes",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Linux",
+        "code": "linux",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Python",
+        "code": "python",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      },
+      {
+        "text": "Bash",
+        "code": "bash",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      },
+      {
+        "text": "Jenkins",
+        "code": "ci_cd",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g3"
+      },
+      {
+        "text": "GitHub Actions",
+        "code": "github_actions",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g3"
+      },
+      {
+        "text": "Git",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Argo CD",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Helm",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      }
+    ],
+    "groups": [
+      {
+        "id": "g1",
+        "min": 1
+      },
+      {
+        "id": "g2",
+        "min": 1
+      },
+      {
+        "id": "g3",
+        "min": 1
+      }
+    ],
+    "requiredLanguages": [],
+    "sponsorship": "no",
+    "salary": {
+      "min": 65000,
+      "max": 90000,
+      "currency": "USD",
+      "period": "year"
+    },
+    "junkFlags": []
+  },
+  "drafted": {
+    "arrangement": {
+      "value": "onsite",
+      "reviewed": false
+    },
+    "contractType": {
+      "value": "full_time",
+      "reviewed": false
+    },
+    "isSoftwareEngineeringRole": {
+      "value": true,
+      "reviewed": false
+    },
+    "engagement": {
+      "value": "employee",
+      "reviewed": false
+    },
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
+}

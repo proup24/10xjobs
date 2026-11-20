@@ -1,0 +1,145 @@
+{
+  "id": "01a1e54f-03ac-741f-9509-d23497358c7e",
+  "input": {
+    "title": "Full Stack Developer",
+    "description": "Job Title: Full Stack React Developer\n\nLocation: 100% Remote opportunity (All over UK)\n\nDuration: 6 Months contract initially (High likelihood of extension)\n\n\nJob Description:\n\n\nAs a Senior React and Node.js Developer, you will leverage your expertise in React, TypeScript, NestJS, Node.js, and MSSQL to build scalable and efficient applications. You will play a pivotal role in the design, development, and maintenance of our web applications, ensuring they are robust, user-friendly, and data-driven.\n\n\nKey Responsibilities:\n\n\n * Develop user interfaces using React and TypeScript with a focus on performance and scalability.\n * Build and maintain back-end services using Node.js and NestJS.\n * Design and manage MSSQL databases, ensuring data integrity and performance optimization.\n * Implement data aggregations to drive meaningful insights and analytics.\n * Collaborate with cross-functional teams to define and implement application features and functionalities.\n * Write unit tests to ensure code quality and maintainability.\n * Conduct code reviews and provide leadership and mentorship to junior developers.\n * Troubleshoot and resolve application issues to ensure optimal performance.\n * Stay current with industry trends and technologies to continuously improve development processes.\n\n\nQualifications:\n\n\n * Bachelor's degree in Computer Science, Software Engineering, or a related field (or equivalent practical experience).\n * 5+ years of experience in software development with a strong focus on React, TypeScript, NestJS, Node.js, and MSSQL.\n * Proven experience in developing and managing data-driven applications, including data aggregations.\n * Strong understanding of RESTful APIs and microservices architecture.\n * Familiarity with version control systems (e.g., Git).\n * Excellent problem-solving skills and attention to detail.\n * Strong communication skills and ability to work collaboratively in a team-oriented environment.\n * Demonstrated leadership experience in guiding and mentoring team members.\n\n\nNice to Have:\n\n\n * Experience with cloud platforms such as Azure.\n * Familiarity with Infrastructure as Code tools like Terraform.\n * Knowledge of Databricks for data analytics and processing.\n * Experience with CI/CD tools, such as Jenkins."
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["remote"],
+        "places": [
+          {
+            "kind": "country",
+            "code": "GB"
+          }
+        ],
+        "placeStrictness": "label"
+      }
+    ],
+    "roleKind": "fullstack_engineer",
+    "seniority": "senior",
+    "yearsRequired": {
+      "min": 5,
+      "max": null
+    },
+    "contractMonths": 6,
+    "requirements": [
+      {
+        "text": "React",
+        "code": "react",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "TypeScript",
+        "code": "typescript",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Node.js",
+        "code": "nodejs",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "NestJS",
+        "code": "nestjs",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "MSSQL",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "RESTful APIs",
+        "code": "rest",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Git",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Azure",
+        "code": "azure",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Terraform",
+        "code": "terraform",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Databricks",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Jenkins",
+        "code": "ci_cd",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      }
+    ],
+    "groups": [],
+    "requiredLanguages": [],
+    "sponsorship": "unstated",
+    "salary": null,
+    "junkFlags": []
+  },
+  "drafted": {
+    "arrangement": {
+      "value": "remote",
+      "reviewed": false
+    },
+    "contractType": {
+      "value": "contract",
+      "reviewed": false
+    },
+    "isSoftwareEngineeringRole": {
+      "value": true,
+      "reviewed": false
+    },
+    "engagement": {
+      "value": "unstated",
+      "reviewed": false
+    },
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
+}

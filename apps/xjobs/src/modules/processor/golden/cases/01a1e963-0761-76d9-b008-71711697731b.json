@@ -1,0 +1,151 @@
+{
+  "id": "01a1e963-0761-76d9-b008-71711697731b",
+  "input": {
+    "title": "Senior Software Engineer (Java/React/AWS)",
+    "description": "Working at CreateFuture\n\n\n\nCreateFuture is an AI-native consulting partner where people do work that matters and are supported to do it well. We work alongside organisations such as PayPal, adidas, NatWest, FanDuel and Money Saving Expert, building digital products and services that make a difference while always putting people first.\n\n\n\nWe’re a team of creators. We write code, shape delivery, build go-to-market strategies, develop AI solutions and create the practices that support our people. We work side by side with our clients, challenging what’s not working and helping them to build the future. Our commitment to craft, quality, and culture has helped us scale to over 600 people in just a few years.\n\n\n\nCreateFuture is a Great Place to Work-Certified™ company and has won Best Workplaces UK multiple years in a row.\n\n\n\nJoin us on our journey. Let’s create tomorrow, together, today.\n\n\n\nAbout The Role And Team\n\n\n\nBuild software that matters. Shape the future of engineering.\n\n\n\nWe’re looking for an experienced Senior Software Engineer - Java, React & AWS who is passionate about building scalable, high-quality software and helping teams grow. This is more than a hands-on engineering role. You’ll influence technical direction, mentor other engineers, drive architectural decisions, and help us embed AI and automation into the way we deliver value for our clients.\n\n\n\nYou’ll thrive here if you enjoy solving complex problems, challenging assumptions, collaborating openly, and taking pride in delivering software that makes a real business impact.\n\n\n\nOur Tech\n\n\n\nYou’ll have strong commercial experience with:\n\n\n\n\n * Modern Java (Java 8+) including Streams, Lambdas and Optional\n * Spring Boot and the wider Spring ecosystem\n * React, including hooks, component design and state management\n * JavaScript and TypeScript\n * Spring Data JPA / Hibernate\n * Spring Security including OAuth2 and JWT\n * REST API design and implementation\n * Microservices and distributed system design\n * SQL databases with strong query optimisation skills\n * NoSQL databases\n * Messaging technologies such as Kafka or RabbitMQ\n * Docker and containerised application development\n * CI/CD pipelines using tools such as Jenkins or GitLab CI\n * Git and modern software development workflows\n * Observability tooling including logging, metrics and distributed tracing\n * Comprehensive testing across unit, integration and functional layers, including front-end testing with tools such as Jest and React Testing Library\n * Maven or Gradle\n * Java concurrency and JVM performance fundamentals\n   \n   \n   \n   \n\nAWS\n\n\n\nYou’ll have hands-on experience building and running production workloads on AWS, including:\n\n\n\n\n * AWS Lambda: designing event-driven, serverless functions triggered from API Gateway, S3, SQS or EventBridge, including running Java on Lambda and reducing cold starts (for example with SnapStart)\n * Amazon S3: bucket design, access control, lifecycle policies and event notifications\n * Amazon RDS (PostgreSQL or MySQL): connection management, read replicas, backup and restore, and performance tuning\n * Amazon CloudWatch: structured logging, custom metrics, dashboards and alarms, and using Logs Insights to diagnose production issues\n * IAM: least-privilege access for services and people\n * Infrastructure as Code: CloudFormation, CDK or Terraform\n   \n   \n   \n   \n\nExperience With The Following Would Be Advantageous\n\n\n\n\n * Python, Next.js, Spring Cloud, WebFlux or reactive programming\n * Amazon Bedrock: integrating foundation models into applications, including prompt design, retrieval-augmented generation (Knowledge Bases) and guardrails\n * Amazon Bedrock AgentCore: building, deploying and running AI agents in production, including runtime, memory, tool integration and observability\n * Amazon SageMaker: deploying, hosting or integrating machine learning models into applications\n * Snowflake or Databricks: building data integrations between AWS services and modern data platforms\n   \n   \n   \n   \n\nWhat You'll Be Doing\n\n\n\nAs a Senior Software Engineer - Java, React & AWS, you will:\n\n\n\n\n * Design, build and maintain scalable, secure and resilient applications, from backend services using modern Java and the Spring ecosystem to responsive, accessible front ends built with React.\n * Build and run cloud-native services on AWS, using Lambda, S3, RDS and CloudWatch to deliver solutions that are secure, observable and cost-effective.\n * Lead technical design and architectural discussions, ensuring solutions are maintainable, performant and aligned with best practices.\n * Develop and evolve RESTful APIs with a focus on security, versioning, performance and reliability, and integrate them seamlessly with React applications.\n * Champion engineering excellence through clean code, automated testing, documentation and code reviews.\n * Drive delivery across multiple initiatives while balancing speed, quality and commercial value.\n * Mentor engineers through coaching, pairing and constructive feedback, helping raise capability across the team.\n * Collaborate with cross-functional teams to solve problems together and deliver outstanding outcomes for clients.\n * Research and evaluate emerging technologies, frameworks and AI capabilities that improve how we build software.\n * Promote automation wherever possible, removing repetitive work so teams can focus on solving meaningful problems.\n * Contribute to a culture of continuous learning, innovation and technical excellence.\n   \n   \n   \n   \n\nYou’ll Demonstrate\n\n\n\nWhat Success Looks Like\n\n\n\nTechnical Excellence & Craft Mastery\n\n\n\n\n * Write clean, maintainable and highly optimised code.\n * Set high standards for quality, testing and documentation.\n * Coach others in engineering best practices and modern development techniques.\n   \n   \n   \n   \n\nArchitectural Leadership\n\n\n\n\n * Design scalable, resilient and secure systems, making informed trade-offs between serverless, containerised and managed AWS services.\n * Make thoughtful architectural decisions that support long-term maintainability.\n * Evaluate new technologies and guide adoption where they add value.\n   \n   \n   \n   \n\nCommercial Delivery\n\n\n\n\n * Lead projects from discovery through delivery.\n * Understand client challenges and translate them into practical technical solutions.\n * Deliver outcomes that create measurable business value.\n   \n   \n   \n   \n\nLeadership & Collaboration\n\n\n\n\n * Lead engineering ceremonies and facilitate productive technical discussions.\n * Mentor and develop engineers across the team.\n * Communicate effectively with both technical and non-technical stakeholders.\n * Foster an environment where knowledge sharing and continuous improvement are part of everyday work.\n   \n   \n   \n   \n\nAI & Innovation\n\n\n\n\n * Explore and implement AI-driven approaches that improve engineering efficiency.\n * Champion responsible adoption of AI across delivery teams.\n * Help shape our engineering practices for the future.\n   \n   \n\nWhat We’ll Offer You\n\n\n\nWe trust people to do their best work. That means flexibility over rigid rules, impact over activity, and real investment in your growth both professionally and personally. You’ll be part of a supportive, and friendly culture, surrounded by smart, curious people who care deeply about what they do.\n\n\n\nWe offer flexible working, including hybrid and remote options. Our office hubs are located in Edinburgh, Leeds, Manchester, London and Bulgaria, with occasional travel to client sites or CreateFuture offices when needed.\n\n\n\nWe trust you to manage your time balancing collaboration with client time and focused work. What matters is the impact you have, not how busy you look.\n\n\n\nOur hiring process\n\n\n\nWe try to keep our hiring process clear, fair and respectful of your time. We aim to get back to everyone who applies and we will be upfront about where you are in the process.\n\n\n\nIt Usually Looks Like This\n\n\n\n\n * Call with our Talent Acquisition Team\n * Role specific capability interview\n   \n   \n   \n   \n\nDepending on the role, we might also ask you to do a short presentation, a practical or technical task or have a values focused conversation. We will explain what is involved before anything happens.\n\n\n\nInclusion at CreateFuture\n\n\n\nWe believe diverse teams build better workplaces and better products. We want CreateFuture to be a place where people feel able to be themselves and do their best work.\n\n\n\nIf you need any adjustments or support during the application process, just. We will do what we can to help.\n\n\n\nWe look forward to your application!"
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["unstated"],
+        "places": [
+          {
+            "kind": "city",
+            "name": "Edinburgh",
+            "countryCode": "GB"
+          },
+          {
+            "kind": "city",
+            "name": "Leeds",
+            "countryCode": "GB"
+          },
+          {
+            "kind": "city",
+            "name": "Manchester",
+            "countryCode": "GB"
+          },
+          {
+            "kind": "city",
+            "name": "London",
+            "countryCode": "GB"
+          },
+          {
+            "kind": "country",
+            "code": "BG"
+          }
+        ],
+        "placeStrictness": "mention"
+      }
+    ],
+    "roleKind": "fullstack_engineer",
+    "seniority": "senior",
+    "yearsRequired": null,
+    "contractMonths": null,
+    "requirements": [
+      {
+        "text": "Java",
+        "code": "java",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Spring Boot",
+        "code": "spring",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "React",
+        "code": "react",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "TypeScript",
+        "code": "typescript",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "AWS",
+        "code": "aws",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Kafka",
+        "code": "kafka",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "RabbitMQ",
+        "code": "rabbitmq",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "Docker",
+        "code": "docker",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Python",
+        "code": "python",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      }
+    ],
+    "groups": [
+      {
+        "id": "g1",
+        "min": 1
+      }
+    ],
+    "requiredLanguages": [],
+    "sponsorship": "unstated",
+    "salary": null,
+    "junkFlags": []
+  },
+  "drafted": {
+    "arrangement": {
+      "value": "unstated",
+      "reviewed": false
+    },
+    "contractType": {
+      "value": "unstated",
+      "reviewed": false
+    },
+    "isSoftwareEngineeringRole": {
+      "value": true,
+      "reviewed": false
+    },
+    "engagement": {
+      "value": "unstated",
+      "reviewed": false
+    },
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
+}

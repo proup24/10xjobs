@@ -1,0 +1,110 @@
+{
+  "id": "01a1ef66-935b-71eb-b0ec-b56eb380befb",
+  "input": {
+    "title": "Full-Stack Software Engineer & Digital Growth Specialist",
+    "description": "Full-Stack Software Engineer & Digital Growth Specialist\n\nCompanies: Sueep LLC & Piramid AI\n\nEmployment Type: Full-Time\n\nLocation: Flexible / Hybrid (depending on candidate)\n\nAbout Us\n\nSueep LLC is a technology-enabled facilities services company specializing in commercial cleaning, post-construction cleaning, and commercial painting. We leverage technology, operational systems, and automation to improve how facilities services are delivered and managed.\n\nPiramid AI is our technology venture, developing software solutions for the construction industry. Our primary product focuses on AI-powered painting estimating and takeoffs, with ambitions to expand into a comprehensive construction ERP platform.\n\nWe are looking for an ambitious, technically capable, and entrepreneurial individual to join our team and help develop the technology powering both businesses.\n\nThis is an opportunity to work directly with company leadership, take ownership of important technology initiatives, and help build products with real commercial applications.\n\nThe Opportunity\n\nWe are seeking a Full-Stack Software Engineer who can take ownership of our existing software infrastructure, continue developing our ERP systems, and contribute to the growth of Piramid AI.\n\nYou will work across two businesses:\n\n1. Sueep LLC – ERP & Business Automation\n\nOur internal ERP is already operational and supports our day-to-day business operations. Your responsibility will be to maintain, improve, and expand the platform.\n\nResponsibilities include:\n\n * Maintain and enhance our existing ERP platform.\n * Develop new features and functionality to improve operational efficiency.\n * Build integrations with third-party applications and APIs.\n * Implement workflow automation and reporting capabilities.\n * Identify opportunities to streamline internal business processes through technology.\n * Troubleshoot, maintain, and improve existing systems.\n\n2. Piramid AI – SaaS Product Development\n\nPiramid is developing AI-powered software for painting contractors and the broader construction industry.\n\nResponsibilities include:\n\n * Develop and maintain the Piramid AI software platform.\n * Build and improve frontend and backend functionality.\n * Develop new product features and improve the user experience.\n * Work with AI APIs and integrations to improve estimating and automation capabilities.\n * Manage cloud infrastructure, deployments, databases, and application performance.\n * Identify and resolve bugs and technical issues.\n * Collaborate with company leadership on product strategy and the technical roadmap.\n * Help transition the platform into a scalable SaaS product.\n\n3. Digital Marketing & Growth Initiatives\n\nWe are looking for someone who understands that developing great software is only part of building a successful technology company.\n\nYou will also assist with digital marketing initiatives across Sueep and Piramid, including:\n\n * Implementing and optimizing Google Ads and Meta advertising campaigns.\n * Managing website improvements, SEO, and conversion optimization.\n * Implementing tracking, analytics, and conversion measurement.\n * Developing automated email marketing campaigns and customer onboarding workflows.\n * Supporting CRM integrations and marketing automation.\n * Using data and analytics to identify opportunities for customer acquisition.\n * Exploring AI tools and automation to improve marketing efficiency.\n\nTechnical Qualifications\n\nRequired:\n\n * Experience with full-stack web development.\n * Proficiency in JavaScript/TypeScript and modern web frameworks.\n * Experience developing and maintaining APIs and backend services.\n * Experience working with relational databases and database architecture.\n * Understanding of cloud infrastructure, deployment, and application security.\n * Ability to independently troubleshoot and solve technical problems.\n * Strong communication skills and ability to manage multiple projects.\n\nPreferred:\n\n * Experience with Next.js and React.\n * Experience with Microsoft Azure or other cloud platforms.\n * Experience with AI APIs, LLM integrations, and automation.\n * Experience developing SaaS applications.\n * Familiarity with Stripe, CRM integrations, and third-party APIs.\n * Experience with Google Analytics, Google Tag Manager, Google Ads, and Meta Ads.\n * Understanding of SEO and digital marketing fundamentals.\n\nWho We Are Looking For\n\nWe are not looking for someone who simply wants to receive tickets and complete assigned tasks.\n\nWe want someone who:\n\n * Takes ownership of projects from beginning to end.\n * Is entrepreneurial, resourceful, and comfortable working in a growing company.\n * Can move between software development, troubleshooting, and business initiatives.\n * Enjoys solving problems and finding ways to improve existing systems.\n * Can work independently while collaborating directly with leadership.\n * Is motivated by building products and seeing their work translate into measurable business results.\n * Is comfortable working in a fast-paced environment where priorities can evolve.\n\nWhat We Offer\n * Direct collaboration with company leadership.\n * The opportunity to work on two growing businesses.\n * Ownership over meaningful software development projects.\n * Exposure to AI, SaaS, construction technology, and business automation.\n * Opportunity to influence product direction and technical architecture.\n * Room for professional advancement as the companies scale.\n * Potential for expanded responsibilities and leadership opportunities.\n\nHow to Apply\n\nPlease submit your resume, GitHub profile, portfolio, or examples of applications and software you have developed.\n\nWe are particularly interested in candidates who can demonstrate that they have independently built, deployed, and maintained real-world software applications.\n\nWe want builders, problem-solvers, and people who are excited about creating something that can scale."
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["hybrid"],
+        "places": [],
+        "placeStrictness": "unstated"
+      }
+    ],
+    "roleKind": "fullstack_engineer",
+    "seniority": "unstated",
+    "yearsRequired": null,
+    "contractMonths": null,
+    "requirements": [
+      {
+        "text": "JavaScript",
+        "code": "javascript",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "TypeScript",
+        "code": "typescript",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "relational databases",
+        "code": "sql",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Next.js",
+        "code": "nextjs",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "React",
+        "code": "react",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Microsoft Azure",
+        "code": "azure",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Stripe",
+        "code": "stripe",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      }
+    ],
+    "groups": [
+      {
+        "id": "g1",
+        "min": 1
+      }
+    ],
+    "requiredLanguages": [],
+    "sponsorship": "unstated",
+    "salary": null,
+    "junkFlags": []
+  },
+  "drafted": {
+    "arrangement": {
+      "value": "hybrid",
+      "reviewed": false
+    },
+    "contractType": {
+      "value": "full_time",
+      "reviewed": false
+    },
+    "isSoftwareEngineeringRole": {
+      "value": true,
+      "reviewed": false
+    },
+    "engagement": {
+      "value": "unstated",
+      "reviewed": false
+    },
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
+}

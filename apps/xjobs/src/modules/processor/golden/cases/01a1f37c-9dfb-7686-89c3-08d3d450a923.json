@@ -1,0 +1,94 @@
+{
+  "id": "01a1f37c-9dfb-7686-89c3-08d3d450a923",
+  "input": {
+    "title": "🔎Full Stack Developer (Python + Typescript)🔎",
+    "description": "🟦Join us in Luxoft!\n\n(opportunity for PL based candidates )\n\n\n💰 Paid Referrals\n\n💻Equipment\n\n🩺Private Medical & Dental care & Life Insurance (covered by us on Employment contract )\n\n🏋🏽 MyBenefit program (sports card, well-being program etc.) (covered by us on Employment contract )\n\n🌎 Internal Mobility program - possibility of rotation between projects, locations, accounts\n\n🎓 LuxTalent platform (webinars, training, courses)\n\n… and many more!\n\n\n🟦Project Description:\n\n\nOur partner, a top tier Hedge Fund, is expanding their AI agent platforms. We are looking for a Senior Python Developer with Typescript to build and maintain business applications.\n\n\n🟦Responsibilities:\n\n\n• Design, develop, and maintain application components on python backend and typescript frontend\n\n• Follow best practices and coding conventions\n\n• Continuously improve the application performance and development tools\n\n• Leverage internally available AI tools to scale software development\n\n\n🟦Mandatory Skills Description:\n\n\n• 3+ years of commercial software development\n\n• Strong python with OOP\n\n• Hands-on TypeScript\n\n• Clear communication\n\n\n🟦Nice-to-Have Skills:\n\n\n• Experience or education in Capital Markets, Trading, or Investment\n\n• React/Angular\n\n\n🟦Languages:\n\n\nEnglish: Upper Intermediate"
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["unstated"],
+        "places": [
+          {
+            "kind": "country",
+            "code": "PL"
+          }
+        ],
+        "placeStrictness": "limit"
+      }
+    ],
+    "roleKind": "fullstack_engineer",
+    "seniority": "senior",
+    "yearsRequired": {
+      "min": 3,
+      "max": null
+    },
+    "contractMonths": null,
+    "requirements": [
+      {
+        "text": "python",
+        "code": "python",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "TypeScript",
+        "code": "typescript",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "React",
+        "code": "react",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Angular",
+        "code": "angular",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      }
+    ],
+    "groups": [],
+    "requiredLanguages": [
+      {
+        "lang": "en",
+        "level": "working"
+      }
+    ],
+    "sponsorship": "unstated",
+    "salary": null,
+    "junkFlags": []
+  },
+  "drafted": {
+    "arrangement": {
+      "value": "unstated",
+      "reviewed": false
+    },
+    "contractType": {
+      "value": "unstated",
+      "reviewed": false
+    },
+    "isSoftwareEngineeringRole": {
+      "value": true,
+      "reviewed": false
+    },
+    "engagement": {
+      "value": "employee",
+      "reviewed": false
+    },
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
+}

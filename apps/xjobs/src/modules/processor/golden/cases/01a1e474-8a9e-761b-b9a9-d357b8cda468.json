@@ -1,0 +1,90 @@
+{
+  "id": "01a1e474-8a9e-761b-b9a9-d357b8cda468",
+  "input": {
+    "title": "AWS Engineer",
+    "description": "Archer is collaborating with MANTECH to connect exceptional professionals with this opportunity. MANTECH is seeking a highly technical AWS Engineer to support a dedicated team of cybersecurity experts in Herndon, Virginia. This role is focused on strengthening a customer’s cloud incident response posture through secure cloud architecture, detection engineering, scripting, and automation.\n\n\n\nAbout The Compan\n\ny\n\nArcher connects skilled professionals with career opportunities at organizations addressing complex technical and mission-focused challenges. For this role, Archer is collaborating with MANTECH, an organization supporting customers with technology and cybersecurity expertise. You will join a team focused on protecting cloud environments and improving the effectiveness of security operations. The work brings together cloud engineering, cyber operations, and incident response to help the customer prepare for and respond to evolving threat\n\ns.\n\nAbout The R\n\nole\n\nAs an AWS Engineer, you will help design, develop, and improve enterprise-scale cloud security monitoring and incident response capabilities. You will apply your experience with AWS, SIEM platforms, cyber development, and automation to support the Cybersecurity Security Operations Center (CSOC). The position combines hands-on engineering with technical consultation and collaboration. You will build and tune cloud detections, create scripts and automated workflows, and help CSOC colleagues coordinate response efforts. You will also contribute to team readiness through mentoring, exercises, and practical training resour\n\nces.\n\nThis position is based in Herndon, Virginia, and requires an active, current TS/SCI clearance with Polygraph. The successful candidate will bring strong technical judgment, clear communication skills, and a commitment to protecting mission-critical cloud environm\n\nents.\n\nQualific\n\nations\n\nRequired qualifications include at least seven years of experience in cloud security, cloud engineering, or cyber operations, and at least seven years working with operating systems, network infrastructure, security principles, or system architecture. Candidates must also have five or more years of AWS experience and at least three years of experience coding and scripting in Python. An active and current TS/SCI clearance with Polygraph is re\n\nquired.\n\nA bachelor’s degree in Computer Science, Information Technology, or a related technical field is preferred. Additional preferred experience includes automation or Security Orchestration, Automation, and Response (SOAR) platforms; incident response, threat hunting, or detection engineering; and cloud environments such as Azure or OCI. Relevant certifications, including CISSP, GIAC, or CEH, are also valued. Candidates should be comfortable applying security concepts to cloud systems and communicating technical information to colleagues with varied levels of exp\n\nerience.\n\nRespons\n\nibilities\n\nConsult on the design, architecture, and implementation of cloud security monitoring systems at enterprise scale. Develop, maintain, and improve Python scripts and other automation tools that support cloud security operations. Design and implement automated incident response playbooks that streamline CSOC processes and help teams respond con\n\nsistently.\n\nDevelop, tune, and optimize detection rules for AWS and other cloud platforms using Splunk Query Language. Collaborate with CSOC team members to share technical insights and coordinate response activities. Provide technical guidance and mentorship to junior staff, plan and implement cyber exercises and drills, and prepare reference and training materials for cloud security and incident response. Track cybersecurity trends, threats, technologies, and relevant AI concepts, then identify and implement improvements that strengthen processes and support sound security\n\npractic\n\nes.\n\nBenefits\n\nThis opportunity offers the chance to contribute to meaningful cybersecurity work alongside a focused team of cloud and incident response professionals. You will address complex technical challenges, strengthen enterprise security capabilities, and build expertise across AWS, SIEM detection, and automation. Benefits and employment details are provided by the hiring organization and can be discussed during the recruit\n\nment process.\n\nThe role requires the ability to remain in a stationary position for approximately 50\n\n% of the time.\n\nEq\n\nual Opportunity\n\nArcher and MANTECH are committed to fair and respectful consideration of qualified applicants. Employment decisions are made in accordance with applicable laws and without discrimination based on protected characteristics. Candidates who meet the stated qualifications are enco\n\nuraged to apply."
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["unstated"],
+        "places": [
+          {
+            "kind": "city",
+            "name": "Herndon",
+            "countryCode": "US"
+          }
+        ],
+        "placeStrictness": "label"
+      }
+    ],
+    "roleKind": "security_engineer",
+    "seniority": "senior",
+    "yearsRequired": {
+      "min": 7,
+      "max": null
+    },
+    "contractMonths": null,
+    "requirements": [
+      {
+        "text": "Python",
+        "code": "python",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "AWS",
+        "code": "aws",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Splunk Query Language",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Azure",
+        "code": "azure",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      }
+    ],
+    "groups": [],
+    "requiredLanguages": [],
+    "sponsorship": "unstated",
+    "salary": null,
+    "junkFlags": []
+  },
+  "drafted": {
+    "arrangement": {
+      "value": "unstated",
+      "reviewed": false
+    },
+    "contractType": {
+      "value": "unstated",
+      "reviewed": false
+    },
+    "isSoftwareEngineeringRole": {
+      "value": true,
+      "reviewed": false
+    },
+    "engagement": {
+      "value": "unstated",
+      "reviewed": false
+    },
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
+}
