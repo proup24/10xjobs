@@ -130,6 +130,16 @@ A trial actor runs beside harvestapi to compare them. `cheap_scraper` (channel `
 
 To end the bebity trial, turn it off, then `pnpm --filter @xjobs/xjobs db:archive-actor -- --actor bebity/linkedin-jobs-scraper --dry-run`, read it, then run it without `--dry-run`. The actor name is the same as the old bebity runs on `LINKEDIN_JOB_BOARD` from before cheap_scraper replaced it there (early November 2026), so it also archives those jobs when they were seen only in bebity batches. Read the dry run before the real one.
 
+## 8b. LinkedIn posts
+
+Hiring-post collection (channel `LINKEDIN_POSTS`, design: [posts collect spec](../../docs/superpowers/specs/2026-11-20-posts-collect-design.md)) stores raw posts only. It creates no jobs; later slices of phase 4 do that.
+
+1. Raise the Apify limit first. The hosted account has a $19/month limit shared with the job board, which alone reaches it around 2026-11-30. Posts add to it.
+2. Set `POST_SEARCH_USERS` in `.env` to the Supabase user ids allowed to turn post search on, comma-separated. Default empty: nobody. The API and the worker read it, and so does `db:regenerate`, which keeps post builders only for profiles with post search on whose owner is listed. Then `$C up -d`.
+3. The daily cap is `COLLECTION_DAILY_BUDGET_USD_LINKEDIN_POSTS` (default 1.5 dollars, Morocco day), counted from posts runs only. Each run's charge limit is what is left of it, and no run starts with less than $0.01 left. A run with no reported cost counts $0.25 until costs are settled.
+4. It runs hourly (`0 * * * *`, `Africa/Casablanca`), every day, on its own queue, only with `XJOBS_RUN_SCHEDULES=1`. Each run looks back to the last successful run (at most 24 hours, with a 5-minute overlap). With no published profile that has post search on and an owner in `POST_SEARCH_USERS`, there are no post segments and nothing is searched.
+5. A `partial` posts run means the actor reported success, but its log had `No available resource` or `Too many boolean operators`, or the log could not be read. Its posts are stored and the cursors do not move, so the next tick searches that window again.
+
 ## 9. Roll back
 
 1. Pick a merge SHA: `git log main`. It must be the full 40-character SHA.
