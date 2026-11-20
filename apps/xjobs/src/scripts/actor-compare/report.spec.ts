@@ -11,6 +11,7 @@ import {
   type RunRow,
   type Sighting,
 } from './report';
+import { atCeiling } from './queries';
 
 const H = 'harvestapi/linkedin-job-search';
 const C = 'cheap_scraper/linkedin-job-scraper';
@@ -196,6 +197,15 @@ describe('runActor', () => {
   });
 });
 
+describe('atCeiling', () => {
+  it('is true for a run of 1000 rows, the row limit, and false for 100', () => {
+    for (const channel of [HC, CC, BC]) {
+      expect(atCeiling(channel, 1000)).toBe(true);
+      expect(atCeiling(channel, 100)).toBe(false);
+    }
+  });
+});
+
 describe('coverage', () => {
   const tick = tickOf(new Date(AT));
 
@@ -277,6 +287,30 @@ describe('coverage', () => {
       expect(
         r.pairs.find((p) => p.label === 'total' && p.a === H && p.b === C),
       ).toMatchObject({ both: 1 });
+    });
+
+    it('is not ran when a 2-member run returns 1000 rows and one half fails', () => {
+      const held = run('h0', {
+        queryIds: ['h1', 'h2'],
+        truncatedQueryIds: ['h1', 'h2'],
+        rows: 1000,
+        atCeiling: true,
+      });
+      const cells = coverage(
+        [
+          held,
+          run('h1', { queryIds: ['h1'], startedAt: later }),
+          run('h2', {
+            queryIds: ['h2'],
+            startedAt: later,
+            status: 'failed',
+            costMicroUsd: null,
+          }),
+          cheap,
+        ],
+        members,
+      );
+      expect(cells.get(H)?.get(`G|${tick}`)).toBe('failed');
     });
 
     it('ran when full at the ceiling alone', () => {

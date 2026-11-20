@@ -66,7 +66,7 @@ describe('nextParts', () => {
     chunks: 1,
     split: false,
     maxReturned: 3,
-    rowLimit: 100,
+    rowLimit: 1000,
     ...overrides,
   });
 
@@ -78,7 +78,7 @@ describe('nextParts', () => {
     expect(
       nextParts(
         { parts: 2, splitAt: ago(10) },
-        tick({ chunks: 3, split: true, maxReturned: 100 }),
+        tick({ chunks: 3, split: true, maxReturned: 1000 }),
         now,
       ),
     ).toBe(3);
@@ -124,11 +124,21 @@ describe('nextParts', () => {
     ).toBe(1);
   });
 
+  it('halves a split once every search returns under 250 of 1000 rows', () => {
+    expect(
+      nextParts(
+        { parts: 4, splitAt: ago(120) },
+        tick({ chunks: 4, maxReturned: 249 }),
+        now,
+      ),
+    ).toBe(2);
+  });
+
   it('keeps a split while any search returns 25% of the row limit or more', () => {
     expect(
       nextParts(
         { parts: 4, splitAt: ago(120) },
-        tick({ chunks: 4, maxReturned: 25 }),
+        tick({ chunks: 4, maxReturned: 250 }),
         now,
       ),
     ).toBeNull();

@@ -1,17 +1,30 @@
 # 08: Seniority to LinkedIn level, and paid repeats
 
-Found 2026-11-18 on `10xjobs-dev`. The user says the map is wrong. It gets its own brainstorm and spec.
+## Decided
+
+Spec: [seniority levels and paid repeats](../../superpowers/specs/2026-11-20-seniority-levels-and-paid-repeats-design.md), 2026-11-20.
+
+- **Map:** junior searches entry; mid searches associate and mid-senior; senior and staff search mid-senior; lead and principal search mid-senior and director. This is the data map, not the user's first correction: the data agreed on junior and disagreed on staff _(user: "go with the data map")_.
+- **Staff and mid-senior:** staff keeps mid-senior only, since 67% of staff jobs are tagged mid-senior and 1% director.
+- **How much the search narrows:** only the internship search stops. Preferences stay precise in the matcher; only the search mapping changes. LinkedIn barely honours `f_E` outside mid-senior (internship searches returned 2% internship jobs), and nothing is built to measure it further.
+- **Ceiling:** every LinkedIn job-board run starts at 1,000 rows. Halving stays, but only for a full group with more than one member. The `totalElements` "full" rule goes.
+- **MENA:** a profile that picks MENA searches Middle East and Africa. Other places stay, and no "skip a country" rule is added.
+- **Place checks:** `db:place-coverage` reports what each place finds alone. `db:split-check` is a paid one-off run by the maintainer that tests halving at a 95% coverage bar; under 95% reopens removing the split.
+- **Repeats across ticks:** deferred. harvestapi has no skip-known-ids input and no repost filter, and a shorter window would lose new jobs.
+- **Recipe:** version 12 to 13; run `db:regenerate` once after deploy.
+
+Found 2026-11-18 on `10xjobs-dev`. The user says the map is wrong. It was brainstormed and specced on 2026-11-20 (see Decided above).
 
 ## Problem
 
 Each profile seniority is searched as LinkedIn experience levels (`f_E`). The builder deliberately takes neighbouring levels too, because posters tag loosely (`queries/channels/linkedin_board.builder.ts`, `EXPERIENCE_LEVELS`):
 
-| Seniority              | Levels searched today |
-| ---------------------- | --------------------- |
-| junior                 | internship, entry     |
-| mid                    | associate, mid-senior |
-| senior                 | mid-senior            |
-| staff, lead, principal | mid-senior, director  |
+| Seniority              | Levels searched before slice 08 |
+| ---------------------- | ------------------------------- |
+| junior                 | internship, entry               |
+| mid                    | associate, mid-senior           |
+| senior                 | mid-senior                      |
+| staff, lead, principal | mid-senior, director            |
 
 The user's correction: **junior is entry, not internship; staff is director, not mid-senior** _(user)_.
 
@@ -23,7 +36,7 @@ The user's correction: **junior is entry, not internship; staff is director, not
 - 11 searches returned nothing in all 19 runs. 10 of them are director or internship searches; the other is Morocco remote entry.
 - They cost almost nothing, because the actor charges per row.
 
-## Open questions
+## Open questions (answered in Decided above)
 
 - The full map per seniority: what do mid, senior, lead and principal search?
 - Staff to director only would drop the mid-senior search for staff. On LinkedIn, most staff engineer jobs are tagged mid-senior. Is that loss wanted, or does staff keep mid-senior through the senior search when a profile picks both?

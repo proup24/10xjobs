@@ -30,6 +30,10 @@ describe('searchPlaces', () => {
     ]);
   });
 
+  it('searches MENA as Africa and the Middle East', () => {
+    expect(searchPlaces('MENA')).toEqual(['africa', 'middle east']);
+  });
+
   it('uses the key itself when it is pinned', () => {
     expect(searchPlaces('Morocco')).toEqual(['morocco']);
   });

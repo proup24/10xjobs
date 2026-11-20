@@ -9,7 +9,6 @@ export {
   ApifyActorProvider,
   ApifyRunError,
 } from './providers/apify/apify.provider';
-export { runChargeCapUsd } from './utils/linkedin-board-run';
 export { SearchNotStartedError } from './utils/search-not-started';
 export type {
   ActorRunConfig,
