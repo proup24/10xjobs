@@ -99,11 +99,11 @@ For the owner's profile (full stack; en + fr; typescript, nodejs, react, react n
 
 - **At publish (or when the switch is turned on)**, each profile gets its own post builders, one per search above, each already packed to fit the operator limit, attached through `QuerySearchService.generate` like job-board builders (shared by hash, counted per profile).
 - **At each tick**, builders sharing a segment key are grouped: `linkedin_posts|<language>|<position>`, where English is always the remote form. Whole builders are merged when their combined spellings still fit the operator limit, and a group is halved when it doesn't, as `fitChunks` does for the job board in `segments/services/segments.ts`. Places and arrangements never split a group, so profiles with the same position and language share every search.
-- **A segment is one actor run with up to 10 merged searches** in `searchQueries`. Posts are credited back to builders through `query.search`, to every member of the merged search (as the job board credits listings).
+- **A segment is one merged search and one actor run** _(changed while planning)_, as for the job board: every post the run returns is credited to every member. This keeps failure detection and crediting one-to-one with the run. It costs a start fee ($0.001) per search per hour, about 96 runs and $0.10 a day for the owner's 4 searches, against 24 runs if searches shared a run.
 
 ### Cadence, window and budget
 
-- **Hourly, every day, 24 runs a day** _(user: option A)_: Morocco time, `0 * * * *`.
+- **Hourly, every day, 24 ticks a day** _(user: option A)_: Morocco time, `0 * * * *`.
 - **Window:** from the builder's `coveredUntil` (minus a small overlap, my call: 5 minutes) to the tick, at most 24 hours; a never-collected builder looks back 24 hours. Passed to the actor as `postedLimitDate`, which the probe showed it honours, with `sortBy: date` _(proposal)_.
 - **No limit on posts per search** _(user)_: `maxPosts: 0` (everything in the window).
 - **One daily budget for the posts channel** _(user)_, counted per Morocco day like the job board's: `COLLECTION_DAILY_BUDGET_USD_LINKEDIN_POSTS`, default `1.50`. The existing daily budget check in `CollectionService.dailyBudget` is extended to this channel (today it covers only job-board channels) _(proposal)_.
