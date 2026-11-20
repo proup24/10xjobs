@@ -56,7 +56,8 @@ export type HiddenProfileColumns =
   | 'contractTypes'
   | 'salaryMin'
   | 'salaryCurrency'
-  | 'salaryPeriod';
+  | 'salaryPeriod'
+  | 'postSearch';
 
 export type ProfileView = Omit<ProfileRow, HiddenProfileColumns> & {
   locations: PlacesByArrangement;

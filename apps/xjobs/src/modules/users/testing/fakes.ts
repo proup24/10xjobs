@@ -136,6 +136,7 @@ export class FakeProfilesRepository extends ProfilesRepository {
       resumeUploadedAt: null,
       state: ProfileState.draft,
       publishedAt: null,
+      postSearch: false,
       createdAt: now,
       updatedAt: now,
       techStack: FakeProfilesRepository.techStack(userId, id, skills),

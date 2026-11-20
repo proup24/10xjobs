@@ -36,6 +36,9 @@ export function toProfileView(profile: ProfileWithSkills): ProfileView {
     salaryMin,
     salaryCurrency,
     salaryPeriod,
+    // Engine-only switch: not part of the API shape.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    postSearch,
     ...columns
   } = profile;
   return {
