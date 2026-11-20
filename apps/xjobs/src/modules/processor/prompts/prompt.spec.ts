@@ -40,6 +40,7 @@ describe('systemPrompt', () => {
     expect(text).toContain('"the position is based in Herndon"');
     expect(text).toContain('"open to PL based candidates"');
     expect(text).toContain('An authorization line is not a place');
+    expect(text).toContain('hybrid and remote options');
   });
 
   it('gives must-have alternatives their own example, not the main one', () => {
