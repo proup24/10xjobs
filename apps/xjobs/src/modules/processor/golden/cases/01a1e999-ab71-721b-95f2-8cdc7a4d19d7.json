@@ -7,7 +7,7 @@
   "expected": {
     "openings": [
       {
-        "arrangements": ["unstated"],
+        "arrangements": ["remote"],
         "places": [
           {
             "kind": "country",
@@ -33,8 +33,8 @@
   },
   "drafted": {
     "arrangement": {
-      "value": "unstated",
-      "reviewed": false
+      "value": "remote",
+      "reviewed": true
     },
     "contractType": {
       "value": "unstated",

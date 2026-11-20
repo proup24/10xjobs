@@ -123,7 +123,7 @@
   "drafted": {
     "arrangement": {
       "value": "remote",
-      "reviewed": false
+      "reviewed": true
     },
     "contractType": {
       "value": "contract",

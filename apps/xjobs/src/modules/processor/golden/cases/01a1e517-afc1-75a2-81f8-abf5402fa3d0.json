@@ -139,7 +139,7 @@
   "drafted": {
     "arrangement": {
       "value": "hybrid",
-      "reviewed": false
+      "reviewed": true
     },
     "contractType": {
       "value": "full_time",
