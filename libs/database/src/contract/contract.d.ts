@@ -24,9 +24,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'ba7d3a586ecbf6b46889147363e2b2ecf663ae7aaa277d415cecf10b118944ff'>;
+  StorageHashBase<'bc188ee2df77d5a2f08e4dc0a6fd622430566439e4da3bace451f077c5ed4b1d'>;
 export type ExecutionHash =
-  ExecutionHashBase<'7b5eaf1d91dcda38671ed0758e62b64e510de826d248ab15bddc3faa2e947c57'>;
+  ExecutionHashBase<'71a03ba0225916055a5855c4c4deaf607551051c05f9a67ec0aecfdefc43a862'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -1253,6 +1253,17 @@ export namespace Models {
     extractions: public_JobExtraction[];
     readonly [RelationKeys]?: 'extractions';
   };
+  export type public_SilencedAuthor = {
+    authorKey: FieldOutputTypes['public']['SilencedAuthor']['authorKey'];
+    createdAt: FieldOutputTypes['public']['SilencedAuthor']['createdAt'];
+    createdBy: FieldOutputTypes['public']['SilencedAuthor']['createdBy'];
+    evidence: FieldOutputTypes['public']['SilencedAuthor']['evidence'];
+    id: FieldOutputTypes['public']['SilencedAuthor']['id'];
+    name: FieldOutputTypes['public']['SilencedAuthor']['name'];
+    origin: FieldOutputTypes['public']['SilencedAuthor']['origin'];
+    reason: FieldOutputTypes['public']['SilencedAuthor']['reason'];
+    readonly [RelationKeys]?: never;
+  };
   export type public_TechTag = {
     aliases: FieldOutputTypes['public']['TechTag']['aliases'];
     approvedAt: FieldOutputTypes['public']['TechTag']['approvedAt'];
@@ -1384,6 +1395,7 @@ export declare const models: {
     RoleKind: Models.public_RoleKind;
     SearchSegmentRun: Models.public_SearchSegmentRun;
     SeniorityTerm: Models.public_SeniorityTerm;
+    SilencedAuthor: Models.public_SilencedAuthor;
     TechTag: Models.public_TechTag;
     User: Models.public_User;
     Webhook: Models.public_Webhook;
@@ -5473,6 +5485,64 @@ type ContractBase = Omit<
               indexes: readonly [];
               foreignKeys: readonly [];
             };
+            readonly silenced_authors: {
+              columns: {
+                readonly authorKey: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly createdBy: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly evidence: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly name: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly origin: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly reason: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['authorKey'] }];
+              indexes: readonly [];
+              foreignKeys: readonly [];
+            };
             readonly tech_tags: {
               columns: {
                 readonly aliases: {
@@ -6233,6 +6303,10 @@ type ContractBase = Omit<
     readonly seniorities: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'SeniorityTerm';
+    };
+    readonly silenced_authors: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'SilencedAuthor';
     };
     readonly tech_tags: { readonly namespace: 'public' & NamespaceId; readonly model: 'TechTag' };
     readonly users: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
@@ -10016,6 +10090,61 @@ type ContractBase = Omit<
               };
             };
           };
+          readonly SilencedAuthor: {
+            readonly fields: {
+              readonly authorKey: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly createdBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly evidence: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly name: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly origin: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly reason: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'silenced_authors';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly authorKey: { readonly column: 'authorKey' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly createdBy: { readonly column: 'createdBy' };
+                readonly evidence: { readonly column: 'evidence' };
+                readonly id: { readonly column: 'id' };
+                readonly name: { readonly column: 'name' };
+                readonly origin: { readonly column: 'origin' };
+                readonly reason: { readonly column: 'reason' };
+              };
+            };
+          };
           readonly TechTag: {
             readonly fields: {
               readonly aliases: {
@@ -11078,6 +11207,14 @@ type ContractBase = Omit<
           readonly onCreate: { readonly id: 'uuidv7'; readonly kind: 'generator' };
           readonly ref: {
             readonly entry: 'search_segment_runs';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'uuidv7'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'silenced_authors';
             readonly field: 'id';
             readonly namespace: 'public';
           };

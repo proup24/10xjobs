@@ -156,6 +156,10 @@
       "model": "SeniorityTerm",
       "namespace": "public"
     },
+    "silenced_authors": {
+      "model": "SilencedAuthor",
+      "namespace": "public"
+    },
     "tech_tags": {
       "model": "TechTag",
       "namespace": "public"
@@ -6597,6 +6601,100 @@
               "table": "seniorities"
             }
           },
+          "SilencedAuthor": {
+            "fields": {
+              "authorKey": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "createdBy": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "evidence": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "name": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "origin": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "reason": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "authorKey": {
+                  "column": "authorKey"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "createdBy": {
+                  "column": "createdBy"
+                },
+                "evidence": {
+                  "column": "evidence"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "name": {
+                  "column": "name"
+                },
+                "origin": {
+                  "column": "origin"
+                },
+                "reason": {
+                  "column": "reason"
+                }
+              },
+              "namespaceId": "public",
+              "table": "silenced_authors"
+            }
+          },
           "TechTag": {
             "fields": {
               "aliases": {
@@ -8231,6 +8329,11 @@
               "kind": "rls",
               "namespaceId": "public",
               "tableName": "seniorities"
+            },
+            "silenced_authors": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "silenced_authors"
             },
             "tech_tags": {
               "kind": "rls",
@@ -13649,6 +13752,78 @@
               },
               "uniques": []
             },
+            "silenced_authors": {
+              "checks": [
+                {
+                  "expression": "origin IN ('manual', 'automatic')",
+                  "name": "silenced_authors_origin_d1fb74ff",
+                  "prefix": "silenced_authors_origin"
+                }
+              ],
+              "columns": {
+                "authorKey": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "createdBy": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "evidence": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": true
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "name": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "origin": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "reason": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "authorKey"
+                  ]
+                }
+              ]
+            },
             "tech_tags": {
               "checks": [
                 {
@@ -14501,10 +14676,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "ba7d3a586ecbf6b46889147363e2b2ecf663ae7aaa277d415cecf10b118944ff"
+    "storageHash": "bc188ee2df77d5a2f08e4dc0a6fd622430566439e4da3bace451f077c5ed4b1d"
   },
   "execution": {
-    "executionHash": "7b5eaf1d91dcda38671ed0758e62b64e510de826d248ab15bddc3faa2e947c57",
+    "executionHash": "71a03ba0225916055a5855c4c4deaf607551051c05f9a67ec0aecfdefc43a862",
     "mutations": {
       "defaults": [
         {
@@ -14947,6 +15122,17 @@
           },
           "ref": {
             "entry": "search_segment_runs",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv7",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "silenced_authors",
             "field": "id",
             "namespace": "public"
           }

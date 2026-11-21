@@ -2002,6 +2002,40 @@ export type Database = {
         };
         Relationships: [];
       };
+      silenced_authors: {
+        Row: {
+          authorKey: string;
+          createdAt: string;
+          createdBy: string | null;
+          evidence: Json | null;
+          id: string;
+          name: string | null;
+          origin: string;
+          reason: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          authorKey: string;
+          createdAt?: string;
+          createdBy?: string | null;
+          evidence?: Json | null;
+          id: string;
+          name?: string | null;
+          origin: string;
+          reason: string;
+        };
+        Update: {
+          authorKey?: string;
+          createdAt?: string;
+          createdBy?: string | null;
+          evidence?: Json | null;
+          id?: string;
+          name?: string | null;
+          origin?: string;
+          reason?: string;
+        };
+        Relationships: [];
+      };
       tech_tags: {
         Row: {
           aliases: string[];

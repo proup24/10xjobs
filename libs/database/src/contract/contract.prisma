@@ -1418,3 +1418,25 @@ model LinkedinSearchSplit {
   @@map("linkedin_search_splits")
   @@rls
 }
+
+// A LinkedIn post author whose posts never reach Extract, for anyone. `authorKey` is the
+// normalized record's `post.author.key` (`profile:<id>` or `company:<id>`). Silencing is
+// derived, never stored on jobs: a post job is silenced when every one of its sources'
+// authors is here, so un-silencing needs no clean-up. `createdBy` is the admin's
+// Supabase user id; null for automatic entries. Engine-only: RLS on, no policies.
+model SilencedAuthor {
+  id        Uuid                 @id @onCreate(uuid(7))
+  authorKey String               @unique
+  // The author's name as last seen.
+  name      String?
+  reason    String
+  origin    String
+  // Why an automatic entry was added (post counts, days); null for manual ones.
+  evidence  Jsonb?
+  createdBy Uuid?
+  createdAt TimestamptzJsDate(3) @default(now())
+
+  @@check(expression: sql`origin IN ('manual', 'automatic')`, name: "silenced_authors_origin")
+  @@map("silenced_authors")
+  @@rls
+}
