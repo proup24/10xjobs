@@ -27,6 +27,8 @@
     "replace-profile-skills-published",
     "match-reviews-profile-version",
     "profile-version-backfill",
-    "match-details-review-version"
+    "match-details-review-version",
+    "replace-profile-skills-no-key-lock",
+    "set-profile-resume-no-key-lock"
   ]
 }

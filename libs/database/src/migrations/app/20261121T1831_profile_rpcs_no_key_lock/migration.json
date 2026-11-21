@@ -1,0 +1,10 @@
+{
+  "from": "102e61ccb77605cd7b61d1362d8667349060173f0c1fdade6bec81e50f63117f",
+  "to": "102e61ccb77605cd7b61d1362d8667349060173f0c1fdade6bec81e50f63117f",
+  "providedInvariants": [
+    "replace-profile-skills-no-key-lock",
+    "set-profile-resume-no-key-lock"
+  ],
+  "createdAt": "2026-11-21T18:31:45.751Z",
+  "migrationHash": "40212f7312184884ca0a2cdb55ac927470efdcf9e42ee16d03a3d7c699e3e652"
+}

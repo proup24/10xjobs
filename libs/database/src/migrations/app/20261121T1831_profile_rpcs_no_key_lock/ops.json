@@ -1,0 +1,46 @@
+[
+  {
+    "id": "functions.replace_profile_skills_no_key_lock",
+    "invariantId": "replace-profile-skills-no-key-lock",
+    "label": "replace_profile_skills: lock the profile FOR NO KEY UPDATE, so a search swap does not block it",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "profile_skills"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "replace_profile_skills(): same body, FOR NO KEY UPDATE on the profile",
+        "sql": "CREATE OR REPLACE FUNCTION public.replace_profile_skills(p_profile_id uuid, p_skills jsonb) RETURNS void\n  LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $$\nBEGIN\n  -- Lock the caller's draft or published profile so concurrent calls (double submit, two tabs)\n  -- run one after the other: the second waits, then its delete sees the first one's rows.\n  -- Not the caller's profile (missing, another user's): P0002, nothing written.\n  PERFORM 1\n     FROM public.profiles p\n    WHERE p.id = p_profile_id AND p.\"userId\" = (SELECT auth.uid()) AND p.state IN ('draft', 'published')\n      FOR NO KEY UPDATE;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION USING ERRCODE = 'P0002', MESSAGE = 'no profile of yours to replace the skills of';\n  END IF;\n\n  DELETE FROM public.profile_skills ps\n   WHERE ps.\"profileId\" = p_profile_id AND ps.\"userId\" = (SELECT auth.uid());\n\n  INSERT INTO public.profile_skills (\"id\", \"userId\", \"profileId\", \"technology\", \"domain\", \"mastery\", \"importance\")\n  SELECT gen_random_uuid(), (SELECT auth.uid()), p_profile_id, s.technology, s.domain, s.mastery, s.importance\n    FROM jsonb_to_recordset(p_skills) AS s(technology text, domain text, mastery integer, importance integer);\nEND $$;\nREVOKE EXECUTE ON FUNCTION public.replace_profile_skills(uuid, jsonb) FROM PUBLIC, anon;\nGRANT EXECUTE ON FUNCTION public.replace_profile_skills(uuid, jsonb) TO authenticated;"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "functions.set_profile_resume_no_key_lock",
+    "invariantId": "set-profile-resume-no-key-lock",
+    "label": "set_profile_resume: lock the profile FOR NO KEY UPDATE, so a search swap does not block it",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "profiles"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "set_profile_resume(): same body, FOR NO KEY UPDATE on the profile",
+        "sql": "CREATE OR REPLACE FUNCTION public.set_profile_resume(profile_id uuid, key text, filename text, sha256 text)\n  RETURNS text\n  LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$\nDECLARE\n  uid uuid := auth.uid();\n  previous text;\n  object_size bigint;\n  clean text;\nBEGIN\n  IF uid IS NULL THEN\n    RAISE EXCEPTION 'set_profile_resume: not signed in' USING ERRCODE = '42501';\n  END IF;\n\n  SELECT p.\"resumeKey\" INTO previous\n  FROM public.profiles p\n  WHERE p.id = set_profile_resume.profile_id AND p.\"userId\" = uid\n  FOR NO KEY UPDATE;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'set_profile_resume: profile not found' USING ERRCODE = '42501';\n  END IF;\n\n  IF key IS NULL OR NOT public.resume_key_is_own(key) THEN\n    RAISE EXCEPTION 'set_profile_resume: key is not a resume key in your folder'\n      USING ERRCODE = '23514';\n  END IF;\n  IF split_part(key, '/', 2) <> set_profile_resume.profile_id::text THEN\n    RAISE EXCEPTION 'set_profile_resume: key belongs to another profile'\n      USING ERRCODE = '23514';\n  END IF;\n  IF sha256 IS NULL OR sha256 !~ '^[0-9a-f]{64}$' THEN\n    RAISE EXCEPTION 'set_profile_resume: sha256 must be 64 lowercase hex characters'\n      USING ERRCODE = '23514';\n  END IF;\n\n  SELECT (o.metadata->>'size')::bigint INTO object_size\n  FROM storage.objects o\n  WHERE o.bucket_id = 'resumes' AND o.name = key;\n  IF NOT FOUND OR object_size IS NULL THEN\n    RAISE EXCEPTION 'set_profile_resume: no uploaded file at key'\n      USING ERRCODE = '23514';\n  END IF;\n\n  clean := regexp_replace(coalesce(filename, ''), '^.*[/\\\\]', '');\n  clean := regexp_replace(clean, '[^A-Za-z0-9_. -]', '_', 'g');\n  clean := btrim(left(clean, 200));\n  IF clean = '' THEN\n    clean := 'resume.pdf';\n  END IF;\n\n  UPDATE public.profiles p\n  SET \"resumeKey\" = key,\n      \"resumeFilename\" = clean,\n      \"resumeSizeBytes\" = object_size::int,\n      \"resumeSha256\" = sha256,\n      \"resumeUploadedAt\" = now()\n  WHERE p.id = set_profile_resume.profile_id;\n\n  RETURN previous;\nEND;\n$$;\nREVOKE ALL ON FUNCTION public.set_profile_resume(uuid, text, text, text) FROM PUBLIC, anon;\nGRANT EXECUTE ON FUNCTION public.set_profile_resume(uuid, text, text, text) TO authenticated;"
+      }
+    ],
+    "postcheck": []
+  }
+]
