@@ -37,6 +37,7 @@ export default async function Page() {
       terms={stored.terms}
       resume={resume}
       lists={lists}
+      profileId={profileId}
     />
   );
 }

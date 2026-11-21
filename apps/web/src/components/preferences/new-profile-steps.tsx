@@ -5,9 +5,11 @@ import {
   useEffect,
   useRef,
   useState,
+  useTransition,
   type ComponentProps,
 } from 'react';
 import { useRouter } from 'next/navigation';
+import { publishProfileAction } from '@/app/(app)/preferences/publish-action';
 import { useUnsavedChanges } from '@/components/layout/unsaved-changes';
 import { JobForm } from '@/components/setup/job-form';
 import { ResumeField, type Resume } from '@/components/setup/resume-field';
@@ -156,7 +158,7 @@ type ResumeProps = {
 
 /**
  * Step 3: the created profile's resume. A copied resume shows with Replace; a blank
- * profile needs an upload before Finish. Finish opens the new profile.
+ * profile needs an upload before Finish. Finish publishes it and opens its matches.
  */
 export function NewProfileResumeStep({
   profileId,
@@ -170,13 +172,16 @@ export function NewProfileResumeStep({
   }>({ resume: current, uploading: false });
   const last = useRef<Resume | null | undefined>(undefined);
   const ready = state.resume !== null && !state.uploading;
+  const [pending, start] = useTransition();
+  const [error, setError] = useState<string | undefined>();
 
   return (
     <StepFrame
       flow={flowFor(profileId)}
       step="resume"
       title={title('resume')}
-      pending={false}
+      pending={pending}
+      formError={error}
       formId="new-profile-resume-form"
       submitLabel="Finish"
       submitDisabled={!ready}
@@ -188,9 +193,13 @@ export function NewProfileResumeStep({
         noValidate
         onSubmit={(e) => {
           e.preventDefault();
-          if (!ready) return;
-          router.push(`/preferences/profiles/${profileId}`);
-          router.refresh();
+          if (!ready || pending) return;
+          setError(undefined);
+          start(async () => {
+            const outcome = await publishProfileAction(profileId);
+            if (outcome.status === 'published') router.push(outcome.href);
+            else setError(outcome.message);
+          });
         }}
       >
         <ResumeField
