@@ -111,7 +111,7 @@ describe('DeleteProfileButton', () => {
   });
 
   it('a failure toasts', async () => {
-    deleteProfileAction.mockResolvedValue('not-draft');
+    deleteProfileAction.mockResolvedValue('failed');
     render(
       <DeleteProfileButton
         profileId={ID}

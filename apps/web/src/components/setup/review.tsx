@@ -22,7 +22,7 @@ import { NOTICE_OPTIONS, formatOffset } from '@/lib/setup/options';
 import { UNKNOWN, labeller, placeLabeler } from '@/lib/setup/place-label';
 import { SETUP_STEPS, stepPath, type SetupStepId } from '@/lib/setup/steps';
 import type { ValueLists } from '@/lib/setup/value-lists';
-import { StepFrame } from './step-frame';
+import { ReviewFinish } from './review-finish';
 
 type Props = {
   about: AboutAnswers;
@@ -31,6 +31,7 @@ type Props = {
   terms: TermsAnswers;
   resume: { filename: string; sizeBytes: number };
   lists: ValueLists;
+  profileId: string;
 };
 
 const PERIOD_WORDS = {
@@ -89,8 +90,8 @@ function StepCard({ step, rows }: { step: SetupStepId; rows: Row[] }) {
 }
 
 /**
- * The summary after step 5: one card per step with an Edit link. Setup is already done
- * here, so Finish only goes home. Rendered on the server: the value lists stay there.
+ * The summary after step 5: one card per step with an Edit link. Finish publishes the
+ * profile and opens its matches view. Rendered on the server: the value lists stay there.
  */
 export function Review({
   about,
@@ -99,6 +100,7 @@ export function Review({
   terms,
   resume,
   lists,
+  profileId,
 }: Props) {
   const country = labeller(lists.countries);
   const region = labeller(lists.regions);
@@ -211,13 +213,7 @@ export function Review({
   ];
 
   return (
-    <StepFrame
-      step="review"
-      title="Review"
-      pending={false}
-      submitLabel="Finish"
-      submitHref="/"
-    >
+    <ReviewFinish profileId={profileId}>
       <div className="flex flex-col gap-4">
         <StepCard step="about" rows={aboutRows} />
         <StepCard step="eligibility" rows={eligibilityRows} />
@@ -235,6 +231,6 @@ export function Review({
           ]}
         />
       </div>
-    </StepFrame>
+    </ReviewFinish>
   );
 }

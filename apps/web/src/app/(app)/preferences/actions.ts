@@ -66,12 +66,12 @@ export async function saveProfileTermsAction(
 }
 
 /**
- * Deletes one of the signed-in user's profiles, through `deleteDraftProfile` only. The
+ * Deletes one of the signed-in user's profiles, directly for a draft, through the engine for a published one. The
  * list is read first so a delete can land on the profile that followed the deleted one.
  */
 export async function deleteProfileAction(
   profileId: string,
-): Promise<'last' | 'only-resume' | 'not-draft' | 'failed'> {
+): Promise<'last' | 'only-resume' | 'failed'> {
   if (!isProfileId(profileId)) return 'failed';
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.auth.getClaims();
@@ -83,7 +83,14 @@ export async function deleteProfileAction(
   } catch {
     return 'failed';
   }
-  const result = await deleteProfile(supabase, userId, profileId);
+  let result: Awaited<ReturnType<typeof deleteProfile>>;
+  try {
+    result = await deleteProfile(supabase, userId, profileId, {
+      engine: await engineClient(),
+    });
+  } catch {
+    return 'failed';
+  }
   if (result !== 'deleted') return result;
   // The nav lists profiles: re-read it before landing on the next one.
   revalidatePath('/preferences', 'layout');
@@ -100,10 +107,9 @@ export async function setPostSearchAction(
 ): Promise<'saved' | 'forbidden' | 'failed'> {
   if (!isProfileId(profileId) || typeof enabled !== 'boolean') return 'failed';
   try {
-    const result = await (await engineClient()).setPostSearch(
-      profileId,
-      enabled,
-    );
+    const result = await (
+      await engineClient()
+    ).setPostSearch(profileId, enabled);
     if (result.kind === 'ok') return 'saved';
     if (result.kind === 'forbidden') return 'forbidden';
     return 'failed';

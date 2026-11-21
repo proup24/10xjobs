@@ -19,7 +19,11 @@ export default async function PreferencesLayout({
       <h1 className="text-title-3">Preferences</h1>
       <div className="grid gap-6 md:grid-cols-[14rem_1fr] md:gap-10">
         <PreferencesNav
-          items={items.map(({ id, hasResume }) => ({ id, hasResume }))}
+          items={items.map(({ id, hasResume, state }) => ({
+            id,
+            hasResume,
+            state,
+          }))}
           labels={labels}
           draftInProgress={draft !== null}
         />

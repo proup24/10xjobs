@@ -117,6 +117,25 @@ describe('PreferencesNav', () => {
     );
   });
 
+  it('marks a draft profile Not live, and a published one not', () => {
+    const DRAFT = '33333333-3333-4333-8333-333333333333';
+    const items: ProfileListItem[] = [
+      ...ITEMS.slice(0, 1),
+      { ...ITEMS[1], id: DRAFT, state: 'draft' },
+    ];
+    render(
+      <UnsavedChangesProvider>
+        <PreferencesNav
+          items={items}
+          labels={{ ...LABELS, [DRAFT]: 'Backend engineer · Lyon' }}
+          draftInProgress={false}
+        />
+      </UnsavedChangesProvider>,
+    );
+    expect(link(/Lyon/).textContent).toContain('Not live');
+    expect(link(/Berlin/).textContent).not.toContain('Not live');
+  });
+
   it('shows the sections only under the current profile, with the current one marked', () => {
     pathname.value = `/preferences/profiles/${A}/terms`;
     renderNav();

@@ -24,7 +24,7 @@ const PROFILE_SECTIONS = (['job', 'terms', 'resume'] as const).map(
 );
 
 type Props = {
-  items: Pick<ProfileListItem, 'id' | 'hasResume'>[];
+  items: Pick<ProfileListItem, 'id' | 'hasResume' | 'state'>[];
   /** Profile id → its nav label (see `profileLabels`). */
   labels: Record<string, string>;
   /** A new profile's draft exists: "+ New profile" offers to continue it. */
@@ -49,7 +49,13 @@ export function PreferencesNav({ items, labels, draftInProgress }: Props) {
       // Without a resume the profile opens on the section it still needs.
       href: profilePath(p.id, p.hasResume ? 'job' : 'resume'),
       label: labels[p.id] ?? 'Profile',
-      badge: p.hasResume ? undefined : 'Needs a resume',
+      // A draft is not live whatever its resume: that is the state to show.
+      badge:
+        p.state === 'draft'
+          ? 'Not live'
+          : p.hasResume
+            ? undefined
+            : 'Needs a resume',
       children: selected
         ? PROFILE_SECTIONS.map(({ section, label }) => {
             const href = profilePath(p.id, section);

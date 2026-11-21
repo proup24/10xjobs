@@ -1,7 +1,7 @@
 # Phase 2: Find
 
 Date: 2026-11-10
-Status: draft
+Status: draft. Slices 06 and 07 built (PRs #109 and #111, and the web-app PR).
 
 ## Intent
 
@@ -53,7 +53,7 @@ The UI comes first _(user)_: job details, the matches view and the Rejected tab 
 
 **Publishing and editing**
 
-- **Published profiles are no longer frozen** _(user)_. This reverses the Phase 1 decision "Published profiles are frozen". A published profile stays editable, and saving a change applies it: the searches for later collection runs follow the new preferences, and recent jobs are re-decided against them. A job that only failed on the old preferences becomes qualified and shows up as new; a recent qualified job that no longer fits leaves the list. Older jobs are not re-decided.
+- **Published profiles are no longer frozen** _(user)_. This reverses the Phase 1 decision "Published profiles are frozen". A published profile stays editable, and saving a change applies it: the searches for later collection runs follow the new preferences, and recent jobs are re-decided against them. A job that only failed on the old preferences becomes qualified and appears in the list in its normal date order (not marked new or unread); a recent qualified job that no longer fits leaves the list. Older jobs are not re-decided.
 - **No separate publish button** _(my call)_. Finishing guided setup, or finishing "add a profile", publishes. After that, saving is enough.
 - **Editing does not re-collect the past.** A new search finds jobs from its next scheduled run on; it isn't replayed over old collection windows.
 - **A decision must still be explainable after an edit.** Today `job_matches` relies on the profile being frozen to know which preferences a decision used. With editable profiles, each decision has to record which version of the profile it read. How (a profile version counter, a snapshot of the compared values in `checks`, or both) is slice 07's to settle.

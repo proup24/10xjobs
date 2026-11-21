@@ -1,5 +1,7 @@
 # 06: Publish on create
 
+Status: built (PRs #109 and #111, and the web-app PR). Spec: [publish and edit a published profile design](../../superpowers/specs/2026-11-21-publish-and-edit-published-design.md).
+
 ## Goal
 
 A profile goes live as soon as the user finishes setting it up, with no publish button: finishing guided setup or finishing "add a profile" publishes it, the matcher backfills recent jobs for it, and the next collection runs search for it.
@@ -9,7 +11,7 @@ A profile goes live as soon as the user finishes setting it up, with no publish 
 - Guided setup (Phase 1 slice 07) ends with a complete draft that has everything publishing needs.
 - "Add a profile, blank or copied" and deleting a draft from preferences.
 - The engine's publish: it checks the profile is complete, attaches the shared query search builders, and the matcher backfills matchable jobs on publish.
-- Deleting a published profile through the engine (`releaseAll`), which releases its shared searches.
+- Nothing yet deletes a published profile and releases its shared searches. This slice adds `DELETE /profiles/:id` on the engine, which releases them through `QuerySearchService.releaseAndDelete`.
 
 ## In scope
 

@@ -107,7 +107,9 @@ describe('deleteProfileAction', () => {
     del.deleteProfile.mockResolvedValue('deleted');
     del.hrefAfterDelete.mockReturnValue('/preferences/profiles/other/job');
     await deleteProfileAction(ID);
-    expect(del.deleteProfile).toHaveBeenCalledWith(client, 'user-1', ID);
+    expect(del.deleteProfile).toHaveBeenCalledWith(client, 'user-1', ID, {
+      engine: expect.anything(),
+    });
     expect(del.hrefAfterDelete).toHaveBeenCalledWith(LIST, ID);
     expect(revalidatePath).toHaveBeenCalledWith('/preferences', 'layout');
     expect(redirect).toHaveBeenCalledWith('/preferences/profiles/other/job');

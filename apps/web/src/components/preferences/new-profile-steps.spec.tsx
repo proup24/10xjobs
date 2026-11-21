@@ -18,6 +18,10 @@ import {
 const push = vi.hoisted(() => vi.fn());
 const refresh = vi.hoisted(() => vi.fn());
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push, refresh }) }));
+const publishProfileAction = vi.hoisted(() => vi.fn());
+vi.mock('@/app/(app)/preferences/publish-action', () => ({
+  publishProfileAction,
+}));
 vi.mock('@/lib/resume/actions', () => ({ confirmResumeAction: vi.fn() }));
 vi.mock('@/lib/supabase/client', () => ({
   createSupabaseBrowserClient: () => ({}),
@@ -118,7 +122,11 @@ describe('NewProfileResumeStep', () => {
     expect(finish().disabled).toBe(true);
   });
 
-  it('a copied resume shows with Replace, and Finish opens the profile', async () => {
+  it('a copied resume shows with Replace, and Finish publishes and opens the matches view', async () => {
+    publishProfileAction.mockResolvedValue({
+      status: 'published',
+      href: `/?profile=${P}`,
+    });
     render(
       <NewProfileResumeStep
         profileId={P}
@@ -130,8 +138,45 @@ describe('NewProfileResumeStep', () => {
     expect(screen.getByRole('button', { name: 'Replace' })).toBeTruthy();
     await waitFor(() => expect(finish().disabled).toBe(false));
     fireEvent.click(finish());
-    expect(push).toHaveBeenCalledWith(`/preferences/profiles/${P}`);
-    expect(refresh).toHaveBeenCalled();
+    await waitFor(() => expect(push).toHaveBeenCalledWith(`/?profile=${P}`));
+    expect(publishProfileAction).toHaveBeenCalledWith(P);
+  });
+
+  it('a failed publish shows the message and Finish works again', async () => {
+    publishProfileAction.mockResolvedValueOnce({
+      status: 'failed',
+      message: 'Nope.',
+    });
+    render(
+      <NewProfileResumeStep
+        profileId={P}
+        userId={U}
+        current={{ filename: 'cv.pdf', sizeBytes: 2048 }}
+      />,
+    );
+    await waitFor(() => expect(finish().disabled).toBe(false));
+    fireEvent.click(finish());
+    expect((await screen.findByRole('alert')).textContent).toBe('Nope.');
+    expect(push).not.toHaveBeenCalled();
+    await waitFor(() => expect(finish().disabled).toBe(false));
+  });
+
+  it('a rejected publish request shows the failure message and Finish works again', async () => {
+    publishProfileAction.mockRejectedValue(new Error('network'));
+    render(
+      <NewProfileResumeStep
+        profileId={P}
+        userId={U}
+        current={{ filename: 'cv.pdf', sizeBytes: 2048 }}
+      />,
+    );
+    await waitFor(() => expect(finish().disabled).toBe(false));
+    fireEvent.click(finish());
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      "Couldn't publish the profile. It's saved; try Finish again.",
+    );
+    expect(push).not.toHaveBeenCalled();
+    await waitFor(() => expect(finish().disabled).toBe(false));
   });
 
   it('Back opens the new profile’s terms', () => {

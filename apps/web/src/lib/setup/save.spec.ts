@@ -52,7 +52,7 @@ const terms: TermsAnswers = {
 const quiet = { log: () => undefined };
 
 type World = {
-  profile?: { id: string } | null;
+  profile?: { id: string; state?: string } | null;
   draft?: { id: string; answers: unknown } | null;
   existing?: Record<string, unknown>[];
   /** False: the profile update matches no row (e.g. the profile was published meanwhile). */
@@ -532,6 +532,31 @@ describe('saveProfileJob', () => {
     expect(f.queries('profiles', 'select')).toHaveLength(0);
   });
 
+  it("saves a published profile's job", async () => {
+    const f = world({ profile: { id: P, state: 'published' } });
+    const lines: string[] = [];
+    expect(
+      await saveProfileJob(f.supabase, P, job, isSearchableTech, {
+        log: (l) => lines.push(l),
+      }),
+    ).toEqual({ status: 'saved' });
+    const [update] = f.queries('profiles', 'update');
+    expect(update.filters.some(([, col]) => col === 'state')).toBe(false);
+    expect(f.rpcs('replace_profile_skills')).toHaveLength(1);
+    expect(lines).toEqual([]);
+  });
+
+  it('logs that no profile of yours matched, not a draft', async () => {
+    const f = world({ profileUpdateMatches: false });
+    const lines: string[] = [];
+    await saveProfileJob(f.supabase, P, job, isSearchableTech, {
+      log: (l) => lines.push(l),
+    });
+    expect(lines).toEqual([
+      'setup save: job profile update matched no profile of yours',
+    ]);
+  });
+
   it('returns failed when the update matches no row', async () => {
     const f = world({ profileUpdateMatches: false });
     expect(
@@ -553,6 +578,24 @@ describe('saveProfileTerms', () => {
     expect(update.filters).toContainEqual(['eq', 'id', OTHER]);
     expect(update.payload).toEqual(termsColumns(terms));
     expect(f.queries('profiles', 'select')).toHaveLength(0);
+  });
+
+  it("saves a published profile's terms", async () => {
+    const f = world({ profile: { id: P, state: 'published' } });
+    expect(await saveProfileTerms(f.supabase, P, terms, quiet)).toEqual({
+      status: 'saved',
+    });
+    const [update] = f.queries('profiles', 'update');
+    expect(update.filters.some(([, col]) => col === 'state')).toBe(false);
+  });
+
+  it('logs that no profile of yours matched, not a draft', async () => {
+    const f = world({ profileUpdateMatches: false });
+    const lines: string[] = [];
+    await saveProfileTerms(f.supabase, P, terms, { log: (l) => lines.push(l) });
+    expect(lines).toEqual([
+      'setup save: terms profile update matched no profile of yours',
+    ]);
   });
 
   it('returns failed when the update matches no row', async () => {

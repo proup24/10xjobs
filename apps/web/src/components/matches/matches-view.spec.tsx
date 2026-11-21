@@ -289,8 +289,18 @@ describe('MatchesView empty states', () => {
     });
     expect(screen.getByText("This profile isn't live yet")).toBeTruthy();
     expect(
-      screen.getByText("It starts matching once it's published."),
+      screen.getByText('Finish setting it up to start matching.'),
     ).toBeTruthy();
+  });
+
+  it('the draft empty state links Finish setup to the profile resume step', () => {
+    renderView({
+      profiles: [{ id: P1, label: 'Full-stack engineer', state: 'draft' }],
+      rows: [],
+    });
+    expect(
+      screen.getByRole('link', { name: 'Finish setup' }).getAttribute('href'),
+    ).toBe(`/preferences/new/${P1}/resume`);
   });
 
   it('lists a draft beside one published profile, without "All profiles"', async () => {

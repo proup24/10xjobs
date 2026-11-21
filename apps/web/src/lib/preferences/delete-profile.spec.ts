@@ -16,6 +16,7 @@ const rows = (
           : resumes.map((r, i) => ({
               id: `p${i + 1}`,
               resumeKey: r ? 'u1/x.pdf' : null,
+              state: 'draft',
             })),
         error,
       }) as never,
@@ -32,7 +33,7 @@ describe('deleteProfile', () => {
   });
 
   it('delegates to deleteDraftProfile when there are two or more', async () => {
-    for (const result of ['deleted', 'not-draft', 'failed'] as const) {
+    for (const result of ['deleted', 'failed'] as const) {
       const f = rows([true, true]);
       const deleteDraft = vi.fn().mockResolvedValue(result);
       expect(await deleteProfile(f.supabase, 'u1', 'p1', { deleteDraft })).toBe(
@@ -40,6 +41,68 @@ describe('deleteProfile', () => {
       );
       expect(deleteDraft).toHaveBeenCalledWith(f.supabase, 'u1', 'p1');
     }
+  });
+
+  it('sends a published profile through the engine, not the draft path', async () => {
+    const f = fakeSupabase({
+      reply: () => ({
+        data: [
+          { id: 'p1', resumeKey: 'u1/x.pdf', state: 'published' },
+          { id: 'p2', resumeKey: 'u1/y.pdf', state: 'draft' },
+        ],
+        error: null,
+      }),
+    });
+    const deleteDraft = vi.fn();
+    const deletePublished = vi.fn().mockResolvedValue('deleted');
+    const engine = { deleteProfile: vi.fn() };
+    expect(
+      await deleteProfile(f.supabase, 'u1', 'p1', {
+        deleteDraft,
+        deletePublished,
+        engine,
+      }),
+    ).toBe('deleted');
+    expect(deletePublished).toHaveBeenCalledWith(
+      f.supabase,
+      'u1',
+      'p1',
+      engine,
+    );
+    expect(deleteDraft).not.toHaveBeenCalled();
+  });
+
+  it('keeps the last and only-resume guards for published profiles', async () => {
+    const deletePublished = vi.fn();
+    const one = fakeSupabase({
+      reply: () => ({
+        data: [{ id: 'p1', resumeKey: 'k', state: 'published' }],
+        error: null,
+      }),
+    });
+    const engine = { deleteProfile: vi.fn() };
+    expect(
+      await deleteProfile(one.supabase, 'u1', 'p1', {
+        deletePublished,
+        engine,
+      }),
+    ).toBe('last');
+    const two = fakeSupabase({
+      reply: () => ({
+        data: [
+          { id: 'p1', resumeKey: 'k', state: 'published' },
+          { id: 'p2', resumeKey: null, state: 'draft' },
+        ],
+        error: null,
+      }),
+    });
+    expect(
+      await deleteProfile(two.supabase, 'u1', 'p1', {
+        deletePublished,
+        engine,
+      }),
+    ).toBe('only-resume');
+    expect(deletePublished).not.toHaveBeenCalled();
   });
 
   it('refuses the only profile with a resume, deleting nothing', async () => {

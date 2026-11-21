@@ -1,4 +1,11 @@
-import { cleanup, render, screen, within } from '@testing-library/react';
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type {
   AboutAnswers,
@@ -9,9 +16,17 @@ import type {
 import type { ValueLists } from '@/lib/setup/value-lists';
 import { Review } from './review';
 
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
+const push = vi.hoisted(() => vi.fn());
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
+const publishProfileAction = vi.hoisted(() => vi.fn());
+vi.mock('@/app/(app)/preferences/publish-action', () => ({
+  publishProfileAction,
+}));
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+});
 
 const CITY = '8f9c1a52-3b1e-4c7a-9d2e-1f0a2b3c4d5e';
 
@@ -91,6 +106,7 @@ const terms: TermsAnswers = {
 function setup() {
   return render(
     <Review
+      profileId="p1"
       about={about}
       eligibility={eligibility}
       job={job}
@@ -127,11 +143,42 @@ describe('Review', () => {
     }
   });
 
-  it('Finish links to /', () => {
+  it('Finish publishes and goes to the matches view', async () => {
+    publishProfileAction.mockResolvedValue({
+      status: 'published',
+      href: '/?profile=p1',
+    });
     setup();
-    expect(
-      screen.getByRole('link', { name: 'Finish' }).getAttribute('href'),
-    ).toBe('/');
+    fireEvent.click(screen.getByRole('button', { name: 'Finish' }));
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/?profile=p1'));
+    expect(publishProfileAction).toHaveBeenCalledWith('p1');
+  });
+
+  it('a failed publish shows the message and Finish works again', async () => {
+    publishProfileAction.mockResolvedValue({
+      status: 'failed',
+      message: 'Try again.',
+    });
+    setup();
+    const finish = () =>
+      screen.getByRole('button', { name: 'Finish' }) as HTMLButtonElement;
+    fireEvent.click(finish());
+    expect((await screen.findByRole('alert')).textContent).toBe('Try again.');
+    expect(push).not.toHaveBeenCalled();
+    await waitFor(() => expect(finish().disabled).toBe(false));
+  });
+
+  it('a rejected publish request shows the failure message and Finish works again', async () => {
+    publishProfileAction.mockRejectedValue(new Error('network'));
+    setup();
+    const finish = () =>
+      screen.getByRole('button', { name: 'Finish' }) as HTMLButtonElement;
+    fireEvent.click(finish());
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      "Couldn't publish the profile. It's saved; try Finish again.",
+    );
+    expect(push).not.toHaveBeenCalled();
+    await waitFor(() => expect(finish().disabled).toBe(false));
   });
 
   it('shows labels, never codes', () => {
@@ -176,6 +223,7 @@ describe('Review', () => {
   it('an unknown code shows "Unknown", never the code', () => {
     render(
       <Review
+        profileId="p1"
         about={about}
         eligibility={{ ...eligibility, residenceCountry: 'ZZ' }}
         job={{ ...job, position: 'mystery_engineer' }}
@@ -199,6 +247,7 @@ describe('Review', () => {
   it('shows the empty answers plainly', () => {
     render(
       <Review
+        profileId="p1"
         about={{ name: 'Ada', phone: null, linkedin: null, links: [] }}
         eligibility={{
           ...eligibility,
