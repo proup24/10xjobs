@@ -330,6 +330,19 @@ describe('QuerySearchService', () => {
       expect(repository.searchesVersions.get(profileId)).toBe(4);
     });
 
+    it('replace on a profile that is not published changes nothing', async () => {
+      const { service, repository, profileId } = await setup();
+      const result = await service.replace(
+        profileId,
+        service.recipesFor(profile),
+        4,
+      );
+      expect(result).toEqual({ created: 0, existing: 0, released: 0 });
+      expect(repository.rows).toHaveLength(0);
+      expect(repository.links).toHaveLength(0);
+      expect(repository.searchesVersions.has(profileId)).toBe(false);
+    });
+
     it('releaseAndDelete releases the builders of a published profile only', async () => {
       const { service, repository, profileId } = await setup();
       await service.generate(profileId, profile);

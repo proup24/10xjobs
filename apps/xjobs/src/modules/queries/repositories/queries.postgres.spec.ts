@@ -78,6 +78,15 @@ describe.skipIf(!url)('query search repository in PostgreSQL', () => {
     return row.id;
   }
 
+  async function draftOf(id: string): Promise<void> {
+    await db.execute(
+      db.raw
+        .sql`UPDATE profiles SET state = 'draft', "publishedAt" = NULL WHERE id = ${id}::uuid`
+        .affectedCount()
+        .build(),
+    );
+  }
+
   beforeAll(async () => {
     const target = new URL(url!);
     if (
@@ -190,6 +199,28 @@ describe.skipIf(!url)('query search repository in PostgreSQL', () => {
     expect(rc).toMatchObject({ associatedProfiles: 1, isActive: true });
   });
 
+  it('replace on a draft changes nothing', async () => {
+    const id = await profile();
+    const a = ashby('emea');
+    await draftOf(id);
+
+    expect(await repo.replace(id, [a], 5)).toEqual({
+      created: 0,
+      existing: 0,
+      released: 0,
+    });
+
+    expect(await builderOf(a)).toBeNull();
+    expect(
+      await db.orm.public.ProfileQuerySearchBuilder.where({
+        profileId: id,
+      }).all(),
+    ).toHaveLength(0);
+    expect(
+      (await db.orm.public.Profile.where({ id }).first())!.searchesVersion,
+    ).toBeNull();
+  });
+
   it('replace sets searchesVersion', async () => {
     const id = await profile();
     await repo.replace(id, [ashby('emea')], 7);
@@ -240,7 +271,7 @@ describe.skipIf(!url)('query search repository in PostgreSQL', () => {
     const id = await profile();
     const a = ashby('emea');
     await repo.attach(id, [a]);
-    await sql`UPDATE profiles SET state = 'draft', "publishedAt" = NULL`;
+    await draftOf(id);
 
     expect(await repo.releaseAndDelete(id)).toBe(false);
 

@@ -129,6 +129,7 @@ export class PrismaQuerySearchRepository extends QuerySearchRepository {
     );
   }
 
+  // Builder locks of two profiles' swaps can cross; the 40P01 retry in `transaction` covers it.
   private static async attachIn(
     tx: DatabaseTransaction,
     profileId: string,
@@ -183,6 +184,7 @@ export class PrismaQuerySearchRepository extends QuerySearchRepository {
     return result;
   }
 
+  // Same note as `attachIn`: a deadlock here is retried by `transaction`.
   /** Unlinks the profile's builders (all, or those `keep` rejects); returns how many. */
   private static async releaseIn(
     tx: DatabaseTransaction,
@@ -219,6 +221,15 @@ export class PrismaQuerySearchRepository extends QuerySearchRepository {
   ): Promise<QuerySearchReplaceResult> {
     const wanted = new Set(recipes.map((recipe) => recipe.hash));
     return this.transaction(async (tx) => {
+      // Lock the profile first (as releaseAndDelete does): a draft or missing
+      // profile must never gain links, since deleting it would skip `adjust`.
+      const profile = await tx.orm.public.Profile.where({
+        id: profileId,
+        state: 'published',
+      })
+        .forUpdate()
+        .first();
+      if (!profile) return { created: 0, existing: 0, released: 0 };
       const attached = await PrismaQuerySearchRepository.attachIn(
         tx,
         profileId,

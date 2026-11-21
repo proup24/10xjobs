@@ -146,17 +146,22 @@ export class FakeQuerySearchRepository extends QuerySearchRepository {
     recipes: QuerySearchRecipe[],
     searchesVersion: number,
   ): Promise<QuerySearchReplaceResult> {
+    if (!this.published.has(profileId))
+      return { created: 0, existing: 0, released: 0 };
     const attached = await this.attach(profileId, recipes);
     const wanted = new Set(recipes.map((recipe) => recipe.hash));
+    const hashOf = (queryId: string): string => {
+      const row = this.rows.find((candidate) => candidate.id === queryId);
+      if (!row) throw new Error('missing builder');
+      return row.hash;
+    };
     const drop = this.links.filter(
       (link) =>
-        link.profileId === profileId &&
-        !wanted.has(this.rows.find((row) => row.id === link.queryId)!.hash),
+        link.profileId === profileId && !wanted.has(hashOf(link.queryId)),
     );
     this.links = this.links.filter((link) => !drop.includes(link));
     for (const link of drop) this.adjust(link.queryId, -1);
-    if (this.published.has(profileId))
-      this.searchesVersions.set(profileId, searchesVersion);
+    this.searchesVersions.set(profileId, searchesVersion);
     return { ...attached, released: drop.length };
   }
 
