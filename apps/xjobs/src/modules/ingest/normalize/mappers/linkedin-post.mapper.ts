@@ -1,6 +1,6 @@
 import type { NormalizeContext } from '../normalize';
 import { httpUrl } from '../linkedin';
-import { cleanPostText, sortLinks } from '../posts/clean';
+import { cleanPostText, hasSeeMoreTail, sortLinks } from '../posts/clean';
 import { readPostPayload, type RawPost } from '../posts/payload';
 import { firstDrop } from '../posts/rules';
 import { emptyRecord, type NormalizedRecord, type PostAuthor } from '../record';
@@ -71,6 +71,8 @@ export function mapLinkedinPost(
       url: postingUrl,
       author,
       text: ownText || null,
+      truncated: hasSeeMoreTail(raw.text ?? ''),
+      attachedUrls: [...new Set(raw.linkUrls)],
       postedAt: raw.postedAt,
       original: original
         ? {
@@ -83,6 +85,9 @@ export function mapLinkedinPost(
                 ? authorOf(original.author)
                 : null,
             text: originalText || null,
+            truncated: hasSeeMoreTail(original.text ?? ''),
+            // The original's attachments arrive with its real shape (Task 11).
+            attachedUrls: [],
             postedAt: original.postedAt,
           }
         : null,

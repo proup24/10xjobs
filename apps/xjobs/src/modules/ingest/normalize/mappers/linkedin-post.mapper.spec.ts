@@ -93,6 +93,30 @@ describe('mapLinkedinPost', () => {
     expect(r.post?.links.atsPostings).toHaveLength(1);
   });
 
+  it('marks a post whose text the actor cut at "see more"', () => {
+    expect(mapped(plain).post).toMatchObject({
+      truncated: false,
+      attachedUrls: [],
+    });
+    const cut = mapped({ ...plain, content: `${plain.content} …see more` });
+    expect(cut.post?.truncated).toBe(true);
+    expect(cut.post?.text).toBe(mapped(plain).post?.text);
+  });
+
+  it('keeps the links attached outside the text', () => {
+    const r = mapped({
+      ...plain,
+      article: { link: 'https://jobs.example/role-1' },
+    });
+    expect(r.post?.attachedUrls).toEqual(['https://jobs.example/role-1']);
+  });
+
+  it('maps an item whose id is a number and whose link is in url', () => {
+    const { id: _id, linkedinUrl, ...rest } = plain;
+    const r = mapped({ ...rest, id: 7390000000000000, url: linkedinUrl });
+    expect(r.post).toMatchObject({ id: '7390000000000000', url: linkedinUrl });
+  });
+
   it('drops a post whose text cleans to nothing', () => {
     expect(mapLinkedinPost({ ...plain, content: ' 🚀 ' }, ctx)).toEqual({
       invalid: 'prepare: no-text',
@@ -160,6 +184,17 @@ describe('mapLinkedinPost with an original', () => {
     expect(r.post?.text).toBe('My added words');
     expect(r.post?.original?.text).toBe('Original job text');
     expect(r.post?.original?.author?.key).toBe('profile:orig-author');
+    expect(r.post?.original).toMatchObject({
+      truncated: false,
+      attachedUrls: [],
+    });
+  });
+
+  it("marks an original whose text was cut, apart from the share's", () => {
+    stub.original = original('Original job text …see more');
+    const r = mapped({ ...plain, content: 'My added words' });
+    expect(r.post?.original?.truncated).toBe(true);
+    expect(r.post?.truncated).toBe(false);
   });
 
   it('runs rules on the original text and headline, not the sharer', () => {

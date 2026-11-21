@@ -60,6 +60,25 @@ function compare(a: MergeSource, b: MergeSource): number {
 }
 
 /**
+ * A post's details with the fields a record stored before them lacks filled
+ * in: not truncated, nothing attached.
+ */
+export function withPostDefaults(post: PostDetail): PostDetail {
+  return {
+    ...post,
+    truncated: post.truncated ?? false,
+    attachedUrls: post.attachedUrls ?? [],
+    original: post.original
+      ? {
+          ...post.original,
+          truncated: post.original.truncated ?? false,
+          attachedUrls: post.original.attachedUrls ?? [],
+        }
+      : null,
+  };
+}
+
+/**
  * Every post source's details: originals first, then by posting time (unknown
  * last), then by raw item id. Null when no source is a post.
  */
@@ -81,7 +100,7 @@ export function mergePostSources(
       (time(a) < time(b) ? -1 : time(a) > time(b) ? 1 : 0) ||
       (a.rawItemId < b.rawItemId ? -1 : a.rawItemId > b.rawItemId ? 1 : 0),
   );
-  return { sources: posts.map((s) => s.record.post) };
+  return { sources: posts.map((s) => withPostDefaults(s.record.post)) };
 }
 
 /**
@@ -122,7 +141,11 @@ export function mergeSources(sources: MergeSource[]): MergedJob {
       fieldSources.postingUrl = from.rawItemId;
     } else {
       const from = open.find((s) => s.record[field] != null);
-      record[field] = from ? from.record[field] : null;
+      record[field] = !from
+        ? null
+        : field === 'post'
+          ? withPostDefaults(from.record.post as PostDetail)
+          : from.record[field];
       if (from) fieldSources[field] = from.rawItemId;
     }
   }

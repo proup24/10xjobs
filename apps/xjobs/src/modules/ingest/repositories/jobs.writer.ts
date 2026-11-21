@@ -623,14 +623,16 @@ async function dropPostSource(
     jobId: link.jobId,
   }).all();
   if (left.length > 0) await remerge(tx, link.jobId);
+  // An archived post job keeps no post details, so no reader sees stale ones.
   else
-    await orm.public.NormalizedJob.where({ id: link.jobId }).updateAll(
-      processingColumns({
+    await orm.public.NormalizedJob.where({ id: link.jobId }).updateAll({
+      ...processingColumns({
         status: 'archived',
         reason: null,
         requestedAt: null,
       }),
-    );
+      postSources: null,
+    });
 }
 
 /**

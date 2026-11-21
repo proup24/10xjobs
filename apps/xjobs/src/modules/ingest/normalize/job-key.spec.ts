@@ -1,6 +1,8 @@
+import { createHash } from 'node:crypto';
 import { Channel } from 'src/common/enums';
 import { emptyRecord, type NormalizedRecord } from '.';
 import { canonicalApplyUrl, jobKey } from './job-key';
+import { comparableText } from './posts/clean';
 import type { PostAuthor, PostDetail } from './record';
 
 const ashbyId = '287770d2-dbc7-4372-adf8-c3e2685d85af';
@@ -227,13 +229,21 @@ describe('jobKey for posts', () => {
     id: string,
     text: string | null,
     authorKey: string | null,
-    original: { id: string | null; text: string | null } | null = null,
+    original: {
+      id: string | null;
+      text: string | null;
+      truncated?: boolean;
+      attachedUrls?: string[];
+    } | null = null,
+    own: { truncated?: boolean; attachedUrls?: string[] } = {},
   ): string => {
     const detail: PostDetail = {
       id,
       url: `https://www.linkedin.com/feed/update/${id}`,
       author: author(original ? 'profile:sharer' : authorKey),
       text: original ? 'my take' : text,
+      truncated: own.truncated ?? false,
+      attachedUrls: own.attachedUrls ?? [],
       postedAt: null,
       original: original
         ? {
@@ -241,6 +251,8 @@ describe('jobKey for posts', () => {
             url: null,
             author: author(authorKey),
             text: original.text,
+            truncated: original.truncated ?? false,
+            attachedUrls: original.attachedUrls ?? [],
             postedAt: null,
           }
         : null,
@@ -294,6 +306,67 @@ describe('jobKey for posts', () => {
     const variant = `🚀 ${long.toUpperCase().replace('EUROPE', 'Europé')}!!`;
     expect(post('1', variant, 'profile:ada')).toBe(
       post('2', long, 'profile:ada'),
+    );
+  });
+
+  it('keeps the exact fingerprint of author and text without attachments', () => {
+    const digest = createHash('sha256')
+      .update(
+        'profile:ada\nwe are hiring a senior backend engineer to join our platform team remote within europe typescript and postgres apply by email today',
+      )
+      .digest('hex')
+      .slice(0, 32);
+    expect(post('1', long, 'profile:ada')).toBe(`linkedin-post:text:${digest}`);
+  });
+
+  it('separates same-author texts that attach different links', () => {
+    const a = post('1', long, 'profile:ada', null, {
+      attachedUrls: ['https://jobs.example/1'],
+    });
+    const b = post('2', long, 'profile:ada', null, {
+      attachedUrls: ['https://jobs.example/2'],
+    });
+    expect(a).toMatch(/^linkedin-post:text:[0-9a-f]{32}$/);
+    expect(a).not.toBe(b);
+    expect(a).not.toBe(post('3', long, 'profile:ada'));
+  });
+
+  it('ignores the order and repeats of attached links', () => {
+    const urls = ['https://jobs.example/b', 'https://jobs.example/a'];
+    expect(post('1', long, 'profile:ada', null, { attachedUrls: urls })).toBe(
+      post('2', long, 'profile:ada', null, {
+        attachedUrls: [urls[1]!, urls[0]!, urls[1]!],
+      }),
+    );
+  });
+
+  it('falls back to the id for a truncated text, own or original', () => {
+    expect(post('5', long, 'profile:ada', null, { truncated: true })).toBe(
+      'linkedin-post:5',
+    );
+    expect(
+      post('5', null, 'profile:ada', { id: 'X', text: long, truncated: true }),
+    ).toBe('linkedin-post:X');
+  });
+
+  it("keys a share by its original's text, whatever the share's own text", () => {
+    expect(
+      post(
+        '6',
+        null,
+        'profile:ada',
+        { id: 'X', text: long },
+        { truncated: true, attachedUrls: ['https://jobs.example/9'] },
+      ),
+    ).toBe(post('1', long, 'profile:ada'));
+  });
+
+  it('needs at least 100 comparable characters for the text key', () => {
+    const of = (n: number) => 'a'.repeat(n);
+    expect(comparableText(of(99))).toHaveLength(99);
+    expect(post('7', of(99), 'profile:ada')).toBe('linkedin-post:7');
+    expect(post('7', of(100), 'profile:ada')).toMatch(
+      /^linkedin-post:text:[0-9a-f]{32}$/,
     );
   });
 

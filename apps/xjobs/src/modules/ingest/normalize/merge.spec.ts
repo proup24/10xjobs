@@ -252,13 +252,23 @@ describe('mergePostSources', () => {
       type: null,
     },
     text: null,
+    truncated: false,
+    attachedUrls: [],
     postedAt,
     original,
     links: { emails: [], linkedinJobIds: [], atsPostings: [], other: [] },
   });
   const postSource = (rawItemId: string, post: PostDetail) =>
     source(rawItemId, Channel.LINKEDIN_POSTS, { post });
-  const orig = { id: 'o', url: null, author: null, text: null, postedAt: null };
+  const orig = {
+    id: 'o',
+    url: null,
+    author: null,
+    text: null,
+    truncated: false,
+    attachedUrls: [],
+    postedAt: null,
+  };
 
   it('puts the original first, then shares by time, then raw id', () => {
     const merged = mergeSources([
@@ -280,6 +290,19 @@ describe('mergePostSources', () => {
       postSource('c', detail('pc', '2026-10-03T00:00:00.000Z')),
     ]);
     expect(result?.sources.map((p) => p.id)).toEqual(['pa', 'pc', 'pb']);
+  });
+
+  it('reads a post stored before truncated and attachedUrls as false and []', () => {
+    const old = detail('p', null, { ...orig });
+    delete (old as Partial<PostDetail>).truncated;
+    delete (old as Partial<PostDetail>).attachedUrls;
+    delete (old.original as Partial<NonNullable<PostDetail['original']>>)
+      .truncated;
+    delete (old.original as Partial<NonNullable<PostDetail['original']>>)
+      .attachedUrls;
+    expect(mergePostSources([postSource('r', old)])?.sources).toEqual([
+      detail('p', null, orig),
+    ]);
   });
 
   it('is null with job-board sources only', () => {

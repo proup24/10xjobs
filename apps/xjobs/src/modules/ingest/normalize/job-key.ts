@@ -58,8 +58,11 @@ function sourceId(sourceKey: string): string {
 
 /**
  * `linkedin-post:text:<fingerprint>` for an original with at least 100
- * comparable characters and a known author; else `linkedin-post:<original id,
- * else the post's own id>`. A share is judged by the post it shares.
+ * comparable characters, a known author and a text the actor did not cut at
+ * "see more"; else `linkedin-post:<original id, else the post's own id>`. The
+ * fingerprint covers the author, the text and any links attached outside the
+ * text (sorted, once each). A share is judged by the post it shares: its own
+ * text, truncation and attachments never count.
  */
 export function postJobKey(
   sourceKey: string,
@@ -67,11 +70,16 @@ export function postJobKey(
 ): string {
   const post = record.post;
   const original = post?.original ?? null;
+  const from = original ?? post;
   const authorKey = original ? original.author?.key : post?.author.key;
-  const text = comparableText((original ? original.text : post?.text) ?? '');
-  if (authorKey && text.length >= MIN_POST_TEXT) {
+  const text = comparableText(from?.text ?? '');
+  // `??`: a record stored before these fields existed has no key at all.
+  const truncated = from?.truncated ?? false;
+  if (authorKey && text.length >= MIN_POST_TEXT && !truncated) {
+    const attached = [...new Set(from?.attachedUrls ?? [])].sort();
+    const input = [`${authorKey}\n${text}`, ...attached].join('\n');
     const digest = createHash('sha256')
-      .update(`${authorKey}\n${text}`)
+      .update(input)
       .digest('hex')
       .slice(0, 32);
     return `linkedin-post:text:${digest}`;
@@ -83,11 +91,11 @@ export function postJobKey(
  * The job's real id, from exact facts only. An Ashby or Greenhouse item is its
  * posting. A LinkedIn job is the posting its apply URL names, else that URL
  * when it carries an identifier, else its own LinkedIn id. A trial actor's
- * item is always its LinkedIn id. A post is keyed by its original's text when
- * that text is long enough and its author is known (the same original shared
- * or reposted is one job, exact matches only), else by the original's id, else
- * by its own id: it may hold several jobs or none, so it never absorbs another
- * on a guess.
+ * item is always its LinkedIn id. A post is keyed by its original's text (with
+ * its attached links) when that text is long enough, whole and its author is
+ * known (the same original shared or reposted is one job, exact matches only),
+ * else by the original's id, else by its own id: it may hold several jobs or
+ * none, so it never absorbs another on a guess.
  */
 export function jobKey(
   channel: Channel,

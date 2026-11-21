@@ -1271,6 +1271,7 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
           processingReason: null,
           processingRequestedAt: null,
         });
+        expect(archived!.postSources).toBeNull();
 
         await undrop();
         expect(await relink(key)).toMatchObject({
@@ -1288,6 +1289,27 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
           processingStatus: null,
           processingReason: null,
           processingRequestedAt: null,
+        });
+      });
+
+      it('a new version of a post that cleans to nothing leaves its job, archived', async () => {
+        await savePost(post(linkedinPost.id), t1);
+        const [before] = await jobs();
+
+        const saved = await savePost(
+          post(linkedinPost.id, { content: ' 🚀 …see more' }),
+          t2,
+        );
+        expect(saved.job).toEqual({ invalid: 'prepare: no-text' });
+        expect(await sources()).toHaveLength(0);
+        const [archived] = await jobs();
+        expect(archived).toMatchObject({
+          id: before!.id,
+          status: 'active',
+          processingStatus: 'archived',
+          processingReason: null,
+          processingRequestedAt: null,
+          postSources: null,
         });
       });
 

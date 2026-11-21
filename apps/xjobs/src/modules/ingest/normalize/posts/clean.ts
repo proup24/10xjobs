@@ -15,16 +15,29 @@ const URL_RE = /https?:\/\/[^\s<>"']+/gi;
 const EMAIL_RE =
   /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/g;
 
+/** The raw text without emoji, hashtag or mention marks. */
+function withoutMarks(raw: string): string {
+  return raw
+    .replace(EMOJI, '')
+    .replace(/hashtag#/gi, '')
+    .replace(/(^|[^\p{L}\p{N}_/&?=:.-])#(?=[\p{L}\p{N}])/gu, '$1')
+    .replace(/(^|\s)@(?=\p{L})/gu, '$1');
+}
+
+/**
+ * True when `cleanPostText` cuts a "see more" tail from this raw text: the
+ * actor truncated the post, so its text may not be all of it.
+ */
+export function hasSeeMoreTail(raw: string): boolean {
+  return SEE_MORE_TAIL.test(withoutMarks(raw));
+}
+
 /**
  * Plain post text for reading and matching: no emoji, hashtag or mention
  * marks, no "see more" tail, one blank line at most between paragraphs.
  */
 export function cleanPostText(raw: string): string {
-  return raw
-    .replace(EMOJI, '')
-    .replace(/hashtag#/gi, '')
-    .replace(/(^|[^\p{L}\p{N}_/&?=:.-])#(?=[\p{L}\p{N}])/gu, '$1')
-    .replace(/(^|\s)@(?=\p{L})/gu, '$1')
+  return withoutMarks(raw)
     .replace(SEE_MORE_TAIL, '')
     .split('\n')
     .map((line) => line.replace(/[ \t]+/g, ' ').trim())

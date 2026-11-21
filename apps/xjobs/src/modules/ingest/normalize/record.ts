@@ -61,6 +61,10 @@ const postOriginalSchema = z.strictObject({
   url: url.nullable(),
   author: postAuthorSchema.nullable(),
   text: text,
+  /** The actor cut the original's text at "see more". */
+  truncated: z.boolean(),
+  /** The original's links that are not in its text. */
+  attachedUrls: z.array(z.string().min(1)),
   postedAt: z.iso.datetime().nullable(),
 });
 
@@ -71,6 +75,16 @@ export const postDetailSchema = z.strictObject({
   author: postAuthorSchema,
   /** This post's own cleaned text (a share's added text). */
   text: text,
+  /**
+   * The actor cut this post's own text at "see more". Missing (false) on a
+   * record stored before the field existed.
+   */
+  truncated: z.boolean(),
+  /**
+   * The payload's links that are not in its text (the article link). Missing
+   * ([]) on a record stored before the field existed.
+   */
+  attachedUrls: z.array(z.string().min(1)),
   postedAt: z.iso.datetime().nullable(),
   original: postOriginalSchema.nullable(),
   links: postLinksSchema,

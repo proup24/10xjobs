@@ -1,4 +1,9 @@
-import { cleanPostText, comparableText, sortLinks } from './clean';
+import {
+  cleanPostText,
+  comparableText,
+  hasSeeMoreTail,
+  sortLinks,
+} from './clean';
 
 describe('cleanPostText', () => {
   it('drops emoji, hashtag marks, blank-line runs and the see-more tail', () => {
@@ -25,6 +30,18 @@ describe('cleanPostText', () => {
     expect(cleanPostText('see more of this, see more')).toBe(
       'see more of this, see more',
     );
+  });
+});
+
+describe('hasSeeMoreTail', () => {
+  it('is true exactly when cleaning cuts the see-more tail', () => {
+    expect(hasSeeMoreTail('DM me…see more')).toBe(true);
+    expect(hasSeeMoreTail('Join us ...see more')).toBe(true);
+    expect(hasSeeMoreTail('Join us … more')).toBe(true);
+    expect(hasSeeMoreTail('DM me …see more 🚀')).toBe(true);
+    expect(hasSeeMoreTail('see more of this, see more')).toBe(false);
+    expect(hasSeeMoreTail('A full post.')).toBe(false);
+    expect(hasSeeMoreTail('')).toBe(false);
   });
 });
 
