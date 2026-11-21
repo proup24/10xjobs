@@ -6,6 +6,7 @@ import {
   ProfilesRepository,
 } from './repositories/profiles.repository';
 import { PostSearchAccess } from './services/post-search-access';
+import { ProfileSearchSync } from './services/profile-search-sync';
 import { ProfilesService } from './services/profiles.service';
 import {
   PrismaUsersRepository,
@@ -21,7 +22,9 @@ import { UsersService } from './services/users.service';
     { provide: UsersRepository, useClass: PrismaUsersRepository },
     PostSearchAccess,
     ProfilesService,
+    ProfileSearchSync,
     { provide: ProfilesRepository, useClass: PrismaProfilesRepository },
   ],
+  exports: [ProfileSearchSync],
 })
 export class UsersModule {}

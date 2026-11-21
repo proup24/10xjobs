@@ -77,6 +77,13 @@ describe('ProfilesService', () => {
       new QuerySearchService(querySearches),
       { allows: (id: string) => listed.includes(id) } as PostSearchAccess,
     );
+    // The real publish makes the profile row the swap locks; mirror it here.
+    const publish = profiles.publish.bind(profiles);
+    vi.spyOn(profiles, 'publish').mockImplementation(async (...args) => {
+      const row = await publish(...args);
+      if (row) querySearches.published.add((row as { id: string }).id);
+      return row;
+    });
     userId = userRows.add('A').id;
     listed = [userId];
     otherUserId = userRows.add('B').id;
@@ -248,6 +255,14 @@ describe('ProfilesService', () => {
       await expect(service.publish(userId, id)).resolves.toMatchObject({
         state: 'published',
       });
+    });
+
+    it('publish records the version it attached for', async () => {
+      const { id } = await create(stack);
+      const profile = (await profiles.findById(userId, id))!;
+      profile.matchVersion = 4;
+      await service.publish(userId, id);
+      expect((await profiles.findById(userId, id))?.searchesVersion).toBe(4);
     });
 
     it('publishes once, attaching its query search builders', async () => {

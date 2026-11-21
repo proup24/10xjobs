@@ -122,7 +122,7 @@ function profilePlaces(profile: ProfileWithSkills): PlacesByArrangement {
 }
 
 /** The labels of every place the profile lists. */
-function labelsFor(
+export function labelsFor(
   profiles: Pick<ProfilesRepository, 'placeLabels'>,
   profile: ProfileWithSkills,
 ): Promise<PlaceLabels> {
@@ -161,7 +161,7 @@ export interface RegenerateDeps {
   postsAllowed: (userId: string) => boolean;
   querySearch: Pick<
     QuerySearchService,
-    'detach' | 'generate' | 'retireOutdated'
+    'recipesFor' | 'replace' | 'retireOutdated'
   >;
 }
 
@@ -190,15 +190,15 @@ export async function regeneratePublished(
   let postsKept = 0;
   let postsDropped = 0;
   for (const profile of published) {
-    // Labels first: a missing one throws before the profile loses its builders.
+    // Labels first: a missing one throws before the profile's builders change.
     const labels = await labelsFor(deps.profiles, profile);
     const posts = profile.postSearch && deps.postsAllowed(profile.userId);
     if (posts) postsKept += 1;
     else if (profile.postSearch) postsDropped += 1;
-    await deps.querySearch.detach(profile.id);
-    await deps.querySearch.generate(profile.id, toInput(profile, labels), {
+    const recipes = deps.querySearch.recipesFor(toInput(profile, labels), {
       posts,
     });
+    await deps.querySearch.replace(profile.id, recipes, profile.matchVersion);
   }
   return {
     profiles: published.length,
@@ -285,6 +285,7 @@ export class ProfilesService {
       userId,
       profile.id,
       new Date(),
+      profile.matchVersion,
     );
     if (!published) {
       // Deleted meanwhile: release what was just attached so counts stay right.

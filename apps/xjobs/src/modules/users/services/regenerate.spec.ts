@@ -24,13 +24,10 @@ describe('regeneratePublished', () => {
           placeLabels: noLabels,
         },
         querySearch: {
-          detach: async (id: string) => {
-            calls.push(`detach:${id}`);
-            return 1;
-          },
-          generate: async (id: string) => {
-            calls.push(`generate:${id}`);
-            return {} as never;
+          recipesFor: () => [{}] as never,
+          replace: async (id: string) => {
+            calls.push(`replace:${id}`);
+            return { created: 0, existing: 0, released: 0 };
           },
           retireOutdated: async () => {
             calls.push('retire');
@@ -41,13 +38,7 @@ describe('regeneratePublished', () => {
       () => ({}) as never,
     );
 
-    expect(calls).toEqual([
-      'detach:p1',
-      'generate:p1',
-      'detach:p2',
-      'generate:p2',
-      'retire',
-    ]);
+    expect(calls).toEqual(['replace:p1', 'replace:p2', 'retire']);
     expect(result).toEqual({
       profiles: 2,
       retired: 3,
@@ -91,11 +82,11 @@ describe('regeneratePublished', () => {
         },
       },
       querySearch: {
-        detach: async () => 0,
-        generate: async (_id, input) => {
+        recipesFor: (input) => {
           inputs.push(input);
-          return { created: 1, existing: 0 };
+          return [{}] as never;
         },
+        replace: async () => ({ created: 1, existing: 0, released: 0 }),
         retireOutdated: async () => 0,
       },
     });
@@ -107,5 +98,30 @@ describe('regeneratePublished', () => {
       hybrid: [],
       onsite: ['Paris, France'],
     });
+  });
+
+  it('regenerate sets searchesVersion', async () => {
+    const locations = { remote: [], hybrid: [], onsite: [] };
+    const published = [{ id: 'p1', locations, matchVersion: 7 }] as never[];
+    const versions: number[] = [];
+    await regeneratePublished(
+      {
+        postsAllowed: () => false,
+        profiles: {
+          listPublished: async () => published,
+          placeLabels: noLabels,
+        },
+        querySearch: {
+          recipesFor: () => [{}] as never,
+          replace: async (_id, _recipes, version) => {
+            versions.push(version);
+            return { created: 0, existing: 0, released: 0 };
+          },
+          retireOutdated: async () => 0,
+        },
+      },
+      () => ({}) as never,
+    );
+    expect(versions).toEqual([7]);
   });
 });
