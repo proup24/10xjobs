@@ -1,0 +1,816 @@
+[
+  {
+    "id": "rlsPolicy.public.profile_skills.profile_skills_owner_delete_e80e5c12.drop",
+    "label": "Drop RLS policy \"profile_skills_owner_delete_e80e5c12\" on \"profile_skills\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "profile_skills_owner_delete_e80e5c12",
+        "table": "profile_skills"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"profile_skills_owner_delete_e80e5c12\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profile_skills",
+          "profile_skills_owner_delete_e80e5c12"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "RLS policy \"profile_skills_owner_delete_e80e5c12\" on \"profile_skills\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop RLS policy \"profile_skills_owner_delete_e80e5c12\"",
+        "sql": "DROP POLICY \"profile_skills_owner_delete_e80e5c12\" ON \"public\".\"profile_skills\"",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"profile_skills_owner_delete_e80e5c12\" is absent",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profile_skills",
+          "profile_skills_owner_delete_e80e5c12"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"profile_skills_owner_delete_e80e5c12\" on \"profile_skills\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.profile_skills.profile_skills_owner_insert_87e871a7.drop",
+    "label": "Drop RLS policy \"profile_skills_owner_insert_87e871a7\" on \"profile_skills\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "profile_skills_owner_insert_87e871a7",
+        "table": "profile_skills"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"profile_skills_owner_insert_87e871a7\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profile_skills",
+          "profile_skills_owner_insert_87e871a7"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "RLS policy \"profile_skills_owner_insert_87e871a7\" on \"profile_skills\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop RLS policy \"profile_skills_owner_insert_87e871a7\"",
+        "sql": "DROP POLICY \"profile_skills_owner_insert_87e871a7\" ON \"public\".\"profile_skills\"",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"profile_skills_owner_insert_87e871a7\" is absent",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profile_skills",
+          "profile_skills_owner_insert_87e871a7"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"profile_skills_owner_insert_87e871a7\" on \"profile_skills\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.profile_skills.profile_skills_owner_update_7fcd0c7f.drop",
+    "label": "Drop RLS policy \"profile_skills_owner_update_7fcd0c7f\" on \"profile_skills\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "profile_skills_owner_update_7fcd0c7f",
+        "table": "profile_skills"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"profile_skills_owner_update_7fcd0c7f\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profile_skills",
+          "profile_skills_owner_update_7fcd0c7f"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "RLS policy \"profile_skills_owner_update_7fcd0c7f\" on \"profile_skills\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop RLS policy \"profile_skills_owner_update_7fcd0c7f\"",
+        "sql": "DROP POLICY \"profile_skills_owner_update_7fcd0c7f\" ON \"public\".\"profile_skills\"",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"profile_skills_owner_update_7fcd0c7f\" is absent",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profile_skills",
+          "profile_skills_owner_update_7fcd0c7f"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"profile_skills_owner_update_7fcd0c7f\" on \"profile_skills\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.profiles.profiles_owner_update_draft_b3dbbb7b.drop",
+    "label": "Drop RLS policy \"profiles_owner_update_draft_b3dbbb7b\" on \"profiles\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "profiles_owner_update_draft_b3dbbb7b",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"profiles_owner_update_draft_b3dbbb7b\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "profiles_owner_update_draft_b3dbbb7b"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "RLS policy \"profiles_owner_update_draft_b3dbbb7b\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop RLS policy \"profiles_owner_update_draft_b3dbbb7b\"",
+        "sql": "DROP POLICY \"profiles_owner_update_draft_b3dbbb7b\" ON \"public\".\"profiles\"",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"profiles_owner_update_draft_b3dbbb7b\" is absent",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "profiles_owner_update_draft_b3dbbb7b"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"profiles_owner_update_draft_b3dbbb7b\" on \"profiles\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "dropColumn.job_matches.profileUpdatedAt",
+    "label": "Drop column \"profileUpdatedAt\" from \"job_matches\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "profileUpdatedAt",
+        "table": "job_matches"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"profileUpdatedAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "job_matches",
+          "profileUpdatedAt"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"profileUpdatedAt\" on \"job_matches\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop column \"profileUpdatedAt\"",
+        "sql": "ALTER TABLE \"public\".\"job_matches\" DROP COLUMN \"profileUpdatedAt\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"profileUpdatedAt\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "job_matches",
+          "profileUpdatedAt"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"profileUpdatedAt\" on \"job_matches\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "column.public.job_matches.profileVersion",
+    "label": "Add column \"profileVersion\" to \"job_matches\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "profileVersion",
+        "table": "job_matches"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"profileVersion\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "job_matches",
+          "profileVersion"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"profileVersion\" on \"job_matches\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"profileVersion\"",
+        "sql": "ALTER TABLE \"public\".\"job_matches\" ADD COLUMN \"profileVersion\" int4"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"profileVersion\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "job_matches",
+          "profileVersion"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"profileVersion\" on \"job_matches\""
+        }
+      },
+      {
+        "description": "verify column \"profileVersion\" has type \"integer\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "job_matches",
+          "profileVersion",
+          "integer"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.match_reviews.profileVersion",
+    "label": "Add column \"profileVersion\" to \"match_reviews\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "profileVersion",
+        "table": "match_reviews"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"profileVersion\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "match_reviews",
+          "profileVersion"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"profileVersion\" on \"match_reviews\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"profileVersion\"",
+        "sql": "ALTER TABLE \"public\".\"match_reviews\" ADD COLUMN \"profileVersion\" int4"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"profileVersion\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "match_reviews",
+          "profileVersion"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"profileVersion\" on \"match_reviews\""
+        }
+      },
+      {
+        "description": "verify column \"profileVersion\" has type \"integer\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "match_reviews",
+          "profileVersion",
+          "integer"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.profiles.matchVersion",
+    "label": "Add column \"matchVersion\" to \"profiles\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "matchVersion",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"matchVersion\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "matchVersion"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"matchVersion\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"matchVersion\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ADD COLUMN \"matchVersion\" int4 DEFAULT 0 NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"matchVersion\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "matchVersion"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"matchVersion\" on \"profiles\""
+        }
+      },
+      {
+        "description": "verify column \"matchVersion\" has type \"integer\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "matchVersion",
+          "integer"
+        ]
+      },
+      {
+        "description": "verify column \"matchVersion\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "matchVersion",
+          "NO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.profiles.searchesVersion",
+    "label": "Add column \"searchesVersion\" to \"profiles\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "searchesVersion",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"searchesVersion\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "searchesVersion"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"searchesVersion\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"searchesVersion\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ADD COLUMN \"searchesVersion\" int4"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"searchesVersion\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "searchesVersion"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"searchesVersion\" on \"profiles\""
+        }
+      },
+      {
+        "description": "verify column \"searchesVersion\" has type \"integer\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "searchesVersion",
+          "integer"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.profile_skills.profile_skills_owner_delete_5640e969",
+    "label": "Create RLS policy \"profile_skills_owner_delete_5640e969\" on \"profile_skills\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "profile_skills_owner_delete_5640e969",
+        "table": "profile_skills"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"profile_skills_owner_delete_5640e969\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profile_skills",
+          "profile_skills_owner_delete_5640e969"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"profile_skills_owner_delete_5640e969\" on \"profile_skills\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"profile_skills_owner_delete_5640e969\"",
+        "sql": "CREATE POLICY \"profile_skills_owner_delete_5640e969\" ON \"public\".\"profile_skills\" AS PERMISSIVE FOR DELETE TO authenticated USING (\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills.\"profileId\" AND p.\"userId\" = auth.uid()))",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"profile_skills_owner_delete_5640e969\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "profile_skills",
+          "profile_skills_owner_delete_5640e969",
+          "DELETE",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.profile_skills.profile_skills_owner_insert_ca26fb79",
+    "label": "Create RLS policy \"profile_skills_owner_insert_ca26fb79\" on \"profile_skills\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "profile_skills_owner_insert_ca26fb79",
+        "table": "profile_skills"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"profile_skills_owner_insert_ca26fb79\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profile_skills",
+          "profile_skills_owner_insert_ca26fb79"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"profile_skills_owner_insert_ca26fb79\" on \"profile_skills\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"profile_skills_owner_insert_ca26fb79\"",
+        "sql": "CREATE POLICY \"profile_skills_owner_insert_ca26fb79\" ON \"public\".\"profile_skills\" AS PERMISSIVE FOR INSERT TO authenticated WITH CHECK (\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills.\"profileId\" AND p.\"userId\" = auth.uid()))",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"profile_skills_owner_insert_ca26fb79\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "profile_skills",
+          "profile_skills_owner_insert_ca26fb79",
+          "INSERT",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.profile_skills.profile_skills_owner_update_43e3a0db",
+    "label": "Create RLS policy \"profile_skills_owner_update_43e3a0db\" on \"profile_skills\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "profile_skills_owner_update_43e3a0db",
+        "table": "profile_skills"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"profile_skills_owner_update_43e3a0db\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profile_skills",
+          "profile_skills_owner_update_43e3a0db"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"profile_skills_owner_update_43e3a0db\" on \"profile_skills\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"profile_skills_owner_update_43e3a0db\"",
+        "sql": "CREATE POLICY \"profile_skills_owner_update_43e3a0db\" ON \"public\".\"profile_skills\" AS PERMISSIVE FOR UPDATE TO authenticated USING (\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills.\"profileId\" AND p.\"userId\" = auth.uid())) WITH CHECK (\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills.\"profileId\" AND p.\"userId\" = auth.uid()))",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"profile_skills_owner_update_43e3a0db\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "profile_skills",
+          "profile_skills_owner_update_43e3a0db",
+          "UPDATE",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.profiles.profiles_owner_update_027386ad",
+    "label": "Create RLS policy \"profiles_owner_update_027386ad\" on \"profiles\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "profiles_owner_update_027386ad",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"profiles_owner_update_027386ad\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "profiles_owner_update_027386ad"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"profiles_owner_update_027386ad\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"profiles_owner_update_027386ad\"",
+        "sql": "CREATE POLICY \"profiles_owner_update_027386ad\" ON \"public\".\"profiles\" AS PERMISSIVE FOR UPDATE TO authenticated USING (\"userId\" = auth.uid()) WITH CHECK (\"userId\" = auth.uid())",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"profiles_owner_update_027386ad\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "profiles_owner_update_027386ad",
+          "UPDATE",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "functions.bump_profile_match_version",
+    "invariantId": "profile-match-version",
+    "label": "Bump profiles.matchVersion when the matcher-relevant profile changes",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "profiles"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create bump_profile_match_version() and its triggers on profiles and profile_skills",
+        "sql": "CREATE FUNCTION public.bump_profile_match_version() RETURNS trigger\n  LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$\nBEGIN\n  IF TG_TABLE_NAME = 'profiles' THEN\n    -- BEFORE UPDATE. Every column bumps unless listed here, so a new column bumps by default.\n    IF (to_jsonb(NEW) - ARRAY['resumeKey','resumeFilename','resumeSizeBytes','resumeSha256','resumeUploadedAt','state','publishedAt','matchVersion','searchesVersion','postSearch','createdAt','updatedAt'])\n       IS DISTINCT FROM\n       (to_jsonb(OLD) - ARRAY['resumeKey','resumeFilename','resumeSizeBytes','resumeSha256','resumeUploadedAt','state','publishedAt','matchVersion','searchesVersion','postSearch','createdAt','updatedAt']) THEN\n      NEW.\"matchVersion\" := OLD.\"matchVersion\" + 1;\n    END IF;\n    RETURN NEW;\n  END IF;\n  -- profile_skills, AFTER each row: OLD is null on insert, NEW on delete.\n  UPDATE public.profiles SET \"matchVersion\" = \"matchVersion\" + 1\n    WHERE id IN (OLD.\"profileId\", NEW.\"profileId\");\n  RETURN NULL;\nEND $$;\nREVOKE EXECUTE ON FUNCTION public.bump_profile_match_version() FROM PUBLIC, anon, authenticated;\nCREATE TRIGGER bump_profile_match_version BEFORE UPDATE ON public.profiles\n  FOR EACH ROW EXECUTE FUNCTION public.bump_profile_match_version();\nCREATE TRIGGER bump_profile_match_version AFTER INSERT OR UPDATE OR DELETE ON public.profile_skills\n  FOR EACH ROW EXECUTE FUNCTION public.bump_profile_match_version();"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "functions.replace_profile_skills_published",
+    "invariantId": "replace-profile-skills-published",
+    "label": "replace_profile_skills: accept the caller's draft or published profile",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "profile_skills"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "replace replace_profile_skills(p_profile_id, p_skills)",
+        "sql": "CREATE OR REPLACE FUNCTION public.replace_profile_skills(p_profile_id uuid, p_skills jsonb) RETURNS void\n  LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $$\nBEGIN\n  -- Lock the caller's draft or published profile so concurrent calls (double submit, two tabs)\n  -- run one after the other: the second waits, then its delete sees the first one's rows.\n  -- Not the caller's profile (missing, another user's): P0002, nothing written.\n  PERFORM 1\n     FROM public.profiles p\n    WHERE p.id = p_profile_id AND p.\"userId\" = (SELECT auth.uid()) AND p.state IN ('draft', 'published')\n      FOR UPDATE;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION USING ERRCODE = 'P0002', MESSAGE = 'no profile of yours to replace the skills of';\n  END IF;\n\n  DELETE FROM public.profile_skills ps\n   WHERE ps.\"profileId\" = p_profile_id AND ps.\"userId\" = (SELECT auth.uid());\n\n  INSERT INTO public.profile_skills (\"id\", \"userId\", \"profileId\", \"technology\", \"domain\", \"mastery\", \"importance\")\n  SELECT gen_random_uuid(), (SELECT auth.uid()), p_profile_id, s.technology, s.domain, s.mastery, s.importance\n    FROM jsonb_to_recordset(p_skills) AS s(technology text, domain text, mastery integer, importance integer);\nEND $$;\nREVOKE EXECUTE ON FUNCTION public.replace_profile_skills(uuid, jsonb) FROM PUBLIC, anon;\nGRANT EXECUTE ON FUNCTION public.replace_profile_skills(uuid, jsonb) TO authenticated;"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "functions.match_reviews_profile_version",
+    "invariantId": "match-reviews-profile-version",
+    "label": "Set match_reviews.profileVersion from its match on insert",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "match_reviews"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create match_reviews_profile_version() and its trigger",
+        "sql": "CREATE FUNCTION public.match_reviews_profile_version() RETURNS trigger\n  LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$\nBEGIN\n  SELECT m.\"profileVersion\" INTO NEW.\"profileVersion\"\n    FROM public.job_matches m WHERE m.id = NEW.\"matchId\";\n  RETURN NEW;\nEND $$;\nREVOKE EXECUTE ON FUNCTION public.match_reviews_profile_version() FROM PUBLIC, anon, authenticated;\nCREATE TRIGGER match_reviews_profile_version BEFORE INSERT ON public.match_reviews\n  FOR EACH ROW EXECUTE FUNCTION public.match_reviews_profile_version();"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "data.profile_version_backfill",
+    "invariantId": "profile-version-backfill",
+    "label": "Backfill job_matches and match_reviews profileVersion to 0",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "job_matches"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "set profileVersion on existing matches and reviews",
+        "sql": "UPDATE public.job_matches SET \"profileVersion\" = 0;\nUPDATE public.match_reviews r SET \"profileVersion\" = m.\"profileVersion\"\n  FROM public.job_matches m WHERE m.id = r.\"matchId\";"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "functions.match_details_review_version",
+    "invariantId": "match-details-review-version",
+    "label": "match_details: a review choice applies only on the match's profile version",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "job_matches"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "replace match_details (same return columns)",
+        "sql": "CREATE OR REPLACE FUNCTION public.match_details(\n  p_profile_id uuid DEFAULT NULL,\n  p_outcome text DEFAULT 'qualified',\n  p_since timestamptz DEFAULT NULL,\n  p_job_id uuid DEFAULT NULL,\n  p_details boolean DEFAULT true\n) RETURNS TABLE(\n  \"matchId\" uuid, \"profileId\" uuid, \"jobId\" uuid, outcome text, unverified boolean,\n  \"stackScore\" numeric, checks jsonb, \"decidedAt\" timestamptz,\n  kind text, title text, \"companyName\" text, \"companyUrl\" text, location text,\n  \"salaryText\" text, \"salaryMin\" int, \"salaryMax\" int, \"salaryCurrency\" text, \"salaryPeriod\" text,\n  \"publishedAt\" text, \"postedAt\" timestamptz, \"firstSeenAt\" timestamptz, \"lastSeenAt\" timestamptz, closed boolean,\n  \"postingUrl\" text, \"applyUrl\" text, \"posterName\" text, \"posterProfileUrl\" text, \"posterType\" text,\n  \"descriptionText\" text, channels text[], \"viewedAt\" timestamptz, facts jsonb, conflicts jsonb,\n  \"reviewRule\" text, \"reviewField\" text, \"reviewChoice\" text, \"extractionId\" uuid,\n  \"decisionStatus\" text\n)\n  LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$\nWITH l AS MATERIALIZED (\n  SELECT\n    (SELECT COALESCE(jsonb_object_agg(t.code, t.label), '{}'::jsonb) FROM public.role_kinds t) AS role_kinds,\n    (SELECT COALESCE(jsonb_object_agg(t.code, t.label), '{}'::jsonb) FROM public.seniorities t) AS seniorities,\n    (SELECT COALESCE(jsonb_object_agg(t.code, t.label), '{}'::jsonb) FROM public.arrangements t) AS arrangements,\n    (SELECT COALESCE(jsonb_object_agg(t.code, t.label), '{}'::jsonb) FROM public.contract_types t) AS contract_types,\n    (SELECT COALESCE(jsonb_object_agg(t.code, t.label), '{}'::jsonb) FROM public.engagements t) AS engagements,\n    (SELECT COALESCE(jsonb_object_agg(t.code, t.label), '{}'::jsonb) FROM public.tech_tags t) AS tech_tags,\n    (SELECT COALESCE(jsonb_object_agg(t.code, t.label), '{}'::jsonb) FROM public.regions t) AS regions,\n    (SELECT COALESCE(jsonb_object_agg(t.code, t.label), '{}'::jsonb) FROM public.countries t) AS countries\n)\nSELECT\n  m.id, m.\"profileId\", m.\"jobId\", m.outcome,\n  -- A review row the user moved to Matches rests on an unsure check.\n  m.unverified OR COALESCE(d.choice = 'qualified', false), m.\"stackScore\",\n  CASE WHEN p_details THEN m.checks END, m.\"decidedAt\",\n  j.kind, j.title, j.\"companyName\", j.\"companyUrl\", j.location,\n  j.\"salaryText\", j.\"salaryMin\", j.\"salaryMax\", j.\"salaryCurrency\", j.\"salaryPeriod\",\n  j.\"publishedAt\", j.\"postedAt\", j.\"firstSeenAt\", j.\"lastSeenAt\",\n  -- Closed by its sources, by its combined facts, or by a LinkedIn listing past its expiry.\n  j.closed OR COALESCE(f.closed, false) OR (j.\"expiresAt\" IS NOT NULL AND j.\"expiresAt\" <= now()),\n  j.\"postingUrl\", j.\"applyUrl\", j.\"posterName\", j.\"posterProfileUrl\", j.\"posterType\",\n  CASE WHEN p_details THEN j.\"descriptionText\" END,\n  ARRAY(\n    SELECT DISTINCT r.channel::text\n      FROM public.normalized_job_sources s\n      JOIN public.raw_items r ON r.id = s.\"rawItemId\"\n     WHERE s.\"jobId\" = j.id\n     ORDER BY 1),\n  v.\"viewedAt\",\n  -- The job's combined facts; null when it has none yet.\n  CASE WHEN f.\"jobId\" IS NULL THEN NULL\n       WHEN p_details THEN jsonb_build_object(\n  'position', CASE WHEN jsonb_typeof(x.\"position\"->'value') <> 'null' THEN jsonb_build_object(\n      'roleKind', jsonb_build_object(\n        'code', x.\"position\"->'value'->'roleKind',\n        'label', l.role_kinds ->> (x.\"position\"->'value'->>'roleKind')),\n      'title', x.\"position\"->'value'->'title',\n      'source', x.\"position\"->>'source',\n      'quote', NULLIF(x.\"position\"->>'quote', '')) END,\n  'seniority', CASE WHEN jsonb_typeof(x.\"seniority\"->'value') <> 'null' THEN jsonb_build_object(\n      'code', x.\"seniority\"->'value',\n      'label', l.seniorities ->> (x.\"seniority\"->>'value'),\n      'source', x.\"seniority\"->>'source',\n      'quote', NULLIF(x.\"seniority\"->>'quote', '')) END,\n  'yearsRequired', CASE WHEN jsonb_typeof(x.\"yearsRequired\"->'value') <> 'null' THEN jsonb_build_object(\n      'min', x.\"yearsRequired\"->'value'->'min',\n      'max', x.\"yearsRequired\"->'value'->'max',\n      'source', x.\"yearsRequired\"->>'source',\n      'quote', NULLIF(x.\"yearsRequired\"->>'quote', '')) END,\n  'arrangement', CASE WHEN jsonb_typeof(x.\"arrangement\"->'value') <> 'null' THEN jsonb_build_object(\n      'code', x.\"arrangement\"->'value',\n      'label', l.arrangements ->> (x.\"arrangement\"->>'value'),\n      'source', x.\"arrangement\"->>'source',\n      'quote', NULLIF(x.\"arrangement\"->>'quote', '')) END,\n  'openings', (\n    SELECT COALESCE(jsonb_agg(jsonb_build_object(\n      'arrangements', (\n        SELECT COALESCE(jsonb_agg(jsonb_build_object(\n          'code', a.code,\n          'label', l.arrangements ->> (a.code)\n        ) ORDER BY a.ord), '[]'::jsonb)\n        FROM jsonb_array_elements_text(o.opening->'arrangements') WITH ORDINALITY a(code, ord)),\n      'places', (\n        SELECT COALESCE(jsonb_agg(CASE p.place->>'kind'\n          WHEN 'worldwide' THEN jsonb_build_object('kind', 'worldwide')\n          WHEN 'region' THEN jsonb_build_object(\n            'kind', 'region',\n            'code', p.place->'code',\n            'label', l.regions ->> (p.place->>'code'))\n          WHEN 'country' THEN jsonb_build_object(\n            'kind', 'country',\n            'code', p.place->'code',\n            'label', l.countries ->> (p.place->>'code'))\n          WHEN 'city' THEN jsonb_build_object(\n            'kind', 'city',\n            'name', p.place->'name',\n            'countryCode', p.place->'countryCode',\n            'cityId', p.place->'cityId')\n        END ORDER BY p.ord), '[]'::jsonb)\n        FROM jsonb_array_elements(o.opening->'places') WITH ORDINALITY p(place, ord)),\n      'placeStrictness', o.opening->'placeStrictness',\n      'timezones', (\n        SELECT COALESCE(jsonb_agg(jsonb_build_object(\n          'fromUtc', z.tz->'fromUtc',\n          'toUtc', z.tz->'toUtc',\n          'label', z.tz->'label'\n        ) ORDER BY z.ord), '[]'::jsonb)\n        FROM jsonb_array_elements(o.opening->'timezones') WITH ORDINALITY z(tz, ord)),\n      'arrangementSource', o.opening->'arrangementSource',\n      'placesSource', o.opening->'placesSource',\n      'quote', NULLIF(o.opening->>'quote', '')\n    ) ORDER BY o.ord), '[]'::jsonb)\n    FROM jsonb_array_elements(x.\"openings\") WITH ORDINALITY o(opening, ord)),\n  'contractType', CASE WHEN jsonb_typeof(x.\"contractType\"->'value') <> 'null' THEN jsonb_build_object(\n      'code', x.\"contractType\"->'value',\n      'label', l.contract_types ->> (x.\"contractType\"->>'value'),\n      'source', x.\"contractType\"->>'source',\n      'quote', NULLIF(x.\"contractType\"->>'quote', '')) END,\n  'engagement', CASE WHEN jsonb_typeof(x.\"engagement\"->'value') <> 'null' THEN jsonb_build_object(\n      'code', x.\"engagement\"->'value',\n      'label', l.engagements ->> (x.\"engagement\"->>'value'),\n      'source', x.\"engagement\"->>'source',\n      'quote', NULLIF(x.\"engagement\"->>'quote', '')) END,\n  'contractMonths', CASE WHEN jsonb_typeof(x.\"contractMonths\"->'value') <> 'null' THEN jsonb_build_object(\n      'months', x.\"contractMonths\"->'value',\n      'source', x.\"contractMonths\"->>'source',\n      'quote', NULLIF(x.\"contractMonths\"->>'quote', '')) END,\n  'salary', CASE WHEN jsonb_typeof(x.\"salary\"->'value') <> 'null' THEN jsonb_build_object(\n      'min', x.\"salary\"->'value'->'min',\n      'max', x.\"salary\"->'value'->'max',\n      'currency', x.\"salary\"->'value'->'currency',\n      'period', x.\"salary\"->'value'->'period',\n      'source', x.\"salary\"->>'source',\n      'quote', NULLIF(x.\"salary\"->>'quote', '')) END,\n  'techStack', CASE WHEN jsonb_typeof(x.\"techStack\"->'value') <> 'null' THEN jsonb_build_object(\n      'requirements', (\n        SELECT COALESCE(jsonb_agg(jsonb_build_object(\n          'technology', jsonb_build_object(\n            'code', r.req->'technology'->'code',\n            -- An extracted technology with no (or no known) code shows its text.\n            'label', COALESCE(\n              l.tech_tags ->> (r.req->'technology'->>'code'),\n              r.req->'technology'->>'text'),\n            'text', r.req->'technology'->'text'),\n          'kind', r.req->'kind',\n          'importance', r.req->'importance',\n          'domain', r.req->'domain',\n          'years', CASE WHEN jsonb_typeof(r.req->'years') = 'object' THEN jsonb_build_object(\n              'min', r.req->'years'->'min',\n              'max', r.req->'years'->'max') END,\n          'group', r.req->'group',\n          'quote', NULLIF(r.req->>'quote', '')\n        ) ORDER BY r.ord), '[]'::jsonb)\n        FROM jsonb_array_elements(x.\"techStack\"->'value'->'requirements') WITH ORDINALITY r(req, ord)),\n      'groups', (\n        SELECT COALESCE(jsonb_agg(jsonb_build_object(\n          'id', g.grp->'id',\n          'min', g.grp->'min'\n        ) ORDER BY g.ord), '[]'::jsonb)\n        FROM jsonb_array_elements(x.\"techStack\"->'value'->'groups') WITH ORDINALITY g(grp, ord)),\n      'source', x.\"techStack\"->>'source',\n      'quote', NULLIF(x.\"techStack\"->>'quote', '')) END,\n  'requiredLanguages', CASE WHEN jsonb_typeof(x.\"requiredLanguages\"->'value') <> 'null' THEN jsonb_build_object(\n      'languages', (\n        SELECT COALESCE(jsonb_agg(jsonb_build_object(\n          'lang', lg.lang->'lang',\n          'level', lg.lang->'level',\n          'quote', NULLIF(lg.lang->>'quote', '')\n        ) ORDER BY lg.ord), '[]'::jsonb)\n        FROM jsonb_array_elements(x.\"requiredLanguages\"->'value') WITH ORDINALITY lg(lang, ord)),\n      'source', x.\"requiredLanguages\"->>'source',\n      'quote', NULLIF(x.\"requiredLanguages\"->>'quote', '')) END,\n  'workAuthorization', CASE WHEN jsonb_typeof(x.\"workAuthorization\"->'value') <> 'null' THEN jsonb_build_object(\n      'requirements', (\n        SELECT COALESCE(jsonb_agg(jsonb_build_object(\n          'kind', w.req->'kind',\n          'place', w.req->'place'\n        ) ORDER BY w.ord), '[]'::jsonb)\n        FROM jsonb_array_elements(x.\"workAuthorization\"->'value'->'requirements') WITH ORDINALITY w(req, ord)),\n      'sponsorship', x.\"workAuthorization\"->'value'->'sponsorship',\n      'source', x.\"workAuthorization\"->>'source',\n      'quote', NULLIF(x.\"workAuthorization\"->>'quote', '')) END\n)\n       ELSE jsonb_build_object(\n  'arrangement', CASE WHEN jsonb_typeof(x.\"arrangement\"->'value') <> 'null' THEN jsonb_build_object(\n      'code', x.\"arrangement\"->'value',\n      'label', l.arrangements ->> (x.\"arrangement\"->>'value'),\n      'source', x.\"arrangement\"->>'source',\n      'quote', NULLIF(x.\"arrangement\"->>'quote', '')) END,\n  'openings', (\n    SELECT COALESCE(jsonb_agg(jsonb_build_object(\n      'arrangements', (\n        SELECT COALESCE(jsonb_agg(jsonb_build_object(\n          'code', a.code,\n          'label', l.arrangements ->> (a.code)\n        ) ORDER BY a.ord), '[]'::jsonb)\n        FROM jsonb_array_elements_text(o.opening->'arrangements') WITH ORDINALITY a(code, ord))\n    ) ORDER BY o.ord), '[]'::jsonb)\n    FROM jsonb_array_elements(x.\"openings\") WITH ORDINALITY o(opening, ord))\n) END,\n  CASE WHEN p_details THEN (\n    SELECT COALESCE(jsonb_agg(jsonb_build_object(\n      'field', c.field,\n      'listingValue', c.\"listingValue\",\n      'descriptionValue', c.\"descriptionValue\",\n      'winner', c.winner\n    ) ORDER BY c.field, c.id), '[]'::jsonb)\n    FROM public.job_fact_conflicts c\n    WHERE c.\"jobId\" = m.\"jobId\") END,\n  m.\"reviewRule\", m.\"reviewField\", d.choice, f.\"extractionId\", jd.status\nFROM public.job_matches m\nJOIN public.normalized_jobs j ON j.id = m.\"jobId\"\nLEFT JOIN public.job_facts f ON f.\"jobId\" = m.\"jobId\"\nLEFT JOIN public.job_views v ON v.\"jobId\" = m.\"jobId\" AND v.\"userId\" = (SELECT auth.uid())\nLEFT JOIN public.job_decisions jd ON jd.\"jobId\" = m.\"jobId\" AND jd.\"userId\" = (SELECT auth.uid())\nCROSS JOIN LATERAL (\n  SELECT dd.d->'position' AS \"position\", dd.d->'seniority' AS \"seniority\", dd.d->'yearsRequired' AS \"yearsRequired\", dd.d->'arrangement' AS \"arrangement\", dd.d->'openings' AS \"openings\", dd.d->'contractType' AS \"contractType\", dd.d->'engagement' AS \"engagement\", dd.d->'contractMonths' AS \"contractMonths\", dd.d->'salary' AS \"salary\", dd.d->'techStack' AS \"techStack\", dd.d->'requiredLanguages' AS \"requiredLanguages\", dd.d->'workAuthorization' AS \"workAuthorization\"\n  FROM (SELECT f.facts || '{}'::jsonb AS d OFFSET 0) dd\n  OFFSET 0) x\nCROSS JOIN l\n-- The user's decision that applies: the latest for the match, when the match is in review on\n-- the rule and field it names, on the match's profile version, and the decision was made since the engine last changed the\n-- outcome (decidedAt), so an old decision does not revive after another outcome.\nLEFT JOIN LATERAL (\n  SELECT r.choice\n    FROM (SELECT r.choice, r.rule, r.field, r.\"createdAt\", r.\"profileVersion\"\n            FROM public.match_reviews r\n           WHERE r.\"matchId\" = m.id AND r.\"userId\" = m.\"userId\"\n           ORDER BY r.\"createdAt\" DESC, r.id DESC\n           LIMIT 1) r\n   WHERE m.outcome = 'review' AND r.rule = m.\"reviewRule\" AND r.field = m.\"reviewField\"\n     AND r.\"createdAt\" >= m.\"decidedAt\"\n     -- A choice made on an older profile version does not apply to a match decided on a newer one.\n     AND r.\"profileVersion\" = m.\"profileVersion\") d ON true\n-- Every job row is reached only through the caller's own matches; a null uid matches none.\nWHERE m.\"userId\" = (SELECT auth.uid())\n  AND (p_profile_id IS NULL OR m.\"profileId\" = p_profile_id)\n  -- The effective outcome: the applicable decision's choice, else the engine's. The first test\n  -- only narrows the rows on the outcome index: a decision moves a review row elsewhere.\n  AND (p_outcome IS NULL\n       OR m.outcome = p_outcome OR (m.outcome = 'review' AND p_outcome IN ('qualified', 'rejected')))\n  AND (p_outcome IS NULL OR COALESCE(d.choice, m.outcome) = p_outcome)\n  AND j.status = 'active'\n  AND (p_since IS NULL OR j.\"lastSeenAt\" >= p_since)\n  AND (p_job_id IS NULL OR m.\"jobId\" = p_job_id)\n$$;\nREVOKE EXECUTE ON FUNCTION public.match_details(uuid, text, timestamptz, uuid, boolean) FROM PUBLIC, anon;\nGRANT EXECUTE ON FUNCTION public.match_details(uuid, text, timestamptz, uuid, boolean) TO authenticated;"
+      }
+    ],
+    "postcheck": []
+  }
+]

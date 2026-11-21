@@ -238,6 +238,11 @@ model Profile {
   publishedAt        TimestamptzJsDate(3)?
   // LinkedIn post search; only the engine writes it (no column grant).
   postSearch         Boolean               @default(false)
+  // Bumped by the bump_profile_match_version trigger on every change the matcher reads (not the
+  // resume columns or the engine's own bookkeeping); job_matches.profileVersion records it.
+  matchVersion       Int                   @default(0)
+  // The search recipe version the profile's searches were last built on; only the engine writes it.
+  searchesVersion    Int?
   jobMatches         JobMatch[]
   webhookDeliveries  WebhookDelivery[]
   +Timestamps
@@ -287,8 +292,9 @@ model ProfileSkill {
   @@rls
 }
 
-// Owners read their profiles at any state but create, edit and delete only drafts. The
-// engine publishes: state and publishedAt are not writable by users (column grants too).
+// Owners read and edit their profiles at any state but create and delete only drafts. The
+// engine publishes: state, publishedAt and the version columns are not writable by users
+// (column grants).
 policy_select profiles_owner_read {
   target = Profile
   roles = [authenticated]
@@ -301,11 +307,11 @@ policy_insert profiles_owner_insert {
   withCheck = sql`"userId" = auth.uid() AND state = 'draft' AND "publishedAt" IS NULL`
 }
 
-policy_update profiles_owner_update_draft {
+policy_update profiles_owner_update {
   target = Profile
   roles = [authenticated]
-  using = sql`"userId" = auth.uid() AND state = 'draft'`
-  withCheck = sql`"userId" = auth.uid() AND state = 'draft' AND "publishedAt" IS NULL`
+  using = sql`"userId" = auth.uid()`
+  withCheck = sql`"userId" = auth.uid()`
 }
 
 policy_delete profiles_owner_delete_draft {
@@ -314,7 +320,7 @@ policy_delete profiles_owner_delete_draft {
   using = sql`"userId" = auth.uid() AND state = 'draft'`
 }
 
-// Skills follow their profile: writable only while the user's own profile is a draft.
+// Skills follow their profile: writable while the profile is the user's own, draft or published.
 // The outer column is qualified; a bare "userId" in the subquery would resolve to p."userId".
 policy_select profile_skills_owner_read {
   target = ProfileSkill
@@ -325,20 +331,20 @@ policy_select profile_skills_owner_read {
 policy_insert profile_skills_owner_insert {
   target = ProfileSkill
   roles = [authenticated]
-  withCheck = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills."profileId" AND p."userId" = auth.uid() AND p.state = 'draft')`
+  withCheck = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills."profileId" AND p."userId" = auth.uid())`
 }
 
 policy_update profile_skills_owner_update {
   target = ProfileSkill
   roles = [authenticated]
-  using = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills."profileId" AND p."userId" = auth.uid() AND p.state = 'draft')`
-  withCheck = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills."profileId" AND p."userId" = auth.uid() AND p.state = 'draft')`
+  using = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills."profileId" AND p."userId" = auth.uid())`
+  withCheck = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills."profileId" AND p."userId" = auth.uid())`
 }
 
 policy_delete profile_skills_owner_delete {
   target = ProfileSkill
   roles = [authenticated]
-  using = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills."profileId" AND p."userId" = auth.uid() AND p.state = 'draft')`
+  using = sql`"userId" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills."profileId" AND p."userId" = auth.uid())`
 }
 
 // Answers to setup steps 3–4 until the profile can be created; one per user.
@@ -1042,13 +1048,9 @@ model JobMatch {
   stackScore     Numeric(4, 3)?
   checks         Jsonb
   decidedAt      TimestamptzJsDate(3)
-  // What the decision read: the profile's updatedAt and the user's eligibilityVersion.
+  // What the decision read: the profile's matchVersion and the user's eligibilityVersion.
   // A row decided before either changed is stale. Null on rows decided before they were recorded.
-  // profileUpdatedAt is enough only because published profiles are frozen (RLS
-  // profiles_owner_update_draft, draft-only RPCs, the engine refuses edits). Phase 2 slice 07
-  // (edit published) must add a column-scoped trigger or a profile version that leaves out the
-  // resume columns and touches the profile when its profile_skills change.
-  profileUpdatedAt   TimestamptzJsDate(3)?
+  profileVersion     Int?
   eligibilityVersion Int?
   reviews            MatchReview[]
   webhookDeliveries  WebhookDelivery[]
@@ -1169,6 +1171,9 @@ model MatchReview {
   match     JobMatch @relation(fields: [matchId], references: [id], onDelete: Cascade)
   jobId     Uuid
   choice    String
+  // The match's profileVersion when the choice was made (set by a trigger); a choice applies only
+  // while the match is still on that version.
+  profileVersion Int?
   rule      String
   field     String
   note      String?

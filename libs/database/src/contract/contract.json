@@ -2795,14 +2795,11 @@
                   "kind": "scalar"
                 }
               },
-              "profileUpdatedAt": {
+              "profileVersion": {
                 "nullable": true,
                 "type": {
-                  "codecId": "pg/timestamptz-date@1",
-                  "kind": "scalar",
-                  "typeParams": {
-                    "precision": 3
-                  }
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
                 }
               },
               "reviewField": {
@@ -2988,8 +2985,8 @@
                 "profileId": {
                   "column": "profileId"
                 },
-                "profileUpdatedAt": {
-                  "column": "profileUpdatedAt"
+                "profileVersion": {
+                  "column": "profileVersion"
                 },
                 "reviewField": {
                   "column": "reviewField"
@@ -3322,6 +3319,13 @@
                   "kind": "scalar"
                 }
               },
+              "profileVersion": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
               "rule": {
                 "nullable": false,
                 "type": {
@@ -3406,6 +3410,9 @@
                 },
                 "profileId": {
                   "column": "profileId"
+                },
+                "profileVersion": {
+                  "column": "profileVersion"
                 },
                 "rule": {
                   "column": "rule"
@@ -4695,6 +4702,13 @@
                   "kind": "scalar"
                 }
               },
+              "matchVersion": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
               "noticePeriodDays": {
                 "nullable": false,
                 "type": {
@@ -4782,6 +4796,13 @@
                 "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "searchesVersion": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
                   "kind": "scalar"
                 }
               },
@@ -4932,6 +4953,9 @@
                 "locations": {
                   "column": "locations"
                 },
+                "matchVersion": {
+                  "column": "matchVersion"
+                },
                 "noticePeriodDays": {
                   "column": "noticePeriodDays"
                 },
@@ -4967,6 +4991,9 @@
                 },
                 "salaryPeriod": {
                   "column": "salaryPeriod"
+                },
+                "searchesVersion": {
+                  "column": "searchesVersion"
                 },
                 "seniorities": {
                   "column": "seniorities"
@@ -7794,7 +7821,7 @@
             },
             "profile_skills_owner_delete": {
               "kind": "policy",
-              "name": "profile_skills_owner_delete_e80e5c12",
+              "name": "profile_skills_owner_delete_5640e969",
               "namespaceId": "public",
               "operation": "delete",
               "permissive": true,
@@ -7803,11 +7830,11 @@
                 "authenticated"
               ],
               "tableName": "profile_skills",
-              "using": "\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills.\"profileId\" AND p.\"userId\" = auth.uid() AND p.state = 'draft')"
+              "using": "\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills.\"profileId\" AND p.\"userId\" = auth.uid())"
             },
             "profile_skills_owner_insert": {
               "kind": "policy",
-              "name": "profile_skills_owner_insert_87e871a7",
+              "name": "profile_skills_owner_insert_ca26fb79",
               "namespaceId": "public",
               "operation": "insert",
               "permissive": true,
@@ -7816,7 +7843,7 @@
                 "authenticated"
               ],
               "tableName": "profile_skills",
-              "withCheck": "\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills.\"profileId\" AND p.\"userId\" = auth.uid() AND p.state = 'draft')"
+              "withCheck": "\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills.\"profileId\" AND p.\"userId\" = auth.uid())"
             },
             "profile_skills_owner_read": {
               "kind": "policy",
@@ -7833,7 +7860,7 @@
             },
             "profile_skills_owner_update": {
               "kind": "policy",
-              "name": "profile_skills_owner_update_7fcd0c7f",
+              "name": "profile_skills_owner_update_43e3a0db",
               "namespaceId": "public",
               "operation": "update",
               "permissive": true,
@@ -7842,8 +7869,8 @@
                 "authenticated"
               ],
               "tableName": "profile_skills",
-              "using": "\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills.\"profileId\" AND p.\"userId\" = auth.uid() AND p.state = 'draft')",
-              "withCheck": "\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills.\"profileId\" AND p.\"userId\" = auth.uid() AND p.state = 'draft')"
+              "using": "\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills.\"profileId\" AND p.\"userId\" = auth.uid())",
+              "withCheck": "\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills.\"profileId\" AND p.\"userId\" = auth.uid())"
             },
             "profiles_owner_delete_draft": {
               "kind": "policy",
@@ -7884,19 +7911,19 @@
               "tableName": "profiles",
               "using": "\"userId\" = auth.uid()"
             },
-            "profiles_owner_update_draft": {
+            "profiles_owner_update": {
               "kind": "policy",
-              "name": "profiles_owner_update_draft_b3dbbb7b",
+              "name": "profiles_owner_update_027386ad",
               "namespaceId": "public",
               "operation": "update",
               "permissive": true,
-              "prefix": "profiles_owner_update_draft",
+              "prefix": "profiles_owner_update",
               "roles": [
                 "authenticated"
               ],
               "tableName": "profiles",
-              "using": "\"userId\" = auth.uid() AND state = 'draft'",
-              "withCheck": "\"userId\" = auth.uid() AND state = 'draft' AND \"publishedAt\" IS NULL"
+              "using": "\"userId\" = auth.uid()",
+              "withCheck": "\"userId\" = auth.uid()"
             },
             "region_countries_read_approved": {
               "kind": "policy",
@@ -10337,13 +10364,10 @@
                   "dataType": "pg/uuid",
                   "nullable": false
                 },
-                "profileUpdatedAt": {
-                  "codecId": "pg/timestamptz-date@1",
-                  "dataType": "pg/timestamptz",
-                  "nullable": true,
-                  "typeParams": {
-                    "precision": 3
-                  }
+                "profileVersion": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
                 },
                 "reviewField": {
                   "codecId": "pg/text@1",
@@ -10830,6 +10854,11 @@
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
                   "nullable": false
+                },
+                "profileVersion": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
                 },
                 "rule": {
                   "codecId": "pg/text@1",
@@ -12322,6 +12351,15 @@
                   "dataType": "pg/jsonb",
                   "nullable": false
                 },
+                "matchVersion": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 0
+                  },
+                  "nullable": false
+                },
                 "noticePeriodDays": {
                   "codecId": "pg/int4@1",
                   "dataType": "pg/int4",
@@ -12390,6 +12428,11 @@
                 "salaryPeriod": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
+                  "nullable": true
+                },
+                "searchesVersion": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
                   "nullable": true
                 },
                 "seniorities": {
@@ -14486,7 +14529,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "e7b08e363baaa0a3e156ae4de9f711a51863b987540910924cedef23bf467e55"
+    "storageHash": "a8b0e3af5a6acba211a21487fd666dddcb3d809695f0f5b44ee66a25372c2621"
   },
   "execution": {
     "executionHash": "7b5eaf1d91dcda38671ed0758e62b64e510de826d248ab15bddc3faa2e947c57",
