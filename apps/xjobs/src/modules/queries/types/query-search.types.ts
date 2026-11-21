@@ -66,3 +66,9 @@ export type QuerySearchAttachResult = {
   /** Recipes that already had a shared builder (reused, not duplicated). */
   existing: number;
 };
+
+/** What swapping a profile's builders did, on top of the attach counts. */
+export type QuerySearchReplaceResult = QuerySearchAttachResult & {
+  /** Builders unlinked because the new recipes no longer want them. */
+  released: number;
+};

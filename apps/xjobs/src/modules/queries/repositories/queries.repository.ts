@@ -6,7 +6,11 @@ import {
   type QuerySearchBuilderRow,
 } from 'src/database';
 import type { DatabaseTransaction } from '@xjobs/database';
-import type { QuerySearchRecipe, QuerySearchAttachResult } from '../types';
+import type {
+  QuerySearchRecipe,
+  QuerySearchAttachResult,
+  QuerySearchReplaceResult,
+} from '../types';
 
 /**
  * Query search builders are shared recipes, deduplicated by hash across every
@@ -49,6 +53,21 @@ export abstract class QuerySearchRepository {
    * any more (inactive). Returns how many it retired.
    */
   abstract retireOutdated(version: number): Promise<number>;
+  /**
+   * Swaps the profile's builders for those of `recipes` in one transaction:
+   * links the wanted ones, unlinks the rest (a builder the profile keeps is
+   * never unlinked), then records `searchesVersion` on the published profile.
+   */
+  abstract replace(
+    profileId: string,
+    recipes: QuerySearchRecipe[],
+    searchesVersion: number,
+  ): Promise<QuerySearchReplaceResult>;
+  /**
+   * In one transaction, unlinks every builder and deletes the published
+   * profile. False, with nothing released, when no published profile matched.
+   */
+  abstract releaseAndDelete(profileId: string): Promise<boolean>;
   /** Retires a builder: unlinks every profile and deactivates it for good. */
   abstract softDelete(queryId: string): Promise<QuerySearchBuilderRow | null>;
 }
@@ -105,54 +124,134 @@ export class PrismaQuerySearchRepository extends QuerySearchRepository {
     profileId: string,
     recipes: QuerySearchRecipe[],
   ): Promise<QuerySearchAttachResult> {
+    return this.transaction((tx) =>
+      PrismaQuerySearchRepository.attachIn(tx, profileId, recipes),
+    );
+  }
+
+  private static async attachIn(
+    tx: DatabaseTransaction,
+    profileId: string,
+    recipes: QuerySearchRecipe[],
+  ): Promise<QuerySearchAttachResult> {
     // A stable order keeps concurrent syncs from locking builders crosswise.
     const wanted = [...recipes].sort((a, b) =>
       a.hash < b.hash ? -1 : a.hash > b.hash ? 1 : 0,
     );
-    return this.transaction(async (tx) => {
-      const orm = tx.orm.public;
-      const result: QuerySearchAttachResult = { created: 0, existing: 0 };
+    const orm = tx.orm.public;
+    const result: QuerySearchAttachResult = { created: 0, existing: 0 };
 
-      for (const recipe of wanted) {
-        let builder = await orm.QuerySearchBuilder.where({
-          hash: recipe.hash,
-        }).first();
-        if (!builder) {
-          // `position` only shapes the keyword and is not a column.
-          const {
-            position: _position,
-            languages: _languages,
-            experienceLevel: _experienceLevel,
-            ...columns
-          } = recipe;
-          builder = await orm.QuerySearchBuilder.create({
-            ...columns,
-            // A seniority code; the column still holds the Seniority enum's values.
-            experience: columns.experience as Seniority,
-            // Channel builders emit plain JSON; the column type is the JSON union.
-            params: columns.params as QuerySearchBuilderRow['params'],
-            associatedProfiles: 0,
-            isActive: false,
-            isDeleted: false,
-          });
-          result.created += 1;
-        } else {
-          result.existing += 1;
-        }
-        if (builder.isDeleted) continue;
-        const linked = await orm.ProfileQuerySearchBuilder.where({
-          profileId,
-          queryId: builder.id,
-        }).first();
-        if (linked) continue;
-        await orm.ProfileQuerySearchBuilder.create({
-          profileId,
-          queryId: builder.id,
+    for (const recipe of wanted) {
+      let builder = await orm.QuerySearchBuilder.where({
+        hash: recipe.hash,
+      }).first();
+      if (!builder) {
+        // `position` only shapes the keyword and is not a column.
+        const {
+          position: _position,
+          languages: _languages,
+          experienceLevel: _experienceLevel,
+          ...columns
+        } = recipe;
+        builder = await orm.QuerySearchBuilder.create({
+          ...columns,
+          // A seniority code; the column still holds the Seniority enum's values.
+          experience: columns.experience as Seniority,
+          // Channel builders emit plain JSON; the column type is the JSON union.
+          params: columns.params as QuerySearchBuilderRow['params'],
+          associatedProfiles: 0,
+          isActive: false,
+          isDeleted: false,
         });
-        await PrismaQuerySearchRepository.adjust(tx, builder.id, 1);
+        result.created += 1;
+      } else {
+        result.existing += 1;
       }
+      if (builder.isDeleted) continue;
+      const linked = await orm.ProfileQuerySearchBuilder.where({
+        profileId,
+        queryId: builder.id,
+      }).first();
+      if (linked) continue;
+      await orm.ProfileQuerySearchBuilder.create({
+        profileId,
+        queryId: builder.id,
+      });
+      await PrismaQuerySearchRepository.adjust(tx, builder.id, 1);
+    }
 
-      return result;
+    return result;
+  }
+
+  /** Unlinks the profile's builders (all, or those `keep` rejects); returns how many. */
+  private static async releaseIn(
+    tx: DatabaseTransaction,
+    profileId: string,
+    keepHashes?: Set<string>,
+  ): Promise<number> {
+    const orm = tx.orm.public;
+    const links = await orm.ProfileQuerySearchBuilder.where({ profileId })
+      .orderBy((link) => link.queryId.asc())
+      .all();
+    let dropped = links;
+    if (keepHashes && links.length) {
+      const builders = await orm.QuerySearchBuilder.where((row) =>
+        row.id.in(links.map((link) => link.queryId)),
+      ).all();
+      const kept = new Set(
+        builders
+          .filter((builder) => keepHashes.has(builder.hash))
+          .map((builder) => builder.id),
+      );
+      dropped = links.filter((link) => !kept.has(link.queryId));
+    }
+    for (const link of dropped) {
+      await orm.ProfileQuerySearchBuilder.where({ id: link.id }).delete();
+      await PrismaQuerySearchRepository.adjust(tx, link.queryId, -1);
+    }
+    return dropped.length;
+  }
+
+  replace(
+    profileId: string,
+    recipes: QuerySearchRecipe[],
+    searchesVersion: number,
+  ): Promise<QuerySearchReplaceResult> {
+    const wanted = new Set(recipes.map((recipe) => recipe.hash));
+    return this.transaction(async (tx) => {
+      const attached = await PrismaQuerySearchRepository.attachIn(
+        tx,
+        profileId,
+        recipes,
+      );
+      const released = await PrismaQuerySearchRepository.releaseIn(
+        tx,
+        profileId,
+        wanted,
+      );
+      await tx.execute(
+        tx.raw
+          .sql`UPDATE profiles SET "searchesVersion" = ${searchesVersion} WHERE id = ${profileId}::uuid AND state = 'published'`
+          .affectedCount()
+          .build(),
+      );
+      return { ...attached, released };
+    });
+  }
+
+  releaseAndDelete(profileId: string): Promise<boolean> {
+    return this.transaction(async (tx) => {
+      const profile = await tx.orm.public.Profile.where({
+        id: profileId,
+        state: 'published',
+      })
+        .forUpdate()
+        .first();
+      if (!profile) return false;
+      await PrismaQuerySearchRepository.releaseIn(tx, profileId);
+      // The row is locked and published, so this deletes exactly it.
+      await tx.orm.public.Profile.where({ id: profileId }).deleteAll();
+      return true;
     });
   }
 

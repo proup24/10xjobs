@@ -309,6 +309,38 @@ describe('QuerySearchService', () => {
     });
   });
 
+  describe('replace and releaseAndDelete', () => {
+    it('recipesFor is what generate attaches', async () => {
+      const { service, repository, profileId } = await setup();
+      const recipes = service.recipesFor(profile, { posts: true });
+      await service.generate(profileId, profile, { posts: true });
+      expect(new Set(hashes(recipes))).toEqual(
+        new Set(repository.rows.map((row) => row.hash)),
+      );
+    });
+
+    it('replace swaps to the new recipes and records the version', async () => {
+      const { service, repository, profileId } = await setup();
+      repository.published.add(profileId);
+      const all = service.recipesFor(profile);
+      await service.generate(profileId, profile);
+      const result = await service.replace(profileId, all.slice(0, 5), 4);
+      expect(result.released).toBe(all.length - 5);
+      expect(repository.links).toHaveLength(5);
+      expect(repository.searchesVersions.get(profileId)).toBe(4);
+    });
+
+    it('releaseAndDelete releases the builders of a published profile only', async () => {
+      const { service, repository, profileId } = await setup();
+      await service.generate(profileId, profile);
+      expect(await service.releaseAndDelete(profileId)).toBe(false);
+      expect(repository.links.length).toBeGreaterThan(0);
+      repository.published.add(profileId);
+      expect(await service.releaseAndDelete(profileId)).toBe(true);
+      expect(repository.links).toHaveLength(0);
+    });
+  });
+
   describe('posts', () => {
     it('generate attaches post recipes only with posts: true', async () => {
       const { service, repository, profileId } = await setup();
