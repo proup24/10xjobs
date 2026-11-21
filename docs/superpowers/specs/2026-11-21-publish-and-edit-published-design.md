@@ -92,7 +92,7 @@ A profile records which version its searches were attached for: `profiles.search
 - The swap is a diff, not detach-then-attach: a builder the profile keeps never drops to 0 associations, so a collection run that reads `listActive` mid-swap never loses a search. `regeneratePublished` (`db:regenerate`) should use the same swap and also set `searchesVersion`.
 - Only the engine attaches and releases searches _(locked)_.
 
-A profile whose `searchesVersion` stays behind for more than 5 minutes is a failure the user should see: its preferences page shows "Your last change hasn't reached the searches yet; it will retry automatically" _(my call)_. The sweep is the retry. The engine logs each failed swap with the profile id.
+While a published profile's `searchesVersion` is null or below its `matchVersion`, its job and terms pages say "Your last change is being applied to the searches." A stuck sync stays visible this way without a timestamp column _(my call)_. The sweep is the retry. The engine logs each failed swap with the profile id.
 
 ### RLS and database functions
 
@@ -118,7 +118,7 @@ A profile whose `searchesVersion` stays behind for more than 5 minutes is a fail
 
 ### Existing data on `10xjobs-dev`
 
-Dev has one user with 2 drafts (both with resumes) and 1 published profile. A one-off script publishes the drafts through the engine's publish; the published profile is kept, and `db:regenerate` moves it to the current recipe and sets `searchesVersion` _(my call)_. No in-app prompt.
+Dev has one user with 2 drafts (both with resumes) and 1 published profile. A one-off script publishes the drafts through the engine's publish; the published profile is kept: its `searchesVersion` starts null, so the search sync's first tick moves it to the current recipe _(my call)_. No in-app prompt.
 
 ## Done when
 
