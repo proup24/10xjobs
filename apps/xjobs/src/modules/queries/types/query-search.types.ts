@@ -71,4 +71,19 @@ export type QuerySearchAttachResult = {
 export type QuerySearchReplaceResult = QuerySearchAttachResult & {
   /** Builders unlinked because the new recipes no longer want them. */
   released: number;
+  /**
+   * Why nothing changed, or null when the swap ran: the profile is no longer
+   * published, or its post search switch moved since the recipes were built.
+   */
+  skipped: QuerySearchReplaceSkip | null;
+};
+
+export type QuerySearchReplaceSkip = 'not_published' | 'post_search_changed';
+
+/** What the caller read on the profile when it built the recipes. */
+export type QuerySearchReplaceExpected = {
+  /** Recorded as the profile's `searchesVersion` once the swap is done. */
+  searchesVersion: number;
+  /** The stored post search switch; the swap is skipped if the row no longer has it. */
+  postSearch: boolean;
 };

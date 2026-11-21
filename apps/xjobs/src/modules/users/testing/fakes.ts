@@ -164,13 +164,15 @@ export class FakeProfilesRepository extends ProfilesRepository {
     profileId: string,
     publishedAt: Date,
     searchesVersion: number,
+    postSearch: boolean,
   ) {
     const profile = await this.findById(userId, profileId);
     if (profile?.state !== ProfileState.draft) return null;
     return Object.assign(profile, {
       state: ProfileState.published,
       publishedAt,
-      searchesVersion,
+      searchesVersion:
+        profile.postSearch === postSearch ? searchesVersion : null,
     });
   }
 

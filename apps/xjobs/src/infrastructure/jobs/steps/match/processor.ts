@@ -3,6 +3,7 @@ import { UnrecoverableError } from 'bullmq';
 import { z } from 'zod';
 import type { MatcherRepository, MatcherService } from 'src/modules/matcher';
 import type { ProfileSearchSync } from 'src/modules/users';
+import { describeError } from 'src/utils';
 import { MATCH_SWEEP } from './config';
 import { MATCH_JOB, MATCH_SWEEP_JOB, type MatchQueue } from './queue.service';
 
@@ -51,12 +52,15 @@ export async function processMatchJob(
   }
   if (job.name === MATCH_SWEEP_JOB) {
     // Search sync is best effort: a failure must not stop the match sweep.
-    let searches: { applied: number; failed: number } | { error: string };
+    let searches:
+      | Awaited<ReturnType<ProfileSearchSync['applyPending']>>
+      | { error: string };
     try {
       searches = await deps.searches.applyPending();
     } catch (error) {
-      logger.error(`Search sync failed: ${describeError(error)}`);
-      searches = { error: describeError(error) };
+      const described = describeError(error);
+      logger.error(`Search sync failed: ${described}`);
+      searches = { error: described };
     }
     const deleted = await deps.repo.deleteInactive();
     const stale = await deps.repo.listStaleJobs(MATCH_SWEEP.limit);
@@ -64,15 +68,4 @@ export async function processMatchJob(
     return { searches, deleted, enqueued: stale.length };
   }
   throw new UnrecoverableError(`Unsupported job: ${job.name}`);
-}
-
-/** Code or class name only: an error message may quote profile content. */
-function describeError(error: unknown): string {
-  if (typeof error === 'object' && error !== null) {
-    const { code, sqlState } = error as { code?: unknown; sqlState?: unknown };
-    if (typeof code === 'string') return code;
-    if (typeof sqlState === 'string') return sqlState;
-    return error.constructor.name;
-  }
-  return typeof error;
 }

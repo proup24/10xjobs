@@ -84,6 +84,13 @@ describe('ProfilesService', () => {
       if (row) querySearches.published.add((row as { id: string }).id);
       return row;
     });
+    // The swap reads the stored post search switch from the same row.
+    const setPostSearch = profiles.setPostSearch.bind(profiles);
+    vi.spyOn(profiles, 'setPostSearch').mockImplementation(async (...args) => {
+      const row = await setPostSearch(...args);
+      if (row) querySearches.postSearch.set(row.id, row.postSearch);
+      return row;
+    });
     userId = userRows.add('A').id;
     listed = [userId];
     otherUserId = userRows.add('B').id;
@@ -405,6 +412,8 @@ describe('ProfilesService', () => {
 
       expect(result).toEqual({
         profiles: 1,
+        failed: 0,
+        skipped: 0,
         retired: old,
         postsKept: 0,
         postsDropped: 0,
@@ -431,6 +440,8 @@ describe('ProfilesService', () => {
 
       expect(await service.regeneratePublished()).toEqual({
         profiles: 1,
+        failed: 0,
+        skipped: 0,
         retired: 0,
         postsKept: 0,
         postsDropped: 0,
@@ -443,6 +454,8 @@ describe('ProfilesService', () => {
       const { id } = await create();
       expect(await service.regeneratePublished()).toEqual({
         profiles: 0,
+        failed: 0,
+        skipped: 0,
         retired: 0,
         postsKept: 0,
         postsDropped: 0,

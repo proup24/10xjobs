@@ -1,11 +1,27 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { QuerySearchService } from 'src/modules/queries';
+import { describeError } from 'src/utils';
 import { ProfilesRepository } from '../repositories/profiles.repository';
 import { PostSearchAccess } from './post-search-access';
 import { toQuerySearchInput, labelsFor } from './profiles.service';
 
-/** Profiles whose searches one tick brings up to date. */
+/** Profiles whose searches one tick swaps (calls to `replace`). */
 export const SEARCH_SYNC_LIMIT = 20;
+/**
+ * How many profiles behind one tick reads per swap it may make: profiles that
+ * fail before the swap do not use up the limit, so a run of broken ones at the
+ * head cannot starve the rest, and this cap keeps one tick bounded.
+ */
+export const SEARCH_SYNC_READ_FACTOR = 10;
+
+export type SearchSyncResult = {
+  /** Profiles whose searches were swapped and whose searchesVersion moved. */
+  applied: number;
+  /** Profiles that threw (or built no searches); the next tick retries them. */
+  failed: number;
+  /** Profiles `replace` skipped: unpublished or post search switched since the read. Retried next tick. */
+  skipped: number;
+};
 
 /**
  * Brings the searches of published profiles to their current version: those
@@ -22,13 +38,14 @@ export class ProfileSearchSync {
     private readonly postSearch: PostSearchAccess,
   ) {}
 
-  async applyPending(
-    limit = SEARCH_SYNC_LIMIT,
-  ): Promise<{ applied: number; failed: number }> {
-    const behind = await this.profiles.listSearchesBehind(limit);
-    let applied = 0;
-    let failed = 0;
+  async applyPending(limit = SEARCH_SYNC_LIMIT): Promise<SearchSyncResult> {
+    const behind = await this.profiles.listSearchesBehind(
+      limit * SEARCH_SYNC_READ_FACTOR,
+    );
+    const result: SearchSyncResult = { applied: 0, failed: 0, skipped: 0 };
+    let swaps = 0;
     for (const profile of behind) {
+      if (swaps >= limit) break;
       try {
         const labels = await labelsFor(this.profiles, profile);
         const recipes = this.querySearch.recipesFor(
@@ -38,34 +55,31 @@ export class ProfileSearchSync {
           },
         );
         // Never swap to nothing: the profile keeps its searches and the next tick retries.
-        if (recipes.length === 0) throw new Error('no searches');
-        await this.querySearch.replace(
+        if (recipes.length === 0) throw new NoSearches();
+        swaps += 1;
+        const { skipped } = await this.querySearch.replace(
           profile.id,
           recipes,
-          profile.matchVersion,
+          {
+            searchesVersion: profile.matchVersion,
+            postSearch: profile.postSearch,
+          },
         );
-        applied += 1;
+        if (skipped) result.skipped += 1;
+        else result.applied += 1;
       } catch (error) {
-        failed += 1;
-        // Ids and error names only: an error message may quote profile content.
+        result.failed += 1;
+        // Ids and error codes only: an error message may quote profile content.
         this.logger.error(
-          `Search sync failed profile=${profile.id}: ${describe(error)}`,
+          `Search sync failed profile=${profile.id}: ${
+            error instanceof NoSearches ? 'no searches' : describeError(error)
+          }`,
         );
       }
     }
-    return { applied, failed };
+    return result;
   }
 }
 
-/** 'no searches' is ours; anything else is reported by code or class name, never its message. */
-function describe(error: unknown): string {
-  if (error instanceof Error && error.message === 'no searches')
-    return 'no searches';
-  if (typeof error === 'object' && error !== null) {
-    const { code, sqlState } = error as { code?: unknown; sqlState?: unknown };
-    if (typeof code === 'string') return code;
-    if (typeof sqlState === 'string') return sqlState;
-    return error.constructor.name;
-  }
-  return typeof error;
-}
+/** The profile builds no searches; swapping to none would release them all. */
+class NoSearches extends Error {}

@@ -78,6 +78,20 @@ export default defineConfig(() => ({
           globals: true,
           environment: 'node',
           include: [WIRING_SPECS],
+          // Dummy values: preview mode connects to nothing, but the modules
+          // validate the environment when they are imported.
+          env: {
+            XJOBS_SKIP_ENV_FILES: '1',
+            NODE_ENV: 'development',
+            DATABASE_URL: 'postgresql://postgres:postgres@127.0.0.1:1/none',
+            REDIS_URL: 'redis://127.0.0.1:1',
+            REDIS_CACHE_URL: 'redis://127.0.0.1:1',
+            SUPABASE_URL: 'http://127.0.0.1:1',
+            SUPABASE_SERVICE_ROLE_KEY: 'dummy',
+            ENGINE_API_KEY: 'dummy-engine-key-000000000000000000',
+            // Includes the operator modules in the API graph.
+            XJOBS_OPERATOR_ENDPOINTS: '1',
+          },
           // Importing the whole engine through tsc takes a while on a cold cache.
           testTimeout: 120_000,
           hookTimeout: 120_000,

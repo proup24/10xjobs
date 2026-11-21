@@ -5,6 +5,7 @@ import { QuerySearchRepository } from '../repositories/queries.repository';
 import type {
   QuerySearchRecipe,
   QuerySearchAttachResult,
+  QuerySearchReplaceExpected,
   QuerySearchReplaceResult,
 } from '../types';
 
@@ -140,14 +141,19 @@ export class FakeQuerySearchRepository extends QuerySearchRepository {
   searchesVersions = new Map<string, number>();
   /** Profile ids that exist and are published; `releaseAndDelete` removes them. */
   published = new Set<string>();
+  /** Profile id → stored post search switch; a profile not listed has it off. */
+  postSearch = new Map<string, boolean>();
 
   async replace(
     profileId: string,
     recipes: QuerySearchRecipe[],
-    searchesVersion: number,
+    expected: QuerySearchReplaceExpected,
   ): Promise<QuerySearchReplaceResult> {
+    const nothing = { created: 0, existing: 0, released: 0 };
     if (!this.published.has(profileId))
-      return { created: 0, existing: 0, released: 0 };
+      return { ...nothing, skipped: 'not_published' };
+    if ((this.postSearch.get(profileId) ?? false) !== expected.postSearch)
+      return { ...nothing, skipped: 'post_search_changed' };
     const attached = await this.attach(profileId, recipes);
     const wanted = new Set(recipes.map((recipe) => recipe.hash));
     const hashOf = (queryId: string): string => {
@@ -161,8 +167,8 @@ export class FakeQuerySearchRepository extends QuerySearchRepository {
     );
     this.links = this.links.filter((link) => !drop.includes(link));
     for (const link of drop) this.adjust(link.queryId, -1);
-    this.searchesVersions.set(profileId, searchesVersion);
-    return { ...attached, released: drop.length };
+    this.searchesVersions.set(profileId, expected.searchesVersion);
+    return { ...attached, released: drop.length, skipped: null };
   }
 
   async releaseAndDelete(profileId: string): Promise<boolean> {

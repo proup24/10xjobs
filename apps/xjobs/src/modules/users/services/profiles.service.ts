@@ -2,6 +2,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import {
@@ -16,6 +17,7 @@ import {
 } from 'src/modules/queries';
 import { ProfilesRepository } from '../repositories/profiles.repository';
 import { postRecipes } from 'src/modules/queries/posts';
+import { describeError } from 'src/utils';
 import { PostSearchAccess } from './post-search-access';
 import { UsersService } from './users.service';
 import { allPlaces, placeTexts } from './place-labels';
@@ -161,6 +163,8 @@ function notPublishedConflict(): ConflictException {
   });
 }
 
+const regenerateLogger = new Logger('Regenerate');
+
 /** What regenerating published profiles needs. */
 export interface RegenerateDeps {
   profiles: Pick<ProfilesRepository, 'listPublished' | 'placeLabels'>;
@@ -173,7 +177,12 @@ export interface RegenerateDeps {
 }
 
 export interface RegenerateResult {
+  /** Published profiles read. */
   profiles: number;
+  /** Profiles whose regeneration threw; the others still ran, and so did retiring. */
+  failed: number;
+  /** Profiles `replace` skipped: unpublished or post search switched since the read. */
+  skipped: number;
   retired: number;
   /** Profiles with post search on that kept their post builders. */
   postsKept: number;
@@ -196,19 +205,38 @@ export async function regeneratePublished(
   const published = await deps.profiles.listPublished();
   let postsKept = 0;
   let postsDropped = 0;
+  let failed = 0;
+  let skipped = 0;
   for (const profile of published) {
-    // Labels first: a missing one throws before the profile's builders change.
-    const labels = await labelsFor(deps.profiles, profile);
-    const posts = profile.postSearch && deps.postsAllowed(profile.userId);
-    if (posts) postsKept += 1;
-    else if (profile.postSearch) postsDropped += 1;
-    const recipes = deps.querySearch.recipesFor(toInput(profile, labels), {
-      posts,
-    });
-    await deps.querySearch.replace(profile.id, recipes, profile.matchVersion);
+    try {
+      // Labels first: a missing one throws before the profile's builders change.
+      const labels = await labelsFor(deps.profiles, profile);
+      const posts = profile.postSearch && deps.postsAllowed(profile.userId);
+      const recipes = deps.querySearch.recipesFor(toInput(profile, labels), {
+        posts,
+      });
+      const result = await deps.querySearch.replace(profile.id, recipes, {
+        searchesVersion: profile.matchVersion,
+        postSearch: profile.postSearch,
+      });
+      if (result.skipped) {
+        skipped += 1;
+        continue;
+      }
+      if (posts) postsKept += 1;
+      else if (profile.postSearch) postsDropped += 1;
+    } catch (error) {
+      // One broken profile must not stop the rest. Ids and codes only.
+      failed += 1;
+      regenerateLogger.error(
+        `Regenerate failed profile=${profile.id}: ${describeError(error)}`,
+      );
+    }
   }
   return {
     profiles: published.length,
+    failed,
+    skipped,
     retired: await deps.querySearch.retireOutdated(),
     postsKept,
     postsDropped,
@@ -293,6 +321,7 @@ export class ProfilesService {
       profile.id,
       new Date(),
       profile.matchVersion,
+      profile.postSearch,
     );
     if (!published) {
       // Deleted meanwhile: release what was just attached so counts stay right.

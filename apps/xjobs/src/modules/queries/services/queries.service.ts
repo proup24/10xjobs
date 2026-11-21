@@ -19,6 +19,7 @@ import type {
   QuerySearchProfileInput,
   QuerySearchRecipe,
   QuerySearchAttachResult,
+  QuerySearchReplaceExpected,
   QuerySearchReplaceResult,
 } from '../types';
 
@@ -65,13 +66,16 @@ export class QuerySearchService {
     ];
   }
 
-  /** Swaps the profile's builders for `recipes` in one transaction and records `searchesVersion`. */
+  /**
+   * Swaps the profile's builders for `recipes` in one transaction and records
+   * `searchesVersion`; skipped when the profile no longer matches `expected`.
+   */
   replace(
     profileId: string,
     recipes: QuerySearchRecipe[],
-    searchesVersion: number,
+    expected: QuerySearchReplaceExpected,
   ): Promise<QuerySearchReplaceResult> {
-    return this.builders.replace(profileId, recipes, searchesVersion);
+    return this.builders.replace(profileId, recipes, expected);
   }
 
   /** Releases every builder and deletes the published profile in one transaction; false when none matched. */

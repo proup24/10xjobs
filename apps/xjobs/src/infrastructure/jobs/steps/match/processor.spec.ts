@@ -16,7 +16,7 @@ function deps() {
       deleteInactive: vi.fn(async () => 4),
     },
     searches: {
-      applyPending: vi.fn(async () => ({ applied: 3, failed: 1 })),
+      applyPending: vi.fn(async () => ({ applied: 3, failed: 1, skipped: 0 })),
     },
     queue: { enqueue: vi.fn(async () => undefined) },
     webhooks: { enqueue: vi.fn(async (_id: string) => undefined) },
@@ -64,7 +64,7 @@ describe('processMatchJob', () => {
   it('sweeps: deletes inactive matches and enqueues stale jobs', async () => {
     const d = deps();
     expect(await processMatchJob(job('sweep'), d as never)).toEqual({
-      searches: { applied: 3, failed: 1 },
+      searches: { applied: 3, failed: 1, skipped: 0 },
       deleted: 4,
       enqueued: 2,
     });
@@ -77,7 +77,7 @@ describe('processMatchJob', () => {
     const order: string[] = [];
     d.searches.applyPending.mockImplementation(async () => {
       order.push('searches');
-      return { applied: 2, failed: 0 };
+      return { applied: 2, failed: 0, skipped: 0 };
     });
     d.repo.deleteInactive.mockImplementation(async () => {
       order.push('delete');

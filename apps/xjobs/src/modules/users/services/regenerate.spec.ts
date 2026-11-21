@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import type { QuerySearchProfileInput } from 'src/modules/queries';
 import type { PlaceLabels } from './place-labels';
 import { regeneratePublished } from './profiles.service';
@@ -27,7 +28,7 @@ describe('regeneratePublished', () => {
           recipesFor: () => [{}] as never,
           replace: async (id: string) => {
             calls.push(`replace:${id}`);
-            return { created: 0, existing: 0, released: 0 };
+            return { created: 0, existing: 0, released: 0, skipped: null };
           },
           retireOutdated: async () => {
             calls.push('retire');
@@ -41,6 +42,8 @@ describe('regeneratePublished', () => {
     expect(calls).toEqual(['replace:p1', 'replace:p2', 'retire']);
     expect(result).toEqual({
       profiles: 2,
+      failed: 0,
+      skipped: 0,
       retired: 3,
       postsKept: 0,
       postsDropped: 0,
@@ -86,7 +89,12 @@ describe('regeneratePublished', () => {
           inputs.push(input);
           return [{}] as never;
         },
-        replace: async () => ({ created: 1, existing: 0, released: 0 }),
+        replace: async () => ({
+          created: 1,
+          existing: 0,
+          released: 0,
+          skipped: null,
+        }),
         retireOutdated: async () => 0,
       },
     });
@@ -113,9 +121,9 @@ describe('regeneratePublished', () => {
         },
         querySearch: {
           recipesFor: () => [{}] as never,
-          replace: async (_id, _recipes, version) => {
-            versions.push(version);
-            return { created: 0, existing: 0, released: 0 };
+          replace: async (_id, _recipes, { searchesVersion }) => {
+            versions.push(searchesVersion);
+            return { created: 0, existing: 0, released: 0, skipped: null };
           },
           retireOutdated: async () => 0,
         },
@@ -123,5 +131,56 @@ describe('regeneratePublished', () => {
       () => ({}) as never,
     );
     expect(versions).toEqual([7]);
+  });
+
+  it('keeps going past a profile that throws, and still retires', async () => {
+    const calls: string[] = [];
+    const locations = { remote: [], hybrid: [], onsite: [] };
+    const published = [
+      { id: 'p1', locations },
+      { id: 'p2', locations },
+      { id: 'p3', locations },
+    ] as never[];
+    const error = vi
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
+    const result = await regeneratePublished(
+      {
+        postsAllowed: () => false,
+        profiles: {
+          listPublished: async () => published,
+          placeLabels: noLabels,
+        },
+        querySearch: {
+          recipesFor: () => [{}] as never,
+          replace: async (id: string) => {
+            calls.push(`replace:${id}`);
+            if (id === 'p2')
+              throw Object.assign(new Error('secret'), { code: '40001' });
+            return {
+              created: 0,
+              existing: 0,
+              released: 0,
+              skipped: id === 'p3' ? ('post_search_changed' as const) : null,
+            };
+          },
+          retireOutdated: async () => {
+            calls.push('retire');
+            return 1;
+          },
+        },
+      },
+      () => ({}) as never,
+    );
+
+    expect(calls).toEqual(['replace:p1', 'replace:p2', 'replace:p3', 'retire']);
+    expect(result).toMatchObject({
+      profiles: 3,
+      failed: 1,
+      skipped: 1,
+      retired: 1,
+    });
+    expect(error).toHaveBeenCalledWith('Regenerate failed profile=p2: 40001');
+    error.mockRestore();
   });
 });

@@ -181,9 +181,17 @@ describe.skipIf(!url)('query search repository in PostgreSQL', () => {
     const [a, b, c] = [ashby('emea'), ashby('paris'), ashby('berlin')];
     await repo.attach(id, [a, b]);
 
-    const result = await repo.replace(id, [b, c], 3);
+    const result = await repo.replace(id, [b, c], {
+      searchesVersion: 3,
+      postSearch: false,
+    });
 
-    expect(result).toEqual({ created: 1, existing: 1, released: 1 });
+    expect(result).toEqual({
+      created: 1,
+      existing: 1,
+      released: 1,
+      skipped: null,
+    });
     const links = await db.orm.public.ProfileQuerySearchBuilder.where({
       profileId: id,
     }).all();
@@ -204,10 +212,13 @@ describe.skipIf(!url)('query search repository in PostgreSQL', () => {
     const a = ashby('emea');
     await draftOf(id);
 
-    expect(await repo.replace(id, [a], 5)).toEqual({
+    expect(
+      await repo.replace(id, [a], { searchesVersion: 5, postSearch: false }),
+    ).toEqual({
       created: 0,
       existing: 0,
       released: 0,
+      skipped: 'not_published',
     });
 
     expect(await builderOf(a)).toBeNull();
@@ -223,7 +234,10 @@ describe.skipIf(!url)('query search repository in PostgreSQL', () => {
 
   it('replace sets searchesVersion', async () => {
     const id = await profile();
-    await repo.replace(id, [ashby('emea')], 7);
+    await repo.replace(id, [ashby('emea')], {
+      searchesVersion: 7,
+      postSearch: false,
+    });
     expect(
       (await db.orm.public.Profile.where({ id }).first())!.searchesVersion,
     ).toBe(7);
@@ -235,7 +249,10 @@ describe.skipIf(!url)('query search repository in PostgreSQL', () => {
     await repo.attach(id, [a, b]);
     await repo.attach(other, [a]);
 
-    const result = await repo.replace(id, [a, b], 2);
+    const result = await repo.replace(id, [a, b], {
+      searchesVersion: 2,
+      postSearch: false,
+    });
 
     expect(result.released).toBe(0);
     expect(await builderOf(a)).toMatchObject({
@@ -246,6 +263,43 @@ describe.skipIf(!url)('query search repository in PostgreSQL', () => {
       associatedProfiles: 1,
       isActive: true,
     });
+  });
+
+  it('replace with a stale post search changes nothing', async () => {
+    const [id, other] = [await profile(), await profile()];
+    const [a, b] = [ashby('emea'), ashby('paris')];
+    await repo.attach(id, [a]);
+    await repo.attach(other, [a]);
+    // The switch was turned on after the caller built its recipes.
+    await db.execute(
+      db.raw.sql`UPDATE profiles SET "postSearch" = true WHERE id = ${id}::uuid`
+        .affectedCount()
+        .build(),
+    );
+
+    expect(
+      await repo.replace(id, [b], { searchesVersion: 4, postSearch: false }),
+    ).toEqual({
+      created: 0,
+      existing: 0,
+      released: 0,
+      skipped: 'post_search_changed',
+    });
+
+    expect(await builderOf(b)).toBeNull();
+    const links = await db.orm.public.ProfileQuerySearchBuilder.where({
+      profileId: id,
+    }).all();
+    expect(links.map((link) => link.queryId)).toEqual([
+      (await builderOf(a))!.id,
+    ]);
+    expect(await builderOf(a)).toMatchObject({
+      associatedProfiles: 2,
+      isActive: true,
+    });
+    expect(
+      (await db.orm.public.Profile.where({ id }).first())!.searchesVersion,
+    ).toBeNull();
   });
 
   it('releaseAndDelete releases every builder and deletes the profile', async () => {

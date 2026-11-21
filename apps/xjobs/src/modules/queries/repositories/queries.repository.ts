@@ -9,6 +9,7 @@ import type { DatabaseTransaction } from '@xjobs/database';
 import type {
   QuerySearchRecipe,
   QuerySearchAttachResult,
+  QuerySearchReplaceExpected,
   QuerySearchReplaceResult,
 } from '../types';
 
@@ -57,11 +58,14 @@ export abstract class QuerySearchRepository {
    * Swaps the profile's builders for those of `recipes` in one transaction:
    * links the wanted ones, unlinks the rest (a builder the profile keeps is
    * never unlinked), then records `searchesVersion` on the published profile.
+   * Skipped, with nothing changed, when the profile is not published or its
+   * post search switch is no longer `expected.postSearch`: the recipes were
+   * built from an older read, and the caller retries with a fresh one.
    */
   abstract replace(
     profileId: string,
     recipes: QuerySearchRecipe[],
-    searchesVersion: number,
+    expected: QuerySearchReplaceExpected,
   ): Promise<QuerySearchReplaceResult>;
   /**
    * In one transaction, unlinks every builder and deletes the published
@@ -217,8 +221,9 @@ export class PrismaQuerySearchRepository extends QuerySearchRepository {
   replace(
     profileId: string,
     recipes: QuerySearchRecipe[],
-    searchesVersion: number,
+    expected: QuerySearchReplaceExpected,
   ): Promise<QuerySearchReplaceResult> {
+    const nothing = { created: 0, existing: 0, released: 0 };
     const wanted = new Set(recipes.map((recipe) => recipe.hash));
     return this.transaction(async (tx) => {
       // Lock the profile first (as releaseAndDelete does): a draft or missing
@@ -229,7 +234,12 @@ export class PrismaQuerySearchRepository extends QuerySearchRepository {
       })
         .forUpdate()
         .first();
-      if (!profile) return { created: 0, existing: 0, released: 0 };
+      if (!profile) return { ...nothing, skipped: 'not_published' };
+      // The switch path writes the flag before it attaches or detaches post
+      // builders, and that write waits on this lock: a flag that moved since
+      // the caller's read means its recipes are stale, so change nothing.
+      if (profile.postSearch !== expected.postSearch)
+        return { ...nothing, skipped: 'post_search_changed' };
       const attached = await PrismaQuerySearchRepository.attachIn(
         tx,
         profileId,
@@ -242,11 +252,11 @@ export class PrismaQuerySearchRepository extends QuerySearchRepository {
       );
       await tx.execute(
         tx.raw
-          .sql`UPDATE profiles SET "searchesVersion" = ${searchesVersion} WHERE id = ${profileId}::uuid AND state = 'published'`
+          .sql`UPDATE profiles SET "searchesVersion" = ${expected.searchesVersion} WHERE id = ${profileId}::uuid AND state = 'published'`
           .affectedCount()
           .build(),
       );
-      return { ...attached, released };
+      return { ...attached, released, skipped: null };
     });
   }
 
@@ -259,6 +269,8 @@ export class PrismaQuerySearchRepository extends QuerySearchRepository {
         .forUpdate()
         .first();
       if (!profile) return false;
+      // A match job inserting a decision for this profile meanwhile can hit a
+      // 23503 foreign key error; that job retries and finds the profile gone.
       await PrismaQuerySearchRepository.releaseIn(tx, profileId);
       // The row is locked and published, so this deletes exactly it.
       await tx.orm.public.Profile.where({ id: profileId }).deleteAll();

@@ -324,7 +324,10 @@ describe('QuerySearchService', () => {
       repository.published.add(profileId);
       const all = service.recipesFor(profile);
       await service.generate(profileId, profile);
-      const result = await service.replace(profileId, all.slice(0, 5), 4);
+      const result = await service.replace(profileId, all.slice(0, 5), {
+        searchesVersion: 4,
+        postSearch: false,
+      });
       expect(result.released).toBe(all.length - 5);
       expect(repository.links).toHaveLength(5);
       expect(repository.searchesVersions.get(profileId)).toBe(4);
@@ -335,11 +338,31 @@ describe('QuerySearchService', () => {
       const result = await service.replace(
         profileId,
         service.recipesFor(profile),
-        4,
+        { searchesVersion: 4, postSearch: false },
       );
-      expect(result).toEqual({ created: 0, existing: 0, released: 0 });
+      expect(result).toEqual({
+        created: 0,
+        existing: 0,
+        released: 0,
+        skipped: 'not_published',
+      });
       expect(repository.rows).toHaveLength(0);
       expect(repository.links).toHaveLength(0);
+      expect(repository.searchesVersions.has(profileId)).toBe(false);
+    });
+
+    it('replace changes nothing when post search moved since the read', async () => {
+      const { service, repository, profileId } = await setup();
+      repository.published.add(profileId);
+      repository.postSearch.set(profileId, true);
+      await service.generate(profileId, profile);
+      const links = repository.links.length;
+      const result = await service.replace(profileId, [], {
+        searchesVersion: 4,
+        postSearch: false,
+      });
+      expect(result.skipped).toBe('post_search_changed');
+      expect(repository.links).toHaveLength(links);
       expect(repository.searchesVersions.has(profileId)).toBe(false);
     });
 
