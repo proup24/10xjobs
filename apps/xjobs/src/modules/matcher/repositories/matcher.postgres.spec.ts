@@ -884,6 +884,23 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
       );
     });
 
+    it('an unchanged outcome still records the new profileVersion and keeps decidedAt', async () => {
+      const p = await profile();
+      const j = await job();
+      await repo.upsertMatches([row(p, j, { outcome: 'rejected' })]);
+      const first = (await matchRow(p.id, j.id))!;
+      await new Promise((r) => setTimeout(r, 20));
+      const next = p.matchVersion + 1;
+      await setMatchVersion(p.id, next);
+      await repo.upsertMatches([
+        row(p, j, { outcome: 'rejected', profileVersion: next }),
+      ]);
+      const second = (await matchRow(p.id, j.id))!;
+      expect(second.profileVersion).toBe(next);
+      expect(second.profileVersion).not.toBe(first.profileVersion);
+      expect(second.decidedAt).toEqual(first.decidedAt);
+    });
+
     it('accepts an empty list', async () => {
       expect(await repo.upsertMatches([])).toEqual({ deliveryIds: [] });
     });

@@ -223,14 +223,12 @@ describe('published profiles are editable by their owner', () => {
     expect(error?.code).toBe(PRIVILEGE);
     expect(await row(id)).toEqual(before);
     const insertId = randomUUID();
-    const ins = await a.client
-      .from('profiles')
-      .insert({
-        id: insertId,
-        ...profileFields(),
-        userId: a.id,
-        [column]: value,
-      });
+    const ins = await a.client.from('profiles').insert({
+      id: insertId,
+      ...profileFields(),
+      userId: a.id,
+      [column]: value,
+    });
     expect(ins.error?.code).toBe(PRIVILEGE);
   });
 
@@ -266,5 +264,29 @@ describe('published profiles are editable by their owner', () => {
 
     expect(await row(id)).toEqual(profileBefore);
     expect(await skillRows(id)).toEqual(skillsBefore);
+  });
+
+  it('another user cannot insert a skill onto it', async () => {
+    const { id } = await published(a);
+    const skillsBefore = await skillRows(id);
+    const versionBefore = await version(id);
+
+    for (const userId of [b.id, a.id]) {
+      const attempt = await b.client
+        .from('profile_skills')
+        .insert({
+          id: randomUUID(),
+          userId,
+          profileId: id,
+          technology: 'rust',
+          domain: 'backend',
+          mastery: 5,
+        })
+        .select();
+      expect(attempt.error ? [] : attempt.data).toEqual([]);
+    }
+
+    expect(await skillRows(id)).toEqual(skillsBefore);
+    expect(await version(id)).toBe(versionBefore);
   });
 });
