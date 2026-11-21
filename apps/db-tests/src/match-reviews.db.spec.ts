@@ -107,7 +107,7 @@ describe('match_reviews and the review-aware match_details', () => {
     });
 
   /**
-   * The engine deciding the match again, as after a profile change: as the matcher's upsert,
+   * The engine deciding the match again on the same profile version: as the matcher's upsert,
    * decidedAt moves (to the database's now()) only when the outcome changes.
    */
   const redecide = (
@@ -119,8 +119,7 @@ describe('match_reviews and the review-aware match_details', () => {
       c.query(
         `UPDATE public.job_matches
             SET "decidedAt" = CASE WHEN outcome = $2 THEN "decidedAt" ELSE now() END,
-                outcome = $2, "reviewRule" = $3, "reviewField" = $4,
-                "profileUpdatedAt" = now()
+                outcome = $2, "reviewRule" = $3, "reviewField" = $4
           WHERE id = $1`,
         [matchId, outcome, review?.rule ?? null, review?.field ?? null],
       ),
@@ -232,6 +231,44 @@ describe('match_reviews and the review-aware match_details', () => {
     expect(data).toEqual([
       { choice: 'qualified', rule: 'seniority', field: 'seniority' },
     ]);
+  });
+
+  it("a choice records its match's profileVersion", async () => {
+    const m = await reviewMatch();
+    await withCatalog((c) =>
+      c.query(
+        `UPDATE public.job_matches SET "profileVersion" = 3 WHERE id = $1`,
+        [m.matchId],
+      ),
+    );
+    expect((await decide(a, m, 'qualified')).error).toBeNull();
+    const { data } = await admin()
+      .from('match_reviews')
+      .select('profileVersion')
+      .eq('matchId', m.matchId)
+      .single();
+    expect(data).toEqual({ profileVersion: 3 });
+  });
+
+  it('a choice stops applying once the match is re-decided on a newer version', async () => {
+    const m = await reviewMatch();
+    expect((await decide(a, m, 'qualified')).error).toBeNull();
+    expect(await listsOf(a, m.job.jobId)).toEqual(['qualified']);
+
+    // Re-decided on a newer profile version; outcome, rule and field are unchanged.
+    const { error } = await admin()
+      .from('job_matches')
+      .update({ profileVersion: 1 })
+      .eq('id', m.matchId);
+    expect(error).toBeNull();
+    expect(await listsOf(a, m.job.jobId)).toEqual(['review']);
+    expect(await rowOf(a, 'review', m.job.jobId)).toMatchObject({
+      reviewChoice: null,
+    });
+
+    // A new choice, made on the new version, applies.
+    expect((await decide(a, m, 'rejected')).error).toBeNull();
+    expect(await listsOf(a, m.job.jobId)).toEqual(['rejected']);
   });
 
   // R66: decidedAt moves only when the outcome changes.
