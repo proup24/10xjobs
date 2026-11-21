@@ -15,6 +15,7 @@ import {
 import { WebhookQueue } from 'src/infrastructure/jobs/steps/webhook';
 import { MatcherRepository, MatcherService } from 'src/modules/matcher';
 import { RatesService } from 'src/modules/rates';
+import { ProfileSearchSync } from 'src/modules/users';
 import { WorkerRuntimeService } from './runtime.service';
 import {
   RUN_SCHEDULES,
@@ -32,6 +33,7 @@ export class MatchWorkerService {
     private readonly runtime: WorkerRuntimeService,
     private readonly service: MatcherService,
     private readonly repo: MatcherRepository,
+    private readonly searches: ProfileSearchSync,
     private readonly matchQueue: MatchQueue,
     private readonly webhookQueue: WebhookQueue,
     private readonly rates: RatesService,
@@ -48,6 +50,7 @@ export class MatchWorkerService {
         const result = await processMatchJob(bullJob, {
           service: this.service,
           repo: this.repo,
+          searches: this.searches,
           queue: this.matchQueue,
           webhooks: this.webhookQueue,
         });

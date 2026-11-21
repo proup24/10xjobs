@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common';
 import { UnrecoverableError } from 'bullmq';
 import { z } from 'zod';
 import type { MatcherRepository, MatcherService } from 'src/modules/matcher';
+import type { ProfileSearchSync } from 'src/modules/users';
 import { MATCH_SWEEP } from './config';
 import { MATCH_JOB, MATCH_SWEEP_JOB, type MatchQueue } from './queue.service';
 
@@ -18,6 +19,7 @@ const logger = new Logger('MatchProcessor');
 export interface MatchJobDeps {
   service: Pick<MatcherService, 'matchJob'>;
   repo: Pick<MatcherRepository, 'listStaleJobs' | 'deleteInactive'>;
+  searches: Pick<ProfileSearchSync, 'applyPending'>;
   queue: Pick<MatchQueue, 'enqueue'>;
   webhooks: WebhookEnqueuer;
 }
@@ -48,10 +50,29 @@ export async function processMatchJob(
     return outcome;
   }
   if (job.name === MATCH_SWEEP_JOB) {
+    // Search sync is best effort: a failure must not stop the match sweep.
+    let searches: { applied: number; failed: number } | { error: string };
+    try {
+      searches = await deps.searches.applyPending();
+    } catch (error) {
+      logger.error(`Search sync failed: ${describeError(error)}`);
+      searches = { error: describeError(error) };
+    }
     const deleted = await deps.repo.deleteInactive();
     const stale = await deps.repo.listStaleJobs(MATCH_SWEEP.limit);
     for (const jobId of stale) await deps.queue.enqueue(jobId);
-    return { deleted, enqueued: stale.length };
+    return { searches, deleted, enqueued: stale.length };
   }
   throw new UnrecoverableError(`Unsupported job: ${job.name}`);
+}
+
+/** Code or class name only: an error message may quote profile content. */
+function describeError(error: unknown): string {
+  if (typeof error === 'object' && error !== null) {
+    const { code, sqlState } = error as { code?: unknown; sqlState?: unknown };
+    if (typeof code === 'string') return code;
+    if (typeof sqlState === 'string') return sqlState;
+    return error.constructor.name;
+  }
+  return typeof error;
 }
