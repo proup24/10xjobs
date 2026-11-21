@@ -236,6 +236,8 @@ model Profile {
   resumeUploadedAt   TimestamptzJsDate(3)?
   state              ProfileState          @default(draft)
   publishedAt        TimestamptzJsDate(3)?
+  // LinkedIn post search; only the engine writes it (no column grant).
+  postSearch         Boolean               @default(false)
   jobMatches         JobMatch[]
   webhookDeliveries  WebhookDelivery[]
   +Timestamps

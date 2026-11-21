@@ -63,7 +63,7 @@ export function decide(
   const checks: Check[] = [
     position,
     checkSeniority(doc, profile),
-    checkLocation(doc.openings, profile, ctx.places),
+    checkLocation(doc.openings, profile, ctx.places, doc.limitsBindPerson),
     stack.check,
     checkSalary(doc, profile, ctx.rates),
     checkCurrency(doc, profile),

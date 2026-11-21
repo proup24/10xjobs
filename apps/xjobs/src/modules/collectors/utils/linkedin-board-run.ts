@@ -1,24 +1,6 @@
-import type {
-  LinkedinJobBoardRunConfig,
-  SegmentQuery,
-  SegmentSearch,
-} from '../types/collector';
+import type { SegmentQuery, SegmentSearch } from '../types/collector';
 import { linkedinGroupKey } from '../providers/mappers/linkedin-job-board.mapper';
 import { SearchNotStartedError } from './search-not-started';
-
-/**
- * The most a LinkedIn job board run of `rows` rows may charge: the config's
- * charge cap, scaled by the rows asked for against its default row limit.
- */
-export function runChargeCapUsd(
-  config: Pick<
-    LinkedinJobBoardRunConfig,
-    'maxRunChargeUsd' | 'maxRowsPerSearch'
-  >,
-  rows: number,
-): number {
-  return (config.maxRunChargeUsd * rows) / config.maxRowsPerSearch;
-}
 
 /**
  * Builds a LinkedIn job board actor input for a segment that runs one search.

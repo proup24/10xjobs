@@ -205,6 +205,16 @@ export class ApifyActorProvider {
       .list({ desc: true, ...options });
   }
 
+  /** A run's log text, or null when it can't be read. */
+  async runLog(runId: string): Promise<string | null> {
+    try {
+      return (await this.client.log(runId).get()) ?? null;
+    } catch {
+      this.logger.warn(`Could not read the log of Apify run ${runId}`);
+      return null;
+    }
+  }
+
   /** Aborts a run; a run that is already gone is not an error. */
   async abortRun(runId: string): Promise<ActorRun | null> {
     try {

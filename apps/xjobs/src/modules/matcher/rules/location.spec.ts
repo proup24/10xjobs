@@ -31,7 +31,7 @@ const berlin = {
   cityId: 'berlin-id',
 };
 const outcome = (openings: Opening[], p = profile) =>
-  checkLocation(openings, p, idx).outcome;
+  checkLocation(openings, p, idx, true).outcome;
 
 describe('checkLocation', () => {
   it('passes remote anywhere because the profile is worldwide', () => {
@@ -57,16 +57,33 @@ describe('checkLocation', () => {
       ]),
     ).toBe('pass');
   });
-  it('fails an unwanted city when limited, unknown when merely mentioned', () => {
-    const o = (placeStrictness: Opening['placeStrictness']) =>
-      opening({ arrangements: ['onsite'], places: [berlin], placeStrictness });
-    expect(outcome([o('limit')])).toBe('fail');
-    expect(outcome([o('mention')])).toBe('unknown');
+  it('a mentioned place binds hybrid and onsite, not remote', () => {
+    const o = (arrangements: Opening['arrangements']) =>
+      opening({ arrangements, places: [berlin], placeStrictness: 'mention' });
+    const p = exampleProfile();
+    p.locations.remote = [{ kind: 'country', code: 'MA' }];
+    expect(outcome([o(['onsite'])], p)).toBe('fail');
+    expect(outcome([o(['hybrid'])], p)).toBe('fail');
+    expect(outcome([o(['remote'])], p)).toBe('unknown');
+  });
+  it('a mentioned office that fits passes', () => {
+    expect(
+      outcome([
+        opening({
+          arrangements: ['hybrid'],
+          places: [
+            berlin,
+            { kind: 'city', name: 'A', countryCode: 'MA', cityId: CITY_A },
+          ],
+          placeStrictness: 'mention',
+        }),
+      ]),
+    ).toBe('pass');
   });
   it('is unknown without places', () => {
     expect(outcome([opening({})])).toBe('unknown');
   });
-  it('caps a match on only unstated arrangements to unknown', () => {
+  it('an opening with no arrangement passes on an office place that fits', () => {
     expect(
       outcome([
         opening({
@@ -74,7 +91,80 @@ describe('checkLocation', () => {
           places: [
             { kind: 'city', name: 'A', countryCode: 'MA', cityId: CITY_A },
           ],
-          placeStrictness: 'limit',
+          placeStrictness: 'label',
+          placesSource: 'linkedin',
+        }),
+      ]),
+    ).toBe('pass');
+  });
+  it('an opening with no arrangement fails surely outside the office places, with its cause', () => {
+    const c = checkLocation(
+      [
+        opening({
+          arrangements: ['unstated'],
+          places: [berlin],
+          placeStrictness: 'label',
+          placesSource: 'linkedin',
+          confidence: 'unsure',
+        }),
+      ],
+      profile,
+      idx,
+      true,
+    );
+    expect(c).toMatchObject({ outcome: 'fail', unsure: false });
+    expect(c.reason).toBe(
+      'no source states the arrangement, so it is checked as office-based: job location (unstated in Berlin) does not fit your wanted arrangements (hybrid, onsite)',
+    );
+    const noHybrid = exampleProfile();
+    noHybrid.locations.hybrid = [];
+    expect(
+      checkLocation(
+        [
+          opening({
+            arrangements: ['unstated'],
+            places: [berlin],
+            placeStrictness: 'label',
+            placesSource: 'linkedin',
+            confidence: 'unsure',
+          }),
+        ],
+        noHybrid,
+        idx,
+        true,
+      ).reason,
+    ).toBe(
+      'no source states the arrangement, so it is checked as office-based: job location (unstated in Berlin) does not fit your wanted arrangements (onsite)',
+    );
+  });
+  it('an opening with no arrangement and no place is unknown with office places, fail without', () => {
+    const remoteOnly = exampleProfile();
+    remoteOnly.locations.hybrid = [];
+    remoteOnly.locations.onsite = [];
+    const bare = opening({ arrangements: ['unstated'] });
+    expect(outcome([bare])).toBe('unknown');
+    expect(outcome([bare], remoteOnly)).toBe('fail');
+  });
+  it('stated plus unstated keeps every arrangement', () => {
+    expect(
+      outcome([
+        opening({
+          arrangements: ['remote', 'unstated'],
+          places: [berlin],
+          placeStrictness: 'label',
+        }),
+      ]),
+    ).toBe('pass');
+  });
+  it('an opening with no arrangement and an unplaceable city is unknown', () => {
+    expect(
+      outcome([
+        opening({
+          arrangements: ['unstated'],
+          places: [
+            { kind: 'city', name: 'Nowhere', countryCode: null, cityId: null },
+          ],
+          placeStrictness: 'label',
         }),
       ]),
     ).toBe('unknown');
@@ -104,7 +194,7 @@ describe('checkLocation', () => {
   it('fails when the profile does not want the arrangement', () => {
     const p = exampleProfile();
     p.locations.remote = [];
-    const check = checkLocation([opening({})], p, idx);
+    const check = checkLocation([opening({})], p, idx, true);
     expect(check.outcome).toBe('fail');
     expect(check.reason).toContain('remote');
   });
@@ -118,7 +208,7 @@ describe('checkLocation', () => {
         ...edit,
       });
     const check = (openings: Opening[], p = profile) =>
-      checkLocation(openings, p, idx);
+      checkLocation(openings, p, idx, true);
 
     it('an unsure description place that does not fit is unsure', () => {
       expect(check([limited({ confidence: 'unsure' })])).toMatchObject({
@@ -126,6 +216,31 @@ describe('checkLocation', () => {
         unsure: true,
         unsureField: 'openings',
       });
+    });
+    it('a mentioned hybrid place that fails is sure, even on an unsure opening', () => {
+      expect(
+        check([
+          opening({
+            arrangements: ['hybrid'],
+            places: [berlin],
+            placeStrictness: 'mention',
+            confidence: 'unsure',
+          }),
+        ]),
+      ).toMatchObject({ outcome: 'fail', unsure: false, unsureField: null });
+    });
+    it('a mentioned hybrid place that fails stays unsure when the remote route fails on unsure time zones', () => {
+      expect(
+        check([
+          opening({
+            arrangements: ['hybrid', 'remote'],
+            places: [berlin],
+            placeStrictness: 'mention',
+            timezones: [{ fromUtc: 9, toUtc: 10, label: 'x' }],
+            confidence: 'unsure',
+          }),
+        ]),
+      ).toMatchObject({ outcome: 'fail', unsure: true });
     });
     it('a sure opening that does not fit is sure', () => {
       expect(check([limited({})])).toMatchObject({
@@ -237,7 +352,7 @@ describe('residence', () => {
   };
   const strict = (
     places: Opening['places'],
-    placeStrictness: Opening['placeStrictness'] = 'label',
+    placeStrictness: Opening['placeStrictness'] = 'limit',
   ) => opening({ places, placeStrictness });
   const resident = (
     residenceCountry: string | null,
@@ -249,8 +364,11 @@ describe('residence', () => {
     edit?.(p);
     return p;
   };
-  const check = (openings: Opening[], p: ReturnType<typeof exampleProfile>) =>
-    checkLocation(openings, p, ridx);
+  const check = (
+    openings: Opening[],
+    p: ReturnType<typeof exampleProfile>,
+    limitsBindPerson = true,
+  ) => checkLocation(openings, p, ridx, limitsBindPerson);
   const outcomeOf = (o: Opening, p: ReturnType<typeof exampleProfile>) =>
     check([o], p).outcome;
 
@@ -278,7 +396,18 @@ describe('residence', () => {
     },
   );
 
-  it('the Solvex case fails with the residence reason', () => {
+  it('the Solvex case (a label) passes; the same place as a limit fails on residence', () => {
+    const p = resident('MA', [], (x) => {
+      x.locations.remote = [region('UK')];
+    });
+    expect(check([strict([country('GB')], 'label')], p).outcome).toBe('pass');
+    expect(check([strict([country('GB')], 'limit')], p)).toMatchObject({
+      outcome: 'fail',
+      reason:
+        'job location (remote in GB, stated in the description) requires living there; you live in MA',
+    });
+  });
+  it('a limit fails with the residence reason and detail', () => {
     const p = resident('MA', [], (x) => {
       x.locations.remote = [region('UK')];
     });
@@ -339,17 +468,25 @@ describe('residence', () => {
         unsure: false,
       });
     });
-    it('are unknown when an on-site place fits', () => {
+    it('pass when an on-site place fits', () => {
       const p = resident('MA', [], (x) => {
         x.locations.onsite = [country('GB')];
       });
-      expect(check([unstated], p).outcome).toBe('unknown');
+      expect(check([unstated], p).outcome).toBe('pass');
     });
   });
-  it('limit is strict too', () => {
-    expect(outcomeOf(strict([country('GB')], 'limit'), resident('MA'))).toBe(
-      'fail',
+  it('a label is not checked against residence', () => {
+    expect(outcomeOf(strict([country('GB')], 'label'), resident('MA'))).toBe(
+      'pass',
     );
+  });
+  it('a label still binds residence on facts from before the cut-over', () => {
+    const c = check([strict([country('GB')], 'label')], resident('MA'), false);
+    expect(c).toMatchObject({
+      outcome: 'fail',
+      reason:
+        'job location (remote in GB, stated in the description) requires living there; you live in MA',
+    });
   });
   it("no residence keeps today's outcome", () => {
     const c = check([strict([country('GB')])], resident(null));

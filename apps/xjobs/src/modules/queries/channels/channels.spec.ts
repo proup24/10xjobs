@@ -2,7 +2,6 @@ import { ENGINEERING_ROLE_KINDS } from '@xjobs/database';
 import { Arrangement, Channel, Seniority, SkillDomain } from 'src/common/enums';
 import { locationKey } from '../steps/normalize';
 import type { QuerySearchCombination } from '../types';
-import { TECHNOLOGY_TERMS } from '../builders/keywords';
 import { AshbyQueryBuilder } from './ashbyhq.builder';
 import { GreenhouseQueryBuilder } from './greenhouse.builder';
 import { toRecipe } from '../builders/recipe';
@@ -24,7 +23,7 @@ const base: QuerySearchCombination = {
 };
 
 const build = (
-  channel: Channel,
+  channel: Exclude<Channel, Channel.LINKEDIN_POSTS>,
   overrides: Partial<QuerySearchCombination> = {},
 ) => CHANNEL_QUERY_BUILDERS[channel].build({ ...base, channel, ...overrides });
 
@@ -140,10 +139,10 @@ describe('LinkedIn job board builder', () => {
 
 describe('linkedinLevels', () => {
   it('splits a seniority into single f_E levels', () => {
-    expect(linkedinLevels(Seniority.junior)).toEqual(['1', '2']);
+    expect(linkedinLevels(Seniority.junior)).toEqual(['2']);
     expect(linkedinLevels(Seniority.mid)).toEqual(['3', '4']);
     expect(linkedinLevels(Seniority.senior)).toEqual(['4']);
-    expect(linkedinLevels(Seniority.staff)).toEqual(['4', '5']);
+    expect(linkedinLevels(Seniority.staff)).toEqual(['4']);
     expect(linkedinLevels(Seniority.lead)).toEqual(['4', '5']);
     expect(linkedinLevels(Seniority.principal)).toEqual(['4', '5']);
   });
@@ -186,58 +185,9 @@ describe('LinkedIn job board builder, role words and spellings', () => {
   });
 });
 
-describe('LinkedIn posts builder', () => {
-  it('puts seniority, remote and the location in the query, the actor having no filters', () => {
-    const query = build(Channel.LINKEDIN_POSTS, { location: 'morocco' });
-    expect(query.keyword).toBe(
-      `hiring ${TITLES} nestjs typescript senior remote morocco`,
-    );
-    expect(query.params).toEqual({});
-  });
-
-  it('leaves worldwide out of the query, in any case', () => {
-    for (const location of ['worldwide', locationKey('WorldWide')]) {
-      expect(build(Channel.LINKEDIN_POSTS, { location }).keyword).toBe(
-        `hiring ${TITLES} nestjs typescript senior remote`,
-      );
-    }
-  });
-
-  it('searches onsite and hybrid posts by location, with no word for mid-level', () => {
-    expect(
-      build(Channel.LINKEDIN_POSTS, { ...onsite, experience: Seniority.mid })
-        .keyword,
-    ).toBe(`hiring ${TITLES} nestjs typescript casablanca, morocco`);
-    expect(
-      build(Channel.LINKEDIN_POSTS, {
-        type: Arrangement.onsite,
-        location: 'europe',
-      }).keyword,
-    ).toBe(`hiring ${TITLES} nestjs typescript senior europe`);
-  });
-
-  it('stays within the actor limits of 500 characters and 5 operators', () => {
-    const longest = Object.keys(TECHNOLOGY_TERMS).reduce((a, b) =>
-      TECHNOLOGY_TERMS[a].length >= TECHNOLOGY_TERMS[b].length ? a : b,
-    );
-    for (const position of ENGINEERING_ROLE_KINDS) {
-      const { keyword } = build(Channel.LINKEDIN_POSTS, {
-        ...onsite,
-        position,
-        technologies: [longest],
-        location: 'x'.repeat(100),
-      });
-      expect(keyword.length).toBeLessThanOrEqual(500);
-      expect(keyword.match(/ (OR|AND|NOT) /g)?.length ?? 0).toBeLessThanOrEqual(
-        5,
-      );
-    }
-  });
-});
-
 describe('Greenhouse and Ashby builders', () => {
   it('search Google with titles, technologies, seniority, remote and the location', () => {
-    for (const channel of [Channel.GREEN_HOUSE, Channel.ASHBY]) {
+    for (const channel of [Channel.GREEN_HOUSE, Channel.ASHBY] as const) {
       expect(build(channel, { location: 'morocco' })).toEqual({
         keyword: `${TITLES} nestjs typescript senior "remote" "morocco"`,
         params: { remote: true },
@@ -284,6 +234,7 @@ describe('Greenhouse and Ashby builders', () => {
 describe('channel query builders', () => {
   it('registers a builder for every channel', () => {
     for (const channel of Object.values(Channel)) {
+      if (channel === Channel.LINKEDIN_POSTS) continue;
       expect(CHANNEL_QUERY_BUILDERS[channel].channel).toBe(channel);
     }
   });
@@ -320,15 +271,15 @@ describe('channel query builders', () => {
     expect({ ...trial, channel: main.channel, hash: main.hash }).toEqual(main);
   });
 
-  it('keeps the LinkedIn job board recipe hash it had before the trial channel', () => {
-    // Literal taken on the code before the trial channel existed.
+  it('pins the LinkedIn job board recipe hash', () => {
+    // A literal: it changes only when the recipe or its version does.
     const recipe = toRecipe({
       ...base,
       channel: Channel.LINKEDIN_JOB_BOARD,
       experienceLevel: '4',
     });
     expect(recipe.hash).toBe(
-      '3be04a3aaa389a4bbdd79eb56832247d0e59a2ae52bc92a9319ace16eae37427',
+      'd9ffdcc8d4f6f6b41bd02e0263f116829922b1f2a93ff1c3154122bf496f29f8',
     );
   });
 });

@@ -1,19 +1,28 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ErrorCode, ProfileState, SkillDomain } from 'src/common/enums';
+import {
+  Channel,
+  ErrorCode,
+  ProfileState,
+  SkillDomain,
+} from 'src/common/enums';
 import {
   QuerySearchService,
   type QuerySearchProfileInput,
 } from 'src/modules/queries';
 import { ProfilesRepository } from '../repositories/profiles.repository';
+import { postRecipes } from 'src/modules/queries/posts';
+import { PostSearchAccess } from './post-search-access';
 import { UsersService } from './users.service';
 import { allPlaces, placeTexts } from './place-labels';
 import type {
   PlaceLabels,
   PlacesByArrangement,
+  PostSearchView,
   ProfileView,
   ProfileWithSkills,
   PublishedProfileView,
@@ -36,6 +45,9 @@ export function toProfileView(profile: ProfileWithSkills): ProfileView {
     salaryMin,
     salaryCurrency,
     salaryPeriod,
+    // Engine-only switch: not part of the API shape.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    postSearch,
     ...columns
   } = profile;
   return {
@@ -145,10 +157,21 @@ function publishedConflict(): ConflictException {
 /** What regenerating published profiles needs. */
 export interface RegenerateDeps {
   profiles: Pick<ProfilesRepository, 'listPublished' | 'placeLabels'>;
+  /** Whether the user may have post builders; a switched-on profile of anyone else gets none. */
+  postsAllowed: (userId: string) => boolean;
   querySearch: Pick<
     QuerySearchService,
     'detach' | 'generate' | 'retireOutdated'
   >;
+}
+
+export interface RegenerateResult {
+  profiles: number;
+  retired: number;
+  /** Profiles with post search on that kept their post builders. */
+  postsKept: number;
+  /** Profiles with post search on whose owner is not listed: their post builders were not attached. */
+  postsDropped: number;
 }
 
 /**
@@ -162,17 +185,26 @@ export async function regeneratePublished(
     profile: ProfileWithSkills,
     labels: PlaceLabels,
   ) => QuerySearchProfileInput = toQuerySearchInput,
-): Promise<{ profiles: number; retired: number }> {
+): Promise<RegenerateResult> {
   const published = await deps.profiles.listPublished();
+  let postsKept = 0;
+  let postsDropped = 0;
   for (const profile of published) {
     // Labels first: a missing one throws before the profile loses its builders.
     const labels = await labelsFor(deps.profiles, profile);
+    const posts = profile.postSearch && deps.postsAllowed(profile.userId);
+    if (posts) postsKept += 1;
+    else if (profile.postSearch) postsDropped += 1;
     await deps.querySearch.detach(profile.id);
-    await deps.querySearch.generate(profile.id, toInput(profile, labels));
+    await deps.querySearch.generate(profile.id, toInput(profile, labels), {
+      posts,
+    });
   }
   return {
     profiles: published.length,
     retired: await deps.querySearch.retireOutdated(),
+    postsKept,
+    postsDropped,
   };
 }
 
@@ -183,6 +215,7 @@ export class ProfilesService {
     private readonly users: UsersService,
     private readonly profiles: ProfilesRepository,
     private readonly querySearch: QuerySearchService,
+    private readonly postSearch: PostSearchAccess,
   ) {}
 
   /** 404s an unknown user, or a profile that is not this user's. */
@@ -218,10 +251,11 @@ export class ProfilesService {
    * then retires the outdated builders nothing uses any more. Run once after a
    * recipe version bump; running it again changes nothing.
    */
-  async regeneratePublished(): Promise<{ profiles: number; retired: number }> {
+  async regeneratePublished(): Promise<RegenerateResult> {
     return regeneratePublished({
       profiles: this.profiles,
       querySearch: this.querySearch,
+      postsAllowed: (userId) => this.postSearch.allows(userId),
     });
   }
 
@@ -245,6 +279,7 @@ export class ProfilesService {
     const querySearches = await this.querySearch.generate(
       profile.id,
       toQuerySearchInput(profile, await labelsFor(this.profiles, profile)),
+      { posts: profile.postSearch && this.postSearch.allows(userId) },
     );
     const published = await this.profiles.publish(
       userId,
@@ -259,5 +294,75 @@ export class ProfilesService {
       return this.rejectWrite(userId, profile.id);
     }
     return { ...toProfileView(published), querySearches };
+  }
+
+  /** The switch, for any owner: stored value, whether the owner may turn it on, and the searches it gives. */
+  async postSearchStatus(
+    userId: string,
+    profileId: string,
+  ): Promise<PostSearchView> {
+    const profile = await this.getOrThrow(userId, profileId);
+    return this.postSearchView(userId, profile);
+  }
+
+  /**
+   * Turns post search on or off, the one change a published profile accepts.
+   * Only allow-listed users; on a published profile the post builders are
+   * attached or detached at once (a draft gets them when published).
+   */
+  async setPostSearch(
+    userId: string,
+    profileId: string,
+    enabled: boolean,
+  ): Promise<PostSearchView> {
+    const { postSearch: previous } = await this.getOrThrow(userId, profileId);
+    if (!this.postSearch.allows(userId))
+      throw new ForbiddenException({
+        message: 'Post search is not available for this account',
+        code: ErrorCode.POST_SEARCH_NOT_ALLOWED,
+      });
+    const profile = await this.profiles.setPostSearch(
+      userId,
+      profileId,
+      enabled,
+    );
+    if (!profile) throw new NotFoundException(PROFILE_NOT_FOUND);
+    if (profile.state === ProfileState.published) {
+      try {
+        if (enabled)
+          await this.querySearch.attachPosts(
+            profile.id,
+            toQuerySearchInput(
+              profile,
+              await labelsFor(this.profiles, profile),
+            ),
+          );
+        else
+          await this.querySearch.detachChannel(
+            profile.id,
+            Channel.LINKEDIN_POSTS,
+          );
+      } catch (error) {
+        // Keep the flag true to the builders: put it back before failing.
+        await this.profiles.setPostSearch(userId, profileId, previous);
+        throw error;
+      }
+    }
+    return this.postSearchView(userId, profile);
+  }
+
+  private async postSearchView(
+    userId: string,
+    profile: ProfileWithSkills,
+  ): Promise<PostSearchView> {
+    const input = toQuerySearchInput(
+      profile,
+      await labelsFor(this.profiles, profile),
+    );
+    return {
+      enabled: profile.postSearch,
+      allowed: this.postSearch.allows(userId),
+      searches: postRecipes(input).length,
+    };
   }
 }

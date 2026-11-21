@@ -76,6 +76,7 @@ const everyWorker = [
   'rates',
   'webhook',
   'collect-linkedin-job-board',
+  'collect-linkedin-posts',
 ];
 
 beforeEach(() => {

@@ -527,8 +527,7 @@ describe('CollectionService.collect', () => {
 });
 
 describe('CollectionService LinkedIn search splits', () => {
-  const ROWS = 100;
-  const CEILING = 1000;
+  const ROWS = 1000;
   const linkedin = (count: number) =>
     builders(count, {
       channel: Channel.LINKEDIN_JOB_BOARD,
@@ -538,7 +537,7 @@ describe('CollectionService LinkedIn search splits', () => {
   /** A full result: the row limit reached, every member truncated. */
   const full = (s: SegmentSearch) =>
     resultFor(s, () => [item(1)], {
-      fetched: s.maxItems ?? ROWS,
+      fetched: ROWS,
       truncatedQueryIds: s.queries.map((q) => q.id),
     });
   const small = (s: SegmentSearch) =>
@@ -551,10 +550,11 @@ describe('CollectionService LinkedIn search splits', () => {
   const searches = (collector: ReturnType<typeof setup>['collector']) =>
     collector.collect.mock.calls.map(([s]) => s);
 
-  it('uses the LinkedIn row limits', () => {
-    expect(channelJobsConfig[Channel.LINKEDIN_JOB_BOARD].run).toMatchObject({
+  it('uses one LinkedIn row limit of 1000 rows, with a $1.10 cap', () => {
+    expect(channelJobsConfig[Channel.LINKEDIN_JOB_BOARD].run).toEqual({
+      actor: 'harvestapi/linkedin-job-search',
       maxRowsPerSearch: ROWS,
-      maxRowsCeiling: CEILING,
+      maxRunChargeUsd: 1.1,
     });
   });
 
@@ -567,11 +567,9 @@ describe('CollectionService LinkedIn search splits', () => {
     const summary = await collection.collect(Channel.LINKEDIN_JOB_BOARD);
 
     expect(searches(collector).map(ids)).toEqual([[a, b], [a], [b]]);
-    expect(searches(collector).map((s) => s.maxItems)).toEqual([
-      undefined,
-      undefined,
-      undefined,
-    ]);
+    // Every run asks the collector's one row limit.
+    for (const s of searches(collector))
+      expect(s).not.toHaveProperty('maxItems');
     // Every run searches the same hour.
     const windows = new Set(
       searches(collector).map((s) => `${+s.since}-${+s.until}`),
@@ -687,47 +685,72 @@ describe('CollectionService LinkedIn search splits', () => {
     expect(splits.splits.get(segmentKey(rows[0]))?.parts).toBe(3);
   });
 
-  it('reruns a full single member once with maxItems at the ceiling', async () => {
+  it('moves the cursors of a full single member, runs nothing more, and says once that postings are lost', async () => {
     const rows = linkedin(1);
     const [a] = rows.map((r) => r.id);
-    const { collection, collector, segments, splits, warn } = run(rows, (s) =>
-      s.maxItems === CEILING ? small(s) : full(s),
-    );
+    const { collection, collector, segments, splits, warn } = run(rows, full);
     const summary = await collection.collect(Channel.LINKEDIN_JOB_BOARD);
 
-    expect(searches(collector).map((s) => s.maxItems)).toEqual([
-      undefined,
-      CEILING,
-    ]);
-    expect(searches(collector).map(ids)).toEqual([[a], [a]]);
-    expect(segments.collected.map((x) => x.advance)).toEqual([[], [a]]);
-    expect(warn).not.toHaveBeenCalledWith(
-      expect.stringContaining('older postings in this hour are lost'),
-    );
-    expect(summary).toMatchObject({ segments: 1, batches: 2 });
-    // A rerun is not a split.
-    expect(splits.splits.size).toBe(0);
-  });
-
-  it('moves the cursors of a member still full at the ceiling, and says once that postings are lost', async () => {
-    const rows = linkedin(1);
-    const [a] = rows.map((r) => r.id);
-    const { collection, collector, segments, warn } = run(rows, full);
-    await collection.collect(Channel.LINKEDIN_JOB_BOARD);
-
-    expect(collector.collect).toHaveBeenCalledTimes(2);
-    expect(segments.collected.map((x) => x.advance)).toEqual([[], [a]]);
+    expect(collector.collect).toHaveBeenCalledTimes(1);
+    expect(segments.collected.map((x) => x.advance)).toEqual([[a]]);
     expect(segments.cursors.get(a)).toEqual(
-      segments.collected[1]?.run.windowEnd,
+      segments.collected[0]?.run.windowEnd,
     );
     const lost = warn.mock.calls.filter(([text]) =>
       String(text).includes('older postings'),
     );
     expect(lost).toEqual([
       [
-        `${segmentKey(rows[0])} is full at ${CEILING} rows; older postings in this hour are lost`,
+        `${segmentKey(rows[0])} is full at 1000 rows; older postings in this hour are lost`,
       ],
     ]);
+    expect(summary).toMatchObject({ segments: 1, batches: 1 });
+    // A full single member is not a split.
+    expect(splits.splits.size).toBe(0);
+  });
+
+  it('does not say postings are lost when a full single member was capped, and keeps its cursors', async () => {
+    const rows = linkedin(1);
+    const { collection, segments, warn } = run(rows, (s) =>
+      resultFor(s, () => [item(1)], {
+        fetched: ROWS,
+        truncatedQueryIds: s.queries.map((q) => q.id),
+        capped: true,
+      }),
+    );
+    await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+
+    expect(segments.collected.map((x) => x.advance)).toEqual([[]]);
+    expect(
+      warn.mock.calls.filter(([text]) =>
+        String(text).includes('older postings'),
+      ),
+    ).toEqual([]);
+  });
+
+  it('treats a full run narrowed to one member by its claim as a single member', async () => {
+    const rows = linkedin(2);
+    const [a, b] = rows.map((r) => r.id);
+    const { collection, collector, segments, warn } = run(rows, full);
+    segments.claims.set(a, live());
+    const summary = await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+
+    expect(searches(collector).map(ids)).toEqual([[b]]);
+    expect(segments.collected.map((x) => x.advance)).toEqual([[b]]);
+    expect(segments.cursors.get(b)).toEqual(
+      segments.collected[0]?.run.windowEnd,
+    );
+    expect(segments.cursors.has(a)).toBe(false);
+    expect(
+      warn.mock.calls.filter(([text]) =>
+        String(text).includes('full at 1000 rows'),
+      ),
+    ).toHaveLength(1);
+    expect(summary).toMatchObject({
+      segments: 1,
+      batches: 1,
+      queriesSkipped: 1,
+    });
   });
 
   it('keeps cursors when a half fails, and moves the other half', async () => {
@@ -786,6 +809,21 @@ describe('CollectionService LinkedIn search splits', () => {
     ]);
     // Split under an hour ago: kept.
     expect(setParts).not.toHaveBeenCalled();
+  });
+
+  it('halves a remembered split over 90 minutes old once its searches return under 250 rows', async () => {
+    const rows = linkedin(4);
+    const { collection, splits } = run(rows, (s) =>
+      resultFor(s, () => [item(1)], { fetched: 200 }),
+    );
+    const key = segmentKey(rows[0]);
+    splits.splits.set(key, {
+      parts: 2,
+      splitAt: new Date(Date.now() - 2 * HOUR),
+    });
+    const setParts = vi.spyOn(splits, 'setParts');
+    await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+    expect(setParts).toHaveBeenCalledWith(key, 1, expect.any(Date));
   });
 
   it('halves a remembered split over an hour old once its searches run small', async () => {
@@ -912,7 +950,7 @@ describe('CollectionService daily budget', () => {
     });
   const full = (s: SegmentSearch, costUsd: number | null = 0.15) =>
     resultFor(s, () => [item(1)], {
-      fetched: s.maxItems ?? 100,
+      fetched: 1000,
       truncatedQueryIds: s.queries.map((q) => q.id),
       costUsd,
     });
@@ -981,12 +1019,12 @@ describe('CollectionService daily budget', () => {
     expect(summary).toMatchObject({ batches: 1, segmentsDeferred: 0 });
   });
 
-  it('counts a run with no reported cost at its charge cap', async () => {
+  it('counts a run with no reported cost at the $1.10 cap', async () => {
     const rows = [...linkedin(1), ...linkedin(1, 'europe')];
     const { collection, collector, segments } = run(
       rows,
       (s) => small(s, null),
-      0.25,
+      1.1,
     );
 
     const summary = await collection.collect(Channel.LINKEDIN_JOB_BOARD);
@@ -996,8 +1034,8 @@ describe('CollectionService daily budget', () => {
     expect(segments.collected).toHaveLength(1);
   });
 
-  it('counts earlier runs with no recorded cost at the base charge cap', async () => {
-    const { collection, collector, segments } = run(linkedin(1), small, 0.5);
+  it('counts earlier runs with no recorded cost at the $1.10 cap', async () => {
+    const { collection, collector, segments } = run(linkedin(1), small, 2.2);
     spend(segments, null);
     spend(segments, null);
 
@@ -1006,7 +1044,7 @@ describe('CollectionService daily budget', () => {
     expect(collector.collect).not.toHaveBeenCalled();
   });
 
-  it('stops a split rerun once the cap is reached, and moves no cursor for it', async () => {
+  it('stops a split half once the cap is reached, and moves no cursor for it', async () => {
     const rows = linkedin(2);
     const { collection, collector, segments, splits } = run(
       rows,
@@ -1039,32 +1077,18 @@ describe('CollectionService daily budget', () => {
           throw new Error('apify down');
         return full(s, 0.3);
       },
-      0.5,
+      1.3,
     );
 
     const summary = await collection.collect(Channel.LINKEDIN_JOB_BOARD);
 
-    // The failed run counts at its charge cap (0.25), the full search (0.30) reaches the cap; both halves are skipped.
+    // The failed run counts at its charge cap (1.10), the full search (0.30) reaches the cap; both halves are skipped.
     expect(collector.collect).toHaveBeenCalledTimes(2);
     expect(summary).toMatchObject({
       segmentsFailed: 1,
       batches: 1,
       segmentsDeferred: 2,
     });
-  });
-
-  it('leaves cursors of a full search when its single-member ceiling rerun is skipped', async () => {
-    const { collection, collector, segments } = run(
-      linkedin(1),
-      (s) => full(s, 0.3),
-      0.25,
-    );
-
-    const summary = await collection.collect(Channel.LINKEDIN_JOB_BOARD);
-
-    expect(collector.collect).toHaveBeenCalledTimes(1);
-    expect(summary.segmentsFailed).toBe(0);
-    expect(segments.cursors.size).toBe(0);
   });
 
   it('never charges a place with no geoId: the other search keeps running across ticks, and spend grows by its cost alone', async () => {
@@ -1117,7 +1141,7 @@ describe('CollectionService daily budget', () => {
     const spent = await segments.spentMicroUsd(
       Channel.LINKEDIN_JOB_BOARD,
       new Date(0),
-      250_000,
+      1_100_000,
     );
     expect(spent).toBe(400_000);
     const failed = segments.runs.filter((r) => r.status === 'failed');
@@ -1153,9 +1177,9 @@ describe('CollectionService daily budget', () => {
       await segments.spentMicroUsd(
         Channel.LINKEDIN_JOB_BOARD,
         new Date(0),
-        250_000,
+        1_100_000,
       ),
-    ).toBe(250_000);
+    ).toBe(1_100_000);
   });
 
   it('does not cap or read the spend of other channels', async () => {
@@ -1173,6 +1197,213 @@ describe('CollectionService daily budget', () => {
     expect(collector.collect).toHaveBeenCalledTimes(1);
     expect(summary.segmentsDeferred).toBe(0);
     expect(spent).not.toHaveBeenCalled();
+  });
+});
+
+describe('CollectionService posts budget and incomplete runs', () => {
+  const POSTS = Channel.LINKEDIN_POSTS;
+  const posts = (count: number, position = 'fullstack') =>
+    builders(count, {
+      channel: POSTS,
+      params: {
+        language: 'en',
+        position,
+        hiringWord: 'hiring',
+        positionWords: [position],
+        spellings: ['react'],
+        remote: true,
+      },
+    });
+  const spend = (
+    segments: ReturnType<typeof setup>['segments'],
+    costMicroUsd: number | null,
+  ) =>
+    segments.runs.push({
+      id: `spent-${segments.runs.length}`,
+      channel: POSTS,
+      segmentKey: 'k',
+      segmentHash: 'h',
+      queryIds: [],
+      windowStart: new Date(),
+      windowEnd: new Date(),
+      startedAt: new Date(),
+      finishedAt: new Date(),
+      status: 'succeeded',
+      fetched: 0,
+      costMicroUsd,
+      capped: false,
+      truncatedQueryIds: [],
+      perQuery: {},
+      searchTotals: null,
+      error: null,
+      apifyRunId: null,
+      costFinalAt: null,
+    });
+
+  it('reads its own budget setting', async () => {
+    const { collection, configGet } = setup(posts(1), undefined, POSTS, 1.5);
+    await collection.collect(POSTS);
+    expect(configGet).toHaveBeenCalledWith(
+      'COLLECTION_DAILY_BUDGET_USD_LINKEDIN_POSTS',
+      expect.anything(),
+    );
+  });
+
+  it('caps each posts run at the budget left', async () => {
+    const { collection, collector, segments } = setup(
+      posts(1),
+      undefined,
+      POSTS,
+      1.5,
+    );
+    spend(segments, 1_200_000);
+
+    await collection.collect(POSTS);
+
+    expect(collector.collect).toHaveBeenCalledTimes(1);
+    const [search] = collector.collect.mock.calls[0];
+    expect(Math.abs(search.maxChargeUsd! - 0.3)).toBeLessThan(1e-9);
+  });
+
+  it('lowers the next run of the tick by what the last one cost', async () => {
+    const { collection, collector } = setup(
+      [...posts(1), ...posts(1, 'backend')],
+      async (s) => resultFor(s, undefined, { costUsd: 1 }),
+      POSTS,
+      1.5,
+    );
+
+    await collection.collect(POSTS);
+
+    expect(collector.collect).toHaveBeenCalledTimes(2);
+    const limits = collector.collect.mock.calls.map(([s]) => s.maxChargeUsd!);
+    expect(limits[0]).toBeCloseTo(1.5, 9);
+    expect(limits[1]).toBeCloseTo(0.5, 9);
+  });
+
+  it('skips posts segments once less than a cent is left', async () => {
+    const { collection, collector, segments } = setup(
+      posts(1),
+      undefined,
+      POSTS,
+      1.5,
+    );
+    spend(segments, 1_495_000);
+
+    const summary = await collection.collect(POSTS);
+
+    expect(collector.collect).not.toHaveBeenCalled();
+    expect(summary).toMatchObject({
+      segmentsDeferred: 1,
+      batches: 0,
+      segmentsFailed: 0,
+    });
+    expect(segments.cursors.size).toBe(0);
+  });
+
+  it('starts no further run once a run left less than a cent', async () => {
+    const { collection, collector } = setup(
+      [...posts(1), ...posts(1, 'backend')],
+      async (s) => resultFor(s, undefined, { costUsd: 1.495 }),
+      POSTS,
+      1.5,
+    );
+
+    const summary = await collection.collect(POSTS);
+
+    expect(collector.collect).toHaveBeenCalledTimes(1);
+    expect(summary.segmentsDeferred).toBe(1);
+  });
+
+  it('stores an incomplete run without moving cursors', async () => {
+    const rows = posts(1);
+    const covered = new Date(Date.now() - 2 * 3_600_000);
+    rows[0]!.coveredUntil = covered;
+    const { collection, segments, ingestQueue, storage } = setup(
+      rows,
+      async (s) =>
+        resultFor(s, () => [item(1), item(2), item(3)], {
+          unattributed: [],
+          fetched: 3,
+          incomplete: 'no available resource',
+        }),
+      POSTS,
+      1.5,
+    );
+
+    const summary = await collection.collect(POSTS);
+
+    expect(summary).toMatchObject({ batches: 1, segmentsFailed: 0 });
+    expect(segments.collected).toHaveLength(1);
+    const { run, batch } = segments.collected[0]!;
+    expect(batch.itemCount).toBe(3);
+    expect(run).toMatchObject({
+      status: 'partial',
+      error: 'no available resource',
+    });
+    expect(ingestQueue.enqueue).toHaveBeenCalledWith(batch.id);
+    const file = parseBatchFile(
+      await storage.get(ingestConfig.bucket, batch.storageKey),
+    );
+    expect(file.itemsByQuery[rows[0]!.id]).toHaveLength(3);
+    expect(segments.cursors.get(rows[0]!.id)).toEqual(covered);
+    expect(segments.claims.size).toBe(0);
+  });
+
+  it('counts a posts run with no cost at 25 cents', async () => {
+    const { collection, segments } = setup(posts(1), undefined, POSTS, 1.5);
+    const spent = vi.spyOn(segments, 'spentMicroUsd');
+
+    await collection.collect(POSTS);
+
+    expect(spent).toHaveBeenCalledWith(POSTS, expect.any(Date), 250_000);
+  });
+
+  it('counts a posts fetch that throws at its full charge limit for the rest of the tick', async () => {
+    let calls = 0;
+    const { collection, collector, segments } = setup(
+      [...posts(1), ...posts(1, 'backend')],
+      async (s) => {
+        calls += 1;
+        if (calls === 1) throw new Error('apify down');
+        return resultFor(s);
+      },
+      POSTS,
+      1.5,
+    );
+    spend(segments, 1_000_000);
+
+    // Every run that happened failed, so the job fails too.
+    await expect(collection.collect(POSTS)).rejects.toThrow(
+      'LINKEDIN_POSTS collection failed for all 1 segments',
+    );
+
+    // The first run could have charged all $0.50 left: the second never starts.
+    expect(collector.collect).toHaveBeenCalledTimes(1);
+    expect(segments.runs).toHaveLength(2);
+    const failed = segments.runs.find((r) => r.status === 'failed')!;
+    expect(failed.costMicroUsd).toBeNull();
+  });
+
+  it('never splits or reruns a full posts run', async () => {
+    const rows = posts(2);
+    const { collection, collector, segments } = setup(
+      rows,
+      async (s) =>
+        resultFor(s, undefined, {
+          truncatedQueryIds: s.queries.map((q) => q.id),
+        }),
+      POSTS,
+      1.5,
+    );
+
+    const summary = await collection.collect(POSTS);
+
+    expect(collector.collect).toHaveBeenCalledTimes(1);
+    expect(summary.segments).toBe(1);
+    const { run } = segments.collected[0]!;
+    for (const row of rows)
+      expect(segments.cursors.get(row.id)).toEqual(run.windowEnd);
   });
 });
 
@@ -1287,7 +1518,11 @@ describe('CollectionService claims', () => {
     await collection.collect(Channel.LINKEDIN_POSTS);
 
     const [search] = collector.collect.mock.calls[0];
-    expect(search.since.getTime()).toBe(fresh.getTime() - 15 * 60_000);
+    const { overlapMinutes } = channelJobsConfig[Channel.LINKEDIN_POSTS].window;
+    expect(overlapMinutes).toBeGreaterThan(0);
+    expect(search.since.getTime()).toBe(
+      fresh.getTime() - overlapMinutes * 60_000,
+    );
   });
 
   it('releases claims and moves cursors on success', async () => {
@@ -1403,14 +1638,21 @@ describe('channelJobsConfig', () => {
     });
   });
 
-  it('collects LinkedIn posts hourly over a day at most', () => {
+  it('collects posts hourly every day', () => {
     expect(channelJobsConfig[Channel.LINKEDIN_POSTS]).toMatchObject({
-      schedule: { pattern: '0 8-22 * * 1-5', timezone: 'UTC' },
-      window: { initialHours: 24, overlapMinutes: 15, maximumHours: 24 },
+      queueName: 'collect-linkedin-posts',
+      enabled: true,
+      schedule: { pattern: '0 * * * *', timezone: 'Africa/Casablanca' },
+      concurrency: 1,
+      attempts: 1,
+      claimLeaseMinutes: 30,
+      run: { actor: 'harvestapi/linkedin-post-search', waitSecs: 900 },
     });
-    expect(channelJobsConfig[Channel.LINKEDIN_POSTS].window).not.toHaveProperty(
-      'minimumHours',
-    );
+    expect(channelJobsConfig[Channel.LINKEDIN_POSTS].window).toEqual({
+      initialHours: 24,
+      overlapMinutes: 5,
+      maximumHours: 24,
+    });
   });
 
   it('collects Google boards daily over at least three days', () => {
@@ -1463,7 +1705,7 @@ describe('CollectionService trial channel (cheap_scraper)', () => {
     });
   const full = (s: SegmentSearch, costUsd: number | null = 0.15) =>
     resultFor(s, () => [item(1)], {
-      fetched: s.maxItems ?? 100,
+      fetched: 1000,
       truncatedQueryIds: s.queries.map((q) => q.id),
       costUsd,
     });
@@ -1483,7 +1725,7 @@ describe('CollectionService trial channel (cheap_scraper)', () => {
     ).not.toHaveBeenCalled();
   });
 
-  it('reads its own budget setting and counts a null cost at $0.15', async () => {
+  it('reads its own budget setting and counts a null cost at $1.50', async () => {
     const rows = [
       ...cheapRows(1),
       ...builders(1, {
@@ -1492,13 +1734,13 @@ describe('CollectionService trial channel (cheap_scraper)', () => {
         params: { location: 'europe' },
       }),
     ];
-    // Between the trial's cap ($0.15) and harvestapi's ($0.25): the second
-    // segment runs only if the null-cost first run counted at $0.15.
+    // Between harvestapi's cap ($1.10) and the trial's ($1.50): the second
+    // segment is deferred only if the null-cost first run counted at $1.50.
     const { collection, collector, configGet, segments } = setup(
       rows,
       async (s) => small(s, null),
       CHEAP,
-      0.2,
+      1.3,
     );
     const spent = vi.spyOn(segments, 'spentMicroUsd');
     const summary = await collection.collect(CHEAP);
@@ -1510,12 +1752,12 @@ describe('CollectionService trial channel (cheap_scraper)', () => {
       'COLLECTION_DAILY_BUDGET_USD',
       expect.anything(),
     );
-    expect(spent).toHaveBeenCalledWith(CHEAP, expect.any(Date), 150_000);
-    expect(collector.collect).toHaveBeenCalledTimes(2);
-    expect(summary.segmentsDeferred).toBe(0);
+    expect(spent).toHaveBeenCalledWith(CHEAP, expect.any(Date), 1_500_000);
+    expect(collector.collect).toHaveBeenCalledTimes(1);
+    expect(summary.segmentsDeferred).toBe(1);
   });
 
-  it('counts a null cost at harvestapi cap of $0.25 on its own channel', async () => {
+  it('counts a null cost at harvestapi cap of $1.10 on its own channel', async () => {
     const { collection, segments } = setup(
       builders(1, {
         channel: Channel.LINKEDIN_JOB_BOARD,
@@ -1530,7 +1772,7 @@ describe('CollectionService trial channel (cheap_scraper)', () => {
     expect(spent).toHaveBeenCalledWith(
       Channel.LINKEDIN_JOB_BOARD,
       expect.any(Date),
-      250_000,
+      1_100_000,
     );
   });
 
@@ -1583,26 +1825,19 @@ describe('CollectionService trial channel (cheap_scraper)', () => {
     );
   });
 
-  it('splits a full result, then reruns one member at 1000 rows', async () => {
+  it('splits a full result into halves of 1000 rows each', async () => {
     const rows = cheapRows(2);
     const { collection, collector } = setup(
       rows,
-      async (s) =>
-        s.queries.length > 1 || s.maxItems === undefined ? full(s) : small(s),
+      async (s) => (s.queries.length > 1 ? full(s) : small(s)),
       CHEAP,
     );
     await collection.collect(CHEAP);
-    const calls = collector.collect.mock.calls.map(([s]) => [
-      s.queries.length,
-      s.maxItems,
-    ]);
-    expect(calls).toEqual([
-      [2, undefined],
-      [1, undefined],
-      [1, 1000],
-      [1, undefined],
-      [1, 1000],
-    ]);
+    const searched = collector.collect.mock.calls.map(([s]) => s);
+    expect(searched.map((s) => s.queries.length)).toEqual([2, 1, 1]);
+    // No search overrides the collector's one row limit of 1000.
+    for (const s of searched) expect(s).not.toHaveProperty('maxItems');
+    expect(channelJobsConfig[CHEAP].run.maxRowsPerSearch).toBe(1000);
   });
 
   it('remembers splits with the channel row limit and prunes its own channel', async () => {

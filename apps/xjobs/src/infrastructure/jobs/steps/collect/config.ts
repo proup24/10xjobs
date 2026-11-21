@@ -3,12 +3,12 @@ import {
   type ActorRunConfig,
   type BoardSearchRunConfig,
   type LinkedinJobBoardRunConfig,
-  type LinkedinPostsRunConfig,
   AshbyCollector,
   GreenhouseCollector,
   LinkedinJobBoardBebityCollector,
   LinkedinJobBoardCheapCollector,
   LinkedinJobBoardCollector,
+  type LinkedinPostsRunConfig,
   LinkedinPostsCollector,
 } from 'src/modules/collectors';
 import type { WindowConfig } from 'src/modules/segments';
@@ -52,6 +52,16 @@ const linkedinJobBoard = {
 } as const;
 
 /**
+ * Posts hourly every day over the day just gone, five minutes of overlap;
+ * each run's charge limit is what is left of the day's posts budget.
+ */
+const linkedinPosts = {
+  ...hourly,
+  schedule: { pattern: '0 * * * *', timezone: 'Africa/Casablanca' },
+  window: { initialHours: 24, overlapMinutes: 5, maximumHours: 24 },
+} as const;
+
+/**
  * Google indexes ATS pages hours to days after they are posted, so board
  * discovery runs daily over at least three days; ingest drops the overlap.
  */
@@ -88,8 +98,9 @@ export const channelJobsConfig = {
   },
   [Channel.LINKEDIN_POSTS]: {
     queueName: 'collect-linkedin-posts',
-    ...hourly,
-    enabled: ACTIVE_CHANNELS.includes(Channel.LINKEDIN_POSTS),
+    ...linkedinPosts,
+    // On by itself, under COLLECTION_DAILY_BUDGET_USD_LINKEDIN_POSTS, not through ACTIVE_CHANNELS.
+    enabled: true,
     run: LinkedinPostsCollector.config,
   },
   [Channel.GREEN_HOUSE]: {

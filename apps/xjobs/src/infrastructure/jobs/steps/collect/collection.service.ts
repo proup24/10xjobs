@@ -10,7 +10,6 @@ import {
   LinkedinJobBoardBebityCollector,
   LinkedinJobBoardCollector,
   type LinkedinJobBoardRunConfig,
-  runChargeCapUsd,
   LinkedinPostsCollector,
   SearchNotStartedError,
   type SegmentSearch,
@@ -53,12 +52,17 @@ export const COLLECT_JOB = 'collect';
  */
 const LINKEDIN_JOB_BOARD_TICK_LIMIT_MS = 60 * 60_000;
 
+/** What a posts run with no recorded cost counts as, until its cost is re-read. */
+const POSTS_NULL_COST_MICRO_USD = 250_000;
+/** A posts run is not started with less than this left of the day's budget. */
+const POSTS_MIN_LEFT_USD = 0.01;
+
 /** How one LinkedIn job board group fared in a tick, for its remembered split. */
 interface GroupTally {
   /** Segments the group ends the tick with. */
   chunks: number;
   split: boolean;
-  /** Most rows returned by a run that ended a branch. */
+  /** Most rows returned by a run that ended a branch (not held for halving). */
   maxReturned: number;
   /** False once a segment of the group failed, was skipped or deferred: its size is unknown. */
   measured: boolean;
@@ -66,9 +70,7 @@ interface GroupTally {
 
 /** How a run treats a full result. */
 interface RunOptions {
-  /** Rows the search may return; the collector's default when absent. */
-  maxItems?: number;
-  /** A full result is split or rerun: store it without moving cursors. */
+  /** A full result with more than one member is halved: store it without moving cursors. */
   holdIfFull: boolean;
   /** The day's budget, added to as the run ends; none for channels without a cap. */
   budget?: DailyBudget;
@@ -230,11 +232,13 @@ export class CollectionService {
   }
 
   /**
-   * Runs one segment and adds its outcome to the summary. A LinkedIn job board
-   * search that comes back full was stored without moving cursors: it is
-   * halved and each half run at once over the same hour, down to one member,
-   * which is rerun once at the ceiling row limit. Every run of a tick starts
-   * here, so a check before each run (shutdown, spend) covers splits too.
+   * Runs one segment and adds its outcome to the summary. Every LinkedIn job
+   * board run asks for the channel's one row limit. A full run of more than
+   * one member was stored without moving cursors: it is halved and each half
+   * run at once over the same hour, down to one member. A full run of one
+   * member moved its cursors like any other, and older postings of that hour
+   * are lost (unless it was capped, which keeps its cursors). Every run of a tick starts here, so a check before each run
+   * (shutdown, spend) covers splits too.
    */
   private async collectSegment(
     channel: Channel,
@@ -243,14 +247,18 @@ export class CollectionService {
     summary: CollectionSummary,
     group: GroupTally | undefined,
     budget: DailyBudget | undefined,
-    maxItems?: number,
   ): Promise<void> {
     if (this.stopping) {
       summary.segmentsDeferred += 1;
       if (group) group.measured = false;
       return;
     }
-    if (budget?.reached) {
+    if (
+      budget &&
+      (budget.reached ||
+        (channel === Channel.LINKEDIN_POSTS &&
+          budget.leftUsd < POSTS_MIN_LEFT_USD))
+    ) {
       // Not a failure: no run started and no cursor moved, so the next tick re-covers the window.
       this.logBudgetReached(channel, budget);
       summary.segmentsDeferred += 1;
@@ -258,10 +266,8 @@ export class CollectionService {
       return;
     }
     const splittable = isLinkedinJobBoard(channel);
-    const atCeiling = maxItems !== undefined;
     const outcome = await this.runSegment(channel, segment, until, {
-      maxItems,
-      holdIfFull: splittable && !atCeiling,
+      holdIfFull: splittable,
       budget,
     });
     summary.queriesSkipped += outcome.queriesSkipped;
@@ -279,17 +285,14 @@ export class CollectionService {
     }
     summary.batches += 1;
 
+    // Judged on the members the run searched: its claim may have dropped some.
     const searched = outcome.searched;
-    if (!splittable || !outcome.truncated || atCeiling || !searched) {
-      if (group)
-        group.maxReturned = Math.max(group.maxReturned, outcome.fetched);
-      if (splittable && outcome.truncated && atCeiling)
-        this.logger.warn(
-          `${segment.key} is full at ${maxItems} rows; older postings in this hour are lost`,
-        );
-      return;
-    }
-    if (searched.members.length > 1) {
+    if (
+      splittable &&
+      outcome.truncated &&
+      searched &&
+      searched.members.length > 1
+    ) {
       summary.segments += 1;
       if (group) {
         group.chunks += 1;
@@ -299,15 +302,12 @@ export class CollectionService {
         await this.collectSegment(channel, half, until, summary, group, budget);
       return;
     }
-    await this.collectSegment(
-      channel,
-      searched,
-      until,
-      summary,
-      group,
-      budget,
-      boardRun(channel).maxRowsCeiling,
-    );
+    if (group) group.maxReturned = Math.max(group.maxReturned, outcome.fetched);
+    // A capped run kept its cursors, so the next tick re-covers the hour: nothing is lost.
+    if (splittable && outcome.truncated && !outcome.capped)
+      this.logger.warn(
+        `${segment.key} is full at ${boardRun(channel).maxRowsPerSearch} rows; older postings in this hour are lost`,
+      );
   }
 
   /**
@@ -317,7 +317,7 @@ export class CollectionService {
    * read that fails keeps the stored cost and is retried by the next tick.
    */
   private async settleCosts(channel: Channel, now: Date): Promise<void> {
-    if (!isLinkedinJobBoard(channel)) return;
+    if (!hasDailyBudget(channel)) return;
     try {
       const unsettled = await this.segments.unsettledCosts(
         channel,
@@ -347,17 +347,17 @@ export class CollectionService {
     }
   }
 
-  /** A LinkedIn job board channel's spend today, read once per tick; other channels have no cap. */
+  /** A capped channel's spend today, read once per tick; other channels have no cap. */
   private async dailyBudget(
     channel: Channel,
     now: Date,
   ): Promise<DailyBudget | undefined> {
-    if (!isLinkedinJobBoard(channel)) return undefined;
+    if (!hasDailyBudget(channel)) return undefined;
     const dayStart = moroccoDayStart(now);
     const spent = await this.segments.spentMicroUsd(
       channel,
       dayStart,
-      chargeCapMicroUsd(channel),
+      nullCostMicroUsd(channel),
     );
     return new DailyBudget(
       this.config.get(budgetSetting(channel), { infer: true }),
@@ -512,6 +512,8 @@ export class CollectionService {
     let started = false;
     /** Started, and no cost reported yet. */
     let charged = false;
+    /** The charge limit a posts run was given. */
+    let maxChargeUsd: number | undefined;
 
     try {
       owned = narrow(segment, claim.claimed);
@@ -521,7 +523,16 @@ export class CollectionService {
         this.logger.warn(
           `Segment ${segment.key} was not collected for longer than ${config.window.maximumHours}h; older postings are not caught up`,
         );
-      const search = buildSearch(channel, owned, window, options.maxItems);
+      const search = buildSearch(
+        channel,
+        owned,
+        window,
+        // A posts run may charge only what is left of the day's budget.
+        channel === Channel.LINKEDIN_POSTS
+          ? options.budget?.leftUsd
+          : undefined,
+      );
+      maxChargeUsd = search.maxChargeUsd;
       run = buildRun(runId, owned, search, startedAt);
       // From here a paid run may exist, whatever happens next.
       started = true;
@@ -530,7 +541,7 @@ export class CollectionService {
       costUsd = result.costUsd ?? 0;
       options.budget?.add(
         result.costUsd == null
-          ? chargeCapMicroUsd(channel, options.maxItems)
+          ? runCapMicroUsd(channel, maxChargeUsd)
           : Math.round(result.costUsd * 1_000_000),
       );
       charged = false;
@@ -546,12 +557,22 @@ export class CollectionService {
         perQuery: perQuery(result),
         searchTotals: result.searchTotals ?? null,
       });
+      if (result.incomplete) {
+        // What it found is kept, but it did not search the whole window.
+        run.status = 'partial';
+        run.error = result.incomplete;
+        this.logger.warn(
+          `Segment ${segment.key} run is incomplete (${result.incomplete}); its ${result.fetched} rows are stored and the window is searched again next tick`,
+        );
+      }
       batch = buildBatch(search, result, run.id);
       const full = result.truncatedQueryIds.length > 0;
-      // A capped run may have stopped early, and a full one is searched again
-      // in pieces: keep their searches eligible.
+      // A capped or incomplete run may have stopped early, and a full one of
+      // several members is searched again in halves: keep their searches
+      // eligible.
+      const halved = full && options.holdIfFull && owned.members.length > 1;
       const advance =
-        run.capped || (full && options.holdIfFull) ? [] : run.queryIds;
+        run.capped || result.incomplete || halved ? [] : run.queryIds;
       collected = await this.saveBatch(batch, run, advance);
     } catch (error) {
       this.logger.warn(`Segment ${segment.key} failed: ${message(error)}`);
@@ -561,8 +582,7 @@ export class CollectionService {
         charged = false;
       }
       // A fetch that threw reported no cost: count what it could have charged.
-      if (charged)
-        options.budget?.add(chargeCapMicroUsd(channel, options.maxItems));
+      if (charged) options.budget?.add(runCapMicroUsd(channel, maxChargeUsd));
       const failed =
         run ??
         buildRun(
@@ -596,6 +616,7 @@ export class CollectionService {
       collected,
       costUsd,
       truncated: result.truncatedQueryIds.length > 0,
+      capped: run.capped,
       fetched: result.fetched,
       searched: owned,
     };
@@ -718,7 +739,10 @@ function budgetSetting(
 ):
   | 'COLLECTION_DAILY_BUDGET_USD'
   | 'COLLECTION_DAILY_BUDGET_USD_LINKEDIN_JOB_BOARD_CHEAP'
-  | 'COLLECTION_DAILY_BUDGET_USD_LINKEDIN_JOB_BOARD_BEBITY' {
+  | 'COLLECTION_DAILY_BUDGET_USD_LINKEDIN_JOB_BOARD_BEBITY'
+  | 'COLLECTION_DAILY_BUDGET_USD_LINKEDIN_POSTS' {
+  if (channel === Channel.LINKEDIN_POSTS)
+    return 'COLLECTION_DAILY_BUDGET_USD_LINKEDIN_POSTS';
   if (channel === Channel.LINKEDIN_JOB_BOARD_CHEAP)
     return 'COLLECTION_DAILY_BUDGET_USD_LINKEDIN_JOB_BOARD_CHEAP';
   if (channel === Channel.LINKEDIN_JOB_BOARD_BEBITY)
@@ -726,16 +750,42 @@ function budgetSetting(
   return 'COLLECTION_DAILY_BUDGET_USD';
 }
 
+/** Channels collected under a daily budget: the LinkedIn job boards and posts. */
+function hasDailyBudget(channel: Channel): boolean {
+  return isLinkedinJobBoard(channel) || channel === Channel.LINKEDIN_POSTS;
+}
+
+/** What a capped channel's run with no recorded cost counts as toward the day. */
+function nullCostMicroUsd(channel: Channel): number {
+  return channel === Channel.LINKEDIN_POSTS
+    ? POSTS_NULL_COST_MICRO_USD
+    : chargeCapMicroUsd(channel);
+}
+
 /**
- * The most a run of a LinkedIn job board channel of `maxItems` rows (the
- * default limit when absent) may charge; with no `maxItems` it is also what a
- * run with no recorded cost counts as.
+ * What a run that reported no cost adds to the tick's spend: a posts run its
+ * charge limit, a job board run its charge cap.
  */
-function chargeCapMicroUsd(channel: Channel, maxItems?: number): number {
-  const run = boardRun(channel);
-  return Math.round(
-    runChargeCapUsd(run, maxItems ?? run.maxRowsPerSearch) * 1_000_000,
-  );
+function runCapMicroUsd(
+  channel: Channel,
+  maxChargeUsd: number | undefined,
+): number {
+  if (channel === Channel.LINKEDIN_POSTS)
+    return Math.round(
+      Math.min(
+        maxChargeUsd ?? 0,
+        channelJobsConfig[Channel.LINKEDIN_POSTS].run.maxRunChargeUsd,
+      ) * 1_000_000,
+    );
+  return chargeCapMicroUsd(channel);
+}
+
+/**
+ * The most a run of a LinkedIn job board channel may charge, which is also
+ * what a run with no recorded cost counts as.
+ */
+function chargeCapMicroUsd(channel: Channel): number {
+  return Math.round(boardRun(channel).maxRunChargeUsd * 1_000_000);
 }
 
 function perQuery(result: SegmentResult): Record<string, SegmentQueryOutcome> {
@@ -751,7 +801,7 @@ function buildSearch(
   channel: Channel,
   segment: SearchSegment,
   window: SegmentWindow,
-  maxItems?: number,
+  maxChargeUsd?: number,
 ): SegmentSearch {
   return {
     channel,
@@ -763,7 +813,7 @@ function buildSearch(
       keyword: member.keyword,
       params: member.params as Record<string, unknown>,
     })),
-    ...(maxItems === undefined ? {} : { maxItems }),
+    ...(maxChargeUsd === undefined ? {} : { maxChargeUsd }),
   };
 }
 

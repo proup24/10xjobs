@@ -1,4 +1,3 @@
-import { Logger } from '@nestjs/common';
 import { Channel } from 'src/common/enums';
 import { SearchNotStartedError } from '../utils/search-not-started';
 import type { BoardSearchRunConfig, SegmentSearch } from '../types/collector';
@@ -10,7 +9,6 @@ import {
   mergedLinkedinKeyword,
   toHarvestJobSearchInput,
 } from './mappers/linkedin-job-board.mapper';
-import { LinkedinPostsCollector } from './linkedin-posts.collector';
 import { AshbyCollector } from './ashby.collector';
 import type { AshbyPostingProvider } from './extraction/ashby.provider';
 
@@ -41,7 +39,6 @@ const segment = (
 ): SegmentSearch => ({ channel, since, until, queries });
 
 const board = LinkedinJobBoardCollector.config;
-const posts = LinkedinPostsCollector.config;
 const ashby: BoardSearchRunConfig = {
   actor: 'apify/google-search-scraper',
   maxRunChargeUsd: 1,
@@ -95,10 +92,10 @@ describe('LinkedIn job board segment', () => {
       toHarvestJobSearchInput(
         mergedLinkedinKeyword(queries),
         queries[0].params,
-        100,
+        1000,
       ),
     );
-    expect(run.mock.calls[0][2]).toEqual({ maxChargeUsd: 0.25 });
+    expect(run.mock.calls[0][2]).toEqual({ maxChargeUsd: 1.1 });
     const expected = [
       { rank: 1, payload: item(1) },
       { rank: 2, payload: item(2) },
@@ -270,71 +267,32 @@ describe('LinkedIn job board segment', () => {
     expect(run).not.toHaveBeenCalled();
   });
 
-  it('scales maxItems and the charge cap with the segment row limit', async () => {
-    expect(board.maxRowsCeiling).toBe(1000);
+  it('asks for 1000 rows with a $1.10 cap', async () => {
     const { run, provider } = actor(() => []);
-    await board_(provider).collect({
-      ...segment(Channel.LINKEDIN_JOB_BOARD, queries),
-      maxItems: 1000,
-    });
+    await board_(provider).collect(
+      segment(Channel.LINKEDIN_JOB_BOARD, queries),
+    );
     expect(run.mock.calls[0][1]).toMatchObject({ maxItems: 1000 });
-    expect(run.mock.calls[0][2]).toEqual({ maxChargeUsd: 2.5 });
+    expect(run.mock.calls[0][2]).toEqual({ maxChargeUsd: 1.1 });
   });
 
-  it('counts the search as truncated at the row limit, or when LinkedIn reports more than came back', async () => {
-    const full = Array.from({ length: board.maxRowsPerSearch }, (_, i) =>
-      item(100 + i, board.maxRowsPerSearch),
-    );
+  it('counts the search as truncated at the row limit', async () => {
+    const full = Array.from({ length: 1000 }, (_, i) => item(100 + i, 5000));
     const atLimit = await board_(actor(() => full).provider).collect(
       segment(Channel.LINKEDIN_JOB_BOARD, queries),
     );
     expect(atLimit.truncatedQueryIds).toEqual(['qs-1', 'qs-2']);
-    expect(atLimit.itemsByQuery.get('qs-1')?.at(-1)?.rank).toBe(100);
-
-    const more = Array.from({ length: 30 }, (_, i) => item(i, 40));
-    const partial = await board_(actor(() => more).provider).collect(
-      segment(Channel.LINKEDIN_JOB_BOARD, queries),
-    );
-    expect(partial.truncatedQueryIds).toEqual(['qs-1', 'qs-2']);
-
-    const complete = Array.from({ length: 30 }, (_, i) => item(i, 30));
-    const whole = await board_(actor(() => complete).provider).collect(
-      segment(Channel.LINKEDIN_JOB_BOARD, queries),
-    );
-    expect(whole.truncatedQueryIds).toEqual([]);
+    expect(atLimit.itemsByQuery.get('qs-1')?.at(-1)?.rank).toBe(1000);
   });
 
-  it('warns when a run returned fewer rows than its limit while LinkedIn reports more', async () => {
-    const warn = vi
-      .spyOn(Logger.prototype, 'warn')
-      .mockImplementation(() => undefined);
-    try {
-      const more = Array.from({ length: 30 }, (_, i) => item(i, 40));
-      await board_(actor(() => more).provider).collect({
-        ...segment(Channel.LINKEDIN_JOB_BOARD, queries),
-        segmentKey: 'seg-k',
-      });
-      expect(warn).toHaveBeenCalledTimes(1);
-      expect(warn.mock.calls[0][0]).toBe(
-        'LinkedIn search seg-k returned 30 of 100 rows but reports 40 in total',
-      );
-
-      warn.mockClear();
-      // At the row limit, or with the total matched, nothing is said.
-      const full = Array.from({ length: board.maxRowsPerSearch }, (_, i) =>
-        item(i, 500),
-      );
-      await board_(actor(() => full).provider).collect(
-        segment(Channel.LINKEDIN_JOB_BOARD, queries),
-      );
-      const whole = Array.from({ length: 30 }, (_, i) => item(i, 30));
-      await board_(actor(() => whole).provider).collect(
-        segment(Channel.LINKEDIN_JOB_BOARD, queries),
-      );
-      expect(warn).not.toHaveBeenCalled();
-    } finally {
-      warn.mockRestore();
-    }
+  it('is full only at its row limit, whatever LinkedIn reports in total', async () => {
+    const some = Array.from({ length: 52 }, (_, i) => item(i, 400));
+    const result = await board_(actor(() => some).provider).collect({
+      ...segment(Channel.LINKEDIN_JOB_BOARD, queries),
+      segmentKey: 'seg-k',
+    });
+    expect(result.truncatedQueryIds).toEqual([]);
+    expect(result.searchTotals).toEqual({ totalElements: 400 });
   });
 
   it("keeps the first item's pagination as the search totals, null with no items", async () => {
@@ -360,56 +318,6 @@ describe('LinkedIn job board segment', () => {
       segment(Channel.LINKEDIN_JOB_BOARD, queries),
     );
     expect(unknown).toMatchObject({ costUsd: null, capped: false });
-  });
-});
-
-describe('LinkedIn posts segment', () => {
-  it('runs once with every query from the window start and attributes posts', async () => {
-    const queries = [
-      { id: 'qs-1', keyword: 'hiring backend nestjs remote', params: {} },
-      { id: 'qs-2', keyword: 'hiring backend go remote', params: {} },
-      { id: 'qs-3', keyword: 'hiring backend java remote', params: {} },
-    ];
-    const post = (id: string, search: string) => ({
-      id,
-      linkedinUrl: `https://www.linkedin.com/feed/update/urn:li:activity:${id}/`,
-      content: '\nWe are hiring\nengineers',
-      author: {
-        name: 'Jane',
-        type: 'profile',
-        linkedinUrl: 'https://www.linkedin.com/in/jane',
-      },
-      postedAt: { date: '2026-10-31T11:00:00Z' },
-      query: { search },
-    });
-    // qs-2 fills its post limit, so it is reported truncated.
-    const full = Array.from({ length: posts.maxPostsPerQuery }, (_, i) =>
-      post(String(100 + i), queries[1].keyword),
-    );
-    const { run, provider } = actor(() => [
-      ...full,
-      post('9', 'unknown query'),
-    ]);
-    const result = await new LinkedinPostsCollector(provider).collect(
-      segment(Channel.LINKEDIN_POSTS, queries),
-    );
-    expect(run).toHaveBeenCalledTimes(1);
-    expect(run.mock.calls[0][1]).toMatchObject({
-      searchQueries: queries.map((q) => q.keyword),
-      maxPosts: posts.maxPostsPerQuery,
-      postedLimitDate: since.toISOString(),
-      sortBy: 'date',
-    });
-    expect(result.itemsByQuery.get('qs-2')).toEqual(
-      full.map((payload) => ({ rank: null, payload })),
-    );
-    expect(result.itemsByQuery.get('qs-1')).toEqual([]);
-    expect(result.unattributed).toEqual([
-      { rank: null, payload: post('9', 'unknown query') },
-    ]);
-    expect(result.truncatedQueryIds).toEqual(['qs-2']);
-    expect(result.fetched).toBe(posts.maxPostsPerQuery + 1);
-    expect(result.source).toEqual({ actor: posts.actor, apifyRunId: 'run-1' });
   });
 });
 

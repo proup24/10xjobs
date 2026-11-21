@@ -3,6 +3,7 @@ import type { Channel } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
 import { QUERY_SEARCH_RECIPE_VERSION, toRecipe } from '../builders';
 import { roleWords } from '../builders/role-words';
+import { postRecipes } from '../posts';
 import { technologySets } from '../sets/technology';
 import { QuerySearchRepository } from '../repositories/queries.repository';
 import {
@@ -47,9 +48,26 @@ export class QuerySearchService {
   generate(
     profileId: string,
     input: QuerySearchProfileInput,
+    options?: { posts: boolean },
   ): Promise<QuerySearchAttachResult> {
-    const queries = this.expand(input);
+    const queries = [
+      ...this.expand(input),
+      ...(options?.posts ? postRecipes(input) : []),
+    ];
     return this.builders.attach(profileId, queries);
+  }
+
+  /** Attaches only the profile's LinkedIn post searches (the profile's post switch turned on). */
+  attachPosts(
+    profileId: string,
+    input: QuerySearchProfileInput,
+  ): Promise<QuerySearchAttachResult> {
+    return this.builders.attach(profileId, postRecipes(input));
+  }
+
+  /** Releases the profile's builders of one channel; other channels stay attached. */
+  detachChannel(profileId: string, channel: Channel): Promise<number> {
+    return this.builders.detachChannel(profileId, channel);
   }
 
   /** Releases every builder the profile uses: each loses one associated profile, inactive at 0. */

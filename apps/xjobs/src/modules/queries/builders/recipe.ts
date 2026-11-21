@@ -1,8 +1,9 @@
 import { createHash } from 'node:crypto';
+import { Channel } from 'src/common/enums';
 import type { QuerySearchCombination, QuerySearchRecipe } from '../types';
 import { CHANNEL_QUERY_BUILDERS } from '../channels';
 import { sortKeys } from '../utils';
-export const QUERY_SEARCH_RECIPE_VERSION = 12;
+export const QUERY_SEARCH_RECIPE_VERSION = 13;
 
 /** Hex SHA-256 of the recipe fields in a fixed key order; `params` keys are sorted recursively. */
 export function recipeHash(
@@ -25,6 +26,8 @@ export function recipeHash(
 export function toRecipe(
   combination: QuerySearchCombination,
 ): QuerySearchRecipe {
+  if (combination.channel === Channel.LINKEDIN_POSTS)
+    throw new Error('Post recipes are built by postRecipes');
   const query = CHANNEL_QUERY_BUILDERS[combination.channel].build(combination);
   const recipe = {
     ...combination,

@@ -18,6 +18,7 @@ describe('regeneratePublished', () => {
     ] as never[];
     const result = await regeneratePublished(
       {
+        postsAllowed: () => false,
         profiles: {
           listPublished: async () => published,
           placeLabels: noLabels,
@@ -47,7 +48,12 @@ describe('regeneratePublished', () => {
       'generate:p2',
       'retire',
     ]);
-    expect(result).toEqual({ profiles: 2, retired: 3 });
+    expect(result).toEqual({
+      profiles: 2,
+      retired: 3,
+      postsKept: 0,
+      postsDropped: 0,
+    });
   });
 
   it('looks up place labels, so a city place searches as "<name>, <country label>"', async () => {
@@ -72,6 +78,7 @@ describe('regeneratePublished', () => {
     const asked: unknown[] = [];
     const inputs: QuerySearchProfileInput[] = [];
     await regeneratePublished({
+      postsAllowed: () => false,
       profiles: {
         listPublished: async () => published,
         placeLabels: async (places) => {

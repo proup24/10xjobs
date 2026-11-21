@@ -41,7 +41,7 @@ A remote job whose description ties it to places qualifies only users who live i
 For an opening checked under the `remote` arrangement, the residence check applies when all of these hold:
 
 - `placesSource` is `description`.
-- `placeStrictness` is `label` or `limit` (a location line, a title place, or limiting words). Treating `label` as strict is the user's call.
+- `placeStrictness` is `label` or `limit` (a location line, a title place, or limiting words). Treating `label` as strict is the user's call. Reversed 2026-11-20 for extractions from 2026-11-20 14:50 UTC on: only `limit` binds, see 2026-11-20-non-remote-leak-design.md.
 - The user has at least one home place (below).
 
 It does not apply to `mention` or `unstated` openings, to openings whose places came from LinkedIn, or to the `hybrid` and `onsite` arrangements.

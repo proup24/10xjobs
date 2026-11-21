@@ -44,9 +44,25 @@ describe('syncCollectionScheduler', () => {
       maximumHours: 1,
     });
     expect(channelJobsConfig[Channel.LINKEDIN_POSTS]).toMatchObject({
-      schedule: { pattern: '0 8-22 * * 1-5', timezone: 'UTC' },
-      window: { overlapMinutes: 15 },
+      schedule: { pattern: '0 * * * *', timezone: 'Africa/Casablanca' },
+      window: { overlapMinutes: 5 },
     });
+  });
+
+  it('schedules posts every hour of every day, Morocco time', async () => {
+    const q = queue();
+    expect(
+      await syncCollectionScheduler(
+        q as never,
+        channelJobsConfig[Channel.LINKEDIN_POSTS],
+        true,
+      ),
+    ).toBe('scheduled');
+    expect(q.upsertJobScheduler).toHaveBeenCalledWith(
+      'collect',
+      { pattern: '0 * * * *', tz: 'Africa/Casablanca' },
+      { name: 'collect', opts: { attempts: 1 } },
+    );
   });
 
   it('removes the scheduler when the channel is disabled', async () => {

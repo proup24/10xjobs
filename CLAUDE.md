@@ -27,14 +27,14 @@ Precision over volume: prefer a tailored application over a fast one.
 - `npx nx worker-processor xjobs`: run the processor worker alone (needs `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY`).
 - `npx nx worker-match xjobs`: run the match worker alone.
 - `npx nx worker-webhook xjobs`: run the webhook worker alone (sends the users' match webhooks; registers its sweep only with `XJOBS_RUN_SCHEDULES=1`, set on the hosted engine).
-- `npx nx worker-<channel> xjobs` (`linkedin-job-board`, `linkedin-job-board-cheap`, `linkedin-job-board-bebity`, `linkedin-posts`, `greenhouse`, `ashby`): run one channel's scheduled collection worker (registers schedules only with `XJOBS_RUN_SCHEDULES=1`, set on the hosted engine; `linkedin-job-board-cheap` and `linkedin-job-board-bebity` are trials that also need their channel in `COLLECTION_TRIAL_CHANNELS`).
+- `npx nx worker-<channel> xjobs` (`linkedin-job-board`, `linkedin-job-board-cheap`, `linkedin-job-board-bebity`, `linkedin-posts`, `greenhouse`, `ashby`): run one channel's scheduled collection worker (registers schedules only with `XJOBS_RUN_SCHEDULES=1`, set on the hosted engine; `linkedin-job-board-cheap` and `linkedin-job-board-bebity` are trials that also need their channel in `COLLECTION_TRIAL_CHANNELS`; `linkedin-posts` runs hourly, every day, and needs a published profile with post search on whose owner is in `POST_SEARCH_USERS`).
 - `npx nx run-many -t lint test build typecheck`: what CI runs.
 - `npx nx test xjobs`: unit tests for the engine.
 - `npx nx e2e xjobs-e2e`: e2e tests.
 - `pnpm db:migrate`: apply migrations (local only unless `XJOBS_ALLOW_REMOTE_DB=1`).
 - `pnpm db:seed`: seed the database (same guard).
 - `pnpm users link <email>`: print a sign-in link without sending email.
-- `pnpm --filter @xjobs/xjobs db:regenerate`: move published profiles to the current query recipe; run once after a recipe version bump.
+- `pnpm --filter @xjobs/xjobs db:regenerate`: move published profiles to the current query recipe; run once after a recipe version bump; needs `POST_SEARCH_USERS` set where you run it, or switched-on profiles lose their post builders.
 - `pnpm --filter @xjobs/xjobs db:renormalize`: rebuild normalized jobs from raw storage; run once after a `NORMALIZER_VERSION` bump.
 - `pnpm --filter @xjobs/xjobs db:reprocess -- <flags>`: send in-scope jobs back to the processor (`--null-status`, `--failed`, `--all-in-scope`, `--job <id>`); run after a prompt, schema or model change.
 - `pnpm --filter @xjobs/xjobs db:archive-actor -- --actor <name> [--dry-run]`: archive every job seen only in that Apify actor's batches and delete their matches (one transaction; run `--dry-run` first; remote needs `XJOBS_ALLOW_REMOTE_DB=1`). Nothing un-archives a job except a new ingest observation.
@@ -45,6 +45,8 @@ Precision over volume: prefer a tailored application over a fast one.
 - `pnpm --filter @xjobs/xjobs db:spellings -- --days <n> [--check-totals [--dry-run]]`: read-only report from recent processed LinkedIn jobs (default 7 days) of search spellings worth adding per technology, spellings that never earn their place, and engineering titles missing the role words searched. `--check-totals` makes paid 3-row Apify runs for each suggestion (capped at $0.10 per invocation, off by default; only the maintainer runs it, use `--dry-run` to see the spend).
 - `pnpm --filter @xjobs/xjobs db:match-shares -- --days <n>`: share of decisions (job × profile) per outcome (default 7 days by last write, current matcher version), and for `review` the share per rule and field; review must stay the exception.
 - `pnpm --filter @xjobs/xjobs db:actor-compare -- [--since <iso> | --days <n>]`: read-only report comparing every pair of the LinkedIn job-board actors (harvestapi, cheap_scraper, bebity; credited by batch actor) per Morocco day and in total, counting overlap only on the (search group, Morocco-hour tick) cells both actors ran: overlap and lead time, cells not run and why (skipped, not started, failed, capped), jobs seen by one, two or three actors, outcomes and decisions per pair group, cost per qualified job, field coverage, AI-search contradictions and rewrites, joined jobs reusing extractions (`--since` defaults to the first trial batch).
+- `pnpm --filter @xjobs/xjobs db:place-coverage -- [--days <n>] [--actor <name>]`: read-only report (default 7 days, harvestapi) of each LinkedIn search place's runs, cost and jobs, and the jobs only that place finds with their best match outcome, by arrangement type and by seniority level.
+- `pnpm --filter @xjobs/xjobs db:split-check -- [--group <key>] [--dry-run]`: PAID, maintainer-only one-off check that halving a LinkedIn search group keeps at least 95% of the merged search's jobs (three harvestapi runs of at most 150 rows over 24 hours, at most $0.48 reserved). Run `--dry-run` first: it prints the group, the three keywords and the reserved spend without any Apify call.
 - `pnpm --filter @xjobs/xjobs processor:eval`: run the processor against the golden set.
 - `npm run test:hooks`: tests for the `.claude/hooks` scripts.
 

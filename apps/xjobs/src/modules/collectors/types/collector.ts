@@ -30,10 +30,10 @@ export interface SegmentSearch {
   since: Date;
   until: Date;
   queries: SegmentQuery[];
-  /** Rows this search may return; the LinkedIn collector uses it in place of `maxRowsPerSearch`. */
-  maxItems?: number;
   /** The segment's key, for log lines only. */
   segmentKey?: string;
+  /** The run's charge limit in USD; the posts collector refuses to start without it. */
+  maxChargeUsd?: number;
 }
 
 /** What one segment run collected, per member builder, untouched. */
@@ -57,6 +57,11 @@ export interface SegmentResult {
   capped: boolean;
   /** Members whose search reached its row limit. */
   truncatedQueryIds: string[];
+  /**
+   * Why the results may be missing some posts (a failure the actor logged but
+   * did not report); set, the run is stored but no cursor moves.
+   */
+  incomplete?: string | null;
 }
 
 /** How a channel's actor runs; the values live in the channel's job config. */
@@ -68,18 +73,18 @@ export interface ActorRunConfig {
   memoryMbytes?: number;
 }
 
-export interface LinkedinJobBoardRunConfig extends ActorRunConfig {
-  /**
-   * Rows one search may return, sent as the run's `maxItems` (a run carries
-   * one search); a search that returns this many counts as truncated.
-   */
-  maxRowsPerSearch: number;
-  /** The most rows a segment's `maxItems` may ask for. */
-  maxRowsCeiling: number;
+export interface LinkedinPostsRunConfig extends ActorRunConfig {
+  /** How long to wait for the run before aborting it, in seconds. */
+  waitSecs: number;
 }
 
-export interface LinkedinPostsRunConfig extends ActorRunConfig {
-  maxPostsPerQuery: number;
+export interface LinkedinJobBoardRunConfig extends ActorRunConfig {
+  /**
+   * Rows every search asks for, sent as the run's row limit (a run carries
+   * one search); a search that returns this many is full. `maxRunChargeUsd`
+   * covers a run of this many rows.
+   */
+  maxRowsPerSearch: number;
 }
 
 /** Greenhouse and Ashby postings are discovered through Google. */

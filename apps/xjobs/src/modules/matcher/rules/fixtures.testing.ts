@@ -96,6 +96,8 @@ export function factsDoc(
     listing: listingFacts(EMPTY_LISTING, EMPTY_VOCAB),
     vocab: EMPTY_VOCAB,
     now: new Date('2026-11-12T00:00:00Z'),
+    // Before the cut-over: a label binds residence, as every fixture was written for.
+    extractedAt: new Date('2026-11-12T00:00:00Z'),
     descriptionText: null,
   });
   const doc = structuredClone(facts);

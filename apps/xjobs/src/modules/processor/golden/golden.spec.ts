@@ -138,8 +138,8 @@ describe('convertGoldenCase', () => {
       expect(convertGoldenCase(structuredClone(c))).toEqual(c);
   });
 
-  it('holds all 73 cases in the converted shape', () => {
-    expect(cases).toHaveLength(73);
+  it('holds all 82 cases in the converted shape', () => {
+    expect(cases).toHaveLength(82);
     for (const c of cases) {
       expect(c.expected).not.toHaveProperty('mainStack');
       expect(Array.isArray(c.expected.requirements)).toBe(true);

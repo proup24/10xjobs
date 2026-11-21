@@ -4,7 +4,8 @@ import type { Channel } from 'src/common/enums';
 import { DatabaseService, type SearchSegmentRunRow } from 'src/database';
 
 /** Whether the segment's results were collected and stored; ingest has its own status. */
-export type SegmentRunStatus = 'succeeded' | 'failed';
+/** `partial`: stored, but the actor said it did not finish; cursors stay. */
+export type SegmentRunStatus = 'succeeded' | 'partial' | 'failed';
 
 /** Per member builder: how many items its query returned. */
 export interface SegmentQueryOutcome {

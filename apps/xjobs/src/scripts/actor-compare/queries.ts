@@ -193,7 +193,7 @@ export async function loadSegmentRuns(
       costMicroUsd: r.costMicroUsd,
       queryIds: r.queryIds,
       truncatedQueryIds: r.truncatedQueryIds,
-      atCeiling: r.rows >= ceilingRows(r.channel),
+      atCeiling: atCeiling(r.channel, r.rows),
       rows: r.rows,
       sentKeyword: actor === HARVEST_ACTOR ? null : sentKeyword(r.members),
       echoedKeywords: [...new Set(r.echoed.map(stripLocation))],
@@ -202,18 +202,18 @@ export async function loadSegmentRuns(
 }
 
 /**
- * The channel's `maxRowsCeiling`. A run row stores what it fetched, not the
- * rows it asked for; a run held for splitting asks `maxRowsPerSearch`, far
- * below the ceiling, so only a ceiling run can fetch this many.
+ * A run of `rows` rows returned its channel's one row limit
+ * (`maxRowsPerSearch`). A run row stores what it fetched, not the rows it
+ * asked for; every run asks this many, so only a full run fetches this many.
  */
-function ceilingRows(channel: string): number {
+export function atCeiling(channel: string, rows: number): boolean {
   const config = (
     channelJobsConfig as Record<
       string,
-      { run?: { maxRowsCeiling?: number } } | undefined
+      { run?: { maxRowsPerSearch?: number } } | undefined
     >
   )[channel];
-  return config?.run?.maxRowsCeiling ?? Number.POSITIVE_INFINITY;
+  return rows >= (config?.run?.maxRowsPerSearch ?? Number.POSITIVE_INFINITY);
 }
 
 /**

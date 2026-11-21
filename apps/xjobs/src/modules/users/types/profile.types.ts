@@ -56,7 +56,8 @@ export type HiddenProfileColumns =
   | 'contractTypes'
   | 'salaryMin'
   | 'salaryCurrency'
-  | 'salaryPeriod';
+  | 'salaryPeriod'
+  | 'postSearch';
 
 export type ProfileView = Omit<ProfileRow, HiddenProfileColumns> & {
   locations: PlacesByArrangement;
@@ -77,4 +78,13 @@ export type ProfileView = Omit<ProfileRow, HiddenProfileColumns> & {
 
 export type PublishedProfileView = ProfileView & {
   querySearches: QuerySearchAttachResult;
+};
+
+/** The post search switch as the web app reads it. */
+export type PostSearchView = {
+  enabled: boolean;
+  /** Whether the owner is on the engine's allow-list. */
+  allowed: boolean;
+  /** How many LinkedIn post searches the profile would get. */
+  searches: number;
 };

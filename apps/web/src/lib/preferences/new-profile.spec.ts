@@ -71,6 +71,7 @@ function storedRow(): ProfileRow {
     userId: U,
     state: 'published',
     publishedAt: '2026-11-08T00:00:00Z',
+    postSearch: false,
     resumeFilename: null,
     resumeKey: null,
     resumeSha256: null,
