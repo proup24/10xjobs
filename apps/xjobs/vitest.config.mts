@@ -65,8 +65,11 @@ export default defineConfig(() => ({
             '{src,tests}/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
           ],
           exclude: ['**/node_modules/**', WIRING_SPECS],
-          // The PostgreSQL specs truncate one shared database, so they cannot overlap.
-          fileParallelism: !process.env.PROCESSOR_TEST_DATABASE_URL,
+          // The PostgreSQL specs truncate shared databases, so they cannot overlap.
+          fileParallelism: !(
+            process.env.PROCESSOR_TEST_DATABASE_URL ||
+            process.env.INGEST_TEST_DATABASE_URL
+          ),
         },
       },
       {

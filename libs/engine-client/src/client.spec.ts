@@ -330,3 +330,272 @@ describe('engine client post search', () => {
     });
   });
 });
+
+describe('engine client admin review', () => {
+  const author = {
+    key: 'profile:jane',
+    name: 'Jane',
+    headline: 'CTO',
+    profileUrl: 'https://www.linkedin.com/in/jane',
+  };
+  const drop = {
+    rawItemId: 'r1',
+    reason: 'prepare: hashtag-spam: "#hiring #hiring"',
+    rule: 'hashtag-spam',
+    match: '#hiring #hiring',
+    postedAt: '2026-11-20T10:00:00.000Z',
+    url: 'https://www.linkedin.com/posts/1',
+    author,
+  };
+  const held = {
+    jobId: 'j1',
+    url: 'https://www.linkedin.com/posts/2',
+    author,
+    postedAt: null,
+  };
+  const silenced = {
+    id: 's1',
+    authorKey: 'profile:jane',
+    name: 'Jane',
+    reason: 'spam',
+    origin: 'manual',
+    evidence: null,
+    createdBy: 'u1',
+    createdAt: '2026-11-20T10:00:00.000Z',
+  };
+  const ok = (data: unknown, status = 200) =>
+    json(status, { status: 'success', data });
+
+  function expectAuth(init: RequestInit | undefined) {
+    const headers = new Headers(init?.headers);
+    expect(headers.get('x-engine-key')).toBe(KEY);
+    expect(headers.get('authorization')).toBe(`Bearer ${TOKEN}`);
+  }
+
+  it('adminMe sends GET /api/admin/me', async () => {
+    const { client, fetchMock } = setup(() => ok({ admin: true }));
+    expect(await client.adminMe()).toEqual({
+      kind: 'ok',
+      data: { admin: true },
+    });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('http://engine.test/api/admin/me');
+    expect(init?.method).toBe('GET');
+    expectAuth(init);
+  });
+
+  it('adminMe with a bad body → unavailable', async () => {
+    const { client } = setup(() => ok({ admin: 'yes' }));
+    expect(await client.adminMe()).toEqual({ kind: 'unavailable' });
+  });
+
+  it('prepareDrops sends the rule, cursor and limit as query params', async () => {
+    const { client, fetchMock } = setup(() =>
+      ok({ items: [drop], next: 'abc' }),
+    );
+    expect(
+      await client.prepareDrops({
+        rule: 'hashtag spam',
+        before: 'cur/sor=',
+        limit: 20,
+      }),
+    ).toEqual({ kind: 'ok', data: { items: [drop], next: 'abc' } });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe(
+      'http://engine.test/api/admin/prepare/drops?rule=hashtag+spam&before=cur%2Fsor%3D&limit=20',
+    );
+    expect(init?.method).toBe('GET');
+    expect(init?.body).toBeUndefined();
+    expectAuth(init);
+  });
+
+  it('prepareDrops with no options sends no query', async () => {
+    const { client, fetchMock } = setup(() => ok({ items: [], next: null }));
+    expect(await client.prepareDrops()).toEqual({
+      kind: 'ok',
+      data: { items: [], next: null },
+    });
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      'http://engine.test/api/admin/prepare/drops',
+    );
+  });
+
+  it('prepareDrops with a malformed page → unavailable', async () => {
+    const { client } = setup(() => ok({ items: [{ rawItemId: 1 }], next: 1 }));
+    expect(await client.prepareDrops()).toEqual({ kind: 'unavailable' });
+  });
+
+  it('silencedPosts sends GET …/prepare/silenced-posts with the cursor', async () => {
+    const { client, fetchMock } = setup(() =>
+      ok({ items: [held], next: null }),
+    );
+    expect(await client.silencedPosts({ before: 'j0', limit: 5 })).toEqual({
+      kind: 'ok',
+      data: { items: [held], next: null },
+    });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe(
+      'http://engine.test/api/admin/prepare/silenced-posts?before=j0&limit=5',
+    );
+    expect(init?.method).toBe('GET');
+    expectAuth(init);
+  });
+
+  it('silencedAuthors sends GET /api/admin/silenced-authors', async () => {
+    const { client, fetchMock } = setup(() => ok([silenced]));
+    expect(await client.silencedAuthors()).toEqual({
+      kind: 'ok',
+      data: [silenced],
+    });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('http://engine.test/api/admin/silenced-authors');
+    expect(init?.method).toBe('GET');
+    expectAuth(init);
+  });
+
+  it('silencedAuthors with a non-array → unavailable', async () => {
+    const { client } = setup(() => ok({}));
+    expect(await client.silencedAuthors()).toEqual({ kind: 'unavailable' });
+  });
+
+  it('silenceAuthor POSTs the key, name and reason; 201 → silenced', async () => {
+    const { client, fetchMock } = setup(() => ok({ status: 'silenced' }, 201));
+    expect(
+      await client.silenceAuthor({
+        authorKey: 'profile:jane',
+        name: 'Jane',
+        reason: 'spam',
+      }),
+    ).toEqual({ kind: 'ok', data: { status: 'silenced' } });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('http://engine.test/api/admin/silenced-authors');
+    expect(init?.method).toBe('POST');
+    expect(init?.body).toBe(
+      '{"authorKey":"profile:jane","name":"Jane","reason":"spam"}',
+    );
+    expect(new Headers(init?.headers).get('content-type')).toBe(
+      'application/json',
+    );
+    expectAuth(init);
+  });
+
+  it('silenceAuthor leaves a null name out; 200 → already', async () => {
+    const { client, fetchMock } = setup(() => ok({ status: 'already' }));
+    expect(
+      await client.silenceAuthor({
+        authorKey: 'company:acme',
+        name: null,
+        reason: 'spam',
+      }),
+    ).toEqual({ kind: 'ok', data: { status: 'already' } });
+    expect(fetchMock.mock.calls[0][1]?.body).toBe(
+      '{"authorKey":"company:acme","reason":"spam"}',
+    );
+  });
+
+  it('unsilenceAuthor DELETEs the URL-encoded key; 204 → ok', async () => {
+    const { client, fetchMock } = setup(
+      () => new Response(null, { status: 204 }),
+    );
+    expect(await client.unsilenceAuthor('profile:jane doe/x')).toEqual({
+      kind: 'ok',
+      data: null,
+    });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe(
+      'http://engine.test/api/admin/silenced-authors/profile%3Ajane%20doe%2Fx',
+    );
+    expect(init?.method).toBe('DELETE');
+    expect(init?.body).toBeUndefined();
+    expectAuth(init);
+  });
+
+  it('unsilenceAuthor 404 → not-found', async () => {
+    const { client } = setup(() => json(404, { code: 'NOT_FOUND' }));
+    expect(await client.unsilenceAuthor('profile:jane')).toEqual({
+      kind: 'not-found',
+    });
+  });
+
+  const calls = [
+    ['adminMe', (c: ReturnType<typeof setup>['client']) => c.adminMe()],
+    [
+      'prepareDrops',
+      (c: ReturnType<typeof setup>['client']) => c.prepareDrops(),
+    ],
+    [
+      'silencedPosts',
+      (c: ReturnType<typeof setup>['client']) => c.silencedPosts(),
+    ],
+    [
+      'silencedAuthors',
+      (c: ReturnType<typeof setup>['client']) => c.silencedAuthors(),
+    ],
+    [
+      'silenceAuthor',
+      (c: ReturnType<typeof setup>['client']) =>
+        c.silenceAuthor({ authorKey: 'profile:a', reason: 'r' }),
+    ],
+    [
+      'unsilenceAuthor',
+      (c: ReturnType<typeof setup>['client']) => c.unsilenceAuthor('profile:a'),
+    ],
+  ] as const;
+
+  it.each(calls)('%s maps error statuses to result kinds', async (_, call) => {
+    const cases: [Response, unknown][] = [
+      [json(401, { code: 'UNAUTHORIZED' }), { kind: 'unauthorized' }],
+      [json(403, { code: 'FORBIDDEN' }), { kind: 'forbidden' }],
+      [json(404, { code: 'NOT_FOUND' }), { kind: 'not-found' }],
+      [
+        json(400, { code: 'BAD_REQUEST', message: 'limit must not be > 200' }),
+        { kind: 'invalid', message: 'limit must not be > 200' },
+      ],
+      [
+        json(400, { code: 'VALIDATION_FAILED' }),
+        { kind: 'invalid', message: 'Bad request' },
+      ],
+      [json(503, { code: 'SERVICE_UNAVAILABLE' }), { kind: 'unavailable' }],
+      [
+        new Response('<html>Bad Gateway</html>', { status: 502 }),
+        { kind: 'unavailable' },
+      ],
+    ];
+    for (const [response, expected] of cases) {
+      const { client } = setup(() => response);
+      expect(await call(client)).toEqual(expected);
+    }
+  });
+
+  it.each(calls)(
+    '%s: network error → unavailable; no session → unauthorized; no config → unavailable',
+    async (_, call) => {
+      const failing = setup(() => {
+        throw new TypeError('fetch failed');
+      });
+      expect(await call(failing.client)).toEqual({ kind: 'unavailable' });
+
+      const noSession = setup(() => json(200, {}), {
+        accessToken: async () => null,
+      });
+      expect(await call(noSession.client)).toEqual({ kind: 'unauthorized' });
+      expect(noSession.fetchMock).not.toHaveBeenCalled();
+
+      const noUrl = setup(() => json(200, {}), { url: undefined });
+      expect(await call(noUrl.client)).toEqual({ kind: 'unavailable' });
+      expect(noUrl.fetchMock).not.toHaveBeenCalled();
+    },
+  );
+
+  it('logs the call, outcome and status, never the key, token or author key', async () => {
+    const { client, log } = setup(() => json(403, { code: 'FORBIDDEN' }));
+    await client.unsilenceAuthor('profile:secret-person');
+    expect(log).toHaveBeenCalledWith(
+      'engine unsilenceAuthor outcome=forbidden status=403',
+    );
+    const logged = JSON.stringify(log.mock.calls);
+    expect(logged).not.toContain(KEY);
+    expect(logged).not.toContain(TOKEN);
+    expect(logged).not.toContain('secret-person');
+  });
+});

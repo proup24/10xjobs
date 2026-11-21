@@ -56,6 +56,7 @@ Precision over volume: prefer a tailored application over a fast one.
 - The Prisma contract (`libs/database/src/contract/contract.prisma`) is the only schema source, RLS policies included. The local stack is the Supabase CLI; production is Supabase Cloud.
 - Qualify decisions record a reason, so wrong rejections can be found and fixed.
 - UI work in `apps/web` follows `apps/web/DESIGN.md`: build only from `components/ui` and theme tokens.
+- `ADMIN_USERS` (comma-separated Supabase user ids, read by the engine API) gates the admin pages (`/admin/*` in the web app, `/api/admin/*` in the engine); empty means nobody.
 
 ## Workflow
 

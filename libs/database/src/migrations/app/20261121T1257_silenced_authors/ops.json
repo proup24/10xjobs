@@ -1,0 +1,138 @@
+[
+  {
+    "id": "table.silenced_authors",
+    "label": "Create table \"silenced_authors\"",
+    "summary": "Creates table \"silenced_authors\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "silenced_authors"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"silenced_authors\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"silenced_authors\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"silenced_authors\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"silenced_authors\"",
+        "sql": "CREATE TABLE \"public\".\"silenced_authors\" (\n  \"authorKey\" text NOT NULL,\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"createdBy\" uuid,\n  \"evidence\" jsonb,\n  \"id\" uuid NOT NULL,\n  \"name\" text,\n  \"origin\" text NOT NULL,\n  \"reason\" text NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"silenced_authors_origin_d1fb74ff\" CHECK (origin IN ('manual', 'automatic'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"silenced_authors\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"silenced_authors\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"silenced_authors\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "unique.silenced_authors.silenced_authors_authorKey_key",
+    "label": "Add unique constraint on \"silenced_authors\" (authorKey)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "silenced_authors_authorKey_key",
+        "table": "silenced_authors"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"silenced_authors_authorKey_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "silenced_authors_authorKey_key",
+          "public",
+          "\"public\".\"silenced_authors\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"silenced_authors_authorKey_key\" on \"silenced_authors\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"silenced_authors_authorKey_key\"",
+        "sql": "ALTER TABLE \"public\".\"silenced_authors\" ADD CONSTRAINT \"silenced_authors_authorKey_key\" UNIQUE (\"authorKey\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"silenced_authors_authorKey_key\" exists on (authorKey)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "silenced_authors_authorKey_key",
+          "public",
+          "\"public\".\"silenced_authors\"",
+          "u",
+          "[\"authorKey\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.silenced_authors",
+    "label": "Enable row-level security on \"silenced_authors\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "silenced_authors"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"silenced_authors\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "silenced_authors"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"silenced_authors\"",
+        "sql": "ALTER TABLE \"public\".\"silenced_authors\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"silenced_authors\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "silenced_authors"
+        ]
+      }
+    ]
+  }
+]
