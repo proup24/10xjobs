@@ -202,7 +202,7 @@ export async function saveEligibility(
   );
 }
 
-/** Step 3 on a given draft profile: its columns and skills (domain follows the position). */
+/** Step 3 on a given profile (draft or published): its columns and skills (domain follows the position). */
 export async function saveProfileJob(
   supabase: Client,
   profileId: string,
@@ -222,14 +222,14 @@ export async function saveProfileJob(
     .select('id');
   if (update.error) return failure(log, 'job profile update', update.error);
   if (!update.data || update.data.length === 0) {
-    log('setup save: job profile update matched no draft profile');
+    log('setup save: job profile update matched no profile of yours');
     return FAILED;
   }
   const skills = await supabase.rpc('replace_profile_skills', {
     p_profile_id: profileId,
     p_skills: jobSkills(job),
   });
-  // P0002 (not a draft of yours) isn't a refusal of the answers: failed.
+  // P0002 (not yours) isn't a refusal of the answers: failed.
   if (skills.error) return failure(log, 'job skills replace', skills.error);
   return SAVED;
 }
@@ -274,7 +274,7 @@ export async function saveJob(
   return SAVED;
 }
 
-/** Step 4 on a given draft profile: its terms columns. */
+/** Step 4 on a given profile (draft or published): its terms columns. */
 export async function saveProfileTerms(
   supabase: Client,
   profileId: string,
@@ -292,7 +292,7 @@ export async function saveProfileTerms(
     .select('id');
   if (update.error) return failure(log, 'terms profile update', update.error);
   if (!update.data || update.data.length === 0) {
-    log('setup save: terms profile update matched no draft profile');
+    log('setup save: terms profile update matched no profile of yours');
     return FAILED;
   }
   return SAVED;

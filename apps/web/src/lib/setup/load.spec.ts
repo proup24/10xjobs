@@ -5,6 +5,7 @@ import {
   loadAbout,
   loadEligibility,
   loadResume,
+  loadProfileSync,
   loadSetupProfile,
   loadSetupSnapshot,
 } from './load';
@@ -373,5 +374,37 @@ describe('loadValueLists', () => {
       ['range', 0, 999],
       ['range', 1000, 1999],
     ]);
+  });
+});
+
+describe('loadProfileSync', () => {
+  const row = (searchesVersion: number | null, state = 'published') =>
+    tables({ profiles: { state, matchVersion: 3, searchesVersion } });
+
+  it('is applying while searches are null or behind', async () => {
+    expect(await loadProfileSync(row(null).supabase, P)).toEqual({
+      published: true,
+      applying: true,
+    });
+    expect(await loadProfileSync(row(2).supabase, P)).toEqual({
+      published: true,
+      applying: true,
+    });
+  });
+
+  it('is not applying once searches caught up, and reports drafts', async () => {
+    expect(await loadProfileSync(row(3).supabase, P)).toEqual({
+      published: true,
+      applying: false,
+    });
+    expect(
+      (await loadProfileSync(row(3, 'draft').supabase, P))?.published,
+    ).toBe(false);
+  });
+
+  it('is null when the profile is not found', async () => {
+    expect(
+      await loadProfileSync(tables({ profiles: null }).supabase, P),
+    ).toBeNull();
   });
 });

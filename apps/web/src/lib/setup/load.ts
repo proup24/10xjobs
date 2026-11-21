@@ -185,3 +185,27 @@ export async function loadResume(
     sizeBytes: row.resumeSizeBytes ?? 0,
   };
 }
+
+/**
+ * A profile's publish state and whether its searches are behind its last matching change
+ * (`searchesVersion` null or below `matchVersion`), or null when it isn't the user's.
+ */
+export async function loadProfileSync(
+  supabase: Client,
+  profileId: string,
+): Promise<{ published: boolean; applying: boolean } | null> {
+  const row = must(
+    'profile read',
+    await supabase
+      .from('profiles')
+      .select('state, matchVersion, searchesVersion')
+      .eq('id', profileId)
+      .maybeSingle(),
+  );
+  if (!row) return null;
+  return {
+    published: row.state === 'published',
+    applying:
+      row.searchesVersion === null || row.searchesVersion < row.matchVersion,
+  };
+}
