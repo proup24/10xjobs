@@ -9,6 +9,7 @@ import {
   type ComponentProps,
 } from 'react';
 import { useRouter } from 'next/navigation';
+import { PUBLISH_FAILED_MESSAGE } from '@/lib/profiles/publish';
 import { publishProfileAction } from '@/app/(app)/preferences/publish-action';
 import { useUnsavedChanges } from '@/components/layout/unsaved-changes';
 import { JobForm } from '@/components/setup/job-form';
@@ -196,9 +197,14 @@ export function NewProfileResumeStep({
           if (!ready || pending) return;
           setError(undefined);
           start(async () => {
-            const outcome = await publishProfileAction(profileId);
-            if (outcome.status === 'published') router.push(outcome.href);
-            else setError(outcome.message);
+            try {
+              const outcome = await publishProfileAction(profileId);
+              if (outcome.status === 'published') router.push(outcome.href);
+              else setError(outcome.message);
+            } catch {
+              // A dropped request or a deploy's version skew: stay on the step.
+              setError(PUBLISH_FAILED_MESSAGE);
+            }
           });
         }}
       >

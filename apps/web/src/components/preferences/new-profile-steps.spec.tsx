@@ -161,6 +161,24 @@ describe('NewProfileResumeStep', () => {
     await waitFor(() => expect(finish().disabled).toBe(false));
   });
 
+  it('a rejected publish request shows the failure message and Finish works again', async () => {
+    publishProfileAction.mockRejectedValue(new Error('network'));
+    render(
+      <NewProfileResumeStep
+        profileId={P}
+        userId={U}
+        current={{ filename: 'cv.pdf', sizeBytes: 2048 }}
+      />,
+    );
+    await waitFor(() => expect(finish().disabled).toBe(false));
+    fireEvent.click(finish());
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      "Couldn't publish the profile. It's saved; try Finish again.",
+    );
+    expect(push).not.toHaveBeenCalled();
+    await waitFor(() => expect(finish().disabled).toBe(false));
+  });
+
   it('Back opens the new profile’s terms', () => {
     render(<NewProfileResumeStep profileId={P} userId={U} current={null} />);
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));

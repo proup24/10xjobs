@@ -1,6 +1,6 @@
 # 06: Publish on create
 
-Status: built (PRs #109, #111 and PR C). Spec: [publish and edit a published profile design](../../superpowers/specs/2026-11-21-publish-and-edit-published-design.md).
+Status: built (PRs #109 and #111, and the web-app PR). Spec: [publish and edit a published profile design](../../superpowers/specs/2026-11-21-publish-and-edit-published-design.md).
 
 ## Goal
 

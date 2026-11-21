@@ -1,7 +1,7 @@
 # Phase 2: Find
 
 Date: 2026-11-10
-Status: draft. Slices 06 and 07 built (PRs #109, #111 and PR C).
+Status: draft. Slices 06 and 07 built (PRs #109 and #111, and the web-app PR).
 
 ## Intent
 

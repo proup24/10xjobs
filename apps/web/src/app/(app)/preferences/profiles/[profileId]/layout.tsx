@@ -1,5 +1,6 @@
 import { DeleteProfileButton } from '@/components/preferences/delete-profile-button';
 import { Suspense } from 'react';
+import { DraftNotice } from '@/components/preferences/draft-notice';
 import { PostSearchSection } from '@/components/preferences/post-search-section';
 import { requireOwnProfile } from '../../guard';
 import { preferenceProfiles } from '../../data';
@@ -34,6 +35,7 @@ export default async function ProfileLayout({
           blockedReason={blockedReason}
         />
       </div>
+      {mine?.state === 'draft' && <DraftNotice profileId={profileId} />}
       <Suspense fallback={null}>
         <PostSearchSection profileId={profileId} />
       </Suspense>

@@ -168,6 +168,19 @@ describe('Review', () => {
     await waitFor(() => expect(finish().disabled).toBe(false));
   });
 
+  it('a rejected publish request shows the failure message and Finish works again', async () => {
+    publishProfileAction.mockRejectedValue(new Error('network'));
+    setup();
+    const finish = () =>
+      screen.getByRole('button', { name: 'Finish' }) as HTMLButtonElement;
+    fireEvent.click(finish());
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      "Couldn't publish the profile. It's saved; try Finish again.",
+    );
+    expect(push).not.toHaveBeenCalled();
+    await waitFor(() => expect(finish().disabled).toBe(false));
+  });
+
   it('shows labels, never codes', () => {
     setup();
     const a = within(card('About you'));
