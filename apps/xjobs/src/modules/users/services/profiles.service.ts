@@ -133,8 +133,8 @@ export const ELIGIBILITY_REQUIRED =
   'set your country of residence and answer the visa sponsorship question before publishing';
 
 const PROFILE_NOT_FOUND = 'Profile not found';
-export const PROFILE_PUBLISHED =
-  'A published profile cannot be changed; delete it and create a new one';
+export const PROFILE_PUBLISHED = 'This profile is already published';
+export const PROFILE_NOT_PUBLISHED = 'This profile is not published';
 
 /** A deleted user and another user's profile look the same to the caller: 'Profile not found'. */
 async function profileNotFoundIfUserGone<T>(lookup: Promise<T>): Promise<T> {
@@ -151,6 +151,13 @@ function publishedConflict(): ConflictException {
   return new ConflictException({
     message: PROFILE_PUBLISHED,
     code: ErrorCode.PROFILE_PUBLISHED,
+  });
+}
+
+function notPublishedConflict(): ConflictException {
+  return new ConflictException({
+    message: PROFILE_NOT_PUBLISHED,
+    code: ErrorCode.PROFILE_NOT_PUBLISHED,
   });
 }
 
@@ -295,6 +302,22 @@ export class ProfilesService {
       return this.rejectWrite(userId, profile.id);
     }
     return { ...toProfileView(published), querySearches };
+  }
+
+  /**
+   * Deletes a published profile and releases its query search builders in one
+   * transaction. 404 like getOrThrow; 409 for a draft. Deleted or unpublished
+   * meanwhile (including a repeated delete) is a 404.
+   */
+  async deletePublished(
+    userId: string,
+    profileId: string,
+  ): Promise<{ id: string }> {
+    const profile = await this.getOrThrow(userId, profileId);
+    if (profile.state !== ProfileState.published) throw notPublishedConflict();
+    if (!(await this.querySearch.releaseAndDelete(profile.id)))
+      throw new NotFoundException(PROFILE_NOT_FOUND);
+    return { id: profile.id };
   }
 
   /** The switch, for any owner: stored value, whether the owner may turn it on, and the searches it gives. */

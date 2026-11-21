@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -22,6 +23,7 @@ import {
   PostSearchResponseDto,
   SetPostSearchDto,
 } from '../dto/post-search.dto';
+import { DeleteProfileResponseDto } from '../dto/delete-profile.response.dto';
 import { PublishProfileResponseDto } from '../dto/publish-profile.response.dto';
 import { ProfilesService } from '../services/profiles.service';
 import type { PostSearchView, PublishedProfileView } from '../types';
@@ -52,6 +54,25 @@ export class ProfilesController {
     @Param('profileId', ParseUUIDPipe) profileId: string,
   ): Promise<PublishedProfileView> {
     return this.profiles.publish(userId, profileId);
+  }
+
+  @ApiSuccessResponse(DeleteProfileResponseDto, {
+    description:
+      'Deletes a published profile and releases its searches; a draft is 409 PROFILE_NOT_PUBLISHED',
+  })
+  @ApiErrorResponses(
+    HttpStatus.BAD_REQUEST,
+    HttpStatus.NOT_FOUND,
+    HttpStatus.CONFLICT,
+    HttpStatus.SERVICE_UNAVAILABLE,
+  )
+  @HttpCode(HttpStatus.OK)
+  @Delete(':profileId')
+  delete(
+    @CurrentUser() userId: string,
+    @Param('profileId', ParseUUIDPipe) profileId: string,
+  ): Promise<{ id: string }> {
+    return this.profiles.deletePublished(userId, profileId);
   }
 
   @ApiSuccessResponse(PostSearchResponseDto, {

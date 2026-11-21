@@ -170,6 +170,121 @@ describe('engine client publishProfile', () => {
   });
 });
 
+describe('engine client deleteProfile', () => {
+  it('sends DELETE {url}/api/profiles/{id} with X-Engine-Key and Bearer token', async () => {
+    const { client, fetchMock, log } = setup(() =>
+      json(200, { status: 'success', data: { id: PID } }),
+    );
+    expect(await client.deleteProfile(PID)).toEqual({
+      kind: 'ok',
+      data: { id: PID },
+    });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe(`http://engine.test/api/profiles/${PID}`);
+    expect(init?.method).toBe('DELETE');
+    const headers = new Headers(init?.headers);
+    expect(headers.get('x-engine-key')).toBe(KEY);
+    expect(headers.get('authorization')).toBe(`Bearer ${TOKEN}`);
+    expect(log).toHaveBeenCalledWith(
+      `engine deleteProfile profile=${PID} outcome=ok status=200`,
+    );
+  });
+
+  it('401 → unauthorized, 404 → not-found, 400 → invalid', async () => {
+    expect(
+      await setup(() =>
+        json(401, { code: 'UNAUTHORIZED' }),
+      ).client.deleteProfile(PID),
+    ).toEqual({ kind: 'unauthorized' });
+    expect(
+      await setup(() => json(404, { code: 'NOT_FOUND' })).client.deleteProfile(
+        PID,
+      ),
+    ).toEqual({ kind: 'not-found' });
+    expect(
+      await setup(() => json(400, { message: 'bad' })).client.deleteProfile(
+        PID,
+      ),
+    ).toEqual({ kind: 'invalid', message: 'bad' });
+  });
+
+  it('409 PROFILE_NOT_PUBLISHED → conflict not-published', async () => {
+    const { client } = setup(() =>
+      json(409, { code: 'PROFILE_NOT_PUBLISHED' }),
+    );
+    expect(await client.deleteProfile(PID)).toEqual({
+      kind: 'conflict',
+      reason: 'not-published',
+    });
+  });
+
+  it('409 with another code → unavailable', async () => {
+    const { client } = setup(() => json(409, { code: 'PROFILE_PUBLISHED' }));
+    expect(await client.deleteProfile(PID)).toEqual({ kind: 'unavailable' });
+  });
+
+  it('503, network error, HTML body and empty 200 → unavailable', async () => {
+    expect(await setup(() => json(503, {})).client.deleteProfile(PID)).toEqual({
+      kind: 'unavailable',
+    });
+    expect(
+      await setup(() => {
+        throw new TypeError('fetch failed');
+      }).client.deleteProfile(PID),
+    ).toEqual({ kind: 'unavailable' });
+    expect(
+      await setup(
+        () => new Response('<html></html>', { status: 502 }),
+      ).client.deleteProfile(PID),
+    ).toEqual({ kind: 'unavailable' });
+    expect(
+      await setup(() => new Response('', { status: 200 })).client.deleteProfile(
+        PID,
+      ),
+    ).toEqual({ kind: 'unavailable' });
+  });
+
+  it('aborts after timeoutMs → unavailable', async () => {
+    const hanging = vi.fn<typeof fetch>(
+      (_input, init) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () =>
+            reject(init.signal?.reason),
+          );
+        }),
+    );
+    const { client } = setup(() => json(200, {}), {
+      fetch: hanging,
+      timeoutMs: 10,
+    });
+    expect(await client.deleteProfile(PID)).toEqual({ kind: 'unavailable' });
+  });
+
+  it('missing url or key → unavailable; no session → unauthorized; neither fetches', async () => {
+    for (const overrides of [{ url: undefined }, { apiKey: undefined }]) {
+      const { client, fetchMock } = setup(() => json(200, {}), overrides);
+      expect(await client.deleteProfile(PID)).toEqual({ kind: 'unavailable' });
+      expect(fetchMock).not.toHaveBeenCalled();
+    }
+    const { client, fetchMock } = setup(() => json(200, {}), {
+      accessToken: async () => null,
+    });
+    expect(await client.deleteProfile(PID)).toEqual({ kind: 'unauthorized' });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('a non-UUID id → not-found without fetching, raw value not logged', async () => {
+    const { client, fetchMock, log } = setup(() => json(200, {}));
+    expect(await client.deleteProfile('../x?y=1')).toEqual({
+      kind: 'not-found',
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(log).toHaveBeenCalledWith(
+      'engine deleteProfile profile=invalid outcome=not-found status=none',
+    );
+  });
+});
+
 describe('engine client post search', () => {
   const view = { enabled: false, allowed: true, searches: 2 };
 

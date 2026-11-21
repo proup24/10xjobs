@@ -102,6 +102,7 @@ describe('API contract', () => {
         .map((o) => o.name)
         .sort(),
     ).toEqual([
+      'DELETE /api/profiles/{profileId}',
       'GET /api/health',
       'GET /api/profiles/{profileId}/post-search',
       'GET /api/users/{userId}/profiles/{profileId}/query-search',

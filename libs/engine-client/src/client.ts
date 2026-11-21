@@ -12,7 +12,10 @@ export type PostSearchView = {
 export type EngineResult<T> =
   | { kind: 'ok'; data: T }
   | { kind: 'not-found' }
-  | { kind: 'conflict'; reason: 'already-published' | 'incomplete' }
+  | {
+      kind: 'conflict';
+      reason: 'already-published' | 'incomplete' | 'not-published';
+    }
   | { kind: 'invalid'; message: string }
   | { kind: 'unauthorized' }
   | { kind: 'forbidden' }
@@ -29,6 +32,7 @@ export interface EngineClientDeps {
 
 export interface EngineClient {
   publishProfile(profileId: string): Promise<EngineResult<PublishedProfile>>;
+  deleteProfile(profileId: string): Promise<EngineResult<{ id: string }>>;
   postSearchStatus(profileId: string): Promise<EngineResult<PostSearchView>>;
   setPostSearch(
     profileId: string,
@@ -128,6 +132,79 @@ export function createEngineClient(deps: EngineClientDeps): EngineClient {
     }
   }
 
+  async function deleteProfile(
+    profileId: string,
+  ): Promise<EngineResult<{ id: string }>> {
+    let status: number | undefined;
+    // Not a UUID: the engine would 400 it, and the raw input stays out of the log.
+    const validId = UUID.test(profileId);
+    const finish = (
+      result: EngineResult<{ id: string }>,
+    ): EngineResult<{ id: string }> => {
+      log(
+        `engine deleteProfile profile=${validId ? profileId : 'invalid'} outcome=${result.kind} status=${status ?? 'none'}`,
+      );
+      return result;
+    };
+
+    if (!validId) return finish({ kind: 'not-found' });
+
+    if (!deps.url || !deps.apiKey) return finish({ kind: 'unavailable' });
+
+    let token: string | null;
+    try {
+      token = await deps.accessToken();
+    } catch {
+      return finish({ kind: 'unavailable' });
+    }
+    if (!token) return finish({ kind: 'unauthorized' });
+
+    try {
+      const response = await doFetch(
+        `${deps.url.replace(/\/+$/, '')}/api/profiles/${encodeURIComponent(profileId)}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'X-Engine-Key': deps.apiKey,
+            Authorization: `Bearer ${token}`,
+          },
+          signal: AbortSignal.timeout(deps.timeoutMs ?? DEFAULT_TIMEOUT_MS),
+        },
+      );
+      status = response.status;
+
+      let body: unknown;
+      try {
+        body = await response.json();
+      } catch {
+        return finish({ kind: 'unavailable' });
+      }
+      const record = isRecord(body) ? body : {};
+
+      if (status === 200) {
+        const data = record.data;
+        if (isRecord(data) && typeof data.id === 'string')
+          return finish({ kind: 'ok', data: { id: data.id } });
+        return finish({ kind: 'unavailable' });
+      }
+      if (status === 401) return finish({ kind: 'unauthorized' });
+      if (status === 404) return finish({ kind: 'not-found' });
+      if (status === 409) {
+        if (record.code === 'PROFILE_NOT_PUBLISHED')
+          return finish({ kind: 'conflict', reason: 'not-published' });
+        return finish({ kind: 'unavailable' });
+      }
+      if (status === 400) {
+        const message =
+          typeof record.message === 'string' ? record.message : 'Bad request';
+        return finish({ kind: 'invalid', message });
+      }
+      return finish({ kind: 'unavailable' });
+    } catch {
+      return finish({ kind: 'unavailable' });
+    }
+  }
+
   function isPostSearchView(data: unknown): data is PostSearchView {
     return (
       isRecord(data) &&
@@ -213,6 +290,7 @@ export function createEngineClient(deps: EngineClientDeps): EngineClient {
 
   return {
     publishProfile,
+    deleteProfile,
     postSearchStatus: (profileId) =>
       postSearch('postSearchStatus', profileId, 'GET'),
     setPostSearch: (profileId, enabled) =>

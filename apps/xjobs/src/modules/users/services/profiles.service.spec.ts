@@ -341,6 +341,44 @@ describe('ProfilesService', () => {
     });
   });
 
+  describe('deleting a published profile', () => {
+    const stack = [skill('nodejs', 8)];
+
+    it('deletePublished releases searches and deletes', async () => {
+      const { id } = await create(stack);
+      await service.publish(userId, id);
+      expect(querySearches.links.length).toBeGreaterThan(0);
+      await expect(service.deletePublished(userId, id)).resolves.toEqual({
+        id,
+      });
+      expect(querySearches.links).toHaveLength(0);
+      expect(querySearches.published.has(id)).toBe(false);
+      // A repeat finds nothing to release: a 404, not a 500.
+      await expect(service.deletePublished(userId, id)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+    });
+
+    it('refuses a draft with PROFILE_NOT_PUBLISHED', async () => {
+      const { id } = await create(stack);
+      const error = await service.deletePublished(userId, id).catch((e) => e);
+      expect(error).toBeInstanceOf(ConflictException);
+      expect(error.getResponse()).toEqual({
+        message: 'This profile is not published',
+        code: 'PROFILE_NOT_PUBLISHED',
+      });
+    });
+
+    it("404s another user's profile", async () => {
+      const { id } = await create(stack);
+      await service.publish(userId, id);
+      await expect(
+        service.deletePublished(otherUserId, id),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(querySearches.published.has(id)).toBe(true);
+    });
+  });
+
   describe('regenerating to the current recipe', () => {
     /** Turns every builder into one from an older recipe, as after a version bump. */
     const ageBuilders = () => {
