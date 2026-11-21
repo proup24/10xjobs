@@ -8,11 +8,24 @@ A Claude step reads each prepared post and pulls out its facts: role title, stac
 
 - The job-board processor: a Claude step through `claude -p` that turns a listing into a validated facts document, with a golden set and `processor:eval` to measure it (`apps/xjobs/src/modules/processor/README.md`).
 
+## What slice 02 hands over
+
+- A cleaned copy of each post that wasn't dropped, its author, and its links already sorted without Claude: email addresses, LinkedIn job links, Ashby or Greenhouse postings, other links.
+- For a share, both the sharer's added text and the original post (text, author, date). The added text may hold the only contact email, or say the role is filled.
+- Exact duplicates already merged, so each distinct post is extracted once.
+
+## Decided (2026-11-21, slice 02 brainstorm)
+
+- **Extract gives a "not hiring" verdict** _(user)_, the second line of defence behind Prepare's light filter. It also feeds the automatic silenced-author list: an author whose posts keep being judged not hiring is silenced engine-wide past a threshold, which slice 02's spec defines and this slice switches on.
+- **How the author asks to apply is one of: email, external apply link, LinkedIn job board link, or "connect / DM me / comment"** _(user, from the social posts page decision in the README)_. The email kind is applied to automatically; the others are shown as matches to act on by hand.
+
 ## In scope
 
-- Extraction for posts, including the facts only posts need: the contact email, how the author asks to be contacted (email, DM, comment, link), and the company when the author isn't the employer.
+- Extraction for posts, including the facts only posts need: the contact email, how the author asks to be contacted (the four kinds above), and the company when the author isn't the employer.
+- The "not hiring" verdict, with a reason, and switching on the automatic silenced-author adds.
 - A post that announces several roles.
 - A golden set of real posts and an eval, like the processor's.
+- **Claude quota:** Prepare drops only near-certain junk, so most collected posts (about 500 a day for the owner's profile alone) reach this step. Quota is the owner's main worry, so this slice needs a guard, e.g. a daily cap on post extractions, and a measure of the calls a day costs.
 
 ## Out of scope
 
@@ -22,7 +35,7 @@ A Claude step reads each prepared post and pulls out its facts: role title, stac
 ## Open questions
 
 - Reuse the job-board processor with a post prompt, or a separate step? (See "Suggested direction" in the README.)
-- Is a "not actually hiring" verdict here a second line of defence behind Prepare?
-- Is the email address valid only when the post names it as the way to apply, or whenever an address appears?
+- Is the email address valid only when the post names it as the way to apply, or whenever an address appears? (Prepare notes every address; telling an apply address from "press: media@…" is this step's job.)
 - How should a post naming several roles be represented: one job per role?
 - Which bar on the golden set must Extract pass before slice 05 can send anything automatically?
+- What happens to posts past the daily cap: queued for the next day, or oldest dropped?
