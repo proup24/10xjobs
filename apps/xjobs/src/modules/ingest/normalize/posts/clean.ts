@@ -8,12 +8,12 @@ export type PostLinks = {
   other: string[];
 };
 
-const EMOJI = /[\p{Extended_Pictographic}\u{FE00}-\u{FE0F}\u{200D}]/gu;
+const EMOJI =
+  /\p{Extended_Pictographic}|\p{Regional_Indicator}|[\u{FE00}-\u{FE0F}]|\u{200D}|\u{20E3}|[\u{1F3FB}-\u{1F3FF}]/gu;
 const SEE_MORE_TAIL = /\s*(?:…|\.{3})\s*(?:see\s+)?more\s*$/i;
 const URL_RE = /https?:\/\/[^\s<>"']+/gi;
 const EMAIL_RE =
   /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/g;
-const linkedinHosts = new Set(['linkedin.com', 'www.linkedin.com']);
 
 /**
  * Plain post text for reading and matching: no emoji, hashtag or mention
@@ -23,7 +23,7 @@ export function cleanPostText(raw: string): string {
   return raw
     .replace(EMOJI, '')
     .replace(/hashtag#/gi, '')
-    .replace(/#(?=[\p{L}\p{N}])/gu, '')
+    .replace(/(^|[^\p{L}\p{N}_/&?=:.-])#(?=[\p{L}\p{N}])/gu, '$1')
     .replace(/(^|\s)@(?=\p{L})/gu, '$1')
     .replace(SEE_MORE_TAIL, '')
     .split('\n')
@@ -43,8 +43,22 @@ export function comparableText(clean: string): string {
     .trim();
 }
 
+/** Drops trailing punctuation, keeping a `)` that closes a `(` in the URL. */
+function trimUrl(raw: string): string {
+  let url = raw;
+  for (;;) {
+    const last = url.at(-1) ?? '';
+    const open = url.split('(').length - 1;
+    const close = url.split(')').length - 1;
+    if (/[.,;:!?…\]”’»"']/.test(last) || (last === ')' && close > open))
+      url = url.slice(0, -1);
+    else return url;
+  }
+}
+
 function linkedinJobId(url: URL): string | null {
-  if (!linkedinHosts.has(url.hostname.toLowerCase())) return null;
+  const host = url.hostname.toLowerCase();
+  if (host !== 'linkedin.com' && !host.endsWith('.linkedin.com')) return null;
   const view = /\/jobs\/view\/(?:[^/?#]*-)?(\d+)/.exec(url.pathname);
   return (
     view?.[1] ??
@@ -56,7 +70,7 @@ function linkedinJobId(url: URL): string | null {
 /** Sorts the emails and URLs found in the text and the post's own links. */
 export function sortLinks(text: string, urls: readonly string[]): PostLinks {
   const found = [...text.matchAll(URL_RE)].map((m) => m[0]);
-  const all = [...found, ...urls].map((u) => u.replace(/[.,;:!?)\]]+$/, ''));
+  const all = [...found, ...urls].map(trimUrl);
   const emails = (text.replace(URL_RE, ' ').match(EMAIL_RE) ?? []).map((e) =>
     e.toLowerCase(),
   );

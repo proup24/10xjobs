@@ -58,4 +58,35 @@ describe('sortLinks', () => {
     expect(links.linkedinJobIds).toEqual(['4012345678']);
     expect(links.other).toEqual(['https://lnkd.in/x']);
   });
+
+  it('accepts regional LinkedIn hosts', () => {
+    expect(
+      sortLinks('https://ma.linkedin.com/jobs/view/123', []).linkedinJobIds,
+    ).toEqual(['123']);
+  });
+
+  it('keeps balanced parentheses and drops closing marks and ellipses', () => {
+    const links = sortLinks(
+      'a https://x.com/X_(y) b (https://x.com/p) c https://lnkd.in/abc… d “https://lnkd.in/q”',
+      [],
+    );
+    expect(links.other).toEqual([
+      'https://x.com/X_(y)',
+      'https://x.com/p',
+      'https://lnkd.in/abc',
+      'https://lnkd.in/q',
+    ]);
+  });
+});
+
+describe('cleanPostText details', () => {
+  it('removes flags, keycaps and skin tones', () => {
+    expect(cleanPostText('Rabat 🇲🇦 1️⃣ ok 👍🏽')).toBe('Rabat 1 ok');
+  });
+
+  it('only strips a # at the start of a word', () => {
+    expect(cleanPostText('see https://x.com/a#sec and issue#12 #go')).toBe(
+      'see https://x.com/a#sec and issue#12 go',
+    );
+  });
 });
