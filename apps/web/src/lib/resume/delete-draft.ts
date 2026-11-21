@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@xjobs/database/types';
 import { errorCode } from './errors';
-import { profileFolder, RESUMES_BUCKET } from './key';
+import { removeProfileFiles } from './remove-profile-files';
 
 // Log lines carry the profile id and an error code only.
 export async function deleteDraftProfile(
@@ -26,16 +26,9 @@ export async function deleteDraftProfile(
   if (read.error || !read.data) return fail('state read failed', read.error);
   if (read.data.state !== 'draft') return 'not-draft';
 
-  const bucket = supabase.storage.from(RESUMES_BUCKET);
   const id = read.data.id;
-  const folder = profileFolder(userId, id);
-  const listed = await bucket.list(folder);
-  if (listed.error) return fail('list failed', listed.error);
-  const paths = (listed.data ?? []).map((file) => `${folder}/${file.name}`);
-  if (paths.length > 0) {
-    const removed = await bucket.remove(paths);
-    if (removed.error) return fail('file removal failed', removed.error);
-  }
+  const removed = await removeProfileFiles(supabase, userId, id);
+  if (removed) return fail(removed.what, removed.error);
 
   const deleted = await supabase
     .from('profiles')
