@@ -1,3 +1,4 @@
+import { linkedinPostId, linkedinPostUrl } from '../../utils/source-key';
 import { cleanText, objectAt } from '../text';
 
 type RawAuthor = {
@@ -68,8 +69,9 @@ export function readPostPayload(payload: Record<string, unknown>): RawPost {
   const content = typeof payload.content === 'string' ? payload.content : null;
   const images = Array.isArray(payload.postImages) ? payload.postImages : [];
   return {
-    id: cleanText(payload.id),
-    url: cleanText(payload.linkedinUrl),
+    // Read as the source key reads them, so an item ingest keeps has both.
+    id: linkedinPostId(payload),
+    url: linkedinPostUrl(payload),
     text: content && content.trim() ? content : null,
     postedAt: isoDate(objectAt(payload.postedAt).date),
     author: readAuthor(payload.author),
