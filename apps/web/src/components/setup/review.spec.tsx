@@ -106,13 +106,13 @@ const terms: TermsAnswers = {
 function setup() {
   return render(
     <Review
+      profileId="p1"
       about={about}
       eligibility={eligibility}
       job={job}
       terms={terms}
       resume={{ filename: 'cv.pdf', sizeBytes: 123_456 }}
       lists={lists}
-      profileId="p1"
     />,
   );
 }
@@ -210,6 +210,7 @@ describe('Review', () => {
   it('an unknown code shows "Unknown", never the code', () => {
     render(
       <Review
+        profileId="p1"
         about={about}
         eligibility={{ ...eligibility, residenceCountry: 'ZZ' }}
         job={{ ...job, position: 'mystery_engineer' }}
@@ -233,6 +234,7 @@ describe('Review', () => {
   it('shows the empty answers plainly', () => {
     render(
       <Review
+        profileId="p1"
         about={{ name: 'Ada', phone: null, linkedin: null, links: [] }}
         eligibility={{
           ...eligibility,
