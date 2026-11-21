@@ -8,8 +8,10 @@ import { z } from 'zod';
  * part of a `url:` key); run `db:renormalize`.
  * Version 7 builds LinkedIn job-board description text from the HTML, so its
  * line breaks survive; run `db:renormalize` once (it sends nothing to Process).
+ * Version 8 maps LinkedIn posts to `kind: 'post'` records with a `post` object;
+ * run `db:renormalize`.
  */
-export const NORMALIZER_VERSION = 7;
+export const NORMALIZER_VERSION = 8;
 
 const text = z.string().min(1).nullable();
 const url = z.url({ protocol: /^https?$/ });
@@ -31,6 +33,52 @@ export const normalizedCompanySchema = z.strictObject({
 });
 
 export type NormalizedCompany = z.infer<typeof normalizedCompanySchema>;
+
+const postAuthorSchema = z.strictObject({
+  key: text,
+  name: text,
+  profileUrl: url.nullable(),
+  headline: text,
+  type: z.enum(['person', 'company']).nullable(),
+});
+
+/** The emails and links a post carries, sorted by what can be done with them. */
+const postLinksSchema = z.strictObject({
+  emails: z.array(z.string().min(1)),
+  linkedinJobIds: z.array(z.string().min(1)),
+  atsPostings: z.array(
+    z.strictObject({
+      provider: z.enum(['ashby', 'greenhouse']),
+      url: z.string().min(1),
+    }),
+  ),
+  other: z.array(z.string().min(1)),
+});
+
+/** The post a repost shares. */
+const postOriginalSchema = z.strictObject({
+  id: text,
+  url: url.nullable(),
+  author: postAuthorSchema.nullable(),
+  text: text,
+  postedAt: z.iso.datetime().nullable(),
+});
+
+/** What a post record knows about the post itself. */
+export const postDetailSchema = z.strictObject({
+  id: z.string().min(1),
+  url: url,
+  author: postAuthorSchema,
+  /** This post's own cleaned text (a share's added text). */
+  text: text,
+  postedAt: z.iso.datetime().nullable(),
+  original: postOriginalSchema.nullable(),
+  links: postLinksSchema,
+});
+
+export type PostAuthor = z.infer<typeof postAuthorSchema>;
+export type PostOriginal = z.infer<typeof postOriginalSchema>;
+export type PostDetail = z.infer<typeof postDetailSchema>;
 
 /**
  * The unified job format, shaped like the LinkedIn job board (the most
@@ -88,7 +136,12 @@ export const normalizedRecordSchema = z
     expiresAt: z.iso.datetime().nullable(),
     listingState: text,
     company: normalizedCompanySchema.nullable(),
+    post: postDetailSchema.nullable(),
     closed: z.boolean(),
+  })
+  .refine((r) => r.kind !== 'post' || r.post !== null, {
+    message: 'a post record needs its post',
+    path: ['post'],
   })
   .refine((r) => r.closed || r.title !== null || r.descriptionText !== null, {
     message: 'a title or a description is required',
@@ -128,6 +181,7 @@ export const RECORD_FIELDS = [
   'expiresAt',
   'listingState',
   'company',
+  'post',
   'closed',
 ] as const satisfies readonly (keyof NormalizedRecord)[];
 
