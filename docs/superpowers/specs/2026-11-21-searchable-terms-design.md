@@ -48,7 +48,7 @@ Effects:
 
 ## Anti-goals
 
-- A term that pulls in non-engineering jobs. Role words limit this, and the per-term volume check below catches it.
+- A term that pulls in non-engineering jobs. Role words limit this, and the per-term volume check in Rollout catches it.
 - A profile's searches splitting into many more LinkedIn runs, which costs Apify spend against the daily budget. The packer splits only when the keyword limit is hit. Check this on the dev profiles after regenerating.
 
 ## Approaches
@@ -60,7 +60,7 @@ Effects:
 
 1. `QUERY_SEARCH_RECIPE_VERSION` goes from 13 to 14. `search-spellings.ts` says any spelling change bumps it, and existing builders' hashes change.
 2. After the engine deploys, run `db:regenerate` on dev, with `POST_SEARCH_USERS` set where it runs, so existing profiles move to the new searches. The edit sync doesn't do this: a code change moves no profile's `matchVersion`.
-3. Measure volume with `db:spellings --check-totals`. It is maintainer-only and paid (at most $0.10 per run); run `--dry-run` first. Drop any term that returns too few results, with another version bump.
+3. Measure volume a week later with `db:spellings -- --days 7`. It reports, per searched technology, the jobs tagged with it and which spellings earn their place. `--check-totals` only prices suggested extra spellings, not new terms. Drop a term that brings in almost nothing, with another version bump.
 
 ## Left to the builder
 
