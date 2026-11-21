@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { admin } from './support/admin.js';
 import {
   pdfBytes,
+  profileFields,
   publishProfile,
   resumeKeyFor,
   seedProfile,
@@ -19,7 +20,6 @@ const PRIVILEGE = '42501';
 describe('published profiles are editable by their owner', () => {
   let a: TestUser;
   let b: TestUser;
-  let pub: string;
 
   const row = async (id: string) => {
     const { data, error } = await admin()
@@ -56,7 +56,7 @@ describe('published profiles are editable by their owner', () => {
   });
 
   it('updates a published profile and bumps matchVersion', async () => {
-    pub = (await published(a)).id;
+    const pub = (await published(a)).id;
     const before = await version(pub);
     const { data, error } = await a.client
       .from('profiles')
@@ -73,11 +73,13 @@ describe('published profiles are editable by their owner', () => {
     const { id } = await published(a);
     const current = (await row(id))['noticePeriodDays'];
     const before = await version(id);
-    const { error } = await a.client
+    const { data, error } = await a.client
       .from('profiles')
       .update({ noticePeriodDays: current })
-      .eq('id', id);
+      .eq('id', id)
+      .select();
     expect(error).toBeNull();
+    expect(data).toHaveLength(1);
     expect(await version(id)).toBe(before);
   });
 
@@ -103,11 +105,15 @@ describe('published profiles are editable by their owner', () => {
   it('postSearch does not bump', async () => {
     const { id } = await published(a);
     const before = await version(id);
-    const { error } = await admin()
+    const flipped = !(await row(id))['postSearch'];
+    const { data, error } = await admin()
       .from('profiles')
-      .update({ postSearch: !(await row(id))['postSearch'] })
-      .eq('id', id);
+      .update({ postSearch: flipped })
+      .eq('id', id)
+      .select();
     expect(error).toBeNull();
+    expect(data).toHaveLength(1);
+    expect((await row(id))['postSearch']).toBe(flipped);
     expect(await version(id)).toBe(before);
   });
 
@@ -182,6 +188,50 @@ describe('published profiles are editable by their owner', () => {
       .eq('id', id);
     expect(error?.code).toBe(PRIVILEGE);
     expect(await row(id)).toEqual(before);
+  });
+
+  it.each([
+    ['state', 'published'],
+    ['publishedAt', '2000-01-01T00:00:00.000Z'],
+    ['matchVersion', 99],
+    ['searchesVersion', 99],
+  ])('rejects a user insert with %s', async (column, value) => {
+    const id = randomUUID();
+    const { error } = await a.client
+      .from('profiles')
+      .insert({ id, ...profileFields(), userId: a.id, [column]: value });
+    expect(error?.code).toBe(PRIVILEGE);
+    const { data } = await admin().from('profiles').select('id').eq('id', id);
+    expect(data).toEqual([]);
+  });
+
+  it.each([
+    ['resumeKey', 'x/resume.pdf'],
+    ['resumeFilename', 'resume.pdf'],
+    ['resumeSizeBytes', 1234],
+    ['resumeSha256', 'abc123'],
+    ['resumeUploadedAt', '2000-01-01T00:00:00.000Z'],
+    ['createdAt', '2000-01-01T00:00:00.000Z'],
+    ['updatedAt', '2000-01-01T00:00:00.000Z'],
+  ])('rejects a user write of only %s on a draft', async (column, value) => {
+    const id = await seedProfile(a.id);
+    const before = await row(id);
+    const { error } = await a.client
+      .from('profiles')
+      .update({ [column]: value })
+      .eq('id', id);
+    expect(error?.code).toBe(PRIVILEGE);
+    expect(await row(id)).toEqual(before);
+    const insertId = randomUUID();
+    const ins = await a.client
+      .from('profiles')
+      .insert({
+        id: insertId,
+        ...profileFields(),
+        userId: a.id,
+        [column]: value,
+      });
+    expect(ins.error?.code).toBe(PRIVILEGE);
   });
 
   it('cannot delete a published profile', async () => {

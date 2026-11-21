@@ -277,7 +277,7 @@ describe('match_reviews and the review-aware match_details', () => {
       const m = await reviewMatch();
       expect((await decide(a, m, 'qualified')).error).toBeNull();
 
-      // A profile change re-deciding onto the same rule and field keeps the decision.
+      // A same-version re-decision onto the same rule and field keeps the decision.
       await redecide(m.matchId, 'review', SENIORITY);
       expect(await listsOf(a, m.job.jobId)).toEqual(['qualified']);
 
