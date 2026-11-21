@@ -66,9 +66,10 @@ function compare(a: MergeSource, b: MergeSource): number {
 export function mergePostSources(
   sources: MergeSource[],
 ): { sources: PostDetail[] } | null {
+  // `!= null`: a record stored before the post field existed has no key at all.
   const posts = sources.filter(
     (s): s is MergeSource & { record: { post: PostDetail } } =>
-      s.record.post !== null,
+      s.record.post != null,
   );
   if (posts.length === 0) return null;
   const rank = (s: (typeof posts)[number]) => (s.record.post.original ? 1 : 0);
@@ -120,7 +121,7 @@ export function mergeSources(sources: MergeSource[]): MergedJob {
       record.postingUrl = from.record.postingUrl;
       fieldSources.postingUrl = from.rawItemId;
     } else {
-      const from = open.find((s) => s.record[field] !== null);
+      const from = open.find((s) => s.record[field] != null);
       record[field] = from ? from.record[field] : null;
       if (from) fieldSources[field] = from.rawItemId;
     }

@@ -286,4 +286,13 @@ describe('mergePostSources', () => {
     expect(mergePostSources([ashby, linkedin])).toBeNull();
     expect(mergeSources([ashby, linkedin]).postSources).toBeNull();
   });
+
+  it('treats a record stored before the post field existed as having no post', () => {
+    const old = source('old', Channel.LINKEDIN_JOB_BOARD, {});
+    delete (old.record as Partial<NormalizedRecord>).post;
+    const merged = mergeSources([old]);
+    expect(merged.postSources).toBeNull();
+    expect(merged.record.post).toBeNull();
+    expect(mergePostSources([old])).toBeNull();
+  });
 });
