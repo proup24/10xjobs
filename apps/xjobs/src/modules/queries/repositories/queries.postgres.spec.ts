@@ -78,6 +78,15 @@ describe.skipIf(!url)('query search repository in PostgreSQL', () => {
     return row.id;
   }
 
+  async function draftOf(id: string): Promise<void> {
+    await db.execute(
+      db.raw
+        .sql`UPDATE profiles SET state = 'draft', "publishedAt" = NULL WHERE id = ${id}::uuid`
+        .affectedCount()
+        .build(),
+    );
+  }
+
   beforeAll(async () => {
     const target = new URL(url!);
     if (
@@ -147,5 +156,188 @@ describe.skipIf(!url)('query search repository in PostgreSQL', () => {
         (row) => row.channel === Channel.LINKEDIN_POSTS,
       ),
     ).toMatchObject({ associatedProfiles: 0, isActive: false });
+  });
+
+  const ashby = (location: string) =>
+    toRecipe({
+      channel: Channel.ASHBY,
+      position: input.position,
+      location,
+      experience: 'senior',
+      type: Arrangement.remote,
+      technologies: ['nestjs'],
+      domain: SkillDomain.backend,
+      languages: input.languages,
+    });
+
+  async function builderOf(recipe: { hash: string }) {
+    return db.orm.public.QuerySearchBuilder.where({
+      hash: recipe.hash,
+    }).first();
+  }
+
+  it('replace keeps shared builders linked throughout', async () => {
+    const id = await profile();
+    const [a, b, c] = [ashby('emea'), ashby('paris'), ashby('berlin')];
+    await repo.attach(id, [a, b]);
+
+    const result = await repo.replace(id, [b, c], {
+      searchesVersion: 3,
+      postSearch: false,
+    });
+
+    expect(result).toEqual({
+      created: 1,
+      existing: 1,
+      released: 1,
+      skipped: null,
+    });
+    const links = await db.orm.public.ProfileQuerySearchBuilder.where({
+      profileId: id,
+    }).all();
+    const linked = new Set(links.map((link) => link.queryId));
+    const [ra, rb, rc] = [
+      await builderOf(a),
+      await builderOf(b),
+      await builderOf(c),
+    ];
+    expect(linked).toEqual(new Set([rb!.id, rc!.id]));
+    expect(ra).toMatchObject({ associatedProfiles: 0, isActive: false });
+    expect(rb).toMatchObject({ associatedProfiles: 1, isActive: true });
+    expect(rc).toMatchObject({ associatedProfiles: 1, isActive: true });
+  });
+
+  it('replace on a draft changes nothing', async () => {
+    const id = await profile();
+    const a = ashby('emea');
+    await draftOf(id);
+
+    expect(
+      await repo.replace(id, [a], { searchesVersion: 5, postSearch: false }),
+    ).toEqual({
+      created: 0,
+      existing: 0,
+      released: 0,
+      skipped: 'not_published',
+    });
+
+    expect(await builderOf(a)).toBeNull();
+    expect(
+      await db.orm.public.ProfileQuerySearchBuilder.where({
+        profileId: id,
+      }).all(),
+    ).toHaveLength(0);
+    expect(
+      (await db.orm.public.Profile.where({ id }).first())!.searchesVersion,
+    ).toBeNull();
+  });
+
+  it('replace sets searchesVersion', async () => {
+    const id = await profile();
+    await repo.replace(id, [ashby('emea')], {
+      searchesVersion: 7,
+      postSearch: false,
+    });
+    expect(
+      (await db.orm.public.Profile.where({ id }).first())!.searchesVersion,
+    ).toBe(7);
+  });
+
+  it('replace with the same recipes changes no counts', async () => {
+    const [id, other] = [await profile(), await profile()];
+    const [a, b] = [ashby('emea'), ashby('paris')];
+    await repo.attach(id, [a, b]);
+    await repo.attach(other, [a]);
+
+    const result = await repo.replace(id, [a, b], {
+      searchesVersion: 2,
+      postSearch: false,
+    });
+
+    expect(result.released).toBe(0);
+    expect(await builderOf(a)).toMatchObject({
+      associatedProfiles: 2,
+      isActive: true,
+    });
+    expect(await builderOf(b)).toMatchObject({
+      associatedProfiles: 1,
+      isActive: true,
+    });
+  });
+
+  it('replace with a stale post search changes nothing', async () => {
+    const [id, other] = [await profile(), await profile()];
+    const [a, b] = [ashby('emea'), ashby('paris')];
+    await repo.attach(id, [a]);
+    await repo.attach(other, [a]);
+    // The switch was turned on after the caller built its recipes.
+    await db.execute(
+      db.raw.sql`UPDATE profiles SET "postSearch" = true WHERE id = ${id}::uuid`
+        .affectedCount()
+        .build(),
+    );
+
+    expect(
+      await repo.replace(id, [b], { searchesVersion: 4, postSearch: false }),
+    ).toEqual({
+      created: 0,
+      existing: 0,
+      released: 0,
+      skipped: 'post_search_changed',
+    });
+
+    expect(await builderOf(b)).toBeNull();
+    const links = await db.orm.public.ProfileQuerySearchBuilder.where({
+      profileId: id,
+    }).all();
+    expect(links.map((link) => link.queryId)).toEqual([
+      (await builderOf(a))!.id,
+    ]);
+    expect(await builderOf(a)).toMatchObject({
+      associatedProfiles: 2,
+      isActive: true,
+    });
+    expect(
+      (await db.orm.public.Profile.where({ id }).first())!.searchesVersion,
+    ).toBeNull();
+  });
+
+  it('releaseAndDelete releases every builder and deletes the profile', async () => {
+    const [id, other] = [await profile(), await profile()];
+    const [a, b] = [ashby('emea'), ashby('paris')];
+    await repo.attach(id, [a, b]);
+    await repo.attach(other, [a]);
+
+    expect(await repo.releaseAndDelete(id)).toBe(true);
+
+    expect(await db.orm.public.Profile.where({ id }).first()).toBeNull();
+    expect(await builderOf(a)).toMatchObject({
+      associatedProfiles: 1,
+      isActive: true,
+    });
+    expect(await builderOf(b)).toMatchObject({
+      associatedProfiles: 0,
+      isActive: false,
+    });
+  });
+
+  it('releaseAndDelete leaves a draft alone', async () => {
+    const id = await profile();
+    const a = ashby('emea');
+    await repo.attach(id, [a]);
+    await draftOf(id);
+
+    expect(await repo.releaseAndDelete(id)).toBe(false);
+
+    expect(await db.orm.public.Profile.where({ id }).first()).not.toBeNull();
+    expect(await builderOf(a)).toMatchObject({
+      associatedProfiles: 1,
+      isActive: true,
+    });
+    expect(
+      await db.orm.public.ProfileQuerySearchBuilder.where({
+        profileId: id,
+      }).all(),
+    ).toHaveLength(1);
   });
 });

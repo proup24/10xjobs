@@ -34,7 +34,7 @@ async function main(): Promise<void> {
   // The repositories only read `db` from the database service.
   const database = { db } as DatabaseService;
   try {
-    const { profiles, retired, postsKept, postsDropped } =
+    const { profiles, failed, skipped, retired, postsKept, postsDropped } =
       await regeneratePublished({
         profiles: new PrismaProfilesRepository(database),
         postsAllowed,
@@ -43,11 +43,16 @@ async function main(): Promise<void> {
         ),
       });
     logger.log(
-      `Regenerated ${profiles} published profiles; retired ${retired} outdated builders`,
+      `Regenerated ${profiles - failed - skipped} of ${profiles} published profiles; retired ${retired} outdated builders`,
     );
+    if (failed > 0 || skipped > 0)
+      logger.warn(
+        `${failed} profiles failed and ${skipped} were skipped (unpublished or post search switched meanwhile); their builders did not change. Run it again.`,
+      );
     logger.log(
       `Post search on: ${postsKept} profiles kept their post builders, ${postsDropped} did not`,
     );
+    if (failed > 0) process.exitCode = 1;
     if (postsDropped > 0)
       logger.warn(
         `${postsDropped} profiles have post search on but their owner is not in POST_SEARCH_USERS: their post builders were not attached. Set POST_SEARCH_USERS where you run this and run it again.`,

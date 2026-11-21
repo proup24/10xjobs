@@ -2,7 +2,9 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import {
   Channel,
@@ -14,8 +16,10 @@ import {
   QuerySearchService,
   type QuerySearchProfileInput,
 } from 'src/modules/queries';
+import { StorageService } from 'src/modules/storage';
 import { ProfilesRepository } from '../repositories/profiles.repository';
 import { postRecipes } from 'src/modules/queries/posts';
+import { describeError } from 'src/utils';
 import { PostSearchAccess } from './post-search-access';
 import { UsersService } from './users.service';
 import { allPlaces, placeTexts } from './place-labels';
@@ -122,7 +126,7 @@ function profilePlaces(profile: ProfileWithSkills): PlacesByArrangement {
 }
 
 /** The labels of every place the profile lists. */
-function labelsFor(
+export function labelsFor(
   profiles: Pick<ProfilesRepository, 'placeLabels'>,
   profile: ProfileWithSkills,
 ): Promise<PlaceLabels> {
@@ -133,8 +137,8 @@ export const ELIGIBILITY_REQUIRED =
   'set your country of residence and answer the visa sponsorship question before publishing';
 
 const PROFILE_NOT_FOUND = 'Profile not found';
-export const PROFILE_PUBLISHED =
-  'A published profile cannot be changed; delete it and create a new one';
+export const PROFILE_PUBLISHED = 'This profile is already published';
+export const PROFILE_NOT_PUBLISHED = 'This profile is not published';
 
 /** A deleted user and another user's profile look the same to the caller: 'Profile not found'. */
 async function profileNotFoundIfUserGone<T>(lookup: Promise<T>): Promise<T> {
@@ -154,6 +158,21 @@ function publishedConflict(): ConflictException {
   });
 }
 
+function notPublishedConflict(): ConflictException {
+  return new ConflictException({
+    message: PROFILE_NOT_PUBLISHED,
+    code: ErrorCode.PROFILE_NOT_PUBLISHED,
+  });
+}
+
+const regenerateLogger = new Logger('Regenerate');
+const deleteLogger = new Logger('DeleteProfile');
+
+/** The web app's resume bucket and folder layout (`apps/web/src/lib/resume/key.ts`). */
+export const RESUMES_BUCKET = 'resumes';
+export const profileFolder = (userId: string, profileId: string): string =>
+  `${userId}/${profileId}`;
+
 /** What regenerating published profiles needs. */
 export interface RegenerateDeps {
   profiles: Pick<ProfilesRepository, 'listPublished' | 'placeLabels'>;
@@ -161,12 +180,17 @@ export interface RegenerateDeps {
   postsAllowed: (userId: string) => boolean;
   querySearch: Pick<
     QuerySearchService,
-    'detach' | 'generate' | 'retireOutdated'
+    'recipesFor' | 'replace' | 'retireOutdated'
   >;
 }
 
 export interface RegenerateResult {
+  /** Published profiles read. */
   profiles: number;
+  /** Profiles whose regeneration threw; the others still ran, and so did retiring. */
+  failed: number;
+  /** Profiles `replace` skipped: unpublished or post search switched since the read. */
+  skipped: number;
   retired: number;
   /** Profiles with post search on that kept their post builders. */
   postsKept: number;
@@ -189,19 +213,38 @@ export async function regeneratePublished(
   const published = await deps.profiles.listPublished();
   let postsKept = 0;
   let postsDropped = 0;
+  let failed = 0;
+  let skipped = 0;
   for (const profile of published) {
-    // Labels first: a missing one throws before the profile loses its builders.
-    const labels = await labelsFor(deps.profiles, profile);
-    const posts = profile.postSearch && deps.postsAllowed(profile.userId);
-    if (posts) postsKept += 1;
-    else if (profile.postSearch) postsDropped += 1;
-    await deps.querySearch.detach(profile.id);
-    await deps.querySearch.generate(profile.id, toInput(profile, labels), {
-      posts,
-    });
+    try {
+      // Labels first: a missing one throws before the profile's builders change.
+      const labels = await labelsFor(deps.profiles, profile);
+      const posts = profile.postSearch && deps.postsAllowed(profile.userId);
+      const recipes = deps.querySearch.recipesFor(toInput(profile, labels), {
+        posts,
+      });
+      const result = await deps.querySearch.replace(profile.id, recipes, {
+        searchesVersion: profile.matchVersion,
+        postSearch: profile.postSearch,
+      });
+      if (result.skipped) {
+        skipped += 1;
+        continue;
+      }
+      if (posts) postsKept += 1;
+      else if (profile.postSearch) postsDropped += 1;
+    } catch (error) {
+      // One broken profile must not stop the rest. Ids and codes only.
+      failed += 1;
+      regenerateLogger.error(
+        `Regenerate failed profile=${profile.id}: ${describeError(error)}`,
+      );
+    }
   }
   return {
     profiles: published.length,
+    failed,
+    skipped,
     retired: await deps.querySearch.retireOutdated(),
     postsKept,
     postsDropped,
@@ -216,6 +259,7 @@ export class ProfilesService {
     private readonly profiles: ProfilesRepository,
     private readonly querySearch: QuerySearchService,
     private readonly postSearch: PostSearchAccess,
+    private readonly storage: StorageService,
   ) {}
 
   /** 404s an unknown user, or a profile that is not this user's. */
@@ -285,6 +329,8 @@ export class ProfilesService {
       userId,
       profile.id,
       new Date(),
+      profile.matchVersion,
+      profile.postSearch,
     );
     if (!published) {
       // Deleted meanwhile: release what was just attached so counts stay right.
@@ -294,6 +340,40 @@ export class ProfilesService {
       return this.rejectWrite(userId, profile.id);
     }
     return { ...toProfileView(published), querySearches };
+  }
+
+  /**
+   * Deletes a published profile and releases its query search builders in one
+   * transaction. 404 like getOrThrow; 409 for a draft. Deleted or unpublished
+   * meanwhile (including a repeated delete) is a 404.
+   *
+   * The profile's resume files go first, with the service role: the user's own
+   * Storage policy keeps a published profile's live file, and once the row is
+   * gone nobody could reach the folder. A storage failure is a 503 that keeps
+   * the row and its searches, so a retry (with an emptied folder) finishes.
+   */
+  async deletePublished(
+    userId: string,
+    profileId: string,
+  ): Promise<{ id: string }> {
+    const profile = await this.getOrThrow(userId, profileId);
+    if (profile.state !== ProfileState.published) throw notPublishedConflict();
+    try {
+      await this.storage.deletePrefix(
+        RESUMES_BUCKET,
+        profileFolder(userId, profile.id),
+      );
+    } catch (error) {
+      deleteLogger.error(
+        `Resume removal failed for profile ${profile.id} (user ${userId}): ${describeError(error)}`,
+      );
+      throw new ServiceUnavailableException(
+        'Could not remove the resume files; try again',
+      );
+    }
+    if (!(await this.querySearch.releaseAndDelete(profile.id)))
+      throw new NotFoundException(PROFILE_NOT_FOUND);
+    return { id: profile.id };
   }
 
   /** The switch, for any owner: stored value, whether the owner may turn it on, and the searches it gives. */

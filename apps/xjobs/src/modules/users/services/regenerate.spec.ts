@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import type { QuerySearchProfileInput } from 'src/modules/queries';
 import type { PlaceLabels } from './place-labels';
 import { regeneratePublished } from './profiles.service';
@@ -24,13 +25,10 @@ describe('regeneratePublished', () => {
           placeLabels: noLabels,
         },
         querySearch: {
-          detach: async (id: string) => {
-            calls.push(`detach:${id}`);
-            return 1;
-          },
-          generate: async (id: string) => {
-            calls.push(`generate:${id}`);
-            return {} as never;
+          recipesFor: () => [{}] as never,
+          replace: async (id: string) => {
+            calls.push(`replace:${id}`);
+            return { created: 0, existing: 0, released: 0, skipped: null };
           },
           retireOutdated: async () => {
             calls.push('retire');
@@ -41,15 +39,11 @@ describe('regeneratePublished', () => {
       () => ({}) as never,
     );
 
-    expect(calls).toEqual([
-      'detach:p1',
-      'generate:p1',
-      'detach:p2',
-      'generate:p2',
-      'retire',
-    ]);
+    expect(calls).toEqual(['replace:p1', 'replace:p2', 'retire']);
     expect(result).toEqual({
       profiles: 2,
+      failed: 0,
+      skipped: 0,
       retired: 3,
       postsKept: 0,
       postsDropped: 0,
@@ -91,11 +85,16 @@ describe('regeneratePublished', () => {
         },
       },
       querySearch: {
-        detach: async () => 0,
-        generate: async (_id, input) => {
+        recipesFor: (input) => {
           inputs.push(input);
-          return { created: 1, existing: 0 };
+          return [{}] as never;
         },
+        replace: async () => ({
+          created: 1,
+          existing: 0,
+          released: 0,
+          skipped: null,
+        }),
         retireOutdated: async () => 0,
       },
     });
@@ -107,5 +106,81 @@ describe('regeneratePublished', () => {
       hybrid: [],
       onsite: ['Paris, France'],
     });
+  });
+
+  it('regenerate sets searchesVersion', async () => {
+    const locations = { remote: [], hybrid: [], onsite: [] };
+    const published = [{ id: 'p1', locations, matchVersion: 7 }] as never[];
+    const versions: number[] = [];
+    await regeneratePublished(
+      {
+        postsAllowed: () => false,
+        profiles: {
+          listPublished: async () => published,
+          placeLabels: noLabels,
+        },
+        querySearch: {
+          recipesFor: () => [{}] as never,
+          replace: async (_id, _recipes, { searchesVersion }) => {
+            versions.push(searchesVersion);
+            return { created: 0, existing: 0, released: 0, skipped: null };
+          },
+          retireOutdated: async () => 0,
+        },
+      },
+      () => ({}) as never,
+    );
+    expect(versions).toEqual([7]);
+  });
+
+  it('keeps going past a profile that throws, and still retires', async () => {
+    const calls: string[] = [];
+    const locations = { remote: [], hybrid: [], onsite: [] };
+    const published = [
+      { id: 'p1', locations },
+      { id: 'p2', locations },
+      { id: 'p3', locations },
+    ] as never[];
+    const error = vi
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
+    const result = await regeneratePublished(
+      {
+        postsAllowed: () => false,
+        profiles: {
+          listPublished: async () => published,
+          placeLabels: noLabels,
+        },
+        querySearch: {
+          recipesFor: () => [{}] as never,
+          replace: async (id: string) => {
+            calls.push(`replace:${id}`);
+            if (id === 'p2')
+              throw Object.assign(new Error('secret'), { code: '40001' });
+            return {
+              created: 0,
+              existing: 0,
+              released: 0,
+              skipped: id === 'p3' ? ('post_search_changed' as const) : null,
+            };
+          },
+          retireOutdated: async () => {
+            calls.push('retire');
+            return 1;
+          },
+        },
+      },
+      () => ({}) as never,
+    );
+
+    expect(calls).toEqual(['replace:p1', 'replace:p2', 'replace:p3', 'retire']);
+    expect(result).toMatchObject({
+      profiles: 3,
+      failed: 1,
+      skipped: 1,
+      retired: 1,
+    });
+    expect(error).toHaveBeenCalledWith('Regenerate failed profile=p2: 40001');
+    error.mockRestore();
   });
 });

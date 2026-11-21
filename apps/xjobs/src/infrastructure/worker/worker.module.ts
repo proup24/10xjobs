@@ -17,6 +17,7 @@ import { MatcherModule } from 'src/modules/matcher';
 import { ProcessorModule } from 'src/modules/processor';
 import { RatesModule } from 'src/modules/rates';
 import { StorageModule } from 'src/modules/storage';
+import { ProfileSearchModule } from 'src/modules/users';
 import { WebhooksModule } from 'src/modules/webhooks';
 import { CollectionWorkerService } from './collection.service';
 import { InfrastructureWorkerService } from './infrastructure.service';
@@ -51,6 +52,7 @@ import { WorkerService } from './worker.service';
     RatesModule,
     StorageModule,
     WebhooksModule,
+    ProfileSearchModule,
   ],
   providers: [
     {

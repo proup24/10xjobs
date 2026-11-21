@@ -94,6 +94,18 @@ export class FakeProfilesRepository extends ProfilesRepository {
     return this.rows.filter((row) => row.state === ProfileState.published);
   }
 
+  async listSearchesBehind(limit: number) {
+    return this.rows
+      .filter(
+        (row) =>
+          row.state === ProfileState.published &&
+          (row.searchesVersion === null ||
+            row.searchesVersion < row.matchVersion),
+      )
+      .sort((a, b) => a.updatedAt.getTime() - b.updatedAt.getTime())
+      .slice(0, limit);
+  }
+
   async findById(userId: string, profileId: string) {
     return (
       this.rows.find((row) => row.userId === userId && row.id === profileId) ??
@@ -147,12 +159,20 @@ export class FakeProfilesRepository extends ProfilesRepository {
     return profile;
   }
 
-  async publish(userId: string, profileId: string, publishedAt: Date) {
+  async publish(
+    userId: string,
+    profileId: string,
+    publishedAt: Date,
+    searchesVersion: number,
+    postSearch: boolean,
+  ) {
     const profile = await this.findById(userId, profileId);
     if (profile?.state !== ProfileState.draft) return null;
     return Object.assign(profile, {
       state: ProfileState.published,
       publishedAt,
+      searchesVersion:
+        profile.postSearch === postSearch ? searchesVersion : null,
     });
   }
 

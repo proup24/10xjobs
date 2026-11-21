@@ -6,7 +6,12 @@ import {
   type QuerySearchBuilderRow,
 } from 'src/database';
 import type { DatabaseTransaction } from '@xjobs/database';
-import type { QuerySearchRecipe, QuerySearchAttachResult } from '../types';
+import type {
+  QuerySearchRecipe,
+  QuerySearchAttachResult,
+  QuerySearchReplaceExpected,
+  QuerySearchReplaceResult,
+} from '../types';
 
 /**
  * Query search builders are shared recipes, deduplicated by hash across every
@@ -49,6 +54,24 @@ export abstract class QuerySearchRepository {
    * any more (inactive). Returns how many it retired.
    */
   abstract retireOutdated(version: number): Promise<number>;
+  /**
+   * Swaps the profile's builders for those of `recipes` in one transaction:
+   * links the wanted ones, unlinks the rest (a builder the profile keeps is
+   * never unlinked), then records `searchesVersion` on the published profile.
+   * Skipped, with nothing changed, when the profile is not published or its
+   * post search switch is no longer `expected.postSearch`: the recipes were
+   * built from an older read, and the caller retries with a fresh one.
+   */
+  abstract replace(
+    profileId: string,
+    recipes: QuerySearchRecipe[],
+    expected: QuerySearchReplaceExpected,
+  ): Promise<QuerySearchReplaceResult>;
+  /**
+   * In one transaction, unlinks every builder and deletes the published
+   * profile. False, with nothing released, when no published profile matched.
+   */
+  abstract releaseAndDelete(profileId: string): Promise<boolean>;
   /** Retires a builder: unlinks every profile and deactivates it for good. */
   abstract softDelete(queryId: string): Promise<QuerySearchBuilderRow | null>;
 }
@@ -105,54 +128,153 @@ export class PrismaQuerySearchRepository extends QuerySearchRepository {
     profileId: string,
     recipes: QuerySearchRecipe[],
   ): Promise<QuerySearchAttachResult> {
+    return this.transaction((tx) =>
+      PrismaQuerySearchRepository.attachIn(tx, profileId, recipes),
+    );
+  }
+
+  // Builder locks of two profiles' swaps can cross; the 40P01 retry in `transaction` covers it.
+  private static async attachIn(
+    tx: DatabaseTransaction,
+    profileId: string,
+    recipes: QuerySearchRecipe[],
+  ): Promise<QuerySearchAttachResult> {
     // A stable order keeps concurrent syncs from locking builders crosswise.
     const wanted = [...recipes].sort((a, b) =>
       a.hash < b.hash ? -1 : a.hash > b.hash ? 1 : 0,
     );
-    return this.transaction(async (tx) => {
-      const orm = tx.orm.public;
-      const result: QuerySearchAttachResult = { created: 0, existing: 0 };
+    const orm = tx.orm.public;
+    const result: QuerySearchAttachResult = { created: 0, existing: 0 };
 
-      for (const recipe of wanted) {
-        let builder = await orm.QuerySearchBuilder.where({
-          hash: recipe.hash,
-        }).first();
-        if (!builder) {
-          // `position` only shapes the keyword and is not a column.
-          const {
-            position: _position,
-            languages: _languages,
-            experienceLevel: _experienceLevel,
-            ...columns
-          } = recipe;
-          builder = await orm.QuerySearchBuilder.create({
-            ...columns,
-            // A seniority code; the column still holds the Seniority enum's values.
-            experience: columns.experience as Seniority,
-            // Channel builders emit plain JSON; the column type is the JSON union.
-            params: columns.params as QuerySearchBuilderRow['params'],
-            associatedProfiles: 0,
-            isActive: false,
-            isDeleted: false,
-          });
-          result.created += 1;
-        } else {
-          result.existing += 1;
-        }
-        if (builder.isDeleted) continue;
-        const linked = await orm.ProfileQuerySearchBuilder.where({
-          profileId,
-          queryId: builder.id,
-        }).first();
-        if (linked) continue;
-        await orm.ProfileQuerySearchBuilder.create({
-          profileId,
-          queryId: builder.id,
+    for (const recipe of wanted) {
+      let builder = await orm.QuerySearchBuilder.where({
+        hash: recipe.hash,
+      }).first();
+      if (!builder) {
+        // `position` only shapes the keyword and is not a column.
+        const {
+          position: _position,
+          languages: _languages,
+          experienceLevel: _experienceLevel,
+          ...columns
+        } = recipe;
+        builder = await orm.QuerySearchBuilder.create({
+          ...columns,
+          // A seniority code; the column still holds the Seniority enum's values.
+          experience: columns.experience as Seniority,
+          // Channel builders emit plain JSON; the column type is the JSON union.
+          params: columns.params as QuerySearchBuilderRow['params'],
+          associatedProfiles: 0,
+          isActive: false,
+          isDeleted: false,
         });
-        await PrismaQuerySearchRepository.adjust(tx, builder.id, 1);
+        result.created += 1;
+      } else {
+        result.existing += 1;
       }
+      if (builder.isDeleted) continue;
+      const linked = await orm.ProfileQuerySearchBuilder.where({
+        profileId,
+        queryId: builder.id,
+      }).first();
+      if (linked) continue;
+      await orm.ProfileQuerySearchBuilder.create({
+        profileId,
+        queryId: builder.id,
+      });
+      await PrismaQuerySearchRepository.adjust(tx, builder.id, 1);
+    }
 
-      return result;
+    return result;
+  }
+
+  // Same note as `attachIn`: a deadlock here is retried by `transaction`.
+  /** Unlinks the profile's builders (all, or those `keep` rejects); returns how many. */
+  private static async releaseIn(
+    tx: DatabaseTransaction,
+    profileId: string,
+    keepHashes?: Set<string>,
+  ): Promise<number> {
+    const orm = tx.orm.public;
+    const links = await orm.ProfileQuerySearchBuilder.where({ profileId })
+      .orderBy((link) => link.queryId.asc())
+      .all();
+    let dropped = links;
+    if (keepHashes && links.length) {
+      const builders = await orm.QuerySearchBuilder.where((row) =>
+        row.id.in(links.map((link) => link.queryId)),
+      ).all();
+      const kept = new Set(
+        builders
+          .filter((builder) => keepHashes.has(builder.hash))
+          .map((builder) => builder.id),
+      );
+      dropped = links.filter((link) => !kept.has(link.queryId));
+    }
+    for (const link of dropped) {
+      await orm.ProfileQuerySearchBuilder.where({ id: link.id }).delete();
+      await PrismaQuerySearchRepository.adjust(tx, link.queryId, -1);
+    }
+    return dropped.length;
+  }
+
+  replace(
+    profileId: string,
+    recipes: QuerySearchRecipe[],
+    expected: QuerySearchReplaceExpected,
+  ): Promise<QuerySearchReplaceResult> {
+    const nothing = { created: 0, existing: 0, released: 0 };
+    const wanted = new Set(recipes.map((recipe) => recipe.hash));
+    return this.transaction(async (tx) => {
+      // Lock the profile first (as releaseAndDelete does): a draft or missing
+      // profile must never gain links, since deleting it would skip `adjust`.
+      const profile = await tx.orm.public.Profile.where({
+        id: profileId,
+        state: 'published',
+      })
+        .forUpdate()
+        .first();
+      if (!profile) return { ...nothing, skipped: 'not_published' };
+      // The switch path writes the flag before it attaches or detaches post
+      // builders, and that write waits on this lock: a flag that moved since
+      // the caller's read means its recipes are stale, so change nothing.
+      if (profile.postSearch !== expected.postSearch)
+        return { ...nothing, skipped: 'post_search_changed' };
+      const attached = await PrismaQuerySearchRepository.attachIn(
+        tx,
+        profileId,
+        recipes,
+      );
+      const released = await PrismaQuerySearchRepository.releaseIn(
+        tx,
+        profileId,
+        wanted,
+      );
+      await tx.execute(
+        tx.raw
+          .sql`UPDATE profiles SET "searchesVersion" = ${expected.searchesVersion} WHERE id = ${profileId}::uuid AND state = 'published'`
+          .affectedCount()
+          .build(),
+      );
+      return { ...attached, released, skipped: null };
+    });
+  }
+
+  releaseAndDelete(profileId: string): Promise<boolean> {
+    return this.transaction(async (tx) => {
+      const profile = await tx.orm.public.Profile.where({
+        id: profileId,
+        state: 'published',
+      })
+        .forUpdate()
+        .first();
+      if (!profile) return false;
+      // A match job inserting a decision for this profile meanwhile can hit a
+      // 23503 foreign key error; that job retries and finds the profile gone.
+      await PrismaQuerySearchRepository.releaseIn(tx, profileId);
+      // The row is locked and published, so this deletes exactly it.
+      await tx.orm.public.Profile.where({ id: profileId }).deleteAll();
+      return true;
     });
   }
 

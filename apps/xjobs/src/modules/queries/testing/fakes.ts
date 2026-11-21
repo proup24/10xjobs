@@ -2,7 +2,12 @@
 import type { Channel } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
 import { QuerySearchRepository } from '../repositories/queries.repository';
-import type { QuerySearchRecipe, QuerySearchAttachResult } from '../types';
+import type {
+  QuerySearchRecipe,
+  QuerySearchAttachResult,
+  QuerySearchReplaceExpected,
+  QuerySearchReplaceResult,
+} from '../types';
 
 export class FakeQuerySearchRepository extends QuerySearchRepository {
   rows: QuerySearchBuilderRow[] = [];
@@ -130,6 +135,48 @@ export class FakeQuerySearchRepository extends QuerySearchRepository {
     );
     for (const row of outdated) row.isDeleted = true;
     return outdated.length;
+  }
+
+  /** Profile id → searchesVersion recorded by `replace`. */
+  searchesVersions = new Map<string, number>();
+  /** Profile ids that exist and are published; `releaseAndDelete` removes them. */
+  published = new Set<string>();
+  /** Profile id → stored post search switch; a profile not listed has it off. */
+  postSearch = new Map<string, boolean>();
+
+  async replace(
+    profileId: string,
+    recipes: QuerySearchRecipe[],
+    expected: QuerySearchReplaceExpected,
+  ): Promise<QuerySearchReplaceResult> {
+    const nothing = { created: 0, existing: 0, released: 0 };
+    if (!this.published.has(profileId))
+      return { ...nothing, skipped: 'not_published' };
+    if ((this.postSearch.get(profileId) ?? false) !== expected.postSearch)
+      return { ...nothing, skipped: 'post_search_changed' };
+    const attached = await this.attach(profileId, recipes);
+    const wanted = new Set(recipes.map((recipe) => recipe.hash));
+    const hashOf = (queryId: string): string => {
+      const row = this.rows.find((candidate) => candidate.id === queryId);
+      if (!row) throw new Error('missing builder');
+      return row.hash;
+    };
+    const drop = this.links.filter(
+      (link) =>
+        link.profileId === profileId && !wanted.has(hashOf(link.queryId)),
+    );
+    this.links = this.links.filter((link) => !drop.includes(link));
+    for (const link of drop) this.adjust(link.queryId, -1);
+    this.searchesVersions.set(profileId, expected.searchesVersion);
+    return { ...attached, released: drop.length, skipped: null };
+  }
+
+  async releaseAndDelete(profileId: string): Promise<boolean> {
+    if (!this.published.has(profileId)) return false;
+    await this.detach(profileId);
+    this.published.delete(profileId);
+    this.owners.delete(profileId);
+    return true;
   }
 
   async softDelete(queryId: string): Promise<QuerySearchBuilderRow | null> {

@@ -35,6 +35,7 @@ function setup(opts: {
     {} as never,
     {} as never,
     {} as never,
+    {} as never,
     rates as never,
     opts.runSchedules,
   );

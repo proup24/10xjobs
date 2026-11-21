@@ -3,12 +3,14 @@ import {
   ConflictException,
   ForbiddenException,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { Engagement, Seniority, SkillDomain } from 'src/common/enums';
 import {
   ELIGIBILITY_REQUIRED,
   PROFILE_PUBLISHED,
   ProfilesService,
+  RESUMES_BUCKET,
   toProfileView,
   toQuerySearchInput,
 } from './profiles.service';
@@ -19,6 +21,7 @@ import {
   SKILLS_REQUIRED,
 } from 'src/modules/queries';
 import { FakeQuerySearchRepository } from 'src/modules/queries/testing/fakes';
+import { MemoryStorageService } from 'src/modules/storage/testing';
 import { FakeProfilesRepository, FakeUsersRepository } from '../testing/fakes';
 import { UsersService } from './users.service';
 import { PostSearchAccess } from './post-search-access';
@@ -61,6 +64,7 @@ describe('ProfilesService', () => {
   let userRows: FakeUsersRepository;
   let profiles: FakeProfilesRepository;
   let querySearches: FakeQuerySearchRepository;
+  let storage: MemoryStorageService;
   let service: ProfilesService;
   let listed: string[];
   let userId: string;
@@ -71,12 +75,28 @@ describe('ProfilesService', () => {
     const users = new UsersService(userRows);
     profiles = new FakeProfilesRepository();
     querySearches = new FakeQuerySearchRepository();
+    storage = new MemoryStorageService();
     service = new ProfilesService(
       users,
       profiles,
       new QuerySearchService(querySearches),
       { allows: (id: string) => listed.includes(id) } as PostSearchAccess,
+      storage,
     );
+    // The real publish makes the profile row the swap locks; mirror it here.
+    const publish = profiles.publish.bind(profiles);
+    vi.spyOn(profiles, 'publish').mockImplementation(async (...args) => {
+      const row = await publish(...args);
+      if (row) querySearches.published.add((row as { id: string }).id);
+      return row;
+    });
+    // The swap reads the stored post search switch from the same row.
+    const setPostSearch = profiles.setPostSearch.bind(profiles);
+    vi.spyOn(profiles, 'setPostSearch').mockImplementation(async (...args) => {
+      const row = await setPostSearch(...args);
+      if (row) querySearches.postSearch.set(row.id, row.postSearch);
+      return row;
+    });
     userId = userRows.add('A').id;
     listed = [userId];
     otherUserId = userRows.add('B').id;
@@ -250,6 +270,14 @@ describe('ProfilesService', () => {
       });
     });
 
+    it('publish records the version it attached for', async () => {
+      const { id } = await create(stack);
+      const profile = (await profiles.findById(userId, id))!;
+      profile.matchVersion = 4;
+      await service.publish(userId, id);
+      expect((await profiles.findById(userId, id))?.searchesVersion).toBe(4);
+    });
+
     it('publishes once, attaching its query search builders', async () => {
       const { id } = await create(stack);
       const first = await service.publish(userId, id);
@@ -326,6 +354,109 @@ describe('ProfilesService', () => {
     });
   });
 
+  describe('deleting a published profile', () => {
+    const stack = [skill('nodejs', 8)];
+
+    it('deletePublished releases searches and deletes', async () => {
+      const { id } = await create(stack);
+      await service.publish(userId, id);
+      expect(querySearches.links.length).toBeGreaterThan(0);
+      await expect(service.deletePublished(userId, id)).resolves.toEqual({
+        id,
+      });
+      expect(querySearches.links).toHaveLength(0);
+      expect(querySearches.published.has(id)).toBe(false);
+      // A repeat finds nothing to release: a 404, not a 500.
+      await expect(service.deletePublished(userId, id)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+    });
+
+    const pdf = Buffer.from('%PDF-1.7');
+    const putResume = (owner: string, profileId: string, name: string) =>
+      storage.put(RESUMES_BUCKET, `${owner}/${profileId}/${name}.pdf`, pdf);
+
+    it("deletePublished removes the profile's resume files before deleting", async () => {
+      const { id } = await create(stack);
+      await service.publish(userId, id);
+      const other = await create(stack);
+      await putResume(userId, id, 'live');
+      await putResume(userId, id, 'old');
+      await putResume(userId, other.id, 'kept');
+      const release = vi.spyOn(querySearches, 'releaseAndDelete');
+      const removal = vi.spyOn(storage, 'deletePrefix');
+      await expect(service.deletePublished(userId, id)).resolves.toEqual({
+        id,
+      });
+      expect(removal).toHaveBeenCalledWith(RESUMES_BUCKET, `${userId}/${id}`);
+      expect(removal.mock.invocationCallOrder[0]).toBeLessThan(
+        release.mock.invocationCallOrder[0],
+      );
+      expect(storage.keys(RESUMES_BUCKET)).toEqual([
+        `${userId}/${other.id}/kept.pdf`,
+      ]);
+      expect(querySearches.published.has(id)).toBe(false);
+    });
+
+    it('a storage failure keeps the profile', async () => {
+      const { id } = await create(stack);
+      await service.publish(userId, id);
+      await putResume(userId, id, 'live');
+      const release = vi.spyOn(querySearches, 'releaseAndDelete');
+      storage.failNextDelete = true;
+      const error = await service.deletePublished(userId, id).catch((e) => e);
+      expect(error).toBeInstanceOf(ServiceUnavailableException);
+      expect(release).not.toHaveBeenCalled();
+      expect((await profiles.findById(userId, id))?.state).toBe('published');
+      expect(querySearches.published.has(id)).toBe(true);
+      expect(storage.keys(RESUMES_BUCKET)).toEqual([
+        `${userId}/${id}/live.pdf`,
+      ]);
+    });
+
+    it('a retry with an empty folder still deletes', async () => {
+      const { id } = await create(stack);
+      await service.publish(userId, id);
+      storage.failNextDelete = true;
+      await expect(service.deletePublished(userId, id)).rejects.toBeInstanceOf(
+        ServiceUnavailableException,
+      );
+      await expect(service.deletePublished(userId, id)).resolves.toEqual({
+        id,
+      });
+      expect(querySearches.published.has(id)).toBe(false);
+    });
+
+    it("a draft or another user's profile leaves the files alone", async () => {
+      const { id } = await create(stack);
+      await putResume(userId, id, 'draft');
+      await service.deletePublished(userId, id).catch(() => undefined);
+      await service.deletePublished(otherUserId, id).catch(() => undefined);
+      expect(storage.keys(RESUMES_BUCKET)).toEqual([
+        `${userId}/${id}/draft.pdf`,
+      ]);
+    });
+
+    it('refuses a draft with PROFILE_NOT_PUBLISHED', async () => {
+      const { id } = await create(stack);
+      const error = await service.deletePublished(userId, id).catch((e) => e);
+      expect(error).toBeInstanceOf(ConflictException);
+      expect(error.getResponse()).toEqual({
+        message: 'This profile is not published',
+        code: 'PROFILE_NOT_PUBLISHED',
+      });
+    });
+
+    it("404s another user's profile", async () => {
+      const { id } = await create(stack);
+      await service.publish(userId, id);
+      await expect(
+        service.deletePublished(otherUserId, id),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(querySearches.published.has(id)).toBe(true);
+    });
+  });
+
   describe('regenerating to the current recipe', () => {
     /** Turns every builder into one from an older recipe, as after a version bump. */
     const ageBuilders = () => {
@@ -352,6 +483,8 @@ describe('ProfilesService', () => {
 
       expect(result).toEqual({
         profiles: 1,
+        failed: 0,
+        skipped: 0,
         retired: old,
         postsKept: 0,
         postsDropped: 0,
@@ -378,6 +511,8 @@ describe('ProfilesService', () => {
 
       expect(await service.regeneratePublished()).toEqual({
         profiles: 1,
+        failed: 0,
+        skipped: 0,
         retired: 0,
         postsKept: 0,
         postsDropped: 0,
@@ -390,6 +525,8 @@ describe('ProfilesService', () => {
       const { id } = await create();
       expect(await service.regeneratePublished()).toEqual({
         profiles: 0,
+        failed: 0,
+        skipped: 0,
         retired: 0,
         postsKept: 0,
         postsDropped: 0,

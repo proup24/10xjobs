@@ -11,15 +11,24 @@ import type { Place, PlaceLabels, ProfileWithSkills } from '../types';
 export abstract class ProfilesRepository {
   /** Every published profile, of every user. */
   abstract listPublished(): Promise<ProfileWithSkills[]>;
+  /** Published profiles whose searches were attached for an older version than their match version (or never), oldest update first. */
+  abstract listSearchesBehind(limit: number): Promise<ProfileWithSkills[]>;
   abstract findById(
     userId: string,
     profileId: string,
   ): Promise<ProfileWithSkills | null>;
-  /** Publishes a draft for good; null when not the user's or already published. */
+  /**
+   * Publishes a draft for good, recording the version its searches were
+   * attached for; null when not the user's or already published. When the post
+   * search switch is no longer `postSearch` (the value the searches were built
+   * from), `searchesVersion` stays null so the search sync rebuilds them.
+   */
   abstract publish(
     userId: string,
     profileId: string,
     publishedAt: Date,
+    searchesVersion: number,
+    postSearch: boolean,
   ): Promise<ProfileWithSkills | null>;
   /** Stores the post search switch; null when the profile is not the user's. Allowed on published profiles. */
   abstract setPostSearch(
@@ -77,6 +86,28 @@ export class PrismaProfilesRepository extends ProfilesRepository {
     return Promise.all(profiles.map((profile) => this.withSkills(profile)));
   }
 
+  async listSearchesBehind(limit: number): Promise<ProfileWithSkills[]> {
+    const { raw, orm } = this.database.db;
+    const rows = await this.database.db.query(
+      raw.sql`SELECT id FROM profiles
+        WHERE state = 'published'
+          AND ("searchesVersion" IS NULL OR "searchesVersion" < "matchVersion")
+        ORDER BY "updatedAt" ASC, id ASC
+        LIMIT ${limit}::int`
+        .returnsRow({ id: 'pg/uuid@1' })
+        .build(),
+    );
+    if (rows.length === 0) return [];
+    // The profile row (and its matchVersion) is read before its skills: skills
+    // newer than the version only make the next tick reapply.
+    const ids = rows.map((row) => row.id as string);
+    const profiles = await orm.public.Profile.where((p) => p.id.in(ids))
+      .orderBy((p) => p.updatedAt.asc())
+      .orderBy((p) => p.id.asc())
+      .all();
+    return Promise.all(profiles.map((profile) => this.withSkills(profile)));
+  }
+
   async findById(
     userId: string,
     profileId: string,
@@ -92,13 +123,26 @@ export class PrismaProfilesRepository extends ProfilesRepository {
     userId: string,
     profileId: string,
     publishedAt: Date,
+    searchesVersion: number,
+    postSearch: boolean,
   ): Promise<ProfileWithSkills | null> {
-    const profile = await this.orm.Profile.where({
-      id: profileId,
-      userId,
-      state: ProfileState.draft,
-    }).update({ state: ProfileState.published, publishedAt });
-    return profile ? this.withSkills(profile) : null;
+    const { db } = this.database;
+    // The CASE reads the row as locked by this UPDATE, so a switch committed
+    // after the caller's read is seen; one committed after this sees a
+    // published profile and attaches or detaches the post builders itself.
+    const rows = await db.query(
+      db.raw.sql`UPDATE profiles
+        SET state = 'published',
+          "publishedAt" = ${publishedAt.toISOString()}::timestamptz,
+          "searchesVersion" = CASE WHEN "postSearch" = ${postSearch}::boolean
+            THEN ${searchesVersion}::int ELSE NULL END
+        WHERE id = ${profileId}::uuid AND "userId" = ${userId}::uuid
+          AND state = 'draft'
+        RETURNING id`
+        .returnsRow({ id: 'pg/uuid@1' })
+        .build(),
+    );
+    return rows.length ? this.findById(userId, profileId) : null;
   }
 
   async setPostSearch(

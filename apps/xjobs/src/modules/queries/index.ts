@@ -15,5 +15,6 @@ export type {
   LocationsByArrangement,
   QuerySearchProfileInput,
   QuerySearchAttachResult,
+  QuerySearchReplaceResult,
   RankedSkill,
 } from './types';

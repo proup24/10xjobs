@@ -19,6 +19,8 @@ import type {
   QuerySearchProfileInput,
   QuerySearchRecipe,
   QuerySearchAttachResult,
+  QuerySearchReplaceExpected,
+  QuerySearchReplaceResult,
 } from '../types';
 
 @Injectable()
@@ -50,11 +52,35 @@ export class QuerySearchService {
     input: QuerySearchProfileInput,
     options?: { posts: boolean },
   ): Promise<QuerySearchAttachResult> {
-    const queries = [
+    return this.builders.attach(profileId, this.recipesFor(input, options));
+  }
+
+  /** Every recipe a profile's searches consist of: its board recipes, plus post searches when `posts` is on. */
+  recipesFor(
+    input: QuerySearchProfileInput,
+    options?: { posts: boolean },
+  ): QuerySearchRecipe[] {
+    return [
       ...this.expand(input),
       ...(options?.posts ? postRecipes(input) : []),
     ];
-    return this.builders.attach(profileId, queries);
+  }
+
+  /**
+   * Swaps the profile's builders for `recipes` in one transaction and records
+   * `searchesVersion`; skipped when the profile no longer matches `expected`.
+   */
+  replace(
+    profileId: string,
+    recipes: QuerySearchRecipe[],
+    expected: QuerySearchReplaceExpected,
+  ): Promise<QuerySearchReplaceResult> {
+    return this.builders.replace(profileId, recipes, expected);
+  }
+
+  /** Releases every builder and deletes the published profile in one transaction; false when none matched. */
+  releaseAndDelete(profileId: string): Promise<boolean> {
+    return this.builders.releaseAndDelete(profileId);
   }
 
   /** Attaches only the profile's LinkedIn post searches (the profile's post switch turned on). */
