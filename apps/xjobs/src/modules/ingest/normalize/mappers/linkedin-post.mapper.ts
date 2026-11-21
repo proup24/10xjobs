@@ -42,9 +42,12 @@ export function mapLinkedinPost(
   const originalText = original ? cleanPostText(original.text ?? '') : '';
   if (!ownText && !originalText) return { invalid: 'prepare: no-text' };
 
+  // The record needs a title or description, and a share with only added text
+  // must still reach Extract, so an original with no text falls back to it.
   const description = originalText || ownText;
+  // Rules judge the original post, never the sharer.
   const drop = firstDrop({
-    text: description,
+    text: original ? originalText : ownText,
     headline: original ? original.author.info : raw.author.info,
   });
   if (drop) return { invalid: `prepare: ${drop.rule}: "${drop.match}"` };
