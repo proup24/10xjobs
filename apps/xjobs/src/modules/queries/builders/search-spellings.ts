@@ -4,6 +4,7 @@ const OVERRIDES: Readonly<Record<string, readonly string[]>> = {
   nodejs: ['nodejs', 'node.js'],
   nextjs: ['nextjs', 'next.js'],
   nestjs: ['nestjs', 'nest.js'],
+  llm: ['llm', 'llms'],
 };
 
 /**

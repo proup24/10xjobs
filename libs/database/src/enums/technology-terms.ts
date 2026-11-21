@@ -69,6 +69,23 @@ export const TECHNOLOGY_TERMS: Readonly<Record<string, string>> = {
   pytorch: 'pytorch',
   tensorflow: 'tensorflow',
   langchain: 'langchain',
+  llm: 'llm',
+  rag: 'rag',
+  claude_code: 'claude code',
+  claude: 'claude',
+  openai: 'openai',
+  langgraph: 'langgraph',
+  ios: 'ios',
+  android: 'android',
+  wordpress: 'wordpress',
+  sap: 'sap',
+  salesforce: 'salesforce',
+  servicenow: 'servicenow',
+  shopify: 'shopify',
+  stripe: 'stripe',
+  playwright: 'playwright',
+  cypress: 'cypress',
+  supabase: 'supabase',
 };
 
 /** Whether a tech tag has search wording; concepts such as `saas` do not. */
