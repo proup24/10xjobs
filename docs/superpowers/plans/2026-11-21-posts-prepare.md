@@ -292,6 +292,7 @@
   - A plain repost maps with `original` set and gets its original's key.
   - A share keeps its added text in `post.text` and gets its original's key.
   - Both land in one job with the original in the Postgres spec, with `postSources` holding both.
+  - `readOriginal` fills `original.truncated` and `original.attachedUrls` from the original's own payload, the way the original scraped alone gets them (PR A keys a post by its text plus its attached links, and the mapper hard-codes `original.attachedUrls: []`). Decide from the real payloads whether a repost's top-level `article` belongs to the share or to the original. Otherwise a repost of a post with an article link keys differently from that post and doesn't join it.
 - [ ] **Step 2: Run.** Expected: FAIL. **Step 3: Implement** `readOriginal`. **Step 4: Run.** Expected: PASS.
 - [ ] **Step 5: Commit** `feat(ingest): shares and reposts join their original, normalizer version 9`.
 
