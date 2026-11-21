@@ -100,7 +100,12 @@ describe('admin routes over HTTP', () => {
   ])('403s a non-admin on %s %s', async (method, path) => {
     const body =
       method === 'POST' ? { authorKey: 'profile:a', reason: 'r' } : undefined;
+    silenced.silence.mockClear();
+    silenced.unsilence.mockClear();
     expect((await call(path, 'other', { method, body })).status).toBe(403);
+    // 403 with no write.
+    expect(silenced.silence).not.toHaveBeenCalled();
+    expect(silenced.unsilence).not.toHaveBeenCalled();
   });
 
   it('round-trips silence and delete with an encoded key', async () => {

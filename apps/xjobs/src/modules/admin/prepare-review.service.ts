@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { SilencedAuthorsRepository } from 'src/modules/ingest/repositories/silenced-authors.repository';
 import { authorOf } from 'src/modules/ingest/normalize/mappers/linkedin-post.mapper';
+import { httpUrl } from 'src/modules/ingest/normalize/linkedin';
 import { readPostPayload } from 'src/modules/ingest/normalize/posts/payload';
 import {
   PrepareReviewRepository,
@@ -87,7 +88,8 @@ function dropView(row: DropRow): DropView {
     reason: row.reason,
     ...parseDropReason(row.reason),
     postedAt: post.postedAt,
-    url: post.url,
+    // Raw payload text: only an http(s) URL may reach a link.
+    url: post.url ? (httpUrl(post.url)?.toString() ?? null) : null,
     author: authorView(authorOf(post.author)),
   };
 }

@@ -119,6 +119,21 @@ describe('PrepareReviewService', () => {
     expect(page.next).toBeNull();
   });
 
+  it.each(['javascript:alert(1)', 'data:text/html,<b>x</b>', 'not a url'])(
+    'gives a null url for a payload url that is not http(s): %s',
+    async (url) => {
+      const bad = row(1, 'prepare: no-text');
+      bad.payload = { ...(bad.payload as object), url };
+      const drops = vi.fn().mockResolvedValue([bad]);
+      const page = await service({ drops }).drops({
+        rule: null,
+        before: null,
+        limit: 5,
+      });
+      expect(page.items[0].url).toBeNull();
+    },
+  );
+
   it('answers 400 for a garbage cursor', async () => {
     const drops = vi.fn();
     await expect(
