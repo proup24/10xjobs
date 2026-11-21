@@ -9,6 +9,7 @@ import {
 } from 'src/modules/segments/repositories/segments.repository';
 import { MemoryStorageService } from 'src/modules/storage/testing';
 import { ingestConfig, normalizeConfig } from '../config';
+import { NORMALIZER_VERSION } from '../normalize';
 import { BatchFileReaderService } from '../services/batch-file-reader.service';
 import { BatchItemWriterService } from '../services/batch-item-writer.service';
 import { BatchIngestService } from '../services/batch.service';
@@ -19,6 +20,7 @@ import ashbyFailed from '../utils/fixtures/ashby-failed.json';
 import ashby from '../utils/fixtures/ashby.json';
 import greenhouse from '../utils/fixtures/greenhouse.json';
 import linkedinJob from '../utils/fixtures/linkedin-job.json';
+import linkedinPost from '../utils/fixtures/linkedin-post.json';
 import bebityJob from '../utils/fixtures/linkedin-job-bebity.json';
 import cheapJob from '../utils/fixtures/linkedin-job-cheap.json';
 import harvestJobs from '../utils/fixtures/linkedin-job-harvest.json';
@@ -148,23 +150,6 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
     );
     q1 = await builder();
     q2 = await builder();
-  });
-
-  it('saves a post without a normalized job', async () => {
-    const b = await batch(Channel.LINKEDIN_POSTS);
-    const post = { id: '7001', content: 'We are hiring a backend engineer' };
-    const saved = await repo.saveItem({
-      ...input(b, post, t1, q1, Channel.LINKEDIN_POSTS),
-      kind: 'post',
-    });
-
-    expect(saved).toEqual({ newItem: true, newVersion: true, job: null });
-    const items = await db.orm.public.RawItem.where({
-      channel: Channel.LINKEDIN_POSTS,
-    }).all();
-    expect(items.map((row) => row.kind)).toEqual(['post']);
-    expect(await db.orm.public.NormalizedJob.all()).toHaveLength(0);
-    expect(await db.orm.public.NormalizedVersion.all()).toHaveLength(0);
   });
 
   it('stores a first sighting as an item, a version and a sighting', async () => {
@@ -1163,6 +1148,205 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
       }
     });
 
+    describe('LinkedIn posts', () => {
+      const long =
+        'We are hiring a senior Node.js engineer to build our payments platform. Remote within Europe, TypeScript and PostgreSQL. Send me a message to apply.';
+      const post = (
+        id: string,
+        overrides: Record<string, unknown> = {},
+      ): Record<string, unknown> => ({
+        ...structuredClone(linkedinPost),
+        id,
+        linkedinUrl: `https://www.linkedin.com/posts/jane-doe_hiring-activity-${id}-abcd`,
+        ...overrides,
+      });
+      /** Two posts by one author with the same long text: one job. */
+      const twin = (id: string) =>
+        post(id, {
+          content: long,
+          author: { ...linkedinPost.author, publicIdentifier: 'jane-doe' },
+        });
+      const savePost = async (payload: Record<string, unknown>, at: Date) =>
+        repo.saveItem({
+          ...input(
+            await batch(Channel.LINKEDIN_POSTS),
+            payload,
+            at,
+            q1,
+            Channel.LINKEDIN_POSTS,
+          ),
+          kind: 'post',
+        });
+      const relink = async (sourceKey: string) =>
+        linkJobSafely({ db } as DatabaseService, {
+          rawItemId: await rawItemId(sourceKey),
+          observedAt: t3,
+          rebuild: true,
+        });
+      /** The current normalized version of the item's latest raw version. */
+      const currentVersion = async (sourceKey: string) => {
+        const item = await db.orm.public.RawItem.where({ sourceKey }).first();
+        return (await db.orm.public.NormalizedVersion.where({
+          rawVersionId: item!.latestVersionId!,
+          normalizerVersion: NORMALIZER_VERSION,
+        }).first())!;
+      };
+      /** Makes the item's current version a drop; returns a function that un-drops it. */
+      const drop = async (sourceKey: string) => {
+        const kept = await currentVersion(sourceKey);
+        await db.orm.public.NormalizedVersion.where({ id: kept.id }).updateAll({
+          status: 'invalid',
+          reason: 'prepare: test-rule: "x"',
+          record: null,
+          jobKey: null,
+        });
+        return () =>
+          db.orm.public.NormalizedVersion.where({ id: kept.id }).updateAll({
+            status: kept.status,
+            reason: kept.reason,
+            record: kept.record,
+            jobKey: kept.jobKey,
+          });
+      };
+      const postSourcesOf = (j: { postSources: unknown }) =>
+        (j.postSources as { sources: { id: string }[] } | null)?.sources.map(
+          (s) => s.id,
+        );
+
+      it('makes one active post job with no processing status, once', async () => {
+        const saved = await savePost(post(linkedinPost.id), t1);
+
+        expect(saved.job).toMatchObject({ created: true, pending: false });
+        const once = { jobs: await jobs(), sources: await sources() };
+        expect(once.jobs).toHaveLength(1);
+        expect(once.jobs[0]).toMatchObject({
+          kind: 'post',
+          status: 'active',
+          jobKey: `linkedin-post:${linkedinPost.id}`,
+          processingStatus: null,
+          processingReason: null,
+          processingRequestedAt: null,
+        });
+        expect(postSourcesOf(once.jobs[0]!)).toEqual([linkedinPost.id]);
+        expect(once.sources).toHaveLength(1);
+
+        const again = await savePost(post(linkedinPost.id), t1);
+        expect(again.job).toMatchObject({ created: false, pending: false });
+        expect(await jobs()).toEqual(
+          once.jobs.map((j) => ({ ...j, updatedAt: expect.any(Date) })),
+        );
+        expect(await sources()).toEqual(once.sources);
+      });
+
+      it('joins two posts by one author with the same long text', async () => {
+        await savePost(twin('7390000000000000001'), t1);
+        await savePost(twin('7390000000000000002'), t2);
+
+        const all = await jobs();
+        expect(all).toHaveLength(1);
+        expect(all[0]!.jobKey).toMatch(/^linkedin-post:text:/);
+        expect(all[0]!.processingStatus).toBeNull();
+        expect(postSourcesOf(all[0]!)?.sort()).toEqual([
+          '7390000000000000001',
+          '7390000000000000002',
+        ]);
+        expect(await sources()).toHaveLength(2);
+      });
+
+      it('a kept post that becomes a drop leaves its job, archived; un-dropped, it links again', async () => {
+        await savePost(post(linkedinPost.id), t1);
+        const [before] = await jobs();
+        const key = `id:${linkedinPost.id}`;
+        const undrop = await drop(key);
+
+        expect(await relink(key)).toEqual({
+          invalid: 'prepare: test-rule: "x"',
+        });
+        expect(await sources()).toHaveLength(0);
+        const [archived] = await jobs();
+        expect(archived).toMatchObject({
+          id: before!.id,
+          status: 'active',
+          processingStatus: 'archived',
+          processingReason: null,
+          processingRequestedAt: null,
+        });
+        expect(archived!.postSources).toBeNull();
+
+        await undrop();
+        expect(await relink(key)).toMatchObject({
+          jobId: before!.id,
+          created: false,
+          pending: false,
+        });
+        expect(await sources()).toEqual([
+          expect.objectContaining({ jobId: before!.id }),
+        ]);
+        const [back] = await jobs();
+        expect(back).toMatchObject({
+          id: before!.id,
+          status: 'active',
+          processingStatus: null,
+          processingReason: null,
+          processingRequestedAt: null,
+        });
+      });
+
+      it('a new version of a post that cleans to nothing leaves its job, archived', async () => {
+        await savePost(post(linkedinPost.id), t1);
+        const [before] = await jobs();
+
+        const saved = await savePost(
+          post(linkedinPost.id, { content: ' 🚀 …see more' }),
+          t2,
+        );
+        expect(saved.job).toEqual({ invalid: 'prepare: no-text' });
+        expect(await sources()).toHaveLength(0);
+        const [archived] = await jobs();
+        expect(archived).toMatchObject({
+          id: before!.id,
+          status: 'active',
+          processingStatus: 'archived',
+          processingReason: null,
+          processingRequestedAt: null,
+          postSources: null,
+        });
+      });
+
+      it('a dropped post on a two-source job leaves the other source, and the job re-merges', async () => {
+        await savePost(twin('7390000000000000001'), t1);
+        await savePost(twin('7390000000000000002'), t2);
+        const [before] = await jobs();
+        await drop('id:7390000000000000002');
+
+        expect(await relink('id:7390000000000000002')).toHaveProperty(
+          'invalid',
+        );
+        expect(await sources()).toEqual([
+          expect.objectContaining({
+            jobId: before!.id,
+            rawItemId: await rawItemId('id:7390000000000000001'),
+          }),
+        ]);
+        const [after] = await jobs();
+        expect(after).toMatchObject({
+          id: before!.id,
+          status: 'active',
+          processingStatus: null,
+        });
+        expect(postSourcesOf(after!)).toEqual(['7390000000000000001']);
+      });
+
+      it('a job-board item that turns invalid keeps its link', async () => {
+        await save(liJob('4483900001'), t1);
+        const [link] = await sources();
+        await drop('id:4483900001');
+
+        expect(await relink('id:4483900001')).toHaveProperty('invalid');
+        expect(await sources()).toEqual([link]);
+      });
+    });
+
     describe('harvestapi LinkedIn jobs', () => {
       const remote = harvestJobs.find((j) => j.id === '4488222855')!;
       const remoteCompany = remote.company as Record<string, unknown>;
@@ -1948,6 +2132,32 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
         });
         await db.orm.public.JobView.create({ userId, jobId, viewedAt: t1 });
       };
+
+      it('links post items to post jobs', async () => {
+        await repo.saveItem({
+          ...input(
+            await batch(Channel.LINKEDIN_POSTS),
+            linkedinPost,
+            t1,
+            q1,
+            Channel.LINKEDIN_POSTS,
+          ),
+          kind: 'post',
+        });
+        await wipe();
+
+        expect(await rebuild()).toEqual({ items: 5, invalid: 0, jobs: 4 });
+        const posts = await db.orm.public.NormalizedJob.where({
+          kind: 'post',
+        }).all();
+        expect(posts).toEqual([
+          expect.objectContaining({
+            jobKey: `linkedin-post:${linkedinPost.id}`,
+            status: 'active',
+            processingStatus: null,
+          }),
+        ]);
+      });
 
       it('renames a job with many sources in place when the title leaves its key', async () => {
         const shared = (await jobs()).find((j) => j.jobKey === sharedKey)!;

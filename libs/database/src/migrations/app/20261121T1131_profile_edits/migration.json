@@ -1,0 +1,13 @@
+{
+  "from": "ba7d3a586ecbf6b46889147363e2b2ecf663ae7aaa277d415cecf10b118944ff",
+  "to": "edf1f976e9ec105106b12ed01062b9ef47fe15757a5b00d2487d18afebc8e4ac",
+  "providedInvariants": [
+    "match-details-review-version",
+    "match-reviews-profile-version",
+    "profile-match-version",
+    "profile-version-backfill",
+    "replace-profile-skills-published"
+  ],
+  "createdAt": "2026-11-21T11:31:33.220Z",
+  "migrationHash": "ba6d56d3e93aab2263525cfe41675a6efe9afa596ce1daaf430955297a69418c"
+}

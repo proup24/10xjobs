@@ -66,7 +66,6 @@ export class BatchItemWriterService {
         if (saved.newItem) report.newItems += 1;
         else if (saved.newVersion) report.newVersions += 1;
         else report.repeats += 1;
-        if (saved.job === null) continue;
         if ('invalid' in saved.job) {
           report.normalizeInvalid += 1;
           addError({

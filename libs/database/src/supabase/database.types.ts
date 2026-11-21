@@ -1091,6 +1091,7 @@ export type Database = {
           posterProfileUrl: string | null;
           posterType: string | null;
           postingUrl: string;
+          postSources: Json | null;
           processedAt: string | null;
           processingAttempts: number;
           processingError: string | null;
@@ -1149,6 +1150,7 @@ export type Database = {
           posterProfileUrl?: string | null;
           posterType?: string | null;
           postingUrl: string;
+          postSources?: Json | null;
           processedAt?: string | null;
           processingAttempts?: number;
           processingError?: string | null;
@@ -1206,6 +1208,7 @@ export type Database = {
           posterProfileUrl?: string | null;
           posterType?: string | null;
           postingUrl?: string;
+          postSources?: Json | null;
           processedAt?: string | null;
           processingAttempts?: number;
           processingError?: string | null;

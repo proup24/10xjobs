@@ -67,6 +67,13 @@ function processingColumns(state: ProcessingState): JobPatch {
   };
 }
 
+/** A post job's processing state while it has a source: Process never takes posts. */
+const NO_PROCESSING: ProcessingState = {
+  status: null,
+  reason: null,
+  requestedAt: null,
+};
+
 function sameProcessing(a: ProcessingState, b: ProcessingState): boolean {
   return (
     a.status === b.status &&
@@ -218,6 +225,7 @@ async function remerge(tx: DatabaseTransaction, jobId: string): Promise<void> {
     ...fieldColumns(merged.record),
     companyId,
     fieldSources: merged.fieldSources as unknown as Json,
+    postSources: merged.postSources as unknown as Json | null,
     firstSeenAt: counted.map((i) => i.firstSeenAt).reduce(min),
     lastSeenAt: counted.map((i) => i.lastSeenAt).reduce(max),
     normalizerVersion: NORMALIZER_VERSION,
@@ -528,7 +536,9 @@ async function effectiveKey(
   },
   latestKey: string,
 ): Promise<string> {
-  if (isStrongJobKey(latestKey)) return latestKey;
+  // A post's key is never a posting key, so an earlier version never wins.
+  if (isStrongJobKey(latestKey) || item.channel === Channel.LINKEDIN_POSTS)
+    return latestKey;
   const versions = await tx.orm.public.RawItemVersion.where({
     rawItemId: item.id,
   })
@@ -596,12 +606,43 @@ async function leaveJob(
 }
 
 /**
+ * A post whose latest version is now a drop leaves its job: the job re-merges
+ * from the sources left, or, with none left, is `archived` for Process. It
+ * keeps `status = 'active'` and its key, so an un-dropped post links back to it.
+ */
+async function dropPostSource(
+  tx: DatabaseTransaction,
+  link: { id: string; jobId: string },
+): Promise<void> {
+  const { orm } = tx;
+  await orm.public.NormalizedJob.where({ id: link.jobId })
+    .forNoKeyUpdate()
+    .first();
+  await orm.public.NormalizedJobSource.where({ id: link.id }).deleteAll();
+  const left = await orm.public.NormalizedJobSource.where({
+    jobId: link.jobId,
+  }).all();
+  if (left.length > 0) await remerge(tx, link.jobId);
+  // An archived post job keeps no post details, so no reader sees stale ones.
+  else
+    await orm.public.NormalizedJob.where({ id: link.jobId }).updateAll({
+      ...processingColumns({
+        status: 'archived',
+        reason: null,
+        requestedAt: null,
+      }),
+      postSources: null,
+    });
+}
+
+/**
  * Links a raw item to the job its latest version's job key names, inside the
  * raw item's transaction, and re-merges every job the link touched. A new key
  * with no job renames the item's old job when all its sources key there.
  * Sends the job to Process (`pending`) only when this observation creates it
  * or finds it after `reopenAfterMs` unseen. Idempotent: replaying changes
- * nothing.
+ * nothing. A post is never sent to Process (slice 03 extracts posts), and a
+ * post that turns invalid leaves its job; a job-board item keeps its link.
  */
 export async function linkJob(
   tx: DatabaseTransaction,
@@ -626,8 +667,16 @@ export async function linkJob(
     channel: item.channel as Channel,
     sourceKey: item.sourceKey,
   });
-  if (version.status !== 'valid' || !version.jobKey || !version.record)
+  const isPost = item.kind === 'post';
+  if (version.status !== 'valid' || !version.jobKey || !version.record) {
+    if (isPost) {
+      const kept = await orm.public.NormalizedJobSource.where({
+        rawItemId: input.rawItemId,
+      }).first();
+      if (kept) await dropPostSource(tx, kept);
+    }
     return { invalid: version.reason ?? 'normalize: invalid' };
+  }
   const record = version.record as unknown as NormalizedRecord;
   // A trial item joins the job its harvestapi twin is on.
   const key =
@@ -731,17 +780,20 @@ export async function linkJob(
 
   const joined =
     !input.rebuild && firstBoardSource && (await hasTrialSource(tx, job.id));
-  const next: ProcessingState = joined
-    ? { status: 'pending', reason: 'joined', requestedAt: input.observedAt }
-    : nextProcessing({
-        created,
-        previousLastSeenAt,
-        observedAt: input.observedAt,
-        current,
-        rebuild: input.rebuild,
-        sightingOnly:
-          isTrialChannel(item.channel) && (await hasHarvestSource(tx, job.id)),
-      });
+  const next: ProcessingState = isPost
+    ? NO_PROCESSING
+    : joined
+      ? { status: 'pending', reason: 'joined', requestedAt: input.observedAt }
+      : nextProcessing({
+          created,
+          previousLastSeenAt,
+          observedAt: input.observedAt,
+          current,
+          rebuild: input.rebuild,
+          sightingOnly:
+            isTrialChannel(item.channel) &&
+            (await hasHarvestSource(tx, job.id)),
+        });
   const changed = !sameProcessing(next, current);
   if (changed)
     await orm.public.NormalizedJob.where({ id: job.id }).updateAll(

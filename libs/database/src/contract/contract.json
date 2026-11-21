@@ -3638,6 +3638,13 @@
                   "kind": "scalar"
                 }
               },
+              "postSources": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
+              },
               "postedAt": {
                 "nullable": true,
                 "type": {
@@ -4114,6 +4121,9 @@
                 },
                 "normalizerVersion": {
                   "column": "normalizerVersion"
+                },
+                "postSources": {
+                  "column": "postSources"
                 },
                 "postedAt": {
                   "column": "postedAt"
@@ -11285,6 +11295,11 @@
                   "dataType": "pg/int4",
                   "nullable": false
                 },
+                "postSources": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": true
+                },
                 "postedAt": {
                   "codecId": "pg/timestamptz-date@1",
                   "dataType": "pg/timestamptz",
@@ -14529,7 +14544,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "a8b0e3af5a6acba211a21487fd666dddcb3d809695f0f5b44ee66a25372c2621"
+    "storageHash": "edf1f976e9ec105106b12ed01062b9ef47fe15757a5b00d2487d18afebc8e4ac"
   },
   "execution": {
     "executionHash": "7b5eaf1d91dcda38671ed0758e62b64e510de826d248ab15bddc3faa2e947c57",

@@ -248,10 +248,11 @@ describe('normalize LinkedIn job board, item format', () => {
 });
 
 describe('normalize LinkedIn posts', () => {
-  it('does not normalize a post: it is stored raw', () => {
-    expect(post()).toEqual({
-      invalid: 'normalize: LINKEDIN_POSTS is not normalized',
-    });
+  it('maps a post to a post record', () => {
+    const r = record(post());
+    expect(r.kind).toBe('post');
+    expect(r.post?.id).toBe(linkedinPost.id);
+    expect(r.postingUrl).toBe(linkedinPost.linkedinUrl);
   });
 });
 

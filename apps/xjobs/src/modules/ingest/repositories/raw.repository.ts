@@ -39,7 +39,7 @@ export interface SaveItemInput {
 export interface SaveItemResult {
   newItem: boolean;
   newVersion: boolean;
-  job: LinkOutcome | null;
+  job: LinkOutcome;
 }
 
 /** Stores raw items and moves collection batches through their statuses. */
@@ -155,8 +155,6 @@ export class PrismaRawStorageRepository extends RawStorageRepository {
       this.database,
       (tx) => save(tx, input),
     );
-    // A post is stored raw only: it holds no job of its own.
-    if (input.kind === 'post') return { newItem, newVersion, job: null };
     const job = await linkJobSafely(this.database, {
       rawItemId,
       observedAt: input.observedAt,

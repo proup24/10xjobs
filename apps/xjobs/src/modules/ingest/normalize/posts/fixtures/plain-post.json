@@ -1,0 +1,29 @@
+{
+  "type": "post",
+  "id": "7390000000000000101",
+  "linkedinUrl": "https://www.linkedin.com/posts/jane-doe_hiring-activity-7390000000000000101-abcd",
+  "content": "We're hiring a senior Node.js engineer 🚀\n\nRemote in Europe. Send your CV to Jobs@Acme.example and tell us why you fit.\n\n#hiring #nodejs",
+  "author": {
+    "id": "102634140",
+    "universalName": "jane-doe",
+    "publicIdentifier": "Jane-Doe-123",
+    "type": "profile",
+    "name": "Jane Doe",
+    "linkedinUrl": "https://www.linkedin.com/in/jane-doe-123",
+    "info": "Engineering Manager at Acme",
+    "website": null,
+    "websiteLabel": null,
+    "avatar": {
+      "url": "https://media.licdn.com/dms/image/v2/X/profile/0/1/jane"
+    },
+    "urn": "102634140"
+  },
+  "postedAt": {
+    "timestamp": 1761904800000,
+    "date": "2026-10-31T10:00:00.000Z",
+    "postedAgoShort": "2h",
+    "postedAgoText": "2 hours ago • Visible to anyone on or off LinkedIn"
+  },
+  "postImages": [],
+  "engagement": { "likes": 12, "comments": 3, "shares": 1, "reactions": [] }
+}

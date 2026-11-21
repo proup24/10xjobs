@@ -70,23 +70,39 @@ const linkedinFields: Record<LinkedinKind, { ids: string[]; urls: string[] }> =
     },
   };
 
+/** A LinkedIn post item's link: `linkedinUrl`, else `url`, else `postUrl`. */
+export function linkedinPostUrl(item: Record<string, unknown>): string | null {
+  return firstText(item, linkedinFields.posts.urls);
+}
+
+/**
+ * A LinkedIn post item's id, as its source key reads it: `id` (a string or a
+ * number), else the numeric id in its `urn`, else the id its link names.
+ */
+export function linkedinPostId(item: Record<string, unknown>): string | null {
+  const id = firstText(item, linkedinFields.posts.ids);
+  if (id) return id;
+  const urn = idText(item.urn);
+  const activity = urn && /^urn:li:[a-zA-Z]+:(\d+)$/.exec(urn)?.[1];
+  if (activity) return activity;
+  const url = linkedinPostUrl(item);
+  return url ? idFromLinkedinUrl(Channel.LINKEDIN_POSTS, url) : null;
+}
+
 function linkedinKey(
   kind: LinkedinKind,
   item: Record<string, unknown>,
 ): SourceKeyResult {
   const fields = linkedinFields[kind];
-  const channel =
-    kind === 'board' ? Channel.LINKEDIN_JOB_BOARD : Channel.LINKEDIN_POSTS;
-  const id = firstText(item, fields.ids);
+  const id =
+    kind === 'posts' ? linkedinPostId(item) : firstText(item, fields.ids);
   if (id) return { key: `id:${id}` };
-  if (kind === 'posts') {
-    const urn = idText(item.urn);
-    const activity = urn && /^urn:li:[a-zA-Z]+:(\d+)$/.exec(urn)?.[1];
-    if (activity) return { key: `id:${activity}` };
-  }
   const url = firstText(item, fields.urls);
   if (url) {
-    const fromUrl = idFromLinkedinUrl(channel, url);
+    const fromUrl =
+      kind === 'board'
+        ? idFromLinkedinUrl(Channel.LINKEDIN_JOB_BOARD, url)
+        : null;
     if (fromUrl) return { key: `id:${fromUrl}` };
     const canonical = canonicalUrl(url);
     if (canonical) return { key: `url:${canonical}` };

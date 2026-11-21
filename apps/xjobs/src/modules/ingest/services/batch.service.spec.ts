@@ -37,9 +37,6 @@ class FakeRepository extends RawStorageRepository {
     this.saved.push(input);
     const newItem = !this.keys.has(input.sourceKey);
     this.keys.add(input.sourceKey);
-    // Like the real repository, a post is stored raw and links no job.
-    if (input.kind === 'post')
-      return { newItem, newVersion: newItem, job: null };
     const job = this.outcomes.get(input.sourceKey) ?? {
       jobId: `job-${input.sourceKey}`,
       created: newItem,
@@ -181,7 +178,14 @@ describe('BatchIngestService', () => {
     expect(JSON.stringify(repo.saved[0]!.payload)).not.toContain('\\u0000');
   });
 
-  it('stores a posts batch raw and links no job', async () => {
+  it('reports the post jobs and drops of a posts batch', async () => {
+    repo.outcomes.set('id:p1', {
+      jobId: 'job-p1',
+      created: true,
+      reopened: false,
+      pending: false,
+    });
+    repo.outcomes.set('id:p2', { invalid: 'prepare: no-text' });
     await store(
       file({
         channel: Channel.LINKEDIN_POSTS,
@@ -199,9 +203,9 @@ describe('BatchIngestService', () => {
     expect(repo.reports.get('b1')).toMatchObject({
       received: 2,
       newItems: 2,
-      normalized: 0,
-      normalizeInvalid: 0,
-      newJobs: 0,
+      normalized: 1,
+      normalizeInvalid: 1,
+      newJobs: 1,
     });
   });
 

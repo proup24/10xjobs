@@ -114,6 +114,7 @@ describe('normalize Ashby', () => {
       expiresAt: null,
       listingState: null,
       company: null,
+      post: null,
       closed: true,
     });
   });
