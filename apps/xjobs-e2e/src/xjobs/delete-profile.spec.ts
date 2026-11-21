@@ -33,6 +33,15 @@ const exists = async (id: string) => {
   return data !== null;
 };
 
+const resumes = () => admin().storage.from('resumes');
+
+/** File names in a profile's resume folder, read with the service role. */
+const folderFiles = async (folder: string) => {
+  const { data, error } = await resumes().list(folder);
+  if (error) throw new Error(error.message);
+  return data.map((entry) => entry.name);
+};
+
 describe('DELETE /api/profiles/:profileId', () => {
   let a: { id: string; accessToken: string };
   let b: { id: string; accessToken: string };
@@ -49,9 +58,24 @@ describe('DELETE /api/profiles/:profileId', () => {
       token: a.accessToken,
     });
     expect(res.status).toBe(200);
+    // The live file a published profile keeps, which the user's own Storage
+    // policy may not delete: the engine must remove it.
+    const { error } = await resumes().upload(
+      `${a.id}/${published}/${randomUUID()}.pdf`,
+      Buffer.from('%PDF-1.7\n%%EOF\n'),
+      { contentType: 'application/pdf', upsert: false },
+    );
+    if (error) throw new Error(`Could not upload a resume: ${error.message}`);
   });
 
   afterAll(async () => {
+    // Left behind only if the delete test failed.
+    if (a && published) {
+      const folder = `${a.id}/${published}`;
+      const names = await folderFiles(folder);
+      if (names.length)
+        await resumes().remove(names.map((name) => `${folder}/${name}`));
+    }
     for (const id of [a?.id, b?.id].filter(Boolean)) await deleteAuthUser(id);
   });
 
@@ -71,6 +95,7 @@ describe('DELETE /api/profiles/:profileId', () => {
     const res = await call('DELETE', published, { token: b.accessToken });
     expect(res.status).toBe(404);
     expect(await exists(published)).toBe(true);
+    expect(await folderFiles(`${a.id}/${published}`)).toHaveLength(1);
   });
 
   it('409 PROFILE_NOT_PUBLISHED for a draft, which stays', async () => {
@@ -85,11 +110,12 @@ describe('DELETE /api/profiles/:profileId', () => {
     expect(res.status).toBe(400);
   });
 
-  it('200s the owner, then 404s the repeat', async () => {
+  it('200s the owner, removing the resume folder, then 404s the repeat', async () => {
     const res = await call('DELETE', published, { token: a.accessToken });
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({ data: { id: published } });
     expect(await exists(published)).toBe(false);
+    expect(await folderFiles(`${a.id}/${published}`)).toEqual([]);
     const again = await call('DELETE', published, { token: a.accessToken });
     expect(again.status).toBe(404);
     expect(

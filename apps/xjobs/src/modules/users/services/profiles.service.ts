@@ -4,6 +4,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import {
   Channel,
@@ -15,6 +16,7 @@ import {
   QuerySearchService,
   type QuerySearchProfileInput,
 } from 'src/modules/queries';
+import { StorageService } from 'src/modules/storage';
 import { ProfilesRepository } from '../repositories/profiles.repository';
 import { postRecipes } from 'src/modules/queries/posts';
 import { describeError } from 'src/utils';
@@ -164,6 +166,12 @@ function notPublishedConflict(): ConflictException {
 }
 
 const regenerateLogger = new Logger('Regenerate');
+const deleteLogger = new Logger('DeleteProfile');
+
+/** The web app's resume bucket and folder layout (`apps/web/src/lib/resume/key.ts`). */
+export const RESUMES_BUCKET = 'resumes';
+export const profileFolder = (userId: string, profileId: string): string =>
+  `${userId}/${profileId}`;
 
 /** What regenerating published profiles needs. */
 export interface RegenerateDeps {
@@ -251,6 +259,7 @@ export class ProfilesService {
     private readonly profiles: ProfilesRepository,
     private readonly querySearch: QuerySearchService,
     private readonly postSearch: PostSearchAccess,
+    private readonly storage: StorageService,
   ) {}
 
   /** 404s an unknown user, or a profile that is not this user's. */
@@ -337,6 +346,11 @@ export class ProfilesService {
    * Deletes a published profile and releases its query search builders in one
    * transaction. 404 like getOrThrow; 409 for a draft. Deleted or unpublished
    * meanwhile (including a repeated delete) is a 404.
+   *
+   * The profile's resume files go first, with the service role: the user's own
+   * Storage policy keeps a published profile's live file, and once the row is
+   * gone nobody could reach the folder. A storage failure is a 503 that keeps
+   * the row and its searches, so a retry (with an emptied folder) finishes.
    */
   async deletePublished(
     userId: string,
@@ -344,6 +358,19 @@ export class ProfilesService {
   ): Promise<{ id: string }> {
     const profile = await this.getOrThrow(userId, profileId);
     if (profile.state !== ProfileState.published) throw notPublishedConflict();
+    try {
+      await this.storage.deletePrefix(
+        RESUMES_BUCKET,
+        profileFolder(userId, profile.id),
+      );
+    } catch (error) {
+      deleteLogger.error(
+        `Resume removal failed for profile ${profile.id} (user ${userId}): ${describeError(error)}`,
+      );
+      throw new ServiceUnavailableException(
+        'Could not remove the resume files; try again',
+      );
+    }
     if (!(await this.querySearch.releaseAndDelete(profile.id)))
       throw new NotFoundException(PROFILE_NOT_FOUND);
     return { id: profile.id };
