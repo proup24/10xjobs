@@ -17,10 +17,10 @@ This closes both gaps. A profile goes live when the user finishes setting it up,
 
 - Finishing guided setup, or finishing "add a profile", publishes the profile through the engine (`publishProfile` in `@xjobs/engine-client`). Where each flow publishes:
   - **Guided setup:** on the Review page's "Finish" (`components/setup/review.tsx`, today a plain link to `/`) _(user, option a)_. The Review page stays; uploading a resume no longer ends setup on its own.
-  - **Add a profile:** on its last step, which is the resume step (`set_profile_resume`). For a copy whose resume was copied, the last step is terms _(my call)_.
+  - **Add a profile:** on its resume step's "Finish" (`NewProfileResumeStep`). A copy goes through that step too, with its copied resume already there _(my call)_.
 - After publishing, the user lands on the matches view for the new profile, in its "no matches yet" state.
 - If publishing fails (engine unreachable, or it refuses, e.g. incomplete), the profile stays a draft, the publishing step shows the error plainly, and pressing the step's button again retries. Nothing publishes on its own: no sweep auto-publishes drafts, so a copy still being edited never goes live by accident _(my call)_.
-- Preferences show which profiles are live: a draft gets a "Not live" mark with a "Finish setup" link to the step that publishes its flow. The app doesn't guess whether a draft's publish failed or was never tried; either way the user finishes from that step _(user, option a)_. The matches view's draft state says the same instead of "not live yet".
+- Preferences show which profiles are live: a draft gets a "Not live" mark with a "Finish setup" link to `/preferences/new/<id>/resume`, whose "Finish" publishes any draft of the user's (guided setup's Review "Finish" publishes too) _(my call)_. The app doesn't guess whether a draft's publish failed or was never tried; either way the user finishes from that step _(user, option a)_. The matches view's draft state says the same instead of "not live yet".
 - Deleting a **published** profile from preferences goes through a new engine route, which releases its shared searches. Drafts keep being deleted directly. The existing rules stay: never the last profile, never the only one with a resume.
 
 **Edit (slice 07)**
@@ -66,7 +66,7 @@ For publishing, both use the same shape: a direct engine call right after the fi
 `job_matches.profileUpdatedAt` works only while published profiles are frozen: only the engine's ORM moves `profiles.updatedAt`, and web edits, skill changes and `set_profile_resume` don't. Replace it, copying the existing `users.eligibilityVersion` pattern (migration `20261112T1603_rematch_triggers`):
 
 - `profiles.matchVersion int NOT NULL DEFAULT 0`.
-- A `BEFORE UPDATE` trigger on `profiles` bumps it when any column changes **other than** `resumeKey`, `resumeFilename`, `resumeSizeBytes`, `resumeSha256`, `resumeUploadedAt`, `state`, `publishedAt`, `matchVersion`, `searchesVersion`, `createdAt`, `updatedAt` (the two version columns must be excluded, or the search sweep's write would bump the version and loop forever), with a `WHEN ... IS DISTINCT FROM` guard so a no-op save doesn't bump. Listing the excluded columns rather than the matching ones means a future matching column bumps by default _(my call)_.
+- A `BEFORE UPDATE` trigger on `profiles` bumps it when any column changes **other than** `resumeKey`, `resumeFilename`, `resumeSizeBytes`, `resumeSha256`, `resumeUploadedAt`, `state`, `publishedAt`, `matchVersion`, `searchesVersion`, `postSearch`, `createdAt`, `updatedAt` (`postSearch` only moves post builders, which the engine's switch already does at once; the two version columns must be excluded, or the search sweep's write would bump the version and loop forever), with a `WHEN ... IS DISTINCT FROM` guard so a no-op save doesn't bump. Listing the excluded columns rather than the matching ones means a future matching column bumps by default _(my call)_.
 - An `AFTER INSERT OR UPDATE OR DELETE` trigger on `profile_skills` bumps the owning profile (both, if a row moved).
 - `job_matches.profileVersion int`, written by the matcher from the profile it read. Migration backfills every existing row with its profile's version (0): published profiles were frozen, so every existing row is current. Then `profileUpdatedAt` is dropped _(my call)_.
 - `ON_CURRENT_PROFILE` in `matcher.repository.ts` compares `m."profileVersion" >= p."matchVersion"` instead of the timestamps.
@@ -81,7 +81,7 @@ Volume: on dev, one published profile has about 6,700 rows in the window, so a f
 
 ### Review choices
 
-Today `match_details` applies the user's latest `match_reviews` choice while the match is still in review on the same rule and field, and only if the choice was made after `decidedAt`. Add `match_reviews.profileVersion` (the profile's `matchVersion` when the choice was made, set by the database, not trusted from the client). `match_details` applies a choice only when its `profileVersion` equals the profile's current `matchVersion`. Existing choices are backfilled with their profile's current version (0), so nothing changes for them until the next edit. The `match-reviews.db.spec.ts` tests grow a case: a choice stops applying after an edit, and a new choice on the new version applies.
+Today `match_details` applies the user's latest `match_reviews` choice while the match is still in review on the same rule and field, and only if the choice was made after `decidedAt`. Add `match_reviews.profileVersion`: the `profileVersion` of the match the choice was made on, set by a `BEFORE INSERT` trigger, never by the client. `match_details` applies a choice only when it equals the match's current `profileVersion`. The choice thus stops counting once the match is re-decided on a newer profile version, without joining `profiles`. Existing choices are backfilled from their match (0) _(my call)_. The `match-reviews.db.spec.ts` tests grow a case: a choice stops applying after an edit, and a new choice on the new version applies.
 
 ### Searches
 
