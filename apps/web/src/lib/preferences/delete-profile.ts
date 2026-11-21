@@ -20,7 +20,7 @@ type Deps = {
  * Deletes one of the user's profiles, never the last one and never the only one with a
  * resume (setup stays done once any profile has a resume), for drafts and published
  * profiles alike. A draft is `deleteDraftProfile`'s; a published profile goes through the
- * engine (`deletePublishedProfile`). Files are removed first on both paths. Log lines carry ids and error codes only.
+ * engine (`deletePublishedProfile`), which removes the resume files itself. A draft's files are removed first. Log lines carry ids and error codes only.
  */
 export async function deleteProfile(
   supabase: SupabaseClient<Database>,
