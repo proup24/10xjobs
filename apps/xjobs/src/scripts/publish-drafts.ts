@@ -31,6 +31,7 @@ import { PrismaQuerySearchRepository } from 'src/modules/queries/repositories/qu
 import { PrismaProfilesRepository } from 'src/modules/users/repositories/profiles.repository';
 import { PrismaUsersRepository } from 'src/modules/users/repositories/users.repository';
 import { PostSearchAccess } from 'src/modules/users/services/post-search-access';
+import type { StorageService } from 'src/modules/storage';
 import { ProfilesService } from 'src/modules/users/services/profiles.service';
 import { UsersService } from 'src/modules/users/services/users.service';
 import { describeError } from 'src/utils';
@@ -125,6 +126,15 @@ async function main(): Promise<void> {
   const database = { db } as DatabaseService;
   try {
     const profiles = new PrismaProfilesRepository(database);
+    // publish never touches storage; only deletePublished removes resume files.
+    const unusedStorage = Object.fromEntries(
+      ['put', 'get', 'delete', 'deletePrefix', 'ensureBucket'].map((method) => [
+        method,
+        () => {
+          throw new Error('publish-drafts does not use storage');
+        },
+      ]),
+    ) as unknown as StorageService;
     const service = new ProfilesService(
       new UsersService(new PrismaUsersRepository(database)),
       profiles,
@@ -132,6 +142,7 @@ async function main(): Promise<void> {
       new PostSearchAccess({
         get: () => POST_SEARCH_USERS,
       } as unknown as ConfigService<{ POST_SEARCH_USERS?: string[] }, true>),
+      unusedStorage,
     );
     const { published, failed, outcomes } = await publishDrafts(
       {
