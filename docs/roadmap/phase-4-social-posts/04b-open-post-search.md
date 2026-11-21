@@ -4,9 +4,9 @@
 
 Any user can turn post search on for their profiles from their preferences, and be matched with jobs found in LinkedIn posts. The allow-list goes away, and the posts budget is shared fairly between everyone who turned it on.
 
-## Why after slice 04
+## Why after slices 04 and 04a
 
-Until slice 04, collected posts are stored raw and never matched, so turning post search on gives a user nothing back while it costs credit. Slice 01 to 04 run on the owner's profile only, which also measures the cost per profile before the switch opens.
+Until slice 04, collected posts are stored raw and never matched, and until slice 04a there is no page to see post matches on, so turning post search on gives a user nothing back while it costs credit. Slices 01 to 04a run on the owner's profile only, which also measures the cost per profile before the switch opens.
 
 ## What already exists (on `main`, from slice 01)
 

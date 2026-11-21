@@ -1,5 +1,6 @@
 import { Channel } from 'src/common/enums';
 import { mapAshby, mapGreenhouse } from './ats';
+import { mapLinkedinPost } from './mappers/linkedin-post.mapper';
 import { mapLinkedinJob } from './mappers/linkedin-job.mapper';
 import {
   type NormalizedRecord,
@@ -23,6 +24,7 @@ const mappers: Partial<Record<Channel, Mapper>> = {
   [Channel.LINKEDIN_JOB_BOARD]: mapLinkedinJob,
   [Channel.LINKEDIN_JOB_BOARD_CHEAP]: mapLinkedinJob,
   [Channel.LINKEDIN_JOB_BOARD_BEBITY]: mapLinkedinJob,
+  [Channel.LINKEDIN_POSTS]: mapLinkedinPost,
   [Channel.ASHBY]: mapAshby,
   [Channel.GREEN_HOUSE]: mapGreenhouse,
 };

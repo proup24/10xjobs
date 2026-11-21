@@ -1,5 +1,9 @@
 import { Channel, isTrialChannel } from 'src/common/enums';
-import { type NormalizedRecord, RECORD_FIELDS } from './record';
+import {
+  type NormalizedRecord,
+  type PostDetail,
+  RECORD_FIELDS,
+} from './record';
 
 /** One raw item's current normalized record, as a candidate for its job. */
 export interface MergeSource {
@@ -15,6 +19,8 @@ export interface MergedJob {
   record: NormalizedRecord;
   /** Which raw item each field's value came from. */
   fieldSources: Partial<Record<keyof NormalizedRecord, string>>;
+  /** Every post source's details, originals first; null when no source is a post. */
+  postSources: { sources: PostDetail[] } | null;
 }
 
 /** The employer's own ATS posting first, then the LinkedIn job, then a post. */
@@ -54,6 +60,50 @@ function compare(a: MergeSource, b: MergeSource): number {
 }
 
 /**
+ * A post's details with the fields a record stored before them lacks filled
+ * in: not truncated, nothing attached.
+ */
+export function withPostDefaults(post: PostDetail): PostDetail {
+  return {
+    ...post,
+    truncated: post.truncated ?? false,
+    attachedUrls: post.attachedUrls ?? [],
+    original: post.original
+      ? {
+          ...post.original,
+          truncated: post.original.truncated ?? false,
+          attachedUrls: post.original.attachedUrls ?? [],
+        }
+      : null,
+  };
+}
+
+/**
+ * Every post source's details: originals first, then by posting time (unknown
+ * last), then by raw item id. Null when no source is a post.
+ */
+export function mergePostSources(
+  sources: MergeSource[],
+): { sources: PostDetail[] } | null {
+  // `!= null`: a record stored before the post field existed has no key at all.
+  const posts = sources.filter(
+    (s): s is MergeSource & { record: { post: PostDetail } } =>
+      s.record.post != null,
+  );
+  if (posts.length === 0) return null;
+  const rank = (s: (typeof posts)[number]) => (s.record.post.original ? 1 : 0);
+  const time = (s: (typeof posts)[number]) =>
+    s.record.post.postedAt ?? '\uffff';
+  posts.sort(
+    (a, b) =>
+      rank(a) - rank(b) ||
+      (time(a) < time(b) ? -1 : time(a) > time(b) ? 1 : 0) ||
+      (a.rawItemId < b.rawItemId ? -1 : a.rawItemId > b.rawItemId ? 1 : 0),
+  );
+  return { sources: posts.map((s) => withPostDefaults(s.record.post)) };
+}
+
+/**
  * The job's record, field by field from the best source that states it. A
  * closed posting contributes only its flag; the job is closed when every ATS
  * posting behind it is.
@@ -90,10 +140,18 @@ export function mergeSources(sources: MergeSource[]): MergedJob {
       record.postingUrl = from.record.postingUrl;
       fieldSources.postingUrl = from.rawItemId;
     } else {
-      const from = open.find((s) => s.record[field] !== null);
-      record[field] = from ? from.record[field] : null;
+      const from = open.find((s) => s.record[field] != null);
+      record[field] = !from
+        ? null
+        : field === 'post'
+          ? withPostDefaults(from.record.post as PostDetail)
+          : from.record[field];
       if (from) fieldSources[field] = from.rawItemId;
     }
   }
-  return { record: record as NormalizedRecord, fieldSources };
+  return {
+    record: record as NormalizedRecord,
+    fieldSources,
+    postSources: mergePostSources(sources),
+  };
 }

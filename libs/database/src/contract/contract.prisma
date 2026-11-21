@@ -615,6 +615,8 @@ model NormalizedJob {
   closed                Boolean
   // Which raw item each field came from.
   fieldSources          Jsonb
+  // Every post source's details ({ sources: PostDetail[] }); null on a job with no post source.
+  postSources           Jsonb?
   firstSeenAt           TimestamptzJsDate(3)
   lastSeenAt            TimestamptzJsDate(3)
   processingStatus      String?
