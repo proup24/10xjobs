@@ -236,7 +236,7 @@ describe.skipIf(!url)('archiveActorJobs in PostgreSQL', () => {
       stackScore: '0.5',
       checks: [],
       decidedAt: new Date(),
-      profileUpdatedAt: profile.updatedAt,
+      profileVersion: profile.matchVersion,
       eligibilityVersion: 0,
     } as never);
   }

@@ -738,6 +738,7 @@ export const seedMatchOn = (
     jobId: job.jobId,
     extractionId: job.extractionId,
     matcherVersion: 1,
+    profileVersion: 0,
     outcome: opts.outcome ?? 'qualified',
     reviewRule: opts.review?.rule ?? null,
     reviewField: opts.review?.field ?? null,

@@ -184,26 +184,24 @@ describe('replace_profile_skills', () => {
     expect(await stackOf(profileId)).toEqual(newStack);
   });
 
-  it('replace_profile_skills on a published profile changes nothing', async () => {
+  it('replace_profile_skills on a published profile swaps the stack', async () => {
     const profileId = await seedProfile(a.id);
     await seedSkill(a.id, profileId);
     await publishProfile(profileId);
-    const before = await stackOf(profileId);
 
     const { error } = await replace(a, profileId, newStack);
-    expect(error?.code).toBe('P0002');
-    expect(await stackOf(profileId)).toEqual(before);
+    expect(error).toBeNull();
+    expect(await stackOf(profileId)).toEqual(newStack);
   });
 
-  it('replace_profile_skills with an empty list on a published profile raises P0002', async () => {
+  it('replace_profile_skills with an empty list on a published profile clears the stack', async () => {
     const profileId = await seedProfile(a.id);
     await seedSkill(a.id, profileId);
     await publishProfile(profileId);
-    const before = await stackOf(profileId);
 
     const { error } = await replace(a, profileId, []);
-    expect(error?.code).toBe('P0002');
-    expect(await stackOf(profileId)).toEqual(before);
+    expect(error).toBeNull();
+    expect(await stackOf(profileId)).toEqual([]);
   });
 
   it('two concurrent replace_profile_skills calls leave exactly one of the lists', async () => {
