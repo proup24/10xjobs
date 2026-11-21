@@ -775,7 +775,7 @@ export type Database = {
           matcherVersion: number;
           outcome: string;
           profileId: string;
-          profileUpdatedAt: string | null;
+          profileVersion: number | null;
           reviewField: string | null;
           reviewRule: string | null;
           stackScore: number | null;
@@ -796,7 +796,7 @@ export type Database = {
           matcherVersion: number;
           outcome: string;
           profileId: string;
-          profileUpdatedAt?: string | null;
+          profileVersion?: number | null;
           reviewField?: string | null;
           reviewRule?: string | null;
           stackScore?: number | null;
@@ -816,7 +816,7 @@ export type Database = {
           matcherVersion?: number;
           outcome?: string;
           profileId?: string;
-          profileUpdatedAt?: string | null;
+          profileVersion?: number | null;
           reviewField?: string | null;
           reviewRule?: string | null;
           stackScore?: number | null;
@@ -958,6 +958,7 @@ export type Database = {
           matchId: string;
           note: string | null;
           profileId: string;
+          profileVersion: number | null;
           rule: string;
           updatedAt: string;
           userId: string;
@@ -972,6 +973,7 @@ export type Database = {
           matchId: string;
           note?: string | null;
           profileId: string;
+          profileVersion?: number | null;
           rule: string;
           updatedAt?: string;
           userId: string;
@@ -985,6 +987,7 @@ export type Database = {
           matchId?: string;
           note?: string | null;
           profileId?: string;
+          profileVersion?: number | null;
           rule?: string;
           updatedAt?: string;
           userId?: string;
@@ -1500,6 +1503,7 @@ export type Database = {
           id: string;
           languages: NonNullable<Json>;
           locations: NonNullable<Json>;
+          matchVersion: number;
           noticePeriodDays: number;
           position: string;
           postSearch: boolean;
@@ -1512,6 +1516,7 @@ export type Database = {
           salaryCurrency: string | null;
           salaryMin: number | null;
           salaryPeriod: string | null;
+          searchesVersion: number | null;
           seniorities: string[];
           state: string;
           timezoneCurrent: number;
@@ -1531,6 +1536,7 @@ export type Database = {
           id: string;
           languages: NonNullable<Json>;
           locations: NonNullable<Json>;
+          matchVersion?: number;
           noticePeriodDays: number;
           position: string;
           postSearch?: boolean;
@@ -1543,6 +1549,7 @@ export type Database = {
           salaryCurrency?: string | null;
           salaryMin?: number | null;
           salaryPeriod?: string | null;
+          searchesVersion?: number | null;
           seniorities: string[];
           state?: string;
           timezoneCurrent: number;
@@ -1561,6 +1568,7 @@ export type Database = {
           id?: string;
           languages?: NonNullable<Json>;
           locations?: NonNullable<Json>;
+          matchVersion?: number;
           noticePeriodDays?: number;
           position?: string;
           postSearch?: boolean;
@@ -1573,6 +1581,7 @@ export type Database = {
           salaryCurrency?: string | null;
           salaryMin?: number | null;
           salaryPeriod?: string | null;
+          searchesVersion?: number | null;
           seniorities?: string[];
           state?: string;
           timezoneCurrent?: number;

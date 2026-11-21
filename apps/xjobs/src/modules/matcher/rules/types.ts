@@ -78,8 +78,8 @@ export interface MatchProfile {
   /** Spoken languages, ISO 639-1; non-empty. */
   languages: { lang: string; level: LanguageLevel }[];
   eligibility: MatchEligibility;
-  /** No rule reads these: each decision records them, and a row decided before either changed is stale. */
-  updatedAt: Date;
+  /** No rule reads these: each decision records them, and a row decided before either changed is stale. `profiles.matchVersion`, bumped by triggers on any matching change. */
+  matchVersion: number;
   /** `users.eligibilityVersion`, bumped by triggers whenever the eligibility changes. */
   eligibilityVersion: number;
 }

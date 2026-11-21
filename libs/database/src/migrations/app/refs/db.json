@@ -1,5 +1,5 @@
 {
-  "hash": "ba7d3a586ecbf6b46889147363e2b2ecf663ae7aaa277d415cecf10b118944ff",
+  "hash": "edf1f976e9ec105106b12ed01062b9ef47fe15757a5b00d2487d18afebc8e4ac",
   "invariants": [
     "end-expired-sessions",
     "code-check-fixes",
@@ -22,6 +22,11 @@
     "job-decisions-update-columns",
     "match-details-decisions",
     "job-decision-list",
-    "job-postings"
+    "job-postings",
+    "profile-match-version",
+    "replace-profile-skills-published",
+    "match-reviews-profile-version",
+    "profile-version-backfill",
+    "match-details-review-version"
   ]
 }

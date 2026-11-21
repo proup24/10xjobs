@@ -178,26 +178,25 @@ describe('MatcherService', () => {
     });
   });
 
-  it("records the profile's updatedAt and the user's eligibility version it read", async () => {
+  it("records the profile's matchVersion and the user's eligibility version it read", async () => {
     const { repo, service } = setup();
-    const at = new Date('2026-11-10T10:00:00Z');
     repo.profiles[0] = {
       ...exampleProfile(),
-      updatedAt: at,
+      matchVersion: 7,
       eligibilityVersion: 4,
     };
     await service.matchJob('job-1');
     const [row] = (await repo.matchesForJob('job-1')).filter(
       (r) => r.profileId === 'profile-1',
     );
-    expect(row).toMatchObject({ profileUpdatedAt: at, eligibilityVersion: 4 });
+    expect(row).toMatchObject({ profileVersion: 7, eligibilityVersion: 4 });
   });
 
   it('decides again only the profile that was edited', async () => {
     const { repo, service } = setup();
     await service.matchJob('job-1');
     const edited = exampleProfile();
-    edited.updatedAt = new Date(edited.updatedAt.getTime() + 1000);
+    edited.matchVersion += 1;
     repo.profiles[0] = edited;
     expect(await service.matchJob('job-1')).toMatchObject({ profiles: 1 });
     expect(await service.matchJob('job-1')).toMatchObject({ profiles: 0 });

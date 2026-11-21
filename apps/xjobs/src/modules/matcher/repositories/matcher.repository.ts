@@ -24,8 +24,8 @@ export interface StoredMatch extends Decision {
   extractionId: string;
   /** The hash of the `job_facts` the decision read; `''` on a row decided before job facts (never current). */
   factsHash: string;
-  /** The profile's `updatedAt` the decision read; null on a row decided before it was recorded. */
-  profileUpdatedAt: Date | null;
+  /** The profile's `matchVersion` the decision read; null on a row decided before it was recorded (stale). */
+  profileVersion: number | null;
   /** The user's `eligibilityVersion` the decision read; null on a row decided before it was recorded. */
   eligibilityVersion: number | null;
 }
@@ -108,11 +108,11 @@ const STALE_FACTS = (raw: Raw) =>
 
 /**
  * The row `m` (joined with its user `u`) was decided on the current state of the profile `p`
- * and of the user's eligibility. A row decided before they were recorded (null) is not stale
- * by this test: the MATCHER_VERSION bump that came with them already makes it stale.
+ * and of the user's eligibility. A null `profileVersion` is stale; a null `eligibilityVersion` is not by this
+ * test: the MATCHER_VERSION bump that came with it already makes it stale.
  */
 const ON_CURRENT_PROFILE = (raw: Raw) =>
-  raw.sql`(m."profileUpdatedAt" IS NULL OR m."profileUpdatedAt" >= p."updatedAt")
+  raw.sql`(m."profileVersion" >= p."matchVersion")
     AND (m."eligibilityVersion" IS NULL OR m."eligibilityVersion" >= u."eligibilityVersion")`.returns(
     BOOL,
   );
@@ -205,7 +205,7 @@ export class PrismaMatcherRepository extends MatcherRepository {
     );
     return profiles.map((p) => ({
       id: p.id,
-      updatedAt: p.updatedAt,
+      matchVersion: p.matchVersion,
       userId: p.userId,
       position: p.position,
       seniorities: [...p.seniorities],
@@ -319,11 +319,11 @@ export class PrismaMatcherRepository extends MatcherRepository {
         const [stored] = await tx.query(
           tx.raw.sql`INSERT INTO job_matches
               (id, "userId", "profileId", "jobId", "extractionId", "factsHash", "matcherVersion",
-               "profileUpdatedAt", "eligibilityVersion",
+               "profileVersion", "eligibilityVersion",
                outcome, unverified, "reviewRule", "reviewField", "stackScore", checks, "decidedAt")
             VALUES (${randomUUID()}::uuid, ${r.userId}::uuid, ${r.profileId}::uuid, ${r.jobId}::uuid,
               ${r.extractionId}::uuid, ${r.factsHash}::text, ${MATCHER_VERSION}::int,
-              NULLIF(${r.profileUpdatedAt?.toISOString() ?? ''}::text, '')::timestamptz,
+              NULLIF(${r.profileVersion === null ? '' : String(r.profileVersion)}::text, '')::int,
               NULLIF(${r.eligibilityVersion === null ? '' : String(r.eligibilityVersion)}::text, '')::int,
               ${r.outcome}::text,
               ${r.unverified}::boolean,
@@ -333,7 +333,7 @@ export class PrismaMatcherRepository extends MatcherRepository {
             ON CONFLICT ("profileId", "jobId") DO UPDATE SET
               "extractionId" = EXCLUDED."extractionId", "factsHash" = EXCLUDED."factsHash",
               "matcherVersion" = EXCLUDED."matcherVersion",
-              "profileUpdatedAt" = EXCLUDED."profileUpdatedAt",
+              "profileVersion" = EXCLUDED."profileVersion",
               "eligibilityVersion" = EXCLUDED."eligibilityVersion",
               outcome = EXCLUDED.outcome, unverified = EXCLUDED.unverified,
               "reviewRule" = EXCLUDED."reviewRule", "reviewField" = EXCLUDED."reviewField",
@@ -405,7 +405,7 @@ export class PrismaMatcherRepository extends MatcherRepository {
     const { raw } = this.db;
     const rows = await this.db.query(
       raw.sql`SELECT "profileId", "userId", "jobId", "extractionId", "factsHash",
-          "profileUpdatedAt", "eligibilityVersion", outcome,
+          "profileVersion", "eligibilityVersion", outcome,
           unverified, "reviewRule", "reviewField", "stackScore", checks
         FROM job_matches WHERE "jobId" = ${jobId}::uuid
         ORDER BY "profileId" ASC`
@@ -415,7 +415,7 @@ export class PrismaMatcherRepository extends MatcherRepository {
           jobId: UUID,
           extractionId: UUID,
           factsHash: TEXT,
-          profileUpdatedAt: 'pg/timestamptz-date@1',
+          profileVersion: 'pg/int4@1',
           eligibilityVersion: 'pg/int4@1',
           outcome: TEXT,
           unverified: BOOL,
@@ -432,7 +432,7 @@ export class PrismaMatcherRepository extends MatcherRepository {
       jobId: r.jobId as string,
       extractionId: r.extractionId as string,
       factsHash: (r.factsHash as string | null) ?? '',
-      profileUpdatedAt: (r.profileUpdatedAt as Date | null) ?? null,
+      profileVersion: (r.profileVersion as number | null) ?? null,
       eligibilityVersion: (r.eligibilityVersion as number | null) ?? null,
       outcome: r.outcome as Decision['outcome'],
       unverified: r.unverified as boolean,

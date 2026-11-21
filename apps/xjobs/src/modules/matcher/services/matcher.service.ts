@@ -78,7 +78,7 @@ export class MatcherService {
       jobId,
       extractionId: job.extractionId,
       factsHash: job.factsHash,
-      profileUpdatedAt: profile.updatedAt,
+      profileVersion: profile.matchVersion,
       eligibilityVersion: profile.eligibilityVersion,
     }));
     const { deliveryIds } = await this.repo.upsertMatches(rows);
