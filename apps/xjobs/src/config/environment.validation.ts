@@ -123,6 +123,14 @@ const postSearchShape = {
     ),
 };
 
+/**
+ * Supabase user ids allowed to use the admin routes, comma separated. Empty
+ * (the default) allows nobody.
+ */
+const adminShape = {
+  ADMIN_USERS: postSearchShape.POST_SEARCH_USERS,
+};
+
 /** Just the post search allow-list, for scripts that load no other settings. */
 export const postSearchEnvironmentSchema = z.object(postSearchShape);
 
@@ -196,6 +204,7 @@ export const workerProcessEnvironmentSchema = databaseEnvironmentSchema
     XJOBS_RUN_SCHEDULES: booleanFlag.default(false),
     ...processorEnvironmentShape,
     ...postSearchShape,
+    ...adminShape,
   })
   .superRefine((env, ctx) => {
     requireStorage(env, ctx);
@@ -241,6 +250,7 @@ export const environmentSchema = databaseEnvironmentSchema
     ...collectionBudgetShape,
     ...processorEnvironmentShape,
     ...postSearchShape,
+    ...adminShape,
     /** Mounts the operator routes (processor, matcher, query search); local only. */
     XJOBS_OPERATOR_ENDPOINTS: booleanFlag.default(false),
     /** Set by Nx in development to receive the server's ready signal. */
