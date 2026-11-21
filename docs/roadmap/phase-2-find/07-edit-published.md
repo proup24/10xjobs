@@ -1,8 +1,10 @@
 # 07: Edit a published profile
 
+Status: built (PRs #109, #111 and PR C). Spec: [publish and edit a published profile design](../../superpowers/specs/2026-11-21-publish-and-edit-published-design.md).
+
 ## Goal
 
-A published profile stays editable, and saving a change takes effect. The user's example: they add Go to their stack. From the next collection runs, the profile searches for Go jobs too, and recent jobs that were rejected only because of Go become qualified and show up as new.
+A published profile stays editable, and saving a change takes effect. The user's example: they add Go to their stack. From the next collection runs, the profile searches for Go jobs too, and recent jobs that were rejected only because of Go become qualified and appear in the list in their normal date order. They are not marked new or unread: the list's "New" (posted in the last 12 hours) and viewed state stay as they were.
 
 ## What already exists (on `main`)
 
