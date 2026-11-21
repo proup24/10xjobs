@@ -23,33 +23,18 @@ export default class M extends Migration<Start, End> {
         schema: 'public',
         table: 'silenced_authors',
         columns: [
-          col('authorKey', 'text', {
-            notNull: true,
-            codecRef: { codecId: 'pg/text@1' },
-          }),
+          col('authorKey', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
           col('createdAt', 'timestamptz(3)', {
             notNull: true,
             default: fn(sql`now()`),
-            codecRef: {
-              codecId: 'pg/timestamptz-date@1',
-              typeParams: { precision: 3 },
-            },
+            codecRef: { codecId: 'pg/timestamptz-date@1', typeParams: { precision: 3 } },
           }),
           col('createdBy', 'uuid', { codecRef: { codecId: 'pg/uuid@1' } }),
           col('evidence', 'jsonb', { codecRef: { codecId: 'pg/jsonb@1' } }),
-          col('id', 'uuid', {
-            notNull: true,
-            codecRef: { codecId: 'pg/uuid@1' },
-          }),
+          col('id', 'uuid', { notNull: true, codecRef: { codecId: 'pg/uuid@1' } }),
           col('name', 'text', { codecRef: { codecId: 'pg/text@1' } }),
-          col('origin', 'text', {
-            notNull: true,
-            codecRef: { codecId: 'pg/text@1' },
-          }),
-          col('reason', 'text', {
-            notNull: true,
-            codecRef: { codecId: 'pg/text@1' },
-          }),
+          col('origin', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
+          col('reason', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
         ],
         constraints: [
           primaryKey(['id']),
@@ -65,10 +50,7 @@ export default class M extends Migration<Start, End> {
         constraint: 'silenced_authors_authorKey_key',
         columns: ['authorKey'],
       }),
-      this.enableRowLevelSecurity({
-        schema: 'public',
-        table: 'silenced_authors',
-      }),
+      this.enableRowLevelSecurity({ schema: 'public', table: 'silenced_authors' }),
     ];
   }
 }

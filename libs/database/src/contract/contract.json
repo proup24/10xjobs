@@ -451,8 +451,12 @@
               "extractions": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["code"],
-                  "targetFields": ["arrangement"]
+                  "localFields": [
+                    "code"
+                  ],
+                  "targetFields": [
+                    "arrangement"
+                  ]
                 },
                 "to": {
                   "model": "JobExtraction",
@@ -575,8 +579,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["countryCode"],
-                  "targetFields": ["code"]
+                  "localFields": [
+                    "countryCode"
+                  ],
+                  "targetFields": [
+                    "code"
+                  ]
                 },
                 "to": {
                   "model": "Country",
@@ -749,8 +757,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["segmentRunId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "segmentRunId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "SearchSegmentRun",
@@ -954,8 +966,12 @@
               "jobs": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["companyId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "companyId"
+                  ]
                 },
                 "to": {
                   "model": "NormalizedJob",
@@ -1097,8 +1113,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["userId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "User",
@@ -1202,8 +1222,12 @@
               "extractions": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["code"],
-                  "targetFields": ["contractType"]
+                  "localFields": [
+                    "code"
+                  ],
+                  "targetFields": [
+                    "contractType"
+                  ]
                 },
                 "to": {
                   "model": "JobExtraction",
@@ -1304,8 +1328,12 @@
               "cities": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["code"],
-                  "targetFields": ["countryCode"]
+                  "localFields": [
+                    "code"
+                  ],
+                  "targetFields": [
+                    "countryCode"
+                  ]
                 },
                 "to": {
                   "model": "City",
@@ -1315,8 +1343,12 @@
               "regions": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["code"],
-                  "targetFields": ["countryCode"]
+                  "localFields": [
+                    "code"
+                  ],
+                  "targetFields": [
+                    "countryCode"
+                  ]
                 },
                 "to": {
                   "model": "RegionCountry",
@@ -1417,8 +1449,12 @@
               "extractions": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["code"],
-                  "targetFields": ["engagement"]
+                  "localFields": [
+                    "code"
+                  ],
+                  "targetFields": [
+                    "engagement"
+                  ]
                 },
                 "to": {
                   "model": "JobExtraction",
@@ -1586,8 +1622,12 @@
                 "cardinality": "N:1",
                 "nullable": true,
                 "on": {
-                  "localFields": ["extractionId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "extractionId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "JobExtraction",
@@ -1598,8 +1638,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["jobId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "jobId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "NormalizedJob",
@@ -1610,8 +1654,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["userId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "User",
@@ -1808,8 +1856,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["jobId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "jobId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "NormalizedJob",
@@ -1820,8 +1872,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["userId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "User",
@@ -2101,8 +2157,12 @@
                 "cardinality": "N:1",
                 "nullable": true,
                 "on": {
-                  "localFields": ["arrangement"],
-                  "targetFields": ["code"]
+                  "localFields": [
+                    "arrangement"
+                  ],
+                  "targetFields": [
+                    "code"
+                  ]
                 },
                 "to": {
                   "model": "ArrangementTerm",
@@ -2112,8 +2172,12 @@
               "attempts": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["extractionId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "extractionId"
+                  ]
                 },
                 "to": {
                   "model": "ProcessingAttempt",
@@ -2124,8 +2188,12 @@
                 "cardinality": "N:1",
                 "nullable": true,
                 "on": {
-                  "localFields": ["contractType"],
-                  "targetFields": ["code"]
+                  "localFields": [
+                    "contractType"
+                  ],
+                  "targetFields": [
+                    "code"
+                  ]
                 },
                 "to": {
                   "model": "ContractType",
@@ -2135,8 +2203,12 @@
               "currentFor": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["currentExtractionId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "currentExtractionId"
+                  ]
                 },
                 "to": {
                   "model": "NormalizedJob",
@@ -2147,8 +2219,12 @@
                 "cardinality": "N:1",
                 "nullable": true,
                 "on": {
-                  "localFields": ["engagement"],
-                  "targetFields": ["code"]
+                  "localFields": [
+                    "engagement"
+                  ],
+                  "targetFields": [
+                    "code"
+                  ]
                 },
                 "to": {
                   "model": "EngagementTerm",
@@ -2158,8 +2234,12 @@
               "factConflicts": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["extractionId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "extractionId"
+                  ]
                 },
                 "to": {
                   "model": "JobFactConflict",
@@ -2169,8 +2249,12 @@
               "factReports": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["extractionId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "extractionId"
+                  ]
                 },
                 "to": {
                   "model": "FactReport",
@@ -2180,8 +2264,12 @@
               "facts": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["extractionId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "extractionId"
+                  ]
                 },
                 "to": {
                   "model": "JobFacts",
@@ -2192,8 +2280,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["jobId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "jobId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "NormalizedJob",
@@ -2203,8 +2295,12 @@
               "matches": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["extractionId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "extractionId"
+                  ]
                 },
                 "to": {
                   "model": "JobMatch",
@@ -2215,8 +2311,12 @@
                 "cardinality": "N:1",
                 "nullable": true,
                 "on": {
-                  "localFields": ["roleKind"],
-                  "targetFields": ["code"]
+                  "localFields": [
+                    "roleKind"
+                  ],
+                  "targetFields": [
+                    "code"
+                  ]
                 },
                 "to": {
                   "model": "RoleKind",
@@ -2227,8 +2327,12 @@
                 "cardinality": "N:1",
                 "nullable": true,
                 "on": {
-                  "localFields": ["seniority"],
-                  "targetFields": ["code"]
+                  "localFields": [
+                    "seniority"
+                  ],
+                  "targetFields": [
+                    "code"
+                  ]
                 },
                 "to": {
                   "model": "SeniorityTerm",
@@ -2404,8 +2508,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["extractionId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "extractionId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "JobExtraction",
@@ -2416,8 +2524,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["jobId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "jobId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "NormalizedJob",
@@ -2539,8 +2651,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["extractionId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "extractionId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "JobExtraction",
@@ -2551,8 +2667,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["jobId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "jobId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "NormalizedJob",
@@ -2741,8 +2861,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["extractionId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "extractionId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "JobExtraction",
@@ -2753,8 +2877,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["jobId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "jobId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "NormalizedJob",
@@ -2765,8 +2893,14 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["profileId", "userId"],
-                  "targetFields": ["id", "userId"]
+                  "localFields": [
+                    "profileId",
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id",
+                    "userId"
+                  ]
                 },
                 "to": {
                   "model": "Profile",
@@ -2776,8 +2910,12 @@
               "reviews": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["matchId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "matchId"
+                  ]
                 },
                 "to": {
                   "model": "MatchReview",
@@ -2788,8 +2926,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["userId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "User",
@@ -2799,8 +2941,12 @@
               "webhookDeliveries": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["matchId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "matchId"
+                  ]
                 },
                 "to": {
                   "model": "WebhookDelivery",
@@ -2908,8 +3054,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["jobId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "jobId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "NormalizedJob",
@@ -2920,8 +3070,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["userId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "User",
@@ -3206,8 +3360,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["matchId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "matchId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "JobMatch",
@@ -3218,8 +3376,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["userId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "User",
@@ -3696,8 +3858,12 @@
               "attempts": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["jobId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "jobId"
+                  ]
                 },
                 "to": {
                   "model": "ProcessingAttempt",
@@ -3708,8 +3874,12 @@
                 "cardinality": "N:1",
                 "nullable": true,
                 "on": {
-                  "localFields": ["companyId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "companyId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "Company",
@@ -3720,8 +3890,12 @@
                 "cardinality": "N:1",
                 "nullable": true,
                 "on": {
-                  "localFields": ["currentExtractionId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "currentExtractionId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "JobExtraction",
@@ -3731,8 +3905,12 @@
               "decisions": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["jobId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "jobId"
+                  ]
                 },
                 "to": {
                   "model": "JobDecision",
@@ -3742,8 +3920,12 @@
               "extractions": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["jobId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "jobId"
+                  ]
                 },
                 "to": {
                   "model": "JobExtraction",
@@ -3753,8 +3935,12 @@
               "factConflicts": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["jobId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "jobId"
+                  ]
                 },
                 "to": {
                   "model": "JobFactConflict",
@@ -3764,8 +3950,12 @@
               "factReports": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["jobId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "jobId"
+                  ]
                 },
                 "to": {
                   "model": "FactReport",
@@ -3776,8 +3966,12 @@
                 "cardinality": "1:1",
                 "nullable": true,
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["jobId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "jobId"
+                  ]
                 },
                 "to": {
                   "model": "JobFacts",
@@ -3787,8 +3981,12 @@
               "matches": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["jobId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "jobId"
+                  ]
                 },
                 "to": {
                   "model": "JobMatch",
@@ -3799,8 +3997,12 @@
                 "cardinality": "N:1",
                 "nullable": true,
                 "on": {
-                  "localFields": ["mergedIntoId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "mergedIntoId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "NormalizedJob",
@@ -3810,8 +4012,12 @@
               "views": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["jobId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "jobId"
+                  ]
                 },
                 "to": {
                   "model": "JobView",
@@ -3821,8 +4027,12 @@
               "webhookDeliveries": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["jobId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "jobId"
+                  ]
                 },
                 "to": {
                   "model": "WebhookDelivery",
@@ -4051,8 +4261,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["jobId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "jobId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "NormalizedJob",
@@ -4063,8 +4277,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["normalizedVersionId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "normalizedVersionId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "NormalizedVersion",
@@ -4075,8 +4293,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["rawItemId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "rawItemId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "RawItem",
@@ -4173,8 +4395,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["rawVersionId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "rawVersionId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "RawItemVersion",
@@ -4336,8 +4562,12 @@
                 "cardinality": "N:1",
                 "nullable": true,
                 "on": {
-                  "localFields": ["extractionId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "extractionId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "JobExtraction",
@@ -4348,8 +4578,12 @@
                 "cardinality": "N:1",
                 "nullable": true,
                 "on": {
-                  "localFields": ["jobId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "jobId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "NormalizedJob",
@@ -4659,8 +4893,14 @@
               "jobMatches": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id", "userId"],
-                  "targetFields": ["profileId", "userId"]
+                  "localFields": [
+                    "id",
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "profileId",
+                    "userId"
+                  ]
                 },
                 "to": {
                   "model": "JobMatch",
@@ -4671,8 +4911,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["userId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "User",
@@ -4682,8 +4926,14 @@
               "webhookDeliveries": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id", "userId"],
-                  "targetFields": ["profileId", "userId"]
+                  "localFields": [
+                    "id",
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "profileId",
+                    "userId"
+                  ]
                 },
                 "to": {
                   "model": "WebhookDelivery",
@@ -4827,8 +5077,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["profileId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "profileId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "Profile",
@@ -4839,8 +5093,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["queryId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "queryId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "QuerySearchBuilder",
@@ -4916,8 +5174,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["userId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "User",
@@ -5030,8 +5292,14 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["profileId", "userId"],
-                  "targetFields": ["id", "userId"]
+                  "localFields": [
+                    "profileId",
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id",
+                    "userId"
+                  ]
                 },
                 "to": {
                   "model": "Profile",
@@ -5042,8 +5310,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["userId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "User",
@@ -5511,8 +5783,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["batchId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "batchId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "CollectionBatch",
@@ -5523,8 +5799,12 @@
                 "cardinality": "N:1",
                 "nullable": true,
                 "on": {
-                  "localFields": ["queryId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "queryId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "QuerySearchBuilder",
@@ -5535,8 +5815,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["rawItemId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "rawItemId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "RawItem",
@@ -5547,8 +5831,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["versionId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "versionId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "RawItemVersion",
@@ -5660,8 +5948,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["firstBatchId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "firstBatchId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "CollectionBatch",
@@ -5672,8 +5964,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["rawItemId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "rawItemId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "RawItem",
@@ -5734,8 +6030,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["countryCode"],
-                  "targetFields": ["code"]
+                  "localFields": [
+                    "countryCode"
+                  ],
+                  "targetFields": [
+                    "code"
+                  ]
                 },
                 "to": {
                   "model": "Country",
@@ -5746,8 +6046,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["regionCode"],
-                  "targetFields": ["code"]
+                  "localFields": [
+                    "regionCode"
+                  ],
+                  "targetFields": [
+                    "code"
+                  ]
                 },
                 "to": {
                   "model": "RegionTerm",
@@ -5833,8 +6137,12 @@
               "countries": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["code"],
-                  "targetFields": ["regionCode"]
+                  "localFields": [
+                    "code"
+                  ],
+                  "targetFields": [
+                    "regionCode"
+                  ]
                 },
                 "to": {
                   "model": "RegionCountry",
@@ -5942,8 +6250,12 @@
               "extractions": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["code"],
-                  "targetFields": ["roleKind"]
+                  "localFields": [
+                    "code"
+                  ],
+                  "targetFields": [
+                    "roleKind"
+                  ]
                 },
                 "to": {
                   "model": "JobExtraction",
@@ -6275,8 +6587,12 @@
               "extractions": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["code"],
-                  "targetFields": ["seniority"]
+                  "localFields": [
+                    "code"
+                  ],
+                  "targetFields": [
+                    "seniority"
+                  ]
                 },
                 "to": {
                   "model": "JobExtraction",
@@ -6589,8 +6905,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "AuthUser",
@@ -6601,8 +6921,12 @@
               "factReports": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["userId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "userId"
+                  ]
                 },
                 "to": {
                   "model": "FactReport",
@@ -6612,8 +6936,12 @@
               "jobDecisions": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["userId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "userId"
+                  ]
                 },
                 "to": {
                   "model": "JobDecision",
@@ -6623,8 +6951,12 @@
               "jobMatches": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["userId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "userId"
+                  ]
                 },
                 "to": {
                   "model": "JobMatch",
@@ -6634,8 +6966,12 @@
               "jobViews": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["userId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "userId"
+                  ]
                 },
                 "to": {
                   "model": "JobView",
@@ -6645,8 +6981,12 @@
               "matchReviews": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["userId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "userId"
+                  ]
                 },
                 "to": {
                   "model": "MatchReview",
@@ -6656,8 +6996,12 @@
               "webhookDeliveries": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["userId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "userId"
+                  ]
                 },
                 "to": {
                   "model": "WebhookDelivery",
@@ -6667,8 +7011,12 @@
               "webhooks": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["userId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "userId"
+                  ]
                 },
                 "to": {
                   "model": "Webhook",
@@ -6813,8 +7161,14 @@
               "deliveries": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id", "userId"],
-                  "targetFields": ["webhookId", "userId"]
+                  "localFields": [
+                    "id",
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "webhookId",
+                    "userId"
+                  ]
                 },
                 "to": {
                   "model": "WebhookDelivery",
@@ -6825,8 +7179,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["userId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "User",
@@ -7016,8 +7374,12 @@
                 "cardinality": "N:1",
                 "nullable": true,
                 "on": {
-                  "localFields": ["jobId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "jobId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "NormalizedJob",
@@ -7028,8 +7390,12 @@
                 "cardinality": "N:1",
                 "nullable": true,
                 "on": {
-                  "localFields": ["matchId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "matchId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "JobMatch",
@@ -7040,8 +7406,14 @@
                 "cardinality": "N:1",
                 "nullable": true,
                 "on": {
-                  "localFields": ["profileId", "userId"],
-                  "targetFields": ["id", "userId"]
+                  "localFields": [
+                    "profileId",
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id",
+                    "userId"
+                  ]
                 },
                 "to": {
                   "model": "Profile",
@@ -7052,8 +7424,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["userId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "User",
@@ -7064,8 +7440,14 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["webhookId", "userId"],
-                  "targetFields": ["id", "userId"]
+                  "localFields": [
+                    "webhookId",
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id",
+                    "userId"
+                  ]
                 },
                 "to": {
                   "model": "Webhook",
@@ -7187,8 +7569,12 @@
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
-                  "localFields": ["userId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "User",
@@ -7285,7 +7671,9 @@
               "operation": "select",
               "permissive": true,
               "prefix": "cities_read_approved",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "cities",
               "using": "status = 'approved'"
             },
@@ -7296,7 +7684,9 @@
               "operation": "all",
               "permissive": true,
               "prefix": "contacts_owner",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "contacts",
               "using": "\"userId\" = auth.uid()",
               "withCheck": "\"userId\" = auth.uid()"
@@ -7308,7 +7698,9 @@
               "operation": "select",
               "permissive": true,
               "prefix": "contract_types_read_approved",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "contract_types",
               "using": "status = 'approved'"
             },
@@ -7319,7 +7711,9 @@
               "operation": "select",
               "permissive": true,
               "prefix": "countries_read_approved",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "countries",
               "using": "status = 'approved'"
             },
@@ -7330,7 +7724,9 @@
               "operation": "select",
               "permissive": true,
               "prefix": "engagements_read_approved",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "engagements",
               "using": "status = 'approved'"
             },
@@ -7341,7 +7737,9 @@
               "operation": "insert",
               "permissive": true,
               "prefix": "fact_reports_owner_insert",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "fact_reports",
               "withCheck": "\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.job_matches m WHERE m.\"userId\" = auth.uid() AND m.\"jobId\" = fact_reports.\"jobId\")"
             },
@@ -7352,7 +7750,9 @@
               "operation": "select",
               "permissive": true,
               "prefix": "fact_reports_owner_read",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "fact_reports",
               "using": "\"userId\" = auth.uid()"
             },
@@ -7363,7 +7763,9 @@
               "operation": "select",
               "permissive": true,
               "prefix": "iso_currencies_read_approved",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "iso_currencies",
               "using": "true"
             },
@@ -7374,7 +7776,9 @@
               "operation": "select",
               "permissive": true,
               "prefix": "iso_languages_read_approved",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "iso_languages",
               "using": "true"
             },
@@ -7385,7 +7789,9 @@
               "operation": "delete",
               "permissive": true,
               "prefix": "job_decisions_owner_delete",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "job_decisions",
               "using": "\"userId\" = auth.uid()"
             },
@@ -7396,7 +7802,9 @@
               "operation": "insert",
               "permissive": true,
               "prefix": "job_decisions_owner_insert",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "job_decisions",
               "withCheck": "\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.job_matches m WHERE m.\"userId\" = auth.uid() AND m.\"jobId\" = job_decisions.\"jobId\")"
             },
@@ -7407,7 +7815,9 @@
               "operation": "select",
               "permissive": true,
               "prefix": "job_decisions_owner_read",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "job_decisions",
               "using": "\"userId\" = auth.uid()"
             },
@@ -7418,7 +7828,9 @@
               "operation": "update",
               "permissive": true,
               "prefix": "job_decisions_owner_update",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "job_decisions",
               "using": "\"userId\" = auth.uid()",
               "withCheck": "\"userId\" = auth.uid()"
@@ -7430,7 +7842,9 @@
               "operation": "select",
               "permissive": true,
               "prefix": "job_matches_owner_read",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "job_matches",
               "using": "\"userId\" = auth.uid()"
             },
@@ -7441,7 +7855,9 @@
               "operation": "insert",
               "permissive": true,
               "prefix": "job_views_owner_insert",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "job_views",
               "withCheck": "\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.job_matches m WHERE m.\"userId\" = auth.uid() AND m.\"jobId\" = job_views.\"jobId\")"
             },
@@ -7452,7 +7868,9 @@
               "operation": "select",
               "permissive": true,
               "prefix": "job_views_owner_read",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "job_views",
               "using": "\"userId\" = auth.uid()"
             },
@@ -7463,7 +7881,9 @@
               "operation": "delete",
               "permissive": true,
               "prefix": "match_reviews_owner_delete",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "match_reviews",
               "using": "\"userId\" = auth.uid()"
             },
@@ -7474,7 +7894,9 @@
               "operation": "insert",
               "permissive": true,
               "prefix": "match_reviews_owner_insert",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "match_reviews",
               "withCheck": "\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.job_matches m WHERE m.id = match_reviews.\"matchId\" AND m.\"userId\" = auth.uid() AND m.\"profileId\" = match_reviews.\"profileId\" AND m.\"jobId\" = match_reviews.\"jobId\" AND m.outcome = 'review' AND m.\"reviewRule\" = match_reviews.rule AND m.\"reviewField\" = match_reviews.field)"
             },
@@ -7485,7 +7907,9 @@
               "operation": "select",
               "permissive": true,
               "prefix": "match_reviews_owner_read",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "match_reviews",
               "using": "\"userId\" = auth.uid()"
             },
@@ -7496,7 +7920,9 @@
               "operation": "all",
               "permissive": true,
               "prefix": "profile_setup_drafts_owner",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "profile_setup_drafts",
               "using": "\"userId\" = auth.uid()",
               "withCheck": "\"userId\" = auth.uid()"
@@ -7508,7 +7934,9 @@
               "operation": "delete",
               "permissive": true,
               "prefix": "profile_skills_owner_delete",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "profile_skills",
               "using": "\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills.\"profileId\" AND p.\"userId\" = auth.uid())"
             },
@@ -7519,7 +7947,9 @@
               "operation": "insert",
               "permissive": true,
               "prefix": "profile_skills_owner_insert",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "profile_skills",
               "withCheck": "\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills.\"profileId\" AND p.\"userId\" = auth.uid())"
             },
@@ -7530,7 +7960,9 @@
               "operation": "select",
               "permissive": true,
               "prefix": "profile_skills_owner_read",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "profile_skills",
               "using": "\"userId\" = auth.uid()"
             },
@@ -7541,7 +7973,9 @@
               "operation": "update",
               "permissive": true,
               "prefix": "profile_skills_owner_update",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "profile_skills",
               "using": "\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills.\"profileId\" AND p.\"userId\" = auth.uid())",
               "withCheck": "\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = profile_skills.\"profileId\" AND p.\"userId\" = auth.uid())"
@@ -7553,7 +7987,9 @@
               "operation": "delete",
               "permissive": true,
               "prefix": "profiles_owner_delete_draft",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "profiles",
               "using": "\"userId\" = auth.uid() AND state = 'draft'"
             },
@@ -7564,7 +8000,9 @@
               "operation": "insert",
               "permissive": true,
               "prefix": "profiles_owner_insert",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "profiles",
               "withCheck": "\"userId\" = auth.uid() AND state = 'draft' AND \"publishedAt\" IS NULL"
             },
@@ -7575,7 +8013,9 @@
               "operation": "select",
               "permissive": true,
               "prefix": "profiles_owner_read",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "profiles",
               "using": "\"userId\" = auth.uid()"
             },
@@ -7586,7 +8026,9 @@
               "operation": "update",
               "permissive": true,
               "prefix": "profiles_owner_update",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "profiles",
               "using": "\"userId\" = auth.uid()",
               "withCheck": "\"userId\" = auth.uid()"
@@ -7598,7 +8040,9 @@
               "operation": "select",
               "permissive": true,
               "prefix": "region_countries_read_approved",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "region_countries",
               "using": "true"
             },
@@ -7609,7 +8053,9 @@
               "operation": "select",
               "permissive": true,
               "prefix": "regions_read_approved",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "regions",
               "using": "status = 'approved'"
             },
@@ -7620,7 +8066,9 @@
               "operation": "select",
               "permissive": true,
               "prefix": "role_kinds_read_approved",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "role_kinds",
               "using": "status = 'approved'"
             },
@@ -7631,7 +8079,9 @@
               "operation": "select",
               "permissive": true,
               "prefix": "seniorities_read_approved",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "seniorities",
               "using": "status = 'approved'"
             },
@@ -7642,7 +8092,9 @@
               "operation": "select",
               "permissive": true,
               "prefix": "tech_tags_read_approved",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "tech_tags",
               "using": "status = 'approved'"
             },
@@ -7653,7 +8105,9 @@
               "operation": "select",
               "permissive": true,
               "prefix": "users_owner_read",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "users",
               "using": "id = auth.uid()"
             },
@@ -7664,7 +8118,9 @@
               "operation": "update",
               "permissive": true,
               "prefix": "users_owner_update",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "users",
               "using": "id = auth.uid()",
               "withCheck": "id = auth.uid()"
@@ -7676,7 +8132,9 @@
               "operation": "select",
               "permissive": true,
               "prefix": "webhook_deliveries_owner_read",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "webhook_deliveries",
               "using": "\"userId\" = auth.uid()"
             },
@@ -7687,7 +8145,9 @@
               "operation": "select",
               "permissive": true,
               "prefix": "webhooks_owner_read",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "webhooks",
               "using": "\"userId\" = auth.uid()"
             },
@@ -7698,7 +8158,9 @@
               "operation": "all",
               "permissive": true,
               "prefix": "work_authorizations_owner",
-              "roles": ["authenticated"],
+              "roles": [
+                "authenticated"
+              ],
               "tableName": "work_authorizations",
               "using": "\"userId\" = auth.uid()",
               "withCheck": "\"userId\" = auth.uid()"
@@ -7993,7 +8455,9 @@
               "foreignKeys": [],
               "indexes": [],
               "primaryKey": {
-                "columns": ["code"]
+                "columns": [
+                  "code"
+                ]
               },
               "uniques": []
             },
@@ -8082,12 +8546,16 @@
                   },
                   "onDelete": "restrict",
                   "source": {
-                    "columns": ["countryCode"],
+                    "columns": [
+                      "countryCode"
+                    ],
                     "namespaceId": "public",
                     "tableName": "cities"
                   },
                   "target": {
-                    "columns": ["code"],
+                    "columns": [
+                      "code"
+                    ],
                     "namespaceId": "public",
                     "tableName": "countries"
                   }
@@ -8095,18 +8563,25 @@
               ],
               "indexes": [
                 {
-                  "columns": ["countryCode"],
+                  "columns": [
+                    "countryCode"
+                  ],
                   "name": "cities_countryCode_idx_479cc5a2",
                   "prefix": "cities_countryCode_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": [
                 {
-                  "columns": ["nameKey", "countryCode"]
+                  "columns": [
+                    "nameKey",
+                    "countryCode"
+                  ]
                 }
               ]
             },
@@ -8231,16 +8706,22 @@
               "foreignKeys": [
                 {
                   "index": {
-                    "unique": ["segmentRunId"]
+                    "unique": [
+                      "segmentRunId"
+                    ]
                   },
                   "onDelete": "restrict",
                   "source": {
-                    "columns": ["segmentRunId"],
+                    "columns": [
+                      "segmentRunId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "collection_batches"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "search_segment_runs"
                   }
@@ -8248,18 +8729,25 @@
               ],
               "indexes": [
                 {
-                  "columns": ["status", "createdAt"],
+                  "columns": [
+                    "status",
+                    "createdAt"
+                  ],
                   "name": "collection_batches_status_createdAt_idx_58610442",
                   "prefix": "collection_batches_status_createdAt_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": [
                 {
-                  "columns": ["segmentRunId"]
+                  "columns": [
+                    "segmentRunId"
+                  ]
                 }
               ]
             },
@@ -8397,11 +8885,15 @@
               "foreignKeys": [],
               "indexes": [],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": [
                 {
-                  "columns": ["linkedinId"]
+                  "columns": [
+                    "linkedinId"
+                  ]
                 }
               ]
             },
@@ -8486,12 +8978,16 @@
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["userId"],
+                    "columns": [
+                      "userId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "contacts"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "users"
                   }
@@ -8499,18 +8995,26 @@
               ],
               "indexes": [
                 {
-                  "columns": ["userId"],
+                  "columns": [
+                    "userId"
+                  ],
                   "name": "contacts_userId_idx_a489d58a",
                   "prefix": "contacts_userId_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": [
                 {
-                  "columns": ["userId", "kind", "value"]
+                  "columns": [
+                    "userId",
+                    "kind",
+                    "value"
+                  ]
                 }
               ]
             },
@@ -8580,7 +9084,9 @@
               "foreignKeys": [],
               "indexes": [],
               "primaryKey": {
-                "columns": ["code"]
+                "columns": [
+                  "code"
+                ]
               },
               "uniques": []
             },
@@ -8650,7 +9156,9 @@
               "foreignKeys": [],
               "indexes": [],
               "primaryKey": {
-                "columns": ["code"]
+                "columns": [
+                  "code"
+                ]
               },
               "uniques": []
             },
@@ -8720,7 +9228,9 @@
               "foreignKeys": [],
               "indexes": [],
               "primaryKey": {
-                "columns": ["code"]
+                "columns": [
+                  "code"
+                ]
               },
               "uniques": []
             },
@@ -8748,7 +9258,9 @@
               "foreignKeys": [],
               "indexes": [],
               "primaryKey": {
-                "columns": ["currency"]
+                "columns": [
+                  "currency"
+                ]
               },
               "uniques": []
             },
@@ -8828,12 +9340,16 @@
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["userId"],
+                    "columns": [
+                      "userId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "fact_reports"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "users"
                   }
@@ -8844,12 +9360,16 @@
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["jobId"],
+                    "columns": [
+                      "jobId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "fact_reports"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "normalized_jobs"
                   }
@@ -8860,12 +9380,16 @@
                   },
                   "onDelete": "setNull",
                   "source": {
-                    "columns": ["extractionId"],
+                    "columns": [
+                      "extractionId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "fact_reports"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "job_extractions"
                   }
@@ -8873,26 +9397,34 @@
               ],
               "indexes": [
                 {
-                  "columns": ["extractionId"],
+                  "columns": [
+                    "extractionId"
+                  ],
                   "name": "fact_reports_extractionId_idx_3dd68fa6",
                   "prefix": "fact_reports_extractionId_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["jobId"],
+                  "columns": [
+                    "jobId"
+                  ],
                   "name": "fact_reports_jobId_idx_623c8f77",
                   "prefix": "fact_reports_jobId_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["userId"],
+                  "columns": [
+                    "userId"
+                  ],
                   "name": "fact_reports_userId_idx_a489d58a",
                   "prefix": "fact_reports_userId_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": []
             },
@@ -8912,7 +9444,9 @@
               "foreignKeys": [],
               "indexes": [],
               "primaryKey": {
-                "columns": ["code"]
+                "columns": [
+                  "code"
+                ]
               },
               "uniques": []
             },
@@ -8932,7 +9466,9 @@
               "foreignKeys": [],
               "indexes": [],
               "primaryKey": {
-                "columns": ["code"]
+                "columns": [
+                  "code"
+                ]
               },
               "uniques": []
             },
@@ -9043,12 +9579,16 @@
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["userId"],
+                    "columns": [
+                      "userId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "job_decisions"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "users"
                   }
@@ -9059,12 +9599,16 @@
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["jobId"],
+                    "columns": [
+                      "jobId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "job_decisions"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "normalized_jobs"
                   }
@@ -9072,24 +9616,33 @@
               ],
               "indexes": [
                 {
-                  "columns": ["jobId"],
+                  "columns": [
+                    "jobId"
+                  ],
                   "name": "job_decisions_jobId_idx_623c8f77",
                   "prefix": "job_decisions_jobId_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["userId"],
+                  "columns": [
+                    "userId"
+                  ],
                   "name": "job_decisions_userId_idx_a489d58a",
                   "prefix": "job_decisions_userId_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": [
                 {
-                  "columns": ["userId", "jobId"]
+                  "columns": [
+                    "userId",
+                    "jobId"
+                  ]
                 }
               ]
             },
@@ -9321,12 +9874,16 @@
                   },
                   "onDelete": "restrict",
                   "source": {
-                    "columns": ["jobId"],
+                    "columns": [
+                      "jobId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "job_extractions"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "normalized_jobs"
                   }
@@ -9337,12 +9894,16 @@
                   },
                   "onDelete": "restrict",
                   "source": {
-                    "columns": ["arrangement"],
+                    "columns": [
+                      "arrangement"
+                    ],
                     "namespaceId": "public",
                     "tableName": "job_extractions"
                   },
                   "target": {
-                    "columns": ["code"],
+                    "columns": [
+                      "code"
+                    ],
                     "namespaceId": "public",
                     "tableName": "arrangements"
                   }
@@ -9353,12 +9914,16 @@
                   },
                   "onDelete": "restrict",
                   "source": {
-                    "columns": ["seniority"],
+                    "columns": [
+                      "seniority"
+                    ],
                     "namespaceId": "public",
                     "tableName": "job_extractions"
                   },
                   "target": {
-                    "columns": ["code"],
+                    "columns": [
+                      "code"
+                    ],
                     "namespaceId": "public",
                     "tableName": "seniorities"
                   }
@@ -9369,12 +9934,16 @@
                   },
                   "onDelete": "restrict",
                   "source": {
-                    "columns": ["roleKind"],
+                    "columns": [
+                      "roleKind"
+                    ],
                     "namespaceId": "public",
                     "tableName": "job_extractions"
                   },
                   "target": {
-                    "columns": ["code"],
+                    "columns": [
+                      "code"
+                    ],
                     "namespaceId": "public",
                     "tableName": "role_kinds"
                   }
@@ -9385,12 +9954,16 @@
                   },
                   "onDelete": "restrict",
                   "source": {
-                    "columns": ["contractType"],
+                    "columns": [
+                      "contractType"
+                    ],
                     "namespaceId": "public",
                     "tableName": "job_extractions"
                   },
                   "target": {
-                    "columns": ["code"],
+                    "columns": [
+                      "code"
+                    ],
                     "namespaceId": "public",
                     "tableName": "contract_types"
                   }
@@ -9401,12 +9974,16 @@
                   },
                   "onDelete": "restrict",
                   "source": {
-                    "columns": ["engagement"],
+                    "columns": [
+                      "engagement"
+                    ],
                     "namespaceId": "public",
                     "tableName": "job_extractions"
                   },
                   "target": {
-                    "columns": ["code"],
+                    "columns": [
+                      "code"
+                    ],
                     "namespaceId": "public",
                     "tableName": "engagements"
                   }
@@ -9414,71 +9991,94 @@
               ],
               "indexes": [
                 {
-                  "columns": ["arrangement"],
+                  "columns": [
+                    "arrangement"
+                  ],
                   "name": "job_extractions_arrangement_idx_5f2eb234",
                   "prefix": "job_extractions_arrangement_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["cityIds"],
+                  "columns": [
+                    "cityIds"
+                  ],
                   "name": "job_extractions_cityIds_gin_36569053",
                   "prefix": "job_extractions_cityIds_gin",
                   "type": "gin",
                   "unique": false
                 },
                 {
-                  "columns": ["contractType"],
+                  "columns": [
+                    "contractType"
+                  ],
                   "name": "job_extractions_contractType_idx_7af72bd3",
                   "prefix": "job_extractions_contractType_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["countryCodes"],
+                  "columns": [
+                    "countryCodes"
+                  ],
                   "name": "job_extractions_countryCodes_gin_d29e2bf0",
                   "prefix": "job_extractions_countryCodes_gin",
                   "type": "gin",
                   "unique": false
                 },
                 {
-                  "columns": ["engagement"],
+                  "columns": [
+                    "engagement"
+                  ],
                   "name": "job_extractions_engagement_idx_01398bc8",
                   "prefix": "job_extractions_engagement_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["jobId"],
+                  "columns": [
+                    "jobId"
+                  ],
                   "name": "job_extractions_jobId_idx_623c8f77",
                   "prefix": "job_extractions_jobId_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["jobId", "createdAt"],
+                  "columns": [
+                    "jobId",
+                    "createdAt"
+                  ],
                   "name": "job_extractions_job_created",
                   "unique": false
                 },
                 {
-                  "columns": ["mainStackTags"],
+                  "columns": [
+                    "mainStackTags"
+                  ],
                   "name": "job_extractions_mainStackTags_gin_a32a2b95",
                   "prefix": "job_extractions_mainStackTags_gin",
                   "type": "gin",
                   "unique": false
                 },
                 {
-                  "columns": ["niceTags"],
+                  "columns": [
+                    "niceTags"
+                  ],
                   "name": "job_extractions_niceTags_gin_f00ca684",
                   "prefix": "job_extractions_niceTags_gin",
                   "type": "gin",
                   "unique": false
                 },
                 {
-                  "columns": ["regionCodes"],
+                  "columns": [
+                    "regionCodes"
+                  ],
                   "name": "job_extractions_regionCodes_gin_2489d722",
                   "prefix": "job_extractions_regionCodes_gin",
                   "type": "gin",
                   "unique": false
                 },
                 {
-                  "columns": ["requiredTags"],
+                  "columns": [
+                    "requiredTags"
+                  ],
                   "name": "job_extractions_requiredTags_gin_187039b5",
                   "prefix": "job_extractions_requiredTags_gin",
                   "type": "gin",
@@ -9495,19 +10095,25 @@
                   "unique": false
                 },
                 {
-                  "columns": ["roleKind"],
+                  "columns": [
+                    "roleKind"
+                  ],
                   "name": "job_extractions_roleKind_idx_0a94017d",
                   "prefix": "job_extractions_roleKind_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["seniority"],
+                  "columns": [
+                    "seniority"
+                  ],
                   "name": "job_extractions_seniority_idx_79fd7107",
                   "prefix": "job_extractions_seniority_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["techTags"],
+                  "columns": [
+                    "techTags"
+                  ],
                   "name": "job_extractions_techTags_gin_e48af3d5",
                   "prefix": "job_extractions_techTags_gin",
                   "type": "gin",
@@ -9515,7 +10121,9 @@
                 }
               ],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": []
             },
@@ -9588,12 +10196,16 @@
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["jobId"],
+                    "columns": [
+                      "jobId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "job_fact_conflicts"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "normalized_jobs"
                   }
@@ -9604,12 +10216,16 @@
                   },
                   "onDelete": "restrict",
                   "source": {
-                    "columns": ["extractionId"],
+                    "columns": [
+                      "extractionId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "job_fact_conflicts"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "job_extractions"
                   }
@@ -9617,26 +10233,34 @@
               ],
               "indexes": [
                 {
-                  "columns": ["extractionId"],
+                  "columns": [
+                    "extractionId"
+                  ],
                   "name": "job_fact_conflicts_extractionId_idx_3dd68fa6",
                   "prefix": "job_fact_conflicts_extractionId_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["field"],
+                  "columns": [
+                    "field"
+                  ],
                   "name": "job_fact_conflicts_field_idx_7672e3b5",
                   "prefix": "job_fact_conflicts_field_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["jobId"],
+                  "columns": [
+                    "jobId"
+                  ],
                   "name": "job_fact_conflicts_jobId_idx_623c8f77",
                   "prefix": "job_fact_conflicts_jobId_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": []
             },
@@ -9712,12 +10336,16 @@
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["jobId"],
+                    "columns": [
+                      "jobId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "job_facts"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "normalized_jobs"
                   }
@@ -9728,12 +10356,16 @@
                   },
                   "onDelete": "restrict",
                   "source": {
-                    "columns": ["extractionId"],
+                    "columns": [
+                      "extractionId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "job_facts"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "job_extractions"
                   }
@@ -9741,14 +10373,18 @@
               ],
               "indexes": [
                 {
-                  "columns": ["extractionId"],
+                  "columns": [
+                    "extractionId"
+                  ],
                   "name": "job_facts_extractionId_idx_3dd68fa6",
                   "prefix": "job_facts_extractionId_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": ["jobId"]
+                "columns": [
+                  "jobId"
+                ]
               },
               "uniques": []
             },
@@ -9895,12 +10531,16 @@
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["userId"],
+                    "columns": [
+                      "userId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "job_matches"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "users"
                   }
@@ -9911,12 +10551,18 @@
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["profileId", "userId"],
+                    "columns": [
+                      "profileId",
+                      "userId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "job_matches"
                   },
                   "target": {
-                    "columns": ["id", "userId"],
+                    "columns": [
+                      "id",
+                      "userId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "profiles"
                   }
@@ -9927,12 +10573,16 @@
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["jobId"],
+                    "columns": [
+                      "jobId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "job_matches"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "normalized_jobs"
                   }
@@ -9943,12 +10593,16 @@
                   },
                   "onDelete": "restrict",
                   "source": {
-                    "columns": ["extractionId"],
+                    "columns": [
+                      "extractionId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "job_matches"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "job_extractions"
                   }
@@ -9956,42 +10610,60 @@
               ],
               "indexes": [
                 {
-                  "columns": ["extractionId"],
+                  "columns": [
+                    "extractionId"
+                  ],
                   "name": "job_matches_extractionId_idx_3dd68fa6",
                   "prefix": "job_matches_extractionId_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["jobId"],
+                  "columns": [
+                    "jobId"
+                  ],
                   "name": "job_matches_jobId_idx_623c8f77",
                   "prefix": "job_matches_jobId_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["profileId", "outcome", "decidedAt"],
+                  "columns": [
+                    "profileId",
+                    "outcome",
+                    "decidedAt"
+                  ],
                   "name": "job_matches_profileId_outcome_decidedAt_idx_d8694a97",
                   "prefix": "job_matches_profileId_outcome_decidedAt_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["profileId", "userId"],
+                  "columns": [
+                    "profileId",
+                    "userId"
+                  ],
                   "name": "job_matches_profileId_userId_idx_2d3ae1fb",
                   "prefix": "job_matches_profileId_userId_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["userId"],
+                  "columns": [
+                    "userId"
+                  ],
                   "name": "job_matches_userId_idx_a489d58a",
                   "prefix": "job_matches_userId_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": [
                 {
-                  "columns": ["profileId", "jobId"]
+                  "columns": [
+                    "profileId",
+                    "jobId"
+                  ]
                 }
               ]
             },
@@ -10036,12 +10708,16 @@
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["userId"],
+                    "columns": [
+                      "userId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "job_views"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "users"
                   }
@@ -10052,12 +10728,16 @@
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["jobId"],
+                    "columns": [
+                      "jobId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "job_views"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "normalized_jobs"
                   }
@@ -10065,24 +10745,33 @@
               ],
               "indexes": [
                 {
-                  "columns": ["jobId"],
+                  "columns": [
+                    "jobId"
+                  ],
                   "name": "job_views_jobId_idx_623c8f77",
                   "prefix": "job_views_jobId_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["userId"],
+                  "columns": [
+                    "userId"
+                  ],
                   "name": "job_views_userId_idx_a489d58a",
                   "prefix": "job_views_userId_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": [
                 {
-                  "columns": ["userId", "jobId"]
+                  "columns": [
+                    "userId",
+                    "jobId"
+                  ]
                 }
               ]
             },
@@ -10152,7 +10841,9 @@
               "foreignKeys": [],
               "indexes": [],
               "primaryKey": {
-                "columns": ["code"]
+                "columns": [
+                  "code"
+                ]
               },
               "uniques": []
             },
@@ -10211,7 +10902,9 @@
               "foreignKeys": [],
               "indexes": [],
               "primaryKey": {
-                "columns": ["groupKey"]
+                "columns": [
+                  "groupKey"
+                ]
               },
               "uniques": []
             },
@@ -10310,12 +11003,16 @@
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["userId"],
+                    "columns": [
+                      "userId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "match_reviews"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "users"
                   }
@@ -10326,12 +11023,16 @@
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["matchId"],
+                    "columns": [
+                      "matchId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "match_reviews"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "job_matches"
                   }
@@ -10339,26 +11040,35 @@
               ],
               "indexes": [
                 {
-                  "columns": ["matchId", "createdAt"],
+                  "columns": [
+                    "matchId",
+                    "createdAt"
+                  ],
                   "name": "match_reviews_matchId_createdAt_idx_c6ba7c28",
                   "prefix": "match_reviews_matchId_createdAt_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["matchId"],
+                  "columns": [
+                    "matchId"
+                  ],
                   "name": "match_reviews_matchId_idx_4caf5ecc",
                   "prefix": "match_reviews_matchId_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["userId"],
+                  "columns": [
+                    "userId"
+                  ],
                   "name": "match_reviews_userId_idx_a489d58a",
                   "prefix": "match_reviews_userId_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": []
             },
@@ -10400,28 +11110,38 @@
                   },
                   "onDelete": "restrict",
                   "source": {
-                    "columns": ["jobId"],
+                    "columns": [
+                      "jobId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "normalized_job_sources"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "normalized_jobs"
                   }
                 },
                 {
                   "index": {
-                    "unique": ["rawItemId"]
+                    "unique": [
+                      "rawItemId"
+                    ]
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["rawItemId"],
+                    "columns": [
+                      "rawItemId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "normalized_job_sources"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "raw_items"
                   }
@@ -10432,12 +11152,16 @@
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["normalizedVersionId"],
+                    "columns": [
+                      "normalizedVersionId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "normalized_job_sources"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "normalized_versions"
                   }
@@ -10445,24 +11169,32 @@
               ],
               "indexes": [
                 {
-                  "columns": ["jobId"],
+                  "columns": [
+                    "jobId"
+                  ],
                   "name": "normalized_job_sources_jobId_idx_623c8f77",
                   "prefix": "normalized_job_sources_jobId_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["normalizedVersionId"],
+                  "columns": [
+                    "normalizedVersionId"
+                  ],
                   "name": "normalized_job_sources_normalizedVersionId_idx_e69af444",
                   "prefix": "normalized_job_sources_normalizedVersionId_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": [
                 {
-                  "columns": ["rawItemId"]
+                  "columns": [
+                    "rawItemId"
+                  ]
                 }
               ]
             },
@@ -10837,12 +11569,16 @@
                   },
                   "onDelete": "restrict",
                   "source": {
-                    "columns": ["mergedIntoId"],
+                    "columns": [
+                      "mergedIntoId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "normalized_jobs"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "normalized_jobs"
                   }
@@ -10853,12 +11589,16 @@
                   },
                   "onDelete": "restrict",
                   "source": {
-                    "columns": ["companyId"],
+                    "columns": [
+                      "companyId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "normalized_jobs"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "companies"
                   }
@@ -10869,12 +11609,16 @@
                   },
                   "onDelete": "setNull",
                   "source": {
-                    "columns": ["currentExtractionId"],
+                    "columns": [
+                      "currentExtractionId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "normalized_jobs"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "job_extractions"
                   }
@@ -10882,35 +11626,48 @@
               ],
               "indexes": [
                 {
-                  "columns": ["companyId"],
+                  "columns": [
+                    "companyId"
+                  ],
                   "name": "normalized_jobs_companyId_idx_33acc5ed",
                   "prefix": "normalized_jobs_companyId_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["currentExtractionId"],
+                  "columns": [
+                    "currentExtractionId"
+                  ],
                   "name": "normalized_jobs_currentExtractionId_idx_6f0ea778",
                   "prefix": "normalized_jobs_currentExtractionId_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["mergedIntoId"],
+                  "columns": [
+                    "mergedIntoId"
+                  ],
                   "name": "normalized_jobs_mergedIntoId_idx_470bd53d",
                   "prefix": "normalized_jobs_mergedIntoId_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["processingStatus", "processingRequestedAt"],
+                  "columns": [
+                    "processingStatus",
+                    "processingRequestedAt"
+                  ],
                   "name": "normalized_jobs_processing_queue",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": [
                 {
-                  "columns": ["jobKey"]
+                  "columns": [
+                    "jobKey"
+                  ]
                 }
               ]
             },
@@ -10983,12 +11740,16 @@
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["rawVersionId"],
+                    "columns": [
+                      "rawVersionId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "normalized_versions"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "raw_item_versions"
                   }
@@ -10996,18 +11757,25 @@
               ],
               "indexes": [
                 {
-                  "columns": ["rawVersionId"],
+                  "columns": [
+                    "rawVersionId"
+                  ],
                   "name": "normalized_versions_rawVersionId_idx_db7572f8",
                   "prefix": "normalized_versions_rawVersionId_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": [
                 {
-                  "columns": ["rawVersionId", "normalizerVersion"]
+                  "columns": [
+                    "rawVersionId",
+                    "normalizerVersion"
+                  ]
                 }
               ]
             },
@@ -11128,12 +11896,16 @@
                   },
                   "onDelete": "restrict",
                   "source": {
-                    "columns": ["jobId"],
+                    "columns": [
+                      "jobId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "processing_attempts"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "normalized_jobs"
                   }
@@ -11144,12 +11916,16 @@
                   },
                   "onDelete": "setNull",
                   "source": {
-                    "columns": ["extractionId"],
+                    "columns": [
+                      "extractionId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "processing_attempts"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "job_extractions"
                   }
@@ -11157,27 +11933,35 @@
               ],
               "indexes": [
                 {
-                  "columns": ["createdAt"],
+                  "columns": [
+                    "createdAt"
+                  ],
                   "name": "processing_attempts_created_noneval_95f31976",
                   "prefix": "processing_attempts_created_noneval",
                   "unique": false,
                   "where": "NOT eval"
                 },
                 {
-                  "columns": ["extractionId"],
+                  "columns": [
+                    "extractionId"
+                  ],
                   "name": "processing_attempts_extractionId_idx_3dd68fa6",
                   "prefix": "processing_attempts_extractionId_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["jobId"],
+                  "columns": [
+                    "jobId"
+                  ],
                   "name": "processing_attempts_jobId_idx_623c8f77",
                   "prefix": "processing_attempts_jobId_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": []
             },
@@ -11218,12 +12002,16 @@
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["profileId"],
+                    "columns": [
+                      "profileId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "profile_query_search_builders"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "profiles"
                   }
@@ -11234,12 +12022,16 @@
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["queryId"],
+                    "columns": [
+                      "queryId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "profile_query_search_builders"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "query_search_builder"
                   }
@@ -11247,24 +12039,33 @@
               ],
               "indexes": [
                 {
-                  "columns": ["profileId"],
+                  "columns": [
+                    "profileId"
+                  ],
                   "name": "profile_query_search_builders_profileId_idx_d9cdfcaf",
                   "prefix": "profile_query_search_builders_profileId_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["queryId"],
+                  "columns": [
+                    "queryId"
+                  ],
                   "name": "profile_query_search_builders_queryId_idx_edc2d44a",
                   "prefix": "profile_query_search_builders_queryId_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": [
                 {
-                  "columns": ["profileId", "queryId"]
+                  "columns": [
+                    "profileId",
+                    "queryId"
+                  ]
                 }
               ]
             },
@@ -11313,16 +12114,22 @@
               "foreignKeys": [
                 {
                   "index": {
-                    "unique": ["userId"]
+                    "unique": [
+                      "userId"
+                    ]
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["userId"],
+                    "columns": [
+                      "userId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "profile_setup_drafts"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "users"
                   }
@@ -11330,11 +12137,15 @@
               ],
               "indexes": [],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": [
                 {
-                  "columns": ["userId"]
+                  "columns": [
+                    "userId"
+                  ]
                 }
               ]
             },
@@ -11434,12 +12245,16 @@
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["userId"],
+                    "columns": [
+                      "userId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "profile_skills"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "users"
                   }
@@ -11450,12 +12265,18 @@
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["profileId", "userId"],
+                    "columns": [
+                      "profileId",
+                      "userId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "profile_skills"
                   },
                   "target": {
-                    "columns": ["id", "userId"],
+                    "columns": [
+                      "id",
+                      "userId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "profiles"
                   }
@@ -11463,24 +12284,35 @@
               ],
               "indexes": [
                 {
-                  "columns": ["profileId", "userId"],
+                  "columns": [
+                    "profileId",
+                    "userId"
+                  ],
                   "name": "profile_skills_profileId_userId_idx_2d3ae1fb",
                   "prefix": "profile_skills_profileId_userId_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["userId"],
+                  "columns": [
+                    "userId"
+                  ],
                   "name": "profile_skills_userId_idx_a489d58a",
                   "prefix": "profile_skills_userId_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": [
                 {
-                  "columns": ["profileId", "technology", "domain"]
+                  "columns": [
+                    "profileId",
+                    "technology",
+                    "domain"
+                  ]
                 }
               ]
             },
@@ -11789,12 +12621,16 @@
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["userId"],
+                    "columns": [
+                      "userId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "profiles"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "users"
                   }
@@ -11802,18 +12638,25 @@
               ],
               "indexes": [
                 {
-                  "columns": ["userId"],
+                  "columns": [
+                    "userId"
+                  ],
                   "name": "profiles_userId_idx_a489d58a",
                   "prefix": "profiles_userId_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": [
                 {
-                  "columns": ["id", "userId"]
+                  "columns": [
+                    "id",
+                    "userId"
+                  ]
                 }
               ]
             },
@@ -12035,18 +12878,26 @@
               "foreignKeys": [],
               "indexes": [
                 {
-                  "columns": ["channel", "isActive", "isDeleted"],
+                  "columns": [
+                    "channel",
+                    "isActive",
+                    "isDeleted"
+                  ],
                   "name": "query_search_builder_channel_isActive_isDeleted_idx_f3572b4f",
                   "prefix": "query_search_builder_channel_isActive_isDeleted_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": [
                 {
-                  "columns": ["hash"]
+                  "columns": [
+                    "hash"
+                  ]
                 }
               ]
             },
@@ -12115,12 +12966,16 @@
                   },
                   "onDelete": "restrict",
                   "source": {
-                    "columns": ["batchId"],
+                    "columns": [
+                      "batchId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "raw_item_sightings"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "collection_batches"
                   }
@@ -12131,12 +12986,16 @@
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["rawItemId"],
+                    "columns": [
+                      "rawItemId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "raw_item_sightings"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "raw_items"
                   }
@@ -12147,12 +13006,16 @@
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["versionId"],
+                    "columns": [
+                      "versionId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "raw_item_sightings"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "raw_item_versions"
                   }
@@ -12163,12 +13026,16 @@
                   },
                   "onDelete": "restrict",
                   "source": {
-                    "columns": ["queryId"],
+                    "columns": [
+                      "queryId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "raw_item_sightings"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "query_search_builder"
                   }
@@ -12176,36 +13043,50 @@
               ],
               "indexes": [
                 {
-                  "columns": ["batchId"],
+                  "columns": [
+                    "batchId"
+                  ],
                   "name": "raw_item_sightings_batchId_idx_84d4b0b9",
                   "prefix": "raw_item_sightings_batchId_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["queryId"],
+                  "columns": [
+                    "queryId"
+                  ],
                   "name": "raw_item_sightings_queryId_idx_edc2d44a",
                   "prefix": "raw_item_sightings_queryId_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["rawItemId"],
+                  "columns": [
+                    "rawItemId"
+                  ],
                   "name": "raw_item_sightings_rawItemId_idx_e9f47b12",
                   "prefix": "raw_item_sightings_rawItemId_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["versionId"],
+                  "columns": [
+                    "versionId"
+                  ],
                   "name": "raw_item_sightings_versionId_idx_ef8aa804",
                   "prefix": "raw_item_sightings_versionId_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": [
                 {
-                  "columns": ["batchId", "rawItemId", "attribution"]
+                  "columns": [
+                    "batchId",
+                    "rawItemId",
+                    "attribution"
+                  ]
                 }
               ]
             },
@@ -12279,12 +13160,16 @@
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["rawItemId"],
+                    "columns": [
+                      "rawItemId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "raw_item_versions"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "raw_items"
                   }
@@ -12295,12 +13180,16 @@
                   },
                   "onDelete": "restrict",
                   "source": {
-                    "columns": ["firstBatchId"],
+                    "columns": [
+                      "firstBatchId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "raw_item_versions"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "collection_batches"
                   }
@@ -12308,30 +13197,41 @@
               ],
               "indexes": [
                 {
-                  "columns": ["createdAt"],
+                  "columns": [
+                    "createdAt"
+                  ],
                   "name": "raw_item_versions_createdAt_idx_9575dbd7",
                   "prefix": "raw_item_versions_createdAt_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["firstBatchId"],
+                  "columns": [
+                    "firstBatchId"
+                  ],
                   "name": "raw_item_versions_firstBatchId_idx_5fbe686f",
                   "prefix": "raw_item_versions_firstBatchId_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["rawItemId"],
+                  "columns": [
+                    "rawItemId"
+                  ],
                   "name": "raw_item_versions_rawItemId_idx_e9f47b12",
                   "prefix": "raw_item_versions_rawItemId_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": [
                 {
-                  "columns": ["rawItemId", "contentHash"]
+                  "columns": [
+                    "rawItemId",
+                    "contentHash"
+                  ]
                 }
               ]
             },
@@ -12405,11 +13305,16 @@
               "foreignKeys": [],
               "indexes": [],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": [
                 {
-                  "columns": ["channel", "sourceKey"]
+                  "columns": [
+                    "channel",
+                    "sourceKey"
+                  ]
                 }
               ]
             },
@@ -12433,12 +13338,16 @@
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["regionCode"],
+                    "columns": [
+                      "regionCode"
+                    ],
                     "namespaceId": "public",
                     "tableName": "region_countries"
                   },
                   "target": {
-                    "columns": ["code"],
+                    "columns": [
+                      "code"
+                    ],
                     "namespaceId": "public",
                     "tableName": "regions"
                   }
@@ -12449,12 +13358,16 @@
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["countryCode"],
+                    "columns": [
+                      "countryCode"
+                    ],
                     "namespaceId": "public",
                     "tableName": "region_countries"
                   },
                   "target": {
-                    "columns": ["code"],
+                    "columns": [
+                      "code"
+                    ],
                     "namespaceId": "public",
                     "tableName": "countries"
                   }
@@ -12462,20 +13375,27 @@
               ],
               "indexes": [
                 {
-                  "columns": ["countryCode"],
+                  "columns": [
+                    "countryCode"
+                  ],
                   "name": "region_countries_countryCode_idx_479cc5a2",
                   "prefix": "region_countries_countryCode_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["regionCode"],
+                  "columns": [
+                    "regionCode"
+                  ],
                   "name": "region_countries_regionCode_idx_65b6bdbe",
                   "prefix": "region_countries_regionCode_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": ["regionCode", "countryCode"]
+                "columns": [
+                  "regionCode",
+                  "countryCode"
+                ]
               },
               "uniques": []
             },
@@ -12545,7 +13465,9 @@
               "foreignKeys": [],
               "indexes": [],
               "primaryKey": {
-                "columns": ["code"]
+                "columns": [
+                  "code"
+                ]
               },
               "uniques": []
             },
@@ -12624,7 +13546,9 @@
               "foreignKeys": [],
               "indexes": [],
               "primaryKey": {
-                "columns": ["code"]
+                "columns": [
+                  "code"
+                ]
               },
               "uniques": []
             },
@@ -12783,14 +13707,19 @@
               "foreignKeys": [],
               "indexes": [
                 {
-                  "columns": ["channel", "startedAt"],
+                  "columns": [
+                    "channel",
+                    "startedAt"
+                  ],
                   "name": "search_segment_runs_channel_startedAt_idx_346540ce",
                   "prefix": "search_segment_runs_channel_startedAt_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": []
             },
@@ -12860,7 +13789,9 @@
               "foreignKeys": [],
               "indexes": [],
               "primaryKey": {
-                "columns": ["code"]
+                "columns": [
+                  "code"
+                ]
               },
               "uniques": []
             },
@@ -12924,11 +13855,15 @@
               "foreignKeys": [],
               "indexes": [],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": [
                 {
-                  "columns": ["authorKey"]
+                  "columns": [
+                    "authorKey"
+                  ]
                 }
               ]
             },
@@ -13016,7 +13951,9 @@
               "foreignKeys": [],
               "indexes": [],
               "primaryKey": {
-                "columns": ["code"]
+                "columns": [
+                  "code"
+                ]
               },
               "uniques": []
             },
@@ -13088,12 +14025,16 @@
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "users"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "auth",
                     "spaceId": "supabase",
                     "tableName": "users"
@@ -13102,7 +14043,9 @@
               ],
               "indexes": [],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": []
             },
@@ -13259,12 +14202,16 @@
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["userId"],
+                    "columns": [
+                      "userId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "webhook_deliveries"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "users"
                   }
@@ -13275,12 +14222,18 @@
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["webhookId", "userId"],
+                    "columns": [
+                      "webhookId",
+                      "userId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "webhook_deliveries"
                   },
                   "target": {
-                    "columns": ["id", "userId"],
+                    "columns": [
+                      "id",
+                      "userId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "webhooks"
                   }
@@ -13291,12 +14244,18 @@
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["profileId", "userId"],
+                    "columns": [
+                      "profileId",
+                      "userId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "webhook_deliveries"
                   },
                   "target": {
-                    "columns": ["id", "userId"],
+                    "columns": [
+                      "id",
+                      "userId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "profiles"
                   }
@@ -13307,12 +14266,16 @@
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["jobId"],
+                    "columns": [
+                      "jobId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "webhook_deliveries"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "normalized_jobs"
                   }
@@ -13323,12 +14286,16 @@
                   },
                   "onDelete": "setNull",
                   "source": {
-                    "columns": ["matchId"],
+                    "columns": [
+                      "matchId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "webhook_deliveries"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "job_matches"
                   }
@@ -13336,51 +14303,72 @@
               ],
               "indexes": [
                 {
-                  "columns": ["jobId"],
+                  "columns": [
+                    "jobId"
+                  ],
                   "name": "webhook_deliveries_jobId_idx_623c8f77",
                   "prefix": "webhook_deliveries_jobId_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["matchId"],
+                  "columns": [
+                    "matchId"
+                  ],
                   "name": "webhook_deliveries_matchId_idx_4caf5ecc",
                   "prefix": "webhook_deliveries_matchId_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["profileId", "jobId"],
+                  "columns": [
+                    "profileId",
+                    "jobId"
+                  ],
                   "name": "webhook_deliveries_match_once_6bad34b8",
                   "prefix": "webhook_deliveries_match_once",
                   "unique": true,
                   "where": "kind = 'match'"
                 },
                 {
-                  "columns": ["profileId", "userId"],
+                  "columns": [
+                    "profileId",
+                    "userId"
+                  ],
                   "name": "webhook_deliveries_profileId_userId_idx_2d3ae1fb",
                   "prefix": "webhook_deliveries_profileId_userId_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["userId"],
+                  "columns": [
+                    "userId"
+                  ],
                   "name": "webhook_deliveries_userId_idx_a489d58a",
                   "prefix": "webhook_deliveries_userId_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["webhookId", "status", "createdAt"],
+                  "columns": [
+                    "webhookId",
+                    "status",
+                    "createdAt"
+                  ],
                   "name": "webhook_deliveries_webhookId_status_createdAt_idx_206ef646",
                   "prefix": "webhook_deliveries_webhookId_status_createdAt_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["webhookId", "userId"],
+                  "columns": [
+                    "webhookId",
+                    "userId"
+                  ],
                   "name": "webhook_deliveries_webhookId_userId_idx_f48d66cb",
                   "prefix": "webhook_deliveries_webhookId_userId_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": []
             },
@@ -13505,16 +14493,22 @@
               "foreignKeys": [
                 {
                   "index": {
-                    "unique": ["userId"]
+                    "unique": [
+                      "userId"
+                    ]
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["userId"],
+                    "columns": [
+                      "userId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "webhooks"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "users"
                   }
@@ -13522,14 +14516,21 @@
               ],
               "indexes": [],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": [
                 {
-                  "columns": ["userId"]
+                  "columns": [
+                    "userId"
+                  ]
                 },
                 {
-                  "columns": ["id", "userId"]
+                  "columns": [
+                    "id",
+                    "userId"
+                  ]
                 }
               ]
             },
@@ -13594,12 +14595,16 @@
                   },
                   "onDelete": "cascade",
                   "source": {
-                    "columns": ["userId"],
+                    "columns": [
+                      "userId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "work_authorizations"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "users"
                   }
@@ -13607,18 +14612,26 @@
               ],
               "indexes": [
                 {
-                  "columns": ["userId"],
+                  "columns": [
+                    "userId"
+                  ],
                   "name": "work_authorizations_userId_idx_a489d58a",
                   "prefix": "work_authorizations_userId_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": [
                 {
-                  "columns": ["userId", "kind", "place"]
+                  "columns": [
+                    "userId",
+                    "kind",
+                    "place"
+                  ]
                 }
               ]
             }
@@ -13626,7 +14639,12 @@
           "valueSet": {
             "Arrangement": {
               "kind": "valueSet",
-              "values": ["remote", "hybrid", "onsite", "unstated"]
+              "values": [
+                "remote",
+                "hybrid",
+                "onsite",
+                "unstated"
+              ]
             },
             "Channel": {
               "kind": "valueSet",
@@ -13654,11 +14672,20 @@
             },
             "Engagement": {
               "kind": "valueSet",
-              "values": ["employee", "contractor", "eor", "agency", "per_task"]
+              "values": [
+                "employee",
+                "contractor",
+                "eor",
+                "agency",
+                "per_task"
+              ]
             },
             "ProfileState": {
               "kind": "valueSet",
-              "values": ["draft", "published"]
+              "values": [
+                "draft",
+                "published"
+              ]
             },
             "Seniority": {
               "kind": "valueSet",
