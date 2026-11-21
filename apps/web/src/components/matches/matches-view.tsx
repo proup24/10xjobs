@@ -180,7 +180,13 @@ export function MatchesView({
   };
 
   let list: React.ReactNode;
-  if (isDraft) list = <MatchEmpty kind="draft" />;
+  if (isDraft)
+    list = (
+      <MatchEmpty
+        kind="draft"
+        finishHref={`/preferences/new/${state.profile}/resume`}
+      />
+    );
   else if (visible.length > 0)
     list = (
       <MatchList

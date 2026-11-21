@@ -10,7 +10,7 @@ import {
 
 export type EmptyKind =
   | { kind: 'no-profile' }
-  | { kind: 'draft' }
+  | { kind: 'draft'; finishHref: string }
   | { kind: 'no-matches-24h'; weekHref: string }
   | { kind: 'no-matches-7d' }
   | { kind: 'no-review-24h'; weekHref: string }
@@ -44,6 +44,9 @@ export function MatchEmpty(props: EmptyKind) {
       {(props.kind === 'no-matches-24h' || props.kind === 'no-review-24h') && (
         <Action href={props.weekHref}>Last 7 days</Action>
       )}
+      {props.kind === 'draft' && (
+        <Action href={props.finishHref}>Finish setup</Action>
+      )}
       {props.kind === 'filtered' && (
         <Action href={props.clearHref}>Clear filters</Action>
       )}
@@ -58,7 +61,7 @@ const TEXT: Record<EmptyKind['kind'], [string, string | null]> = {
   ],
   draft: [
     "This profile isn't live yet",
-    "It starts matching once it's published.",
+    'Finish setting it up to start matching.',
   ],
   'no-matches-24h': [
     'No matches in the last 24 hours',
