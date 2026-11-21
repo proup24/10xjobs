@@ -30,10 +30,30 @@ const input: QuerySearchProfileInput = {
 
 describe.skipIf(!url)('query search repository in PostgreSQL', () => {
   let db: DatabaseClient;
+  // A second pool, so a test can hold a lock on one connection and act on another.
+  let db2: DatabaseClient;
   let repo: PrismaQuerySearchRepository;
 
   async function sql(statement: TemplateStringsArray): Promise<void> {
     await db.execute(db.raw.sql(statement).affectedCount().build());
+  }
+
+  /** Runs one fixed statement with no parameters, such as DDL naming a test id. */
+  async function ddl(text: string): Promise<void> {
+    const statement = Object.assign([text], { raw: [text] });
+    await db.execute(db.raw.sql(statement).affectedCount().build());
+  }
+
+  /** The SQLSTATE in `error`'s cause chain, if any. */
+  function sqlStateOf(error: unknown): string | undefined {
+    let current: unknown = error;
+    for (let depth = 0; depth < 10 && current; depth++) {
+      if (typeof current !== 'object') return undefined;
+      const state = (current as { sqlState?: unknown }).sqlState;
+      if (typeof state === 'string') return state;
+      current = (current as { cause?: unknown }).cause;
+    }
+    return undefined;
   }
 
   async function profile(): Promise<string> {
@@ -101,11 +121,19 @@ describe.skipIf(!url)('query search repository in PostgreSQL', () => {
       slowQueryMs: 60000,
       logQueries: false,
     });
+    db2 = createDatabaseClient({
+      url: url!,
+      connectionTimeoutMs: 3000,
+      idleTimeoutMs: 1000,
+      slowQueryMs: 60000,
+      logQueries: false,
+    });
     repo = new PrismaQuerySearchRepository({ db } as DatabaseService);
     await sql`INSERT INTO iso_languages (code, label) VALUES ('en', 'English'), ('fr', 'French') ON CONFLICT (code) DO NOTHING`;
   }, 60_000);
   afterAll(async () => {
     await db?.close();
+    await db2?.close();
   });
   beforeEach(async () => {
     await sql`TRUNCATE query_search_builder, profiles CASCADE`;
@@ -300,6 +328,105 @@ describe.skipIf(!url)('query search repository in PostgreSQL', () => {
     expect(
       (await db.orm.public.Profile.where({ id }).first())!.searchesVersion,
     ).toBeNull();
+  });
+
+  it('a running swap does not block an edit of the profile', async () => {
+    const id = await profile();
+    await db.transaction(async (tx) => {
+      // The lock replace holds on the profile for the whole swap.
+      expect(
+        await PrismaQuerySearchRepository['lockForSwap'](tx, id),
+      ).not.toBeNull();
+
+      // A user's edit (PostgREST PATCH) takes FOR NO KEY UPDATE: it must not wait.
+      await db2.transaction(async (other) => {
+        await other.execute(
+          other.raw.sql`SET LOCAL lock_timeout = '500ms'`
+            .affectedCount()
+            .build(),
+        );
+        await other.execute(
+          other.raw
+            .sql`UPDATE profiles SET "noticePeriodDays" = 60 WHERE id = ${id}::uuid`
+            .affectedCount()
+            .build(),
+        );
+      });
+
+      // A delete must still wait, so a swapped profile never loses links unadjusted.
+      const deleting = db2.transaction(async (other) => {
+        await other.execute(
+          other.raw.sql`SET LOCAL lock_timeout = '500ms'`
+            .affectedCount()
+            .build(),
+        );
+        await other.execute(
+          other.raw.sql`DELETE FROM profiles WHERE id = ${id}::uuid`
+            .affectedCount()
+            .build(),
+        );
+      });
+      const error = await deleting.then(
+        () => null,
+        (caught: unknown) => caught,
+      );
+      expect(['55P03', '57014']).toContain(sqlStateOf(error));
+    });
+    expect(
+      (await db.orm.public.Profile.where({ id }).first())!.noticePeriodDays,
+    ).toBe(60);
+  });
+
+  it('a postSearch change during a swap rolls the swap back', async () => {
+    const [id, other] = [await profile(), await profile()];
+    const [a, b] = [ashby('emea'), ashby('paris')];
+    await repo.attach(id, [a]);
+    await repo.attach(other, [a]);
+    const suffix = id.replaceAll('-', '');
+    const fn = `test_flip_post_search_${suffix}`;
+    const trigger = `test_flip_post_search_${suffix}`;
+    // The switch flips the flag inside the swap, after its early check.
+    await ddl(`CREATE FUNCTION ${fn}() RETURNS trigger LANGUAGE plpgsql AS $$
+      BEGIN
+        IF NEW."profileId" = '${id}'::uuid THEN
+          UPDATE profiles SET "postSearch" = NOT "postSearch" WHERE id = NEW."profileId";
+        END IF;
+        RETURN NEW;
+      END $$`);
+    try {
+      await ddl(
+        `CREATE TRIGGER ${trigger} AFTER INSERT ON profile_query_search_builders FOR EACH ROW EXECUTE FUNCTION ${fn}()`,
+      );
+
+      expect(
+        await repo.replace(id, [b], { searchesVersion: 4, postSearch: false }),
+      ).toEqual({
+        created: 0,
+        existing: 0,
+        released: 0,
+        skipped: 'post_search_changed',
+      });
+    } finally {
+      await ddl(
+        `DROP TRIGGER IF EXISTS ${trigger} ON profile_query_search_builders`,
+      );
+      await ddl(`DROP FUNCTION IF EXISTS ${fn}()`);
+    }
+
+    expect(await builderOf(b)).toBeNull();
+    const links = await db.orm.public.ProfileQuerySearchBuilder.where({
+      profileId: id,
+    }).all();
+    expect(links.map((link) => link.queryId)).toEqual([
+      (await builderOf(a))!.id,
+    ]);
+    expect(await builderOf(a)).toMatchObject({
+      associatedProfiles: 2,
+      isActive: true,
+    });
+    const row = (await db.orm.public.Profile.where({ id }).first())!;
+    expect(row.searchesVersion).toBeNull();
+    expect(row.postSearch).toBe(false);
   });
 
   it('releaseAndDelete releases every builder and deletes the profile', async () => {

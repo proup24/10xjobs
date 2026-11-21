@@ -11,6 +11,7 @@ import type {
   QuerySearchAttachResult,
   QuerySearchReplaceExpected,
   QuerySearchReplaceResult,
+  QuerySearchReplaceSkip,
 } from '../types';
 
 /**
@@ -74,6 +75,13 @@ export abstract class QuerySearchRepository {
   abstract releaseAndDelete(profileId: string): Promise<boolean>;
   /** Retires a builder: unlinks every profile and deactivates it for good. */
   abstract softDelete(queryId: string): Promise<QuerySearchBuilderRow | null>;
+}
+
+/** Thrown inside a swap to roll it back when the profile moved under it. */
+class SwapSkipped extends Error {
+  constructor(readonly skipped: QuerySearchReplaceSkip) {
+    super(`Search swap skipped: ${skipped}`);
+  }
 }
 
 const MAX_TRANSACTION_RETRIES = 3;
@@ -218,6 +226,20 @@ export class PrismaQuerySearchRepository extends QuerySearchRepository {
     return dropped.length;
   }
 
+  /**
+   * The published profile, locked for a swap; null when none is published.
+   * FOR KEY SHARE blocks a DELETE (and FOR UPDATE), so a draft or deleted
+   * profile never gains links that its cascade would drop without `adjust`.
+   * It does not block FOR NO KEY UPDATE, so a user's edit and the
+   * `profile_skills` trigger's "matchVersion" write go through while a long
+   * swap runs; a FOR UPDATE here made those edits hit their 8 s timeout.
+   */
+  private static lockForSwap(tx: DatabaseTransaction, profileId: string) {
+    return tx.orm.public.Profile.where({ id: profileId, state: 'published' })
+      .forKeyShare()
+      .first();
+  }
+
   replace(
     profileId: string,
     recipes: QuerySearchRecipe[],
@@ -225,19 +247,18 @@ export class PrismaQuerySearchRepository extends QuerySearchRepository {
   ): Promise<QuerySearchReplaceResult> {
     const nothing = { created: 0, existing: 0, released: 0 };
     const wanted = new Set(recipes.map((recipe) => recipe.hash));
-    return this.transaction(async (tx) => {
-      // Lock the profile first (as releaseAndDelete does): a draft or missing
-      // profile must never gain links, since deleting it would skip `adjust`.
-      const profile = await tx.orm.public.Profile.where({
-        id: profileId,
-        state: 'published',
-      })
-        .forUpdate()
-        .first();
+    return this.transaction<QuerySearchReplaceResult>(async (tx) => {
+      // Lock the profile first: a draft or missing profile must never gain
+      // links, since deleting it would skip `adjust` (see `lockForSwap`).
+      const profile = await PrismaQuerySearchRepository.lockForSwap(
+        tx,
+        profileId,
+      );
       if (!profile) return { ...nothing, skipped: 'not_published' };
       // The switch path writes the flag before it attaches or detaches post
-      // builders, and that write waits on this lock: a flag that moved since
-      // the caller's read means its recipes are stale, so change nothing.
+      // builders: a flag that moved since the caller's read means its recipes
+      // are stale, so change nothing. A cheap short-cut; the final write below
+      // is the check that counts.
       if (profile.postSearch !== expected.postSearch)
         return { ...nothing, skipped: 'post_search_changed' };
       const attached = await PrismaQuerySearchRepository.attachIn(
@@ -250,18 +271,39 @@ export class PrismaQuerySearchRepository extends QuerySearchRepository {
         profileId,
         wanted,
       );
-      await tx.execute(
+      // KEY SHARE lets edits land during the swap, so the version is written
+      // only while the profile is still published with the `expected` flag;
+      // otherwise the whole swap rolls back and the next tick retries with
+      // fresh recipes. This UPDATE then holds the row until commit, so a
+      // switch writing the flag after it waits, and attaches or detaches
+      // post builders after the swap: the race stays closed both ways.
+      const { affectedRows } = await tx.execute(
         tx.raw
-          .sql`UPDATE profiles SET "searchesVersion" = ${expected.searchesVersion} WHERE id = ${profileId}::uuid AND state = 'published'`
+          .sql`UPDATE profiles SET "searchesVersion" = ${expected.searchesVersion} WHERE id = ${profileId}::uuid AND state = 'published' AND "postSearch" = ${expected.postSearch}`
           .affectedCount()
           .build(),
       );
+      if (affectedRows === 0) {
+        const now = await tx.orm.public.Profile.where({
+          id: profileId,
+        }).first();
+        throw new SwapSkipped(
+          now?.state === 'published' ? 'post_search_changed' : 'not_published',
+        );
+      }
       return { ...attached, released, skipped: null };
+    }).catch((error: unknown) => {
+      // The sentinel has no SQLSTATE, so `transaction` never retries it.
+      if (error instanceof SwapSkipped)
+        return { ...nothing, skipped: error.skipped };
+      throw error;
     });
   }
 
   releaseAndDelete(profileId: string): Promise<boolean> {
     return this.transaction(async (tx) => {
+      // FOR UPDATE waits for a running swap's KEY SHARE (see `lockForSwap`)
+      // and then finds what the swap committed.
       const profile = await tx.orm.public.Profile.where({
         id: profileId,
         state: 'published',
