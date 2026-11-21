@@ -65,12 +65,41 @@ describe('Prepare review page', () => {
   it.each([
     [{ kind: 'ok', data: { admin: false } }],
     [{ kind: 'forbidden' }],
-    [{ kind: 'unavailable' }],
+    [{ kind: 'unauthorized' }],
   ])('is not found unless the engine says admin (%j)', async (me) => {
     engine.adminMe.mockResolvedValue(me);
     await expect(Page(params())).rejects.toBe(NOT_FOUND);
     expect(engine.prepareDrops).not.toHaveBeenCalled();
     expect(engine.silencedAuthors).not.toHaveBeenCalled();
+  });
+
+  it('says the engine is unreachable when adminMe is unavailable, and shows no admin data', async () => {
+    engine.adminMe.mockResolvedValue({ kind: 'unavailable' });
+    render(await Page(params()));
+    expect(notFound).not.toHaveBeenCalled();
+    expect(
+      screen.getByText("Couldn't reach the engine; try again."),
+    ).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Dropped posts' })).toBeNull();
+    expect(engine.prepareDrops).not.toHaveBeenCalled();
+    expect(engine.silencedPosts).not.toHaveBeenCalled();
+    expect(engine.silencedAuthors).not.toHaveBeenCalled();
+  });
+
+  it('keeps the rule and the drops cursor on the held-posts next link', async () => {
+    engine.silencedPosts.mockResolvedValue({
+      kind: 'ok',
+      data: { items: [], next: 'held-2' },
+    });
+    render(await Page(params({ rule: 'no-text', before: 'c1', held: 'h1' })));
+    expect(
+      screen
+        .getByRole('link', { name: 'Next held posts' })
+        .getAttribute('href'),
+    ).toBe('/admin/prepare?rule=no-text&before=c1&held=held-2');
+    expect(
+      screen.getByRole('link', { name: 'Next drops' }).getAttribute('href'),
+    ).toBe('/admin/prepare?rule=no-text&before=cursor-2&held=h1');
   });
 
   it('renders the three sections and the rule filter for an admin', async () => {
@@ -99,7 +128,7 @@ describe('Prepare review page', () => {
     ).toBe('hashtag-spam');
     expect(
       screen.getByRole('link', { name: 'Next drops' }).getAttribute('href'),
-    ).toBe('/admin/prepare?rule=hashtag-spam&before=cursor-2');
+    ).toBe('/admin/prepare?rule=hashtag-spam&before=cursor-2&held=h1');
   });
 
   it('shows a section the engine could not load as unavailable', async () => {

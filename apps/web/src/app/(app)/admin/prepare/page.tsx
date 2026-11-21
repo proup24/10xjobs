@@ -4,6 +4,12 @@ import {
   PREPARE_REVIEW_PATH,
   PrepareReview,
 } from '@/components/admin/prepare-review';
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from '@/components/ui/empty';
 import { engineClient } from '@/lib/engine/server';
 
 export const dynamic = 'force-dynamic';
@@ -27,7 +33,8 @@ function href(params: Record<string, string | undefined>): string {
 
 /**
  * Admin only: anyone the engine does not count as an admin (`ADMIN_USERS`) gets a 404,
- * so the page does not reveal that it exists. The engine checks every call again.
+ * so the page does not reveal that it exists. An unreachable engine shows only a retry
+ * note. The engine checks every call again.
  */
 export default async function Page({
   searchParams,
@@ -36,6 +43,18 @@ export default async function Page({
 }) {
   const engine = await engineClient();
   const me = await engine.adminMe();
+  // Engine down: say so rather than 404. Nothing admin is fetched or shown.
+  if (me.kind === 'unavailable')
+    return (
+      <Empty>
+        <EmptyHeader>
+          <EmptyTitle>Prepare review</EmptyTitle>
+          <EmptyDescription>
+            Couldn&apos;t reach the engine; try again.
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
+    );
   if (me.kind !== 'ok' || !me.data.admin) notFound();
 
   const sp = await searchParams;
@@ -60,10 +79,15 @@ export default async function Page({
       drops={dropsPage}
       held={heldPage}
       authors={dataOf(authors)}
+      // Each section's next link keeps the filter and the other section's cursor.
       nextDropsHref={
-        dropsPage?.next ? href({ rule, before: dropsPage.next }) : null
+        dropsPage?.next
+          ? href({ rule, before: dropsPage.next, held: heldBefore })
+          : null
       }
-      nextHeldHref={heldPage?.next ? href({ held: heldPage.next }) : null}
+      nextHeldHref={
+        heldPage?.next ? href({ rule, before, held: heldPage.next }) : null
+      }
     />
   );
 }

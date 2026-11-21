@@ -79,7 +79,9 @@ export function SilenceButton({
           <DialogHeader>
             <DialogTitle>Silence {who}</DialogTitle>
             <DialogDescription>
-              Their posts are held from now on and no longer reach matching.
+              For everyone: their posts are held from processing, unless an
+              author who isn&apos;t silenced also posted them. You can
+              un-silence any time.
             </DialogDescription>
           </DialogHeader>
           <Field required invalid={missing}>

@@ -71,8 +71,18 @@ function Author({ author }: { author: AuthorView }) {
   );
 }
 
+/** Only an http(s) URL becomes a link; anything else (`data:`, `javascript:`) none. */
+function isHttpUrl(url: string): boolean {
+  try {
+    const { protocol } = new URL(url);
+    return protocol === 'http:' || protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 function OpenPost({ url }: { url: string | null }) {
-  if (!url) return null;
+  if (!url || !isHttpUrl(url)) return null;
   return (
     <a
       href={url}

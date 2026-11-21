@@ -108,6 +108,30 @@ describe('PrepareReview', () => {
     expect(link.getAttribute('rel')).toBe('noopener noreferrer');
   });
 
+  it.each(['javascript:alert(1)', 'data:text/html,x', 'not a url'])(
+    'renders no link for a post URL that is not http(s): %s',
+    (url) => {
+      setup({ drops: { items: [drop({ url })], next: null } });
+      expect(
+        within(section('Dropped posts')).queryByRole('link', {
+          name: 'Open post',
+        }),
+      ).toBeNull();
+    },
+  );
+
+  it('says the silence applies to everyone, and when a post is held', async () => {
+    setup();
+    fireEvent.click(
+      within(section('Dropped posts')).getByRole('button', { name: 'Silence' }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText(/for everyone/i)).toBeTruthy();
+    expect(
+      within(dialog).getByText(/isn.t silenced also posted/i),
+    ).toBeTruthy();
+  });
+
   it('shows the stored reason for a drop that is not a prepare rule', () => {
     setup({
       drops: {
