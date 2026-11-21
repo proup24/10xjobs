@@ -8,7 +8,8 @@ import { emptyRecord, type NormalizedRecord, type PostAuthor } from '../record';
 const link = (value: string | null) =>
   value ? (httpUrl(value)?.toString() ?? null) : null;
 
-function authorOf(a: RawPost['author']): PostAuthor {
+/** The author as a post record stores it, with its silence key. */
+export function authorOf(a: RawPost['author']): PostAuthor {
   const id =
     a.type === 'person'
       ? a.publicIdentifier
