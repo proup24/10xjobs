@@ -24,7 +24,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'e7b08e363baaa0a3e156ae4de9f711a51863b987540910924cedef23bf467e55'>;
+  StorageHashBase<'ba7d3a586ecbf6b46889147363e2b2ecf663ae7aaa277d415cecf10b118944ff'>;
 export type ExecutionHash =
   ExecutionHashBase<'7b5eaf1d91dcda38671ed0758e62b64e510de826d248ab15bddc3faa2e947c57'>;
 export type ProfileHash =
@@ -964,6 +964,7 @@ export namespace Models {
     location: FieldOutputTypes['public']['NormalizedJob']['location'];
     mergedIntoId: FieldOutputTypes['public']['NormalizedJob']['mergedIntoId'];
     normalizerVersion: FieldOutputTypes['public']['NormalizedJob']['normalizerVersion'];
+    postSources: FieldOutputTypes['public']['NormalizedJob']['postSources'];
     postedAt: FieldOutputTypes['public']['NormalizedJob']['postedAt'];
     posterName: FieldOutputTypes['public']['NormalizedJob']['posterName'];
     posterProfileUrl: FieldOutputTypes['public']['NormalizedJob']['posterProfileUrl'];
@@ -3711,6 +3712,12 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/int4';
                   readonly codecId: 'pg/int4@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly postSources: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly postedAt: {
@@ -8240,6 +8247,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
               };
+              readonly postSources: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
               readonly postedAt: {
                 readonly nullable: true;
                 readonly type: {
@@ -8539,6 +8550,7 @@ type ContractBase = Omit<
                 readonly location: { readonly column: 'location' };
                 readonly mergedIntoId: { readonly column: 'mergedIntoId' };
                 readonly normalizerVersion: { readonly column: 'normalizerVersion' };
+                readonly postSources: { readonly column: 'postSources' };
                 readonly postedAt: { readonly column: 'postedAt' };
                 readonly posterName: { readonly column: 'posterName' };
                 readonly posterProfileUrl: { readonly column: 'posterProfileUrl' };
