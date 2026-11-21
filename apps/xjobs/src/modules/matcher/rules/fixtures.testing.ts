@@ -55,7 +55,7 @@ export function exampleProfile(): MatchProfile {
       residenceCountry: null,
       acceptsSponsorship: null,
     },
-    updatedAt: new Date('2026-11-01T00:00:00Z'),
+    matchVersion: 1,
     eligibilityVersion: 0,
   };
 }

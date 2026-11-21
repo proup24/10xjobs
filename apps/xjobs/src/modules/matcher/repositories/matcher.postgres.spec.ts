@@ -211,7 +211,7 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
   async function profile(): Promise<{
     id: string;
     userId: string;
-    updatedAt: Date;
+    matchVersion: number;
   }> {
     const userId = randomUUID();
     await db.execute(
@@ -260,7 +260,13 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
       mastery: 8,
       importance: 9,
     } as never);
-    return { id: row.id, userId, updatedAt: row.updatedAt };
+    // The skill insert above bumped the version (trigger), so read it back.
+    const fresh = await db.orm.public.Profile.where({ id: row.id }).first();
+    return {
+      id: row.id,
+      userId,
+      matchVersion: (fresh as unknown as { matchVersion: number }).matchVersion,
+    };
   }
 
   const decision = (
@@ -272,7 +278,7 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
     | 'jobId'
     | 'extractionId'
     | 'factsHash'
-    | 'profileUpdatedAt'
+    | 'profileVersion'
     | 'eligibilityVersion'
   > => ({
     outcome: 'qualified',
@@ -294,7 +300,7 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
   });
 
   const row = (
-    p: { id: string; userId: string; updatedAt: Date },
+    p: { id: string; userId: string; matchVersion: number },
     j: { id: string; extractionId: string },
     over: Partial<StoredMatch> = {},
   ): StoredMatch => ({
@@ -303,11 +309,21 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
     jobId: j.id,
     extractionId: j.extractionId,
     factsHash: 'h1',
-    profileUpdatedAt: p.updatedAt,
+    profileVersion: p.matchVersion,
     eligibilityVersion: 0,
     ...decision(),
     ...over,
   });
+
+  /** What a profile edit does through its triggers: raise `matchVersion`, here to `version`. */
+  async function setMatchVersion(id: string, version: number) {
+    await db.execute(
+      db.raw
+        .sql`UPDATE profiles SET "matchVersion" = ${String(version)}::int WHERE id = ${id}::uuid`
+        .affectedCount()
+        .build(),
+    );
+  }
 
   async function matchRow(profileId: string, jobId: string) {
     return db.orm.public.JobMatch.where({ profileId, jobId }).first();
@@ -403,7 +419,7 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
         timezoneMin: -60,
         timezoneMax: 180,
         skills: [{ technology: 'python', mastery: 8, importance: 9 }],
-        updatedAt: p.updatedAt,
+        matchVersion: p.matchVersion,
         eligibilityVersion: 0,
       });
       const stale = {
@@ -633,9 +649,7 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
       await facts(j);
       await repo.upsertMatches([row(p, j), row(other, j)]);
       expect(await repo.listStaleJobs(10)).toEqual([]);
-      await db.orm.public.Profile.where({ id: p.id }).updateAll({
-        updatedAt: new Date(p.updatedAt.getTime() + 1000),
-      } as never);
+      await setMatchVersion(p.id, p.matchVersion + 1);
       expect(await repo.listStaleJobs(10)).toEqual([j.id]);
       const stale = await repo.listPublishedProfiles({
         onlyStaleFor: {
@@ -648,7 +662,7 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
       // Decided again on the edited profile, as the service records it.
       for (const edited of stale)
         await repo.upsertMatches([
-          row({ ...p, updatedAt: edited.updatedAt }, j),
+          row({ ...p, matchVersion: edited.matchVersion }, j),
         ]);
       expect(await repo.listStaleJobs(10)).toEqual([]);
     });
@@ -680,15 +694,80 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
       expect(await repo.listStaleJobs(10)).toEqual([]);
     });
 
-    it('a row without a recorded profile time or eligibility version is not stale by those rules', async () => {
+    it('a row without a recorded eligibility version is not stale by it', async () => {
       const p = await profile();
       const j = await job();
       await facts(j);
       await repo.upsertMatches([row(p, j)]);
-      await sql`UPDATE job_matches SET "profileUpdatedAt" = NULL, "eligibilityVersion" = NULL`;
+      await sql`UPDATE job_matches SET "eligibilityVersion" = NULL`;
       await sql`UPDATE users SET "eligibilityVersion" = 3`;
-      await sql`UPDATE profiles SET "updatedAt" = now() + interval '1 day'`;
       expect(await repo.listStaleJobs(10)).toEqual([]);
+    });
+
+    it('a row with a null profileVersion is stale', async () => {
+      const p = await profile();
+      const j = await job();
+      await facts(j);
+      await repo.upsertMatches([row(p, j)]);
+      await sql`UPDATE job_matches SET "profileVersion" = NULL`;
+      expect(await repo.listStaleJobs(10)).toEqual([j.id]);
+    });
+
+    it("stores the profile's matchVersion on each decision", async () => {
+      const p = await profile();
+      await setMatchVersion(p.id, 3);
+      const j = await job();
+      await facts(j);
+      await repo.upsertMatches([row({ ...p, matchVersion: 3 }, j)]);
+      expect(await matchRow(p.id, j.id)).toMatchObject({ profileVersion: 3 });
+    });
+
+    it('a row on an older profile version is stale', async () => {
+      const p = await profile();
+      const other = await profile();
+      const j = await job();
+      await facts(j);
+      await repo.upsertMatches([row(p, j), row(other, j)]);
+      expect(await repo.listStaleJobs(10)).toEqual([]);
+      await setMatchVersion(p.id, p.matchVersion + 1);
+      expect(await repo.listStaleJobs(10)).toEqual([j.id]);
+      const stale = await repo.listPublishedProfiles({
+        onlyStaleFor: {
+          jobId: j.id,
+          factsHash: 'h1',
+          extractionId: j.extractionId,
+        },
+      });
+      expect(stale.map((x) => x.id)).toEqual([p.id]);
+    });
+
+    it('an outcome flips when the edit changes it', async () => {
+      const p = await profile();
+      const j = await job();
+      await facts(j);
+      await repo.upsertMatches([
+        row(p, j, { outcome: 'rejected', stackScore: null }),
+      ]);
+      const before = await matchRow(p.id, j.id);
+      await setMatchVersion(p.id, p.matchVersion + 1);
+      const [edited] = await repo.listPublishedProfiles({
+        onlyStaleFor: {
+          jobId: j.id,
+          factsHash: 'h1',
+          extractionId: j.extractionId,
+        },
+      });
+      await repo.upsertMatches([
+        row({ ...p, matchVersion: edited!.matchVersion }, j),
+      ]);
+      const after = await matchRow(p.id, j.id);
+      expect(after).toMatchObject({
+        outcome: 'qualified',
+        profileVersion: edited!.matchVersion,
+      });
+      expect(after!.decidedAt.getTime()).toBeGreaterThan(
+        before!.decidedAt.getTime(),
+      );
     });
 
     it('ignores unmatchable jobs and respects the limit', async () => {
@@ -766,11 +845,11 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
       expect(stored?.checks).toHaveLength(1);
       expect(await matchRow(p.id, j.id)).toMatchObject({
         matcherVersion: MATCHER_VERSION,
-        profileUpdatedAt: p.updatedAt,
+        profileVersion: p.matchVersion,
         eligibilityVersion: 0,
       });
       expect(stored).toMatchObject({
-        profileUpdatedAt: p.updatedAt,
+        profileVersion: p.matchVersion,
         eligibilityVersion: 0,
       });
     });
