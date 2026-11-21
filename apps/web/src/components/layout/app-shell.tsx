@@ -14,7 +14,14 @@ import {
 } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  admin,
+}: {
+  children: React.ReactNode;
+  /** Resolves to whether the user is an admin; the user menu shows admin pages then. */
+  admin?: Promise<boolean>;
+}) {
   return (
     <UnsavedChangesProvider>
       <SidebarProvider>
@@ -34,7 +41,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Separator orientation="vertical" className="h-4 md:hidden" />
             <div className="ml-auto flex items-center gap-1">
               <ThemeToggle />
-              <UserMenu />
+              <UserMenu admin={admin} />
             </div>
           </header>
           <div className="flex-1 p-4 md:p-6">{children}</div>

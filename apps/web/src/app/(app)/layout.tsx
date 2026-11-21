@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { AppShell } from '@/components/layout/app-shell';
+import { isAdmin } from '@/lib/admin/is-admin';
 import { landingPath } from '@/lib/auth/landing';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
@@ -14,5 +15,6 @@ export default async function AppLayout({
   const { data } = await supabase.auth.getClaims();
   if (!data?.claims) redirect('/sign-in');
   if ((await landingPath(supabase)) === '/setup') redirect('/setup');
-  return <AppShell>{children}</AppShell>;
+  // Not awaited: the menu shows the admin item when the engine answers.
+  return <AppShell admin={isAdmin()}>{children}</AppShell>;
 }
