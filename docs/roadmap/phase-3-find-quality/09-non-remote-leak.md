@@ -43,4 +43,4 @@ They passed in two ways:
 - Should a remote opening with no stated place stay unknown when the job also names onsite cities?
 - Should a mentioned-only place of the employees count as the job's place?
 - Should the matcher use LinkedIn's tag at all when the description disagrees? Today the description wins (`facts/rules/combine.ts`).
-- Confirm or rule out the AI-search lead with a few controlled harvestapi runs: the same search, with and without the workplace filter.
+- ~~Confirm or rule out the AI-search lead~~: moved to [slice 10](10-search-yield.md) as a cost question; matching handles untagged jobs here.
