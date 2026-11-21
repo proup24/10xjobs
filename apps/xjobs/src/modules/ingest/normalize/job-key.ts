@@ -1,8 +1,13 @@
+import { createHash } from 'node:crypto';
 import { Channel, isTrialChannel } from 'src/common/enums';
 import { normalizeConfig } from '../config';
 import { atsIdentity } from '../utils/identity';
 import { httpUrl, isLinkedinHost } from './linkedin';
+import { comparableText } from './posts/clean';
 import type { NormalizedRecord } from './record';
+
+/** Shortest comparable text, in characters, that identifies a post by its content. */
+const MIN_POST_TEXT = 100;
 
 function isTracking(key: string): boolean {
   return normalizeConfig.trackingParams.some((rule) =>
@@ -52,11 +57,37 @@ function sourceId(sourceKey: string): string {
 }
 
 /**
+ * `linkedin-post:text:<fingerprint>` for an original with at least 100
+ * comparable characters and a known author; else `linkedin-post:<original id,
+ * else the post's own id>`. A share is judged by the post it shares.
+ */
+export function postJobKey(
+  sourceKey: string,
+  record: NormalizedRecord,
+): string {
+  const post = record.post;
+  const original = post?.original ?? null;
+  const authorKey = original ? original.author?.key : post?.author.key;
+  const text = comparableText((original ? original.text : post?.text) ?? '');
+  if (authorKey && text.length >= MIN_POST_TEXT) {
+    const digest = createHash('sha256')
+      .update(`${authorKey}\n${text}`)
+      .digest('hex')
+      .slice(0, 32);
+    return `linkedin-post:text:${digest}`;
+  }
+  return `linkedin-post:${original?.id ?? sourceId(sourceKey)}`;
+}
+
+/**
  * The job's real id, from exact facts only. An Ashby or Greenhouse item is its
  * posting. A LinkedIn job is the posting its apply URL names, else that URL
  * when it carries an identifier, else its own LinkedIn id. A trial actor's
- * item is always its LinkedIn id. A post is always
- * its own: it may hold several jobs or none, so it never absorbs another.
+ * item is always its LinkedIn id. A post is keyed by its original's text when
+ * that text is long enough and its author is known (the same original shared
+ * or reposted is one job, exact matches only), else by the original's id, else
+ * by its own id: it may hold several jobs or none, so it never absorbs another
+ * on a guess.
  */
 export function jobKey(
   channel: Channel,
@@ -70,7 +101,7 @@ export function jobKey(
       return `ats:${provider}/${sourceKey.replace(/^posting:/, '')}`;
     }
     case Channel.LINKEDIN_POSTS:
-      return `linkedin-post:${sourceId(sourceKey)}`;
+      return postJobKey(sourceKey, record);
     case Channel.LINKEDIN_JOB_BOARD:
     case Channel.LINKEDIN_JOB_BOARD_CHEAP:
     case Channel.LINKEDIN_JOB_BOARD_BEBITY: {

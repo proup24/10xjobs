@@ -1,6 +1,7 @@
 import { Channel } from 'src/common/enums';
 import { emptyRecord, type NormalizedRecord } from '.';
 import { canonicalApplyUrl, jobKey } from './job-key';
+import type { PostAuthor, PostDetail } from './record';
 
 const ashbyId = '287770d2-dbc7-4372-adf8-c3e2685d85af';
 const liJob = (applyUrl: string | null, id = '4483908744') =>
@@ -209,5 +210,103 @@ describe('jobKey for trial channels', () => {
     expect(jobKey(Channel.LINKEDIN_JOB_BOARD, 'id:123', record)).toBe(
       'ats:greenhouse/acme/9',
     );
+  });
+});
+
+describe('jobKey for posts', () => {
+  const author = (key: string | null): PostAuthor => ({
+    key,
+    name: null,
+    profileUrl: null,
+    headline: null,
+    type: null,
+  });
+  const long =
+    'We are hiring a senior backend engineer to join our platform team. Remote within Europe, TypeScript and Postgres, apply by email today.';
+  const post = (
+    id: string,
+    text: string | null,
+    authorKey: string | null,
+    original: { id: string | null; text: string | null } | null = null,
+  ): string => {
+    const detail: PostDetail = {
+      id,
+      url: `https://www.linkedin.com/feed/update/${id}`,
+      author: author(original ? 'profile:sharer' : authorKey),
+      text: original ? 'my take' : text,
+      postedAt: null,
+      original: original
+        ? {
+            id: original.id,
+            url: null,
+            author: author(authorKey),
+            text: original.text,
+            postedAt: null,
+          }
+        : null,
+      links: { emails: [], linkedinJobIds: [], atsPostings: [], other: [] },
+    };
+    return jobKey(
+      Channel.LINKEDIN_POSTS,
+      `id:${id}`,
+      emptyRecord({
+        kind: 'post',
+        postingUrl: detail.url,
+        post: detail,
+      }),
+    );
+  };
+
+  it('gives one key to the same author and text under different post ids', () => {
+    const a = post('1', long, 'profile:ada');
+    expect(a).toMatch(/^linkedin-post:text:[0-9a-f]{32}$/);
+    expect(post('2', long, 'profile:ada')).toBe(a);
+  });
+
+  it('gives a share the key of its original', () => {
+    expect(post('3', null, 'profile:ada', { id: 'X', text: long })).toBe(
+      post('1', long, 'profile:ada'),
+    );
+  });
+
+  it('separates the same text under different authors', () => {
+    expect(post('1', long, 'profile:ada')).not.toBe(
+      post('1', long, 'profile:bob'),
+    );
+  });
+
+  it('falls back to the id for short text, own or original', () => {
+    const short = 'x'.repeat(60);
+    expect(post('7', short, 'profile:ada')).toBe('linkedin-post:7');
+    expect(post('7', short, 'profile:ada', { id: 'X', text: short })).toBe(
+      'linkedin-post:X',
+    );
+    expect(post('7', null, 'profile:ada', { id: null, text: null })).toBe(
+      'linkedin-post:7',
+    );
+  });
+
+  it('falls back to the id when the author key is unknown', () => {
+    expect(post('8', long, null)).toBe('linkedin-post:8');
+  });
+
+  it('ignores accents, case, emoji and punctuation', () => {
+    const variant = `🚀 ${long.toUpperCase().replace('EUROPE', 'Europé')}!!`;
+    expect(post('1', variant, 'profile:ada')).toBe(
+      post('2', long, 'profile:ada'),
+    );
+  });
+
+  it('does not throw when a post record lacks its post', () => {
+    expect(
+      jobKey(
+        Channel.LINKEDIN_POSTS,
+        'id:9',
+        emptyRecord({
+          kind: 'post',
+          postingUrl: 'https://www.linkedin.com/feed/update/9',
+        }),
+      ),
+    ).toBe('linkedin-post:9');
   });
 });

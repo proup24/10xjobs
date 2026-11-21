@@ -1,6 +1,12 @@
 import { Channel } from 'src/common/enums';
 import { emptyRecord, type NormalizedRecord } from '.';
-import { boardSources, type MergeSource, mergeSources } from './merge';
+import {
+  boardSources,
+  type MergeSource,
+  mergePostSources,
+  mergeSources,
+} from './merge';
+import type { PostDetail } from './record';
 
 const t = (day: number) => new Date(Date.UTC(2026, 9, day));
 const source = (
@@ -227,5 +233,57 @@ describe('trial sources', () => {
     expect(boardSources([c, h, ashby])).toEqual([h, ashby]);
     expect(boardSources([c, ashby])).toEqual([c, ashby]);
     expect(boardSources([c])).toEqual([c]);
+  });
+});
+
+describe('mergePostSources', () => {
+  const detail = (
+    id: string,
+    postedAt: string | null,
+    original: PostDetail['original'] = null,
+  ): PostDetail => ({
+    id,
+    url: `https://www.linkedin.com/feed/update/${id}`,
+    author: {
+      key: null,
+      name: null,
+      profileUrl: null,
+      headline: null,
+      type: null,
+    },
+    text: null,
+    postedAt,
+    original,
+    links: { emails: [], linkedinJobIds: [], atsPostings: [], other: [] },
+  });
+  const postSource = (rawItemId: string, post: PostDetail) =>
+    source(rawItemId, Channel.LINKEDIN_POSTS, { post });
+  const orig = { id: 'o', url: null, author: null, text: null, postedAt: null };
+
+  it('puts the original first, then shares by time, then raw id', () => {
+    const merged = mergeSources([
+      postSource('r3', detail('s2', '2026-10-05T00:00:00.000Z', orig)),
+      postSource('r2', detail('s1', '2026-10-03T00:00:00.000Z', orig)),
+      postSource('r1', detail('o', '2026-10-09T00:00:00.000Z')),
+    ]);
+    expect(merged.postSources?.sources.map((p) => p.id)).toEqual([
+      'o',
+      's1',
+      's2',
+    ]);
+  });
+
+  it('breaks ties by raw item id and puts null times last', () => {
+    const result = mergePostSources([
+      postSource('b', detail('pb', null)),
+      postSource('a', detail('pa', '2026-10-03T00:00:00.000Z')),
+      postSource('c', detail('pc', '2026-10-03T00:00:00.000Z')),
+    ]);
+    expect(result?.sources.map((p) => p.id)).toEqual(['pa', 'pc', 'pb']);
+  });
+
+  it('is null with job-board sources only', () => {
+    expect(mergePostSources([ashby, linkedin])).toBeNull();
+    expect(mergeSources([ashby, linkedin]).postSources).toBeNull();
   });
 });
