@@ -429,6 +429,84 @@ describe.skipIf(!url)('query search repository in PostgreSQL', () => {
     expect(row.postSearch).toBe(false);
   });
 
+  it('two overlapping swaps of one profile keep counts and links right', async () => {
+    const id = await profile();
+    const places = Array.from({ length: 12 }, (_, i) => `place-${i}`);
+    const recipes = places.map(ashby);
+    // Overlapping sets, so each swap both keeps, adds and drops builders.
+    const first = recipes.slice(0, 8);
+    const second = recipes.slice(4, 12);
+    await repo.attach(id, recipes.slice(2, 10));
+    // A second pool, so the two swaps really run on separate connections.
+    const other = new PrismaQuerySearchRepository({
+      db: db2,
+    } as DatabaseService);
+
+    for (let round = 0; round < 4; round++) {
+      await Promise.all([
+        repo.replace(id, round % 2 ? second : first, {
+          searchesVersion: round,
+          postSearch: false,
+        }),
+        other.replace(id, round % 2 ? first : second, {
+          searchesVersion: round,
+          postSearch: false,
+        }),
+      ]);
+
+      const links = await db.orm.public.ProfileQuerySearchBuilder.where({
+        profileId: id,
+      }).all();
+      const builders = await db.orm.public.QuerySearchBuilder.all();
+      const hashById = new Map(builders.map((row) => [row.id, row.hash]));
+      const linked = links.map((link) => hashById.get(link.queryId)).sort();
+      expect([
+        first.map((recipe) => recipe.hash).sort(),
+        second.map((recipe) => recipe.hash).sort(),
+      ]).toContainEqual(linked);
+      for (const builder of builders) {
+        const used = links.filter((link) => link.queryId === builder.id).length;
+        expect(builder).toMatchObject({
+          associatedProfiles: used,
+          isActive: used > 0,
+        });
+      }
+    }
+  });
+
+  it('a link another transaction deleted meanwhile is not released twice', async () => {
+    const [id, other] = [await profile(), await profile()];
+    const a = ashby('emea');
+    await repo.attach(id, [a]);
+    await repo.attach(other, [a]);
+    const builder = (await builderOf(a))!;
+    let detaching: Promise<number> | undefined;
+    await db2.transaction(async (tx) => {
+      // What an overlapping swap does: unlink the builder and count it down.
+      await tx.execute(
+        tx.raw
+          .sql`DELETE FROM profile_query_search_builders WHERE "profileId" = ${id}::uuid`
+          .affectedCount()
+          .build(),
+      );
+      await tx.execute(
+        tx.raw
+          .sql`UPDATE query_search_builder SET "associatedProfiles" = "associatedProfiles" - 1 WHERE id = ${builder.id}::uuid`
+          .affectedCount()
+          .build(),
+      );
+      // detach reads the link (still committed), then waits on its row lock.
+      detaching = repo.detach(id);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    });
+
+    expect(await detaching).toBe(0);
+    expect(await builderOf(a)).toMatchObject({
+      associatedProfiles: 1,
+      isActive: true,
+    });
+  });
+
   it('releaseAndDelete releases every builder and deletes the profile', async () => {
     const [id, other] = [await profile(), await profile()];
     const [a, b] = [ashby('emea'), ashby('paris')];

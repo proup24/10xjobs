@@ -219,20 +219,39 @@ export class PrismaQuerySearchRepository extends QuerySearchRepository {
       );
       dropped = links.filter((link) => !kept.has(link.queryId));
     }
-    for (const link of dropped) {
-      await orm.ProfileQuerySearchBuilder.where({ id: link.id }).delete();
+    return PrismaQuerySearchRepository.unlink(tx, dropped);
+  }
+
+  /**
+   * Deletes `links` and takes one association off each builder whose link this
+   * call removed; returns how many it removed. A link another transaction
+   * already deleted (an overlapping detach or swap) is not counted twice.
+   */
+  private static async unlink(
+    tx: DatabaseTransaction,
+    links: { id: string; queryId: string }[],
+  ): Promise<number> {
+    let removed = 0;
+    for (const link of links) {
+      const deleted = await tx.orm.public.ProfileQuerySearchBuilder.where({
+        id: link.id,
+      }).delete();
+      if (!deleted) continue;
       await PrismaQuerySearchRepository.adjust(tx, link.queryId, -1);
+      removed += 1;
     }
-    return dropped.length;
+    return removed;
   }
 
   /**
    * The published profile, locked for a swap; null when none is published.
-   * FOR KEY SHARE blocks a DELETE (and FOR UPDATE), so a draft or deleted
-   * profile never gains links that its cascade would drop without `adjust`.
-   * It does not block FOR NO KEY UPDATE, so a user's edit and the
-   * `profile_skills` trigger's "matchVersion" write go through while a long
-   * swap runs; a FOR UPDATE here made those edits hit their 8 s timeout.
+   * FOR KEY SHARE blocks a DELETE and FOR UPDATE (`releaseAndDelete`, the
+   * web's draft delete), so a deleted profile never gains links that its
+   * cascade would drop without `adjust`. It blocks no FOR NO KEY UPDATE: a
+   * user's PATCH, `replace_profile_skills` and `set_profile_resume` (both lock
+   * FOR NO KEY UPDATE) and the `profile_skills` trigger's "matchVersion"
+   * write go through while a long swap runs. Nor does it block another
+   * swap's KEY SHARE; `replace` serializes swaps with an advisory lock.
    */
   private static lockForSwap(tx: DatabaseTransaction, profileId: string) {
     return tx.orm.public.Profile.where({ id: profileId, state: 'published' })
@@ -255,6 +274,18 @@ export class PrismaQuerySearchRepository extends QuerySearchRepository {
         profileId,
       );
       if (!profile) return { ...nothing, skipped: 'not_published' };
+      // KEY SHARE does not exclude another swap of this profile (a sync tick
+      // and db:regenerate, or two ticks): two swaps reading and writing the
+      // same links at once leave a mix of both recipe sets. This lock makes
+      // them take turns, released at commit; edits never take it, so they
+      // stay unblocked. The second swap reads the links after the first one
+      // commits, and its final write still checks the flag.
+      await tx.execute(
+        tx.raw
+          .sql`SELECT pg_advisory_xact_lock(hashtextextended(${profileId}::text, 0))`
+          .affectedCount()
+          .build(),
+      );
       // The switch path writes the flag before it attaches or detaches post
       // builders: a flag that moved since the caller's read means its recipes
       // are stale, so change nothing. A cheap short-cut; the final write below
@@ -272,25 +303,20 @@ export class PrismaQuerySearchRepository extends QuerySearchRepository {
         wanted,
       );
       // KEY SHARE lets edits land during the swap, so the version is written
-      // only while the profile is still published with the `expected` flag;
-      // otherwise the whole swap rolls back and the next tick retries with
-      // fresh recipes. This UPDATE then holds the row until commit, so a
-      // switch writing the flag after it waits, and attaches or detaches
-      // post builders after the swap: the race stays closed both ways.
+      // only while the profile still has the `expected` flag; otherwise the
+      // whole swap rolls back and the next tick retries with fresh recipes.
+      // This UPDATE then holds the row until commit, so a switch writing the
+      // flag after it waits, and attaches or detaches post builders after the
+      // swap: the race stays closed both ways.
       const { affectedRows } = await tx.execute(
         tx.raw
           .sql`UPDATE profiles SET "searchesVersion" = ${expected.searchesVersion} WHERE id = ${profileId}::uuid AND state = 'published' AND "postSearch" = ${expected.postSearch}`
           .affectedCount()
           .build(),
       );
-      if (affectedRows === 0) {
-        const now = await tx.orm.public.Profile.where({
-          id: profileId,
-        }).first();
-        throw new SwapSkipped(
-          now?.state === 'published' ? 'post_search_changed' : 'not_published',
-        );
-      }
+      // Only the flag can make this 0: users cannot write `state`, nothing in
+      // the engine unpublishes, and KEY SHARE holds off a DELETE.
+      if (affectedRows === 0) throw new SwapSkipped('post_search_changed');
       return { ...attached, released, skipped: null };
     }).catch((error: unknown) => {
       // The sentinel has no SQLSTATE, so `transaction` never retries it.
@@ -326,11 +352,7 @@ export class PrismaQuerySearchRepository extends QuerySearchRepository {
       const links = await orm.ProfileQuerySearchBuilder.where({ profileId })
         .orderBy((link) => link.queryId.asc())
         .all();
-      for (const link of links) {
-        await orm.ProfileQuerySearchBuilder.where({ id: link.id }).delete();
-        await PrismaQuerySearchRepository.adjust(tx, link.queryId, -1);
-      }
-      return links.length;
+      return PrismaQuerySearchRepository.unlink(tx, links);
     });
   }
 
@@ -347,11 +369,7 @@ export class PrismaQuerySearchRepository extends QuerySearchRepository {
         : [];
       const onChannel = new Set(builders.map((builder) => builder.id));
       const dropped = links.filter((link) => onChannel.has(link.queryId));
-      for (const link of dropped) {
-        await orm.ProfileQuerySearchBuilder.where({ id: link.id }).delete();
-        await PrismaQuerySearchRepository.adjust(tx, link.queryId, -1);
-      }
-      return dropped.length;
+      return PrismaQuerySearchRepository.unlink(tx, dropped);
     });
   }
 
