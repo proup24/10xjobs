@@ -5,6 +5,7 @@ import {
   linkedinKeyword,
   linkedinKeywordFits,
 } from './linkedin_keyword';
+import { searchSpellings } from '../builders/search-spellings';
 
 describe('keywordTerm', () => {
   it('lowercases and quotes only terms with a space or one of .#+', () => {
@@ -44,6 +45,24 @@ describe('linkedinKeyword', () => {
   it('throws when a side is empty', () => {
     expect(() => linkedinKeyword([], ['react'])).toThrow();
     expect(() => linkedinKeyword(['engineer'], [])).toThrow();
+  });
+});
+
+describe('linkedinKeyword with the claude tags', () => {
+  it('searches claude code as one phrase', () => {
+    expect(linkedinKeyword(['engineer'], searchSpellings('claude_code'))).toBe(
+      '(engineer) AND ("claude code")',
+    );
+  });
+
+  it('keeps claude and claude code apart', () => {
+    const keyword = linkedinKeyword(
+      ['engineer'],
+      [...searchSpellings('claude'), ...searchSpellings('claude_code')],
+    );
+    expect(keyword).toBe('(engineer) AND ("claude code" OR claude)');
+    expect(keyword.match(/claude code/g)).toHaveLength(1);
+    expect(keyword.match(/claude(?! code)/g)).toHaveLength(1);
   });
 });
 

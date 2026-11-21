@@ -37,6 +37,31 @@ describe('processor seed data', () => {
     expect(isSearchableTech('saas')).toBe(false);
   });
 
+  it('the agreed tags are searchable and the dropped ones are not', () => {
+    const agreed = [
+      'llm',
+      'rag',
+      'claude_code',
+      'claude',
+      'openai',
+      'langgraph',
+      'ios',
+      'android',
+      'wordpress',
+      'sap',
+      'salesforce',
+      'servicenow',
+      'shopify',
+      'stripe',
+      'playwright',
+      'cypress',
+      'supabase',
+    ];
+    for (const code of agreed) expect(isSearchableTech(code)).toBe(true);
+    for (const code of ['chromadb', 'seo', 'bedrock', 'mcp', 'html', 'css'])
+      expect(isSearchableTech(code)).toBe(false);
+  });
+
   it('role kinds and engagements have unstated; role kinds have other', () => {
     expect(codes('roleKinds')).toEqual(
       expect.arrayContaining(['unstated', 'other']),

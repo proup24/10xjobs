@@ -330,6 +330,19 @@ describe('loadValueLists', () => {
     expect(roles.filters).toContainEqual(['eq', 'isEngineering', true]);
   });
 
+  it('marks the new tags searchable', async () => {
+    const f = tables({
+      tech_tags: [
+        { code: 'claude_code', label: 'Claude Code', aliases: [] },
+        { code: 'seo', label: 'SEO', aliases: [] },
+      ],
+    });
+    const lists = await loadValueLists(f.supabase);
+    expect(
+      Object.fromEntries(lists.techs.map((t) => [t.value, t.searchable])),
+    ).toEqual({ claude_code: true, seo: false });
+  });
+
   it('never filters on the hidden status column (the read policies return approved rows only)', async () => {
     const f = fakeSupabase();
     await loadValueLists(f.supabase);

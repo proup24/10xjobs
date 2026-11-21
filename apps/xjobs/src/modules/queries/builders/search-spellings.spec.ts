@@ -13,6 +13,14 @@ describe('searchSpellings', () => {
     expect(searchSpellings('nestjs')).toEqual(['nestjs', 'nest.js']);
   });
 
+  it('lists both spellings of llm', () => {
+    expect(searchSpellings('llm')).toEqual(['llm', 'llms']);
+  });
+
+  it('uses the plain term for claude code', () => {
+    expect(searchSpellings('claude_code')).toEqual(['claude code']);
+  });
+
   it('has an entry for every technology term', () => {
     for (const key of Object.keys(TECHNOLOGY_TERMS)) {
       expect(SEARCH_SPELLINGS).toHaveProperty(key);
