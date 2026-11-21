@@ -32,8 +32,8 @@ import {
 
 /**
  * Needs INGEST_TEST_DATABASE_URL: a disposable `ingest_test` database on
- * 127.0.0.1, migrated to the current contract. Truncates its tables. Every
- * test on that database lives in this file, so they never run in parallel.
+ * 127.0.0.1, migrated to the current contract. Truncates its tables; files on
+ * that database run one at a time (see `vitest.config.mts`).
  */
 const url = process.env.INGEST_TEST_DATABASE_URL;
 const t1 = new Date('2026-10-31T10:00:00Z');

@@ -16,8 +16,11 @@ export default defineConfig(() => ({
     environment: 'node',
     include: ['{src,tests}/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     passWithNoTests: true,
-    // The PostgreSQL specs truncate one shared database, so they cannot overlap.
-    fileParallelism: !process.env.PROCESSOR_TEST_DATABASE_URL,
+    // The PostgreSQL specs truncate shared databases, so they cannot overlap.
+    fileParallelism: !(
+      process.env.PROCESSOR_TEST_DATABASE_URL ||
+      process.env.INGEST_TEST_DATABASE_URL
+    ),
     reporters: ['default'],
     coverage: {
       reportsDirectory: './test-output/vitest/coverage',

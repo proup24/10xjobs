@@ -1,7 +1,8 @@
 'use client';
 
 import { CircleUser } from 'lucide-react';
-import { useRef } from 'react';
+import Link from 'next/link';
+import { Suspense, use, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -10,7 +11,21 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-export function UserMenu() {
+/** Shown once the engine says the user is an admin; nothing while it is asked. */
+function AdminItem({ admin }: { admin: Promise<boolean> }) {
+  if (!use(admin)) return null;
+  return (
+    <DropdownMenuItem render={<Link href="/admin/prepare" />}>
+      Admin: Prepare review
+    </DropdownMenuItem>
+  );
+}
+
+/**
+ * `admin` is a promise so the shell does not wait on the engine: the item appears when
+ * it resolves to true.
+ */
+export function UserMenu({ admin }: { admin?: Promise<boolean> }) {
   const form = useRef<HTMLFormElement>(null);
 
   return (
@@ -24,6 +39,11 @@ export function UserMenu() {
           <CircleUser aria-hidden />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-auto min-w-40">
+          {admin && (
+            <Suspense fallback={null}>
+              <AdminItem admin={admin} />
+            </Suspense>
+          )}
           <DropdownMenuItem onClick={() => form.current?.requestSubmit()}>
             Sign out
           </DropdownMenuItem>

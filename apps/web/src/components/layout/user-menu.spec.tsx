@@ -4,11 +4,32 @@ import { UserMenu } from './user-menu';
 
 afterEach(cleanup);
 
+const open = () =>
+  fireEvent.click(screen.getByRole('button', { name: 'User menu' }));
+
 describe('UserMenu', () => {
   it('exposes Sign out as a menu item', async () => {
     render(<UserMenu />);
-    fireEvent.click(screen.getByRole('button', { name: 'User menu' }));
+    open();
     const item = await screen.findByRole('menuitem', { name: 'Sign out' });
     expect(item).toBeTruthy();
+  });
+
+  it('links an admin to the Prepare review', async () => {
+    render(<UserMenu admin={Promise.resolve(true)} />);
+    open();
+    const item = await screen.findByRole('menuitem', {
+      name: 'Admin: Prepare review',
+    });
+    expect(item.getAttribute('href')).toBe('/admin/prepare');
+  });
+
+  it('hides the admin item from anyone else', async () => {
+    render(<UserMenu admin={Promise.resolve(false)} />);
+    open();
+    await screen.findByRole('menuitem', { name: 'Sign out' });
+    expect(
+      screen.queryByRole('menuitem', { name: 'Admin: Prepare review' }),
+    ).toBeNull();
   });
 });
