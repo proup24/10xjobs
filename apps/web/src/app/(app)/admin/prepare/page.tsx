@@ -1,11 +1,11 @@
 import { notFound } from 'next/navigation';
 import type { EngineResult } from '@xjobs/engine-client';
 import {
-  ExtractVerdicts,
   LISTED_VERDICTS,
-  VERDICT_REASONS,
+  POST_VERDICT_REASONS,
   type ListedVerdict,
-} from '@/components/admin/extract-verdicts';
+} from '@xjobs/database/enums';
+import { ExtractVerdicts } from '@/components/admin/extract-verdicts';
 import {
   PREPARE_REVIEW_PATH,
   PrepareReview,
@@ -34,7 +34,7 @@ const verdictOf = (v: string | undefined): ListedVerdict | undefined =>
   LISTED_VERDICTS.find((x) => x === v);
 
 const reasonOf = (v: string | undefined): string | undefined =>
-  VERDICT_REASONS.find((x) => x === v);
+  POST_VERDICT_REASONS.find((x) => x === v);
 
 function href(params: Record<string, string | undefined>): string {
   const query = new URLSearchParams();

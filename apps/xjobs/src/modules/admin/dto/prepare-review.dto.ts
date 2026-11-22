@@ -1,9 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
-  JUNK_REASONS,
-  NOT_HIRING_REASONS,
-} from 'src/modules/processor/schema/post-extraction';
+  LISTED_VERDICTS,
+  POST_VERDICT_REASONS,
+  type ListedVerdict,
+} from '@xjobs/database/enums';
 import {
   IsIn,
   IsInt,
@@ -43,20 +44,15 @@ export class DropsQueryDto {
   limit?: number;
 }
 
-export const LISTED_VERDICTS = ['not_hiring', 'junk'] as const;
-export const VERDICT_REASONS = [
-  ...new Set([...NOT_HIRING_REASONS, ...JUNK_REASONS]),
-];
-
 export class VerdictsQueryDto {
-  @ApiPropertyOptional({ enum: LISTED_VERDICTS })
+  @ApiPropertyOptional({ enum: [...LISTED_VERDICTS] })
   @IsOptional()
-  @IsIn(LISTED_VERDICTS)
-  verdict?: (typeof LISTED_VERDICTS)[number];
+  @IsIn([...LISTED_VERDICTS])
+  verdict?: ListedVerdict;
 
-  @ApiPropertyOptional({ enum: VERDICT_REASONS })
+  @ApiPropertyOptional({ enum: [...POST_VERDICT_REASONS] })
   @IsOptional()
-  @IsIn(VERDICT_REASONS)
+  @IsIn([...POST_VERDICT_REASONS])
   reason?: string;
 
   @ApiPropertyOptional({ description: 'The `next` of the previous page' })
@@ -154,8 +150,8 @@ export class HeldPostsPageDto {
 
 export class VerdictViewDto {
   @ApiProperty() jobId!: string;
-  @ApiProperty({ enum: LISTED_VERDICTS }) verdict!: 'not_hiring' | 'junk';
-  @ApiProperty({ enum: VERDICT_REASONS }) reason!: string;
+  @ApiProperty({ enum: [...LISTED_VERDICTS] }) verdict!: ListedVerdict;
+  @ApiProperty({ enum: [...POST_VERDICT_REASONS] }) reason!: string;
   @ApiProperty() quote!: string;
   @ApiProperty({ enum: ['sure', 'unsure'] }) confidence!: 'sure' | 'unsure';
   @ApiProperty({ type: AuthorViewDto }) author!: AuthorViewDto;

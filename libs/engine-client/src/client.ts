@@ -35,8 +35,9 @@ export type HeldPostView = {
 };
 export type VerdictView = {
   jobId: string;
-  verdict: 'not_hiring' | 'junk';
-  /** A reason code of `NOT_HIRING_REASONS` or `JUNK_REASONS` (post-extraction.ts). */
+  /** A `LISTED_VERDICTS` code (`@xjobs/database/enums`). */
+  verdict: string;
+  /** A `POST_VERDICT_REASONS` code (`@xjobs/database/enums`). */
   reason: string;
   /** The verbatim quote the verdict rests on. */
   quote: string;
@@ -106,7 +107,7 @@ export interface EngineClient {
     limit?: number;
   }): Promise<EngineResult<ReviewPage<HeldPostView>>>;
   extractVerdicts(options?: {
-    verdict?: 'not_hiring' | 'junk';
+    verdict?: string;
     reason?: string;
     before?: string;
     limit?: number;
@@ -168,7 +169,7 @@ function isVerdictView(v: unknown): v is VerdictView {
   return (
     isRecord(v) &&
     typeof v.jobId === 'string' &&
-    (v.verdict === 'not_hiring' || v.verdict === 'junk') &&
+    typeof v.verdict === 'string' &&
     typeof v.reason === 'string' &&
     typeof v.quote === 'string' &&
     (v.confidence === 'sure' || v.confidence === 'unsure') &&

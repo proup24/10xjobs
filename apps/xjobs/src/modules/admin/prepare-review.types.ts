@@ -1,3 +1,5 @@
+import type { ListedVerdict } from '@xjobs/database/enums';
+
 export interface AuthorView {
   key: string | null;
   name: string | null;
@@ -27,8 +29,8 @@ export interface HeldPostView {
 
 export interface VerdictView {
   jobId: string;
-  verdict: 'not_hiring' | 'junk';
-  /** The verdict's reason code (`NOT_HIRING_REASONS` or `JUNK_REASONS`). */
+  verdict: ListedVerdict;
+  /** The verdict's reason code (`POST_VERDICT_REASONS`). */
   reason: string;
   /** The verbatim quote the verdict rests on. */
   quote: string;

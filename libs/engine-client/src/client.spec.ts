@@ -474,7 +474,7 @@ describe('engine client admin review', () => {
 
   it('extractVerdicts with a malformed row → unavailable', async () => {
     const { client } = setup(() =>
-      ok({ items: [{ jobId: 'j1', verdict: 'hiring' }], next: null }),
+      ok({ items: [{ jobId: 'j1', verdict: 'junk' }], next: null }),
     );
     expect(await client.extractVerdicts()).toEqual({ kind: 'unavailable' });
   });

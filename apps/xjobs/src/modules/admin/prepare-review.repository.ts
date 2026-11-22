@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import type { ListedVerdict } from '@xjobs/database/enums';
 import { DatabaseService } from 'src/database';
 import {
   NORMALIZER_VERSION,
@@ -57,7 +58,7 @@ export abstract class PrepareReviewRepository {
    * (`lastSeenAt` holding its extraction time).
    */
   abstract verdicts(page: {
-    verdict: 'not_hiring' | 'junk' | null;
+    verdict: ListedVerdict | null;
     reason: string | null;
     before: { lastSeenAt: string; id: string } | null;
     limit: number;
@@ -141,7 +142,7 @@ export class PrismaPrepareReviewRepository extends PrepareReviewRepository {
   }
 
   async verdicts(page: {
-    verdict: 'not_hiring' | 'junk' | null;
+    verdict: ListedVerdict | null;
     reason: string | null;
     before: { lastSeenAt: string; id: string } | null;
     limit: number;

@@ -1,3 +1,8 @@
+import {
+  LISTED_VERDICTS,
+  POST_VERDICT_REASONS,
+  type ListedVerdict,
+} from '@xjobs/database/enums';
 import type { ReviewPage, VerdictView } from '@xjobs/engine-client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -28,31 +33,14 @@ import {
   day,
 } from './prepare-review';
 
-export type ListedVerdict = VerdictView['verdict'];
-
-export const LISTED_VERDICTS: readonly ListedVerdict[] = ['not_hiring', 'junk'];
-
-/**
- * The reason codes of `NOT_HIRING_REASONS` and `JUNK_REASONS` in the engine's
- * `post-extraction.ts`, once each; the engine 400s any other.
- */
-export const VERDICT_REASONS = [
-  'open_to_work',
-  'advice_or_commentary',
-  'course_or_training_ad',
-  'job_digest',
-  'role_filled',
-  'no_clear_employer',
-  'many_roles_across_companies',
-  'funnel',
-  'messaging_group',
-  'other',
-] as const;
-
 const VERDICT_LABEL: Record<ListedVerdict, string> = {
   not_hiring: 'Not hiring',
   junk: 'Junk',
 };
+
+/** An unknown code (a newer engine) shows as itself. */
+const verdictLabel = (verdict: string): string =>
+  (VERDICT_LABEL as Record<string, string | undefined>)[verdict] ?? verdict;
 
 const VERDICT_ITEMS = [
   { value: null, label: 'Any verdict' },
@@ -60,7 +48,7 @@ const VERDICT_ITEMS = [
 ];
 const REASON_ITEMS = [
   { value: null, label: 'Any reason' },
-  ...VERDICT_REASONS.map((r) => ({ value: r, label: r })),
+  ...POST_VERDICT_REASONS.map((r) => ({ value: r, label: r })),
 ];
 
 type Props = {
@@ -176,7 +164,7 @@ function Verdicts({
                 <Badge
                   variant={v.verdict === 'junk' ? 'destructive' : 'secondary'}
                 >
-                  {VERDICT_LABEL[v.verdict]}
+                  {verdictLabel(v.verdict)}
                 </Badge>
                 {v.confidence === 'unsure' && (
                   <Badge variant="outline">Unsure</Badge>

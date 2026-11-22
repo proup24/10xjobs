@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import type { ListedVerdict } from '@xjobs/database/enums';
 import { SilencedAuthorsRepository } from 'src/modules/ingest/repositories/silenced-authors.repository';
 import { authorOf } from 'src/modules/ingest/normalize/mappers/linkedin-post.mapper';
 import { httpUrl } from 'src/modules/ingest/normalize/linkedin';
@@ -26,14 +27,18 @@ import type {
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** `<iso>|<raw item id>` as base64url; the order is lastSeenAt, id (both descending). */
-export function encodeDropCursor(row: { lastSeenAt: Date; id: string }) {
+/**
+ * `<iso>|<uuid>` as base64url, for a page ordered by a time then an id (both
+ * descending): a drop's lastSeenAt and raw item id, or a verdict's extraction
+ * time and job id.
+ */
+export function encodePageCursor(row: { lastSeenAt: Date; id: string }) {
   return Buffer.from(`${row.lastSeenAt.toISOString()}|${row.id}`).toString(
     'base64url',
   );
 }
 
-export function decodeDropCursor(
+export function decodePageCursor(
   cursor: string,
 ): { lastSeenAt: string; id: string } | null {
   const [at, id, ...rest] = Buffer.from(cursor, 'base64url')
@@ -139,7 +144,7 @@ export class PrepareReviewService {
     before: string | null;
     limit: number;
   }): Promise<Page<DropView>> {
-    const before = query.before ? decodeDropCursor(query.before) : null;
+    const before = query.before ? decodePageCursor(query.before) : null;
     if (query.before && !before)
       throw new BadRequestException('before is not a valid cursor');
     const rows = await this.review.drops({
@@ -153,7 +158,7 @@ export class PrepareReviewService {
       items: page.map(dropView),
       next:
         rows.length > query.limit && last
-          ? encodeDropCursor({
+          ? encodePageCursor({
               lastSeenAt: last.lastSeenAt,
               id: last.rawItemId,
             })
@@ -162,12 +167,12 @@ export class PrepareReviewService {
   }
 
   async verdicts(query: {
-    verdict: 'not_hiring' | 'junk' | null;
+    verdict: ListedVerdict | null;
     reason: string | null;
     before: string | null;
     limit: number;
   }): Promise<Page<VerdictView>> {
-    const before = query.before ? decodeDropCursor(query.before) : null;
+    const before = query.before ? decodePageCursor(query.before) : null;
     if (query.before && !before)
       throw new BadRequestException('before is not a valid cursor');
     const rows = await this.review.verdicts({
@@ -182,7 +187,7 @@ export class PrepareReviewService {
       items: page.map(verdictView),
       next:
         rows.length > query.limit && last
-          ? encodeDropCursor({ lastSeenAt: last.extractedAt, id: last.jobId })
+          ? encodePageCursor({ lastSeenAt: last.extractedAt, id: last.jobId })
           : null,
     };
   }

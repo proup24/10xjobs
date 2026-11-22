@@ -4,8 +4,8 @@ import type {
   PrepareReviewRepository,
 } from './prepare-review.repository';
 import {
-  decodeDropCursor,
-  encodeDropCursor,
+  decodePageCursor,
+  encodePageCursor,
   parseDropReason,
   PrepareReviewService,
 } from './prepare-review.service';
@@ -59,14 +59,14 @@ describe('drop cursor', () => {
   it('round-trips', () => {
     const at = new Date('2026-11-21T10:00:00.123Z');
     expect(
-      decodeDropCursor(encodeDropCursor({ lastSeenAt: at, id: ID(1) })),
+      decodePageCursor(encodePageCursor({ lastSeenAt: at, id: ID(1) })),
     ).toEqual({ lastSeenAt: at.toISOString(), id: ID(1) });
   });
 
   it.each(['', '!!!', 'bm9wZQ', Buffer.from('a|b').toString('base64url')])(
     'rejects %j',
     (cursor) => {
-      expect(decodeDropCursor(cursor)).toBeNull();
+      expect(decodePageCursor(cursor)).toBeNull();
     },
   );
 });
@@ -100,7 +100,7 @@ describe('PrepareReviewService', () => {
         profileUrl: 'https://www.linkedin.com/in/jane',
       },
     });
-    expect(decodeDropCursor(page.next!)).toEqual({
+    expect(decodePageCursor(page.next!)).toEqual({
       lastSeenAt: rows[1]!.lastSeenAt.toISOString(),
       id: ID(2),
     });
