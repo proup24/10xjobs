@@ -107,6 +107,19 @@ export class PostAssembler {
         return '';
       };
 
+      // The employer becomes the role job's company and slice 05's repost
+      // key, so a guessed one is worse than none: a name stays only with its
+      // quote intact and only when the post's text (headers included, where
+      // the author's headline is) holds it. Dropping it counts one failure.
+      const checkEmployer = (): typeof employer => {
+        const quote = clearBad(employer.quote);
+        if (employer.name === null) return { name: null, quote };
+        if (quote === '' && employer.quote !== '') return { name: null, quote };
+        if (inText(employer.name)) return { name: employer.name, quote };
+        quoteFailures++;
+        return { name: null, quote };
+      };
+
       let listed: AssembledDocument;
       try {
         listed = this.facts.assemble(listing, meta, input, vocabulary);
@@ -119,7 +132,7 @@ export class PostAssembler {
       quoteFailures += listed.quoteFailures;
       return {
         title: listed.doc.position.value?.title ?? '',
-        employer: { ...employer, quote: clearBad(employer.quote) },
+        employer: checkEmployer(),
         authorRelation,
         howToApply: {
           ...howToApply,

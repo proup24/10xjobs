@@ -214,6 +214,34 @@ describe('PostAssembler', () => {
     o.roles[0].employer.quote = 'Globex is hiring';
     const out = await run(o);
     expect(out.doc.roles[0].employer.quote).toBe('');
+    expect(out.doc.roles[0].employer.name).toBeNull();
+    expect(out.quoteFailures).toBe(1);
+  });
+
+  it('drops and counts an employer name that is not in the post text', async () => {
+    const o = output(role());
+    o.roles[0].employer = { name: 'Globex', quote: 'Acme is hiring' };
+    const out = await run(o);
+    expect(out.doc.roles[0].employer).toEqual({
+      name: null,
+      quote: 'Acme is hiring',
+    });
+    expect(out.quoteFailures).toBe(1);
+  });
+
+  it('keeps an employer name found in the text, normalised as quotes are', async () => {
+    const o = output(role());
+    o.roles[0].employer = { name: '  ACME ', quote: 'Acme is hiring' };
+    const out = await run(o);
+    expect(out.doc.roles[0].employer.name).toBe('  ACME ');
+    expect(out.quoteFailures).toBe(0);
+  });
+
+  it('a null employer name with a failed quote counts the quote once', async () => {
+    const o = output(role());
+    o.roles[0].employer = { name: null, quote: 'Globex is hiring' };
+    const out = await run(o);
+    expect(out.doc.roles[0].employer).toEqual({ name: null, quote: '' });
     expect(out.quoteFailures).toBe(1);
   });
 
