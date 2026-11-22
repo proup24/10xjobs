@@ -16,6 +16,7 @@
     "db:actor-compare": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/actor-compare.ts",
     "db:place-coverage": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/place-coverage.ts",
     "db:split-check": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/split-check.ts",
+    "db:indeed-sample": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/indeed-sample.ts",
     "db:vocab": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/vocab.ts",
     "db:spellings": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/spellings.ts",
     "db:post-sample": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/post-sample.ts",

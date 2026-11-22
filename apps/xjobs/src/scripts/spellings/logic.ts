@@ -22,7 +22,7 @@ const escape = (text: string): string =>
   text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /** Case-insensitive match of `spelling` not inside a longer word. */
-function mentions(text: string, spelling: string): boolean {
+export function mentions(text: string, spelling: string): boolean {
   return new RegExp(
     `(?<![\\p{L}\\p{N}])${escape(spelling)}(?![\\p{L}\\p{N}])`,
     'iu',
