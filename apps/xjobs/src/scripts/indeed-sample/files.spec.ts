@@ -49,6 +49,7 @@ const planFile: PlanFile = {
     search: r.search,
     input: r.input,
     reservedUsd: r.reservedUsd,
+    worstCaseUsd: r.worstCaseUsd,
     memoryMbytes: r.memoryMbytes,
     timeoutSecs: r.timeoutSecs,
   })),

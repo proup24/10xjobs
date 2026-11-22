@@ -14,6 +14,7 @@ const RUN: PlannedRun = {
   },
   input: {},
   reservedUsd: 0.02,
+  worstCaseUsd: 0.011,
   memoryMbytes: 128,
   timeoutSecs: 900,
 };

@@ -61,7 +61,10 @@ function previousDays(today: string, count: number): string[] {
 /**
  * The latest Morocco day, among the 7 before `today` (today excluded), on which
  * every place ran, every run succeeded uncapped with a final cost, and each
- * place's run count is at least 90% of its busiest day in the window.
+ * place's run count is at least 90% of its busiest day in the window. Only
+ * days whose runs all have a final cost set that peak: earlier days, from
+ * before final costs were recorded or under an older, busier schedule, would
+ * reject every day after a schedule change (11-19 against 11-16's 50 runs).
  */
 export function pickBaselineDay(
   runs: BaselineRun[],
@@ -74,7 +77,13 @@ export function pickBaselineDay(
     counts.get(moroccoDay(r.startedAt))?.get(r.place)?.push(r);
 
   const peak = (p: PlaceId) =>
-    Math.max(...days.map((d) => counts.get(d)?.get(p)?.length ?? 0));
+    Math.max(
+      0,
+      ...days.map((d) => {
+        const dayRuns = counts.get(d)?.get(p) ?? [];
+        return dayRuns.every((r) => r.costFinal) ? dayRuns.length : 0;
+      }),
+    );
   const peaks = Object.fromEntries(PLACES.map((p) => [p, peak(p)])) as Record<
     PlaceId,
     number

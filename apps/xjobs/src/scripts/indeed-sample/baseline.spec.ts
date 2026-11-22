@@ -104,6 +104,23 @@ describe('pickBaselineDay', () => {
     expect(pickBaselineDay(eight, TODAY).day).toBe('2026-11-20');
   });
 
+  it('measures the 90% rule only against days with final costs (dev, 2026-11-22)', () => {
+    // Mon-Wed ran a busier schedule before final costs were recorded; Thu is
+    // the first day with final costs and must not be judged against Monday.
+    const notFinal = (day: string, n: number) =>
+      fullDay(day, n).map((r) => ({ ...r, costFinal: false }));
+    const runs = [
+      ...notFinal('2026-11-16', 50),
+      ...notFinal('2026-11-17', 47),
+      ...notFinal('2026-11-18', 33),
+      ...fullDay('2026-11-19', 28),
+    ];
+    expect(pickBaselineDay(runs, TODAY).day).toBe('2026-11-19');
+    // A final day cut short against a full final day is still refused.
+    const short = [...fullDay('2026-11-19', 28), ...fullDay('2026-11-20', 21)];
+    expect(pickBaselineDay(short, TODAY).day).toBe('2026-11-19');
+  });
+
   it('gives a reason when no day qualifies', () => {
     const out = pickBaselineDay([], TODAY);
     expect(out.day).toBeNull();

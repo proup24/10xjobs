@@ -19,6 +19,8 @@ export interface PlanFileRun {
   search: SampleSearch;
   input: Record<string, unknown>;
   reservedUsd: number;
+  /** What a full run should charge, unrounded; a plan written before it was saved has none. */
+  worstCaseUsd?: number;
   /** The run's pinned memory and timeout; a plan written before they were saved has neither. */
   memoryMbytes?: number;
   timeoutSecs?: number;
@@ -71,6 +73,7 @@ export function plannedRuns(plan: PlanFile): PlannedRun[] {
     search: r.search,
     input: r.input,
     reservedUsd: r.reservedUsd,
+    worstCaseUsd: r.worstCaseUsd ?? r.reservedUsd,
     memoryMbytes: r.memoryMbytes ?? ACTORS[r.actor].memoryMbytes,
     timeoutSecs: r.timeoutSecs ?? RUN_TIMEOUT_SECS,
   }));
