@@ -157,6 +157,26 @@ describe('buildReport coverage', () => {
     expect(r.perActor.valig.coverage.fullDescription).toBe(0.5);
   });
 
+  it('treats a blank jk as no jk everywhere', () => {
+    const r = report([
+      result('valig', 'us-remote-plain', [job('a'), job('  '), job('')]),
+    ]);
+    expect(r.perActor.valig.coverage.jk).toBeCloseTo(1 / 3);
+    expect(r.perActor.valig.distinct).toBe(1);
+    expect(r.perActor.valig.runs[0].distinct).toBe(1);
+    expect(r.perActor.valig.gate.reasons).toContain(
+      'jk or description under 95%',
+    );
+  });
+
+  it('prices 1000 distinct jobs from the total cost', () => {
+    const r = report([
+      result('valig', 'us-remote-plain', [job('a'), job('b')], 0.1),
+      result('valig', 'ma-onsite-plain', [job('b'), job(null)], 0.3),
+    ]);
+    expect(r.perActor.valig.costPer1000).toBeCloseTo(200);
+  });
+
   it('gives null coverage and zeros to an actor with no results', () => {
     const r = report([result('valig', 'us-remote-plain', [job('a')])], {
       planned: [
@@ -246,7 +266,19 @@ describe('buildReport gate', () => {
     ]);
     expect(r.perActor.valig.costUnknownRuns).toEqual(['us-remote-plain']);
     expect(r.perActor.valig.costUsd).toBe(0.1);
+    expect(r.perActor.valig.costPerRelevantGate).toBeNull();
     expect(r.perActor.valig.gate.reasons).toEqual(['cost unknown']);
+  });
+
+  it('lists cost unknown alongside no relevant jobs', () => {
+    const r = report([
+      result('valig', 'us-remote-plain', [other('a')], null),
+      result('valig', 'ma-onsite-plain', [other('b')], 0.1),
+    ]);
+    expect(r.perActor.valig.gate.reasons).toEqual([
+      'cost unknown',
+      'no relevant jobs',
+    ]);
   });
 
   it('cannot judge against a baseline with no relevant jobs', () => {
@@ -288,6 +320,10 @@ describe('buildReport missing runs', () => {
       ],
     });
     expect(r.perActor.valig.notRun).toEqual(['ma-onsite-plain']);
+    expect(r.perActor.valig.gate).toEqual({
+      pass: false,
+      reasons: ['gate run missing'],
+    });
     expect(r.perActor.valig.relevantByPlace['ma-onsite']).toBe(0);
     expect(r.boolean.valig['ma-onsite']).toEqual({
       plainRelevantShare: null,
@@ -403,5 +439,18 @@ describe('buildReport pickOrder', () => {
       result('memo23', 'us-remote-plain', [other('x')], 0.1),
     ]);
     expect(r.pickOrder).toEqual(['kaix', 'valig']);
+  });
+
+  it('breaks a tie on relevant jobs by passing probes, before cost', () => {
+    const r = report([
+      result('kaix', 'us-remote-plain', [job('a')], 0.1),
+      result('kaix', 'ma-onsite-plain', [job('m')], 0.1),
+      result('kaix', 'us-locremote-plain', [job('a')], 0.1),
+      result('memo23', 'us-remote-plain', [job('a')], 0.1),
+      result('memo23', 'ma-onsite-plain', [job('m')], 0.1),
+    ]);
+    expect(r.probes.remoteFilter.kaix?.lostShare).toBe(0);
+    expect(r.perActor.kaix.costUsd).toBeGreaterThan(r.perActor.memo23.costUsd);
+    expect(r.pickOrder).toEqual(['kaix', 'memo23']);
   });
 });

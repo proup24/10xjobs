@@ -57,7 +57,7 @@ export interface ActorReport {
   costPer1000: number | null;
   /** Distinct relevant `jk` per place, core runs only. */
   relevantByPlace: Record<PlaceId, number>;
-  /** Core-run cost on the gate places over their relevant jobs. */
+  /** Core-run cost on the gate places over their relevant jobs; null when none are relevant or a gate run's cost is unknown. */
   costPerRelevantGate: number | null;
   coverage: Record<CoverageField, number | null>;
   devOverlap: { proven: number; likely: number };
@@ -133,8 +133,11 @@ export function titleCompanyKey(
 
 const present = (s: string | null) => s !== null && s.trim() !== '';
 
+/** The one "has a jk" check: a blank jk counts as none. */
+const hasJk = (j: SampleJob): j is SampleJob & { jk: string } => present(j.jk);
+
 const COVERAGE: Record<CoverageField, (j: SampleJob) => boolean> = {
-  jk: (j) => present(j.jk),
+  jk: hasJk,
   fullDescription: (j) => isFullDescription(j.descriptionText),
   employerApplyLink: (j) => j.applyUrl !== null,
   easyApplyFlag: (j) => j.easyApply !== null,
@@ -151,7 +154,7 @@ const share = (part: number, whole: number) =>
 
 function jks(jobs: SampleJob[]): Set<string> {
   const out = new Set<string>();
-  for (const j of jobs) if (j.jk !== null) out.add(j.jk);
+  for (const j of jobs) if (hasJk(j)) out.add(j.jk);
   return out;
 }
 
@@ -161,6 +164,42 @@ function relevantJks(jobs: SampleJob[], spellings: string[]): Set<string> {
 
 function sumCosts(runs: RunResult[]): number {
   return runs.reduce((sum, r) => sum + (r.costUsd ?? 0), 0);
+}
+
+/**
+ * Every gate reason that applies, independently. `'no relevant jobs'` and the
+ * 2x comparison exclude each other, since the comparison needs a value.
+ */
+function gateReasons(g: {
+  rows: SampleJob[];
+  missingGateRuns: number;
+  costUnknown: boolean;
+  gateRelevant: number;
+  costPerRelevantGate: number | null;
+  gatePerRelevantUsd: number | null;
+}): string[] {
+  const reasons: string[] = [];
+  if (g.rows.length === 0) reasons.push('no rows');
+  else {
+    const full = g.rows.filter(
+      (j) => hasJk(j) && isFullDescription(j.descriptionText),
+    ).length;
+    if (full / g.rows.length < MIN_FULL_SHARE - EPS)
+      reasons.push('jk or description under 95%');
+  }
+  if (g.missingGateRuns > 0) reasons.push('gate run missing');
+  if (g.costUnknown) reasons.push('cost unknown');
+  if (g.gatePerRelevantUsd === null)
+    reasons.push('baseline has no relevant jobs');
+  if (g.gateRelevant === 0) reasons.push('no relevant jobs');
+  else if (
+    g.costPerRelevantGate !== null &&
+    g.gatePerRelevantUsd !== null &&
+    g.costPerRelevantGate >
+      MAX_BASELINE_RATIO * g.gatePerRelevantUsd * (1 + EPS)
+  )
+    reasons.push('cost per relevant job over 2x baseline');
+  return reasons;
 }
 
 function probe(
@@ -199,7 +238,7 @@ function devOverlap(
 ): { proven: number; likely: number } {
   const byJk = new Map<string, SampleJob[]>();
   for (const j of jobs) {
-    if (j.jk === null) continue;
+    if (!hasJk(j)) continue;
     byJk.set(j.jk, [...(byJk.get(j.jk) ?? []), j]);
   }
   let proven = 0;
@@ -231,7 +270,8 @@ function devOverlap(
  * `devOverlap` and the cross-actor `overlap`.
  *
  * Missing runs land in `notRun`; every number is computed over the results
- * that exist and nothing throws.
+ * that exist and nothing throws. A missing core run on a gate place fails the
+ * gate (`'gate run missing'`).
  */
 export function buildReport(input: {
   planned: PlannedRun[];
@@ -289,7 +329,16 @@ export function buildReport(input: {
       (s, p) => s + relevantByPlace[p],
       0,
     );
-    const costPerRelevantGate = share(sumCosts(gateRuns), gateRelevant);
+    const costUnknown = gateRuns.some((r) => r.costUsd === null);
+    // A partial sum would read cheaper than the truth: null instead.
+    const costPerRelevantGate = costUnknown
+      ? null
+      : share(sumCosts(gateRuns), gateRelevant);
+    const notRun = planned
+      .filter(
+        (p) => p.actor === actor && !resultKeys.has(runKey(actor, p.search.id)),
+      )
+      .map((p) => p.search);
 
     const coverage = {} as Record<CoverageField, number | null>;
     for (const [field, has] of Object.entries(COVERAGE) as [
@@ -299,25 +348,16 @@ export function buildReport(input: {
       coverage[field] = share(rows.filter(has).length, rows.length);
     }
 
-    const reasons: string[] = [];
-    if (rows.length === 0) reasons.push('no rows');
-    else {
-      const full = rows.filter(
-        (j) => j.jk !== null && isFullDescription(j.descriptionText),
-      ).length;
-      if (full / rows.length < MIN_FULL_SHARE - EPS)
-        reasons.push('jk or description under 95%');
-    }
-    if (costPerRelevantGate === null) reasons.push('no relevant jobs');
-    else if (gateRuns.some((r) => r.costUsd === null))
-      reasons.push('cost unknown');
-    else if (gatePerRelevantUsd === null)
-      reasons.push('baseline has no relevant jobs');
-    else if (
-      costPerRelevantGate >
-      MAX_BASELINE_RATIO * gatePerRelevantUsd * (1 + EPS)
-    )
-      reasons.push('cost per relevant job over 2x baseline');
+    const reasons = gateReasons({
+      rows,
+      missingGateRuns: notRun.filter(
+        (search) => isCoreSearch(search) && GATE_PLACES.includes(search.place),
+      ).length,
+      costUnknown,
+      gateRelevant,
+      costPerRelevantGate,
+      gatePerRelevantUsd,
+    });
 
     perActor[actor] = {
       runs: runs.map((r) => ({
@@ -328,12 +368,7 @@ export function buildReport(input: {
         distinct: jks(r.jobs).size,
         costUsd: r.costUsd,
       })),
-      notRun: planned
-        .filter(
-          (p) =>
-            p.actor === actor && !resultKeys.has(runKey(actor, p.search.id)),
-        )
-        .map((p) => p.search.id),
+      notRun: notRun.map((search) => search.id),
       distinct: distinct.size,
       costUsd,
       costUnknownRuns: runs
