@@ -39,18 +39,27 @@ export class AutoSilenceService {
     }
     let silenced = 0;
     for (const c of candidates) {
-      const status = await this.silenced.silence({
-        authorKey: c.authorKey,
-        name: c.name,
-        origin: 'automatic',
-        reason: AUTO_SILENCE_REASON,
-        evidence: {
-          ...c,
-          firstSeenAt: c.firstSeenAt.toISOString(),
-          lastSeenAt: c.lastSeenAt.toISOString(),
-        },
-        createdBy: null,
-      });
+      let status: 'silenced' | 'already';
+      try {
+        status = await this.silenced.silence({
+          authorKey: c.authorKey,
+          name: c.name,
+          origin: 'automatic',
+          reason: AUTO_SILENCE_REASON,
+          evidence: {
+            ...c,
+            firstSeenAt: c.firstSeenAt.toISOString(),
+            lastSeenAt: c.lastSeenAt.toISOString(),
+          },
+          createdBy: null,
+        });
+      } catch (error) {
+        // One failure must not stop the others; tomorrow's run retries it.
+        this.logger.error(
+          `could not silence ${c.authorKey}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+        continue;
+      }
       if (status === 'silenced') {
         silenced++;
         this.logger.log(

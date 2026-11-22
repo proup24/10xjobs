@@ -243,8 +243,8 @@ export class PrepareReviewService {
     });
   }
 
-  async unsilence(authorKey: string): Promise<void> {
-    if (!(await this.silenced.unsilence(authorKey)))
+  async unsilence(adminId: string, authorKey: string): Promise<void> {
+    if (!(await this.silenced.unsilence(authorKey, adminId)))
       throw new NotFoundException('That author is not silenced');
   }
 }

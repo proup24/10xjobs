@@ -164,9 +164,12 @@ export class PrepareReviewController {
   @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete('silenced-authors/:authorKey')
-  async unsilence(@Param('authorKey') authorKey: string): Promise<void> {
+  async unsilence(
+    @CurrentUser() adminId: string,
+    @Param('authorKey') authorKey: string,
+  ): Promise<void> {
     if (!AUTHOR_KEY.test(authorKey))
       throw new BadRequestException('authorKey must be profile:… or company:…');
-    await this.review.unsilence(authorKey);
+    await this.review.unsilence(adminId, authorKey);
   }
 }

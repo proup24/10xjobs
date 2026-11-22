@@ -47,8 +47,13 @@ export abstract class SilencedAuthorsRepository {
   abstract list(): Promise<SilencedAuthorRow[]>;
   /** Adds the author; `'already'` when it was silenced, leaving that entry as it was. */
   abstract silence(input: SilenceInput): Promise<'silenced' | 'already'>;
-  /** Removes the author; false when it was not silenced. */
-  abstract unsilence(authorKey: string): Promise<boolean>;
+  /**
+   * Removes the author; false when it was not silenced. Removing an
+   * `automatic` entry also records the dismissal (`by` = the admin), in the
+   * same statement, so automatic silencing needs new posts to silence the
+   * author again. A manual entry leaves no dismissal.
+   */
+  abstract unsilence(authorKey: string, by: string | null): Promise<boolean>;
   /**
    * Ids of silenced post jobs, by job id descending (ids are UUIDv7, so newest
    * job first). `before` is the last id of the previous page, or null for the
@@ -157,10 +162,23 @@ export class PrismaSilencedAuthorsRepository extends SilencedAuthorsRepository {
     return rows.length > 0 ? 'silenced' : 'already';
   }
 
-  async unsilence(authorKey: string): Promise<boolean> {
+  async unsilence(authorKey: string, by: string | null): Promise<boolean> {
     const { raw } = this.db;
+    // The nullable admin id travels in a jsonb document, as in `silence`.
+    const doc = JSON.stringify({ by });
+    // One statement: the delete and the dismissal commit together.
     const rows = await this.db.query(
-      raw.sql`DELETE FROM silenced_authors WHERE "authorKey" = ${authorKey}::text RETURNING id`
+      raw.sql`WITH gone AS (
+          DELETE FROM silenced_authors WHERE "authorKey" = ${authorKey}::text
+          RETURNING id, origin),
+        dismissed AS (
+          INSERT INTO auto_silence_dismissals ("authorKey", "dismissedAt", "dismissedBy")
+          SELECT ${authorKey}::text, now(), (${doc}::jsonb->>'by')::uuid
+          FROM gone WHERE origin = 'automatic'
+          ON CONFLICT ("authorKey") DO UPDATE
+            SET "dismissedAt" = EXCLUDED."dismissedAt", "dismissedBy" = EXCLUDED."dismissedBy"
+          RETURNING 1)
+        SELECT id FROM gone`
         .returnsRow({ id: UUID })
         .build(),
     );

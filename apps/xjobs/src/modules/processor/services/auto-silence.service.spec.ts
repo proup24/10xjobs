@@ -18,9 +18,10 @@ const candidate = (authorKey: string): AutoSilenceCandidate => ({
 function make(enabled: boolean, candidates: AutoSilenceCandidate[]) {
   const repo = { candidates: vi.fn(async () => candidates) };
   const silenced = {
-    silence: vi.fn(async (input: { authorKey: string }) =>
-      input.authorKey === 'company:raced' ? 'already' : 'silenced',
-    ),
+    silence: vi.fn(async (input: { authorKey: string }) => {
+      if (input.authorKey === 'company:broken') throw new Error('db down');
+      return input.authorKey === 'company:raced' ? 'already' : 'silenced';
+    }),
   };
   const service = new AutoSilenceService(
     repo as unknown as AutoSilenceRepository,
@@ -72,6 +73,22 @@ describe('AutoSilenceService', () => {
       },
       createdBy: null,
     });
+  });
+
+  it('logs a failed silence and goes on with the next candidate', async () => {
+    vi.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+    const error = vi
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
+    const { service, silenced } = make(true, [
+      candidate('company:broken'),
+      candidate('company:agg'),
+    ]);
+    expect(await service.run()).toEqual({ silenced: 1, candidates: 2 });
+    expect(silenced.silence).toHaveBeenCalledTimes(2);
+    expect(error).toHaveBeenCalledWith(
+      expect.stringContaining('could not silence company:broken: db down'),
+    );
   });
 
   it('with no candidates, does nothing', async () => {

@@ -20,7 +20,11 @@ export interface AutoSilenceCandidate {
   authorKey: string;
   /** The author's name on their newest post. */
   name: string | null;
-  /** Posts counted: every current post extraction but `role_filled` ones. */
+  /**
+   * Posts counted: current post extractions with a sure `not_hiring` or
+   * `junk` verdict, `role_filled` ones excepted, first seen after the owner's
+   * last removal of an automatic silence of this author, if any.
+   */
   counted: number;
   /** The first and last counted post job's `firstSeenAt`. */
   firstSeenAt: Date;
@@ -32,8 +36,12 @@ export interface AutoSilenceCandidate {
 export abstract class AutoSilenceRepository {
   /**
    * Authors not yet silenced whom the rule silences: at least 10 counted posts
-   * over at least 7 days, every counted one ruled `not_hiring` or `junk`, and
-   * no role job of any of their posts ever `qualified`. Most counted first.
+   * over at least 7 days, every counted one ruled `not_hiring` or `junk` with
+   * a sure verdict, and no role job of any of their posts `qualified`. A
+   * `hiring` verdict (sure or unsure) or any other verdict blocks; an unsure
+   * `not_hiring` or `junk` and a `role_filled` post neither count nor block.
+   * After the owner removed an automatic silence of the author, only posts
+   * first seen after that count or block. Most counted first.
    */
   abstract candidates(): Promise<AutoSilenceCandidate[]>;
 }
@@ -65,13 +73,27 @@ const AUTHORED = `SELECT DISTINCT ON (j.id, key) j.id, j."firstSeenAt", j."curre
   ORDER BY j.id, key, name`;
 
 const CANDIDATES = `WITH authored AS (${AUTHORED}),
-  ruled AS (
+  judged AS (
     SELECT a.id, a.key, a.name, a."firstSeenAt", e.verdict,
-      -- A role filled: the author was hiring, so it neither counts nor blocks.
-      NOT (e.verdict = 'not_hiring' AND e."verdictReason" IS NOT DISTINCT FROM 'role_filled') AS counted
+      CASE
+        -- A role filled: the author was hiring, so it neither counts nor blocks.
+        WHEN e.verdict = 'not_hiring' AND e."verdictReason" IS NOT DISTINCT FROM 'role_filled' THEN 'skip'
+        -- An unsure not-hiring or junk verdict is not evidence either way.
+        WHEN e.verdict IN ('not_hiring', 'junk') AND e."verdictConfidence" = 'unsure' THEN 'skip'
+        WHEN e.verdict IN ('not_hiring', 'junk') AND e."verdictConfidence" = 'sure' THEN 'count'
+        -- Hiring (sure or unsure), or anything else: blocks.
+        ELSE 'block'
+      END AS role
     FROM authored a
     JOIN job_extractions e ON e.id = a."currentExtractionId" AND e."docType" = 'post'
+    LEFT JOIN auto_silence_dismissals d ON d."authorKey" = a.key
     WHERE a.key IS NOT NULL
+      -- After the owner removed an automatic silence, only new posts are evidence.
+      AND (d."dismissedAt" IS NULL OR a."firstSeenAt" > d."dismissedAt")
+  ),
+  ruled AS (
+    SELECT id, key, name, "firstSeenAt", verdict, role = 'count' AS counted, role = 'block' AS blocks
+    FROM judged WHERE role <> 'skip'
   ),
   grouped AS (
     SELECT key,
@@ -79,7 +101,7 @@ const CANDIDATES = `WITH authored AS (${AUTHORED}),
       count(*) FILTER (WHERE counted)::int AS counted,
       min("firstSeenAt") FILTER (WHERE counted) AS first,
       max("firstSeenAt") FILTER (WHERE counted) AS last,
-      bool_and(NOT counted OR COALESCE(verdict IN ('not_hiring', 'junk'), false)) AS only_junk
+      NOT bool_or(blocks) AS only_junk
     FROM ruled GROUP BY key
   )
   SELECT g.key AS "authorKey", g.name, g.counted, g.first AS "firstSeenAt",
@@ -92,6 +114,8 @@ const CANDIDATES = `WITH authored AS (${AUTHORED}),
     AND g.counted >= ${AUTO_SILENCE_RULE.minPosts}
     AND g.last - g.first >= interval '${AUTO_SILENCE_RULE.minDays} days'
     AND NOT EXISTS (SELECT 1 FROM silenced_authors sa WHERE sa."authorKey" = g.key)
+    -- "Never qualified" means "has a qualified match now" until slice 04
+    -- matches role jobs: the match sweep deletes matches of archived jobs.
     AND NOT EXISTS (
       SELECT 1 FROM authored a
       JOIN normalized_jobs r ON r."parentJobId" = a.id AND r.kind = 'post_role'

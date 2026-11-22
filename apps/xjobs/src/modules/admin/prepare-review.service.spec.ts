@@ -204,14 +204,15 @@ describe('PrepareReviewService', () => {
         set.add(i.authorKey);
         return 'silenced' as const;
       }),
-      unsilence: vi.fn(async (k: string) => set.delete(k)),
+      unsilence: vi.fn(async (k: string, _by: string | null) => set.delete(k)),
     };
     const s = service({}, silenced);
     const input = { authorKey: 'profile:a', name: null, reason: 'r' };
     expect(await s.silence('admin', input)).toBe('silenced');
     expect(await s.silence('admin', input)).toBe('already');
-    await expect(s.unsilence('profile:a')).resolves.toBeUndefined();
-    await expect(s.unsilence('profile:a')).rejects.toMatchObject({
+    await expect(s.unsilence('admin', 'profile:a')).resolves.toBeUndefined();
+    expect(silenced.unsilence).toHaveBeenLastCalledWith('profile:a', 'admin');
+    await expect(s.unsilence('admin', 'profile:a')).rejects.toMatchObject({
       status: 404,
     });
   });

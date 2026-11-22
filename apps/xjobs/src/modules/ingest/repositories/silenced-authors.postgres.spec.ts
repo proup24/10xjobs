@@ -118,7 +118,7 @@ describe.skipIf(!url)('silenced authors in PostgreSQL', () => {
     await db?.close();
   });
   beforeEach(async () => {
-    await sql`TRUNCATE silenced_authors, job_decisions, normalized_job_sources, normalized_jobs, companies, normalized_versions, raw_item_sightings, raw_item_versions, raw_items, collection_batches, search_segment_runs CASCADE`;
+    await sql`TRUNCATE silenced_authors, auto_silence_dismissals, job_decisions, normalized_job_sources, normalized_jobs, companies, normalized_versions, raw_item_sightings, raw_item_versions, raw_items, collection_batches, search_segment_runs CASCADE`;
     const run = await db.orm.public.SearchSegmentRun.create({
       channel: 'LINKEDIN_POSTS',
       segmentKey: 'k',
@@ -197,10 +197,63 @@ describe.skipIf(!url)('silenced authors in PostgreSQL', () => {
     const id = await job();
     await source(id, by('profile:a'));
     await silence('profile:a');
-    expect(await repo.unsilence('profile:a')).toBe(true);
+    expect(await repo.unsilence('profile:a', null)).toBe(true);
     expect(await predicate(id)).toBe(false);
     expect(await held()).toEqual([]);
-    expect(await repo.unsilence('profile:a')).toBe(false);
+    expect(await repo.unsilence('profile:a', null)).toBe(false);
+  });
+
+  const dismissals = () =>
+    db.query(
+      db.raw
+        .sql`SELECT "authorKey", "dismissedAt", "dismissedBy" FROM auto_silence_dismissals ORDER BY "authorKey"`
+        .returnsRow({
+          authorKey: 'pg/text@1',
+          dismissedAt: 'pg/timestamptz-date@1',
+          dismissedBy: 'pg/uuid@1',
+        })
+        .build(),
+    );
+
+  it("records the owner's removal of an automatic silence, and only of one", async () => {
+    const owner = randomUUID();
+    await repo.silence({
+      authorKey: 'company:agg',
+      name: null,
+      reason: 'automatic: not hiring or junk',
+      origin: 'automatic',
+      evidence: { counted: 10 },
+      createdBy: null,
+    });
+    await silence('profile:a');
+    expect(await repo.unsilence('profile:a', owner)).toBe(true);
+    expect(await dismissals()).toEqual([]);
+    const before = new Date();
+    expect(await repo.unsilence('company:agg', owner)).toBe(true);
+    const [first] = await dismissals();
+    expect(first).toMatchObject({
+      authorKey: 'company:agg',
+      dismissedBy: owner,
+    });
+    expect((first!.dismissedAt as Date).getTime()).toBeGreaterThanOrEqual(
+      before.getTime() - 1000,
+    );
+    // Silenced automatically again later, removed again: the dismissal moves.
+    await repo.silence({
+      authorKey: 'company:agg',
+      name: null,
+      reason: 'automatic: not hiring or junk',
+      origin: 'automatic',
+      evidence: null,
+      createdBy: null,
+    });
+    expect(await repo.unsilence('company:agg', null)).toBe(true);
+    const rows = await dismissals();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.dismissedBy).toBeNull();
+    expect((rows[0]!.dismissedAt as Date).getTime()).toBeGreaterThanOrEqual(
+      (first!.dismissedAt as Date).getTime(),
+    );
   });
 
   it("answers 'already' to a second silence, keeping the first entry", async () => {

@@ -138,7 +138,10 @@ describe('admin routes over HTTP', () => {
       method: 'DELETE',
     });
     expect(del.status).toBe(204);
-    expect(silenced.unsilence).toHaveBeenLastCalledWith('profile:jane');
+    expect(silenced.unsilence).toHaveBeenLastCalledWith(
+      'profile:jane',
+      'admin',
+    );
     expect(
       (
         await call('/silenced-authors/profile%3Ajane', 'admin', {

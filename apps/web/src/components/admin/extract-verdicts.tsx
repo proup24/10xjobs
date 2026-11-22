@@ -295,7 +295,7 @@ export function ExtractVerdicts({
       <Section
         id="auto-silence-candidates"
         title="Automatic silencing candidates"
-        description="Authors with at least 10 posts over 7 days or more, every one ruled not hiring or junk (role filled not counted), and none ever qualified. Automatic silencing silences them daily at 04:00 UTC once POST_AUTO_SILENCE is on; until then it only logs them."
+        description="Authors with at least 10 counted posts over 7 days or more, every counted one ruled not hiring or junk with a sure verdict (unsure and role-filled posts not counted), and none qualified. After you remove an automatic silence, only posts first seen later count. Automatic silencing silences them daily at 04:00 UTC once POST_AUTO_SILENCE is on; until then it only logs them."
       >
         {candidates ? (
           <Candidates candidates={candidates} />

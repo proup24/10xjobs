@@ -153,19 +153,21 @@ describe('PrepareReviewController', () => {
 
   it('unsilences an encoded-then-decoded key and 404s one that is not silenced', async () => {
     const unsilence = vi.fn().mockResolvedValue(undefined);
-    await make({ unsilence }).unsilence('profile:jane');
-    expect(unsilence).toHaveBeenCalledWith('profile:jane');
+    await make({ unsilence }).unsilence('admin', 'profile:jane');
+    expect(unsilence).toHaveBeenCalledWith('admin', 'profile:jane');
     const missing = vi
       .fn()
       .mockRejectedValue(Object.assign(new Error('x'), { status: 404 }));
     await expect(
-      make({ unsilence: missing }).unsilence('profile:z'),
+      make({ unsilence: missing }).unsilence('admin', 'profile:z'),
     ).rejects.toMatchObject({ status: 404 });
   });
 
   it('answers 400 for a bad key without touching the service', async () => {
     const unsilence = vi.fn();
-    await expect(make({ unsilence }).unsilence('jane')).rejects.toMatchObject({
+    await expect(
+      make({ unsilence }).unsilence('admin', 'jane'),
+    ).rejects.toMatchObject({
       status: 400,
     });
     expect(unsilence).not.toHaveBeenCalled();
