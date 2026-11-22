@@ -170,11 +170,11 @@ export class PrismaSilencedAuthorsRepository extends SilencedAuthorsRepository {
     const rows = await this.db.query(
       raw.sql`WITH gone AS (
           DELETE FROM silenced_authors WHERE "authorKey" = ${authorKey}::text
-          RETURNING id, origin),
+          RETURNING id),
         dismissed AS (
           INSERT INTO auto_silence_dismissals ("authorKey", "dismissedAt", "dismissedBy")
           SELECT ${authorKey}::text, now(), (${doc}::jsonb->>'by')::uuid
-          FROM gone WHERE origin = 'automatic'
+          FROM gone
           ON CONFLICT ("authorKey") DO UPDATE
             SET "dismissedAt" = EXCLUDED."dismissedAt", "dismissedBy" = EXCLUDED."dismissedBy"
           RETURNING 1)

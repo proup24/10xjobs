@@ -372,6 +372,18 @@ describe.skipIf(!url)('prepare review in PostgreSQL', () => {
       });
     });
 
+    it('does not list archived post jobs', async () => {
+      const live = await post(1, [{}]);
+      const archived = await post(2, [{}]);
+      await db.execute(
+        db.raw
+          .sql`UPDATE normalized_jobs SET "processingStatus" = 'archived' WHERE id = ${archived}::uuid`
+          .affectedCount()
+          .build(),
+      );
+      expect((await page({})).map((r) => r.jobId)).toEqual([live]);
+    });
+
     it('filters by verdict and reason', async () => {
       const funnel = await post(1, [{}]);
       const group = await post(2, [{ reason: 'messaging_group' }]);

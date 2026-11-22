@@ -194,9 +194,7 @@ function isVerdictView(v: unknown): v is VerdictView {
   );
 }
 
-function isAutoSilenceCandidateView(
-  v: unknown,
-): v is AutoSilenceCandidateView {
+function isAutoSilenceCandidateView(v: unknown): v is AutoSilenceCandidateView {
   return (
     isRecord(v) &&
     typeof v.authorKey === 'string' &&

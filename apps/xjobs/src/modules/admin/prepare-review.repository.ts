@@ -160,6 +160,8 @@ export class PrismaPrepareReviewRepository extends PrepareReviewRepository {
         FROM normalized_jobs j
         JOIN job_extractions e ON e.id = j."currentExtractionId"
         WHERE j.kind = 'post' AND e."docType" = 'post'
+          AND j.status = 'active'
+          AND j."processingStatus" IS DISTINCT FROM 'archived'
           AND e.verdict IN ('not_hiring', 'junk')
           AND (${verdict}::text = '' OR e.verdict = ${verdict}::text)
           AND (${reason}::text = '' OR e."verdictReason" = ${reason}::text)

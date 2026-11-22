@@ -278,7 +278,7 @@ export function ExtractVerdicts({
       <Section
         id="extract-verdicts"
         title="Extract verdicts"
-        description="Posts the processor ruled not hiring or junk, newest first."
+        description="Posts the processor ruled not hiring or junk, newest first. Silencing an author silences the original author, so it holds their future posts, not a post made only of shares."
       >
         <VerdictFilter verdict={verdict} reason={reason} />
         {page ? (

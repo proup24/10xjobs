@@ -215,7 +215,7 @@ describe.skipIf(!url)('silenced authors in PostgreSQL', () => {
         .build(),
     );
 
-  it("records the owner's removal of an automatic silence, and only of one", async () => {
+  it("records the owner's removal of a silence, whatever its origin", async () => {
     const owner = randomUUID();
     await repo.silence({
       authorKey: 'company:agg',
@@ -227,10 +227,14 @@ describe.skipIf(!url)('silenced authors in PostgreSQL', () => {
     });
     await silence('profile:a');
     expect(await repo.unsilence('profile:a', owner)).toBe(true);
-    expect(await dismissals()).toEqual([]);
+    expect(await dismissals()).toMatchObject([
+      { authorKey: 'profile:a', dismissedBy: owner },
+    ]);
     const before = new Date();
     expect(await repo.unsilence('company:agg', owner)).toBe(true);
-    const [first] = await dismissals();
+    const first = (await dismissals()).find(
+      (r) => r.authorKey === 'company:agg',
+    );
     expect(first).toMatchObject({
       authorKey: 'company:agg',
       dismissedBy: owner,
@@ -248,7 +252,9 @@ describe.skipIf(!url)('silenced authors in PostgreSQL', () => {
       createdBy: null,
     });
     expect(await repo.unsilence('company:agg', null)).toBe(true);
-    const rows = await dismissals();
+    const rows = (await dismissals()).filter(
+      (r) => r.authorKey === 'company:agg',
+    );
     expect(rows).toHaveLength(1);
     expect(rows[0]!.dismissedBy).toBeNull();
     expect((rows[0]!.dismissedAt as Date).getTime()).toBeGreaterThanOrEqual(

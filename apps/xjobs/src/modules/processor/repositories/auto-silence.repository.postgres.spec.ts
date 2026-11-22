@@ -377,7 +377,13 @@ describe.skipIf(!url)('AutoSilenceRepository in PostgreSQL', () => {
       createdBy: null,
     });
     expect(await keys()).toEqual([]);
-    await silenced.unsilence('company:agg', null);
+    // Deleted directly: an un-silence through the repository records a dismissal.
+    await db.query(
+      db.raw
+        .sql`DELETE FROM silenced_authors WHERE "authorKey" = 'company:agg' RETURNING id`
+        .returnsRow({ id: 'pg/uuid@1' })
+        .build(),
+    );
     expect(await keys()).toEqual(['company:agg']);
   });
 
@@ -449,7 +455,7 @@ describe.skipIf(!url)('AutoSilenceRepository in PostgreSQL', () => {
       });
     });
 
-    it('leaves no dismissal after a manual un-silence', async () => {
+    it('records a dismissal after a manual un-silence: new evidence is needed', async () => {
       await posts(10, 8, own);
       await silenced.silence({
         authorKey: 'company:agg',
@@ -460,7 +466,7 @@ describe.skipIf(!url)('AutoSilenceRepository in PostgreSQL', () => {
         createdBy: null,
       });
       await silenced.unsilence('company:agg', randomUUID());
-      expect(await keys()).toEqual(['company:agg']);
+      expect(await keys()).toEqual([]);
     });
   });
 });
