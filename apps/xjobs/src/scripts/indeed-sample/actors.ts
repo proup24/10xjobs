@@ -41,13 +41,17 @@ export interface ActorSpec {
   hasRemoteFilter: boolean;
   /** Per-row Apify event names this actor's input turns on, plus its start event. */
   rowEvents: string[];
+  /** Charged once per started GB of `memoryMbytes`, at least once. */
   startEvent: string;
+  /** Live events this actor's input keeps off, each with the reason; any other unlisted event refuses the plan. */
+  knownOffEvents: Record<string, string>;
+  /** Run memory, pinned at the actor's default run option. */
+  memoryMbytes: number;
   buildInput(search: SampleSearch): Record<string, unknown>;
   readItem(raw: Record<string, unknown>): SampleJob;
 }
 
 const COUNTRY: Record<ActorName, Record<PlaceId, string>> = {
-  // Unconfirmed: valig's README says ISO alpha-2 (the UK would be `gb`); `uk`/`ma` come from the brief.
   valig: { 'us-remote': 'us', 'uk-remote': 'uk', 'ma-onsite': 'ma' },
   kaix: { 'us-remote': 'US', 'uk-remote': 'UK', 'ma-onsite': 'MA' },
   memo23: {
@@ -55,7 +59,6 @@ const COUNTRY: Record<ActorName, Record<PlaceId, string>> = {
     'uk-remote': 'United Kingdom',
     'ma-onsite': 'Morocco',
   },
-  // Unconfirmed: the README documents `us` and `uk` only; `ma` is assumed by pattern.
   curious_coder: { 'us-remote': 'us', 'uk-remote': 'uk', 'ma-onsite': 'ma' },
 };
 
@@ -283,6 +286,8 @@ export const ACTORS: Record<ActorName, ActorSpec> = {
     hasRemoteFilter: false,
     rowEvents: ['apify-default-dataset-item'],
     startEvent: 'apify-actor-start',
+    knownOffEvents: {},
+    memoryMbytes: 128,
     buildInput: (search) => ({
       country: COUNTRY.valig[search.place],
       title: search.keyword,
@@ -299,6 +304,8 @@ export const ACTORS: Record<ActorName, ActorSpec> = {
     hasRemoteFilter: true,
     rowEvents: ['apify-default-dataset-item'],
     startEvent: 'apify-actor-start',
+    knownOffEvents: {},
+    memoryMbytes: 512,
     // Rich mode is the only one that combines the date and remote filters.
     buildInput: (search) => ({
       keyword: search.keyword,
@@ -319,6 +326,11 @@ export const ACTORS: Record<ActorName, ActorSpec> = {
     hasRemoteFilter: true,
     rowEvents: ['apify-default-dataset-item', 'additional-data'],
     startEvent: 'apify-actor-start',
+    knownOffEvents: {
+      'contact-email':
+        'charged only by enrichEmails, which the input sets false',
+    },
+    memoryMbytes: 1024,
     buildInput: (search) => ({
       position: search.keyword,
       country: COUNTRY.memo23[search.place],
@@ -344,6 +356,8 @@ export const ACTORS: Record<ActorName, ActorSpec> = {
     hasRemoteFilter: false,
     rowEvents: ['apify-default-dataset-item'],
     startEvent: 'apify-actor-start',
+    knownOffEvents: {},
+    memoryMbytes: 512,
     buildInput: (search) => ({
       country: COUNTRY.curious_coder[search.place],
       query: search.keyword,

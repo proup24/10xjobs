@@ -7,6 +7,8 @@ import {
 } from './actors';
 
 export const TOTAL_CAP_USD = 1.5;
+/** Each run's Apify timeout, passed on start so no actor default (valig's is 300 s) can cut a run short. */
+export const RUN_TIMEOUT_SECS = 900;
 
 export interface Keywords {
   plain: string;
@@ -18,6 +20,8 @@ export interface PlannedRun {
   search: SampleSearch;
   input: Record<string, unknown>;
   reservedUsd: number;
+  memoryMbytes: number;
+  timeoutSecs: number;
 }
 
 /** Event name to USD, FREE tier. */
@@ -82,19 +86,14 @@ function record(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
-/** Event prices from an Apify act JSON: the last pricing entry, flat price first, else the FREE tier. */
-export function parseEventPrices(actJson: unknown): EventPrices {
-  const data = record(record(actJson)?.data);
-  const infos = data?.pricingInfos;
-  if (!Array.isArray(infos) || infos.length === 0) {
-    throw new Error('Act JSON has no data.pricingInfos');
-  }
+/** One pricing entry's events, flat price first, else the FREE tier. */
+function entryPrices(info: unknown, label: string): EventPrices {
   const events = record(
-    record(record(infos[infos.length - 1])?.pricingPerEvent)?.actorChargeEvents,
+    record(record(info)?.pricingPerEvent)?.actorChargeEvents,
   );
   if (!events) {
     throw new Error(
-      'Last pricingInfos entry is not pay-per-event (no pricingPerEvent.actorChargeEvents)',
+      `${label} pricingInfos entry is not pay-per-event (no pricingPerEvent.actorChargeEvents)`,
     );
   }
   const prices: EventPrices = {};
@@ -113,6 +112,53 @@ export function parseEventPrices(actJson: unknown): EventPrices {
   return prices;
 }
 
+/** An entry's start time in ms; a missing or unreadable one counts as always in force. */
+function startedAtMs(info: unknown): number {
+  const raw = record(info)?.startedAt;
+  const ms = typeof raw === 'string' ? Date.parse(raw) : NaN;
+  return Number.isNaN(ms) ? -Infinity : ms;
+}
+
+/**
+ * Event prices from an Apify act JSON: per event, the highest price across the
+ * entry in force at `now` (the latest `startedAt` not after it; on a tie, the
+ * later in the list) and every entry that starts after `now`, so a scheduled
+ * increase is reserved and a superseded past price is not.
+ */
+export function parseEventPrices(
+  actJson: unknown,
+  now: Date = new Date(),
+): EventPrices {
+  const data = record(record(actJson)?.data);
+  const infos = data?.pricingInfos;
+  if (!Array.isArray(infos) || infos.length === 0) {
+    throw new Error('Act JSON has no data.pricingInfos');
+  }
+  const at = now.getTime();
+  let inForce: unknown = undefined;
+  let inForceMs = -Infinity;
+  const future: unknown[] = [];
+  for (const info of infos) {
+    const ms = startedAtMs(info);
+    if (ms > at) future.push(info);
+    else if (inForce === undefined || ms >= inForceMs) {
+      inForce = info;
+      inForceMs = ms;
+    }
+  }
+  const prices: EventPrices = {};
+  const entries = [
+    ...(inForce === undefined ? [] : [{ info: inForce, label: 'In-force' }]),
+    ...future.map((info) => ({ info, label: 'Future' })),
+  ];
+  for (const { info, label } of entries) {
+    for (const [name, usd] of Object.entries(entryPrices(info, label))) {
+      prices[name] = Math.max(prices[name] ?? usd, usd);
+    }
+  }
+  return prices;
+}
+
 function priceOf(spec: ActorSpec, prices: EventPrices, event: string): number {
   const usd = prices[event];
   if (typeof usd !== 'number') {
@@ -121,14 +167,37 @@ function priceOf(spec: ActorSpec, prices: EventPrices, event: string): number {
   return usd;
 }
 
-/** Worst-case cost of one run: every row at every row event, plus the start event, rounded up to the cent. */
+/** Start events Apify charges for a run: one per started GB of memory, at least one. */
+export function startEvents(memoryMbytes: number): number {
+  return Math.max(1, Math.ceil(memoryMbytes / 1024));
+}
+
+/** Worst-case cost of one run: every row at every row event, plus its start events, rounded up to the cent. */
 export function reserveUsd(spec: ActorSpec, prices: EventPrices): number {
   const perRow = spec.rowEvents.reduce(
     (sum, event) => sum + priceOf(spec, prices, event),
     0,
   );
-  const total = spec.rows * perRow + priceOf(spec, prices, spec.startEvent);
+  const total =
+    spec.rows * perRow +
+    startEvents(spec.memoryMbytes) * priceOf(spec, prices, spec.startEvent);
   return Math.ceil(total * 100 - 1e-9) / 100;
+}
+
+/** Throws naming the actor and event for a live event the spec neither reserves nor lists as kept off. */
+export function checkEvents(spec: ActorSpec, prices: EventPrices): void {
+  const known = new Set([
+    ...spec.rowEvents,
+    spec.startEvent,
+    ...Object.keys(spec.knownOffEvents),
+  ]);
+  for (const event of Object.keys(prices)) {
+    if (!known.has(event)) {
+      throw new Error(
+        `Actor ${spec.name} charges event ${event}, which the plan does not reserve: add it to rowEvents or knownOffEvents`,
+      );
+    }
+  }
 }
 
 export function buildPlan(
@@ -152,9 +221,17 @@ export function buildPlan(
       ),
       ...probes(actor, k),
     ];
+    checkEvents(spec, prices[actor]);
     const reservedUsd = reserveUsd(spec, prices[actor]);
     for (const search of searches) {
-      runs.push({ actor, search, input: spec.buildInput(search), reservedUsd });
+      runs.push({
+        actor,
+        search,
+        input: spec.buildInput(search),
+        reservedUsd,
+        memoryMbytes: spec.memoryMbytes,
+        timeoutSecs: RUN_TIMEOUT_SECS,
+      });
     }
   }
   const reservedUsd =

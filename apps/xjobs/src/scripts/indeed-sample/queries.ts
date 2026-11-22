@@ -10,6 +10,7 @@ import {
   mergedLinkedinKeyword,
 } from 'src/modules/collectors/providers/mappers/linkedin-job-board.mapper';
 import { mapLinkedinJob } from 'src/modules/ingest/normalize/mappers/linkedin-job.mapper';
+import { SEARCH_SPELLINGS } from 'src/modules/queries/builders/search-spellings';
 import { segmentKey } from 'src/modules/segments';
 import { HARVEST_ACTOR } from '../actor-compare/report';
 import type { PlaceId } from './actors';
@@ -103,8 +104,20 @@ export async function loadPlaceGroups(
 }
 
 /**
+ * The role word plus the technology as the LinkedIn builders search it: its
+ * first searched spelling (`go` → `golang`). A technology with no searched
+ * spelling falls back to its code.
+ */
+export function plainKeyword(roleWord: string, technology: string): string {
+  const spelling = Object.hasOwn(SEARCH_SPELLINGS, technology)
+    ? SEARCH_SPELLINGS[technology][0]?.toLowerCase()
+    : undefined;
+  return `${roleWord} ${spelling ?? technology}`;
+}
+
+/**
  * The profile's first role word (sorted, over its active LinkedIn job board
- * builders) and the technology of its most important skill (ties: higher
+ * builders) and the top spelling of its most important skill (ties: higher
  * mastery, then code), e.g. `developer typescript`.
  */
 export async function loadPlainKeyword(
@@ -137,7 +150,7 @@ export async function loadPlainKeyword(
       `Profile ${profileId} has no active LinkedIn job board builder with role words`,
     );
   if (!skill) throw new Error(`Profile ${profileId} has no skills`);
-  return `${roleWords[0]} ${skill}`;
+  return plainKeyword(roleWords[0], skill);
 }
 
 /** Only a run the engine stored as `succeeded` counts as one; `partial` and `failed` keep their status. */

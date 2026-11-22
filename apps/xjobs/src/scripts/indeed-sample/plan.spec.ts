@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ACTORS, type ActorName } from './actors';
 import {
+  RUN_TIMEOUT_SECS,
   TOTAL_CAP_USD,
   buildPlan,
   isCoreSearch,
@@ -163,6 +164,36 @@ describe('buildPlan', () => {
     expect(plan.reservedUsd).toBe(Math.round(plan.reservedUsd * 100) / 100);
   });
 
+  it("records each run's memory and timeout", () => {
+    for (const run of plan.runs) {
+      expect(run.memoryMbytes).toBe(ACTORS[run.actor].memoryMbytes);
+      expect(run.timeoutSecs).toBe(RUN_TIMEOUT_SECS);
+    }
+  });
+
+  it('refuses a live event the actor does not account for', () => {
+    expect(() =>
+      buildPlan(KEYWORDS, {
+        ...PRICES,
+        memo23: { ...MEMO23_PRICES, 'mystery-fee': 0.01 },
+      }),
+    ).toThrow(/memo23.*mystery-fee/);
+    expect(() =>
+      buildPlan(KEYWORDS, {
+        ...PRICES,
+        kaix: { ...PRICES.kaix, 'contact-email': 0.05 },
+      }),
+    ).toThrow(/kaix.*contact-email/);
+  });
+
+  it("accepts memo23's contact-email event, which its input keeps off", () => {
+    const live = buildPlan(KEYWORDS, {
+      ...PRICES,
+      memo23: { ...MEMO23_PRICES, 'contact-email': 0.05 },
+    });
+    expect(live.reservedUsd).toBe(plan.reservedUsd);
+  });
+
   it('fits the cap at the current prices and not at double', () => {
     expect(plan.capUsd).toBe(TOTAL_CAP_USD);
     expect(plan.reservedUsd).toBeLessThanOrEqual(1.5);
@@ -174,8 +205,23 @@ describe('buildPlan', () => {
 });
 
 describe('reserveUsd', () => {
-  it('rounds memo23 up to 0.14', () => {
+  it('rounds memo23 up to 0.14 at its 1024 MB', () => {
+    expect(ACTORS.memo23.memoryMbytes).toBe(1024);
     expect(reserveUsd(ACTORS.memo23, MEMO23_PRICES)).toBe(0.14);
+  });
+
+  it('reserves one start event per started GB of memory, at least one', () => {
+    // 50 × 0.00249 = 0.1245, plus 4 start events of 0.007: 0.1525 → 0.16.
+    expect(
+      reserveUsd({ ...ACTORS.memo23, memoryMbytes: 4096 }, MEMO23_PRICES),
+    ).toBe(0.16);
+    // 1025 MB is two started GB: 0.1245 + 0.014 = 0.1385 → 0.14.
+    expect(
+      reserveUsd({ ...ACTORS.memo23, memoryMbytes: 1025 }, MEMO23_PRICES),
+    ).toBe(0.14);
+    // valig at 128 MB still pays one start event: 0.01 + 0.001 → 0.02.
+    expect(ACTORS.valig.memoryMbytes).toBe(128);
+    expect(reserveUsd(ACTORS.valig, PRICES.valig)).toBe(0.02);
   });
 
   it('throws naming the actor and the missing event', () => {
@@ -218,8 +264,91 @@ describe('parseEventPrices', () => {
     },
   };
 
-  it('reads the last pricing entry, flat first and FREE tier otherwise', () => {
+  it('on a startedAt tie reads the later entry, flat first and FREE tier otherwise', () => {
     expect(parseEventPrices(act)).toEqual(MEMO23_PRICES);
+  });
+
+  const NOW = new Date('2026-11-22T12:00:00Z');
+  const entry = (startedAt: string, item: number, start = 0.007) => ({
+    pricingModel: 'PAY_PER_EVENT',
+    startedAt,
+    pricingPerEvent: {
+      actorChargeEvents: {
+        'apify-default-dataset-item': {
+          eventTieredPricingUsd: { FREE: { tieredEventPriceUsd: item } },
+        },
+        'apify-actor-start': { eventPriceUsd: start },
+      },
+    },
+  });
+
+  it('uses a future price increase', () => {
+    const prices = parseEventPrices(
+      {
+        data: {
+          pricingInfos: [
+            // Listed out of order: the future entry first.
+            entry('2026-12-01T00:00:00Z', 0.002),
+            entry('2026-11-01T00:00:00Z', 0.001),
+          ],
+        },
+      },
+      NOW,
+    );
+    expect(prices['apify-default-dataset-item']).toBe(0.002);
+  });
+
+  it('ignores a superseded past price, even a higher one', () => {
+    const prices = parseEventPrices(
+      {
+        data: {
+          pricingInfos: [
+            // Listed out of order: the superseded entry last.
+            entry('2026-11-20T00:00:00Z', 0.001),
+            entry('2026-11-01T00:00:00Z', 0.009, 0.05),
+          ],
+        },
+      },
+      NOW,
+    );
+    expect(prices).toEqual({
+      'apify-default-dataset-item': 0.001,
+      'apify-actor-start': 0.007,
+    });
+  });
+
+  it('keeps the price in force over a future decrease', () => {
+    const prices = parseEventPrices(
+      {
+        data: {
+          pricingInfos: [
+            entry('2026-11-20T00:00:00Z', 0.001),
+            entry('2026-12-01T00:00:00Z', 0.0005),
+          ],
+        },
+      },
+      NOW,
+    );
+    expect(prices['apify-default-dataset-item']).toBe(0.001);
+  });
+
+  it('refuses a future entry that is not pay-per-event', () => {
+    expect(() =>
+      parseEventPrices(
+        {
+          data: {
+            pricingInfos: [
+              {
+                pricingModel: 'FLAT_PRICE_PER_MONTH',
+                startedAt: '2026-12-01T00:00:00Z',
+              },
+              entry('2026-11-20T00:00:00Z', 0.001),
+            ],
+          },
+        },
+        NOW,
+      ),
+    ).toThrow(/pay-per-event/);
   });
 
   it('throws when the pay-per-event shape is missing', () => {

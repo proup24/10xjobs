@@ -58,7 +58,14 @@ function planned(actor: ActorName, id: string): PlannedRun {
         : 'filter',
     seniorOnly: id.endsWith('-senior'),
   };
-  return { actor, search, input: {}, reservedUsd: 0.1 };
+  return {
+    actor,
+    search,
+    input: {},
+    reservedUsd: 0.1,
+    memoryMbytes: 512,
+    timeoutSecs: 900,
+  };
 }
 
 function result(
@@ -66,8 +73,16 @@ function result(
   searchId: string,
   jobs: SampleJob[],
   costUsd: number | null = 0.1,
+  scrapedAt: string | null = null,
 ): RunResult {
-  return { actor, searchId, place: placeOf(searchId), costUsd, jobs };
+  return {
+    actor,
+    searchId,
+    place: placeOf(searchId),
+    costUsd,
+    scrapedAt,
+    jobs,
+  };
 }
 
 const NO_DEV: DevLookup = { strongKeys: new Set(), titleCompany: new Set() };
@@ -311,6 +326,24 @@ describe('buildReport gate', () => {
   });
 });
 
+describe('buildReport charge cap', () => {
+  it('flags a run whose cost reached its reservation', () => {
+    const r = report([
+      result('valig', 'us-remote-plain', [job('a')], 0.096),
+      result('valig', 'us-remote-real', [job('b')], 0.09),
+      result('valig', 'ma-onsite-plain', [job('m')], null),
+    ]);
+    // planned() reserves 0.1 per run.
+    expect(
+      r.perActor.valig.runs.map((x) => [x.searchId, x.chargeCapReached]),
+    ).toEqual([
+      ['us-remote-plain', true],
+      ['us-remote-real', false],
+      ['ma-onsite-plain', false],
+    ]);
+  });
+});
+
 describe('buildReport missing runs', () => {
   it('lists a planned run with no result and still builds', () => {
     const r = report([result('valig', 'us-remote-plain', [job('a')])], {
@@ -372,6 +405,138 @@ describe('buildReport probes', () => {
       onlyUnfiltered: 1,
       both: 1,
       lostShare: 0.5,
+    });
+  });
+
+  it('keeps raw counts and does not window when neither side is full', () => {
+    const r = report([
+      result('kaix', 'us-remote-plain', [job('a')]),
+      result('kaix', 'us-locremote-plain', [
+        job('a'),
+        job('old', { postedAt: '2026-11-01T00:00:00Z' }),
+      ]),
+    ]);
+    const probe = r.probes.remoteFilter.kaix;
+    expect(probe).toMatchObject({
+      filtered: { rows: 1, full: false },
+      unfiltered: { rows: 2, full: false },
+      windowed: false,
+      spanStart: null,
+      lostShare: 0.5,
+      raw: { onlyFiltered: 0, onlyUnfiltered: 1, both: 1, lostShare: 0.5 },
+      note: null,
+    });
+    expect(probe?.lost.map((j) => j.jk)).toEqual(['old']);
+  });
+
+  it('windows to the filtered span when both sides hit the row cap', () => {
+    // kaix caps at 100 rows: both sides are full.
+    const shared = range('s', 99);
+    const r = report([
+      result(
+        'kaix',
+        'us-remote-plain',
+        [...shared, 'f'].map((jk) =>
+          job(jk, { postedAt: '2026-11-21T10:00:00Z' }),
+        ),
+      ),
+      result('kaix', 'us-locremote-plain', [
+        ...shared.map((jk) => job(jk, { postedAt: '2026-11-21T11:00:00Z' })),
+        job('old', { postedAt: '2026-11-21T03:00:00Z' }),
+      ]),
+    ]);
+    const probe = r.probes.remoteFilter.kaix;
+    expect(probe).toMatchObject({
+      filtered: { rows: 100, full: true },
+      unfiltered: { rows: 100, full: true },
+      windowed: true,
+      spanStart: '2026-11-21T10:00:00.000Z',
+      unparsedPostedAt: 0,
+      onlyFiltered: 1,
+      onlyUnfiltered: 0,
+      both: 99,
+      lost: [],
+      lostShare: 0,
+      raw: { onlyFiltered: 1, onlyUnfiltered: 1, both: 99, lostShare: 0.01 },
+    });
+    expect(probe?.note).toMatch(/row cap/);
+  });
+
+  it('reads relative posting times against the run scrape time', () => {
+    const scrapedAt = '2026-11-21T12:00:00Z';
+    const filtered = range('s', 98).map((jk) =>
+      job(jk, { postedAt: '2 hours ago' }),
+    );
+    const r = report([
+      result(
+        'kaix',
+        'us-remote-plain',
+        [...filtered, job('x', { postedAt: 'today' }), job('y')],
+        0.1,
+        scrapedAt,
+      ),
+      result(
+        'kaix',
+        'us-locremote-plain',
+        [
+          ...range('s', 96).map((jk) => job(jk, { postedAt: 'Just posted' })),
+          job('old', { postedAt: '30+ days ago' }),
+          job('hour', { postedAt: '1 hour ago' }),
+          job('odd', { postedAt: 'Posted recently' }),
+          job('none', { postedAt: null }),
+        ],
+        0.1,
+        scrapedAt,
+      ),
+    ]);
+    const probe = r.probes.remoteFilter.kaix;
+    expect(probe?.windowed).toBe(true);
+    expect(probe?.spanStart).toBe('2026-11-21T10:00:00.000Z');
+    // 'odd' and 'none' cannot be read and stay inside the span.
+    expect(probe?.unparsedPostedAt).toBe(2);
+    expect(probe?.lost.map((j) => j.jk)).toEqual(['hour', 'none', 'odd']);
+    expect(probe?.lostShare).toBeCloseTo(3 / 99);
+  });
+
+  it('cannot read relative times without a scrape time', () => {
+    const r = report([
+      result(
+        'memo23',
+        'us-remote-plain',
+        range('s', 50).map((jk) => job(jk, { postedAt: '2 hours ago' })),
+      ),
+      result(
+        'memo23',
+        'us-remote-plain-senior',
+        range('s', 50).map((jk) => job(jk, { postedAt: '1 hour ago' })),
+      ),
+    ]);
+    const senior = r.probes.seniorFilter.memo23;
+    expect(senior?.filtered.full).toBe(true);
+    expect(senior?.windowed).toBe(false);
+    expect(senior?.note).toMatch(/no posting time/);
+  });
+
+  it('windows the senior probe the same way', () => {
+    // memo23 caps at 50 rows.
+    const shared = range('s', 49);
+    const r = report([
+      result('memo23', 'us-remote-plain', [
+        ...shared.map((jk) => job(jk, { postedAt: '2026-11-21T11:00:00Z' })),
+        job('old', { postedAt: '2026-11-20T00:00:00Z' }),
+      ]),
+      result(
+        'memo23',
+        'us-remote-plain-senior',
+        [...shared, 'f'].map((jk) =>
+          job(jk, { postedAt: '2026-11-21T10:00:00Z' }),
+        ),
+      ),
+    ]);
+    expect(r.probes.seniorFilter.memo23).toMatchObject({
+      windowed: true,
+      lostShare: 0,
+      raw: { lostShare: 0.02 },
     });
   });
 
@@ -439,6 +604,24 @@ describe('buildReport pickOrder', () => {
       result('memo23', 'us-remote-plain', [other('x')], 0.1),
     ]);
     expect(r.pickOrder).toEqual(['kaix', 'valig']);
+  });
+
+  it('breaks a later tie by gate cost per relevant job, not total cost', () => {
+    const r = report([
+      result('valig', 'us-remote-plain', [job('a')], 0.1),
+      result('valig', 'ma-onsite-plain', [job('m')], 0.1),
+      // Not relevant and off the gate places: total cost only.
+      result('valig', 'uk-remote-plain', [other('x')], 1),
+      result('curious_coder', 'us-remote-plain', [job('a')], 0.15),
+      result('curious_coder', 'ma-onsite-plain', [job('m')], 0.15),
+    ]);
+    expect(r.perActor.valig.costUsd).toBeGreaterThan(
+      r.perActor.curious_coder.costUsd,
+    );
+    expect(r.perActor.valig.costPerRelevantGate).toBeLessThan(
+      r.perActor.curious_coder.costPerRelevantGate as number,
+    );
+    expect(r.pickOrder).toEqual(['valig', 'curious_coder']);
   });
 
   it('breaks a tie on relevant jobs by passing probes, before cost', () => {

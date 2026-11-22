@@ -9,7 +9,12 @@ import {
   type PlanFile,
   type SpendRun,
 } from './files';
-import { buildPlan, type EventPrices, type Keywords } from './plan';
+import {
+  RUN_TIMEOUT_SECS,
+  buildPlan,
+  type EventPrices,
+  type Keywords,
+} from './plan';
 
 const K: Keywords = {
   plain: 'developer typescript',
@@ -18,12 +23,11 @@ const K: Keywords = {
 const PRICES: EventPrices = {
   'apify-default-dataset-item': 0.001,
   'apify-actor-start': 0.001,
-  'additional-data': 0.001,
 };
 const plan = buildPlan(K, {
   valig: PRICES,
   kaix: PRICES,
-  memo23: PRICES,
+  memo23: { ...PRICES, 'additional-data': 0.001 },
   curious_coder: PRICES,
 });
 
@@ -45,6 +49,8 @@ const planFile: PlanFile = {
     search: r.search,
     input: r.input,
     reservedUsd: r.reservedUsd,
+    memoryMbytes: r.memoryMbytes,
+    timeoutSecs: r.timeoutSecs,
   })),
   reservedUsd: plan.reservedUsd,
   capUsd: plan.capUsd,
@@ -56,6 +62,20 @@ describe('parsePlanFile and plannedRuns', () => {
     const parsed = parsePlanFile(JSON.stringify(planFile));
     expect(parsed).toEqual(planFile);
     expect(plannedRuns(parsed)).toEqual(plan.runs);
+  });
+
+  it('fills memory and timeout from the actor spec for an older plan', () => {
+    const older = {
+      ...planFile,
+      runs: planFile.runs.map(
+        ({ memoryMbytes: _m, timeoutSecs: _t, ...rest }) => rest,
+      ),
+    };
+    const runs = plannedRuns(parsePlanFile(JSON.stringify(older)));
+    expect(runs.map((r) => r.memoryMbytes)).toEqual(
+      plan.runs.map((r) => ACTORS[r.actor].memoryMbytes),
+    );
+    expect(runs.every((r) => r.timeoutSecs === RUN_TIMEOUT_SECS)).toBe(true);
   });
 
   it('refuses a file without runs, keywords, spellings or baseline', () => {
@@ -79,6 +99,7 @@ describe('readResults', () => {
           runId: 'r1',
           status: 'SUCCEEDED',
           usageTotalUsd: 0.12,
+          startedAt: '2026-11-22T10:00:00.000Z',
           items: [item],
         }),
       ],
@@ -91,6 +112,7 @@ describe('readResults', () => {
         searchId: first.search.id,
         place: first.search.place,
         costUsd: 0.12,
+        scrapedAt: '2026-11-22T10:00:00.000Z',
         jobs: [ACTORS[first.actor].readItem(item)],
       },
     ]);
@@ -125,9 +147,10 @@ describe('readResults', () => {
         }),
       ],
     ]);
-    expect(
-      readResults('/f', plan.runs, (p) => files.get(p) ?? null)[0].costUsd,
-    ).toBeNull();
+    const [read] = readResults('/f', plan.runs, (p) => files.get(p) ?? null);
+    expect(read.costUsd).toBeNull();
+    // A file written before startedAt was saved.
+    expect(read.scrapedAt).toBeNull();
   });
 });
 

@@ -10,7 +10,7 @@ import {
   type PlaceId,
   type SampleSearch,
 } from './actors';
-import type { Keywords, PlannedRun } from './plan';
+import { RUN_TIMEOUT_SECS, type Keywords, type PlannedRun } from './plan';
 import type { BaselineInput, RunResult } from './report';
 
 export interface PlanFileRun {
@@ -19,6 +19,9 @@ export interface PlanFileRun {
   search: SampleSearch;
   input: Record<string, unknown>;
   reservedUsd: number;
+  /** The run's pinned memory and timeout; a plan written before they were saved has neither. */
+  memoryMbytes?: number;
+  timeoutSecs?: number;
 }
 
 export interface PlanFile {
@@ -39,12 +42,17 @@ export interface PlanFile {
   fits: boolean;
 }
 
-/** What the paid loop writes per run. */
+/** What the paid loop writes per run, whatever its status. */
 export interface RunFile {
   runId: string;
   status: string;
   usageTotalUsd: number | null;
+  /** The Apify run's start (ISO): the scrape time relative posting times are read against. */
+  startedAt?: string | null;
+  finishedAt?: string | null;
   items: Record<string, unknown>[];
+  /** Why the items of a run that did not succeed could not be listed. */
+  itemsError?: string;
 }
 
 export function parsePlanFile(text: string): PlanFile {
@@ -63,6 +71,8 @@ export function plannedRuns(plan: PlanFile): PlannedRun[] {
     search: r.search,
     input: r.input,
     reservedUsd: r.reservedUsd,
+    memoryMbytes: r.memoryMbytes ?? ACTORS[r.actor].memoryMbytes,
+    timeoutSecs: r.timeoutSecs ?? RUN_TIMEOUT_SECS,
   }));
 }
 
@@ -76,7 +86,8 @@ export function runFilePath(
 
 /**
  * One RunResult per planned run whose file exists and whose Apify status is
- * `SUCCEEDED`; anything else is left out, so the report lists it in `notRun`.
+ * `SUCCEEDED`; anything else is left out, so the report lists it in `notRun`
+ * (a stopped run's file keeps its items for inspection only).
  */
 export function readResults(
   folder: string,
@@ -95,6 +106,7 @@ export function readResults(
       place: run.search.place,
       costUsd:
         typeof file.usageTotalUsd === 'number' ? file.usageTotalUsd : null,
+      scrapedAt: typeof file.startedAt === 'string' ? file.startedAt : null,
       jobs: (file.items ?? []).map((item) => ACTORS[run.actor].readItem(item)),
     });
   }

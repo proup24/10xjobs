@@ -54,6 +54,7 @@ import {
   type EventPrices,
   type PlannedRun,
 } from './indeed-sample/plan';
+import { finishSample, runItems, startOptions } from './indeed-sample/paid';
 import {
   loadBaselineJobs,
   loadBaselineRuns,
@@ -67,7 +68,8 @@ import { buildReport, titleCompanyKey } from './indeed-sample/report';
 const REPO_ROOT = resolve(__dirname, '../../../..');
 const PLACES = Object.keys(PLACE_GROUPS) as PlaceId[];
 const BASELINE_LOAD_DAYS = 8;
-const WAIT_SECS = 900;
+// A minute past each run's own timeout, so Apify ends a slow run itself.
+const WAIT_GRACE_SECS = 60;
 const LATE_CHARGES_MS = 5 * 60_000;
 
 const logger = new Logger('IndeedSample');
@@ -158,6 +160,8 @@ async function preparePlan(
       search: r.search,
       input: r.input,
       reservedUsd: r.reservedUsd,
+      memoryMbytes: r.memoryMbytes,
+      timeoutSecs: r.timeoutSecs,
     })),
     reservedUsd: plan.reservedUsd,
     capUsd: plan.capUsd,
@@ -189,8 +193,12 @@ const TERMINAL = new Set(['SUCCEEDED', 'FAILED', 'ABORTED', 'TIMED-OUT']);
  * `spend.json` from the moment `start` returns. Whatever stopped the loop, it
  * aborts a run still going, waits 5 minutes, re-reads every started run's
  * final cost (best effort) and rewrites the files; then it rethrows a throw.
+ * Resolves `{ stopped: true }` when a run ended without succeeding.
  */
-async function runPaid(planned: PlannedRun[], folder: string): Promise<void> {
+async function runPaid(
+  planned: PlannedRun[],
+  folder: string,
+): Promise<{ stopped: boolean }> {
   const token = process.env.APIFY_TOKEN;
   if (!token) throw new Error('APIFY_TOKEN is required');
   const { ApifyClient } = await import('apify-client');
@@ -214,6 +222,7 @@ async function runPaid(planned: PlannedRun[], folder: string): Promise<void> {
   };
 
   let failure: unknown = null;
+  let stopped = false;
   let current: SpendRun | undefined;
   // The planned run being started, for a stop before Apify returns its id.
   let attempting: string | null = null;
@@ -223,7 +232,7 @@ async function runPaid(planned: PlannedRun[], folder: string): Promise<void> {
       attempting = `${run.actor}/${run.search.id}`;
       const started = await client
         .actor(ACTORS[run.actor].actorId)
-        .start(run.input, { maxTotalChargeUsd: run.reservedUsd });
+        .start(run.input, startOptions(run));
       current = {
         actor: run.actor,
         searchId: run.search.id,
@@ -236,7 +245,7 @@ async function runPaid(planned: PlannedRun[], folder: string): Promise<void> {
       saveSpend();
       let finished = await client
         .run(started.id)
-        .waitForFinish({ waitSecs: WAIT_SECS });
+        .waitForFinish({ waitSecs: run.timeoutSecs + WAIT_GRACE_SECS });
       if (!TERMINAL.has(finished.status)) finished = await settle(started.id);
       current.status = finished.status;
       current.usageTotalUsd =
@@ -244,16 +253,29 @@ async function runPaid(planned: PlannedRun[], folder: string): Promise<void> {
           ? finished.usageTotalUsd
           : null;
       saveSpend();
-      const items =
-        finished.status === 'SUCCEEDED'
-          ? ((await client.dataset(finished.defaultDatasetId).listItems())
-              .items as Record<string, unknown>[])
-          : [];
+      // Kept for every status; the report reads only SUCCEEDED runs.
+      const { items, itemsError } = await runItems(
+        finished.status,
+        async () =>
+          (await client.dataset(finished.defaultDatasetId).listItems())
+            .items as Record<string, unknown>[],
+      );
+      if (itemsError)
+        logger.error(
+          `Could not list items of ${finished.status} run ${finished.id}: ${itemsError}`,
+        );
       const file: RunFile = {
         runId: finished.id,
         status: finished.status,
         usageTotalUsd: current.usageTotalUsd,
+        startedAt: finished.startedAt
+          ? new Date(finished.startedAt).toISOString()
+          : null,
+        finishedAt: finished.finishedAt
+          ? new Date(finished.finishedAt).toISOString()
+          : null,
         items,
+        ...(itemsError ? { itemsError } : {}),
       };
       const path = runFilePath(folder, run.actor, run.search.id);
       writeJson(path, file);
@@ -262,6 +284,7 @@ async function runPaid(planned: PlannedRun[], folder: string): Promise<void> {
         `${run.actor}/${run.search.id}: ${finished.status}, ${items.length} rows, $${current.usageTotalUsd ?? '?'} (spent $${round(spentUsd(ledger))})`,
       );
       if (finished.status !== 'SUCCEEDED') {
+        stopped = true;
         console.log(JSON.stringify(stopLine(current)));
         break;
       }
@@ -309,6 +332,7 @@ async function runPaid(planned: PlannedRun[], folder: string): Promise<void> {
     );
   }
   if (failure !== null) throw failure;
+  return { stopped };
 }
 
 function strongKeyOf(applyUrl: string): string | null {
@@ -401,14 +425,20 @@ async function main(): Promise<void> {
   writeJson(join(folder, 'plan.json'), plan);
   logger.log(`Saving to ${folder}`);
   let failure: unknown = null;
+  let stopped = false;
   try {
-    await runPaid(plannedRuns(plan), folder);
+    ({ stopped } = await runPaid(plannedRuns(plan), folder));
   } catch (error) {
     failure = error;
   }
   // A stopped sample still gets its report: notRun lists what is missing.
-  await reportFrom(optIn, folder);
-  if (failure !== null) throw failure;
+  const { exitCode } = await finishSample({
+    failure,
+    stopped,
+    report: () => reportFrom(optIn, folder),
+    log: (line) => logger.error(line),
+  });
+  if (exitCode !== 0) process.exitCode = exitCode;
 }
 
 main().catch((error: unknown) => {
