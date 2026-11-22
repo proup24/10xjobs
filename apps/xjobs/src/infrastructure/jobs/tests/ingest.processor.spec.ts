@@ -80,7 +80,7 @@ describe('processIngestJob', () => {
     expect(d.processQueue.enqueue.mock.calls).toEqual([['j1'], ['j2']]);
   });
 
-  it('does not nudge the processor for LinkedIn posts', async () => {
+  it('sends the pending jobs of a LinkedIn posts batch to the processor', async () => {
     const d = deps();
     d.ingest.ingestBatch.mockImplementation((async (
       _id: string,
@@ -93,12 +93,16 @@ describe('processIngestJob', () => {
     ) => {
       await attempt.onPending?.({
         channel: Channel.LINKEDIN_POSTS,
-        jobIds: ['j1'],
+        jobIds: ['j1', 'j2'],
       });
       return null;
     }) as never);
     await processIngestJob(job('ingest-batch', { batchId: 'b1' }), d as never);
-    expect(d.processQueue.enqueue).not.toHaveBeenCalled();
+    // At the posts' lower priority, so a listing waiting is taken first.
+    expect(d.processQueue.enqueue.mock.calls).toEqual([
+      ['j1', 'post'],
+      ['j2', 'post'],
+    ]);
   });
 
   it('does not nudge the processor for channels it does not process', async () => {

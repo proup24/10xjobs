@@ -24,7 +24,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'102e61ccb77605cd7b61d1362d8667349060173f0c1fdade6bec81e50f63117f'>;
+  StorageHashBase<'ec52f11675023da7974608e4e29057d636681a978f6b43e77012fe5d69eda55d'>;
 export type ExecutionHash =
   ExecutionHashBase<'71a03ba0225916055a5855c4c4deaf607551051c05f9a67ec0aecfdefc43a862'>;
 export type ProfileHash =
@@ -789,6 +789,7 @@ export namespace Models {
     createdAt: FieldOutputTypes['public']['JobExtraction']['createdAt'];
     data: FieldOutputTypes['public']['JobExtraction']['data'];
     decisionModel: FieldOutputTypes['public']['JobExtraction']['decisionModel'];
+    docType: FieldOutputTypes['public']['JobExtraction']['docType'];
     engagement: FieldOutputTypes['public']['JobExtraction']['engagement'];
     extractionModel: FieldOutputTypes['public']['JobExtraction']['extractionModel'];
     id: FieldOutputTypes['public']['JobExtraction']['id'];
@@ -809,6 +810,9 @@ export namespace Models {
     schemaVersion: FieldOutputTypes['public']['JobExtraction']['schemaVersion'];
     seniority: FieldOutputTypes['public']['JobExtraction']['seniority'];
     techTags: FieldOutputTypes['public']['JobExtraction']['techTags'];
+    verdict: FieldOutputTypes['public']['JobExtraction']['verdict'];
+    verdictConfidence: FieldOutputTypes['public']['JobExtraction']['verdictConfidence'];
+    verdictReason: FieldOutputTypes['public']['JobExtraction']['verdictReason'];
     worldwide: FieldOutputTypes['public']['JobExtraction']['worldwide'];
     arrangementTerm: public_ArrangementTerm | null;
     attempts: public_ProcessingAttempt[];
@@ -965,6 +969,7 @@ export namespace Models {
     location: FieldOutputTypes['public']['NormalizedJob']['location'];
     mergedIntoId: FieldOutputTypes['public']['NormalizedJob']['mergedIntoId'];
     normalizerVersion: FieldOutputTypes['public']['NormalizedJob']['normalizerVersion'];
+    parentJobId: FieldOutputTypes['public']['NormalizedJob']['parentJobId'];
     postSources: FieldOutputTypes['public']['NormalizedJob']['postSources'];
     postedAt: FieldOutputTypes['public']['NormalizedJob']['postedAt'];
     posterName: FieldOutputTypes['public']['NormalizedJob']['posterName'];
@@ -981,6 +986,7 @@ export namespace Models {
     publishedAt: FieldOutputTypes['public']['NormalizedJob']['publishedAt'];
     regionCode: FieldOutputTypes['public']['NormalizedJob']['regionCode'];
     remoteAllowed: FieldOutputTypes['public']['NormalizedJob']['remoteAllowed'];
+    roleKey: FieldOutputTypes['public']['NormalizedJob']['roleKey'];
     salaryCurrency: FieldOutputTypes['public']['NormalizedJob']['salaryCurrency'];
     salaryMax: FieldOutputTypes['public']['NormalizedJob']['salaryMax'];
     salaryMin: FieldOutputTypes['public']['NormalizedJob']['salaryMin'];
@@ -1003,6 +1009,8 @@ export namespace Models {
     facts: public_JobFacts | null;
     matches: public_JobMatch[];
     mergedInto: public_NormalizedJob | null;
+    parent: public_NormalizedJob | null;
+    roles: public_NormalizedJob[];
     views: public_JobView[];
     webhookDeliveries: public_WebhookDelivery[];
     readonly [RelationKeys]?:
@@ -1016,6 +1024,8 @@ export namespace Models {
       | 'facts'
       | 'matches'
       | 'mergedInto'
+      | 'parent'
+      | 'roles'
       | 'views'
       | 'webhookDeliveries';
   };
@@ -1046,6 +1056,7 @@ export namespace Models {
     cachedInputTokens: FieldOutputTypes['public']['ProcessingAttempt']['cachedInputTokens'];
     costUsd: FieldOutputTypes['public']['ProcessingAttempt']['costUsd'];
     createdAt: FieldOutputTypes['public']['ProcessingAttempt']['createdAt'];
+    docType: FieldOutputTypes['public']['ProcessingAttempt']['docType'];
     error: FieldOutputTypes['public']['ProcessingAttempt']['error'];
     eval: FieldOutputTypes['public']['ProcessingAttempt']['eval'];
     extractionId: FieldOutputTypes['public']['ProcessingAttempt']['extractionId'];
@@ -2440,6 +2451,16 @@ type ContractBase = Omit<
                   readonly nullable: true;
                   readonly many: false;
                 };
+                readonly docType: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'listing'>;
+                  };
+                  readonly many: false;
+                };
                 readonly engagement: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -2567,6 +2588,24 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/text@1';
                   readonly nullable: false;
                   readonly many: { readonly elementNullable: false };
+                };
+                readonly verdict: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly verdictConfidence: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly verdictReason: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
                 };
                 readonly worldwide: {
                   readonly dataType: 'pg/bool';
@@ -3734,6 +3773,12 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly many: false;
                 };
+                readonly parentJobId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly postSources: {
                   readonly dataType: 'pg/jsonb';
                   readonly codecId: 'pg/jsonb@1';
@@ -3838,6 +3883,12 @@ type ContractBase = Omit<
                   readonly nullable: true;
                   readonly many: false;
                 };
+                readonly roleKey: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly salaryCurrency: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -3914,7 +3965,10 @@ type ContractBase = Omit<
                 };
               };
               primaryKey: { readonly columns: readonly ['id'] };
-              uniques: readonly [{ readonly columns: readonly ['jobKey'] }];
+              uniques: readonly [
+                { readonly columns: readonly ['parentJobId', 'roleKey'] },
+                { readonly columns: readonly ['jobKey'] },
+              ];
               indexes: readonly [
                 {
                   readonly name: 'normalized_jobs_companyId_idx_33acc5ed';
@@ -3935,6 +3989,19 @@ type ContractBase = Omit<
                   readonly unique: false;
                 },
                 {
+                  readonly name: 'normalized_jobs_parentJobId_idx_f90efd5f';
+                  readonly prefix: 'normalized_jobs_parentJobId_idx';
+                  readonly columns: readonly ['parentJobId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'normalized_jobs_pending_posts_0135ba82';
+                  readonly prefix: 'normalized_jobs_pending_posts';
+                  readonly columns: readonly ['firstSeenAt'];
+                  readonly where: "kind = 'post' AND \"processingStatus\" = 'pending'";
+                  readonly unique: false;
+                },
+                {
                   readonly name: 'normalized_jobs_processing_queue';
                   readonly columns: readonly ['processingStatus', 'processingRequestedAt'];
                   readonly unique: false;
@@ -3946,6 +4013,18 @@ type ContractBase = Omit<
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'normalized_jobs';
                     readonly columns: readonly ['mergedIntoId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'normalized_jobs';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'normalized_jobs';
+                    readonly columns: readonly ['parentJobId'];
                   };
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
@@ -4079,6 +4158,16 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
                   readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly docType: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'listing'>;
+                  };
                   readonly many: false;
                 };
                 readonly error: {
@@ -7324,6 +7413,10 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly docType: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly engagement: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -7408,6 +7501,18 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
                 readonly many: { readonly elementNullable: false };
+              };
+              readonly verdict: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly verdictConfidence: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly verdictReason: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly worldwide: {
                 readonly nullable: false;
@@ -7566,6 +7671,7 @@ type ContractBase = Omit<
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly data: { readonly column: 'data' };
                 readonly decisionModel: { readonly column: 'decisionModel' };
+                readonly docType: { readonly column: 'docType' };
                 readonly engagement: { readonly column: 'engagement' };
                 readonly extractionModel: { readonly column: 'extractionModel' };
                 readonly id: { readonly column: 'id' };
@@ -7588,6 +7694,9 @@ type ContractBase = Omit<
                 readonly schemaVersion: { readonly column: 'schemaVersion' };
                 readonly seniority: { readonly column: 'seniority' };
                 readonly techTags: { readonly column: 'techTags' };
+                readonly verdict: { readonly column: 'verdict' };
+                readonly verdictConfidence: { readonly column: 'verdictConfidence' };
+                readonly verdictReason: { readonly column: 'verdictReason' };
                 readonly worldwide: { readonly column: 'worldwide' };
               };
             };
@@ -8346,6 +8455,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
               };
+              readonly parentJobId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
               readonly postSources: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
@@ -8425,6 +8538,10 @@ type ContractBase = Omit<
               readonly remoteAllowed: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly roleKey: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly salaryCurrency: {
                 readonly nullable: true;
@@ -8594,6 +8711,29 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['id'];
                 };
               };
+              readonly parent: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'NormalizedJob';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['parentJobId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly roles: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'NormalizedJob';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['parentJobId'];
+                };
+              };
               readonly views: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -8649,6 +8789,7 @@ type ContractBase = Omit<
                 readonly location: { readonly column: 'location' };
                 readonly mergedIntoId: { readonly column: 'mergedIntoId' };
                 readonly normalizerVersion: { readonly column: 'normalizerVersion' };
+                readonly parentJobId: { readonly column: 'parentJobId' };
                 readonly postSources: { readonly column: 'postSources' };
                 readonly postedAt: { readonly column: 'postedAt' };
                 readonly posterName: { readonly column: 'posterName' };
@@ -8665,6 +8806,7 @@ type ContractBase = Omit<
                 readonly publishedAt: { readonly column: 'publishedAt' };
                 readonly regionCode: { readonly column: 'regionCode' };
                 readonly remoteAllowed: { readonly column: 'remoteAllowed' };
+                readonly roleKey: { readonly column: 'roleKey' };
                 readonly salaryCurrency: { readonly column: 'salaryCurrency' };
                 readonly salaryMax: { readonly column: 'salaryMax' };
                 readonly salaryMin: { readonly column: 'salaryMin' };
@@ -8843,6 +8985,10 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 3 };
                 };
               };
+              readonly docType: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly error: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -8929,6 +9075,7 @@ type ContractBase = Omit<
                 readonly cachedInputTokens: { readonly column: 'cachedInputTokens' };
                 readonly costUsd: { readonly column: 'costUsd' };
                 readonly createdAt: { readonly column: 'createdAt' };
+                readonly docType: { readonly column: 'docType' };
                 readonly error: { readonly column: 'error' };
                 readonly eval: { readonly column: 'eval' };
                 readonly extractionId: { readonly column: 'extractionId' };

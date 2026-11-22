@@ -3,6 +3,8 @@ import { or } from '@prisma/orm-postgres/orm-client';
 import { DatabaseService } from 'src/database';
 import type { DatabaseTransaction, JobExtractionRow } from '@xjobs/database';
 import { inRetriedTransaction } from 'src/modules/ingest/repositories/raw.repository';
+import { silencedPostJobSql } from 'src/modules/ingest/repositories/silenced-authors.repository';
+import type { PostDetail } from 'src/modules/ingest/normalize/record';
 import type { JobForProcessing, ModelCallMeta } from '../models/types';
 import { PROCESSOR_CHANNELS } from '../config/processor.config';
 import type { TypedColumns } from '../rules/typed-columns';
@@ -12,6 +14,7 @@ import {
   type ExtractionDocumentV2,
   parseStoredDocument,
 } from '../schema';
+import type { PostDocument } from '../schema/post-extraction';
 
 /** A job this worker holds: what `finish` checks the row against. */
 export interface Claim {
@@ -25,6 +28,8 @@ export interface Claim {
 
 /** Two runs with the same key would produce the same extraction. */
 export type ReuseKey = {
+  /** Which document the run generates; a listing key never finds a post row. */
+  docType: DocType;
   inputHash: string;
   schemaVersion: number;
   promptHash: string;
@@ -33,9 +38,32 @@ export type ReuseKey = {
 
 export interface NewExtraction extends ReuseKey, TypedColumns {
   jobId: string;
-  data: ExtractionDocument;
+  /** A listing document, or a post document on a `post` row. */
+  data: ExtractionDocument | PostDocument;
   needsReview: boolean;
   costUsd: number;
+  /** A post's verdict, its reason code and confidence; null on a listing. */
+  verdict: string | null;
+  verdictReason: string | null;
+  verdictConfidence: string | null;
+}
+
+/** A stored extraction's key and raw `data`, as `findExtraction` reads it. */
+export type StoredExtraction = ReuseKey & {
+  id: string;
+  jobId: string;
+  data: unknown;
+};
+
+/** A role of a hiring post, written as its `post_role` job. */
+export interface RoleJobInput {
+  postJobId: string;
+  /** Names the role within the post; unique per post. */
+  roleKey: string;
+  title: string;
+  companyName: string | null;
+  /** The role's listing-shaped extraction, made current. */
+  extractionId: string;
 }
 
 export interface NewAttempt extends ModelCallMeta {
@@ -53,7 +81,12 @@ export interface NewAttempt extends ModelCallMeta {
   outcome: 'ok' | 'error' | 'invalid';
   error: string | null;
   quoteFailures: number;
+  /** The document the call was generating. */
+  docType: DocType;
 }
+
+/** The two documents the processor generates: a listing's, or a post's. */
+export type DocType = 'listing' | 'post';
 
 export type FinishOutcome =
   | { status: 'processed'; extractionId: string | null }
@@ -78,7 +111,7 @@ export type ReprocessFilter = {
 /** One job's processing state and current extraction, for inspection. */
 export interface JobState {
   id: string;
-  /** Active, a `job`, and has a LinkedIn job board source. */
+  /** In the processor's scope (see `processorScopeSql`). */
   inScope: boolean;
   status: string;
   kind: string;
@@ -118,19 +151,34 @@ export function readStoredData(
 }
 
 /** In-scope jobs per processing status; `unset` is a null status (never sent to the processor). */
-export type ProcessingCounts = Record<
+export type Counts = Record<
   'pending' | 'processing' | 'processed' | 'failed' | 'archived' | 'unset',
   number
 >;
 
 /**
- * Every read and write the processor makes. A job is in scope when it is an
- * active `job` with at least one LinkedIn job board source; nothing here
- * claims or reprocesses any other job.
+ * Listings and posts counted apart. `outOfWindow`: active posts still
+ * `pending` that were first seen more than 7 days ago, so never extracted.
+ * `silenced`: in-window `pending` posts held because every author is silenced.
+ * Neither is in the post status counts; role jobs are never counted.
+ */
+export interface ProcessingCounts {
+  listings: Counts;
+  posts: Counts & { outOfWindow: number; silenced: number };
+}
+
+/**
+ * Every read and write the processor makes. A job is in scope when it is
+ * active and either a `job` with at least one LinkedIn job board source, or a
+ * `post` first seen within 7 days whose authors are not all silenced (see
+ * `processorScopeSql`); nothing here claims or reprocesses any other job, and
+ * never a `post_role` job.
  */
 export abstract class ProcessorRepository {
-  /** In-scope `pending` jobs, oldest `processingRequestedAt` first. */
+  /** In-scope `pending` listing jobs, oldest `processingRequestedAt` first. */
   abstract listPendingInScope(limit: number): Promise<string[]>;
+  /** In-scope `pending` post jobs, newest `firstSeenAt` first. */
+  abstract listPendingPosts(limit: number): Promise<string[]>;
   /** `pending` → `processing` for an in-scope job; null when it is not claimable. */
   abstract claim(jobId: string): Promise<Claim | null>;
   abstract loadJob(jobId: string): Promise<JobForProcessing | null>;
@@ -145,6 +193,8 @@ export abstract class ProcessorRepository {
     jobId: string,
     key: Omit<ReuseKey, 'inputHash'>,
   ): Promise<{ id: string; jobId: string } | null>;
+  /** One extraction row by id, its `data` unparsed; null when there is none. */
+  abstract findExtraction(id: string): Promise<StoredExtraction | null>;
   /** A new row for `jobId` with the same document; returns its id. */
   abstract copyExtraction(extractionId: string, jobId: string): Promise<string>;
   abstract saveExtraction(row: NewExtraction): Promise<string>;
@@ -160,12 +210,22 @@ export abstract class ProcessorRepository {
   ): Promise<'finished' | 'superseded'>;
   /** `processing` jobs claimed before `olderThan` go back to `pending`. */
   abstract releaseStale(olderThan: Date): Promise<number>;
-  /** Spend of non-eval attempts since `since`, in USD. */
-  abstract spendSince(since: Date): Promise<number>;
+  /** Logged spend since `since`; of one document type, or of every attempt. */
+  abstract spendSince(since: Date, docType?: DocType): Promise<number>;
   /** Sets the matching in-scope jobs to `pending`; returns how many. */
   abstract markPending(filter: ReprocessFilter): Promise<MarkPendingResult>;
   abstract jobState(jobId: string): Promise<JobState | null>;
   abstract processingCounts(): Promise<ProcessingCounts>;
+  /**
+   * Creates or updates the `post_role` job of `roleKey` under the post job,
+   * `processed` with `extractionId` as its current extraction (an archived
+   * one comes back); returns its id.
+   */
+  abstract upsertRoleJob(input: RoleJobInput): Promise<string>;
+  /** Archives the post's role jobs whose `roleKey` is not in `keep`; returns how many. */
+  abstract archiveRoleJobs(postJobId: string, keep: string[]): Promise<number>;
+  /** Non-eval post model calls (attempt rows) since `since`. */
+  abstract postCallsSince(since: Date): Promise<number>;
 }
 
 type Raw = DatabaseTransaction['raw'];
@@ -184,6 +244,70 @@ type LinkedInJobIds = ReturnType<ReturnType<Raw['sql']>['returnsRow']>;
 export function linkedInJobIds(raw: Raw): LinkedInJobIds {
   return raw.sql`SELECT s."jobId" FROM normalized_job_sources s JOIN raw_items r ON r.id = s."rawItemId" WHERE r.channel = ANY(${`{${PROCESSOR_CHANNELS.join(',')}}`}::text[])`.returnsRow(
     { jobId: UUID },
+  );
+}
+
+/** A table alias: `j` or `normalized_jobs`. */
+const ALIAS = /^[a-z_][a-z0-9_]*$/;
+
+/** Splices fixed text (checked aliases) around `values`, which travel as fragments. */
+function fragment(raw: Raw, parts: string[], ...values: unknown[]) {
+  const strings = Object.assign([...parts], { raw: [...parts] });
+  return (
+    raw.sql as (
+      s: TemplateStringsArray,
+      ...v: unknown[]
+    ) => ReturnType<Raw['sql']>
+  )(strings, ...values).returns('pg/bool@1');
+}
+
+/**
+ * The post half of the scope, on the job aliased `alias`: a `post` first seen
+ * within 7 days, not silenced (checked after the window, so it runs only on
+ * recent posts). The caller checks `status = 'active'`.
+ */
+export function postScopeSql(raw: Raw, alias: string) {
+  if (!ALIAS.test(alias)) throw new Error(`Not a table alias: ${alias}`);
+  const a = alias;
+  return fragment(
+    raw,
+    [
+      `(${a}.kind = 'post' AND ${a}."firstSeenAt" >= now() - interval '7 days' AND NOT `,
+      `)`,
+    ],
+    silencedPostJobSql(raw, `${a}.id`),
+  );
+}
+
+/**
+ * True when the job aliased `alias` has a LinkedIn job board source: the same
+ * test as `id IN (linkedInJobIds)`, but correlated, so inside an OR it probes
+ * that job's sources by index instead of hashing every LinkedIn source.
+ */
+function hasLinkedInSourceSql(raw: Raw, alias: string) {
+  return fragment(
+    raw,
+    [
+      `EXISTS (SELECT 1 FROM normalized_job_sources s JOIN raw_items r ON r.id = s."rawItemId" WHERE s."jobId" = ${alias}.id AND r.channel = ANY(`,
+      `::text[]))`,
+    ],
+    `{${PROCESSOR_CHANNELS.join(',')}}`,
+  );
+}
+
+/**
+ * The processor's scope on the job aliased `alias`: a listing `job` with a
+ * LinkedIn job board source, or an in-window, unsilenced `post`. Never a
+ * `post_role` job. The caller checks `status = 'active'`.
+ */
+export function processorScopeSql(raw: Raw, alias: string) {
+  if (!ALIAS.test(alias)) throw new Error(`Not a table alias: ${alias}`);
+  const a = alias;
+  return fragment(
+    raw,
+    [`((${a}.kind = 'job' AND `, `) OR `, `)`],
+    hasLinkedInSourceSql(raw, a),
+    postScopeSql(raw, a),
   );
 }
 
@@ -214,26 +338,41 @@ export class PrismaProcessorRepository extends ProcessorRepository {
     return rows.map((row) => row.id as string);
   }
 
+  async listPendingPosts(limit: number): Promise<string[]> {
+    const { raw } = this.db;
+    const rows = await this.db.query(
+      raw.sql`SELECT j.id FROM normalized_jobs j
+        WHERE j."processingStatus" = 'pending' AND j.status = 'active'
+          AND ${postScopeSql(raw, 'j')}
+        ORDER BY j."firstSeenAt" DESC, j.id DESC
+        LIMIT ${limit}::int`
+        .returnsRow({ id: UUID })
+        .build(),
+    );
+    return rows.map((row) => row.id as string);
+  }
+
   /**
    * One UPDATE, so the check and the write are atomic. Two concurrent claims
    * of the same job both find it `pending`, but the second blocks on the row
    * lock the first UPDATE takes; once the first commits, Postgres re-checks
    * the WHERE against the new row version (READ COMMITTED re-evaluation),
-   * sees `processing`, and updates nothing. A job merged or demoted to a post
-   * after listing fails the same row-level checks.
+   * sees `processing`, and updates nothing. A job merged after listing, a
+   * post that left the window, or one whose authors were silenced since,
+   * fails the same row-level checks.
    */
   async claim(jobId: string): Promise<Claim | null> {
     const { raw } = this.db;
     const rows = await this.db.query(
-      raw.sql`UPDATE normalized_jobs SET
+      raw.sql`UPDATE normalized_jobs j SET
           "processingStatus" = 'processing',
           "processingAttempts" = "processingAttempts" + 1,
           "processingStartedAt" = now(),
           "processingRequestedAt" = COALESCE("processingRequestedAt", now()),
           "updatedAt" = now()
-        WHERE id = ${jobId}::uuid
-          AND "processingStatus" = 'pending' AND status = 'active' AND kind = 'job'
-          AND id IN (${linkedInJobIds(raw)})
+        WHERE j.id = ${jobId}::uuid
+          AND j."processingStatus" = 'pending' AND j.status = 'active'
+          AND ${processorScopeSql(raw, 'j')}
         RETURNING "processingRequestedAt" AS "requestedAt", "processingAttempts" AS attempts, "processingReason" AS reason`
         .returnsRow({
           requestedAt: TIMESTAMP,
@@ -262,6 +401,10 @@ export class PrismaProcessorRepository extends ProcessorRepository {
       closed: row.closed,
       title: row.title,
       descriptionText: row.descriptionText,
+      // Role jobs are never claimed, so only `job` and `post` reach here.
+      kind: row.kind === 'post' ? 'post' : 'job',
+      postSources:
+        (row.postSources as { sources: PostDetail[] } | null)?.sources ?? null,
     };
   }
 
@@ -269,6 +412,7 @@ export class PrismaProcessorRepository extends ProcessorRepository {
     key: ReuseKey,
   ): Promise<{ id: string; jobId: string } | null> {
     const row = await this.db.orm.public.JobExtraction.where({
+      docType: key.docType,
       inputHash: key.inputHash,
       schemaVersion: key.schemaVersion,
       promptHash: key.promptHash,
@@ -286,7 +430,8 @@ export class PrismaProcessorRepository extends ProcessorRepository {
     const { raw } = this.db;
     const rows = await this.db.query(
       raw.sql`SELECT e.id, e."jobId" FROM job_extractions e
-        WHERE e."schemaVersion" = ${key.schemaVersion}
+        WHERE e."docType" = ${key.docType}
+          AND e."schemaVersion" = ${key.schemaVersion}
           AND e."promptHash" = ${key.promptHash}
           AND e."extractionModel" = ${key.extractionModel}
           AND (e."jobId" = ${jobId}::uuid
@@ -298,6 +443,21 @@ export class PrismaProcessorRepository extends ProcessorRepository {
     return rows[0]
       ? { id: rows[0].id as string, jobId: rows[0].jobId as string }
       : null;
+  }
+
+  async findExtraction(id: string): Promise<StoredExtraction | null> {
+    const row = await this.db.orm.public.JobExtraction.where({ id }).first();
+    if (!row) return null;
+    return {
+      id: row.id,
+      jobId: row.jobId,
+      docType: row.docType === 'post' ? 'post' : 'listing',
+      inputHash: row.inputHash,
+      schemaVersion: row.schemaVersion,
+      promptHash: row.promptHash,
+      extractionModel: row.extractionModel,
+      data: row.data,
+    };
   }
 
   /** The copy cost nothing: no model was called for it. */
@@ -396,9 +556,10 @@ export class PrismaProcessorRepository extends ProcessorRepository {
     return released.length;
   }
 
-  async spendSince(since: Date): Promise<number> {
+  async spendSince(since: Date, docType?: DocType): Promise<number> {
     const result = await this.db.orm.public.ProcessingAttempt.where({
       eval: false,
+      ...(docType ? { docType } : {}),
     })
       .where((a) => a.createdAt.gte(since))
       .aggregate((a) => ({ total: a.sum('costUsd') }));
@@ -410,8 +571,10 @@ export class PrismaProcessorRepository extends ProcessorRepository {
     const job = await orm.public.NormalizedJob.where({ id: jobId }).first();
     if (!job) return null;
     const [scope] = await this.db.query(
-      raw.sql`SELECT ${jobId}::uuid IN (${linkedInJobIds(raw)}) AS "linkedIn"`
-        .returnsRow({ linkedIn: 'pg/bool@1' })
+      raw.sql`SELECT EXISTS (SELECT 1 FROM normalized_jobs j
+          WHERE j.id = ${jobId}::uuid AND j.status = 'active'
+            AND ${processorScopeSql(raw, 'j')}) AS "inScope"`
+        .returnsRow({ inScope: 'pg/bool@1' })
         .build(),
     );
     const extraction = job.currentExtractionId
@@ -421,10 +584,7 @@ export class PrismaProcessorRepository extends ProcessorRepository {
       : null;
     return {
       id: job.id,
-      inScope:
-        job.status === 'active' &&
-        job.kind === 'job' &&
-        Boolean(scope?.linkedIn),
+      inScope: Boolean(scope?.inScope),
       status: job.status,
       kind: job.kind,
       closed: job.closed,
@@ -450,26 +610,120 @@ export class PrismaProcessorRepository extends ProcessorRepository {
 
   async processingCounts(): Promise<ProcessingCounts> {
     const { raw } = this.db;
+    // One row per (group, status); a post is in exactly one group.
     const rows = await this.db.query(
-      raw.sql`SELECT coalesce(j."processingStatus", 'unset') AS status, count(*)::int AS n
-        FROM normalized_jobs j
-        WHERE j.status = 'active' AND j.kind = 'job'
-          AND j.id IN (${linkedInJobIds(raw)})
-        GROUP BY 1`
-        .returnsRow({ status: 'pg/text@1', n: 'pg/int4@1' })
+      raw.sql`SELECT g.grp, coalesce(g.status, 'unset') AS status, count(*)::int AS n
+        FROM (
+          SELECT 'listing' AS grp, j."processingStatus" AS status
+            FROM normalized_jobs j
+            WHERE j.status = 'active' AND j.kind = 'job'
+              AND j.id IN (${linkedInJobIds(raw)})
+          UNION ALL
+          SELECT CASE
+              WHEN j."firstSeenAt" < now() - interval '7 days' THEN 'outOfWindow'
+              WHEN ${silencedPostJobSql(raw, 'j.id')} THEN 'silenced'
+              ELSE 'post' END,
+            j."processingStatus"
+            FROM normalized_jobs j
+            WHERE j.status = 'active' AND j.kind = 'post'
+        ) g
+        GROUP BY 1, 2`
+        .returnsRow({ grp: 'pg/text@1', status: 'pg/text@1', n: 'pg/int4@1' })
         .build(),
     );
-    const counts: ProcessingCounts = {
+    const zero = (): Counts => ({
       pending: 0,
       processing: 0,
       processed: 0,
       failed: 0,
       archived: 0,
       unset: 0,
+    });
+    const counts: ProcessingCounts = {
+      listings: zero(),
+      posts: { ...zero(), outOfWindow: 0, silenced: 0 },
     };
-    for (const row of rows)
-      counts[row.status as keyof ProcessingCounts] = row.n as number;
+    for (const row of rows) {
+      const n = row.n as number;
+      const status = row.status as keyof Counts;
+      if (row.grp === 'listing') counts.listings[status] = n;
+      else if (row.grp === 'post') counts.posts[status] = n;
+      // Held posts count only while they wait: `pending`.
+      else if (status === 'pending')
+        counts.posts[row.grp as 'outOfWindow' | 'silenced'] += n;
+    }
     return counts;
+  }
+
+  async upsertRoleJob(input: RoleJobInput): Promise<string> {
+    return inRetriedTransaction(this.database, async (tx) => {
+      const jobs = tx.orm.public.NormalizedJob;
+      const parent = await jobs
+        .where({ id: input.postJobId })
+        .forNoKeyUpdate()
+        .first();
+      if (!parent) throw new Error(`post job ${input.postJobId} not found`);
+      const fields = {
+        title: input.title,
+        companyName: input.companyName,
+        postingUrl: parent.postingUrl,
+        postedAt: parent.postedAt,
+        firstSeenAt: parent.firstSeenAt,
+        lastSeenAt: parent.lastSeenAt,
+        descriptionText: parent.descriptionText,
+        closed: parent.closed,
+        status: 'active',
+        processingStatus: 'processed',
+        processingReason: null,
+        processingError: null,
+        processingStartedAt: null,
+        processedAt: new Date(),
+        currentExtractionId: input.extractionId,
+      };
+      const existing = await jobs
+        .where({ parentJobId: input.postJobId, roleKey: input.roleKey })
+        .first();
+      if (existing) {
+        await jobs.where({ id: existing.id }).updateAll(fields);
+        return existing.id;
+      }
+      const created = await jobs.create({
+        ...fields,
+        jobKey: `${parent.jobKey}#role:${input.roleKey}`,
+        kind: 'post_role',
+        parentJobId: input.postJobId,
+        roleKey: input.roleKey,
+        mergedIntoId: null,
+        fieldSources: {} as Json,
+        normalizerVersion: parent.normalizerVersion,
+      });
+      return created.id;
+    });
+  }
+
+  async archiveRoleJobs(postJobId: string, keep: string[]): Promise<number> {
+    const { raw } = this.db;
+    const rows = await this.db.query(
+      raw.sql`UPDATE normalized_jobs SET "processingStatus" = 'archived', "updatedAt" = now()
+        WHERE "parentJobId" = ${postJobId}::uuid AND kind = 'post_role'
+          AND NOT coalesce("roleKey" = ANY(ARRAY(SELECT jsonb_array_elements_text(${JSON.stringify(keep)}::jsonb))), false)
+          AND "processingStatus" IS DISTINCT FROM 'archived'
+        RETURNING id`
+        .returnsRow({ id: UUID })
+        .build(),
+    );
+    return rows.length;
+  }
+
+  async postCallsSince(since: Date): Promise<number> {
+    const { raw } = this.db;
+    const [row] = await this.db.query(
+      raw.sql`SELECT count(*)::int AS n FROM processing_attempts
+        WHERE eval = false AND "docType" = 'post' AND "createdAt" >= ${since.toISOString()}::timestamptz`
+        .returnsRow({ n: 'pg/int4@1' })
+        .build(),
+    );
+    return (row?.n as number | undefined) ?? 0;
   }
 
   /**
@@ -484,7 +738,7 @@ export class PrismaProcessorRepository extends ProcessorRepository {
           touched.add((row as { id: string }).id);
       };
       const { raw } = tx;
-      const ids = () => linkedInJobIds(raw);
+      const scope = () => processorScopeSql(raw, 'j');
       // Archived jobs are never touched; count the ones a selector would have matched.
       let skippedArchived = 0;
       const countArchived = async (plan: Parameters<typeof tx.query>[0]) => {
@@ -492,8 +746,8 @@ export class PrismaProcessorRepository extends ProcessorRepository {
       };
       if (filter.allInScope)
         await countArchived(
-          raw.sql`SELECT id FROM normalized_jobs
-            WHERE status = 'active' AND kind = 'job' AND id IN (${ids()})
+          raw.sql`SELECT j.id FROM normalized_jobs j
+            WHERE j.status = 'active' AND ${scope()}
               AND "processingStatus" = 'archived'`
             .returnsRow({ id: UUID })
             .build(),
@@ -501,17 +755,17 @@ export class PrismaProcessorRepository extends ProcessorRepository {
       else
         for (const jobId of new Set(filter.jobIds ?? []))
           await countArchived(
-            raw.sql`SELECT id FROM normalized_jobs
-              WHERE status = 'active' AND kind = 'job' AND id IN (${ids()})
+            raw.sql`SELECT j.id FROM normalized_jobs j
+              WHERE j.status = 'active' AND ${scope()}
                 AND "processingStatus" = 'archived' AND id = ${jobId}::uuid`
               .returnsRow({ id: UUID })
               .build(),
           );
-      // Every statement: in scope (active `job` with a LinkedIn source), then the selector.
+      // Every statement: in scope (see `processorScopeSql`), then the selector.
       if (filter.allInScope)
         await run(
-          raw.sql`UPDATE normalized_jobs SET ${pendingColumns(raw)}
-            WHERE status = 'active' AND kind = 'job' AND id IN (${ids()})
+          raw.sql`UPDATE normalized_jobs j SET ${pendingColumns(raw)}
+            WHERE j.status = 'active' AND ${scope()}
               AND "processingStatus" IS DISTINCT FROM 'archived'
             RETURNING id`
             .returnsRow({ id: UUID })
@@ -519,8 +773,8 @@ export class PrismaProcessorRepository extends ProcessorRepository {
         );
       if (filter.nullStatus)
         await run(
-          raw.sql`UPDATE normalized_jobs SET ${pendingColumns(raw)}
-            WHERE status = 'active' AND kind = 'job' AND id IN (${ids()})
+          raw.sql`UPDATE normalized_jobs j SET ${pendingColumns(raw)}
+            WHERE j.status = 'active' AND ${scope()}
               AND "processingStatus" IS NULL
               AND "processingStatus" IS DISTINCT FROM 'archived'
             RETURNING id`
@@ -529,8 +783,8 @@ export class PrismaProcessorRepository extends ProcessorRepository {
         );
       if (filter.failed)
         await run(
-          raw.sql`UPDATE normalized_jobs SET ${pendingColumns(raw)}
-            WHERE status = 'active' AND kind = 'job' AND id IN (${ids()})
+          raw.sql`UPDATE normalized_jobs j SET ${pendingColumns(raw)}
+            WHERE j.status = 'active' AND ${scope()}
               AND "processingStatus" = 'failed'
               AND "processingStatus" IS DISTINCT FROM 'archived'
             RETURNING id`
@@ -539,8 +793,8 @@ export class PrismaProcessorRepository extends ProcessorRepository {
         );
       for (const jobId of new Set(filter.jobIds ?? []))
         await run(
-          raw.sql`UPDATE normalized_jobs SET ${pendingColumns(raw)}
-            WHERE status = 'active' AND kind = 'job' AND id IN (${ids()})
+          raw.sql`UPDATE normalized_jobs j SET ${pendingColumns(raw)}
+            WHERE j.status = 'active' AND ${scope()}
               AND id = ${jobId}::uuid
               AND "processingStatus" IS DISTINCT FROM 'archived'
             RETURNING id`

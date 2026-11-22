@@ -52,6 +52,7 @@ const noColumns: TypedColumns = {
 
 const key = (inputHash: string = randomUUID()): ReuseKey => ({
   inputHash,
+  docType: 'listing',
   schemaVersion: 1,
   promptHash: 'prompt-hash',
   extractionModel: 'anthropic/claude-opus-5.5',
@@ -65,6 +66,7 @@ const attempt = (over: Partial<NewAttempt> = {}): NewAttempt => ({
   outcome: 'ok',
   error: null,
   quoteFailures: 0,
+  docType: 'listing',
   model: 'anthropic/claude-opus-5.5',
   providerRequestId: null,
   inputTokens: 100,
@@ -85,7 +87,11 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
   }
 
   /** A raw item of `channel` with one version, its normalized version and its link to `jobId`. */
-  async function source(jobId: string, channel: Channel): Promise<void> {
+  async function source(
+    jobId: string,
+    channel: Channel,
+    authorKey: string | null = null,
+  ): Promise<void> {
     const run = await db.orm.public.SearchSegmentRun.create({
       channel,
       segmentKey: 'k',
@@ -138,7 +144,7 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       normalizerVersion: 1,
       status: 'valid',
       reason: null,
-      record: {},
+      record: authorKey ? { post: { author: { key: authorKey } } } : {},
       jobKey: randomUUID(),
     });
     await db.orm.public.NormalizedJobSource.create({
@@ -159,6 +165,10 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
     reason?: 'new' | 'reopened' | 'joined';
     status?: 'active' | 'merged';
     mergedIntoId?: string;
+    firstSeenAt?: Date;
+    /** One LinkedIn posts source per author key (instead of `channels`). */
+    authors?: string[];
+    postSources?: unknown;
   }
 
   /** A normalized job with one source per channel (LinkedIn job board by default). */
@@ -187,8 +197,9 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       postingUrl: `https://example.com/${randomUUID()}`,
       closed: spec.closed ?? false,
       fieldSources: {},
-      firstSeenAt: t0,
-      lastSeenAt: t0,
+      postSources: (spec.postSources ?? null) as never,
+      firstSeenAt: spec.firstSeenAt ?? t0,
+      lastSeenAt: spec.firstSeenAt ?? t0,
       processingStatus: status,
       processingReason: status === 'pending' ? (spec.reason ?? 'new') : null,
       processingRequestedAt:
@@ -199,8 +210,12 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
           : spec.requestedAt,
       normalizerVersion: 1,
     });
-    for (const channel of spec.channels ?? [Channel.LINKEDIN_JOB_BOARD])
-      await source(row.id, channel);
+    if (spec.authors)
+      for (const author of spec.authors)
+        await source(row.id, Channel.LINKEDIN_POSTS, author);
+    else
+      for (const channel of spec.channels ?? [Channel.LINKEDIN_JOB_BOARD])
+        await source(row.id, channel);
     return row.id;
   }
 
@@ -218,6 +233,9 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       data: fixtureDocument(),
       needsReview: false,
       costUsd: 0.02,
+      verdict: null,
+      verdictReason: null,
+      verdictConfidence: null,
     };
   }
 
@@ -248,7 +266,7 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
     await db?.close();
   });
   beforeEach(async () => {
-    await sql`TRUNCATE processing_attempts, job_extractions, cities, normalized_job_sources, normalized_jobs, normalized_versions, raw_item_sightings, raw_item_versions, raw_items, collection_batches, search_segment_runs CASCADE`;
+    await sql`TRUNCATE silenced_authors, processing_attempts, job_extractions, cities, normalized_job_sources, normalized_jobs, normalized_versions, raw_item_sightings, raw_item_versions, raw_items, collection_batches, search_segment_runs CASCADE`;
     // The seeded rows stay; only what a test proposed or counted is undone.
     await sql`DELETE FROM tech_tags WHERE status = 'proposed'`;
     await sql`DELETE FROM role_kinds WHERE status = 'proposed'`;
@@ -371,15 +389,27 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
   });
 
   describe('loadJob', () => {
-    it('returns only the title and description', async () => {
+    it('returns the title, description and kind of a listing job', async () => {
       const id = await job({ descriptionText: null });
       expect(await repo.loadJob(id)).toEqual({
         id,
         closed: false,
         title: 'Backend Engineer',
         descriptionText: null,
+        kind: 'job',
+        postSources: null,
       });
       expect(await repo.loadJob(randomUUID())).toBeNull();
+    });
+
+    it("returns a post job's kind and its post sources", async () => {
+      const sources = [{ postUrl: 'https://www.linkedin.com/posts/1' }];
+      const id = await job({ kind: 'post', postSources: { sources } });
+      expect(await repo.loadJob(id)).toMatchObject({
+        id,
+        kind: 'post',
+        postSources: sources,
+      });
     });
   });
 
@@ -572,6 +602,19 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       expect(copy?.data).toEqual(fixtureDocument());
       expect(copy?.inputHash).toBe('same-input');
     });
+
+    it('finds one extraction by id with its key and raw data', async () => {
+      const jobId = await job();
+      const reuse = { ...key('by-id'), docType: 'post' as const };
+      const id = await repo.saveExtraction(extraction(jobId, reuse));
+      expect(await repo.findExtraction(id)).toEqual({
+        ...reuse,
+        id,
+        jobId,
+        data: fixtureDocument(),
+      });
+      expect(await repo.findExtraction(randomUUID())).toBeNull();
+    });
   });
 
   describe('findJoinedReusable', () => {
@@ -652,6 +695,18 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       }).first();
       expect(row?.requiredTags).toEqual(['python']);
       expect(row?.niceTags).toEqual(['go']);
+    });
+
+    it("stores an attempt's doc type", async () => {
+      const id = await job();
+      await repo.recordAttempts([
+        attempt({ jobId: id }),
+        attempt({ jobId: id, docType: 'post' }),
+      ]);
+      const rows = await db.orm.public.ProcessingAttempt.where({
+        jobId: id,
+      }).all();
+      expect(rows.map((r) => r.docType).sort()).toEqual(['listing', 'post']);
     });
 
     it('stores every field of an attempt', async () => {
@@ -853,6 +908,305 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
     it('listPendingInScope never lists an archived job', async () => {
       await job({ processingStatus: 'archived' });
       expect(await repo.listPendingInScope(10)).toEqual([]);
+    });
+  });
+
+  describe('posts', () => {
+    const hoursAgo = (n: number) => new Date(Date.now() - n * 3_600_000);
+    const daysAgo = (n: number) => hoursAgo(n * 24);
+
+    /** A pending post job first seen `at`, with one LinkedIn posts source per author. */
+    const post = (
+      at: Date = hoursAgo(1),
+      over: JobSpec = {},
+    ): Promise<string> =>
+      job({ kind: 'post', firstSeenAt: at, authors: ['profile:p1'], ...over });
+
+    async function silence(authorKey: string): Promise<void> {
+      await db.execute(
+        db.raw
+          .sql`INSERT INTO silenced_authors (id, "authorKey", reason, origin)
+          VALUES (${randomUUID()}::uuid, ${authorKey}::text, 'test', 'manual')`
+          .affectedCount()
+          .build(),
+      );
+    }
+
+    it('claims a pending post first seen within 7 days', async () => {
+      const id = await post();
+      expect(await repo.claim(id)).not.toBeNull();
+      expect((await repo.jobState(id))?.inScope).toBe(true);
+    });
+
+    it('never claims a post first seen 8 days ago, and counts it out of window', async () => {
+      const id = await post(daysAgo(8));
+      expect(await repo.claim(id)).toBeNull();
+      expect(await repo.listPendingPosts(10)).toEqual([]);
+      expect((await repo.jobState(id))?.inScope).toBe(false);
+      const counts = await repo.processingCounts();
+      expect(counts.posts).toMatchObject({
+        pending: 0,
+        outOfWindow: 1,
+        silenced: 0,
+      });
+    });
+
+    it('holds a post whose only author is silenced, and claims it once un-silenced', async () => {
+      const id = await post(hoursAgo(1), { authors: ['profile:junk'] });
+      await silence('profile:junk');
+      expect(await repo.listPendingPosts(10)).toEqual([]);
+      expect(await repo.claim(id)).toBeNull();
+      expect((await repo.processingCounts()).posts).toMatchObject({
+        pending: 0,
+        outOfWindow: 0,
+        silenced: 1,
+      });
+
+      await sql`DELETE FROM silenced_authors`;
+      expect(await repo.listPendingPosts(10)).toEqual([id]);
+      expect(await repo.claim(id)).not.toBeNull();
+    });
+
+    it('still claims a post when only one of its authors is silenced', async () => {
+      const id = await post(hoursAgo(1), {
+        authors: ['profile:junk', 'profile:ok'],
+      });
+      await silence('profile:junk');
+      expect(await repo.claim(id)).not.toBeNull();
+    });
+
+    it('lists in-scope pending posts newest first and respects the limit', async () => {
+      const older = await post(hoursAgo(3));
+      const newest = await post(hoursAgo(1));
+      const middle = await post(hoursAgo(2));
+      await post(daysAgo(8));
+      await post(hoursAgo(1), { processingStatus: 'processed' });
+      await job();
+      expect(await repo.listPendingPosts(10)).toEqual([newest, middle, older]);
+      expect(await repo.listPendingPosts(1)).toEqual([newest]);
+    });
+
+    it('keeps posts out of the listing queue', async () => {
+      await post();
+      expect(await repo.listPendingInScope(10)).toEqual([]);
+    });
+
+    it('counts listings and in-scope posts separately', async () => {
+      await job();
+      await job({ processingStatus: null });
+      await post();
+      await post(hoursAgo(2), { processingStatus: 'processed' });
+      expect(await repo.processingCounts()).toEqual({
+        listings: {
+          pending: 1,
+          processing: 0,
+          processed: 0,
+          failed: 0,
+          archived: 0,
+          unset: 1,
+        },
+        posts: {
+          pending: 1,
+          processing: 0,
+          processed: 1,
+          failed: 0,
+          archived: 0,
+          unset: 0,
+          outOfWindow: 0,
+          silenced: 0,
+        },
+      });
+    });
+
+    it('markPending with nullStatus marks in-window posts and skips out-of-window ones', async () => {
+      const fresh = await post(hoursAgo(1), { processingStatus: null });
+      const old = await post(daysAgo(8), { processingStatus: null });
+      expect((await repo.markPending({ nullStatus: true })).marked).toBe(1);
+      expect((await jobRow(fresh)).processingStatus).toBe('pending');
+      expect((await jobRow(old)).processingStatus).toBeNull();
+    });
+
+    it('a listing reuse key still finds a listing row written without a doc type', async () => {
+      const jobId = await job();
+      const reuse = key('pre-change');
+      const { docType: _docType, ...legacy } = reuse;
+      const row = await db.orm.public.JobExtraction.create({
+        ...legacy,
+        ...noColumns,
+        jobId,
+        decisionModel: null,
+        data: fixtureDocument() as never,
+        needsReview: false,
+        costUsd: '0.02',
+      });
+      expect(row.docType).toBe('listing');
+      expect(await repo.findReusable(reuse)).toEqual({ id: row.id, jobId });
+      expect(await repo.findReusable({ ...reuse, docType: 'post' })).toBeNull();
+    });
+
+    it('saves a post extraction with its doc type and verdict', async () => {
+      const jobId = await post();
+      const reuse: ReuseKey = { ...key('post-input'), docType: 'post' };
+      const id = await repo.saveExtraction({
+        ...extraction(jobId, reuse),
+        verdict: 'hiring',
+        verdictReason: 'hiring',
+        verdictConfidence: 'sure',
+      });
+      expect(
+        await db.orm.public.JobExtraction.where({ id }).first(),
+      ).toMatchObject({
+        docType: 'post',
+        verdict: 'hiring',
+        verdictReason: 'hiring',
+        verdictConfidence: 'sure',
+      });
+      expect(await repo.findReusable(reuse)).toEqual({ id, jobId });
+      expect(
+        await repo.findReusable({ ...reuse, docType: 'listing' }),
+      ).toBeNull();
+    });
+
+    describe('role jobs', () => {
+      async function roleSetup() {
+        const postId = await post(hoursAgo(2), {
+          processingStatus: 'processed',
+        });
+        await db.orm.public.NormalizedJob.where({ id: postId }).updateAll({
+          postedAt: hoursAgo(3),
+        });
+        const extractionId = await repo.saveExtraction(
+          extraction(postId, { ...key(), docType: 'post' }),
+        );
+        return { postId, extractionId };
+      }
+
+      it('creates a post_role job copying the post, and updates it on a second upsert', async () => {
+        const { postId, extractionId } = await roleSetup();
+        const postRow = await jobRow(postId);
+        const id = await repo.upsertRoleJob({
+          postJobId: postId,
+          roleKey: 'a',
+          title: 'Backend Engineer',
+          companyName: 'Acme',
+          extractionId,
+        });
+        expect(await jobRow(id)).toMatchObject({
+          kind: 'post_role',
+          status: 'active',
+          parentJobId: postId,
+          roleKey: 'a',
+          jobKey: `${postRow.jobKey}#role:a`,
+          title: 'Backend Engineer',
+          companyName: 'Acme',
+          postingUrl: postRow.postingUrl,
+          postedAt: postRow.postedAt,
+          firstSeenAt: postRow.firstSeenAt,
+          lastSeenAt: postRow.lastSeenAt,
+          descriptionText: postRow.descriptionText,
+          processingStatus: 'processed',
+          currentExtractionId: extractionId,
+        });
+        expect((await jobRow(id)).processedAt).toBeInstanceOf(Date);
+
+        const next = await repo.saveExtraction(
+          extraction(postId, { ...key(), docType: 'post' }),
+        );
+        const again = await repo.upsertRoleJob({
+          postJobId: postId,
+          roleKey: 'a',
+          title: 'Senior Backend Engineer',
+          companyName: null,
+          extractionId: next,
+        });
+        expect(again).toBe(id);
+        expect(await jobRow(id)).toMatchObject({
+          title: 'Senior Backend Engineer',
+          companyName: null,
+          currentExtractionId: next,
+        });
+      });
+
+      it('archives a role job with no role key', async () => {
+        const { postId, extractionId } = await roleSetup();
+        const postRow = await jobRow(postId);
+        const orphan = await db.orm.public.NormalizedJob.create({
+          jobKey: `${postRow.jobKey}#role:none`,
+          kind: 'post_role',
+          status: 'active',
+          mergedIntoId: null,
+          parentJobId: postId,
+          roleKey: null,
+          postingUrl: postRow.postingUrl,
+          closed: false,
+          fieldSources: {},
+          firstSeenAt: postRow.firstSeenAt,
+          lastSeenAt: postRow.lastSeenAt,
+          processingStatus: 'processed',
+          currentExtractionId: extractionId,
+          normalizerVersion: 1,
+        });
+        expect(await repo.archiveRoleJobs(postId, ['a'])).toBe(1);
+        expect((await jobRow(orphan.id)).processingStatus).toBe('archived');
+      });
+
+      it('never claims, lists or counts a role job', async () => {
+        const { postId, extractionId } = await roleSetup();
+        const id = await repo.upsertRoleJob({
+          postJobId: postId,
+          roleKey: 'a',
+          title: 'Backend Engineer',
+          companyName: 'Acme',
+          extractionId,
+        });
+        await db.orm.public.NormalizedJob.where({ id }).updateAll({
+          processingStatus: 'pending',
+        });
+        expect(await repo.claim(id)).toBeNull();
+        expect(await repo.listPendingInScope(10)).toEqual([]);
+        expect(await repo.listPendingPosts(10)).toEqual([]);
+        expect((await repo.markPending({ allInScope: true })).marked).toBe(1);
+        const counts = await repo.processingCounts();
+        expect(counts.posts.pending).toBe(1);
+        expect(counts.posts.processed).toBe(0);
+        expect(counts.listings.pending).toBe(0);
+      });
+
+      it('archives the role jobs not kept, and an upsert reactivates one', async () => {
+        const { postId, extractionId } = await roleSetup();
+        const role = (roleKey: string) =>
+          repo.upsertRoleJob({
+            postJobId: postId,
+            roleKey,
+            title: `Role ${roleKey}`,
+            companyName: 'Acme',
+            extractionId,
+          });
+        const a = await role('a');
+        const b = await role('b');
+        expect(await repo.archiveRoleJobs(postId, ['a'])).toBe(1);
+        expect((await jobRow(a)).processingStatus).toBe('processed');
+        expect(await jobRow(b)).toMatchObject({
+          processingStatus: 'archived',
+          status: 'active',
+        });
+        expect(await repo.archiveRoleJobs(postId, ['a'])).toBe(0);
+        expect(await repo.archiveRoleJobs(postId, [])).toBe(1);
+
+        expect(await role('b')).toBe(b);
+        expect((await jobRow(b)).processingStatus).toBe('processed');
+      });
+    });
+
+    it('counts non-eval post calls since a date', async () => {
+      await repo.recordAttempts([
+        attempt({ docType: 'post' }),
+        attempt({ docType: 'post', outcome: 'error' }),
+        attempt({ docType: 'post', eval: true }),
+        attempt({ docType: 'listing' }),
+      ]);
+      expect(await repo.postCallsSince(hoursAgo(1))).toBe(2);
+      expect(await repo.postCallsSince(new Date(Date.now() + 60_000))).toBe(0);
     });
   });
 

@@ -16,6 +16,14 @@ export const PROCESS_QUEUE = 'process';
 export const PROCESS_JOB = 'process-job';
 /** Release stale claims and re-enqueue pending jobs nothing picked up. */
 export const PROCESS_SWEEP_JOB = 'sweep';
+/**
+ * BullMQ priority of a post job. Listings are queued with none, and BullMQ
+ * takes every job with no priority before any prioritized one, so a waiting
+ * listing always goes before a queued post, however long the post backlog
+ * (spec: a post never jumps ahead of a listing that has waited). A post
+ * already running is not interrupted.
+ */
+export const POST_PRIORITY = 1;
 
 /**
  * Hands normalized jobs to the processor worker. The job row is the source of
@@ -61,13 +69,20 @@ export class ProcessQueue implements OnApplicationShutdown {
 
   /**
    * The BullMQ job id is the job id, so a job is never queued twice at once;
-   * a finished one is removed, so the same id can be queued again.
+   * a finished one is removed, so the same id can be queued again. A post is
+   * queued at POST_PRIORITY. Re-adding a queued id is a no-op whatever the
+   * priority, and a post always gets the same one, so dedup is unchanged.
    */
-  async enqueue(jobId: string): Promise<void> {
+  async enqueue(jobId: string, kind?: 'post'): Promise<void> {
     await this.queue.add(
       PROCESS_JOB,
       { jobId },
-      { jobId, removeOnComplete: true, removeOnFail: true },
+      {
+        jobId,
+        removeOnComplete: true,
+        removeOnFail: true,
+        ...(kind === 'post' ? { priority: POST_PRIORITY } : {}),
+      },
     );
   }
 

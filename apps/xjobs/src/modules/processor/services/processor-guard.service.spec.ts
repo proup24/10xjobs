@@ -21,6 +21,7 @@ const config: ProcessorConfig = {
   dailyBudgetUsd: 20,
   weeklyStopAt: 0.85,
   generationTries: 3,
+  postDailyCap: 250,
 };
 
 const obs = (
@@ -229,6 +230,79 @@ describe('ProcessorGuard', () => {
       );
       await guard.check();
       expect(spy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('post cap', () => {
+    const postCalls = async (repo: MemoryProcessorRepository, n: number) =>
+      repo.recordAttempts(
+        Array.from({ length: n }, () => ({
+          jobId: null,
+          extractionId: null,
+          eval: false,
+          step: 'generation' as const,
+          outcome: 'ok' as const,
+          error: null,
+          quoteFailures: 0,
+          docType: 'post' as const,
+          model: 'm',
+          providerRequestId: null,
+          inputTokens: 0,
+          outputTokens: 0,
+          cachedInputTokens: 0,
+          costUsd: 0,
+          latencyMs: 0,
+        })),
+      );
+
+    it('blocks posts, not listings, once today reached the cap', async () => {
+      const repo = new MemoryProcessorRepository(() => NOW);
+      await postCalls(repo, 2);
+      const guard = new ProcessorGuard(
+        repo,
+        { ...config, dailyBudgetUsd: 0, postDailyCap: 2 },
+        () => NOW,
+      );
+      await expect(guard.check('post')).resolves.toBe('post_cap');
+      await expect(guard.check('listing')).resolves.toBeNull();
+      await expect(guard.check()).resolves.toBeNull();
+    });
+
+    it('allows posts below the cap', async () => {
+      const repo = new MemoryProcessorRepository(() => NOW);
+      await postCalls(repo, 1);
+      const guard = new ProcessorGuard(
+        repo,
+        { ...config, postDailyCap: 2 },
+        () => NOW,
+      );
+      await expect(guard.check('post')).resolves.toBeNull();
+    });
+
+    it('resets at UTC midnight', async () => {
+      const repo = new MemoryProcessorRepository(() => NOW);
+      await postCalls(repo, 2);
+      let clock = NOW;
+      const guard = new ProcessorGuard(
+        repo,
+        { ...config, postDailyCap: 2 },
+        () => clock,
+      );
+      await expect(guard.check('post')).resolves.toBe('post_cap');
+      clock = new Date('2026-11-03T00:00:01Z');
+      await expect(guard.check('post')).resolves.toBeNull();
+    });
+
+    it('a cap of 0 always blocks posts and never listings', async () => {
+      const guard = make({ postDailyCap: 0 });
+      await expect(guard.check('post')).resolves.toBe('post_cap');
+      await expect(guard.check('listing')).resolves.toBeNull();
+    });
+
+    it('keeps pause priority over the cap', async () => {
+      const guard = make({ postDailyCap: 0 });
+      guard.pauseUntil(at(1000), 'usage_limit', 'x');
+      await expect(guard.check('post')).resolves.toBe('paused');
     });
   });
 });

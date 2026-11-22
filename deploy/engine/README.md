@@ -214,6 +214,10 @@ The processor pauses on a usage limit (until the limit resets, or 15 minutes if 
 2. The log line reads `Processing paused until <time> (<reason>): <detail>`; the reason is `usage_limit`, `weekly_reserve`, `auth` or `startup` (auth and a failed startup check log at error level; the initial `checking the Claude credential` pause logs at info). `GET /processor/status` shows the same pause, but it is an operator endpoint (`XJOBS_OPERATOR_ENDPOINTS`) that the hosted API does not serve; use it only on a local engine.
 3. Nothing needs fixing for a usage limit or the weekly stop: jobs wait as `pending` and the processor resumes by itself. An auth error needs section 14. An `auth` pause whose detail starts `could not run claude:` is not the token: the `claude` binary could not be started (missing, or out of processes or file handles).
 
+### Post extraction cap
+
+Posts are extracted at most `POST_EXTRACTION_DAILY_CAP` times per UTC day (default `250`; `0` pauses post extraction and leaves listings alone). A post that reaches the cap waits as `pending` and goes on the next day. Posts also count toward `PROCESSOR_DAILY_BUDGET_USD`. Set the variable in `.env` and run `$C up -d worker`. (`POST_AUTO_SILENCE` is not built yet and has no effect.)
+
 ## 16. Measure worker memory
 
 Four `claude` calls run at once by default (`PROCESSOR_CONCURRENCY=4`), each a Node process.

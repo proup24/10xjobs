@@ -165,6 +165,7 @@ async function main(): Promise<void> {
     dailyBudgetUsd: 0,
     weeklyStopAt: env.PROCESSOR_WEEKLY_STOP_AT,
     generationTries: env.PROCESSOR_GENERATION_TRIES,
+    postDailyCap: env.POST_EXTRACTION_DAILY_CAP,
   };
   console.log(`generator ${config.extractionModel}`);
 

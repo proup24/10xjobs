@@ -1,7 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { seedOptions } from '../rules/options.testing';
 import { modelOutputSchema } from '../schema';
-import { promptHash, systemPrompt } from './prompt';
+import {
+  APPLY_KINDS,
+  AUTHOR_RELATIONS,
+  JUNK_REASONS,
+  NOT_HIRING_REASONS,
+  VERDICTS,
+} from '../schema/post-extraction';
+import {
+  postPromptHash,
+  postSystemPrompt,
+  promptHash,
+  systemPrompt,
+} from './prompt';
 import { SYSTEM_PROMPT } from './system.prompt';
 
 describe('promptHash', () => {
@@ -70,5 +82,59 @@ describe('systemPrompt field paths', () => {
       'lang',
     ])
       expect(text).toContain(name);
+  });
+});
+
+describe('postSystemPrompt', () => {
+  const text = postSystemPrompt();
+
+  it('leaves the listing prompt hash unchanged', () => {
+    expect(promptHash()).toBe(
+      'acec5044dd160a5ebf7dff8090d74f5a0a3d09d311b4308aa2b8b9954785db86',
+    );
+  });
+
+  it('is the post head followed by the listing prompt', () => {
+    expect(text.endsWith(`\n\n${SYSTEM_PROMPT}`)).toBe(true);
+    expect(text.length).toBeGreaterThan(SYSTEM_PROMPT.length + 2);
+  });
+
+  it('ties the links to their kinds, as the document schema does', () => {
+    expect(text).toContain(
+      '`links` is non-empty exactly when `kinds` has `external_link` or `linkedin_job`.',
+    );
+  });
+
+  it('has its own hash', () => {
+    expect(postPromptHash()).toMatch(/^[0-9a-f]{64}$/);
+    expect(postPromptHash()).not.toBe(promptHash());
+  });
+
+  it('names every verdict, reason code, apply kind and author relation', () => {
+    const head = text.slice(0, text.length - SYSTEM_PROMPT.length);
+    for (const code of [
+      ...VERDICTS,
+      ...NOT_HIRING_REASONS,
+      ...JUNK_REASONS,
+      ...APPLY_KINDS,
+      ...AUTHOR_RELATIONS,
+    ])
+      expect(head).toContain(`\`${code}\``);
+  });
+
+  it('names the fields the model fills for a post', () => {
+    const head = text.slice(0, text.length - SYSTEM_PROMPT.length);
+    for (const name of [
+      'verdict',
+      'reason',
+      'roles',
+      'employer',
+      'authorRelation',
+      'howToApply',
+      'kinds',
+      'emailQuote',
+      'links',
+    ])
+      expect(head).toContain(name);
   });
 });

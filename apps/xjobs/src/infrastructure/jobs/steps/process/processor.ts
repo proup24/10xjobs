@@ -19,10 +19,10 @@ const logger = new Logger('ProcessJob');
 const jobPayload = z.object({ jobId: z.string().min(1) });
 
 export interface ProcessJobDeps {
-  service: Pick<ProcessorService, 'process' | 'isPaused'>;
+  service: Pick<ProcessorService, 'process' | 'isPaused' | 'isPostCapReached'>;
   repo: Pick<
     ProcessorRepository,
-    'listPendingInScope' | 'releaseStale' | 'spendSince'
+    'listPendingInScope' | 'listPendingPosts' | 'releaseStale' | 'spendSince'
   >;
   queue: Pick<ProcessQueue, 'enqueue'>;
   matchQueue: Pick<MatchQueue, 'enqueue'>;
@@ -67,11 +67,19 @@ export async function processProcessJob(
     const spent = await deps.repo.spendSince(startOfUtcDay(now));
     if (deps.config.dailyBudgetUsd > 0 && spent >= deps.config.dailyBudgetUsd)
       return { released, enqueued: 0 };
-    const pending = await deps.repo.listPendingInScope(
+    // Posts go at their lower queue priority, so a listing queued after them
+    // (by this sweep or a later ingest nudge) is still taken first. Posts get
+    // the same limit, and none are listed while the daily post cap is
+    // reached, so they are not claimed and bounced every minute.
+    const listings = await deps.repo.listPendingInScope(
       processSweepConfig.limit,
     );
-    for (const jobId of pending) await deps.queue.enqueue(jobId);
-    return { released, enqueued: pending.length };
+    const posts = (await deps.service.isPostCapReached())
+      ? []
+      : await deps.repo.listPendingPosts(processSweepConfig.limit);
+    for (const jobId of listings) await deps.queue.enqueue(jobId);
+    for (const jobId of posts) await deps.queue.enqueue(jobId, 'post');
+    return { released, enqueued: listings.length + posts.length };
   }
   throw new UnrecoverableError(`Unsupported job: ${job.name}`);
 }

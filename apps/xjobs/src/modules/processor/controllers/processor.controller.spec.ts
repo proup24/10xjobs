@@ -53,6 +53,7 @@ describe('ProcessorController', () => {
 
   it.each([
     [new ProcessorBlockedError('over_budget'), HttpStatus.TOO_MANY_REQUESTS],
+    [new ProcessorBlockedError('post_cap'), HttpStatus.TOO_MANY_REQUESTS],
     [new ProcessorBlockedError('paused'), HttpStatus.SERVICE_UNAVAILABLE],
     [new ProviderUnavailableError('401'), HttpStatus.SERVICE_UNAVAILABLE],
     [new ExtractionFailed(['x: y']), HttpStatus.UNPROCESSABLE_ENTITY],
@@ -89,6 +90,17 @@ describe('ProcessorController', () => {
       outcome: 'processed',
       job: null,
     });
+  });
+
+  it('answers 429 when a run hits the post cap', async () => {
+    const processNow = vi.fn(async () => {
+      throw new ProcessorBlockedError('post_cap');
+    });
+    const capped = controller({
+      jobState: async () => ({ inScope: true }) as JobState,
+      processNow,
+    });
+    expect(await statusOf(capped.run(JOB))).toBe(HttpStatus.TOO_MANY_REQUESTS);
   });
 
   it('answers 404 for an unknown job', async () => {

@@ -282,6 +282,7 @@ describe.skipIf(!url)('archiveActorJobs in PostgreSQL', () => {
       jobs: 2,
       byStatus: { pending: 1, processed: 1 },
       matchesDeleted: 0,
+      roleJobs: 0,
     });
     const a = await row(pending.id);
     expect(a.processingStatus).toBe('archived');
@@ -312,6 +313,7 @@ describe.skipIf(!url)('archiveActorJobs in PostgreSQL', () => {
       jobs: 2,
       byStatus: { pending: 1, processed: 1 },
       matchesDeleted: 1,
+      roleJobs: 0,
     });
     expect((await row(processed.id)).processingStatus).toBe('processed');
     expect(await matchCount()).toBe(1);
@@ -323,7 +325,61 @@ describe.skipIf(!url)('archiveActorJobs in PostgreSQL', () => {
     await match(processed);
     await archiveActorJobs(db, CHEAP, { dryRun: false });
     const again = await archiveActorJobs(db, CHEAP, { dryRun: false });
-    expect(again).toEqual({ jobs: 0, byStatus: {}, matchesDeleted: 0 });
+    expect(again).toEqual({
+      jobs: 0,
+      byStatus: {},
+      matchesDeleted: 0,
+      roleJobs: 0,
+    });
+  });
+
+  /** A processed role job read from `parentJobId`; it has no sources of its own. */
+  async function roleJob(parentJobId: string, roleKey: string) {
+    const row = await db.orm.public.NormalizedJob.create({
+      jobKey: `${parentJobId}#role:${roleKey}`,
+      postingUrl: `https://example.com/${randomUUID()}`,
+      kind: 'post_role',
+      parentJobId,
+      roleKey,
+      status: 'active',
+      mergedIntoId: null,
+      closed: false,
+      fieldSources: {},
+      firstSeenAt: t0,
+      lastSeenAt: t0,
+      normalizerVersion: 1,
+      processingStatus: 'processed',
+    } as never);
+    return row.id;
+  }
+
+  it("archives an archived post job's role jobs too, in the same run", async () => {
+    const post = await job([CHEAP], 'processed');
+    const keptPost = await job([CHEAP, HARVEST], 'processed');
+    await db.orm.public.NormalizedJob.where({
+      id: post.id,
+    }).updateAll({ kind: 'post' });
+    await db.orm.public.NormalizedJob.where({
+      id: keptPost.id,
+    }).updateAll({ kind: 'post' });
+    const roles = [
+      await roleJob(post.id, 'backend'),
+      await roleJob(post.id, 'frontend'),
+    ];
+    const keptRole = await roleJob(keptPost.id, 'backend');
+
+    const dry = await archiveActorJobs(db, CHEAP, { dryRun: true });
+    expect(dry).toMatchObject({ jobs: 1, roleJobs: 2 });
+    expect((await row(roles[0]!)).processingStatus).toBe('processed');
+
+    const result = await archiveActorJobs(db, CHEAP, { dryRun: false });
+    expect(result).toMatchObject({ jobs: 1, roleJobs: 2 });
+    for (const id of roles)
+      expect(await row(id)).toMatchObject({
+        status: 'active',
+        processingStatus: 'archived',
+      });
+    expect((await row(keptRole)).processingStatus).toBe('processed');
   });
 
   it('the matcher never selects an archived job', async () => {

@@ -166,6 +166,8 @@ const processorEnvironmentShape = {
   PROCESSOR_DAILY_BUDGET_USD: z.coerce.number().min(0).default(0),
   /** Schema tries per generation; capped, since each one is a model call. */
   PROCESSOR_GENERATION_TRIES: z.coerce.number().int().min(1).max(5).default(3),
+  /** Post model calls per UTC day; 0 pauses post extraction. */
+  POST_EXTRACTION_DAILY_CAP: z.coerce.number().int().min(0).default(250),
 };
 
 export const processorEnvironmentSchema = z.object(processorEnvironmentShape);

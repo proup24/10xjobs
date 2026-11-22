@@ -1,6 +1,6 @@
 import { UnrecoverableError } from 'bullmq';
 import { z } from 'zod';
-import { isLinkedinJobBoard } from 'src/common/enums';
+import { Channel, isLinkedinJobBoard } from 'src/common/enums';
 import {
   type BatchIngestService,
   type RawStorageRepository,
@@ -43,8 +43,13 @@ export async function processIngestJob(
       onPending: async ({ channel, jobIds }) => {
         // Other channels' jobs are out of the processor's scope: it would only
         // fail to claim them.
-        if (!isLinkedinJobBoard(channel)) return;
-        for (const jobId of jobIds) await deps.processQueue.enqueue(jobId);
+        if (!isLinkedinJobBoard(channel) && channel !== Channel.LINKEDIN_POSTS)
+          return;
+        // A posts batch holds only post jobs: at the posts' lower priority.
+        for (const jobId of jobIds)
+          if (channel === Channel.LINKEDIN_POSTS)
+            await deps.processQueue.enqueue(jobId, 'post');
+          else await deps.processQueue.enqueue(jobId);
       },
     });
   }

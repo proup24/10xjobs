@@ -81,4 +81,17 @@ describe('AttemptLog', () => {
     const line = warn.mock.calls[0]![0] as string;
     expect(line.length).toBeLessThan(700);
   });
+  it('writes the listing doc type on every entry by default', () => {
+    const run = new AttemptLog(JOB);
+    run.ok('generation', meta.model, meta);
+    run.invalid('generation_retry', meta.model, meta, 'x');
+    expect(run.entries().map((e) => e.docType)).toEqual(['listing', 'listing']);
+  });
+
+  it('writes the post doc type on every entry of a post log', () => {
+    const run = new AttemptLog(JOB, { docType: 'post' });
+    run.ok('generation', meta.model, meta);
+    run.failed('generation_retry', meta.model, new Error('boom'));
+    expect(run.entries('e-1').map((e) => e.docType)).toEqual(['post', 'post']);
+  });
 });

@@ -528,6 +528,7 @@ export type Database = {
           createdAt: string;
           data: NonNullable<Json>;
           decisionModel: string | null;
+          docType: string;
           engagement: string | null;
           extractionModel: string;
           id: string;
@@ -548,6 +549,9 @@ export type Database = {
           schemaVersion: number;
           seniority: string | null;
           techTags: string[];
+          verdict: string | null;
+          verdictConfidence: string | null;
+          verdictReason: string | null;
           worldwide: boolean;
         };
         ComputedFields: never;
@@ -560,6 +564,7 @@ export type Database = {
           createdAt?: string;
           data: NonNullable<Json>;
           decisionModel?: string | null;
+          docType?: string;
           engagement?: string | null;
           extractionModel: string;
           id: string;
@@ -580,6 +585,9 @@ export type Database = {
           schemaVersion: number;
           seniority?: string | null;
           techTags: string[];
+          verdict?: string | null;
+          verdictConfidence?: string | null;
+          verdictReason?: string | null;
           worldwide: boolean;
         };
         Update: {
@@ -591,6 +599,7 @@ export type Database = {
           createdAt?: string;
           data?: NonNullable<Json>;
           decisionModel?: string | null;
+          docType?: string;
           engagement?: string | null;
           extractionModel?: string;
           id?: string;
@@ -611,6 +620,9 @@ export type Database = {
           schemaVersion?: number;
           seniority?: string | null;
           techTags?: string[];
+          verdict?: string | null;
+          verdictConfidence?: string | null;
+          verdictReason?: string | null;
           worldwide?: boolean;
         };
         Relationships: [
@@ -1086,6 +1098,7 @@ export type Database = {
           location: string | null;
           mergedIntoId: string | null;
           normalizerVersion: number;
+          parentJobId: string | null;
           postedAt: string | null;
           posterName: string | null;
           posterProfileUrl: string | null;
@@ -1102,6 +1115,7 @@ export type Database = {
           publishedAt: string | null;
           regionCode: string | null;
           remoteAllowed: boolean | null;
+          roleKey: string | null;
           salaryCurrency: string | null;
           salaryMax: number | null;
           salaryMin: number | null;
@@ -1145,6 +1159,7 @@ export type Database = {
           location?: string | null;
           mergedIntoId?: string | null;
           normalizerVersion: number;
+          parentJobId?: string | null;
           postedAt?: string | null;
           posterName?: string | null;
           posterProfileUrl?: string | null;
@@ -1161,6 +1176,7 @@ export type Database = {
           publishedAt?: string | null;
           regionCode?: string | null;
           remoteAllowed?: boolean | null;
+          roleKey?: string | null;
           salaryCurrency?: string | null;
           salaryMax?: number | null;
           salaryMin?: number | null;
@@ -1203,6 +1219,7 @@ export type Database = {
           location?: string | null;
           mergedIntoId?: string | null;
           normalizerVersion?: number;
+          parentJobId?: string | null;
           postedAt?: string | null;
           posterName?: string | null;
           posterProfileUrl?: string | null;
@@ -1219,6 +1236,7 @@ export type Database = {
           publishedAt?: string | null;
           regionCode?: string | null;
           remoteAllowed?: boolean | null;
+          roleKey?: string | null;
           salaryCurrency?: string | null;
           salaryMax?: number | null;
           salaryMin?: number | null;
@@ -1250,6 +1268,13 @@ export type Database = {
           {
             foreignKeyName: 'normalized_jobs_mergedIntoId_fkey';
             columns: ['mergedIntoId'];
+            isOneToOne: false;
+            referencedRelation: 'normalized_jobs';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'normalized_jobs_parentJobId_fkey';
+            columns: ['parentJobId'];
             isOneToOne: false;
             referencedRelation: 'normalized_jobs';
             referencedColumns: ['id'];
@@ -1303,6 +1328,7 @@ export type Database = {
           cachedInputTokens: number;
           costUsd: number;
           createdAt: string;
+          docType: string;
           error: string | null;
           eval: boolean;
           extractionId: string | null;
@@ -1322,6 +1348,7 @@ export type Database = {
           cachedInputTokens: number;
           costUsd: number;
           createdAt?: string;
+          docType?: string;
           error?: string | null;
           eval?: boolean;
           extractionId?: string | null;
@@ -1340,6 +1367,7 @@ export type Database = {
           cachedInputTokens?: number;
           costUsd?: number;
           createdAt?: string;
+          docType?: string;
           error?: string | null;
           eval?: boolean;
           extractionId?: string | null;

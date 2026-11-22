@@ -1,4 +1,5 @@
 import type { z } from 'zod';
+import type { PostDetail } from '../../ingest/normalize/record';
 
 export interface PostingInput {
   jobId: string;
@@ -12,6 +13,9 @@ export interface JobForProcessing {
   closed: boolean;
   title: string | null;
   descriptionText: string | null;
+  kind: 'job' | 'post';
+  /** A post job's sources (`normalized_jobs.postSources.sources`); null on a listing job. */
+  postSources: PostDetail[] | null;
 }
 
 export interface ModelCallMeta {

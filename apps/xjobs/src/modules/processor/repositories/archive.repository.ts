@@ -1,4 +1,5 @@
 import type { DatabaseClient } from '@xjobs/database';
+import { archivePostRoleJobs } from 'src/database/role-jobs';
 
 type Raw = DatabaseClient['raw'];
 
@@ -10,6 +11,8 @@ export interface ArchiveResult {
   /** Jobs by the status they had before; `none` for a null status. */
   byStatus: Record<string, number>;
   matchesDeleted: number;
+  /** Role jobs of the archived post jobs, archived with them. */
+  roleJobs: number;
 }
 
 /**
@@ -36,7 +39,7 @@ function archivableIds(raw: Raw, actor: string) {
 /**
  * Archives every job whose sources were seen only in batches of `actor`: the
  * job leaves the processor and the matcher, and its `job_matches` rows are
- * deleted. One transaction, so a failure leaves nothing half-archived. With
+ * deleted; an archived post job's role jobs are archived too. One transaction, so a failure leaves nothing half-archived. With
  * `dryRun` nothing is written and the counts say what would change. Already
  * archived jobs are skipped, so a second run archives nothing.
  */
@@ -59,7 +62,7 @@ export async function archiveActorJobs(
       byStatus[status] = (byStatus[status] ?? 0) + 1;
     }
     const jobs = rows.length;
-    if (jobs === 0) return { jobs, byStatus, matchesDeleted: 0 };
+    if (jobs === 0) return { jobs, byStatus, matchesDeleted: 0, roleJobs: 0 };
 
     if (opts.dryRun) {
       const counted = await tx.query(
@@ -68,7 +71,20 @@ export async function archiveActorJobs(
           .returnsRow({ id: UUID })
           .build(),
       );
-      return { jobs, byStatus, matchesDeleted: counted.length };
+      const roles = await tx.query(
+        raw.sql`SELECT id FROM normalized_jobs
+          WHERE kind = 'post_role'
+            AND "processingStatus" IS DISTINCT FROM 'archived'
+            AND "parentJobId" IN (${archivableIds(raw, actor)})`
+          .returnsRow({ id: UUID })
+          .build(),
+      );
+      return {
+        jobs,
+        byStatus,
+        matchesDeleted: counted.length,
+        roleJobs: roles.length,
+      };
     }
 
     // Matches first, then the status; `currentExtractionId` stays for the record.
@@ -78,7 +94,7 @@ export async function archiveActorJobs(
         .returnsRow({ id: UUID })
         .build(),
     );
-    await tx.query(
+    const archived = await tx.query(
       raw.sql`UPDATE normalized_jobs
         SET "processingStatus" = 'archived', "processingError" = NULL,
           "processingStartedAt" = NULL, "updatedAt" = now()
@@ -86,6 +102,12 @@ export async function archiveActorJobs(
         .returnsRow({ id: UUID })
         .build(),
     );
-    return { jobs, byStatus, matchesDeleted: deleted.length };
+    // Role jobs have no sources, so archivableIds never picks them: they go
+    // with their post job. Only post ids have role jobs; the rest match none.
+    const roleJobs = await archivePostRoleJobs(
+      tx,
+      archived.map((r) => r.id as string),
+    );
+    return { jobs, byStatus, matchesDeleted: deleted.length, roleJobs };
   });
 }

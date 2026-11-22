@@ -19,6 +19,8 @@ Decided in the slice 02 brainstorm _(user, 2026-11-21)_: matches are separated b
   - **Matches:** every post match the user acts on by hand: "connect / DM me / comment" posts (with links to the post and the author), external apply links, and links to a LinkedIn job board listing.
   - **Applied:** posts with a stated email, applied to automatically. They never show under Matches. Slice 05 fills it; this slice lays it out.
 - Each post match shows its facts, the original post (and for a share, the sharer's text), the author, how to apply, and why it matched.
+- **A Junk tab** next to Matches and Disqualified _(user, 2026-11-22, slice 03 brainstorm)_: the posts Extract ruled not hiring or junk, with the verdict and its reason, from the user's own searches. The owner watches it to confirm the junk.
+- **A review list** for posts whose verdict Extract was unsure of _(user, 2026-11-22)_: not a match, never emailed, like the job board's review outcome.
 - Job-board matches stay in today's view, without post matches.
 - **Blocked authors, per user** _(user)_: in preferences, the user adds and removes authors (by LinkedIn profile link) for all their profiles. Owned by the user and isolated by RLS. Slice 04 makes it stop matches; slice 05 makes it stop emails.
 
@@ -29,6 +31,8 @@ Decided in the slice 02 brainstorm _(user, 2026-11-21)_: matches are separated b
 - Separating other sources (job board, ATS) into their own pages: later, after this one.
 
 ## Open questions
+
+- Does the Junk tab also show Prepare's drops, which today only the owner sees?
 
 - Where the social posts page sits in the app's navigation, and what it shows before post search is on.
 - Can a user block an author straight from a post match, besides the preferences page?

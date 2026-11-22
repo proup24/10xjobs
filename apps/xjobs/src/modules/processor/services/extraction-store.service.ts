@@ -35,6 +35,7 @@ export class ExtractionStore {
   /** Same input, schema, prompt and generator model: same extraction. */
   reuseKey(input: PostingInput): ReuseKey {
     return {
+      docType: 'listing',
       inputHash: inputHash(input),
       schemaVersion: EXTRACTION_SCHEMA_VERSION,
       promptHash: promptHash(),
@@ -73,6 +74,23 @@ export class ExtractionStore {
     vocabulary: Vocabulary,
     log: AttemptLog,
   ): Promise<string> {
+    return this.saveDocument(jobId, key, assembled, log.costUsd, (id) =>
+      this.repo.recordAttempts(log.entries(id)),
+    );
+  }
+
+  /**
+   * `save` without the attempts: a post's role rows go through here, and the
+   * post records its run's attempts once. `afterRow` runs right after the row
+   * is written (where `save` records its attempts).
+   */
+  async saveDocument(
+    jobId: string,
+    key: ReuseKey,
+    assembled: AssembledDocument,
+    costUsd: number,
+    afterRow?: (extractionId: string) => Promise<void>,
+  ): Promise<string> {
     const doc = await this.withCityIds(assembled);
     await this.vocab.propose(assembled.proposals);
     const extractionId = await this.repo.saveExtraction({
@@ -81,9 +99,12 @@ export class ExtractionStore {
       jobId,
       data: doc,
       needsReview: needsReview(doc),
-      costUsd: log.costUsd,
+      costUsd,
+      verdict: null,
+      verdictReason: null,
+      verdictConfidence: null,
     });
-    await this.repo.recordAttempts(log.entries(extractionId));
+    await afterRow?.(extractionId);
     for (const [list, codes] of usedCodes(doc))
       await this.vocab.bumpOccurrences(list, codes);
     return extractionId;

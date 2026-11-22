@@ -8,7 +8,10 @@ import {
   ClaudeAuthError,
   type ProviderUnavailableError,
 } from '../models/errors';
-import { ProcessorRepository } from '../repositories/processor.repository';
+import {
+  type DocType,
+  ProcessorRepository,
+} from '../repositories/processor.repository';
 
 /** How long processing stops after a key, credit or account error. */
 export const PROVIDER_PAUSE_MS = 10 * 60_000;
@@ -27,7 +30,7 @@ export interface PauseState {
 /** Injectable clock for the budget day and the pause; the system clock by default. */
 export const PROCESSOR_CLOCK = Symbol('PROCESSOR_CLOCK');
 
-export type GuardBlock = 'paused' | 'over_budget';
+export type GuardBlock = 'paused' | 'over_budget' | 'post_cap';
 
 export const startOfUtcDay = (d: Date): Date =>
   new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
@@ -57,22 +60,38 @@ export class ProcessorGuard {
   /**
    * Null when calls may start. The budget is checked against the spend
    * already logged, so jobs in flight at the same time can overshoot it by up
-   * to `concurrency - 1` jobs.
+   * to `concurrency - 1` jobs. For a post (`docType = 'post'`) it also checks
+   * the per-UTC-day post cap (`POST_EXTRACTION_DAILY_CAP`, 0 pauses posts)
+   * against today's logged post calls, which overshoots the same way.
    */
-  async check(): Promise<GuardBlock | null> {
+  async check(docType: DocType = 'listing'): Promise<GuardBlock | null> {
     if (this.isPaused()) return 'paused';
+    if (await this.overBudget()) return 'over_budget';
+    if (docType === 'post' && (await this.postCapReached())) return 'post_cap';
+    return null;
+  }
+
+  private async overBudget(): Promise<boolean> {
     // A budget of 0 means no cap (the subscription's limits stop first).
-    if (this.config.dailyBudgetUsd === 0) return null;
+    if (this.config.dailyBudgetUsd === 0) return false;
     const day = startOfUtcDay(this.now());
     const spent = await this.repo.spendSince(day);
-    if (spent < this.config.dailyBudgetUsd) return null;
+    if (spent < this.config.dailyBudgetUsd) return false;
     if (this.budgetWarnedDay !== day.getTime()) {
       this.budgetWarnedDay = day.getTime();
       this.logger.warn(
         `Daily budget reached (${spent.toFixed(2)} of ${this.config.dailyBudgetUsd} USD); not processing until the next UTC day`,
       );
     }
-    return 'over_budget';
+    return true;
+  }
+
+  /** A cap of 0 pauses post extraction; otherwise today's post calls count. */
+  private async postCapReached(): Promise<boolean> {
+    const cap = this.config.postDailyCap;
+    if (cap === 0) return true;
+    const calls = await this.repo.postCallsSince(startOfUtcDay(this.now()));
+    return calls >= cap;
   }
 
   isPaused(): boolean {
@@ -176,8 +195,13 @@ export class ProcessorGuard {
     );
   }
 
-  /** Today's logged spend, for the status endpoint. */
-  async spentToday(): Promise<number> {
-    return this.repo.spendSince(startOfUtcDay(this.now()));
+  /** Today's logged spend (of one document type, or all), for the status endpoint. */
+  async spentToday(docType?: DocType): Promise<number> {
+    return this.repo.spendSince(startOfUtcDay(this.now()), docType);
+  }
+
+  /** Today's post extraction calls, for the status endpoint. */
+  async postCallsToday(): Promise<number> {
+    return this.repo.postCallsSince(startOfUtcDay(this.now()));
   }
 }
