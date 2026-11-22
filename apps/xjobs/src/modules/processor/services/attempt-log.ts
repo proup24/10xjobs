@@ -6,7 +6,7 @@ import {
   TransientModelError,
 } from '../models/errors';
 import type { ModelCallMeta } from '../models/types';
-import type { NewAttempt } from '../repositories/processor.repository';
+import type { DocType, NewAttempt } from '../repositories/processor.repository';
 
 export type AttemptStep = NewAttempt['step'];
 
@@ -33,9 +33,18 @@ export class AttemptLog {
   private readonly rows: NewAttempt[] = [];
   readonly label: string;
 
-  /** `jobId` null for a preview, which is not tied to a normalized job. */
-  constructor(private readonly jobId: string | null) {
+  private readonly docType: DocType;
+
+  /**
+   * `jobId` null for a preview, which is not tied to a normalized job.
+   * `docType` is written on every entry (default `'listing'`).
+   */
+  constructor(
+    private readonly jobId: string | null,
+    options: { docType?: DocType } = {},
+  ) {
     this.label = jobId ? `[job ${jobId}]` : '[preview]';
+    this.docType = options.docType ?? 'listing';
   }
 
   info(message: string): void {
@@ -122,6 +131,7 @@ export class AttemptLog {
       outcome,
       error,
       quoteFailures: 0,
+      docType: this.docType,
       model: meta?.model ?? model,
       providerRequestId: meta?.providerRequestId ?? null,
       inputTokens: meta?.inputTokens ?? 0,

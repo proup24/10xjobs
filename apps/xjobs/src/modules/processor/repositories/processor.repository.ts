@@ -53,7 +53,12 @@ export interface NewAttempt extends ModelCallMeta {
   outcome: 'ok' | 'error' | 'invalid';
   error: string | null;
   quoteFailures: number;
+  /** The document the call was generating. */
+  docType: DocType;
 }
+
+/** The two documents the processor generates: a listing's, or a post's. */
+export type DocType = 'listing' | 'post';
 
 export type FinishOutcome =
   | { status: 'processed'; extractionId: string | null }

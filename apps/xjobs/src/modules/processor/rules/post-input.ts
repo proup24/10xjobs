@@ -9,6 +9,14 @@ export type PostLinks = {
   urls: string[];
 };
 
+/** What the processor reads for a post job (see `buildPostInput`). */
+export type PostInput = {
+  input: PostingInput;
+  /** The rendered texts without the links block: what a quote about the post may come from. */
+  postText: string;
+  links: PostLinks;
+};
+
 const CUT_NOTE = 'Note: this text was cut at "see more".';
 const CAP_NOTE = 'Note: this text was cut for length.';
 const SEPARATOR = '\n\n';
@@ -94,12 +102,7 @@ function unique(values: string[]): string[] {
  * left out of the text and the links. The links block always comes last and
  * whole; over the cap, the texts are cut to fit around it (see `fit`).
  */
-export function buildPostInput(job: JobForProcessing): {
-  input: PostingInput;
-  /** The rendered texts without the links block: what a quote about the post may come from. */
-  postText: string;
-  links: PostLinks;
-} {
+export function buildPostInput(job: JobForProcessing): PostInput {
   const sources = [...(job.postSources ?? [])].sort((a, b) =>
     a.id < b.id ? -1 : a.id > b.id ? 1 : 0,
   );

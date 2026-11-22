@@ -65,6 +65,7 @@ const attempt = (over: Partial<NewAttempt> = {}): NewAttempt => ({
   outcome: 'ok',
   error: null,
   quoteFailures: 0,
+  docType: 'listing',
   model: 'anthropic/claude-opus-5.5',
   providerRequestId: null,
   inputTokens: 100,
@@ -652,6 +653,18 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       }).first();
       expect(row?.requiredTags).toEqual(['python']);
       expect(row?.niceTags).toEqual(['go']);
+    });
+
+    it("stores an attempt's doc type", async () => {
+      const id = await job();
+      await repo.recordAttempts([
+        attempt({ jobId: id }),
+        attempt({ jobId: id, docType: 'post' }),
+      ]);
+      const rows = await db.orm.public.ProcessingAttempt.where({
+        jobId: id,
+      }).all();
+      expect(rows.map((r) => r.docType).sort()).toEqual(['listing', 'post']);
     });
 
     it('stores every field of an attempt', async () => {

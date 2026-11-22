@@ -469,6 +469,7 @@ function attemptDefaults(): NewAttempt {
     outcome: 'ok',
     error: null,
     quoteFailures: 0,
+    docType: 'listing',
     model: 'm',
     providerRequestId: null,
     inputTokens: 0,
