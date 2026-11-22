@@ -1,5 +1,7 @@
 # 01: Actor sample
 
+Status: run once on 2026-11-22 (Sunday window, $0.0884 spent). Gate passes on the numbers. The verdict and the pick wait for a weekday re-run _(user)_. Results: [docs/actors/indeed-actor-sample.md](../../actors/indeed-actor-sample.md).
+
 ## Goal
 
 Pick the Apify actor the `INDEED` channel is built on, from a small paid sample of 3–4 shortlisted actors run on the same searches, before any channel code is written _(user: "sample the actors first")_.
@@ -35,8 +37,16 @@ Apify lists dozens of Indeed actors at very different prices ($0.03 to $5 per 1,
 - The channel itself (slice 03) and the ingest mapper (slice 04).
 - Running two actors side by side on a schedule (possible later, as a trial channel).
 
+## Findings (2026-11-22 run)
+
+- **Gate:** valig, kaix and curious_coder pass. memo23 fails on cost (2.7× harvestapi's cost per relevant job). Pick order: curious_coder, valig, kaix (provisional).
+- **Volume is the open question:** at most 13 relevant US remote jobs in Indeed's 24-hour window (Saturday to Sunday), against harvestapi's 536 on 2026-11-19, a Thursday. Indeed itself ran out of results on every search.
+- **Dev overlap is 0:** none of the sampled jobs is on dev.
+- **Filters:** kaix's remote filter (rich mode) is not trusted (measured). It returned old on-site jobs near the proxy. Location `Remote` works on every actor.
+- **Next:** a weekday re-run of the same 27 runs (about $0.09 spent, the user's OK at the time). First decide whether kaix's core remote searches use location `Remote`.
+
 ## Open questions
 
-- For the jobs that do link out, is resolving Indeed's redirect ourselves (one request per job) acceptable if the actor doesn't?
-- Does any actor charge a large per-run start fee? With 5+ markets and several searches per tick, that decides the cadence in slice 03.
-- How do actors handle Indeed's result cap per search (pages of 15, often ~1,000 results max)?
+- ~~For the jobs that do link out, is resolving Indeed's redirect ourselves (one request per job) acceptable if the actor doesn't?~~ Not needed: valig and curious_coder return the resolved employer link on 78% of rows, memo23 on 87%. The rest point back to Indeed.
+- ~~Does any actor charge a large per-run start fee?~~ No. The highest is memo23's $0.007. It dominates memo23's cost when a search returns few rows. The others are $0.0009 or less.
+- ~~How do actors handle Indeed's result cap per search?~~ It wasn't reached. No search went past one page (15) in the 24-hour window.
