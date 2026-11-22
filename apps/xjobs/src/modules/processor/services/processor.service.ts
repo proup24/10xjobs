@@ -9,7 +9,7 @@ import {
   type Claim,
   type FinishOutcome,
   type JobState,
-  type Counts,
+  type ProcessingCounts,
   ProcessorRepository,
 } from '../repositories/processor.repository';
 import { VocabRepository } from '../repositories/vocab.repository';
@@ -65,10 +65,18 @@ export interface PreviewResult {
 
 export interface ProcessorStatus {
   models: { extraction: string };
-  /** Listing jobs only until the status reports posts too. */
-  jobs: Counts;
+  /** In-scope jobs per processing status, listings and posts apart. */
+  jobs: ProcessingCounts;
+  /** Today's spend on listings and posts together; the budget covers both. */
   estimatedCostTodayUsd: number;
   dailyBudgetUsd: number;
+  posts: {
+    /** Post extraction calls today; the cap counts these. */
+    callsToday: number;
+    /** 0 pauses post extraction. */
+    dailyCap: number;
+    estimatedCostTodayUsd: number;
+  };
   /** Only this process's pause; another worker process may be paused too. */
   paused: boolean;
   pause: PauseState | null;
@@ -144,7 +152,8 @@ export class ProcessorService {
     try {
       const job = await this.jobs.loadJob(claim.jobId);
       // A post's calls count toward the post cap.
-      if (job?.kind === 'post') log = new AttemptLog(jobId, { docType: 'post' });
+      if (job?.kind === 'post')
+        log = new AttemptLog(jobId, { docType: 'post' });
       log.info(
         `claimed${job?.kind === 'post' ? ' post' : ''} (attempt ${claim.attempts} of ${this.config.maxAttempts})`,
       );
@@ -227,9 +236,14 @@ export class ProcessorService {
       models: {
         extraction: this.config.extractionModel,
       },
-      jobs: (await this.jobs.processingCounts()).listings,
+      jobs: await this.jobs.processingCounts(),
       estimatedCostTodayUsd: await this.guard.spentToday(),
       dailyBudgetUsd: this.config.dailyBudgetUsd,
+      posts: {
+        callsToday: await this.guard.postCallsToday(),
+        dailyCap: this.config.postDailyCap,
+        estimatedCostTodayUsd: await this.guard.spentToday('post'),
+      },
       paused: this.guard.isPaused(),
       pause: this.guard.pauseState(),
       weeklyUtilization: this.guard.lastWeeklyUtilization(),

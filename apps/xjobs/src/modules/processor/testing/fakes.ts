@@ -24,6 +24,7 @@ import {
   type ProcessingCounts,
   ProcessorRepository,
   readStoredData,
+  type DocType,
   type MarkPendingResult,
   type ReprocessFilter,
   type ReuseKey,
@@ -213,9 +214,14 @@ export class MemoryProcessorRepository extends ProcessorRepository {
   }
 
   /** Logs a non-eval attempt costing `costUsd` at `at`. */
-  addSpend(costUsd: number, at: Date = this.now()): void {
+  addSpend(
+    costUsd: number,
+    at: Date = this.now(),
+    docType: 'listing' | 'post' = 'listing',
+  ): void {
     this.attempts.push({
       ...attemptDefaults(),
+      docType,
       costUsd,
       id: randomUUID(),
       createdAt: at,
@@ -446,10 +452,15 @@ export class MemoryProcessorRepository extends ProcessorRepository {
     return n;
   }
 
-  async spendSince(since: Date): Promise<number> {
+  async spendSince(since: Date, docType?: DocType): Promise<number> {
     this.log.push('spendSince');
     return this.attempts
-      .filter((a) => !a.eval && a.createdAt >= since)
+      .filter(
+        (a) =>
+          !a.eval &&
+          a.createdAt >= since &&
+          (!docType || a.docType === docType),
+      )
       .reduce((sum, a) => sum + a.costUsd, 0);
   }
 

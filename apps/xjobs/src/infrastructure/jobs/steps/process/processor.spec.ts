@@ -21,10 +21,11 @@ function deps(outcome = 'processed', spent = 0, paused = false) {
     },
     repo: {
       listPendingInScope: vi.fn(async () => ['j1', 'j2']),
+      listPendingPosts: vi.fn(async (): Promise<string[]> => []),
       releaseStale: vi.fn(async () => 3),
       spendSince: vi.fn(async () => spent),
     },
-    queue: { enqueue: vi.fn(async () => undefined) },
+    queue: { enqueue: vi.fn(async (_id: string) => undefined) },
     matchQueue: { enqueue: vi.fn(async () => undefined) },
     config,
   };
@@ -32,6 +33,19 @@ function deps(outcome = 'processed', spent = 0, paused = false) {
 const job = (name: string, data: unknown = {}) => ({ name, data });
 
 describe('processProcessJob', () => {
+  it('sweeps the waiting listings first, then the posts', async () => {
+    const d = deps();
+    d.repo.listPendingPosts.mockResolvedValue(['p1']);
+    const result = await processProcessJob(job('sweep'), d as never);
+    expect(d.queue.enqueue.mock.calls.map((c) => c[0])).toEqual([
+      'j1',
+      'j2',
+      'p1',
+    ]);
+    expect(result).toMatchObject({ enqueued: 3 });
+    expect(d.repo.listPendingPosts).toHaveBeenCalledWith(200);
+  });
+
   it('refuses a process-job without a job id', async () => {
     await expect(
       processProcessJob(job('process-job', {}), deps() as never),

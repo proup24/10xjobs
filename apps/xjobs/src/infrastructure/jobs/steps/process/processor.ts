@@ -22,7 +22,7 @@ export interface ProcessJobDeps {
   service: Pick<ProcessorService, 'process' | 'isPaused'>;
   repo: Pick<
     ProcessorRepository,
-    'listPendingInScope' | 'releaseStale' | 'spendSince'
+    'listPendingInScope' | 'listPendingPosts' | 'releaseStale' | 'spendSince'
   >;
   queue: Pick<ProcessQueue, 'enqueue'>;
   matchQueue: Pick<MatchQueue, 'enqueue'>;
@@ -67,9 +67,13 @@ export async function processProcessJob(
     const spent = await deps.repo.spendSince(startOfUtcDay(now));
     if (deps.config.dailyBudgetUsd > 0 && spent >= deps.config.dailyBudgetUsd)
       return { released, enqueued: 0 };
-    const pending = await deps.repo.listPendingInScope(
+    // Listings first, so a post never goes ahead of a listing already waiting.
+    // Posts get the same limit; the daily post cap stops them at the call.
+    const listings = await deps.repo.listPendingInScope(
       processSweepConfig.limit,
     );
+    const posts = await deps.repo.listPendingPosts(processSweepConfig.limit);
+    const pending = [...listings, ...posts];
     for (const jobId of pending) await deps.queue.enqueue(jobId);
     return { released, enqueued: pending.length };
   }

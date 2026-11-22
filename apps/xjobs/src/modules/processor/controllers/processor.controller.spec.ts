@@ -53,6 +53,7 @@ describe('ProcessorController', () => {
 
   it.each([
     [new ProcessorBlockedError('over_budget'), HttpStatus.TOO_MANY_REQUESTS],
+    [new ProcessorBlockedError('post_cap'), HttpStatus.TOO_MANY_REQUESTS],
     [new ProcessorBlockedError('paused'), HttpStatus.SERVICE_UNAVAILABLE],
     [new ProviderUnavailableError('401'), HttpStatus.SERVICE_UNAVAILABLE],
     [new ExtractionFailed(['x: y']), HttpStatus.UNPROCESSABLE_ENTITY],

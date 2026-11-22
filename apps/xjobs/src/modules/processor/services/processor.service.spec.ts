@@ -719,19 +719,57 @@ describe('ProcessorService', () => {
       expect(await service().status()).toEqual({
         models: { extraction: EXT },
         jobs: {
-          pending: 1,
-          processing: 0,
-          processed: 1,
-          failed: 0,
-          archived: 0,
-          unset: 1,
+          listings: {
+            pending: 1,
+            processing: 0,
+            processed: 1,
+            failed: 0,
+            archived: 0,
+            unset: 1,
+          },
+          posts: {
+            pending: 0,
+            processing: 0,
+            processed: 0,
+            failed: 0,
+            archived: 0,
+            unset: 0,
+            outOfWindow: 0,
+            silenced: 0,
+          },
         },
         estimatedCostTodayUsd: 1.5,
         dailyBudgetUsd: 20,
+        posts: {
+          callsToday: 0,
+          dailyCap: config.postDailyCap,
+          estimatedCostTodayUsd: 0,
+        },
         paused: false,
         pause: null,
         weeklyUtilization: null,
       });
+    });
+
+    it('reports the post counts, calls and cost of today apart from the listings', async () => {
+      addJob('p1', { kind: 'post', firstSeenAt: now() });
+      addJob('p2', {
+        kind: 'post',
+        firstSeenAt: now(),
+        processingStatus: 'processed',
+      });
+      repo.addSpend(1, now(), 'listing');
+      repo.addSpend(0.25, now(), 'post');
+      repo.addSpend(0.5, now(), 'post');
+
+      const status = await service().status();
+      expect(status.jobs.posts).toMatchObject({ pending: 1, processed: 1 });
+      expect(status.posts).toEqual({
+        callsToday: 2,
+        dailyCap: config.postDailyCap,
+        estimatedCostTodayUsd: 0.75,
+      });
+      expect(status.estimatedCostTodayUsd).toBe(1.75);
     });
   });
   describe('usage limits', () => {
@@ -1009,12 +1047,8 @@ describe('ProcessorService', () => {
       expect(byKey.get('backend-engineer')?.id).toBe(
         before.get('backend-engineer'),
       );
-      expect(byKey.get('backend-engineer')?.processingStatus).toBe(
-        'processed',
-      );
-      expect(byKey.get('frontend-engineer')?.processingStatus).toBe(
-        'archived',
-      );
+      expect(byKey.get('backend-engineer')?.processingStatus).toBe('processed');
+      expect(byKey.get('frontend-engineer')?.processingStatus).toBe('archived');
       const added = byKey.get('senior-frontend-engineer');
       expect(added?.processingStatus).toBe('processed');
       expect([...before.values()]).not.toContain(added?.id);

@@ -211,7 +211,8 @@ export abstract class ProcessorRepository {
   /** `processing` jobs claimed before `olderThan` go back to `pending`. */
   abstract releaseStale(olderThan: Date): Promise<number>;
   /** Spend of non-eval attempts since `since`, in USD. */
-  abstract spendSince(since: Date): Promise<number>;
+  /** Logged spend since `since`; of one document type, or of every attempt. */
+  abstract spendSince(since: Date, docType?: DocType): Promise<number>;
   /** Sets the matching in-scope jobs to `pending`; returns how many. */
   abstract markPending(filter: ReprocessFilter): Promise<MarkPendingResult>;
   abstract jobState(jobId: string): Promise<JobState | null>;
@@ -556,9 +557,10 @@ export class PrismaProcessorRepository extends ProcessorRepository {
     return released.length;
   }
 
-  async spendSince(since: Date): Promise<number> {
+  async spendSince(since: Date, docType?: DocType): Promise<number> {
     const result = await this.db.orm.public.ProcessingAttempt.where({
       eval: false,
+      ...(docType ? { docType } : {}),
     })
       .where((a) => a.createdAt.gte(since))
       .aggregate((a) => ({ total: a.sum('costUsd') }));

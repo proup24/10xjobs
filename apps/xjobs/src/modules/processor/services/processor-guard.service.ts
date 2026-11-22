@@ -192,8 +192,13 @@ export class ProcessorGuard {
     );
   }
 
-  /** Today's logged spend, for the status endpoint. */
-  async spentToday(): Promise<number> {
-    return this.repo.spendSince(startOfUtcDay(this.now()));
+  /** Today's logged spend (of one document type, or all), for the status endpoint. */
+  async spentToday(docType?: 'listing' | 'post'): Promise<number> {
+    return this.repo.spendSince(startOfUtcDay(this.now()), docType);
+  }
+
+  /** Today's post extraction calls, for the status endpoint. */
+  async postCallsToday(): Promise<number> {
+    return this.repo.postCallsSince(startOfUtcDay(this.now()));
   }
 }

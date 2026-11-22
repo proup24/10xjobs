@@ -1,12 +1,12 @@
 # Processor
 
-The processor is the third stage of the pipeline (Collect → Ingest → **Process** → Match). It reads each in-scope normalized job, asks Claude for the facts the posting establishes, checks them against the text and the list tables, and stores one validated extraction document per run. It never guesses: a fact the posting does not state is `null` or `unstated`.
+The processor is the third stage of the pipeline (Collect → Ingest → **Process** → Match). It reads each in-scope normalized job (a LinkedIn job listing, or a LinkedIn post), asks Claude for the facts the posting establishes, checks them against the text and the list tables, and stores one validated extraction document per run. It never guesses: a fact the posting does not state is `null` or `unstated`.
 
 Design: `docs/superpowers/specs/2026-11-01-processor-design.md`.
 
 ## Flow
 
-1. **Trigger.** Ingest sets a new or reopened job to `pending`. Once its batch is ingested, the ingest worker enqueues every job the batch left `pending` on the `process` queue (LinkedIn job-board batches only, harvestapi's `LINKEDIN_JOB_BOARD` and the trial channels: `isLinkedinJobBoard`, the same channels as `PROCESSOR_CHANNELS`). The processor's sweeper (every 60 s) re-enqueues any pending job a nudge missed and returns stale claims to `pending`.
+1. **Trigger.** Ingest sets a new or reopened job to `pending`. Once its batch is ingested, the ingest worker enqueues every job the batch left `pending` on the `process` queue (LinkedIn job-board batches, harvestapi's `LINKEDIN_JOB_BOARD` and the trial channels: `isLinkedinJobBoard`, the same channels as `PROCESSOR_CHANNELS`; and LinkedIn posts batches, whose pending post jobs go to Extract). The processor's sweeper (every 60 s) re-enqueues any pending job a nudge missed and returns stale claims to `pending`. Each sweep enqueues up to 200 pending listings first, then up to 200 pending posts (newest first), so a post never goes ahead of a listing already waiting.
 2. **One job.** The worker calls `ProcessorService.process(jobId)`, which reads top to bottom:
 
    | Step | Service                     | Does                                                                                                                                                                                                                                                                                                                                                                                                       |
@@ -19,6 +19,16 @@ Design: `docs/superpowers/specs/2026-11-01-processor-design.md`.
    | 6    | `decideFailure` + `finish`  | `processed`, or per the failure table: usage limit or auth failure → `pending` with the attempt given back and a pause; request error or a first generation invalid on every try → `failed`; anything else → `pending` until `PROCESSOR_MAX_ATTEMPTS`, then `failed`. A job that ends `processed` with a current extraction (including a reused one) is handed to the match queue (see `modules/matcher`). |
 
    Every model call goes into an `AttemptLog` and is written once, whatever the outcome.
+
+### Posts
+
+A post job (`kind = 'post'`, from LinkedIn posts search) takes the same path with a post prompt and schema (`PostPipeline`, `PostAssembler`, `PostStore`). Design: `docs/superpowers/specs/2026-11-22-posts-extract-design.md`.
+
+- **One call per post.** The generator returns a verdict (`hiring`, `not_hiring` or `junk`, each with a reason and a confidence) and one entry per role the post offers. `unsure` confidence marks the extraction `needsReview`.
+- **Role jobs.** Each role of a `hiring` post becomes its own `normalized_jobs` row with `kind = 'post_role'`, `parentJobId` set to the post job and a `roleKey` (the role's identity within the post), `processed` with the role's extraction as its current extraction. A role that disappears when the post is processed again is archived, and an archived role that comes back is reopened. Archiving a post job archives its role jobs. Role jobs are never claimed or counted as posts.
+- **Contact checks.** The contact email and the links of a role are hard checks, because they are what slice 05 may email: each must appear in the post text (an address as a whole address, not inside a longer one) and in its quote, or the extraction fails; unsupported quotes elsewhere are cleared and counted.
+- **Reuse.** A post reuses a stored extraction only on the exact key (`inputHash`, schema version, prompt hash, model) and never through joined reuse: a share that joins an original sends the processed post back as `joined`, and Claude reads it again.
+- **Cap.** `POST_EXTRACTION_DAILY_CAP` (default 250, UTC day) limits post calls per day, counted from non-eval `processing_attempts` with `docType = 'post'`; 0 pauses posts. At the cap the job goes back to `pending` with its attempt given back and the outcome is `post_cap` (the API answers 429). Posts also count toward the daily budget `PROCESSOR_DAILY_BUDGET_USD`, which covers listings and posts together.
 
 ### Joined jobs
 
@@ -44,14 +54,14 @@ Jobs ingested before the processor existed have no processing status and are not
 
 Served by the API (`npx nx serve xjobs`), local only, with `XJOBS_OPERATOR_ENDPOINTS=1`, and the engine key, under `/processor`:
 
-| Endpoint                          | Does                                                                                                                                                                                                                                                            |
-| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `POST /processor/preview`         | Runs the extraction on a posting you send (`title` optional, `description`). Returns the document, its typed columns, `needsReview`, the cost and every model call. Saves no extraction and no vocabulary; the calls are recorded and count against the budget. |
-| `POST /processor/jobs/:jobId/run` | Sends one in-scope job back to `pending` and processes it in the request, through the worker's path. Returns the outcome and the job state.                                                                                                                     |
-| `GET /processor/jobs/:jobId`      | The job's processing status, attempts, error and current extraction.                                                                                                                                                                                            |
-| `GET /processor/status`           | In-scope jobs per status (`unset` = never sent), today's spend against the budget, the models, and whether this process is paused.                                                                                                                              |
+| Endpoint                          | Does                                                                                                                                                                                                                                                                                           |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /processor/preview`         | Runs the extraction on a posting you send (`title` optional, `description`). Returns the document, its typed columns, `needsReview`, the cost and every model call. Saves no extraction and no vocabulary; the calls are recorded and count against the budget.                                |
+| `POST /processor/jobs/:jobId/run` | Sends one in-scope job back to `pending` and processes it in the request, through the worker's path. Returns the outcome and the job state.                                                                                                                                                    |
+| `GET /processor/jobs/:jobId`      | The job's processing status, attempts, error and current extraction.                                                                                                                                                                                                                           |
+| `GET /processor/status`           | In-scope jobs per status (`unset` = never sent) for `jobs.listings` and `jobs.posts` (posts also `outOfWindow` and `silenced`, pending ones only), today's spend against the budget, `posts` (calls today, the daily cap, today's post spend), the models, and whether this process is paused. |
 
-Preview and run answer 503 when the app has no Claude credential, 429 once the budget is spent or while a pause is on, 502 on a Claude error, and 422 when the first generation was invalid on every try.
+Preview and run answer 503 when the app has no Claude credential, 429 once the budget is spent or today's post cap is reached, 503 while a pause is on, 502 on a Claude error, and 422 when the first generation was invalid on every try.
 
 ## Models and cost
 
@@ -79,11 +89,16 @@ A call already running when a pause starts finishes normally. Pauses are logged 
 
 ## Scope
 
-A normalized job is in scope when it is `status='active'`, `kind='job'`, and at least one of its sources (`normalized_job_sources` → `raw_items`) has a channel in `PROCESSOR_CHANNELS` (`processor.config.ts`): harvestapi's `LINKEDIN_JOB_BOARD` and the trial channels (`TRIAL_CHANNELS`, today `LINKEDIN_JOB_BOARD_CHEAP`). A LinkedIn job merged with its Ashby or Greenhouse posting is in scope. Only in-scope jobs are listed, claimed or reprocessed; every other job is invisible to the processor. An `archived` job is never claimed. A closed in-scope job is claimed and marked `processed` with no model call and no extraction.
+Two kinds of job are in scope, always `status='active'`:
+
+- **Listings** (`kind='job'`): at least one source (`normalized_job_sources` → `raw_items`) has a channel in `PROCESSOR_CHANNELS` (`processor.config.ts`): harvestapi's `LINKEDIN_JOB_BOARD` and the trial channels (`TRIAL_CHANNELS`, today `LINKEDIN_JOB_BOARD_CHEAP`). A LinkedIn job merged with its Ashby or Greenhouse posting is in scope.
+- **Posts** (`kind='post'`): first seen within the last 7 days, and not every author silenced. A post older than the window (`outOfWindow`) or whose authors are all silenced (`silenced`) is out of scope and stays as it is.
+
+Only in-scope jobs are listed, claimed or reprocessed; every other job, `post_role` jobs included, is invisible to the processor. An `archived` job is never claimed. A closed in-scope job is claimed and marked `processed` with no model call and no extraction.
 
 ## Statuses
 
-`normalized_jobs.processingStatus` is the source of truth; the queue is only a nudge.
+`normalized_jobs.processingStatus` is the source of truth; the queue is only a nudge. The same statuses apply to listings and posts; the status endpoint counts them apart.
 
 | Status       | Meaning                                                                                                                                                                                                                                                    |
 | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -103,7 +118,7 @@ On `normalized_jobs` the processor writes only `processingStatus`, `processingAt
 All of these are shared across workspaces: they describe public postings and carry nothing about any person. Workspace scoping starts at qualify.
 
 - `job_extractions`: one row per completed run, append-only. `data` holds the validated document; the typed columns (`arrangement`, `seniority`, `roleKind`, `contractType`, `engagement`, `isSoftwareEngineeringRole`, `worldwide`, `regionCodes`, `countryCodes`, `cityIds`, `techTags`, `mainStackTags`, `requiredTags`, `niceTags`, salary) are copies for filtering. The tech stack is one list of requirements (spec section 5a): `requiredTags` and `niceTags` hold the tags the posting requires and merely prefers, `techTags` is every tag it names. `requiredTags` also holds every member of an alternative group ("React or Vue" puts both in it), so it is not a list of tags a candidate must all have: matching must read the groups and their `min` from `data.techStack.value.groups`. A requirement whose technology has no code (`code` null) appears only in `data`, never in a tag column. Rows written before schema version 2 have `requiredTags` `'{}'`: filter on `schemaVersion >= 2`, which is also the schema that reads only the title and description (v3). `needsReview` is true when any of `arrangement`, an opening, `seniority`, `position`, `contractType`, `engagement` or `isSoftwareEngineeringRole` is `unsure`, when a `main` stack requirement is `unsure` (`rules/validate.ts`). `(inputHash, schemaVersion, promptHash, extractionModel)` is the reuse key: a run with the same key reuses the row (or copies it, at no cost, for another job) instead of calling a model.
-- `processing_attempts`: one row per model call (`generation`, `generation_retry`; `verification`, `decision`, `extraction` and `extraction_retry` only on rows from before the processor became generator-only), with tokens, `costUsd`, latency, outcome and error. Eval runs are tagged `eval = true` with a null `jobId`; the daily budget sums `costUsd` of non-eval rows only.
+- `processing_attempts`: one row per model call (`generation`, `generation_retry`; `verification`, `decision`, `extraction` and `extraction_retry` only on rows from before the processor became generator-only), with tokens, `costUsd`, latency, outcome and error. Eval runs are tagged `eval = true` with a null `jobId`; the daily budget sums `costUsd` of non-eval rows only, and the post cap counts the non-eval `post` rows.
 - List tables `tech_tags`, `regions`, `countries`, `role_kinds`, `seniorities`, `arrangements`, `contract_types`, `engagements`, `junk_flags`: `code`, `label`, `aliases`, `status` (`approved` | `proposed`), `occurrences`. Only approved rows are offered to the models or matched. An unknown term is upserted as `proposed` under the slug of its text; an approved row with that code is never touched. `tech_tags` adds `family` and `implies`; `region_countries` lists each region's countries.
 - `cities`: created as postings name them, `proposed`, unique per `(nameKey, countryCode)` where `nameKey` is the lower-cased name.
 
@@ -118,6 +133,15 @@ The PostgreSQL tests (`repositories/processor.postgres.spec.ts`) need `PROCESSOR
 ```sh
 PROCESSOR_TEST_DATABASE_URL=postgresql://postgres:<password>@127.0.0.1:<port>/processor_test npx vitest run --config apps/xjobs/vitest.config.mts src/modules/processor/repositories
 ```
+
+The ingest Postgres specs (`modules/ingest`) need their own database named `ingest_test` (`INGEST_TEST_DATABASE_URL`), with the same rules. Make it on the same container by restoring a dump of `processor_test` (`CREATE DATABASE ... TEMPLATE` fails while pg_cron holds a session):
+
+```sh
+docker exec <container> psql -U supabase_admin -d postgres -c 'CREATE DATABASE ingest_test'
+docker exec <container> pg_dump -U supabase_admin processor_test | docker exec -i <container> psql -U supabase_admin -d ingest_test
+```
+
+Run `pnpm db:migrate` against each database after a contract change.
 
 ## Approving terms
 
