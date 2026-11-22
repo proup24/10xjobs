@@ -972,8 +972,8 @@
         }
       ]
     },
-    "label": "hiring",
-    "note": "freelance recruiter relays micro1 senior full-stack engineer openings with apply link"
+    "label": "unsure",
+    "note": "owner: This looks like junk, they mention 300 openings, for unclear company, likely aggregator or sales people, we have to be able to recognize junk like this | pre-label: freelance recruiter relays micro1 senior full-stack engineer openings with apply link"
   },
   {
     "rawItemId": "01a1fd58-e61a-709c-a408-7126084013ea",
@@ -1133,8 +1133,8 @@
         }
       ]
     },
-    "label": "hiring",
-    "note": "'Urgent Hiring' Full-stack Engineer remote Africa, mid-level, deadline given"
+    "label": "unsure",
+    "note": "owner: Hiring, but it links to a whatsapp chat, which is a sign for junk | pre-label: 'Urgent Hiring' Full-stack Engineer remote Africa, mid-level, deadline given"
   },
   {
     "rawItemId": "01a1ff46-806c-74a7-97e7-83f5ef4e4c24",
@@ -1361,8 +1361,8 @@
         }
       ]
     },
-    "label": "unsure",
-    "note": "'35+ openings' generic list of IT role names, '100% permanent WFH'; agency, no company"
+    "label": "not_hiring",
+    "note": "owner: Vague, and I opened the link, they are selling courses not hiring, we should be able to recognize such posts | pre-label: '35+ openings' generic list of IT role names, '100% permanent WFH'; agency, no company"
   },
   {
     "rawItemId": "01a1fd5b-15a9-7449-85b7-23635d5f2885",
@@ -2630,8 +2630,8 @@
         }
       ]
     },
-    "label": "hiring",
-    "note": "agency CEO lists openings incl. Senior Full-stack Engineer (same as #5)"
+    "label": "unsure",
+    "note": "owner: Hiring but this seems like aggregators, posting that list many job vacancies / different roles, locations and companies, is a junk sign | pre-label: agency CEO lists openings incl. Senior Full-stack Engineer (same as #5)"
   },
   {
     "rawItemId": "01a20245-6ee0-730e-ba40-e1c34370e5ea",
@@ -5347,8 +5347,8 @@
       "shareLinkedinUrl": "https://www.linkedin.com/feed/update/urn:li:share:7530166247179726849",
       "contentAttributes": []
     },
-    "label": "unsure",
-    "note": "holiday job-search advice plus digest of companies with remote roles; links in comment"
+    "label": "not_hiring",
+    "note": "owner: Not hiring, this is more like aggregators sharing company names who might be hiring, we should be able to recognize those as well | pre-label: holiday job-search advice plus digest of companies with remote roles; links in comment"
   },
   {
     "rawItemId": "01a1fd5a-b1f9-7659-affc-5168b97af4dd",
@@ -6853,8 +6853,8 @@
         }
       ]
     },
-    "label": "unsure",
-    "note": "'WE'RE HIRING OPT students', role list plus training/placement/visa help: OPT agency"
+    "label": "not_hiring",
+    "note": "owner: Same here, this is not a a role, they are looking for clients among freshers looking for jobs | pre-label: 'WE'RE HIRING OPT students', role list plus training/placement/visa help: OPT agency"
   },
   {
     "rawItemId": "01a1fd58-5e41-700a-9961-bce3d2cf1efc",
@@ -7244,8 +7244,8 @@
         }
       ]
     },
-    "label": "unsure",
-    "note": "'Multiple job openings across India' generic frontend role list, 0-15 yrs, WhatsApp group"
+    "label": "not_hiring",
+    "note": "owner: This might seem like they are hiring, but hey are not, likely an aggregator selling candidate information to employers | pre-label: 'Multiple job openings across India' generic frontend role list, 0-15 yrs, WhatsApp group"
   },
   {
     "rawItemId": "01a1fd58-f650-707c-87e3-cd92cf60991b",
@@ -8821,8 +8821,8 @@
         }
       ]
     },
-    "label": "unsure",
-    "note": "bench-sales lead relays Junior Data Analyst 0-5 yrs to a gmail 'resume.database'; may be harvesting"
+    "label": "hiring",
+    "note": "owner: They mention a data analysis role with clear requirements | pre-label: bench-sales lead relays Junior Data Analyst 0-5 yrs to a gmail 'resume.database'; may be harvesting"
   },
   {
     "rawItemId": "01a20321-22c2-70fb-9999-501f4a9b8ab5",
@@ -8907,8 +8907,8 @@
         }
       ]
     },
-    "label": "unsure",
-    "note": "'WE'RE HIRING IT roles' generic role list at 'MNCs' + free training + WhatsApp group; lead-gen"
+    "label": "not_hiring",
+    "note": "owner: Junk, no clear role, or employing company, requirements or responsibilities | pre-label: 'WE'RE HIRING IT roles' generic role list at 'MNCs' + free training + WhatsApp group; lead-gen"
   },
   {
     "rawItemId": "01a201a0-896e-766d-a404-7a8fd97d6871",
@@ -9472,8 +9472,8 @@
       "shareLinkedinUrl": "https://www.linkedin.com/feed/update/urn:li:share:7529528381563076608",
       "contentAttributes": []
     },
-    "label": "unsure",
-    "note": "edutech (Corizo) 'internship and hiring programme' with live training, stipend; may be course funnel"
+    "label": "hiring",
+    "note": "owner: They are hiring though this is for students, but I'd label it as hiring though these isnt engineering role | pre-label: edutech (Corizo) 'internship and hiring programme' with live training, stipend; may be course funnel"
   },
   {
     "rawItemId": "01a1fd5a-ea9a-72bb-8a48-cd5863c9db81",
