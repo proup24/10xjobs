@@ -269,6 +269,22 @@ export function postScopeSql(raw: Raw, alias: string) {
 }
 
 /**
+ * True when the job aliased `alias` has a LinkedIn job board source: the same
+ * test as `id IN (linkedInJobIds)`, but correlated, so inside an OR it probes
+ * that job's sources by index instead of hashing every LinkedIn source.
+ */
+function hasLinkedInSourceSql(raw: Raw, alias: string) {
+  return fragment(
+    raw,
+    [
+      `EXISTS (SELECT 1 FROM normalized_job_sources s JOIN raw_items r ON r.id = s."rawItemId" WHERE s."jobId" = ${alias}.id AND r.channel = ANY(`,
+      `::text[]))`,
+    ],
+    `{${PROCESSOR_CHANNELS.join(',')}}`,
+  );
+}
+
+/**
  * The processor's scope on the job aliased `alias`: a listing `job` with a
  * LinkedIn job board source, or an in-window, unsilenced `post`. Never a
  * `post_role` job. The caller checks `status = 'active'`.
@@ -278,8 +294,8 @@ export function processorScopeSql(raw: Raw, alias: string) {
   const a = alias;
   return fragment(
     raw,
-    [`((${a}.kind = 'job' AND ${a}.id IN (`, `)) OR `, `)`],
-    linkedInJobIds(raw),
+    [`((${a}.kind = 'job' AND `, `) OR `, `)`],
+    hasLinkedInSourceSql(raw, a),
     postScopeSql(raw, a),
   );
 }
@@ -663,7 +679,7 @@ export class PrismaProcessorRepository extends ProcessorRepository {
     const rows = await this.db.query(
       raw.sql`UPDATE normalized_jobs SET "processingStatus" = 'archived', "updatedAt" = now()
         WHERE "parentJobId" = ${postJobId}::uuid AND kind = 'post_role'
-          AND "roleKey" NOT IN (SELECT jsonb_array_elements_text(${JSON.stringify(keep)}::jsonb))
+          AND NOT coalesce("roleKey" = ANY(ARRAY(SELECT jsonb_array_elements_text(${JSON.stringify(keep)}::jsonb))), false)
           AND "processingStatus" IS DISTINCT FROM 'archived'
         RETURNING id`
         .returnsRow({ id: UUID })

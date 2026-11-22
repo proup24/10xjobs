@@ -1114,6 +1114,29 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
         });
       });
 
+      it('archives a role job with no role key', async () => {
+        const { postId, extractionId } = await roleSetup();
+        const postRow = await jobRow(postId);
+        const orphan = await db.orm.public.NormalizedJob.create({
+          jobKey: `${postRow.jobKey}#role:none`,
+          kind: 'post_role',
+          status: 'active',
+          mergedIntoId: null,
+          parentJobId: postId,
+          roleKey: null,
+          postingUrl: postRow.postingUrl,
+          closed: false,
+          fieldSources: {},
+          firstSeenAt: postRow.firstSeenAt,
+          lastSeenAt: postRow.lastSeenAt,
+          processingStatus: 'processed',
+          currentExtractionId: extractionId,
+          normalizerVersion: 1,
+        });
+        expect(await repo.archiveRoleJobs(postId, ['a'])).toBe(1);
+        expect((await jobRow(orphan.id)).processingStatus).toBe('archived');
+      });
+
       it('never claims, lists or counts a role job', async () => {
         const { postId, extractionId } = await roleSetup();
         const id = await repo.upsertRoleJob({
