@@ -1,4 +1,5 @@
 import plain from './fixtures/plain-post.json';
+import share from './fixtures/share.json';
 import { readOriginal, readPostPayload } from './payload';
 
 describe('readPostPayload', () => {
@@ -84,5 +85,72 @@ describe('readPostPayload', () => {
 
   it('readOriginal returns null for the fixture', () => {
     expect(readOriginal(plain)).toBeNull();
+  });
+
+  it('reads an attached LinkedIn job as a stable link outside the text', () => {
+    const raw = readPostPayload({
+      ...plain,
+      job: {
+        title: 'Full Stack Developer',
+        linkedinUrl:
+          'https://www.linkedin.com/jobs/view/4492857632/?refId=1sl%2FNRX&trackingId=1sl%2FNRX',
+      },
+    });
+    // refId and trackingId change between scrapes of one post.
+    expect(raw.linkUrls).toEqual([
+      'https://www.linkedin.com/jobs/view/4492857632/',
+    ]);
+  });
+});
+
+describe('readOriginal', () => {
+  it('reads the shared original nested in the payload', () => {
+    const original = readOriginal(share);
+    expect(original).toMatchObject({
+      id: '7526947052816121856',
+      url: share.repost.linkedinUrl,
+      text: share.repost.content,
+      postedAt: '2026-11-13T10:00:21.305Z',
+      author: {
+        publicIdentifier: 'iahmediibrahim',
+        universalName: null,
+        type: 'person',
+        name: 'Ahmed Ibrahim',
+      },
+      linkUrls: [],
+      imageUrls: [share.repost.postImages[0]!.url],
+    });
+    expect(readPostPayload(share).original).toEqual(original);
+  });
+
+  it("keeps a share's own attachments apart from its original's", () => {
+    const raw = readPostPayload({
+      ...share,
+      article: { link: 'https://sharer.example/portfolio' },
+      repost: {
+        ...share.repost,
+        article: { link: 'https://jobs.ashbyhq.com/acme/1' },
+        job: { linkedinUrl: 'https://www.linkedin.com/jobs/view/4492769811/' },
+      },
+    });
+    expect(raw.linkUrls).toEqual(['https://sharer.example/portfolio']);
+    expect(raw.imageUrls).toEqual([]);
+    expect(raw.original?.linkUrls).toEqual([
+      'https://jobs.ashbyhq.com/acme/1',
+      'https://www.linkedin.com/jobs/view/4492769811/',
+    ]);
+  });
+
+  it('reads a repost whose outer text is empty the same way', () => {
+    // No plain repost occurs in the real data; this is a share with no added text.
+    expect(readOriginal({ ...share, content: '' })).toEqual(
+      readOriginal(share),
+    );
+  });
+
+  it('is null, never a throw, when the original is missing or malformed', () => {
+    for (const repost of [undefined, null, 'x', 7, [], [share.repost], {}])
+      expect(readOriginal({ ...share, repost })).toBeNull();
+    expect(readOriginal({ ...share, repost: { content: '  ' } })).toBeNull();
   });
 });

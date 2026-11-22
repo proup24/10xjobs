@@ -10,8 +10,11 @@ import { z } from 'zod';
  * line breaks survive; run `db:renormalize` once (it sends nothing to Process).
  * Version 8 maps LinkedIn posts to `kind: 'post'` records with a `post` object;
  * run `db:renormalize`.
+ * Version 9 reads a share's nested original (with its own attachments) so a
+ * share or repost joins its original's job, and reads a post's attached
+ * LinkedIn job as a link; run `db:renormalize`.
  */
-export const NORMALIZER_VERSION = 8;
+export const NORMALIZER_VERSION = 9;
 
 const text = z.string().min(1).nullable();
 const url = z.url({ protocol: /^https?$/ });

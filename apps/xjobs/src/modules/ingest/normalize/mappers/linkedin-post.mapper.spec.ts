@@ -1,19 +1,28 @@
 import { Channel } from 'src/common/enums';
+import company from '../posts/fixtures/company-author.json';
 import plain from '../posts/fixtures/plain-post.json';
+import share from '../posts/fixtures/share.json';
+import { cleanPostText } from '../posts/clean';
 import { type DropRule, DROP_RULES } from '../posts/rules';
 import { normalize, type NormalizedRecord, RECORD_FIELDS } from '..';
+import { jobKey } from '../job-key';
 import type { RawPost } from '../posts/payload';
 import { mapLinkedinPost } from './linkedin-post.mapper';
 
-const stub = vi.hoisted(() => ({ original: null as RawPost['original'] }));
+// A set `stub.original` replaces the payload's original; undefined reads the real one.
+const stub = vi.hoisted(() => ({
+  original: undefined as RawPost['original'] | undefined,
+}));
 vi.mock('../posts/payload', async (importOriginal) => {
   const real = await importOriginal<typeof import('../posts/payload')>();
   return {
     ...real,
-    readPostPayload: (p: Record<string, unknown>) => ({
-      ...real.readPostPayload(p),
-      original: stub.original,
-    }),
+    readPostPayload: (p: Record<string, unknown>) => {
+      const raw = real.readPostPayload(p);
+      return stub.original === undefined
+        ? raw
+        : { ...raw, original: stub.original };
+    },
   };
 });
 
@@ -171,10 +180,12 @@ describe('mapLinkedinPost with an original', () => {
     text,
     postedAt: null,
     author: author('Original headline'),
+    linkUrls: [],
+    imageUrls: [],
   });
 
   afterEach(() => {
-    stub.original = null;
+    stub.original = undefined;
   });
 
   it('describes with the original and keeps the share text in post.text', () => {
@@ -241,5 +252,109 @@ describe('mapLinkedinPost with an original', () => {
     const r = mapped({ ...plain, content: 'Mail me at me@x.example' });
     expect(r.post?.links.emails).toEqual(['me@x.example']);
     expect(r.post?.links.atsPostings).toHaveLength(1);
+  });
+});
+
+// No plain repost (no added text) occurs in the real data, so it has no fixture test.
+describe('mapLinkedinPost with a real share', () => {
+  const keyOf = (payload: Record<string, unknown>) =>
+    jobKey(Channel.LINKEDIN_POSTS, `id:${String(payload.id)}`, mapped(payload));
+  /**
+   * The nested original as that post scraped alone: the nested object has the
+   * top-level shape minus `type`, `query` and the always-empty reaction and
+   * comment id lists, none of which the mapper reads.
+   */
+  const alone = (repost: Record<string, unknown>) => ({
+    type: 'post',
+    ...repost,
+  });
+
+  it('keeps the added text and describes with the original', () => {
+    const r = mapped(share);
+    expect(r.post?.text).toBe(cleanPostText(share.content));
+    expect(r.descriptionText).toBe(cleanPostText(share.repost.content));
+    expect(r.post?.original).toMatchObject({
+      id: share.repost.id,
+      url: share.repost.linkedinUrl,
+      author: { key: 'profile:iahmediibrahim', name: 'Ahmed Ibrahim' },
+      text: cleanPostText(share.repost.content),
+      truncated: false,
+      attachedUrls: [],
+      postedAt: '2026-11-13T10:00:21.305Z',
+    });
+    expect(r.postedAt).toBe('2026-11-20T18:11:04.175Z');
+  });
+
+  it("gets its original's key, the key the original has scraped alone", () => {
+    const key = keyOf(share);
+    expect(key).toMatch(/^linkedin-post:text:/);
+    expect(keyOf(alone(share.repost))).toBe(key);
+  });
+
+  it("keys by the original's attachments, never the sharer's", () => {
+    const attached = {
+      ...share.repost,
+      article: { link: 'https://jobs.ashbyhq.com/acme/1' },
+      job: {
+        linkedinUrl:
+          'https://www.linkedin.com/jobs/view/4492769811/?refId=a&trackingId=a',
+      },
+    };
+    const withAttached = { ...share, repost: attached };
+    const r = mapped(withAttached);
+    expect(r.post?.original?.attachedUrls).toEqual([
+      'https://jobs.ashbyhq.com/acme/1',
+      'https://www.linkedin.com/jobs/view/4492769811/',
+    ]);
+    expect(r.post?.links.linkedinJobIds).toEqual(['4492769811']);
+    const key = keyOf(withAttached);
+    expect(key).not.toBe(keyOf(share));
+    expect(keyOf(alone(attached))).toBe(key);
+    // A rescrape's new tracking ids keep the key.
+    expect(
+      keyOf({
+        ...share,
+        repost: {
+          ...attached,
+          job: {
+            linkedinUrl:
+              'https://www.linkedin.com/jobs/view/4492769811/?refId=b&trackingId=b',
+          },
+        },
+      }),
+    ).toBe(key);
+
+    const sharerArticle = {
+      ...share,
+      article: { link: 'https://sharer.example/portfolio' },
+    };
+    expect(mapped(sharerArticle).post?.attachedUrls).toEqual([
+      'https://sharer.example/portfolio',
+    ]);
+    expect(mapped(sharerArticle).post?.original?.attachedUrls).toEqual([]);
+    expect(keyOf(sharerArticle)).toBe(keyOf(share));
+  });
+
+  it('reads an attached LinkedIn job into the linked job ids', () => {
+    const r = mapped({
+      ...company,
+      job: {
+        title: 'Full Stack Developer',
+        linkedinUrl:
+          'https://www.linkedin.com/jobs/view/4492857632/?refId=1sl%2FNRX&trackingId=1sl%2FNRX',
+      },
+    });
+    expect(r.post?.links.linkedinJobIds).toEqual(['4492857632']);
+    expect(r.post?.attachedUrls).toContain(
+      'https://www.linkedin.com/jobs/view/4492857632/',
+    );
+  });
+
+  it('reads a share whose original is missing or malformed as an original', () => {
+    for (const repost of [null, 'x', 7, [], {}]) {
+      const r = mapped({ ...share, repost });
+      expect(r.post?.original).toBeNull();
+      expect(r.descriptionText).toBe(cleanPostText(share.content));
+    }
   });
 });
