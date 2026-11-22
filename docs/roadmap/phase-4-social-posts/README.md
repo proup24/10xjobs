@@ -88,6 +88,6 @@ Posts join the existing job pipeline rather than getting a separate one: a prepa
 ## Out of scope for this phase
 
 - Claude-written personalization for each email (after v1).
-- Replying to, following up on or tracking responses to emails (Phase 5 territory).
+- Replying to, following up on or tracking responses to emails (Phase 6 and 7 territory).
 - DMs, comments or connection requests on LinkedIn.
 - Tailored resumes and application forms.
