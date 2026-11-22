@@ -18,6 +18,10 @@ A post that qualifies for a profile and states a contact email gets one email fr
 - **Emailed posts show under Applied on the social posts page** (slice 04a), never under Matches _(user)_.
 - **A post by an author the user blocked is never emailed** (the per-user list from slice 04a) _(user)_.
 
+- **Gate** _(user, 2026-11-22, slice 03)_: nothing is sent automatically until slice 03's post eval passes its bars on the current prompt, schema and model: no not-hiring or junk post comes out hiring with a contact email, the contact email is exact on every hiring post, and at least 95% of hiring posts come out hiring.
+- **Never for an unsure verdict** _(user, 2026-11-22)_: a role job whose post verdict is unsure is never emailed, whatever its match outcome.
+- **One email per post per user**, naming the role that matched, when a post names several roles (slice 03 makes one job per role).
+
 ## In scope
 
 - Connecting a user's Gmail, with permission only to send.

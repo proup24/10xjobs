@@ -1,5 +1,7 @@
 # 03: Extract
 
+Spec: [2026-11-22-posts-extract-design.md](../../superpowers/specs/2026-11-22-posts-extract-design.md). The spec settles this brief's open questions.
+
 ## Goal
 
 A Claude step reads each prepared post and pulls out its facts: role title, stack, seniority, arrangement, location, company, the contact email and the apply link. A fact the post doesn't state stays empty. Nothing is guessed.
