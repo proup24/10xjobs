@@ -16,6 +16,10 @@ Until slice 04, collected posts are stored raw and never matched, and until slic
 - The switch on the profile page (`apps/web/src/components/preferences/post-search-switch.tsx`), shown only to listed users.
 - One daily budget for the posts channel, `COLLECTION_DAILY_BUDGET_USD_LINKEDIN_POSTS` (default $1.50). Segments run in sorted key order each tick, so when the budget runs out, the keys that sort last are skipped (the known limit in the slice 01 spec).
 
+## Shared with Phase 5
+
+Phase 5 (Indeed) runs alongside this phase _(user, 2026-11-22)_ and needs the same kind of per-profile switch without an allow-list ([Phase 5 slice 02](../phase-5-indeed/02-indeed-switch.md)). Build the switch here as a shared per-profile channel switch (one component, endpoint shape and builder attach/detach path for posts, Indeed and later channels). Whichever slice lands first builds the shared part, and the other adopts it.
+
 ## In scope
 
 - **Remove the allow-list** _(user, 2026-11-20)_: `POST_SEARCH_USERS`, the 403 path, `allowed` in the engine's post search view and the web client, and the regenerate script's allow-list handling. Builders are attached whenever a profile's post search is on.

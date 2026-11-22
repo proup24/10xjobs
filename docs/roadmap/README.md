@@ -68,14 +68,22 @@ Collect LinkedIn hiring posts for each published profile, clean and pre-filter t
 
 **Slices:** [phase-4-social-posts/](phase-4-social-posts/README.md)
 
-### Phase 5: Apply
+### Phase 5: Indeed
+
+Add Indeed as a job-board channel, through Apify, and prove what it adds: the qualified jobs the user applies to that LinkedIn, Greenhouse and Ashby didn't bring, where it overlaps with them, and which Indeed actor to use. Indeed jobs take the LinkedIn job-board path (searches from the profile, the same processor and matcher) and are switched on per profile in preferences.
+
+**Exit criteria:** see the phase README.
+
+**Slices:** [phase-5-indeed/](phase-5-indeed/README.md)
+
+### Phase 6: Apply
 
 - Tailor a personalized one-page resume per qualified job, and render it.
 - Fill application forms from a personal fact bank.
 
 How much a human reviews before anything is sent is decided in this phase's spec.
 
-### Phase 6: Track and report
+### Phase 7: Track and report
 
 Report what's new and how the pipeline is performing: volume and pass rates per stage and per source, plus application outcomes.
 
