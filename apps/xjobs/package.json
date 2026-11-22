@@ -18,6 +18,7 @@
     "db:split-check": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/split-check.ts",
     "db:vocab": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/vocab.ts",
     "db:spellings": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/spellings.ts",
+    "db:post-sample": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/post-sample.ts",
     "processor:golden-import": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/processor-golden-import.ts",
     "processor:golden-draft": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/processor-golden-draft.ts",
     "processor:eval": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/processor-eval.ts",

@@ -28,6 +28,18 @@ export function authorOf(a: RawPost['author']): PostAuthor {
   };
 }
 
+/**
+ * What a post object's own payload says about its text and attachments, read
+ * the same way for a post and for the original it shares, so a share keys
+ * exactly like its original scraped alone.
+ */
+function ownParts(p: { text: string | null; linkUrls: string[] }) {
+  return {
+    truncated: hasSeeMoreTail(p.text ?? ''),
+    attachedUrls: [...new Set(p.linkUrls)],
+  };
+}
+
 /** A LinkedIn post (harvestapi/linkedin-post-search item). Pure. */
 export function mapLinkedinPost(
   payload: Record<string, unknown>,
@@ -47,9 +59,11 @@ export function mapLinkedinPost(
   // must still reach Extract, so an original with no text falls back to it.
   const description = originalText || ownText;
   // Rules judge the original post, never the sharer.
+  const judged = original ?? raw;
   const drop = firstDrop({
     text: original ? originalText : ownText,
-    headline: original ? original.author.info : raw.author.info,
+    headline: judged.author.info,
+    openToWorkCard: judged.openToWorkCard,
   });
   if (drop) return { invalid: `prepare: ${drop.rule}: "${drop.match}"` };
 
@@ -72,8 +86,7 @@ export function mapLinkedinPost(
       url: postingUrl,
       author,
       text: ownText || null,
-      truncated: hasSeeMoreTail(raw.text ?? ''),
-      attachedUrls: [...new Set(raw.linkUrls)],
+      ...ownParts(raw),
       postedAt: raw.postedAt,
       original: original
         ? {
@@ -86,16 +99,14 @@ export function mapLinkedinPost(
                 ? authorOf(original.author)
                 : null,
             text: originalText || null,
-            truncated: hasSeeMoreTail(original.text ?? ''),
-            // The original's attachments arrive with its real shape (Task 11).
-            attachedUrls: [],
+            ...ownParts(original),
             postedAt: original.postedAt,
           }
         : null,
-      links: sortLinks(
-        [raw.text ?? '', original?.text ?? ''].join('\n'),
-        raw.linkUrls,
-      ),
+      links: sortLinks([raw.text ?? '', original?.text ?? ''].join('\n'), [
+        ...raw.linkUrls,
+        ...(original?.linkUrls ?? []),
+      ]),
     },
   });
 }

@@ -1,0 +1,79 @@
+{
+  "id": "7529704645947154433",
+  "type": "post",
+  "query": {
+    "page": 2,
+    "search": "hiring (fullstack OR \"full stack\") (\"claude code\" OR nestjs OR nextjs OR nodejs) remote",
+    "sortBy": "date",
+    "postedLimit": "week"
+  },
+  "author": {
+    "id": "102634140",
+    "urn": "102634140",
+    "info": "27,311 followers",
+    "name": "RemoteYeah",
+    "type": "company",
+    "avatar": {
+      "url": "https://media.licdn.com/dms/image/v2/D4E0BAQFxC5VBQl2IBQ/company-logo_400_400/B4EZnhrwCSHoAY-/0/1760427967022/remoteyeah_logo?e=1796860800&v=beta&t=f4GMs6H1LojZD-qHdLb7fpWRYQhngZEvHFxO-MWjgoM",
+      "width": 400,
+      "height": 400
+    },
+    "website": null,
+    "companyId": "102634140",
+    "linkedinUrl": "https://www.linkedin.com/company/remoteyeah/posts",
+    "websiteLabel": null,
+    "universalName": "remoteyeah",
+    "publicIdentifier": null
+  },
+  "header": {
+    "text": null
+  },
+  "article": {
+    "link": "https://remoteyeah.com/jobs/remote-full-stack-engineer-pavago-19?utm_source=linkedin",
+    "image": {
+      "url": "https://media.licdn.com/dms/image/sync/v2/D4E27AQG2-ONDYragTQ/articleshare-shrink_1280_800/B4EaH7ifB5HUAg-/0/1795221484112?e=1795892400&v=beta&t=LVzI_aBq66_RUzHwMBEaNZAsDcs0rRT8unNaO39qd2Q",
+      "width": 1200,
+      "height": 675
+    },
+    "title": "Remote Full Stack Engineer at Pavago",
+    "subtitle": "remoteyeah.com",
+    "linkLabel": "Open article: Remote Full Stack Engineer at Pavago by remoteyeah.com",
+    "description": null
+  },
+  "content": "Pavago is hiring a Remote Full Stack Engineer. 🏢 Employment type: Full-time, 📍Remote locations: India\n\n💻 Skills: JavaScript, React.js, Next.js, OpenAI, Webhook, Python, Apache Spark\n\nRepost to help your network 🌱\n\n#remotework #remoteworking #remotejobs #workfromhome #wfh #software #developer #dev #coding #hiring #tech #engineer #development #career #jobopening #javascript #reactjs #nextjs #openai #webhook #python #apachespark #fullstackengineer #fulltime\n\nApply now: https://lnkd.in/e5qQh73U",
+  "comments": [],
+  "entityId": "7529704645947154433",
+  "postedAt": {
+    "date": "2026-11-21T00:38:02.741Z",
+    "timestamp": 1795221482741,
+    "postedAgoText": "17 hours ago • Visible to anyone on or off LinkedIn",
+    "postedAgoShort": "17h"
+  },
+  "shareUrn": "urn:li:share:7529704645212934144",
+  "reactions": [],
+  "commentIds": [],
+  "engagement": {
+    "id": "7529704645947154433",
+    "likes": 0,
+    "shares": 0,
+    "comments": 0,
+    "reactions": []
+  },
+  "postImages": [],
+  "linkedinUrl": "https://www.linkedin.com/posts/remoteyeah_remote-full-stack-engineer-at-pavago-activity-7529704645947154433-jAVN",
+  "reactionIds": [],
+  "socialContent": {
+    "shareUrl": "https://www.linkedin.com/posts/remoteyeah_remote-full-stack-engineer-at-pavago-activity-7529704645947154433-jAVN?",
+    "trustInterventionBanner": null
+  },
+  "shareLinkedinUrl": "https://www.linkedin.com/feed/update/urn:li:share:7529704645212934144",
+  "contentAttributes": [
+    {
+      "type": "TEXT_LINK",
+      "start": 471,
+      "length": 24,
+      "textLink": "https://lnkd.in/e5qQh73U",
+      "hyperlink": null
+    }
+  ]
+}

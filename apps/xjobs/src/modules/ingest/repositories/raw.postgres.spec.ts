@@ -20,6 +20,7 @@ import ashbyFailed from '../utils/fixtures/ashby-failed.json';
 import ashby from '../utils/fixtures/ashby.json';
 import greenhouse from '../utils/fixtures/greenhouse.json';
 import linkedinJob from '../utils/fixtures/linkedin-job.json';
+import share from '../normalize/posts/fixtures/share.json';
 import linkedinPost from '../utils/fixtures/linkedin-post.json';
 import bebityJob from '../utils/fixtures/linkedin-job-bebity.json';
 import cheapJob from '../utils/fixtures/linkedin-job-cheap.json';
@@ -1250,6 +1251,28 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
           '7390000000000000001',
           '7390000000000000002',
         ]);
+        expect(await sources()).toHaveLength(2);
+      });
+
+      it('joins a share to its original, original first', async () => {
+        const { repost } = structuredClone(share);
+        // Scraped alone, the original is dated after the share, so only the
+        // originals-first rank, never posting time, can put it first.
+        repost.postedAt = {
+          ...repost.postedAt,
+          date: '2026-11-21T09:00:00.000Z',
+          timestamp: Date.parse('2026-11-21T09:00:00.000Z'),
+        };
+        expect(repost.postedAt.date > share.postedAt.date).toBe(true);
+        // The share is collected first: its order comes from being a share.
+        await savePost(structuredClone(share), t1);
+        await savePost({ type: 'post', ...repost }, t2);
+
+        const all = await jobs();
+        expect(all).toHaveLength(1);
+        expect(all[0]!.jobKey).toMatch(/^linkedin-post:text:/);
+        expect(all[0]!.processingStatus).toBeNull();
+        expect(postSourcesOf(all[0]!)).toEqual([repost.id, share.id]);
         expect(await sources()).toHaveLength(2);
       });
 

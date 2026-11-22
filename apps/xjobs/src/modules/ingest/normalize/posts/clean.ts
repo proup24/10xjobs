@@ -69,7 +69,8 @@ function trimUrl(raw: string): string {
   }
 }
 
-function linkedinJobId(url: URL): string | null {
+/** The LinkedIn job id a linkedin.com URL names, else null. */
+export function linkedinJobId(url: URL): string | null {
   const host = url.hostname.toLowerCase();
   if (host !== 'linkedin.com' && !host.endsWith('.linkedin.com')) return null;
   const view = /\/jobs\/view\/(?:[^/?#]*-)?(\d+)/.exec(url.pathname);

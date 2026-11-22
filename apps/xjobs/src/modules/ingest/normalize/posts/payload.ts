@@ -1,5 +1,7 @@
 import { linkedinPostId, linkedinPostUrl } from '../../utils/source-key';
+import { httpUrl } from '../linkedin';
 import { cleanText, objectAt } from '../text';
+import { linkedinJobId } from './clean';
 
 type RawAuthor = {
   publicIdentifier: string | null;
@@ -10,16 +12,8 @@ type RawAuthor = {
   info: string | null;
 };
 
-type RawOriginal = {
-  id: string | null;
-  url: string | null;
-  text: string | null;
-  postedAt: string | null;
-  author: RawAuthor;
-};
-
 /** A post as the actor returns it, every leaf trimmed text or null. */
-export type RawPost = {
+type RawPostFields = {
   id: string | null;
   url: string | null;
   text: string | null;
@@ -28,8 +22,12 @@ export type RawPost = {
   /** Links the payload carries outside the text. */
   linkUrls: string[];
   imageUrls: string[];
-  original: RawOriginal | null;
+  /** LinkedIn's "<name> is open to work" card (`showcase`) is on the post. */
+  openToWorkCard: boolean;
 };
+
+/** A post and the original it shares or reposts, read with the same fields. */
+export type RawPost = RawPostFields & { original: RawPostFields | null };
 
 const authorTypes: Record<string, RawAuthor['type']> = {
   profile: 'person',
@@ -56,15 +54,23 @@ function isoDate(value: unknown): string | null {
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
-/** The shared original of a repost; null until its real shape is known. */
-export function readOriginal(
-  _payload: Record<string, unknown>,
-): RawPost['original'] {
-  return null;
+/**
+ * An attached LinkedIn job's link as `/jobs/view/<id>/`: its `refId` and
+ * `trackingId` change on every scrape of the same post.
+ */
+function jobLink(value: unknown): string | null {
+  const url = httpUrl(value);
+  const id = url && linkedinJobId(url);
+  return id ? `https://www.linkedin.com/jobs/view/${id}/` : cleanText(value);
 }
 
-/** The only place that knows the actor's field names. */
-export function readPostPayload(payload: Record<string, unknown>): RawPost {
+/** True for the open-to-work card the actor returns as `showcase`. */
+function isOpenToWorkCard(value: unknown): boolean {
+  return /\bopen to work\b/i.test(cleanText(objectAt(value).title) ?? '');
+}
+
+/** The fields of one post object: a top-level item or its nested original. */
+function readPostFields(payload: Record<string, unknown>): RawPostFields {
   // `content` is kept as the actor sent it: cleaning may alter URL text.
   const content = typeof payload.content === 'string' ? payload.content : null;
   const images = Array.isArray(payload.postImages) ? payload.postImages : [];
@@ -75,12 +81,34 @@ export function readPostPayload(payload: Record<string, unknown>): RawPost {
     text: content && content.trim() ? content : null,
     postedAt: isoDate(objectAt(payload.postedAt).date),
     author: readAuthor(payload.author),
-    linkUrls: [cleanText(objectAt(payload.article).link)].filter(
-      (u): u is string => u !== null,
-    ),
+    // The object's own attachments only: a share's original keeps its
+    // `article`, `job` and images nested in `repost`, never at the top level.
+    linkUrls: [
+      cleanText(objectAt(payload.article).link),
+      jobLink(objectAt(payload.job).linkedinUrl),
+    ].filter((u): u is string => u !== null),
     imageUrls: images
       .map((i) => cleanText(typeof i === 'string' ? i : objectAt(i).url))
       .filter((u): u is string => u !== null),
-    original: readOriginal(payload),
+    openToWorkCard: isOpenToWorkCard(payload.showcase),
   };
+}
+
+/**
+ * The original a share or repost carries nested in `repost`, read as that
+ * post scraped alone, whatever the outer text. Null when `repost` is missing,
+ * not an object, or has neither an id nor text.
+ */
+export function readOriginal(
+  payload: Record<string, unknown>,
+): RawPost['original'] {
+  const repost = objectAt(payload.repost);
+  if (Object.keys(repost).length === 0) return null;
+  const original = readPostFields(repost);
+  return original.id || original.text ? original : null;
+}
+
+/** The only place that knows the actor's field names. */
+export function readPostPayload(payload: Record<string, unknown>): RawPost {
+  return { ...readPostFields(payload), original: readOriginal(payload) };
 }
