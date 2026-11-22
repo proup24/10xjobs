@@ -86,6 +86,70 @@ describe('open-to-work', () => {
       }),
     ).toBeNull();
   });
+
+  it('does not match a headline author whose text relays a role', () => {
+    expect(
+      match({
+        headline: 'Open to work',
+        text: 'My former team is hiring a React dev, DM me',
+      }),
+    ).toBeNull();
+    for (const text of [
+      'WeAreHiring a Senior React dev, DM me',
+      'Our recruiter is looking for a Node.js engineer',
+    ])
+      expect(match({ headline: 'Open to work', text })).toBeNull();
+  });
+
+  it('matches a headline author whose text says nothing of hiring', () => {
+    expect(
+      match({
+        headline: 'Open to work | Software Engineer',
+        text: 'I am looking for my next backend role. Happy to connect!',
+      }),
+    ).toBe('Open to work');
+  });
+
+  it('does not match an opening that says recruiting', () => {
+    expect(
+      match({ text: 'NowRecruiting | Open to work candidates welcome' }),
+    ).toBeNull();
+  });
+
+  it('does not match "not open to work"', () => {
+    expect(
+      match({ text: 'Not open to work, just sharing my project' }),
+    ).toBeNull();
+    expect(
+      match({
+        headline: 'Engineer at Acme | Not  open to work',
+        text: 'My project',
+      }),
+    ).toBeNull();
+  });
+
+  it.each([
+    'Requirement: Java developer. Candidates must be open to work on W2',
+    'Java developer, Pune: open to work from office five days a week',
+    'Backend engineer, must be open to work onsite in Pune',
+  ])('does not match staffing requirement copy: %s', (text) => {
+    expect(match({ text })).toBeNull();
+  });
+
+  it('does not match "open to work" in a headline about work arrangements', () => {
+    expect(
+      match({
+        headline: 'Engineer | Open to work remotely',
+        text: 'My project',
+      }),
+    ).toBeNull();
+  });
+
+  it('does not match across a line break', () => {
+    expect(
+      match({ text: 'Senior engineer, open to\nWork mode: Hybrid' }),
+    ).toBeNull();
+  });
 });
 
 describe('bench-sales-hotlist', () => {

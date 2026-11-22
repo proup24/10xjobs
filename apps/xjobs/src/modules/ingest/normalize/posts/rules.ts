@@ -16,30 +16,39 @@ export type DropRule = {
 
 /** How far into the text a post says it is a job seeker's. */
 const OPENING = 200;
-/** "open to work", "Open-to-work", "OPENTOWORK" (a cleaned #OpenToWork). */
-const OPEN_TO_WORK = /\bopen[\s_-]*to[\s_-]*work\b/iu;
-const HIRING = /\bhiring\b/iu;
+/**
+ * "open to work", "Open-to-work", "OPENTOWORK" (a cleaned #OpenToWork), on
+ * one line. Not "not open to work", and not requirement copy that asks a
+ * candidate to be open to work on W2, from office, onsite, remotely and so on.
+ */
+const OPEN_TO_WORK =
+  /(?<!\bnot\s+)\bopen[ \t_-]*to[ \t_-]*work\b(?!\s+(?:on|from|in|at|onsite|on-site|remotely|remote|hybrid|with|for|under|as|in-office)\b)/iu;
+/** Hiring or recruiting words, compounds too (WeAreHiring, recruiter). */
+const HIRING = /hiring|recruit/iu;
 
 /** Folds styled letters (𝐎𝐏𝐄𝐍, ｏｐｅｎ) to plain ones before matching. */
 const plain = (s: string) => s.normalize('NFKC');
 
 /**
  * The author is looking for work. Three signals, each with no hiring post
- * against it in the labelled sample: the open-to-work card, "open to work" in
- * the text's opening, and "open to work" in the headline. Never "#OpenToWork"
- * anywhere in the text: hiring posts carry it among their hashtags. An opening
- * that also says "hiring" is left to Extract.
+ * against it in the labelled sample: the open-to-work card; "open to work" in
+ * the text's opening, unless that opening says hiring or recruiting; "open to
+ * work" in the headline, unless the text says hiring or recruiting anywhere
+ * (a job seeker relaying a former team's opening). Never "#OpenToWork"
+ * anywhere in the text: hiring posts carry it among their hashtags.
  */
 const openToWork: DropRule = {
   name: 'open-to-work',
   match({ text, headline, openToWorkCard }) {
     if (openToWorkCard) return 'open-to-work card';
-    const opening = plain(text).slice(0, OPENING);
+    const body = plain(text);
+    const opening = body.slice(0, OPENING);
     if (!HIRING.test(opening)) {
       const m = OPEN_TO_WORK.exec(opening);
       if (m) return m[0];
     }
-    return headline ? (OPEN_TO_WORK.exec(plain(headline))?.[0] ?? null) : null;
+    if (!headline || HIRING.test(body)) return null;
+    return OPEN_TO_WORK.exec(plain(headline))?.[0] ?? null;
   },
 };
 

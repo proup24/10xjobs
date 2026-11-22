@@ -1256,6 +1256,14 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
 
       it('joins a share to its original, original first', async () => {
         const { repost } = structuredClone(share);
+        // Scraped alone, the original is dated after the share, so only the
+        // originals-first rank, never posting time, can put it first.
+        repost.postedAt = {
+          ...repost.postedAt,
+          date: '2026-11-21T09:00:00.000Z',
+          timestamp: Date.parse('2026-11-21T09:00:00.000Z'),
+        };
+        expect(repost.postedAt.date > share.postedAt.date).toBe(true);
         // The share is collected first: its order comes from being a share.
         await savePost(structuredClone(share), t1);
         await savePost({ type: 'post', ...repost }, t2);
