@@ -110,6 +110,7 @@ it('runs the processor with the others when a Claude credential is set', async (
     expect(created.workers).toEqual(everyWorker);
     expect(module.get(ProcessorGuard).isPaused()).toBe(false);
     expect(created.schedulers).toContain('process:sweep');
+    expect(created.schedulers).toContain('process:auto-silence');
     expect(created.schedulers).toContain('match:sweep');
     expect(created.schedulers).toContain('rates:refresh');
   } finally {

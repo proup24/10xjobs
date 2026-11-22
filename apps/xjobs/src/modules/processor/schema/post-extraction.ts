@@ -1,26 +1,19 @@
 import { z } from 'zod';
+import {
+  JUNK_REASONS,
+  NOT_HIRING_REASONS,
+  VERDICTS,
+  type Verdict,
+} from '@xjobs/database/enums';
 import { confidenceSchema } from './fact';
 import { extractionDocumentSchema } from './extraction';
 import { buildModelOutput, type ListOptions } from './model-output';
 
 export const POST_SCHEMA_VERSION = 1;
 
-export const VERDICTS = ['hiring', 'not_hiring', 'junk'] as const;
-export const NOT_HIRING_REASONS = [
-  'open_to_work',
-  'advice_or_commentary',
-  'course_or_training_ad',
-  'job_digest',
-  'role_filled',
-  'other',
-] as const;
-export const JUNK_REASONS = [
-  'no_clear_employer',
-  'many_roles_across_companies',
-  'funnel',
-  'messaging_group',
-  'other',
-] as const;
+// The verdict codes live in the shared enums, so the web filters on the same lists.
+export { JUNK_REASONS, NOT_HIRING_REASONS, VERDICTS, type Verdict };
+
 export const APPLY_KINDS = [
   'email',
   'external_link',
@@ -31,7 +24,6 @@ export const APPLY_KINDS = [
 export const AUTHOR_RELATIONS = ['employer', 'recruiter', 'unstated'] as const;
 export const CONFIDENCES = ['sure', 'unsure'] as const;
 
-export type Verdict = (typeof VERDICTS)[number];
 export type ApplyKind = (typeof APPLY_KINDS)[number];
 
 const verdictSchema = z.strictObject({

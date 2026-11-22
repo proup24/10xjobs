@@ -1,6 +1,12 @@
 import { notFound } from 'next/navigation';
 import type { EngineResult } from '@xjobs/engine-client';
 import {
+  LISTED_VERDICTS,
+  POST_VERDICT_REASONS,
+  type ListedVerdict,
+} from '@xjobs/database/enums';
+import { ExtractVerdicts } from '@/components/admin/extract-verdicts';
+import {
   PREPARE_REVIEW_PATH,
   PrepareReview,
 } from '@/components/admin/prepare-review';
@@ -23,6 +29,12 @@ const first = (v: string | string[] | undefined) =>
 
 const dataOf = <T,>(result: EngineResult<T>): T | null =>
   result.kind === 'ok' ? result.data : null;
+
+const verdictOf = (v: string | undefined): ListedVerdict | undefined =>
+  LISTED_VERDICTS.find((x) => x === v);
+
+const reasonOf = (v: string | undefined): string | undefined =>
+  POST_VERDICT_REASONS.find((x) => x === v);
 
 function href(params: Record<string, string | undefined>): string {
   const query = new URLSearchParams();
@@ -61,32 +73,64 @@ export default async function Page({
   const rule = first(sp.rule);
   const before = first(sp.before);
   const heldBefore = first(sp.held);
+  // An unknown verdict or reason is ignored rather than sent for a 400.
+  const verdict = verdictOf(first(sp.verdict));
+  const reason = reasonOf(first(sp.reason));
+  const verdictsBefore = first(sp.verdicts);
 
-  const [drops, held, authors] = await Promise.all([
+  const [drops, held, verdicts, authors, candidates] = await Promise.all([
     engine.prepareDrops({
       ...(rule ? { rule } : {}),
       ...(before ? { before } : {}),
     }),
     engine.silencedPosts(heldBefore ? { before: heldBefore } : {}),
+    engine.extractVerdicts({
+      ...(verdict ? { verdict } : {}),
+      ...(reason ? { reason } : {}),
+      ...(verdictsBefore ? { before: verdictsBefore } : {}),
+    }),
     engine.silencedAuthors(),
+    engine.autoSilenceCandidates(),
   ]);
   const dropsPage = dataOf(drops);
   const heldPage = dataOf(held);
+  const verdictsPage = dataOf(verdicts);
+  const authorList = dataOf(authors);
+  // Every section's next link keeps the filters and the other sections' cursors.
+  const state = {
+    rule,
+    before,
+    held: heldBefore,
+    verdict,
+    reason,
+    verdicts: verdictsBefore,
+  };
 
   return (
     <PrepareReview
       rule={rule ?? null}
       drops={dropsPage}
       held={heldPage}
-      authors={dataOf(authors)}
-      // Each section's next link keeps the filter and the other section's cursor.
+      authors={authorList}
       nextDropsHref={
-        dropsPage?.next
-          ? href({ rule, before: dropsPage.next, held: heldBefore })
-          : null
+        dropsPage?.next ? href({ ...state, before: dropsPage.next }) : null
       }
       nextHeldHref={
-        heldPage?.next ? href({ rule, before, held: heldPage.next }) : null
+        heldPage?.next ? href({ ...state, held: heldPage.next }) : null
+      }
+      verdicts={
+        <ExtractVerdicts
+          verdict={verdict ?? null}
+          reason={reason ?? null}
+          page={verdictsPage}
+          silenced={new Set((authorList ?? []).map((a) => a.authorKey))}
+          candidates={dataOf(candidates)}
+          nextHref={
+            verdictsPage?.next
+              ? href({ ...state, verdicts: verdictsPage.next })
+              : null
+          }
+        />
       }
     />
   );

@@ -1,3 +1,5 @@
+import type { ListedVerdict } from '@xjobs/database/enums';
+
 export interface AuthorView {
   key: string | null;
   name: string | null;
@@ -25,6 +27,22 @@ export interface HeldPostView {
   postedAt: string | null;
 }
 
+export interface VerdictView {
+  jobId: string;
+  verdict: ListedVerdict;
+  /** The verdict's reason code (`POST_VERDICT_REASONS`). */
+  reason: string;
+  /** The verbatim quote the verdict rests on. */
+  quote: string;
+  confidence: 'sure' | 'unsure';
+  /** The original post's author (see `originalAuthorOf`). */
+  author: AuthorView;
+  postedAt: string | null;
+  /** The post job's `postingUrl`. */
+  url: string;
+  extractedAt: string;
+}
+
 export interface Page<T> {
   items: T[];
   next: string | null;
@@ -39,4 +57,17 @@ export interface SilencedAuthorView {
   evidence: unknown;
   createdBy: string | null;
   createdAt: string;
+}
+
+/** An author the automatic silencing rule would silence, with its evidence. */
+export interface AutoSilenceCandidateView {
+  authorKey: string;
+  name: string | null;
+  /** Posts counted (role_filled ones are not). */
+  counted: number;
+  /** The first and last counted post's firstSeenAt. */
+  firstSeenAt: string;
+  lastSeenAt: string;
+  /** Counted posts per verdict. */
+  verdicts: Record<string, number>;
 }

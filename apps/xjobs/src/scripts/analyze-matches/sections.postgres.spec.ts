@@ -3,6 +3,7 @@ import { createDatabaseClient, type DatabaseClient } from '@xjobs/database';
 import { EXTRACTION_SCHEMA_VERSION } from 'src/modules/processor/schema';
 import { fixtureDocument } from 'src/modules/processor/schema/fixture.testing';
 import { fixtureHiringPost } from 'src/modules/processor/schema/fixture-post.testing';
+import { shapePostExtraction } from './post-extraction';
 import { SECTIONS } from './sections';
 
 /**
@@ -134,6 +135,67 @@ describe.skipIf(!url)(
       expect((await rows('8.')).map((r) => r.text)).not.toContain(
         'RoleOnlyTech',
       );
+    });
+
+    it('section 13 counts post calls, verdicts, role jobs and stuck posts per UTC day', async () => {
+      const now = new Date();
+      const daysAgo = (n: number, hours = 12) => {
+        const d = new Date(now);
+        d.setUTCDate(d.getUTCDate() - n);
+        d.setUTCHours(hours, 0, 0, 0);
+        return d;
+      };
+      const day = (d: Date) => d.toISOString().slice(0, 10);
+      const attempt = (docType: string, evalRun: boolean, at: Date) =>
+        db.orm.public.ProcessingAttempt.create({
+          jobId: null,
+          extractionId: null,
+          eval: evalRun,
+          step: 'generation',
+          docType,
+          model: 'm',
+          providerRequestId: null,
+          inputTokens: 1,
+          outputTokens: 1,
+          cachedInputTokens: 0,
+          costUsd: '0.5',
+          latencyMs: 1,
+          outcome: 'ok',
+          error: null,
+          quoteFailures: 0,
+          createdAt: at,
+        } as never);
+      await attempt('post', false, daysAgo(0));
+      await attempt('post', false, daysAgo(0, 1));
+      await attempt('post', true, daysAgo(0)); // eval: ignored
+      await attempt('listing', false, daysAgo(0)); // listing: ignored
+      await attempt('post', false, daysAgo(9)); // outside the window
+
+      const post = await job('post');
+      await extraction(post, 'post', fixtureHiringPost());
+      await db.orm.public.JobExtraction.where({ jobId: post }).updateAll({
+        verdict: 'hiring',
+        verdictConfidence: 'sure',
+        createdAt: daysAgo(1),
+      } as never);
+      const role = await job('post_role', post);
+      await db.orm.public.NormalizedJob.where({ id: role }).updateAll({
+        processedAt: daysAgo(2),
+      } as never);
+      const stuck = await job('post');
+      await db.orm.public.NormalizedJob.where({ id: stuck }).updateAll({
+        processingStatus: 'pending',
+        firstSeenAt: daysAgo(10),
+        lastSeenAt: daysAgo(10),
+      } as never);
+
+      const shaped = shapePostExtraction((await rows('13.')) as never, now);
+      const by = Object.fromEntries(shaped.map((r) => [r.day, r]));
+      expect(by[day(daysAgo(0))]).toMatchObject({ calls: 2, cost_usd: 1 });
+      expect(by[day(daysAgo(1))]).toMatchObject({ hiring_sure: 1 });
+      expect(by[day(daysAgo(2))]).toMatchObject({ role_jobs: 1 });
+      expect(by[day(daysAgo(3))]).toMatchObject({ left_window_pending: 1 });
+      expect(shaped.reduce((n, r) => n + r.calls, 0)).toBe(2);
     });
   },
 );

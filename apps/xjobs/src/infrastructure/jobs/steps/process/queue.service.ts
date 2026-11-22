@@ -16,6 +16,8 @@ export const PROCESS_QUEUE = 'process';
 export const PROCESS_JOB = 'process-job';
 /** Release stale claims and re-enqueue pending jobs nothing picked up. */
 export const PROCESS_SWEEP_JOB = 'sweep';
+/** Silence authors the automatic rule catches, or log them while it is off. */
+export const AUTO_SILENCE_JOB = 'auto-silence';
 /**
  * BullMQ priority of a post job. Listings are queued with none, and BullMQ
  * takes every job with no priority before any prioritized one, so a waiting

@@ -1,11 +1,12 @@
 import type { SilencedAuthorsRepository } from 'src/modules/ingest/repositories/silenced-authors.repository';
+import type { AutoSilenceRepository } from 'src/modules/processor/repositories/auto-silence.repository';
 import type {
   DropRow,
   PrepareReviewRepository,
 } from './prepare-review.repository';
 import {
-  decodeDropCursor,
-  encodeDropCursor,
+  decodePageCursor,
+  encodePageCursor,
   parseDropReason,
   PrepareReviewService,
 } from './prepare-review.service';
@@ -39,6 +40,7 @@ function service(
   return new PrepareReviewService(
     review as PrepareReviewRepository,
     silenced as SilencedAuthorsRepository,
+    { candidates: async () => [] } as unknown as AutoSilenceRepository,
   );
 }
 
@@ -59,14 +61,14 @@ describe('drop cursor', () => {
   it('round-trips', () => {
     const at = new Date('2026-11-21T10:00:00.123Z');
     expect(
-      decodeDropCursor(encodeDropCursor({ lastSeenAt: at, id: ID(1) })),
+      decodePageCursor(encodePageCursor({ lastSeenAt: at, id: ID(1) })),
     ).toEqual({ lastSeenAt: at.toISOString(), id: ID(1) });
   });
 
   it.each(['', '!!!', 'bm9wZQ', Buffer.from('a|b').toString('base64url')])(
     'rejects %j',
     (cursor) => {
-      expect(decodeDropCursor(cursor)).toBeNull();
+      expect(decodePageCursor(cursor)).toBeNull();
     },
   );
 });
@@ -100,7 +102,7 @@ describe('PrepareReviewService', () => {
         profileUrl: 'https://www.linkedin.com/in/jane',
       },
     });
-    expect(decodeDropCursor(page.next!)).toEqual({
+    expect(decodePageCursor(page.next!)).toEqual({
       lastSeenAt: rows[1]!.lastSeenAt.toISOString(),
       id: ID(2),
     });
@@ -202,14 +204,15 @@ describe('PrepareReviewService', () => {
         set.add(i.authorKey);
         return 'silenced' as const;
       }),
-      unsilence: vi.fn(async (k: string) => set.delete(k)),
+      unsilence: vi.fn(async (k: string, _by: string | null) => set.delete(k)),
     };
     const s = service({}, silenced);
     const input = { authorKey: 'profile:a', name: null, reason: 'r' };
     expect(await s.silence('admin', input)).toBe('silenced');
     expect(await s.silence('admin', input)).toBe('already');
-    await expect(s.unsilence('profile:a')).resolves.toBeUndefined();
-    await expect(s.unsilence('profile:a')).rejects.toMatchObject({
+    await expect(s.unsilence('admin', 'profile:a')).resolves.toBeUndefined();
+    expect(silenced.unsilence).toHaveBeenLastCalledWith('profile:a', 'admin');
+    await expect(s.unsilence('admin', 'profile:a')).rejects.toMatchObject({
       status: 404,
     });
   });

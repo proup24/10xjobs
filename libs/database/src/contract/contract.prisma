@@ -1461,3 +1461,14 @@ model SilencedAuthor {
   @@map("silenced_authors")
   @@rls
 }
+
+// The owner removed an automatic silence: automatic silencing then counts only
+// posts first seen after dismissedAt, so it needs new evidence. Engine-only.
+model AutoSilenceDismissal {
+  authorKey   String               @id
+  dismissedAt TimestamptzJsDate(3) @default(now())
+  dismissedBy Uuid?
+
+  @@map("auto_silence_dismissals")
+  @@rls
+}

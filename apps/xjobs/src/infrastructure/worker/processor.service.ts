@@ -15,6 +15,7 @@ import {
   processSweepConfig,
 } from 'src/infrastructure/jobs/steps/process';
 import {
+  AutoSilenceService,
   CLAUDE_BIN,
   checkClaudeCall,
   checkClaudeInstalled,
@@ -27,7 +28,11 @@ import {
   ProcessorRepository,
 } from 'src/modules/processor';
 import { WorkerRuntimeService } from './runtime.service';
-import { RUN_SCHEDULES, syncProcessSweepScheduler } from './scheduler';
+import {
+  RUN_SCHEDULES,
+  syncAutoSilenceScheduler,
+  syncProcessSweepScheduler,
+} from './scheduler';
 
 /** How often a failed startup check runs again. */
 export const STARTUP_RECHECK_MS = 10 * 60_000;
@@ -50,6 +55,7 @@ export class ProcessorWorkerService implements OnModuleDestroy {
     private readonly repo: ProcessorRepository,
     private readonly processQueue: ProcessQueue,
     private readonly matchQueue: MatchQueue,
+    private readonly autoSilence: AutoSilenceService,
     @Inject(PROCESSOR_CONFIG) private readonly config: ProcessorConfig,
     private readonly guard: ProcessorGuard,
     private readonly model: ExtractionModel,
@@ -146,6 +152,7 @@ export class ProcessorWorkerService implements OnModuleDestroy {
     await this.checkStartup();
     const queue = await this.runtime.createQueue(PROCESS_QUEUE, connection);
     await syncProcessSweepScheduler(queue, this.runSchedules);
+    await syncAutoSilenceScheduler(queue, this.runSchedules);
     this.runtime.startWorker(
       PROCESS_QUEUE,
       (bullJob) =>
@@ -154,6 +161,7 @@ export class ProcessorWorkerService implements OnModuleDestroy {
           repo: this.repo,
           queue: this.processQueue,
           matchQueue: this.matchQueue,
+          autoSilence: this.autoSilence,
           config: this.config,
         }),
       this.config.concurrency,
@@ -161,7 +169,7 @@ export class ProcessorWorkerService implements OnModuleDestroy {
     );
     this.logger.log(
       this.runSchedules
-        ? `Processing jobs; sweeping every ${processSweepConfig.everyMs / 1000}s`
+        ? `Processing jobs; sweeping every ${processSweepConfig.everyMs / 1000}s; auto-silence daily at 04:00 UTC`
         : 'Processing jobs; schedules off',
     );
   }

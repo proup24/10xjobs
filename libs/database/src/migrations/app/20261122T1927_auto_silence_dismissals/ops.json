@@ -1,0 +1,90 @@
+[
+  {
+    "id": "table.auto_silence_dismissals",
+    "label": "Create table \"auto_silence_dismissals\"",
+    "summary": "Creates table \"auto_silence_dismissals\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "auto_silence_dismissals"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"auto_silence_dismissals\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"auto_silence_dismissals\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"auto_silence_dismissals\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"auto_silence_dismissals\"",
+        "sql": "CREATE TABLE \"public\".\"auto_silence_dismissals\" (\n  \"authorKey\" text NOT NULL,\n  \"dismissedAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"dismissedBy\" uuid,\n  PRIMARY KEY (\"authorKey\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"auto_silence_dismissals\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"auto_silence_dismissals\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"auto_silence_dismissals\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.auto_silence_dismissals",
+    "label": "Enable row-level security on \"auto_silence_dismissals\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "auto_silence_dismissals"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"auto_silence_dismissals\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "auto_silence_dismissals"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"auto_silence_dismissals\"",
+        "sql": "ALTER TABLE \"public\".\"auto_silence_dismissals\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"auto_silence_dismissals\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "auto_silence_dismissals"
+        ]
+      }
+    ]
+  }
+]

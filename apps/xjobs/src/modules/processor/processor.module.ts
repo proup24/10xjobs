@@ -14,9 +14,21 @@ import {
   ProcessorRepository,
 } from './repositories/processor.repository';
 import {
+  PrismaSilencedAuthorsRepository,
+  SilencedAuthorsRepository,
+} from 'src/modules/ingest/repositories/silenced-authors.repository';
+import {
+  AutoSilenceRepository,
+  PrismaAutoSilenceRepository,
+} from './repositories/auto-silence.repository';
+import {
   PrismaVocabRepository,
   VocabRepository,
 } from './repositories/vocab.repository';
+import {
+  AutoSilenceService,
+  POST_AUTO_SILENCE,
+} from './services/auto-silence.service';
 import { ExtractionPipeline } from './services/extraction-pipeline.service';
 import { ExtractionStore } from './services/extraction-store.service';
 import { FactAssembler } from './services/fact-assembler.service';
@@ -48,6 +60,19 @@ type Env = ConfigService<ProcessorEnvironmentVariables, true>;
     PostStore,
     { provide: ProcessorRepository, useClass: PrismaProcessorRepository },
     { provide: VocabRepository, useClass: PrismaVocabRepository },
+    AutoSilenceService,
+    { provide: AutoSilenceRepository, useClass: PrismaAutoSilenceRepository },
+    {
+      provide: SilencedAuthorsRepository,
+      useClass: PrismaSilencedAuthorsRepository,
+    },
+    {
+      provide: POST_AUTO_SILENCE,
+      inject: [ConfigService],
+      // Only `true` switches it on; a process without the variable stays off.
+      useFactory: (config: Env): boolean =>
+        config.get('POST_AUTO_SILENCE', { infer: true }) === true,
+    },
     {
       provide: PROCESSOR_CONFIG,
       inject: [ConfigService],
@@ -97,6 +122,7 @@ type Env = ConfigService<ProcessorEnvironmentVariables, true>;
   ],
   exports: [
     ProcessorService,
+    AutoSilenceService,
     ProcessorGuard,
     ProcessorRepository,
     PROCESSOR_CONFIG,

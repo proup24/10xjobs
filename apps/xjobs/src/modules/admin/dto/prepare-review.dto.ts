@@ -1,6 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  LISTED_VERDICTS,
+  POST_VERDICT_REASONS,
+  type ListedVerdict,
+} from '@xjobs/database/enums';
+import {
+  IsIn,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -21,6 +27,33 @@ export class DropsQueryDto {
   @IsNotEmpty()
   @MaxLength(100)
   rule?: string;
+
+  @ApiPropertyOptional({ description: 'The `next` of the previous page' })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(200)
+  before?: string;
+
+  @ApiPropertyOptional({ minimum: 1, maximum: 200, default: 50 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(200)
+  limit?: number;
+}
+
+export class VerdictsQueryDto {
+  @ApiPropertyOptional({ enum: [...LISTED_VERDICTS] })
+  @IsOptional()
+  @IsIn([...LISTED_VERDICTS])
+  verdict?: ListedVerdict;
+
+  @ApiPropertyOptional({ enum: [...POST_VERDICT_REASONS] })
+  @IsOptional()
+  @IsIn([...POST_VERDICT_REASONS])
+  reason?: string;
 
   @ApiPropertyOptional({ description: 'The `next` of the previous page' })
   @IsOptional()
@@ -115,6 +148,23 @@ export class HeldPostsPageDto {
   @ApiProperty({ nullable: true, type: String }) next!: string | null;
 }
 
+export class VerdictViewDto {
+  @ApiProperty() jobId!: string;
+  @ApiProperty({ enum: [...LISTED_VERDICTS] }) verdict!: ListedVerdict;
+  @ApiProperty({ enum: [...POST_VERDICT_REASONS] }) reason!: string;
+  @ApiProperty() quote!: string;
+  @ApiProperty({ enum: ['sure', 'unsure'] }) confidence!: 'sure' | 'unsure';
+  @ApiProperty({ type: AuthorViewDto }) author!: AuthorViewDto;
+  @ApiProperty({ nullable: true, type: String }) postedAt!: string | null;
+  @ApiProperty() url!: string;
+  @ApiProperty() extractedAt!: string;
+}
+
+export class VerdictsPageDto {
+  @ApiProperty({ type: [VerdictViewDto] }) items!: VerdictViewDto[];
+  @ApiProperty({ nullable: true, type: String }) next!: string | null;
+}
+
 export class SilencedAuthorViewDto {
   @ApiProperty() id!: string;
   @ApiProperty() authorKey!: string;
@@ -135,4 +185,22 @@ export class SilencedAuthorViewDto {
 export class SilenceAuthorResponseDto {
   @ApiProperty({ enum: ['silenced', 'already'] })
   status!: 'silenced' | 'already';
+}
+
+export class AutoSilenceCandidateViewDto {
+  @ApiProperty({ example: 'company:agg' }) authorKey!: string;
+  @ApiProperty({ nullable: true, type: String }) name!: string | null;
+  @ApiProperty({ description: 'Posts counted (role_filled ones are not)' })
+  counted!: number;
+  @ApiProperty({ description: "The first counted post's firstSeenAt" })
+  firstSeenAt!: string;
+  @ApiProperty({ description: "The last counted post's firstSeenAt" })
+  lastSeenAt!: string;
+  @ApiProperty({
+    description: 'Counted posts per verdict',
+    example: { junk: 10, not_hiring: 2 },
+    type: 'object',
+    additionalProperties: { type: 'integer' },
+  })
+  verdicts!: Record<string, number>;
 }

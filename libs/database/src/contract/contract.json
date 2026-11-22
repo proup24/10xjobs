@@ -8,6 +8,10 @@
       "model": "ArrangementTerm",
       "namespace": "public"
     },
+    "auto_silence_dismissals": {
+      "model": "AutoSilenceDismissal",
+      "namespace": "public"
+    },
     "cities": {
       "model": "City",
       "namespace": "public"
@@ -490,6 +494,50 @@
               },
               "namespaceId": "public",
               "table": "arrangements"
+            }
+          },
+          "AutoSilenceDismissal": {
+            "fields": {
+              "authorKey": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "dismissedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "dismissedBy": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "authorKey": {
+                  "column": "authorKey"
+                },
+                "dismissedAt": {
+                  "column": "dismissedAt"
+                },
+                "dismissedBy": {
+                  "column": "dismissedBy"
+                }
+              },
+              "namespaceId": "public",
+              "table": "auto_silence_dismissals"
             }
           },
           "City": {
@@ -8273,6 +8321,11 @@
               "namespaceId": "public",
               "tableName": "arrangements"
             },
+            "auto_silence_dismissals": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "auto_silence_dismissals"
+            },
             "cities": {
               "kind": "rls",
               "namespaceId": "public",
@@ -8558,6 +8611,40 @@
               "primaryKey": {
                 "columns": [
                   "code"
+                ]
+              },
+              "uniques": []
+            },
+            "auto_silence_dismissals": {
+              "columns": {
+                "authorKey": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "dismissedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "dismissedBy": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "authorKey"
                 ]
               },
               "uniques": []
@@ -14921,7 +15008,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "ec52f11675023da7974608e4e29057d636681a978f6b43e77012fe5d69eda55d"
+    "storageHash": "4ac2bcc5b523844f1f915c4e73dc8fb05fa6c33a5c253c8ec71f6c33ddf8677b"
   },
   "execution": {
     "executionHash": "71a03ba0225916055a5855c4c4deaf607551051c05f9a67ec0aecfdefc43a862",

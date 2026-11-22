@@ -33,6 +33,33 @@ export type HeldPostView = {
   author: AuthorView;
   postedAt: string | null;
 };
+export type VerdictView = {
+  jobId: string;
+  /** A `LISTED_VERDICTS` code (`@xjobs/database/enums`). */
+  verdict: string;
+  /** A `POST_VERDICT_REASONS` code (`@xjobs/database/enums`). */
+  reason: string;
+  /** The verbatim quote the verdict rests on. */
+  quote: string;
+  confidence: 'sure' | 'unsure';
+  /** The original post's author (a share's original, never the sharer). */
+  author: AuthorView;
+  postedAt: string | null;
+  url: string;
+  extractedAt: string;
+};
+/** An author the automatic silencing rule would silence, with its evidence. */
+export type AutoSilenceCandidateView = {
+  authorKey: string;
+  name: string | null;
+  /** Posts counted (role_filled ones are not). */
+  counted: number;
+  /** The first and last counted post's firstSeenAt. */
+  firstSeenAt: string;
+  lastSeenAt: string;
+  /** Counted posts per verdict. */
+  verdicts: Record<string, number>;
+};
 /** `next` is an opaque cursor: pass it back as `before`. */
 export type ReviewPage<T> = { items: T[]; next: string | null };
 export type SilencedAuthorView = {
@@ -91,6 +118,14 @@ export interface EngineClient {
     before?: string;
     limit?: number;
   }): Promise<EngineResult<ReviewPage<HeldPostView>>>;
+  extractVerdicts(options?: {
+    verdict?: string;
+    reason?: string;
+    before?: string;
+    limit?: number;
+  }): Promise<EngineResult<ReviewPage<VerdictView>>>;
+  /** Who automatic silencing would silence now; already silenced authors are left out. */
+  autoSilenceCandidates(): Promise<EngineResult<AutoSilenceCandidateView[]>>;
   silencedAuthors(): Promise<EngineResult<SilencedAuthorView[]>>;
   /** 201 gives `silenced`, 200 `already`. */
   silenceAuthor(
@@ -141,6 +176,34 @@ function isHeldPostView(v: unknown): v is HeldPostView {
     typeof v.url === 'string' &&
     isNullableString(v.postedAt) &&
     isAuthorView(v.author)
+  );
+}
+
+function isVerdictView(v: unknown): v is VerdictView {
+  return (
+    isRecord(v) &&
+    typeof v.jobId === 'string' &&
+    typeof v.verdict === 'string' &&
+    typeof v.reason === 'string' &&
+    typeof v.quote === 'string' &&
+    (v.confidence === 'sure' || v.confidence === 'unsure') &&
+    isAuthorView(v.author) &&
+    isNullableString(v.postedAt) &&
+    typeof v.url === 'string' &&
+    typeof v.extractedAt === 'string'
+  );
+}
+
+function isAutoSilenceCandidateView(v: unknown): v is AutoSilenceCandidateView {
+  return (
+    isRecord(v) &&
+    typeof v.authorKey === 'string' &&
+    isNullableString(v.name) &&
+    typeof v.counted === 'number' &&
+    typeof v.firstSeenAt === 'string' &&
+    typeof v.lastSeenAt === 'string' &&
+    isRecord(v.verdicts) &&
+    Object.values(v.verdicts).every((n) => typeof n === 'number')
   );
 }
 
@@ -534,6 +597,29 @@ export function createEngineClient(deps: EngineClientDeps): EngineClient {
           })}`,
         },
         pageOf(isHeldPostView),
+      ),
+    extractVerdicts: (options = {}) =>
+      admin(
+        'extractVerdicts',
+        {
+          method: 'GET',
+          path: `/admin/extract/verdicts${queryOf({
+            verdict: options.verdict,
+            reason: options.reason,
+            before: options.before,
+            limit: options.limit,
+          })}`,
+        },
+        pageOf(isVerdictView),
+      ),
+    autoSilenceCandidates: () =>
+      admin(
+        'autoSilenceCandidates',
+        { method: 'GET', path: '/admin/extract/auto-silence-candidates' },
+        (data) =>
+          Array.isArray(data) && data.every(isAutoSilenceCandidateView)
+            ? data
+            : undefined,
       ),
     silencedAuthors: () =>
       admin(

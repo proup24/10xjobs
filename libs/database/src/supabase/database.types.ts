@@ -40,6 +40,25 @@ export type Database = {
         };
         Relationships: [];
       };
+      auto_silence_dismissals: {
+        Row: {
+          authorKey: string;
+          dismissedAt: string;
+          dismissedBy: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          authorKey: string;
+          dismissedAt?: string;
+          dismissedBy?: string | null;
+        };
+        Update: {
+          authorKey?: string;
+          dismissedAt?: string;
+          dismissedBy?: string | null;
+        };
+        Relationships: [];
+      };
       cities: {
         Row: {
           aliases: string[];

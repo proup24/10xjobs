@@ -168,6 +168,11 @@ const processorEnvironmentShape = {
   PROCESSOR_GENERATION_TRIES: z.coerce.number().int().min(1).max(5).default(3),
   /** Post model calls per UTC day; 0 pauses post extraction. */
   POST_EXTRACTION_DAILY_CAP: z.coerce.number().int().min(0).default(250),
+  /**
+   * Lets the daily automatic silencing run silence authors. Off, it only logs
+   * who it would silence (`would silence <authorKey> …`).
+   */
+  POST_AUTO_SILENCE: booleanFlag.default(false),
 };
 
 export const processorEnvironmentSchema = z.object(processorEnvironmentShape);

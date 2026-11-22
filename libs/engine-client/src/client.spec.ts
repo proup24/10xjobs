@@ -441,6 +441,75 @@ describe('engine client admin review', () => {
     expectAuth(init);
   });
 
+  it('extractVerdicts sends the verdict, reason, cursor and limit as query params', async () => {
+    const verdict = {
+      jobId: 'j1',
+      verdict: 'junk',
+      reason: 'funnel',
+      quote: 'Join my group',
+      confidence: 'sure',
+      author,
+      postedAt: null,
+      url: 'https://www.linkedin.com/posts/1',
+      extractedAt: '2026-11-22T09:00:00.000Z',
+    };
+    const { client, fetchMock } = setup(() =>
+      ok({ items: [verdict], next: 'c2' }),
+    );
+    expect(
+      await client.extractVerdicts({
+        verdict: 'junk',
+        reason: 'funnel',
+        before: 'c1',
+        limit: 5,
+      }),
+    ).toEqual({ kind: 'ok', data: { items: [verdict], next: 'c2' } });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe(
+      'http://engine.test/api/admin/extract/verdicts?verdict=junk&reason=funnel&before=c1&limit=5',
+    );
+    expect(init?.method).toBe('GET');
+    expectAuth(init);
+  });
+
+  it('extractVerdicts with a malformed row → unavailable', async () => {
+    const { client } = setup(() =>
+      ok({ items: [{ jobId: 'j1', verdict: 'junk' }], next: null }),
+    );
+    expect(await client.extractVerdicts()).toEqual({ kind: 'unavailable' });
+  });
+
+  it('autoSilenceCandidates sends GET /api/admin/extract/auto-silence-candidates', async () => {
+    const candidate = {
+      authorKey: 'company:agg',
+      name: null,
+      counted: 12,
+      firstSeenAt: '2026-11-01T08:00:00.000Z',
+      lastSeenAt: '2026-11-09T08:00:00.000Z',
+      verdicts: { junk: 10, not_hiring: 2 },
+    };
+    const { client, fetchMock } = setup(() => ok([candidate]));
+    expect(await client.autoSilenceCandidates()).toEqual({
+      kind: 'ok',
+      data: [candidate],
+    });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe(
+      'http://engine.test/api/admin/extract/auto-silence-candidates',
+    );
+    expect(init?.method).toBe('GET');
+    expectAuth(init);
+  });
+
+  it('autoSilenceCandidates with a malformed row → unavailable', async () => {
+    const { client } = setup(() =>
+      ok([{ authorKey: 'company:agg', counted: '12' }]),
+    );
+    expect(await client.autoSilenceCandidates()).toEqual({
+      kind: 'unavailable',
+    });
+  });
+
   it('silencedAuthors sends GET /api/admin/silenced-authors', async () => {
     const { client, fetchMock } = setup(() => ok([silenced]));
     expect(await client.silencedAuthors()).toEqual({
@@ -526,6 +595,14 @@ describe('engine client admin review', () => {
     [
       'silencedPosts',
       (c: ReturnType<typeof setup>['client']) => c.silencedPosts(),
+    ],
+    [
+      'extractVerdicts',
+      (c: ReturnType<typeof setup>['client']) => c.extractVerdicts(),
+    ],
+    [
+      'autoSilenceCandidates',
+      (c: ReturnType<typeof setup>['client']) => c.autoSilenceCandidates(),
     ],
     [
       'silencedAuthors',

@@ -9,7 +9,9 @@ import {
   MATCH_SWEEP_JOB,
 } from 'src/infrastructure/jobs/steps/match';
 import {
+  AUTO_SILENCE_JOB,
   PROCESS_SWEEP_JOB,
+  autoSilenceConfig,
   processSweepConfig,
 } from 'src/infrastructure/jobs/steps/process';
 import { RATES_REFRESH_JOB } from 'src/infrastructure/jobs/steps/rates';
@@ -128,6 +130,23 @@ export async function syncRatesRefreshScheduler(
     RATES_REFRESH_JOB,
     { pattern: RATES_REFRESH.pattern, tz: RATES_REFRESH.timezone },
     { name: RATES_REFRESH_JOB, opts: { attempts: 1 } },
+  );
+  return 'scheduled';
+}
+
+/** Runs automatic silencing (a dry run while it is off) daily at 04:00 UTC; idempotent. */
+export async function syncAutoSilenceScheduler(
+  queue: SchedulerQueue,
+  run: boolean,
+): Promise<'scheduled' | 'removed'> {
+  if (!run) {
+    await queue.removeJobScheduler(AUTO_SILENCE_JOB);
+    return 'removed';
+  }
+  await queue.upsertJobScheduler(
+    AUTO_SILENCE_JOB,
+    { pattern: autoSilenceConfig.pattern, tz: autoSilenceConfig.timezone },
+    { name: AUTO_SILENCE_JOB, opts: { attempts: 1 } },
   );
   return 'scheduled';
 }

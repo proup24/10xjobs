@@ -26,6 +26,7 @@ import { AdminGuard } from './admin.guard';
 import {
   AUTHOR_KEY,
   AdminMeResponseDto,
+  AutoSilenceCandidateViewDto,
   DropsPageDto,
   DropsQueryDto,
   HeldPostsPageDto,
@@ -33,13 +34,17 @@ import {
   SilenceAuthorResponseDto,
   SilencedAuthorViewDto,
   SilencedPostsQueryDto,
+  VerdictsPageDto,
+  VerdictsQueryDto,
 } from './dto/prepare-review.dto';
 import { PrepareReviewService } from './prepare-review.service';
 import type {
+  AutoSilenceCandidateView,
   DropView,
   HeldPostView,
   Page,
   SilencedAuthorView,
+  VerdictView,
 } from './prepare-review.types';
 
 const DEFAULT_LIMIT = 50;
@@ -93,6 +98,34 @@ export class PrepareReviewController {
     });
   }
 
+  @ApiSuccessResponse(VerdictsPageDto, {
+    description:
+      'Post jobs whose current extraction is ruled not_hiring or junk, newest extraction first',
+  })
+  @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.FORBIDDEN)
+  @UseGuards(AdminGuard)
+  @Get('extract/verdicts')
+  verdicts(@Query() query: VerdictsQueryDto): Promise<Page<VerdictView>> {
+    return this.review.verdicts({
+      verdict: query.verdict ?? null,
+      reason: query.reason ?? null,
+      before: query.before ?? null,
+      limit: query.limit ?? DEFAULT_LIMIT,
+    });
+  }
+
+  @ApiSuccessResponse(AutoSilenceCandidateViewDto, {
+    isArray: true,
+    description:
+      'Authors the automatic silencing rule would silence now, most counted posts first; already silenced authors are left out',
+  })
+  @ApiErrorResponses(HttpStatus.FORBIDDEN)
+  @UseGuards(AdminGuard)
+  @Get('extract/auto-silence-candidates')
+  autoSilenceCandidates(): Promise<AutoSilenceCandidateView[]> {
+    return this.review.autoSilenceCandidates();
+  }
+
   @ApiSuccessResponse(SilencedAuthorViewDto, { isArray: true })
   @ApiErrorResponses(HttpStatus.FORBIDDEN)
   @UseGuards(AdminGuard)
@@ -131,9 +164,12 @@ export class PrepareReviewController {
   @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete('silenced-authors/:authorKey')
-  async unsilence(@Param('authorKey') authorKey: string): Promise<void> {
+  async unsilence(
+    @CurrentUser() adminId: string,
+    @Param('authorKey') authorKey: string,
+  ): Promise<void> {
     if (!AUTHOR_KEY.test(authorKey))
       throw new BadRequestException('authorKey must be profile:… or company:…');
-    await this.review.unsilence(authorKey);
+    await this.review.unsilence(adminId, authorKey);
   }
 }

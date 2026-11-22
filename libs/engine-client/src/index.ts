@@ -1,6 +1,7 @@
 export { createEngineClient } from './client';
 export type {
   AuthorView,
+  AutoSilenceCandidateView,
   DropView,
   EngineClient,
   EngineClientDeps,
@@ -11,4 +12,5 @@ export type {
   ReviewPage,
   SilenceInput,
   SilencedAuthorView,
+  VerdictView,
 } from './client';

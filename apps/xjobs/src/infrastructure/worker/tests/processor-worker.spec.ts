@@ -80,7 +80,7 @@ async function build() {
   return Test.createTestingModule({ imports: [WorkerModule] }).compile();
 }
 
-it('runs only the processor queue with its sweeper after the startup checks', async () => {
+it('runs only the processor queue with its sweeper and daily auto-silence run after the startup checks', async () => {
   const log = vi.spyOn(Logger.prototype, 'log');
   const module = await build();
   try {
@@ -94,7 +94,10 @@ it('runs only the processor queue with its sweeper after the startup checks', as
     expect(log).toHaveBeenCalledWith('processor ready');
     expect(module.get(ProcessorGuard).isPaused()).toBe(false);
     expect(created.workers).toEqual(['process']);
-    expect(created.schedulers.map(([id]) => id)).toEqual(['sweep']);
+    expect(created.schedulers.map(([id]) => id)).toEqual([
+      'sweep',
+      'auto-silence',
+    ]);
   } finally {
     await module.get(WorkerService).beforeApplicationShutdown();
     await module.close();

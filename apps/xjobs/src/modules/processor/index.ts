@@ -15,6 +15,15 @@ export {
 } from './services/processor.service';
 export { ProcessorModule } from './processor.module';
 export {
+  AutoSilenceService,
+  POST_AUTO_SILENCE,
+} from './services/auto-silence.service';
+export {
+  AutoSilenceRepository,
+  PrismaAutoSilenceRepository,
+  type AutoSilenceCandidate,
+} from './repositories/auto-silence.repository';
+export {
   type Claim,
   ProcessorRepository,
   linkedInJobIds,

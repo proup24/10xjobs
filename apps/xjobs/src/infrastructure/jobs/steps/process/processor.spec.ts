@@ -28,12 +28,23 @@ function deps(outcome = 'processed', spent = 0, paused = false) {
     },
     queue: { enqueue: vi.fn(async (_id: string, _kind?: 'post') => undefined) },
     matchQueue: { enqueue: vi.fn(async () => undefined) },
+    autoSilence: { run: vi.fn(async () => ({ silenced: 0, candidates: 2 })) },
     config,
   };
 }
 const job = (name: string, data: unknown = {}) => ({ name, data });
 
 describe('processProcessJob', () => {
+  it('runs automatic silencing on its daily job', async () => {
+    const d = deps();
+    expect(await processProcessJob(job('auto-silence'), d as never)).toEqual({
+      silenced: 0,
+      candidates: 2,
+    });
+    expect(d.autoSilence.run).toHaveBeenCalledTimes(1);
+    expect(d.service.process).not.toHaveBeenCalled();
+  });
+
   it('sweeps listings only while the post cap is reached', async () => {
     const d = deps();
     d.service.isPostCapReached.mockResolvedValue(true);

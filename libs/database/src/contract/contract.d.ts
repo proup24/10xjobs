@@ -24,7 +24,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'ec52f11675023da7974608e4e29057d636681a978f6b43e77012fe5d69eda55d'>;
+  StorageHashBase<'4ac2bcc5b523844f1f915c4e73dc8fb05fa6c33a5c253c8ec71f6c33ddf8677b'>;
 export type ExecutionHash =
   ExecutionHashBase<'71a03ba0225916055a5855c4c4deaf607551051c05f9a67ec0aecfdefc43a862'>;
 export type ProfileHash =
@@ -631,6 +631,12 @@ export namespace Models {
     status: FieldOutputTypes['public']['ArrangementTerm']['status'];
     extractions: public_JobExtraction[];
     readonly [RelationKeys]?: 'extractions';
+  };
+  export type public_AutoSilenceDismissal = {
+    authorKey: FieldOutputTypes['public']['AutoSilenceDismissal']['authorKey'];
+    dismissedAt: FieldOutputTypes['public']['AutoSilenceDismissal']['dismissedAt'];
+    dismissedBy: FieldOutputTypes['public']['AutoSilenceDismissal']['dismissedBy'];
+    readonly [RelationKeys]?: never;
   };
   export type public_City = {
     aliases: FieldOutputTypes['public']['City']['aliases'];
@@ -1372,6 +1378,7 @@ export namespace Models {
 export declare const models: {
   public: {
     ArrangementTerm: Models.public_ArrangementTerm;
+    AutoSilenceDismissal: Models.public_AutoSilenceDismissal;
     City: Models.public_City;
     CollectionBatch: Models.public_CollectionBatch;
     Company: Models.public_Company;
@@ -1488,6 +1495,34 @@ type ContractBase = Omit<
                 };
               };
               primaryKey: { readonly columns: readonly ['code'] };
+              uniques: readonly [];
+              indexes: readonly [];
+              foreignKeys: readonly [];
+            };
+            readonly auto_silence_dismissals: {
+              columns: {
+                readonly authorKey: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly dismissedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly dismissedBy: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['authorKey'] };
               uniques: readonly [];
               indexes: readonly [];
               foreignKeys: readonly [];
@@ -6302,6 +6337,10 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'ArrangementTerm';
     };
+    readonly auto_silence_dismissals: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'AutoSilenceDismissal';
+    };
     readonly cities: { readonly namespace: 'public' & NamespaceId; readonly model: 'City' };
     readonly collection_batches: {
       readonly namespace: 'public' & NamespaceId;
@@ -6501,6 +6540,36 @@ type ContractBase = Omit<
                 readonly label: { readonly column: 'label' };
                 readonly occurrences: { readonly column: 'occurrences' };
                 readonly status: { readonly column: 'status' };
+              };
+            };
+          };
+          readonly AutoSilenceDismissal: {
+            readonly fields: {
+              readonly authorKey: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly dismissedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly dismissedBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'auto_silence_dismissals';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly authorKey: { readonly column: 'authorKey' };
+                readonly dismissedAt: { readonly column: 'dismissedAt' };
+                readonly dismissedBy: { readonly column: 'dismissedBy' };
               };
             };
           };

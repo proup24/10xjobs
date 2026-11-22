@@ -3,7 +3,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import type { ListedVerdict } from '@xjobs/database/enums';
 import { SilencedAuthorsRepository } from 'src/modules/ingest/repositories/silenced-authors.repository';
+import { AutoSilenceRepository } from 'src/modules/processor/repositories/auto-silence.repository';
 import { authorOf } from 'src/modules/ingest/normalize/mappers/linkedin-post.mapper';
 import { httpUrl } from 'src/modules/ingest/normalize/linkedin';
 import { readPostPayload } from 'src/modules/ingest/normalize/posts/payload';
@@ -11,26 +13,34 @@ import {
   PrepareReviewRepository,
   type DropRow,
   type HeldPostRow,
+  type VerdictRow,
 } from './prepare-review.repository';
+import { originalAuthorOf } from './post-author';
 import type {
   AuthorView,
+  AutoSilenceCandidateView,
   DropView,
   HeldPostView,
   Page,
   SilencedAuthorView,
+  VerdictView,
 } from './prepare-review.types';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** `<iso>|<raw item id>` as base64url; the order is lastSeenAt, id (both descending). */
-export function encodeDropCursor(row: { lastSeenAt: Date; id: string }) {
+/**
+ * `<iso>|<uuid>` as base64url, for a page ordered by a time then an id (both
+ * descending): a drop's lastSeenAt and raw item id, or a verdict's extraction
+ * time and job id.
+ */
+export function encodePageCursor(row: { lastSeenAt: Date; id: string }) {
   return Buffer.from(`${row.lastSeenAt.toISOString()}|${row.id}`).toString(
     'base64url',
   );
 }
 
-export function decodeDropCursor(
+export function decodePageCursor(
   cursor: string,
 ): { lastSeenAt: string; id: string } | null {
   const [at, id, ...rest] = Buffer.from(cursor, 'base64url')
@@ -108,19 +118,46 @@ function heldView(row: HeldPostRow): HeldPostView {
   };
 }
 
+function verdictView(row: VerdictRow): VerdictView {
+  const source = row.source;
+  const post = source ? (source.original ?? source) : null;
+  return {
+    jobId: row.jobId,
+    verdict: row.verdict as VerdictView['verdict'],
+    reason: row.reason,
+    quote: row.quote,
+    confidence: row.confidence === 'sure' ? 'sure' : 'unsure',
+    author: authorView((source && originalAuthorOf(source)) ?? {}),
+    postedAt: post?.postedAt ?? null,
+    url: row.postingUrl,
+    extractedAt: row.extractedAt.toISOString(),
+  };
+}
+
 @Injectable()
 export class PrepareReviewService {
   constructor(
     private readonly review: PrepareReviewRepository,
     private readonly silenced: SilencedAuthorsRepository,
+    private readonly autoSilence: AutoSilenceRepository,
   ) {}
+
+  /** Who the automatic silencing rule would silence now (already silenced authors excluded). */
+  async autoSilenceCandidates(): Promise<AutoSilenceCandidateView[]> {
+    const rows = await this.autoSilence.candidates();
+    return rows.map((row) => ({
+      ...row,
+      firstSeenAt: row.firstSeenAt.toISOString(),
+      lastSeenAt: row.lastSeenAt.toISOString(),
+    }));
+  }
 
   async drops(query: {
     rule: string | null;
     before: string | null;
     limit: number;
   }): Promise<Page<DropView>> {
-    const before = query.before ? decodeDropCursor(query.before) : null;
+    const before = query.before ? decodePageCursor(query.before) : null;
     if (query.before && !before)
       throw new BadRequestException('before is not a valid cursor');
     const rows = await this.review.drops({
@@ -134,10 +171,36 @@ export class PrepareReviewService {
       items: page.map(dropView),
       next:
         rows.length > query.limit && last
-          ? encodeDropCursor({
+          ? encodePageCursor({
               lastSeenAt: last.lastSeenAt,
               id: last.rawItemId,
             })
+          : null,
+    };
+  }
+
+  async verdicts(query: {
+    verdict: ListedVerdict | null;
+    reason: string | null;
+    before: string | null;
+    limit: number;
+  }): Promise<Page<VerdictView>> {
+    const before = query.before ? decodePageCursor(query.before) : null;
+    if (query.before && !before)
+      throw new BadRequestException('before is not a valid cursor');
+    const rows = await this.review.verdicts({
+      verdict: query.verdict,
+      reason: query.reason,
+      before,
+      limit: query.limit + 1,
+    });
+    const page = rows.slice(0, query.limit);
+    const last = page.at(-1);
+    return {
+      items: page.map(verdictView),
+      next:
+        rows.length > query.limit && last
+          ? encodePageCursor({ lastSeenAt: last.extractedAt, id: last.jobId })
           : null,
     };
   }
@@ -180,8 +243,8 @@ export class PrepareReviewService {
     });
   }
 
-  async unsilence(authorKey: string): Promise<void> {
-    if (!(await this.silenced.unsilence(authorKey)))
+  async unsilence(adminId: string, authorKey: string): Promise<void> {
+    if (!(await this.silenced.unsilence(authorKey, adminId)))
       throw new NotFoundException('That author is not silenced');
   }
 }
