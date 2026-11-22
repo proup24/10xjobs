@@ -1,17 +1,23 @@
 import { join } from 'node:path';
-import { TransientModelError, UsageLimitError } from '../../models/errors';
+import {
+  ProviderUnavailableError,
+  TransientModelError,
+  UsageLimitError,
+} from '../../models/errors';
 import type { Vocabulary } from '../../repositories/vocab.repository';
 import { buildPostInput } from '../../rules/post-input';
 import { AttemptLog } from '../../services/attempt-log';
 import { ExtractionFailed } from '../../services/extraction-pipeline.service';
 import type { PostPipeline } from '../../services/post-pipeline.service';
-import type {
-  PauseState,
-  ProcessorGuard,
+import {
+  type PauseState,
+  PROVIDER_PAUSE_MS,
+  type ProcessorGuard,
+  USAGE_LIMIT_FALLBACK_MS,
 } from '../../services/processor-guard.service';
 import { callStats, reportFileName } from '../score';
 import type { PostGoldenCase } from './golden-posts';
-import { type PostScore, scorePost } from './score-posts';
+import { type PostEvalReport, type PostScore, scorePost } from './score-posts';
 
 /** Where `processor:eval -- --posts` writes the report of a run with `generator`. */
 export const postReportFile = (generator: string): string =>
@@ -19,18 +25,28 @@ export const postReportFile = (generator: string): string =>
 
 export interface PostEvalRun {
   scores: PostScore[];
-  /** Case indices not run because a usage limit or the weekly reserve stopped the run. */
+  /** Case indices not run because a usage limit, the weekly reserve or the provider stopped the run. */
   notRun: number[];
+  /** Why the run stopped; reason `auth` when the provider was unavailable. */
   limitStop: PauseState | null;
 }
 
-const LIMIT_REASONS = new Set(['usage_limit', 'weekly_reserve']);
+const STOP_REASONS = new Set(['usage_limit', 'weekly_reserve', 'auth']);
+
+/** The run passes only when the bars hold, every case generated and none was left unrun. */
+export const postRunPasses = (
+  report: Pick<PostEvalReport, 'pass'>,
+  run: Pick<PostEvalRun, 'scores' | 'notRun'>,
+): boolean =>
+  report.pass &&
+  run.notRun.length === 0 &&
+  run.scores.every((s) => s.failed === null);
 
 /**
  * Runs every post case through the pipeline in memory: no repository, no
  * database, nothing saved. A transient failure is retried up to `maxTries`;
  * a usage limit (or the weekly reserve the model's limits report to `guard`)
- * stops the run, and the cases left are listed, not scored. Every try's
+ * or an unavailable provider stops the run, and the cases left are listed, not scored. Every try's
  * calls count toward the case's calls and cost.
  */
 export async function runPostEval(options: {
@@ -51,7 +67,7 @@ export async function runPostEval(options: {
 
   const limitPause = (): PauseState | null => {
     const pause = guard.pauseState();
-    return pause && LIMIT_REASONS.has(pause.reason) ? pause : null;
+    return pause && STOP_REASONS.has(pause.reason) ? pause : null;
   };
   const stop = (index: number, pause: PauseState): void => {
     limitStop ??= pause;
@@ -82,13 +98,28 @@ export async function runPostEval(options: {
         record(scorePost(c, assembled, { index, ...calls() }));
         return;
       } catch (error) {
+        // Not a quality failure: the subscription or the provider stopped the run.
         if (error instanceof UsageLimitError) {
-          guard.pauseForUsageLimit(
-            error.limit?.resetsAt ?? null,
-            error.message,
-          );
-          // Not a quality failure: the subscription stopped the run.
-          stop(index, limitPause() as PauseState);
+          const resetsAt = error.limit?.resetsAt ?? null;
+          guard.pauseForUsageLimit(resetsAt, error.message);
+          const now = Date.now();
+          stop(index, {
+            reason: 'usage_limit',
+            until:
+              resetsAt && resetsAt.getTime() > now
+                ? resetsAt
+                : new Date(now + USAGE_LIMIT_FALLBACK_MS),
+            detail: error.message,
+          });
+          return;
+        }
+        if (error instanceof ProviderUnavailableError) {
+          guard.pause(error);
+          stop(index, {
+            reason: 'auth',
+            until: new Date(Date.now() + PROVIDER_PAUSE_MS),
+            detail: error.message,
+          });
           return;
         }
         if (error instanceof TransientModelError && attempt < maxTries)

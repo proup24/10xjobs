@@ -35,6 +35,7 @@ import {
 import { loadPostGolden } from 'src/modules/processor/golden/posts/golden-posts';
 import {
   postReportFile,
+  postRunPasses,
   runPostEval,
 } from 'src/modules/processor/golden/posts/run-posts';
 import {
@@ -220,9 +221,14 @@ function printPosts(report: PostEvalReport): void {
       `  ${bar.pass ? 'PASS' : 'FAIL'} ${name} ${value} (${name === 'wrongSends' ? '<=' : '>='} ${bar.threshold}; over ${bar.scored} cases${blocked(bar.blockedBy)})`,
     );
   }
+  // A fact bar with nothing scored passes as not applying; show it as n/a.
+  const scoredFor = (name: string): number =>
+    name === 'sureContradicted'
+      ? rf.sureFacts
+      : rf.facts[name as keyof typeof rf.facts].scored;
   for (const [name, ok] of Object.entries(rf.bars))
     console.log(
-      `  ${ok ? 'PASS' : 'FAIL'} roleFacts.${name} (${name === 'sureContradicted' ? '<=' : '>='} ${BARS[name as keyof typeof BARS]})`,
+      `  ${scoredFor(name) === 0 ? 'n/a ' : ok ? 'PASS' : 'FAIL'} roleFacts.${name} (${name === 'sureContradicted' ? '<=' : '>='} ${BARS[name as keyof typeof BARS]})`,
     );
   if (rf.blockedBy.length)
     console.log(`  FAIL roleFacts${blocked(rf.blockedBy)}`);
@@ -256,12 +262,16 @@ async function runPosts(env: Env, config: ProcessorConfig): Promise<boolean> {
       ),
   });
   const report = summarizePosts(run.scores);
-  const pass = report.pass && run.notRun.length === 0;
+  // A case that did not generate, or did not run, proves nothing, so it fails the run.
+  const pass = postRunPasses(report, run);
   printPosts({ ...report, pass });
+  const failed = run.scores.filter((s) => s.failed).length;
+  if (failed)
+    console.log(`\n${failed} posts failed to generate (see failures)`);
   const limit = run.limitStop;
   if (limit)
     console.log(
-      `\nSTOPPED ON A LIMIT (${limit.reason}, until ${limit.until.toISOString()}): ${limit.detail}\n${run.notRun.length} posts not run; the scores above cover only the ${run.scores.length} that ran. Re-run after the reset.`,
+      `\n${limit.reason === 'auth' ? 'STOPPED: provider unavailable' : `STOPPED ON A LIMIT (${limit.reason}, until ${limit.until.toISOString()})`}: ${limit.detail}\n${run.notRun.length} posts not run; the scores above cover only the ${run.scores.length} that ran. Re-run after ${limit.reason === 'auth' ? 'fixing the provider' : 'the reset'}.`,
     );
   writeFileSync(
     postReportFile(config.extractionModel),

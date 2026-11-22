@@ -49,9 +49,17 @@ export interface PostScore {
   gotEmails: string[];
   /** Labelled hiring only: every role, paired by role key order; null otherwise. */
   emails: RoleEmail[] | null;
-  /** Null when no role on either side has an email (nothing to send to). */
+  /**
+   * False on a reviewed hiring case whose extracted role count differs from
+   * the labelled one (a send goes to every role); null when no role on
+   * either side has an email (nothing to send to).
+   */
   emailExact: boolean | null;
+  /** Whether the labelled and extracted role counts differ, on a reviewed hiring case. */
+  roleCountMiss: boolean;
   roleCount: { want: number; got: number };
+  /** Pairs whose labelled and extracted role keys differ: a warning, not a miss. */
+  keyMismatches: { want: string; got: string }[];
   /** Listing fact scores of each reviewed labelled role that has an extracted pair. */
   roleFacts: FactScores[];
   generatorCalls: number;
@@ -95,8 +103,10 @@ function roleCase(id: string, role: PostGoldenRole): GoldenCase {
  * sorted by role key (`roleKeys` of the labelled titles, the document's
  * `roleKey`s). A labelled role with no extracted pair counts as an extracted
  * null email, an extracted role with no label as a labelled null email, so a
- * missing labelled email or an extra extracted one is a miss. Role facts are
- * scored only on reviewed labelled roles with a pair. A failed generation
+ * missing labelled email or an extra extracted one is a miss. On a reviewed
+ * hiring case, a different role count is an email miss too. A pair whose keys
+ * differ is a warning (titles vary), and its facts are still scored. Role
+ * facts are scored only on reviewed labelled roles with a pair. A failed generation
  * extracts nothing: not kept, and a miss on any labelled email.
  */
 export function scorePost(
@@ -124,6 +134,11 @@ export function scorePost(
     (_, i) => ({ want: wantRoles[i], got: gotRoles[i] }),
   );
 
+  const rolesReviewed =
+    c.roles.every((r) => r.reviewed) &&
+    (label !== 'hiring' || c.roles.length > 0);
+  const roleCountMiss =
+    label === 'hiring' && rolesReviewed && c.roles.length !== extracted.length;
   let emails: RoleEmail[] | null = null;
   let emailExact: boolean | null = null;
   if (label === 'hiring') {
@@ -135,7 +150,11 @@ export function scorePost(
     emailExact = emails.some((e) => e.want !== null || e.got !== null)
       ? emails.every((e) => sameEmail(e.want, e.got))
       : null;
+    if (roleCountMiss) emailExact = false;
   }
+  const keyMismatches = pairs.flatMap(({ want, got: g }) =>
+    want && g && want.key !== g.key ? [{ want: want.key, got: g.key }] : [],
+  );
 
   const roleFacts = pairs.flatMap(({ want, got: g }) =>
     want?.item.reviewed && g
@@ -153,9 +172,7 @@ export function scorePost(
     rawItemId: c.rawItemId,
     label,
     verdictReviewed: c.verdict.reviewed,
-    rolesReviewed:
-      c.roles.every((r) => r.reviewed) &&
-      (label !== 'hiring' || c.roles.length > 0),
+    rolesReviewed,
     got: doc
       ? { value: doc.verdict.value, confidence: doc.verdict.confidence }
       : null,
@@ -165,7 +182,9 @@ export function scorePost(
     gotEmails,
     emails,
     emailExact,
+    roleCountMiss,
     roleCount: { want: c.roles.length, got: extracted.length },
+    keyMismatches,
     roleFacts,
     generatorCalls: extra.generatorCalls ?? 0,
     costUsd: extra.costUsd ?? 0,
@@ -186,7 +205,8 @@ export interface PostBar {
 /** One reason a case counts against a bar (or did not generate). */
 export interface PostFailure {
   index: number | string;
-  bar: PostBarName | 'generation' | 'roles' | 'roleFacts';
+  /** `roleKey` is a warning: titles vary, so another key in a pair is not a miss. */
+  bar: PostBarName | 'generation' | 'roleKey' | 'roleFacts';
   reason: string;
 }
 
@@ -224,6 +244,7 @@ const outcome = (s: PostScore): string =>
  * which cases a bar counts), so one unreviewed verdict fails all of them; the
  * email and role fact bars also use the role labels of the cases labelled
  * hiring, so an unreviewed role, or a hiring case with no roles, fails those.
+ * A not-hiring or junk case whose generation failed also blocks wrongSends.
  */
 export function summarizePosts(scores: PostScore[]): PostEvalReport {
   const verdictBlocked = scores.filter((s) => !s.verdictReviewed).map(idOf);
@@ -240,6 +261,13 @@ export function summarizePosts(scores: PostScore[]): PostEvalReport {
   const hiring = scores.filter((s) => s.label === 'hiring');
   const withEmail = hiring.filter((s) => s.emailExact !== null);
 
+  // A not-hiring or junk case that never generated proves nothing about a send.
+  const sendBlocked = [
+    ...new Set([
+      ...verdictBlocked,
+      ...notHiring.filter((s) => s.failed).map(idOf),
+    ]),
+  ];
   const wrongSends = notHiring.filter((s) => s.sendsEmail);
   const kept = hiring.filter((s) => s.sureHiring);
   const exact = withEmail.filter((s) => s.emailExact);
@@ -265,7 +293,7 @@ export function summarizePosts(scores: PostScore[]): PostEvalReport {
       wrongSends.length,
       POST_BARS.wrongSends,
       notHiring.length,
-      verdictBlocked,
+      sendBlocked,
       (v) => v <= POST_BARS.wrongSends,
     ),
     contactEmailExact: bar(
@@ -370,11 +398,17 @@ function failuresOf(s: PostScore): PostFailure[] {
         bar: 'contactEmailExact',
         reason: `role ${e.roleKey}: want ${show(e.want)}, got ${show(e.got)}`,
       });
-  if (s.label === 'hiring' && s.got && s.roleCount.want !== s.roleCount.got)
+  if (s.roleCountMiss)
     out.push({
       index,
-      bar: 'roles',
+      bar: 'contactEmailExact',
       reason: `${s.roleCount.want} roles labelled, ${s.roleCount.got} extracted`,
+    });
+  for (const k of s.keyMismatches)
+    out.push({
+      index,
+      bar: 'roleKey',
+      reason: `warning: labelled role ${k.want} paired with extracted ${k.got}`,
     });
   for (const r of s.roleFacts)
     for (const [fact, f] of Object.entries(r.facts))

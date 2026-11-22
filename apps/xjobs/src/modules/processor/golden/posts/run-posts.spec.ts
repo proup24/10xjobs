@@ -2,7 +2,11 @@ import { Logger } from '@nestjs/common';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PostDetail } from '../../../ingest/normalize/record';
 import type { ProcessorConfig } from '../../config/processor.config';
-import { TransientModelError, UsageLimitError } from '../../models/errors';
+import {
+  ProviderUnavailableError,
+  TransientModelError,
+  UsageLimitError,
+} from '../../models/errors';
 import type { PostModelOutput } from '../../schema/post-extraction';
 import { FactAssembler } from '../../services/fact-assembler.service';
 import { GenerationService } from '../../services/generation.service';
@@ -15,7 +19,7 @@ import {
   MemoryVocabRepository,
 } from '../../testing/fakes';
 import type { PostGoldenCase } from './golden-posts';
-import { runPostEval } from './run-posts';
+import { postRunPasses, runPostEval } from './run-posts';
 
 const EXT = 'anthropic/claude-opus-5.5';
 const config: ProcessorConfig = {
@@ -145,5 +149,51 @@ describe('runPostEval', () => {
     expect(result.notRun).toEqual([1, 2]);
     expect(result.limitStop?.reason).toBe('usage_limit');
     expect(model.calls).toHaveLength(2);
+  });
+
+  it('stops with the limit from the error itself', async () => {
+    const resetsAt = new Date(Date.now() + 3_600_000);
+    const { result } = await run(() => {
+      throw new UsageLimitError('claude usage limit reached', {
+        resetsAt,
+      } as never);
+    });
+
+    expect(result.limitStop).toEqual({
+      reason: 'usage_limit',
+      until: resetsAt,
+      detail: 'claude usage limit reached',
+    });
+    expect(result.notRun).toEqual([0, 1, 2]);
+  });
+
+  it('stops when the provider is unavailable', async () => {
+    let n = 0;
+    const { result, model } = await run(() => {
+      if (n++ === 1) throw new ProviderUnavailableError('claude could not run');
+      return notHiring;
+    });
+
+    expect(result.scores.map((s) => s.index)).toEqual([0]);
+    expect(result.notRun).toEqual([1, 2]);
+    expect(result.limitStop).toMatchObject({
+      reason: 'auth',
+      detail: 'claude could not run',
+    });
+    expect(model.calls).toHaveLength(2);
+  });
+
+  it('fails the run on a failed generation or a case not run', async () => {
+    const passing = { pass: true };
+    const ok = await run(() => notHiring);
+    expect(postRunPasses(passing, ok.result)).toBe(true);
+    expect(postRunPasses({ pass: false }, ok.result)).toBe(false);
+    expect(postRunPasses(passing, { ...ok.result, notRun: [3] })).toBe(false);
+
+    const failed = await run(() => ({
+      ...notHiring,
+      verdict: { ...notHiring.verdict, quote: 'not in the post' },
+    }));
+    expect(postRunPasses(passing, failed.result)).toBe(false);
   });
 });

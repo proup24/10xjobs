@@ -396,6 +396,89 @@ describe('the post eval', () => {
     expect(report.pass).toBe(false);
   });
 
+  it('fails the report when a not-hiring case never generates', () => {
+    const report = summarizePosts([
+      scorePost(
+        goldenCase('not_hiring'),
+        { failed: ['no document'] },
+        { index: 8 },
+      ),
+    ]);
+
+    expect(report.bars.wrongSends).toMatchObject({
+      value: 0,
+      blockedBy: [8],
+      pass: false,
+    });
+    expect(report.pass).toBe(false);
+  });
+
+  it('fails wrongSends on one failed junk case among passing ones', async () => {
+    const report = summarizePosts([
+      ...(await passingSet()),
+      scorePost(goldenCase('junk'), { failed: ['no document'] }, { index: 7 }),
+    ]);
+
+    expect(report.bars.wrongSends.pass).toBe(false);
+    expect(report.bars.wrongSends.blockedBy).toEqual([7]);
+    expect(report.bars.hiringKept.pass).toBe(true);
+    expect(report.pass).toBe(false);
+  });
+
+  it('warns when a paired role has another key, still scoring its facts', async () => {
+    const got = await assembled('hiring', 'sure', [
+      role('Frontend Engineer', 'jobs@acme.com'),
+    ]);
+    const score = scorePost(
+      goldenCase('hiring', [
+        labelRole('Backend Engineer', 'jobs@acme.com', {
+          facts: { seniority: 'senior' },
+        }),
+      ]),
+      got,
+      { index: 3 },
+    );
+    const report = summarizePosts([score]);
+
+    expect(score.emailExact).toBe(true);
+    expect(score.roleFacts).toHaveLength(1);
+    expect(report.bars.contactEmailExact.pass).toBe(true);
+    expect(report.failures).toContainEqual({
+      index: 3,
+      bar: 'roleKey',
+      reason:
+        'warning: labelled role backend-engineer paired with extracted frontend-engineer',
+    });
+  });
+
+  it('counts a missing role on a reviewed hiring case as an email miss', async () => {
+    const got = await assembled('hiring', 'sure', [
+      role('Backend Engineer', null),
+    ]);
+    const score = scorePost(
+      goldenCase('hiring', [
+        labelRole('Backend Engineer', null),
+        labelRole('Frontend Engineer', null),
+      ]),
+      got,
+      { index: 4 },
+    );
+    const report = summarizePosts([score]);
+
+    expect(score.emailExact).toBe(false);
+    expect(report.bars.contactEmailExact).toMatchObject({
+      value: 0,
+      scored: 1,
+      pass: false,
+    });
+    expect(report.failures).toContainEqual({
+      index: 4,
+      bar: 'contactEmailExact',
+      reason: '2 roles labelled, 1 extracted',
+    });
+    expect(report.pass).toBe(false);
+  });
+
   it('reports calls and cost per post', async () => {
     const [a, b] = await passingSet();
     const report = summarizePosts([
