@@ -77,6 +77,47 @@ describe('postDocumentSchema', () => {
       ),
     ).toBe(false);
   });
+
+  it('rejects empty kinds', () => {
+    expect(
+      ok(
+        hiring((d) => {
+          d.roles[1].howToApply.kinds = [];
+        }),
+      ),
+    ).toBe(false);
+  });
+
+  it('ties links to the external_link and linkedin_job kinds', () => {
+    const link = 'https://boards.greenhouse.io/acme/jobs/1';
+    for (const kind of ['external_link', 'linkedin_job'] as const) {
+      // The kind with no link.
+      expect(
+        ok(
+          hiring((d) => {
+            d.roles[1].howToApply.kinds = [kind];
+          }),
+        ),
+      ).toBe(false);
+      // The kind with its link.
+      expect(
+        ok(
+          hiring((d) => {
+            d.roles[1].howToApply.kinds = [kind];
+            d.roles[1].howToApply.links = [link];
+          }),
+        ),
+      ).toBe(true);
+    }
+    // A link with neither kind.
+    expect(
+      ok(
+        hiring((d) => {
+          d.roles[1].howToApply.links = [link];
+        }),
+      ),
+    ).toBe(false);
+  });
 });
 
 describe('postModelOutputSchema', () => {

@@ -92,6 +92,17 @@ describe('ProcessorController', () => {
     });
   });
 
+  it('answers 429 when a run hits the post cap', async () => {
+    const processNow = vi.fn(async () => {
+      throw new ProcessorBlockedError('post_cap');
+    });
+    const capped = controller({
+      jobState: async () => ({ inScope: true }) as JobState,
+      processNow,
+    });
+    expect(await statusOf(capped.run(JOB))).toBe(HttpStatus.TOO_MANY_REQUESTS);
+  });
+
   it('answers 404 for an unknown job', async () => {
     expect(
       await statusOf(controller({ jobState: async () => null }).job(JOB)),

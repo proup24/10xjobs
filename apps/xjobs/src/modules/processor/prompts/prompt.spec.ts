@@ -99,6 +99,12 @@ describe('postSystemPrompt', () => {
     expect(text.length).toBeGreaterThan(SYSTEM_PROMPT.length + 2);
   });
 
+  it('ties the links to their kinds, as the document schema does', () => {
+    expect(text).toContain(
+      '`links` is non-empty exactly when `kinds` has `external_link` or `linkedin_job`.',
+    );
+  });
+
   it('has its own hash', () => {
     expect(postPromptHash()).toMatch(/^[0-9a-f]{64}$/);
     expect(postPromptHash()).not.toBe(promptHash());

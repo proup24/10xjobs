@@ -51,7 +51,7 @@ const employerSchema = z.strictObject({
 });
 
 const howToApplySchema = z.strictObject({
-  kinds: z.array(z.enum(APPLY_KINDS)),
+  kinds: z.array(z.enum(APPLY_KINDS)).min(1),
   email: z.string().min(1).nullable(),
   emailQuote: z.string(),
   links: z.array(z.string().min(1)),
@@ -131,6 +131,16 @@ export const postDocumentSchema = z
           code: 'custom',
           path: [...path, 'kinds'],
           message: 'unstated stands alone',
+        });
+      }
+      const linkKind =
+        kinds.includes('external_link') || kinds.includes('linkedin_job');
+      if (linkKind !== role.howToApply.links.length > 0) {
+        ctx.addIssue({
+          code: 'custom',
+          path: [...path, 'links'],
+          message:
+            'links are set exactly when kinds includes external_link or linkedin_job',
         });
       }
       if (kinds.includes('email') !== (email !== null)) {

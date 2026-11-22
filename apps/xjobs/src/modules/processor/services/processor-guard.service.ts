@@ -60,7 +60,9 @@ export class ProcessorGuard {
   /**
    * Null when calls may start. The budget is checked against the spend
    * already logged, so jobs in flight at the same time can overshoot it by up
-   * to `concurrency - 1` jobs.
+   * to `concurrency - 1` jobs. For a post (`docType = 'post'`) it also checks
+   * the per-UTC-day post cap (`POST_EXTRACTION_DAILY_CAP`, 0 pauses posts)
+   * against today's logged post calls, which overshoots the same way.
    */
   async check(docType: DocType = 'listing'): Promise<GuardBlock | null> {
     if (this.isPaused()) return 'paused';

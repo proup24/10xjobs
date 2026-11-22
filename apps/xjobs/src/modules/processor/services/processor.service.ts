@@ -163,12 +163,17 @@ export class ProcessorService {
     }
   }
 
-  /** Sends one in-scope job back to `pending`, then processes it now. */
+  /**
+   * Sends one in-scope job back to `pending`, then processes it now. At the
+   * post cap it throws ProcessorBlockedError (the API's 429); the job stays
+   * `pending` for the worker.
+   */
   async processNow(
     jobId: string,
   ): Promise<{ outcome: ProcessOutcome; job: JobState | null }> {
     await this.jobs.markPending({ jobIds: [jobId] });
     const outcome = await this.process(jobId);
+    if (outcome === 'post_cap') throw new ProcessorBlockedError('post_cap');
     return { outcome, job: await this.jobs.jobState(jobId) };
   }
 

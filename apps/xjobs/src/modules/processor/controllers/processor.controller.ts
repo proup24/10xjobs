@@ -79,13 +79,18 @@ export class ProcessorController {
   @ApiOperation({
     summary: 'Process one normalized job now',
     description:
-      'Sends the job back to pending and processes it in this request, through the same path as the worker. Only LinkedIn job board jobs are in scope.',
+      'Sends the job back to pending and processes it in this request, through the same path as the worker. In scope: active LinkedIn job board jobs, and active LinkedIn post jobs first seen within 7 days and not silenced. At the daily post cap it answers 429 and the job stays pending.',
   })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'The outcome and the job state after the run.',
   })
-  @ApiErrorResponses(HttpStatus.NOT_FOUND, HttpStatus.SERVICE_UNAVAILABLE)
+  @ApiErrorResponses(
+    HttpStatus.NOT_FOUND,
+    HttpStatus.UNPROCESSABLE_ENTITY,
+    HttpStatus.TOO_MANY_REQUESTS,
+    HttpStatus.SERVICE_UNAVAILABLE,
+  )
   @HttpCode(HttpStatus.OK)
   @Post('jobs/:jobId/run')
   async run(@Param('jobId', ParseUUIDPipe) jobId: string) {
@@ -94,10 +99,14 @@ export class ProcessorController {
     if (!state) throw new NotFoundException(`No normalized job ${jobId}`);
     if (!state.inScope)
       throw new HttpException(
-        `Job ${jobId} is out of the processor's scope (an active LinkedIn job board job)`,
+        `Job ${jobId} is out of the processor's scope (an active LinkedIn job board job, or an active LinkedIn post job first seen within 7 days and not silenced)`,
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
-    return this.processor.processNow(jobId);
+    try {
+      return await this.processor.processNow(jobId);
+    } catch (error) {
+      throw toHttp(error);
+    }
   }
 
   @ApiOperation({ summary: "A job's processing state and current extraction" })

@@ -30,7 +30,10 @@ import {
   ProcessorGuard,
   USAGE_LIMIT_FALLBACK_MS,
 } from './processor-guard.service';
-import { createProcessorService } from './processor.service';
+import {
+  createProcessorService,
+  ProcessorBlockedError,
+} from './processor.service';
 import { postKeyPromptHash } from './post-store.service';
 
 const EXT = 'anthropic/claude-opus-5.5';
@@ -1192,6 +1195,23 @@ describe('ProcessorService', () => {
         processingAttempts: 0,
       });
       expect(repo.extractions).toHaveLength(0);
+    });
+
+    it('processNow at the post cap throws ProcessorBlockedError, the job left pending', async () => {
+      addPost('post-1', POST_TEXT, { processingStatus: 'processed' });
+      const svc = createProcessorService({
+        repo,
+        vocab,
+        extraction,
+        config: { ...config, postDailyCap: 0 },
+        now,
+      });
+
+      const error = await svc.processNow('post-1').catch((e: unknown) => e);
+      expect(error).toBeInstanceOf(ProcessorBlockedError);
+      expect((error as ProcessorBlockedError).reason).toBe('post_cap');
+      expect(extraction.calls).toHaveLength(0);
+      expect(job('post-1').processingStatus).toBe('pending');
     });
 
     it('the post cap does not hold listings back', async () => {

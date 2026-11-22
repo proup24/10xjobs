@@ -127,6 +127,7 @@ describe('PostAssembler', () => {
   it('accepts listed links and a LinkedIn job url with a listed id', async () => {
     const o = output(
       role({
+        kinds: ['email', 'external_link', 'linkedin_job'],
         links: [
           'https://boards.greenhouse.io/acme/jobs/1',
           'https://www.linkedin.com/jobs/view/4111111111',

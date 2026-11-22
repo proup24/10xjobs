@@ -79,6 +79,6 @@ Each role entry holds every top-level key of the job-posting facts below (\`posi
 
 \`emailQuote\`: verbatim words from the post that contain the address and show it is offered for applying; \`""\` when \`email\` is \`null\`.
 
-\`links\`: the apply links for \`external_link\` and \`linkedin_job\`, each copied exactly from the \`Links in the post\` list; \`[]\` when there are none. Never a link that is not in that list. Use \`external_link\` or \`linkedin_job\` only when its link is in that list; when the post points to an application link that is not listed, leave that kind out and record the kinds that do hold, or \`["unstated"]\`.
+\`links\`: the apply links for \`external_link\` and \`linkedin_job\`, each copied exactly from the \`Links in the post\` list; \`[]\` when there are none. Never a link that is not in that list. Use \`external_link\` or \`linkedin_job\` only when its link is in that list; when the post points to an application link that is not listed, leave that kind out and record the kinds that do hold, or \`["unstated"]\`. \`links\` is non-empty exactly when \`kinds\` has \`external_link\` or \`linkedin_job\`.
 
 \`quote\`: the words that say how to apply.`;
