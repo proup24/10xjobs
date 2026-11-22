@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { Logger } from '@nestjs/common';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ProcessorConfig } from '../config/processor.config';
 import { postPromptHash } from '../prompts/prompt';
 import type { Vocabulary } from '../repositories/vocab.repository';
@@ -18,7 +19,7 @@ import {
 import { AttemptLog } from './attempt-log';
 import { ExtractionStore } from './extraction-store.service';
 import type { AssembledPost } from './post-assembler.service';
-import { PostStore } from './post-store.service';
+import { postKeyPromptHash, PostStore } from './post-store.service';
 
 const EXT = 'anthropic/claude-opus-5.5';
 const config: ProcessorConfig = {
@@ -76,6 +77,18 @@ describe('PostStore', () => {
     repo.addJob({ id: 'post-1', kind: 'post', linkedIn: false });
   });
 
+  it('postKeyPromptHash: the post prompt and the listing schema version its roles are read with', () => {
+    expect(postKeyPromptHash()).toBe(
+      postKeyPromptHash(EXTRACTION_SCHEMA_VERSION),
+    );
+    expect(postKeyPromptHash(EXTRACTION_SCHEMA_VERSION)).not.toBe(
+      postKeyPromptHash(EXTRACTION_SCHEMA_VERSION + 1),
+    );
+    // The role rows keep the plain post prompt hash: their schema version
+    // already carries the listing schema.
+    expect(postKeyPromptHash()).not.toBe(postPromptHash());
+  });
+
   it('reuseKey: the post schema, the post prompt and the model', () => {
     const key = store.reuseKey({
       jobId: 'post-1',
@@ -86,7 +99,7 @@ describe('PostStore', () => {
     expect(key).toMatchObject({
       docType: 'post',
       schemaVersion: POST_SCHEMA_VERSION,
-      promptHash: postPromptHash(),
+      promptHash: postKeyPromptHash(),
       extractionModel: EXT,
     });
     expect(key.inputHash).toMatch(/^[0-9a-f]{64}$/);
@@ -195,7 +208,7 @@ describe('PostStore', () => {
     );
     await repo.archiveRoleJobs('post-1', []);
 
-    await store.syncRoles('post-1', id);
+    await expect(store.syncRoles('post-1', id)).resolves.toBe(true);
 
     for (const r of roleJobs()) {
       expect(r.processingStatus).toBe('processed');
@@ -203,26 +216,71 @@ describe('PostStore', () => {
     }
   });
 
-  it('syncRoles: a missing role row is an error, not a silent drop', async () => {
-    const key = store.reuseKey({
-      jobId: 'post-1',
-      title: null,
-      description: 'a',
-      truncated: false,
+  describe('reuse: a stored post that no longer reads falls back to a fresh run', () => {
+    const key = () =>
+      store.reuseKey({
+        jobId: 'post-1',
+        title: null,
+        description: 'a',
+        truncated: false,
+      });
+    let warn: ReturnType<typeof vi.spyOn>;
+    beforeEach(() => {
+      warn = vi
+        .spyOn(Logger.prototype, 'warn')
+        .mockImplementation(() => undefined);
     });
-    const id = await store.save(
-      'post-1',
-      key,
-      assembledOf(fixtureHiringPost()),
-      vocabulary,
-      log,
-    );
-    repo.extractions.splice(
-      repo.extractions.findIndex((e) => e.docType === 'listing'),
-      1,
-    );
-    await expect(store.syncRoles('post-1', id)).rejects.toThrow(
-      /role backend-engineer/,
-    );
+
+    it('reuses a readable post row and syncs its role jobs', async () => {
+      const id = await store.save(
+        'post-1',
+        key(),
+        assembledOf(fixtureHiringPost()),
+        vocabulary,
+        log,
+      );
+      await expect(store.reuse(key(), 'post-1')).resolves.toBe(id);
+      expect(warn).not.toHaveBeenCalled();
+    });
+
+    it('a role row missing: null, a warning, nothing copied or changed', async () => {
+      const id = await store.save(
+        'post-1',
+        key(),
+        assembledOf(fixtureHiringPost()),
+        vocabulary,
+        log,
+      );
+      repo.extractions.splice(
+        repo.extractions.findIndex((e) => e.docType === 'listing'),
+        1,
+      );
+      const rows = repo.extractions.length;
+      const roles = structuredClone(roleJobs());
+
+      await expect(store.reuse(key(), 'post-1')).resolves.toBeNull();
+      await expect(store.reuse(key(), 'post-2')).resolves.toBeNull();
+
+      expect(repo.extractions).toHaveLength(rows);
+      expect(roleJobs()).toEqual(roles);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringMatching(new RegExp(`${id}.*role backend-engineer`)),
+      );
+    });
+
+    it('a post document that fails to parse: null and a warning', async () => {
+      const id = await store.save(
+        'post-1',
+        key(),
+        assembledOf(fixtureHiringPost()),
+        vocabulary,
+        log,
+      );
+      const post = row(id);
+      post.data = { ...(post.data as object), roles: 'not a list' } as never;
+
+      await expect(store.reuse(key(), 'post-1')).resolves.toBeNull();
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining(id));
+    });
   });
 });

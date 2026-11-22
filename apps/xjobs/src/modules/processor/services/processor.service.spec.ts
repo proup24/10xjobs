@@ -31,6 +31,7 @@ import {
   USAGE_LIMIT_FALLBACK_MS,
 } from './processor-guard.service';
 import { createProcessorService } from './processor.service';
+import { postKeyPromptHash } from './post-store.service';
 
 const EXT = 'anthropic/claude-opus-5.5';
 const NOW = new Date('2026-11-02T10:00:00Z');
@@ -982,7 +983,7 @@ describe('ProcessorService', () => {
         jobId: 'post-1',
         docType: 'post',
         schemaVersion: POST_SCHEMA_VERSION,
-        promptHash: postPromptHash(),
+        promptHash: postKeyPromptHash(),
         extractionModel: EXT,
         verdict: 'hiring',
         verdictReason: 'hiring',
@@ -1047,12 +1048,8 @@ describe('ProcessorService', () => {
       expect(byKey.get('backend-engineer')?.id).toBe(
         before.get('backend-engineer'),
       );
-      expect(byKey.get('backend-engineer')?.processingStatus).toBe(
-        'processed',
-      );
-      expect(byKey.get('frontend-engineer')?.processingStatus).toBe(
-        'archived',
-      );
+      expect(byKey.get('backend-engineer')?.processingStatus).toBe('processed');
+      expect(byKey.get('frontend-engineer')?.processingStatus).toBe('archived');
       const added = byKey.get('senior-frontend-engineer');
       expect(added?.processingStatus).toBe('processed');
       expect([...before.values()]).not.toContain(added?.id);
