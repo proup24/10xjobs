@@ -41,8 +41,12 @@ import {
   plannedRuns,
   readResults,
   runFilePath,
+  spendFile,
+  spentUsd,
   type PlanFile,
   type RunFile,
+  type SpendFile,
+  type SpendRun,
 } from './indeed-sample/files';
 import {
   buildPlan,
@@ -176,35 +180,70 @@ function readOrNull(path: string): string | null {
 
 const round = (usd: number) => Number(usd.toFixed(4));
 
+const TERMINAL = new Set(['SUCCEEDED', 'FAILED', 'ABORTED', 'TIMED-OUT']);
+
 /**
  * The paid path: the only code that builds an Apify client. Runs go one at a
- * time in plan order; a run that does not succeed stops the loop. Prints
- * `{ stoppedAt, spentUsd, folder }` on a stop or a throw.
+ * time in plan order; a run that does not succeed, or a throw, stops the loop
+ * and prints `{ stoppedAt, runId, spentUsd, folder }`. Every started run is in
+ * `spend.json` from the moment `start` returns. Whatever stopped the loop, it
+ * aborts a run still going, waits 5 minutes, re-reads every started run's
+ * final cost (best effort) and rewrites the files; then it rethrows a throw.
  */
 async function runPaid(planned: PlannedRun[], folder: string): Promise<void> {
   const token = process.env.APIFY_TOKEN;
   if (!token) throw new Error('APIFY_TOKEN is required');
   const { ApifyClient } = await import('apify-client');
   const client = new ApifyClient({ token });
-  const written: { path: string; file: RunFile; reservedUsd: number }[] = [];
-  let spentUsd = 0;
-  let current: string | null = null;
+  const ledger: SpendRun[] = [];
+  const files = new Map<SpendRun, { path: string; file: RunFile }>();
+  const spendPath = join(folder, 'spend.json');
+  const saveSpend = () => writeJson(spendPath, spendFile(ledger));
+  const stopLine = (entry: SpendRun | undefined) => ({
+    stoppedAt: entry ? `${entry.actor}/${entry.searchId}` : attempting,
+    runId: entry?.runId ?? null,
+    status: entry?.status ?? null,
+    spentUsd: round(spentUsd(ledger)),
+    folder,
+  });
+
+  /** Aborts a run that is not finished and waits briefly for its final record. */
+  const settle = async (runId: string) => {
+    await client.run(runId).abort();
+    return client.run(runId).waitForFinish({ waitSecs: 60 });
+  };
+
+  let failure: unknown = null;
+  let current: SpendRun | undefined;
+  // The planned run being started, for a stop before Apify returns its id.
+  let attempting: string | null = null;
   try {
     for (const run of planned) {
-      current = `${run.actor}/${run.search.id}`;
+      current = undefined;
+      attempting = `${run.actor}/${run.search.id}`;
       const started = await client
         .actor(ACTORS[run.actor].actorId)
         .start(run.input, { maxTotalChargeUsd: run.reservedUsd });
-      const finished = await client
+      current = {
+        actor: run.actor,
+        searchId: run.search.id,
+        runId: started.id,
+        status: 'STARTED',
+        usageTotalUsd: null,
+        reservedUsd: run.reservedUsd,
+      };
+      ledger.push(current);
+      saveSpend();
+      let finished = await client
         .run(started.id)
         .waitForFinish({ waitSecs: WAIT_SECS });
-      if (finished.status === 'RUNNING' || finished.status === 'READY')
-        await client.run(finished.id).abort();
-      const usage =
+      if (!TERMINAL.has(finished.status)) finished = await settle(started.id);
+      current.status = finished.status;
+      current.usageTotalUsd =
         typeof finished.usageTotalUsd === 'number'
           ? finished.usageTotalUsd
           : null;
-      spentUsd += usage ?? run.reservedUsd;
+      saveSpend();
       const items =
         finished.status === 'SUCCEEDED'
           ? ((await client.dataset(finished.defaultDatasetId).listItems())
@@ -213,47 +252,63 @@ async function runPaid(planned: PlannedRun[], folder: string): Promise<void> {
       const file: RunFile = {
         runId: finished.id,
         status: finished.status,
-        usageTotalUsd: usage,
+        usageTotalUsd: current.usageTotalUsd,
         items,
       };
       const path = runFilePath(folder, run.actor, run.search.id);
       writeJson(path, file);
-      written.push({ path, file, reservedUsd: run.reservedUsd });
+      files.set(current, { path, file });
       logger.log(
-        `${current}: ${finished.status}, ${items.length} rows, $${usage ?? '?'} (spent $${round(spentUsd)})`,
+        `${run.actor}/${run.search.id}: ${finished.status}, ${items.length} rows, $${current.usageTotalUsd ?? '?'} (spent $${round(spentUsd(ledger))})`,
       );
       if (finished.status !== 'SUCCEEDED') {
-        console.log(
-          JSON.stringify({
-            stoppedAt: current,
-            status: finished.status,
-            spentUsd: round(spentUsd),
-            folder,
-          }),
-        );
+        console.log(JSON.stringify(stopLine(current)));
         break;
       }
     }
-    current = 'final cost re-read';
+  } catch (error) {
+    failure = error;
+    if (current && !TERMINAL.has(current.status)) {
+      try {
+        const settled = await settle(current.runId);
+        current.status = settled.status;
+      } catch (abortError) {
+        logger.error(
+          `Could not abort run ${current.runId}: ${abortError instanceof Error ? abortError.message : String(abortError)}`,
+        );
+      }
+    }
+    saveSpend();
+    console.error(JSON.stringify(stopLine(current)));
+  }
+
+  if (ledger.length > 0) {
     // Late charges arrive after a run ends, as the trial channels found.
     logger.log('Waiting 5 minutes before re-reading the final costs');
     await sleep(LATE_CHARGES_MS);
-    spentUsd = 0;
-    for (const { path, file, reservedUsd } of written) {
-      const run = await client.run(file.runId).get();
-      if (typeof run?.usageTotalUsd === 'number')
-        file.usageTotalUsd = run.usageTotalUsd;
-      // An unknown cost counts at its reservation, as in the run loop.
-      spentUsd += file.usageTotalUsd ?? reservedUsd;
-      writeJson(path, file);
+    for (const entry of ledger) {
+      try {
+        const run = await client.run(entry.runId).get();
+        if (run) entry.status = run.status;
+        if (typeof run?.usageTotalUsd === 'number')
+          entry.usageTotalUsd = run.usageTotalUsd;
+      } catch (error) {
+        logger.error(
+          `Could not re-read run ${entry.runId}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+      const saved = files.get(entry);
+      if (saved) {
+        saved.file.usageTotalUsd = entry.usageTotalUsd;
+        writeJson(saved.path, saved.file);
+      }
     }
-    logger.log(`Final spend $${round(spentUsd)} over ${written.length} runs`);
-  } catch (error) {
-    console.error(
-      JSON.stringify({ stoppedAt: current, spentUsd: round(spentUsd), folder }),
+    saveSpend();
+    logger.log(
+      `Final spend $${round(spentUsd(ledger))} over ${ledger.length} runs`,
     );
-    throw error;
   }
+  if (failure !== null) throw failure;
 }
 
 function strongKeyOf(applyUrl: string): string | null {
@@ -302,8 +357,13 @@ async function reportFrom(
     dev,
     strongKeyOf,
   });
-  writeJson(join(folder, 'report.json'), report);
-  console.log(JSON.stringify(report, null, 2));
+  const spendText = readOrNull(join(folder, 'spend.json'));
+  // The real spend, runs that did not succeed included.
+  const spend =
+    spendText === null ? null : (JSON.parse(spendText) as SpendFile);
+  const out = { ...report, spend };
+  writeJson(join(folder, 'report.json'), out);
+  console.log(JSON.stringify(out, null, 2));
 }
 
 async function main(): Promise<void> {
@@ -340,8 +400,15 @@ async function main(): Promise<void> {
   );
   writeJson(join(folder, 'plan.json'), plan);
   logger.log(`Saving to ${folder}`);
-  await runPaid(plannedRuns(plan), folder);
+  let failure: unknown = null;
+  try {
+    await runPaid(plannedRuns(plan), folder);
+  } catch (error) {
+    failure = error;
+  }
+  // A stopped sample still gets its report: notRun lists what is missing.
   await reportFrom(optIn, folder);
+  if (failure !== null) throw failure;
 }
 
 main().catch((error: unknown) => {

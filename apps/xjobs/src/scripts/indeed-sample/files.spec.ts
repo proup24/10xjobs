@@ -4,7 +4,10 @@ import {
   plannedRuns,
   readResults,
   runFilePath,
+  spendFile,
+  spentUsd,
   type PlanFile,
+  type SpendRun,
 } from './files';
 import { buildPlan, type EventPrices, type Keywords } from './plan';
 
@@ -125,5 +128,52 @@ describe('readResults', () => {
     expect(
       readResults('/f', plan.runs, (p) => files.get(p) ?? null)[0].costUsd,
     ).toBeNull();
+  });
+});
+
+describe('spendFile', () => {
+  it('sums known costs and counts an unknown one at its reservation', () => {
+    const runs: SpendRun[] = [
+      {
+        actor: 'valig',
+        searchId: 'us-remote-plain',
+        runId: 'r1',
+        status: 'SUCCEEDED',
+        usageTotalUsd: 0.1234,
+        reservedUsd: 0.5,
+      },
+      {
+        actor: 'valig',
+        searchId: 'us-remote-real',
+        runId: 'r2',
+        status: 'STARTED',
+        usageTotalUsd: null,
+        reservedUsd: 0.31,
+      },
+    ];
+    expect(spentUsd(runs)).toBeCloseTo(0.4334, 10);
+    expect(spendFile(runs)).toEqual({
+      spentUsd: 0.4334,
+      runs: [
+        {
+          actor: 'valig',
+          searchId: 'us-remote-plain',
+          runId: 'r1',
+          status: 'SUCCEEDED',
+          usageTotalUsd: 0.1234,
+        },
+        {
+          actor: 'valig',
+          searchId: 'us-remote-real',
+          runId: 'r2',
+          status: 'STARTED',
+          usageTotalUsd: null,
+        },
+      ],
+    });
+  });
+
+  it('is zero with no runs', () => {
+    expect(spendFile([])).toEqual({ spentUsd: 0, runs: [] });
   });
 });

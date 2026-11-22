@@ -261,6 +261,7 @@ export async function loadDevLookup(
           WHERE j."mergedIntoId" IS NULL) AS keys,
         (SELECT coalesce(jsonb_agg(DISTINCT p.v), '[]'::jsonb)
           FROM normalized_jobs j
+          -- titleCompanyKey's counterpart: SQL lower(btrim) and JS toLowerCase().trim() may differ on non-ASCII.
           JOIN p ON p.v = lower(btrim(j.title)) || '|' || lower(btrim(j."companyName"))
           WHERE j."mergedIntoId" IS NULL) AS pairs`
       .returnsRow({ keys: JSONB, pairs: JSONB })

@@ -100,3 +100,41 @@ export function readResults(
   }
   return results;
 }
+
+/**
+ * One Apify run the paid loop started, recorded as soon as `start` returns, so
+ * a run whose wait throws is still counted and its id kept for the re-read.
+ */
+export interface SpendRun {
+  actor: ActorName;
+  searchId: string;
+  runId: string;
+  /** Apify's status; `STARTED` until the loop reads one. */
+  status: string;
+  usageTotalUsd: number | null;
+  reservedUsd: number;
+}
+
+/** `spend.json`: what the sample really cost, every started run included. */
+export interface SpendFile {
+  spentUsd: number;
+  runs: Omit<SpendRun, 'reservedUsd'>[];
+}
+
+/** Known costs, plus the reservation of each run whose cost is unknown. */
+export function spentUsd(runs: readonly SpendRun[]): number {
+  return runs.reduce((sum, r) => sum + (r.usageTotalUsd ?? r.reservedUsd), 0);
+}
+
+export function spendFile(runs: readonly SpendRun[]): SpendFile {
+  return {
+    spentUsd: Number(spentUsd(runs).toFixed(4)),
+    runs: runs.map(({ actor, searchId, runId, status, usageTotalUsd }) => ({
+      actor,
+      searchId,
+      runId,
+      status,
+      usageTotalUsd,
+    })),
+  };
+}
