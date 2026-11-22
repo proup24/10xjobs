@@ -63,6 +63,7 @@ function planned(actor: ActorName, id: string): PlannedRun {
     search,
     input: {},
     reservedUsd: 0.1,
+    worstCaseUsd: 0.09,
     memoryMbytes: 512,
     timeoutSecs: 900,
   };
@@ -327,13 +328,15 @@ describe('buildReport gate', () => {
 });
 
 describe('buildReport charge cap', () => {
-  it('flags a run whose cost reached its reservation', () => {
+  it('flags a run that charged more than a full run should', () => {
     const r = report([
       result('valig', 'us-remote-plain', [job('a')], 0.096),
       result('valig', 'us-remote-real', [job('b')], 0.09),
       result('valig', 'ma-onsite-plain', [job('m')], null),
     ]);
-    // planned() reserves 0.1 per run.
+    // planned() reserves 0.1 per run; a full run costs 0.09. A run at exactly
+    // the full-run cost (every row returned) is not flagged: kaix's full runs
+    // cost $0.00501 against a $0.01 reservation, and were wrongly flagged.
     expect(
       r.perActor.valig.runs.map((x) => [x.searchId, x.chargeCapReached]),
     ).toEqual([

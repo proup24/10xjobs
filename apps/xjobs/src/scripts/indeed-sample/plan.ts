@@ -20,6 +20,8 @@ export interface PlannedRun {
   search: SampleSearch;
   input: Record<string, unknown>;
   reservedUsd: number;
+  /** Unrounded cost of a run that returns every row: what a full run should charge. */
+  worstCaseUsd: number;
   memoryMbytes: number;
   timeoutSecs: number;
 }
@@ -172,16 +174,21 @@ export function startEvents(memoryMbytes: number): number {
   return Math.max(1, Math.ceil(memoryMbytes / 1024));
 }
 
-/** Worst-case cost of one run: every row at every row event, plus its start events, rounded up to the cent. */
-export function reserveUsd(spec: ActorSpec, prices: EventPrices): number {
+/** Unrounded worst-case cost of one run: every row at every row event, plus its start events. */
+export function worstCaseUsd(spec: ActorSpec, prices: EventPrices): number {
   const perRow = spec.rowEvents.reduce(
     (sum, event) => sum + priceOf(spec, prices, event),
     0,
   );
-  const total =
+  return (
     spec.rows * perRow +
-    startEvents(spec.memoryMbytes) * priceOf(spec, prices, spec.startEvent);
-  return Math.ceil(total * 100 - 1e-9) / 100;
+    startEvents(spec.memoryMbytes) * priceOf(spec, prices, spec.startEvent)
+  );
+}
+
+/** Worst-case cost of one run, rounded up to the cent. */
+export function reserveUsd(spec: ActorSpec, prices: EventPrices): number {
+  return Math.ceil(worstCaseUsd(spec, prices) * 100 - 1e-9) / 100;
 }
 
 /** Throws naming the actor and event for a live event the spec neither reserves nor lists as kept off. */
@@ -223,12 +230,14 @@ export function buildPlan(
     ];
     checkEvents(spec, prices[actor]);
     const reservedUsd = reserveUsd(spec, prices[actor]);
+    const worstCase = worstCaseUsd(spec, prices[actor]);
     for (const search of searches) {
       runs.push({
         actor,
         search,
         input: spec.buildInput(search),
         reservedUsd,
+        worstCaseUsd: worstCase,
         memoryMbytes: spec.memoryMbytes,
         timeoutSecs: RUN_TIMEOUT_SECS,
       });

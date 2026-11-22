@@ -44,7 +44,7 @@ export interface RunSummary {
   rows: number;
   distinct: number;
   costUsd: number | null;
-  /** The cost reached the run's reservation (within half a cent), so Apify's limit may have cut it short. */
+  /** The run charged more than a full run should at the planned prices, so Apify's limit may have cut it short. */
   chargeCapReached: boolean;
 }
 
@@ -133,7 +133,8 @@ const MIN_FULL_SHARE = 0.95;
 const MAX_BASELINE_RATIO = 2;
 const MAX_LOST_SHARE = 0.02;
 const EPS = 1e-9;
-const CHARGE_CAP_SLACK_USD = 0.005;
+/** Float slack when comparing a run's charge with its full-run cost. */
+const CHARGE_SLACK_USD = 1e-6;
 
 const REMOTE_PROBE = {
   filtered: 'us-remote-plain',
@@ -500,9 +501,9 @@ export function buildReport(input: {
 
     perActor[actor] = {
       runs: runs.map((r) => {
-        const reserved = plannedByKey.get(
+        const fullRunUsd = plannedByKey.get(
           runKey(actor, r.searchId),
-        )?.reservedUsd;
+        )?.worstCaseUsd;
         return {
           searchId: r.searchId,
           place: r.place,
@@ -510,10 +511,13 @@ export function buildReport(input: {
           rows: r.jobs.length,
           distinct: jks(r.jobs).size,
           costUsd: r.costUsd,
+          // Charged more than a run returning every row should: an event the
+          // plan didn't price, so Apify's limit (the rounded-up reservation)
+          // may have cut it short. A full run at the planned prices never is.
           chargeCapReached:
             r.costUsd !== null &&
-            reserved !== undefined &&
-            r.costUsd >= reserved - CHARGE_CAP_SLACK_USD,
+            fullRunUsd !== undefined &&
+            r.costUsd > fullRunUsd + CHARGE_SLACK_USD,
         };
       }),
       notRun: notRun.map((search) => search.id),

@@ -161,6 +161,11 @@ describe('buildPlan', () => {
     }
     const sum = plan.runs.reduce((acc, r) => acc + r.reservedUsd, 0);
     expect(plan.reservedUsd).toBeCloseTo(sum, 10);
+    // A full kaix run (100 rows at 0.00005 + 0.00001 start) charges $0.00501
+    // against a $0.01 reservation: the unrounded worst case is kept apart.
+    const kaix = plan.runs.find((r) => r.actor === 'kaix');
+    expect(kaix?.worstCaseUsd).toBeCloseTo(0.00501, 10);
+    expect(kaix?.reservedUsd).toBe(0.01);
     expect(plan.reservedUsd).toBe(Math.round(plan.reservedUsd * 100) / 100);
   });
 
