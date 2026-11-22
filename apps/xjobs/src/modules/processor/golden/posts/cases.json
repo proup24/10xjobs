@@ -30,7 +30,19 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "IT Technical Support",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "careers@bluerocktalentgroup.com",
+        "facts": {
+          "roleKind": "support",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      }
+    ],
     "note": "company relays IT Technical Support role, send resumes to careers@ email"
   },
   {
@@ -64,8 +76,22 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
-    "note": "recruiter relays Senior Full-Stack Software Engineer contract at micro1, DM for referral"
+    "roles": [
+      {
+        "title": "Senior Full-Stack Software Engineer",
+        "employer": "micro1",
+        "applyKinds": ["connect_dm_comment"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "seniority": "senior",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
+    "note": "recruiter relays Senior Full-Stack Software Engineer contract at micro1, DM for referral | pre-label: unsure because it is the same micro1 AI-training contractor gig the owner ruled junk in #11 (here no 300-openings claim)"
   },
   {
     "rawItemId": "01a1fd5a-a72d-750e-b165-a70959051b2f",
@@ -98,8 +124,67 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
-    "note": "recruiter lists 5 roles at Prophecy Technologies incl. Senior GenAI Python Engineer Lead"
+    "roles": [
+      {
+        "title": "Senior GenAI Python Engineer Lead",
+        "employer": "Prophecy Technologies",
+        "applyKinds": ["email"],
+        "contactEmail": "m.hari@prophecytechs.com",
+        "facts": {
+          "roleKind": "ai_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Systems Engineer – Windows & VMware",
+        "employer": "Prophecy Technologies",
+        "applyKinds": ["email"],
+        "contactEmail": "m.hari@prophecytechs.com",
+        "facts": {
+          "roleKind": "other",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Registered Nurse (RN) – Clinical Business Analyst",
+        "employer": "Prophecy Technologies",
+        "applyKinds": ["email"],
+        "contactEmail": "m.hari@prophecytechs.com",
+        "facts": {
+          "roleKind": "other",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Lead .NET Full Stack Developer",
+        "employer": "Prophecy Technologies",
+        "applyKinds": ["email"],
+        "contactEmail": "m.hari@prophecytechs.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "seniority": "lead",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Python AWS Full Stack Developer with AI",
+        "employer": "Prophecy Technologies",
+        "applyKinds": ["email"],
+        "contactEmail": "m.hari@prophecytechs.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "arrangement": "hybrid",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
+    "note": "recruiter lists 5 roles at Prophecy Technologies incl. Senior GenAI Python Engineer Lead | pre-label: unsure because 5 roles (incl. a nurse) in different cities from a staffing firm; kept hiring as the post names Prophecy Technologies as the hirer"
   },
   {
     "rawItemId": "01a1fd5a-82c3-7096-b74f-77147e04e427",
@@ -196,8 +281,8 @@
       }
     ],
     "verdict": {
-      "value": "hiring",
-      "reason": "hiring",
+      "value": "junk",
+      "reason": "many_roles_across_companies",
       "reviewed": false
     },
     "roles": [],
@@ -234,7 +319,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Senior / Staff Software Engineer",
+        "employer": "Loancrate",
+        "applyKinds": ["email"],
+        "contactEmail": "mohammed.ali@verizservices.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "recruiter relays Senior/Staff Software Engineer at Loancrate, remote US"
   },
   {
@@ -264,12 +362,12 @@
       }
     ],
     "verdict": {
-      "value": "hiring",
-      "reason": "hiring",
+      "value": "junk",
+      "reason": "messaging_group",
       "reviewed": false
     },
     "roles": [],
-    "note": "'We're hiring Senior Full Stack Developer' remote India; also pushes job group link"
+    "note": "'We're hiring Senior Full Stack Developer' remote India; also pushes job group link | pre-label: unsure because sample said hiring; a daily job-update account, no employer, the resume address is missing and the only link is its job-update group"
   },
   {
     "rawItemId": "01a1fd58-fcc7-76b9-b604-e88003a86b1d",
@@ -302,7 +400,19 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "SAP Basis Administrator",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "careers@palantiraisol.com",
+        "facts": {
+          "roleKind": "other",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      }
+    ],
     "note": "company relays SAP Basis Administrator role, send resumes to careers@ email"
   },
   {
@@ -370,7 +480,19 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Game Developer",
+        "employer": "Intellara Labs",
+        "applyKinds": ["connect_dm_comment"],
+        "contactEmail": null,
+        "facts": {
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "studio 'We're hiring a Game Developer', remote part-time, DM to apply"
   },
   {
@@ -681,7 +803,21 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Senior Fullstack Developer (React.js / Node.js)",
+        "employer": null,
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "seniority": "senior",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "job site relays Senior Fullstack Developer (React/Node) remote Sweden with apply link"
   },
   {
@@ -715,7 +851,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "PHP Full Stack Developer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "sanket.chopde@admedia.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "HR 'We're Hiring: PHP Full Stack Developer' remote India"
   },
   {
@@ -749,7 +898,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Senior Network Engineer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "careers@cogentcube.com",
+        "facts": {
+          "roleKind": "other",
+          "seniority": "senior",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      }
+    ],
     "note": "company relays Senior Network Engineer, send resumes to careers@ email"
   },
   {
@@ -783,7 +945,19 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "AWS Java Full Stack Developer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "careers@addisongrouptechnologies.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "company relays AWS Java Full Stack Developer, send resumes to careers@ email"
   },
   {
@@ -817,7 +991,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Senior Software Engineer – LLM Evaluation",
+        "employer": null,
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "ai_training",
+          "seniority": "senior",
+          "arrangement": "remote"
+        },
+        "reviewed": false
+      }
+    ],
     "note": "'WE'RE HIRING: Senior Software Engineer - LLM Evaluation', remote contract"
   },
   {
@@ -851,7 +1038,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Full-Stack Developers",
+        "employer": "FAMA24",
+        "applyKinds": ["email"],
+        "contactEmail": "recruitment@fama24.co.za",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "Fama24 'We're hiring' 3 Full-Stack Developers, remote"
   },
   {
@@ -885,7 +1085,19 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Oracle Developer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "sukesh@nebulapartners.com",
+        "facts": {
+          "roleKind": "backend_engineer",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "relays Oracle Developer (APEX) role, send resume to email"
   },
   {
@@ -924,7 +1136,21 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Senior Full Stack Engineer (TypeScript / Node.js)",
+        "employer": "Storyteq",
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "seniority": "senior",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "job board relays Storyteq Senior Full Stack Engineer with apply link"
   },
   {
@@ -958,7 +1184,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Sr Data Engineer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "careers@nexoratechinc.com",
+        "facts": {
+          "roleKind": "data_engineer",
+          "seniority": "senior",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "company relays Sr Data Engineer, send resumes to careers@ email"
   },
   {
@@ -992,7 +1231,21 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Senior Software Engineer – Next.js / GraphQL / Agentic AI",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "yunuskhan@arkinfotechspectrum.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "seniority": "senior",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "recruiter relays Senior Software Engineer Next.js/GraphQL/Agentic AI, remote"
   },
   {
@@ -1026,7 +1279,19 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": ".Net Full Stack Developer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "careers@cogentcube.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "company relays .Net Full Stack Developer, send resumes to careers@ email"
   },
   {
@@ -1099,7 +1364,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Full-Stack AI Engineer",
+        "employer": "Pavago",
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "ai_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "job board relays Pavago Full-Stack AI Engineer remote Portugal with apply link"
   },
   {
@@ -1201,7 +1479,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Sr Data Engineer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "careers@palantiraisol.com",
+        "facts": {
+          "roleKind": "data_engineer",
+          "seniority": "senior",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "company relays Sr Data Engineer, send resumes to careers@ email"
   },
   {
@@ -1242,7 +1533,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Full Stack Software Engineer – Postgres",
+        "employer": "ClickHouse",
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "relays ClickHouse Full Stack Software Engineer - Postgres with Ashby apply link"
   },
   {
@@ -1276,7 +1580,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Senior .Net Full Stack Developer (.NET + React)",
+        "employer": "Global IT Family LLC",
+        "applyKinds": ["email", "connect_dm_comment"],
+        "contactEmail": "amishra@globalitfamily.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "seniority": "senior",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "'WE'RE HIRING' Senior .Net Full Stack Developer, Columbus OH C2C, resume email"
   },
   {
@@ -1310,8 +1627,21 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
-    "note": "staffing recruiter relays Full Stack Java Developer for State of Colorado, remote"
+    "roles": [
+      {
+        "title": "Full Stack Java Developer",
+        "employer": "State of Colorado – OIT",
+        "applyKinds": ["email", "connect_dm_comment"],
+        "contactEmail": "abdul@dataspectron.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
+    "note": "staffing recruiter relays Full Stack Java Developer for State of Colorado, remote | pre-label: unsure because the email sits in the \"Thanks & Regards\" signature, right after \"please share your updated resume\"; labelled as the contact email"
   },
   {
     "rawItemId": "01a2008f-0da9-777a-9bf9-fdb62941b8a7",
@@ -1354,7 +1684,99 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Tech Lead Fullstack",
+        "employer": "Capgemini",
+        "applyKinds": ["external_link", "email", "connect_dm_comment"],
+        "contactEmail": "soufiane.baymik@capgemini.com",
+        "facts": {
+          "roleKind": "tech_lead",
+          "seniority": "lead",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Tech Lead Fullstack – Agentic AI",
+        "employer": "Capgemini",
+        "applyKinds": ["external_link", "email", "connect_dm_comment"],
+        "contactEmail": "soufiane.baymik@capgemini.com",
+        "facts": {
+          "roleKind": "tech_lead",
+          "seniority": "lead",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Expert Agentic AI & Code Graph",
+        "employer": "Capgemini",
+        "applyKinds": ["external_link", "email", "connect_dm_comment"],
+        "contactEmail": "soufiane.baymik@capgemini.com",
+        "facts": {
+          "roleKind": "ai_engineer",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Développeur Fullstack Java et Angular",
+        "employer": "Capgemini",
+        "applyKinds": ["external_link", "email", "connect_dm_comment"],
+        "contactEmail": "soufiane.baymik@capgemini.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Développeur Fullstack Angular / Quarkus",
+        "employer": "Capgemini",
+        "applyKinds": ["external_link", "email", "connect_dm_comment"],
+        "contactEmail": "soufiane.baymik@capgemini.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Développeur Fullstack Angular et Go Lang",
+        "employer": "Capgemini",
+        "applyKinds": ["external_link", "email", "connect_dm_comment"],
+        "contactEmail": "soufiane.baymik@capgemini.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "AI Engineering Backend Senior",
+        "employer": "Capgemini",
+        "applyKinds": ["external_link", "email", "connect_dm_comment"],
+        "contactEmail": "soufiane.baymik@capgemini.com",
+        "facts": {
+          "roleKind": "backend_engineer",
+          "seniority": "senior",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "AI Engineering Backend Senior & Mobile Lead",
+        "employer": "Capgemini",
+        "applyKinds": ["external_link", "email", "connect_dm_comment"],
+        "contactEmail": "soufiane.baymik@capgemini.com",
+        "facts": {
+          "roleKind": "backend_engineer",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "Capgemini recrute au Maroc: Tech Lead Fullstack roles with links (French)"
   },
   {
@@ -1388,7 +1810,19 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "SAP Supply Chain Analyst",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "hr@aspirax.co",
+        "facts": {
+          "roleKind": "other",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      }
+    ],
     "note": "company relays SAP Supply Chain Analyst, send resumes to hr@ email"
   },
   {
@@ -1422,7 +1856,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Lead .Net Full Stack Developer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "careers@cogentcube.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "seniority": "lead",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "company relays Lead .Net Full Stack Developer, send resumes to careers@ email"
   },
   {
@@ -1456,7 +1903,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Senior Software Engineer – LLM Evaluation",
+        "employer": null,
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "ai_training",
+          "seniority": "senior",
+          "arrangement": "remote"
+        },
+        "reviewed": false
+      }
+    ],
     "note": "'WE'RE HIRING: Senior Software Engineer - LLM Evaluation', US/Canada/WEU"
   },
   {
@@ -1495,8 +1955,22 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
-    "note": "'We're Hiring: Technical Lead' at U DEVS, remote paid in USD"
+    "roles": [
+      {
+        "title": "Technical Lead",
+        "employer": "U DEVS (SMC-PRIVATE) LIMITED",
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "tech_lead",
+          "seniority": "lead",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
+    "note": "'We're Hiring: Technical Lead' at U DEVS, remote paid in USD | pre-label: unsure because the poster (Smart Hiring HR) also plugs \"Daily Jobs | ATS Resume Tips\" and a WhatsApp group; the apply path is a link"
   },
   {
     "rawItemId": "01a1fd5a-dd9b-7548-a302-fb4353686f91",
@@ -1563,7 +2037,31 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Full Stack Developer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "srinivas.m@eraytec.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": ".NET C# Developer with angular",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "srinivas.m@eraytec.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "recruiter 'Hiring: Full Stack Developer and Dot Net Developer', remote, resume email"
   },
   {
@@ -1635,7 +2133,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Senior .NET Full Stack Developer (.NET Core + Angular)",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "careers@addisongrouptechnologies.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "seniority": "senior",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "company relays Senior .NET Full Stack Developer, send resumes to careers@ email"
   },
   {
@@ -1669,8 +2180,22 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
-    "note": "'Hiring Alert - Senior Full Stack Developer' with apply link; also WhatsApp group plug"
+    "roles": [
+      {
+        "title": "Senior Full Stack Developer",
+        "employer": null,
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "seniority": "senior",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
+    "note": "'Hiring Alert - Senior Full Stack Developer' with apply link; also WhatsApp group plug | pre-label: unsure because the author is a daily job-sharing account plugging a WhatsApp group; the way to apply is a link, not the group, and no employer is named"
   },
   {
     "rawItemId": "01a1fd58-6802-751c-9e54-42ebbc082860",
@@ -1708,7 +2233,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Remote Full Stack Engineer",
+        "employer": "Pavago",
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "job board relays Pavago Remote Full Stack Engineer India with apply link"
   },
   {
@@ -1742,7 +2280,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Network Engineer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "bharathi@bluerocktalentgroup.com",
+        "facts": {
+          "roleKind": "other",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      }
+    ],
     "note": "recruiter relays Network Engineer remote USA C2C"
   },
   {
@@ -1781,7 +2332,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Full-Stack AI Engineer",
+        "employer": "Pavago",
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "ai_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "job board relays Pavago Full-Stack AI Engineer Portugal with apply link"
   },
   {
@@ -1819,7 +2383,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Full Stack Product Engineer, Merchant Platform",
+        "employer": "Bask Health",
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "'Hiring Alert' Full Stack Product Engineer at Bask Health, remote"
   },
   {
@@ -1853,7 +2430,19 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Network Engineer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "careers@bluerocktalentgroup.com",
+        "facts": {
+          "roleKind": "other",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      }
+    ],
     "note": "company relays Network Engineer, send resumes to careers@ email"
   },
   {
@@ -1921,8 +2510,79 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
-    "note": "recruiter lists 6 roles at Prophecy Technologies incl. Lead .NET Full Stack Developer"
+    "roles": [
+      {
+        "title": "Senior GenAI Python Engineer Lead",
+        "employer": "Prophecy Technologies",
+        "applyKinds": ["email"],
+        "contactEmail": "m.hari@prophecytechs.com",
+        "facts": {
+          "roleKind": "ai_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Systems Engineer – Windows & VMware",
+        "employer": "Prophecy Technologies",
+        "applyKinds": ["email"],
+        "contactEmail": "m.hari@prophecytechs.com",
+        "facts": {
+          "roleKind": "other",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Registered Nurse (RN) – Clinical Business Analyst",
+        "employer": "Prophecy Technologies",
+        "applyKinds": ["email"],
+        "contactEmail": "m.hari@prophecytechs.com",
+        "facts": {
+          "roleKind": "other",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Lead .NET Full Stack Developer",
+        "employer": "Prophecy Technologies",
+        "applyKinds": ["email"],
+        "contactEmail": "m.hari@prophecytechs.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "seniority": "lead",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Python AWS Full Stack Developer with AI",
+        "employer": "Prophecy Technologies",
+        "applyKinds": ["email"],
+        "contactEmail": "m.hari@prophecytechs.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "arrangement": "hybrid",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "DataStage ETL Developer",
+        "employer": "Prophecy Technologies",
+        "applyKinds": ["email"],
+        "contactEmail": "m.hari@prophecytechs.com",
+        "facts": {
+          "roleKind": "data_engineer",
+          "arrangement": "hybrid",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
+    "note": "recruiter lists 6 roles at Prophecy Technologies incl. Lead .NET Full Stack Developer | pre-label: unsure because 6 roles (incl. a nurse) in different cities from a staffing firm; kept hiring as the post names Prophecy Technologies as the hirer"
   },
   {
     "rawItemId": "01a20322-1ecd-73fa-8242-e7ccf6266542",
@@ -2066,12 +2726,12 @@
       }
     ],
     "verdict": {
-      "value": "hiring",
-      "reason": "hiring",
+      "value": "junk",
+      "reason": "no_clear_employer",
       "reviewed": false
     },
     "roles": [],
-    "note": "relays micro1 openings: Software Engineer - Backend, Sr. Full-Stack SE, with apply links"
+    "note": "relays micro1 openings: Software Engineer - Backend, Sr. Full-Stack SE, with apply links | pre-label: unsure because sample said hiring; \"597 openings\" (100/300 per role) from a repost page, same micro1 gig the owner ruled junk in #11"
   },
   {
     "rawItemId": "01a1fd58-82e4-764f-93c8-d62b1cfdd3b3",
@@ -2107,7 +2767,19 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Remote Full Stack Engineers",
+        "employer": "Turing",
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "ai_training",
+          "arrangement": "remote"
+        },
+        "reviewed": false
+      }
+    ],
     "note": "'Hiring: Remote Full Stack Engineers' at Turing (AI training), with apply link"
   },
   {
@@ -2174,12 +2846,12 @@
       }
     ],
     "verdict": {
-      "value": "hiring",
-      "reason": "hiring",
+      "value": "junk",
+      "reason": "many_roles_across_companies",
       "reviewed": false
     },
     "roles": [],
-    "note": "staffing manager 'We are hiring' lists roles incl. Senior/Lead Golang Backend Engineer"
+    "note": "staffing manager 'We are hiring' lists roles incl. Senior/Lead Golang Backend Engineer | pre-label: unsure because it lists many roles across places for unnamed clients; owner #32 rule says junk, but each req is specific (9 roles: Golang, SAP, BAs, Qualys, ...)"
   },
   {
     "rawItemId": "01a1fd5a-60a5-77ac-9841-56fd59f4c9fc",
@@ -2218,8 +2890,21 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
-    "note": "job-update channel relays one role: Wadhwani AI Associate Full Stack Engineer, link"
+    "roles": [
+      {
+        "title": "Associate Full Stack Engineer",
+        "employer": "Wadhwani AI",
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
+    "note": "job-update channel relays one role: Wadhwani AI Associate Full Stack Engineer, link | pre-label: unsure because it is a job-update channel plugging WhatsApp/Telegram; the role itself has its own link"
   },
   {
     "rawItemId": "01a20245-65f1-71a4-b584-f1cc2be5bcd1",
@@ -2286,8 +2971,68 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
-    "note": "recruiter lists immediate roles incl. Senior AI/ML Engineer remote, .NET Full Stack"
+    "roles": [
+      {
+        "title": "Senior AI/ML & Constraint Programming Engineer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "raju.n@adroitinnovative.com",
+        "facts": {
+          "roleKind": "ml_engineer",
+          "seniority": "senior",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Network Storage Administrator",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "raju.n@adroitinnovative.com",
+        "facts": {
+          "roleKind": "other",
+          "arrangement": "onsite",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      },
+      {
+        "title": "FACETS Developer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "raju.n@adroitinnovative.com",
+        "facts": {
+          "arrangement": "onsite"
+        },
+        "reviewed": false
+      },
+      {
+        "title": ".NET Full Stack Developer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "raju.n@adroitinnovative.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Senior Kubernetes Platform Engineer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "raju.n@adroitinnovative.com",
+        "facts": {
+          "roleKind": "platform_engineer",
+          "seniority": "senior",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
+    "note": "recruiter lists immediate roles incl. Senior AI/ML Engineer remote, .NET Full Stack | pre-label: unsure because a staffing recruiter lists 5 unrelated reqs in different cities, likely several unnamed clients (junk sign many_roles_across_companies?)"
   },
   {
     "rawItemId": "01a1fe32-1beb-747c-aa97-11e5ea834a18",
@@ -2354,7 +3099,31 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "GCP_Data_Engineer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "syamsai.p@impaxioninc.com",
+        "facts": {
+          "roleKind": "data_engineer",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "GenAI_Engineer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "syamsai.p@impaxioninc.com",
+        "facts": {
+          "roleKind": "ai_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "recruiter relays GCP Data Engineer, Hartford CT, #hiring"
   },
   {
@@ -2388,7 +3157,19 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Network Engineer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "hr@aspirax.co",
+        "facts": {
+          "roleKind": "other",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      }
+    ],
     "note": "company relays Network Engineer, send resumes to hr@ email"
   },
   {
@@ -2422,7 +3203,21 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Senior Fullstack Developer (Kotlin/Java + React)",
+        "employer": null,
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "seniority": "senior",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "sourcer relays Senior Fullstack Developer (Kotlin/Java + React), Poland B2B (Polish)"
   },
   {
@@ -2499,7 +3294,99 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Tech Lead Fullstack",
+        "employer": "Capgemini",
+        "applyKinds": ["external_link", "connect_dm_comment"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "tech_lead",
+          "seniority": "lead",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Tech Lead Fullstack – Agentic AI",
+        "employer": "Capgemini",
+        "applyKinds": ["external_link", "connect_dm_comment"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "tech_lead",
+          "seniority": "lead",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Expert Agentic AI & Code Graph",
+        "employer": "Capgemini",
+        "applyKinds": ["external_link", "connect_dm_comment"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "ai_engineer",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Développeur Fullstack Java et Angular",
+        "employer": "Capgemini",
+        "applyKinds": ["external_link", "connect_dm_comment"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Développeur Fullstack Angular / Quarkus",
+        "employer": "Capgemini",
+        "applyKinds": ["external_link", "connect_dm_comment"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Développeur Fullstack Angular et Go Lang",
+        "employer": "Capgemini",
+        "applyKinds": ["external_link", "connect_dm_comment"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "AI Engineering Backend Senior",
+        "employer": "Capgemini",
+        "applyKinds": ["external_link", "connect_dm_comment"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "backend_engineer",
+          "seniority": "senior",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "AI Engineering Backend Senior & Mobile Lead",
+        "employer": "Capgemini",
+        "applyKinds": ["external_link", "connect_dm_comment"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "backend_engineer",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "recruiter: Capgemini recrute au Maroc, Tech Lead Fullstack roles with links (French)"
   },
   {
@@ -2529,12 +3416,12 @@
       }
     ],
     "verdict": {
-      "value": "hiring",
-      "reason": "hiring",
+      "value": "junk",
+      "reason": "other",
       "reviewed": false
     },
     "roles": [],
-    "note": "'WE ARE HIRING' multiple US IT roles incl. Java Full Stack Developer at Staffbee"
+    "note": "'WE ARE HIRING' multiple US IT roles incl. Java Full Stack Developer at Staffbee | pre-label: unsure because sample said hiring; the post itself says \"potential hiring profiles, not confirmation of active client vacancies\" (resume harvesting to a gmail)"
   },
   {
     "rawItemId": "01a1fd58-fbb4-74fb-bb52-cb4bde43dcef",
@@ -2567,7 +3454,19 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "SAP Basis Administrator",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "careers@nexoratechinc.com",
+        "facts": {
+          "roleKind": "other",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      }
+    ],
     "note": "company relays SAP Basis Administrator, send resumes to careers@ email"
   },
   {
@@ -2601,7 +3500,32 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Full Stack Developer",
+        "employer": "Terasync Tech",
+        "applyKinds": ["email"],
+        "contactEmail": "careers@terasynctech.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "DevOps Engineer",
+        "employer": "Terasync Tech",
+        "applyKinds": ["email"],
+        "contactEmail": "careers@terasynctech.com",
+        "facts": {
+          "roleKind": "devops_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "TeraSync 'We're hiring' Full Stack Developer, DevOps Engineer, remote"
   },
   {
@@ -2640,7 +3564,21 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Senior Full-Stack Software Engineer",
+        "employer": "Cardata",
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "seniority": "senior",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "job board relays Cardata Senior Full-Stack Software Engineer, Canada, apply link"
   },
   {
@@ -2674,7 +3612,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Software Engineer – Next.js, GraphQL & AI Engineering",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "deb@infinitysolutions.ca",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "'WE ARE HIRING' Software Engineer Next.js/GraphQL/AI, remote full-time"
   },
   {
@@ -2742,8 +3693,189 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
-    "note": "Cemzo 'We're Hiring Interns': React Native, Node.js, Full Stack intern roles"
+    "roles": [
+      {
+        "title": "React Native Intern",
+        "employer": "Cemzo",
+        "applyKinds": ["email"],
+        "contactEmail": "careers@cemzo.in",
+        "facts": {
+          "roleKind": "mobile_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "React.js Intern",
+        "employer": "Cemzo",
+        "applyKinds": ["email"],
+        "contactEmail": "careers@cemzo.in",
+        "facts": {
+          "roleKind": "frontend_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Node.js / Backend Developer Intern",
+        "employer": "Cemzo",
+        "applyKinds": ["email"],
+        "contactEmail": "careers@cemzo.in",
+        "facts": {
+          "roleKind": "backend_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Full Stack Developer Intern",
+        "employer": "Cemzo",
+        "applyKinds": ["email"],
+        "contactEmail": "careers@cemzo.in",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Mobile App Tester (Android)",
+        "employer": "Cemzo",
+        "applyKinds": ["email"],
+        "contactEmail": "careers@cemzo.in",
+        "facts": {
+          "roleKind": "qa_manual",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Web App Tester",
+        "employer": "Cemzo",
+        "applyKinds": ["email"],
+        "contactEmail": "careers@cemzo.in",
+        "facts": {
+          "roleKind": "qa_manual",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      },
+      {
+        "title": "QA / Software Testing Intern",
+        "employer": "Cemzo",
+        "applyKinds": ["email"],
+        "contactEmail": "careers@cemzo.in",
+        "facts": {
+          "roleKind": "qa_manual",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Content Creator Intern",
+        "employer": "Cemzo",
+        "applyKinds": ["email"],
+        "contactEmail": "careers@cemzo.in",
+        "facts": {
+          "roleKind": "other",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Social Media Manager Intern",
+        "employer": "Cemzo",
+        "applyKinds": ["email"],
+        "contactEmail": "careers@cemzo.in",
+        "facts": {
+          "roleKind": "other",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Graphic Designer Intern",
+        "employer": "Cemzo",
+        "applyKinds": ["email"],
+        "contactEmail": "careers@cemzo.in",
+        "facts": {
+          "roleKind": "other",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Video Editor Intern",
+        "employer": "Cemzo",
+        "applyKinds": ["email"],
+        "contactEmail": "careers@cemzo.in",
+        "facts": {
+          "roleKind": "other",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Digital Marketing Intern",
+        "employer": "Cemzo",
+        "applyKinds": ["email"],
+        "contactEmail": "careers@cemzo.in",
+        "facts": {
+          "roleKind": "other",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Business Development Intern",
+        "employer": "Cemzo",
+        "applyKinds": ["email"],
+        "contactEmail": "careers@cemzo.in",
+        "facts": {
+          "roleKind": "other",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Market Research Intern",
+        "employer": "Cemzo",
+        "applyKinds": ["email"],
+        "contactEmail": "careers@cemzo.in",
+        "facts": {
+          "roleKind": "other",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Operations Intern",
+        "employer": "Cemzo",
+        "applyKinds": ["email"],
+        "contactEmail": "careers@cemzo.in",
+        "facts": {
+          "roleKind": "other",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      }
+    ],
+    "note": "Cemzo 'We're Hiring Interns': React Native, Node.js, Full Stack intern roles | pre-label: unsure because it is 15 unpaid internships at one startup (\"Internship Certificate\"); real but could be a free-labour funnel"
   },
   {
     "rawItemId": "01a1fdc4-506d-7001-9873-41110072c80c",
@@ -2815,7 +3947,21 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Technical Lead - Full Stack Developer (Frontend-Focused)",
+        "employer": "Miratech",
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "tech_lead",
+          "seniority": "lead",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "job board relays Miratech Technical Lead - Full Stack Developer, apply link"
   },
   {
@@ -2855,7 +4001,19 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Forward Deployed Engineer (FDE)",
+        "employer": "Joblet-AI",
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "ai_training",
+          "arrangement": "remote"
+        },
+        "reviewed": false
+      }
+    ],
     "note": "relays Forward Deployed Engineer contract (Joblet-AI/micro1), remote, apply link"
   },
   {
@@ -2928,7 +4086,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Full-Stack Developer - Next.js & Python",
+        "employer": "Pavago",
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "job board relays Pavago Full-Stack Developer Next.js & Python, Philippines, apply link"
   },
   {
@@ -3098,7 +4269,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Lead .Net Full Stack Developer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "careers@nexoratechinc.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "seniority": "lead",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "company relays Lead .Net Full Stack Developer, send resumes to careers@ email"
   },
   {
@@ -3172,8 +4356,21 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
-    "note": "'JOB OPPORTUNITY micro1' relays Sr. Full-Stack Software Engineer contract, apply link"
+    "roles": [
+      {
+        "title": "Sr. Full-Stack Software Engineer",
+        "employer": "micro1",
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "ai_training",
+          "seniority": "senior",
+          "arrangement": "remote"
+        },
+        "reviewed": false
+      }
+    ],
+    "note": "'JOB OPPORTUNITY micro1' relays Sr. Full-Stack Software Engineer contract, apply link | pre-label: unsure because it is the same micro1 AI-training contractor gig the owner ruled junk in #11 (here no 300-openings claim); also sells 1:1 mock-interview sessions"
   },
   {
     "rawItemId": "01a1ff7b-b95a-761e-80b2-1fec97c424a6",
@@ -3202,12 +4399,12 @@
       }
     ],
     "verdict": {
-      "value": "hiring",
-      "reason": "hiring",
+      "value": "junk",
+      "reason": "many_roles_across_companies",
       "reviewed": false
     },
     "roles": [],
-    "note": "HR freelancer lists urgent roles incl. Senior Fullstack (.NET/Angular) HCM (Vietnamese)"
+    "note": "HR freelancer lists urgent roles incl. Senior Fullstack (.NET/Angular) HCM (Vietnamese) | pre-label: unsure because sample said hiring; an HR freelancer lists 14+ IT, sales and marketing roles across HCM, Hanoi and Tokyo"
   },
   {
     "rawItemId": "01a1fd58-64bc-752f-b7ad-23a43f658e29",
@@ -3240,8 +4437,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
-    "note": "'IMMEDIATE HIRING Full Stack Developer' USA contract"
+    "roles": [
+      {
+        "title": "Full Stack Developer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "tanyakharb47@gmail.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
+    "note": "'IMMEDIATE HIRING Full Stack Developer' USA contract | pre-label: unsure because it is a generic OPT/CPT-recruiter req (project-dependent location, gmail, no client); could be candidate harvesting"
   },
   {
     "rawItemId": "01a1fe31-ab75-7279-811c-faa9ced1388c",
@@ -3274,7 +4483,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Full Stack Developer",
+        "employer": "Cartigram",
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "'WE ARE HIRING Full Stack Developer' at Cartigram, remote, apply link"
   },
   {
@@ -3313,7 +4535,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Full-stack Engineer",
+        "employer": null,
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "recruiter relays Full-stack Engineer remote LATAM 4k-8k USD, apply link"
   },
   {
@@ -3384,12 +4619,12 @@
       }
     ],
     "verdict": {
-      "value": "hiring",
-      "reason": "hiring",
+      "value": "junk",
+      "reason": "funnel",
       "reviewed": false
     },
     "roles": [],
-    "note": "Freelanly relays GainWise AI Full Stack Developer Intern, remote"
+    "note": "Freelanly relays GainWise AI Full Stack Developer Intern, remote | pre-label: unsure because sample said hiring; Freelanly reposts other posts and the way in is its own paid application-drafting service (\"first one's on us\"), so funnel"
   },
   {
     "rawItemId": "01a1fe6a-0ec9-70f8-8912-ce34cee911c5",
@@ -3425,8 +4660,68 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
-    "note": "Jobiglo: IT Road Consulting recrute, lists roles incl. Full Stack Java/React (French)"
+    "roles": [
+      {
+        "title": "Ingénieur développement mobile Android senior (H/F)",
+        "employer": "IT Road Consulting",
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "mobile_engineer",
+          "seniority": "senior",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Développeur iOS Senior",
+        "employer": "IT Road Consulting",
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "mobile_engineer",
+          "seniority": "senior",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Développeur Full Stack Java / React (H/F)",
+        "employer": "IT Road Consulting",
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Designer UX/UI Senior",
+        "employer": "IT Road Consulting",
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "other",
+          "seniority": "senior",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Consultants formateurs seniors en conduite du changement",
+        "employer": "IT Road Consulting",
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "other",
+          "seniority": "senior",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      }
+    ],
+    "note": "Jobiglo: IT Road Consulting recrute, lists roles incl. Full Stack Java/React (French) | pre-label: unsure because Jobiglo is a digest page (\"entreprises qui recrutent en volume\") linking to its own search; kept hiring as it is one named employer"
   },
   {
     "rawItemId": "01a1fd59-089a-75c7-8ab6-8196133ec226",
@@ -3459,7 +4754,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Senior AI/ML Engineer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "sukesh@nebulapartners.com",
+        "facts": {
+          "roleKind": "ai_engineer",
+          "seniority": "senior",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "relays Senior AI/ML Engineer, send resume to email"
   },
   {
@@ -3493,7 +4801,19 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Full Stack Engineer",
+        "employer": null,
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "ai_training",
+          "arrangement": "remote"
+        },
+        "reviewed": false
+      }
+    ],
     "note": "'Hiring Alert! Full Stack Engineer' contract remote (LLM evaluation)"
   },
   {
@@ -3527,7 +4847,21 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Développeur(se) Senior Full Stack Mobile – Flutter / NestJS",
+        "employer": "NovaSend Côte d'Ivoire",
+        "applyKinds": ["email"],
+        "contactEmail": "recrutement@moon-send.io",
+        "facts": {
+          "roleKind": "mobile_engineer",
+          "seniority": "senior",
+          "arrangement": "onsite",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "NovaSend recrute Senior Full Stack Mobile Flutter/NestJS developer, Abidjan (French)"
   },
   {
@@ -3595,7 +4929,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Embedded Software Engineer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "sukesh@nebulapartners.com",
+        "facts": {
+          "roleKind": "embedded_engineer",
+          "arrangement": "hybrid",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "relays Embedded Software Engineer, send resume to email"
   },
   {
@@ -3629,7 +4976,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Product-Minded Software Engineers (Frontend / Full-Stack)",
+        "employer": null,
+        "applyKinds": ["connect_dm_comment"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "CTO 'Hiring 2 Product-Minded Software Engineers', remote, salary given"
   },
   {
@@ -3702,7 +5062,21 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Lead Full-stack Engineer",
+        "employer": "Sporty Group",
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "seniority": "lead",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "job board relays Sporty Group Lead Full-stack Engineer, apply link"
   },
   {
@@ -3736,7 +5110,19 @@
       "reason": "hiring",
       "reviewed": true
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Junior Data Analyst/Data Analyst",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "resume.database26@gmail.com",
+        "facts": {
+          "roleKind": "other",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      }
+    ],
     "note": "owner: They mention a data analysis role with clear requirements | pre-label: bench-sales lead relays Junior Data Analyst 0-5 yrs to a gmail 'resume.database'; may be harvesting"
   },
   {
@@ -3880,7 +5266,19 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Azure Data Engineer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "careers@palantiraisol.com",
+        "facts": {
+          "roleKind": "data_engineer",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "company relays Azure Data Engineer, send resumes to careers@ email"
   },
   {
@@ -3914,8 +5312,22 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
-    "note": "'Hiring Alert - Senior Full Stack Developer' remote India with apply link"
+    "roles": [
+      {
+        "title": "Senior Full Stack Developer",
+        "employer": null,
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "seniority": "senior",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
+    "note": "'Hiring Alert - Senior Full Stack Developer' remote India with apply link | pre-label: unsure because the author is a daily job-sharing account plugging a WhatsApp group; the way to apply is a link, not the group, and no employer is named"
   },
   {
     "rawItemId": "01a201a0-982b-73b7-a580-c227344c95ed",
@@ -4016,8 +5428,21 @@
       "reason": "hiring",
       "reviewed": true
     },
-    "roles": [],
-    "note": "owner: They are hiring though this is for students, but I'd label it as hiring though these isnt engineering role | pre-label: edutech (Corizo) 'internship and hiring programme' with live training, stipend; may be course funnel"
+    "roles": [
+      {
+        "title": "Internship and Hiring Programme 2027",
+        "employer": "Corizo",
+        "applyKinds": ["connect_dm_comment"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "other",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      }
+    ],
+    "note": "owner: They are hiring though this is for students, but I'd label it as hiring though these isnt engineering role | pre-label: edutech (Corizo) 'internship and hiring programme' with live training, stipend; may be course funnel | pre-label: unsure because roles are one programme entry covering eight internship domains; split into 8 roles if preferred"
   },
   {
     "rawItemId": "01a1fd5a-ea9a-72bb-8a48-cd5863c9db81",
@@ -4050,7 +5475,57 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Python Full Stack Developer – AWS",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "deepthis@xoveconsulting.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "arrangement": "hybrid",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Technical Project Manager",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "deepthis@xoveconsulting.com",
+        "facts": {
+          "roleKind": "other",
+          "arrangement": "hybrid",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Full Stack Developer – Strong UI Experience",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "deepthis@xoveconsulting.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "arrangement": "hybrid",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Full Stack Tech Lead",
+        "employer": "Southwest Airlines",
+        "applyKinds": ["email"],
+        "contactEmail": "deepthis@xoveconsulting.com",
+        "facts": {
+          "roleKind": "tech_lead",
+          "seniority": "lead",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "recruiter 'We're Hiring' 4 roles incl. Python Full Stack Developer, Dallas"
   },
   {
@@ -4084,8 +5559,70 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
-    "note": "recruiter #Hiring 5 W2 requirements incl. Python Full Stack Developer, Dallas"
+    "roles": [
+      {
+        "title": "Microsoft Dynamics 365 Finance & Operations (D365 F&O) – Business Analyst / QA",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "krishna@rits-it.com",
+        "facts": {
+          "roleKind": "other",
+          "arrangement": "onsite",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Python Full Stack Developer – AWS",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "krishna@rits-it.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "arrangement": "onsite",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Java Developer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "krishna@rits-it.com",
+        "facts": {
+          "roleKind": "backend_engineer",
+          "arrangement": "hybrid",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "IT Systems Analyst – AI",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "krishna@rits-it.com",
+        "facts": {
+          "roleKind": "other",
+          "arrangement": "onsite",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Senior React / AI Software Engineer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "krishna@rits-it.com",
+        "facts": {
+          "roleKind": "frontend_engineer",
+          "seniority": "senior",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
+    "note": "recruiter #Hiring 5 W2 requirements incl. Python Full Stack Developer, Dallas | pre-label: unsure because a staffing recruiter lists 5 unrelated reqs in different states, likely several unnamed clients (junk sign many_roles_across_companies?)"
   },
   {
     "rawItemId": "01a1fd5a-c744-74dc-a2ae-faf08ef9bdfb",
@@ -4156,7 +5693,44 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Full Stack Developer (Intern)",
+        "employer": "Gatehood",
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "UI/UX Designer (Freelance)",
+        "employer": "Gatehood",
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "other",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Founder's Office – Growth & Operations",
+        "employer": "Gatehood",
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "other",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      }
+    ],
     "note": "'We're hiring at Gatehood': Full Stack Developer (Intern), apply link"
   },
   {
@@ -4190,7 +5764,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Full-stack Engineer",
+        "employer": null,
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "talent partner relays Full-stack Engineer remote, USD 4-8k/month, apply link"
   },
   {
@@ -4224,7 +5811,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Full Stack Java Developer",
+        "employer": "State of Utah",
+        "applyKinds": ["email"],
+        "contactEmail": "tom@datamanusa.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "arrangement": "hybrid",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "recruiter 'Now Hiring' Full Stack Java Developer for State of Utah"
   },
   {
@@ -4296,7 +5896,21 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "AEM (Adobe) + React Full Stack Java Developer",
+        "employer": "Maitrenix IT Solutions",
+        "applyKinds": ["email"],
+        "contactEmail": "info@maitrenix.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "seniority": "senior",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "Maitrenix 'WE'RE HIRING' Senior AEM + React Full Stack Java Developer, remote India"
   },
   {
@@ -4330,7 +5944,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Full Stack Development Intern",
+        "employer": "Infinity Classes",
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "Jobsii relays Infinity Classes Full Stack Development Intern, remote"
   },
   {
@@ -4364,7 +5991,32 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Full Stack AI Developer",
+        "employer": "WeLaunch",
+        "applyKinds": ["email", "connect_dm_comment"],
+        "contactEmail": "hr@welaunch.ai",
+        "facts": {
+          "roleKind": "ai_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Technical Customer Success Manager",
+        "employer": "WeLaunch",
+        "applyKinds": ["email", "connect_dm_comment"],
+        "contactEmail": "hr@welaunch.ai",
+        "facts": {
+          "roleKind": "other",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      }
+    ],
     "note": "WeLaunch 'We're hiring two people': Full Stack AI Developer, remote"
   },
   {
@@ -4398,7 +6050,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "SAP Functional Procurement – USDC Senior Specialist",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "careers@nexoratechinc.com",
+        "facts": {
+          "roleKind": "other",
+          "seniority": "senior",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      }
+    ],
     "note": "company relays SAP Functional Procurement Senior Specialist, careers@ email"
   },
   {
@@ -4467,12 +6132,12 @@
       }
     ],
     "verdict": {
-      "value": "hiring",
-      "reason": "hiring",
+      "value": "junk",
+      "reason": "many_roles_across_companies",
       "reviewed": false
     },
     "roles": [],
-    "note": "agency lists 5 remote roles for South Africans incl. Lean Project Manager (AWS migration)"
+    "note": "agency lists 5 remote roles for South Africans incl. Lean Project Manager (AWS migration) | pre-label: unsure because sample said hiring; an agency lists 5 roles (CRM, finance, PM, developer, recruiter) for different US and UK clients"
   },
   {
     "rawItemId": "01a1fd58-941b-76d5-a10e-11e8a34150bc",
@@ -4505,7 +6170,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Full Stack Product Intern",
+        "employer": "Matrica",
+        "applyKinds": ["email"],
+        "contactEmail": "tech@matrica.in",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "arrangement": "hybrid",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "Matrica founder seeks builder (JS/React/Node/Python), Delhi hybrid, stipend"
   },
   {
@@ -4539,8 +6217,21 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
-    "note": "'WE ARE HIRING - SOFTWARE TRAINERS' for a training programme (trainer is the job)"
+    "roles": [
+      {
+        "title": "Software Trainers",
+        "employer": "LoopX Technologies Innovation Pvt. Ltd.",
+        "applyKinds": ["email"],
+        "contactEmail": "info@loopxtechnologies.com",
+        "facts": {
+          "roleKind": "other",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      }
+    ],
+    "note": "'WE ARE HIRING - SOFTWARE TRAINERS' for a training programme (trainer is the job) | pre-label: unsure because a 3-follower training company hiring freelance trainers for a student \"training & project internship programme\"; could front a course funnel"
   },
   {
     "rawItemId": "01a1fd5a-cb56-7119-b280-e04cdea86460",
@@ -4569,12 +6260,12 @@
       }
     ],
     "verdict": {
-      "value": "hiring",
-      "reason": "hiring",
+      "value": "junk",
+      "reason": "many_roles_across_companies",
       "reviewed": false
     },
     "roles": [],
-    "note": "staffing manager 'We are hiring' list incl. Senior/Lead Golang Backend Engineer (dup of #61)"
+    "note": "staffing manager 'We are hiring' list incl. Senior/Lead Golang Backend Engineer (dup of #61) | pre-label: unsure because it lists many roles across places for unnamed clients; owner #32 rule says junk, but each req is specific (9 roles: Golang, SAP, BAs, Qualys, ...; same post as #61)"
   },
   {
     "rawItemId": "01a1fd5a-c060-70af-94a4-2fe513ab1cac",
@@ -4613,8 +6304,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
-    "note": "Oakspire Tek #Hiring Full Stack Software Engineer roles in 5 US cities with apply links"
+    "roles": [
+      {
+        "title": "Full Stack Software Engineer",
+        "employer": null,
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
+    "note": "Oakspire Tek #Hiring Full Stack Software Engineer roles in 5 US cities with apply links | pre-label: unsure because a staffing page posts \"today's requirements\" for one title in 5 cities (likely different clients) with OpenToWork/C2C hashtags"
   },
   {
     "rawItemId": "01a1fd58-71b8-728e-8f35-da61631cdb42",
@@ -4647,8 +6350,21 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
-    "note": "recruiter 'Hiring: Senior Technical Lead / Full-Stack Developer', remote USA"
+    "roles": [
+      {
+        "title": "Senior Technical Lead / Full-Stack Developer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "ritika.arora@gvrinfotek.com",
+        "facts": {
+          "roleKind": "tech_lead",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
+    "note": "recruiter 'Hiring: Senior Technical Lead / Full-Stack Developer', remote USA | pre-label: unsure because the email stands alone after the role overview (no \"send to\"); labelled as the contact email"
   },
   {
     "rawItemId": "01a1fd58-2439-7344-9edc-dbf9761e2a9a",
@@ -4683,12 +6399,12 @@
       }
     ],
     "verdict": {
-      "value": "hiring",
-      "reason": "hiring",
+      "value": "junk",
+      "reason": "funnel",
       "reviewed": false
     },
     "roles": [],
-    "note": "Freelanly relays Junior Java Full Stack Developer contract-to-hire, US"
+    "note": "Freelanly relays Junior Java Full Stack Developer contract-to-hire, US | pre-label: unsure because sample said hiring; Freelanly reposts other posts and the way in is its own paid application-drafting service (\"first one's on us\"), so funnel"
   },
   {
     "rawItemId": "01a1fd5a-95cf-767d-9c95-6cf806b47c0c",
@@ -4721,8 +6437,68 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
-    "note": "recruiter lists immediate roles incl. .NET Full Stack Developer (dup of #64)"
+    "roles": [
+      {
+        "title": "Senior AI/ML & Constraint Programming Engineer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "raju.n@adroitinnovative.com",
+        "facts": {
+          "roleKind": "ml_engineer",
+          "seniority": "senior",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Network Storage Administrator",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "raju.n@adroitinnovative.com",
+        "facts": {
+          "roleKind": "other",
+          "arrangement": "onsite",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      },
+      {
+        "title": "FACETS Developer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "raju.n@adroitinnovative.com",
+        "facts": {
+          "arrangement": "onsite"
+        },
+        "reviewed": false
+      },
+      {
+        "title": ".NET Full Stack Developer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "raju.n@adroitinnovative.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Senior Kubernetes Platform Engineer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "raju.n@adroitinnovative.com",
+        "facts": {
+          "roleKind": "platform_engineer",
+          "seniority": "senior",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
+    "note": "recruiter lists immediate roles incl. .NET Full Stack Developer (dup of #64) | pre-label: unsure because a staffing recruiter lists 5 unrelated reqs in different cities, likely several unnamed clients (junk sign many_roles_across_companies?)"
   },
   {
     "rawItemId": "01a1fd59-033f-7555-b3f2-aca5608a1193",
@@ -4789,7 +6565,31 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Full Stack Developer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "srinivas.m@eraytec.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": ".NET C# Developer with angular",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "srinivas.m@eraytec.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "recruiter 'Hiring: Full Stack Developer and Dot Net Developer' (dup of #44)"
   },
   {
@@ -4825,12 +6625,12 @@
       }
     ],
     "verdict": {
-      "value": "hiring",
-      "reason": "hiring",
+      "value": "junk",
+      "reason": "funnel",
       "reviewed": false
     },
     "roles": [],
-    "note": "Freelanly relays Junior Full Stack Developer, Indonesia (Indonesian)"
+    "note": "Freelanly relays Junior Full Stack Developer, Indonesia (Indonesian) | pre-label: unsure because sample said hiring; Freelanly reposts other posts and the way in is its own paid application-drafting service (\"first one's on us\"), so funnel"
   },
   {
     "rawItemId": "01a1fd5b-0f3d-73d0-ae8b-773dcedf4d53",
@@ -4863,8 +6663,81 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
-    "note": "recruiter 'We're Hiring' Technical Lead / Senior Full Stack Engineer, remote India"
+    "roles": [
+      {
+        "title": "Technical Lead / Senior Full Stack Engineer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "joshua@innoverglobalinc.com",
+        "facts": {
+          "roleKind": "tech_lead",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": "IBM MQ MFT Consultant",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "joshua@innoverglobalinc.com",
+        "facts": {
+          "roleKind": "other",
+          "arrangement": "hybrid",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      },
+      {
+        "title": "IBM Sterling B2B Integrator Consultant",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "joshua@innoverglobalinc.com",
+        "facts": {
+          "roleKind": "other",
+          "arrangement": "hybrid",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      },
+      {
+        "title": "IBM Aspera Consultant",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "joshua@innoverglobalinc.com",
+        "facts": {
+          "roleKind": "other",
+          "arrangement": "hybrid",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Denodo Consultant / Administrator",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "joshua@innoverglobalinc.com",
+        "facts": {
+          "roleKind": "other",
+          "arrangement": "hybrid",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      },
+      {
+        "title": "Infrastructure Generalist – File Transfer & Production Support",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "joshua@innoverglobalinc.com",
+        "facts": {
+          "roleKind": "support",
+          "arrangement": "hybrid",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      }
+    ],
+    "note": "recruiter 'We're Hiring' Technical Lead / Senior Full Stack Engineer, remote India | pre-label: unsure because a staffing recruiter lists 6 reqs; 5 are Bangalore file-transfer roles (likely one client), so kept hiring"
   },
   {
     "rawItemId": "01a1fd58-1fe1-7761-991f-46b26b76f60b",
@@ -4901,7 +6774,21 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Software Engineer, Recent Grad",
+        "employer": "Keplar",
+        "applyKinds": ["external_link"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "seniority": "junior",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "Hireeing relays Keplar Software Engineer, Recent Grad, remote"
   },
   {
@@ -4938,12 +6825,12 @@
       }
     ],
     "verdict": {
-      "value": "hiring",
-      "reason": "hiring",
+      "value": "junk",
+      "reason": "funnel",
       "reviewed": false
     },
     "roles": [],
-    "note": "Freelanly relays Software Engineering Intern, remote MERN/Next.js"
+    "note": "Freelanly relays Software Engineering Intern, remote MERN/Next.js | pre-label: unsure because sample said hiring; Freelanly reposts other posts and the way in is its own paid application-drafting service (\"first one's on us\"), so funnel"
   },
   {
     "rawItemId": "01a1fd5a-ca42-704d-9018-ed7c1dc26486",
@@ -5010,7 +6897,31 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Full Stack Developer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "srinivas.m@eraytec.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      },
+      {
+        "title": ".NET C# Developer with angular",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "srinivas.m@eraytec.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "recruiter 'Hiring: Full Stack Developer and Dot Net Developer' (dup of #44)"
   },
   {
@@ -5044,7 +6955,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Full-Stack Software Engineer – EXPERT",
+        "employer": null,
+        "applyKinds": ["connect_dm_comment", "email"],
+        "contactEmail": "venkatasai.puttapudi@onesource.one",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "'WE ARE HIRING' Full-Stack Software Engineer Expert, Belgium remote"
   },
   {
@@ -5078,7 +7002,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Full-Stack Developer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "farhad@peopleexperts.org",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "relays People Experts Full-Stack Developer, remote Islamabad"
   },
   {
@@ -5146,7 +7083,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Twilio Full Stack Contact Center Engineer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "sherlyn@vysystems.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "arrangement": "remote",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "'We're Hiring' Twilio Full Stack Contact Center Engineer, C2C remote"
   },
   {
@@ -5177,7 +7127,7 @@
     ],
     "verdict": {
       "value": "not_hiring",
-      "reason": "other",
+      "reason": "open_to_work",
       "reviewed": false
     },
     "roles": [],
@@ -5214,7 +7164,19 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Senior / Lead Full-Stack Developer (React | Java / Spring Boot | Cloud)",
+        "employer": "Cognizant",
+        "applyKinds": ["connect_dm_comment"],
+        "contactEmail": null,
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "Cognizant manager 'We're Hiring' Senior/Lead Full-Stack Developer"
   },
   {
@@ -5248,7 +7210,19 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Java Full Stack Developer (Java + React)",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "careers@bluerocktalentgroup.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": false
+      }
+    ],
     "note": "company relays Java Full Stack Developer, send resumes to careers@ email"
   },
   {
@@ -5282,7 +7256,20 @@
       "reason": "hiring",
       "reviewed": false
     },
-    "roles": [],
+    "roles": [
+      {
+        "title": "Senior Network Engineer",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "careers@nexoratechinc.com",
+        "facts": {
+          "roleKind": "other",
+          "seniority": "senior",
+          "isSoftwareEngineeringRole": false
+        },
+        "reviewed": false
+      }
+    ],
     "note": "company relays Senior Network Engineer, send resumes to careers@ email"
   }
 ]
