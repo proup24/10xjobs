@@ -84,6 +84,24 @@ describe('pickBaselineDay', () => {
     expect(out.day).toBeNull();
   });
 
+  it('assigns runs to the Morocco day, not the UTC day', () => {
+    // 23:30Z on 11-20 is 00:30 (+01:00) on 11-21 in Casablanca.
+    const late = (p: PlaceId) =>
+      run(p, '2026-11-20', {
+        startedAt: new Date('2026-11-20T23:30:00Z'),
+      });
+    const runs = PLACES.map(late);
+    expect(pickBaselineDay(runs, TODAY).day).toBe('2026-11-21');
+  });
+
+  it('applies the 90% threshold: 9 of 10 qualifies, 8 of 10 does not', () => {
+    const peak = fullDay('2026-11-20', 10);
+    const nine = [...peak, ...fullDay('2026-11-21', 9)];
+    expect(pickBaselineDay(nine, TODAY).day).toBe('2026-11-21');
+    const eight = [...peak, ...fullDay('2026-11-21', 8)];
+    expect(pickBaselineDay(eight, TODAY).day).toBe('2026-11-20');
+  });
+
   it('gives a reason when no day qualifies', () => {
     const out = pickBaselineDay([], TODAY);
     expect(out.day).toBeNull();
@@ -179,7 +197,7 @@ describe('isRelevant', () => {
       ),
     ).toBe(false);
   });
-  it('uses the other field when one is null, and false without spellings', () => {
+  it('mention check uses the other field when one is null; null title and no spellings are without spellings', () => {
     expect(
       isRelevant({ title: 'Software Engineer', descriptionText: null }, [
         'software',
@@ -187,7 +205,7 @@ describe('isRelevant', () => {
     ).toBe(true);
     expect(
       isRelevant({ title: null, descriptionText: 'engineer ts' }, ['ts']),
-    ).toBe(true);
+    ).toBe(false);
     expect(isRelevant({ title: null, descriptionText: null }, ['ts'])).toBe(
       false,
     );

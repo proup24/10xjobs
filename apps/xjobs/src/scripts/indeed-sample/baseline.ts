@@ -36,17 +36,15 @@ export interface BaselineJob {
 }
 
 /**
- * An engineering title (the title, or the description when the title is
- * missing) that mentions at least one searched spelling in the title or the
+ * The title alone must match `ENGINEERING_TITLE` (a null title is not
+ * relevant), and at least one searched spelling must appear in the title or the
  * description. No spellings means not relevant.
  */
 export function isRelevant(
   job: { title: string | null; descriptionText: string | null },
   spellings: readonly string[],
 ): boolean {
-  const titleSource = job.title ?? job.descriptionText;
-  if (titleSource === null || !ENGINEERING_TITLE.test(titleSource))
-    return false;
+  if (job.title === null || !ENGINEERING_TITLE.test(job.title)) return false;
   const text = [job.title, job.descriptionText]
     .filter((s): s is string => s !== null)
     .join('\n');
