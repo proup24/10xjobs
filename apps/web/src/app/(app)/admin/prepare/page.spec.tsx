@@ -11,6 +11,7 @@ const engine = vi.hoisted(() => ({
   prepareDrops: vi.fn(),
   silencedPosts: vi.fn(),
   extractVerdicts: vi.fn(),
+  autoSilenceCandidates: vi.fn(),
   silencedAuthors: vi.fn(),
 }));
 vi.mock('@/lib/engine/server', () => ({ engineClient: async () => engine }));
@@ -58,6 +59,7 @@ beforeEach(() => {
     data: { items: [], next: null },
   });
   engine.silencedAuthors.mockResolvedValue({ kind: 'ok', data: [] });
+  engine.autoSilenceCandidates.mockResolvedValue({ kind: 'ok', data: [] });
 });
 
 afterEach(cleanup);
@@ -76,6 +78,7 @@ describe('Prepare review page', () => {
     await expect(Page(params())).rejects.toBe(NOT_FOUND);
     expect(engine.prepareDrops).not.toHaveBeenCalled();
     expect(engine.silencedAuthors).not.toHaveBeenCalled();
+    expect(engine.autoSilenceCandidates).not.toHaveBeenCalled();
   });
 
   it('says the engine is unreachable when adminMe is unavailable, and shows no admin data', async () => {
@@ -167,6 +170,31 @@ describe('Prepare review page', () => {
     ).toBe(
       '/admin/prepare?before=cursor-2&held=h1&verdict=junk&reason=funnel&verdicts=v1',
     );
+  });
+
+  it('shows the automatic silencing candidates, or that they could not load', async () => {
+    engine.autoSilenceCandidates.mockResolvedValue({
+      kind: 'ok',
+      data: [
+        {
+          authorKey: 'company:agg',
+          name: 'Agg Jobs',
+          counted: 12,
+          firstSeenAt: '2026-11-01T08:00:00.000Z',
+          lastSeenAt: '2026-11-09T08:00:00.000Z',
+          verdicts: { junk: 12 },
+        },
+      ],
+    });
+    render(await Page(params()));
+    expect(engine.autoSilenceCandidates).toHaveBeenCalledWith();
+    expect(screen.getByText('Agg Jobs')).toBeTruthy();
+    cleanup();
+    engine.autoSilenceCandidates.mockResolvedValue({ kind: 'unavailable' });
+    render(await Page(params()));
+    expect(
+      screen.getByText("Couldn't load automatic silencing candidates."),
+    ).toBeTruthy();
   });
 
   it('ignores a verdict or reason the engine does not list', async () => {

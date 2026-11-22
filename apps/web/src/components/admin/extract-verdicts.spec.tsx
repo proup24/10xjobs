@@ -6,7 +6,10 @@ import {
   within,
 } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { VerdictView } from '@xjobs/engine-client';
+import type {
+  AutoSilenceCandidateView,
+  VerdictView,
+} from '@xjobs/engine-client';
 import { ExtractVerdicts } from './extract-verdicts';
 
 vi.mock('@/app/(app)/admin/prepare/actions', () => ({
@@ -42,6 +45,7 @@ const setup = (over: Partial<Props> = {}) =>
       page={{ items: [verdict()], next: null }}
       silenced={new Set()}
       nextHref={null}
+      candidates={[]}
       {...over}
     />,
   );
@@ -152,5 +156,47 @@ describe('ExtractVerdicts', () => {
         .getByRole('link', { name: 'Next verdicts' })
         .getAttribute('href'),
     ).toBe('/admin/prepare?verdicts=c2');
+  });
+
+  describe('automatic silencing candidates', () => {
+    const candidate: AutoSilenceCandidateView = {
+      authorKey: 'company:agg',
+      name: 'Agg Jobs',
+      counted: 12,
+      firstSeenAt: '2026-11-01T08:00:00.000Z',
+      lastSeenAt: '2026-11-09T08:00:00.000Z',
+      verdicts: { junk: 10, not_hiring: 2 },
+    };
+    const candidates = () =>
+      within(
+        screen.getByRole('region', { name: 'Automatic silencing candidates' }),
+      );
+
+    it('lists each candidate with its evidence and the silence action', async () => {
+      setup({ candidates: [candidate] });
+      const row = within(candidates().getAllByRole('row')[1]!);
+      expect(row.getByText('Agg Jobs')).toBeTruthy();
+      expect(row.getByText('company:agg')).toBeTruthy();
+      expect(row.getByText('12')).toBeTruthy();
+      expect(row.getByText('2026-11-01')).toBeTruthy();
+      expect(row.getByText('2026-11-09')).toBeTruthy();
+      expect(row.getByText('Junk 10')).toBeTruthy();
+      expect(row.getByText('Not hiring 2')).toBeTruthy();
+      fireEvent.click(row.getByRole('button', { name: 'Silence' }));
+      const dialog = await screen.findByRole('dialog');
+      expect(within(dialog).getByText(/for everyone/i)).toBeTruthy();
+    });
+
+    it('says when nobody meets the rule, and when the list failed', () => {
+      setup({ candidates: [] });
+      expect(
+        candidates().getByText('No author meets the automatic silencing rule.'),
+      ).toBeTruthy();
+      cleanup();
+      setup({ candidates: null });
+      expect(
+        candidates().getByText("Couldn't load automatic silencing candidates."),
+      ).toBeTruthy();
+    });
   });
 });

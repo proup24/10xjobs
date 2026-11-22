@@ -78,7 +78,7 @@ export default async function Page({
   const reason = reasonOf(first(sp.reason));
   const verdictsBefore = first(sp.verdicts);
 
-  const [drops, held, verdicts, authors] = await Promise.all([
+  const [drops, held, verdicts, authors, candidates] = await Promise.all([
     engine.prepareDrops({
       ...(rule ? { rule } : {}),
       ...(before ? { before } : {}),
@@ -90,6 +90,7 @@ export default async function Page({
       ...(verdictsBefore ? { before: verdictsBefore } : {}),
     }),
     engine.silencedAuthors(),
+    engine.autoSilenceCandidates(),
   ]);
   const dropsPage = dataOf(drops);
   const heldPage = dataOf(held);
@@ -123,6 +124,7 @@ export default async function Page({
           reason={reason ?? null}
           page={verdictsPage}
           silenced={new Set((authorList ?? []).map((a) => a.authorKey))}
+          candidates={dataOf(candidates)}
           nextHref={
             verdictsPage?.next
               ? href({ ...state, verdicts: verdictsPage.next })

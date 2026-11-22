@@ -3,7 +3,11 @@ import {
   POST_VERDICT_REASONS,
   type ListedVerdict,
 } from '@xjobs/database/enums';
-import type { ReviewPage, VerdictView } from '@xjobs/engine-client';
+import type {
+  AutoSilenceCandidateView,
+  ReviewPage,
+  VerdictView,
+} from '@xjobs/engine-client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Field, FieldLabel } from '@/components/ui/field';
@@ -60,6 +64,8 @@ type Props = {
   /** Keys of the silenced authors. */
   silenced: Set<string>;
   nextHref: string | null;
+  /** Who automatic silencing would silence now; null when the engine could not say. */
+  candidates: AutoSilenceCandidateView[] | null;
 };
 
 function FilterSelect({
@@ -202,6 +208,58 @@ function Verdicts({
   );
 }
 
+function Candidates({
+  candidates,
+}: {
+  candidates: AutoSilenceCandidateView[];
+}) {
+  if (candidates.length === 0)
+    return <Note>No author meets the automatic silencing rule.</Note>;
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Author</TableHead>
+          <TableHead>Posts</TableHead>
+          <TableHead>First seen</TableHead>
+          <TableHead>Last seen</TableHead>
+          <TableHead>Verdicts</TableHead>
+          <TableHead>
+            <span className="sr-only">Actions</span>
+          </TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {candidates.map((c) => (
+          <TableRow key={c.authorKey}>
+            <TableCell className="whitespace-normal">
+              <div className="grid gap-0.5">
+                {c.name && <span>{c.name}</span>}
+                <Code>{c.authorKey}</Code>
+              </div>
+            </TableCell>
+            <TableCell>{c.counted}</TableCell>
+            <TableCell>{day(c.firstSeenAt)}</TableCell>
+            <TableCell>{day(c.lastSeenAt)}</TableCell>
+            <TableCell>
+              <div className="flex flex-wrap items-center gap-1">
+                {Object.entries(c.verdicts).map(([v, n]) => (
+                  <Badge key={v} variant="secondary">
+                    {`${verdictLabel(v)} ${n}`}
+                  </Badge>
+                ))}
+              </div>
+            </TableCell>
+            <TableCell>
+              <SilenceButton authorKey={c.authorKey} name={c.name} />
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
 /**
  * Extracted posts ruled not hiring or junk, newest extraction first, so the owner can
  * confirm the verdicts. Read-only apart from silencing an author; a wrong verdict is
@@ -213,24 +271,38 @@ export function ExtractVerdicts({
   page,
   silenced,
   nextHref,
+  candidates,
 }: Props) {
   return (
-    <Section
-      id="extract-verdicts"
-      title="Extract verdicts"
-      description="Posts the processor ruled not hiring or junk, newest first."
-    >
-      <VerdictFilter verdict={verdict} reason={reason} />
-      {page ? (
-        <Verdicts page={page} silenced={silenced} />
-      ) : (
-        <Note>Couldn&apos;t load extract verdicts.</Note>
-      )}
-      {nextHref && (
-        <TextLink href={nextHref} className="w-fit">
-          Next verdicts
-        </TextLink>
-      )}
-    </Section>
+    <>
+      <Section
+        id="extract-verdicts"
+        title="Extract verdicts"
+        description="Posts the processor ruled not hiring or junk, newest first."
+      >
+        <VerdictFilter verdict={verdict} reason={reason} />
+        {page ? (
+          <Verdicts page={page} silenced={silenced} />
+        ) : (
+          <Note>Couldn&apos;t load extract verdicts.</Note>
+        )}
+        {nextHref && (
+          <TextLink href={nextHref} className="w-fit">
+            Next verdicts
+          </TextLink>
+        )}
+      </Section>
+      <Section
+        id="auto-silence-candidates"
+        title="Automatic silencing candidates"
+        description="Authors with at least 10 posts over 7 days or more, every one ruled not hiring or junk (role filled not counted), and none ever qualified. Automatic silencing silences them daily at 04:00 UTC once POST_AUTO_SILENCE is on; until then it only logs them."
+      >
+        {candidates ? (
+          <Candidates candidates={candidates} />
+        ) : (
+          <Note>Couldn&apos;t load automatic silencing candidates.</Note>
+        )}
+      </Section>
+    </>
   );
 }

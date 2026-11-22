@@ -253,6 +253,19 @@ describe('worker process configuration', () => {
     expect(() => run('')).toThrow('XJOBS_RUN_SCHEDULES');
   });
 
+  it('leaves POST_AUTO_SILENCE off unless it is set truthy', () => {
+    const run = (v?: string) =>
+      validateWorkerProcessEnvironment({
+        ...worker,
+        ...(v === undefined ? {} : { POST_AUTO_SILENCE: v }),
+      }).POST_AUTO_SILENCE;
+    expect(run()).toBe(false);
+    expect(run('0')).toBe(false);
+    expect(run('1')).toBe(true);
+    expect(run('true')).toBe(true);
+    expect(() => run('maybe')).toThrow('POST_AUTO_SILENCE');
+  });
+
   it('rejects an unrecognised XJOBS_RUN_SCHEDULES value', () => {
     const result = workerProcessEnvironmentSchema.safeParse({
       ...worker,

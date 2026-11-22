@@ -8,10 +8,12 @@ import type {
 import type { MatchQueue } from '../match';
 import { processSweepConfig } from './config';
 import {
+  AUTO_SILENCE_JOB,
   PROCESS_JOB,
   PROCESS_SWEEP_JOB,
   type ProcessQueue,
 } from './queue.service';
+import type { AutoSilenceService } from 'src/modules/processor/services/auto-silence.service';
 import { ProcessorService } from 'src/modules/processor/services/processor.service';
 
 const logger = new Logger('ProcessJob');
@@ -26,6 +28,7 @@ export interface ProcessJobDeps {
   >;
   queue: Pick<ProcessQueue, 'enqueue'>;
   matchQueue: Pick<MatchQueue, 'enqueue'>;
+  autoSilence: Pick<AutoSilenceService, 'run'>;
   config: ProcessorConfig;
 }
 
@@ -81,5 +84,6 @@ export async function processProcessJob(
     for (const jobId of posts) await deps.queue.enqueue(jobId, 'post');
     return { released, enqueued: listings.length + posts.length };
   }
+  if (job.name === AUTO_SILENCE_JOB) return deps.autoSilence.run();
   throw new UnrecoverableError(`Unsupported job: ${job.name}`);
 }

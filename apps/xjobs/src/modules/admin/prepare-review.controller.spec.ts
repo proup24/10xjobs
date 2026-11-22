@@ -46,6 +46,7 @@ describe('PrepareReviewController', () => {
       'drops',
       'silencedPosts',
       'verdicts',
+      'autoSilenceCandidates',
       'silencedAuthors',
       'silence',
       'unsilence',

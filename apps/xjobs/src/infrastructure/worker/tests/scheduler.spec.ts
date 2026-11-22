@@ -3,9 +3,13 @@ import { channelJobsConfig } from 'src/infrastructure/jobs/steps/collect';
 import { SWEEP_JOB } from 'src/infrastructure/jobs/steps/ingest/queue.service';
 import { MATCH_SWEEP_JOB } from 'src/infrastructure/jobs/steps/match';
 import { WEBHOOK_SWEEP_JOB } from 'src/infrastructure/jobs/steps/webhook';
-import { PROCESS_SWEEP_JOB } from 'src/infrastructure/jobs/steps/process';
+import {
+  AUTO_SILENCE_JOB,
+  PROCESS_SWEEP_JOB,
+} from 'src/infrastructure/jobs/steps/process';
 import { RATES_REFRESH_JOB } from 'src/infrastructure/jobs/steps/rates';
 import {
+  syncAutoSilenceScheduler,
   syncCollectionScheduler,
   syncMatchSweepScheduler,
   syncWebhookSweepScheduler,
@@ -117,6 +121,7 @@ it('removes every scheduler when schedules are off', async () => {
     [syncMatchSweepScheduler, MATCH_SWEEP_JOB],
     [syncWebhookSweepScheduler, WEBHOOK_SWEEP_JOB],
     [syncRatesRefreshScheduler, RATES_REFRESH_JOB],
+    [syncAutoSilenceScheduler, AUTO_SILENCE_JOB],
   ] as const) {
     const q = {
       upsertJobScheduler: vi.fn(async () => undefined),
@@ -139,6 +144,21 @@ describe('syncRatesRefreshScheduler', () => {
       'refresh',
       { pattern: '0 3 * * *', tz: 'UTC' },
       { name: 'refresh', opts: { attempts: 1 } },
+    );
+  });
+});
+
+describe('syncAutoSilenceScheduler', () => {
+  it('schedules the automatic silencing run daily at 04:00 UTC', async () => {
+    const q = {
+      upsertJobScheduler: vi.fn(async () => undefined),
+      removeJobScheduler: vi.fn(async () => true),
+    };
+    expect(await syncAutoSilenceScheduler(q as never, true)).toBe('scheduled');
+    expect(q.upsertJobScheduler).toHaveBeenCalledWith(
+      'auto-silence',
+      { pattern: '0 4 * * *', tz: 'UTC' },
+      { name: 'auto-silence', opts: { attempts: 1 } },
     );
   });
 });

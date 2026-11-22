@@ -1,4 +1,5 @@
 import type { SilencedAuthorsRepository } from 'src/modules/ingest/repositories/silenced-authors.repository';
+import type { AutoSilenceRepository } from 'src/modules/processor/repositories/auto-silence.repository';
 import type {
   DropRow,
   PrepareReviewRepository,
@@ -39,6 +40,7 @@ function service(
   return new PrepareReviewService(
     review as PrepareReviewRepository,
     silenced as SilencedAuthorsRepository,
+    { candidates: async () => [] } as unknown as AutoSilenceRepository,
   );
 }
 

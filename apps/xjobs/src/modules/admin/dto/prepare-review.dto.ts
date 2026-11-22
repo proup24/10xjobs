@@ -186,3 +186,21 @@ export class SilenceAuthorResponseDto {
   @ApiProperty({ enum: ['silenced', 'already'] })
   status!: 'silenced' | 'already';
 }
+
+export class AutoSilenceCandidateViewDto {
+  @ApiProperty({ example: 'company:agg' }) authorKey!: string;
+  @ApiProperty({ nullable: true, type: String }) name!: string | null;
+  @ApiProperty({ description: 'Posts counted (role_filled ones are not)' })
+  counted!: number;
+  @ApiProperty({ description: "The first counted post's firstSeenAt" })
+  firstSeenAt!: string;
+  @ApiProperty({ description: "The last counted post's firstSeenAt" })
+  lastSeenAt!: string;
+  @ApiProperty({
+    description: 'Counted posts per verdict',
+    example: { junk: 10, not_hiring: 2 },
+    type: 'object',
+    additionalProperties: { type: 'integer' },
+  })
+  verdicts!: Record<string, number>;
+}

@@ -7,6 +7,7 @@ import {
 import { Test } from '@nestjs/testing';
 import { UserGuard } from 'src/common/guards';
 import { SilencedAuthorsRepository } from 'src/modules/ingest/repositories/silenced-authors.repository';
+import { AutoSilenceRepository } from 'src/modules/processor/repositories/auto-silence.repository';
 import { AdminAccess } from './admin-access';
 import { PrepareReviewController } from './prepare-review.controller';
 import { PrepareReviewRepository } from './prepare-review.repository';
@@ -40,6 +41,7 @@ describe('admin routes over HTTP', () => {
     heldPosts: vi.fn().mockResolvedValue([]),
     verdicts: vi.fn().mockResolvedValue([]),
   };
+  const autoSilence = { candidates: vi.fn().mockResolvedValue([]) };
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -48,6 +50,7 @@ describe('admin routes over HTTP', () => {
         PrepareReviewService,
         { provide: PrepareReviewRepository, useValue: review },
         { provide: SilencedAuthorsRepository, useValue: silenced },
+        { provide: AutoSilenceRepository, useValue: autoSilence },
         {
           provide: AdminAccess,
           useValue: { isAdmin: (id: string) => id === 'admin' },
@@ -96,6 +99,7 @@ describe('admin routes over HTTP', () => {
     ['GET', '/prepare/drops'],
     ['GET', '/prepare/silenced-posts'],
     ['GET', '/extract/verdicts'],
+    ['GET', '/extract/auto-silence-candidates'],
     ['GET', '/silenced-authors'],
     ['POST', '/silenced-authors'],
     ['DELETE', '/silenced-authors/profile%3Ajane'],
@@ -316,5 +320,35 @@ describe('admin routes over HTTP', () => {
       items: [],
       next: null,
     });
+  });
+
+  it('lists the would-be automatic silences with their evidence', async () => {
+    autoSilence.candidates.mockClear();
+    expect(
+      (await call('/extract/auto-silence-candidates', 'other')).status,
+    ).toBe(403);
+    expect(autoSilence.candidates).not.toHaveBeenCalled();
+    autoSilence.candidates.mockResolvedValueOnce([
+      {
+        authorKey: 'company:agg',
+        name: 'Agg Jobs',
+        counted: 12,
+        firstSeenAt: new Date('2026-11-01T08:00:00.000Z'),
+        lastSeenAt: new Date('2026-11-09T08:00:00.000Z'),
+        verdicts: { junk: 10, not_hiring: 2 },
+      },
+    ]);
+    const res = await call('/extract/auto-silence-candidates', 'admin');
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual([
+      {
+        authorKey: 'company:agg',
+        name: 'Agg Jobs',
+        counted: 12,
+        firstSeenAt: '2026-11-01T08:00:00.000Z',
+        lastSeenAt: '2026-11-09T08:00:00.000Z',
+        verdicts: { junk: 10, not_hiring: 2 },
+      },
+    ]);
   });
 });

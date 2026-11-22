@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import type { ListedVerdict } from '@xjobs/database/enums';
 import { SilencedAuthorsRepository } from 'src/modules/ingest/repositories/silenced-authors.repository';
+import { AutoSilenceRepository } from 'src/modules/processor/repositories/auto-silence.repository';
 import { authorOf } from 'src/modules/ingest/normalize/mappers/linkedin-post.mapper';
 import { httpUrl } from 'src/modules/ingest/normalize/linkedin';
 import { readPostPayload } from 'src/modules/ingest/normalize/posts/payload';
@@ -17,6 +18,7 @@ import {
 import { originalAuthorOf } from './post-author';
 import type {
   AuthorView,
+  AutoSilenceCandidateView,
   DropView,
   HeldPostView,
   Page,
@@ -137,7 +139,18 @@ export class PrepareReviewService {
   constructor(
     private readonly review: PrepareReviewRepository,
     private readonly silenced: SilencedAuthorsRepository,
+    private readonly autoSilence: AutoSilenceRepository,
   ) {}
+
+  /** Who the automatic silencing rule would silence now (already silenced authors excluded). */
+  async autoSilenceCandidates(): Promise<AutoSilenceCandidateView[]> {
+    const rows = await this.autoSilence.candidates();
+    return rows.map((row) => ({
+      ...row,
+      firstSeenAt: row.firstSeenAt.toISOString(),
+      lastSeenAt: row.lastSeenAt.toISOString(),
+    }));
+  }
 
   async drops(query: {
     rule: string | null;

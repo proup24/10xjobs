@@ -58,3 +58,16 @@ export interface SilencedAuthorView {
   createdBy: string | null;
   createdAt: string;
 }
+
+/** An author the automatic silencing rule would silence, with its evidence. */
+export interface AutoSilenceCandidateView {
+  authorKey: string;
+  name: string | null;
+  /** Posts counted (role_filled ones are not). */
+  counted: number;
+  /** The first and last counted post's firstSeenAt. */
+  firstSeenAt: string;
+  lastSeenAt: string;
+  /** Counted posts per verdict. */
+  verdicts: Record<string, number>;
+}

@@ -1,6 +1,7 @@
 export { createEngineClient } from './client';
 export type {
   AuthorView,
+  AutoSilenceCandidateView,
   DropView,
   EngineClient,
   EngineClientDeps,

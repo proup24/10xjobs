@@ -48,6 +48,18 @@ export type VerdictView = {
   url: string;
   extractedAt: string;
 };
+/** An author the automatic silencing rule would silence, with its evidence. */
+export type AutoSilenceCandidateView = {
+  authorKey: string;
+  name: string | null;
+  /** Posts counted (role_filled ones are not). */
+  counted: number;
+  /** The first and last counted post's firstSeenAt. */
+  firstSeenAt: string;
+  lastSeenAt: string;
+  /** Counted posts per verdict. */
+  verdicts: Record<string, number>;
+};
 /** `next` is an opaque cursor: pass it back as `before`. */
 export type ReviewPage<T> = { items: T[]; next: string | null };
 export type SilencedAuthorView = {
@@ -112,6 +124,8 @@ export interface EngineClient {
     before?: string;
     limit?: number;
   }): Promise<EngineResult<ReviewPage<VerdictView>>>;
+  /** Who automatic silencing would silence now; already silenced authors are left out. */
+  autoSilenceCandidates(): Promise<EngineResult<AutoSilenceCandidateView[]>>;
   silencedAuthors(): Promise<EngineResult<SilencedAuthorView[]>>;
   /** 201 gives `silenced`, 200 `already`. */
   silenceAuthor(
@@ -177,6 +191,21 @@ function isVerdictView(v: unknown): v is VerdictView {
     isNullableString(v.postedAt) &&
     typeof v.url === 'string' &&
     typeof v.extractedAt === 'string'
+  );
+}
+
+function isAutoSilenceCandidateView(
+  v: unknown,
+): v is AutoSilenceCandidateView {
+  return (
+    isRecord(v) &&
+    typeof v.authorKey === 'string' &&
+    isNullableString(v.name) &&
+    typeof v.counted === 'number' &&
+    typeof v.firstSeenAt === 'string' &&
+    typeof v.lastSeenAt === 'string' &&
+    isRecord(v.verdicts) &&
+    Object.values(v.verdicts).every((n) => typeof n === 'number')
   );
 }
 
@@ -584,6 +613,15 @@ export function createEngineClient(deps: EngineClientDeps): EngineClient {
           })}`,
         },
         pageOf(isVerdictView),
+      ),
+    autoSilenceCandidates: () =>
+      admin(
+        'autoSilenceCandidates',
+        { method: 'GET', path: '/admin/extract/auto-silence-candidates' },
+        (data) =>
+          Array.isArray(data) && data.every(isAutoSilenceCandidateView)
+            ? data
+            : undefined,
       ),
     silencedAuthors: () =>
       admin(

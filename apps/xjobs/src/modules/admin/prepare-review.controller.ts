@@ -26,6 +26,7 @@ import { AdminGuard } from './admin.guard';
 import {
   AUTHOR_KEY,
   AdminMeResponseDto,
+  AutoSilenceCandidateViewDto,
   DropsPageDto,
   DropsQueryDto,
   HeldPostsPageDto,
@@ -38,6 +39,7 @@ import {
 } from './dto/prepare-review.dto';
 import { PrepareReviewService } from './prepare-review.service';
 import type {
+  AutoSilenceCandidateView,
   DropView,
   HeldPostView,
   Page,
@@ -110,6 +112,18 @@ export class PrepareReviewController {
       before: query.before ?? null,
       limit: query.limit ?? DEFAULT_LIMIT,
     });
+  }
+
+  @ApiSuccessResponse(AutoSilenceCandidateViewDto, {
+    isArray: true,
+    description:
+      'Authors the automatic silencing rule would silence now, most counted posts first; already silenced authors are left out',
+  })
+  @ApiErrorResponses(HttpStatus.FORBIDDEN)
+  @UseGuards(AdminGuard)
+  @Get('extract/auto-silence-candidates')
+  autoSilenceCandidates(): Promise<AutoSilenceCandidateView[]> {
+    return this.review.autoSilenceCandidates();
   }
 
   @ApiSuccessResponse(SilencedAuthorViewDto, { isArray: true })
