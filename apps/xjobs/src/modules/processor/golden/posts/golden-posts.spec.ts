@@ -1,3 +1,4 @@
+import { JUNK_REASONS, NOT_HIRING_REASONS } from '@xjobs/database/enums';
 import { postDetailSchema } from '../../../ingest/normalize/record';
 import sample from '../../../ingest/normalize/posts/sample/sample.json';
 import { loadPostGolden } from './golden-posts';
@@ -32,13 +33,18 @@ describe('the post golden set', () => {
     }
   });
 
-  it('keeps every other sample verdict, with a reason that belongs to it', () => {
+  it('keeps every other sample verdict, or narrows a sample hiring to junk, with a reason that belongs to it', () => {
     cases.forEach((c, i) => {
       if (c.verdict.reviewed) return;
-      expect(c.verdict.value).toBe(
-        sample[i].label === 'hiring' ? 'hiring' : 'not_hiring',
+      // The pre-label applies the owner's junk signs, which slice 02's sample had no label for.
+      expect(c.verdict.value).toBeOneOf(
+        sample[i].label === 'hiring' ? ['hiring', 'junk'] : ['not_hiring'],
       );
       if (c.verdict.value === 'hiring') expect(c.verdict.reason).toBe('hiring');
+      else
+        expect(
+          c.verdict.value === 'junk' ? JUNK_REASONS : NOT_HIRING_REASONS,
+        ).toContain(c.verdict.reason);
     });
   });
 
