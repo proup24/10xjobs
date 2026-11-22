@@ -8,6 +8,8 @@ function job(over: Partial<JobForProcessing> = {}): JobForProcessing {
     closed: false,
     title: 'Engineer',
     descriptionText: 'Hello',
+    kind: 'job',
+    postSources: null,
     ...over,
   };
 }

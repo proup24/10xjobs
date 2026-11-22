@@ -4,7 +4,7 @@ import type { JobForProcessing, PostingInput } from '../models/types';
 /** Keeps one posting a bounded share of the generator's context and cost. */
 export const DESCRIPTION_CAP_BYTES = 30_000;
 
-function cut(text: string): { text: string; truncated: boolean } {
+export function cut(text: string): { text: string; truncated: boolean } {
   const buf = Buffer.from(text, 'utf8');
   if (buf.length <= DESCRIPTION_CAP_BYTES) return { text, truncated: false };
   // toString drops a trailing partial UTF-8 sequence as U+FFFD, so trim it.

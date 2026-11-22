@@ -262,6 +262,8 @@ export class PrismaProcessorRepository extends ProcessorRepository {
       closed: row.closed,
       title: row.title,
       descriptionText: row.descriptionText,
+      kind: 'job',
+      postSources: null,
     };
   }
 

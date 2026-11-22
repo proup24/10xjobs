@@ -162,6 +162,8 @@ export class ProcessorService {
       closed: false,
       title: posting.title ?? null,
       descriptionText: posting.description,
+      kind: 'job',
+      postSources: null,
     });
     const vocabulary = await this.vocab.snapshot();
     const log = new AttemptLog(null);

@@ -163,6 +163,7 @@ export class MemoryProcessorRepository extends ProcessorRepository {
       descriptionText: 'We hire.',
       status: 'active',
       kind: 'job',
+      postSources: null,
       linkedIn: true,
       processingStatus: 'pending',
       processingReason: 'new',
@@ -252,6 +253,8 @@ export class MemoryProcessorRepository extends ProcessorRepository {
       closed: job.closed,
       title: job.title,
       descriptionText: job.descriptionText,
+      kind: 'job',
+      postSources: null,
     };
   }
 
