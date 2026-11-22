@@ -4,7 +4,7 @@ import type { ModelCallMeta, PostingInput } from '../models/types';
 import type { Vocabulary } from '../repositories/vocab.repository';
 import type { PostLinks } from '../rules/post-input';
 import { roleKeys } from '../rules/role-key';
-import { normalizeForQuote } from '../rules/validate';
+import { normalizeForQuote, quoteFinder } from '../rules/validate';
 import { zodErrors } from '../schema/errors';
 import {
   type PostDocument,
@@ -28,6 +28,18 @@ export interface AssembledPost {
 const EDGE = /^[\s.,;:)>(<]+|[\s.,;:)>(<]+$/g;
 const LINKEDIN_JOB = /^https?:\/\/(?:www\.)?linkedin\.com\/jobs\/view\/(\d+)$/i;
 
+function invalid(path: string, message: string): ExtractionInvalidError {
+  return new ExtractionInvalidError(path, `${path}: ${message}`);
+}
+
+/** Whether `quote` holds `email` as a whole address, not inside a longer one. */
+function containsAddress(quote: string, email: string): boolean {
+  const escaped = email.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(?<![\\w.+%@-])${escaped}(?![\\w@-]|\\.\\w)`).test(
+    normalizeForQuote(quote),
+  );
+}
+
 const cleanEmail = (email: string): string =>
   email.replace(EDGE, '').toLowerCase();
 
@@ -46,23 +58,17 @@ export class PostAssembler {
     output: PostModelOutput,
     meta: ModelCallMeta,
     input: PostingInput,
+    /** The post's text without the links block: the hard-check quotes must come from it. */
+    postText: string,
     links: PostLinks,
     vocabulary: Vocabulary,
   ): AssembledPost {
-    const haystack = normalizeForQuote(
-      [input.title, input.description]
-        .filter((s): s is string => !!s)
-        .join('\n'),
-    );
-    const inText = (quote: string): boolean =>
-      haystack.includes(normalizeForQuote(quote));
+    // The links block lists every address and link, so a quote from it proves nothing.
+    const inText = quoteFinder(postText);
 
     const { verdict } = output;
-    if (verdict.quote !== '' && !inText(verdict.quote))
-      throw new ExtractionInvalidError(
-        'verdict.quote',
-        'verdict.quote: not found in the post',
-      );
+    if (verdict.quote === '' || !inText(verdict.quote))
+      throw invalid('verdict.quote', 'not found in the post');
 
     const emails = new Map(links.emails.map((e) => [cleanEmail(e), e]));
     const linkedinIds = new Set(links.linkedinJobIds);
@@ -73,28 +79,25 @@ export class PostAssembler {
     const roles = output.roles.map((r, i) => {
       const { employer, authorRelation, howToApply, ...listing } = r;
       const base = `roles.${i}.howToApply`;
-      const fail = (path: string, message: string): never => {
-        throw new ExtractionInvalidError(path, `${path}: ${message}`);
-      };
 
       let email: string | null = null;
       if (howToApply.email !== null) {
         const found = emails.get(cleanEmail(howToApply.email));
         if (found === undefined)
-          return fail(`${base}.email`, 'not an email found in the post');
+          throw invalid(`${base}.email`, 'not an email found in the post');
         email = found;
         const quote = howToApply.emailQuote;
         if (quote === '' || !inText(quote))
-          fail(`${base}.emailQuote`, 'not found in the post');
-        if (!normalizeForQuote(quote).includes(email.toLowerCase()))
-          fail(`${base}.emailQuote`, 'does not contain the email');
+          throw invalid(`${base}.emailQuote`, 'not found in the post');
+        if (!containsAddress(quote, email))
+          throw invalid(`${base}.emailQuote`, 'does not contain the email');
       }
 
       const checkedLinks = howToApply.links.map((raw, j) => {
         const link = raw.trim();
         const id = LINKEDIN_JOB.exec(link)?.[1];
         if (!urls.has(link) && !(id && linkedinIds.has(id)))
-          fail(`${base}.links.${j}`, 'not a link found in the post');
+          throw invalid(`${base}.links.${j}`, 'not a link found in the post');
         return link;
       });
 
@@ -104,7 +107,14 @@ export class PostAssembler {
         return '';
       };
 
-      const listed = this.facts.assemble(listing, meta, input, vocabulary);
+      let listed: AssembledDocument;
+      try {
+        listed = this.facts.assemble(listing, meta, input, vocabulary);
+      } catch (error) {
+        if (!(error instanceof ExtractionInvalidError)) throw error;
+        const path = `roles.${i}.${error.path}`;
+        throw new ExtractionInvalidError(path, `roles.${i}.${error.message}`);
+      }
       assembled.push(listed);
       quoteFailures += listed.quoteFailures;
       return {

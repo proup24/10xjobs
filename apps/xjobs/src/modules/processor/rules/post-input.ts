@@ -96,6 +96,8 @@ function unique(values: string[]): string[] {
  */
 export function buildPostInput(job: JobForProcessing): {
   input: PostingInput;
+  /** The rendered texts without the links block: what a quote about the post may come from. */
+  postText: string;
   links: PostLinks;
 } {
   const sources = [...(job.postSources ?? [])].sort((a, b) =>
@@ -157,6 +159,7 @@ export function buildPostInput(job: JobForProcessing): {
     DESCRIPTION_CAP_BYTES -
     (linksBlock ? bytes(linksBlock) + bytes(SEPARATOR) : 0);
   const capped = fit(sections, budget);
+  const postText = sections.map(render).join(SEPARATOR);
   const text = [
     ...sections.map(render),
     ...(linksBlock ? [linksBlock] : []),
@@ -168,6 +171,7 @@ export function buildPostInput(job: JobForProcessing): {
       description: text,
       truncated: capped || anyCut,
     },
+    postText,
     links,
   };
 }

@@ -18,6 +18,12 @@ export function normalizeForQuote(s: string): string {
     .toLowerCase();
 }
 
+/** A test for whether a quote is in `text`, compared after normalizeForQuote. */
+export function quoteFinder(text: string): (quote: string) => boolean {
+  const haystack = normalizeForQuote(text);
+  return (quote) => haystack.includes(normalizeForQuote(quote));
+}
+
 /** Whether a value says something about the posting (null, unstated and empty do not). */
 function isEstablished(name: string, value: unknown): boolean {
   if (value === null || value === undefined || value === 'unstated')
@@ -133,11 +139,10 @@ export function checkQuotes(
   input: PostingInput,
 ): { doc: ExtractionDocument; quoteFailures: number } {
   const out = structuredClone(doc);
-  const haystack = normalizeForQuote(
+  const found = quoteFinder(
     [input.title, input.description].filter((s): s is string => !!s).join('\n'),
   );
-  const bad = (quote: string): boolean =>
-    quote !== '' && !haystack.includes(normalizeForQuote(quote));
+  const bad = (quote: string): boolean => quote !== '' && !found(quote);
 
   const facts: Record<string, AnyFact> = {
     position: out.position,

@@ -22,10 +22,11 @@ const meta: ModelCallMeta = {
 };
 
 const POST_TEXT = `We are hiring. Acme is hiring. Send your CV to Jobs@Acme.com. ${DESCRIPTION}`;
+const LINKS_BLOCK = 'Links in the post:\npress@acme.com\njobs@acme.com';
 const input: PostingInput = {
   jobId: 'j',
   title: null,
-  description: POST_TEXT,
+  description: `${POST_TEXT}\n\n${LINKS_BLOCK}`,
   truncated: false,
 };
 const links = {
@@ -75,12 +76,22 @@ function output(...roles: Role[]): PostModelOutput {
 describe('PostAssembler', () => {
   const assembler = new PostAssembler(new FactAssembler());
   let vocabulary: Vocabulary;
-  const run = async (o: PostModelOutput, i = input, l = links) => {
+  const run = async (
+    o: PostModelOutput,
+    i = input,
+    l = links,
+    text = POST_TEXT,
+  ) => {
     vocabulary ??= await new MemoryVocabRepository().snapshot();
-    return assembler.assemble(o, meta, i, l, vocabulary);
+    return assembler.assemble(o, meta, i, text, l, vocabulary);
   };
-  const invalidPath = async (o: PostModelOutput, i = input, l = links) => {
-    const error = await run(o, i, l).catch((e: unknown) => e);
+  const invalidPath = async (
+    o: PostModelOutput,
+    i = input,
+    l = links,
+    text = POST_TEXT,
+  ) => {
+    const error = await run(o, i, l, text).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(ExtractionInvalidError);
     return (error as ExtractionInvalidError).path;
   };
@@ -177,7 +188,7 @@ describe('PostAssembler', () => {
     );
     o.verdict.quote = 'Acme is hiring';
     o.roles[0].employer.quote = 'Acme is hiring';
-    const out = await run(o, built.input, built.links);
+    const out = await run(o, built.input, built.links, built.postText);
     expect(out.doc.roles[0].howToApply.email).toBe('jobs@acme.com');
   });
 
@@ -195,6 +206,67 @@ describe('PostAssembler', () => {
     const o = output(role({ quote: 'Apply via carrier pigeon' }));
     const out = await run(o);
     expect(out.doc.roles[0].howToApply.quote).toBe('');
-    expect(out.quoteFailures).toBeGreaterThanOrEqual(1);
+    expect(out.quoteFailures).toBe(1);
+  });
+
+  it('clears and counts an employer quote that is not in the text', async () => {
+    const o = output(role());
+    o.roles[0].employer.quote = 'Globex is hiring';
+    const out = await run(o);
+    expect(out.doc.roles[0].employer.quote).toBe('');
+    expect(out.quoteFailures).toBe(1);
+  });
+
+  it('throws when the email quote is empty but an email is set', async () => {
+    const o = output(role({ emailQuote: '' }));
+    expect(await invalidPath(o)).toBe('roles.0.howToApply.emailQuote');
+  });
+
+  it('does not take an email quote from the links block', async () => {
+    const text = 'We are hiring. Acme is hiring.';
+    const o = output(role({ emailQuote: 'jobs@acme.com' }));
+    expect(
+      await invalidPath(
+        o,
+        { ...input, description: `${text}\n\n${LINKS_BLOCK}` },
+        links,
+        text,
+      ),
+    ).toBe('roles.0.howToApply.emailQuote');
+  });
+
+  it('does not take the verdict quote from the links block', async () => {
+    const o = output(role());
+    o.verdict.quote = 'Links in the post:';
+    expect(await invalidPath(o)).toBe('verdict.quote');
+  });
+
+  it('throws on an empty verdict quote', async () => {
+    const o = output(role());
+    o.verdict.quote = '';
+    expect(await invalidPath(o)).toBe('verdict.quote');
+  });
+
+  it('rejects an email quote that holds only a longer address', async () => {
+    const text = `${POST_TEXT} Write hr.jobs@acme.com`;
+    const o = output(role({ emailQuote: 'Write hr.jobs@acme.com' }));
+    expect(
+      await invalidPath(o, { ...input, description: text }, links, text),
+    ).toBe('roles.0.howToApply.emailQuote');
+  });
+
+  it('names the role when a listing fact is invalid', async () => {
+    const o = output(role(), role());
+    (o.roles[1] as unknown as Record<string, unknown>).seniority = {
+      value: 'wizard',
+      quote: '',
+      confidence: 'sure',
+    };
+    const error = (await run(o).catch((e: unknown) => e)) as Error & {
+      path: string;
+    };
+    expect(error).toBeInstanceOf(ExtractionInvalidError);
+    expect(error.path.startsWith('roles.1.')).toBe(true);
+    expect(error.message).toContain('roles.1.');
   });
 });
