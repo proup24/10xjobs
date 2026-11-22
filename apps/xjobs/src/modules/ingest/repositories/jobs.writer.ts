@@ -6,6 +6,7 @@ import {
 } from 'src/common/enums';
 import type { NormalizedJobRow, RawItemVersionRow } from 'src/database';
 import type { DatabaseTransaction } from '@xjobs/database';
+import { archivePostRoleJobs } from 'src/database/role-jobs';
 import {
   boardSources,
   isStrongJobKey,
@@ -553,7 +554,7 @@ async function effectiveKey(
 /**
  * Moves one source row from its job to `toJobId`, then settles the job it
  * left: re-merged when other sources remain, else merged into `toJobId` with
- * every user's decisions and views. Returns the left job's processing state
+ * every user's decisions and views (a post job's role jobs are archived). Returns the left job's processing state
  * when it was `pending`, for the caller to carry over; the target is not
  * re-merged here.
  */
@@ -592,6 +593,8 @@ async function leaveJob(
       ? processingColumns({ status: null, reason: null, requestedAt: null })
       : {}),
   });
+  // A merged post job's roles are read again from the job it merged into.
+  if (old.kind === 'post') await archivePostRoleJobs(tx, [old.id]);
   await moveDecisions(tx, old.id, input.toJobId);
   await moveViews(tx, old.id, input.toJobId);
   const oldState = processingOf(old);
@@ -630,10 +633,7 @@ async function dropPostSource(
     postSources: null,
   });
   // Its role jobs go with it, as when Process archives them; status stays 'active'.
-  await orm.public.NormalizedJob.where({
-    parentJobId: link.jobId,
-    kind: 'post_role',
-  }).updateAll({ processingStatus: 'archived' });
+  await archivePostRoleJobs(tx, [link.jobId]);
 }
 
 /**

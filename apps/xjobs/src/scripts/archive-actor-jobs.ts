@@ -55,7 +55,7 @@ async function main(): Promise<void> {
     const result = await archiveActorJobs(db, actor, { dryRun });
     const after = await countArchived(db);
     logger.log(
-      `${dryRun ? 'Would archive' : 'Archived'} ${result.jobs} jobs ${JSON.stringify(result.byStatus)}; ${dryRun ? 'would delete' : 'deleted'} ${result.matchesDeleted} matches`,
+      `${dryRun ? 'Would archive' : 'Archived'} ${result.jobs} jobs ${JSON.stringify(result.byStatus)}; ${dryRun ? 'would delete' : 'deleted'} ${result.matchesDeleted} matches; ${dryRun ? 'would archive' : 'archived'} ${result.roleJobs} role jobs of those post jobs`,
     );
     logger.log(`Archived jobs: ${before} before, ${after} after`);
   } finally {

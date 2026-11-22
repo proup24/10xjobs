@@ -1522,6 +1522,42 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
             ].sort(),
           );
         });
+
+        it('a post job merged into another when its last source leaves archives its role jobs', async () => {
+          await savePost(twin('7390000000000000001'), t1);
+          const target = await postJob();
+          const other = await savePost(post('7390000000000000002'), t1);
+          const leaving = (await db.orm.public.NormalizedJob.where({
+            id: (other.job as { jobId: string }).jobId,
+          }).first())!;
+          expect(leaving.id).not.toBe(target.id);
+          await roleJob(leaving, 'backend');
+          await roleJob(target, 'backend');
+
+          // A new version of the second post now has the first one's text.
+          await savePost(twin('7390000000000000002'), t2);
+
+          expect(
+            await db.orm.public.NormalizedJob.where({ id: leaving.id }).first(),
+          ).toMatchObject({ status: 'merged', mergedIntoId: target.id });
+          const roles = await db.orm.public.NormalizedJob.where({
+            kind: 'post_role',
+          }).all();
+          expect(
+            roles
+              .map((r) => [
+                r.parentJobId === leaving.id,
+                r.status,
+                r.processingStatus,
+              ])
+              .sort(),
+          ).toEqual(
+            [
+              [false, 'active', 'processed'],
+              [true, 'active', 'archived'],
+            ].sort(),
+          );
+        });
       });
 
       it('a job-board item that turns invalid keeps its link', async () => {
