@@ -20,6 +20,8 @@ export interface ProcessorConfig {
   weeklyStopAt: number;
   /** Model calls per generation: the first and its schema-fix retries (spec §2). */
   generationTries: number;
+  /** Post model calls per UTC day; 0 pauses post extraction. */
+  postDailyCap: number;
 }
 
 export const PROCESSOR_CONFIG = Symbol('PROCESSOR_CONFIG');

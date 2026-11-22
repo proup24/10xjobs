@@ -82,7 +82,9 @@ export class ProcessorBlockedError extends Error {
         ? pause
           ? `Processing is paused until ${pause.until.toISOString()} (${pause.reason}): ${pause.detail}`
           : 'Processing is paused'
-        : "Today's processing budget is spent",
+        : reason === 'post_cap'
+          ? "Today's post extraction cap is reached"
+          : "Today's processing budget is spent",
     );
     this.name = 'ProcessorBlockedError';
   }

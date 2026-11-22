@@ -72,6 +72,7 @@ async function main(): Promise<void> {
     dailyBudgetUsd: 0,
     weeklyStopAt: env.PROCESSOR_WEEKLY_STOP_AT,
     generationTries: 1,
+    postDailyCap: env.POST_EXTRACTION_DAILY_CAP,
   });
   const extraction = createClaudeExtractionModel({
     model,

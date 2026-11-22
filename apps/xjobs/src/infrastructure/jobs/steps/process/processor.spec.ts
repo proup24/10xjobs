@@ -10,6 +10,7 @@ const config: ProcessorConfig = {
   dailyBudgetUsd: 10,
   weeklyStopAt: 0.85,
   generationTries: 3,
+  postDailyCap: 250,
 };
 
 function deps(outcome = 'processed', spent = 0, paused = false) {

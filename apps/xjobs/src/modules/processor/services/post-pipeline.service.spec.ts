@@ -24,6 +24,7 @@ const config: ProcessorConfig = {
   dailyBudgetUsd: 20,
   weeklyStopAt: 0.85,
   generationTries: 3,
+  postDailyCap: 250,
 };
 
 const POST_TEXT = `We are hiring. Acme is hiring. Send your CV to jobs@acme.com. ${DESCRIPTION}`;

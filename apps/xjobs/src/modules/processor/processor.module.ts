@@ -58,6 +58,7 @@ type Env = ConfigService<ProcessorEnvironmentVariables, true>;
           infer: true,
         }),
         weeklyStopAt: config.get('PROCESSOR_WEEKLY_STOP_AT', { infer: true }),
+        postDailyCap: config.get('POST_EXTRACTION_DAILY_CAP', { infer: true }),
         generationTries: config.get('PROCESSOR_GENERATION_TRIES', {
           infer: true,
         }),

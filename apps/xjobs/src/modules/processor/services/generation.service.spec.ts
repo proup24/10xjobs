@@ -22,6 +22,7 @@ const config: ProcessorConfig = {
   dailyBudgetUsd: 20,
   weeklyStopAt: 0.85,
   generationTries: 3,
+  postDailyCap: 250,
 };
 
 const input: PostingInput = {

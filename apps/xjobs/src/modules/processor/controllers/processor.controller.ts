@@ -143,7 +143,7 @@ function toHttp(error: unknown): unknown {
   if (error instanceof ProcessorBlockedError)
     return new HttpException(
       error.message,
-      error.reason === 'over_budget'
+      error.reason === 'over_budget' || error.reason === 'post_cap'
         ? HttpStatus.TOO_MANY_REQUESTS
         : HttpStatus.SERVICE_UNAVAILABLE,
     );
