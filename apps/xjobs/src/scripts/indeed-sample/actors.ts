@@ -47,6 +47,7 @@ export interface ActorSpec {
 }
 
 const COUNTRY: Record<ActorName, Record<PlaceId, string>> = {
+  // Unconfirmed: valig's README says ISO alpha-2 (the UK would be `gb`); `uk`/`ma` come from the brief.
   valig: { 'us-remote': 'us', 'uk-remote': 'uk', 'ma-onsite': 'ma' },
   kaix: { 'us-remote': 'US', 'uk-remote': 'UK', 'ma-onsite': 'MA' },
   memo23: {
@@ -54,6 +55,7 @@ const COUNTRY: Record<ActorName, Record<PlaceId, string>> = {
     'uk-remote': 'United Kingdom',
     'ma-onsite': 'Morocco',
   },
+  // Unconfirmed: the README documents `us` and `uk` only; `ma` is assumed by pattern.
   curious_coder: { 'us-remote': 'us', 'uk-remote': 'uk', 'ma-onsite': 'ma' },
 };
 
@@ -80,12 +82,10 @@ function firstText(...values: unknown[]): string | null {
   return null;
 }
 
-/** Plain text from a text field, or from an HTML field when the text is missing. */
+/** Plain text from a text field, or from an HTML field when the text is missing; markup and entities never survive either path. */
 function plainText(text: unknown, html: unknown): string | null {
-  const direct = cleanText(text);
-  if (direct) return direct;
-  const markup = cleanText(html);
-  return markup ? cleanText(htmlToPlainText(markup)) : null;
+  const raw = cleanText(text) ?? cleanText(html);
+  return raw ? cleanText(htmlToPlainText(raw)) : null;
 }
 
 /** An employer URL: http(s) only, and never an indeed.com host. */
@@ -221,7 +221,12 @@ function readKaix(raw: Record<string, unknown>): SampleJob {
   };
 }
 
-/** Source fields (flat output): jobId (else jobKey, id, or jk in url), positionName, company, location, jobDescription/jobDescriptionHtml, externalApplyUrl, datePublished, salary, jobType, remote. */
+/**
+ * Source fields (flat output, from the actor's dataset schema): jobId, positionName, company,
+ * location, jobDescription (the schema does not say text or HTML, so both are cleaned),
+ * externalApplyLink, indeedApplyable/indeedApplyEnabled, datePublished (else dateOnIndeed,
+ * postedAt relative text), salary, jobType, remote. Alternates for the normalizeOutput columns.
+ */
 function readMemo23(raw: Record<string, unknown>): SampleJob {
   const urlKey = /[?&]jk=([0-9a-f]+)/i.exec(String(raw.url ?? ''))?.[1];
   return {
@@ -232,14 +237,14 @@ function readMemo23(raw: Record<string, unknown>): SampleJob {
     place: firstText(raw.location) ?? joinPlace(raw.city, raw.countryCode),
     descriptionText: plainText(
       raw.jobDescription ?? raw.description_text,
-      raw.jobDescriptionHtml ?? raw.description_html,
+      raw.description_html,
     ),
-    applyUrl: employerUrl(
-      raw.externalApplyUrl,
-      raw.externalApplyLink,
-      raw.thirdPartyApplyUrl,
-    ),
-    postedAt: dateText(raw.datePublished) ?? dateText(raw.dateOnIndeed),
+    applyUrl: employerUrl(raw.externalApplyLink, raw.externalApplyUrl),
+    easyApply: bool(raw.indeedApplyable) ?? bool(raw.indeedApplyEnabled),
+    postedAt:
+      dateText(raw.datePublished) ??
+      dateText(raw.dateOnIndeed) ??
+      dateText(raw.postedAt),
     remote: bool(raw.remote),
     salary:
       firstText(raw.salary) ??

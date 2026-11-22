@@ -7,6 +7,9 @@ import {
   type SampleSearch,
 } from 'src/scripts/indeed-sample/actors';
 
+// fixtures/memo23.json is built from the actor's dataset schema (build ua2EEra2zcXeFlsb1),
+// because its README has no example output item. The schema declares jobDescription
+// without saying text or HTML, so the reader cleans both.
 function fixture(name: ActorName): Record<string, unknown> {
   const rows = JSON.parse(
     readFileSync(join(__dirname, 'fixtures', `${name}.json`), 'utf8'),
@@ -167,7 +170,7 @@ describe('readItem', () => {
       (fixture('kaix').apply as { url: string }).url,
     );
     expect(ACTORS.memo23.readItem(fixture('memo23')).applyUrl).toBe(
-      fixture('memo23').externalApplyUrl,
+      fixture('memo23').externalApplyLink,
     );
     expect(
       ACTORS.curious_coder.readItem(fixture('curious_coder')).applyUrl,
@@ -190,6 +193,42 @@ describe('readItem', () => {
     });
   });
 
+  it('strips markup from the kaix fixture description', () => {
+    const raw = fixture('kaix');
+    const description = raw.description as { text: string; html: string };
+    expect(description.html).toContain('<');
+    const fromText = ACTORS.kaix.readItem(raw).descriptionText ?? '';
+    const fromHtml =
+      ACTORS.kaix.readItem({ ...raw, description: { html: description.html } })
+        .descriptionText ?? '';
+    for (const out of [fromText, fromHtml]) {
+      expect(out).toContain('Responsibilities');
+      expect(out).toContain('APIs & internal tooling');
+      expect(out).not.toMatch(/[<>]|&amp;/);
+    }
+  });
+
+  it('cleans markup and entities on the text path too', () => {
+    expect(
+      ACTORS.memo23.readItem({ jobDescription: '<p>Build &amp; ship</p>' })
+        .descriptionText,
+    ).toBe('Build & ship');
+  });
+
+  it('reads memo23 easy apply and dates from the schema fields', () => {
+    expect(ACTORS.memo23.readItem(fixture('memo23'))).toMatchObject({
+      easyApply: false,
+      postedAt: '2025-06-04T05:00:00.000Z',
+      remote: false,
+      salary: '$175,000 - $250,000 a year',
+      jobType: 'Full-time',
+      place: 'New York, NY',
+    });
+    expect(ACTORS.memo23.readItem({ postedAt: '1 day ago' }).postedAt).toBe(
+      '1 day ago',
+    );
+  });
+
   it('turns html-only descriptions into plain text', () => {
     const job = ACTORS.valig.readItem({
       description: { html: '<div><p>Build <b>things</b></p></div>' },
@@ -202,7 +241,7 @@ describe('readItem', () => {
     expect(ACTORS.valig.readItem({ jobUrl: url }).applyUrl).toBeNull();
     expect(ACTORS.kaix.readItem({ apply: { url } }).applyUrl).toBeNull();
     expect(
-      ACTORS.memo23.readItem({ externalApplyUrl: url }).applyUrl,
+      ACTORS.memo23.readItem({ externalApplyLink: url }).applyUrl,
     ).toBeNull();
     expect(
       ACTORS.curious_coder.readItem({ originalApplyUrl: url }).applyUrl,

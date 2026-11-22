@@ -13,8 +13,8 @@
       "clickTracking": "[tracking URL removed]"
     },
     "description": {
-      "text": "[job description text removed]",
-      "html": "[job description HTML removed]"
+      "text": "About the role\n\nWe are hiring a Software Engineer to build payment APIs & internal tooling.\n\nResponsibilities\n\n- Design and ship services in Java and Go\n- Review code & mentor teammates\n- Own on-call for your services\n\nQualifications\n\n- 5+ years of professional experience\n- Bachelor's degree in computer science or equivalent\n\nVisa is an equal opportunity employer.",
+      "html": "<div><p><b>About the role</b></p><p>We are hiring a Software Engineer to build payment APIs &amp; internal tooling.</p><p><b>Responsibilities</b></p><ul><li>Design and ship services in Java and Go</li><li>Review code &amp; mentor teammates</li><li>Own on-call for your services</li></ul><p><b>Qualifications</b></p><ul><li>5+ years of professional experience</li><li>Bachelor's degree in computer science or equivalent</li></ul><p>Visa is an equal opportunity employer.</p></div>"
     },
     "snippet": "[snippet text removed]",
     "classification": {
