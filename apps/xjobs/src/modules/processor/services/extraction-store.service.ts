@@ -35,6 +35,7 @@ export class ExtractionStore {
   /** Same input, schema, prompt and generator model: same extraction. */
   reuseKey(input: PostingInput): ReuseKey {
     return {
+      docType: 'listing',
       inputHash: inputHash(input),
       schemaVersion: EXTRACTION_SCHEMA_VERSION,
       promptHash: promptHash(),
@@ -82,6 +83,9 @@ export class ExtractionStore {
       data: doc,
       needsReview: needsReview(doc),
       costUsd: log.costUsd,
+      verdict: null,
+      verdictReason: null,
+      verdictConfidence: null,
     });
     await this.repo.recordAttempts(log.entries(extractionId));
     for (const [list, codes] of usedCodes(doc))

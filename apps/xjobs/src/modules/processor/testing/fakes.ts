@@ -16,6 +16,7 @@ import type {
 import { ExtractionModel } from '../models/types';
 import {
   type Claim,
+  type Counts,
   type FinishOutcome,
   type JobState,
   type NewAttempt,
@@ -26,6 +27,7 @@ import {
   type MarkPendingResult,
   type ReprocessFilter,
   type ReuseKey,
+  type RoleJobInput,
 } from '../repositories/processor.repository';
 import {
   matchingForms,
@@ -108,13 +110,20 @@ export class FakeExtractionModel extends ExtractionModel {
   }
 }
 
-export interface MemoryJob extends JobForProcessing {
+export interface MemoryJob extends Omit<JobForProcessing, 'kind'> {
   /** Shown by `jobState` only; the processor never reads it. */
   companyName: string | null;
   status: 'active' | 'merged';
-  kind: 'job' | 'post';
+  kind: 'job' | 'post' | 'post_role';
   /** Has a LinkedIn job board source. */
   linkedIn: boolean;
+  /** A post is in scope for 7 days from here. */
+  firstSeenAt: Date;
+  /** Every author of the post is silenced. */
+  silenced: boolean;
+  /** Set on a `post_role` job: its post job and its role within it. */
+  parentJobId: string | null;
+  roleKey: string | null;
   processingStatus:
     | 'pending'
     | 'processing'
@@ -165,6 +174,10 @@ export class MemoryProcessorRepository extends ProcessorRepository {
       kind: 'job',
       postSources: null,
       linkedIn: true,
+      firstSeenAt: this.now(),
+      silenced: false,
+      parentJobId: null,
+      roleKey: null,
       processingStatus: 'pending',
       processingReason: 'new',
       mergedIntoId: null,
@@ -209,19 +222,49 @@ export class MemoryProcessorRepository extends ProcessorRepository {
     return job;
   }
 
+  private inWindow(job: MemoryJob): boolean {
+    return job.firstSeenAt.getTime() >= this.now().getTime() - 7 * DAY_MS;
+  }
+
+  /** Mirrors `processorScopeSql`. */
   private inScope(job: MemoryJob): boolean {
-    return job.status === 'active' && job.kind === 'job' && job.linkedIn;
+    if (job.status !== 'active') return false;
+    if (job.kind === 'job') return job.linkedIn;
+    return job.kind === 'post' && this.inWindow(job) && !job.silenced;
   }
 
   async listPendingInScope(limit: number): Promise<string[]> {
     this.log.push('listPendingInScope');
     return [...this.jobs.values()]
-      .filter((j) => this.inScope(j) && j.processingStatus === 'pending')
+      .filter(
+        (j) =>
+          j.kind === 'job' &&
+          this.inScope(j) &&
+          j.processingStatus === 'pending',
+      )
       .sort(
         (a, b) =>
           (a.processingRequestedAt?.getTime() ?? -Infinity) -
             (b.processingRequestedAt?.getTime() ?? -Infinity) ||
           (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+      )
+      .slice(0, limit)
+      .map((j) => j.id);
+  }
+
+  async listPendingPosts(limit: number): Promise<string[]> {
+    this.log.push('listPendingPosts');
+    return [...this.jobs.values()]
+      .filter(
+        (j) =>
+          j.kind === 'post' &&
+          this.inScope(j) &&
+          j.processingStatus === 'pending',
+      )
+      .sort(
+        (a, b) =>
+          b.firstSeenAt.getTime() - a.firstSeenAt.getTime() ||
+          (a.id < b.id ? 1 : a.id > b.id ? -1 : 0),
       )
       .slice(0, limit)
       .map((j) => j.id);
@@ -253,8 +296,8 @@ export class MemoryProcessorRepository extends ProcessorRepository {
       closed: job.closed,
       title: job.title,
       descriptionText: job.descriptionText,
-      kind: 'job',
-      postSources: null,
+      kind: job.kind === 'post' ? 'post' : 'job',
+      postSources: job.postSources,
     };
   }
 
@@ -264,6 +307,7 @@ export class MemoryProcessorRepository extends ProcessorRepository {
     this.log.push('findReusable');
     const hits = this.extractions.filter(
       (e) =>
+        e.docType === key.docType &&
         e.inputHash === key.inputHash &&
         e.schemaVersion === key.schemaVersion &&
         e.promptHash === key.promptHash &&
@@ -283,6 +327,7 @@ export class MemoryProcessorRepository extends ProcessorRepository {
         (e) =>
           (e.jobId === jobId ||
             this.jobs.get(e.jobId)?.mergedIntoId === jobId) &&
+          e.docType === key.docType &&
           e.schemaVersion === key.schemaVersion &&
           e.promptHash === key.promptHash &&
           e.extractionModel === key.extractionModel,
@@ -446,19 +491,91 @@ export class MemoryProcessorRepository extends ProcessorRepository {
   }
 
   async processingCounts(): Promise<ProcessingCounts> {
-    const counts: ProcessingCounts = {
+    const zero = (): Counts => ({
       pending: 0,
       processing: 0,
       processed: 0,
       failed: 0,
       archived: 0,
       unset: 0,
+    });
+    const counts: ProcessingCounts = {
+      listings: zero(),
+      posts: { ...zero(), outOfWindow: 0, silenced: 0 },
     };
-    for (const job of this.jobs.values())
-      if (this.inScope(job)) counts[job.processingStatus ?? 'unset'] += 1;
+    for (const job of this.jobs.values()) {
+      const status = job.processingStatus ?? 'unset';
+      if (job.status !== 'active') continue;
+      if (job.kind === 'job') {
+        if (job.linkedIn) counts.listings[status] += 1;
+      } else if (job.kind === 'post') {
+        if (this.inScope(job)) counts.posts[status] += 1;
+        else if (status === 'pending')
+          counts.posts[this.inWindow(job) ? 'silenced' : 'outOfWindow'] += 1;
+      }
+    }
     return counts;
   }
+
+  async upsertRoleJob(input: RoleJobInput): Promise<string> {
+    this.log.push('upsertRoleJob');
+    const parent = this.mustGet(input.postJobId);
+    const existing = [...this.jobs.values()].find(
+      (j) => j.parentJobId === input.postJobId && j.roleKey === input.roleKey,
+    );
+    const fields = {
+      title: input.title,
+      companyName: input.companyName,
+      descriptionText: parent.descriptionText,
+      firstSeenAt: parent.firstSeenAt,
+      closed: parent.closed,
+      status: 'active' as const,
+      processingStatus: 'processed' as const,
+      processingReason: null,
+      processingError: null,
+      processingStartedAt: null,
+      processedAt: this.now(),
+      currentExtractionId: input.extractionId,
+    };
+    if (existing) {
+      Object.assign(existing, fields);
+      return existing.id;
+    }
+    return this.addJob({
+      ...fields,
+      id: randomUUID(),
+      kind: 'post_role',
+      linkedIn: false,
+      parentJobId: input.postJobId,
+      roleKey: input.roleKey,
+    }).id;
+  }
+
+  async archiveRoleJobs(postJobId: string, keep: string[]): Promise<number> {
+    this.log.push('archiveRoleJobs');
+    let n = 0;
+    for (const job of this.jobs.values())
+      if (
+        job.kind === 'post_role' &&
+        job.parentJobId === postJobId &&
+        !keep.includes(job.roleKey ?? '') &&
+        job.processingStatus !== 'archived'
+      ) {
+        job.processingStatus = 'archived';
+        n++;
+      }
+    return n;
+  }
+
+  async postCallsSince(since: Date): Promise<number> {
+    this.log.push('postCallsSince');
+    return this.attempts.filter(
+      (a) => !a.eval && a.docType === 'post' && a.createdAt >= since,
+    ).length;
+  }
 }
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 function attemptDefaults(): NewAttempt {
   return {

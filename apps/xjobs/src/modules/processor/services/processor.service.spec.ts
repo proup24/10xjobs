@@ -691,7 +691,8 @@ describe('ProcessorService', () => {
     });
 
     it('does not process an out-of-scope job', async () => {
-      addJob('post-1', { kind: 'post' });
+      // A post first seen long before the 7-day window.
+      addJob('post-1', { kind: 'post', firstSeenAt: new Date(0) });
       const { outcome } = await service().processNow('post-1');
       expect(outcome).toBe('not_claimed');
       expect(extraction.calls).toHaveLength(0);

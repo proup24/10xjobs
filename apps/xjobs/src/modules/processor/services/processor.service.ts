@@ -9,7 +9,7 @@ import {
   type Claim,
   type FinishOutcome,
   type JobState,
-  type ProcessingCounts,
+  type Counts,
   ProcessorRepository,
 } from '../repositories/processor.repository';
 import { VocabRepository } from '../repositories/vocab.repository';
@@ -61,7 +61,8 @@ export interface PreviewResult {
 
 export interface ProcessorStatus {
   models: { extraction: string };
-  jobs: ProcessingCounts;
+  /** Listing jobs only until the status reports posts too. */
+  jobs: Counts;
   estimatedCostTodayUsd: number;
   dailyBudgetUsd: number;
   /** Only this process's pause; another worker process may be paused too. */
@@ -211,7 +212,7 @@ export class ProcessorService {
       models: {
         extraction: this.config.extractionModel,
       },
-      jobs: await this.jobs.processingCounts(),
+      jobs: (await this.jobs.processingCounts()).listings,
       estimatedCostTodayUsd: await this.guard.spentToday(),
       dailyBudgetUsd: this.config.dailyBudgetUsd,
       paused: this.guard.isPaused(),
