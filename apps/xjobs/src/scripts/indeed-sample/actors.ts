@@ -113,6 +113,26 @@ function bool(value: unknown): boolean | null {
   return typeof value === 'boolean' ? value : null;
 }
 
+/** Indeed's remote job attribute (the `sc=attr(DSQF7)` search filter). */
+const REMOTE_ATTRIBUTE = 'DSQF7';
+
+/**
+ * Remote from Indeed's job attributes, as a key → label map (valig) or a list of
+ * `{ key, label }` (curious_coder): true when DSQF7 is there, false when the attributes
+ * are there without it, null when the item has no attributes.
+ */
+function remoteAttribute(attributes: unknown): boolean | null {
+  if (Array.isArray(attributes)) {
+    return attributes.some(
+      (attribute) => objectAt(attribute).key === REMOTE_ATTRIBUTE,
+    );
+  }
+  if (attributes && typeof attributes === 'object') {
+    return REMOTE_ATTRIBUTE in attributes;
+  }
+  return null;
+}
+
 function num(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
@@ -166,7 +186,7 @@ function remoteLocation(search: SampleSearch): string {
   return search.remoteBy === 'none' ? '' : 'Remote';
 }
 
-/** Source fields: key, title, jobUrl, employer.name, location.*, description.text/html, datePublished, baseSalary, jobTypes. */
+/** Source fields: key, title, jobUrl, employer.name, location.*, description.text/html, datePublished, baseSalary, jobTypes, attributes (DSQF7 = remote). */
 function readValig(raw: Record<string, unknown>): SampleJob {
   const location = objectAt(raw.location);
   const salary = objectAt(raw.baseSalary);
@@ -188,6 +208,7 @@ function readValig(raw: Record<string, unknown>): SampleJob {
       salary.currencyCode,
       salary.unitOfWork,
     ),
+    remote: remoteAttribute(raw.attributes),
     jobType: listText(raw.jobTypes),
   };
 }
@@ -256,7 +277,7 @@ function readMemo23(raw: Record<string, unknown>): SampleJob {
   };
 }
 
-/** Source fields: id, title, companyDetails.name (else jobSourceName), formattedLocation, jobDescription/jobDescriptionHTML, originalApplyUrl, pubDate (epoch ms), salary.*, jobTypes. */
+/** Source fields: id, title, companyDetails.name (else jobSourceName), formattedLocation, jobDescription/jobDescriptionHTML, originalApplyUrl, pubDate (epoch ms), salary.*, jobTypes, attributes (DSQF7 = remote). */
 function readCuriousCoder(raw: Record<string, unknown>): SampleJob {
   const salary = objectAt(raw.salary);
   return {
@@ -274,6 +295,7 @@ function readCuriousCoder(raw: Record<string, unknown>): SampleJob {
       salary.currencyCode,
       salary.type,
     ),
+    remote: remoteAttribute(raw.attributes),
     jobType: listText(raw.jobTypes),
   };
 }

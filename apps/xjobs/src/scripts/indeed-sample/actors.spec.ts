@@ -229,6 +229,33 @@ describe('readItem', () => {
     );
   });
 
+  it("reads valig and curious_coder's remote flag from Indeed's DSQF7 attribute", () => {
+    // Shapes from the 2026-11-22 sample: valig keys a map, curious_coder lists {key, label}.
+    expect(
+      ACTORS.valig.readItem({ attributes: { DSQF7: 'Remote', FGY89: 'SQL' } })
+        .remote,
+    ).toBe(true);
+    expect(ACTORS.valig.readItem({ attributes: { FGY89: 'SQL' } }).remote).toBe(
+      false,
+    );
+    expect(
+      ACTORS.curious_coder.readItem({
+        attributes: [
+          { key: 'DSQF7', label: 'Remote' },
+          { key: 'X62BT', label: 'Python' },
+        ],
+      }).remote,
+    ).toBe(true);
+    expect(
+      ACTORS.curious_coder.readItem({
+        attributes: [{ key: 'X62BT', label: 'Python' }],
+      }).remote,
+    ).toBe(false);
+    expect(ACTORS.curious_coder.readItem({ attributes: [] }).remote).toBe(
+      false,
+    );
+  });
+
   it('turns html-only descriptions into plain text', () => {
     const job = ACTORS.valig.readItem({
       description: { html: '<div><p>Build <b>things</b></p></div>' },
