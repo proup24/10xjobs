@@ -21,6 +21,9 @@ import { ExtractionPipeline } from './services/extraction-pipeline.service';
 import { ExtractionStore } from './services/extraction-store.service';
 import { FactAssembler } from './services/fact-assembler.service';
 import { GenerationService } from './services/generation.service';
+import { PostAssembler } from './services/post-assembler.service';
+import { PostPipeline } from './services/post-pipeline.service';
+import { PostStore } from './services/post-store.service';
 import { ProcessorGuard } from './services/processor-guard.service';
 import { ProcessorService } from './services/processor.service';
 
@@ -40,6 +43,9 @@ type Env = ConfigService<ProcessorEnvironmentVariables, true>;
     GenerationService,
     FactAssembler,
     ExtractionStore,
+    PostPipeline,
+    PostAssembler,
+    PostStore,
     { provide: ProcessorRepository, useClass: PrismaProcessorRepository },
     { provide: VocabRepository, useClass: PrismaVocabRepository },
     {

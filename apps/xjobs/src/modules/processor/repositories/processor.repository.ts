@@ -14,6 +14,7 @@ import {
   type ExtractionDocumentV2,
   parseStoredDocument,
 } from '../schema';
+import type { PostDocument } from '../schema/post-extraction';
 
 /** A job this worker holds: what `finish` checks the row against. */
 export interface Claim {
@@ -37,7 +38,8 @@ export type ReuseKey = {
 
 export interface NewExtraction extends ReuseKey, TypedColumns {
   jobId: string;
-  data: ExtractionDocument;
+  /** A listing document, or a post document on a `post` row. */
+  data: ExtractionDocument | PostDocument;
   needsReview: boolean;
   costUsd: number;
   /** A post's verdict, its reason code and confidence; null on a listing. */
@@ -45,6 +47,13 @@ export interface NewExtraction extends ReuseKey, TypedColumns {
   verdictReason: string | null;
   verdictConfidence: string | null;
 }
+
+/** A stored extraction's key and raw `data`, as `findExtraction` reads it. */
+export type StoredExtraction = ReuseKey & {
+  id: string;
+  jobId: string;
+  data: unknown;
+};
 
 /** A role of a hiring post, written as its `post_role` job. */
 export interface RoleJobInput {
@@ -184,6 +193,8 @@ export abstract class ProcessorRepository {
     jobId: string,
     key: Omit<ReuseKey, 'inputHash'>,
   ): Promise<{ id: string; jobId: string } | null>;
+  /** One extraction row by id, its `data` unparsed; null when there is none. */
+  abstract findExtraction(id: string): Promise<StoredExtraction | null>;
   /** A new row for `jobId` with the same document; returns its id. */
   abstract copyExtraction(extractionId: string, jobId: string): Promise<string>;
   abstract saveExtraction(row: NewExtraction): Promise<string>;
@@ -432,6 +443,21 @@ export class PrismaProcessorRepository extends ProcessorRepository {
     return rows[0]
       ? { id: rows[0].id as string, jobId: rows[0].jobId as string }
       : null;
+  }
+
+  async findExtraction(id: string): Promise<StoredExtraction | null> {
+    const row = await this.db.orm.public.JobExtraction.where({ id }).first();
+    if (!row) return null;
+    return {
+      id: row.id,
+      jobId: row.jobId,
+      docType: row.docType === 'post' ? 'post' : 'listing',
+      inputHash: row.inputHash,
+      schemaVersion: row.schemaVersion,
+      promptHash: row.promptHash,
+      extractionModel: row.extractionModel,
+      data: row.data,
+    };
   }
 
   /** The copy cost nothing: no model was called for it. */

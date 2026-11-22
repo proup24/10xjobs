@@ -4,7 +4,7 @@ import {
   type ProcessorConfig,
 } from '../config/processor.config';
 import { ProviderUnavailableError, UsageLimitError } from '../models/errors';
-import { ExtractionModel } from '../models/types';
+import { ExtractionModel, type JobForProcessing } from '../models/types';
 import {
   type Claim,
   type FinishOutcome,
@@ -14,6 +14,7 @@ import {
 } from '../repositories/processor.repository';
 import { VocabRepository } from '../repositories/vocab.repository';
 import { buildPostingInput } from '../rules/input';
+import { buildPostInput } from '../rules/post-input';
 import { deriveTypedColumns, type TypedColumns } from '../rules/typed-columns';
 import { needsReview } from '../rules/validate';
 import type { ExtractionDocument } from '../schema';
@@ -22,6 +23,9 @@ import { ExtractionPipeline } from './extraction-pipeline.service';
 import { ExtractionStore } from './extraction-store.service';
 import { FactAssembler } from './fact-assembler.service';
 import { GenerationService } from './generation.service';
+import { PostAssembler } from './post-assembler.service';
+import { PostPipeline } from './post-pipeline.service';
+import { PostStore } from './post-store.service';
 import { decideFailure, type FailureOutcome } from './failure-policy';
 import {
   type GuardBlock,
@@ -95,11 +99,15 @@ export class ProcessorBlockedError extends Error {
  *
  * Processing one job:
  *   1. ProcessorGuard        may model calls start? (budget, provider pause)
- *   2. claim                 pending → processing, or someone else has it
- *   3. load + reuse          a closed job, or the same input seen before, needs no call
+ *   2. claim + load          pending → processing, or someone else has it; the kind routes
+ *   3. reuse                 a closed job, or the same input seen before, needs no call
  *   4. ExtractionPipeline    generate (schema-fix retries) → cross-fact checks
  *   5. ExtractionStore       save the extraction, its attempts and vocabulary
  *   6. finish                processed / pending (retry) / failed, per decideFailure
+ *
+ * A `post` job takes the post path instead of 3 to 5: the post cap (checked
+ * once the kind is known), exact reuse only, PostPipeline, then PostStore,
+ * which also writes its role jobs.
  */
 @Injectable()
 export class ProcessorService {
@@ -111,6 +119,8 @@ export class ProcessorService {
     private readonly vocab: VocabRepository,
     private readonly pipeline: ExtractionPipeline,
     private readonly store: ExtractionStore,
+    private readonly postPipeline: PostPipeline,
+    private readonly posts: PostStore,
     @Inject(PROCESSOR_CONFIG) private readonly config: ProcessorConfig,
   ) {}
 
@@ -129,13 +139,16 @@ export class ProcessorService {
       return 'not_claimed';
     }
 
-    const log = new AttemptLog(jobId);
+    let log = new AttemptLog(jobId);
     const started = Date.now();
-    log.info(
-      `claimed (attempt ${claim.attempts} of ${this.config.maxAttempts})`,
-    );
     try {
-      return await this.run(claim, log, started);
+      const job = await this.jobs.loadJob(claim.jobId);
+      // A post's calls count toward the post cap.
+      if (job?.kind === 'post') log = new AttemptLog(jobId, { docType: 'post' });
+      log.info(
+        `claimed${job?.kind === 'post' ? ' post' : ''} (attempt ${claim.attempts} of ${this.config.maxAttempts})`,
+      );
+      return await this.run(claim, job, log, started);
     } catch (error) {
       return this.fail(claim, error, log, started);
     }
@@ -229,10 +242,10 @@ export class ProcessorService {
 
   private async run(
     claim: Claim,
+    job: JobForProcessing | null,
     log: AttemptLog,
     started: number,
   ): Promise<ProcessOutcome> {
-    const job = await this.jobs.loadJob(claim.jobId);
     if (!job) {
       log.warn('the job no longer exists');
       return this.finish(
@@ -251,6 +264,8 @@ export class ProcessorService {
         log,
       );
     }
+
+    if (job.kind === 'post') return this.runPost(claim, job, log, started);
 
     const input = buildPostingInput(job);
     log.debug(
@@ -288,6 +303,68 @@ export class ProcessorService {
     );
     log.info(
       `processed in ${elapsed(started)} · ${usd(log.costUsd)} · extraction ${extractionId}${needsReview(assembled.doc) ? ' · needs review' : ''}`,
+    );
+    return this.finish(
+      claim,
+      { status: 'processed', extractionId },
+      'processed',
+      log,
+    );
+  }
+
+  /** The post path: the cap, exact reuse only, one call, the post and its role jobs saved. */
+  private async runPost(
+    claim: Claim,
+    job: JobForProcessing,
+    log: AttemptLog,
+    started: number,
+  ): Promise<ProcessOutcome> {
+    const blocked = await this.guard.check('post');
+    if (blocked) {
+      log.info(`not started: ${blocked}; back to pending, attempt given back`);
+      return this.finish(
+        claim,
+        {
+          status: 'pending',
+          error: new ProcessorBlockedError(blocked, this.guard.pauseState())
+            .message,
+          refundAttempt: true,
+        },
+        blocked,
+        log,
+      );
+    }
+
+    const post = buildPostInput(job);
+    log.debug(
+      `post input: ${post.input.description.length} characters${post.input.truncated ? ' (truncated)' : ''}`,
+    );
+    const vocabulary = await this.vocab.snapshot();
+    const key = this.posts.reuseKey(post.input);
+    const reused = await this.posts.reuse(key, claim.jobId);
+    if (reused) {
+      log.info(
+        `reused post extraction ${reused}: same input, prompt and models`,
+      );
+      return this.finish(
+        claim,
+        { status: 'processed', extractionId: reused },
+        'reused',
+        log,
+      );
+    }
+
+    const assembled = await this.postPipeline.run(post, vocabulary, log);
+    const extractionId = await this.posts.save(
+      claim.jobId,
+      key,
+      assembled,
+      vocabulary,
+      log,
+    );
+    const { verdict } = assembled.doc;
+    log.info(
+      `processed in ${elapsed(started)} · ${usd(log.costUsd)} · post extraction ${extractionId} · ${verdict.value} (${verdict.reason}, ${verdict.confidence}) · ${assembled.doc.roles.length} roles`,
     );
     return this.finish(
       claim,
@@ -376,14 +453,17 @@ export function createProcessorService(
   deps: ProcessorDependencies,
 ): ProcessorService {
   const { repo, vocab, config } = deps;
+  const facts = new FactAssembler();
+  const generation = new GenerationService(deps.extraction, facts, config);
+  const store = new ExtractionStore(repo, vocab, config);
   return new ProcessorService(
     deps.guard ?? new ProcessorGuard(repo, config, deps.now),
     repo,
     vocab,
-    new ExtractionPipeline(
-      new GenerationService(deps.extraction, new FactAssembler(), config),
-    ),
-    new ExtractionStore(repo, vocab, config),
+    new ExtractionPipeline(generation),
+    store,
+    new PostPipeline(generation, new PostAssembler(facts)),
+    new PostStore(repo, store, config),
     config,
   );
 }

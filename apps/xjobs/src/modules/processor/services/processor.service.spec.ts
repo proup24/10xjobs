@@ -17,6 +17,14 @@ import {
   sequence,
 } from '../testing/fakes';
 import { DESCRIPTION, generatorOutput, mf } from '../testing/generator-output';
+import { createHash } from 'node:crypto';
+import { postPromptHash, postSystemPrompt } from '../prompts/prompt';
+import { postDetail } from '../rules/post-input.testing';
+import {
+  POST_SCHEMA_VERSION,
+  type PostDocument,
+  type PostModelOutput,
+} from '../schema/post-extraction';
 import {
   PROVIDER_PAUSE_MS,
   ProcessorGuard,
@@ -842,6 +850,345 @@ describe('ProcessorService', () => {
         weeklyUtilization: 0.85,
         pause: { until: reset, reason: 'weekly_reserve' },
       });
+    });
+  });
+  describe('posts', () => {
+    const POST_TEXT = `We are hiring. Acme is hiring. ${DESCRIPTION}`;
+    type Role = PostModelOutput['roles'][number];
+
+    const role = (title: string, employer: string | null = 'Acme'): Role =>
+      ({
+        ...generatorOutput({
+          position: mf({ roleKind: 'backend_engineer', title }, title),
+        }),
+        employer: { name: employer, quote: employer ? 'Acme is hiring' : '' },
+        authorRelation: 'employer',
+        howToApply: {
+          kinds: ['unstated'],
+          email: null,
+          emailQuote: '',
+          links: [],
+          quote: '',
+        },
+      }) as unknown as Role;
+
+    const hiring = (
+      titles: string[],
+      confidence: 'sure' | 'unsure' = 'sure',
+    ): PostModelOutput => ({
+      verdict: {
+        value: 'hiring',
+        reason: 'hiring',
+        quote: 'We are hiring',
+        confidence,
+      },
+      roles: titles.map((t) => role(t)),
+    });
+    const junk: PostModelOutput = {
+      verdict: {
+        value: 'junk',
+        reason: 'funnel',
+        quote: 'We are hiring',
+        confidence: 'sure',
+      },
+      roles: [],
+    };
+
+    const addPost = (id = 'post-1', text = POST_TEXT, p = {}) =>
+      repo.addJob({
+        id,
+        kind: 'post',
+        linkedIn: false,
+        title: null,
+        descriptionText: null,
+        postSources: [postDetail({ id: `${id}-src`, text })],
+        ...p,
+      });
+    const answer = (...outputs: PostModelOutput[]) => {
+      let i = 0;
+      extraction = new FakeExtractionModel(
+        () => outputs[Math.min(i++, outputs.length - 1)],
+        EXT,
+      );
+    };
+    const roleJobs = (postId = 'post-1') =>
+      [...repo.jobs.values()].filter((j) => j.parentJobId === postId);
+    const extractionOf = (id: string | null) => {
+      const found = repo.extractions.find((e) => e.id === id);
+      if (!found) throw new Error(`no extraction ${id}`);
+      return found;
+    };
+    /** A post job back to pending with a new input (a share added text). */
+    const rejoin = (id: string, text: string) => {
+      repo.reopen(id);
+      const j = job(id);
+      j.processingReason = 'joined';
+      j.postSources = [postDetail({ id: `${id}-src`, text })];
+    };
+
+    beforeEach(() => {
+      vi.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+      vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+      vi.spyOn(Logger.prototype, 'debug').mockImplementation(() => undefined);
+    });
+
+    it('a two-role hiring post: one post row and two role jobs with their extractions', async () => {
+      addPost();
+      answer(hiring(['Backend Engineer', 'Frontend Engineer']));
+
+      await expect(service().process('post-1')).resolves.toBe('processed');
+
+      expect(extraction.calls).toHaveLength(1);
+      const post = extractionOf(job('post-1').currentExtractionId);
+      expect(post).toMatchObject({
+        jobId: 'post-1',
+        docType: 'post',
+        schemaVersion: POST_SCHEMA_VERSION,
+        promptHash: postPromptHash(),
+        extractionModel: EXT,
+        verdict: 'hiring',
+        verdictReason: 'hiring',
+        verdictConfidence: 'sure',
+        needsReview: false,
+        seniority: null,
+        techTags: [],
+        worldwide: false,
+      });
+      expect(post.costUsd).toBeCloseTo(0.01);
+      const doc = post.data as unknown as PostDocument;
+      expect(doc.roles.map((r) => r.roleKey)).toEqual([
+        'backend-engineer',
+        'frontend-engineer',
+      ]);
+      expect(job('post-1').processingStatus).toBe('processed');
+
+      const roles = roleJobs();
+      expect(roles.map((r) => [r.roleKey, r.title, r.companyName])).toEqual([
+        ['backend-engineer', 'Backend Engineer', 'Acme'],
+        ['frontend-engineer', 'Frontend Engineer', 'Acme'],
+      ]);
+      for (const r of roles) {
+        const row = extractionOf(r.currentExtractionId);
+        expect(row).toMatchObject({
+          docType: 'listing',
+          schemaVersion: EXTRACTION_SCHEMA_VERSION,
+          promptHash: postPromptHash(),
+          extractionModel: EXT,
+          inputHash: createHash('sha256')
+            .update(`${post.inputHash}:${r.roleKey}`)
+            .digest('hex'),
+          seniority: 'senior',
+          roleKind: 'backend_engineer',
+          verdict: null,
+          costUsd: 0,
+        });
+        expect(row.data.position.value?.title).toBe(r.title);
+        expect(r.processingStatus).toBe('processed');
+      }
+      // The run's single call is recorded once, as a post call, on the post row.
+      expect(
+        repo.attempts.map((a) => [a.docType, a.extractionId, a.jobId]),
+      ).toEqual([['post', post.id, 'post-1']]);
+    });
+
+    it('a re-extraction that rewords one role keeps the other role job and archives the old one', async () => {
+      addPost();
+      answer(
+        hiring(['Backend Engineer', 'Frontend Engineer']),
+        hiring(['Backend Engineer', 'Senior Frontend Engineer']),
+      );
+      await service().process('post-1');
+      const before = new Map(roleJobs().map((r) => [r.roleKey, r.id]));
+
+      rejoin('post-1', `${POST_TEXT} Shared: still open.`);
+      await expect(service().process('post-1')).resolves.toBe('processed');
+
+      expect(extraction.calls).toHaveLength(2);
+      const after = roleJobs();
+      const byKey = new Map(after.map((r) => [r.roleKey, r]));
+      expect(byKey.get('backend-engineer')?.id).toBe(
+        before.get('backend-engineer'),
+      );
+      expect(byKey.get('backend-engineer')?.processingStatus).toBe(
+        'processed',
+      );
+      expect(byKey.get('frontend-engineer')?.processingStatus).toBe(
+        'archived',
+      );
+      const added = byKey.get('senior-frontend-engineer');
+      expect(added?.processingStatus).toBe('processed');
+      expect([...before.values()]).not.toContain(added?.id);
+      // The kept role points at its new extraction.
+      expect(
+        extractionOf(byKey.get('backend-engineer')!.currentExtractionId)
+          .inputHash,
+      ).toBe(
+        createHash('sha256')
+          .update(
+            `${extractionOf(job('post-1').currentExtractionId).inputHash}:backend-engineer`,
+          )
+          .digest('hex'),
+      );
+    });
+
+    it('a junk result creates no role jobs and archives the existing ones', async () => {
+      addPost();
+      answer(hiring(['Backend Engineer']), junk);
+      await service().process('post-1');
+      expect(roleJobs()).toHaveLength(1);
+
+      rejoin('post-1', `${POST_TEXT} Join my group.`);
+      await expect(service().process('post-1')).resolves.toBe('processed');
+
+      expect(roleJobs().map((r) => r.processingStatus)).toEqual(['archived']);
+      expect(extractionOf(job('post-1').currentExtractionId)).toMatchObject({
+        docType: 'post',
+        verdict: 'junk',
+        verdictReason: 'funnel',
+      });
+    });
+
+    it('a junk first extraction makes no role jobs', async () => {
+      addPost();
+      answer(junk);
+      await expect(service().process('post-1')).resolves.toBe('processed');
+      expect(roleJobs()).toHaveLength(0);
+      expect(repo.extractions).toHaveLength(1);
+    });
+
+    it('an unsure hiring post: needsReview on the post row, role jobs still made', async () => {
+      addPost();
+      answer(hiring(['Backend Engineer'], 'unsure'));
+      await service().process('post-1');
+      expect(extractionOf(job('post-1').currentExtractionId)).toMatchObject({
+        needsReview: true,
+        verdict: 'hiring',
+        verdictConfidence: 'unsure',
+      });
+      expect(roleJobs()).toHaveLength(1);
+    });
+
+    it('an unnamed employer gives the role job no company name', async () => {
+      addPost();
+      answer({
+        ...hiring([]),
+        roles: [role('Backend Engineer', null)],
+      });
+      await service().process('post-1');
+      expect(roleJobs()[0].companyName).toBeNull();
+    });
+
+    it('a joined claim with a different input calls the model (no joined reuse)', async () => {
+      addPost();
+      answer(hiring(['Backend Engineer']));
+      await service().process('post-1');
+      rejoin('post-1', `${POST_TEXT} Shared with added text.`);
+
+      await expect(service().process('post-1')).resolves.toBe('processed');
+
+      expect(extraction.calls).toHaveLength(2);
+      expect(repo.log).not.toContain('findJoinedReusable');
+    });
+
+    it('exact reuse: an unchanged reopened post links its rows with no call and keeps its role jobs', async () => {
+      addPost();
+      answer(hiring(['Backend Engineer']));
+      await service().process('post-1');
+      const first = job('post-1').currentExtractionId;
+      const roleId = roleJobs()[0].id;
+      repo.reopen('post-1');
+
+      await expect(service().process('post-1')).resolves.toBe('reused');
+
+      expect(extraction.calls).toHaveLength(1);
+      expect(repo.extractions).toHaveLength(2);
+      expect(job('post-1').currentExtractionId).toBe(first);
+      expect(roleJobs().map((r) => [r.id, r.processingStatus])).toEqual([
+        [roleId, 'processed'],
+      ]);
+    });
+
+    it('exact reuse from another post job copies the post row and its role rows', async () => {
+      addPost('post-1');
+      addPost('post-2');
+      answer(hiring(['Backend Engineer', 'Frontend Engineer']));
+      await service().process('post-1');
+
+      await expect(service().process('post-2')).resolves.toBe('reused');
+
+      expect(extraction.calls).toHaveLength(1);
+      const post = extractionOf(job('post-2').currentExtractionId);
+      expect(post).toMatchObject({
+        jobId: 'post-2',
+        docType: 'post',
+        costUsd: 0,
+      });
+      const roles = roleJobs('post-2');
+      expect(roles.map((r) => r.roleKey)).toEqual([
+        'backend-engineer',
+        'frontend-engineer',
+      ]);
+      for (const r of roles) {
+        const row = extractionOf(r.currentExtractionId);
+        expect(row.jobId).toBe('post-2');
+        expect(row.docType).toBe('listing');
+      }
+      // post-1's role jobs keep their own rows.
+      const own = new Set(roleJobs('post-1').map((r) => r.currentExtractionId));
+      for (const r of roles) expect(own.has(r.currentExtractionId)).toBe(false);
+    });
+
+    it('the post cap: post_cap, the job back to pending with the attempt given back', async () => {
+      addPost();
+      answer(hiring(['Backend Engineer']));
+      const svc = createProcessorService({
+        repo,
+        vocab,
+        extraction,
+        config: { ...config, postDailyCap: 0 },
+        now,
+      });
+
+      await expect(svc.process('post-1')).resolves.toBe('post_cap');
+
+      expect(extraction.calls).toHaveLength(0);
+      expect(job('post-1')).toMatchObject({
+        processingStatus: 'pending',
+        processingAttempts: 0,
+      });
+      expect(repo.extractions).toHaveLength(0);
+    });
+
+    it('the post cap does not hold listings back', async () => {
+      addJob();
+      const svc = createProcessorService({
+        repo,
+        vocab,
+        extraction,
+        config: { ...config, postDailyCap: 0 },
+        now,
+      });
+      await expect(svc.process('job-1')).resolves.toBe('processed');
+    });
+
+    it('processNow on a post runs the post path', async () => {
+      addPost('post-1', POST_TEXT, { processingStatus: 'processed' });
+      answer(hiring(['Backend Engineer']));
+      const { outcome } = await service().processNow('post-1');
+      expect(outcome).toBe('processed');
+      expect(extraction.calls[0].req.systemPrompt).toBe(postSystemPrompt());
+      expect(extractionOf(job('post-1').currentExtractionId).docType).toBe(
+        'post',
+      );
+      expect(roleJobs()).toHaveLength(1);
+    });
+
+    it('a failed post run records its attempts as post calls', async () => {
+      addPost();
+      extraction = new FakeExtractionModel(() => ({ nope: true }), EXT);
+      await expect(service().process('post-1')).resolves.toBe('failed');
+      expect(repo.attempts.length).toBeGreaterThan(0);
+      for (const a of repo.attempts) expect(a.docType).toBe('post');
     });
   });
 });

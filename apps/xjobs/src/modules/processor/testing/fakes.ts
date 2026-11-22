@@ -28,6 +28,7 @@ import {
   type ReprocessFilter,
   type ReuseKey,
   type RoleJobInput,
+  type StoredExtraction,
 } from '../repositories/processor.repository';
 import {
   matchingForms,
@@ -37,7 +38,7 @@ import {
   type Vocabulary,
   addsAlias,
 } from '../repositories/vocab.repository';
-import type { ListOptions } from '../schema';
+import type { ExtractionDocument, ListOptions } from '../schema';
 import { zodErrors } from '../schema/errors';
 import { LIST_NAMES, type ListName } from '../vocab/lists';
 import { slugCode, type VocabSnapshot } from '../vocab/resolve';
@@ -142,7 +143,12 @@ export interface MemoryJob extends Omit<JobForProcessing, 'kind'> {
   currentExtractionId: string | null;
 }
 
-export interface MemoryExtraction extends NewExtraction {
+/**
+ * A stored row. `data` is typed as a listing document so listing specs read
+ * it directly; a `post` row holds a PostDocument (cast it to read one).
+ */
+export interface MemoryExtraction extends Omit<NewExtraction, 'data'> {
+  data: ExtractionDocument;
   id: string;
   createdAt: Date;
 }
@@ -336,6 +342,22 @@ export class MemoryProcessorRepository extends ProcessorRepository {
     return latest ? { id: latest.id, jobId: latest.jobId } : null;
   }
 
+  async findExtraction(id: string): Promise<StoredExtraction | null> {
+    this.log.push('findExtraction');
+    const row = this.extractions.find((e) => e.id === id);
+    if (!row) return null;
+    return {
+      id: row.id,
+      jobId: row.jobId,
+      docType: row.docType,
+      inputHash: row.inputHash,
+      schemaVersion: row.schemaVersion,
+      promptHash: row.promptHash,
+      extractionModel: row.extractionModel,
+      data: structuredClone(row.data),
+    };
+  }
+
   async copyExtraction(extractionId: string, jobId: string): Promise<string> {
     this.log.push('copyExtraction');
     const source = this.extractions.find((e) => e.id === extractionId);
@@ -355,7 +377,7 @@ export class MemoryProcessorRepository extends ProcessorRepository {
     this.log.push('saveExtraction');
     const id = randomUUID();
     this.extractions.push({
-      ...structuredClone(row),
+      ...(structuredClone(row) as MemoryExtraction),
       id,
       createdAt: this.now(),
     });

@@ -602,6 +602,19 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       expect(copy?.data).toEqual(fixtureDocument());
       expect(copy?.inputHash).toBe('same-input');
     });
+
+    it('finds one extraction by id with its key and raw data', async () => {
+      const jobId = await job();
+      const reuse = { ...key('by-id'), docType: 'post' as const };
+      const id = await repo.saveExtraction(extraction(jobId, reuse));
+      expect(await repo.findExtraction(id)).toEqual({
+        ...reuse,
+        id,
+        jobId,
+        data: fixtureDocument(),
+      });
+      expect(await repo.findExtraction(randomUUID())).toBeNull();
+    });
   });
 
   describe('findJoinedReusable', () => {
