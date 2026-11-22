@@ -27,7 +27,7 @@ const modelFact = <T extends z.ZodType>(value: T) =>
     confidence: confidenceSchema,
   });
 
-function buildModelOutput(options: ListOptions) {
+export function buildModelOutput(options: ListOptions) {
   const place = z.discriminatedUnion('kind', [
     z.strictObject({ kind: z.literal('worldwide') }),
     z.strictObject({
