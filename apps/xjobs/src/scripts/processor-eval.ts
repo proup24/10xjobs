@@ -1,9 +1,12 @@
 /**
  * Runs the golden set through the generator and measures it:
  *
- *   pnpm --filter @xjobs/xjobs processor:eval -- [--generator m]
+ *   pnpm --filter @xjobs/xjobs processor:eval -- [--posts] [--generator m]
  *
- * `--generator` defaults to `PROCESSOR_EXTRACTION_MODEL`. Calls `claude -p`
+ * `--generator` defaults to `PROCESSOR_EXTRACTION_MODEL`. `--posts` runs the
+ * post golden set (`golden/posts/cases.json`) through PostPipeline instead,
+ * scores it against the post bars (`POST_BARS`), and writes
+ * `golden/posts/last-report.<generator>.json`. Calls `claude -p`
  * (uses the Claude subscription's limits); never run in CI. Uses the same
  * generator as the worker, with in-memory repositories seeded from `seed-data.ts`,
  * so the database is not touched. Attempts are recorded with `eval: true`.
@@ -29,6 +32,15 @@ import {
   scoreCase,
   summarize,
 } from 'src/modules/processor/golden/score';
+import { loadPostGolden } from 'src/modules/processor/golden/posts/golden-posts';
+import {
+  postReportFile,
+  runPostEval,
+} from 'src/modules/processor/golden/posts/run-posts';
+import {
+  type PostEvalReport,
+  summarizePosts,
+} from 'src/modules/processor/golden/posts/score-posts';
 import { createClaudeExtractionModel } from 'src/modules/processor/models/claude-extraction.model';
 import {
   claudeBin,
@@ -41,11 +53,20 @@ import {
 } from 'src/modules/processor/services/processor-guard.service';
 import type { NewAttempt } from 'src/modules/processor/repositories/processor.repository';
 import { extractionDocumentSchema } from 'src/modules/processor/schema';
+import {
+  VERDICTS,
+  type Verdict,
+} from 'src/modules/processor/schema/post-extraction';
+import { FactAssembler } from 'src/modules/processor/services/fact-assembler.service';
+import { GenerationService } from 'src/modules/processor/services/generation.service';
+import { PostAssembler } from 'src/modules/processor/services/post-assembler.service';
+import { PostPipeline } from 'src/modules/processor/services/post-pipeline.service';
 import { createProcessorService } from 'src/modules/processor/services/processor.service';
 import {
   MemoryProcessorRepository,
   MemoryVocabRepository,
 } from 'src/modules/processor/testing/fakes';
+import { parseEvalArgs } from './processor-args';
 
 const CONCURRENCY = 4;
 const MAX_TRIES = 3;
@@ -55,11 +76,6 @@ class EvalProcessorRepository extends MemoryProcessorRepository {
   override async recordAttempts(rows: NewAttempt[]): Promise<void> {
     await super.recordAttempts(rows.map((r) => ({ ...r, eval: true })));
   }
-}
-
-function flag(name: string): string | undefined {
-  const i = process.argv.indexOf(`--${name}`);
-  return i === -1 ? undefined : process.argv[i + 1];
 }
 
 /** One wrong fact in one case, to tell a model miss from a wrong label. */
@@ -152,12 +168,115 @@ function print(report: EvalReport, failed: string[]): void {
   console.log(`\noverall: ${report.pass ? 'PASS' : 'FAIL'}`);
 }
 
+type Env = ReturnType<typeof processorEnvironmentSchema.parse>;
+
+/** The worker's generator; cost per job is the CLI's list-price figure. */
+function claudeModel(env: Env, config: ProcessorConfig, guard: ProcessorGuard) {
+  return createClaudeExtractionModel({
+    model: config.extractionModel,
+    effort: env.PROCESSOR_EFFORT,
+    timeoutMs: env.PROCESSOR_CALL_TIMEOUT_MS,
+    bin: claudeBin(process.env),
+    onLimits: (limits) => guard.observeLimits(limits),
+  });
+}
+
+function printPosts(report: PostEvalReport): void {
+  console.log(`\nposts: ${report.cases}`);
+  console.log(
+    '\nlabel \\ got     hiring sure/unsure  not_hiring sure/unsure  junk sure/unsure  failed',
+  );
+  for (const label of VERDICTS) {
+    const row = report.confusion[label];
+    const cell = (v: Verdict) => `${row[v].sure}/${row[v].unsure}`.padStart(9);
+    console.log(
+      `${label.padEnd(14)} ${cell('hiring').padStart(18)} ${cell('not_hiring').padStart(22)} ${cell('junk').padStart(16)} ${String(row.failed).padStart(7)}`,
+    );
+  }
+  console.log(
+    `unsure by label: ${VERDICTS.map((v) => `${v} ${report.unsureByLabel[v]}`).join(', ')}`,
+  );
+  console.log(
+    `per post: ${report.generatorCallsPerPost.toFixed(2)} generator calls, ${report.costPerPost.toFixed(4)} USD`,
+  );
+  const rf = report.roleFacts;
+  console.log(
+    `\nrole facts (reviewed roles only): ${
+      Object.entries(rf.facts)
+        .filter(([, f]) => f.scored > 0)
+        .map(([name, f]) => `${name} ${pct(f.accuracy).trim()} of ${f.scored}`)
+        .join(', ') || 'none labelled'
+    }`,
+  );
+  console.log('\nbars:');
+  const blocked = (ids: (number | string)[]) =>
+    ids.length
+      ? `; unreviewed labels in ${ids.length} cases: ${ids.slice(0, 20).join(', ')}${ids.length > 20 ? ', …' : ''}`
+      : '';
+  for (const [name, bar] of Object.entries(report.bars)) {
+    const value =
+      name === 'wrongSends' ? String(bar.value) : pct(bar.value).trim();
+    console.log(
+      `  ${bar.pass ? 'PASS' : 'FAIL'} ${name} ${value} (${name === 'wrongSends' ? '<=' : '>='} ${bar.threshold}; over ${bar.scored} cases${blocked(bar.blockedBy)})`,
+    );
+  }
+  for (const [name, ok] of Object.entries(rf.bars))
+    console.log(
+      `  ${ok ? 'PASS' : 'FAIL'} roleFacts.${name} (${name === 'sureContradicted' ? '<=' : '>='} ${BARS[name as keyof typeof BARS]})`,
+    );
+  if (rf.blockedBy.length)
+    console.log(`  FAIL roleFacts${blocked(rf.blockedBy)}`);
+  if (report.failures.length) {
+    console.log('\nfailures (case index, bar: reason):');
+    for (const f of report.failures)
+      console.log(`  #${String(f.index).padEnd(4)} ${f.bar}: ${f.reason}`);
+  }
+  console.log(`\noverall: ${report.pass ? 'PASS' : 'FAIL'}`);
+}
+
+/** The post suite: PostPipeline in memory over the post golden set. */
+async function runPosts(env: Env, config: ProcessorConfig): Promise<boolean> {
+  const repo = new MemoryProcessorRepository();
+  const guard = new ProcessorGuard(repo, config);
+  const facts = new FactAssembler();
+  const pipeline = new PostPipeline(
+    new GenerationService(claudeModel(env, config, guard), facts, config),
+    new PostAssembler(facts),
+  );
+  const run = await runPostEval({
+    cases: loadPostGolden(),
+    pipeline,
+    guard,
+    vocabulary: await new MemoryVocabRepository().snapshot(),
+    concurrency: CONCURRENCY,
+    maxTries: MAX_TRIES,
+    onScore: (s) =>
+      console.log(
+        `  #${s.index}: ${s.got ? `${s.got.value} (${s.got.confidence})` : 'failed'}`,
+      ),
+  });
+  const report = summarizePosts(run.scores);
+  const pass = report.pass && run.notRun.length === 0;
+  printPosts({ ...report, pass });
+  const limit = run.limitStop;
+  if (limit)
+    console.log(
+      `\nSTOPPED ON A LIMIT (${limit.reason}, until ${limit.until.toISOString()}): ${limit.detail}\n${run.notRun.length} posts not run; the scores above cover only the ${run.scores.length} that ran. Re-run after the reset.`,
+    );
+  writeFileSync(
+    postReportFile(config.extractionModel),
+    `${JSON.stringify({ ...report, pass, stoppedOnLimit: limit, notRun: run.notRun, config, scores: run.scores }, null, 2)}\n`,
+  );
+  return pass;
+}
+
 async function main(): Promise<void> {
+  const args = parseEvalArgs(process.argv.slice(2));
   loadEnvironmentFiles();
   const env = processorEnvironmentSchema.parse(process.env);
   if (!hasClaudeCredential(env)) throw new Error(NO_CLAUDE_CREDENTIAL);
   const config: ProcessorConfig = {
-    extractionModel: flag('generator') ?? env.PROCESSOR_EXTRACTION_MODEL,
+    extractionModel: args.generator ?? env.PROCESSOR_EXTRACTION_MODEL,
     concurrency: CONCURRENCY,
     maxAttempts: MAX_TRIES,
     claimTimeoutMs: env.PROCESSOR_CLAIM_TIMEOUT_MS,
@@ -168,20 +287,14 @@ async function main(): Promise<void> {
     postDailyCap: env.POST_EXTRACTION_DAILY_CAP,
   };
   console.log(`generator ${config.extractionModel}`);
+  if (args.posts) process.exit((await runPosts(env, config)) ? 0 : 1);
 
   const repo = new EvalProcessorRepository();
   const guard = new ProcessorGuard(repo, config);
   const service = createProcessorService({
     repo,
     vocab: new MemoryVocabRepository(),
-    // The worker's generator; cost per job is the CLI's list-price figure.
-    extraction: createClaudeExtractionModel({
-      model: config.extractionModel,
-      effort: env.PROCESSOR_EFFORT,
-      timeoutMs: env.PROCESSOR_CALL_TIMEOUT_MS,
-      bin: claudeBin(process.env),
-      onLimits: (limits) => guard.observeLimits(limits),
-    }),
+    extraction: claudeModel(env, config, guard),
     guard,
     config,
   });

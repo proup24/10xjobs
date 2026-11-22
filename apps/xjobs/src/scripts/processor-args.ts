@@ -1,7 +1,7 @@
 import type { ReprocessFilter } from 'src/modules/processor/repositories/processor.repository';
 import { LIST_NAMES, type ListName } from 'src/modules/processor/vocab/lists';
 
-/** Argument parsing for `db:reprocess` and `db:vocab`, kept apart so specs can import it. */
+/** Argument parsing for `db:reprocess`, `db:vocab` and `processor:eval`, kept apart so specs can import it. */
 /** pnpm forwards the `--` of `pnpm run x -- args`; drop one. */
 const withoutLeadingSeparator = (argv: readonly string[]) =>
   argv[0] === '--' ? argv.slice(1) : argv;
@@ -75,4 +75,26 @@ export function parseVocabArgs(rawArgv: readonly string[]): VocabCommand {
   throw new Error(
     `unknown action: ${action ?? '(none)'}; use list, approve, reject or alias`,
   );
+}
+
+/** What `processor:eval` runs: the listing set, or the post set with `--posts`. */
+export interface EvalArgs {
+  posts: boolean;
+  generator?: string;
+}
+
+export function parseEvalArgs(rawArgv: readonly string[]): EvalArgs {
+  const argv = withoutLeadingSeparator(rawArgv);
+  const args: EvalArgs = { posts: false };
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === '--posts') args.posts = true;
+    else if (arg === '--generator') {
+      const model = argv[++i];
+      if (model === undefined || model.startsWith('--'))
+        throw new Error('--generator needs a model');
+      args.generator = model;
+    } else throw new Error(`unknown argument: ${arg}`);
+  }
+  return args;
 }

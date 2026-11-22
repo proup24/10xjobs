@@ -1,4 +1,8 @@
-import { parseReprocessArgs, parseVocabArgs } from './processor-args';
+import {
+  parseEvalArgs,
+  parseReprocessArgs,
+  parseVocabArgs,
+} from './processor-args';
 
 describe('parseReprocessArgs', () => {
   it('reads each selector', () => {
@@ -117,5 +121,26 @@ describe('parseVocabArgs', () => {
       'needs a code',
     );
     expect(() => parseVocabArgs(['techTags', 'alias', 'bun'])).toThrow('--to');
+  });
+});
+
+describe('parseEvalArgs', () => {
+  it('runs listings with the default generator when given nothing', () => {
+    expect(parseEvalArgs([])).toEqual({ posts: false });
+    expect(parseEvalArgs(['--'])).toEqual({ posts: false });
+  });
+
+  it('reads --posts and --generator', () => {
+    expect(parseEvalArgs(['--', '--posts', '--generator', 'sonnet'])).toEqual({
+      posts: true,
+      generator: 'sonnet',
+    });
+  });
+
+  it('refuses a --generator with no model and an unknown argument', () => {
+    expect(() => parseEvalArgs(['--generator'])).toThrow(
+      '--generator needs a model',
+    );
+    expect(() => parseEvalArgs(['--post'])).toThrow('unknown argument: --post');
   });
 });
