@@ -1,0 +1,129 @@
+{
+  "id": "7529607260222844928",
+  "type": "post",
+  "query": {
+    "page": 3,
+    "search": "hiring (fullstack OR \"full stack\") (nestjs OR nextjs OR nodejs OR react OR reactjs) remote",
+    "sortBy": "date",
+    "postedLimit": "week"
+  },
+  "author": {
+    "id": "ACoAABwGCcgB58Goq1zsziXKZrZrillkoGsDBV8",
+    "urn": "470157768",
+    "info": "Senior Frontend Engineer | Full-Stack Javascript | Next.js · React Native · TypeScript · NestJS | Building High-Performance Platforms",
+    "name": "Ahmed Ibrahim",
+    "type": "profile",
+    "avatar": {
+      "url": "https://media.licdn.com/dms/image/v2/D4E35AQFv6A9-F7-t4A/profile-framedphoto-shrink_800_800/B4EZ_3x8OZIMAc-/0/1786568492342?e=1795860000&v=beta&t=BNKoD0D31p5fqNGJd5W1DV37tMlWiLXe3VNgunVmJ4Y",
+      "width": 800,
+      "height": 800
+    },
+    "website": "https://www.linkedin.com/services/page/994b923205331779a6",
+    "profileId": "ACoAABwGCcgB58Goq1zsziXKZrZrillkoGsDBV8",
+    "linkedinUrl": "https://www.linkedin.com/in/iahmediibrahim?miniProfileUrn=urn%3Ali%3Afsd_profile%3AACoAABwGCcgB58Goq1zsziXKZrZrillkoGsDBV8",
+    "websiteLabel": "View my services",
+    "universalName": null,
+    "publicIdentifier": "iahmediibrahim"
+  },
+  "header": {
+    "text": null
+  },
+  "repost": {
+    "id": "7526947052816121856",
+    "author": {
+      "id": "ACoAABwGCcgB58Goq1zsziXKZrZrillkoGsDBV8",
+      "urn": "470157768",
+      "info": "Senior Frontend Engineer | Full-Stack Javascript | Next.js · React Native · TypeScript · NestJS | Building High-Performance Platforms",
+      "name": "Ahmed Ibrahim",
+      "type": "profile",
+      "avatar": {
+        "url": "https://media.licdn.com/dms/image/v2/D4E35AQFv6A9-F7-t4A/profile-framedphoto-shrink_800_800/B4EZ_3x8OZIMAc-/0/1786568492342?e=1795860000&v=beta&t=BNKoD0D31p5fqNGJd5W1DV37tMlWiLXe3VNgunVmJ4Y",
+        "width": 800,
+        "height": 800
+      },
+      "website": null,
+      "profileId": "ACoAABwGCcgB58Goq1zsziXKZrZrillkoGsDBV8",
+      "linkedinUrl": "https://www.linkedin.com/in/iahmediibrahim?miniProfileUrn=urn%3Ali%3Afsd_profile%3AACoAABwGCcgB58Goq1zsziXKZrZrillkoGsDBV8",
+      "websiteLabel": null,
+      "universalName": null,
+      "publicIdentifier": "iahmediibrahim"
+    },
+    "header": {
+      "text": null
+    },
+    "content": "I rebuilt my portfolio, and while I was in there I rewrote how I describe myself.\nFor the last year I've been working as a backend engineer too — NestJS services, PostgreSQL schemas, Drizzle data layers. And I've been going back to the fundamentals: data structures & algorithms, OOP, system design. Because that's where senior engineering actually lives, AI era or not.\n\nThe site is my work, not a template:\n▪ A six-palette design system with runtime switching and zero theme flash\n▪ ⌘K command palette, scroll-spy nav, one shared breakpoint set\n▪ A \"Now\" section wired to the CMS — my live learning tracks (DevOps: Linux → Terraform → AWS from · Databases: MySQL & PostgreSQL)\n▪ Contentful-driven, ISR, statically optimized\nNext.js 16 · React · TypeScript · Motion · Tailwind · Contentful · NestJS · PostgreSQL\n\nI'm open to Senior Frontend Engineer / Full-Stack Engineer roles — remote or Egypt-based. If you're hiring, or you know a team that is, I'd love a conversation. DM me.\n \n#frontendengineer #fullstack #nextjs #react #hiring #opentowork",
+    "comments": [],
+    "entityId": "7526947052816121856",
+    "postedAt": {
+      "date": "2026-11-13T10:00:21.305Z",
+      "timestamp": 1794564021305,
+      "postedAgoText": "1 week ago • Visible to anyone on or off LinkedIn",
+      "postedAgoShort": "1w"
+    },
+    "shareUrn": "urn:li:share:7526800560570691584",
+    "engagement": {
+      "id": "7526947052816121856",
+      "likes": 8,
+      "shares": 3,
+      "comments": 1,
+      "reactions": [
+        {
+          "type": "APPRECIATION",
+          "count": 7
+        },
+        {
+          "type": "LIKE",
+          "count": 1
+        }
+      ]
+    },
+    "postImages": [
+      {
+        "url": "https://media.licdn.com/dms/image/v2/D4E22AQHi_XZS93v8EA/feedshare-image-high-res/B4EaHSROZNGsAU-/0/1794529093465?e=1796860800&v=beta&t=zIaHf7p1rrzQDYZ3CgCAg2kYPLkQq5M2srViVa-iUrY",
+        "width": 1200,
+        "height": 630
+      }
+    ],
+    "linkedinUrl": "https://www.linkedin.com/posts/iahmediibrahim_frontendengineer-fullstack-nextjs-activity-7526947052816121856-Io12",
+    "socialContent": {
+      "shareUrl": "https://www.linkedin.com/posts/iahmediibrahim_frontendengineer-fullstack-nextjs-activity-7526947052816121856-Io12?",
+      "trustInterventionBanner": null
+    },
+    "shareLinkedinUrl": "https://www.linkedin.com/feed/update/urn:li:share:7526800560570691584",
+    "contentAttributes": []
+  },
+  "content": "📢 Open to Opportunities | Senior Frontend / Fullstack Engineer\n\nI'm actively seeking my next role as a Senior Software Engineer, Senior Frontend Developer, Frontend Lead, or Full-Stack Engineer (Remote or Hybrid).\n\n⚡ Why I can add immediate value:\n * Immediate Availability: Zero notice period—ready to start right away.\n * Proven Track Record: Experience building scalable systems at CIB Egypt, Saqaya, and Adam—improving page speeds by 35% and cutting dev onboarding times by 40%.\n * Versatile Tech Stack: TypeScript, React.js, Next.js, React Native, NestJS, Node.js, PostgreSQL, MongoDB, Docker, AWS/Azure, and CI/CD pipelines.\n\nIf your team is hiring or you can offer a referral, I’d deeply appreciate a connection!\n\n#OpenToWork #SeniorFrontendDeveloper #FullStackEngineer #ReactJS #NextJS #TechHiring #RemoteJobs",
+  "comments": [],
+  "entityId": "7529607260222844928",
+  "postedAt": {
+    "date": "2026-11-20T18:11:04.175Z",
+    "timestamp": 1795198264175,
+    "postedAgoText": "14 hours ago • Visible to anyone on or off LinkedIn",
+    "postedAgoShort": "14h"
+  },
+  "repostId": "7526947052816121856",
+  "shareUrn": "urn:li:share:7529607259522387968",
+  "reactions": [],
+  "commentIds": [],
+  "engagement": {
+    "id": "7529607260222844928",
+    "likes": 1,
+    "shares": 0,
+    "comments": 0,
+    "reactions": [
+      {
+        "type": "APPRECIATION",
+        "count": 1
+      }
+    ]
+  },
+  "postImages": [],
+  "linkedinUrl": "https://www.linkedin.com/posts/iahmediibrahim_frontendengineer-fullstack-nextjs-activity-7529607260222844928-84V5",
+  "reactionIds": [],
+  "socialContent": {
+    "shareUrl": "https://www.linkedin.com/posts/iahmediibrahim_frontendengineer-fullstack-nextjs-activity-7529607260222844928-84V5?",
+    "trustInterventionBanner": null
+  },
+  "shareLinkedinUrl": "https://www.linkedin.com/feed/update/urn:li:share:7529607259522387968",
+  "contentAttributes": []
+}
