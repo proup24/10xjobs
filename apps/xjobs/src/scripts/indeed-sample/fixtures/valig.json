@@ -1,0 +1,108 @@
+[
+  {
+    "key": "5e5dafc2a80c214d",
+    "url": "https://www.indeed.com/viewjob?jk=5e5dafc2a80c214d",
+    "title": "Quantitative Analyst - FX Algo Quant team",
+    "jobUrl": "https://jobs.citi.com/job/new-york/quantitative-analyst-fx-algo-quant-team/287/82148284400",
+    "refNum": "82148284400",
+    "datePublished": "2025-06-04T05:00:00.000Z",
+    "dateOnIndeed": "2025-06-05T02:53:46.418Z",
+    "expired": false,
+    "expirationDate": null,
+    "isRepost": null,
+    "isLatestPost": null,
+    "isPlacement": null,
+    "isUrgentHire": false,
+    "isHighVolumeHiring": false,
+    "language": "en",
+    "location": {
+      "countryName": "United States",
+      "countryCode": "US",
+      "admin1Code": "NY",
+      "admin2Code": "061",
+      "admin3Code": null,
+      "admin4Code": null,
+      "city": "New York",
+      "postalCode": null,
+      "streetAddress": null,
+      "latitude": 40.758293,
+      "longitude": -73.96987
+    },
+    "employer": {
+      "name": "Citi",
+      "companyPageUrl": "https://www.indeed.com/cmp/Citi",
+      "briefDescription": "Citi is more than a global financial services company. It\u2019s an engine for progress. Apply today to to get involved.",
+      "address": "New York, NY",
+      "industry": "",
+      "employeesCount": "10,000+",
+      "revenue": "more than $10B (USD)",
+      "ceoName": "Jane Fraser ",
+      "ceoPhotoUrl": "https://d2q79iu7y748jz.cloudfront.net/s/_ceophoto/512x512/00da38b558ea5d5f18f5c57ee79bd5f1",
+      "corporateWebsite": "http://www.citigroup.com",
+      "logoUrl": "https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/3a65f2fd9d93f6c880484c373f0b34da",
+      "headerImageUrl": "https://d2q79iu7y748jz.cloudfront.net/s/_headerimage/1960x400/adc59e3911b232c20ea62808e0c0f41a",
+      "ratingsCount": 20279,
+      "ratingsValue": 3.9
+    },
+    "parentEmployer": {
+      "name": "",
+      "companyPageUrl": ""
+    },
+    "attributes": {
+      "696DK": "6 years",
+      "9Q2SK": "Calculus",
+      "AWHEP": "Paid holidays",
+      "CF3CP": "Full-time",
+      "CFRGS": "Disability insurance",
+      "EVPJU": "Java",
+      "EXSNN": "Master's degree",
+      "EY33Q": "Health insurance",
+      "FGY89": "SQL",
+      "FQJ2X": "Dental insurance",
+      "FVKX2": "401(k)",
+      "HFDVW": "Bachelor's degree",
+      "HW4J4": "Paid time off",
+      "PAXZC": "Hybrid work",
+      "RZAT2": "Vision insurance",
+      "UB7SC": "Senior level",
+      "WSBNK": "Communication skills",
+      "X62BT": "Python",
+      "ZK3HH": "Analytics"
+    },
+    "employerAttributes": {
+      "CF3CP": "Full-time",
+      "PAXZC": "Hybrid work"
+    },
+    "jobTypes": {
+      "CF3CP": "Full-time"
+    },
+    "benefits": {
+      "AWHEP": "Paid holidays",
+      "CFRGS": "Disability insurance",
+      "EY33Q": "Health insurance",
+      "FQJ2X": "Dental insurance",
+      "FVKX2": "401(k)",
+      "HW4J4": "Paid time off",
+      "RZAT2": "Vision insurance"
+    },
+    "socialInsurance": {
+      "EY33Q": "Health insurance"
+    },
+    "occupations": {
+      "66WJ8": "Investment Management & Research Occupations",
+      "6YCJB": "Finance & Accounting Occupations",
+      "GVG4B": "Quantitative Financial Analysis Occupations",
+      "PZ7NG": "Investment Management & Financial Advisory Occupations"
+    },
+    "baseSalary": {
+      "min": 175000,
+      "max": 250000,
+      "unitOfWork": "YEAR",
+      "currencyCode": "USD"
+    },
+    "description": {
+      "text": "The Quantitative Analyst will...",
+      "html": "<div><div><p>The Quantitative Analyst will..."
+    }
+  }
+]

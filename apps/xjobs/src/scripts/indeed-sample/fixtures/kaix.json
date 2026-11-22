@@ -1,0 +1,266 @@
+[
+  {
+    "id": "29a452d465e71ecc",
+    "refNum": "JOB_POSTING-3-14946",
+    "title": {
+      "text": "Software Engineer - Sr. Consultant level",
+      "normalized": "software consultant"
+    },
+    "urls": {
+      "indeed": "https://www.indeed.com/viewjob?jk=29a452d465e71ecc",
+      "external": "https://visa.wd5.myworkdayjobs.com/Visa/job/US---Bellevue-WA/Software-Engineer---Sr-Consultant-level_REF085157W",
+      "apply": "https://visa.wd5.myworkdayjobs.com/Visa/job/US---Bellevue-WA/Software-Engineer---Sr-Consultant-level_REF085157W",
+      "clickTracking": "[tracking URL removed]"
+    },
+    "description": {
+      "text": "[job description text removed]",
+      "html": "[job description HTML removed]"
+    },
+    "snippet": "[snippet text removed]",
+    "classification": {
+      "jobType": ["Full-time"],
+      "occupations": {
+        "5NN53": "Software Development Occupations",
+        "EHPW9": "Technology Occupations",
+        "HJSX6": "Software Development & Architecture Occupations"
+      },
+      "primaryOccupation": {
+        "key": "5NN53",
+        "label": "Software Development Occupations"
+      },
+      "occupationMostLikelySuid": null,
+      "skills": [
+        {
+          "key": "2EWTB",
+          "label": "Roadmap creation (System development task)"
+        },
+        {
+          "key": "4R4AM",
+          "label": "Software engineering"
+        },
+        {
+          "key": "5GR9R",
+          "label": "UI development"
+        }
+      ],
+      "languages": [],
+      "attributes": {
+        "all": {
+          "6ETQT": "Go",
+          "EVPJU": "Java",
+          "FADZP": "Microservices",
+          "EY33Q": "Health insurance",
+          "FVKX2": "401(k)",
+          "9PQEB": "5 years",
+          "VBXYJ": "Bachelor's degree in computer science",
+          "UB7SC": "Senior level",
+          "Q5R8A": "Fair chance",
+          "DN85V": "Office"
+        },
+        "employerProvided": [
+          {
+            "key": "CF3CP",
+            "label": "Full-time"
+          }
+        ]
+      },
+      "employerProvidedOccupations": null
+    },
+    "workArrangement": {
+      "isRemote": false,
+      "locationType": null,
+      "remoteWorkType": null,
+      "remoteAttributes": [],
+      "shift": [],
+      "schedule": [],
+      "workSchedule": null,
+      "workingHours": null,
+      "workingSystem": [],
+      "travel": ["Travel"]
+    },
+    "salary": {
+      "text": "$152,200 - $243,700 a year",
+      "min": 152200,
+      "max": 243700,
+      "exact": null,
+      "minCents": "15220000",
+      "maxCents": "24370000",
+      "exactCents": null,
+      "currency": "USD",
+      "period": "yearly",
+      "source": "EXTRACTION",
+      "estimated": false,
+      "detailed": null,
+      "extracted": {
+        "min": 152200,
+        "max": 243700,
+        "type": "YEARLY"
+      },
+      "snippet": {
+        "currency": "USD",
+        "source": "EXTRACTION",
+        "text": "$152,200 - $243,700 a year"
+      },
+      "extras": ["Bonus opportunities"]
+    },
+    "benefits": [
+      "Wellness program",
+      "Health savings account",
+      "Health insurance",
+      "Dental insurance"
+    ],
+    "socialInsurance": {
+      "EY33Q": "Health insurance"
+    },
+    "apply": {
+      "url": "https://visa.wd5.myworkdayjobs.com/Visa/job/US---Bellevue-WA/Software-Engineer---Sr-Consultant-level_REF085157W",
+      "isEasyApply": true,
+      "indeedApplyKey": "[apply key removed]",
+      "scopes": ["DESKTOP", "MOBILE"],
+      "resumeType": "required",
+      "organicApplyStarts": 0
+    },
+    "location": {
+      "formatted": "Bellevue, WA 98004",
+      "formattedShort": "Bellevue, WA",
+      "fullAddress": "929 108th Avenue NE, Bellevue, WA 98004",
+      "city": "Bellevue",
+      "state": "WA",
+      "stateName": "Washington State",
+      "admin2Code": "033",
+      "admin2Name": "King County",
+      "admin3Code": null,
+      "admin3Name": null,
+      "admin4Code": null,
+      "admin4Name": null,
+      "postalCode": "98004",
+      "streetAddress": "929 108th Avenue NE",
+      "latitude": 47.618294,
+      "longitude": -122.19712,
+      "country": "US",
+      "countryName": "United States"
+    },
+    "locationCount": 1,
+    "company": {
+      "name": "Visa Technology and Operations LLC",
+      "key": "ba979d6fb0c7a936",
+      "sourceName": "Visa Technology and Operations LLC",
+      "tier": "FREE",
+      "industry": null,
+      "sectors": [],
+      "size": "10,000+",
+      "revenue": "more than $10B (USD)",
+      "briefDescription": "Our Purpose is to... Uplift everyone, everywhere by being the best way to pay and be paid.",
+      "fullDescription": "[company description removed]",
+      "brandColor": "#ffffff",
+      "customContents": ["Visa: a purpose-driven industry leader!"],
+      "subsidiaryOptOut": false,
+      "featuredEmployer": false,
+      "brandingReasons": ["PAID_BRANDING"],
+      "urls": {
+        "website": "http://www.visa.com",
+        "indeed": "https://www.indeed.com/cmp/Visa"
+      },
+      "logos": {
+        "square": "[logo URL removed]",
+        "squareSizes": {
+          "url64": "[logo URL removed]",
+          "url96": "[logo URL removed]",
+          "url128": "[logo URL removed]",
+          "url256": "[logo URL removed]"
+        },
+        "rectangular": null,
+        "header": "[logo URL removed]",
+        "header1960x400": "[logo URL removed]",
+        "headerAltText": null
+      },
+      "ratings": {
+        "overall": 3.9,
+        "count": 1204,
+        "reviewCount": 1204
+      },
+      "ceo": {
+        "name": "Ryan McInerney",
+        "photoUrl": "[photo URL removed]"
+      },
+      "stockSymbol": null,
+      "addresses": [],
+      "phone": null,
+      "socialLinks": {
+        "facebook": "https://www.facebook.com/Visa",
+        "twitter": "https://twitter.com/Visa",
+        "instagram": "https://www.instagram.com/visa"
+      },
+      "responsiveness": {
+        "averageResponseTimeDays": 4,
+        "responseRate": 0.74,
+        "isActivelyReviewed": false,
+        "lastActivityTimeInDays": null
+      },
+      "parentEmployer": null
+    },
+    "photos": null,
+    "dates": {
+      "posted": "2026-09-23",
+      "onIndeed": "2026-09-23T22:38:42.917Z",
+      "validThrough": null,
+      "age": "4 days ago",
+      "postedToday": false
+    },
+    "signals": {
+      "isExpired": false,
+      "sponsoredEmployerKey": null,
+      "isSponsored": false,
+      "isBrandedJob": null,
+      "isUrgentHire": false,
+      "isHighVolumeHiring": false,
+      "isRepost": true,
+      "isLatestPost": true,
+      "isPlacement": null,
+      "isNew": true,
+      "employerResponsive": true,
+      "applyCount": null,
+      "numHires": null,
+      "matchScores": [],
+      "hiringTags": ["Fair chance"],
+      "hiringInsights": {
+        "numOfCandidates": null,
+        "employerLastReviewed": "4",
+        "recurringHireText": null,
+        "isHiringEvent": false
+      },
+      "jobPageExists": true
+    },
+    "requirements": {
+      "certifications": [],
+      "qualifications": [],
+      "experienceLevel": "5 years",
+      "educationLevel": "Bachelor's degree in engineering",
+      "attributes": null,
+      "physicalRequirements": [],
+      "eligibility": [],
+      "ageRequirement": [],
+      "experienceDuration": []
+    },
+    "requiredDocuments": null,
+    "meta": {
+      "source": "Visa Inc.",
+      "feed": {
+        "isDradis": false,
+        "sourceType": "EMPLOYER"
+      },
+      "language": "en",
+      "locale": "en_US",
+      "scrapedAt": "2026-09-27T21:52:47.544Z",
+      "search": {
+        "keyword": "title:(\"software engineer\") -intern",
+        "location": "Seattle, WA"
+      },
+      "scrapingInfo": {
+        "page": 1,
+        "index": 10
+      },
+      "workSetting": ["Office"]
+    }
+  }
+]
