@@ -1,4 +1,5 @@
 import type { createDatabaseClient } from 'src/database';
+import { postExtractionSql, shapePostExtraction } from './post-extraction';
 
 type Db = ReturnType<typeof createDatabaseClient>;
 type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
@@ -12,6 +13,11 @@ type Raw = Tx['raw'];
 export const SECTIONS: {
   title: string;
   sql: (raw: Raw) => ReturnType<Raw['sql']>;
+  /** Turns the query's rows into the printed rows (default: print as they are). */
+  shape?: (
+    rows: Record<string, unknown>[],
+    now: Date,
+  ) => Record<string, unknown>[];
 }[] = [
   {
     title: '0. Database contents',
@@ -208,5 +214,12 @@ export const SECTIONS: {
           count(*) FILTER (WHERE NOT d.has_snapshot) AS "noSnapshot"
         FROM decisions d LEFT JOIN seen s ON s.id = d.id
         GROUP BY d.reason, d.rules) t`,
+  },
+  {
+    title:
+      '13. Post extraction per UTC day (last 7 days; left_window_pending is the current state)',
+    sql: postExtractionSql,
+    shape: (rows, now) =>
+      shapePostExtraction(rows as never, now).map((r) => ({ ...r })),
   },
 ];

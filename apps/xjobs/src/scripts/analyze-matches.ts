@@ -34,7 +34,8 @@ async function main(): Promise<void> {
         const [row] = await tx.query(
           section.sql(tx.raw).returnsRow({ rows: JSONB }).build(),
         );
-        const rows = (row?.rows ?? []) as Record<string, unknown>[];
+        const raw = (row?.rows ?? []) as Record<string, unknown>[];
+        const rows = section.shape ? section.shape(raw, new Date()) : raw;
         console.log(`\n== ${section.title} ==`);
         if (rows.length === 0) console.log('(no rows)');
         else console.table(rows);
