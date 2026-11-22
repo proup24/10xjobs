@@ -217,7 +217,7 @@ export class MemoryProcessorRepository extends ProcessorRepository {
   addSpend(
     costUsd: number,
     at: Date = this.now(),
-    docType: 'listing' | 'post' = 'listing',
+    docType: DocType = 'listing',
   ): void {
     this.attempts.push({
       ...attemptDefaults(),

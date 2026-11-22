@@ -18,6 +18,7 @@ function deps(outcome = 'processed', spent = 0, paused = false) {
     service: {
       process: vi.fn(async () => outcome),
       isPaused: vi.fn(() => paused),
+      isPostCapReached: vi.fn(async () => false),
     },
     repo: {
       listPendingInScope: vi.fn(async () => ['j1', 'j2']),
@@ -33,6 +34,16 @@ function deps(outcome = 'processed', spent = 0, paused = false) {
 const job = (name: string, data: unknown = {}) => ({ name, data });
 
 describe('processProcessJob', () => {
+  it('sweeps listings only while the post cap is reached', async () => {
+    const d = deps();
+    d.service.isPostCapReached.mockResolvedValue(true);
+    d.repo.listPendingPosts.mockResolvedValue(['p1']);
+    const result = await processProcessJob(job('sweep'), d as never);
+    expect(d.repo.listPendingPosts).not.toHaveBeenCalled();
+    expect(d.queue.enqueue.mock.calls.map((c) => c[0])).toEqual(['j1', 'j2']);
+    expect(result).toMatchObject({ enqueued: 2 });
+  });
+
   it('sweeps the waiting listings first, then the posts', async () => {
     const d = deps();
     d.repo.listPendingPosts.mockResolvedValue(['p1']);

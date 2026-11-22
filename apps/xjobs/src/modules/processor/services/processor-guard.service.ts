@@ -8,7 +8,10 @@ import {
   ClaudeAuthError,
   type ProviderUnavailableError,
 } from '../models/errors';
-import { ProcessorRepository } from '../repositories/processor.repository';
+import {
+  type DocType,
+  ProcessorRepository,
+} from '../repositories/processor.repository';
 
 /** How long processing stops after a key, credit or account error. */
 export const PROVIDER_PAUSE_MS = 10 * 60_000;
@@ -59,9 +62,7 @@ export class ProcessorGuard {
    * already logged, so jobs in flight at the same time can overshoot it by up
    * to `concurrency - 1` jobs.
    */
-  async check(
-    docType: 'listing' | 'post' = 'listing',
-  ): Promise<GuardBlock | null> {
+  async check(docType: DocType = 'listing'): Promise<GuardBlock | null> {
     if (this.isPaused()) return 'paused';
     if (await this.overBudget()) return 'over_budget';
     if (docType === 'post' && (await this.postCapReached())) return 'post_cap';
@@ -193,7 +194,7 @@ export class ProcessorGuard {
   }
 
   /** Today's logged spend (of one document type, or all), for the status endpoint. */
-  async spentToday(docType?: 'listing' | 'post'): Promise<number> {
+  async spentToday(docType?: DocType): Promise<number> {
     return this.repo.spendSince(startOfUtcDay(this.now()), docType);
   }
 

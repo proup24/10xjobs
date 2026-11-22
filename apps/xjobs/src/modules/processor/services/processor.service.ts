@@ -254,6 +254,11 @@ export class ProcessorService {
     return this.guard.isPaused();
   }
 
+  /** Whether today's post cap stops post extraction (the sweep then skips posts). */
+  async isPostCapReached(): Promise<boolean> {
+    return (await this.guard.check('post')) === 'post_cap';
+  }
+
   private async run(
     claim: Claim,
     job: JobForProcessing | null,

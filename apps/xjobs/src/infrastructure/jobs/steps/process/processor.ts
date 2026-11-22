@@ -19,7 +19,7 @@ const logger = new Logger('ProcessJob');
 const jobPayload = z.object({ jobId: z.string().min(1) });
 
 export interface ProcessJobDeps {
-  service: Pick<ProcessorService, 'process' | 'isPaused'>;
+  service: Pick<ProcessorService, 'process' | 'isPaused' | 'isPostCapReached'>;
   repo: Pick<
     ProcessorRepository,
     'listPendingInScope' | 'listPendingPosts' | 'releaseStale' | 'spendSince'
@@ -68,11 +68,14 @@ export async function processProcessJob(
     if (deps.config.dailyBudgetUsd > 0 && spent >= deps.config.dailyBudgetUsd)
       return { released, enqueued: 0 };
     // Listings first, so a post never goes ahead of a listing already waiting.
-    // Posts get the same limit; the daily post cap stops them at the call.
+    // Posts get the same limit, and none are listed while the daily post cap
+    // is reached, so they are not claimed and bounced every minute.
     const listings = await deps.repo.listPendingInScope(
       processSweepConfig.limit,
     );
-    const posts = await deps.repo.listPendingPosts(processSweepConfig.limit);
+    const posts = (await deps.service.isPostCapReached())
+      ? []
+      : await deps.repo.listPendingPosts(processSweepConfig.limit);
     const pending = [...listings, ...posts];
     for (const jobId of pending) await deps.queue.enqueue(jobId);
     return { released, enqueued: pending.length };

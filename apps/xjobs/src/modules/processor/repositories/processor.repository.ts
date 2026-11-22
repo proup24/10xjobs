@@ -210,7 +210,6 @@ export abstract class ProcessorRepository {
   ): Promise<'finished' | 'superseded'>;
   /** `processing` jobs claimed before `olderThan` go back to `pending`. */
   abstract releaseStale(olderThan: Date): Promise<number>;
-  /** Spend of non-eval attempts since `since`, in USD. */
   /** Logged spend since `since`; of one document type, or of every attempt. */
   abstract spendSince(since: Date, docType?: DocType): Promise<number>;
   /** Sets the matching in-scope jobs to `pending`; returns how many. */

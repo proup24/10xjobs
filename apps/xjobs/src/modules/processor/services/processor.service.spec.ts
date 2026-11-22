@@ -1047,8 +1047,12 @@ describe('ProcessorService', () => {
       expect(byKey.get('backend-engineer')?.id).toBe(
         before.get('backend-engineer'),
       );
-      expect(byKey.get('backend-engineer')?.processingStatus).toBe('processed');
-      expect(byKey.get('frontend-engineer')?.processingStatus).toBe('archived');
+      expect(byKey.get('backend-engineer')?.processingStatus).toBe(
+        'processed',
+      );
+      expect(byKey.get('frontend-engineer')?.processingStatus).toBe(
+        'archived',
+      );
       const added = byKey.get('senior-frontend-engineer');
       expect(added?.processingStatus).toBe('processed');
       expect([...before.values()]).not.toContain(added?.id);
