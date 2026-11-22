@@ -4,12 +4,16 @@ import type { JobForProcessing, PostingInput } from '../models/types';
 /** Keeps one posting a bounded share of the generator's context and cost. */
 export const DESCRIPTION_CAP_BYTES = 30_000;
 
-export function cut(text: string): { text: string; truncated: boolean } {
+/** Cuts text to at most `cap` bytes, at the last paragraph break when there is one. */
+export function cut(
+  text: string,
+  cap = DESCRIPTION_CAP_BYTES,
+): { text: string; truncated: boolean } {
   const buf = Buffer.from(text, 'utf8');
-  if (buf.length <= DESCRIPTION_CAP_BYTES) return { text, truncated: false };
+  if (buf.length <= cap) return { text, truncated: false };
   // toString drops a trailing partial UTF-8 sequence as U+FFFD, so trim it.
   let head = buf
-    .subarray(0, DESCRIPTION_CAP_BYTES)
+    .subarray(0, Math.max(0, cap))
     .toString('utf8')
     .replace(/�+$/, '');
   const at = head.lastIndexOf('\n\n');

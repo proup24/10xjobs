@@ -13,7 +13,7 @@ The input is one LinkedIn post, laid out in sections:
 - \`Original post by <name> (<headline>, <person or company>), posted <date>:\` then the post's text. The author is a person or a company page.
 - Zero or more \`Shared by <name> (<headline>) with this added text:\` sections: people who shared the post and the words they added. Added text belongs to the same post: it may give the only way to apply, or say the role is filled.
 - \`Links in the post:\` every email address and link the post carries, one per line: email addresses first, then LinkedIn job links, then other links. Only these exist; the post text may show shortened forms of them.
-- \`Note: this text was cut at "see more".\` after a text cut short. A first line \`Note: the description was truncated.\` means some text was cut: at "see more" or at the input's end. The \`Links in the post\` list is never cut. Judge only what you can see: a cut post may hide its way to apply.
+- \`Note: this text was cut at "see more".\` or \`Note: this text was cut for length.\` right after a text cut short. A first line \`Note: the description was truncated.\` means at least one text was cut. The \`Links in the post\` list is never cut. Judge only what you can see: a cut post may hide its way to apply.
 
 ## Output
 
