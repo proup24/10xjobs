@@ -1214,25 +1214,25 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
           (s) => s.id,
         );
 
-      it('makes one active post job with no processing status, once', async () => {
+      it('makes one active post job, pending for Process as new, once', async () => {
         const saved = await savePost(post(linkedinPost.id), t1);
 
-        expect(saved.job).toMatchObject({ created: true, pending: false });
+        expect(saved.job).toMatchObject({ created: true, pending: true });
         const once = { jobs: await jobs(), sources: await sources() };
         expect(once.jobs).toHaveLength(1);
         expect(once.jobs[0]).toMatchObject({
           kind: 'post',
           status: 'active',
           jobKey: `linkedin-post:${linkedinPost.id}`,
-          processingStatus: null,
-          processingReason: null,
-          processingRequestedAt: null,
+          processingStatus: 'pending',
+          processingReason: 'new',
+          processingRequestedAt: t1,
         });
         expect(postSourcesOf(once.jobs[0]!)).toEqual([linkedinPost.id]);
         expect(once.sources).toHaveLength(1);
 
         const again = await savePost(post(linkedinPost.id), t1);
-        expect(again.job).toMatchObject({ created: false, pending: false });
+        expect(again.job).toMatchObject({ created: false, pending: true });
         expect(await jobs()).toEqual(
           once.jobs.map((j) => ({ ...j, updatedAt: expect.any(Date) })),
         );
@@ -1246,7 +1246,7 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
         const all = await jobs();
         expect(all).toHaveLength(1);
         expect(all[0]!.jobKey).toMatch(/^linkedin-post:text:/);
-        expect(all[0]!.processingStatus).toBeNull();
+        expect(all[0]!.processingStatus).toBe('pending');
         expect(postSourcesOf(all[0]!)?.sort()).toEqual([
           '7390000000000000001',
           '7390000000000000002',
@@ -1271,7 +1271,7 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
         const all = await jobs();
         expect(all).toHaveLength(1);
         expect(all[0]!.jobKey).toMatch(/^linkedin-post:text:/);
-        expect(all[0]!.processingStatus).toBeNull();
+        expect(all[0]!.processingStatus).toBe('pending');
         expect(postSourcesOf(all[0]!)).toEqual([repost.id, share.id]);
         expect(await sources()).toHaveLength(2);
       });
@@ -1297,6 +1297,7 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
         expect(archived!.postSources).toBeNull();
 
         await undrop();
+        // A rebuild links it back but changes no processing status.
         expect(await relink(key)).toMatchObject({
           jobId: before!.id,
           created: false,
@@ -1309,10 +1310,9 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
         expect(back).toMatchObject({
           id: before!.id,
           status: 'active',
-          processingStatus: null,
-          processingReason: null,
-          processingRequestedAt: null,
+          processingStatus: 'archived',
         });
+        expect(postSourcesOf(back!)).toEqual([linkedinPost.id]);
       });
 
       it('a new version of a post that cleans to nothing leaves its job, archived', async () => {
@@ -1355,9 +1355,173 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
         expect(after).toMatchObject({
           id: before!.id,
           status: 'active',
-          processingStatus: null,
+          processingStatus: 'pending',
         });
         expect(postSourcesOf(after!)).toEqual(['7390000000000000001']);
+      });
+
+      describe('sent to Extract', () => {
+        const postJob = async () =>
+          (await db.orm.public.NormalizedJob.where({ kind: 'post' }).all())[0]!;
+        const setProcessing = (
+          id: string,
+          status: string | null,
+          requestedAt: Date | null = null,
+        ) =>
+          db.orm.public.NormalizedJob.where({ id }).updateAll({
+            processingStatus: status,
+            processingReason: null,
+            processingRequestedAt: requestedAt,
+          });
+        /** The share's original, collected alone. */
+        const original = () => ({
+          type: 'post',
+          ...structuredClone(share).repost,
+        });
+        const shareWith = (content: string) => ({
+          ...structuredClone(share),
+          content,
+        });
+        /** A role job read from the post job. */
+        const roleJob = (
+          parent: { id: string; jobKey: string; postingUrl: string },
+          roleKey: string,
+        ) =>
+          db.orm.public.NormalizedJob.create({
+            jobKey: `${parent.jobKey}#role:${roleKey}`,
+            postingUrl: parent.postingUrl,
+            kind: 'post_role',
+            parentJobId: parent.id,
+            roleKey,
+            status: 'active',
+            mergedIntoId: null,
+            closed: false,
+            fieldSources: {} as never,
+            firstSeenAt: t1,
+            lastSeenAt: t1,
+            normalizerVersion: NORMALIZER_VERSION,
+            processingStatus: 'processed',
+          });
+
+        it('a share with added text joining a processed post job sends it back as joined', async () => {
+          await savePost(original(), t1);
+          const job = await postJob();
+          await setProcessing(job.id, 'processed');
+
+          const saved = await savePost(shareWith('Great team, DM me!'), t2);
+          expect(saved.job).toMatchObject({
+            jobId: job.id,
+            created: false,
+            pending: true,
+          });
+          expect(await postJob()).toMatchObject({
+            processingStatus: 'pending',
+            processingReason: 'joined',
+            processingRequestedAt: t2,
+            processingAttempts: 0,
+          });
+        });
+
+        it('a share with no added text leaves a processed post job alone', async () => {
+          await savePost(original(), t1);
+          const job = await postJob();
+          await setProcessing(job.id, 'processed');
+
+          const saved = await savePost(shareWith(''), t2);
+          expect(saved.job).toMatchObject({ jobId: job.id, pending: false });
+          expect(await postJob()).toMatchObject({
+            processingStatus: 'processed',
+          });
+        });
+
+        it('a share joining a post job with no processing status leaves it null', async () => {
+          await savePost(original(), t1);
+          const job = await postJob();
+          await setProcessing(job.id, null);
+
+          await savePost(shareWith('Great team, DM me!'), t2);
+          expect(await postJob()).toMatchObject({
+            processingStatus: null,
+            processingReason: null,
+          });
+        });
+
+        it('a post job with no processing status is not reopened after a long gap', async () => {
+          await savePost(post(linkedinPost.id), t1);
+          const job = await postJob();
+          await setProcessing(job.id, null);
+          const later = new Date(t1.getTime() + normalizeConfig.reopenAfterMs);
+
+          await savePost(post(linkedinPost.id), later);
+          expect(await postJob()).toMatchObject({ processingStatus: null });
+        });
+
+        it('an archived post job seen again is reopened', async () => {
+          await savePost(post(linkedinPost.id), t1);
+          const job = await postJob();
+          await setProcessing(job.id, 'archived');
+
+          const saved = await savePost(post(linkedinPost.id), t2);
+          expect(saved.job).toMatchObject({ reopened: true, pending: true });
+          expect(await postJob()).toMatchObject({
+            processingStatus: 'pending',
+            processingReason: 'reopened',
+            processingRequestedAt: t2,
+          });
+        });
+
+        it('a rebuild changes no processing status of a post job', async () => {
+          await savePost(original(), t1);
+          await savePost(shareWith('Great team, DM me!'), t2);
+          const job = await postJob();
+          await setProcessing(job.id, 'processed');
+
+          expect(await relink(`id:${share.id}`)).toMatchObject({
+            jobId: job.id,
+            pending: false,
+          });
+          expect(await relink(`id:${share.repost.id}`)).toMatchObject({
+            jobId: job.id,
+            pending: false,
+          });
+          expect(await postJob()).toMatchObject({
+            processingStatus: 'processed',
+          });
+        });
+
+        it('a post job archived by a drop archives its role jobs too', async () => {
+          await savePost(post(linkedinPost.id), t1);
+          const job = await postJob();
+          const other = await savePost(post('7390000000000000009'), t1);
+          const otherJob = await db.orm.public.NormalizedJob.where({
+            id: (other.job as { jobId: string }).jobId,
+          }).first();
+          await roleJob(job, 'backend');
+          await roleJob(job, 'frontend');
+          await roleJob(otherJob!, 'backend');
+          await drop(`id:${linkedinPost.id}`);
+
+          await relink(`id:${linkedinPost.id}`);
+          const roles = await db.orm.public.NormalizedJob.where({
+            kind: 'post_role',
+          }).all();
+          expect(
+            roles
+              .map((r) => [
+                r.parentJobId === job.id,
+                r.roleKey,
+                r.status,
+                r.processingStatus,
+              ])
+              .sort(),
+          ).toEqual(
+            [
+              [false, 'backend', 'active', 'processed'],
+              [true, 'backend', 'active', 'archived'],
+              [true, 'frontend', 'active', 'archived'],
+            ].sort(),
+          );
+        });
       });
 
       it('a job-board item that turns invalid keeps its link', async () => {

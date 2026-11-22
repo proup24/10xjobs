@@ -67,13 +67,6 @@ function processingColumns(state: ProcessingState): JobPatch {
   };
 }
 
-/** A post job's processing state while it has a source: Process never takes posts. */
-const NO_PROCESSING: ProcessingState = {
-  status: null,
-  reason: null,
-  requestedAt: null,
-};
-
 function sameProcessing(a: ProcessingState, b: ProcessingState): boolean {
   return (
     a.status === b.status &&
@@ -607,8 +600,9 @@ async function leaveJob(
 
 /**
  * A post whose latest version is now a drop leaves its job: the job re-merges
- * from the sources left, or, with none left, is `archived` for Process. It
- * keeps `status = 'active'` and its key, so an un-dropped post links back to it.
+ * from the sources left, or, with none left, is `archived` for Process with
+ * every role job read from it. It keeps `status = 'active'` and its key, so an
+ * un-dropped post links back to it.
  */
 async function dropPostSource(
   tx: DatabaseTransaction,
@@ -622,17 +616,59 @@ async function dropPostSource(
   const left = await orm.public.NormalizedJobSource.where({
     jobId: link.jobId,
   }).all();
-  if (left.length > 0) await remerge(tx, link.jobId);
+  if (left.length > 0) {
+    await remerge(tx, link.jobId);
+    return;
+  }
   // An archived post job keeps no post details, so no reader sees stale ones.
-  else
-    await orm.public.NormalizedJob.where({ id: link.jobId }).updateAll({
-      ...processingColumns({
-        status: 'archived',
-        reason: null,
-        requestedAt: null,
-      }),
-      postSources: null,
-    });
+  await orm.public.NormalizedJob.where({ id: link.jobId }).updateAll({
+    ...processingColumns({
+      status: 'archived',
+      reason: null,
+      requestedAt: null,
+    }),
+    postSources: null,
+  });
+  // Its role jobs go with it, as when Process archives them; status stays 'active'.
+  await orm.public.NormalizedJob.where({
+    parentJobId: link.jobId,
+    kind: 'post_role',
+  }).updateAll({ processingStatus: 'archived' });
+}
+
+/**
+ * A post item's next processing state. Like a listing's (`nextProcessing`),
+ * except that a share bringing added text to a post job Process already has
+ * sends it back as `joined` (the new text may hold the contact or say the
+ * role is filled), and a post job with no processing status (made before
+ * slice 03) stays so until `db:reprocess -- --null-status`.
+ */
+function nextPostProcessing(input: {
+  record: NormalizedRecord;
+  created: boolean;
+  /** The item was not linked to this job before this observation. */
+  joins: boolean;
+  previousLastSeenAt: Date | null;
+  observedAt: Date;
+  current: ProcessingState;
+  rebuild: boolean;
+}): ProcessingState {
+  if (input.rebuild) return input.current;
+  if (!input.created && input.current.status === null) return input.current;
+  const post = input.record.post;
+  if (
+    !input.created &&
+    input.joins &&
+    post?.original &&
+    post.text !== null &&
+    input.current.status !== 'archived'
+  )
+    return {
+      status: 'pending',
+      reason: 'joined',
+      requestedAt: input.observedAt,
+    };
+  return nextProcessing({ ...input, sightingOnly: false });
 }
 
 /**
@@ -641,8 +677,11 @@ async function dropPostSource(
  * with no job renames the item's old job when all its sources key there.
  * Sends the job to Process (`pending`) only when this observation creates it
  * or finds it after `reopenAfterMs` unseen. Idempotent: replaying changes
- * nothing. A post is never sent to Process (slice 03 extracts posts), and a
- * post that turns invalid leaves its job; a job-board item keeps its link.
+ * nothing. A post job is sent the same way (Process extracts posts), and
+ * again as `joined` when a share brings added text to it (see
+ * `nextPostProcessing`); a post that turns invalid leaves its job, archived
+ * with its role jobs when it was the last source. A job-board item that turns
+ * invalid keeps its link.
  */
 export async function linkJob(
   tx: DatabaseTransaction,
@@ -781,7 +820,15 @@ export async function linkJob(
   const joined =
     !input.rebuild && firstBoardSource && (await hasTrialSource(tx, job.id));
   const next: ProcessingState = isPost
-    ? NO_PROCESSING
+    ? nextPostProcessing({
+        record,
+        created,
+        joins: link?.jobId !== job.id,
+        previousLastSeenAt,
+        observedAt: input.observedAt,
+        current,
+        rebuild: input.rebuild,
+      })
     : joined
       ? { status: 'pending', reason: 'joined', requestedAt: input.observedAt }
       : nextProcessing({
