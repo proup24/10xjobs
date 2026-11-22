@@ -33,6 +33,20 @@ export type HeldPostView = {
   author: AuthorView;
   postedAt: string | null;
 };
+export type VerdictView = {
+  jobId: string;
+  verdict: 'not_hiring' | 'junk';
+  /** A reason code of `NOT_HIRING_REASONS` or `JUNK_REASONS` (post-extraction.ts). */
+  reason: string;
+  /** The verbatim quote the verdict rests on. */
+  quote: string;
+  confidence: 'sure' | 'unsure';
+  /** The original post's author (a share's original, never the sharer). */
+  author: AuthorView;
+  postedAt: string | null;
+  url: string;
+  extractedAt: string;
+};
 /** `next` is an opaque cursor: pass it back as `before`. */
 export type ReviewPage<T> = { items: T[]; next: string | null };
 export type SilencedAuthorView = {
@@ -91,6 +105,12 @@ export interface EngineClient {
     before?: string;
     limit?: number;
   }): Promise<EngineResult<ReviewPage<HeldPostView>>>;
+  extractVerdicts(options?: {
+    verdict?: 'not_hiring' | 'junk';
+    reason?: string;
+    before?: string;
+    limit?: number;
+  }): Promise<EngineResult<ReviewPage<VerdictView>>>;
   silencedAuthors(): Promise<EngineResult<SilencedAuthorView[]>>;
   /** 201 gives `silenced`, 200 `already`. */
   silenceAuthor(
@@ -141,6 +161,21 @@ function isHeldPostView(v: unknown): v is HeldPostView {
     typeof v.url === 'string' &&
     isNullableString(v.postedAt) &&
     isAuthorView(v.author)
+  );
+}
+
+function isVerdictView(v: unknown): v is VerdictView {
+  return (
+    isRecord(v) &&
+    typeof v.jobId === 'string' &&
+    (v.verdict === 'not_hiring' || v.verdict === 'junk') &&
+    typeof v.reason === 'string' &&
+    typeof v.quote === 'string' &&
+    (v.confidence === 'sure' || v.confidence === 'unsure') &&
+    isAuthorView(v.author) &&
+    isNullableString(v.postedAt) &&
+    typeof v.url === 'string' &&
+    typeof v.extractedAt === 'string'
   );
 }
 
@@ -534,6 +569,20 @@ export function createEngineClient(deps: EngineClientDeps): EngineClient {
           })}`,
         },
         pageOf(isHeldPostView),
+      ),
+    extractVerdicts: (options = {}) =>
+      admin(
+        'extractVerdicts',
+        {
+          method: 'GET',
+          path: `/admin/extract/verdicts${queryOf({
+            verdict: options.verdict,
+            reason: options.reason,
+            before: options.before,
+            limit: options.limit,
+          })}`,
+        },
+        pageOf(isVerdictView),
       ),
     silencedAuthors: () =>
       admin(

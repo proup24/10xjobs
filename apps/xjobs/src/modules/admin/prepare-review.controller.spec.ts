@@ -45,6 +45,7 @@ describe('PrepareReviewController', () => {
     for (const name of [
       'drops',
       'silencedPosts',
+      'verdicts',
       'silencedAuthors',
       'silence',
       'unsilence',

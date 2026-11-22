@@ -33,6 +33,8 @@ import {
   SilenceAuthorResponseDto,
   SilencedAuthorViewDto,
   SilencedPostsQueryDto,
+  VerdictsPageDto,
+  VerdictsQueryDto,
 } from './dto/prepare-review.dto';
 import { PrepareReviewService } from './prepare-review.service';
 import type {
@@ -40,6 +42,7 @@ import type {
   HeldPostView,
   Page,
   SilencedAuthorView,
+  VerdictView,
 } from './prepare-review.types';
 
 const DEFAULT_LIMIT = 50;
@@ -88,6 +91,22 @@ export class PrepareReviewController {
     @Query() query: SilencedPostsQueryDto,
   ): Promise<Page<HeldPostView>> {
     return this.review.silencedPosts({
+      before: query.before ?? null,
+      limit: query.limit ?? DEFAULT_LIMIT,
+    });
+  }
+
+  @ApiSuccessResponse(VerdictsPageDto, {
+    description:
+      'Post jobs whose current extraction is ruled not_hiring or junk, newest extraction first',
+  })
+  @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.FORBIDDEN)
+  @UseGuards(AdminGuard)
+  @Get('extract/verdicts')
+  verdicts(@Query() query: VerdictsQueryDto): Promise<Page<VerdictView>> {
+    return this.review.verdicts({
+      verdict: query.verdict ?? null,
+      reason: query.reason ?? null,
       before: query.before ?? null,
       limit: query.limit ?? DEFAULT_LIMIT,
     });

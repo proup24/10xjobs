@@ -1,6 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  JUNK_REASONS,
+  NOT_HIRING_REASONS,
+} from 'src/modules/processor/schema/post-extraction';
+import {
+  IsIn,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -21,6 +26,38 @@ export class DropsQueryDto {
   @IsNotEmpty()
   @MaxLength(100)
   rule?: string;
+
+  @ApiPropertyOptional({ description: 'The `next` of the previous page' })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(200)
+  before?: string;
+
+  @ApiPropertyOptional({ minimum: 1, maximum: 200, default: 50 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(200)
+  limit?: number;
+}
+
+export const LISTED_VERDICTS = ['not_hiring', 'junk'] as const;
+export const VERDICT_REASONS = [
+  ...new Set([...NOT_HIRING_REASONS, ...JUNK_REASONS]),
+];
+
+export class VerdictsQueryDto {
+  @ApiPropertyOptional({ enum: LISTED_VERDICTS })
+  @IsOptional()
+  @IsIn(LISTED_VERDICTS)
+  verdict?: (typeof LISTED_VERDICTS)[number];
+
+  @ApiPropertyOptional({ enum: VERDICT_REASONS })
+  @IsOptional()
+  @IsIn(VERDICT_REASONS)
+  reason?: string;
 
   @ApiPropertyOptional({ description: 'The `next` of the previous page' })
   @IsOptional()
@@ -112,6 +149,23 @@ export class HeldPostViewDto {
 
 export class HeldPostsPageDto {
   @ApiProperty({ type: [HeldPostViewDto] }) items!: HeldPostViewDto[];
+  @ApiProperty({ nullable: true, type: String }) next!: string | null;
+}
+
+export class VerdictViewDto {
+  @ApiProperty() jobId!: string;
+  @ApiProperty({ enum: LISTED_VERDICTS }) verdict!: 'not_hiring' | 'junk';
+  @ApiProperty({ enum: VERDICT_REASONS }) reason!: string;
+  @ApiProperty() quote!: string;
+  @ApiProperty({ enum: ['sure', 'unsure'] }) confidence!: 'sure' | 'unsure';
+  @ApiProperty({ type: AuthorViewDto }) author!: AuthorViewDto;
+  @ApiProperty({ nullable: true, type: String }) postedAt!: string | null;
+  @ApiProperty() url!: string;
+  @ApiProperty() extractedAt!: string;
+}
+
+export class VerdictsPageDto {
+  @ApiProperty({ type: [VerdictViewDto] }) items!: VerdictViewDto[];
   @ApiProperty({ nullable: true, type: String }) next!: string | null;
 }
 

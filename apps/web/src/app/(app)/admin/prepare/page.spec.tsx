@@ -10,6 +10,7 @@ const engine = vi.hoisted(() => ({
   adminMe: vi.fn(),
   prepareDrops: vi.fn(),
   silencedPosts: vi.fn(),
+  extractVerdicts: vi.fn(),
   silencedAuthors: vi.fn(),
 }));
 vi.mock('@/lib/engine/server', () => ({ engineClient: async () => engine }));
@@ -49,6 +50,10 @@ beforeEach(() => {
     },
   });
   engine.silencedPosts.mockResolvedValue({
+    kind: 'ok',
+    data: { items: [], next: null },
+  });
+  engine.extractVerdicts.mockResolvedValue({
     kind: 'ok',
     data: { items: [], next: null },
   });
@@ -129,6 +134,44 @@ describe('Prepare review page', () => {
     expect(
       screen.getByRole('link', { name: 'Next drops' }).getAttribute('href'),
     ).toBe('/admin/prepare?rule=hashtag-spam&before=cursor-2&held=h1');
+  });
+
+  it('passes the verdict filters and cursor, and keeps every param on each next link', async () => {
+    engine.extractVerdicts.mockResolvedValue({
+      kind: 'ok',
+      data: { items: [], next: 'v-2' },
+    });
+    render(
+      await Page(
+        params({
+          verdict: 'junk',
+          reason: 'funnel',
+          verdicts: 'v1',
+          held: 'h1',
+        }),
+      ),
+    );
+    expect(
+      screen.getByRole('heading', { name: 'Extract verdicts' }),
+    ).toBeTruthy();
+    expect(engine.extractVerdicts).toHaveBeenCalledWith({
+      verdict: 'junk',
+      reason: 'funnel',
+      before: 'v1',
+    });
+    expect(
+      screen.getByRole('link', { name: 'Next verdicts' }).getAttribute('href'),
+    ).toBe('/admin/prepare?held=h1&verdict=junk&reason=funnel&verdicts=v-2');
+    expect(
+      screen.getByRole('link', { name: 'Next drops' }).getAttribute('href'),
+    ).toBe(
+      '/admin/prepare?before=cursor-2&held=h1&verdict=junk&reason=funnel&verdicts=v1',
+    );
+  });
+
+  it('ignores a verdict or reason the engine does not list', async () => {
+    render(await Page(params({ verdict: 'hiring', reason: 'bogus' })));
+    expect(engine.extractVerdicts).toHaveBeenCalledWith({});
   });
 
   it('shows a section the engine could not load as unavailable', async () => {

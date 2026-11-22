@@ -11,13 +11,16 @@ import {
   PrepareReviewRepository,
   type DropRow,
   type HeldPostRow,
+  type VerdictRow,
 } from './prepare-review.repository';
+import { originalAuthorOf } from './post-author';
 import type {
   AuthorView,
   DropView,
   HeldPostView,
   Page,
   SilencedAuthorView,
+  VerdictView,
 } from './prepare-review.types';
 
 const UUID_RE =
@@ -108,6 +111,22 @@ function heldView(row: HeldPostRow): HeldPostView {
   };
 }
 
+function verdictView(row: VerdictRow): VerdictView {
+  const source = row.source;
+  const post = source ? (source.original ?? source) : null;
+  return {
+    jobId: row.jobId,
+    verdict: row.verdict as VerdictView['verdict'],
+    reason: row.reason,
+    quote: row.quote,
+    confidence: row.confidence === 'sure' ? 'sure' : 'unsure',
+    author: authorView((source && originalAuthorOf(source)) ?? {}),
+    postedAt: post?.postedAt ?? null,
+    url: row.postingUrl,
+    extractedAt: row.extractedAt.toISOString(),
+  };
+}
+
 @Injectable()
 export class PrepareReviewService {
   constructor(
@@ -138,6 +157,32 @@ export class PrepareReviewService {
               lastSeenAt: last.lastSeenAt,
               id: last.rawItemId,
             })
+          : null,
+    };
+  }
+
+  async verdicts(query: {
+    verdict: 'not_hiring' | 'junk' | null;
+    reason: string | null;
+    before: string | null;
+    limit: number;
+  }): Promise<Page<VerdictView>> {
+    const before = query.before ? decodeDropCursor(query.before) : null;
+    if (query.before && !before)
+      throw new BadRequestException('before is not a valid cursor');
+    const rows = await this.review.verdicts({
+      verdict: query.verdict,
+      reason: query.reason,
+      before,
+      limit: query.limit + 1,
+    });
+    const page = rows.slice(0, query.limit);
+    const last = page.at(-1);
+    return {
+      items: page.map(verdictView),
+      next:
+        rows.length > query.limit && last
+          ? encodeDropCursor({ lastSeenAt: last.extractedAt, id: last.jobId })
           : null,
     };
   }

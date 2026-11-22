@@ -240,4 +240,166 @@ describe.skipIf(!url)('prepare review in PostgreSQL', () => {
       },
     ]);
   });
+
+  describe('verdicts', () => {
+    const author = {
+      key: 'profile:jane',
+      name: 'Jane Doe',
+      profileUrl: null,
+      headline: 'Founder',
+      type: 'person',
+    };
+    const source = {
+      id: 'p1',
+      url: 'https://www.linkedin.com/posts/p1',
+      author,
+      text: 'join my group',
+      truncated: false,
+      attachedUrls: [],
+      postedAt: '2026-11-21T08:00:00.000Z',
+      original: null,
+      links: { emails: [], linkedinJobIds: [], atsPostings: [], other: [] },
+    };
+
+    async function extraction(
+      jobId: string,
+      createdAt: string,
+      over: {
+        docType?: string;
+        verdict?: string | null;
+        reason?: string | null;
+        quote?: string;
+      } = {},
+    ): Promise<string> {
+      const row = await db.orm.public.JobExtraction.create({
+        jobId,
+        inputHash: randomUUID(),
+        schemaVersion: 1,
+        promptHash: 'p',
+        extractionModel: 'm',
+        data: { verdict: { quote: over.quote ?? 'Join my group' } },
+        needsReview: false,
+        docType: over.docType ?? 'post',
+        verdict: over.verdict === undefined ? 'junk' : over.verdict,
+        verdictReason: over.reason === undefined ? 'funnel' : over.reason,
+        verdictConfidence: 'sure',
+        worldwide: false,
+        regionCodes: [],
+        countryCodes: [],
+        cityIds: [],
+        techTags: [],
+        mainStackTags: [],
+        costUsd: 0,
+        createdAt: new Date(createdAt),
+      } as never);
+      return (row as { id: string }).id;
+    }
+
+    /** A post job whose current extraction is the last one made. */
+    async function post(
+      n: number,
+      extractions: Parameters<typeof extraction>[2][],
+      at = `2026-11-22T09:00:0${n}.000Z`,
+      kind: 'post' | 'job' = 'post',
+    ): Promise<string> {
+      const id = `00000000-0000-7000-8000-00000000000${n}`;
+      await db.orm.public.NormalizedJob.create({
+        id,
+        jobKey: `test:${id}`,
+        kind,
+        status: 'active',
+        postingUrl: `https://www.linkedin.com/posts/${n}`,
+        closed: false,
+        fieldSources: {},
+        postSources: { sources: [source] },
+        firstSeenAt: new Date(now),
+        lastSeenAt: new Date(now),
+        normalizerVersion: 8,
+      } as never);
+      let current = '';
+      for (const over of extractions) current = await extraction(id, at, over);
+      await db.execute(
+        db.raw
+          .sql`UPDATE normalized_jobs SET "currentExtractionId" = ${current}::uuid WHERE id = ${id}::uuid`
+          .affectedCount()
+          .build(),
+      );
+      return id;
+    }
+
+    const page = (
+      over: Partial<Parameters<PrismaPrepareReviewRepository['verdicts']>[0]>,
+    ) =>
+      repo.verdicts({
+        verdict: null,
+        reason: null,
+        before: null,
+        limit: 10,
+        ...over,
+      });
+
+    it('lists current junk and not-hiring post extractions, newest first', async () => {
+      const junk = await post(1, [{}]);
+      const notHiring = await post(2, [
+        {
+          verdict: 'not_hiring',
+          reason: 'open_to_work',
+          quote: 'Open to work',
+        },
+      ]);
+      await post(3, [{ verdict: 'hiring', reason: 'hiring' }]);
+      // A junk extraction superseded by a hiring one does not list.
+      await post(4, [{}, { verdict: 'hiring', reason: 'hiring' }]);
+      // A listing extraction on a post job does not list.
+      await post(5, [{ docType: 'listing', verdict: null, reason: null }]);
+      // A listing job never lists, whatever its row says.
+      await post(6, [{}], undefined, 'job');
+      const rows = await page({});
+      expect(rows.map((r) => r.jobId)).toEqual([notHiring, junk]);
+      expect(rows[1]).toEqual({
+        jobId: junk,
+        postingUrl: 'https://www.linkedin.com/posts/1',
+        verdict: 'junk',
+        reason: 'funnel',
+        confidence: 'sure',
+        quote: 'Join my group',
+        source,
+        extractedAt: new Date('2026-11-22T09:00:01.000Z'),
+      });
+      expect(rows[0]).toMatchObject({
+        reason: 'open_to_work',
+        quote: 'Open to work',
+      });
+    });
+
+    it('filters by verdict and reason', async () => {
+      const funnel = await post(1, [{}]);
+      const group = await post(2, [{ reason: 'messaging_group' }]);
+      const other = await post(3, [{ verdict: 'not_hiring', reason: 'other' }]);
+      const ids = async (o: Parameters<typeof page>[0]) =>
+        (await page(o)).map((r) => r.jobId);
+      expect(await ids({ verdict: 'junk' })).toEqual([group, funnel]);
+      expect(await ids({ verdict: 'not_hiring' })).toEqual([other]);
+      expect(await ids({ reason: 'funnel' })).toEqual([funnel]);
+      expect(await ids({ verdict: 'junk', reason: 'other' })).toEqual([]);
+    });
+
+    it('pages by extraction time then job id, with no gaps on a tie', async () => {
+      const same = '2026-11-22T09:00:05.123Z';
+      await post(1, [{}], same);
+      await post(2, [{}], same);
+      await post(3, [{}], '2026-11-22T09:00:01.000Z');
+      const all = await page({});
+      expect(all).toHaveLength(3);
+      const first = await page({ limit: 2 });
+      const last = first[1]!;
+      const second = await page({
+        limit: 2,
+        before: { lastSeenAt: last.extractedAt.toISOString(), id: last.jobId },
+      });
+      expect([...first, ...second].map((r) => r.jobId)).toEqual(
+        all.map((r) => r.jobId),
+      );
+    });
+  });
 });

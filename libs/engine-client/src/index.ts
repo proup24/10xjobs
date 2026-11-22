@@ -11,4 +11,5 @@ export type {
   ReviewPage,
   SilenceInput,
   SilencedAuthorView,
+  VerdictView,
 } from './client';

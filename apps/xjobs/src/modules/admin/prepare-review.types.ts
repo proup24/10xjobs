@@ -25,6 +25,22 @@ export interface HeldPostView {
   postedAt: string | null;
 }
 
+export interface VerdictView {
+  jobId: string;
+  verdict: 'not_hiring' | 'junk';
+  /** The verdict's reason code (`NOT_HIRING_REASONS` or `JUNK_REASONS`). */
+  reason: string;
+  /** The verbatim quote the verdict rests on. */
+  quote: string;
+  confidence: 'sure' | 'unsure';
+  /** The original post's author (see `originalAuthorOf`). */
+  author: AuthorView;
+  postedAt: string | null;
+  /** The post job's `postingUrl`. */
+  url: string;
+  extractedAt: string;
+}
+
 export interface Page<T> {
   items: T[];
   next: string | null;

@@ -31,12 +31,14 @@ type Props = {
   authors: SilencedAuthorView[] | null;
   nextDropsHref: string | null;
   nextHeldHref: string | null;
+  /** The Extract verdicts section, shown after the drops. */
+  verdicts?: React.ReactNode;
 };
 
-const day = (iso: string | null) =>
+export const day = (iso: string | null) =>
   iso ? <time dateTime={iso}>{iso.slice(0, 10)}</time> : '—';
 
-function Section({
+export function Section({
   id,
   title,
   description,
@@ -60,7 +62,7 @@ function Section({
   );
 }
 
-function Author({ author }: { author: AuthorView }) {
+export function Author({ author }: { author: AuthorView }) {
   return (
     <div className="grid gap-0.5">
       <span>{author.name ?? author.key ?? 'Unknown author'}</span>
@@ -81,7 +83,7 @@ function isHttpUrl(url: string): boolean {
   }
 }
 
-function OpenPost({ url }: { url: string | null }) {
+export function OpenPost({ url }: { url: string | null }) {
   if (!url || !isHttpUrl(url)) return null;
   return (
     <a
@@ -95,7 +97,7 @@ function OpenPost({ url }: { url: string | null }) {
   );
 }
 
-function Note({ children }: { children: React.ReactNode }) {
+export function Note({ children }: { children: React.ReactNode }) {
   return <p className="text-muted-foreground">{children}</p>;
 }
 
@@ -274,6 +276,7 @@ export function PrepareReview({
   authors,
   nextDropsHref,
   nextHeldHref,
+  verdicts,
 }: Props) {
   const silenced = new Set((authors ?? []).map((a) => a.authorKey));
   return (
@@ -297,6 +300,8 @@ export function PrepareReview({
           </TextLink>
         )}
       </Section>
+
+      {verdicts}
 
       <Section
         id="prepare-held"

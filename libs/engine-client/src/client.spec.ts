@@ -441,6 +441,44 @@ describe('engine client admin review', () => {
     expectAuth(init);
   });
 
+  it('extractVerdicts sends the verdict, reason, cursor and limit as query params', async () => {
+    const verdict = {
+      jobId: 'j1',
+      verdict: 'junk',
+      reason: 'funnel',
+      quote: 'Join my group',
+      confidence: 'sure',
+      author,
+      postedAt: null,
+      url: 'https://www.linkedin.com/posts/1',
+      extractedAt: '2026-11-22T09:00:00.000Z',
+    };
+    const { client, fetchMock } = setup(() =>
+      ok({ items: [verdict], next: 'c2' }),
+    );
+    expect(
+      await client.extractVerdicts({
+        verdict: 'junk',
+        reason: 'funnel',
+        before: 'c1',
+        limit: 5,
+      }),
+    ).toEqual({ kind: 'ok', data: { items: [verdict], next: 'c2' } });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe(
+      'http://engine.test/api/admin/extract/verdicts?verdict=junk&reason=funnel&before=c1&limit=5',
+    );
+    expect(init?.method).toBe('GET');
+    expectAuth(init);
+  });
+
+  it('extractVerdicts with a malformed row → unavailable', async () => {
+    const { client } = setup(() =>
+      ok({ items: [{ jobId: 'j1', verdict: 'hiring' }], next: null }),
+    );
+    expect(await client.extractVerdicts()).toEqual({ kind: 'unavailable' });
+  });
+
   it('silencedAuthors sends GET /api/admin/silenced-authors', async () => {
     const { client, fetchMock } = setup(() => ok([silenced]));
     expect(await client.silencedAuthors()).toEqual({
@@ -526,6 +564,10 @@ describe('engine client admin review', () => {
     [
       'silencedPosts',
       (c: ReturnType<typeof setup>['client']) => c.silencedPosts(),
+    ],
+    [
+      'extractVerdicts',
+      (c: ReturnType<typeof setup>['client']) => c.extractVerdicts(),
     ],
     [
       'silencedAuthors',
