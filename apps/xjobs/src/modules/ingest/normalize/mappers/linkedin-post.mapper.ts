@@ -59,9 +59,11 @@ export function mapLinkedinPost(
   // must still reach Extract, so an original with no text falls back to it.
   const description = originalText || ownText;
   // Rules judge the original post, never the sharer.
+  const judged = original ?? raw;
   const drop = firstDrop({
     text: original ? originalText : ownText,
-    headline: original ? original.author.info : raw.author.info,
+    headline: judged.author.info,
+    openToWorkCard: judged.openToWorkCard,
   });
   if (drop) return { invalid: `prepare: ${drop.rule}: "${drop.match}"` };
 

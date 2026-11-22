@@ -101,6 +101,29 @@ describe('readPostPayload', () => {
       'https://www.linkedin.com/jobs/view/4492857632/',
     ]);
   });
+  it('reads an open-to-work card, on the post and on its original', () => {
+    const card = {
+      title: 'Ashokraj is open to work',
+      subtitle: 'Full Stack Developer',
+    };
+    expect(readPostPayload(plain).openToWorkCard).toBe(false);
+    expect(readPostPayload({ ...plain, showcase: card }).openToWorkCard).toBe(
+      true,
+    );
+    const shared = readPostPayload({
+      ...share,
+      repost: { ...share.repost, showcase: card },
+    });
+    expect(shared.openToWorkCard).toBe(false);
+    expect(shared.original?.openToWorkCard).toBe(true);
+  });
+
+  it('reads only an open-to-work showcase as the card', () => {
+    for (const showcase of [null, 'x', [], {}, { title: 'Acme is hiring' }])
+      expect(readPostPayload({ ...plain, showcase }).openToWorkCard).toBe(
+        false,
+      );
+  });
 });
 
 describe('readOriginal', () => {

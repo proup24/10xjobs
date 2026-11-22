@@ -22,6 +22,8 @@ type RawPostFields = {
   /** Links the payload carries outside the text. */
   linkUrls: string[];
   imageUrls: string[];
+  /** LinkedIn's "<name> is open to work" card (`showcase`) is on the post. */
+  openToWorkCard: boolean;
 };
 
 /** A post and the original it shares or reposts, read with the same fields. */
@@ -62,6 +64,11 @@ function jobLink(value: unknown): string | null {
   return id ? `https://www.linkedin.com/jobs/view/${id}/` : cleanText(value);
 }
 
+/** True for the open-to-work card the actor returns as `showcase`. */
+function isOpenToWorkCard(value: unknown): boolean {
+  return /\bopen to work\b/i.test(cleanText(objectAt(value).title) ?? '');
+}
+
 /** The fields of one post object: a top-level item or its nested original. */
 function readPostFields(payload: Record<string, unknown>): RawPostFields {
   // `content` is kept as the actor sent it: cleaning may alter URL text.
@@ -83,6 +90,7 @@ function readPostFields(payload: Record<string, unknown>): RawPostFields {
     imageUrls: images
       .map((i) => cleanText(typeof i === 'string' ? i : objectAt(i).url))
       .filter((u): u is string => u !== null),
+    openToWorkCard: isOpenToWorkCard(payload.showcase),
   };
 }
 

@@ -182,6 +182,7 @@ describe('mapLinkedinPost with an original', () => {
     author: author('Original headline'),
     linkUrls: [],
     imageUrls: [],
+    openToWorkCard: false,
   });
 
   afterEach(() => {
@@ -228,8 +229,33 @@ describe('mapLinkedinPost with an original', () => {
       (DROP_RULES as DropRule[]).pop();
     }
     expect(seen).toEqual([
-      { text: 'Original job text', headline: 'Original headline' },
+      {
+        text: 'Original job text',
+        headline: 'Original headline',
+        openToWorkCard: false,
+      },
     ]);
+  });
+
+  it("drops a share on its original's open-to-work card, never the sharer's", () => {
+    const card = { title: 'Jane is open to work' };
+    stub.original = { ...original('Original text')!, openToWorkCard: true };
+    expect(mapLinkedinPost({ ...plain, content: 'Worth a look' }, ctx)).toEqual(
+      { invalid: 'prepare: open-to-work: "open-to-work card"' },
+    );
+    stub.original = original('We are hiring a Java developer');
+    expect(
+      'invalid' in mapLinkedinPost({ ...plain, showcase: card }, ctx),
+    ).toBe(false);
+  });
+
+  it('drops a plain post with its own open-to-work card', () => {
+    expect(
+      mapLinkedinPost(
+        { ...plain, showcase: { title: 'Jane is open to work' } },
+        ctx,
+      ),
+    ).toEqual({ invalid: 'prepare: open-to-work: "open-to-work card"' });
   });
 
   it('drops no-text only when both texts are empty', () => {
