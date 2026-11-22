@@ -13,7 +13,7 @@ The input is one LinkedIn post, laid out in sections:
 - \`Original post by <name> (<headline>, <person or company>), posted <date>:\` then the post's text. The author is a person or a company page.
 - Zero or more \`Shared by <name> (<headline>) with this added text:\` sections: people who shared the post and the words they added. Added text belongs to the same post: it may give the only way to apply, or say the role is filled.
 - \`Links in the post:\` every email address and link the post carries, one per line: email addresses first, then LinkedIn job links, then other links. Only these exist; the post text may show shortened forms of them.
-- \`Note: this text was cut at "see more".\` after a text cut short. A first line \`Note: the description was truncated.\` means the input was cut at its end. Judge only what you can see: a cut post may hide its way to apply.
+- \`Note: this text was cut at "see more".\` after a text cut short. A first line \`Note: the description was truncated.\` means some text was cut: at "see more" or at the input's end. The \`Links in the post\` list is never cut. Judge only what you can see: a cut post may hide its way to apply.
 
 ## Output
 
@@ -47,7 +47,7 @@ Signs of junk often come together: many hashtags, "tag your friends", "repost to
 - A non-software role (IT support, sales) at a real employer is \`hiring\`.
 - When the post names several reasons, pick the one that decides the verdict.
 - \`quote\`: the words that show the verdict.
-- \`confidence\`: \`unsure\` only for a genuine toss-up between two readings, such as hiring or junk. An unsure post goes to a person who reads it, so when one reading is clearly the likelier one, record it as \`sure\`.
+- \`confidence\`: \`unsure\` only for a genuine toss-up between two readings, such as hiring or junk. An unsure post goes to a person who reads it, so when one reading is clearly the likelier one, record it as \`sure\`. When the toss-up is between \`hiring\` and another verdict, record \`hiring\` with \`unsure\` and record its roles, so a person can read them.
 
 \`roles\` is \`[]\` unless the verdict is \`hiring\`; a \`hiring\` post has at least one role.
 
@@ -69,7 +69,7 @@ Each role entry holds every top-level key of the job-posting facts below (\`posi
 
 \`kinds\`, every one that holds:
 
-- \`email\`: send a CV or message to an email address.
+- \`email\`: send a CV or message to an email address. Use \`email\` only when its address is in the \`Links in the post\` list. When the post asks for an email but none is listed (none given, hidden behind "see more", or written in a disguised form), leave \`email\` out of \`kinds\` and record the kinds that do hold, or \`["unstated"]\`.
 - \`external_link\`: an application form, ATS posting or careers page.
 - \`linkedin_job\`: a LinkedIn job link.
 - \`connect_dm_comment\`: "DM me", "comment 'interested'", "connect with me".
@@ -79,6 +79,6 @@ Each role entry holds every top-level key of the job-posting facts below (\`posi
 
 \`emailQuote\`: verbatim words from the post that contain the address and show it is offered for applying; \`""\` when \`email\` is \`null\`.
 
-\`links\`: the apply links for \`external_link\` and \`linkedin_job\`, each copied exactly from the \`Links in the post\` list; \`[]\` when there are none. Never a link that is not in that list.
+\`links\`: the apply links for \`external_link\` and \`linkedin_job\`, each copied exactly from the \`Links in the post\` list; \`[]\` when there are none. Never a link that is not in that list. Use \`external_link\` or \`linkedin_job\` only when its link is in that list; when the post points to an application link that is not listed, leave that kind out and record the kinds that do hold, or \`["unstated"]\`.
 
 \`quote\`: the words that say how to apply.`;
