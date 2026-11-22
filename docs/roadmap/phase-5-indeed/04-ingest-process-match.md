@@ -30,5 +30,5 @@ This is the "prepare" and "extract" of the request: for listings, preparing is i
 ## Open questions
 
 - Claude quota: Indeed may add many jobs to process on the owner's subscription. Does it need a pre-filter before Claude (for example clearly non-engineering titles), and if so, which drops are safe given "missing the right jobs" is an anti-goal?
-- Indeed's descriptions are often HTML fragments; is the existing text cleaner enough?
+- ~~Indeed's descriptions are often HTML fragments; is the existing text cleaner enough?~~ Yes: `htmlToPlainText` gave a full description on 100% of rows on every actor (slice 01).
 - Does `db:archive-actor` work for Indeed actors unchanged?

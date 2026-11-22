@@ -31,7 +31,7 @@ The hosted engine collects Indeed jobs for every published profile with Indeed o
 
 ## Open questions
 
-- Indeed's keyword limits and whether one search per profile group fits, or groups need splitting like LinkedIn's.
-- Indeed's language per site (French on ma.indeed.com, Portuguese on Brazil, Polish on Poland): do English keywords find enough there?
-- How remote is filtered per site (Indeed's remote attribute vs "remote" in the keyword).
-- Rows per search per tick, given Indeed's page size and result cap.
+- ~~Indeed's keyword limits and whether one search per profile group fits.~~ The LinkedIn merged boolean keyword works as is, up to 403 characters (slice 01). The longer limit is still unmeasured.
+- Indeed's language per site: on ma.indeed.com, the recipe's French role words find French titles (slice 01). Portuguese and Polish are still open.
+- ~~How remote is filtered per site.~~ Location `Remote` works on the US and UK sites. kaix's remote filter doesn't (rich mode). memo23's remote attribute is to be rechecked on the weekday re-run (slice 01).
+- ~~Rows per search per tick.~~ In the slice 01 window, no search passed one page (15 rows), so a tick's cost is mostly the start fee. Recheck on the weekday re-run.
