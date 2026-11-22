@@ -3,7 +3,12 @@ import { httpUrl } from '../linkedin';
 import { cleanPostText, hasSeeMoreTail, sortLinks } from '../posts/clean';
 import { readPostPayload, type RawPost } from '../posts/payload';
 import { firstDrop } from '../posts/rules';
-import { emptyRecord, type NormalizedRecord, type PostAuthor } from '../record';
+import {
+  emptyRecord,
+  type NormalizedRecord,
+  type PostAuthor,
+  type PostDetail,
+} from '../record';
 
 const link = (value: string | null) =>
   value ? (httpUrl(value)?.toString() ?? null) : null;
@@ -37,6 +42,45 @@ function ownParts(p: { text: string | null; linkUrls: string[] }) {
   return {
     truncated: hasSeeMoreTail(p.text ?? ''),
     attachedUrls: [...new Set(p.linkUrls)],
+  };
+}
+
+/** The post as a record stores it, from its cleaned texts. Pure. */
+export function postDetailOf(
+  raw: RawPost,
+  id: string,
+  postingUrl: string,
+  ownText: string,
+  originalText: string,
+): PostDetail {
+  const original = raw.original;
+  const author = authorOf(raw.author);
+  return {
+    id,
+    url: postingUrl,
+    author,
+    text: ownText || null,
+    ...ownParts(raw),
+    postedAt: raw.postedAt,
+    original: original
+      ? {
+          id: original.id,
+          url: link(original.url),
+          author:
+            original.author.name ||
+            original.author.publicIdentifier ||
+            original.author.universalName
+              ? authorOf(original.author)
+              : null,
+          text: originalText || null,
+          ...ownParts(original),
+          postedAt: original.postedAt,
+        }
+      : null,
+    links: sortLinks([raw.text ?? '', original?.text ?? ''].join('\n'), [
+      ...raw.linkUrls,
+      ...(original?.linkUrls ?? []),
+    ]),
   };
 }
 
@@ -81,32 +125,6 @@ export function mapLinkedinPost(
             type: author.type,
           }
         : null,
-    post: {
-      id: raw.id,
-      url: postingUrl,
-      author,
-      text: ownText || null,
-      ...ownParts(raw),
-      postedAt: raw.postedAt,
-      original: original
-        ? {
-            id: original.id,
-            url: link(original.url),
-            author:
-              original.author.name ||
-              original.author.publicIdentifier ||
-              original.author.universalName
-                ? authorOf(original.author)
-                : null,
-            text: originalText || null,
-            ...ownParts(original),
-            postedAt: original.postedAt,
-          }
-        : null,
-      links: sortLinks([raw.text ?? '', original?.text ?? ''].join('\n'), [
-        ...raw.linkUrls,
-        ...(original?.linkUrls ?? []),
-      ]),
-    },
+    post: postDetailOf(raw, raw.id, postingUrl, ownText, originalText),
   });
 }
