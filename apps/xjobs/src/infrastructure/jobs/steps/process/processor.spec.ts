@@ -26,7 +26,7 @@ function deps(outcome = 'processed', spent = 0, paused = false) {
       releaseStale: vi.fn(async () => 3),
       spendSince: vi.fn(async () => spent),
     },
-    queue: { enqueue: vi.fn(async (_id: string) => undefined) },
+    queue: { enqueue: vi.fn(async (_id: string, _kind?: 'post') => undefined) },
     matchQueue: { enqueue: vi.fn(async () => undefined) },
     config,
   };
@@ -48,10 +48,11 @@ describe('processProcessJob', () => {
     const d = deps();
     d.repo.listPendingPosts.mockResolvedValue(['p1']);
     const result = await processProcessJob(job('sweep'), d as never);
-    expect(d.queue.enqueue.mock.calls.map((c) => c[0])).toEqual([
-      'j1',
-      'j2',
-      'p1',
+    // Posts at their lower priority: a listing queued later still goes first.
+    expect(d.queue.enqueue.mock.calls).toEqual([
+      ['j1'],
+      ['j2'],
+      ['p1', 'post'],
     ]);
     expect(result).toMatchObject({ enqueued: 3 });
     expect(d.repo.listPendingPosts).toHaveBeenCalledWith(200);

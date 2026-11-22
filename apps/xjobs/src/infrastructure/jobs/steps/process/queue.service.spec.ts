@@ -46,7 +46,7 @@ vi.mock('ioredis', () => ({
 }));
 
 import type { ProcessorConfig } from 'src/modules/processor';
-import { PROCESS_JOB, ProcessQueue } from './queue.service';
+import { POST_PRIORITY, PROCESS_JOB, ProcessQueue } from './queue.service';
 
 const config = { maxAttempts: 3 } as ProcessorConfig;
 const settings = {
@@ -91,5 +91,30 @@ describe('ProcessQueue', () => {
       ],
     ]);
     expect(created.jobs.get('j1')).toBe('waiting');
+  });
+
+  it('queues a post at a lower priority than a listing, which has none', async () => {
+    const queue = new ProcessQueue(settings, config);
+    await queue.enqueue('j1');
+    await queue.enqueue('p1', 'post');
+    expect(created.added).toEqual([
+      [
+        PROCESS_JOB,
+        { jobId: 'j1' },
+        { jobId: 'j1', removeOnComplete: true, removeOnFail: true },
+      ],
+      [
+        PROCESS_JOB,
+        { jobId: 'p1' },
+        {
+          jobId: 'p1',
+          removeOnComplete: true,
+          removeOnFail: true,
+          priority: POST_PRIORITY,
+        },
+      ],
+    ]);
+    // BullMQ takes jobs with no priority before any prioritized job.
+    expect(POST_PRIORITY).toBeGreaterThan(0);
   });
 });

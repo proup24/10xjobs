@@ -45,7 +45,11 @@ export async function processIngestJob(
         // fail to claim them.
         if (!isLinkedinJobBoard(channel) && channel !== Channel.LINKEDIN_POSTS)
           return;
-        for (const jobId of jobIds) await deps.processQueue.enqueue(jobId);
+        // A posts batch holds only post jobs: at the posts' lower priority.
+        for (const jobId of jobIds)
+          if (channel === Channel.LINKEDIN_POSTS)
+            await deps.processQueue.enqueue(jobId, 'post');
+          else await deps.processQueue.enqueue(jobId);
       },
     });
   }

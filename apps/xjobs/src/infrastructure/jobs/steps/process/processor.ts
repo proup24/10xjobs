@@ -67,18 +67,19 @@ export async function processProcessJob(
     const spent = await deps.repo.spendSince(startOfUtcDay(now));
     if (deps.config.dailyBudgetUsd > 0 && spent >= deps.config.dailyBudgetUsd)
       return { released, enqueued: 0 };
-    // Listings first, so a post never goes ahead of a listing already waiting.
-    // Posts get the same limit, and none are listed while the daily post cap
-    // is reached, so they are not claimed and bounced every minute.
+    // Posts go at their lower queue priority, so a listing queued after them
+    // (by this sweep or a later ingest nudge) is still taken first. Posts get
+    // the same limit, and none are listed while the daily post cap is
+    // reached, so they are not claimed and bounced every minute.
     const listings = await deps.repo.listPendingInScope(
       processSweepConfig.limit,
     );
     const posts = (await deps.service.isPostCapReached())
       ? []
       : await deps.repo.listPendingPosts(processSweepConfig.limit);
-    const pending = [...listings, ...posts];
-    for (const jobId of pending) await deps.queue.enqueue(jobId);
-    return { released, enqueued: pending.length };
+    for (const jobId of listings) await deps.queue.enqueue(jobId);
+    for (const jobId of posts) await deps.queue.enqueue(jobId, 'post');
+    return { released, enqueued: listings.length + posts.length };
   }
   throw new UnrecoverableError(`Unsupported job: ${job.name}`);
 }

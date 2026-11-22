@@ -98,7 +98,11 @@ describe('processIngestJob', () => {
       return null;
     }) as never);
     await processIngestJob(job('ingest-batch', { batchId: 'b1' }), d as never);
-    expect(d.processQueue.enqueue.mock.calls).toEqual([['j1'], ['j2']]);
+    // At the posts' lower priority, so a listing waiting is taken first.
+    expect(d.processQueue.enqueue.mock.calls).toEqual([
+      ['j1', 'post'],
+      ['j2', 'post'],
+    ]);
   });
 
   it('does not nudge the processor for channels it does not process', async () => {
