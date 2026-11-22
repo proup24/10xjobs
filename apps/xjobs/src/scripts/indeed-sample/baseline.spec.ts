@@ -8,6 +8,7 @@ import {
   type BaselineRun,
 } from './baseline';
 import type { PlaceId } from './actors';
+import { moroccoDay } from '../actor-compare/report';
 
 const PLACES = Object.keys(PLACE_GROUPS) as PlaceId[];
 const TODAY = '2026-11-22';
@@ -85,13 +86,14 @@ describe('pickBaselineDay', () => {
   });
 
   it('assigns runs to the Morocco day, not the UTC day', () => {
-    // 23:30Z on 11-20 is 00:30 (+01:00) on 11-21 in Casablanca.
-    const late = (p: PlaceId) =>
-      run(p, '2026-11-20', {
-        startedAt: new Date('2026-11-20T23:30:00Z'),
-      });
-    const runs = PLACES.map(late);
-    expect(pickBaselineDay(runs, TODAY).day).toBe('2026-11-21');
+    // Casablanca's offset depends on the runtime's tz data (+01:00 in older
+    // releases, +00:00 in newer ones for late 2026), so the expected day comes
+    // from moroccoDay itself. 23:30Z lands on the next day whenever the offset
+    // is positive, which is what a UTC-day bug would get wrong.
+    const startedAt = new Date('2026-11-20T23:30:00Z');
+    const expected = moroccoDay(startedAt);
+    const runs = PLACES.map((p: PlaceId) => run(p, expected, { startedAt }));
+    expect(pickBaselineDay(runs, TODAY).day).toBe(expected);
   });
 
   it('applies the 90% threshold: 9 of 10 qualifies, 8 of 10 does not', () => {
