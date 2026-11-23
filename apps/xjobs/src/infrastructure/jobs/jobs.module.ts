@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ActivityModule } from 'src/modules/activity';
 import { CollectorsModule } from 'src/modules/collectors';
 import { QuerySearchModule } from 'src/modules/queries';
 import { SearchSegmentsModule } from 'src/modules/segments';
@@ -14,6 +15,7 @@ import { JobsService } from './jobs.service';
 @Module({
   imports: [
     RedisSettingsModule,
+    ActivityModule,
     QuerySearchModule,
     CollectorsModule,
     SearchSegmentsModule,

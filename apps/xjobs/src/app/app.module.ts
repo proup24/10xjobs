@@ -8,7 +8,7 @@ import { DatabaseModule } from 'src/database';
 import { RedisModule } from 'src/infrastructure/redis/redis.module';
 import { JobsModule } from 'src/infrastructure/jobs/jobs.module';
 import { AdminModule } from 'src/modules/admin/admin.module';
-import { ActivityModule } from 'src/modules/activity';
+import { SearchesModule } from 'src/modules/activity';
 import { UsersModule } from 'src/modules/users';
 import { AuthModule } from 'src/modules/auth';
 import { HealthController } from './controllers/health.controller';
@@ -29,7 +29,7 @@ import { operatorImports } from './operator.module';
     RedisModule,
     JobsModule,
     UsersModule,
-    ActivityModule,
+    SearchesModule,
     AdminModule,
     // Processor, matcher and query-search routes, local only. The workers run
     // in their own process (src/worker.ts), so the API never consumes jobs.

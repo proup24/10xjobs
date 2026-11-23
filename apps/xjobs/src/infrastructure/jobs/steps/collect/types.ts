@@ -4,7 +4,12 @@ import type { SearchSegment } from 'src/modules/segments';
 /** What one collect job did across the channel's segments. */
 export interface CollectionSummary {
   channel: Channel;
+  /** Builders the tick may run: the active ones, less the paused. */
   builders: number;
+  /** Active builders left out because every owner is paused. */
+  buildersPaused: number;
+  /** Builders no longer paused, whose cursors moved to the resume point. */
+  buildersWoken: number;
   /** Segments built, plus one for each LinkedIn search halved in this run. */
   segments: number;
   segmentsFailed: number;

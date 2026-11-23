@@ -3,6 +3,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Channel, isLinkedinJobBoard } from 'src/common/enums';
 import type { WorkerProcessEnvironmentVariables } from 'src/config';
+import type { QuerySearchBuilderRow } from 'src/database';
+import { ActivityRepository } from 'src/modules/activity';
 import {
   AshbyCollector,
   GreenhouseCollector,
@@ -43,6 +45,8 @@ import { IngestQueue } from '../ingest';
 import { DailyBudget, moroccoDayStart } from './spend';
 import { halve, nextParts } from './splits';
 import { CollectionSummary, SegmentOutcome } from './types';
+const HOUR_MS = 3_600_000;
+
 /** Scheduler id and job name of a channel's recurring collect job. */
 export const COLLECT_JOB = 'collect';
 
@@ -108,6 +112,7 @@ export class CollectionService {
     private readonly queries: QuerySearchService,
     private readonly segments: SearchSegmentsRepository,
     private readonly splits: LinkedinSearchSplitsRepository,
+    private readonly activity: ActivityRepository,
     private readonly storage: StorageService,
     private readonly ingestQueue: IngestQueue,
     private readonly apify: ApifyActorProvider,
@@ -130,7 +135,10 @@ export class CollectionService {
     const config = channelJobsConfig[channel];
     // One end of window and observation time for every segment of the run.
     const until = new Date();
-    const builders = await this.queries.listActive(channel);
+    const { builders, paused, woken } = await this.runnableBuilders(
+      channel,
+      until,
+    );
     const remembered = await this.rememberedSplits(channel);
     const plan = planSegments(
       builders,
@@ -153,6 +161,8 @@ export class CollectionService {
     const summary: CollectionSummary = {
       channel,
       builders: builders.length,
+      buildersPaused: paused,
+      buildersWoken: woken,
       segments: segments.length,
       segmentsFailed: 0,
       segmentsSkipped: 0,
@@ -229,6 +239,55 @@ export class CollectionService {
         `${channel} collection failed for all ${summary.segmentsFailed} segments`,
       );
     return summary;
+  }
+
+  /**
+   * The channel's active builders less those whose every owner is paused at
+   * `until`. Marks the paused ones first, then wakes those no longer paused
+   * with a cursor `resumeHours` back, so the planning below reads it. Only
+   * known-paused ids are dropped: a builder linked after the paused set was
+   * read runs. When the paused set can't be read, the tick fails open: it
+   * marks and wakes nothing and leaves out only builders already paused,
+   * whose stale cursors would widen a shared search. A failed mark or wake
+   * fails the tick.
+   */
+  private async runnableBuilders(
+    channel: Channel,
+    until: Date,
+  ): Promise<{
+    builders: QuerySearchBuilderRow[];
+    paused: number;
+    woken: number;
+  }> {
+    const hours = this.config.get('SEARCH_PAUSE_AFTER_HOURS', { infer: true });
+    let paused: Set<string> | null;
+    try {
+      paused = await this.activity.pausedBuilderIds(channel, until, hours);
+    } catch (error) {
+      const name = error instanceof Error ? error.name : 'Error';
+      this.logger.error(
+        `${channel}: paused builders could not be read (${name}: ${message(error)}); running all but those already paused`,
+      );
+      paused = null;
+    }
+    let woken: string[] = [];
+    if (paused) {
+      await this.segments.markPaused([...paused], until);
+      const resumeAt = new Date(
+        until.getTime() - channelJobsConfig[channel].resumeHours * HOUR_MS,
+      );
+      woken = await this.segments.wake(channel, paused, resumeAt);
+    }
+    const listed = await this.queries.listActive(channel);
+    const builders = listed.filter((builder) =>
+      paused ? !paused.has(builder.id) : !builder.pausedAt,
+    );
+    const left = listed.length - builders.length;
+    const count = paused ? paused.size : left;
+    this.logger.log(
+      `${channel}: ${builders.length} builders runnable, ${count} paused, ${woken.length} woken`,
+    );
+    return { builders, paused: count, woken: woken.length };
   }
 
   /**
