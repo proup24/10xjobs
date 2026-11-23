@@ -24,6 +24,7 @@
   - `outcome = 'qualified'`
   - its profile has `state = 'published'`
   - its job has `normalized_jobs.status = 'active'` and `"lastSeenAt" >= t − 7 days`
+  - it is not closed, by the same rule as `match_details`: the job's `closed` flag, `job_facts.closed`, or an `expiresAt` at or before `t` (added after the PR A review: the Matches list hides closed rows)
   - there is no `job_decisions` row for `(userId, jobId)`
   - `m."decidedAt" <= t − H`
 
