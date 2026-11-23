@@ -454,3 +454,30 @@ describe('worker process configuration', () => {
       ).toThrow(/PROCESSOR_GENERATION_TRIES/);
   });
 });
+
+describe('SEARCH_PAUSE_AFTER_HOURS', () => {
+  const workerBase = {
+    ...minimal,
+    REDIS_URL: 'redis://127.0.0.1:6379',
+  };
+  it('defaults to 24 and rejects 0 and 169', () => {
+    expect(validateEnvironment(minimal).SEARCH_PAUSE_AFTER_HOURS).toBe(24);
+    expect(
+      workerProcessEnvironmentSchema.parse(workerBase).SEARCH_PAUSE_AFTER_HOURS,
+    ).toBe(24);
+    expect(
+      validateEnvironment({ ...minimal, SEARCH_PAUSE_AFTER_HOURS: '168' })
+        .SEARCH_PAUSE_AFTER_HOURS,
+    ).toBe(168);
+    for (const bad of ['0', '169', '1.5'])
+      expect(() =>
+        validateEnvironment({ ...minimal, SEARCH_PAUSE_AFTER_HOURS: bad }),
+      ).toThrow(/SEARCH_PAUSE_AFTER_HOURS/);
+    expect(() =>
+      workerProcessEnvironmentSchema.parse({
+        ...workerBase,
+        SEARCH_PAUSE_AFTER_HOURS: '0',
+      }),
+    ).toThrow();
+  });
+});

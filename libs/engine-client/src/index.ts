@@ -10,6 +10,7 @@ export type {
   PostSearchView,
   PublishedProfile,
   ReviewPage,
+  SearchesStateView,
   SilenceInput,
   SilencedAuthorView,
   VerdictView,

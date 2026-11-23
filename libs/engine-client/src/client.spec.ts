@@ -676,3 +676,42 @@ describe('engine client admin review', () => {
     expect(logged).not.toContain('secret-person');
   });
 });
+
+describe('engine client searches', () => {
+  it('searchesState maps 200', async () => {
+    const view = { paused: true, lastActiveAt: '2026-11-20T10:00:00.000Z' };
+    const { client, fetchMock } = setup(() =>
+      json(200, { status: 'success', data: view }),
+    );
+    expect(await client.searchesState()).toEqual({ kind: 'ok', data: view });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('http://engine.test/api/me/searches');
+    expect(init?.method).toBe('GET');
+    const headers = new Headers(init?.headers);
+    expect(headers.get('x-engine-key')).toBe(KEY);
+    expect(headers.get('authorization')).toBe(`Bearer ${TOKEN}`);
+  });
+
+  it('resumeSearches posts and maps 200', async () => {
+    const view = { paused: false, lastActiveAt: null };
+    const { client, fetchMock } = setup(() =>
+      json(200, { status: 'success', data: view }),
+    );
+    expect(await client.resumeSearches()).toEqual({ kind: 'ok', data: view });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('http://engine.test/api/me/searches/resume');
+    expect(init?.method).toBe('POST');
+  });
+
+  it('resumeSearches maps 503 to an error result', async () => {
+    const { client } = setup(() => json(503, { code: 'SERVICE_UNAVAILABLE' }));
+    expect(await client.resumeSearches()).toEqual({ kind: 'unavailable' });
+  });
+
+  it('searchesState rejects a malformed body', async () => {
+    const { client } = setup(() =>
+      json(200, { status: 'success', data: { paused: 'yes' } }),
+    );
+    expect(await client.searchesState()).toEqual({ kind: 'unavailable' });
+  });
+});
