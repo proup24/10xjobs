@@ -32,10 +32,7 @@ describe('mostCommonRoleWord', () => {
 
   it('counts a word once per builder and breaks ties alphabetically', () => {
     expect(
-      mostCommonRoleWord([
-        ['engineer', 'engineer', 'engineer'],
-        ['developer'],
-      ]),
+      mostCommonRoleWord([['engineer', 'engineer', 'engineer'], ['developer']]),
     ).toBe('developer');
   });
 

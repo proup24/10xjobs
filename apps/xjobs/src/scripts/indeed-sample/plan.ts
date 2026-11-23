@@ -32,7 +32,7 @@ export type EventPrices = Record<string, number>;
 const ACTOR_ORDER: ActorName[] = ['valig', 'kaix', 'memo23', 'curious_coder'];
 const PLACES: PlaceId[] = ['us-remote', 'uk-remote', 'ma-onsite'];
 
-/** The six core searches. Remote places use the actor's remote filter by default; buildPlan swaps in `location` where there is none. */
+/** The six core searches. Remote places use the actor's remote filter by default; buildPlan swaps in `location` where the actor's `coreRemoteBy` says so. */
 export function sampleSearches(k: Keywords): SampleSearch[] {
   return PLACES.flatMap((place) =>
     (['plain', 'real'] as const).map(
@@ -77,7 +77,13 @@ function probes(actor: ActorName, k: Keywords): SampleSearch[] {
     remoteBy: 'filter',
     seniorOnly: true,
   };
-  if (actor === 'kaix') return [locRemote];
+  // kaix's core remote searches use location Remote, so its probe runs the filter.
+  const filterRemote: SampleSearch = {
+    ...locRemote,
+    id: 'us-filterremote-plain',
+    remoteBy: 'filter',
+  };
+  if (actor === 'kaix') return [filterRemote];
   if (actor === 'memo23') return [locRemote, senior];
   return [];
 }
@@ -222,7 +228,7 @@ export function buildPlan(
     const spec = ACTORS[actor];
     const searches = [
       ...core.map((s) =>
-        !spec.hasRemoteFilter && s.remoteBy === 'filter'
+        spec.coreRemoteBy === 'location' && s.remoteBy === 'filter'
           ? { ...s, remoteBy: 'location' as const }
           : s,
       ),

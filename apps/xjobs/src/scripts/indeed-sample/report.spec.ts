@@ -369,6 +369,27 @@ describe('buildReport missing runs', () => {
 });
 
 describe('buildReport probes', () => {
+  it('pairs a us-filterremote-plain probe with the core location search', () => {
+    // kaix from 2026-11-23: core us-remote-plain uses location Remote, the probe the filter.
+    const all = range('f', 50);
+    const r = report([
+      result(
+        'kaix',
+        'us-filterremote-plain',
+        all.slice(1).map((jk) => job(jk)),
+      ),
+      result(
+        'kaix',
+        'us-remote-plain',
+        all.map((jk) => job(jk)),
+      ),
+    ]);
+    const probe = r.probes.remoteFilter.kaix;
+    expect(probe?.lostShare).toBe(0.02);
+    expect(probe?.lost.map((l) => l.jk)).toEqual(['f0']);
+    expect(r.perActor.kaix.relevantByPlace['us-remote']).toBe(50);
+  });
+
   it('reports the lost share of the remote filter', () => {
     const all = range('r', 50);
     const r = report([

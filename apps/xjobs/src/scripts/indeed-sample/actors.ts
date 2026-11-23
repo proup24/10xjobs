@@ -39,6 +39,12 @@ export interface ActorSpec {
   actorId: string;
   rows: number;
   hasRemoteFilter: boolean;
+  /**
+   * How the core remote searches ask for remote. 'filter' only where the filter was
+   * measured trustworthy; kaix's rich-mode filter returned on-site jobs near the proxy
+   * on 2026-11-22, so kaix uses location `Remote` and probes the filter instead.
+   */
+  coreRemoteBy: 'filter' | 'location';
   /** Per-row Apify event names this actor's input turns on, plus its start event. */
   rowEvents: string[];
   /** Charged once per started GB of `memoryMbytes`, at least once. */
@@ -306,6 +312,7 @@ export const ACTORS: Record<ActorName, ActorSpec> = {
     actorId: 'valig/indeed-jobs-scraper',
     rows: 100,
     hasRemoteFilter: false,
+    coreRemoteBy: 'location',
     rowEvents: ['apify-default-dataset-item'],
     startEvent: 'apify-actor-start',
     knownOffEvents: {},
@@ -324,6 +331,7 @@ export const ACTORS: Record<ActorName, ActorSpec> = {
     actorId: 'kaix/indeed-scraper',
     rows: 100,
     hasRemoteFilter: true,
+    coreRemoteBy: 'location',
     rowEvents: ['apify-default-dataset-item'],
     startEvent: 'apify-actor-start',
     knownOffEvents: {},
@@ -346,6 +354,7 @@ export const ACTORS: Record<ActorName, ActorSpec> = {
     actorId: 'memo23/apify-indeed-cheerio-ppr',
     rows: 50,
     hasRemoteFilter: true,
+    coreRemoteBy: 'filter',
     rowEvents: ['apify-default-dataset-item', 'additional-data'],
     startEvent: 'apify-actor-start',
     knownOffEvents: {
@@ -376,6 +385,7 @@ export const ACTORS: Record<ActorName, ActorSpec> = {
     actorId: 'curious_coder/indeed-scraper',
     rows: 100,
     hasRemoteFilter: false,
+    coreRemoteBy: 'location',
     rowEvents: ['apify-default-dataset-item'],
     startEvent: 'apify-actor-start',
     knownOffEvents: {},

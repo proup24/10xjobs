@@ -43,7 +43,7 @@ Apify lists dozens of Indeed actors at very different prices ($0.03 to $5 per 1,
 - **Volume is the open question:** at most 13 relevant US remote jobs in Indeed's 24-hour window (Saturday to Sunday), against harvestapi's 536 on 2026-11-19, a Thursday. Indeed itself ran out of results on every search.
 - **Dev overlap is 0:** none of the sampled jobs is on dev.
 - **Filters:** kaix's remote filter (rich mode) is not trusted (measured). It returned old on-site jobs near the proxy. Location `Remote` works on every actor.
-- **Next:** a weekday re-run of the same 27 runs (about $0.09 spent, the user's OK at the time). First decide whether kaix's core remote searches use location `Remote`.
+- **Next:** a weekday re-run of the same 27 runs (about $0.09 spent, the user's OK at the time). kaix's core remote searches now use location `Remote`, with the filter as the probe. Set for 2026-11-23 at 18:00 UTC _(user)_.
 
 ## Open questions
 
