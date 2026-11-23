@@ -1,6 +1,8 @@
 import { linkedinKeyword } from 'src/modules/queries/channels/linkedin_keyword';
 import {
+  harvestGroupKey,
   linkedinGroupKey,
+  mergedExperienceLevel,
   mergedLinkedinKeyword,
   toHarvestJobSearchInput,
 } from './linkedin-job-board.mapper';
@@ -123,5 +125,40 @@ describe('mergedLinkedinKeyword', () => {
         { params: { roleWords: ['developer'], spellings: ['go', 'rust'] } },
       ]),
     ).toBe(linkedinKeyword(['backend', 'developer'], ['go', 'golang', 'rust']));
+  });
+});
+
+describe('harvestGroupKey', () => {
+  it('is the group key without the level', () => {
+    const params = { location: 'Germany', experienceLevel: '4', workType: '2' };
+    expect(harvestGroupKey(params)).toBe(
+      linkedinGroupKey({ location: 'Germany', workType: '2' }),
+    );
+  });
+  it('is equal across levels and differs across work types', () => {
+    const a = harvestGroupKey({ location: 'Germany', experienceLevel: '2' });
+    expect(a).toBe(
+      harvestGroupKey({ location: 'Germany', experienceLevel: '5' }),
+    );
+    expect(a).not.toBe(harvestGroupKey({ location: 'Germany', workType: '3' }));
+  });
+});
+
+describe('mergedExperienceLevel', () => {
+  const q = (experienceLevel?: string) => ({
+    params: experienceLevel === undefined ? {} : { experienceLevel },
+  });
+  it('is the sorted, deduplicated union of the members codes', () => {
+    expect(mergedExperienceLevel([q('5'), q('3'), q('4'), q('4')])).toBe(
+      '3,4,5',
+    );
+    expect(mergedExperienceLevel([q('4,5'), q('2')])).toBe('2,4,5');
+  });
+  it('is undefined when any member has no level', () => {
+    expect(mergedExperienceLevel([q('4'), q()])).toBeUndefined();
+    expect(mergedExperienceLevel([q('4'), q('')])).toBeUndefined();
+  });
+  it('is undefined for no members', () => {
+    expect(mergedExperienceLevel([])).toBeUndefined();
   });
 });
