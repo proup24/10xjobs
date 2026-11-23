@@ -39,6 +39,8 @@ export interface PostScore {
   verdictReviewed: boolean;
   /** Every labelled role reviewed, and at least one for a hiring label. */
   rolesReviewed: boolean;
+  /** Verdict reviewed by the owner and, for hiring, every role too (absent `reviewedBy` is the owner). */
+  ownerReviewed: boolean;
   got: { value: Verdict; confidence: Confidence } | null;
   /** The generation's last errors when it never validated; null otherwise. */
   failed: string[] | null;
@@ -167,12 +169,19 @@ export function scorePost(
       : [],
   );
 
+  const byOwner = (x: { reviewed: boolean; reviewedBy?: string }): boolean =>
+    x.reviewed && (x.reviewedBy ?? 'owner') === 'owner';
+
   return {
     index: extra.index ?? null,
     rawItemId: c.rawItemId,
     label,
     verdictReviewed: c.verdict.reviewed,
     rolesReviewed,
+    ownerReviewed:
+      byOwner(c.verdict) &&
+      c.roles.every(byOwner) &&
+      (label !== 'hiring' || c.roles.length > 0),
     got: doc
       ? { value: doc.verdict.value, confidence: doc.verdict.confidence }
       : null,
@@ -223,6 +232,10 @@ export interface PostEvalReport {
   /** Unsure verdicts, by the case's label. */
   unsureByLabel: Record<Verdict, number>;
   bars: Record<PostBarName, PostBar>;
+  /** Cases whose labels the owner reviewed (see `PostScore.ownerReviewed`). */
+  ownerCases: number;
+  /** The same three bars over the owner-reviewed cases alone. */
+  ownerBars: Record<PostBarName, PostBar>;
   /**
    * The listing fact bars on the reviewed labelled roles, plus the cases
    * blocking them; a fact bar no reviewed role labels passes (it does not apply).
@@ -239,24 +252,12 @@ const show = (email: string | null): string => email ?? 'no email';
 const outcome = (s: PostScore): string =>
   s.got ? `${s.got.value} (${s.got.confidence})` : 'nothing (failed)';
 
-/**
- * The post report. Every bar uses every case's verdict label (it decides
- * which cases a bar counts), so one unreviewed verdict fails all of them; the
- * email and role fact bars also use the role labels of the cases labelled
- * hiring, so an unreviewed role, or a hiring case with no roles, fails those.
- * A not-hiring or junk case whose generation failed also blocks wrongSends.
- */
-export function summarizePosts(scores: PostScore[]): PostEvalReport {
-  const verdictBlocked = scores.filter((s) => !s.verdictReviewed).map(idOf);
-  const roleBlocked = [
-    ...new Set([
-      ...verdictBlocked,
-      ...scores
-        .filter((s) => s.label === 'hiring' && !s.rolesReviewed)
-        .map(idOf),
-    ]),
-  ];
-
+/** The three bars over `scores`, with the cases whose unreviewed labels block them. */
+function barsOf(
+  scores: PostScore[],
+  verdictBlocked: (number | string)[],
+  roleBlocked: (number | string)[],
+): Record<PostBarName, PostBar> {
   const notHiring = scores.filter((s) => s.label !== 'hiring');
   const hiring = scores.filter((s) => s.label === 'hiring');
   const withEmail = hiring.filter((s) => s.emailExact !== null);
@@ -311,6 +312,30 @@ export function summarizePosts(scores: PostScore[]): PostEvalReport {
       (v) => v >= POST_BARS.hiringKept,
     ),
   };
+  return bars;
+}
+
+/**
+ * The post report. Every bar uses every case's verdict label (it decides
+ * which cases a bar counts), so one unreviewed verdict fails all of them; the
+ * email and role fact bars also use the role labels of the cases labelled
+ * hiring, so an unreviewed role, or a hiring case with no roles, fails those.
+ * A not-hiring or junk case whose generation failed also blocks wrongSends.
+ */
+export function summarizePosts(scores: PostScore[]): PostEvalReport {
+  const verdictBlocked = scores.filter((s) => !s.verdictReviewed).map(idOf);
+  const roleBlocked = [
+    ...new Set([
+      ...verdictBlocked,
+      ...scores
+        .filter((s) => s.label === 'hiring' && !s.rolesReviewed)
+        .map(idOf),
+    ]),
+  ];
+
+  const bars = barsOf(scores, verdictBlocked, roleBlocked);
+  const owner = scores.filter((s) => s.ownerReviewed);
+  const ownerBars = barsOf(owner, [], []);
 
   const facts = summarize(scores.flatMap((s) => s.roleFacts));
   // A listing fact bar applies only where some reviewed role labels its fact.
@@ -337,6 +362,8 @@ export function summarizePosts(scores: PostScore[]): PostEvalReport {
     cases: scores.length,
     ...confusionOf(scores),
     bars,
+    ownerCases: owner.length,
+    ownerBars,
     roleFacts,
     generatorCallsPerPost: perPost((s) => s.generatorCalls),
     costPerPost: perPost((s) => s.costUsd),

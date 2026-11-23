@@ -489,4 +489,112 @@ describe('the post eval', () => {
     expect(report.generatorCallsPerPost).toBe(2);
     expect(report.costPerPost).toBeCloseTo(0.03);
   });
+
+  describe('owner-reviewed bars', () => {
+    const agreed = (c: PostGoldenCase): PostGoldenCase => ({
+      ...c,
+      verdict: { ...c.verdict, reviewedBy: 'agreement' },
+      roles: c.roles.map((r) => ({ ...r, reviewedBy: 'agreement' })),
+    });
+
+    it('counts a label reviewed by agreement for the bars, but not as owner-reviewed', async () => {
+      const hiring = await assembled('hiring', 'sure', [
+        role('Backend Engineer', 'jobs@acme.com'),
+      ]);
+      const score = scorePost(
+        agreed(
+          goldenCase('hiring', [
+            labelRole('Backend Engineer', 'jobs@acme.com'),
+          ]),
+        ),
+        hiring,
+        { index: 0 },
+      );
+      const report = summarizePosts([score]);
+
+      expect(score.verdictReviewed).toBe(true);
+      expect(score.rolesReviewed).toBe(true);
+      expect(score.ownerReviewed).toBe(false);
+      expect(report.pass).toBe(true);
+      expect(report.ownerCases).toBe(0);
+      expect(report.ownerBars.hiringKept).toMatchObject({
+        scored: 0,
+        value: null,
+        pass: false,
+      });
+    });
+
+    it('treats an absent reviewedBy as the owner', async () => {
+      const report = summarizePosts(await passingSet());
+
+      expect(report.ownerCases).toBe(2);
+      expect(report.ownerBars.hiringKept).toMatchObject({
+        value: 1,
+        pass: true,
+      });
+    });
+
+    it('needs the owner on every role of a hiring case', async () => {
+      const got = await assembled('hiring', 'sure', [
+        role('Backend Engineer', 'jobs@acme.com'),
+        role('Data Engineer', 'jobs@acme.com'),
+      ]);
+      const score = scorePost(
+        goldenCase('hiring', [
+          labelRole('Backend Engineer', 'jobs@acme.com', {
+            reviewedBy: 'owner',
+          }),
+          labelRole('Data Engineer', 'jobs@acme.com', {
+            reviewedBy: 'agreement',
+          }),
+        ]),
+        got,
+        { index: 1 },
+      );
+
+      expect(score.rolesReviewed).toBe(true);
+      expect(score.ownerReviewed).toBe(false);
+    });
+
+    it('scores the bars on owner-reviewed cases alone, so an agreement-case miss does not show there', async () => {
+      const wrongEmail = await assembled('hiring', 'sure', [
+        role('Backend Engineer', 'cv@acme.com'),
+      ]);
+      const missed = scorePost(
+        agreed(
+          goldenCase('hiring', [
+            labelRole('Backend Engineer', 'jobs@acme.com'),
+          ]),
+        ),
+        wrongEmail,
+        { index: 5 },
+      );
+      const report = summarizePosts([...(await passingSet()), missed]);
+
+      expect(report.bars.contactEmailExact).toMatchObject({
+        scored: 2,
+        pass: false,
+      });
+      expect(report.ownerCases).toBe(2);
+      expect(report.ownerBars.contactEmailExact).toMatchObject({
+        value: 1,
+        scored: 1,
+        pass: true,
+      });
+      expect(report.ownerBars.wrongSends).toMatchObject({
+        scored: 1,
+        pass: true,
+      });
+    });
+
+    it('leaves an unreviewed case out of the owner bars', async () => {
+      const got = await assembled('not_hiring', 'sure');
+      const report = summarizePosts([
+        scorePost(goldenCase('not_hiring', [], false), got, { index: 9 }),
+      ]);
+
+      expect(report.ownerCases).toBe(0);
+      expect(report.ownerBars.wrongSends.scored).toBe(0);
+    });
+  });
 });

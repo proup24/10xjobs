@@ -220,13 +220,19 @@ function printPosts(report: PostEvalReport): void {
     ids.length
       ? `; unreviewed labels in ${ids.length} cases: ${ids.slice(0, 20).join(', ')}${ids.length > 20 ? ', …' : ''}`
       : '';
-  for (const [name, bar] of Object.entries(report.bars)) {
-    const value =
-      name === 'wrongSends' ? String(bar.value) : pct(bar.value).trim();
-    console.log(
-      `  ${bar.pass ? 'PASS' : 'FAIL'} ${name} ${value} (${name === 'wrongSends' ? '<=' : '>='} ${bar.threshold}; over ${bar.scored} cases${blocked(bar.blockedBy)})`,
-    );
-  }
+  const printBars = (bars: PostEvalReport['bars']): void => {
+    for (const [name, bar] of Object.entries(bars)) {
+      const value =
+        name === 'wrongSends' ? String(bar.value) : pct(bar.value).trim();
+      console.log(
+        `  ${bar.pass ? 'PASS' : 'FAIL'} ${name} ${value} (${name === 'wrongSends' ? '<=' : '>='} ${bar.threshold}; over ${bar.scored} cases${blocked(bar.blockedBy)})`,
+      );
+    }
+  };
+  printBars(report.bars);
+  console.log(`\nowner-reviewed only (${report.ownerCases} cases):`);
+  printBars(report.ownerBars);
+  console.log('');
   // A fact bar with nothing scored passes as not applying; show it as n/a.
   const scoredFor = (name: string): number =>
     name === 'sureContradicted'
