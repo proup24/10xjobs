@@ -160,7 +160,8 @@ The report's pick order is **curious_coder, valig, kaix**.
 
 - **When:** a weekday evening UTC (for example Wednesday 2026-11-25), so the 24-hour window covers a full US workday. The script picks the latest qualifying harvestapi day itself, which should then fall after #99.
 - **Cost:** the same 27 runs, $1.43 reserved and about $0.09 spent. It needs the user's OK at the time. A rerun pays again.
-- **To decide first:** whether kaix's core remote searches should use location `Remote` instead of its filter (a small change to `buildInput`), so kaix is measured on remote jobs at all.
+- **kaix change (user, 2026-11-23):** kaix's core remote searches now use location `Remote`, and its probe runs the filter (`us-filterremote-plain`), so kaix is measured on remote jobs. Still 27 runs.
+- **Scheduled:** Monday 2026-11-23 at 18:00 UTC _(user)_. The window covers Sunday 18:00 to Monday 18:00 UTC: the US Monday morning and early afternoon, plus Sunday evening.
 
 ## Preference → search map
 

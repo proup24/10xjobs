@@ -140,6 +140,11 @@ const REMOTE_PROBE = {
   filtered: 'us-remote-plain',
   unfiltered: 'us-locremote-plain',
 };
+/** The pair when the core search uses location Remote and the probe runs the filter (kaix from 2026-11-23). */
+const FILTER_REMOTE_PROBE = {
+  filtered: 'us-filterremote-plain',
+  unfiltered: 'us-remote-plain',
+};
 const SENIOR_PROBE = {
   filtered: 'us-remote-plain-senior',
   unfiltered: 'us-remote-plain',
@@ -549,7 +554,13 @@ export function buildReport(input: {
       };
     }
 
-    const remote = probe(actor, runs, REMOTE_PROBE, spell('us-remote'));
+    // A saved folder from before 2026-11-23 has the old pair, so the runs choose it.
+    const remotePair = runs.some(
+      (r) => r.searchId === FILTER_REMOTE_PROBE.filtered,
+    )
+      ? FILTER_REMOTE_PROBE
+      : REMOTE_PROBE;
+    const remote = probe(actor, runs, remotePair, spell('us-remote'));
     if (remote) remoteFilter[actor] = remote;
     if (actor === 'memo23') {
       const senior = probe(actor, runs, SENIOR_PROBE, spell('us-remote'));

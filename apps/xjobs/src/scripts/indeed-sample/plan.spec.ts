@@ -77,7 +77,7 @@ describe('sampleSearches', () => {
       (r) => !isCoreSearch(r.search),
     );
     expect(probes.map((r) => r.search.id)).toEqual([
-      'us-locremote-plain',
+      'us-filterremote-plain',
       'us-locremote-plain',
       'us-remote-plain-senior',
     ]);
@@ -116,26 +116,28 @@ describe('buildPlan', () => {
     }
   });
 
-  it('gives kaix 7 runs: core plus us-locremote-plain', () => {
+  it('gives kaix 7 runs: core on location Remote plus a filter probe', () => {
+    // Measured 2026-11-22: kaix's rich-mode remote filter returned on-site jobs
+    // near the proxy, so its core remote searches use location Remote.
     const runs = byActor('kaix');
     expect(runs.map((r) => r.search.id)).toEqual([
       ...sampleSearches(KEYWORDS).map((s) => s.id),
-      'us-locremote-plain',
+      'us-filterremote-plain',
     ]);
     const core = runs.slice(0, 6);
-    expect(
-      core
-        .filter((r) => r.search.place !== 'ma-onsite')
-        .every((r) => r.search.remoteBy === 'filter'),
-    ).toBe(true);
-    const probe = runs[6].search;
-    expect(probe).toMatchObject({
+    for (const run of core.filter((r) => r.search.place !== 'ma-onsite')) {
+      expect(run.search.remoteBy).toBe('location');
+      expect(run.input).toMatchObject({ location: 'Remote', remote: '' });
+    }
+    const probe = runs[6];
+    expect(probe.search).toMatchObject({
       place: 'us-remote',
       keywordKind: 'plain',
       keyword: 'software engineer',
-      remoteBy: 'location',
+      remoteBy: 'filter',
       seniorOnly: false,
     });
+    expect(probe.input).toMatchObject({ location: '', remote: 'remote' });
   });
 
   it('gives memo23 8 runs with a senior-only probe', () => {
