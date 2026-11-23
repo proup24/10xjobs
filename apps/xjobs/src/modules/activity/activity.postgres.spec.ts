@@ -115,7 +115,13 @@ describe.skipIf(!url)('activity in PostgreSQL', () => {
   }
 
   async function seedJob(
-    over: { lastSeenAt?: Date; mergedIntoId?: string } = {},
+    over: {
+      lastSeenAt?: Date;
+      mergedIntoId?: string;
+      closed?: boolean;
+      factsClosed?: boolean;
+      expiresAt?: Date;
+    } = {},
   ): Promise<Job> {
     const job = await db.orm.public.NormalizedJob.create({
       jobKey: randomUUID(),
@@ -126,7 +132,8 @@ describe.skipIf(!url)('activity in PostgreSQL', () => {
       companyName: 'Acme',
       descriptionText: 'We build things.',
       postingUrl: `https://example.com/${randomUUID()}`,
-      closed: false,
+      closed: over.closed ?? false,
+      expiresAt: over.expiresAt ?? null,
       fieldSources: {},
       firstSeenAt: hoursBefore(20 * 24),
       lastSeenAt: over.lastSeenAt ?? hoursBefore(1),
@@ -164,6 +171,13 @@ describe.skipIf(!url)('activity in PostgreSQL', () => {
       salaryPeriod: null,
       costUsd: '0',
     });
+    if (over.factsClosed !== undefined)
+      await exec(
+        db.raw.sql`INSERT INTO job_facts
+            ("jobId", "extractionId", "factsVersion", "factsHash", facts, closed, "builtAt", "createdAt", "updatedAt")
+          VALUES (${job.id}::uuid, ${extraction.id}::uuid, 1, 'h1', '{}'::jsonb,
+            ${over.factsClosed}::boolean, now(), now(), now())`,
+      );
     return { jobId: job.id, extractionId: extraction.id };
   }
 
@@ -414,6 +428,45 @@ describe.skipIf(!url)('activity in PostgreSQL', () => {
 
     expect(await paused()).toEqual([]);
     expect((await repo.userState(userId, at, H)).paused).toBe(false);
+  });
+
+  // The Matches list hides closed jobs (match_details `closed`), so they never wait.
+  it.each([
+    ['its own closed flag', { closed: true }],
+    ['closed job facts', { factsClosed: true }],
+    ['a LinkedIn expiry at or before the tick', { expiresAt: hoursBefore(2) }],
+  ] as const)(
+    'a match on a job closed by %s does not pause',
+    async (_, job) => {
+      const userId = await seedUser();
+      const profileId = await seedProfile(userId);
+      await link(profileId, await seedBuilder());
+      await seedMatch(userId, profileId, await seedJob(job), {
+        decidedAt: hoursBefore(25),
+      });
+
+      expect(await paused()).toEqual([]);
+      expect((await repo.userState(userId, at, H)).paused).toBe(false);
+    },
+  );
+
+  it('counts a job with open facts or an expiry after the tick as waiting', async () => {
+    const userId = await seedUser();
+    const profileId = await seedProfile(userId);
+    const builderId = await seedBuilder();
+    await link(profileId, builderId);
+    // Expires after the tick but before now(): expiry is judged at the tick.
+    await seedMatch(
+      userId,
+      profileId,
+      await seedJob({
+        factsClosed: false,
+        expiresAt: new Date(at.getTime() + 3600_000),
+      }),
+      { decidedAt: hoursBefore(25) },
+    );
+
+    expect(await paused()).toEqual([builderId]);
   });
 
   it('keeps a shared builder runnable while one owner is active', async () => {

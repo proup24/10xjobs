@@ -12,8 +12,8 @@ const TEXT = 'pg/text@1';
  * the only definition of a paused user. Spliced in as `WITH ${…}`.
  *
  * A user is paused when a match has waited in their Matches list at least
- * `hours` (a qualified match of a published profile, on an active job seen in
- * the last 7 days, with no decision, decided at or before `at − hours`; the
+ * `hours` (a qualified match of a published profile, on an active, open job
+ * seen in the last 7 days, with no decision, decided at or before `at − hours`; the
  * list of `match_details` and the web page) and none of the four activity
  * signals falls in `(at − hours, at]`: a decision of any status, a delivered
  * match webhook, a resume, or a published profile's `publishedAt`. A waiting
@@ -30,11 +30,15 @@ export function pausedUsersCte(raw: Raw, at: Date, hours: number): Cte {
              SELECT 1 FROM public.job_matches m
                JOIN public.profiles p ON p.id = m."profileId" AND p.state = 'published'
                JOIN public.normalized_jobs j ON j.id = m."jobId"
+               LEFT JOIN public.job_facts f ON f."jobId" = m."jobId"
               WHERE m."userId" = u.id
                 AND m.outcome = 'qualified'
                 AND m."decidedAt" <= w."since"
                 AND j.status = 'active'
                 AND j."lastSeenAt" >= w."at" - interval '7 days'
+                -- match_details' "closed", with the expiry judged at the tick.
+                AND NOT (j.closed OR COALESCE(f.closed, false)
+                         OR (j."expiresAt" IS NOT NULL AND j."expiresAt" <= w."at"))
                 AND NOT EXISTS (
                   SELECT 1 FROM public.job_decisions d
                    WHERE d."userId" = m."userId" AND d."jobId" = m."jobId"))
