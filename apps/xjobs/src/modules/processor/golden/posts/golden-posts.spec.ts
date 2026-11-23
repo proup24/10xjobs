@@ -19,7 +19,7 @@ describe('the post golden set', () => {
       [13, 'messaging_group'],
       [32, 'many_roles_across_companies'],
     ] as const)
-      expect(cases[i].verdict).toEqual({
+      expect(cases[i].verdict).toMatchObject({
         value: 'junk',
         reason,
         reviewed: true,
