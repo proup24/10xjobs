@@ -7,6 +7,7 @@ import {
 } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
 import {
+  harvestGroupKey,
   linkedinGroupKey,
   mergedLinkedinKeyword,
 } from 'src/modules/collectors/providers/mappers/linkedin-job-board.mapper';
@@ -173,7 +174,7 @@ describe('buildSegments', () => {
 
   it('keys a LinkedIn job board builder by its group, with the geoId before location text', () => {
     expect(segmentKey(builder({ params: { location: 'emea' } }))).toBe(
-      `${Channel.LINKEDIN_JOB_BOARD}|onsite|group:${linkedinGroupKey({ location: 'emea' })}`,
+      `${Channel.LINKEDIN_JOB_BOARD}|onsite|group:${harvestGroupKey({ location: 'emea' })}`,
     );
     expect(
       segmentKey(
@@ -187,7 +188,7 @@ describe('buildSegments', () => {
         }),
       ),
     ).toBe(
-      `${Channel.LINKEDIN_JOB_BOARD}|onsite|group:${linkedinGroupKey({ location: 'emea', geoId: '91000000', experienceLevel: '4', workType: '2' })}`,
+      `${Channel.LINKEDIN_JOB_BOARD}|onsite|group:${harvestGroupKey({ location: 'emea', geoId: '91000000', experienceLevel: '4', workType: '2' })}`,
     );
   });
 
@@ -199,6 +200,9 @@ describe('buildSegments', () => {
     );
     expect(main.startsWith('LINKEDIN_JOB_BOARD|')).toBe(true);
     expect(trial.startsWith('LINKEDIN_JOB_BOARD_CHEAP|')).toBe(true);
+    expect(main).toBe(
+      `${Channel.LINKEDIN_JOB_BOARD}|onsite|group:${harvestGroupKey(params)}`,
+    );
     expect(trial).toBe(
       `${Channel.LINKEDIN_JOB_BOARD_CHEAP}|onsite|group:${linkedinGroupKey(params)}`,
     );
@@ -244,15 +248,38 @@ describe('buildSegments', () => {
     expect(segments[0].members).toHaveLength(2);
   });
 
-  it('keeps levels and work types apart', () => {
+  it('merges levels of one place and work type, and keeps work types and places apart', () => {
     const base = { location: 'Germany' };
+    const noLevel = builder({ params: base });
+    const level4 = builder({ params: { ...base, experienceLevel: '4' } });
     const segments = buildSegments([
-      builder({ params: base }),
-      builder({ params: { ...base, experienceLevel: '4' } }),
+      noLevel,
+      level4,
       builder({ params: { ...base, workType: '2' } }),
       builder({ params: { location: 'France' } }),
     ]);
-    expect(segments).toHaveLength(4);
+    expect(segments).toHaveLength(3);
+    const germanyOnsite = segments.find(
+      (s) => s.members.includes(noLevel) || s.members.includes(level4),
+    );
+    expect(germanyOnsite?.members.map((m) => m.id).sort()).toEqual(
+      [noLevel.id, level4.id].sort(),
+    );
+  });
+
+  it('keeps levels apart for the trial channels', () => {
+    const base = { location: 'Germany' };
+    const segments = buildSegments([
+      builder({
+        channel: Channel.LINKEDIN_JOB_BOARD_CHEAP,
+        params: { ...base, experienceLevel: '4' },
+      }),
+      builder({
+        channel: Channel.LINKEDIN_JOB_BOARD_CHEAP,
+        params: { ...base, experienceLevel: '5' },
+      }),
+    ]);
+    expect(segments).toHaveLength(2);
   });
 
   it('ignores domain for the LinkedIn job board', () => {
@@ -391,7 +418,7 @@ describe('buildSegments', () => {
     ).toContain('python');
   });
 
-  it('keeps user C Morocco onsite levels apart from other segments', () => {
+  it('merges user C Morocco onsite levels into one segment, apart from Europe', () => {
     const casa = (level: string, spellings: string[]) =>
       builder({
         params: {
@@ -417,8 +444,12 @@ describe('buildSegments', () => {
       casa('1', ['java']),
       casa('2', ['java']),
     ]);
-    expect(segments).toHaveLength(3);
-    for (const s of segments) expect(s.members).toHaveLength(1);
+    expect(segments).toHaveLength(2);
+    const morocco = segments.find((s) => s.members.length === 2);
+    expect(morocco?.members.map((m) => m.params)).toEqual([
+      expect.objectContaining({ location: 'morocco' }),
+      expect.objectContaining({ location: 'morocco' }),
+    ]);
   });
 
   describe('European Union and Europe preferences', () => {

@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { Channel, isLinkedinJobBoard } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
 import {
+  harvestGroupKey,
   linkedinGroupKey,
   linkedinMemberWords,
 } from 'src/modules/collectors/providers/mappers/linkedin-job-board.mapper';
@@ -20,7 +21,8 @@ import {
 export interface SearchSegment {
   /**
    * `channel|domain|type|place`: what every member shares. For the LinkedIn
-   * job board, `channel|type|group:<place and filters>`.
+   * job board, `channel|type|group:<place and filters>`; harvestapi's group
+   * leaves out the experience level (its search covers every level).
    */
   key: string;
   /** sha256 of the key and the ordered member ids: the segment's identity. */
@@ -32,8 +34,10 @@ export interface SearchSegment {
 export const SEGMENT_SIZE = 10;
 
 /**
- * The group a LinkedIn job board builder searches in (`linkedinGroupKey`):
- * place and filters, whatever its keyword. A builder whose place can't be
+ * The group a LinkedIn job board builder searches in: place and filters,
+ * whatever its keyword. harvestapi (`Channel.LINKEDIN_JOB_BOARD`) groups
+ * without the experience level (`harvestGroupKey`), so levels merge into one
+ * search; the trial channels keep `linkedinGroupKey`, level included. A builder whose place can't be
  * resolved (no geoId) gets a segment of its own, keyed so it can't collide with
  * a real group: its run fails loudly, naming the place, and every other
  * segment still runs.
@@ -41,7 +45,11 @@ export const SEGMENT_SIZE = 10;
 function linkedinJobBoardKey(builder: QuerySearchBuilderRow): string {
   const prefix = `${builder.channel}|${builder.type}`;
   try {
-    return `${prefix}|group:${linkedinGroupKey(params(builder))}`;
+    const key =
+      builder.channel === Channel.LINKEDIN_JOB_BOARD
+        ? harvestGroupKey(params(builder))
+        : linkedinGroupKey(params(builder));
+    return `${prefix}|group:${key}`;
   } catch {
     return `${prefix}|unresolved:${builder.id}`;
   }
