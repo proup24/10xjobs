@@ -2119,7 +2119,14 @@ describe('CollectionService paused builders', () => {
     activity.pausedBuilders.delete(BOARD);
     vi.setSystemTime(at(1));
     collector.collect.mockClear();
+    const claim = vi.spyOn(segments, 'claim');
+    claim.mockImplementationOnce(async (...args) => {
+      // Woken before planning: B's cursor is the fresh one, until − 1h.
+      expect(segments.cursors.get(b.id)).toEqual(START);
+      return FakeSearchSegmentsRepository.prototype.claim.apply(segments, args);
+    });
     await collection.collect(BOARD);
+    expect(claim).toHaveBeenCalledTimes(1);
 
     expect(searches(collector).map(ids)).toEqual([[a.id, b.id]]);
     const [second] = searches(collector);
@@ -2236,6 +2243,43 @@ describe('CollectionService paused builders', () => {
     expect(log).toHaveBeenCalledWith(
       'ASHBY: 2 builders runnable, 1 paused, 1 woken',
     );
+  });
+
+  it('runs the unflagged builders when the paused set cannot be read', async () => {
+    const plain = builder();
+    const flagged = builder({ pausedAt: new Date('2026-11-20T10:00:00Z') });
+    const { collection, collector, activity, segments } = setup([
+      plain,
+      flagged,
+    ]);
+    vi.spyOn(activity, 'pausedBuilderIds').mockRejectedValue(
+      new Error('relation does not exist'),
+    );
+    const mark = vi.spyOn(segments, 'markPaused');
+    const wake = vi.spyOn(segments, 'wake');
+    const error = vi.mocked(Logger.prototype.error);
+
+    const summary = await collection.collect(Channel.ASHBY);
+
+    expect(searches(collector).map(ids)).toEqual([[plain.id]]);
+    expect(mark).not.toHaveBeenCalled();
+    expect(wake).not.toHaveBeenCalled();
+    expect(summary).toMatchObject({
+      builders: 1,
+      buildersPaused: 1,
+      buildersWoken: 0,
+      batches: 1,
+    });
+    expect(error).toHaveBeenCalledWith(
+      expect.stringContaining('ASHBY: paused builders could not be read'),
+    );
+  });
+
+  it('fails the tick when waking fails', async () => {
+    const { collection, collector, segments } = setup([builder()]);
+    vi.spyOn(segments, 'wake').mockRejectedValue(new Error('db down'));
+    await expect(collection.collect(Channel.ASHBY)).rejects.toThrow('db down');
+    expect(collector.collect).not.toHaveBeenCalled();
   });
 
   it('counts nothing paused or woken without active builders', async () => {
