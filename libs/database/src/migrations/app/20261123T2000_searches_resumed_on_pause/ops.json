@@ -1,0 +1,24 @@
+[
+  {
+    "id": "data.searches_resumed_backfill_on_pause",
+    "invariantId": "searches-resumed-backfill-on-pause",
+    "label": "Restart the paused-searches grace for users with a published profile",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "users"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "restart users.searchesResumedAt for published users",
+        "sql": "UPDATE public.users u SET \"searchesResumedAt\" = GREATEST(COALESCE(u.\"searchesResumedAt\", now()), now())\n  WHERE EXISTS (SELECT 1 FROM public.profiles p WHERE p.\"userId\" = u.id AND p.state = 'published');"
+      }
+    ],
+    "postcheck": []
+  }
+]
