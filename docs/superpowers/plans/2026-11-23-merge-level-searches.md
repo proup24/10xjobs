@@ -16,7 +16,7 @@
 - No `QUERY_SEARCH_RECIPE_VERSION` bump and no change to builders, their hashes, claims or cursors.
 - The merged search asks for every level any member asks for, and for no `experienceLevel` at all when any member has none.
 - Work types stay separate searches.
-- Halving (`parts`, `evenChunks`, `fitChunks`) is unchanged.
+- Halving (`parts`, `evenChunks`, `fitChunks`, `halve`) keeps its shape, but for harvestapi it cuts between keyword units, never inside one, so one keyword's levels never run twice (owner, 2026-11-23); trials and every other channel are unchanged.
 
 ## Review Focus
 

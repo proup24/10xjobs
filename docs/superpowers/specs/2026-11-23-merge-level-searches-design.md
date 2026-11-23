@@ -39,7 +39,7 @@ Goal _(user)_: each row is paid for once, and no job is lost.
 - **Group key.** For `Channel.LINKEDIN_JOB_BOARD` only, the segment's group key (`segmentKey` → `linkedinGroupKey`) is place + work type, without the level. Trial channels keep the level in their key.
 - **Actor input.** The harvestapi `experienceLevel` is the sorted, deduplicated union of the members' mapped levels. If any member has no level (an unstated seniority), the input sends no `experienceLevel`. Today `toHarvestJobSearchInput` reads the first member's params; the levels now come from all members.
 - **One-search check.** `oneSearchInput` checks that members share the new level-less key, so a merged segment is still a single search.
-- **Halving.** Unchanged. A group that fills its 1,000 rows is cut into member chunks, and each chunk sends the union of its own members' levels. Rows can repeat across chunks only in those capped hours, as they do today when keyword chunks overlap.
+- **Halving.** Unchanged. A group that fills its 1,000 rows is cut into member chunks, and each chunk sends the union of its own members' levels. Rows can repeat across chunks only in those capped hours, as they do today when keyword chunks overlap. Per the owner (2026-11-23), harvestapi groups are chunked and halved by keyword unit (the members that share one keyword, typically one profile's levels), never inside one, so one keyword's levels never run twice; a group of one unit is not halved. Trials and every other channel keep member chunks.
 - **Segment identity.** Keys and hashes change once, at deploy. Searches always ask for the last hour, so the change loses no window. `linkedin_search_splits` keyed by the old groups (0 rows on dev today) is left alone.
 
 ## Rollout
