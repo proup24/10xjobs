@@ -24,7 +24,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'4ac2bcc5b523844f1f915c4e73dc8fb05fa6c33a5c253c8ec71f6c33ddf8677b'>;
+  StorageHashBase<'fbbefdd7802eb5414e4417952f49b70cb8bf2e3ae4e71bd8caded0f2e4b96f2d'>;
 export type ExecutionHash =
   ExecutionHashBase<'71a03ba0225916055a5855c4c4deaf607551051c05f9a67ec0aecfdefc43a862'>;
 export type ProfileHash =
@@ -1166,6 +1166,7 @@ export namespace Models {
     keyword: FieldOutputTypes['public']['QuerySearchBuilder']['keyword'];
     location: FieldOutputTypes['public']['QuerySearchBuilder']['location'];
     params: FieldOutputTypes['public']['QuerySearchBuilder']['params'];
+    pausedAt: FieldOutputTypes['public']['QuerySearchBuilder']['pausedAt'];
     technologies: FieldOutputTypes['public']['QuerySearchBuilder']['technologies'];
     type: FieldOutputTypes['public']['QuerySearchBuilder']['type'];
     updatedAt: FieldOutputTypes['public']['QuerySearchBuilder']['updatedAt'];
@@ -1304,6 +1305,7 @@ export namespace Models {
     id: FieldOutputTypes['public']['User']['id'];
     name: FieldOutputTypes['public']['User']['name'];
     residenceCountry: FieldOutputTypes['public']['User']['residenceCountry'];
+    searchesResumedAt: FieldOutputTypes['public']['User']['searchesResumedAt'];
     updatedAt: FieldOutputTypes['public']['User']['updatedAt'];
     factReports: public_FactReport[];
     jobDecisions: public_JobDecision[];
@@ -2398,6 +2400,12 @@ type ContractBase = Omit<
                   readonly name: 'job_decisions_jobId_idx_623c8f77';
                   readonly prefix: 'job_decisions_jobId_idx';
                   readonly columns: readonly ['jobId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'job_decisions_userId_decidedAt_idx_39d93175';
+                  readonly prefix: 'job_decisions_userId_decidedAt_idx';
+                  readonly columns: readonly ['userId', 'decidedAt'];
                   readonly unique: false;
                 },
                 {
@@ -4935,6 +4943,13 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly many: false;
                 };
+                readonly pausedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
                 readonly technologies: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -5809,6 +5824,13 @@ type ContractBase = Omit<
                   readonly nullable: true;
                   readonly many: false;
                 };
+                readonly searchesResumedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
                 readonly updatedAt: {
                   readonly dataType: 'pg/timestamptz';
                   readonly codecId: 'pg/timestamptz-date@1';
@@ -5992,6 +6014,13 @@ type ContractBase = Omit<
                   readonly name: 'webhook_deliveries_userId_idx_a489d58a';
                   readonly prefix: 'webhook_deliveries_userId_idx';
                   readonly columns: readonly ['userId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'webhook_deliveries_user_delivered_6332df6c';
+                  readonly prefix: 'webhook_deliveries_user_delivered';
+                  readonly columns: readonly ['userId', 'deliveredAt'];
+                  readonly where: "status = 'delivered'";
                   readonly unique: false;
                 },
                 {
@@ -9664,6 +9693,14 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
               };
+              readonly pausedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
               readonly technologies: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -9708,6 +9745,7 @@ type ContractBase = Omit<
                 readonly keyword: { readonly column: 'keyword' };
                 readonly location: { readonly column: 'location' };
                 readonly params: { readonly column: 'params' };
+                readonly pausedAt: { readonly column: 'pausedAt' };
                 readonly technologies: { readonly column: 'technologies' };
                 readonly type: { readonly column: 'type' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
@@ -10496,6 +10534,14 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly searchesResumedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
               readonly updatedAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -10596,6 +10642,7 @@ type ContractBase = Omit<
                 readonly id: { readonly column: 'id' };
                 readonly name: { readonly column: 'name' };
                 readonly residenceCountry: { readonly column: 'residenceCountry' };
+                readonly searchesResumedAt: { readonly column: 'searchesResumedAt' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
               };
             };

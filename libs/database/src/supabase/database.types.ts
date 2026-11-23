@@ -1667,6 +1667,7 @@ export type Database = {
           keyword: string;
           location: string;
           params: NonNullable<Json>;
+          pausedAt: string | null;
           technologies: string[];
           type: string;
           updatedAt: string;
@@ -1691,6 +1692,7 @@ export type Database = {
           keyword: string;
           location: string;
           params: NonNullable<Json>;
+          pausedAt?: string | null;
           technologies: string[];
           type: string;
           updatedAt?: string;
@@ -1714,6 +1716,7 @@ export type Database = {
           keyword?: string;
           location?: string;
           params?: NonNullable<Json>;
+          pausedAt?: string | null;
           technologies?: string[];
           type?: string;
           updatedAt?: string;
@@ -2138,6 +2141,7 @@ export type Database = {
           id: string;
           name: string | null;
           residenceCountry: string | null;
+          searchesResumedAt: string | null;
           updatedAt: string;
         };
         ComputedFields: never;
@@ -2149,6 +2153,7 @@ export type Database = {
           id: string;
           name?: string | null;
           residenceCountry?: string | null;
+          searchesResumedAt?: string | null;
           updatedAt?: string;
         };
         Update: {
@@ -2159,6 +2164,7 @@ export type Database = {
           id?: string;
           name?: string | null;
           residenceCountry?: string | null;
+          searchesResumedAt?: string | null;
           updatedAt?: string;
         };
         Relationships: [];
