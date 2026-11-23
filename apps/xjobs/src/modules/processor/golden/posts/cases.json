@@ -223,12 +223,13 @@
       }
     ],
     "verdict": {
-      "value": "not_hiring",
-      "reason": "job_digest",
-      "reviewed": false
+      "value": "junk",
+      "reason": "funnel",
+      "reviewed": true,
+      "reviewedBy": "agreement"
     },
     "roles": [],
-    "note": "job-platform promo (JobQuicks): role categories for clients and seekers, PDF 'upload and login', no role"
+    "note": "controller (2026-11-23): junk per the owner sign \"promoting a job-hunting service\"; Extract said junk (sure) | job-platform promo (JobQuicks): role categories for clients and seekers, PDF 'upload and login', no role"
   },
   {
     "rawItemId": "01a200c4-e386-7556-a879-1bed5c92f7e2",
