@@ -24,6 +24,7 @@ export class FakeUsersRepository extends UsersRepository {
       residenceCountry: null,
       acceptsSponsorship: null,
       eligibilityVersion: 0,
+      searchesResumedAt: null,
       createdAt: now,
       updatedAt: now,
     };
