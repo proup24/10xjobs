@@ -17,11 +17,16 @@ import {
 } from '../../services/processor-guard.service';
 import { callStats, reportFileName } from '../score';
 import type { PostGoldenCase } from './golden-posts';
+import { type PostDocument } from '../../schema/post-extraction';
 import { type PostEvalReport, type PostScore, scorePost } from './score-posts';
 
 /** Where `processor:eval -- --posts` writes the report of a run with `generator`. */
 export const postReportFile = (generator: string): string =>
   join(__dirname, reportFileName(generator));
+
+/** Where a `--case` run writes its report, so a partial run never overwrites the full one. */
+export const postCasesReportFile = (generator: string): string =>
+  postReportFile(generator).replace(/\.json$/, '.cases.json');
 
 export interface PostEvalRun {
   scores: PostScore[];
@@ -42,8 +47,15 @@ export const postRunPasses = (
   run.notRun.length === 0 &&
   run.scores.every((s) => s.failed === null);
 
+/** A subset run has no bars; it is fine when every case generated and nothing stopped it. */
+export const subsetRunOk = (
+  run: Pick<PostEvalRun, 'notRun'> & { scores: Pick<PostScore, 'failed'>[] },
+): boolean =>
+  run.notRun.length === 0 && run.scores.every((s) => s.failed === null);
+
 /**
- * Runs every post case through the pipeline in memory: no repository, no
+ * Runs every post case (or only those at the `only` indices; scores keep the
+ * case's index in `cases`) through the pipeline in memory: no repository, no
  * database, nothing saved. A transient failure is retried up to `maxTries`;
  * a usage limit (or the weekly reserve the model's limits report to `guard`)
  * or an unavailable provider stops the run, and the cases left are listed, not scored. Every try's
@@ -56,14 +68,21 @@ export async function runPostEval(options: {
   vocabulary: Vocabulary;
   concurrency?: number;
   maxTries?: number;
-  onScore?: (score: PostScore) => void;
+  /** 0-based indices into `cases` to run; every case when omitted. */
+  only?: readonly number[];
+  /** Called per scored case, with the extracted document (null when it failed). */
+  onScore?: (score: PostScore, doc: PostDocument | null) => void;
 }): Promise<PostEvalRun> {
   const { cases, pipeline, guard, vocabulary } = options;
   const maxTries = options.maxTries ?? 3;
   const scores: PostScore[] = [];
   const notRun: number[] = [];
   let limitStop: PauseState | null = null;
-  const queue = cases.map((c, index) => ({ c, index }));
+  const queue = cases
+    .map((c, index) => ({ c, index }))
+    .filter(
+      ({ index }) => options.only === undefined || options.only.includes(index),
+    );
 
   const limitPause = (): PauseState | null => {
     const pause = guard.pauseState();
@@ -74,9 +93,9 @@ export async function runPostEval(options: {
     notRun.push(index, ...queue.splice(0).map((q) => q.index));
   };
 
-  const record = (score: PostScore): void => {
+  const record = (score: PostScore, doc: PostDocument | null): void => {
     scores.push(score);
-    options.onScore?.(score);
+    options.onScore?.(score, doc);
   };
 
   const runOne = async (c: PostGoldenCase, index: number): Promise<void> => {
@@ -95,7 +114,7 @@ export async function runPostEval(options: {
       const calls = () => callStats(logs.flatMap((l) => l.entries()));
       try {
         const assembled = await pipeline.run(post, vocabulary, log);
-        record(scorePost(c, assembled, { index, ...calls() }));
+        record(scorePost(c, assembled, { index, ...calls() }), assembled.doc);
         return;
       } catch (error) {
         // Not a quality failure: the subscription or the provider stopped the run.
@@ -128,7 +147,7 @@ export async function runPostEval(options: {
           error instanceof ExtractionFailed
             ? error.errors
             : [error instanceof Error ? error.message : String(error)];
-        record(scorePost(c, { failed }, { index, ...calls() }));
+        record(scorePost(c, { failed }, { index, ...calls() }), null);
         return;
       }
     }

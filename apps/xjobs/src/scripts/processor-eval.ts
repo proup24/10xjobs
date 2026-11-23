@@ -1,12 +1,15 @@
 /**
  * Runs the golden set through the generator and measures it:
  *
- *   pnpm --filter @xjobs/xjobs processor:eval -- [--posts] [--generator m]
+ *   pnpm --filter @xjobs/xjobs processor:eval -- [--posts [--case n]...] [--generator m]
  *
  * `--generator` defaults to `PROCESSOR_EXTRACTION_MODEL`. `--posts` runs the
  * post golden set (`golden/posts/cases.json`) through PostPipeline instead,
  * scores it against the post bars (`POST_BARS`), and writes
- * `golden/posts/last-report.<generator>.json`. Calls `claude -p`
+ * `golden/posts/last-report.<generator>.json`. `--case n` (repeatable, 0-based
+ * indices as the owner numbers posts) runs only those post cases, prints each
+ * result in full, computes no bars and writes `last-report.<generator>.cases.json`
+ * instead. Calls `claude -p`
  * (uses the Claude subscription's limits); never run in CI. Uses the same
  * generator as the worker, with in-memory repositories seeded from `seed-data.ts`,
  * so the database is not touched. Attempts are recorded with `eval: true`.
@@ -34,10 +37,13 @@ import {
 } from 'src/modules/processor/golden/score';
 import { loadPostGolden } from 'src/modules/processor/golden/posts/golden-posts';
 import {
+  postCasesReportFile,
   postReportFile,
   postRunPasses,
   runPostEval,
+  subsetRunOk,
 } from 'src/modules/processor/golden/posts/run-posts';
+import type { PostDocument } from 'src/modules/processor/schema/post-extraction';
 import {
   type PostEvalReport,
   summarizePosts,
@@ -67,7 +73,7 @@ import {
   MemoryProcessorRepository,
   MemoryVocabRepository,
 } from 'src/modules/processor/testing/fakes';
-import { parseEvalArgs } from './processor-args';
+import { checkCaseIndices, parseEvalArgs } from './processor-args';
 
 const CONCURRENCY = 4;
 const MAX_TRIES = 3;
@@ -240,8 +246,31 @@ function printPosts(report: PostEvalReport): void {
   console.log(`\noverall: ${report.pass ? 'PASS' : 'FAIL'}`);
 }
 
-/** The post suite: PostPipeline in memory over the post golden set. */
-async function runPosts(env: Env, config: ProcessorConfig): Promise<boolean> {
+/** Everything a person needs to judge one post's extraction, under its score line. */
+function printPostDocument(doc: PostDocument): void {
+  const v = doc.verdict;
+  console.log(`      verdict ${v.value} (${v.reason}, ${v.confidence})`);
+  console.log(`        quote: "${v.quote}"`);
+  doc.roles.forEach((r, i) => {
+    const h = r.howToApply;
+    console.log(`      role ${i + 1}: ${r.title}`);
+    console.log(
+      `        employer: ${r.employer.name ?? '-'}   authorRelation: ${r.authorRelation}`,
+    );
+    console.log(`        apply: ${h.kinds.join(', ')}`);
+    if (h.email !== null)
+      console.log(`        email: ${h.email}  "${h.emailQuote}"`);
+  });
+}
+
+/** The post suite: PostPipeline in memory over the post golden set, or only the `selected` cases. */
+async function runPosts(
+  env: Env,
+  config: ProcessorConfig,
+  selected?: number[],
+): Promise<boolean> {
+  const cases = loadPostGolden();
+  if (selected) checkCaseIndices(selected, cases.length);
   const repo = new MemoryProcessorRepository();
   const guard = new ProcessorGuard(repo, config);
   const facts = new FactAssembler();
@@ -250,21 +279,28 @@ async function runPosts(env: Env, config: ProcessorConfig): Promise<boolean> {
     new PostAssembler(facts),
   );
   const run = await runPostEval({
-    cases: loadPostGolden(),
+    cases,
+    only: selected,
     pipeline,
     guard,
     vocabulary: await new MemoryVocabRepository().snapshot(),
     concurrency: CONCURRENCY,
     maxTries: MAX_TRIES,
-    onScore: (s) =>
+    onScore: (s, doc) => {
       console.log(
         `  #${s.index}: ${s.got ? `${s.got.value} (${s.got.confidence})` : 'failed'}`,
-      ),
+      );
+      if (selected) {
+        if (doc) printPostDocument(doc);
+        else console.log(`      failed: ${(s.failed ?? []).join('; ')}`);
+      }
+    },
   });
   const report = summarizePosts(run.scores);
   // A case that did not generate, or did not run, proves nothing, so it fails the run.
-  const pass = postRunPasses(report, run);
-  printPosts({ ...report, pass });
+  const pass = selected ? subsetRunOk(run) : postRunPasses(report, run);
+  if (selected) console.log('\nsubset run: bars not computed');
+  else printPosts({ ...report, pass });
   const failed = run.scores.filter((s) => s.failed).length;
   if (failed)
     console.log(`\n${failed} posts failed to generate (see failures)`);
@@ -274,8 +310,8 @@ async function runPosts(env: Env, config: ProcessorConfig): Promise<boolean> {
       `\n${limit.reason === 'auth' ? 'STOPPED: provider unavailable' : `STOPPED ON A LIMIT (${limit.reason}, until ${limit.until.toISOString()})`}: ${limit.detail}\n${run.notRun.length} posts not run; the scores above cover only the ${run.scores.length} that ran. Re-run after ${limit.reason === 'auth' ? 'fixing the provider' : 'the reset'}.`,
     );
   writeFileSync(
-    postReportFile(config.extractionModel),
-    `${JSON.stringify({ ...report, pass, stoppedOnLimit: limit, notRun: run.notRun, config, scores: run.scores }, null, 2)}\n`,
+    (selected ? postCasesReportFile : postReportFile)(config.extractionModel),
+    `${JSON.stringify({ ...report, pass, ...(selected ? { selectedCases: selected } : {}), stoppedOnLimit: limit, notRun: run.notRun, config, scores: run.scores }, null, 2)}\n`,
   );
   return pass;
 }
@@ -297,7 +333,8 @@ async function main(): Promise<void> {
     postDailyCap: env.POST_EXTRACTION_DAILY_CAP,
   };
   console.log(`generator ${config.extractionModel}`);
-  if (args.posts) process.exit((await runPosts(env, config)) ? 0 : 1);
+  if (args.posts)
+    process.exit((await runPosts(env, config, args.cases)) ? 0 : 1);
 
   const repo = new EvalProcessorRepository();
   const guard = new ProcessorGuard(repo, config);

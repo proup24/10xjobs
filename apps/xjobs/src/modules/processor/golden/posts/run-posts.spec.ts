@@ -19,7 +19,13 @@ import {
   MemoryVocabRepository,
 } from '../../testing/fakes';
 import type { PostGoldenCase } from './golden-posts';
-import { postRunPasses, runPostEval } from './run-posts';
+import {
+  postCasesReportFile,
+  postReportFile,
+  runPostEval,
+  postRunPasses,
+  subsetRunOk,
+} from './run-posts';
 
 const EXT = 'anthropic/claude-opus-5.5';
 const config: ProcessorConfig = {
@@ -78,6 +84,7 @@ describe('runPostEval', () => {
   async function run(
     respond: ConstructorParameters<typeof FakeExtractionModel>[0],
     cases = ['1', '2', '3'].map(goldenCase),
+    only?: number[],
   ) {
     const model = new FakeExtractionModel(respond, EXT);
     const repo = new MemoryProcessorRepository();
@@ -91,6 +98,7 @@ describe('runPostEval', () => {
       guard,
       vocabulary: await new MemoryVocabRepository().snapshot(),
       concurrency: 1,
+      only,
     });
     return { result, model, repo };
   }
@@ -112,6 +120,41 @@ describe('runPostEval', () => {
     // Nothing written anywhere: no attempts, no extractions.
     expect(repo.attempts).toEqual([]);
     expect(repo.extractions).toEqual([]);
+  });
+
+  it('runs only the selected cases and keeps their original indices', async () => {
+    const { result, model } = await run(
+      () => notHiring,
+      ['1', '2', '3', '4'].map(goldenCase),
+      [3, 1],
+    );
+
+    expect(result.scores.map((s) => [s.index, s.rawItemId])).toEqual([
+      [1, 'raw-2'],
+      [3, 'raw-4'],
+    ]);
+    expect(model.calls).toHaveLength(2);
+    expect(result.notRun).toEqual([]);
+  });
+
+  it('hands each score and its extracted document to onScore', async () => {
+    const docs: [number | null, string | undefined][] = [];
+    const model = new FakeExtractionModel(() => notHiring, EXT);
+    const guard = new ProcessorGuard(new MemoryProcessorRepository(), config);
+    await runPostEval({
+      cases: ['1', '2'].map(goldenCase),
+      pipeline: new PostPipeline(
+        new GenerationService(model, new FactAssembler(), config),
+        new PostAssembler(new FactAssembler()),
+      ),
+      guard,
+      vocabulary: await new MemoryVocabRepository().snapshot(),
+      concurrency: 1,
+      only: [1],
+      onScore: (s, doc) => docs.push([s.index, doc?.verdict.quote]),
+    });
+
+    expect(docs).toEqual([[1, 'Some thoughts on careers']]);
   });
 
   it('scores a generation that never validates as failed', async () => {
@@ -195,5 +238,21 @@ describe('runPostEval', () => {
       verdict: { ...notHiring.verdict, quote: 'not in the post' },
     }));
     expect(postRunPasses(passing, failed.result)).toBe(false);
+  });
+});
+
+describe('subset report', () => {
+  it('writes to a separate file so a partial run keeps the full report', () => {
+    expect(postCasesReportFile(EXT)).toMatch(
+      /posts[\\/]last-report\.anthropic-claude-opus-5-5\.cases\.json$/,
+    );
+    expect(postCasesReportFile(EXT)).not.toBe(postReportFile(EXT));
+  });
+
+  it('exits 0 unless a case failed to generate or the run stopped', () => {
+    const ok = { scores: [{ failed: null }], notRun: [] };
+    expect(subsetRunOk(ok)).toBe(true);
+    expect(subsetRunOk({ ...ok, scores: [{ failed: ['x'] }] })).toBe(false);
+    expect(subsetRunOk({ ...ok, notRun: [4] })).toBe(false);
   });
 });

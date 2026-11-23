@@ -1,4 +1,5 @@
 import {
+  checkCaseIndices,
   parseEvalArgs,
   parseReprocessArgs,
   parseVocabArgs,
@@ -142,5 +143,40 @@ describe('parseEvalArgs', () => {
       '--generator needs a model',
     );
     expect(() => parseEvalArgs(['--post'])).toThrow('unknown argument: --post');
+  });
+
+  it('collects repeated --case indices with --posts', () => {
+    expect(parseEvalArgs(['--posts', '--case', '71', '--case', '129'])).toEqual(
+      { posts: true, cases: [71, 129] },
+    );
+    expect(parseEvalArgs(['--case', '0', '--posts', '--case', '0'])).toEqual({
+      posts: true,
+      cases: [0],
+    });
+  });
+
+  it('refuses --case without --posts, without a value, or with a bad index', () => {
+    expect(() => parseEvalArgs(['--case', '71'])).toThrow(
+      '--case only works with --posts',
+    );
+    expect(() => parseEvalArgs(['--posts', '--case'])).toThrow(
+      '--case needs a case index',
+    );
+    expect(() => parseEvalArgs(['--posts', '--case', '--generator'])).toThrow(
+      '--case needs a case index',
+    );
+    for (const bad of ['x', '1.5', '-1', '7a'])
+      expect(() => parseEvalArgs(['--posts', '--case', bad])).toThrow(
+        `--case needs a whole number, got ${bad}`,
+      );
+  });
+});
+
+describe('checkCaseIndices', () => {
+  it('accepts indices inside the golden set and refuses one outside it', () => {
+    expect(() => checkCaseIndices([0, 149], 150)).not.toThrow();
+    expect(() => checkCaseIndices([150], 150)).toThrow(
+      '--case 150 is out of range: the post golden set has 150 cases (0-149)',
+    );
   });
 });

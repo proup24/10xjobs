@@ -81,6 +81,8 @@ export function parseVocabArgs(rawArgv: readonly string[]): VocabCommand {
 export interface EvalArgs {
   posts: boolean;
   generator?: string;
+  /** With `--posts`: 0-based indices into the post golden set to run, in the order given, without repeats. */
+  cases?: number[];
 }
 
 export function parseEvalArgs(rawArgv: readonly string[]): EvalArgs {
@@ -94,7 +96,30 @@ export function parseEvalArgs(rawArgv: readonly string[]): EvalArgs {
       if (model === undefined || model.startsWith('--'))
         throw new Error('--generator needs a model');
       args.generator = model;
+    } else if (arg === '--case') {
+      const value = argv[++i];
+      if (value === undefined || value.startsWith('--'))
+        throw new Error('--case needs a case index');
+      if (!/^\d+$/.test(value))
+        throw new Error(`--case needs a whole number, got ${value}`);
+      const index = Number(value);
+      const cases = (args.cases ??= []);
+      if (!cases.includes(index)) cases.push(index);
     } else throw new Error(`unknown argument: ${arg}`);
   }
+  if (args.cases && !args.posts)
+    throw new Error('--case only works with --posts');
   return args;
+}
+
+/** Refuses a `--case` index outside the post golden set of `total` cases. */
+export function checkCaseIndices(
+  cases: readonly number[],
+  total: number,
+): void {
+  for (const index of cases)
+    if (index >= total)
+      throw new Error(
+        `--case ${index} is out of range: the post golden set has ${total} cases (0-${total - 1})`,
+      );
 }
