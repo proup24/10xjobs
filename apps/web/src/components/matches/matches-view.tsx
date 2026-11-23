@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import type { ReactNode } from 'react';
 import { toast } from 'sonner';
 import {
   clearJobDecisionAction,
@@ -33,7 +34,6 @@ import {
 import { MatchEmpty } from './match-empty';
 import { MatchFilters } from './match-filters';
 import { MatchList } from './match-list';
-import { PausedNotice } from './paused-notice';
 
 type Profile = { id: string; label: string; state: 'draft' | 'published' };
 
@@ -51,7 +51,7 @@ export function MatchesView({
   userId,
   selected,
   postings,
-  searches,
+  notice,
 }: {
   /** Grouped matches of the last 7 days, published profiles only. */
   jobs: MatchedJob[];
@@ -67,8 +67,8 @@ export function MatchesView({
   selected: MatchRow[] | null;
   /** The postings merged into the selected job; empty without one. */
   postings: JobPosting[];
-  /** Whether the user's searches are paused; null when that couldn't be read. */
-  searches: { paused: boolean; lastActiveAt: Date | null } | null;
+  /** Shown under the heading, above the list: the paused searches notice, streamed in. */
+  notice?: ReactNode;
 }) {
   const router = useRouter();
   const now = new Date(nowIso);
@@ -254,9 +254,7 @@ export function MatchesView({
       <h1 className={cn('text-title-3', state.job && 'hidden md:block')}>
         Matches
       </h1>
-      {searches?.paused && (
-        <PausedNotice lastActiveAt={searches.lastActiveAt} />
-      )}
+      {notice}
       <div className="flex flex-col gap-6 md:flex-row">
         <div
           className={cn(

@@ -5,6 +5,7 @@ import {
   screen,
   within,
 } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { groupByJob, selectJobs, type MatchRow } from '@/lib/matches/group';
 import type { ViewState } from '@/lib/matches/view-state';
@@ -27,9 +28,6 @@ vi.mock('@/app/(app)/actions', () => ({
 }));
 const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock('sonner', () => ({ toast }));
-vi.mock('@/app/(app)/searches-actions', () => ({
-  resumeSearchesAction: vi.fn(),
-}));
 
 afterEach(() => {
   cleanup();
@@ -64,7 +62,7 @@ function renderView(
     profiles?: Profile[];
     initial?: Partial<ViewState>;
     selected?: MatchRow[] | null;
-    searches?: { paused: boolean; lastActiveAt: Date | null } | null;
+    notice?: ReactNode;
   } = {},
 ) {
   const profiles = opts.profiles ?? ONE;
@@ -86,7 +84,7 @@ function renderView(
       userId="u1"
       selected={opts.selected ?? null}
       postings={[]}
-      searches={opts.searches ?? null}
+      notice={opts.notice}
     />,
   );
 }
@@ -429,28 +427,18 @@ describe('MatchesView job decisions', () => {
   });
 });
 
-describe('MatchesView paused notice', () => {
-  const resumeButton = () =>
-    screen.queryByRole('button', { name: 'Resume searches' });
-
-  it('shows the notice above the list when searches are paused', () => {
-    renderView({
-      searches: {
-        paused: true,
-        lastActiveAt: new Date('2026-11-20T10:00:00Z'),
-      },
-    });
-    expect(resumeButton()).toBeTruthy();
-    expect(screen.getByText(/No activity since Nov 20/)).toBeTruthy();
-  });
-
-  it('shows no notice when searches are running', () => {
-    renderView({ searches: { paused: false, lastActiveAt: null } });
-    expect(resumeButton()).toBeNull();
-  });
-
-  it('shows no notice when the state could not be read', () => {
-    renderView({ searches: null });
-    expect(resumeButton()).toBeNull();
+describe('MatchesView notice slot', () => {
+  it('shows the notice under the heading, above the list', () => {
+    renderView({ notice: <p>Paused notice</p> });
+    const notice = screen.getByText('Paused notice');
+    const heading = screen.getByRole('heading', { name: 'Matches' });
+    const list = screen.getByRole('list', { name: 'Matches' });
+    expect(
+      heading.compareDocumentPosition(notice) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      notice.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 });

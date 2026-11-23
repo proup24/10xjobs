@@ -50,30 +50,41 @@ afterEach(cleanup);
 const renderPage = async () =>
   render(await Page({ searchParams: Promise.resolve({}) }));
 
+const resumeButton = () =>
+  screen.queryByRole('button', { name: 'Resume searches' });
+
 describe('Matches page', () => {
-  it('shows the notice when searches are paused', async () => {
+  it('streams in the notice when searches are paused', async () => {
     engine.searchesState.mockResolvedValue({
       kind: 'ok',
       data: { paused: true, lastActiveAt: '2026-11-20T10:00:00.000Z' },
     });
     await renderPage();
     expect(
-      screen.getByRole('button', { name: 'Resume searches' }),
+      await screen.findByRole('button', { name: 'Resume searches' }),
     ).toBeTruthy();
+  });
+
+  it('Matches loads without waiting on the engine', async () => {
+    // Never settles: an engine that hangs.
+    engine.searchesState.mockReturnValue(new Promise(() => undefined));
+    await renderPage();
+    expect(screen.getByRole('heading', { name: 'Matches' })).toBeTruthy();
+    expect(resumeButton()).toBeNull();
   });
 
   it('Matches loads when the state read fails', async () => {
     engine.searchesState.mockResolvedValue({ kind: 'unauthorized' });
     await renderPage();
     expect(screen.getByRole('heading', { name: 'Matches' })).toBeTruthy();
-    expect(
-      screen.queryByRole('button', { name: 'Resume searches' }),
-    ).toBeNull();
+    await vi.waitFor(() => expect(engine.searchesState).toHaveBeenCalled());
+    expect(resumeButton()).toBeNull();
   });
 
   it('Matches loads when the state read throws', async () => {
     engine.searchesState.mockRejectedValue(new Error('down'));
     await renderPage();
     expect(screen.getByRole('heading', { name: 'Matches' })).toBeTruthy();
+    expect(resumeButton()).toBeNull();
   });
 });
