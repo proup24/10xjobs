@@ -3416,12 +3416,68 @@
       }
     ],
     "verdict": {
-      "value": "junk",
-      "reason": "other",
-      "reviewed": false
+      "value": "hiring",
+      "reason": "hiring",
+      "reviewed": true
     },
-    "roles": [],
-    "note": "'WE ARE HIRING' multiple US IT roles incl. Java Full Stack Developer at Staffbee | pre-label: unsure because sample said hiring; the post itself says \"potential hiring profiles, not confirmation of active client vacancies\" (resume harvesting to a gmail)"
+    "roles": [
+      {
+        "title": "JAVA FULL STACK DEVELOPER",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "prashanth.kaja@gmail.com",
+        "facts": {
+          "roleKind": "fullstack_engineer",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": true
+      },
+      {
+        "title": ".NET DEVELOPER",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "prashanth.kaja@gmail.com",
+        "facts": {
+          "roleKind": "backend_engineer",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": true
+      },
+      {
+        "title": "AWS DEVOPS ENGINEER",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "prashanth.kaja@gmail.com",
+        "facts": {
+          "roleKind": "devops_engineer",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": true
+      },
+      {
+        "title": "PYTHON DEVELOPER",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "prashanth.kaja@gmail.com",
+        "facts": {
+          "roleKind": "backend_engineer",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": true
+      },
+      {
+        "title": "REACT.JS DEVELOPER",
+        "employer": null,
+        "applyKinds": ["email"],
+        "contactEmail": "prashanth.kaja@gmail.com",
+        "facts": {
+          "roleKind": "frontend_engineer",
+          "isSoftwareEngineeringRole": true
+        },
+        "reviewed": true
+      }
+    ],
+    "note": "owner (2026-11-23): hiring, but it could be junk (\"potential hiring profiles, not confirmation of active client vacancies\"); apply email prashanth.kaja@gmail.com | 'WE ARE HIRING' multiple US IT roles incl. Java Full Stack Developer at Staffbee | pre-label: unsure because sample said hiring; the post itself says \"potential hiring profiles, not confirmation of active client vacancies\" (resume harvesting to a gmail)"
   },
   {
     "rawItemId": "01a1fd58-fbb4-74fb-bb52-cb4bde43dcef",
