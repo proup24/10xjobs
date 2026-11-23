@@ -4558,26 +4558,13 @@
       }
     ],
     "verdict": {
-      "value": "hiring",
-      "reason": "hiring",
+      "value": "junk",
+      "reason": "no_clear_employer",
       "reviewed": true,
-      "reviewedBy": "agreement"
+      "reviewedBy": "owner"
     },
-    "roles": [
-      {
-        "title": "Full Stack Developer",
-        "employer": null,
-        "applyKinds": ["email"],
-        "contactEmail": "tanyakharb47@gmail.com",
-        "facts": {
-          "roleKind": "fullstack_engineer",
-          "isSoftwareEngineeringRole": true
-        },
-        "reviewed": true,
-        "reviewedBy": "agreement"
-      }
-    ],
-    "note": "'IMMEDIATE HIRING Full Stack Developer' USA contract | pre-label: unsure because it is a generic OPT/CPT-recruiter req (project-dependent location, gmail, no client); could be candidate harvesting"
+    "roles": [],
+    "note": "owner (2026-11-23): junk (personal email, no employer) | 'IMMEDIATE HIRING Full Stack Developer' USA contract | pre-label: unsure because it is a generic OPT/CPT-recruiter req (project-dependent location, gmail, no client); could be candidate harvesting"
   },
   {
     "rawItemId": "01a1fe31-ab75-7279-811c-faa9ced1388c",
