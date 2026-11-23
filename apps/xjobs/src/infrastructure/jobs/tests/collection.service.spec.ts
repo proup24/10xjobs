@@ -11,7 +11,11 @@ import {
   ApifyRunError,
   type ApifyActorProvider,
 } from 'src/modules/collectors/providers/apify/apify.provider';
-import { linkedinGeoId } from 'src/modules/collectors/providers/mappers/linkedin-job-board.mapper';
+import {
+  linkedinGeoId,
+  mergedLinkedinKeyword,
+} from 'src/modules/collectors/providers/mappers/linkedin-job-board.mapper';
+import { FakeActivityRepository } from 'src/modules/activity/testing/fakes';
 import { ingestConfig, parseBatchFile } from 'src/modules/ingest';
 import type { QuerySearchService } from 'src/modules/queries';
 import { segmentHash, segmentKey } from 'src/modules/segments';
@@ -67,7 +71,10 @@ function setup(
   channel: Channel = Channel.ASHBY,
   budgetUsd = 3,
 ) {
-  const configGet = vi.fn((_key: string) => budgetUsd);
+  const configGet = vi.fn((key: string) =>
+    key === 'SEARCH_PAUSE_AFTER_HOURS' ? 24 : budgetUsd,
+  );
+  const activity = new FakeActivityRepository();
   const queries = { listActive: vi.fn(async () => rows) };
   const collectors = Object.fromEntries(
     Object.values(Channel).map((value) => [
@@ -114,6 +121,7 @@ function setup(
     queries as unknown as QuerySearchService,
     segments,
     splits,
+    activity,
     storage,
     ingestQueue as unknown as IngestQueue,
     apify as unknown as ApifyActorProvider,
@@ -132,6 +140,7 @@ function setup(
     collector,
     segments,
     splits,
+    activity,
     storage,
     ingestQueue,
     apify,
@@ -382,6 +391,8 @@ describe('CollectionService.collect', () => {
       expect(await collection.collect(Channel.ASHBY)).toEqual({
         channel: Channel.ASHBY,
         builders: 11,
+        buildersPaused: 0,
+        buildersWoken: 0,
         segments: 2,
         segmentsFailed: 1,
         segmentsSkipped: 0,
@@ -2029,5 +2040,210 @@ describe('CollectionService run ids and final costs', () => {
     await collection.collect(BOARD);
 
     expect(apify.findRun).not.toHaveBeenCalled();
+  });
+});
+
+describe('CollectionService paused builders', () => {
+  afterEach(() => vi.useRealTimers());
+
+  const BOARD = Channel.LINKEDIN_JOB_BOARD;
+  const POSTS = Channel.LINKEDIN_POSTS;
+  const START = new Date('2026-11-23T10:00:00Z');
+  const at = (hours: number) => new Date(START.getTime() + hours * HOUR);
+  const board = (
+    spellings: string[],
+    overrides: Partial<QuerySearchBuilderRow> = {},
+  ) =>
+    builder({
+      channel: BOARD,
+      type: Arrangement.remote,
+      params: { location: 'emea', roleWords: ['engineer'], spellings },
+      ...overrides,
+    });
+  const post = (overrides: Partial<QuerySearchBuilderRow> = {}) =>
+    builder({
+      channel: POSTS,
+      params: {
+        language: 'en',
+        position: 'fullstack',
+        hiringWord: 'hiring',
+        positionWords: ['fullstack'],
+        spellings: ['react'],
+        remote: true,
+      },
+      ...overrides,
+    });
+  const searches = (collector: ReturnType<typeof setup>['collector']) =>
+    collector.collect.mock.calls.map(([s]) => s);
+  const ids = (s: SegmentSearch) => s.queries.map((q) => q.id);
+  const fixTime = (time: Date) => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(time);
+  };
+
+  it('resumes hourly channels one hour back and daily channels one day back', () => {
+    for (const channel of [
+      Channel.LINKEDIN_JOB_BOARD,
+      Channel.LINKEDIN_JOB_BOARD_CHEAP,
+      Channel.LINKEDIN_JOB_BOARD_BEBITY,
+      Channel.LINKEDIN_POSTS,
+    ])
+      expect(channelJobsConfig[channel].resumeHours).toBe(1);
+    for (const channel of [Channel.GREEN_HOUSE, Channel.ASHBY])
+      expect(channelJobsConfig[channel].resumeHours).toBe(24);
+  });
+
+  it('the A/B example', async () => {
+    fixTime(START);
+    // B was paused for days: its cursor is long stale.
+    const a = board(['typescript', 'react'], { coveredUntil: at(-1) });
+    const b = board(['typescript', 'python'], { coveredUntil: at(-72) });
+    const { collection, collector, activity, segments, warn } = setup(
+      [a, b],
+      undefined,
+      BOARD,
+    );
+    activity.pausedBuilders.set(BOARD, new Set([b.id]));
+
+    await collection.collect(BOARD);
+
+    expect(searches(collector).map(ids)).toEqual([[a.id]]);
+    const first = mergedLinkedinKeyword(searches(collector)[0].queries);
+    expect(first).toContain('typescript');
+    expect(first).toContain('react');
+    expect(first).not.toContain('python');
+    expect(segments.paused.get(b.id)).toEqual(START);
+    expect(segments.cursors.get(b.id)).toEqual(at(-72));
+
+    // B's owner marks a job: the next tick B is no longer paused.
+    activity.pausedBuilders.delete(BOARD);
+    vi.setSystemTime(at(1));
+    collector.collect.mockClear();
+    await collection.collect(BOARD);
+
+    expect(searches(collector).map(ids)).toEqual([[a.id, b.id]]);
+    const [second] = searches(collector);
+    const keyword = mergedLinkedinKeyword(second.queries);
+    for (const word of ['typescript', 'react', 'python'])
+      expect(keyword).toContain(word);
+    // B's window starts at until − 1h, not at its stale cursor.
+    expect(second.since).toEqual(START);
+    expect(second.until).toEqual(at(1));
+    expect(segments.paused.has(b.id)).toBe(false);
+    expect(warn).not.toHaveBeenCalledWith(
+      expect.stringContaining('was not collected for longer than'),
+    );
+  });
+
+  it('runs a builder missing from the paused set', async () => {
+    const a = board(['typescript']);
+    const b = board(['python']);
+    const late = board(['go']);
+    const rows = [a, b];
+    const { collection, collector, activity, queries, segments } = setup(
+      rows,
+      undefined,
+      BOARD,
+    );
+    activity.pausedBuilders.set(BOARD, new Set([b.id]));
+    // Published after the paused set was read: it is in no set.
+    queries.listActive.mockImplementation(async () => [...rows, late]);
+
+    const summary = await collection.collect(BOARD);
+
+    expect(searches(collector).map(ids)).toEqual([[a.id, late.id]]);
+    expect(segments.paused.has(late.id)).toBe(false);
+    expect(summary).toMatchObject({ builders: 2, buildersPaused: 1 });
+  });
+
+  it('a paused-only place drops out of the plan', async () => {
+    const emea = board(['typescript']);
+    const morocco = board(['python'], {
+      params: {
+        location: 'morocco',
+        roleWords: ['engineer'],
+        spellings: ['python'],
+      },
+    });
+    const { collection, collector, activity } = setup(
+      [emea, morocco],
+      undefined,
+      BOARD,
+    );
+    activity.pausedBuilders.set(BOARD, new Set([morocco.id]));
+
+    const summary = await collection.collect(BOARD);
+
+    expect(searches(collector).map(ids)).toEqual([[emea.id]]);
+    expect(summary).toMatchObject({ builders: 1, segments: 1 });
+  });
+
+  it("posts: a woken builder doesn't widen a merged post search past one hour", async () => {
+    fixTime(START);
+    const a = post({ coveredUntil: at(-1) });
+    const b = post({ coveredUntil: at(-72) });
+    const { collection, collector, segments } = setup(
+      [a, b],
+      undefined,
+      POSTS,
+      1.5,
+    );
+    // B was paused, and its owner is active again.
+    segments.paused.set(b.id, at(-48));
+
+    await collection.collect(POSTS);
+
+    expect(searches(collector).map(ids)).toEqual([[a.id, b.id]]);
+    const [search] = searches(collector);
+    const overlap = channelJobsConfig[POSTS].window.overlapMinutes * 60_000;
+    expect(search.until).toEqual(START);
+    expect(search.since).toEqual(new Date(at(-1).getTime() - overlap));
+  });
+
+  it('summary counts paused and woken', async () => {
+    fixTime(START);
+    const plain = builder();
+    const paused = builder();
+    const woken = builder({ coveredUntil: at(-240) });
+    const { collection, collector, activity, segments } = setup([
+      plain,
+      paused,
+      woken,
+    ]);
+    activity.pausedBuilders.set(Channel.ASHBY, new Set([paused.id]));
+    segments.paused.set(woken.id, at(-100));
+    const read = vi.spyOn(activity, 'pausedBuilderIds');
+    const mark = vi.spyOn(segments, 'markPaused');
+    const wake = vi.spyOn(segments, 'wake');
+    const log = vi.mocked(Logger.prototype.log);
+
+    const summary = await collection.collect(Channel.ASHBY);
+
+    expect(read).toHaveBeenCalledWith(Channel.ASHBY, START, 24);
+    expect(mark).toHaveBeenCalledWith([paused.id], START);
+    expect(wake).toHaveBeenCalledWith(
+      Channel.ASHBY,
+      new Set([paused.id]),
+      at(-24),
+    );
+    expect(summary).toMatchObject({
+      builders: 2,
+      buildersPaused: 1,
+      buildersWoken: 1,
+    });
+    expect(searches(collector).map(ids)).toEqual([[plain.id, woken.id]]);
+    expect(segments.cursors.get(woken.id)).toEqual(START);
+    expect(log).toHaveBeenCalledWith(
+      'ASHBY: 2 builders runnable, 1 paused, 1 woken',
+    );
+  });
+
+  it('counts nothing paused or woken without active builders', async () => {
+    const { collection } = setup([]);
+    expect(await collection.collect(Channel.ASHBY)).toMatchObject({
+      builders: 0,
+      buildersPaused: 0,
+      buildersWoken: 0,
+    });
   });
 });

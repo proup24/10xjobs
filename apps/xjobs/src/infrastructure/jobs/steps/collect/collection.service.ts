@@ -3,6 +3,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Channel, isLinkedinJobBoard } from 'src/common/enums';
 import type { WorkerProcessEnvironmentVariables } from 'src/config';
+import type { QuerySearchBuilderRow } from 'src/database';
+import { ActivityRepository } from 'src/modules/activity';
 import {
   AshbyCollector,
   GreenhouseCollector,
@@ -108,6 +110,7 @@ export class CollectionService {
     private readonly queries: QuerySearchService,
     private readonly segments: SearchSegmentsRepository,
     private readonly splits: LinkedinSearchSplitsRepository,
+    private readonly activity: ActivityRepository,
     private readonly storage: StorageService,
     private readonly ingestQueue: IngestQueue,
     private readonly apify: ApifyActorProvider,
@@ -130,7 +133,10 @@ export class CollectionService {
     const config = channelJobsConfig[channel];
     // One end of window and observation time for every segment of the run.
     const until = new Date();
-    const builders = await this.queries.listActive(channel);
+    const { builders, paused, woken } = await this.runnableBuilders(
+      channel,
+      until,
+    );
     const remembered = await this.rememberedSplits(channel);
     const plan = planSegments(
       builders,
@@ -153,6 +159,8 @@ export class CollectionService {
     const summary: CollectionSummary = {
       channel,
       builders: builders.length,
+      buildersPaused: paused,
+      buildersWoken: woken,
       segments: segments.length,
       segmentsFailed: 0,
       segmentsSkipped: 0,
@@ -229,6 +237,37 @@ export class CollectionService {
         `${channel} collection failed for all ${summary.segmentsFailed} segments`,
       );
     return summary;
+  }
+
+  /**
+   * The channel's active builders less those whose every owner is paused at
+   * `until`. Marks the paused ones first, then wakes those no longer paused
+   * with a cursor `resumeHours` back, so the planning below reads it. Only
+   * known-paused ids are dropped: a builder linked after the paused set was
+   * read runs.
+   */
+  private async runnableBuilders(
+    channel: Channel,
+    until: Date,
+  ): Promise<{
+    builders: QuerySearchBuilderRow[];
+    paused: number;
+    woken: number;
+  }> {
+    const hours = this.config.get('SEARCH_PAUSE_AFTER_HOURS', { infer: true });
+    const paused = await this.activity.pausedBuilderIds(channel, until, hours);
+    await this.segments.markPaused([...paused], until);
+    const resumeAt = new Date(
+      until.getTime() - channelJobsConfig[channel].resumeHours * 3_600_000,
+    );
+    const woken = await this.segments.wake(channel, paused, resumeAt);
+    const builders = (await this.queries.listActive(channel)).filter(
+      ({ id }) => !paused.has(id),
+    );
+    this.logger.log(
+      `${channel}: ${builders.length} builders runnable, ${paused.size} paused, ${woken.length} woken`,
+    );
+    return { builders, paused: paused.size, woken: woken.length };
   }
 
   /**

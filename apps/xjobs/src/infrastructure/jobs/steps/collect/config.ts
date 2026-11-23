@@ -28,6 +28,8 @@ export interface ChannelJobConfig<R extends ActorRunConfig = ActorRunConfig> {
   segmentSize: number;
   /** The span each segment run searches. */
   window: WindowConfig;
+  /** A woken builder's cursor goes back to this many hours before the tick. */
+  resumeHours: number;
   /** How long a run holds its claim on a query; longer than the slowest segment run. */
   claimLeaseMinutes: number;
   /** The channel's actor and its limits. */
@@ -41,6 +43,7 @@ const hourly = {
   attempts: 1,
   segmentSize: 10,
   window: { initialHours: 24, overlapMinutes: 15, maximumHours: 24 },
+  resumeHours: 1,
   claimLeaseMinutes: 30,
 } as const;
 
@@ -74,6 +77,7 @@ const daily = {
     maximumHours: 168,
     minimumHours: 72,
   },
+  resumeHours: 24,
 } as const;
 
 /** One dedicated config per channel job; each `run` is its collector's static actor config. */
