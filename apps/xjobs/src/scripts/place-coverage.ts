@@ -9,6 +9,11 @@
  * tables, by place and arrangement type, and by place and seniority level:
  * runs, cost, jobs found, jobs found only by that place, and the best match
  * outcome of those jobs (qualified, review, rejected, none).
+ *
+ * From 2026-11-23 a harvestapi run covers every level of its place and work
+ * type (one search per group, levels merged), so the seniority table credits
+ * that run's cost to one of its levels arbitrarily: read per-level cost for
+ * harvestapi as noise from that date on.
  */
 import { Logger } from '@nestjs/common';
 import { parseArgs } from 'node:util';

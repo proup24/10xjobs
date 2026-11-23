@@ -5,6 +5,7 @@ import {
   coverage,
   halfKeywords,
   inconclusive,
+  searchParams,
   pickGroup,
   runFailure,
   type GroupCandidate,
@@ -54,6 +55,34 @@ describe('halfKeywords', () => {
     );
   });
 
+  it('halves by keyword unit: one user keeps its levels in one half', () => {
+    const g = group('k', 50, [
+      member('a3', 'h1', ['go']),
+      member('b3', 'h2', ['java']),
+      member('a4', 'h3', ['go']),
+      member('c3', 'h4', ['rust']),
+      member('b4', 'h5', ['java']),
+    ]);
+    const out = halfKeywords(g);
+    expect(out.by).toBe('members');
+    expect(out.halves[0]).toBe(linkedinKeyword(['engineer'], ['go', 'java']));
+    expect(out.halves[1]).toBe(linkedinKeyword(['engineer'], ['rust']));
+  });
+
+  it('halves the spellings of one keyword unit, whatever its levels', () => {
+    const g = group('k', 50, [
+      member('a3', 'h1', ['rust', 'go', 'java']),
+      member('a4', 'h2', ['rust', 'go', 'java']),
+    ]);
+    const out = halfKeywords(g);
+    expect(out.by).toBe('spellings');
+    expect(out.merged).toBe(
+      linkedinKeyword(['engineer'], ['go', 'java', 'rust']),
+    );
+    expect(out.halves[0]).toBe(linkedinKeyword(['engineer'], ['go', 'java']));
+    expect(out.halves[1]).toBe(linkedinKeyword(['engineer'], ['rust']));
+  });
+
   it('halves the spellings of a single member', () => {
     const g = group('k', 50, [member('a', 'h', ['rust', 'go', 'java'])]);
     const out = halfKeywords(g);
@@ -66,6 +95,32 @@ describe('halfKeywords', () => {
     expect(() => halfKeywords(group('k', 5))).toThrow(
       'cannot halve: one member with fewer than 2 spellings',
     );
+  });
+});
+
+describe('searchParams', () => {
+  it('searches the union of the members levels, as the collector does', () => {
+    const at = (id: string, experienceLevel?: string) => ({
+      id,
+      hash: id,
+      params: {
+        location: 'Germany',
+        workType: '2',
+        roleWords: ['engineer'],
+        spellings: ['go'],
+        ...(experienceLevel === undefined ? {} : { experienceLevel }),
+      },
+    });
+    expect(
+      searchParams(group('k', 5, [at('a', '4'), at('b', '3')])),
+    ).toMatchObject({
+      location: 'Germany',
+      workType: '2',
+      experienceLevel: '3,4',
+    });
+    expect(
+      searchParams(group('k', 5, [at('a', '4'), at('b')])).experienceLevel,
+    ).toBeUndefined();
   });
 });
 

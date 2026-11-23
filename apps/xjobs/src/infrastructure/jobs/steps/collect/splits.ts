@@ -1,5 +1,9 @@
 import type { QuerySearchBuilderRow } from 'src/database';
-import { type SearchSegment, segmentHash } from 'src/modules/segments';
+import {
+  type SearchSegment,
+  keywordUnits,
+  segmentHash,
+} from 'src/modules/segments';
 
 /**
  * How long a remembered split is kept before it may be made smaller: 1.5
@@ -27,23 +31,34 @@ export interface GroupTick {
   rowLimit: number;
 }
 
-function byHash(a: QuerySearchBuilderRow, b: QuerySearchBuilderRow): number {
-  return a.hash < b.hash ? -1 : a.hash > b.hash ? 1 : 0;
+/**
+ * Whether a full run of the segment can be searched again in halves: it holds
+ * more than one keyword unit (`keywordUnits`). A harvestapi segment of one
+ * user's levels is one unit: its halves would search the same keyword.
+ */
+export function canHalve(segment: SearchSegment): boolean {
+  return keywordUnits(segment.channel, segment.members).length > 1;
 }
 
-/** The segment's members by hash order, cut in two, the first half rounded up. */
+/**
+ * The segment's keyword units in order (`keywordUnits`: by hash, one member
+ * each outside harvestapi), cut in two, the first half rounded up.
+ */
 export function halve(segment: SearchSegment): [SearchSegment, SearchSegment] {
-  const members = [...segment.members].sort(byHash);
-  const half = Math.ceil(members.length / 2);
-  const piece = (part: QuerySearchBuilderRow[]): SearchSegment => ({
-    ...segment,
-    members: part,
-    hash: segmentHash(
-      segment.key,
-      part.map(({ id }) => id),
-    ),
-  });
-  return [piece(members.slice(0, half)), piece(members.slice(half))];
+  const units = keywordUnits(segment.channel, segment.members);
+  const half = Math.ceil(units.length / 2);
+  const piece = (part: QuerySearchBuilderRow[][]): SearchSegment => {
+    const members = part.flat();
+    return {
+      ...segment,
+      members,
+      hash: segmentHash(
+        segment.key,
+        members.map(({ id }) => id),
+      ),
+    };
+  };
+  return [piece(units.slice(0, half)), piece(units.slice(half))];
 }
 
 /**

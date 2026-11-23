@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { Channel, isLinkedinJobBoard } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
 import {
+  harvestGroupKey,
   linkedinGroupKey,
   linkedinMemberWords,
 } from 'src/modules/collectors/providers/mappers/linkedin-job-board.mapper';
@@ -20,7 +21,8 @@ import {
 export interface SearchSegment {
   /**
    * `channel|domain|type|place`: what every member shares. For the LinkedIn
-   * job board, `channel|type|group:<place and filters>`.
+   * job board, `channel|type|group:<place and filters>`; harvestapi's group
+   * leaves out the experience level (its search covers every level).
    */
   key: string;
   /** sha256 of the key and the ordered member ids: the segment's identity. */
@@ -32,16 +34,22 @@ export interface SearchSegment {
 export const SEGMENT_SIZE = 10;
 
 /**
- * The group a LinkedIn job board builder searches in (`linkedinGroupKey`):
- * place and filters, whatever its keyword. A builder whose place can't be
- * resolved (no geoId) gets a segment of its own, keyed so it can't collide with
- * a real group: its run fails loudly, naming the place, and every other
- * segment still runs.
+ * The group a LinkedIn job board builder searches in: place and filters,
+ * whatever its keyword. harvestapi (`Channel.LINKEDIN_JOB_BOARD`) groups
+ * without the experience level (`harvestGroupKey`), so levels merge into one
+ * search; the trial channels keep `linkedinGroupKey`, level included. A
+ * builder whose place can't be resolved (no geoId) gets a segment of its own,
+ * keyed so it can't collide with a real group: its run fails loudly, naming
+ * the place, and every other segment still runs.
  */
 function linkedinJobBoardKey(builder: QuerySearchBuilderRow): string {
   const prefix = `${builder.channel}|${builder.type}`;
   try {
-    return `${prefix}|group:${linkedinGroupKey(params(builder))}`;
+    const key =
+      builder.channel === Channel.LINKEDIN_JOB_BOARD
+        ? harvestGroupKey(params(builder))
+        : linkedinGroupKey(params(builder));
+    return `${prefix}|group:${key}`;
   } catch {
     return `${prefix}|unresolved:${builder.id}`;
   }
@@ -72,8 +80,43 @@ export function segmentHash(key: string, memberIds: readonly string[]): string {
     .digest('hex');
 }
 
-function byHash(a: QuerySearchBuilderRow, b: QuerySearchBuilderRow): number {
+function byHash(a: { hash: string }, b: { hash: string }): number {
   return a.hash < b.hash ? -1 : a.hash > b.hash ? 1 : 0;
+}
+
+/** The keyword a harvestapi member searches alone, or null when it has no words. */
+function unitKeyword(params: unknown): string | null {
+  const { roleWords, spellings } = linkedinMemberWords([
+    { params: (params ?? {}) as Record<string, unknown> },
+  ]);
+  if (roleWords.length === 0 || spellings.length === 0) return null;
+  return linkedinKeyword(roleWords, spellings);
+}
+
+/**
+ * The members cut into keyword units, the pieces chunking and halving never
+ * cut. For harvestapi (`Channel.LINKEDIN_JOB_BOARD`) a unit is the members
+ * whose own keyword is the same (typically one profile's level builders):
+ * their merged search covers every level, so running two of them apart pays
+ * twice for the same rows. A member with no words is a unit of its own. Every
+ * other channel has one member per unit. Units are ordered by their lowest
+ * member hash, members by hash inside a unit, whatever the input order.
+ */
+export function keywordUnits<T extends { hash: string; params?: unknown }>(
+  channel: string,
+  members: readonly T[],
+): T[][] {
+  const sorted = [...members].sort(byHash);
+  if (channel !== Channel.LINKEDIN_JOB_BOARD)
+    return sorted.map((member) => [member]);
+  const units = new Map<string | T, T[]>();
+  for (const member of sorted) {
+    const key = unitKeyword(member.params) ?? member;
+    const unit = units.get(key);
+    if (unit) unit.push(member);
+    else units.set(key, [member]);
+  }
+  return [...units.values()];
 }
 
 /** `count` consecutive chunks, as even as possible, larger ones first. */
@@ -106,16 +149,19 @@ function postsFit(members: readonly QuerySearchBuilderRow[]): boolean {
   );
 }
 
-/** Halves a chunk until its merged keyword fits or it holds one member. */
+/**
+ * Halves a chunk of units, between units, until its merged keyword fits or it
+ * holds one unit.
+ */
 function fitChunks(
-  members: QuerySearchBuilderRow[],
+  units: QuerySearchBuilderRow[][],
   fits: (members: readonly QuerySearchBuilderRow[]) => boolean,
-): QuerySearchBuilderRow[][] {
-  if (members.length <= 1 || fits(members)) return [members];
-  const half = Math.ceil(members.length / 2);
+): QuerySearchBuilderRow[][][] {
+  if (units.length <= 1 || fits(units.flat())) return [units];
+  const half = Math.ceil(units.length / 2);
   return [
-    ...fitChunks(members.slice(0, half), fits),
-    ...fitChunks(members.slice(half), fits),
+    ...fitChunks(units.slice(0, half), fits),
+    ...fitChunks(units.slice(half), fits),
   ];
 }
 
@@ -161,6 +207,7 @@ function overLimit(
  * Groups builders by segment key and orders each group by builder hash. A
  * LinkedIn job board group is cut into `parts.get(key) ?? 1` even chunks, then
  * any chunk whose merged keyword is too long is halved; `size` doesn't apply.
+ * Both cut between keyword units (`keywordUnits`), never inside one.
  * Other groups are cut into segments of at most `size`. The same builders
  * always give the same segments, whatever their input order. Pure: it reports
  * the groups keyword length cut, and the lone builders still over the limit
@@ -179,21 +226,29 @@ export function planSegments(
   const plan: SegmentPlan = { segments: [], cuts: [], oversized: [] };
   for (const key of [...groups.keys()].sort()) {
     const members = (groups.get(key) ?? []).sort(byHash);
-    const board = isLinkedinJobBoard(members[0].channel);
-    let chunks: QuerySearchBuilderRow[][];
+    const channel = members[0].channel;
+    const board = isLinkedinJobBoard(channel);
+    // Chunks as units: one member each, except harvestapi's keyword units.
+    let chunks: QuerySearchBuilderRow[][][];
     if (board) {
-      const even = evenChunks(members, parts.get(key) ?? 1);
+      const units = keywordUnits(channel, members);
+      const even = evenChunks(units, parts.get(key) ?? 1);
       chunks = even.flatMap((chunk) => fitChunks(chunk, keywordFits));
       if (chunks.length > even.length)
         plan.cuts.push({ key, members: members.length, chunks: chunks.length });
-    } else if (members[0].channel === Channel.LINKEDIN_POSTS)
-      chunks = fitChunks(members, postsFit);
+    } else if (channel === Channel.LINKEDIN_POSTS)
+      chunks = fitChunks(
+        members.map((member) => [member]),
+        postsFit,
+      );
     else
       chunks = Array.from(
         { length: Math.ceil(members.length / size) },
-        (_, i) => members.slice(i * size, (i + 1) * size),
+        (_, i) =>
+          members.slice(i * size, (i + 1) * size).map((member) => [member]),
       );
-    for (const chunk of chunks) {
+    for (const units of chunks) {
+      const chunk = units.flat();
       const segment: SearchSegment = {
         key,
         hash: segmentHash(
@@ -204,7 +259,8 @@ export function planSegments(
         members: chunk,
       };
       plan.segments.push(segment);
-      const over = board && chunk.length === 1 ? overLimit(chunk[0]) : null;
+      // One unit: its members share one keyword, so the first one measures it.
+      const over = board && units.length === 1 ? overLimit(chunk[0]) : null;
       if (over) plan.oversized.push({ key, hash: segment.hash, ...over });
     }
   }

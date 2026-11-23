@@ -2,6 +2,10 @@
  * The read-only queries behind `db:actor-compare`. Credit is by
  * `collection_batches.actor` (a run with no batch by its channel's actor); the
  * aggregation is in ./report.
+ *
+ * Note: from 2026-11-23, a harvestapi run covers every level of its place and
+ * work type, while cells are still keyed per level, so harvestapi-vs-trial
+ * pairs from that date on are not comparable per level. The trials are off.
  */
 import type { DatabaseTransaction } from '@xjobs/database';
 import { channelJobsConfig } from 'src/infrastructure/jobs/steps/collect/config';

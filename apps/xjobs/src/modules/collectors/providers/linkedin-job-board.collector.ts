@@ -9,14 +9,17 @@ import { reachedChargeCap } from '../utils/collected-job';
 import { oneSearchInput } from '../utils/linkedin-board-run';
 import { ApifyActorProvider } from './apify/apify.provider';
 import {
+  harvestGroupKey,
   type HarvestJobSearchInput,
+  mergedExperienceLevel,
   mergedLinkedinKeyword,
   toHarvestJobSearchInput,
 } from './mappers/linkedin-job-board.mapper';
 
 /**
  * Apify trigger for the LinkedIn job board: one actor run per search. Segments
- * group builders by their search (`linkedinGroupKey`), so a segment runs one
+ * group builders by their search (`harvestGroupKey`: place and work type,
+ * every experience level merged into one search), so a segment runs one
  * search and every item the run returns belongs to every member. The input
  * never depends on the segment's window: the actor is asked for the last hour.
  * Nothing is matched by text, and the run's `maxItems` and charge cap bound
@@ -38,12 +41,18 @@ export class LinkedinJobBoardCollector {
 
   /** The actor input, built before any Apify call (see {@link oneSearchInput}). */
   private input(segment: SegmentSearch, rows: number): HarvestJobSearchInput {
-    return oneSearchInput(segment, (first) =>
-      toHarvestJobSearchInput(
-        mergedLinkedinKeyword(segment.queries),
-        first.params,
-        rows,
-      ),
+    return oneSearchInput(
+      segment,
+      (first) =>
+        toHarvestJobSearchInput(
+          mergedLinkedinKeyword(segment.queries),
+          {
+            ...first.params,
+            experienceLevel: mergedExperienceLevel(segment.queries),
+          },
+          rows,
+        ),
+      harvestGroupKey,
     );
   }
 

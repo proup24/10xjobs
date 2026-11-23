@@ -95,13 +95,57 @@ export function toHarvestJobSearchInput(
  * merge into one search.
  */
 export function linkedinGroupKey(params: Record<string, unknown>): string {
-  const experienceLevel = mapCodes(params.experienceLevel, EXPERIENCE).sort();
+  return groupKey(params, true);
+}
+
+/**
+ * The group key without the experience level, for the harvestapi job board.
+ * LinkedIn has ignored the `f_E` level filter since about 2026-11-18, so
+ * harvestapi runs one search per place and work type across every level (see
+ * docs/superpowers/specs/2026-11-23-merge-level-searches-design.md).
+ */
+export function harvestGroupKey(params: Record<string, unknown>): string {
+  return groupKey(params, false);
+}
+
+function groupKey(params: Record<string, unknown>, withLevel: boolean): string {
+  const experienceLevel = withLevel
+    ? mapCodes(params.experienceLevel, EXPERIENCE).sort()
+    : [];
   const workplaceType = mapCodes(params.workType, WORKPLACE).sort();
   return JSON.stringify({
     place: { geoId: linkedinGeoId(params) },
     ...(experienceLevel.length ? { experienceLevel } : {}),
     ...(workplaceType.length ? { workplaceType } : {}),
   });
+}
+
+/**
+ * The union of the members' known `f_E` codes, sorted and comma-joined, for a
+ * search that spans the levels of a merged group (harvestapi drops the level
+ * from its group key; see `harvestGroupKey`). Undefined when there are no
+ * members or any member has no level, since that member searches every level.
+ * A member whose codes are all unknown (`','`, `'9'`) has no level: the actor
+ * input drops unknown codes (`mapCodes`), so it searches every level too.
+ */
+export function mergedExperienceLevel(
+  queries: readonly { params: Record<string, unknown> }[],
+): string | undefined {
+  if (!queries.length) return undefined;
+  const codes = new Set<string>();
+  for (const { params } of queries) {
+    const level = params.experienceLevel;
+    const known =
+      typeof level === 'string'
+        ? level
+            .split(',')
+            .map((code) => code.trim())
+            .filter((code) => Object.hasOwn(EXPERIENCE, code))
+        : [];
+    if (known.length === 0) return undefined;
+    for (const code of known) codes.add(code);
+  }
+  return [...codes].sort().join(',');
 }
 
 function stringList(value: unknown): string[] {

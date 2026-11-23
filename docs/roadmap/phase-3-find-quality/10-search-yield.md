@@ -21,6 +21,7 @@ All 50 searches share one keyword, built from one profile:
 - **Weak searches.** 30 searches average under one job per run. They cost almost nothing, because charges are per row.
 - **Paid rows LinkedIn doesn't tag remote (moved from [slice 09](09-non-remote-leak.md)).** 17% of raw rows from the remote searches had no workplace tag (538 rows, 405 of them EY's bulk posting). Likely cause: LinkedIn's forced AI job search drops the workplace filter (curious_coder's input schema, August 2026; unconfirmed for harvestapi). Slice 09 handles these jobs in matching, so the open part is cost only.
 - **Coverage gap (accepted earlier).** Collection stops at 21:00 Morocco time, which is 16:00 ET. US postings are about 40% of rows, and the US afternoon is never collected. This was accepted in [slice 01](01-linkedin-source-data.md) _(user)_; revisit it with these numbers.
+- **Level filter ignored (2026-11-23).** LinkedIn has ignored `f_E` since about 2026-11-18, so harvestapi now runs one search per place and work type for every level; see the [spec](../../superpowers/specs/2026-11-23-merge-level-searches-design.md).
 
 ## Open questions
 

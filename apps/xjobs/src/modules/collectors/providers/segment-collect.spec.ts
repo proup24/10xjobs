@@ -4,6 +4,7 @@ import type { BoardSearchRunConfig, SegmentSearch } from '../types/collector';
 import type { ApifyActorProvider } from './apify/apify.provider';
 import { GoogleJobsSearchProvider } from './apify/google-search.provider';
 import { LinkedinJobBoardCollector } from './linkedin-job-board.collector';
+import { LinkedinJobBoardCheapCollector } from './linkedin-job-board-cheap.collector';
 import { boardQuery } from './mappers/google-search.mapper';
 import {
   mergedLinkedinKeyword,
@@ -77,6 +78,7 @@ describe('LinkedIn job board segment', () => {
     jobState: 'LISTED',
     _meta: { pagination: { totalElements } },
   });
+  const role = { roleWords: ['backend'], spellings: ['go'] };
   const board_ = (provider: ApifyActorProvider) =>
     new LinkedinJobBoardCollector(provider);
 
@@ -217,6 +219,64 @@ describe('LinkedIn job board segment', () => {
     expect(run).not.toHaveBeenCalled();
   });
 
+  it('runs members with different experience levels as one search for both', async () => {
+    const { run, provider } = actor(() => [item(1)]);
+    await board_(provider).collect(
+      segment(Channel.LINKEDIN_JOB_BOARD, [
+        {
+          id: 'qs-a',
+          keyword: 'go',
+          params: { ...role, location: 'Germany', experienceLevel: '4' },
+        },
+        {
+          id: 'qs-b',
+          keyword: 'go',
+          params: { ...role, location: 'Germany', experienceLevel: '5' },
+        },
+      ]),
+    );
+    expect(run).toHaveBeenCalledTimes(1);
+    expect(run.mock.calls[0][1]).toMatchObject({
+      experienceLevel: ['mid-senior', 'director'],
+    });
+  });
+
+  it('sends no level when a member has none', async () => {
+    const { run, provider } = actor(() => [item(1)]);
+    await board_(provider).collect(
+      segment(Channel.LINKEDIN_JOB_BOARD, [
+        {
+          id: 'qs-a',
+          keyword: 'go',
+          params: { ...role, location: 'Germany', experienceLevel: '4' },
+        },
+        { id: 'qs-b', keyword: 'go', params: { ...role, location: 'Germany' } },
+      ]),
+    );
+    expect(run.mock.calls[0][1]).not.toHaveProperty('experienceLevel');
+  });
+
+  it('cheap_scraper still refuses members with different experience levels', async () => {
+    const { run, provider } = actor(() => [item(1)]);
+    await expect(
+      new LinkedinJobBoardCheapCollector(provider).collect(
+        segment(Channel.LINKEDIN_JOB_BOARD_CHEAP, [
+          {
+            id: 'qs-a',
+            keyword: 'go',
+            params: { location: 'Germany', experienceLevel: '4' },
+          },
+          {
+            id: 'qs-b',
+            keyword: 'go',
+            params: { location: 'Germany', experienceLevel: '5' },
+          },
+        ]),
+      ),
+    ).rejects.toThrow(/one search/);
+    expect(run).not.toHaveBeenCalled();
+  });
+
   it("sends one jobTitles entry: the members' merged keyword", async () => {
     const members = [
       {
@@ -244,27 +304,6 @@ describe('LinkedIn job board segment', () => {
     );
     const input = run.mock.calls[0][1] as { jobTitles: string[] };
     expect(input.jobTitles).toEqual([mergedLinkedinKeyword(members)]);
-  });
-
-  it('refuses members with different experience levels', async () => {
-    const { run, provider } = actor(() => []);
-    await expect(
-      board_(provider).collect(
-        segment(Channel.LINKEDIN_JOB_BOARD, [
-          {
-            id: 'qs-a',
-            keyword: 'go',
-            params: { location: 'Germany', experienceLevel: '4' },
-          },
-          {
-            id: 'qs-b',
-            keyword: 'go',
-            params: { location: 'Germany', experienceLevel: '5' },
-          },
-        ]),
-      ),
-    ).rejects.toThrow(/one search/);
-    expect(run).not.toHaveBeenCalled();
   });
 
   it('asks for 1000 rows with a $1.10 cap', async () => {
