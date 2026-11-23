@@ -58,11 +58,16 @@ export function timeAgo(at: Date, now: Date): string {
   return `${days} ${days === 1 ? 'day' : 'days'} ago`;
 }
 
+/** "Nov 9": the UTC month and day. */
+export function shortDate(at: Date): string {
+  return `${MONTHS[at.getUTCMonth()]} ${at.getUTCDate()}`;
+}
+
 /** `timeAgo` of the posted time; a date-only post reads "Nov 9". */
 export function postedAge(job: MatchedJob, now: Date): string {
   const at = job.postedAt;
   if (!job.postedExact) {
-    return `${MONTHS[at.getUTCMonth()]} ${at.getUTCDate()}`;
+    return shortDate(at);
   }
   return timeAgo(at, now);
 }

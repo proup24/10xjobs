@@ -41,6 +41,7 @@ export class FakeQuerySearchRepository extends QuerySearchRepository {
       isActive: false,
       isDeleted: false,
       coveredUntil: null,
+      pausedAt: null,
       claimRunId: null,
       claimWindowStart: null,
       claimWindowEnd: null,

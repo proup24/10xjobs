@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
 import { MatchesView } from '@/components/matches/matches-view';
+import { SearchesNotice } from '@/components/matches/searches-notice';
 import { loadMatches } from '@/lib/matches/load';
 import { loadPostings } from '@/lib/matches/postings';
 import { decidedJobHref, selectedRows } from '@/lib/matches/selected';
@@ -93,6 +95,12 @@ export default async function Page({
       userId={userId}
       selected={selected}
       postings={postings}
+      notice={
+        // Streamed in: the engine's state read never holds up the list.
+        <Suspense fallback={null}>
+          <SearchesNotice />
+        </Suspense>
+      }
     />
   );
 }

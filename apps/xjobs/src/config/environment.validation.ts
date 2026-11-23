@@ -131,6 +131,14 @@ const adminShape = {
   ADMIN_USERS: postSearchShape.POST_SEARCH_USERS,
 };
 
+/**
+ * Hours without activity before a user's searches pause (spec: paused searches).
+ * Read by the API (state and resume) and by the workers (collection).
+ */
+const searchPauseShape = {
+  SEARCH_PAUSE_AFTER_HOURS: z.coerce.number().int().min(1).max(168).default(24),
+};
+
 /** Just the post search allow-list, for scripts that load no other settings. */
 export const postSearchEnvironmentSchema = z.object(postSearchShape);
 
@@ -212,6 +220,7 @@ export const workerProcessEnvironmentSchema = databaseEnvironmentSchema
     ...processorEnvironmentShape,
     ...postSearchShape,
     ...adminShape,
+    ...searchPauseShape,
   })
   .superRefine((env, ctx) => {
     requireStorage(env, ctx);
@@ -258,6 +267,7 @@ export const environmentSchema = databaseEnvironmentSchema
     ...processorEnvironmentShape,
     ...postSearchShape,
     ...adminShape,
+    ...searchPauseShape,
     /** Mounts the operator routes (processor, matcher, query search); local only. */
     XJOBS_OPERATOR_ENDPOINTS: booleanFlag.default(false),
     /** Set by Nx in development to receive the server's ready signal. */

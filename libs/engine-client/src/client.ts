@@ -9,6 +9,12 @@ export type PostSearchView = {
   searches: number;
 };
 
+/** The signed-in user's searches: paused, and when they were last active. */
+export type SearchesStateView = {
+  paused: boolean;
+  lastActiveAt: string | null;
+};
+
 /** Matches the engine's `/api/admin/*` DTOs (`apps/xjobs/src/modules/admin`). */
 export type AuthorView = {
   key: string | null;
@@ -107,6 +113,9 @@ export interface EngineClient {
     profileId: string,
     enabled: boolean,
   ): Promise<EngineResult<PostSearchView>>;
+  searchesState(): Promise<EngineResult<SearchesStateView>>;
+  /** Resumes the user's paused searches; already running is a success. */
+  resumeSearches(): Promise<EngineResult<SearchesStateView>>;
   /** Whether the signed-in user is an admin; any signed-in user may ask. */
   adminMe(): Promise<EngineResult<{ admin: boolean }>>;
   prepareDrops(options?: {
@@ -238,6 +247,14 @@ function queryOf(params: Record<string, string | number | undefined>): string {
     if (value !== undefined) query.set(key, String(value));
   const text = query.toString();
   return text ? `?${text}` : '';
+}
+
+function parseSearchesState(data: unknown): SearchesStateView | undefined {
+  return isRecord(data) &&
+    typeof data.paused === 'boolean' &&
+    (data.lastActiveAt === null || typeof data.lastActiveAt === 'string')
+    ? { paused: data.paused, lastActiveAt: data.lastActiveAt }
+    : undefined;
 }
 
 export function createEngineClient(deps: EngineClientDeps): EngineClient {
@@ -567,6 +584,18 @@ export function createEngineClient(deps: EngineClientDeps): EngineClient {
   return {
     publishProfile,
     deleteProfile,
+    searchesState: () =>
+      admin(
+        'searchesState',
+        { method: 'GET', path: '/me/searches' },
+        parseSearchesState,
+      ),
+    resumeSearches: () =>
+      admin(
+        'resumeSearches',
+        { method: 'POST', path: '/me/searches/resume' },
+        parseSearchesState,
+      ),
     adminMe: () =>
       admin('adminMe', { method: 'GET', path: '/admin/me' }, (data) =>
         isRecord(data) && typeof data.admin === 'boolean'

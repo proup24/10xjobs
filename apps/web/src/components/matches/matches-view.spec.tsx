@@ -5,6 +5,7 @@ import {
   screen,
   within,
 } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { groupByJob, selectJobs, type MatchRow } from '@/lib/matches/group';
 import type { ViewState } from '@/lib/matches/view-state';
@@ -61,6 +62,7 @@ function renderView(
     profiles?: Profile[];
     initial?: Partial<ViewState>;
     selected?: MatchRow[] | null;
+    notice?: ReactNode;
   } = {},
 ) {
   const profiles = opts.profiles ?? ONE;
@@ -82,6 +84,7 @@ function renderView(
       userId="u1"
       selected={opts.selected ?? null}
       postings={[]}
+      notice={opts.notice}
     />,
   );
 }
@@ -421,5 +424,21 @@ describe('MatchesView job decisions', () => {
       expect(toast.error).toHaveBeenCalledWith("Couldn't save. Try again."),
     );
     expect(push).not.toHaveBeenCalled();
+  });
+});
+
+describe('MatchesView notice slot', () => {
+  it('shows the notice under the heading, above the list', () => {
+    renderView({ notice: <p>Paused notice</p> });
+    const notice = screen.getByText('Paused notice');
+    const heading = screen.getByRole('heading', { name: 'Matches' });
+    const list = screen.getByRole('list', { name: 'Matches' });
+    expect(
+      heading.compareDocumentPosition(notice) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      notice.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 });

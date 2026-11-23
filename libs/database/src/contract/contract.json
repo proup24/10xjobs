@@ -5660,6 +5660,16 @@
                   "kind": "scalar"
                 }
               },
+              "pausedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
               "technologies": {
                 "many": {
                   "elementNullable": false
@@ -5754,6 +5764,9 @@
                 },
                 "params": {
                   "column": "params"
+                },
+                "pausedAt": {
+                  "column": "pausedAt"
                 },
                 "technologies": {
                   "column": "technologies"
@@ -7038,6 +7051,16 @@
                   "kind": "scalar"
                 }
               },
+              "searchesResumedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
               "updatedAt": {
                 "nullable": false,
                 "type": {
@@ -7195,6 +7218,9 @@
                 },
                 "residenceCountry": {
                   "column": "residenceCountry"
+                },
+                "searchesResumedAt": {
+                  "column": "searchesResumedAt"
                 },
                 "updatedAt": {
                   "column": "updatedAt"
@@ -9809,6 +9835,15 @@
                   ],
                   "name": "job_decisions_jobId_idx_623c8f77",
                   "prefix": "job_decisions_jobId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "userId",
+                    "decidedAt"
+                  ],
+                  "name": "job_decisions_userId_decidedAt_idx_39d93175",
+                  "prefix": "job_decisions_userId_decidedAt_idx",
                   "unique": false
                 },
                 {
@@ -13127,6 +13162,14 @@
                   "dataType": "pg/jsonb",
                   "nullable": false
                 },
+                "pausedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
                 "technologies": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -14294,6 +14337,14 @@
                   "dataType": "pg/text",
                   "nullable": true
                 },
+                "searchesResumedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
                 "updatedAt": {
                   "codecId": "pg/timestamptz-date@1",
                   "dataType": "pg/timestamptz",
@@ -14633,6 +14684,16 @@
                   "name": "webhook_deliveries_userId_idx_a489d58a",
                   "prefix": "webhook_deliveries_userId_idx",
                   "unique": false
+                },
+                {
+                  "columns": [
+                    "userId",
+                    "deliveredAt"
+                  ],
+                  "name": "webhook_deliveries_user_delivered_6332df6c",
+                  "prefix": "webhook_deliveries_user_delivered",
+                  "unique": false,
+                  "where": "status = 'delivered'"
                 },
                 {
                   "columns": [
@@ -15008,7 +15069,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "4ac2bcc5b523844f1f915c4e73dc8fb05fa6c33a5c253c8ec71f6c33ddf8677b"
+    "storageHash": "fbbefdd7802eb5414e4417952f49b70cb8bf2e3ae4e71bd8caded0f2e4b96f2d"
   },
   "execution": {
     "executionHash": "71a03ba0225916055a5855c4c4deaf607551051c05f9a67ec0aecfdefc43a862",

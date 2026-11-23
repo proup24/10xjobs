@@ -97,6 +97,15 @@ export class QuerySearchBuilderResponseDto implements QueryBuilderView {
   })
   coveredUntil!: Date | null;
 
+  @ApiProperty({
+    format: 'date-time',
+    nullable: true,
+    type: String,
+    description:
+      'Set on the first tick that leaves the builder out as paused; null while it runs',
+  })
+  pausedAt!: Date | null;
+
   @ApiProperty({ format: 'date-time' })
   createdAt!: Date;
 

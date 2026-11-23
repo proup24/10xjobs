@@ -125,6 +125,8 @@ model User {
   // Bumped by triggers on any change to work_authorizations, residenceCountry or
   // acceptsSponsorship, so the matcher re-decides the user's jobs.
   eligibilityVersion Int                    @default(0)
+  // Engine-written: the last Resume, or an edit to a published profile the matcher reads.
+  searchesResumedAt  TimestamptzJsDate(3)?
   jobMatches         JobMatch[]
   jobViews           JobView[]
   jobDecisions       JobDecision[]
@@ -397,6 +399,8 @@ model QuerySearchBuilder {
   claimWindowStart   TimestamptzJsDate(3)?
   claimWindowEnd     TimestamptzJsDate(3)?
   claimExpiresAt     TimestamptzJsDate(3)?
+  // Set on the first tick that leaves the builder out as paused; null while it runs.
+  pausedAt           TimestamptzJsDate(3)?
   +Timestamps
 
   @@check(expression: sql`"associatedProfiles" >= 0`, name: "query_search_builder_associated_profiles")
@@ -1140,6 +1144,7 @@ model JobDecision {
   @@check(expression: sql`status = 'dismissed' OR (reason IS NULL AND note IS NULL AND "matchSnapshot" IS NULL)`, name: "job_decisions_applied_bare")
   @@unique([userId, jobId])
   @@index([jobId])
+  @@index([userId, decidedAt])
   @@map("job_decisions")
   @@rls
 }
@@ -1308,6 +1313,7 @@ model WebhookDelivery {
   @@check(expression: sql`kind <> 'match' OR ("profileId" IS NOT NULL AND "jobId" IS NOT NULL AND trigger IS NOT NULL)`, name: "webhook_deliveries_match_complete")
   @@index([profileId, jobId], where: sql`kind = 'match'`, unique: true, name: "webhook_deliveries_match_once")
   @@index([webhookId, status, createdAt])
+  @@index([userId, deliveredAt], where: sql`status = 'delivered'`, name: "webhook_deliveries_user_delivered")
   @@map("webhook_deliveries")
   @@rls
 }
