@@ -1,9 +1,0 @@
-{
-  "from": "fbbefdd7802eb5414e4417952f49b70cb8bf2e3ae4e71bd8caded0f2e4b96f2d",
-  "to": "fbbefdd7802eb5414e4417952f49b70cb8bf2e3ae4e71bd8caded0f2e4b96f2d",
-  "providedInvariants": [
-    "searches-resumed-backfill-on-pause"
-  ],
-  "createdAt": "2026-11-23T13:26:08.856Z",
-  "migrationHash": "98e7052ecb93765c67e4d67ad2572a0c1beeb38a9d5f310ebbe09b36ee58426f"
-}

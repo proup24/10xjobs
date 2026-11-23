@@ -31,7 +31,6 @@
     "replace-profile-skills-no-key-lock",
     "set-profile-resume-no-key-lock",
     "profile-match-version-resumes",
-    "searches-resumed-backfill",
-    "searches-resumed-backfill-on-pause"
+    "searches-resumed-backfill"
   ]
 }
