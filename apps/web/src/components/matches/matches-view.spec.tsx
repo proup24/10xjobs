@@ -27,6 +27,9 @@ vi.mock('@/app/(app)/actions', () => ({
 }));
 const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock('sonner', () => ({ toast }));
+vi.mock('@/app/(app)/searches-actions', () => ({
+  resumeSearchesAction: vi.fn(),
+}));
 
 afterEach(() => {
   cleanup();
@@ -61,6 +64,7 @@ function renderView(
     profiles?: Profile[];
     initial?: Partial<ViewState>;
     selected?: MatchRow[] | null;
+    searches?: { paused: boolean; lastActiveAt: Date | null } | null;
   } = {},
 ) {
   const profiles = opts.profiles ?? ONE;
@@ -82,6 +86,7 @@ function renderView(
       userId="u1"
       selected={opts.selected ?? null}
       postings={[]}
+      searches={opts.searches ?? null}
     />,
   );
 }
@@ -421,5 +426,31 @@ describe('MatchesView job decisions', () => {
       expect(toast.error).toHaveBeenCalledWith("Couldn't save. Try again."),
     );
     expect(push).not.toHaveBeenCalled();
+  });
+});
+
+describe('MatchesView paused notice', () => {
+  const resumeButton = () =>
+    screen.queryByRole('button', { name: 'Resume searches' });
+
+  it('shows the notice above the list when searches are paused', () => {
+    renderView({
+      searches: {
+        paused: true,
+        lastActiveAt: new Date('2026-11-20T10:00:00Z'),
+      },
+    });
+    expect(resumeButton()).toBeTruthy();
+    expect(screen.getByText(/No activity since Nov 20/)).toBeTruthy();
+  });
+
+  it('shows no notice when searches are running', () => {
+    renderView({ searches: { paused: false, lastActiveAt: null } });
+    expect(resumeButton()).toBeNull();
+  });
+
+  it('shows no notice when the state could not be read', () => {
+    renderView({ searches: null });
+    expect(resumeButton()).toBeNull();
   });
 });

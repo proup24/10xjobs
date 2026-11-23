@@ -9,6 +9,7 @@ import {
   knownProfile,
   readViewState,
 } from '@/lib/matches/view-state';
+import { engineClient } from '@/lib/engine/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { preferenceLists, preferenceProfiles } from './preferences/data';
 
@@ -25,6 +26,21 @@ function toParams(sp: SearchParams): URLSearchParams {
     if (first !== undefined) q.set(k, first);
   }
   return q;
+}
+
+/** The notice is advisory: a failed read means no notice, never a failed page. */
+async function readSearches() {
+  try {
+    const result = await (await engineClient()).searchesState();
+    if (result.kind !== 'ok') return null;
+    const { paused, lastActiveAt } = result.data;
+    return {
+      paused,
+      lastActiveAt: lastActiveAt ? new Date(lastActiveAt) : null,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export default async function Page({
@@ -51,7 +67,7 @@ export default async function Page({
   const since = new Date(now.getTime() - WEEK_MS);
   const asked = readViewState(params);
   const outcome = asked.list === 'review' ? 'review' : 'qualified';
-  const [rows, reviewRows, profiles, lists, selected, postings] =
+  const [rows, reviewRows, profiles, lists, selected, postings, searches] =
     await Promise.all([
       loadMatches(supabase, { since, outcome: 'qualified' }),
       loadMatches(supabase, { since, outcome: 'review' }),
@@ -59,6 +75,7 @@ export default async function Page({
       preferenceLists(),
       selectedRows(supabase, asked.job, profilesRead, outcome),
       loadPostings(supabase, asked.job),
+      readSearches(),
     ]);
   // A decided job opened by link (a match webhook's) shows where it now lives.
   const decided = decidedJobHref(selected);
@@ -93,6 +110,7 @@ export default async function Page({
       userId={userId}
       selected={selected}
       postings={postings}
+      searches={searches}
     />
   );
 }
