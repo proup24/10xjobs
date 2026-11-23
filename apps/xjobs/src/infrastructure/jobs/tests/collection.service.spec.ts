@@ -709,6 +709,30 @@ describe('CollectionService LinkedIn search splits', () => {
     expect(splits.splits.size).toBe(0);
   });
 
+  it('never halves a full search of one keyword unit: its levels run once and move their cursors', async () => {
+    const words = { roleWords: ['engineer'], spellings: ['go'] };
+    const rows = ['3', '4', '5'].map((experienceLevel) =>
+      builder({
+        channel: Channel.LINKEDIN_JOB_BOARD,
+        type: Arrangement.remote,
+        params: { location: 'emea', experienceLevel, ...words },
+      }),
+    );
+    const all = rows.map((r) => r.id);
+    const { collection, collector, segments, splits, warn } = run(rows, full);
+    const summary = await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+
+    expect(searches(collector).map(ids)).toEqual([all]);
+    expect(segments.collected.map((x) => x.advance)).toEqual([all]);
+    expect(
+      warn.mock.calls.filter(([text]) =>
+        String(text).includes('older postings'),
+      ),
+    ).toHaveLength(1);
+    expect(summary).toMatchObject({ segments: 1, batches: 1 });
+    expect(splits.splits.size).toBe(0);
+  });
+
   it('does not say postings are lost when a full single member was capped, and keeps its cursors', async () => {
     const rows = linkedin(1);
     const { collection, segments, warn } = run(rows, (s) =>

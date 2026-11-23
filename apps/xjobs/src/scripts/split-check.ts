@@ -8,9 +8,11 @@
  * Picks one active LINKEDIN_JOB_BOARD group (the named key, else the one with
  * most rows in the last 24 hours under 120), then makes three harvestapi runs
  * of at most 150 rows over the last 24 hours: the merged keyword and its two
- * halves. Prints the jobs the halves cover. `--dry-run` prints the group, the
- * three keywords and the reserved spend, and exits before APIFY_TOKEN is
- * read. The paid path reserves $0.16 per run and refuses above $0.50.
+ * halves, cut between keyword units as the collector halves, every run over
+ * the union of the members' levels. Prints the jobs the halves cover.
+ * `--dry-run` prints the group, the three keywords and the reserved spend,
+ * and exits before APIFY_TOKEN is read. The paid path reserves $0.16 per run
+ * and refuses above $0.50.
  */
 import { Logger } from '@nestjs/common';
 import { parseArgs } from 'node:util';
@@ -28,6 +30,7 @@ import {
   inconclusive,
   pickGroup,
   runFailure,
+  searchParams,
   type GroupCandidate,
 } from './split-check/logic';
 
@@ -185,7 +188,7 @@ async function main(): Promise<void> {
       `Refusing: $${plan.reservedUsd.toFixed(3)} reserved passes the $${TOTAL_CAP_USD} cap`,
     );
   }
-  const { ids, costUsd } = await runPaid(keywords, group.members[0].params);
+  const { ids, costUsd } = await runPaid(keywords, searchParams(group));
   console.log(
     JSON.stringify(
       {

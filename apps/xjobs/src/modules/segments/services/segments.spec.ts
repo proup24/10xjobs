@@ -16,6 +16,7 @@ import { LinkedinJobBoardBuilder } from 'src/modules/queries/channels/linkedin_b
 import { locationCombinations } from 'src/modules/queries/steps';
 import {
   buildSegments,
+  keywordUnits,
   planSegments,
   segmentHash,
   segmentKey,
@@ -291,7 +292,10 @@ describe('buildSegments', () => {
   });
 
   it('cuts a group into parts chunks, stable by hash', () => {
-    const builders = many(7);
+    // Each its own keyword: same-keyword builders are one unit, never cut.
+    const builders = Array.from({ length: 7 }, (_, i) =>
+      builder({ params: { spellings: [`tech-${i}`] } }),
+    );
     const key = segmentKey(builders[0]);
     const segments = buildSegments(builders, 10, new Map([[key, 3]]));
     expect(segments.map((s) => s.members.length)).toEqual([3, 2, 2]);
@@ -611,5 +615,129 @@ describe('post segments', () => {
       );
       expect(keyword.match(/ OR /g)?.length ?? 0).toBeLessThanOrEqual(5);
     }
+  });
+});
+
+describe('keyword units', () => {
+  /** One user's words: role words and ten spellings of its own. */
+  const words = (user: number) => ({
+    roleWords: ['engineer'],
+    spellings: Array.from({ length: 10 }, (_, i) => `u${user}t${i}`),
+  });
+  /**
+   * 3 users × 3 levels in one place and work type, built level by level so
+   * hashes interleave the users. One user's keyword fits, two users' fit, all
+   * three don't (31 terms).
+   */
+  const threeByThree = (channel = Channel.LINKEDIN_JOB_BOARD) =>
+    ['3', '4', '5'].flatMap((experienceLevel) =>
+      [1, 2, 3].map((user) =>
+        builder({
+          channel,
+          params: { location: 'Germany', experienceLevel, ...words(user) },
+        }),
+      ),
+    );
+  const userOf = (member: QuerySearchBuilderRow) =>
+    (member.params as { spellings: string[] }).spellings[0];
+
+  it('groups harvestapi members by keyword: ordered by lowest hash, members by hash', () => {
+    const [a3, b3, c3, a4, b4] = threeByThree();
+    const units = keywordUnits(Channel.LINKEDIN_JOB_BOARD, [
+      b4,
+      c3,
+      a4,
+      b3,
+      a3,
+    ]);
+    expect(units).toEqual([[a3, a4], [b3, b4], [c3]]);
+  });
+
+  it('keeps every other channel at one member per unit, in hash order', () => {
+    const builders = threeByThree(Channel.LINKEDIN_JOB_BOARD_CHEAP);
+    const units = keywordUnits(
+      Channel.LINKEDIN_JOB_BOARD_CHEAP,
+      [...builders].reverse(),
+    );
+    expect(units).toEqual(builders.map((member) => [member]));
+  });
+
+  it('keeps a harvestapi member with no words in a unit of its own', () => {
+    const a = builder({ params: { roleWords: [], spellings: [] } });
+    const b = builder({ params: { roleWords: [], spellings: [] } });
+    expect(keywordUnits(Channel.LINKEDIN_JOB_BOARD, [a, b])).toEqual([
+      [a],
+      [b],
+    ]);
+  });
+
+  it.each([1, 2, 3])(
+    'never splits a keyword unit across the chunks of a group too long to merge (parts %i)',
+    (parts) => {
+      const builders = threeByThree();
+      const key = segmentKey(builders[0]);
+      expect(new Set(builders.map(segmentKey)).size).toBe(1);
+      expect(
+        linkedinKeywordFits(
+          ['engineer'],
+          [1, 2, 3].flatMap((user) => words(user).spellings),
+        ),
+      ).toBe(false);
+      const plan = planSegments(builders, 10, new Map([[key, parts]]));
+      expect(plan.segments.flatMap((s) => s.members)).toHaveLength(9);
+      for (const user of [1, 2, 3]) {
+        const holding = plan.segments.filter((s) =>
+          s.members.some((m) => userOf(m) === `u${user}t0`),
+        );
+        expect(holding).toHaveLength(1);
+        expect(
+          holding[0].members.filter((m) => userOf(m) === `u${user}t0`),
+        ).toHaveLength(3);
+      }
+      expect(plan.segments).toHaveLength(Math.max(2, parts));
+      expect(plan.oversized).toEqual([]);
+    },
+  );
+
+  it('keeps one keyword unit in one chunk whatever its parts', () => {
+    const builders = ['3', '4', '5'].map((experienceLevel) =>
+      builder({
+        params: { location: 'Germany', experienceLevel, ...words(1) },
+      }),
+    );
+    const key = segmentKey(builders[0]);
+    const segments = buildSegments(builders, 10, new Map([[key, 3]]));
+    expect(segments).toHaveLength(1);
+    expect(segments[0].members).toHaveLength(3);
+  });
+
+  it('reports a lone unit whose keyword is over the limit as oversized, once', () => {
+    const long = {
+      roleWords: ['backend'],
+      spellings: Array.from({ length: 40 }, (_, i) => `technology-${i}`),
+    };
+    const builders = ['3', '4'].map((experienceLevel) =>
+      builder({ params: { location: 'Germany', experienceLevel, ...long } }),
+    );
+    const plan = planSegments(builders);
+    expect(plan.segments).toHaveLength(1);
+    expect(plan.oversized).toEqual([
+      expect.objectContaining({ hash: plan.segments[0].hash, terms: 41 }),
+    ]);
+  });
+
+  it('chunks a trial group by member, as before, even when members share a keyword', () => {
+    const builders = Array.from({ length: 4 }, () =>
+      builder({
+        channel: Channel.LINKEDIN_JOB_BOARD_CHEAP,
+        params: { location: 'Germany', experienceLevel: '4', ...words(1) },
+      }),
+    );
+    const key = segmentKey(builders[0]);
+    const segments = buildSegments(builders, 10, new Map([[key, 2]]));
+    expect(segments.map((s) => s.members)).toEqual([
+      builders.slice(0, 2),
+      builders.slice(2),
+    ]);
   });
 });

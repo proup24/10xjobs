@@ -121,10 +121,12 @@ function groupKey(params: Record<string, unknown>, withLevel: boolean): string {
 }
 
 /**
- * The union of the members' raw `f_E` codes, sorted and comma-joined, for a
+ * The union of the members' known `f_E` codes, sorted and comma-joined, for a
  * search that spans the levels of a merged group (harvestapi drops the level
  * from its group key; see `harvestGroupKey`). Undefined when there are no
  * members or any member has no level, since that member searches every level.
+ * A member whose codes are all unknown (`','`, `'9'`) has no level: the actor
+ * input drops unknown codes (`mapCodes`), so it searches every level too.
  */
 export function mergedExperienceLevel(
   queries: readonly { params: Record<string, unknown> }[],
@@ -133,12 +135,17 @@ export function mergedExperienceLevel(
   const codes = new Set<string>();
   for (const { params } of queries) {
     const level = params.experienceLevel;
-    if (typeof level !== 'string' || !level.trim()) return undefined;
-    for (const code of level.split(',')) {
-      if (code.trim()) codes.add(code.trim());
-    }
+    const known =
+      typeof level === 'string'
+        ? level
+            .split(',')
+            .map((code) => code.trim())
+            .filter((code) => Object.hasOwn(EXPERIENCE, code))
+        : [];
+    if (known.length === 0) return undefined;
+    for (const code of known) codes.add(code);
   }
-  return codes.size ? [...codes].sort().join(',') : undefined;
+  return [...codes].sort().join(',');
 }
 
 function stringList(value: unknown): string[] {

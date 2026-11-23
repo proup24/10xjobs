@@ -157,6 +157,9 @@ describe('mergedExperienceLevel', () => {
   it('is undefined when any member has no level', () => {
     expect(mergedExperienceLevel([q('4'), q()])).toBeUndefined();
     expect(mergedExperienceLevel([q('4'), q('')])).toBeUndefined();
+    // A level that maps to no known code searches every level, like no level.
+    expect(mergedExperienceLevel([q('4'), q(',')])).toBeUndefined();
+    expect(mergedExperienceLevel([q('4'), q('9')])).toBeUndefined();
   });
   it('is undefined for no members', () => {
     expect(mergedExperienceLevel([])).toBeUndefined();

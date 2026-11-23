@@ -1,8 +1,11 @@
+import { Channel } from 'src/common/enums';
 import {
   linkedinMemberWords,
+  mergedExperienceLevel,
   mergedLinkedinKeyword,
 } from 'src/modules/collectors/providers/mappers/linkedin-job-board.mapper';
 import { linkedinKeyword } from 'src/modules/queries/channels/linkedin_keyword';
+import { keywordUnits } from 'src/modules/segments/services/segments';
 
 /** Rows each of the three runs may return. */
 export const RUN_ROWS = 150;
@@ -40,13 +43,10 @@ export function pickGroup(
   return small[0];
 }
 
-function byHash(a: { hash: string }, b: { hash: string }): number {
-  return a.hash < b.hash ? -1 : a.hash > b.hash ? 1 : 0;
-}
-
 /**
- * The merged keyword and its two halves. Members are halved in hash order,
- * first half rounded up (as the collector's `halve`); a lone member has its
+ * The merged keyword and its two halves. The group's keyword units
+ * (`keywordUnits`: members of one keyword, any level) are halved in order,
+ * first half rounded up (as the collector's `halve`); a lone unit has its
  * sorted spellings halved the same way.
  */
 export function halfKeywords(group: GroupCandidate): {
@@ -54,15 +54,16 @@ export function halfKeywords(group: GroupCandidate): {
   halves: [string, string];
   by: 'members' | 'spellings';
 } {
-  const members = [...group.members].sort(byHash);
+  const units = keywordUnits(Channel.LINKEDIN_JOB_BOARD, group.members);
+  const members = units.flat();
   const merged = mergedLinkedinKeyword(members);
-  if (members.length >= 2) {
-    const half = Math.ceil(members.length / 2);
+  if (units.length >= 2) {
+    const half = Math.ceil(units.length / 2);
     return {
       merged,
       halves: [
-        mergedLinkedinKeyword(members.slice(0, half)),
-        mergedLinkedinKeyword(members.slice(half)),
+        mergedLinkedinKeyword(units.slice(0, half).flat()),
+        mergedLinkedinKeyword(units.slice(half).flat()),
       ],
       by: 'members',
     };
@@ -80,6 +81,18 @@ export function halfKeywords(group: GroupCandidate): {
       linkedinKeyword(roleWords, sorted.slice(half)),
     ],
     by: 'spellings',
+  };
+}
+
+/**
+ * The params the three runs search with: the first member's place and work
+ * type, and the union of the members' levels (`mergedExperienceLevel`), as
+ * the collector does.
+ */
+export function searchParams(group: GroupCandidate): Record<string, unknown> {
+  return {
+    ...group.members[0].params,
+    experienceLevel: mergedExperienceLevel(group.members),
   };
 }
 

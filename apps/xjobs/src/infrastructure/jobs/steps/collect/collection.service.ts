@@ -41,7 +41,7 @@ import { StorageService } from 'src/modules/storage';
 import { channelJobsConfig } from './config';
 import { IngestQueue } from '../ingest';
 import { DailyBudget, moroccoDayStart } from './spend';
-import { halve, nextParts } from './splits';
+import { canHalve, halve, nextParts } from './splits';
 import { CollectionSummary, SegmentOutcome } from './types';
 /** Scheduler id and job name of a channel's recurring collect job. */
 export const COLLECT_JOB = 'collect';
@@ -70,7 +70,7 @@ interface GroupTally {
 
 /** How a run treats a full result. */
 interface RunOptions {
-  /** A full result with more than one member is halved: store it without moving cursors. */
+  /** A full result with more than one keyword unit is halved: store it without moving cursors. */
   holdIfFull: boolean;
   /** The day's budget, added to as the run ends; none for channels without a cap. */
   budget?: DailyBudget;
@@ -234,11 +234,13 @@ export class CollectionService {
   /**
    * Runs one segment and adds its outcome to the summary. Every LinkedIn job
    * board run asks for the channel's one row limit. A full run of more than
-   * one member was stored without moving cursors: it is halved and each half
-   * run at once over the same hour, down to one member. A full run of one
-   * member moved its cursors like any other, and older postings of that hour
-   * are lost (unless it was capped, which keeps its cursors). Every run of a tick starts here, so a check before each run
-   * (shutdown, spend) covers splits too.
+   * one keyword unit (`canHalve`: one member each, except harvestapi's
+   * same-keyword levels) was stored without moving cursors: it is halved and
+   * each half run at once over the same hour, down to one unit. A full run of
+   * one unit moved its cursors like any other, and older postings of that
+   * hour are lost (unless it was capped, which keeps its cursors). Every run
+   * of a tick starts here, so a check before each run (shutdown, spend)
+   * covers splits too.
    */
   private async collectSegment(
     channel: Channel,
@@ -287,12 +289,7 @@ export class CollectionService {
 
     // Judged on the members the run searched: its claim may have dropped some.
     const searched = outcome.searched;
-    if (
-      splittable &&
-      outcome.truncated &&
-      searched &&
-      searched.members.length > 1
-    ) {
+    if (splittable && outcome.truncated && searched && canHalve(searched)) {
       summary.segments += 1;
       if (group) {
         group.chunks += 1;
@@ -568,9 +565,9 @@ export class CollectionService {
       batch = buildBatch(search, result, run.id);
       const full = result.truncatedQueryIds.length > 0;
       // A capped or incomplete run may have stopped early, and a full one of
-      // several members is searched again in halves: keep their searches
-      // eligible.
-      const halved = full && options.holdIfFull && owned.members.length > 1;
+      // several keyword units is searched again in halves: keep their
+      // searches eligible.
+      const halved = full && options.holdIfFull && canHalve(owned);
       const advance =
         run.capped || result.incomplete || halved ? [] : run.queryIds;
       collected = await this.saveBatch(batch, run, advance);

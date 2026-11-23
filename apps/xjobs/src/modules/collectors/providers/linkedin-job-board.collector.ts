@@ -18,9 +18,9 @@ import {
 
 /**
  * Apify trigger for the LinkedIn job board: one actor run per search. Segments
- * group builders by their search (`harvestGroupKey`: place and work type, every
- * experience level merged into one search), so a segment runs one search and every item the run returns belongs to
- * every member. The input
+ * group builders by their search (`harvestGroupKey`: place and work type,
+ * every experience level merged into one search), so a segment runs one
+ * search and every item the run returns belongs to every member. The input
  * never depends on the segment's window: the actor is asked for the last hour.
  * Nothing is matched by text, and the run's `maxItems` and charge cap bound
  * that one search alone.

@@ -1,7 +1,7 @@
 import { Channel } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
 import { type SearchSegment, segmentHash } from 'src/modules/segments';
-import { halve, nextParts } from './splits';
+import { canHalve, halve, nextParts } from './splits';
 
 const member = (n: number) =>
   ({
@@ -55,6 +55,70 @@ describe('halve', () => {
       );
     }
     expect(halves[0].hash).not.toBe(halves[1].hash);
+  });
+});
+
+describe('halve by keyword unit', () => {
+  /** A member with one user's words at one level. */
+  const worded = (
+    n: number,
+    user: string,
+    channel = Channel.LINKEDIN_JOB_BOARD,
+  ) =>
+    ({
+      id: `qs-${n}`,
+      hash: `h-${n}`,
+      channel,
+      params: { roleWords: ['engineer'], spellings: [user] },
+    }) as unknown as QuerySearchBuilderRow;
+  const of = (
+    members: QuerySearchBuilderRow[],
+    channel = Channel.LINKEDIN_JOB_BOARD,
+  ): SearchSegment => {
+    const key = `${channel}|remote|group:x`;
+    return {
+      key,
+      hash: segmentHash(
+        key,
+        members.map(({ id }) => id),
+      ),
+      channel,
+      members,
+    };
+  };
+
+  it('halves a harvestapi segment between keyword units, never inside one', () => {
+    // Users a and b, two levels each, hashes interleaved.
+    const [a1, b1, a2, b2] = [
+      worded(1, 'go'),
+      worded(2, 'rust'),
+      worded(3, 'go'),
+      worded(4, 'rust'),
+    ];
+    const [first, second] = halve(of([b2, a1, b1, a2]));
+    expect(first.members.map(({ id }) => id)).toEqual([a1.id, a2.id]);
+    expect(second.members.map(({ id }) => id)).toEqual([b1.id, b2.id]);
+  });
+
+  it('cannot halve a harvestapi segment of one keyword unit', () => {
+    expect(
+      canHalve(of([worded(1, 'go'), worded(2, 'go'), worded(3, 'go')])),
+    ).toBe(false);
+    expect(canHalve(of([worded(1, 'go'), worded(2, 'rust')]))).toBe(true);
+  });
+
+  it('halves every other segment by member, as before', () => {
+    const channel = Channel.LINKEDIN_JOB_BOARD_CHEAP;
+    const members = [1, 2, 3].map((n) => worded(n, 'go', channel));
+    expect(canHalve(of(members, channel))).toBe(true);
+    const [first, second] = halve(of(members, channel));
+    expect(first.members).toEqual(members.slice(0, 2));
+    expect(second.members).toEqual(members.slice(2));
+  });
+
+  it('cannot halve a single member', () => {
+    expect(canHalve(segment(1))).toBe(false);
+    expect(canHalve(segment(2))).toBe(true);
   });
 });
 

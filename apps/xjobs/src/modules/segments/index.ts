@@ -17,6 +17,7 @@ export {
 export {
   SEGMENT_SIZE,
   buildSegments,
+  keywordUnits,
   planSegments,
   segmentHash,
   segmentKey,
