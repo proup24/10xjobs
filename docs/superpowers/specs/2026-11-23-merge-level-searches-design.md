@@ -1,7 +1,7 @@
 # One LinkedIn search per place for every level
 
 Date: 2026-11-23
-Status: draft, awaiting owner approval
+Status: approved 2026-11-23
 Size: small change
 
 ## Intent
