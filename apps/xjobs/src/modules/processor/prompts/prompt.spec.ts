@@ -130,6 +130,11 @@ describe('postSystemPrompt', () => {
       'Hashtags alone',
       'bare titles',
       'relays one employer',
+      'hundreds of openings',
+      'not a personal mailbox',
+      'list of titles at one named employer',
+      'not a funnel',
+      'Never record a sure `junk`',
     ])
       expect(head).toContain(sign);
     expect(head).not.toMatch(/[\w.+-]+@[\w-]+\.\w+/);
