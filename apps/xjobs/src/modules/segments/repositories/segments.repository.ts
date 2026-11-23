@@ -99,6 +99,20 @@ export abstract class SearchSegmentsRepository {
   ): Promise<void>;
   /** Sets each builder's `coveredUntil` to `until`; never moves a cursor back. */
   abstract advanceCursors(queryIds: string[], until: Date): Promise<void>;
+  /** Sets `pausedAt` to `at` on those builders that are not paused yet; returns how many changed. */
+  abstract markPaused(queryIds: string[], at: Date): Promise<number>;
+  /**
+   * Wakes the channel's active builders that are paused but not in `pausedIds`
+   * (the set the caller just read): `coveredUntil` becomes `cursor`, never
+   * earlier than it was, and a never-collected builder gets it too, so a
+   * return starts fresh instead of at the initial look-back. Clears
+   * `pausedAt`, leaves claims alone, and returns the woken ids.
+   */
+  abstract wake(
+    channel: Channel,
+    pausedIds: ReadonlySet<string>,
+    cursor: Date,
+  ): Promise<string[]>;
   /**
    * The cost, in micro-USD, of the channel's runs started at or after `since`.
    * A run with no recorded cost counts as `nullCostMicroUsd`.
@@ -231,6 +245,44 @@ export class PrismaSearchSegmentsRepository extends SearchSegmentsRepository {
 
   async advanceCursors(queryIds: string[], until: Date): Promise<void> {
     await moveCursors(this.database.db.orm, queryIds, until);
+  }
+
+  async markPaused(queryIds: string[], at: Date): Promise<number> {
+    if (queryIds.length === 0) return 0;
+    const { db } = this.database;
+    const { raw } = db;
+    const ids = `{${queryIds.join(',')}}`;
+    const rows = await db.query(
+      raw.sql`UPDATE query_search_builder SET "pausedAt" = ${at.toISOString()}::timestamptz
+        WHERE id = ANY(${ids}::uuid[]) AND "pausedAt" IS NULL
+        RETURNING id`
+        .returnsRow({ id: UUID })
+        .build(),
+    );
+    return rows.length;
+  }
+
+  async wake(
+    channel: Channel,
+    pausedIds: ReadonlySet<string>,
+    cursor: Date,
+  ): Promise<string[]> {
+    const { db } = this.database;
+    const { raw } = db;
+    const keep = `{${[...pausedIds].join(',')}}`;
+    const rows = await db.query(
+      raw.sql`UPDATE query_search_builder SET
+          "coveredUntil" = GREATEST(COALESCE("coveredUntil", ${cursor.toISOString()}::timestamptz), ${cursor.toISOString()}::timestamptz),
+          "pausedAt" = NULL
+        WHERE channel = ${channel}
+          AND "isActive" AND NOT "isDeleted"
+          AND "pausedAt" IS NOT NULL
+          AND NOT (id = ANY(${keep}::uuid[]))
+        RETURNING id`
+        .returnsRow({ id: UUID })
+        .build(),
+    );
+    return rows.map((row) => row.id as string);
   }
 
   async spentMicroUsd(

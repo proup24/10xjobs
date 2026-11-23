@@ -28,10 +28,15 @@ describe.skipIf(!url)('segment claims in PostgreSQL', () => {
   }
 
   async function builder(
-    over: { coveredUntil?: Date | null; isActive?: boolean } = {},
+    over: {
+      coveredUntil?: Date | null;
+      isActive?: boolean;
+      pausedAt?: Date | null;
+      channel?: Channel;
+    } = {},
   ): Promise<string> {
     const row = await db.orm.public.QuerySearchBuilder.create({
-      channel: Channel.LINKEDIN_POSTS,
+      channel: over.channel ?? Channel.LINKEDIN_POSTS,
       location: 'worldwide',
       experience: 'senior',
       technologies: [],
@@ -45,6 +50,7 @@ describe.skipIf(!url)('segment claims in PostgreSQL', () => {
       isActive: over.isActive ?? true,
       isDeleted: false,
       coveredUntil: over.coveredUntil ?? null,
+      pausedAt: over.pausedAt ?? null,
     });
     return row.id;
   }
@@ -292,5 +298,89 @@ describe.skipIf(!url)('segment claims in PostgreSQL', () => {
     const row = await load(a);
     expect(row?.coveredUntil).toEqual(t0);
     expect(row?.claimRunId).toBeNull();
+  });
+
+  describe('paused builders', () => {
+    const p0 = new Date('2026-11-03T08:00:00Z');
+    const p1 = new Date('2026-11-03T09:00:00Z');
+    const cursor = new Date('2026-11-04T10:00:00Z');
+
+    it('markPaused keeps the first pausedAt', async () => {
+      const a = await builder();
+      const b = await builder({ pausedAt: p0 });
+
+      expect(await repo.markPaused([a, b], p1)).toBe(1);
+
+      expect((await load(a))?.pausedAt).toEqual(p1);
+      expect((await load(b))?.pausedAt).toEqual(p0);
+      expect(await repo.markPaused([], p1)).toBe(0);
+    });
+
+    it('wake moves an old cursor to the fresh cursor', async () => {
+      const a = await builder({ coveredUntil: t0, pausedAt: p0 });
+
+      expect(
+        await repo.wake(Channel.LINKEDIN_POSTS, new Set(), cursor),
+      ).toEqual([a]);
+
+      const row = await load(a);
+      expect(row?.coveredUntil).toEqual(cursor);
+      expect(row?.pausedAt).toBeNull();
+    });
+
+    it('wakes a never-collected builder to a fresh cursor', async () => {
+      const a = await builder({ coveredUntil: null, pausedAt: p0 });
+
+      await repo.wake(Channel.LINKEDIN_POSTS, new Set(), cursor);
+
+      const row = await load(a);
+      expect(row?.coveredUntil).toEqual(cursor);
+      expect(row?.pausedAt).toBeNull();
+    });
+
+    it('wake never moves a cursor back', async () => {
+      const ahead = new Date('2026-11-05T00:00:00Z');
+      const a = await builder({ coveredUntil: ahead, pausedAt: p0 });
+
+      await repo.wake(Channel.LINKEDIN_POSTS, new Set(), cursor);
+
+      const row = await load(a);
+      expect(row?.coveredUntil).toEqual(ahead);
+      expect(row?.pausedAt).toBeNull();
+    });
+
+    it('wake leaves still-paused and never-paused builders alone', async () => {
+      const still = await builder({ coveredUntil: t0, pausedAt: p0 });
+      const never = await builder({ coveredUntil: t0 });
+      const other = await builder({
+        coveredUntil: t0,
+        pausedAt: p0,
+        channel: Channel.ASHBY,
+      });
+
+      expect(
+        await repo.wake(Channel.LINKEDIN_POSTS, new Set([still]), cursor),
+      ).toEqual([]);
+
+      for (const [id, paused] of [
+        [still, p0],
+        [never, null],
+        [other, p0],
+      ] as const) {
+        const row = await load(id);
+        expect(row?.coveredUntil).toEqual(t0);
+        expect(row?.pausedAt ?? null).toEqual(paused);
+      }
+    });
+
+    it('wake does not touch claims', async () => {
+      const a = await builder({ coveredUntil: t0, pausedAt: p0 });
+      const id = randomUUID();
+      await repo.claim(id, [a], { since: t0, until: t2 }, lease);
+
+      await repo.wake(Channel.LINKEDIN_POSTS, new Set(), cursor);
+
+      expect((await load(a))?.claimRunId).toBe(id);
+    });
   });
 });

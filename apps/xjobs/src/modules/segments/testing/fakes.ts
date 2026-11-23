@@ -103,6 +103,33 @@ export class FakeSearchSegmentsRepository extends SearchSegmentsRepository {
     }
   }
 
+  /** Paused builders by id; the fake keeps no channel, so `wake` takes every one it holds. */
+  paused = new Map<string, Date>();
+
+  async markPaused(queryIds: string[], at: Date): Promise<number> {
+    let changed = 0;
+    for (const id of queryIds)
+      if (!this.paused.has(id)) {
+        this.paused.set(id, at);
+        changed += 1;
+      }
+    return changed;
+  }
+
+  async wake(
+    _channel: Channel,
+    pausedIds: ReadonlySet<string>,
+    cursor: Date,
+  ): Promise<string[]> {
+    const woken = [...this.paused.keys()].filter((id) => !pausedIds.has(id));
+    for (const id of woken) {
+      this.paused.delete(id);
+      const current = this.cursors.get(id);
+      if (!current || current < cursor) this.cursors.set(id, cursor);
+    }
+    return woken;
+  }
+
   async spentMicroUsd(
     channel: Channel,
     since: Date,
