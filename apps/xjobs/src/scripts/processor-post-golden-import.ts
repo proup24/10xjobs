@@ -7,9 +7,12 @@
  * Each payload goes through the ingest posts mapper's own detail builder, so
  * Extract sees what production sees. Posts the drop rules would stop are kept,
  * since they test Extract too. Roles stay empty until the label session.
- * Re-running rewrites the file from the sample.
+ * This was the one-off first import. The owner's labels, roles and rulings
+ * since then live only in `cases.json` (the verdict map below is the first
+ * import's, out of date), so the script refuses to overwrite an existing file
+ * unless `--force` is passed: a forced re-run erases every review.
  */
-import { writeFileSync } from 'node:fs';
+import { existsSync, writeFileSync } from 'node:fs';
 import { cleanPostText } from 'src/modules/ingest/normalize/posts/clean';
 import { readPostPayload } from 'src/modules/ingest/normalize/posts/payload';
 import { postDetailOf } from 'src/modules/ingest/normalize/mappers/linkedin-post.mapper';
@@ -78,6 +81,10 @@ function verdictOf(i: number, e: Entry): Verdict {
 }
 
 function main(): void {
+  if (existsSync(POST_GOLDEN_FILE) && !process.argv.includes('--force'))
+    throw new Error(
+      `${POST_GOLDEN_FILE} exists and holds the reviewed labels; re-running replaces them with the sample's pre-labels. Pass --force to overwrite.`,
+    );
   const cases: PostGoldenCase[] = (sample as Entry[]).map((e, i) => {
     const raw = readPostPayload(e.payload);
     const url = raw.url ? httpUrl(raw.url)?.toString() : null;

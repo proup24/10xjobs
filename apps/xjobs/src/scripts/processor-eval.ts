@@ -315,9 +315,19 @@ async function runPosts(
     console.log(
       `\n${limit.reason === 'auth' ? 'STOPPED: provider unavailable' : `STOPPED ON A LIMIT (${limit.reason}, until ${limit.until.toISOString()})`}: ${limit.detail}\n${run.notRun.length} posts not run; the scores above cover only the ${run.scores.length} that ran. Re-run after ${limit.reason === 'auth' ? 'fixing the provider' : 'the reset'}.`,
     );
+  // A subset proves no bar, so its file carries no bars to misread.
+  // (JSON.stringify drops the undefined keys.)
+  const written = selected
+    ? {
+        ...report,
+        bars: undefined,
+        ownerBars: undefined,
+        roleFacts: { ...report.roleFacts, bars: undefined, pass: undefined },
+      }
+    : report;
   writeFileSync(
     (selected ? postCasesReportFile : postReportFile)(config.extractionModel),
-    `${JSON.stringify({ ...report, pass, ...(selected ? { selectedCases: selected } : {}), stoppedOnLimit: limit, notRun: run.notRun, config, scores: run.scores }, null, 2)}\n`,
+    `${JSON.stringify({ ...written, pass, ...(selected ? { selectedCases: selected } : {}), stoppedOnLimit: limit, notRun: run.notRun, config, scores: run.scores }, null, 2)}\n`,
   );
   return pass;
 }

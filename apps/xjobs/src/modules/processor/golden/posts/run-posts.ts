@@ -16,8 +16,8 @@ import {
   USAGE_LIMIT_FALLBACK_MS,
 } from '../../services/processor-guard.service';
 import { callStats, reportFileName } from '../score';
+import type { PostDocument } from '../../schema/post-extraction';
 import type { PostGoldenCase } from './golden-posts';
-import { type PostDocument } from '../../schema/post-extraction';
 import { type PostEvalReport, type PostScore, scorePost } from './score-posts';
 
 /** Where `processor:eval -- --posts` writes the report of a run with `generator`. */

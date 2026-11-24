@@ -50,7 +50,7 @@ Precision over volume: prefer a tailored application over a fast one.
 - `pnpm --filter @xjobs/xjobs db:split-check -- [--group <key>] [--dry-run]`: PAID, maintainer-only one-off check that halving a LinkedIn search group keeps at least 95% of the merged search's jobs (three harvestapi runs of at most 150 rows over 24 hours, at most $0.48 reserved). Run `--dry-run` first: it prints the group, the three keywords and the reserved spend without any Apify call.
 - `pnpm --filter @xjobs/xjobs db:indeed-sample -- --profile <id> [--dry-run | --from <folder>]`: PAID, maintainer-only one-off Phase 5 slice 01 sample of four Indeed actors (27 runs, at most $1.50 reserved; the cap is per invocation; a rerun pays again), with harvestapi's dev baseline; raw items saved under `tmp/indeed-sample/`. Run `--dry-run` first; `--from` rebuilds the report from a saved folder without Apify; remote needs `XJOBS_ALLOW_REMOTE_DB=1`.
 - `pnpm --filter @xjobs/xjobs db:post-sample -- --size <n> [--days <n>] --out <path>`: read-only export of a random sample of LinkedIn post items (`--days` keeps those last seen within n days) as `{ rawItemId, payload, label: null }[]` JSON, for labelling the post drop rules; refuses a remote database without `XJOBS_ALLOW_REMOTE_DB=1`.
-- `pnpm --filter @xjobs/xjobs processor:eval`: run the processor against the golden set.
+- `pnpm --filter @xjobs/xjobs processor:eval -- [--posts [--case <n> ...]] [--generator <model>]`: run the processor against the golden set (`--posts`: the LinkedIn post set and its sending bars, about $3; `--case` runs only those posts, with no bars).
 - `npm run test:hooks`: tests for the `.claude/hooks` scripts.
 
 ## Conventions

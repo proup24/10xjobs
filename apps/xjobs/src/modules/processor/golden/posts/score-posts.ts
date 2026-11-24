@@ -53,8 +53,9 @@ export interface PostScore {
   emails: RoleEmail[] | null;
   /**
    * False on a reviewed hiring case whose extracted role count differs from
-   * the labelled one (a send goes to every role); null when no role on
-   * either side has an email (nothing to send to).
+   * the labelled one (a send goes to every role), even when no role has an
+   * email; otherwise null when no role on either side has an email (nothing
+   * to send to).
    */
   emailExact: boolean | null;
   /** Whether the labelled and extracted role counts differ, on a reviewed hiring case. */
@@ -124,7 +125,7 @@ function pairRoles<W, G>(want: Keyed<W>[], got: Keyed<G>[]): RolePair<W, G>[] {
     const b = g[i];
     pairs.push({ key: (a ?? b).key, want: a, got: b });
   }
-  return pairs.sort((a, b) => (a.key < b.key ? -1 : 1));
+  return pairs.sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
 }
 
 const LABEL_KEYS: readonly LabelKey[] = [
