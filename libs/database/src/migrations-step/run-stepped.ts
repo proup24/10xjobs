@@ -24,7 +24,7 @@ export async function runStepped(
 ): Promise<number> {
   if (argv.length > 0) {
     deps.warn(
-      `db:migrate takes no arguments (got: ${argv.join(' ')}). Use db:migrate:show to inspect the plan.`,
+      `db:migrate takes no arguments (got: ${argv.join(' ')}). db:migrate:show is only for an already-migrated database (it runs unstepped and would run out of memory on a fresh one).`,
     );
     return 2;
   }
@@ -43,8 +43,7 @@ export async function runStepped(
   const written: string[] = [];
   try {
     for (const [i, step] of steps.entries()) {
-      const name =
-        step.target === 'db' ? 'db' : `step-${input.runId}-${i + 1}`;
+      const name = step.target === 'db' ? 'db' : `step-${input.runId}-${i + 1}`;
       if (step.target !== 'db') {
         deps.writeRef(name, step.target);
         written.push(name);

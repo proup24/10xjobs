@@ -57,7 +57,7 @@ export function loadDbRef(appDir: string): RefFile {
   return { hash: raw.hash, invariants: raw.invariants ?? [] };
 }
 
-const cmp = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+const cmp = (a: string, b: string) => a.localeCompare(b);
 
 function compareTieBreak(a: MigrationEdge, b: MigrationEdge): number {
   return (
@@ -111,6 +111,30 @@ export function planSteps(
     const e = via.get(n)!;
     route.unshift(e);
     n = e.from as string;
+  }
+
+  // Prisma routes invariant-aware and could pick another branch than our BFS
+  // at a fork; our step refs would then force it down ours. Refuse such forks.
+  const reaches = new Set<string | null>([dbRef.hash]);
+  for (let grew = true; grew; ) {
+    grew = false;
+    for (const list of outgoing.values()) {
+      for (const e of list) {
+        if (reaches.has(e.to) && !reaches.has(e.from)) {
+          reaches.add(e.from);
+          grew = true;
+        }
+      }
+    }
+  }
+  for (const node of [start, ...route.map((e) => e.to)]) {
+    if (node === dbRef.hash) continue;
+    const live = (outgoing.get(node) ?? []).filter((e) => reaches.has(e.to));
+    if (live.length > 1) {
+      throw new StepPlanError(
+        `Fork at ${node}: ${live[0].dirName} and ${live[1].dirName} both reach the db ref; stepped migrate can't promise Prisma's route. Squash or remove one branch.`,
+      );
+    }
   }
 
   const loopsAt = (node: string | null) =>

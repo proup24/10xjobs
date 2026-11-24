@@ -104,40 +104,17 @@ describe('planSteps', () => {
     ]);
   });
 
-  it('resolves a fork by createdAt, then to, then migrationHash', () => {
-    const mk = (createdAt: string, to: string, mh: string) => [
-      edge('h0', to, [`via-${to}-${mh}`], { createdAt, migrationHash: mh }),
-      edge(to, 'head', [], { dirName: `x-${to}` }),
+  it('stops on a fork where both branches reach the db ref', () => {
+    const edges = [
+      edge(null, 'h0'),
+      edge('h0', 'aa', [], { dirName: 'dirA' }),
+      edge('aa', 'head'),
+      edge('h0', 'bb', [], { dirName: 'dirB' }),
+      edge('bb', 'head'),
     ];
-    const run = (forks: MigrationEdge[]) => {
-      const edges = [edge(null, 'h0'), ...forks];
-      const inv = forks
-        .filter((e) => e.from === 'h0')
-        .flatMap((e) => e.providedInvariants);
-      // Only the winning branch's invariant is collected; force both required.
-      return planSteps(edges, { hash: 'head', invariants: inv }, null);
-    };
-    // createdAt decides
     expect(() =>
-      run([
-        ...mk('2026-01-02T00:00:00Z', 'aa', 'm1'),
-        ...mk('2026-01-01T00:00:00Z', 'bb', 'm2'),
-      ]),
-    ).toThrow(/via-aa-m1/);
-    // then to
-    expect(() =>
-      run([
-        ...mk('2026-01-01T00:00:00Z', 'bb', 'm1'),
-        ...mk('2026-01-01T00:00:00Z', 'aa', 'm2'),
-      ]),
-    ).toThrow(/via-bb-m1/);
-    // then migrationHash
-    expect(() =>
-      run([
-        ...mk('2026-01-01T00:00:00Z', 'aa', 'm2'),
-        ...mk('2026-01-01T00:00:00Z', 'aa', 'm1'),
-      ]),
-    ).toThrow(/via-aa-m2/);
+      planSteps(edges, { hash: 'head', invariants: [] }, null),
+    ).toThrow(/Fork at h0: dirA and dirB both reach the db ref/);
   });
 
   it('never routes into a dead-end branch', () => {
