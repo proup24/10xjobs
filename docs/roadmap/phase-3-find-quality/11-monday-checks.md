@@ -25,7 +25,7 @@ These decide whether Monday produces any data at all.
 
 **Result, 2026-11-24.**
 
-- **Apify limit:** about $5 left at 20:20 UTC, which covers the rest of Tuesday (only the 21:00 tick remained). Flag for Wednesday: $5 is less than one weekday (about $9.5 for the job board plus posts).
+- **Apify limit:** about $5 left at 20:20 UTC, which covers the rest of Tuesday (only the 21:00 tick remained). Flag for Wednesday: $5 is less than one weekday (about $9.5 for the job board's day alone; posts have their own cap).
 - **Daily budget:** `COLLECTION_DAILY_BUDGET_USD=10`, per channel, counted over the Morocco day (from 23:00 UTC). Posts have their own cap. Job-board spend for the day ended at $3.08 of $10.
 
 ## Slice 08: 1,000-row runs, levels, MENA
@@ -51,7 +51,7 @@ Run after the first 2 to 3 ticks, then again at the end of the day.
 - **One run per chunk:** passed. Each tick ran 19 runs over 9 `segmentKey` groups, every (`segmentKey`, `segmentHash`) unique, and each of the 63 searches ran once (63 queries in 63 slots; 27 in 27 after pausing). No repeats.
 - **Full at 1,000 rows, capped, missing costs, failed:** since 11-23 15:00, 167 runs, none full, none capped, none with a missing cost after an hour, none failed. The largest run fetched 225 rows.
 - **Splits:** `linkedin_search_splits` is empty. No run came near 1,000 rows, so none was needed.
-- **Spend:** $0.75 to $0.90 a tick on the new code, about $0.00103 per billed row, against $1.92 at 10:00 on 11-23. No repeated rows between runs in a tick beyond cross-keyword overlap (see PR 125 below).
+- **Spend:** $0.75 to $0.90 a tick on the new code, about $0.00103 per billed row, against $1.92 at 10:00 on 11-23. Each search runs once per tick (63 searches in 63 slots), so the remaining 30 to 39% repeat share is rows found by more than one search in the same tick (see PR 125 below).
 
 ### Later in the week
 
@@ -91,7 +91,7 @@ Run check 1 at any time. Run checks 2 to 8 at the end of the day, or once the pr
 | **7. Rejections name their cause.** Read about 10 new location rejections (Q-G).                                                                             | Each `reason` names its cause. Examples: an office that doesn't fit, "no source states the arrangement, so it is checked as office-based", "requires living there" (only for `limit` places), or an authorization failure.                                                                                                                         | Nothing to do.              | A rejection with a vague reason breaks the "decisions record a reason" convention. Fix its wording in `checkLocation`.                                                                                                                                                                                                                           |
 | **8. Processor health.** Processing errors on new jobs, and cost per job.                                                                                    | No spike in `processingError`; cost about $0.044 a job (the eval's rate).                                                                                                                                                                                                                                                                          | Nothing to do.              | Read the errors. A prompt-related validation error means the prompt broke an output rule. Revert PR 105's last commit or fix it, then run `processor:eval`.                                                                                                                                                                                      |
 
-**Result, 2026-11-24: checks 2, 3 and 7 failed; the others passed. Slice 09 stays open.** Precondition: 4,851 new extractions (2,998 at 10:00).
+**Result, 2026-11-24: checks 2, 3 and 7 failed; the others passed. Slice 09 stays open.** Numbers for checks 1 and 5 are also on [PR 106](https://github.com/proup24/10xjobs/pull/106#issuecomment-7144547950). Precondition: 4,851 new extractions (2,998 at 10:00).
 
 | Check                          | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -110,7 +110,7 @@ Run check 1 at any time. Run checks 2 to 8 at the end of the day, or once the pr
 - **Check 3:** read the quotes, add golden cases, fix the prompt, run `processor:eval`. This is a brainstorm.
 - **Check 7:** fix the wording in `checkLocation`, so the reason names the place and not the arrangement.
 
-Step 6 below was not run, because checks 2 and 3 failed: the `a680c99` PR was not opened and the worktrees were not removed.
+The "After the checks" steps below were not run, because checks 2 and 3 failed: the `a680c99` PR was not opened and the worktrees were not removed.
 
 **After the checks.**
 
@@ -255,8 +255,8 @@ Merged 2026-11-23 (cc5aead2). Searches for a place and work type are chunked by 
 
 **Result, 2026-11-24: passed.** Details on [PR 125](https://github.com/proup24/10xjobs/pull/125#issuecomment-7144546752).
 
-- **Repeat share:** 30.6% to 38.6% on every new tick (old: 70%).
-- **Distinct items:** 505 to 546 on 11-24 10:00 to 12:00 (570 at 11-23 16:00), average 530 against 473 on the old code. Distinct jobs at 10:00: 515 against 492.
+- **Repeat share:** 30.0% to 38.6% on every new tick (old: 70%).
+- **Distinct items:** 505 to 571 across the new ticks, average 530 against 473 on the old code. Distinct jobs at 10:00: 515 against 492.
 - **Spend:** $0.75 to $0.90 a tick, against $1.92.
 - **Qualified:** 8 a tick across all profiles on the old code and 11 on the new. Per profile, 0.71, 0.43 and 9.9 a tick against 1, 1 and 6. The two small profiles get 0 to 3 a tick, which is too few to judge per profile.
 - The 13:00 to 18:00 ticks on 11-24 did not run (worker stopped by hand), so this check is judged on ticks up to 12:00.
@@ -287,7 +287,7 @@ Merged 2026-11-16. The processor sometimes returned two requirements for the sam
 | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------- |
 | **Duplicate failures.** Processing attempts per day that failed with "appears twice" or "same technology". | Far below the 42 of 11-16, and every one recovered on retry. | Read the failing jobs. A new pattern needs a prompt or schema change. |
 
-**Result, 2026-11-24: passed.** Failures per day: 11-16 42, 11-17 4, 11-18 3, 11-19 4, 11-20 1, 11-23 8, 11-24 2 (of 2,185 and 1,776 attempts). All 10 since 11-21 are two-place duplicates, one in a group and one on its own (Vue and Vue 3, Apex and Salesforce platform three times, Power Platform and Copilot Studio, React and Remix, Elixir and Elixir-Phoenix). All 19 since 11-17 recovered on retry (2 to 3 attempts), at about $0.04 each. The owner decided not to merge two-place duplicates. If it recurs, widen the vocabulary with `db:vocab` (Copilot Studio and Power Automate to `power_platform`, Remix to `react`).
+**Result, 2026-11-24: passed.** Failures per day: 11-16 42, 11-17 4, 11-18 3, 11-19 4, 11-20 1, 11-23 8, 11-24 2 (of 2,185 and 1,776 attempts). All 10 since 11-21 are two-place duplicates, one in a group and one on its own (Vue and Vue 3, Apex and Salesforce platform three times, Power Platform and Copilot Studio, React and Remix, Elixir and Elixir-Phoenix). Since 11-17 there were 22 failed attempts on 19 distinct extractions. All 19 extractions succeeded on a later attempt (17 on the 2nd, 2 on the 3rd) and are now processed with no error, at about $0.04 per attempt. The owner decided not to merge two-place duplicates. If it recurs, widen the vocabulary with `db:vocab` (Copilot Studio and Power Automate to `power_platform`, Remix to `react`).
 
 ## Left out
 
