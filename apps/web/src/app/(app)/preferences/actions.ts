@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { isSearchableTech } from '@xjobs/database/enums';
+import type { SearchSwitchKey } from '@xjobs/engine-client';
 import {
   deleteProfile,
   hrefAfterDelete,
@@ -98,21 +99,25 @@ export async function deleteProfileAction(
 }
 
 /**
- * Turns LinkedIn post search on or off for one of the user's profiles. Only the engine
- * writes `postSearch`; the web app has no grant on it.
+ * Turns one search switch on or off for one of the user's profiles. Only the engine
+ * writes the switch columns; the web app has no grant on them.
  */
-export async function setPostSearchAction(
+export async function setSearchSwitchAction(
   profileId: string,
+  key: SearchSwitchKey,
   enabled: boolean,
-): Promise<'saved' | 'forbidden' | 'failed'> {
-  if (!isProfileId(profileId) || typeof enabled !== 'boolean') return 'failed';
+): Promise<'saved' | 'failed'> {
+  if (
+    !isProfileId(profileId) ||
+    (key !== 'posts' && key !== 'indeed') ||
+    typeof enabled !== 'boolean'
+  )
+    return 'failed';
   try {
     const result = await (
       await engineClient()
-    ).setPostSearch(profileId, enabled);
-    if (result.kind === 'ok') return 'saved';
-    if (result.kind === 'forbidden') return 'forbidden';
-    return 'failed';
+    ).setSearchSwitch(profileId, key, enabled);
+    return result.kind === 'ok' ? 'saved' : 'failed';
   } catch {
     return 'failed';
   }

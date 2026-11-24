@@ -6,7 +6,7 @@ import {
   saveProfileJobAction,
   saveProfileTermsAction,
   deleteProfileAction,
-  setPostSearchAction,
+  setSearchSwitchAction,
 } from './actions';
 
 const save = vi.hoisted(() => ({
@@ -29,9 +29,9 @@ vi.mock('next/navigation', () => ({ redirect }));
 const revalidatePath = vi.hoisted(() => vi.fn());
 vi.mock('next/cache', () => ({ revalidatePath }));
 
-const setPostSearch = vi.hoisted(() => vi.fn());
+const setSearchSwitch = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/engine/server', () => ({
-  engineClient: async () => ({ setPostSearch }),
+  engineClient: async () => ({ setSearchSwitch }),
 }));
 
 const getClaims = vi.fn();
@@ -134,41 +134,42 @@ describe('deleteProfileAction', () => {
   });
 });
 
-describe('setPostSearchAction', () => {
-  it('maps ok to saved and passes the id and flag', async () => {
-    setPostSearch.mockResolvedValue({
+describe('setSearchSwitchAction', () => {
+  it('maps ok to saved and passes the id, key and flag', async () => {
+    setSearchSwitch.mockResolvedValue({
       kind: 'ok',
-      data: { enabled: true, allowed: true, searches: 1 },
+      data: { key: 'indeed', enabled: true, searches: 1 },
     });
-    expect(await setPostSearchAction(ID, true)).toBe('saved');
-    expect(setPostSearch).toHaveBeenCalledWith(ID, true);
-  });
-
-  it('maps forbidden to forbidden', async () => {
-    setPostSearch.mockResolvedValue({ kind: 'forbidden' });
-    expect(await setPostSearchAction(ID, true)).toBe('forbidden');
+    expect(await setSearchSwitchAction(ID, 'indeed', true)).toBe('saved');
+    expect(setSearchSwitch).toHaveBeenCalledWith(ID, 'indeed', true);
   });
 
   it.each([
     { kind: 'not-found' },
     { kind: 'unauthorized' },
+    { kind: 'forbidden' },
     { kind: 'unavailable' },
     { kind: 'invalid', message: 'x' },
   ])('maps $kind to failed', async (result) => {
-    setPostSearch.mockResolvedValue(result);
-    expect(await setPostSearchAction(ID, false)).toBe('failed');
+    setSearchSwitch.mockResolvedValue(result);
+    expect(await setSearchSwitchAction(ID, 'posts', false)).toBe('failed');
   });
 
   it('maps a thrown call to failed', async () => {
-    setPostSearch.mockRejectedValue(new Error('boom'));
-    expect(await setPostSearchAction(ID, true)).toBe('failed');
+    setSearchSwitch.mockRejectedValue(new Error('boom'));
+    expect(await setSearchSwitchAction(ID, 'posts', true)).toBe('failed');
   });
 
   it('fails bad input without calling the engine', async () => {
-    expect(await setPostSearchAction('not-a-uuid', true)).toBe('failed');
-    expect(await setPostSearchAction(ID, 'yes' as unknown as boolean)).toBe(
+    expect(await setSearchSwitchAction('not-a-uuid', 'posts', true)).toBe(
       'failed',
     );
-    expect(setPostSearch).not.toHaveBeenCalled();
+    expect(
+      await setSearchSwitchAction(ID, 'other' as unknown as 'posts', true),
+    ).toBe('failed');
+    expect(
+      await setSearchSwitchAction(ID, 'posts', 'yes' as unknown as boolean),
+    ).toBe('failed');
+    expect(setSearchSwitch).not.toHaveBeenCalled();
   });
 });
