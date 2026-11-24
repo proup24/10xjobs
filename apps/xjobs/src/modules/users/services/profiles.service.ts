@@ -1,27 +1,24 @@
 import {
   ConflictException,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import {
-  Channel,
-  ErrorCode,
-  ProfileState,
-  SkillDomain,
-} from 'src/common/enums';
+import { ErrorCode, ProfileState, SkillDomain } from 'src/common/enums';
 import {
   QuerySearchService,
   SEARCH_SWITCHES,
+  SEARCH_SWITCHES_TOKEN,
   switchFlags,
   switchesInEffect,
   type QuerySearchProfileInput,
+  type SearchSwitch,
   type SearchSwitchKey,
 } from 'src/modules/queries';
 import { StorageService } from 'src/modules/storage';
 import { ProfilesRepository } from '../repositories/profiles.repository';
-import { postRecipes } from 'src/modules/queries/posts';
 import { describeError } from 'src/utils';
 import { UsersService } from './users.service';
 import { allPlaces, placeTexts } from './place-labels';
@@ -33,6 +30,7 @@ import type {
   ProfileWithSkills,
   PublishedProfileView,
   Salary,
+  SearchSwitchView,
   SpokenLanguage,
 } from '../types';
 
@@ -51,9 +49,11 @@ export function toProfileView(profile: ProfileWithSkills): ProfileView {
     salaryMin,
     salaryCurrency,
     salaryPeriod,
-    // Engine-only switch: not part of the API shape.
+    // Engine-only switches: not part of the API shape.
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     postSearch,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    indeedSearch,
     ...columns
   } = profile;
   return {
@@ -139,6 +139,7 @@ export const ELIGIBILITY_REQUIRED =
   'set your country of residence and answer the visa sponsorship question before publishing';
 
 const PROFILE_NOT_FOUND = 'Profile not found';
+const SWITCH_NOT_FOUND = 'Search switch not found';
 export const PROFILE_PUBLISHED = 'This profile is already published';
 export const PROFILE_NOT_PUBLISHED = 'This profile is not published';
 
@@ -257,6 +258,8 @@ export class ProfilesService {
     private readonly profiles: ProfilesRepository,
     private readonly querySearch: QuerySearchService,
     private readonly storage: StorageService,
+    @Inject(SEARCH_SWITCHES_TOKEN)
+    private readonly switches: readonly SearchSwitch[] = SEARCH_SWITCHES,
   ) {}
 
   /** 404s an unknown user, or a profile that is not this user's. */
@@ -373,75 +376,117 @@ export class ProfilesService {
     return { id: profile.id };
   }
 
-  /** The switch, for any owner: stored value, whether the owner may turn it on, and the searches it gives. */
-  async postSearchStatus(
+  /** The profile's available search switches, in registry order; 404 like getOrThrow. */
+  async searchSwitches(
     userId: string,
     profileId: string,
-  ): Promise<PostSearchView> {
+  ): Promise<SearchSwitchView[]> {
     const profile = await this.getOrThrow(userId, profileId);
-    return this.postSearchView(profile);
+    const available = this.switches.filter((sw) => sw.available);
+    if (available.length === 0) return [];
+    const input = await this.searchInput(profile);
+    return available.map((sw) => switchView(sw, profile, input));
   }
 
   /**
-   * Turns post search on or off, the one change a published profile accepts.
-   * On a published profile the post builders are attached or detached at once
-   * (a draft gets them when published).
+   * Turns a search switch on or off, the one change a published profile
+   * accepts, for any user. An unknown or unavailable key is a 404 before any
+   * write. On a published profile the switch's builders are attached or
+   * detached at once (a draft gets them when published); if that fails, the
+   * flag is put back.
    */
-  async setPostSearch(
+  async setSearchSwitch(
     userId: string,
     profileId: string,
+    key: string,
     enabled: boolean,
-  ): Promise<PostSearchView> {
-    const { postSearch: previous } = await this.getOrThrow(userId, profileId);
-    const posts = SEARCH_SWITCHES.find((sw) => sw.key === 'posts')!;
+  ): Promise<SearchSwitchView> {
+    const sw = this.switches.find(
+      (candidate) => candidate.key === key && candidate.available,
+    );
+    if (!sw) throw new NotFoundException(SWITCH_NOT_FOUND);
+    const current = await this.getOrThrow(userId, profileId);
+    const previous = current[sw.column];
+    // Before the write: a failed label lookup must leave the flag untouched.
+    const input = await this.searchInput(current);
     const profile = await this.profiles.setSwitch(
       userId,
       profileId,
-      posts.column,
+      sw.column,
       enabled,
     );
     if (!profile) throw new NotFoundException(PROFILE_NOT_FOUND);
     if (profile.state === ProfileState.published) {
       try {
-        if (enabled)
-          await this.querySearch.attachSwitch(
-            profile.id,
-            posts,
-            toQuerySearchInput(
-              profile,
-              await labelsFor(this.profiles, profile),
-            ),
-          );
-        else
-          await this.querySearch.detachChannel(
-            profile.id,
-            Channel.LINKEDIN_POSTS,
-          );
+        if (enabled) await this.querySearch.attachSwitch(profile.id, sw, input);
+        else if (sw.channel)
+          await this.querySearch.detachChannel(profile.id, sw.channel);
       } catch (error) {
         // Keep the flag true to the builders: put it back before failing.
-        await this.profiles.setSwitch(
-          userId,
-          profileId,
-          posts.column,
-          previous,
-        );
+        await this.profiles.setSwitch(userId, profileId, sw.column, previous);
         throw error;
       }
     }
-    return this.postSearchView(profile);
+    return switchView(sw, profile, input);
   }
 
-  private async postSearchView(
-    profile: ProfileWithSkills,
+  /**
+   * The post search switch for the old `/post-search` route: `allowed` is
+   * whether post search is available. Slice 04b deletes it.
+   */
+  async postSearchStatus(
+    userId: string,
+    profileId: string,
   ): Promise<PostSearchView> {
-    const input = toQuerySearchInput(
-      profile,
-      await labelsFor(this.profiles, profile),
-    );
-    return {
-      enabled: profile.postSearch,
-      allowed: SEARCH_SWITCHES.some((sw) => sw.key === 'posts' && sw.available),
-      searches: postRecipes(input).length,
-    };
+    const profile = await this.getOrThrow(userId, profileId);
+    const posts = this.postsSwitch();
+    const view = switchView(posts, profile, await this.searchInput(profile));
+    return toPostSearchView(posts, view);
   }
+
+  /** The old `/post-search` PUT, over `setSearchSwitch`: a 404 while post search is unavailable. */
+  async setPostSearch(
+    userId: string,
+    profileId: string,
+    enabled: boolean,
+  ): Promise<PostSearchView> {
+    const view = await this.setSearchSwitch(
+      userId,
+      profileId,
+      'posts',
+      enabled,
+    );
+    return toPostSearchView(this.postsSwitch(), view);
+  }
+
+  private postsSwitch(): SearchSwitch {
+    const posts = this.switches.find((sw) => sw.key === 'posts');
+    if (!posts) throw new Error('The search switch registry has no posts');
+    return posts;
+  }
+
+  private async searchInput(
+    profile: ProfileWithSkills,
+  ): Promise<QuerySearchProfileInput> {
+    return toQuerySearchInput(profile, await labelsFor(this.profiles, profile));
+  }
+}
+
+function switchView(
+  sw: SearchSwitch,
+  profile: ProfileWithSkills,
+  input: QuerySearchProfileInput,
+): SearchSwitchView {
+  return {
+    key: sw.key,
+    enabled: profile[sw.column],
+    searches: sw.recipes(input).length,
+  };
+}
+
+function toPostSearchView(
+  posts: SearchSwitch,
+  { enabled, searches }: SearchSwitchView,
+): PostSearchView {
+  return { enabled, allowed: posts.available, searches };
 }

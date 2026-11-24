@@ -24,6 +24,7 @@ import { MemoryStorageService } from 'src/modules/storage/testing';
 import { FakeProfilesRepository, FakeUsersRepository } from '../testing/fakes';
 import { UsersService } from './users.service';
 import { Channel } from 'src/common/enums';
+import { SEARCH_SWITCHES } from 'src/modules/queries';
 import type { ProfileInput, SkillInput } from '../types';
 
 const profileInput: ProfileInput = {
@@ -545,7 +546,7 @@ describe('ProfilesService', () => {
     });
   });
 
-  describe('post search switch', () => {
+  describe('search switches', () => {
     const ownerInput: ProfileInput = {
       ...profileInput,
       position: 'fullstack_engineer',
@@ -583,55 +584,15 @@ describe('ProfilesService', () => {
             Channel.LINKEDIN_POSTS,
       );
 
-    it('attaches post builders when turned on for a published profile', async () => {
-      const { id } = await createOwner();
-      await service.publish(userId, id);
-      expect(linkedPosts(id)).toHaveLength(0);
-      await expect(service.setPostSearch(userId, id, true)).resolves.toEqual({
-        enabled: true,
-        allowed: false,
-        searches: 4,
-      });
-      expect(linkedPosts(id)).toHaveLength(4);
-      expect((await profiles.findById(userId, id))?.postSearch).toBe(true);
-    });
-
-    it('detaches only post builders when turned off', async () => {
-      const { id } = await createOwner();
-      await service.publish(userId, id);
-      await service.setPostSearch(userId, id, true);
-      const before = querySearches.links.length;
-      await expect(service.setPostSearch(userId, id, false)).resolves.toEqual({
-        enabled: false,
-        allowed: false,
-        searches: 4,
-      });
-      expect(linkedPosts(id)).toHaveLength(0);
-      expect(querySearches.links.length).toBe(before - 4);
-      expect(
-        querySearches.links.filter((link) => link.profileId === id).length,
-      ).toBeGreaterThan(0);
-    });
-
-    it('only stores the flag on a draft', async () => {
-      const { id } = await createOwner();
-      await service.setPostSearch(userId, id, true);
-      expect((await profiles.findById(userId, id))?.postSearch).toBe(true);
-      expect(querySearches.links).toHaveLength(0);
-    });
-
-    it('publishes with post builders when the switch is on', async () => {
-      const { id } = await createOwner();
-      await service.setPostSearch(userId, id, true);
-      await service.publish(userId, id);
-      expect(linkedPosts(id)).toHaveLength(4);
-    });
-
     /** Turns post search on in the database, as a hidden switch already on. */
     const switchOnPosts = async (id: string) => {
       const row = (await profiles.findById(userId, id))!;
       row.postSearch = true;
       querySearches.switches.set(id, { postSearch: true, indeedSearch: false });
+    };
+    const flags = async (id: string) => {
+      const row = (await profiles.findById(userId, id))!;
+      return { postSearch: row.postSearch, indeedSearch: row.indeedSearch };
     };
 
     it('publish attaches post recipes for any user with postSearch on', async () => {
@@ -654,45 +615,260 @@ describe('ProfilesService', () => {
       expect(linkedPosts(id)).toHaveLength(4);
     });
 
-    it('puts the flag back when attaching the post builders fails', async () => {
-      const { id } = await createOwner();
-      await service.publish(userId, id);
-      const spy = vi
-        .spyOn(QuerySearchService.prototype, 'attachSwitch')
-        .mockRejectedValueOnce(new Error('attach failed'));
-      try {
+    describe('with the real registry (both unavailable)', () => {
+      it('lists no switch', async () => {
+        const { id } = await createOwner();
+        await expect(service.searchSwitches(userId, id)).resolves.toEqual([]);
+      });
+
+      it('refuses an unavailable switch without writing', async () => {
+        const { id } = await createOwner();
+        await service.publish(userId, id);
+        const attach = vi.spyOn(QuerySearchService.prototype, 'attachSwitch');
+        try {
+          await expect(
+            service.setSearchSwitch(userId, id, 'posts', true),
+          ).rejects.toThrow(NotFoundException);
+          expect(profiles.setSwitch).not.toHaveBeenCalled();
+          expect(attach).not.toHaveBeenCalled();
+        } finally {
+          attach.mockRestore();
+        }
+        expect(await flags(id)).toEqual({
+          postSearch: false,
+          indeedSearch: false,
+        });
+        expect(linkedPosts(id)).toHaveLength(0);
+      });
+
+      it('refuses turning a hidden switch off, keeping its builders', async () => {
+        const { id } = await createOwner();
+        await switchOnPosts(id);
+        await service.publish(userId, id);
+        const detach = vi.spyOn(QuerySearchService.prototype, 'detachChannel');
+        try {
+          await expect(
+            service.setSearchSwitch(userId, id, 'posts', false),
+          ).rejects.toThrow(NotFoundException);
+          expect(profiles.setSwitch).not.toHaveBeenCalled();
+          expect(detach).not.toHaveBeenCalled();
+        } finally {
+          detach.mockRestore();
+        }
+        expect((await flags(id)).postSearch).toBe(true);
+        expect(linkedPosts(id)).toHaveLength(4);
+      });
+
+      it.each(['indeed', 'glassdoor', ''])(
+        'refuses the key %j without writing',
+        async (key) => {
+          const { id } = await createOwner();
+          await expect(
+            service.setSearchSwitch(userId, id, key, true),
+          ).rejects.toThrow(NotFoundException);
+          expect(profiles.setSwitch).not.toHaveBeenCalled();
+        },
+      );
+
+      it('postSearchStatus answers allowed false while posts is unavailable', async () => {
+        const { id } = await createOwner();
+        await expect(service.postSearchStatus(userId, id)).resolves.toEqual({
+          enabled: false,
+          allowed: false,
+          searches: 4,
+        });
+        await switchOnPosts(id);
+        await expect(service.postSearchStatus(userId, id)).resolves.toEqual({
+          enabled: true,
+          allowed: false,
+          searches: 4,
+        });
+      });
+
+      it('setPostSearch is not found while posts is unavailable', async () => {
+        const { id } = await createOwner();
         await expect(service.setPostSearch(userId, id, true)).rejects.toThrow(
-          'attach failed',
+          NotFoundException,
         );
-      } finally {
-        spy.mockRestore();
-      }
-      expect((await profiles.findById(userId, id))?.postSearch).toBe(false);
-      expect(linkedPosts(id)).toHaveLength(0);
+        expect(profiles.setSwitch).not.toHaveBeenCalled();
+        expect((await flags(id)).postSearch).toBe(false);
+      });
     });
 
-    it('reports how many searches the profile would get', async () => {
-      const { id } = await createOwner();
-      await expect(service.postSearchStatus(userId, id)).resolves.toEqual({
-        enabled: false,
-        allowed: false,
-        searches: 4,
+    describe('with posts available', () => {
+      let open: ProfilesService;
+      beforeEach(() => {
+        open = new ProfilesService(
+          new UsersService(userRows),
+          profiles,
+          new QuerySearchService(querySearches),
+          storage,
+          SEARCH_SWITCHES.map((sw) =>
+            sw.key === 'posts' ? { ...sw, available: true } : sw,
+          ),
+        );
       });
-      const english = await profiles.add(
-        userId,
-        {
-          ...profileInput,
-          locations: {
-            remote: [],
-            hybrid: [],
-            onsite: [{ kind: 'country', code: 'MA' }],
+
+      it('lists only available switches, in registry order', async () => {
+        const { id } = await createOwner();
+        await expect(open.searchSwitches(userId, id)).resolves.toEqual([
+          { key: 'posts', enabled: false, searches: 4 },
+        ]);
+      });
+
+      it('refuses the unknown key glassdoor and unavailable indeed without writing', async () => {
+        const { id } = await createOwner();
+        for (const key of ['glassdoor', 'indeed'])
+          await expect(
+            open.setSearchSwitch(userId, id, key, true),
+          ).rejects.toThrow(NotFoundException);
+        expect(profiles.setSwitch).not.toHaveBeenCalled();
+      });
+
+      it("another user's profile is not found on both methods", async () => {
+        const { id } = await createOwner();
+        const missing = 'profile-missing';
+        for (const profileId of [id, missing]) {
+          await expect(
+            open.searchSwitches(otherUserId, profileId),
+          ).rejects.toThrow(new NotFoundException('Profile not found'));
+          await expect(
+            open.setSearchSwitch(otherUserId, profileId, 'posts', true),
+          ).rejects.toThrow(new NotFoundException('Profile not found'));
+        }
+        expect(profiles.setSwitch).not.toHaveBeenCalled();
+        expect((await flags(id)).postSearch).toBe(false);
+      });
+
+      it('any user may change an available switch', async () => {
+        const { id } = await profiles.add(otherUserId, ownerInput, ownerSkills);
+        await expect(
+          open.setSearchSwitch(otherUserId, id, 'posts', true),
+        ).resolves.toEqual({ key: 'posts', enabled: true, searches: 4 });
+        expect((await profiles.findById(otherUserId, id))?.postSearch).toBe(
+          true,
+        );
+      });
+
+      it('only stores the flag on a draft', async () => {
+        const { id } = await createOwner();
+        await open.setSearchSwitch(userId, id, 'posts', true);
+        expect((await flags(id)).postSearch).toBe(true);
+        expect(querySearches.links).toHaveLength(0);
+        await open.publish(userId, id);
+        expect(linkedPosts(id)).toHaveLength(4);
+      });
+
+      it('attaches on, detaches off on a published profile', async () => {
+        const { id } = await createOwner();
+        await open.publish(userId, id);
+        expect(linkedPosts(id)).toHaveLength(0);
+        await expect(
+          open.setSearchSwitch(userId, id, 'posts', true),
+        ).resolves.toEqual({ key: 'posts', enabled: true, searches: 4 });
+        expect(linkedPosts(id)).toHaveLength(4);
+        const before = querySearches.links.length;
+        await expect(
+          open.setSearchSwitch(userId, id, 'posts', false),
+        ).resolves.toEqual({ key: 'posts', enabled: false, searches: 4 });
+        expect(linkedPosts(id)).toHaveLength(0);
+        expect(querySearches.links.length).toBe(before - 4);
+        expect(
+          querySearches.links.filter((link) => link.profileId === id).length,
+        ).toBeGreaterThan(0);
+      });
+
+      it('puts the flag back when attach fails', async () => {
+        const { id } = await createOwner();
+        await open.publish(userId, id);
+        const spy = vi
+          .spyOn(QuerySearchService.prototype, 'attachSwitch')
+          .mockRejectedValueOnce(new Error('attach failed'));
+        try {
+          await expect(
+            open.setSearchSwitch(userId, id, 'posts', true),
+          ).rejects.toThrow('attach failed');
+        } finally {
+          spy.mockRestore();
+        }
+        expect((await flags(id)).postSearch).toBe(false);
+        expect(querySearches.switches.get(id)?.postSearch).toBe(false);
+        expect(linkedPosts(id)).toHaveLength(0);
+      });
+
+      it('puts the flag back when detach fails', async () => {
+        const { id } = await createOwner();
+        await open.publish(userId, id);
+        await open.setSearchSwitch(userId, id, 'posts', true);
+        const spy = vi
+          .spyOn(QuerySearchService.prototype, 'detachChannel')
+          .mockRejectedValueOnce(new Error('detach failed'));
+        try {
+          await expect(
+            open.setSearchSwitch(userId, id, 'posts', false),
+          ).rejects.toThrow('detach failed');
+        } finally {
+          spy.mockRestore();
+        }
+        expect((await flags(id)).postSearch).toBe(true);
+        expect(linkedPosts(id)).toHaveLength(4);
+      });
+
+      it('skips detach for a switch with no channel', async () => {
+        const indeedOpen = new ProfilesService(
+          new UsersService(userRows),
+          profiles,
+          new QuerySearchService(querySearches),
+          storage,
+          SEARCH_SWITCHES.map((sw) => ({ ...sw, available: true })),
+        );
+        const { id } = await createOwner();
+        await indeedOpen.publish(userId, id);
+        const detach = vi.spyOn(QuerySearchService.prototype, 'detachChannel');
+        try {
+          await indeedOpen.setSearchSwitch(userId, id, 'indeed', true);
+          await expect(
+            indeedOpen.setSearchSwitch(userId, id, 'indeed', false),
+          ).resolves.toEqual({ key: 'indeed', enabled: false, searches: 0 });
+          expect(detach).not.toHaveBeenCalled();
+        } finally {
+          detach.mockRestore();
+        }
+      });
+
+      it('the wrappers go through the shared path', async () => {
+        const { id } = await createOwner();
+        await open.publish(userId, id);
+        await expect(open.setPostSearch(userId, id, true)).resolves.toEqual({
+          enabled: true,
+          allowed: true,
+          searches: 4,
+        });
+        expect(linkedPosts(id)).toHaveLength(4);
+        await expect(open.postSearchStatus(userId, id)).resolves.toEqual({
+          enabled: true,
+          allowed: true,
+          searches: 4,
+        });
+      });
+
+      it('reports how many searches the profile would get', async () => {
+        const english = await profiles.add(
+          userId,
+          {
+            ...profileInput,
+            locations: {
+              remote: [],
+              hybrid: [],
+              onsite: [{ kind: 'country', code: 'MA' }],
+            },
           },
-        },
-        [skill('nodejs', 8)],
-      );
-      await expect(
-        service.postSearchStatus(userId, english.id),
-      ).resolves.toEqual({ enabled: false, allowed: false, searches: 0 });
+          [skill('nodejs', 8)],
+        );
+        await expect(open.searchSwitches(userId, english.id)).resolves.toEqual([
+          { key: 'posts', enabled: false, searches: 0 },
+        ]);
+      });
     });
   });
 });
