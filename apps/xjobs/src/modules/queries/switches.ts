@@ -26,7 +26,10 @@ export type SearchSwitch = {
  * Every per-profile search switch, in the order their recipes are added.
  * A new switch column must also join `bump_profile_match_version`'s exclusion
  * arrays (latest in `20261124T1043_profile_indeed_search`), or flipping it
- * rematches the profile and resumes paused searches.
+ * rematches the profile and resumes paused searches. It also joins the
+ * hand-written checks in `queries.repository.ts` (the swap's early check and
+ * final `UPDATE … WHERE`), the publish `CASE` in `profiles.repository.ts`, and
+ * the fakes in `queries/testing/fakes.ts` and `users/testing/fakes.ts`.
  */
 export const SEARCH_SWITCHES: readonly SearchSwitch[] = [
   {

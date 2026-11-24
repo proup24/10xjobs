@@ -13,7 +13,8 @@ Until slice 04, collected posts are stored raw and never matched, and until slic
 - `profiles.postSearch`, off by default, written only by the engine (no user column grant).
 - `GET`/`PUT /api/profiles/:profileId/post-search`, which attach or detach the profile's post builders.
 - `POST_SEARCH_USERS`, the allow-list (removed in Phase 5 slice 02): only listed users can turn the switch on (403 otherwise), see it in the web app, or keep post builders through `db:regenerate`.
-- The switch on the profile page (`apps/web/src/components/preferences/post-search-switch.tsx`), shown only to listed users.
+- The switch on the profile page: the shared search switch `apps/web/src/components/preferences/search-switch.tsx` (rendered by `search-switches-section.tsx`), shown only for switches whose `available` is true, so the posts switch is hidden until this slice.
+- `GET /api/profiles/:profileId/searches` and `PUT /api/profiles/:profileId/searches/:key`, the shared switch routes (Phase 5 slice 02).
 - One daily budget for the posts channel, `COLLECTION_DAILY_BUDGET_USD_LINKEDIN_POSTS` (default $1.50). Segments run in sorted key order each tick, so when the budget runs out, the keys that sort last are skipped (the known limit in the slice 01 spec).
 
 ## Shared with Phase 5
