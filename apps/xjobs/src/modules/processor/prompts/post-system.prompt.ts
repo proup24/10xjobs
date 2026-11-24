@@ -27,7 +27,7 @@ First decide the verdict: \`verdict.{value, reason, quote, confidence}\`.
 
 | \`value\` | When | \`reason\` |
 | --- | --- | --- |
-| \`hiring\` | A real opening at an identifiable employer, or a recruiter filling one for a client | \`hiring\` |
+| \`hiring\` | A real opening at an identifiable employer, a recruiter filling one for a client, or a page that relays one employer's opening | \`hiring\` |
 | \`not_hiring\` | No opening is offered | \`open_to_work\`, \`advice_or_commentary\`, \`course_or_training_ad\`, \`job_digest\`, \`role_filled\`, \`other\` |
 | \`junk\` | Says it is hiring, but it is an aggregator or lead-gen post, not a real opening | \`no_clear_employer\`, \`many_roles_across_companies\`, \`funnel\`, \`messaging_group\`, \`other\` |
 
@@ -35,19 +35,26 @@ First decide the verdict: \`verdict.{value, reason, quote, confidence}\`.
 
 \`junk\` reasons:
 
-- \`no_clear_employer\`: no company and no single client stands behind the roles, as in a huge round number of identical openings for an unnamed company, or a long list of generic IT job titles ("software developer, Java developer, data analyst, cybersecurity...") with no duties of its own.
-- \`many_roles_across_companies\`: one poster listing many unrelated roles across several companies, places or trades (engineers next to cleaners or machine operators), each with a pay line.
-- \`funnel\`: the post is a way to sell something to job seekers: courses, training, "placement" or visa help, lists of HR emails, fees. Freshers, students and "0-15 years" invited to the same long list of roles are a sign.
+- \`no_clear_employer\`: no company and no single client stands behind the roles, as in a huge round number of identical openings for an unnamed company, a long list of generic IT job titles ("software developer, Java developer, data analyst, cybersecurity...") with no duties of its own, or one title posted for many cities with only a link each.
+- \`many_roles_across_companies\`: one poster listing many unrelated roles across several companies, places or trades (engineers next to cleaners or machine operators, developers next to ERP consultants, analysts and administrators), each with only a place or a pay line.
+- \`funnel\`: the post is a way to sell something to job seekers or to bring them to the poster's own service: courses, training, "placement" or visa help, lists of HR emails, fees, paid coaching or mock interviews, a job platform or app to sign up to. Freshers, students and "0-15 years" invited to the same long list of roles are a sign. The job seeker pays or signs up; a programme that pays its people (a stipend, a fee for trainers) is not a funnel.
 - \`messaging_group\`: applying means joining a WhatsApp or Telegram group, a paid "room" or a membership, rather than applying to an employer.
-- \`other\`: another lead-gen sign.
+- \`other\`: another lead-gen sign, such as roles the post itself says are not confirmed openings.
 
-Signs of junk often come together: many hashtags, "tag your friends", "repost to help", a big role list with no employer, and an apply link that leads to a group or a sale. A post that reads like a real job ad is still \`junk\` when the only way to apply is joining a group.
+Signs of junk often come together: "tag your friends", a big role list with no employer, and an apply link that leads to a group or a sale. Two signs are \`junk\` on their own, even when the post also carries a real role with its own apply link:
 
-- A real role posted by a third-party recruiter is \`hiring\`, even when the employer is unnamed ("my client"): one role, or a few at one employer.
-- A non-software role (IT support, sales) at a real employer is \`hiring\`.
+- The post asks readers to join or sign up to a job-hunting group, channel, community, service or platform: "join my WhatsApp group for daily job updates", "follow our job channel on Telegram", the poster's paid sessions, a site that applies for you. Use \`messaging_group\` for a chat or community to join, \`funnel\` for a paid service or a platform. A sign-off that only lists the poster's social links, following the poster's page, or "repost to help" is not this sign.
+- The way to apply is a personal mailbox (gmail-style, not a company domain) and no employer stands behind the role: \`no_clear_employer\`, or \`other\` when an agency is named but no employer. A person's own address at a company domain is not a personal mailbox.
+
+A post that reads like a real job ad is still \`junk\` when the only way to apply is joining a group.
+
+- A real role posted by a third-party recruiter is \`hiring\`, even when the employer is unnamed ("my client"). So is a staffing company's page posting one role it is filling, and a job board or person that relays one employer's role with a way to apply. Hashtags alone are not a junk sign, even a wall of staffing terms (C2C, bench sales, hotlist): a described role with an address at the recruiter's own domain is a sure \`hiring\`, however many hashtags follow.
+- A recruiter may list a few roles (five or so) for its clients when each comes with its own duties, requirements or terms: \`hiring\`. So is a list of titles at one named employer. Only a long list of bare titles with nothing but a place each, across unrelated fields, sent to one address, is \`junk\` (\`many_roles_across_companies\`).
+- Contract work (hourly, task-based, AI training or evaluation) is \`hiring\`, the company named or not, unless the post claims hundreds of openings: that is \`no_clear_employer\`, even with an apply link.
+- A non-software role (IT support, sales, trainers) or an internship at a real employer is \`hiring\`. One programme or one role offered across many domains or tracks is one opening, not a role list.
 - When the post names several reasons, pick the one that decides the verdict.
 - \`quote\`: the words that show the verdict.
-- \`confidence\`: \`unsure\` only for a genuine toss-up between two readings, such as hiring or junk. An unsure post goes to a person who reads it, so when one reading is clearly the likelier one, record it as \`sure\`. When the toss-up is between \`hiring\` and another verdict, record \`hiring\` with \`unsure\` and record its roles, so a person can read them.
+- \`confidence\`: \`sure\` whenever the rules above decide the post: a concrete role with a way to apply and no junk sign is a sure \`hiring\`; a post with a junk sign is a sure \`junk\`. \`unsure\` only for a genuine toss-up the rules don't settle, where the post's own words support two readings. An unsure post goes to a person who reads it, so when one reading is clearly the likelier one, record it as \`sure\`. When the toss-up is between \`hiring\` and another verdict, record \`hiring\` with \`unsure\` and record its roles, so a person can read them. Never record a sure \`junk\` for a described role at a named employer with its own way to apply unless one of the signs above plainly holds.
 
 \`roles\` is \`[]\` unless the verdict is \`hiring\`; a \`hiring\` post has at least one role.
 

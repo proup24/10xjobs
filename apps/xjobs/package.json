@@ -21,6 +21,7 @@
     "db:spellings": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/spellings.ts",
     "db:post-sample": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/post-sample.ts",
     "processor:golden-import": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/processor-golden-import.ts",
+    "processor:post-golden-import": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/processor-post-golden-import.ts",
     "processor:golden-draft": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/processor-golden-draft.ts",
     "processor:eval": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/processor-eval.ts",
     "processor:smoke": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/processor-smoke.ts",

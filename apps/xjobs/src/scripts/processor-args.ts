@@ -1,7 +1,7 @@
 import type { ReprocessFilter } from 'src/modules/processor/repositories/processor.repository';
 import { LIST_NAMES, type ListName } from 'src/modules/processor/vocab/lists';
 
-/** Argument parsing for `db:reprocess` and `db:vocab`, kept apart so specs can import it. */
+/** Argument parsing for `db:reprocess`, `db:vocab` and `processor:eval`, kept apart so specs can import it. */
 /** pnpm forwards the `--` of `pnpm run x -- args`; drop one. */
 const withoutLeadingSeparator = (argv: readonly string[]) =>
   argv[0] === '--' ? argv.slice(1) : argv;
@@ -75,4 +75,51 @@ export function parseVocabArgs(rawArgv: readonly string[]): VocabCommand {
   throw new Error(
     `unknown action: ${action ?? '(none)'}; use list, approve, reject or alias`,
   );
+}
+
+/** What `processor:eval` runs: the listing set, or the post set with `--posts`. */
+export interface EvalArgs {
+  posts: boolean;
+  generator?: string;
+  /** With `--posts`: 0-based indices into the post golden set to run, in the order given, without repeats. */
+  cases?: number[];
+}
+
+export function parseEvalArgs(rawArgv: readonly string[]): EvalArgs {
+  const argv = withoutLeadingSeparator(rawArgv);
+  const args: EvalArgs = { posts: false };
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === '--posts') args.posts = true;
+    else if (arg === '--generator') {
+      const model = argv[++i];
+      if (model === undefined || model.startsWith('--'))
+        throw new Error('--generator needs a model');
+      args.generator = model;
+    } else if (arg === '--case') {
+      const value = argv[++i];
+      if (value === undefined || value.startsWith('--'))
+        throw new Error('--case needs a case index');
+      if (!/^\d+$/.test(value))
+        throw new Error(`--case needs a whole number, got ${value}`);
+      const index = Number(value);
+      const cases = (args.cases ??= []);
+      if (!cases.includes(index)) cases.push(index);
+    } else throw new Error(`unknown argument: ${arg}`);
+  }
+  if (args.cases && !args.posts)
+    throw new Error('--case only works with --posts');
+  return args;
+}
+
+/** Refuses a `--case` index outside the post golden set of `total` cases. */
+export function checkCaseIndices(
+  cases: readonly number[],
+  total: number,
+): void {
+  for (const index of cases)
+    if (index >= total)
+      throw new Error(
+        `--case ${index} is out of range: the post golden set has ${total} cases (0-${total - 1})`,
+      );
 }
