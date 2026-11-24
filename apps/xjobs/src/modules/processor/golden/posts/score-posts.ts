@@ -77,6 +77,8 @@ const byKey = <T>(items: T[], keys: string[]): { key: string; item: T }[] =>
     .sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
 
 type Keyed<T> = { key: string; item: T };
+/** A labelled and an extracted role, at least one there; `key` is the label's, else the extracted one's. */
+type RolePair<W, G> = { key: string; want?: Keyed<W>; got?: Keyed<G> };
 
 /** Share of the two keys' words they have in common (0 to 1). */
 const keyOverlap = (a: string, b: string): number => {
@@ -92,15 +94,12 @@ const keyOverlap = (a: string, b: string): number => {
  * by order alone shifts every pair when one key sorts elsewhere ("180-recruitment-
  * consultant" against "recruitment-consultant"). Pairs come out in key order.
  */
-function pairRoles<W, G>(
-  want: Keyed<W>[],
-  got: Keyed<G>[],
-): { want?: Keyed<W>; got?: Keyed<G> }[] {
-  const pairs: { want?: Keyed<W>; got?: Keyed<G> }[] = [];
+function pairRoles<W, G>(want: Keyed<W>[], got: Keyed<G>[]): RolePair<W, G>[] {
+  const pairs: RolePair<W, G>[] = [];
   let w = [...want];
   let g = [...got];
   const take = (a: Keyed<W>, b: Keyed<G>): void => {
-    pairs.push({ want: a, got: b });
+    pairs.push({ key: a.key, want: a, got: b });
     w = w.filter((x) => x !== a);
     g = g.filter((x) => x !== b);
   };
@@ -120,10 +119,12 @@ function pairRoles<W, G>(
     take(best.a, best.b);
   }
   const rest = Math.max(w.length, g.length);
-  for (let i = 0; i < rest; i++) pairs.push({ want: w[i], got: g[i] });
-  const keyOf = (p: (typeof pairs)[number]): string =>
-    (p.want ?? p.got)?.key ?? '';
-  return pairs.sort((a, b) => (keyOf(a) < keyOf(b) ? -1 : 1));
+  for (let i = 0; i < rest; i++) {
+    const a = w[i];
+    const b = g[i];
+    pairs.push({ key: (a ?? b).key, want: a, got: b });
+  }
+  return pairs.sort((a, b) => (a.key < b.key ? -1 : 1));
 }
 
 const LABEL_KEYS: readonly LabelKey[] = [
@@ -190,8 +191,8 @@ export function scorePost(
   let emails: RoleEmail[] | null = null;
   let emailExact: boolean | null = null;
   if (label === 'hiring') {
-    emails = pairs.map(({ want, got: g }) => ({
-      roleKey: (want ?? g).key,
+    emails = pairs.map(({ key, want, got: g }) => ({
+      roleKey: key,
       want: want?.item.contactEmail ?? null,
       got: g?.item.howToApply.email ?? null,
     }));
