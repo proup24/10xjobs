@@ -1422,7 +1422,7 @@
         "applyKinds": ["external_link"],
         "contactEmail": null,
         "facts": {
-          "roleKind": "ai_engineer",
+          "roleKind": "fullstack_engineer",
           "arrangement": "remote",
           "isSoftwareEngineeringRole": true
         },
@@ -1430,7 +1430,7 @@
         "reviewedBy": "agreement"
       }
     ],
-    "note": "job board relays Pavago Full-Stack AI Engineer remote Portugal with apply link"
+    "note": "job board relays Pavago Full-Stack AI Engineer remote Portugal with apply link. Owner ruled 2026-11-24 (role facts, Extract's reading): Full-Stack AI Engineer: roleKind fullstack_engineer."
   },
   {
     "rawItemId": "01a1fd58-3582-728f-9049-2aed2369585d",
@@ -1753,7 +1753,7 @@
         "applyKinds": ["external_link", "email", "connect_dm_comment"],
         "contactEmail": "soufiane.baymik@capgemini.com",
         "facts": {
-          "roleKind": "tech_lead",
+          "roleKind": "fullstack_engineer",
           "seniority": "lead",
           "isSoftwareEngineeringRole": true
         },
@@ -1766,7 +1766,7 @@
         "applyKinds": ["external_link", "email", "connect_dm_comment"],
         "contactEmail": "soufiane.baymik@capgemini.com",
         "facts": {
-          "roleKind": "tech_lead",
+          "roleKind": "fullstack_engineer",
           "seniority": "lead",
           "isSoftwareEngineeringRole": true
         },
@@ -1847,7 +1847,7 @@
         "reviewedBy": "agreement"
       }
     ],
-    "note": "Capgemini recrute au Maroc: Tech Lead Fullstack roles with links (French)"
+    "note": "Capgemini recrute au Maroc: Tech Lead Fullstack roles with links (French). Owner ruled 2026-11-24 (role facts, Extract's reading): Tech Lead Fullstack: roleKind fullstack_engineer; Tech Lead Fullstack – Agentic AI: roleKind fullstack_engineer."
   },
   {
     "rawItemId": "01a1fd58-dc6a-776c-a69c-3acbabedc4a0",
@@ -2137,14 +2137,14 @@
         "applyKinds": ["email"],
         "contactEmail": "srinivas.m@eraytec.com",
         "facts": {
-          "roleKind": "fullstack_engineer",
+          "roleKind": "backend_engineer",
           "isSoftwareEngineeringRole": true
         },
         "reviewed": true,
         "reviewedBy": "agreement"
       }
     ],
-    "note": "recruiter 'Hiring: Full Stack Developer and Dot Net Developer', remote, resume email"
+    "note": "recruiter 'Hiring: Full Stack Developer and Dot Net Developer', remote, resume email. Owner ruled 2026-11-24 (role facts, Extract's reading): .NET C# Developer with angular: roleKind backend_engineer."
   },
   {
     "rawItemId": "01a1ff45-87f1-72c1-b4db-1e460322e0b5",
@@ -2416,7 +2416,7 @@
         "applyKinds": ["external_link"],
         "contactEmail": null,
         "facts": {
-          "roleKind": "ai_engineer",
+          "roleKind": "fullstack_engineer",
           "arrangement": "remote",
           "isSoftwareEngineeringRole": true
         },
@@ -2424,7 +2424,7 @@
         "reviewedBy": "agreement"
       }
     ],
-    "note": "job board relays Pavago Full-Stack AI Engineer Portugal with apply link"
+    "note": "job board relays Pavago Full-Stack AI Engineer Portugal with apply link. Owner ruled 2026-11-24 (role facts, Extract's reading): Full-Stack AI Engineer: roleKind fullstack_engineer."
   },
   {
     "rawItemId": "01a1fd58-e3f5-74cd-b4b3-344d433febea",
@@ -2855,14 +2855,14 @@
         "applyKinds": ["external_link"],
         "contactEmail": null,
         "facts": {
-          "roleKind": "ai_training",
+          "roleKind": "fullstack_engineer",
           "arrangement": "remote"
         },
         "reviewed": true,
         "reviewedBy": "owner"
       }
     ],
-    "note": "'Hiring: Remote Full Stack Engineers' at Turing (AI training), with apply link"
+    "note": "'Hiring: Remote Full Stack Engineers' at Turing (AI training), with apply link. Owner ruled 2026-11-24 (role facts, Extract's reading): Remote Full Stack Engineers: roleKind fullstack_engineer."
   },
   {
     "rawItemId": "01a1ffe8-daa5-75cc-9186-c0c9959a7114",
@@ -3051,7 +3051,7 @@
         "applyKinds": ["email"],
         "contactEmail": "raju.n@adroitinnovative.com",
         "facts": {
-          "roleKind": "ml_engineer",
+          "roleKind": "ai_engineer",
           "seniority": "senior",
           "arrangement": "remote",
           "isSoftwareEngineeringRole": true
@@ -3110,7 +3110,7 @@
         "reviewedBy": "owner"
       }
     ],
-    "note": "recruiter lists immediate roles incl. Senior AI/ML Engineer remote, .NET Full Stack | pre-label: unsure because a staffing recruiter lists 5 unrelated reqs in different cities, likely several unnamed clients (junk sign many_roles_across_companies?)"
+    "note": "recruiter lists immediate roles incl. Senior AI/ML Engineer remote, .NET Full Stack | pre-label: unsure because a staffing recruiter lists 5 unrelated reqs in different cities, likely several unnamed clients (junk sign many_roles_across_companies?). Owner ruled 2026-11-24 (role facts, Extract's reading): Senior AI/ML & Constraint Programming Engineer: roleKind ai_engineer."
   },
   {
     "rawItemId": "01a1fe32-1beb-747c-aa97-11e5ea834a18",
@@ -3389,7 +3389,7 @@
         "applyKinds": ["external_link", "connect_dm_comment"],
         "contactEmail": null,
         "facts": {
-          "roleKind": "tech_lead",
+          "roleKind": "fullstack_engineer",
           "seniority": "lead",
           "isSoftwareEngineeringRole": true
         },
@@ -3402,7 +3402,7 @@
         "applyKinds": ["external_link", "connect_dm_comment"],
         "contactEmail": null,
         "facts": {
-          "roleKind": "tech_lead",
+          "roleKind": "fullstack_engineer",
           "seniority": "lead",
           "isSoftwareEngineeringRole": true
         },
@@ -3483,7 +3483,7 @@
         "reviewedBy": "agreement"
       }
     ],
-    "note": "recruiter: Capgemini recrute au Maroc, Tech Lead Fullstack roles with links (French)"
+    "note": "recruiter: Capgemini recrute au Maroc, Tech Lead Fullstack roles with links (French). Owner ruled 2026-11-24 (role facts, Extract's reading): Tech Lead Fullstack: roleKind fullstack_engineer; Tech Lead Fullstack – Agentic AI: roleKind fullstack_engineer."
   },
   {
     "rawItemId": "01a1fd5a-c365-73a0-932f-7c8ee730a2ba",
@@ -3559,14 +3559,14 @@
         "applyKinds": ["email"],
         "contactEmail": "careers@nexoratechinc.com",
         "facts": {
-          "roleKind": "other",
+          "roleKind": "platform_engineer",
           "isSoftwareEngineeringRole": false
         },
         "reviewed": true,
         "reviewedBy": "owner"
       }
     ],
-    "note": "company relays SAP Basis Administrator, send resumes to careers@ email"
+    "note": "company relays SAP Basis Administrator, send resumes to careers@ email. Owner ruled 2026-11-24 (role facts, Extract's reading): SAP Basis Administrator: roleKind platform_engineer."
   },
   {
     "rawItemId": "01a2027c-5a3e-73ab-b699-c0eb3893f010",
@@ -4079,7 +4079,7 @@
         "applyKinds": ["external_link"],
         "contactEmail": null,
         "facts": {
-          "roleKind": "tech_lead",
+          "roleKind": "fullstack_engineer",
           "seniority": "lead",
           "arrangement": "remote",
           "isSoftwareEngineeringRole": true
@@ -4088,7 +4088,7 @@
         "reviewedBy": "owner"
       }
     ],
-    "note": "job board relays Miratech Technical Lead - Full Stack Developer, apply link"
+    "note": "job board relays Miratech Technical Lead - Full Stack Developer, apply link. Owner ruled 2026-11-24 (role facts, Extract's reading): Technical Lead - Full Stack Developer (Frontend-Focused): roleKind fullstack_engineer."
   },
   {
     "rawItemId": "01a2020e-82e4-716c-a3d6-bb071505c668",
@@ -4135,14 +4135,14 @@
         "applyKinds": ["external_link"],
         "contactEmail": null,
         "facts": {
-          "roleKind": "ai_training",
+          "roleKind": "backend_engineer",
           "arrangement": "remote"
         },
         "reviewed": true,
         "reviewedBy": "owner"
       }
     ],
-    "note": "relays Forward Deployed Engineer contract (Joblet-AI/micro1), remote, apply link"
+    "note": "relays Forward Deployed Engineer contract (Joblet-AI/micro1), remote, apply link. Owner ruled 2026-11-24 (role facts, Extract's reading): Forward Deployed Engineer (FDE): roleKind backend_engineer."
   },
   {
     "rawItemId": "01a1fd5a-67bf-733e-9475-b115a9ec9eb8",
@@ -4985,7 +4985,7 @@
         "applyKinds": ["email"],
         "contactEmail": "recrutement@moon-send.io",
         "facts": {
-          "roleKind": "mobile_engineer",
+          "roleKind": "fullstack_engineer",
           "seniority": "senior",
           "arrangement": "onsite",
           "isSoftwareEngineeringRole": true
@@ -4994,7 +4994,7 @@
         "reviewedBy": "agreement"
       }
     ],
-    "note": "NovaSend recrute Senior Full Stack Mobile Flutter/NestJS developer, Abidjan (French)"
+    "note": "NovaSend recrute Senior Full Stack Mobile Flutter/NestJS developer, Abidjan (French). Owner ruled 2026-11-24 (role facts, Extract's reading): Développeur(se) Senior Full Stack Mobile – Flutter / NestJS: roleKind fullstack_engineer."
   },
   {
     "rawItemId": "01a1fea0-04fd-72aa-9953-7d4bb8a71acb",
@@ -5646,7 +5646,7 @@
         "applyKinds": ["email"],
         "contactEmail": "deepthis@xoveconsulting.com",
         "facts": {
-          "roleKind": "tech_lead",
+          "roleKind": "fullstack_engineer",
           "seniority": "lead",
           "arrangement": "remote",
           "isSoftwareEngineeringRole": true
@@ -5655,7 +5655,7 @@
         "reviewedBy": "agreement"
       }
     ],
-    "note": "recruiter 'We're Hiring' 4 roles incl. Python Full Stack Developer, Dallas"
+    "note": "recruiter 'We're Hiring' 4 roles incl. Python Full Stack Developer, Dallas. Owner ruled 2026-11-24 (role facts, Extract's reading): Full Stack Tech Lead: roleKind fullstack_engineer."
   },
   {
     "rawItemId": "01a1fd5a-d8e2-75e9-a3cc-ac367afe3f9d",
@@ -5962,14 +5962,14 @@
         "contactEmail": "tom@datamanusa.com",
         "facts": {
           "roleKind": "fullstack_engineer",
-          "arrangement": "hybrid",
+          "arrangement": "remote",
           "isSoftwareEngineeringRole": true
         },
         "reviewed": true,
         "reviewedBy": "agreement"
       }
     ],
-    "note": "recruiter 'Now Hiring' Full Stack Java Developer for State of Utah"
+    "note": "recruiter 'Now Hiring' Full Stack Java Developer for State of Utah. Owner ruled 2026-11-24 (role facts, Extract's reading): Full Stack Java Developer: arrangement remote."
   },
   {
     "rawItemId": "01a1ff46-9213-7494-a683-a11424baa954",
@@ -6148,7 +6148,7 @@
         "applyKinds": ["email", "connect_dm_comment"],
         "contactEmail": "hr@welaunch.ai",
         "facts": {
-          "roleKind": "ai_engineer",
+          "roleKind": "fullstack_engineer",
           "arrangement": "remote",
           "isSoftwareEngineeringRole": true
         },
@@ -6169,7 +6169,7 @@
         "reviewedBy": "agreement"
       }
     ],
-    "note": "WeLaunch 'We're hiring two people': Full Stack AI Developer, remote"
+    "note": "WeLaunch 'We're hiring two people': Full Stack AI Developer, remote. Owner ruled 2026-11-24 (role facts, Extract's reading): Full Stack AI Developer: roleKind fullstack_engineer."
   },
   {
     "rawItemId": "01a1fd58-bc1c-73fc-9521-d86f60f729fd",
@@ -6565,7 +6565,7 @@
         "applyKinds": ["email"],
         "contactEmail": "ritika.arora@gvrinfotek.com",
         "facts": {
-          "roleKind": "tech_lead",
+          "roleKind": "fullstack_engineer",
           "arrangement": "remote",
           "isSoftwareEngineeringRole": true
         },
@@ -6573,7 +6573,7 @@
         "reviewedBy": "agreement"
       }
     ],
-    "note": "recruiter 'Hiring: Senior Technical Lead / Full-Stack Developer', remote USA | pre-label: unsure because the email stands alone after the role overview (no \"send to\"); labelled as the contact email"
+    "note": "recruiter 'Hiring: Senior Technical Lead / Full-Stack Developer', remote USA | pre-label: unsure because the email stands alone after the role overview (no \"send to\"); labelled as the contact email. Owner ruled 2026-11-24 (role facts, Extract's reading): Senior Technical Lead / Full-Stack Developer: roleKind fullstack_engineer."
   },
   {
     "rawItemId": "01a1fd58-2439-7344-9edc-dbf9761e2a9a",
@@ -6892,7 +6892,7 @@
         "applyKinds": ["email"],
         "contactEmail": "joshua@innoverglobalinc.com",
         "facts": {
-          "roleKind": "tech_lead",
+          "roleKind": "fullstack_engineer",
           "arrangement": "remote",
           "isSoftwareEngineeringRole": true
         },
@@ -6965,7 +6965,7 @@
         "reviewedBy": "agreement"
       }
     ],
-    "note": "recruiter 'We're Hiring' Technical Lead / Senior Full Stack Engineer, remote India | pre-label: unsure because a staffing recruiter lists 6 reqs; 5 are Bangalore file-transfer roles (likely one client), so kept hiring"
+    "note": "recruiter 'We're Hiring' Technical Lead / Senior Full Stack Engineer, remote India | pre-label: unsure because a staffing recruiter lists 6 reqs; 5 are Bangalore file-transfer roles (likely one client), so kept hiring. Owner ruled 2026-11-24 (role facts, Extract's reading): Technical Lead / Senior Full Stack Engineer: roleKind fullstack_engineer."
   },
   {
     "rawItemId": "01a1fd58-1fe1-7761-991f-46b26b76f60b",
@@ -7135,14 +7135,14 @@
         "applyKinds": ["email"],
         "contactEmail": "srinivas.m@eraytec.com",
         "facts": {
-          "roleKind": "fullstack_engineer",
+          "roleKind": "backend_engineer",
           "isSoftwareEngineeringRole": true
         },
         "reviewed": true,
         "reviewedBy": "owner"
       }
     ],
-    "note": "recruiter 'Hiring: Full Stack Developer and Dot Net Developer' (dup of #44)"
+    "note": "recruiter 'Hiring: Full Stack Developer and Dot Net Developer' (dup of #44). Owner ruled 2026-11-24 (role facts, Extract's reading): .NET C# Developer with angular: roleKind backend_engineer."
   },
   {
     "rawItemId": "01a1fd5a-ce56-7455-9413-2744c2b3792f",
