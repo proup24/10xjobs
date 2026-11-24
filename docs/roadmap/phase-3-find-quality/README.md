@@ -33,6 +33,7 @@ Same as Phases 1 and 2: each slice is a short brief covering the problem, the op
 | 09  | [Non-remote jobs from remote searches](09-non-remote-leak.md)                  | Match   | Done (PRs 101, 103, 105, 106)             |
 | 10  | [Search yield](10-search-yield.md)                                             | Harvest | Findings; not yet discussed               |
 | 11  | [Monday checks](11-monday-checks.md)                                           | Ops     | 2026-11-23; open for other slices' checks |
+| 12  | [Activity signals for paused searches](12-activity-signals.md)                 | Harvest | Found 2026-11-24; brainstorm next         |
 
 ## Follow-ups from slice 02
 
