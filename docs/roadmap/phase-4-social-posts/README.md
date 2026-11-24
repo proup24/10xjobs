@@ -1,7 +1,7 @@
 # Phase 4: Social posts
 
 Date: 2026-11-19
-Status: slice 01 built
+Status: slices 01–03 built
 
 ## Intent
 
@@ -19,7 +19,7 @@ Same as Phases 1 to 3: each slice is a short brief covering the goal, what exist
 | --- | ---------------------------------------------- | -------------------------------------------------------------------------- |
 | 01  | [Collect](01-collect.md)                       | Built ([spec](../../superpowers/specs/2026-11-20-posts-collect-design.md)) |
 | 02  | [Prepare](02-prepare.md)                       | Built ([spec](../../superpowers/specs/2026-11-21-posts-prepare-design.md)) |
-| 03  | [Extract](03-extract.md)                       | Spec ([spec](../../superpowers/specs/2026-11-22-posts-extract-design.md))  |
+| 03  | [Extract](03-extract.md)                       | Built ([spec](../../superpowers/specs/2026-11-22-posts-extract-design.md)) |
 | 04  | [Ingest and qualify](04-ingest-and-qualify.md) | Brief                                                                      |
 | 04a | [Social posts page](04a-social-posts-page.md)  | Brief                                                                      |
 | 04b | [Open post search](04b-open-post-search.md)    | Brief                                                                      |

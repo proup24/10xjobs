@@ -22,6 +22,13 @@ An extracted post becomes a job and is decided against each published profile as
 - The social posts page and the blocked-authors page (slice 04a).
 - Sending email (slice 05).
 
+## From slice 03
+
+- An `unsure` hiring verdict is never a match; at most it goes to review.
+- An archived role job keeps its `job_matches` rows; archiving should delete them, and the matcher must skip `processingStatus = 'archived'`.
+- A `tech_lead` profile fails the position check on a role like "Tech Lead Fullstack", which Extract reads as `fullstack_engineer` (the kind follows the duties, as for listings). The matcher could let a lead title or seniority satisfy a `tech_lead` profile.
+- Post processing shares the Claude subscription with listings, which always go first; on 2026-11-24 a listing backlog left posts unprocessed for over a day. Posts need a guaranteed share of the processor (or more capacity) before this slice ships.
+
 ## Open questions
 
 - Do posts need any rule of their own, for example a stricter one, because a qualified post sends an email with no human step?
