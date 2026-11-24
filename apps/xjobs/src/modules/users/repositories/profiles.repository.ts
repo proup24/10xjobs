@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ProfileState } from 'src/common/enums';
 import { DatabaseService, type ProfileRow } from 'src/database';
+import type { SwitchColumn, SwitchFlags } from 'src/modules/queries';
 import type { Place, PlaceLabels, ProfileWithSkills } from '../types';
 
 /**
@@ -19,21 +20,22 @@ export abstract class ProfilesRepository {
   ): Promise<ProfileWithSkills | null>;
   /**
    * Publishes a draft for good, recording the version its searches were
-   * attached for; null when not the user's or already published. When the post
-   * search switch is no longer `postSearch` (the value the searches were built
-   * from), `searchesVersion` stays null so the search sync rebuilds them.
+   * attached for; null when not the user's or already published. When any
+   * search switch is no longer as in `switches` (the values the searches were
+   * built from), `searchesVersion` stays null so the search sync rebuilds them.
    */
   abstract publish(
     userId: string,
     profileId: string,
     publishedAt: Date,
     searchesVersion: number,
-    postSearch: boolean,
+    switches: SwitchFlags,
   ): Promise<ProfileWithSkills | null>;
-  /** Stores the post search switch; null when the profile is not the user's. Allowed on published profiles. */
-  abstract setPostSearch(
+  /** Stores one search switch; null when the profile is not the user's. Allowed on published profiles. */
+  abstract setSwitch(
     userId: string,
     profileId: string,
+    column: SwitchColumn,
     enabled: boolean,
   ): Promise<ProfileWithSkills | null>;
   /** The labels of the regions, countries and cities given, a city's country included. */
@@ -124,17 +126,20 @@ export class PrismaProfilesRepository extends ProfilesRepository {
     profileId: string,
     publishedAt: Date,
     searchesVersion: number,
-    postSearch: boolean,
+    switches: SwitchFlags,
   ): Promise<ProfileWithSkills | null> {
     const { db } = this.database;
     // The CASE reads the row as locked by this UPDATE, so a switch committed
     // after the caller's read is seen; one committed after this sees a
-    // published profile and attaches or detaches the post builders itself.
+    // published profile and attaches or detaches its builders itself. Every
+    // switch column of `SEARCH_SWITCHES` is compared.
     const rows = await db.query(
       db.raw.sql`UPDATE profiles
         SET state = 'published',
           "publishedAt" = ${publishedAt.toISOString()}::timestamptz,
-          "searchesVersion" = CASE WHEN "postSearch" = ${postSearch}::boolean
+          "searchesVersion" = CASE
+            WHEN "postSearch" = ${switches.postSearch}::boolean
+              AND "indeedSearch" = ${switches.indeedSearch}::boolean
             THEN ${searchesVersion}::int ELSE NULL END
         WHERE id = ${profileId}::uuid AND "userId" = ${userId}::uuid
           AND state = 'draft'
@@ -145,15 +150,16 @@ export class PrismaProfilesRepository extends ProfilesRepository {
     return rows.length ? this.findById(userId, profileId) : null;
   }
 
-  async setPostSearch(
+  async setSwitch(
     userId: string,
     profileId: string,
+    column: SwitchColumn,
     enabled: boolean,
   ): Promise<ProfileWithSkills | null> {
     const profile = await this.orm.Profile.where({
       id: profileId,
       userId,
-    }).update({ postSearch: enabled });
+    }).update({ [column]: enabled });
     return profile ? this.withSkills(profile) : null;
   }
 

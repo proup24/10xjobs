@@ -3,7 +3,7 @@ import { GUARDS_METADATA } from '@nestjs/common/constants';
 import { UserGuard } from 'src/common/guards';
 import type { ProfilesService } from '../services/profiles.service';
 import type { PublishedProfileView } from '../types';
-import { SetPostSearchDto } from '../dto/post-search.dto';
+import { SetSearchSwitchDto } from '../dto/search-switch.dto';
 import { ProfilesController } from './profiles.controller';
 
 describe('ProfilesController', () => {
@@ -48,6 +48,32 @@ describe('ProfilesController', () => {
     );
   });
 
+  it('lists and sets search switches for the token user', async () => {
+    const list = [{ key: 'posts', enabled: false, searches: 4 }];
+    const view = { key: 'posts', enabled: true, searches: 4 };
+    const searchSwitches = vi.fn().mockResolvedValue(list);
+    const setSearchSwitch = vi.fn().mockResolvedValue(view);
+    const controller = new ProfilesController({
+      searchSwitches,
+      setSearchSwitch,
+    } as unknown as ProfilesService);
+    await expect(controller.searchSwitches('token-user', 'p1')).resolves.toBe(
+      list,
+    );
+    expect(searchSwitches).toHaveBeenCalledExactlyOnceWith('token-user', 'p1');
+    await expect(
+      controller.setSearchSwitch('token-user', 'p1', 'posts', {
+        enabled: true,
+      }),
+    ).resolves.toBe(view);
+    expect(setSearchSwitch).toHaveBeenCalledExactlyOnceWith(
+      'token-user',
+      'p1',
+      'posts',
+      true,
+    );
+  });
+
   it.each([{}, { enabled: 'yes' }, { enabled: 1 }, { enabled: null }])(
     'rejects a body without a boolean enabled with 400: %j',
     async (body) => {
@@ -57,7 +83,7 @@ describe('ProfilesController', () => {
         transform: true,
       });
       await expect(
-        pipe.transform(body, { type: 'body', metatype: SetPostSearchDto }),
+        pipe.transform(body, { type: 'body', metatype: SetSearchSwitchDto }),
       ).rejects.toMatchObject({ status: 400 });
     },
   );
@@ -67,7 +93,7 @@ describe('ProfilesController', () => {
     await expect(
       pipe.transform(
         { enabled: false },
-        { type: 'body', metatype: SetPostSearchDto },
+        { type: 'body', metatype: SetSearchSwitchDto },
       ),
     ).resolves.toEqual({ enabled: false });
   });

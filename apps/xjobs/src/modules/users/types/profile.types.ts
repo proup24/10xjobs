@@ -1,6 +1,9 @@
 import type { SkillDomain } from 'src/common/enums';
 import type { ProfileRow, ProfileSkillRow } from 'src/database';
-import type { QuerySearchAttachResult } from 'src/modules/queries';
+import type {
+  QuerySearchAttachResult,
+  SearchSwitchKey,
+} from 'src/modules/queries';
 import type {
   PlacesByArrangement,
   Salary,
@@ -58,6 +61,7 @@ export type HiddenProfileColumns =
   | 'salaryCurrency'
   | 'salaryPeriod'
   | 'postSearch'
+  | 'indeedSearch'
   | 'matchVersion'
   | 'searchesVersion';
 
@@ -82,10 +86,18 @@ export type PublishedProfileView = ProfileView & {
   querySearches: QuerySearchAttachResult;
 };
 
-/** The post search switch as the web app reads it. */
+/** One available search switch of a profile, as the web app reads it. */
+export type SearchSwitchView = {
+  key: SearchSwitchKey;
+  enabled: boolean;
+  /** How many searches the switch would add for this profile. */
+  searches: number;
+};
+
+/** The post search switch as the old `/post-search` routes answer it; slice 04b deletes them. */
 export type PostSearchView = {
   enabled: boolean;
-  /** Whether the owner is on the engine's allow-list. */
+  /** Whether post search is available (shown and changeable) for every user. */
   allowed: boolean;
   /** How many LinkedIn post searches the profile would get. */
   searches: number;

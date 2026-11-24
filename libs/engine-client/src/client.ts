@@ -9,6 +9,13 @@ export type PostSearchView = {
   searches: number;
 };
 
+export type SearchSwitchKey = 'posts' | 'indeed';
+export type SearchSwitchView = {
+  key: SearchSwitchKey;
+  enabled: boolean;
+  searches: number;
+};
+
 /** The signed-in user's searches: paused, and when they were last active. */
 export type SearchesStateView = {
   paused: boolean;
@@ -113,6 +120,12 @@ export interface EngineClient {
     profileId: string,
     enabled: boolean,
   ): Promise<EngineResult<PostSearchView>>;
+  searchSwitches(profileId: string): Promise<EngineResult<SearchSwitchView[]>>;
+  setSearchSwitch(
+    profileId: string,
+    key: SearchSwitchKey,
+    enabled: boolean,
+  ): Promise<EngineResult<SearchSwitchView>>;
   searchesState(): Promise<EngineResult<SearchesStateView>>;
   /** Resumes the user's paused searches; already running is a success. */
   resumeSearches(): Promise<EngineResult<SearchesStateView>>;
@@ -423,18 +436,32 @@ export function createEngineClient(deps: EngineClientDeps): EngineClient {
     );
   }
 
-  async function postSearch(
+  function isSearchSwitchView(data: unknown): data is SearchSwitchView {
+    return (
+      isRecord(data) &&
+      (data.key === 'posts' || data.key === 'indeed') &&
+      typeof data.enabled === 'boolean' &&
+      typeof data.searches === 'number'
+    );
+  }
+
+  function isSearchSwitchList(data: unknown): data is SearchSwitchView[] {
+    return Array.isArray(data) && data.every(isSearchSwitchView);
+  }
+
+  /** One profile-scoped GET or PUT under `/api/profiles/{id}/{path}`. */
+  async function profileSearch<T>(
     name: string,
     profileId: string,
+    path: string,
+    isValid: (data: unknown) => data is T,
     method: 'GET' | 'PUT',
     enabled?: boolean,
-  ): Promise<EngineResult<PostSearchView>> {
+  ): Promise<EngineResult<T>> {
     let status: number | undefined;
     // Not a UUID: the engine would 400 it, and the raw input stays out of the log.
     const validId = UUID.test(profileId);
-    const finish = (
-      result: EngineResult<PostSearchView>,
-    ): EngineResult<PostSearchView> => {
+    const finish = (result: EngineResult<T>): EngineResult<T> => {
       log(
         `engine ${name} profile=${validId ? profileId : 'invalid'} outcome=${result.kind} status=${status ?? 'none'}`,
       );
@@ -460,7 +487,7 @@ export function createEngineClient(deps: EngineClientDeps): EngineClient {
       };
       if (method === 'PUT') headers['Content-Type'] = 'application/json';
       const response = await doFetch(
-        `${deps.url.replace(/\/+$/, '')}/api/profiles/${encodeURIComponent(profileId)}/post-search`,
+        `${deps.url.replace(/\/+$/, '')}/api/profiles/${encodeURIComponent(profileId)}/${path}`,
         {
           method,
           headers,
@@ -479,7 +506,7 @@ export function createEngineClient(deps: EngineClientDeps): EngineClient {
       const record = isRecord(body) ? body : {};
 
       if (status === 200) {
-        return isPostSearchView(record.data)
+        return isValid(record.data)
           ? finish({ kind: 'ok', data: record.data })
           : finish({ kind: 'unavailable' });
       }
@@ -495,6 +522,22 @@ export function createEngineClient(deps: EngineClientDeps): EngineClient {
     } catch {
       return finish({ kind: 'unavailable' });
     }
+  }
+
+  function postSearch(
+    name: string,
+    profileId: string,
+    method: 'GET' | 'PUT',
+    enabled?: boolean,
+  ): Promise<EngineResult<PostSearchView>> {
+    return profileSearch(
+      name,
+      profileId,
+      'post-search',
+      isPostSearchView,
+      method,
+      enabled,
+    );
   }
 
   /**
@@ -691,5 +734,22 @@ export function createEngineClient(deps: EngineClientDeps): EngineClient {
       postSearch('postSearchStatus', profileId, 'GET'),
     setPostSearch: (profileId, enabled) =>
       postSearch('setPostSearch', profileId, 'PUT', enabled),
+    searchSwitches: (profileId) =>
+      profileSearch(
+        'searchSwitches',
+        profileId,
+        'searches',
+        isSearchSwitchList,
+        'GET',
+      ),
+    setSearchSwitch: (profileId, key, enabled) =>
+      profileSearch(
+        'setSearchSwitch',
+        profileId,
+        `searches/${encodeURIComponent(key)}`,
+        isSearchSwitchView,
+        'PUT',
+        enabled,
+      ),
   };
 }

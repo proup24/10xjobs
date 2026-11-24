@@ -196,6 +196,23 @@ Runs the generator over the golden set in `golden/` (in memory, with the seed vo
 
 Exit code 1 means a bar failed (`BARS` in `golden/score.ts`). Run it after any prompt, schema or model change, before reprocessing.
 
+### Post eval
+
+```sh
+pnpm --filter @xjobs/xjobs processor:eval -- --posts [--case <n> ...]
+```
+
+Runs Extract over the 150 labelled LinkedIn posts in `golden/posts/cases.json` the same way (in memory, nothing written to the database) and scores each post's verdict, roles and contact emails. The bars (`POST_BARS` in `golden/posts/score-posts.ts`) gate automatic emails:
+
+- `wrongSends` 0: no not-hiring or junk post comes out sure hiring with an email; a failed generation on one blocks the bar;
+- `contactEmailExact` 1.0: every labelled role's email is extracted exactly, and a different role count is a miss;
+- `hiringKept` at least 0.95: labelled hiring posts that come out sure hiring;
+- role facts use the listing `BARS` where labelled.
+
+The report also gives the same bars on the cases the owner reviewed alone (`ownerBars`; the rest were confirmed by Claude's pre-label and Extract agreeing), the verdict confusion and the unsure count per label. The run fails when a case fails to generate or is left unrun. It is written to `golden/posts/last-report.<generator slug>.json`. `--case <n>` (0-based, repeatable) runs only those cases into `last-report.<slug>.cases.json`, with no bars: use it while tuning, then run the full set. A full run costs about $3.
+
+`cases.json` holds the reviewed labels and is edited by hand. `processor:post-golden-import` built its first version from the sample and refuses to overwrite it without `--force`.
+
 ## The shared-tables exception
 
 Every other domain record is workspace-scoped. The processor tables (`job_extractions`, `processing_attempts`, the list tables, `cities`, `region_countries`) are shared across workspaces on purpose: they describe public postings and a public vocabulary and carry nothing about any person. A term approved once serves every workspace. Workspace scoping starts at qualify, where a workspace's profile is compared with these facts.

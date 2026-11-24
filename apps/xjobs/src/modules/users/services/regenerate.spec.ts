@@ -19,7 +19,6 @@ describe('regeneratePublished', () => {
     ] as never[];
     const result = await regeneratePublished(
       {
-        postsAllowed: () => false,
         profiles: {
           listPublished: async () => published,
           placeLabels: noLabels,
@@ -45,8 +44,7 @@ describe('regeneratePublished', () => {
       failed: 0,
       skipped: 0,
       retired: 3,
-      postsKept: 0,
-      postsDropped: 0,
+      switchesOn: { posts: 0, indeed: 0 },
     });
   });
 
@@ -72,7 +70,6 @@ describe('regeneratePublished', () => {
     const asked: unknown[] = [];
     const inputs: QuerySearchProfileInput[] = [];
     await regeneratePublished({
-      postsAllowed: () => false,
       profiles: {
         listPublished: async () => published,
         placeLabels: async (places) => {
@@ -114,7 +111,6 @@ describe('regeneratePublished', () => {
     const versions: number[] = [];
     await regeneratePublished(
       {
-        postsAllowed: () => false,
         profiles: {
           listPublished: async () => published,
           placeLabels: noLabels,
@@ -146,7 +142,6 @@ describe('regeneratePublished', () => {
       .mockImplementation(() => undefined);
     const result = await regeneratePublished(
       {
-        postsAllowed: () => false,
         profiles: {
           listPublished: async () => published,
           placeLabels: noLabels,
@@ -161,7 +156,7 @@ describe('regeneratePublished', () => {
               created: 0,
               existing: 0,
               released: 0,
-              skipped: id === 'p3' ? ('post_search_changed' as const) : null,
+              skipped: id === 'p3' ? ('switch_changed' as const) : null,
             };
           },
           retireOutdated: async () => {
@@ -182,5 +177,47 @@ describe('regeneratePublished', () => {
     });
     expect(error).toHaveBeenCalledWith('Regenerate failed profile=p2: 40001');
     error.mockRestore();
+  });
+
+  it('counts switches on per key', async () => {
+    const locations = { remote: [], hybrid: [], onsite: [] };
+    const off = { postSearch: false, indeedSearch: false };
+    const published = [
+      { id: 'p1', locations, ...off, postSearch: true },
+      { id: 'p2', locations, ...off },
+      // Skipped by the swap: not counted.
+      { id: 'p3', locations, ...off, postSearch: true },
+    ] as never[];
+    const flagsSeen: unknown[] = [];
+    const expected: unknown[] = [];
+    const result = await regeneratePublished(
+      {
+        profiles: {
+          listPublished: async () => published,
+          placeLabels: noLabels,
+        },
+        querySearch: {
+          recipesFor: (_input, flags) => {
+            flagsSeen.push(flags);
+            return [{}] as never;
+          },
+          replace: async (id, _recipes, exp) => {
+            expected.push(exp.switches);
+            return {
+              created: 0,
+              existing: 0,
+              released: 0,
+              skipped: id === 'p3' ? ('switch_changed' as const) : null,
+            };
+          },
+          retireOutdated: async () => 0,
+        },
+      },
+      () => ({}) as never,
+    );
+    expect(result.switchesOn.posts).toBe(1);
+    expect(result.switchesOn.indeed).toBe(0);
+    expect(flagsSeen[0]).toEqual({ postSearch: true, indeedSearch: false });
+    expect(expected).toEqual(flagsSeen);
   });
 });

@@ -19,14 +19,19 @@ import {
 } from 'src/common/decorators';
 import { UserGuard } from 'src/common/guards';
 import { ENGINE_KEY_AND_BEARER } from 'src/swagger/security';
+import { PostSearchResponseDto } from '../dto/post-search.dto';
 import {
-  PostSearchResponseDto,
-  SetPostSearchDto,
-} from '../dto/post-search.dto';
+  SearchSwitchResponseDto,
+  SetSearchSwitchDto,
+} from '../dto/search-switch.dto';
 import { DeleteProfileResponseDto } from '../dto/delete-profile.response.dto';
 import { PublishProfileResponseDto } from '../dto/publish-profile.response.dto';
 import { ProfilesService } from '../services/profiles.service';
-import type { PostSearchView, PublishedProfileView } from '../types';
+import type {
+  PostSearchView,
+  PublishedProfileView,
+  SearchSwitchView,
+} from '../types';
 
 @ApiTags('profiles')
 // Both headers on every route: one requirement object, so they are ANDed and
@@ -75,8 +80,38 @@ export class ProfilesController {
     return this.profiles.deletePublished(userId, profileId);
   }
 
+  @ApiSuccessResponse(SearchSwitchResponseDto, {
+    isArray: true,
+    description:
+      "The profile's search switches that are available, in registry order",
+  })
+  @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
+  @Get(':profileId/searches')
+  searchSwitches(
+    @CurrentUser() userId: string,
+    @Param('profileId', ParseUUIDPipe) profileId: string,
+  ): Promise<SearchSwitchView[]> {
+    return this.profiles.searchSwitches(userId, profileId);
+  }
+
+  @ApiSuccessResponse(SearchSwitchResponseDto, {
+    description:
+      'Turns a search switch on or off for any user; works on a published profile, attaching or detaching its searches. An unknown or unavailable key is a 404.',
+  })
+  @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
+  @Put(':profileId/searches/:key')
+  setSearchSwitch(
+    @CurrentUser() userId: string,
+    @Param('profileId', ParseUUIDPipe) profileId: string,
+    @Param('key') key: string,
+    @Body() body: SetSearchSwitchDto,
+  ): Promise<SearchSwitchView> {
+    return this.profiles.setSearchSwitch(userId, profileId, key, body.enabled);
+  }
+
   @ApiSuccessResponse(PostSearchResponseDto, {
-    description: 'The post search switch, and whether the user may turn it on',
+    description:
+      'The post search switch, and whether post search is available; slice 04b removes this route',
   })
   @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
   @Get(':profileId/post-search')
@@ -89,18 +124,14 @@ export class ProfilesController {
 
   @ApiSuccessResponse(PostSearchResponseDto, {
     description:
-      'Turns post search on or off; works on a published profile. Only allow-listed users (403 POST_SEARCH_NOT_ALLOWED).',
+      'Turns post search on or off, over the search switch path; a 404 while post search is unavailable. Slice 04b removes this route.',
   })
-  @ApiErrorResponses(
-    HttpStatus.BAD_REQUEST,
-    HttpStatus.FORBIDDEN,
-    HttpStatus.NOT_FOUND,
-  )
+  @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
   @Put(':profileId/post-search')
   setPostSearch(
     @CurrentUser() userId: string,
     @Param('profileId', ParseUUIDPipe) profileId: string,
-    @Body() body: SetPostSearchDto,
+    @Body() body: SetSearchSwitchDto,
   ): Promise<PostSearchView> {
     return this.profiles.setPostSearch(userId, profileId, body.enabled);
   }

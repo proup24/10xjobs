@@ -24,7 +24,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'fbbefdd7802eb5414e4417952f49b70cb8bf2e3ae4e71bd8caded0f2e4b96f2d'>;
+  StorageHashBase<'b5852fb88a982712de75cf95bee57f920a90aeb4f4c941188c17824f2f6ca558'>;
 export type ExecutionHash =
   ExecutionHashBase<'71a03ba0225916055a5855c4c4deaf607551051c05f9a67ec0aecfdefc43a862'>;
 export type ProfileHash =
@@ -1087,6 +1087,7 @@ export namespace Models {
     createdAt: FieldOutputTypes['public']['Profile']['createdAt'];
     engagements: FieldOutputTypes['public']['Profile']['engagements'];
     id: FieldOutputTypes['public']['Profile']['id'];
+    indeedSearch: FieldOutputTypes['public']['Profile']['indeedSearch'];
     languages: FieldOutputTypes['public']['Profile']['languages'];
     locations: FieldOutputTypes['public']['Profile']['locations'];
     matchVersion: FieldOutputTypes['public']['Profile']['matchVersion'];
@@ -4633,6 +4634,16 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/uuid';
                   readonly codecId: 'pg/uuid@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly indeedSearch: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
                   readonly many: false;
                 };
                 readonly languages: {
@@ -9223,6 +9234,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
+              readonly indeedSearch: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
               readonly languages: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
@@ -9376,6 +9391,7 @@ type ContractBase = Omit<
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly engagements: { readonly column: 'engagements' };
                 readonly id: { readonly column: 'id' };
+                readonly indeedSearch: { readonly column: 'indeedSearch' };
                 readonly languages: { readonly column: 'languages' };
                 readonly locations: { readonly column: 'locations' };
                 readonly matchVersion: { readonly column: 'matchVersion' };

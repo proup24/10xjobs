@@ -9,28 +9,18 @@
  * (incomplete, no eligibility answers) is reported and skipped; the exit code
  * is 1 if any failed. Refuses a remote database unless `XJOBS_ALLOW_REMOTE_DB=1`.
  *
- * Set `POST_SEARCH_USERS` where you run this: a draft with post search on
- * gets its post builders only when its owner is listed.
- *
  * It builds its services by hand instead of through Nest: tsx does not emit
  * decorator metadata, so Nest constructor injection cannot resolve services
  * in scripts run with it.
  */
 import { HttpException, Logger } from '@nestjs/common';
-import type { ConfigService } from '@nestjs/config';
 import { assertLocalDatabase, captureRemoteOptIn } from '@xjobs/database/env';
-import {
-  loadDatabaseEnvironment,
-  parseEnvironment,
-  postSearchEnvironmentSchema,
-  toDatabaseConfig,
-} from 'src/config';
+import { loadDatabaseEnvironment, toDatabaseConfig } from 'src/config';
 import { createDatabaseClient, type DatabaseService } from 'src/database';
 import { QuerySearchService } from 'src/modules/queries';
 import { PrismaQuerySearchRepository } from 'src/modules/queries/repositories/queries.repository';
 import { PrismaProfilesRepository } from 'src/modules/users/repositories/profiles.repository';
 import { PrismaUsersRepository } from 'src/modules/users/repositories/users.repository';
-import { PostSearchAccess } from 'src/modules/users/services/post-search-access';
 import type { StorageService } from 'src/modules/storage';
 import { ProfilesService } from 'src/modules/users/services/profiles.service';
 import { UsersService } from 'src/modules/users/services/users.service';
@@ -116,11 +106,6 @@ async function main(): Promise<void> {
   }
   const databaseEnv = loadDatabaseEnvironment();
   assertLocalDatabase({ DATABASE_URL: databaseEnv.DATABASE_URL }, optIn);
-  // loadDatabaseEnvironment has loaded the env files into process.env.
-  const { POST_SEARCH_USERS } = parseEnvironment(
-    postSearchEnvironmentSchema,
-    process.env,
-  );
   const db = createDatabaseClient(toDatabaseConfig(databaseEnv), logger);
   // The repositories only read `db` from the database service.
   const database = { db } as DatabaseService;
@@ -139,9 +124,6 @@ async function main(): Promise<void> {
       new UsersService(new PrismaUsersRepository(database)),
       profiles,
       new QuerySearchService(new PrismaQuerySearchRepository(database)),
-      new PostSearchAccess({
-        get: () => POST_SEARCH_USERS,
-      } as unknown as ConfigService<{ POST_SEARCH_USERS?: string[] }, true>),
       unusedStorage,
     );
     const { published, failed, outcomes } = await publishDrafts(

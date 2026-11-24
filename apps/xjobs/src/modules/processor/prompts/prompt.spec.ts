@@ -122,6 +122,24 @@ describe('postSystemPrompt', () => {
       expect(head).toContain(`\`${code}\``);
   });
 
+  it('states the owner junk signs and when a relayed role is sure hiring', () => {
+    const head = text.slice(0, text.length - SYSTEM_PROMPT.length);
+    for (const sign of [
+      'job-hunting group',
+      'personal mailbox',
+      'Hashtags alone',
+      'bare titles',
+      'relays one employer',
+      'hundreds of openings',
+      'not a personal mailbox',
+      'list of titles at one named employer',
+      'not a funnel',
+      'Never record a sure `junk`',
+    ])
+      expect(head).toContain(sign);
+    expect(head).not.toMatch(/[\w.+-]+@[\w-]+\.\w+/);
+  });
+
   it('names the fields the model fills for a post', () => {
     const head = text.slice(0, text.length - SYSTEM_PROMPT.length);
     for (const name of [

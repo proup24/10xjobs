@@ -240,6 +240,8 @@ model Profile {
   publishedAt        TimestamptzJsDate(3)?
   // LinkedIn post search; only the engine writes it (no column grant).
   postSearch         Boolean               @default(false)
+  // Indeed search; only the engine writes it (no column grant).
+  indeedSearch       Boolean               @default(false)
   // Bumped by the bump_profile_match_version trigger on every change the matcher reads (not the
   // resume columns or the engine's own bookkeeping); job_matches.profileVersion records it.
   matchVersion       Int                   @default(0)

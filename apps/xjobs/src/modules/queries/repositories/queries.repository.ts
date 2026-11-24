@@ -59,9 +59,9 @@ export abstract class QuerySearchRepository {
    * Swaps the profile's builders for those of `recipes` in one transaction:
    * links the wanted ones, unlinks the rest (a builder the profile keeps is
    * never unlinked), then records `searchesVersion` on the published profile.
-   * Skipped, with nothing changed, when the profile is not published or its
-   * post search switch is no longer `expected.postSearch`: the recipes were
-   * built from an older read, and the caller retries with a fresh one.
+   * Skipped, with nothing changed, when the profile is not published or any
+   * of its search switches is no longer as in `expected.switches`: the recipes
+   * were built from an older read, and the caller retries with a fresh one.
    */
   abstract replace(
     profileId: string,
@@ -286,12 +286,15 @@ export class PrismaQuerySearchRepository extends QuerySearchRepository {
           .affectedCount()
           .build(),
       );
-      // The switch path writes the flag before it attaches or detaches post
-      // builders: a flag that moved since the caller's read means its recipes
-      // are stale, so change nothing. A cheap short-cut; the final write below
-      // is the check that counts.
-      if (profile.postSearch !== expected.postSearch)
-        return { ...nothing, skipped: 'post_search_changed' };
+      // The switch path writes a flag before it attaches or detaches that
+      // switch's builders: any flag that moved since the caller's read means
+      // its recipes are stale, so change nothing. A cheap short-cut; the final
+      // write below is the check that counts.
+      if (
+        profile.postSearch !== expected.switches.postSearch ||
+        profile.indeedSearch !== expected.switches.indeedSearch
+      )
+        return { ...nothing, skipped: 'switch_changed' };
       const attached = await PrismaQuerySearchRepository.attachIn(
         tx,
         profileId,
@@ -303,20 +306,21 @@ export class PrismaQuerySearchRepository extends QuerySearchRepository {
         wanted,
       );
       // KEY SHARE lets edits land during the swap, so the version is written
-      // only while the profile still has the `expected` flag; otherwise the
+      // only while the profile still has every `expected` flag; otherwise the
       // whole swap rolls back and the next tick retries with fresh recipes.
-      // This UPDATE then holds the row until commit, so a switch writing the
-      // flag after it waits, and attaches or detaches post builders after the
-      // swap: the race stays closed both ways.
+      // This UPDATE then holds the row until commit, so a switch writing its
+      // flag after it waits, and attaches or detaches its builders after the
+      // swap: the race stays closed both ways. Every switch column of
+      // `SEARCH_SWITCHES` is compared here and in the short-cut above.
       const { affectedRows } = await tx.execute(
         tx.raw
-          .sql`UPDATE profiles SET "searchesVersion" = ${expected.searchesVersion} WHERE id = ${profileId}::uuid AND state = 'published' AND "postSearch" = ${expected.postSearch}`
+          .sql`UPDATE profiles SET "searchesVersion" = ${expected.searchesVersion} WHERE id = ${profileId}::uuid AND state = 'published' AND "postSearch" = ${expected.switches.postSearch} AND "indeedSearch" = ${expected.switches.indeedSearch}`
           .affectedCount()
           .build(),
       );
-      // Only the flag can make this 0: users cannot write `state`, nothing in
+      // Only a flag can make this 0: users cannot write `state`, nothing in
       // the engine unpublishes, and KEY SHARE holds off a DELETE.
-      if (affectedRows === 0) throw new SwapSkipped('post_search_changed');
+      if (affectedRows === 0) throw new SwapSkipped('switch_changed');
       return { ...attached, released, skipped: null };
     }).catch((error: unknown) => {
       // The sentinel has no SQLSTATE, so `transaction` never retries it.

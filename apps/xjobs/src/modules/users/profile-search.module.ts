@@ -1,10 +1,13 @@
 import { Module } from '@nestjs/common';
-import { QuerySearchModule } from 'src/modules/queries';
+import {
+  QuerySearchModule,
+  SEARCH_SWITCHES,
+  SEARCH_SWITCHES_TOKEN,
+} from 'src/modules/queries';
 import {
   PrismaProfilesRepository,
   ProfilesRepository,
 } from './repositories/profiles.repository';
-import { PostSearchAccess } from './services/post-search-access';
 import { ProfileSearchSync } from './services/profile-search-sync';
 
 /**
@@ -14,10 +17,10 @@ import { ProfileSearchSync } from './services/profile-search-sync';
 @Module({
   imports: [QuerySearchModule],
   providers: [
-    PostSearchAccess,
+    { provide: SEARCH_SWITCHES_TOKEN, useValue: SEARCH_SWITCHES },
     ProfileSearchSync,
     { provide: ProfilesRepository, useClass: PrismaProfilesRepository },
   ],
-  exports: [ProfileSearchSync, ProfilesRepository, PostSearchAccess],
+  exports: [ProfileSearchSync, ProfilesRepository, SEARCH_SWITCHES_TOKEN],
 })
 export class ProfileSearchModule {}

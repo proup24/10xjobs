@@ -27,18 +27,18 @@ Precision over volume: prefer a tailored application over a fast one.
 - `npx nx worker-processor xjobs`: run the processor worker alone (needs `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY`).
 - `npx nx worker-match xjobs`: run the match worker alone.
 - `npx nx worker-webhook xjobs`: run the webhook worker alone (sends the users' match webhooks; registers its sweep only with `XJOBS_RUN_SCHEDULES=1`, set on the hosted engine).
-- `npx nx worker-<channel> xjobs` (`linkedin-job-board`, `linkedin-job-board-cheap`, `linkedin-job-board-bebity`, `linkedin-posts`, `greenhouse`, `ashby`): run one channel's scheduled collection worker (registers schedules only with `XJOBS_RUN_SCHEDULES=1`, set on the hosted engine; `linkedin-job-board-cheap` and `linkedin-job-board-bebity` are trials that also need their channel in `COLLECTION_TRIAL_CHANNELS`; `linkedin-posts` runs hourly, every day, and needs a published profile with post search on whose owner is in `POST_SEARCH_USERS`).
+- `npx nx worker-<channel> xjobs` (`linkedin-job-board`, `linkedin-job-board-cheap`, `linkedin-job-board-bebity`, `linkedin-posts`, `greenhouse`, `ashby`): run one channel's scheduled collection worker (registers schedules only with `XJOBS_RUN_SCHEDULES=1`, set on the hosted engine; `linkedin-job-board-cheap` and `linkedin-job-board-bebity` are trials that also need their channel in `COLLECTION_TRIAL_CHANNELS`; `linkedin-posts` runs hourly, every day, and needs a published profile with post search on).
 - `npx nx run-many -t lint test build typecheck`: what CI runs.
 - `npx nx test xjobs`: unit tests for the engine.
 - `npx nx e2e xjobs-e2e`: e2e tests.
 - `pnpm db:migrate`: apply migrations (local only unless `XJOBS_ALLOW_REMOTE_DB=1`).
 - `pnpm db:seed`: seed the database (same guard).
 - `pnpm users link <email>`: print a sign-in link without sending email.
-- `pnpm --filter @xjobs/xjobs db:regenerate`: move published profiles to the current query recipe; run once after a recipe version bump; needs `POST_SEARCH_USERS` set where you run it, or switched-on profiles lose their post builders.
+- `pnpm --filter @xjobs/xjobs db:regenerate`: move published profiles to the current query recipe; run once after a recipe version bump.
 - `pnpm --filter @xjobs/xjobs db:renormalize`: rebuild normalized jobs from raw storage; run once after a `NORMALIZER_VERSION` bump.
 - `pnpm --filter @xjobs/xjobs db:reprocess -- <flags>`: send in-scope jobs back to the processor (`--null-status`, `--failed`, `--all-in-scope`, `--job <id>`); run after a prompt, schema or model change.
 - `pnpm --filter @xjobs/xjobs db:archive-actor -- --actor <name> [--dry-run]`: archive every job seen only in that Apify actor's batches and delete their matches (one transaction; run `--dry-run` first; remote needs `XJOBS_ALLOW_REMOTE_DB=1`). Nothing un-archives a job except a new ingest observation.
-- `pnpm --filter @xjobs/xjobs db:publish-drafts -- [--dry-run]`: publish every draft that has a resume (one-off for profiles made before publish-on-finish; remote needs `XJOBS_ALLOW_REMOTE_DB=1`; needs `POST_SEARCH_USERS` set where you run it, or switched-on profiles get no post builders).
+- `pnpm --filter @xjobs/xjobs db:publish-drafts -- [--dry-run]`: publish every draft that has a resume (one-off for profiles made before publish-on-finish; remote needs `XJOBS_ALLOW_REMOTE_DB=1`).
 - `pnpm --filter @xjobs/xjobs db:rematch -- --all | --job <id>`: re-decide jobs after a rule change; bump `MATCHER_VERSION` first so the sweep also picks them up.
 - `pnpm --filter @xjobs/xjobs db:analyze`: read-only report on match and processor quality (check patterns, dropped facts, vocabulary gaps, processing errors).
 - `pnpm --filter @xjobs/xjobs db:vocab -- <list> list|approve|reject|alias`: review terms the processor proposed (`cities` by id).
@@ -50,7 +50,7 @@ Precision over volume: prefer a tailored application over a fast one.
 - `pnpm --filter @xjobs/xjobs db:split-check -- [--group <key>] [--dry-run]`: PAID, maintainer-only one-off check that halving a LinkedIn search group keeps at least 95% of the merged search's jobs (three harvestapi runs of at most 150 rows over 24 hours, at most $0.48 reserved). Run `--dry-run` first: it prints the group, the three keywords and the reserved spend without any Apify call.
 - `pnpm --filter @xjobs/xjobs db:indeed-sample -- --profile <id> [--dry-run | --from <folder>]`: PAID, maintainer-only one-off Phase 5 slice 01 sample of four Indeed actors (27 runs, at most $1.50 reserved; the cap is per invocation; a rerun pays again), with harvestapi's dev baseline; raw items saved under `tmp/indeed-sample/`. Run `--dry-run` first; `--from` rebuilds the report from a saved folder without Apify; remote needs `XJOBS_ALLOW_REMOTE_DB=1`.
 - `pnpm --filter @xjobs/xjobs db:post-sample -- --size <n> [--days <n>] --out <path>`: read-only export of a random sample of LinkedIn post items (`--days` keeps those last seen within n days) as `{ rawItemId, payload, label: null }[]` JSON, for labelling the post drop rules; refuses a remote database without `XJOBS_ALLOW_REMOTE_DB=1`.
-- `pnpm --filter @xjobs/xjobs processor:eval`: run the processor against the golden set.
+- `pnpm --filter @xjobs/xjobs processor:eval -- [--posts [--case <n> ...]] [--generator <model>]`: run the processor against the golden set (`--posts`: the LinkedIn post set and its sending bars, about $3; `--case` runs only those posts, with no bars).
 - `npm run test:hooks`: tests for the `.claude/hooks` scripts.
 
 ## Conventions

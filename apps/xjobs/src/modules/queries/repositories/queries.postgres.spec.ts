@@ -211,7 +211,7 @@ describe.skipIf(!url)('query search repository in PostgreSQL', () => {
 
     const result = await repo.replace(id, [b, c], {
       searchesVersion: 3,
-      postSearch: false,
+      switches: { postSearch: false, indeedSearch: false },
     });
 
     expect(result).toEqual({
@@ -241,7 +241,10 @@ describe.skipIf(!url)('query search repository in PostgreSQL', () => {
     await draftOf(id);
 
     expect(
-      await repo.replace(id, [a], { searchesVersion: 5, postSearch: false }),
+      await repo.replace(id, [a], {
+        searchesVersion: 5,
+        switches: { postSearch: false, indeedSearch: false },
+      }),
     ).toEqual({
       created: 0,
       existing: 0,
@@ -264,7 +267,7 @@ describe.skipIf(!url)('query search repository in PostgreSQL', () => {
     const id = await profile();
     await repo.replace(id, [ashby('emea')], {
       searchesVersion: 7,
-      postSearch: false,
+      switches: { postSearch: false, indeedSearch: false },
     });
     expect(
       (await db.orm.public.Profile.where({ id }).first())!.searchesVersion,
@@ -279,7 +282,7 @@ describe.skipIf(!url)('query search repository in PostgreSQL', () => {
 
     const result = await repo.replace(id, [a, b], {
       searchesVersion: 2,
-      postSearch: false,
+      switches: { postSearch: false, indeedSearch: false },
     });
 
     expect(result.released).toBe(0);
@@ -306,12 +309,15 @@ describe.skipIf(!url)('query search repository in PostgreSQL', () => {
     );
 
     expect(
-      await repo.replace(id, [b], { searchesVersion: 4, postSearch: false }),
+      await repo.replace(id, [b], {
+        searchesVersion: 4,
+        switches: { postSearch: false, indeedSearch: false },
+      }),
     ).toEqual({
       created: 0,
       existing: 0,
       released: 0,
-      skipped: 'post_search_changed',
+      skipped: 'switch_changed',
     });
 
     expect(await builderOf(b)).toBeNull();
@@ -328,6 +334,79 @@ describe.skipIf(!url)('query search repository in PostgreSQL', () => {
     expect(
       (await db.orm.public.Profile.where({ id }).first())!.searchesVersion,
     ).toBeNull();
+  });
+
+  it('skips when indeedSearch moved since the read', async () => {
+    const id = await profile();
+    const [a, b] = [ashby('emea'), ashby('paris')];
+    await repo.attach(id, [a]);
+    // Read with both switches off; Indeed was turned on before the swap.
+    await db.execute(
+      db.raw
+        .sql`UPDATE profiles SET "indeedSearch" = true WHERE id = ${id}::uuid`
+        .affectedCount()
+        .build(),
+    );
+
+    expect(
+      await repo.replace(id, [b], {
+        searchesVersion: 4,
+        switches: { postSearch: false, indeedSearch: false },
+      }),
+    ).toEqual({
+      created: 0,
+      existing: 0,
+      released: 0,
+      skipped: 'switch_changed',
+    });
+
+    expect(await builderOf(b)).toBeNull();
+    const links = await db.orm.public.ProfileQuerySearchBuilder.where({
+      profileId: id,
+    }).all();
+    expect(links.map((link) => link.queryId)).toEqual([
+      (await builderOf(a))!.id,
+    ]);
+    expect(
+      (await db.orm.public.Profile.where({ id }).first())!.searchesVersion,
+    ).toBeNull();
+  });
+
+  it('an indeedSearch change during a swap rolls the swap back', async () => {
+    const id = await profile();
+    const [a, b] = [ashby('emea'), ashby('paris')];
+    await repo.attach(id, [a]);
+    const suffix = id.replaceAll('-', '');
+    const fn = `test_flip_indeed_search_${suffix}`;
+    const trigger = `test_flip_indeed_search_${suffix}`;
+    // The switch flips the flag inside the swap, after its early check.
+    await ddl(`CREATE FUNCTION ${fn}() RETURNS trigger LANGUAGE plpgsql AS $$
+      BEGIN
+        IF NEW."profileId" = '${id}'::uuid THEN
+          UPDATE profiles SET "indeedSearch" = NOT "indeedSearch" WHERE id = NEW."profileId";
+        END IF;
+        RETURN NEW;
+      END $$`);
+    try {
+      await ddl(
+        `CREATE TRIGGER ${trigger} AFTER INSERT ON profile_query_search_builders FOR EACH ROW EXECUTE FUNCTION ${fn}()`,
+      );
+      expect(
+        await repo.replace(id, [b], {
+          searchesVersion: 4,
+          switches: { postSearch: false, indeedSearch: false },
+        }),
+      ).toMatchObject({ skipped: 'switch_changed' });
+    } finally {
+      await ddl(
+        `DROP TRIGGER IF EXISTS ${trigger} ON profile_query_search_builders`,
+      );
+      await ddl(`DROP FUNCTION IF EXISTS ${fn}()`);
+    }
+    expect(await builderOf(b)).toBeNull();
+    const row = (await db.orm.public.Profile.where({ id }).first())!;
+    expect(row.searchesVersion).toBeNull();
+    expect(row.indeedSearch).toBe(false);
   });
 
   it('a running swap does not block an edit of the profile', async () => {
@@ -399,12 +478,15 @@ describe.skipIf(!url)('query search repository in PostgreSQL', () => {
       );
 
       expect(
-        await repo.replace(id, [b], { searchesVersion: 4, postSearch: false }),
+        await repo.replace(id, [b], {
+          searchesVersion: 4,
+          switches: { postSearch: false, indeedSearch: false },
+        }),
       ).toEqual({
         created: 0,
         existing: 0,
         released: 0,
-        skipped: 'post_search_changed',
+        skipped: 'switch_changed',
       });
     } finally {
       await ddl(
@@ -446,11 +528,11 @@ describe.skipIf(!url)('query search repository in PostgreSQL', () => {
       await Promise.all([
         repo.replace(id, round % 2 ? second : first, {
           searchesVersion: round,
-          postSearch: false,
+          switches: { postSearch: false, indeedSearch: false },
         }),
         other.replace(id, round % 2 ? first : second, {
           searchesVersion: round,
-          postSearch: false,
+          switches: { postSearch: false, indeedSearch: false },
         }),
       ]);
 

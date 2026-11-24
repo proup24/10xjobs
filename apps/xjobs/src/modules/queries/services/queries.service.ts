@@ -3,9 +3,13 @@ import type { Channel } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
 import { QUERY_SEARCH_RECIPE_VERSION, toRecipe } from '../builders';
 import { roleWords } from '../builders/role-words';
-import { postRecipes } from '../posts';
 import { technologySets } from '../sets/technology';
 import { QuerySearchRepository } from '../repositories/queries.repository';
+import {
+  switchesInEffect,
+  type SearchSwitch,
+  type SwitchFlags,
+} from '../switches';
 import {
   assertHasLocations,
   assertHasSeniorities,
@@ -50,19 +54,25 @@ export class QuerySearchService {
   generate(
     profileId: string,
     input: QuerySearchProfileInput,
-    options?: { posts: boolean },
+    flags?: SwitchFlags,
   ): Promise<QuerySearchAttachResult> {
-    return this.builders.attach(profileId, this.recipesFor(input, options));
+    return this.builders.attach(profileId, this.recipesFor(input, flags));
   }
 
-  /** Every recipe a profile's searches consist of: its board recipes, plus post searches when `posts` is on. */
+  /**
+   * Every recipe a profile's searches consist of: its board recipes, then the
+   * recipes of each switch in effect, in registry order. No flags means board
+   * recipes only.
+   */
   recipesFor(
     input: QuerySearchProfileInput,
-    options?: { posts: boolean },
+    flags?: SwitchFlags,
   ): QuerySearchRecipe[] {
     return [
       ...this.expand(input),
-      ...(options?.posts ? postRecipes(input) : []),
+      ...(flags
+        ? switchesInEffect(flags).flatMap((sw) => sw.recipes(input))
+        : []),
     ];
   }
 
@@ -83,12 +93,13 @@ export class QuerySearchService {
     return this.builders.releaseAndDelete(profileId);
   }
 
-  /** Attaches only the profile's LinkedIn post searches (the profile's post switch turned on). */
-  attachPosts(
+  /** Attaches only the recipes of one switch (that switch turned on). */
+  attachSwitch(
     profileId: string,
+    sw: SearchSwitch,
     input: QuerySearchProfileInput,
   ): Promise<QuerySearchAttachResult> {
-    return this.builders.attach(profileId, postRecipes(input));
+    return this.builders.attach(profileId, sw.recipes(input));
   }
 
   /** Releases the profile's builders of one channel; other channels stay attached. */
