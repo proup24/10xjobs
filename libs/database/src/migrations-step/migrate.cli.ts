@@ -60,7 +60,10 @@ const deps: RunDeps = {
         env: { ...process.env, NODE_OPTIONS: '--max-old-space-size=2048' },
       });
       child.on('error', reject);
-      child.on('close', (code) => resolve(code ?? 1));
+      child.on('close', (code) => {
+        child = null;
+        resolve(code ?? 1);
+      });
     });
   },
   log: (message) => console.log(message),
@@ -69,9 +72,15 @@ const deps: RunDeps = {
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.on(signal, () => {
-    child?.kill(signal);
-    for (const name of [...written]) deps.removeRef(name);
-    process.exit(130);
+    const finish = () => {
+      for (const name of [...written]) deps.removeRef(name);
+      process.exit(130);
+    };
+    if (!child) return finish();
+    // Wait for Prisma to stop before deleting its step ref and returning.
+    child.once('close', finish);
+    setTimeout(finish, 10_000).unref();
+    child.kill(signal);
   });
 }
 
