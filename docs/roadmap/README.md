@@ -88,3 +88,9 @@ How much a human reviews before anything is sent is decided in this phase's spec
 Report what's new and how the pipeline is performing: volume and pass rates per stage and per source, plus application outcomes.
 
 Jobs can already be marked applied, not for me or expired ([job decisions](../superpowers/specs/2026-11-16-job-decisions-design.md)).
+
+## Platform
+
+Work no phase owns but every phase depends on: the database toolchain, CI and deploys. It runs alongside the phases, each slice briefed, brainstormed and specced on its own.
+
+**Slices:** [platform/](platform/README.md)
