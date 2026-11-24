@@ -10,9 +10,11 @@ Any user can turn Indeed on or off for each profile from preferences. Turning it
 
 Every later slice builds searches only for profiles with Indeed on, so the switch decides who pays for collection.
 
-The switch is visible to every user from the start, unlike Phase 4's post search, which kept its allow-list until 04b _(user: no allow-list env var)_. While only invited users exist, they share Indeed's one daily cap; the slice 06 report counts applied jobs per user, so the owner's numbers stay readable _(my call)_.
+The switch is visible to every user from the start (the spec later hides it until slice 03 makes Indeed available), unlike Phase 4's post search, which kept its allow-list until 04b _(user: no allow-list env var)_. While only invited users exist, they share Indeed's one daily cap; the slice 06 report counts applied jobs per user, so the owner's numbers stay readable _(my call)_.
 
 ## What exists
+
+_Written before the spec; the spec supersedes it: the shared switch is built, hidden until slice 03, and the allow-list is removed._
 
 - Phase 4's post search switch: `profiles.postSearch` (engine-written, no user column grant), `GET`/`PUT /api/profiles/:profileId/post-search`, builder attach and detach in `users/services/profile-search-sync.ts`, the switch component `apps/web/src/components/preferences/post-search-switch.tsx`.
 - Its allow-list `POST_SEARCH_USERS` and `post-search-access.ts`: **not** copied here.
@@ -20,7 +22,7 @@ The switch is visible to every user from the start, unlike Phase 4's post search
 
 ## In scope
 
-- **A shared per-profile channel switch** _(user: Phases 4 and 5 run alongside each other)_: one component, one endpoint shape and one attach/detach path for post search, Indeed and later channels. Phase 4's slice 04b reuses it to drop `POST_SEARCH_USERS`; if 04b lands first, this slice adopts its version instead.
+- **A shared per-profile channel switch** _(user: Phases 4 and 5 run alongside each other)_: one component, one endpoint shape and one attach/detach path for post search, Indeed and later channels. Slice 02 built it and dropped `POST_SEARCH_USERS`; Phase 4's slice 04b only sets the posts switch's `available`.
 - A per-profile flag, off by default _(my proposal)_, and the engine endpoints to read and set it.
 - The switch in preferences, following `apps/web/DESIGN.md`, with copy saying what it does (searches Indeed for this profile's stack in its named countries and in the main remote markets).
 - Attaching and detaching Indeed builders, and keeping them through `db:regenerate` and publish.

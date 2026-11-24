@@ -8,11 +8,11 @@ Any user can turn post search on for their profiles from their preferences, and 
 
 Until slice 04, collected posts are stored raw and never matched, and until slice 04a there is no page to see post matches on, so turning post search on gives a user nothing back while it costs credit. Slices 01 to 04a run on the owner's profile only, which also measures the cost per profile before the switch opens.
 
-## What already exists (on `main`, from slice 01)
+## What already exists (on `main`, from slice 01; the allow-list was removed in Phase 5 slice 02)
 
 - `profiles.postSearch`, off by default, written only by the engine (no user column grant).
 - `GET`/`PUT /api/profiles/:profileId/post-search`, which attach or detach the profile's post builders.
-- `POST_SEARCH_USERS`, the allow-list: only listed users can turn the switch on (403 otherwise), see it in the web app, or keep post builders through `db:regenerate`.
+- `POST_SEARCH_USERS`, the allow-list (removed in Phase 5 slice 02): only listed users can turn the switch on (403 otherwise), see it in the web app, or keep post builders through `db:regenerate`.
 - The switch on the profile page (`apps/web/src/components/preferences/post-search-switch.tsx`), shown only to listed users.
 - One daily budget for the posts channel, `COLLECTION_DAILY_BUDGET_USD_LINKEDIN_POSTS` (default $1.50). Segments run in sorted key order each tick, so when the budget runs out, the keys that sort last are skipped (the known limit in the slice 01 spec).
 
