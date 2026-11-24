@@ -19,20 +19,21 @@ Same as Phases 1 and 2: each slice is a short brief covering the problem, the op
 
 ## Slices
 
-| #   | Slice                                                                          | Area    | Status                                    |
-| --- | ------------------------------------------------------------------------------ | ------- | ----------------------------------------- |
-| 01  | [LinkedIn source data](01-linkedin-source-data.md)                             | Harvest | Done (PR 52)                              |
-| 02  | [Listing facts](02-listing-facts.md)                                           | Enrich  | Done (PRs 53–60)                          |
-| 02b | [Models on Claude](02b-claude-models.md) (interim)                             | Enrich  | Done (PRs 62–65)                          |
-| 03  | [Processor quality](03-processor-quality.md)                                   | Enrich  | Next; brief revised 2026-11-17            |
-| 04  | [Search precision](04-search-precision.md)                                     | Harvest | Done (PRs 66–70)                          |
-| 05  | [Posting language for close languages](05-posting-language-close-languages.md) | Enrich  | Done (PR 84)                              |
-| 06  | [One job per apply link](06-one-job-per-apply-link.md)                         | Harvest | Done (PR 86)                              |
-| 07  | [Trial LinkedIn actors](07-trial-linkedin-actors.md)                           | Harvest | Designed; plan next                       |
-| 08  | [Seniority to LinkedIn level, and paid repeats](08-seniority-levels.md)        | Harvest | Done (PR 99); rollout checks in 11        |
-| 09  | [Non-remote jobs from remote searches](09-non-remote-leak.md)                  | Match   | Done (PRs 101, 103, 105, 106)             |
-| 10  | [Search yield](10-search-yield.md)                                             | Harvest | Findings; not yet discussed               |
-| 11  | [Monday checks](11-monday-checks.md)                                           | Ops     | 2026-11-23; open for other slices' checks |
+| #   | Slice                                                                          | Area    | Status                                                           |
+| --- | ------------------------------------------------------------------------------ | ------- | ---------------------------------------------------------------- |
+| 01  | [LinkedIn source data](01-linkedin-source-data.md)                             | Harvest | Done (PR 52)                                                     |
+| 02  | [Listing facts](02-listing-facts.md)                                           | Enrich  | Done (PRs 53–60)                                                 |
+| 02b | [Models on Claude](02b-claude-models.md) (interim)                             | Enrich  | Done (PRs 62–65)                                                 |
+| 03  | [Processor quality](03-processor-quality.md)                                   | Enrich  | Next; brief revised 2026-11-17                                   |
+| 04  | [Search precision](04-search-precision.md)                                     | Harvest | Done (PRs 66–70)                                                 |
+| 05  | [Posting language for close languages](05-posting-language-close-languages.md) | Enrich  | Done (PR 84)                                                     |
+| 06  | [One job per apply link](06-one-job-per-apply-link.md)                         | Harvest | Done (PR 86)                                                     |
+| 07  | [Trial LinkedIn actors](07-trial-linkedin-actors.md)                           | Harvest | Designed; plan next                                              |
+| 08  | [Seniority to LinkedIn level, and paid repeats](08-seniority-levels.md)        | Harvest | Done (PRs 99, 125); split-check later in the week                |
+| 09  | [Non-remote jobs from remote searches](09-non-remote-leak.md)                  | Match   | Done (PRs 101, 103, 105, 106); checks 2026-11-24: 3 open, see 11 |
+| 10  | [Search yield](10-search-yield.md)                                             | Harvest | Findings; not yet discussed                                      |
+| 11  | [Monday checks](11-monday-checks.md)                                           | Ops     | Checks run 2026-11-24; 3 open (slice 09)                         |
+| 12  | [Activity signals for paused searches](12-activity-signals.md)                 | Harvest | Found 2026-11-24; brainstorm next                                |
 
 ## Follow-ups from slice 02
 
