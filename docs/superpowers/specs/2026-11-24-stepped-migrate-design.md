@@ -14,6 +14,7 @@ Platform slice 01 (`docs/roadmap/platform/01-migration-squash.md`). Brainstormed
 - The graph is close to linear. There are 64 migration folders, the first with `from: null`. One node has a second hash-changing out-edge, `20261107T1539_verification_steps_requirement_tags` (`1cfd25…` → `f0cc0f…`). It is a dead end that no route uses, which is why dev's `prisma_contract.ledger` has 63 `app` rows, not 64. The route to `db` is unique.
 - The busiest node (`692de7…`) gets 4 invariants from its loop migrations, and the largest single edge (`20261121T1131_profile_edits`) provides 5.
 - **Not yet run end to end:** the stepping rests on reading the planner. Nobody has yet migrated a fresh database to an intermediate ref and then to `db`. The first build task proves it (see Proof it's safe).
+- **Gate passed 2026-11-24:** two hand-written step refs migrated a fresh database, at 332/318 MB peak; the marker held each step's hash and invariants.
 
 ## Goals
 
