@@ -48,7 +48,7 @@ Run after the first 2 to 3 ticks, then again at the end of the day.
 **Result, 2026-11-24: passed.**
 
 - **Searches:** 0 old-recipe builders.
-- **One run per chunk:** passed. Each tick ran 19 runs over 9 `segmentKey` groups, every (`segmentKey`, `segmentHash`) unique, and each of the 63 searches ran once (63 queries in 63 slots; 27 in 27 after pausing). No repeats.
+- **One run per chunk:** passed. Each tick ran 19 runs over 9 `segmentKey` groups, every (`segmentKey`, `segmentHash`) unique, and each of the 63 searches ran once (63 queries in 63 slots; 27 in 27 after pausing). No repeated runs.
 - **Full at 1,000 rows, capped, missing costs, failed:** since 11-23 15:00, 167 runs, none full, none capped, none with a missing cost after an hour, none failed. The largest run fetched 225 rows.
 - **Splits:** `linkedin_search_splits` is empty. No run came near 1,000 rows, so none was needed.
 - **Spend:** $0.75 to $0.90 a tick on the new code, about $0.00103 per billed row, against $1.92 at 10:00 on 11-23. Each search runs once per tick (63 searches in 63 slots), so the remaining 30 to 39% repeat share is rows found by more than one search in the same tick (see PR 125 below).
@@ -287,7 +287,7 @@ Merged 2026-11-16. The processor sometimes returned two requirements for the sam
 | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------- |
 | **Duplicate failures.** Processing attempts per day that failed with "appears twice" or "same technology". | Far below the 42 of 11-16, and every one recovered on retry. | Read the failing jobs. A new pattern needs a prompt or schema change. |
 
-**Result, 2026-11-24: passed.** Failures per day: 11-16 42, 11-17 4, 11-18 3, 11-19 4, 11-20 1, 11-23 8, 11-24 2 (of 2,185 and 1,776 attempts). All 10 since 11-21 are two-place duplicates, one in a group and one on its own (Vue and Vue 3, Apex and Salesforce platform three times, Power Platform and Copilot Studio, React and Remix, Elixir and Elixir-Phoenix). Since 11-17 there were 22 failed attempts on 19 distinct extractions. All 19 extractions succeeded on a later attempt (17 on the 2nd, 2 on the 3rd) and are now processed with no error, at about $0.04 per attempt. The owner decided not to merge two-place duplicates. If it recurs, widen the vocabulary with `db:vocab` (Copilot Studio and Power Automate to `power_platform`, Remix to `react`).
+**Result, 2026-11-24: passed.** Failures per day: 11-16 42, 11-17 4, 11-18 3, 11-19 4, 11-20 1, 11-23 8, 11-24 2 (of 2,185 and 1,776 attempts). All 10 since 11-21 are two-place duplicates, one in a group and one on its own (Vue and Vue 3, Apex and Salesforce platform three times, Power Platform and Copilot Studio, React and Remix, Elixir and Elixir-Phoenix). Since 11-17 there were 22 failed attempts on 19 distinct extractions. All 19 extractions succeeded on a later attempt and are now processed with no error, at about $0.04 per attempt. The owner decided not to merge two-place duplicates. If it recurs, widen the vocabulary with `db:vocab` (Copilot Studio and Power Automate to `power_platform`, Remix to `react`).
 
 ## Left out
 
