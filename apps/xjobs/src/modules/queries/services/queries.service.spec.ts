@@ -11,6 +11,9 @@ import type { QuerySearchProfileInput, QuerySearchRecipe } from '../types';
 import { FakeQuerySearchRepository } from '../testing/fakes';
 import { MOCK_PROFILES } from '../testing/profiles.fixture';
 import { QuerySearchService } from './queries.service';
+import { SEARCH_SWITCHES } from '../switches';
+
+const postsSwitch = SEARCH_SWITCHES.find((sw) => sw.key === 'posts')!;
 
 // These specs cover every channel's builder, inactive ones included.
 vi.mock('src/common/enums', async (importOriginal) =>
@@ -312,8 +315,14 @@ describe('QuerySearchService', () => {
   describe('replace and releaseAndDelete', () => {
     it('recipesFor is what generate attaches', async () => {
       const { service, repository, profileId } = await setup();
-      const recipes = service.recipesFor(profile, { posts: true });
-      await service.generate(profileId, profile, { posts: true });
+      const recipes = service.recipesFor(profile, {
+        postSearch: true,
+        indeedSearch: false,
+      });
+      await service.generate(profileId, profile, {
+        postSearch: true,
+        indeedSearch: false,
+      });
       expect(new Set(hashes(recipes))).toEqual(
         new Set(repository.rows.map((row) => row.hash)),
       );
@@ -326,7 +335,7 @@ describe('QuerySearchService', () => {
       await service.generate(profileId, profile);
       const result = await service.replace(profileId, all.slice(0, 5), {
         searchesVersion: 4,
-        postSearch: false,
+        switches: { postSearch: false, indeedSearch: false },
       });
       expect(result.released).toBe(all.length - 5);
       expect(repository.links).toHaveLength(5);
@@ -338,7 +347,10 @@ describe('QuerySearchService', () => {
       const result = await service.replace(
         profileId,
         service.recipesFor(profile),
-        { searchesVersion: 4, postSearch: false },
+        {
+          searchesVersion: 4,
+          switches: { postSearch: false, indeedSearch: false },
+        },
       );
       expect(result).toEqual({
         created: 0,
@@ -351,17 +363,20 @@ describe('QuerySearchService', () => {
       expect(repository.searchesVersions.has(profileId)).toBe(false);
     });
 
-    it('replace changes nothing when post search moved since the read', async () => {
+    it('replace changes nothing when a switch moved since the read', async () => {
       const { service, repository, profileId } = await setup();
       repository.published.add(profileId);
-      repository.postSearch.set(profileId, true);
+      repository.switches.set(profileId, {
+        postSearch: true,
+        indeedSearch: false,
+      });
       await service.generate(profileId, profile);
       const links = repository.links.length;
       const result = await service.replace(profileId, [], {
         searchesVersion: 4,
-        postSearch: false,
+        switches: { postSearch: false, indeedSearch: false },
       });
-      expect(result.skipped).toBe('post_search_changed');
+      expect(result.skipped).toBe('switch_changed');
       expect(repository.links).toHaveLength(links);
       expect(repository.searchesVersions.has(profileId)).toBe(false);
     });
@@ -377,8 +392,59 @@ describe('QuerySearchService', () => {
     });
   });
 
+  describe('switches', () => {
+    it('recipesFor adds post recipes when postSearch is on', () => {
+      const service = new QuerySearchService(new FakeQuerySearchRepository());
+      const board = service.recipesFor(profile, {
+        postSearch: false,
+        indeedSearch: false,
+      });
+      const withPosts = service.recipesFor(profile, {
+        postSearch: true,
+        indeedSearch: false,
+      });
+      expect(withPosts.slice(0, board.length)).toEqual(board);
+      const added = withPosts.slice(board.length);
+      expect(added.length).toBeGreaterThan(0);
+      expect(added.every((r) => r.channel === Channel.LINKEDIN_POSTS)).toBe(
+        true,
+      );
+    });
+
+    it('recipesFor with no flags is board recipes only', () => {
+      const service = new QuerySearchService(new FakeQuerySearchRepository());
+      const recipes = service.recipesFor(profile);
+      expect(recipes).toEqual(service.expand(profile));
+      expect(recipes.some((r) => r.channel === Channel.LINKEDIN_POSTS)).toBe(
+        false,
+      );
+    });
+
+    it('recipesFor with indeedSearch on adds nothing yet', () => {
+      const service = new QuerySearchService(new FakeQuerySearchRepository());
+      expect(
+        service.recipesFor(profile, { postSearch: false, indeedSearch: true }),
+      ).toEqual(service.expand(profile));
+    });
+
+    it('replace changes nothing when indeedSearch moved since the read', async () => {
+      const { service, repository, profileId } = await setup();
+      repository.published.add(profileId);
+      repository.switches.set(profileId, {
+        postSearch: false,
+        indeedSearch: true,
+      });
+      const result = await service.replace(profileId, service.expand(profile), {
+        searchesVersion: 4,
+        switches: { postSearch: false, indeedSearch: false },
+      });
+      expect(result.skipped).toBe('switch_changed');
+      expect(repository.links).toHaveLength(0);
+    });
+  });
+
   describe('posts', () => {
-    it('generate attaches post recipes only with posts: true', async () => {
+    it('generate attaches post recipes only with postSearch on', async () => {
       const { service, repository, profileId } = await setup();
       const board = await service.generate(profileId, profile);
       const posts = () =>
@@ -386,16 +452,19 @@ describe('QuerySearchService', () => {
       expect(board.created).toBe(30);
       expect(posts()).toHaveLength(0);
       const withPosts = await service.generate(profileId, profile, {
-        posts: true,
+        postSearch: true,
+        indeedSearch: false,
       });
       expect(withPosts).toEqual({ created: 1, existing: 30 });
       expect(posts()).toHaveLength(1);
       expect(posts()[0].associatedProfiles).toBe(1);
     });
 
-    it('attachPosts attaches only the post recipes', async () => {
+    it("attachSwitch attaches only that switch's recipes", async () => {
       const { service, repository, profileId } = await setup();
-      expect(await service.attachPosts(profileId, profile)).toEqual({
+      expect(
+        await service.attachSwitch(profileId, postsSwitch, profile),
+      ).toEqual({
         created: 1,
         existing: 0,
       });
@@ -406,7 +475,10 @@ describe('QuerySearchService', () => {
 
     it('detachChannel leaves other channels attached', async () => {
       const { service, repository, profileId } = await setup();
-      await service.generate(profileId, profile, { posts: true });
+      await service.generate(profileId, profile, {
+        postSearch: true,
+        indeedSearch: false,
+      });
       expect(
         await service.detachChannel(profileId, Channel.LINKEDIN_POSTS),
       ).toBe(1);

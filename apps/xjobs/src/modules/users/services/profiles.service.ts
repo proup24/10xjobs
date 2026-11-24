@@ -1,6 +1,5 @@
 import {
   ConflictException,
-  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
@@ -14,13 +13,16 @@ import {
 } from 'src/common/enums';
 import {
   QuerySearchService,
+  SEARCH_SWITCHES,
+  switchFlags,
+  switchesInEffect,
   type QuerySearchProfileInput,
+  type SearchSwitchKey,
 } from 'src/modules/queries';
 import { StorageService } from 'src/modules/storage';
 import { ProfilesRepository } from '../repositories/profiles.repository';
 import { postRecipes } from 'src/modules/queries/posts';
 import { describeError } from 'src/utils';
-import { PostSearchAccess } from './post-search-access';
 import { UsersService } from './users.service';
 import { allPlaces, placeTexts } from './place-labels';
 import type {
@@ -176,8 +178,6 @@ export const profileFolder = (userId: string, profileId: string): string =>
 /** What regenerating published profiles needs. */
 export interface RegenerateDeps {
   profiles: Pick<ProfilesRepository, 'listPublished' | 'placeLabels'>;
-  /** Whether the user may have post builders; a switched-on profile of anyone else gets none. */
-  postsAllowed: (userId: string) => boolean;
   querySearch: Pick<
     QuerySearchService,
     'recipesFor' | 'replace' | 'retireOutdated'
@@ -189,13 +189,11 @@ export interface RegenerateResult {
   profiles: number;
   /** Profiles whose regeneration threw; the others still ran, and so did retiring. */
   failed: number;
-  /** Profiles `replace` skipped: unpublished or post search switched since the read. */
+  /** Profiles `replace` skipped: unpublished or a search switch moved since the read. */
   skipped: number;
   retired: number;
-  /** Profiles with post search on that kept their post builders. */
-  postsKept: number;
-  /** Profiles with post search on whose owner is not listed: their post builders were not attached. */
-  postsDropped: number;
+  /** Per switch, the profiles regenerated with it in effect (their builders kept). */
+  switchesOn: Record<SearchSwitchKey, number>;
 }
 
 /**
@@ -211,28 +209,29 @@ export async function regeneratePublished(
   ) => QuerySearchProfileInput = toQuerySearchInput,
 ): Promise<RegenerateResult> {
   const published = await deps.profiles.listPublished();
-  let postsKept = 0;
-  let postsDropped = 0;
+  const switchesOn = Object.fromEntries(
+    SEARCH_SWITCHES.map((sw) => [sw.key, 0]),
+  ) as Record<SearchSwitchKey, number>;
   let failed = 0;
   let skipped = 0;
   for (const profile of published) {
     try {
       // Labels first: a missing one throws before the profile's builders change.
       const labels = await labelsFor(deps.profiles, profile);
-      const posts = profile.postSearch && deps.postsAllowed(profile.userId);
-      const recipes = deps.querySearch.recipesFor(toInput(profile, labels), {
-        posts,
-      });
+      const switches = switchFlags(profile);
+      const recipes = deps.querySearch.recipesFor(
+        toInput(profile, labels),
+        switches,
+      );
       const result = await deps.querySearch.replace(profile.id, recipes, {
         searchesVersion: profile.matchVersion,
-        postSearch: profile.postSearch,
+        switches,
       });
       if (result.skipped) {
         skipped += 1;
         continue;
       }
-      if (posts) postsKept += 1;
-      else if (profile.postSearch) postsDropped += 1;
+      for (const sw of switchesInEffect(switches)) switchesOn[sw.key] += 1;
     } catch (error) {
       // One broken profile must not stop the rest. Ids and codes only.
       failed += 1;
@@ -246,8 +245,7 @@ export async function regeneratePublished(
     failed,
     skipped,
     retired: await deps.querySearch.retireOutdated(),
-    postsKept,
-    postsDropped,
+    switchesOn,
   };
 }
 
@@ -258,7 +256,6 @@ export class ProfilesService {
     private readonly users: UsersService,
     private readonly profiles: ProfilesRepository,
     private readonly querySearch: QuerySearchService,
-    private readonly postSearch: PostSearchAccess,
     private readonly storage: StorageService,
   ) {}
 
@@ -299,7 +296,6 @@ export class ProfilesService {
     return regeneratePublished({
       profiles: this.profiles,
       querySearch: this.querySearch,
-      postsAllowed: (userId) => this.postSearch.allows(userId),
     });
   }
 
@@ -320,17 +316,18 @@ export class ProfilesService {
         code: ErrorCode.ELIGIBILITY_REQUIRED,
       });
 
+    const switches = switchFlags(profile);
     const querySearches = await this.querySearch.generate(
       profile.id,
       toQuerySearchInput(profile, await labelsFor(this.profiles, profile)),
-      { posts: profile.postSearch && this.postSearch.allows(userId) },
+      switches,
     );
     const published = await this.profiles.publish(
       userId,
       profile.id,
       new Date(),
       profile.matchVersion,
-      profile.postSearch,
+      switches,
     );
     if (!published) {
       // Deleted meanwhile: release what was just attached so counts stay right.
@@ -382,13 +379,13 @@ export class ProfilesService {
     profileId: string,
   ): Promise<PostSearchView> {
     const profile = await this.getOrThrow(userId, profileId);
-    return this.postSearchView(userId, profile);
+    return this.postSearchView(profile);
   }
 
   /**
    * Turns post search on or off, the one change a published profile accepts.
-   * Only allow-listed users; on a published profile the post builders are
-   * attached or detached at once (a draft gets them when published).
+   * On a published profile the post builders are attached or detached at once
+   * (a draft gets them when published).
    */
   async setPostSearch(
     userId: string,
@@ -396,22 +393,20 @@ export class ProfilesService {
     enabled: boolean,
   ): Promise<PostSearchView> {
     const { postSearch: previous } = await this.getOrThrow(userId, profileId);
-    if (!this.postSearch.allows(userId))
-      throw new ForbiddenException({
-        message: 'Post search is not available for this account',
-        code: ErrorCode.POST_SEARCH_NOT_ALLOWED,
-      });
-    const profile = await this.profiles.setPostSearch(
+    const posts = SEARCH_SWITCHES.find((sw) => sw.key === 'posts')!;
+    const profile = await this.profiles.setSwitch(
       userId,
       profileId,
+      posts.column,
       enabled,
     );
     if (!profile) throw new NotFoundException(PROFILE_NOT_FOUND);
     if (profile.state === ProfileState.published) {
       try {
         if (enabled)
-          await this.querySearch.attachPosts(
+          await this.querySearch.attachSwitch(
             profile.id,
+            posts,
             toQuerySearchInput(
               profile,
               await labelsFor(this.profiles, profile),
@@ -424,15 +419,19 @@ export class ProfilesService {
           );
       } catch (error) {
         // Keep the flag true to the builders: put it back before failing.
-        await this.profiles.setPostSearch(userId, profileId, previous);
+        await this.profiles.setSwitch(
+          userId,
+          profileId,
+          posts.column,
+          previous,
+        );
         throw error;
       }
     }
-    return this.postSearchView(userId, profile);
+    return this.postSearchView(profile);
   }
 
   private async postSearchView(
-    userId: string,
     profile: ProfileWithSkills,
   ): Promise<PostSearchView> {
     const input = toQuerySearchInput(
@@ -441,7 +440,7 @@ export class ProfilesService {
     );
     return {
       enabled: profile.postSearch,
-      allowed: this.postSearch.allows(userId),
+      allowed: SEARCH_SWITCHES.some((sw) => sw.key === 'posts' && sw.available),
       searches: postRecipes(input).length,
     };
   }

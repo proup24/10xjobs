@@ -145,7 +145,10 @@ describe.skipIf(!url)('profiles repository in PostgreSQL', () => {
         null,
         '2026-01-01T00:00:00Z',
       );
-      const published = await repo.publish(userId, id, new Date(), 4, false);
+      const published = await repo.publish(userId, id, new Date(), 4, {
+        postSearch: false,
+        indeedSearch: false,
+      });
       expect(published).toMatchObject({ id, state: 'published' });
       expect(published!.publishedAt).toBeInstanceOf(Date);
       // The publish itself may bump matchVersion; what matters is the recorded searchesVersion.
@@ -165,7 +168,10 @@ describe.skipIf(!url)('profiles repository in PostgreSQL', () => {
           .affectedCount()
           .build(),
       );
-      const published = await repo.publish(userId, id, new Date(), 4, false);
+      const published = await repo.publish(userId, id, new Date(), 4, {
+        postSearch: false,
+        indeedSearch: false,
+      });
       expect(published).toMatchObject({
         state: 'published',
         searchesVersion: null,
@@ -176,6 +182,49 @@ describe.skipIf(!url)('profiles repository in PostgreSQL', () => {
       ]);
     });
 
+    it('publish leaves searchesVersion null when indeedSearch moved', async () => {
+      const { id, userId } = await profile(
+        'draft',
+        4,
+        null,
+        '2026-01-01T00:00:00Z',
+      );
+      await db.execute(
+        db.raw
+          .sql`UPDATE profiles SET "indeedSearch" = true WHERE id = ${id}::uuid`
+          .affectedCount()
+          .build(),
+      );
+      const published = await repo.publish(userId, id, new Date(), 4, {
+        postSearch: false,
+        indeedSearch: false,
+      });
+      expect(published).toMatchObject({
+        state: 'published',
+        searchesVersion: null,
+      });
+    });
+
+    it('records searchesVersion when every switch is as read', async () => {
+      const { id, userId } = await profile(
+        'draft',
+        4,
+        null,
+        '2026-01-01T00:00:00Z',
+      );
+      await db.execute(
+        db.raw
+          .sql`UPDATE profiles SET "postSearch" = true, "indeedSearch" = true WHERE id = ${id}::uuid`
+          .affectedCount()
+          .build(),
+      );
+      const published = await repo.publish(userId, id, new Date(), 4, {
+        postSearch: true,
+        indeedSearch: true,
+      });
+      expect(published!.searchesVersion).toBe(4);
+    });
+
     it('is null for a published profile or another user', async () => {
       const { id, userId } = await profile(
         'draft',
@@ -184,12 +233,23 @@ describe.skipIf(!url)('profiles repository in PostgreSQL', () => {
         '2026-01-01T00:00:00Z',
       );
       expect(
-        await repo.publish(randomUUID(), id, new Date(), 0, false),
+        await repo.publish(randomUUID(), id, new Date(), 0, {
+          postSearch: false,
+          indeedSearch: false,
+        }),
       ).toBeNull();
       expect(
-        await repo.publish(userId, id, new Date(), 0, false),
+        await repo.publish(userId, id, new Date(), 0, {
+          postSearch: false,
+          indeedSearch: false,
+        }),
       ).not.toBeNull();
-      expect(await repo.publish(userId, id, new Date(), 0, false)).toBeNull();
+      expect(
+        await repo.publish(userId, id, new Date(), 0, {
+          postSearch: false,
+          indeedSearch: false,
+        }),
+      ).toBeNull();
     });
   });
 });

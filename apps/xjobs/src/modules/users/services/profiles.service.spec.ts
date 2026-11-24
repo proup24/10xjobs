@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   ConflictException,
-  ForbiddenException,
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
@@ -24,7 +23,6 @@ import { FakeQuerySearchRepository } from 'src/modules/queries/testing/fakes';
 import { MemoryStorageService } from 'src/modules/storage/testing';
 import { FakeProfilesRepository, FakeUsersRepository } from '../testing/fakes';
 import { UsersService } from './users.service';
-import { PostSearchAccess } from './post-search-access';
 import { Channel } from 'src/common/enums';
 import type { ProfileInput, SkillInput } from '../types';
 
@@ -66,7 +64,6 @@ describe('ProfilesService', () => {
   let querySearches: FakeQuerySearchRepository;
   let storage: MemoryStorageService;
   let service: ProfilesService;
-  let listed: string[];
   let userId: string;
   let otherUserId: string;
 
@@ -80,7 +77,6 @@ describe('ProfilesService', () => {
       users,
       profiles,
       new QuerySearchService(querySearches),
-      { allows: (id: string) => listed.includes(id) } as PostSearchAccess,
       storage,
     );
     // The real publish makes the profile row the swap locks; mirror it here.
@@ -90,15 +86,18 @@ describe('ProfilesService', () => {
       if (row) querySearches.published.add((row as { id: string }).id);
       return row;
     });
-    // The swap reads the stored post search switch from the same row.
-    const setPostSearch = profiles.setPostSearch.bind(profiles);
-    vi.spyOn(profiles, 'setPostSearch').mockImplementation(async (...args) => {
-      const row = await setPostSearch(...args);
-      if (row) querySearches.postSearch.set(row.id, row.postSearch);
+    // The swap reads the stored search switches from the same row.
+    const setSwitch = profiles.setSwitch.bind(profiles);
+    vi.spyOn(profiles, 'setSwitch').mockImplementation(async (...args) => {
+      const row = await setSwitch(...args);
+      if (row)
+        querySearches.switches.set(row.id, {
+          postSearch: row.postSearch,
+          indeedSearch: row.indeedSearch,
+        });
       return row;
     });
     userId = userRows.add('A').id;
-    listed = [userId];
     otherUserId = userRows.add('B').id;
     for (const id of [userId, otherUserId])
       userRows.setEligibility(id, {
@@ -486,8 +485,7 @@ describe('ProfilesService', () => {
         failed: 0,
         skipped: 0,
         retired: old,
-        postsKept: 0,
-        postsDropped: 0,
+        switchesOn: { posts: 0, indeed: 0 },
       });
       expect(new Set(linkedVersions(id))).toEqual(
         new Set([QUERY_SEARCH_RECIPE_VERSION]),
@@ -514,8 +512,7 @@ describe('ProfilesService', () => {
         failed: 0,
         skipped: 0,
         retired: 0,
-        postsKept: 0,
-        postsDropped: 0,
+        switchesOn: { posts: 0, indeed: 0 },
       });
       expect(querySearches.rows).toHaveLength(rows);
       expect(querySearches.links).toHaveLength(links);
@@ -528,8 +525,7 @@ describe('ProfilesService', () => {
         failed: 0,
         skipped: 0,
         retired: 0,
-        postsKept: 0,
-        postsDropped: 0,
+        switchesOn: { posts: 0, indeed: 0 },
       });
       expect(linkedVersions(id)).toEqual([]);
     });
@@ -587,31 +583,13 @@ describe('ProfilesService', () => {
             Channel.LINKEDIN_POSTS,
       );
 
-    it('refuses a user who is not allow-listed', async () => {
-      const { id } = await createOwner();
-      listed = [];
-      await expect(service.setPostSearch(userId, id, true)).rejects.toThrow(
-        ForbiddenException,
-      );
-      expect((await profiles.findById(userId, id))?.postSearch).toBe(false);
-      expect(querySearches.links).toHaveLength(0);
-    });
-
-    it('404s a profile that is not the callers before checking the list', async () => {
-      const { id } = await createOwner();
-      listed = [];
-      await expect(
-        service.setPostSearch(otherUserId, id, true),
-      ).rejects.toThrow(NotFoundException);
-    });
-
     it('attaches post builders when turned on for a published profile', async () => {
       const { id } = await createOwner();
       await service.publish(userId, id);
       expect(linkedPosts(id)).toHaveLength(0);
       await expect(service.setPostSearch(userId, id, true)).resolves.toEqual({
         enabled: true,
-        allowed: true,
+        allowed: false,
         searches: 4,
       });
       expect(linkedPosts(id)).toHaveLength(4);
@@ -625,7 +603,7 @@ describe('ProfilesService', () => {
       const before = querySearches.links.length;
       await expect(service.setPostSearch(userId, id, false)).resolves.toEqual({
         enabled: false,
-        allowed: true,
+        allowed: false,
         searches: 4,
       });
       expect(linkedPosts(id)).toHaveLength(0);
@@ -649,49 +627,38 @@ describe('ProfilesService', () => {
       expect(linkedPosts(id)).toHaveLength(4);
     });
 
-    it('publishes without post builders when the owner is not listed', async () => {
-      const { id } = await createOwner();
-      await service.setPostSearch(userId, id, true);
-      listed = [];
-      await service.publish(userId, id);
-      expect(linkedPosts(id)).toHaveLength(0);
-    });
+    /** Turns post search on in the database, as a hidden switch already on. */
+    const switchOnPosts = async (id: string) => {
+      const row = (await profiles.findById(userId, id))!;
+      row.postSearch = true;
+      querySearches.switches.set(id, { postSearch: true, indeedSearch: false });
+    };
 
-    it('regenerates without post builders for a user no longer listed', async () => {
+    it('publish attaches post recipes for any user with postSearch on', async () => {
+      // No allow-list: the owner is on no list at all.
       const { id } = await createOwner();
-      await service.setPostSearch(userId, id, true);
+      await switchOnPosts(id);
       await service.publish(userId, id);
       expect(linkedPosts(id)).toHaveLength(4);
-      await service.regeneratePublished();
-      expect(linkedPosts(id)).toHaveLength(4);
-      listed = [];
-      await service.regeneratePublished();
-      expect(linkedPosts(id)).toHaveLength(0);
-      expect(
-        querySearches.links.filter((link) => link.profileId === id).length,
-      ).toBeGreaterThan(0);
+      expect((await profiles.findById(userId, id))?.searchesVersion).toBe(0);
     });
 
-    it('counts switched-on profiles that kept or lost their post builders', async () => {
+    it('regenerate keeps post builders of a hidden switch that is on', async () => {
       const { id } = await createOwner();
-      await service.setPostSearch(userId, id, true);
+      await switchOnPosts(id);
       await service.publish(userId, id);
       expect(await service.regeneratePublished()).toMatchObject({
-        postsKept: 1,
-        postsDropped: 0,
+        skipped: 0,
+        switchesOn: { posts: 1, indeed: 0 },
       });
-      listed = [];
-      expect(await service.regeneratePublished()).toMatchObject({
-        postsKept: 0,
-        postsDropped: 1,
-      });
+      expect(linkedPosts(id)).toHaveLength(4);
     });
 
     it('puts the flag back when attaching the post builders fails', async () => {
       const { id } = await createOwner();
       await service.publish(userId, id);
       const spy = vi
-        .spyOn(QuerySearchService.prototype, 'attachPosts')
+        .spyOn(QuerySearchService.prototype, 'attachSwitch')
         .mockRejectedValueOnce(new Error('attach failed'));
       try {
         await expect(service.setPostSearch(userId, id, true)).rejects.toThrow(
@@ -708,7 +675,7 @@ describe('ProfilesService', () => {
       const { id } = await createOwner();
       await expect(service.postSearchStatus(userId, id)).resolves.toEqual({
         enabled: false,
-        allowed: true,
+        allowed: false,
         searches: 4,
       });
       const english = await profiles.add(
@@ -723,7 +690,6 @@ describe('ProfilesService', () => {
         },
         [skill('nodejs', 8)],
       );
-      listed = [];
       await expect(
         service.postSearchStatus(userId, english.id),
       ).resolves.toEqual({ enabled: false, allowed: false, searches: 0 });

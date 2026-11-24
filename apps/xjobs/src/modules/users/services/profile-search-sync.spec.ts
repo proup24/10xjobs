@@ -3,7 +3,6 @@ import { QuerySearchService } from 'src/modules/queries';
 import { FakeQuerySearchRepository } from 'src/modules/queries/testing/fakes';
 import { FakeProfilesRepository } from '../testing/fakes';
 import type { ProfileInput } from '../types';
-import { PostSearchAccess } from './post-search-access';
 import { ProfileSearchSync } from './profile-search-sync';
 
 const input: ProfileInput = {
@@ -38,7 +37,6 @@ const stack = [
 describe('ProfileSearchSync', () => {
   let profiles: FakeProfilesRepository;
   let builders: FakeQuerySearchRepository;
-  let allowed: string[];
   let sync: ProfileSearchSync;
   let querySearch: QuerySearchService;
   let replaceSpy: ReturnType<typeof spyReplace>;
@@ -47,11 +45,8 @@ describe('ProfileSearchSync', () => {
   beforeEach(() => {
     profiles = new FakeProfilesRepository();
     builders = new FakeQuerySearchRepository();
-    allowed = [];
     querySearch = new QuerySearchService(builders);
-    sync = new ProfileSearchSync(profiles, querySearch, {
-      allows: (id: string) => allowed.includes(id),
-    } as PostSearchAccess);
+    sync = new ProfileSearchSync(profiles, querySearch);
     // The real swap writes searchesVersion on the profile row itself.
     const replace = builders.replace.bind(builders);
     replaceSpy = spyReplace(builders);
@@ -88,7 +83,7 @@ describe('ProfileSearchSync', () => {
     });
     expect(replaceSpy).toHaveBeenCalledWith(profile.id, expect.any(Array), {
       searchesVersion: 2,
-      postSearch: false,
+      switches: { postSearch: false, indeedSearch: false },
     });
     expect(profile.searchesVersion).toBe(2);
   });
@@ -163,10 +158,13 @@ describe('ProfileSearchSync', () => {
     expect(profile.searchesVersion).toBeNull();
   });
 
-  it('counts a swap skipped for a moved post search switch as skipped, not applied', async () => {
+  it('counts a swap skipped for a moved switch as skipped, not applied', async () => {
     const profile = await published(1, null);
     // The switch was turned on after the sync read the profile.
-    builders.postSearch.set(profile.id, true);
+    builders.switches.set(profile.id, {
+      postSearch: true,
+      indeedSearch: false,
+    });
     await expect(sync.applyPending()).resolves.toEqual({
       applied: 0,
       failed: 0,
@@ -208,20 +206,47 @@ describe('ProfileSearchSync', () => {
     expect(replaceSpy).toHaveBeenCalledTimes(2);
   });
 
-  it('drops post builders for an owner not allowed', async () => {
-    const mine = await published(1, null, 'user-1');
-    const theirs = await published(1, null, 'user-2');
-    mine.postSearch = true;
-    theirs.postSearch = true;
-    builders.postSearch.set(mine.id, true);
-    builders.postSearch.set(theirs.id, true);
-    allowed = ['user-1'];
+  const channelsOf = (id: string) =>
+    replaceSpy.mock.calls
+      .find(([profileId]) => profileId === id)![1]
+      .map((recipe) => recipe.channel);
+
+  it('keeps post recipes for a hidden switch that is on', async () => {
+    // Post search is unavailable, and no allow-list exists: the flag alone counts.
+    const profile = await published(1, null, 'anyone');
+    profile.postSearch = true;
+    builders.switches.set(profile.id, {
+      postSearch: true,
+      indeedSearch: false,
+    });
+    await expect(sync.applyPending()).resolves.toMatchObject({ applied: 1 });
+    expect(channelsOf(profile.id)).toContain(Channel.LINKEDIN_POSTS);
+    expect(replaceSpy).toHaveBeenCalledWith(profile.id, expect.any(Array), {
+      searchesVersion: 1,
+      switches: { postSearch: true, indeedSearch: false },
+    });
+  });
+
+  it('builds no post recipes with the switch off', async () => {
+    const profile = await published(1, null);
     await sync.applyPending();
-    const channelsOf = (id: string) =>
+    expect(channelsOf(profile.id)).not.toContain(Channel.LINKEDIN_POSTS);
+  });
+
+  it('adds nothing for an Indeed flag set in the database (no recipes yet)', async () => {
+    const off = await published(1, null);
+    const on = await published(1, null);
+    on.indeedSearch = true;
+    builders.switches.set(on.id, { postSearch: false, indeedSearch: true });
+    await expect(sync.applyPending()).resolves.toMatchObject({ applied: 2 });
+    expect(replaceSpy.mock.calls.find(([id]) => id === on.id)![2]).toEqual({
+      searchesVersion: 1,
+      switches: { postSearch: false, indeedSearch: true },
+    });
+    const hashes = (id: string) =>
       replaceSpy.mock.calls
         .find(([profileId]) => profileId === id)![1]
-        .map((recipe) => recipe.channel);
-    expect(channelsOf(mine.id)).toContain(Channel.LINKEDIN_POSTS);
-    expect(channelsOf(theirs.id)).not.toContain(Channel.LINKEDIN_POSTS);
+        .map((recipe) => recipe.hash);
+    expect(hashes(on.id)).toEqual(hashes(off.id));
   });
 });

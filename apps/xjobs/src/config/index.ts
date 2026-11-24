@@ -19,7 +19,6 @@ export {
   databaseEnvironmentSchema,
   environmentSchema,
   parseEnvironment,
-  postSearchEnvironmentSchema,
   processorEnvironmentSchema,
   validateEnvironment,
   redisEnvironmentSchema,
