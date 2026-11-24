@@ -68,3 +68,4 @@ out
 
 # Local Supabase JWT signing key (credential)
 supabase/signing_keys.json
+libs/database/src/migrations/app/refs/step-*.json

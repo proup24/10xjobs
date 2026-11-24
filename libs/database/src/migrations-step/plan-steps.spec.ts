@@ -180,7 +180,7 @@ describe('planSteps', () => {
 });
 
 describe('real history', () => {
-  const appDir = path.resolve(import.meta.dirname, '../migrations/app');
+  const appDir = path.resolve(__dirname, '../migrations/app');
 
   it('real history from empty: every step ≤ 8, last is db, all 32 covered', () => {
     const edges = loadEdges(appDir);
