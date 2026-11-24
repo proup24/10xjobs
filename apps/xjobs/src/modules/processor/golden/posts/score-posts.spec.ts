@@ -326,6 +326,36 @@ describe('the post eval', () => {
     expect(score.emailExact).toBe(false);
   });
 
+  it('pairs a role whose key differs slightly with its closest label, not by shifted order', async () => {
+    // Sorted by key, "recruitment-consultant" would fall after "crm-manager"
+    // and shift every pair by one.
+    const got = await assembled('hiring', 'sure', [
+      role('CRM Manager', 'jobs@acme.com'),
+      role('Recruitment Consultant', 'cv@acme.com'),
+    ]);
+    const score = scorePost(
+      goldenCase('hiring', [
+        labelRole('180 Recruitment Consultant', 'cv@acme.com'),
+        labelRole('CRM Manager', 'jobs@acme.com'),
+      ]),
+      got,
+      { index: 7 },
+    );
+
+    expect(score.emails).toEqual([
+      {
+        roleKey: '180-recruitment-consultant',
+        want: 'cv@acme.com',
+        got: 'cv@acme.com',
+      },
+      { roleKey: 'crm-manager', want: 'jobs@acme.com', got: 'jobs@acme.com' },
+    ]);
+    expect(score.emailExact).toBe(true);
+    expect(score.keyMismatches).toEqual([
+      { want: '180-recruitment-consultant', got: 'recruitment-consultant' },
+    ]);
+  });
+
   it('fails every bar while a verdict label is unreviewed, naming the case', async () => {
     const report = summarizePosts([
       ...(await passingSet()),

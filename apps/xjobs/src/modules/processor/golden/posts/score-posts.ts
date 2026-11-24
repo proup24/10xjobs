@@ -23,7 +23,7 @@ export type PostBarName = keyof typeof POST_BARS;
 /** What the pipeline gave for a case: the assembled post, or the errors of a generation that never validated. */
 export type PostResult = Pick<AssembledPost, 'doc'> | { failed: string[] };
 
-/** One role's contact email, labelled and extracted, paired by role key order. */
+/** One role's contact email, labelled and extracted, paired by role key (`pairRoles`). */
 export interface RoleEmail {
   /** The labelled role's key, or the extracted one's when no label pairs with it. */
   roleKey: string;
@@ -49,7 +49,7 @@ export interface PostScore {
   sendsEmail: boolean;
   /** Every role email extracted, in document order. */
   gotEmails: string[];
-  /** Labelled hiring only: every role, paired by role key order; null otherwise. */
+  /** Labelled hiring only: every role, paired by role key (`pairRoles`); null otherwise. */
   emails: RoleEmail[] | null;
   /**
    * False on a reviewed hiring case whose extracted role count differs from
@@ -76,6 +76,56 @@ const byKey = <T>(items: T[], keys: string[]): { key: string; item: T }[] =>
     .map((item, i) => ({ key: keys[i], item }))
     .sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
 
+type Keyed<T> = { key: string; item: T };
+
+/** Share of the two keys' words they have in common (0 to 1). */
+const keyOverlap = (a: string, b: string): number => {
+  const x = new Set(a.split('-'));
+  const y = new Set(b.split('-'));
+  const shared = [...x].filter((w) => y.has(w)).length;
+  return shared / new Set([...x, ...y]).size;
+};
+
+/**
+ * Pairs labelled and extracted roles (both sorted by key): equal keys first,
+ * then the closest keys by shared words, then what is left by key order. Pairing
+ * by order alone shifts every pair when one key sorts elsewhere ("180-recruitment-
+ * consultant" against "recruitment-consultant"). Pairs come out in key order.
+ */
+function pairRoles<W, G>(
+  want: Keyed<W>[],
+  got: Keyed<G>[],
+): { want?: Keyed<W>; got?: Keyed<G> }[] {
+  const pairs: { want?: Keyed<W>; got?: Keyed<G> }[] = [];
+  let w = [...want];
+  let g = [...got];
+  const take = (a: Keyed<W>, b: Keyed<G>): void => {
+    pairs.push({ want: a, got: b });
+    w = w.filter((x) => x !== a);
+    g = g.filter((x) => x !== b);
+  };
+  for (const a of want) {
+    const b = g.find((x) => x.key === a.key);
+    if (b) take(a, b);
+  }
+  for (;;) {
+    let best: { a: Keyed<W>; b: Keyed<G>; score: number } | null = null;
+    for (const a of w)
+      for (const b of g) {
+        const score = keyOverlap(a.key, b.key);
+        if (score > 0 && (best === null || score > best.score))
+          best = { a, b, score };
+      }
+    if (best === null) break;
+    take(best.a, best.b);
+  }
+  const rest = Math.max(w.length, g.length);
+  for (let i = 0; i < rest; i++) pairs.push({ want: w[i], got: g[i] });
+  const keyOf = (p: (typeof pairs)[number]): string =>
+    (p.want ?? p.got)?.key ?? '';
+  return pairs.sort((a, b) => (keyOf(a) < keyOf(b) ? -1 : 1));
+}
+
 const LABEL_KEYS: readonly LabelKey[] = [
   'arrangement',
   'contractType',
@@ -101,9 +151,8 @@ function roleCase(id: string, role: PostGoldenRole): GoldenCase {
 }
 
 /**
- * Scores one post case. Roles are paired by index after both sides are
- * sorted by role key (`roleKeys` of the labelled titles, the document's
- * `roleKey`s). A labelled role with no extracted pair counts as an extracted
+ * Scores one post case. Roles are paired by role key (`roleKeys` of the
+ * labelled titles, the document's `roleKey`s) with `pairRoles`. A labelled role with no extracted pair counts as an extracted
  * null email, an extracted role with no label as a labelled null email, so a
  * missing labelled email or an extra extracted one is a miss. On a reviewed
  * hiring case, a different role count is an email miss too. A pair whose keys
@@ -131,10 +180,7 @@ export function scorePost(
     extracted,
     extracted.map((r) => r.roleKey),
   );
-  const pairs = Array.from(
-    { length: Math.max(wantRoles.length, gotRoles.length) },
-    (_, i) => ({ want: wantRoles[i], got: gotRoles[i] }),
-  );
+  const pairs = pairRoles(wantRoles, gotRoles);
 
   const rolesReviewed =
     c.roles.every((r) => r.reviewed) &&
