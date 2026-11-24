@@ -1,7 +1,7 @@
 # Indeed switch (Phase 5, slice 02)
 
 Date: 2026-11-24
-Status: draft, awaiting approval (builder check done)
+Status: approved
 
 Brief: `docs/roadmap/phase-5-indeed/02-indeed-switch.md`.
 

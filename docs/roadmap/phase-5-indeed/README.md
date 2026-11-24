@@ -22,7 +22,7 @@ Same as Phases 1 to 4: each slice is a short brief covering the goal, what exist
 | #   | Slice                                                    | Status                                                   |
 | --- | -------------------------------------------------------- | -------------------------------------------------------- |
 | 01  | [Actor sample](01-actor-sample.md)                       | Run once (2026-11-22), weekday re-run before the verdict |
-| 02  | [Indeed switch](02-indeed-switch.md)                     | Brief                                                    |
+| 02  | [Indeed switch](02-indeed-switch.md)                     | Built (spec)                                             |
 | 03  | [Collect](03-collect.md)                                 | Brief                                                    |
 | 04  | [Ingest, process and match](04-ingest-process-match.md)  | Brief                                                    |
 | 05  | [Cross-source duplicates](05-cross-source-duplicates.md) | Brief                                                    |

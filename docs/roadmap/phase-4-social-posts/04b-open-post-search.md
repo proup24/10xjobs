@@ -22,7 +22,7 @@ Phase 5 (Indeed) runs alongside this phase _(user, 2026-11-22)_ and needs the sa
 
 ## In scope
 
-- **Remove the allow-list** _(user, 2026-11-20)_: `POST_SEARCH_USERS`, the 403 path, `allowed` in the engine's post search view and the web client, and the regenerate script's allow-list handling. Builders are attached whenever a profile's post search is on.
+- **The allow-list is already gone** _(removed in Phase 5 slice 02)_: `POST_SEARCH_USERS`, the 403 path and the regenerate handling no longer exist, and the switch is the shared search switch (`SEARCH_SWITCHES` in `apps/xjobs/src/modules/queries/switches.ts`). This slice sets the posts switch's `available` to true, which shows it to every user, and shares the budget.
 - **The switch in preferences, for every user** _(user: this needs UI work)_: where it lives (each profile, the preferences overview, and/or profile creation), what it says it does and that English posts are searched for remote work only, the "no post searches for this profile" case, and the state while the engine is unreachable.
 - **Fair budget sharing** _(user: include it)_: no profile's searches are always the ones skipped when the day's budget runs low, e.g. rotating which segments run first each tick, or a share of the day per profile. Segments are shared between profiles, so a share has to be counted per segment, not per user.
 - **Budget sizing:** the default daily budget for many profiles, and what happens on the hosted engine when it is reached (warning, metric, or a visible state for users).

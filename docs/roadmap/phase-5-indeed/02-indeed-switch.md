@@ -1,5 +1,7 @@
 # 02: Indeed switch
 
+Status: Built (spec). Spec: [Indeed switch design](../../superpowers/specs/2026-11-24-indeed-switch-design.md). The switch is shared with post search and hidden until slice 03 makes Indeed available.
+
 ## Goal
 
 Any user can turn Indeed on or off for each profile from preferences. Turning it on attaches the profile's Indeed searches; turning it off detaches them. There is no allow-list _(user)_.
