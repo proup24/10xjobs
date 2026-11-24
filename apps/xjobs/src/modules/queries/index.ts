@@ -9,6 +9,18 @@ export {
   normalizeSeniorities,
   SKILLS_REQUIRED,
 } from './steps';
+export {
+  SEARCH_SWITCHES,
+  SEARCH_SWITCHES_TOKEN,
+  switchFlags,
+  switchesInEffect,
+} from './switches';
+export type {
+  SearchSwitch,
+  SearchSwitchKey,
+  SwitchColumn,
+  SwitchFlags,
+} from './switches';
 export { LOCATION_ARRANGEMENTS } from './types';
 export type {
   LocationArrangement,

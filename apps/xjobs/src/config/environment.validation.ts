@@ -107,28 +107,23 @@ const collectionBudgetShape = {
     .pipe(z.array(z.enum(TRIAL_CHANNELS as [Channel, ...Channel[]]))),
 };
 
-/**
- * Supabase user ids allowed to turn LinkedIn post search on, comma separated.
- * Empty (the default) allows nobody.
- */
-const postSearchShape = {
-  POST_SEARCH_USERS: z
-    .string()
-    .default('')
-    .transform((value) =>
-      value
-        .split(',')
-        .map((part) => part.trim())
-        .filter(Boolean),
-    ),
-};
+/** Supabase user ids, comma separated; empty (the default) is nobody. */
+const userIdList = z
+  .string()
+  .default('')
+  .transform((value) =>
+    value
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean),
+  );
 
 /**
  * Supabase user ids allowed to use the admin routes, comma separated. Empty
  * (the default) allows nobody.
  */
 const adminShape = {
-  ADMIN_USERS: postSearchShape.POST_SEARCH_USERS,
+  ADMIN_USERS: userIdList,
 };
 
 /**
@@ -138,9 +133,6 @@ const adminShape = {
 const searchPauseShape = {
   SEARCH_PAUSE_AFTER_HOURS: z.coerce.number().int().min(1).max(168).default(24),
 };
-
-/** Just the post search allow-list, for scripts that load no other settings. */
-export const postSearchEnvironmentSchema = z.object(postSearchShape);
 
 /**
  * The processor's settings, read by the worker processes and by the API (its
@@ -218,7 +210,6 @@ export const workerProcessEnvironmentSchema = databaseEnvironmentSchema
      */
     XJOBS_RUN_SCHEDULES: booleanFlag.default(false),
     ...processorEnvironmentShape,
-    ...postSearchShape,
     ...adminShape,
     ...searchPauseShape,
   })
@@ -265,7 +256,6 @@ export const environmentSchema = databaseEnvironmentSchema
     APIFY_TOKEN: z.string().min(1).optional(),
     ...collectionBudgetShape,
     ...processorEnvironmentShape,
-    ...postSearchShape,
     ...adminShape,
     ...searchPauseShape,
     /** Mounts the operator routes (processor, matcher, query search); local only. */

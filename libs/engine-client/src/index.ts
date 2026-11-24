@@ -11,6 +11,8 @@ export type {
   PublishedProfile,
   ReviewPage,
   SearchesStateView,
+  SearchSwitchKey,
+  SearchSwitchView,
   SilenceInput,
   SilencedAuthorView,
   VerdictView,

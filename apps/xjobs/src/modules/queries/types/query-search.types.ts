@@ -1,4 +1,5 @@
 import { Arrangement, type Channel, type SkillDomain } from 'src/common/enums';
+import type { SwitchFlags } from '../switches';
 
 /** The arrangements a profile lists locations for, in expansion order. */
 export const LOCATION_ARRANGEMENTS = [
@@ -73,17 +74,17 @@ export type QuerySearchReplaceResult = QuerySearchAttachResult & {
   released: number;
   /**
    * Why nothing changed, or null when the swap ran: the profile is no longer
-   * published, or its post search switch moved since the recipes were built.
+   * published, or one of its search switches moved since the recipes were built.
    */
   skipped: QuerySearchReplaceSkip | null;
 };
 
-export type QuerySearchReplaceSkip = 'not_published' | 'post_search_changed';
+export type QuerySearchReplaceSkip = 'not_published' | 'switch_changed';
 
 /** What the caller read on the profile when it built the recipes. */
 export type QuerySearchReplaceExpected = {
   /** Recorded as the profile's `searchesVersion` once the swap is done. */
   searchesVersion: number;
-  /** The stored post search switch; the swap is skipped if the row no longer has it. */
-  postSearch: boolean;
+  /** Every stored search switch; the swap is skipped if the row no longer has them all. */
+  switches: SwitchFlags;
 };

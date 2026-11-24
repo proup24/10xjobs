@@ -2,6 +2,7 @@
 import type { Channel } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
 import { QuerySearchRepository } from '../repositories/queries.repository';
+import type { SwitchFlags } from '../switches';
 import type {
   QuerySearchRecipe,
   QuerySearchAttachResult,
@@ -142,8 +143,8 @@ export class FakeQuerySearchRepository extends QuerySearchRepository {
   searchesVersions = new Map<string, number>();
   /** Profile ids that exist and are published; `releaseAndDelete` removes them. */
   published = new Set<string>();
-  /** Profile id → stored post search switch; a profile not listed has it off. */
-  postSearch = new Map<string, boolean>();
+  /** Profile id → stored search switches; a profile not listed has them all off. */
+  switches = new Map<string, SwitchFlags>();
 
   async replace(
     profileId: string,
@@ -153,8 +154,15 @@ export class FakeQuerySearchRepository extends QuerySearchRepository {
     const nothing = { created: 0, existing: 0, released: 0 };
     if (!this.published.has(profileId))
       return { ...nothing, skipped: 'not_published' };
-    if ((this.postSearch.get(profileId) ?? false) !== expected.postSearch)
-      return { ...nothing, skipped: 'post_search_changed' };
+    const stored = this.switches.get(profileId) ?? {
+      postSearch: false,
+      indeedSearch: false,
+    };
+    if (
+      stored.postSearch !== expected.switches.postSearch ||
+      stored.indeedSearch !== expected.switches.indeedSearch
+    )
+      return { ...nothing, skipped: 'switch_changed' };
     const attached = await this.attach(profileId, recipes);
     const wanted = new Set(recipes.map((recipe) => recipe.hash));
     const hashOf = (queryId: string): string => {

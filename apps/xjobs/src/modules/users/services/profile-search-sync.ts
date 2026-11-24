@@ -1,8 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { QuerySearchService } from 'src/modules/queries';
+import { QuerySearchService, switchFlags } from 'src/modules/queries';
 import { describeError } from 'src/utils';
 import { ProfilesRepository } from '../repositories/profiles.repository';
-import { PostSearchAccess } from './post-search-access';
 import { toQuerySearchInput, labelsFor } from './profiles.service';
 
 /** Profiles whose searches one tick swaps (calls to `replace`). */
@@ -19,7 +18,7 @@ export type SearchSyncResult = {
   applied: number;
   /** Profiles that threw (or built no searches); the next tick retries them. */
   failed: number;
-  /** Profiles `replace` skipped: unpublished or post search switched since the read. Retried next tick. */
+  /** Profiles `replace` skipped: unpublished or a search switch moved since the read. Retried next tick. */
   skipped: number;
 };
 
@@ -35,7 +34,6 @@ export class ProfileSearchSync {
   constructor(
     private readonly profiles: ProfilesRepository,
     private readonly querySearch: QuerySearchService,
-    private readonly postSearch: PostSearchAccess,
   ) {}
 
   async applyPending(limit = SEARCH_SYNC_LIMIT): Promise<SearchSyncResult> {
@@ -48,11 +46,11 @@ export class ProfileSearchSync {
       if (swaps >= limit) break;
       try {
         const labels = await labelsFor(this.profiles, profile);
+        // Every switch whose flag is on, available or not, keeps its searches.
+        const switches = switchFlags(profile);
         const recipes = this.querySearch.recipesFor(
           toQuerySearchInput(profile, labels),
-          {
-            posts: profile.postSearch && this.postSearch.allows(profile.userId),
-          },
+          switches,
         );
         // Never swap to nothing: the profile keeps its searches and the next tick retries.
         if (recipes.length === 0) throw new NoSearches();
@@ -62,7 +60,7 @@ export class ProfileSearchSync {
           recipes,
           {
             searchesVersion: profile.matchVersion,
-            postSearch: profile.postSearch,
+            switches,
           },
         );
         if (skipped) result.skipped += 1;

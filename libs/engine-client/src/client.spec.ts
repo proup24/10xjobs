@@ -320,14 +320,71 @@ describe('engine client post search', () => {
       'application/json',
     );
   });
+});
 
-  it('maps 403 to forbidden', async () => {
-    const { client } = setup(() =>
-      json(403, { code: 'POST_SEARCH_NOT_ALLOWED' }),
+describe('engine client search switches', () => {
+  const views = [
+    { key: 'posts', enabled: false, searches: 2 },
+    { key: 'indeed', enabled: true, searches: 3 },
+  ];
+
+  it('searchSwitches returns the list', async () => {
+    const { client, fetchMock } = setup(() =>
+      json(200, { status: 'success', data: views }),
     );
-    expect(await client.setPostSearch(PID, true)).toEqual({
-      kind: 'forbidden',
+    expect(await client.searchSwitches(PID)).toEqual({
+      kind: 'ok',
+      data: views,
     });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe(`http://engine.test/api/profiles/${PID}/searches`);
+    expect(init?.method).toBe('GET');
+    const headers = new Headers(init?.headers);
+    expect(headers.get('x-engine-key')).toBe(KEY);
+    expect(headers.get('authorization')).toBe(`Bearer ${TOKEN}`);
+  });
+
+  it('searchSwitches maps a malformed list to unavailable', async () => {
+    const { client } = setup(() =>
+      json(200, {
+        status: 'success',
+        data: [{ key: 'posts', enabled: true }],
+      }),
+    );
+    expect(await client.searchSwitches(PID)).toEqual({ kind: 'unavailable' });
+  });
+
+  it('setSearchSwitch PUTs to /searches/<key> with { enabled }', async () => {
+    const { client, fetchMock } = setup(() =>
+      json(200, { status: 'success', data: views[1] }),
+    );
+    expect(await client.setSearchSwitch(PID, 'indeed', true)).toEqual({
+      kind: 'ok',
+      data: views[1],
+    });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe(`http://engine.test/api/profiles/${PID}/searches/indeed`);
+    expect(init?.method).toBe('PUT');
+    expect(init?.body).toBe('{"enabled":true}');
+    expect(new Headers(init?.headers).get('content-type')).toBe(
+      'application/json',
+    );
+  });
+
+  it('maps 404 to not-found', async () => {
+    const { client } = setup(() => json(404, {}));
+    expect(await client.setSearchSwitch(PID, 'posts', true)).toEqual({
+      kind: 'not-found',
+    });
+  });
+
+  it('an invalid profile id is not-found without a request', async () => {
+    const { client, fetchMock } = setup(() => json(200, {}));
+    expect(await client.searchSwitches('nope')).toEqual({ kind: 'not-found' });
+    expect(await client.setSearchSwitch('nope', 'indeed', true)).toEqual({
+      kind: 'not-found',
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
 

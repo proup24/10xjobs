@@ -8,12 +8,13 @@ Any user can turn post search on for their profiles from their preferences, and 
 
 Until slice 04, collected posts are stored raw and never matched, and until slice 04a there is no page to see post matches on, so turning post search on gives a user nothing back while it costs credit. Slices 01 to 04a run on the owner's profile only, which also measures the cost per profile before the switch opens.
 
-## What already exists (on `main`, from slice 01)
+## What already exists (on `main`, from slice 01; the allow-list was removed in Phase 5 slice 02)
 
 - `profiles.postSearch`, off by default, written only by the engine (no user column grant).
 - `GET`/`PUT /api/profiles/:profileId/post-search`, which attach or detach the profile's post builders.
-- `POST_SEARCH_USERS`, the allow-list: only listed users can turn the switch on (403 otherwise), see it in the web app, or keep post builders through `db:regenerate`.
-- The switch on the profile page (`apps/web/src/components/preferences/post-search-switch.tsx`), shown only to listed users.
+- `POST_SEARCH_USERS`, the allow-list (removed in Phase 5 slice 02): only listed users can turn the switch on (403 otherwise), see it in the web app, or keep post builders through `db:regenerate`.
+- The switch on the profile page: the shared search switch `apps/web/src/components/preferences/search-switch.tsx` (rendered by `search-switches-section.tsx`), shown only for switches whose `available` is true, so the posts switch is hidden until this slice.
+- `GET /api/profiles/:profileId/searches` and `PUT /api/profiles/:profileId/searches/:key`, the shared switch routes (Phase 5 slice 02).
 - One daily budget for the posts channel, `COLLECTION_DAILY_BUDGET_USD_LINKEDIN_POSTS` (default $1.50). Segments run in sorted key order each tick, so when the budget runs out, the keys that sort last are skipped (the known limit in the slice 01 spec).
 
 ## Shared with Phase 5
@@ -22,7 +23,7 @@ Phase 5 (Indeed) runs alongside this phase _(user, 2026-11-22)_ and needs the sa
 
 ## In scope
 
-- **Remove the allow-list** _(user, 2026-11-20)_: `POST_SEARCH_USERS`, the 403 path, `allowed` in the engine's post search view and the web client, and the regenerate script's allow-list handling. Builders are attached whenever a profile's post search is on.
+- **The allow-list is already gone** _(removed in Phase 5 slice 02)_: `POST_SEARCH_USERS`, the 403 path and the regenerate handling no longer exist, and the switch is the shared search switch (`SEARCH_SWITCHES` in `apps/xjobs/src/modules/queries/switches.ts`). This slice sets the posts switch's `available` to true, which shows it to every user, and shares the budget.
 - **The switch in preferences, for every user** _(user: this needs UI work)_: where it lives (each profile, the preferences overview, and/or profile creation), what it says it does and that English posts are searched for remote work only, the "no post searches for this profile" case, and the state while the engine is unreachable.
 - **Fair budget sharing** _(user: include it)_: no profile's searches are always the ones skipped when the day's budget runs low, e.g. rotating which segments run first each tick, or a share of the day per profile. Segments are shared between profiles, so a share has to be counted per segment, not per user.
 - **Budget sizing:** the default daily budget for many profiles, and what happens on the hosted engine when it is reached (warning, metric, or a visible state for users).
