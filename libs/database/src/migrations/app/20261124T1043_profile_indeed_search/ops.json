@@ -1,0 +1,94 @@
+[
+  {
+    "id": "column.public.profiles.indeedSearch",
+    "label": "Add column \"indeedSearch\" to \"profiles\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "indeedSearch",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"indeedSearch\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "indeedSearch"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"indeedSearch\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"indeedSearch\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ADD COLUMN \"indeedSearch\" bool DEFAULT false NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"indeedSearch\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "indeedSearch"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"indeedSearch\" on \"profiles\""
+        }
+      },
+      {
+        "description": "verify column \"indeedSearch\" has type \"boolean\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "indeedSearch",
+          "boolean"
+        ]
+      },
+      {
+        "description": "verify column \"indeedSearch\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "indeedSearch",
+          "NO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "functions.bump_profile_match_version_switches",
+    "invariantId": "profile-switches-no-bump",
+    "label": "bump_profile_match_version: indeedSearch never bumps",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "profiles"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "replace bump_profile_match_version()",
+        "sql": "CREATE OR REPLACE FUNCTION public.bump_profile_match_version() RETURNS trigger\n  LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$\nBEGIN\n  IF TG_TABLE_NAME = 'profiles' THEN\n    -- BEFORE UPDATE. Every column bumps unless listed here, so a new column bumps by default.\n    IF (to_jsonb(NEW) - ARRAY['resumeKey','resumeFilename','resumeSizeBytes','resumeSha256','resumeUploadedAt','state','publishedAt','matchVersion','searchesVersion','postSearch','indeedSearch','createdAt','updatedAt'])\n       IS DISTINCT FROM\n       (to_jsonb(OLD) - ARRAY['resumeKey','resumeFilename','resumeSizeBytes','resumeSha256','resumeUploadedAt','state','publishedAt','matchVersion','searchesVersion','postSearch','indeedSearch','createdAt','updatedAt']) THEN\n      NEW.\"matchVersion\" := OLD.\"matchVersion\" + 1;\n      IF OLD.state = 'published' AND NEW.state = 'published' THEN\n        UPDATE public.users SET \"searchesResumedAt\" = now() WHERE id = NEW.\"userId\";\n      END IF;\n    END IF;\n    RETURN NEW;\n  END IF;\n  -- profile_skills, AFTER each row: OLD is null on insert, NEW on delete.\n  UPDATE public.profiles SET \"matchVersion\" = \"matchVersion\" + 1\n    WHERE id IN (OLD.\"profileId\", NEW.\"profileId\");\n  UPDATE public.users SET \"searchesResumedAt\" = now()\n    WHERE id IN (SELECT p.\"userId\" FROM public.profiles p\n                  WHERE p.id IN (OLD.\"profileId\", NEW.\"profileId\") AND p.state = 'published');\n  RETURN NULL;\nEND $$;"
+      }
+    ],
+    "postcheck": []
+  }
+]

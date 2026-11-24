@@ -58,6 +58,7 @@ export type HiddenProfileColumns =
   | 'salaryCurrency'
   | 'salaryPeriod'
   | 'postSearch'
+  | 'indeedSearch'
   | 'matchVersion'
   | 'searchesVersion';
 

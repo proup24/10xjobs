@@ -1548,6 +1548,7 @@ export type Database = {
           createdAt: string;
           engagements: string[];
           id: string;
+          indeedSearch: boolean;
           languages: NonNullable<Json>;
           locations: NonNullable<Json>;
           matchVersion: number;
@@ -1581,6 +1582,7 @@ export type Database = {
           createdAt?: string;
           engagements: string[];
           id: string;
+          indeedSearch?: boolean;
           languages: NonNullable<Json>;
           locations: NonNullable<Json>;
           matchVersion?: number;
@@ -1613,6 +1615,7 @@ export type Database = {
           createdAt?: string;
           engagements?: string[];
           id?: string;
+          indeedSearch?: boolean;
           languages?: NonNullable<Json>;
           locations?: NonNullable<Json>;
           matchVersion?: number;

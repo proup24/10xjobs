@@ -4851,6 +4851,13 @@
                   "kind": "scalar"
                 }
               },
+              "indeedSearch": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "languages": {
                 "nullable": false,
                 "type": {
@@ -5109,6 +5116,9 @@
                 },
                 "id": {
                   "column": "id"
+                },
+                "indeedSearch": {
+                  "column": "indeedSearch"
                 },
                 "languages": {
                   "column": "languages"
@@ -12783,6 +12793,15 @@
                   "dataType": "pg/uuid",
                   "nullable": false
                 },
+                "indeedSearch": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
                 "languages": {
                   "codecId": "pg/jsonb@1",
                   "dataType": "pg/jsonb",
@@ -15069,7 +15088,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "fbbefdd7802eb5414e4417952f49b70cb8bf2e3ae4e71bd8caded0f2e4b96f2d"
+    "storageHash": "b5852fb88a982712de75cf95bee57f920a90aeb4f4c941188c17824f2f6ca558"
   },
   "execution": {
     "executionHash": "71a03ba0225916055a5855c4c4deaf607551051c05f9a67ec0aecfdefc43a862",

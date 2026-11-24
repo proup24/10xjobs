@@ -1,0 +1,9 @@
+{
+  "from": "fbbefdd7802eb5414e4417952f49b70cb8bf2e3ae4e71bd8caded0f2e4b96f2d",
+  "to": "b5852fb88a982712de75cf95bee57f920a90aeb4f4c941188c17824f2f6ca558",
+  "providedInvariants": [
+    "profile-switches-no-bump"
+  ],
+  "createdAt": "2026-11-24T10:43:51.681Z",
+  "migrationHash": "a1a827d839c82717729cf43f5a8ea2d02ef5157a8e0a92267c58b37e3e27514e"
+}

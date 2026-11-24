@@ -150,6 +150,7 @@ export class FakeProfilesRepository extends ProfilesRepository {
       state: ProfileState.draft,
       publishedAt: null,
       postSearch: false,
+      indeedSearch: false,
       matchVersion: 0,
       searchesVersion: null,
       createdAt: now,
