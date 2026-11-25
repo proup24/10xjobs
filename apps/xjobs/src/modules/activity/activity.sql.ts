@@ -13,11 +13,12 @@ const TEXT = 'pg/text@1';
  *
  * A user is paused when a match has waited in their Matches list at least
  * `hours` (a qualified match of a published profile, on an active, open job
- * seen in the last 7 days, with no decision, decided at or before `at − hours`; the
- * list of `match_details` and the web page) and none of the four activity
- * signals falls in `(at − hours, at]`: a decision of any status, a delivered
- * match webhook, a resume, or a published profile's `publishedAt`. A waiting
- * match implies a published profile.
+ * seen in the last 7 days, with no decision, decided at or before
+ * `at − hours`; the list of `match_details` and the web page) and none of the
+ * six activity signals falls in `(at − hours, at]`: a decision of any status,
+ * a job view, a review choice, a delivered match webhook, a resume, or a
+ * published profile's `publishedAt`. A waiting match implies a published
+ * profile.
  */
 export function pausedUsersCte(raw: Raw, at: Date, hours: number): Cte {
   const t = at.toISOString();
@@ -46,6 +47,12 @@ export function pausedUsersCte(raw: Raw, at: Date, hours: number): Cte {
        AND NOT EXISTS (
              SELECT 1 FROM public.job_decisions d
               WHERE d."userId" = u.id AND d."decidedAt" > w."since" AND d."decidedAt" <= w."at")
+       AND NOT EXISTS (
+             SELECT 1 FROM public.job_views v
+              WHERE v."userId" = u.id AND v."viewedAt" > w."since" AND v."viewedAt" <= w."at")
+       AND NOT EXISTS (
+             SELECT 1 FROM public.match_reviews r
+              WHERE r."userId" = u.id AND r."createdAt" > w."since" AND r."createdAt" <= w."at")
        AND NOT EXISTS (
              SELECT 1 FROM public.webhook_deliveries x
               WHERE x."userId" = u.id AND x.kind = 'match' AND x.status = 'delivered'
