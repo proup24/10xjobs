@@ -1,6 +1,6 @@
 # 03: Extract
 
-Spec: [2026-11-22-posts-extract-design.md](../../superpowers/specs/2026-11-22-posts-extract-design.md). The spec settles this brief's open questions.
+Spec: [2026-11-22-posts-extract-design.md](../../superpowers/specs/2026-11-22-posts-extract-design.md). The spec settles this brief's open questions. Built in PRs #118 (engine), #126 (golden set, post eval, prompt tuning) and #121 (admin verdicts, automatic silencing, off by default).
 
 ## Goal
 
