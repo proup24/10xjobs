@@ -153,6 +153,19 @@ describe('webhooks, webhook_deliveries and webhook_enqueue_match', () => {
     });
   });
 
+  it('never sends a post role', async () => {
+    const parent = await seedDetailedJob({ noFacts: true });
+    const m = await matchOn();
+    await withCatalog((c) =>
+      c.query(
+        `UPDATE public.normalized_jobs SET kind = 'post_role', "parentJobId" = $2 WHERE id = $1`,
+        [m.job.jobId, parent.jobId],
+      ),
+    );
+    expect(await enqueue(m.matchId)).toBeNull();
+    expect(await deliveriesOf(m.job.jobId)).toEqual([]);
+  });
+
   it('a second call creates nothing', async () => {
     const m = await matchOn();
     expect(await enqueue(m.matchId)).not.toBeNull();

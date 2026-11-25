@@ -59,6 +59,45 @@ export type Database = {
         };
         Relationships: [];
       };
+      blocked_authors: {
+        Row: {
+          authorKey: string;
+          createdAt: string;
+          id: string;
+          name: string | null;
+          profileUrl: string | null;
+          updatedAt: string;
+          userId: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          authorKey: string;
+          createdAt?: string;
+          id: string;
+          name?: string | null;
+          profileUrl?: string | null;
+          updatedAt?: string;
+          userId: string;
+        };
+        Update: {
+          authorKey?: string;
+          createdAt?: string;
+          id?: string;
+          name?: string | null;
+          profileUrl?: string | null;
+          updatedAt?: string;
+          userId?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'blocked_authors_userId_fkey';
+            columns: ['userId'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       cities: {
         Row: {
           aliases: string[];
@@ -2428,6 +2467,7 @@ export type Database = {
         Args: {
           p_details?: boolean;
           p_job_id?: string;
+          p_kind?: string;
           p_outcome?: string;
           p_profile_id?: string;
           p_since?: string;
