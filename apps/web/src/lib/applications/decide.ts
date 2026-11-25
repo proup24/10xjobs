@@ -106,6 +106,7 @@ export async function saveDecision(
         .from('job_decisions')
         .update({
           ...rest,
+          source: 'app',
           ...(keepSnapshot ? {} : { matchSnapshot }),
           updatedAt: now,
           ...(existing.data.status !== fields.status ? { decidedAt: now } : {}),

@@ -230,6 +230,49 @@ describe('job_decisions', () => {
     expect(write.error).not.toBeNull();
   });
 
+  it('source defaults to app', async () => {
+    await clear();
+    expect(
+      (
+        await a.client
+          .from('job_decisions')
+          .insert({ userId: a.id, jobId: job, status: 'applied' })
+      ).error,
+    ).toBeNull();
+    const { data } = await admin()
+      .from('job_decisions')
+      .select('source')
+      .eq('jobId', job)
+      .eq('userId', a.id);
+    expect(data).toEqual([{ source: 'app' }]);
+  });
+
+  it('source outside app/webhook is refused', async () => {
+    await clear();
+    await a.client
+      .from('job_decisions')
+      .insert({ userId: a.id, jobId: job, status: 'applied' });
+    const { error } = await withCatalog((c) =>
+      c
+        .query(
+          `UPDATE public.job_decisions SET source = 'other' WHERE "jobId" = $1`,
+          [job],
+        )
+        .then(
+          () => ({ code: null }),
+          (e: { code: string }) => ({ code: e.code }),
+        )
+        .then((r) => ({ error: r })),
+    );
+    expect(error.code).toBe('23514');
+    // The web app's update sets source: 'app', so the owner may write it.
+    const own = await a.client
+      .from('job_decisions')
+      .update({ source: 'app' })
+      .eq('jobId', job);
+    expect(own.error).toBeNull();
+  });
+
   it('decisions go with the job', async () => {
     await clear();
     expect(

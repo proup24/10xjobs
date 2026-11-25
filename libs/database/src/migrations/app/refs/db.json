@@ -1,5 +1,5 @@
 {
-  "hash": "b5852fb88a982712de75cf95bee57f920a90aeb4f4c941188c17824f2f6ca558",
+  "hash": "c5aab1733fcac2a22b3f82422bdd80d9e2630474043df543fdba5a28d4abe44e",
   "invariants": [
     "end-expired-sessions",
     "code-check-fixes",
@@ -32,6 +32,7 @@
     "set-profile-resume-no-key-lock",
     "profile-match-version-resumes",
     "searches-resumed-backfill",
-    "profile-switches-no-bump"
+    "profile-switches-no-bump",
+    "job-decisions-update-source"
   ]
 }
