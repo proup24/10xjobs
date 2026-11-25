@@ -119,6 +119,13 @@ export const channelJobsConfig = {
     enabled: ACTIVE_CHANNELS.includes(Channel.ASHBY),
     run: AshbyCollector.config,
   },
+  // Placeholder until Task 8 gives Indeed its schedule, budget and actor limits.
+  [Channel.INDEED]: {
+    queueName: 'collect-indeed',
+    ...daily,
+    enabled: false,
+    run: { actor: 'valig/indeed-jobs-scraper', maxRunChargeUsd: 0.11 },
+  },
 } satisfies {
   [Channel.LINKEDIN_JOB_BOARD]: ChannelJobConfig<LinkedinJobBoardRunConfig>;
   [Channel.LINKEDIN_JOB_BOARD_CHEAP]: ChannelJobConfig<LinkedinJobBoardRunConfig>;
@@ -126,6 +133,7 @@ export const channelJobsConfig = {
   [Channel.LINKEDIN_POSTS]: ChannelJobConfig<LinkedinPostsRunConfig>;
   [Channel.GREEN_HOUSE]: ChannelJobConfig<BoardSearchRunConfig>;
   [Channel.ASHBY]: ChannelJobConfig<BoardSearchRunConfig>;
+  [Channel.INDEED]: ChannelJobConfig;
 };
 
 /**

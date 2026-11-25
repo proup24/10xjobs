@@ -222,7 +222,9 @@ describe('QuerySearchService', () => {
         ),
       ];
       expect(channels).toEqual(
-        Object.values(Channel).filter((c) => c !== Channel.LINKEDIN_POSTS),
+        Object.values(Channel).filter(
+          (c) => c !== Channel.LINKEDIN_POSTS && c !== Channel.INDEED,
+        ),
       );
     });
   });

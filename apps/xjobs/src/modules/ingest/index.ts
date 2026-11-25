@@ -1,4 +1,8 @@
-export { channelIngestConfig, ingestConfig } from './config';
+export {
+  channelIngestConfig,
+  ingestConfig,
+  INGEST_WAITING_CHANNELS,
+} from './config';
 export { IngestModule } from './ingest.module';
 export {
   type BatchRecord,

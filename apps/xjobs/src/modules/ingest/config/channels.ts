@@ -58,4 +58,8 @@ export const channelIngestConfig: Record<Channel, ChannelIngestConfig> = {
   // The Google snippet varies with the search that found it; the posting is the content.
   [Channel.ASHBY]: { kind: 'job', volatileKeys: ['hit'] },
   [Channel.GREEN_HOUSE]: { kind: 'job', volatileKeys: ['hit'] },
+  [Channel.INDEED]: { kind: 'job', volatileKeys: [] },
 };
+
+/** Collected and stored, not ingested until Phase 5 slice 04. */
+export const INGEST_WAITING_CHANNELS: readonly Channel[] = [Channel.INDEED];

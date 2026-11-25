@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { Channel } from 'src/common/enums';
+import { Channel } from 'src/common/enums';
 import {
   type CollectionBatchRow,
   DatabaseService,
@@ -7,6 +7,7 @@ import {
   type RawItemVersionRow,
 } from 'src/database';
 import type { DatabaseTransaction } from '@xjobs/database';
+import { INGEST_WAITING_CHANNELS } from '../config';
 import type { BatchReport, BatchStatus } from '../types';
 import { type LinkJobInput, type LinkOutcome, linkJob } from './jobs.writer';
 
@@ -202,6 +203,7 @@ export class PrismaRawStorageRepository extends RawStorageRepository {
   async listStalePending(olderThan: Date, limit: number): Promise<string[]> {
     const rows = await this.batches
       .where({ status: 'pending' })
+      .where((row) => row.channel.in(ingestibleChannels))
       .where((row) => row.createdAt.lt(olderThan))
       .orderBy((row) => row.createdAt.asc())
       .limit(limit)
@@ -209,6 +211,11 @@ export class PrismaRawStorageRepository extends RawStorageRepository {
     return rows.map((row) => row.id);
   }
 }
+
+/** Channels whose batches the sweeper may re-enqueue. */
+const ingestibleChannels: Channel[] = Object.values(Channel).filter(
+  (channel) => !INGEST_WAITING_CHANNELS.includes(channel),
+);
 
 function record(row: CollectionBatchRow): BatchRecord {
   return {

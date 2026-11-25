@@ -33,7 +33,12 @@ it('provides one collector per channel without an Apify token', async () => {
       ]
         .map((collector) => module.get(collector).channel)
         .sort(),
-    ).toEqual(Object.values(Channel).sort());
+    ).toEqual(
+      // Task 7 adds the Indeed collector.
+      Object.values(Channel)
+        .filter((c) => c !== Channel.INDEED)
+        .sort(),
+    );
   } finally {
     await module.close();
   }

@@ -315,6 +315,14 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
     expect(await repo.resetToPending(id)).toBe(false);
   });
 
+  it('listStalePending skips waiting channels', async () => {
+    await batch(Channel.INDEED);
+    const linkedin = await batch(Channel.LINKEDIN_JOB_BOARD);
+    expect(
+      await repo.listStalePending(new Date(Date.now() + 60_000), 10),
+    ).toEqual([linkedin]);
+  });
+
   describe('segment runs and batches', () => {
     let segments: PrismaSearchSegmentsRepository;
     let queryId: string;

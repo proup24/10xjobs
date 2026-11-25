@@ -97,6 +97,8 @@ const inactiveSchedulers = [
   'collect-linkedin-job-board-bebity:collect',
   'collect-greenhouse:collect',
   'collect-ashby:collect',
+  // Disabled until Task 8: its worker removes its schedule and exits.
+  'collect-indeed:collect',
 ];
 
 beforeEach(() => {

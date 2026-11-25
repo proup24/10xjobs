@@ -152,7 +152,8 @@ function setup(
 afterEach(() => vi.restoreAllMocks());
 
 describe('channel selection', () => {
-  it.each(Object.values(Channel))(
+  // Task 7 wires INDEED's collector and adds it back here.
+  it.each(Object.values(Channel).filter((c) => c !== Channel.INDEED))(
     'collects %s with its matching collector and limits',
     async (channel) => {
       const { collection, collectors, queries } = setup(
@@ -258,6 +259,31 @@ describe('CollectionService.collect', () => {
     );
     expect(summary).toMatchObject({ batches: 1, collected: 3 });
     expect(summary).not.toHaveProperty('inserted');
+  });
+
+  it('stores an Indeed batch without enqueueing it', async () => {
+    const rows = builders(1, { channel: Channel.INDEED });
+    const { collection, segments, ingestQueue } = setup(
+      rows,
+      undefined,
+      Channel.INDEED,
+    );
+    // The INDEED fetch case lands in Task 7; stand in for the collector.
+    vi.spyOn(
+      collection as unknown as {
+        fetch: (segment: SegmentSearch) => Promise<SegmentResult>;
+      },
+      'fetch',
+    ).mockImplementation(async (segment) => resultFor(segment));
+
+    const summary = await collection.collect(Channel.INDEED);
+
+    expect(summary).toMatchObject({ batches: 1 });
+    expect(segments.collected).toHaveLength(1);
+    expect(segments.collected[0]!.batch.storageKey.startsWith('INDEED/')).toBe(
+      true,
+    );
+    expect(ingestQueue.enqueue).not.toHaveBeenCalled();
   });
 
   it('records the search totals a run reports with its segment run', async () => {

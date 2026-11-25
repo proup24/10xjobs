@@ -28,6 +28,8 @@ export function toRecipe(
 ): QuerySearchRecipe {
   if (combination.channel === Channel.LINKEDIN_POSTS)
     throw new Error('Post recipes are built by postRecipes');
+  if (combination.channel === Channel.INDEED)
+    throw new Error('Indeed recipes are built by indeedRecipes');
   const query = CHANNEL_QUERY_BUILDERS[combination.channel].build(combination);
   const recipe = {
     ...combination,

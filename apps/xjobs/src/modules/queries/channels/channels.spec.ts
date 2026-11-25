@@ -23,7 +23,7 @@ const base: QuerySearchCombination = {
 };
 
 const build = (
-  channel: Exclude<Channel, Channel.LINKEDIN_POSTS>,
+  channel: Exclude<Channel, Channel.LINKEDIN_POSTS | Channel.INDEED>,
   overrides: Partial<QuerySearchCombination> = {},
 ) => CHANNEL_QUERY_BUILDERS[channel].build({ ...base, channel, ...overrides });
 
@@ -234,7 +234,8 @@ describe('Greenhouse and Ashby builders', () => {
 describe('channel query builders', () => {
   it('registers a builder for every channel', () => {
     for (const channel of Object.values(Channel)) {
-      if (channel === Channel.LINKEDIN_POSTS) continue;
+      if (channel === Channel.LINKEDIN_POSTS || channel === Channel.INDEED)
+        continue;
       expect(CHANNEL_QUERY_BUILDERS[channel].channel).toBe(channel);
     }
   });

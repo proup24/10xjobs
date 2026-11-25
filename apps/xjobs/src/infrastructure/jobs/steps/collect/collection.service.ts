@@ -23,6 +23,7 @@ import {
   type BatchFile,
   batchStorageKey,
   ingestConfig,
+  INGEST_WAITING_CHANNELS,
   serializeBatchFile,
 } from 'src/modules/ingest';
 import { QuerySearchService } from 'src/modules/queries';
@@ -664,7 +665,7 @@ export class CollectionService {
       };
     }
 
-    await this.enqueueBatch(batch.batchId);
+    await this.enqueueBatch(batch.batchId, channel);
     return {
       skipped: false,
       queriesSkipped,
@@ -715,7 +716,9 @@ export class CollectionService {
     );
   }
 
-  private async enqueueBatch(batchId: string): Promise<void> {
+  private async enqueueBatch(batchId: string, channel: Channel): Promise<void> {
+    // Stored and pending; ingest picks it up once its channel stops waiting.
+    if (INGEST_WAITING_CHANNELS.includes(channel)) return;
     try {
       await this.ingestQueue.enqueue(batchId);
     } catch (error) {
@@ -773,6 +776,9 @@ export class CollectionService {
         return this.linkedinJobsBebity.collect(segment);
       case Channel.LINKEDIN_POSTS:
         return this.linkedinPosts.collect(segment);
+      case Channel.INDEED:
+        // Task 7 wires the Indeed collector.
+        throw new Error('INDEED collector not wired');
     }
   }
 }

@@ -28,6 +28,7 @@ const precedence: Record<Channel, number> = {
   [Channel.ASHBY]: 1,
   [Channel.GREEN_HOUSE]: 1,
   [Channel.LINKEDIN_JOB_BOARD]: 2,
+  [Channel.INDEED]: 2.5,
   // Trial actors rank below harvestapi in the planned order curious_coder 2.1,
   // bebity 2.2, cheap_scraper 2.4; they count only when no harvestapi source is
   // present (boardSources).
