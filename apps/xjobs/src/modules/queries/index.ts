@@ -22,9 +22,11 @@ export type {
   SwitchFlags,
 } from './switches';
 export { LOCATION_ARRANGEMENTS } from './types';
+export type { IndeedMarket } from './indeed/markets';
 export type {
   LocationArrangement,
   LocationsByArrangement,
+  PlaceCountry,
   QuerySearchProfileInput,
   QuerySearchAttachResult,
   QuerySearchReplaceResult,

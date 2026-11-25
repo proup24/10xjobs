@@ -22,6 +22,7 @@ describe('regeneratePublished', () => {
         profiles: {
           listPublished: async () => published,
           placeLabels: noLabels,
+          indeedMarkets: async () => [],
         },
         querySearch: {
           recipesFor: () => [{}] as never,
@@ -71,6 +72,7 @@ describe('regeneratePublished', () => {
     const inputs: QuerySearchProfileInput[] = [];
     await regeneratePublished({
       profiles: {
+        indeedMarkets: async () => [],
         listPublished: async () => published,
         placeLabels: async (places) => {
           asked.push(places);
@@ -114,6 +116,7 @@ describe('regeneratePublished', () => {
         profiles: {
           listPublished: async () => published,
           placeLabels: noLabels,
+          indeedMarkets: async () => [],
         },
         querySearch: {
           recipesFor: () => [{}] as never,
@@ -145,6 +148,7 @@ describe('regeneratePublished', () => {
         profiles: {
           listPublished: async () => published,
           placeLabels: noLabels,
+          indeedMarkets: async () => [],
         },
         querySearch: {
           recipesFor: () => [{}] as never,
@@ -195,6 +199,7 @@ describe('regeneratePublished', () => {
         profiles: {
           listPublished: async () => published,
           placeLabels: noLabels,
+          indeedMarkets: async () => [],
         },
         querySearch: {
           recipesFor: (_input, flags) => {

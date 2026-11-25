@@ -171,6 +171,56 @@ describe('ProfilesService', () => {
     });
   });
 
+  it('toQuerySearchInput maps countries and cities per arrangement', async () => {
+    const profile = await profiles.add(
+      userId,
+      {
+        ...profileInput,
+        locations: {
+          remote: [
+            { kind: 'country', code: 'MA' },
+            { kind: 'region', code: 'EMEA' },
+          ],
+          hybrid: [],
+          onsite: [{ kind: 'city', id: 'c1' }],
+        },
+      },
+      [skill('nodejs', 8)],
+    );
+    const input = toQuerySearchInput(profile, {
+      regions: new Map([['EMEA', 'EMEA']]),
+      countries: new Map([['MA', 'Morocco']]),
+      cities: new Map([['c1', { name: 'Casablanca', countryCode: 'MA' }]]),
+    });
+    expect(input.placeCountries).toEqual({
+      remote: [{ countryCode: 'MA', city: null }],
+      hybrid: [],
+      onsite: [{ countryCode: 'MA', city: 'Casablanca' }],
+    });
+  });
+
+  it('carries the markets given', async () => {
+    const profile = await create();
+    const markets = [
+      {
+        site: 'us',
+        countryCode: 'US',
+        mainRemote: true,
+        remoteLocation: 'Remote',
+      },
+    ];
+    const input = toQuerySearchInput(
+      profile,
+      {
+        regions: new Map([['MENA', 'MENA']]),
+        countries: new Map(),
+        cities: new Map(),
+      },
+      markets,
+    );
+    expect(input.indeedMarkets).toEqual(markets);
+  });
+
   it('sorts the stack by importance then mastery', async () => {
     const view = toProfileView(
       await create([skill('rust', 5, 2), skill('go', 5, 9)]),

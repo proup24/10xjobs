@@ -252,4 +252,15 @@ describe.skipIf(!url)('profiles repository in PostgreSQL', () => {
       ).toBeNull();
     });
   });
+
+  it('indeedMarkets reads the seeded rows', async () => {
+    const markets = await repo.indeedMarkets();
+    expect(markets).toHaveLength(62);
+    expect(markets.find((m) => m.site === 'us')).toEqual({
+      site: 'us',
+      countryCode: 'US',
+      mainRemote: true,
+      remoteLocation: 'Remote',
+    });
+  });
 });
