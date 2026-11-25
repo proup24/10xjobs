@@ -7,14 +7,17 @@
  * Counts `job_matches` rows written in the last N days (default 7) by the
  * current matcher version or later, so decisions from older rules do not skew
  * the shares. The window is `updatedAt`, not `decidedAt`: a re-match that keeps
- * the outcome keeps `decidedAt` but still bumps `updatedAt`.
+ * the outcome keeps `decidedAt` but still bumps `updatedAt`. The tables are
+ * printed once per job kind: listings (`job`) and LinkedIn post roles
+ * (`post_role`).
  */
 import { Logger } from '@nestjs/common';
 import { loadDatabaseEnvironment, toDatabaseConfig } from 'src/config';
 import { createDatabaseClient } from 'src/database';
 import { MATCHER_VERSION } from 'src/modules/matcher/config/matcher.config';
 import {
-  outcomeShares,
+  MATCH_JOB_KINDS,
+  outcomeSharesByKind,
   type ShareRow,
 } from 'src/modules/matcher/services/shares';
 
@@ -48,20 +51,29 @@ async function main(): Promise<void> {
     const { raw } = db;
     const text = 'pg/text@1';
     const rows = (await db.query(
-      raw.sql`SELECT m.outcome, m."reviewRule", m."reviewField"
-        FROM job_matches m
+      raw.sql`SELECT j.kind, m.outcome, m."reviewRule", m."reviewField"
+        FROM job_matches m JOIN normalized_jobs j ON j.id = m."jobId"
         WHERE m."updatedAt" >= now() - make_interval(days => ${days}::int)
           AND m."matcherVersion" >= ${MATCHER_VERSION}::int`
-        .returnsRow({ outcome: text, reviewRule: text, reviewField: text })
+        .returnsRow({
+          kind: text,
+          outcome: text,
+          reviewRule: text,
+          reviewField: text,
+        })
         .build(),
-    )) as ShareRow[];
-    const result = outcomeShares(rows);
+    )) as (ShareRow & { kind: string })[];
+    const byKind = outcomeSharesByKind(rows);
     console.log(
-      `Match shares: last ${days} days, matcher version >= ${MATCHER_VERSION}, ${result.total} decisions`,
+      `Match shares: last ${days} days, matcher version >= ${MATCHER_VERSION}, ${rows.length} decisions`,
     );
-    print('Outcome', result.byOutcome);
-    print('Review by rule (of review rows)', result.reviewByRule);
-    print('Review by field (of review rows)', result.reviewByField);
+    for (const kind of MATCH_JOB_KINDS) {
+      const result = byKind[kind];
+      console.log(`\n== ${kind}: ${result.total} decisions ==`);
+      print('Outcome', result.byOutcome);
+      print('Review by rule (of review rows)', result.reviewByRule);
+      print('Review by field (of review rows)', result.reviewByField);
+    }
   } finally {
     await db.close();
   }

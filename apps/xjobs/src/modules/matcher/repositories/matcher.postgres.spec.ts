@@ -208,7 +208,7 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
     );
   }
 
-  async function profile(): Promise<{
+  async function profile(opts: { postSearch?: boolean } = {}): Promise<{
     id: string;
     userId: string;
     matchVersion: number;
@@ -260,6 +260,14 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
       mastery: 8,
       importance: 9,
     } as never);
+    // A switch is an engine write: it never bumps matchVersion.
+    if (opts.postSearch)
+      await db.execute(
+        db.raw
+          .sql`UPDATE profiles SET "postSearch" = true WHERE id = ${row.id}::uuid`
+          .affectedCount()
+          .build(),
+      );
     // The skill insert above bumped the version (trigger), so read it back.
     const fresh = await db.orm.public.Profile.where({ id: row.id }).first();
     return {
@@ -329,6 +337,141 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
     return db.orm.public.JobMatch.where({ profileId, jobId }).first();
   }
 
+  interface RoleSpec {
+    postedAt?: Date | null;
+    verdictConfidence?: string | null;
+    processingStatus?: string;
+    postSources?: unknown;
+  }
+
+  /** Two sources: a plain post by Jane, and Sam's share of an original by Acme. */
+  const TWO_SOURCES = {
+    sources: [
+      {
+        author: { key: 'profile:jane-doe', name: 'Jane Doe' },
+        original: null,
+      },
+      {
+        author: { key: 'profile:sam-lee', name: 'Sam Lee' },
+        original: { author: { key: 'company:acme', name: 'Acme' } },
+      },
+    ],
+  };
+
+  /**
+   * A processed `post` job with its post extraction, and one `post_role` job
+   * under it whose current extraction is a listing-shaped row of the post job
+   * (as PostStore writes it). The role job has no source of its own.
+   */
+  async function roleJob(spec: RoleSpec = {}): Promise<{
+    id: string;
+    extractionId: string;
+    postJobId: string;
+  }> {
+    const base = {
+      status: 'active',
+      mergedIntoId: null,
+      title: 'Backend Engineer',
+      companyName: 'Acme',
+      location: null,
+      contractType: null,
+      experienceLevel: null,
+      salaryText: null,
+      salaryMin: null,
+      salaryMax: null,
+      salaryCurrency: null,
+      salaryPeriod: null,
+      descriptionText: 'We are hiring a backend engineer.',
+      closed: false,
+      fieldSources: {},
+      firstSeenAt: t0,
+      lastSeenAt: new Date(),
+      processingReason: null,
+      processingRequestedAt: t0,
+      normalizerVersion: 1,
+    };
+    const post = await db.orm.public.NormalizedJob.create({
+      ...base,
+      jobKey: randomUUID(),
+      kind: 'post',
+      postingUrl: `https://www.linkedin.com/feed/update/${randomUUID()}`,
+      processingStatus: 'processed',
+      postSources: (spec.postSources ?? TWO_SOURCES) as never,
+    } as never);
+    const postExtraction = await db.orm.public.JobExtraction.create({
+      jobId: post.id,
+      inputHash: randomUUID(),
+      schemaVersion: 1,
+      promptHash: 'p',
+      decisionModel: null,
+      extractionModel: 'e',
+      data: {} as never,
+      needsReview: false,
+      docType: 'post',
+      verdict: 'hiring',
+      verdictReason: 'hiring',
+      verdictConfidence:
+        spec.verdictConfidence === undefined ? 'sure' : spec.verdictConfidence,
+      arrangement: null,
+      seniority: null,
+      roleKind: null,
+      contractType: null,
+      engagement: null,
+      isSoftwareEngineeringRole: null,
+      worldwide: false,
+      regionCodes: [],
+      countryCodes: [],
+      cityIds: [],
+      techTags: [],
+      mainStackTags: [],
+      requiredTags: [],
+      niceTags: [],
+      salaryMin: null,
+      salaryMax: null,
+      salaryCurrency: null,
+      salaryPeriod: null,
+      costUsd: '0',
+    } as never);
+    await db.orm.public.NormalizedJob.where({ id: post.id }).updateAll({
+      currentExtractionId: postExtraction.id,
+    });
+    const role = await db.orm.public.NormalizedJob.create({
+      ...base,
+      jobKey: `${post.jobKey}#role:r1`,
+      kind: 'post_role',
+      parentJobId: post.id,
+      roleKey: 'r1',
+      postingUrl: post.postingUrl,
+      processingStatus: spec.processingStatus ?? 'processed',
+      ...(spec.postedAt === null
+        ? {}
+        : { postedAt: spec.postedAt ?? new Date(Date.now() - 2 * DAY) }),
+    } as never);
+    const extractionId = await extraction(post.id);
+    await db.orm.public.NormalizedJob.where({ id: role.id }).updateAll({
+      currentExtractionId: extractionId,
+    });
+    return { id: role.id, extractionId, postJobId: post.id };
+  }
+
+  async function block(userId: string, authorKey: string, name?: string) {
+    await db.orm.public.BlockedAuthor.create({
+      userId,
+      authorKey,
+      name: name ?? null,
+      profileUrl: null,
+    } as never);
+  }
+
+  async function setMatchUpdatedAt(jobId: string, at: Date) {
+    await db.execute(
+      db.raw
+        .sql`UPDATE job_matches SET "updatedAt" = ${at.toISOString()}::timestamptz WHERE "jobId" = ${jobId}::uuid`
+        .affectedCount()
+        .build(),
+    );
+  }
+
   beforeAll(async () => {
     const target = new URL(url!);
     if (
@@ -358,7 +501,7 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
     await db?.close();
   });
   beforeEach(async () => {
-    await sql`TRUNCATE webhook_deliveries, webhooks, job_matches, work_authorizations, job_fact_conflicts, job_facts, profile_skills, profiles, processing_attempts, job_extractions, normalized_job_sources, normalized_jobs, normalized_versions, raw_item_sightings, raw_item_versions, raw_items, collection_batches, search_segment_runs CASCADE`;
+    await sql`TRUNCATE blocked_authors, webhook_deliveries, webhooks, job_matches, work_authorizations, job_fact_conflicts, job_facts, profile_skills, profiles, processing_attempts, job_extractions, normalized_job_sources, normalized_jobs, normalized_versions, raw_item_sightings, raw_item_versions, raw_items, collection_batches, search_segment_runs CASCADE`;
   });
 
   describe('loadCandidate', () => {
@@ -367,6 +510,8 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
       expect(await repo.loadCandidate(j.id)).toEqual({
         extractionId: j.extractionId,
         needsReview: false,
+        kind: 'job',
+        post: null,
       });
       expect(await repo.listMatchableJobs()).toContain(j.id);
     });
@@ -990,6 +1135,194 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
       expect(await repo.deleteInactive()).toBe(1);
       expect(await repo.matchesForJob(j.id)).toEqual([]);
       expect(await repo.matchesForJob(keep.id)).toHaveLength(1);
+    });
+  });
+
+  describe('post role jobs', () => {
+    it('a processed post_role job is matchable; an archived one is not', async () => {
+      const role = await roleJob();
+      expect(await repo.listMatchableJobs()).toContain(role.id);
+      expect(await repo.loadCandidate(role.id)).not.toBeNull();
+      const archived = await roleJob({ processingStatus: 'archived' });
+      expect(await repo.loadCandidate(archived.id)).toBeNull();
+      expect(await repo.listMatchableJobs()).not.toContain(archived.id);
+      // The post job itself is never matched: its roles are.
+      expect(await repo.loadCandidate(role.postJobId)).toBeNull();
+      expect(await repo.listMatchableJobs()).not.toContain(role.postJobId);
+    });
+
+    it("loadCandidate reads the parent's verdict confidence, every author, and the role's postedAt", async () => {
+      const postedAt = new Date('2026-11-20T10:00:00.000Z');
+      const role = await roleJob({ postedAt, verdictConfidence: 'unsure' });
+      expect(await repo.loadCandidate(role.id)).toEqual({
+        extractionId: role.extractionId,
+        needsReview: false,
+        kind: 'post_role',
+        post: {
+          verdictConfidence: 'unsure',
+          authors: [
+            { key: 'profile:jane-doe', name: 'Jane Doe' },
+            { key: 'profile:sam-lee', name: 'Sam Lee' },
+            { key: 'company:acme', name: 'Acme' },
+          ],
+          postedAt,
+        },
+      });
+    });
+
+    it('a null verdict confidence counts as unsure, and a role may have no date', async () => {
+      const role = await roleJob({ verdictConfidence: null, postedAt: null });
+      expect((await repo.loadCandidate(role.id))?.post).toMatchObject({
+        verdictConfidence: 'unsure',
+        postedAt: null,
+      });
+    });
+
+    it('a listing candidate has kind job and no post', async () => {
+      const j = await job();
+      expect(await repo.loadCandidate(j.id)).toMatchObject({
+        kind: 'job',
+        post: null,
+      });
+    });
+
+    it('listStaleJobs ignores profiles with post search off for role jobs', async () => {
+      const on = await profile({ postSearch: true });
+      await profile();
+      const role = await roleJob();
+      await facts(role);
+      expect(await repo.listStaleJobs(10)).toEqual([role.id]);
+      const stale = {
+        jobId: role.id,
+        factsHash: 'h1',
+        extractionId: role.extractionId,
+      };
+      expect(
+        (await repo.listPublishedProfiles({ onlyStaleFor: stale })).map(
+          (p) => p.id,
+        ),
+      ).toEqual([on.id]);
+      await repo.upsertMatches([row(on, role)]);
+      expect(await repo.listStaleJobs(10)).toEqual([]);
+      expect(await repo.listPublishedProfiles({ onlyStaleFor: stale })).toEqual(
+        [],
+      );
+    });
+
+    it('a listing is still decided for a profile with post search off', async () => {
+      const off = await profile();
+      const j = await job();
+      await facts(j);
+      expect(await repo.listStaleJobs(10)).toEqual([j.id]);
+      await repo.upsertMatches([row(off, j)]);
+      expect(await repo.listStaleJobs(10)).toEqual([]);
+    });
+
+    it('a role row decided before its original turned 30 is stale after', async () => {
+      const p = await profile({ postSearch: true });
+      const role = await roleJob({ postedAt: new Date(Date.now() - 31 * DAY) });
+      await facts(role);
+      await repo.upsertMatches([row(p, role)]);
+      // Decided just now, after the 30-day mark: current.
+      expect(await repo.listStaleJobs(10)).toEqual([]);
+      // Decided two days ago, when the original was 29 days old: stale.
+      await setMatchUpdatedAt(role.id, new Date(Date.now() - 2 * DAY));
+      expect(await repo.listStaleJobs(10)).toEqual([role.id]);
+      const stale = {
+        jobId: role.id,
+        factsHash: 'h1',
+        extractionId: role.extractionId,
+      };
+      expect(
+        (await repo.listPublishedProfiles({ onlyStaleFor: stale })).map(
+          (x) => x.id,
+        ),
+      ).toEqual([p.id]);
+      // Decided again: current again.
+      await repo.upsertMatches([row(p, role)]);
+      expect(await repo.listStaleJobs(10)).toEqual([]);
+    });
+
+    it('a role with no postedAt is current once decided (the sweep does not loop on it)', async () => {
+      const p = await profile({ postSearch: true });
+      const role = await roleJob({ postedAt: null });
+      await facts(role);
+      expect(await repo.listStaleJobs(10)).toEqual([role.id]);
+      await repo.upsertMatches([row(p, role)]);
+      await setMatchUpdatedAt(role.id, new Date(Date.now() - 40 * DAY));
+      expect(await repo.listStaleJobs(10)).toEqual([]);
+      expect(
+        await repo.listPublishedProfiles({
+          onlyStaleFor: {
+            jobId: role.id,
+            factsHash: 'h1',
+            extractionId: role.extractionId,
+          },
+        }),
+      ).toEqual([]);
+    });
+
+    it('a young role row and a listing row are not stale by age', async () => {
+      const p = await profile({ postSearch: true });
+      const role = await roleJob({ postedAt: new Date(Date.now() - 10 * DAY) });
+      const j = await job();
+      await facts(role);
+      await facts(j);
+      await repo.upsertMatches([row(p, role), row(p, j)]);
+      await setMatchUpdatedAt(role.id, new Date(Date.now() - 5 * DAY));
+      await setMatchUpdatedAt(j.id, new Date(Date.now() - 40 * DAY));
+      expect(await repo.listStaleJobs(10)).toEqual([]);
+    });
+
+    it('deleteInactive deletes rows of archived roles and of profiles with post search off', async () => {
+      const on = await profile({ postSearch: true });
+      const off = await profile({ postSearch: true });
+      const kept = await roleJob();
+      const archived = await roleJob();
+      const listing = await job();
+      await repo.upsertMatches([
+        row(on, kept),
+        row(off, kept),
+        row(on, archived),
+        row(off, listing),
+      ]);
+      expect(await repo.deleteInactive()).toBe(0);
+      await db.orm.public.NormalizedJob.where({ id: archived.id }).updateAll({
+        processingStatus: 'archived',
+      });
+      await db.execute(
+        db.raw
+          .sql`UPDATE profiles SET "postSearch" = false WHERE id = ${off.id}::uuid`
+          .affectedCount()
+          .build(),
+      );
+      expect(await repo.deleteInactive()).toBe(2);
+      expect(
+        (await repo.matchesForJob(kept.id)).map((m) => m.profileId),
+      ).toEqual([on.id]);
+      expect(await repo.matchesForJob(archived.id)).toEqual([]);
+      // A listing row stays: post search does not gate listings.
+      expect(await repo.matchesForJob(listing.id)).toHaveLength(1);
+    });
+
+    it("listPublishedProfiles loads each user's blocked authors and post search", async () => {
+      const a = await profile({ postSearch: true });
+      const b = await profile();
+      await block(a.userId, 'profile:jane-doe', 'Jane Doe');
+      // Keys compare lowercased: Prepare writes them lowercased.
+      await block(a.userId, 'company:ACME');
+      const byId = new Map(
+        (await repo.listPublishedProfiles()).map((p) => [p.id, p]),
+      );
+      expect(byId.get(a.id)?.blockedAuthors.sort()).toEqual([
+        'company:acme',
+        'profile:jane-doe',
+      ]);
+      expect(byId.get(a.id)?.postSearch).toBe(true);
+      expect(byId.get(b.id)).toMatchObject({
+        blockedAuthors: [],
+        postSearch: false,
+      });
     });
   });
 });
