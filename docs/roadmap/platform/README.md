@@ -13,6 +13,6 @@ Same as the phases: each slice is a short brief covering the goal, what exists, 
 
 ## Slices
 
-| #   | Slice                                      | Status                                                 |
-| --- | ------------------------------------------ | ------------------------------------------------------ |
-| 01  | [Migration squash](01-migration-squash.md) | Built as a stepped migrate (PR 131); squash not chosen |
+| #   | Slice                                      | Status                                                                                                                |
+| --- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| 01  | [Migration squash](01-migration-squash.md) | Built as a stepped migrate, not a squash ([spec](../../superpowers/specs/2026-11-24-stepped-migrate-design.md), #131) |
