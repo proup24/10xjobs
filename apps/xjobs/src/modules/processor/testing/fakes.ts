@@ -584,6 +584,18 @@ export class MemoryProcessorRepository extends ProcessorRepository {
     }).id;
   }
 
+  async listRoleJobIds(postJobId: string): Promise<string[]> {
+    return [...this.jobs.values()]
+      .filter(
+        (j) =>
+          j.kind === 'post_role' &&
+          j.parentJobId === postJobId &&
+          j.processingStatus === 'processed' &&
+          j.status === 'active',
+      )
+      .map((j) => j.id);
+  }
+
   async archiveRoleJobs(postJobId: string, keep: string[]): Promise<number> {
     this.log.push('archiveRoleJobs');
     let n = 0;

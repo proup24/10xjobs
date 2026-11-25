@@ -6,6 +6,7 @@ import { inRetriedTransaction } from 'src/modules/ingest/repositories/raw.reposi
 import { silencedPostJobSql } from 'src/modules/ingest/repositories/silenced-authors.repository';
 import type { PostDetail } from 'src/modules/ingest/normalize/record';
 import type { JobForProcessing, ModelCallMeta } from '../models/types';
+import { roleJobPostedAt } from './role-posted-at';
 import { PROCESSOR_CHANNELS } from '../config/processor.config';
 import type { TypedColumns } from '../rules/typed-columns';
 import {
@@ -224,6 +225,8 @@ export abstract class ProcessorRepository {
   abstract upsertRoleJob(input: RoleJobInput): Promise<string>;
   /** Archives the post's role jobs whose `roleKey` is not in `keep`; returns how many. */
   abstract archiveRoleJobs(postJobId: string, keep: string[]): Promise<number>;
+  /** Ids of the post's processed, active role jobs (what matching takes). */
+  abstract listRoleJobIds(postJobId: string): Promise<string[]>;
   /** Non-eval post model calls (attempt rows) since `since`. */
   abstract postCallsSince(since: Date): Promise<number>;
 }
@@ -667,7 +670,7 @@ export class PrismaProcessorRepository extends ProcessorRepository {
         title: input.title,
         companyName: input.companyName,
         postingUrl: parent.postingUrl,
-        postedAt: parent.postedAt,
+        postedAt: roleJobPostedAt(parent.postSources, parent.postedAt),
         firstSeenAt: parent.firstSeenAt,
         lastSeenAt: parent.lastSeenAt,
         descriptionText: parent.descriptionText,
@@ -713,6 +716,16 @@ export class PrismaProcessorRepository extends ProcessorRepository {
         .build(),
     );
     return rows.length;
+  }
+
+  async listRoleJobIds(postJobId: string): Promise<string[]> {
+    const rows = await this.db.orm.public.NormalizedJob.where({
+      parentJobId: postJobId,
+      kind: 'post_role',
+      processingStatus: 'processed',
+      status: 'active',
+    }).all();
+    return rows.map((r) => r.id);
   }
 
   async postCallsSince(since: Date): Promise<number> {

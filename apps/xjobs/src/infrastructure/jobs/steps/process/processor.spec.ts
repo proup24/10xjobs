@@ -25,6 +25,7 @@ function deps(outcome = 'processed', spent = 0, paused = false) {
       listPendingPosts: vi.fn(async (): Promise<string[]> => []),
       releaseStale: vi.fn(async () => 3),
       spendSince: vi.fn(async () => spent),
+      listRoleJobIds: vi.fn(async (_id: string): Promise<string[]> => []),
     },
     queue: { enqueue: vi.fn(async (_id: string, _kind?: 'post') => undefined) },
     matchQueue: { enqueue: vi.fn(async () => undefined) },
@@ -100,6 +101,16 @@ describe('processProcessJob', () => {
       expect(d.matchQueue.enqueue).toHaveBeenCalledWith('j1');
     },
   );
+
+  it('a processed post enqueues its role jobs for matching', async () => {
+    const d = deps('processed');
+    d.repo.listRoleJobIds.mockResolvedValue(['r1', 'r2']);
+    await processProcessJob(job('process-job', { jobId: 'p1' }), d as never);
+    expect(d.repo.listRoleJobIds).toHaveBeenCalledWith('p1');
+    expect(d.matchQueue.enqueue.mock.calls.map((c: unknown[]) => c[0])).toEqual(
+      ['p1', 'r1', 'r2'],
+    );
+  });
 
   it('still returns the outcome when the match nudge throws', async () => {
     const d = deps('processed');
