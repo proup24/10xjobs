@@ -30,9 +30,9 @@ Same as Phases 1 and 2: each slice is a short brief covering the problem, the op
 | 06  | [One job per apply link](06-one-job-per-apply-link.md)                         | Harvest | Done (PR 86)                                                                          |
 | 07  | [Trial LinkedIn actors](07-trial-linkedin-actors.md)                           | Harvest | Built (PRs 94, 95, 96); cheap_scraper off since 2026-11-18; which actor stays is open |
 | 08  | [Seniority to LinkedIn level, and paid repeats](08-seniority-levels.md)        | Harvest | Done (PRs 99, 125); split-check later in the week                                     |
-| 09  | [Non-remote jobs from remote searches](09-non-remote-leak.md)                  | Match   | Done (PRs 101, 103, 105, 106); checks 2026-11-24: 3 open, see 11                      |
+| 09  | [Non-remote jobs from remote searches](09-non-remote-leak.md)                  | Match   | Done (PRs 101, 103, 105, 106, 136); check 3 open, see 11                              |
 | 10  | [Search yield](10-search-yield.md)                                             | Harvest | Findings; not yet discussed                                                           |
-| 11  | [Monday checks](11-monday-checks.md)                                           | Ops     | Checks run 2026-11-24; 3 open (slice 09)                                              |
+| 11  | [Monday checks](11-monday-checks.md)                                           | Ops     | Checks run 2026-11-24; slice 09 check 3 open                                          |
 | 12  | [Activity signals for paused searches](12-activity-signals.md)                 | Harvest | Spec and plan done; part 1 built (PR 133)                                             |
 
 ## Follow-ups from slice 02
