@@ -280,7 +280,7 @@ describe('channel query builders', () => {
       experienceLevel: '4',
     });
     expect(recipe.hash).toBe(
-      '171d656aa5df4caccfa96d457b52562af4311c7d8564dcb63045f3ba165f00e7',
+      '6b98561831448c1ee7dbc911d8210104a004cb98d5d9c9a0de897aa2739150b1',
     );
   });
 });

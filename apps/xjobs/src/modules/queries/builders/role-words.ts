@@ -37,6 +37,8 @@ const ENGINEER_WORDS: Readonly<Record<string, readonly string[]>> = {
   fr: ['ingénieur', 'développeur', 'architecte'],
   es: ['ingeniero', 'desarrollador'],
   de: ['entwickler', 'ingenieur'],
+  pt: ['engenheiro', 'desenvolvedor', 'programador', 'arquiteto'],
+  pl: ['programista', 'inżynier', 'architekt'],
 };
 
 /**
@@ -57,11 +59,14 @@ export const ROLE_WORDS: Readonly<
     fr: ['architecte'],
     es: ['arquitecto'],
     de: ['architekt'],
+    pt: ['arquiteto'],
+    pl: ['architekt'],
   },
   tech_lead: {
     en: ['tech lead', 'technical lead', 'lead developer'],
     fr: ['lead technique', 'lead dev'],
     es: ['líder técnico'],
+    pt: ['líder técnico'],
   },
   engineering_manager: {
     en: ['engineering manager', 'head of engineering'],
