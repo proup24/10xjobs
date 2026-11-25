@@ -14,6 +14,7 @@ import { QuerySearchService } from './queries.service';
 import { SEARCH_SWITCHES } from '../switches';
 
 const postsSwitch = SEARCH_SWITCHES.find((sw) => sw.key === 'posts')!;
+const indeedSwitch = SEARCH_SWITCHES.find((sw) => sw.key === 'indeed')!;
 
 // These specs cover every channel's builder, inactive ones included.
 vi.mock('src/common/enums', async (importOriginal) =>
@@ -473,6 +474,23 @@ describe('QuerySearchService', () => {
       expect(repository.rows.map((row) => row.channel)).toEqual([
         Channel.LINKEDIN_POSTS,
       ]);
+    });
+
+    it('the indeed switch with no Indeed places attaches nothing and keeps the board recipes', async () => {
+      const { service, repository, profileId } = await setup();
+      // The fixture profile has no market rows, so Indeed builds no recipes.
+      expect(
+        await service.attachSwitch(profileId, indeedSwitch, profile),
+      ).toEqual({ created: 0, existing: 0 });
+      const flags = { postSearch: false, indeedSearch: true };
+      expect(service.recipesFor(profile, flags)).toHaveLength(30);
+      expect(await service.generate(profileId, profile, flags)).toEqual({
+        created: 30,
+        existing: 0,
+      });
+      expect(
+        repository.rows.some((row) => row.channel === Channel.INDEED),
+      ).toBe(false);
     });
 
     it('detachChannel leaves other channels attached', async () => {

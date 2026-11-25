@@ -1,5 +1,6 @@
 import { Channel, SkillDomain } from 'src/common/enums';
 import type { QuerySearchProfileInput } from './types';
+import { indeedRecipes } from './indeed';
 import { SEARCH_SWITCHES, switchFlags, switchesInEffect } from './switches';
 
 const input: QuerySearchProfileInput = {
@@ -38,7 +39,7 @@ describe('search switches', () => {
       {
         key: 'indeed',
         column: 'indeedSearch',
-        channel: null,
+        channel: Channel.INDEED,
         available: false,
       },
     ]);
@@ -67,8 +68,13 @@ describe('search switches', () => {
     ).toEqual([]);
   });
 
-  it('indeed adds no recipes', () => {
-    expect(byKey('indeed').recipes(input)).toEqual([]);
+  it("the indeed switch is INDEED's and stays unavailable", () => {
+    const sw = byKey('indeed');
+    expect(sw.channel).toBe(Channel.INDEED);
+    expect(sw.available).toBe(false);
+    expect(sw.recipes).toBe(indeedRecipes);
+    // No market rows or places on this input: nothing to search.
+    expect(sw.recipes(input)).toEqual([]);
   });
 
   it('posts adds the post recipes', () => {
