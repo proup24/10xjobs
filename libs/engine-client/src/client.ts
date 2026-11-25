@@ -155,7 +155,23 @@ export interface EngineClient {
   ): Promise<EngineResult<{ status: 'silenced' | 'already' }>>;
   /** 204 gives `ok` with null; 404 when the author was not silenced. */
   unsilenceAuthor(authorKey: string): Promise<EngineResult<null>>;
+  /**
+   * Forwards a receiver's webhook callback to the engine unchanged: the raw
+   * bytes, the three `X-10xjobs-*` headers and the content type, plus the
+   * engine key. Never sends an access token. Returns the engine's status and
+   * body text as is; a missing url or key, or a failed fetch, is `unavailable`.
+   */
+  forwardWebhookCallback(input: {
+    body: Uint8Array;
+    headers: Record<CallbackHeader, string | null>;
+    contentType?: string | null;
+  }): Promise<{ status: number; body: string } | { kind: 'unavailable' }>;
 }
+
+export type CallbackHeader =
+  | 'x-10xjobs-webhook'
+  | 'x-10xjobs-timestamp'
+  | 'x-10xjobs-signature';
 
 const DEFAULT_TIMEOUT_MS = 10_000;
 
@@ -624,7 +640,44 @@ export function createEngineClient(deps: EngineClientDeps): EngineClient {
     }
   }
 
+  async function forwardWebhookCallback(input: {
+    body: Uint8Array;
+    headers: Record<CallbackHeader, string | null>;
+    contentType?: string | null;
+  }): Promise<{ status: number; body: string } | { kind: 'unavailable' }> {
+    let status: number | undefined;
+    const finish = <T>(result: T, outcome: string): T => {
+      // Status only: the body, signature and secret never reach the log.
+      log(
+        `engine forwardWebhookCallback outcome=${outcome} status=${status ?? 'none'}`,
+      );
+      return result;
+    };
+    if (!deps.url || !deps.apiKey)
+      return finish({ kind: 'unavailable' as const }, 'unavailable');
+    const headers: Record<string, string> = {
+      'X-Engine-Key': deps.apiKey,
+      'Content-Type': input.contentType || 'application/json',
+    };
+    for (const [name, value] of Object.entries(input.headers))
+      if (value !== null) headers[name] = value;
+    try {
+      const response = await doFetch(`${deps.url}/api/webhooks/callback`, {
+        method: 'POST',
+        headers,
+        body: input.body as unknown as ArrayBuffer,
+        signal: AbortSignal.timeout(deps.timeoutMs ?? DEFAULT_TIMEOUT_MS),
+      });
+      status = response.status;
+      const body = await response.text();
+      return finish({ status: response.status, body }, 'relayed');
+    } catch {
+      return finish({ kind: 'unavailable' as const }, 'unavailable');
+    }
+  }
+
   return {
+    forwardWebhookCallback,
     publishProfile,
     deleteProfile,
     searchesState: () =>

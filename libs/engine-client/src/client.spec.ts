@@ -772,3 +772,78 @@ describe('engine client searches', () => {
     expect(await client.searchesState()).toEqual({ kind: 'unavailable' });
   });
 });
+
+describe('engine client forwardWebhookCallback', () => {
+  const headers = {
+    'x-10xjobs-webhook': 'wh-1',
+    'x-10xjobs-timestamp': '1800000000',
+    'x-10xjobs-signature': 'sha256=abc',
+  };
+  const body = new TextEncoder().encode('{ "a" :  "é" }\n');
+
+  it('sends the engine key, the three headers and a JSON content type', async () => {
+    const { client, fetchMock } = setup(() => json(200, { version: 1 }));
+    await client.forwardWebhookCallback({ body, headers });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('http://engine.test/api/webhooks/callback');
+    expect(init?.method).toBe('POST');
+    const sent = new Headers(init?.headers);
+    expect(sent.get('x-engine-key')).toBe(KEY);
+    expect(sent.get('x-10xjobs-webhook')).toBe('wh-1');
+    expect(sent.get('x-10xjobs-timestamp')).toBe('1800000000');
+    expect(sent.get('x-10xjobs-signature')).toBe('sha256=abc');
+    expect(sent.get('content-type')).toBe('application/json');
+  });
+
+  it('never sends Authorization, and omits a missing header', async () => {
+    const { client, fetchMock } = setup(() => json(200, {}));
+    await client.forwardWebhookCallback({
+      body,
+      headers: { ...headers, 'x-10xjobs-signature': null },
+    });
+    const sent = new Headers(fetchMock.mock.calls[0][1]?.headers);
+    expect(sent.has('authorization')).toBe(false);
+    expect(sent.has('x-10xjobs-signature')).toBe(false);
+  });
+
+  it('passes the body bytes unchanged', async () => {
+    const { client, fetchMock } = setup(() => json(200, {}));
+    await client.forwardWebhookCallback({ body, headers });
+    expect(fetchMock.mock.calls[0][1]?.body).toBe(body);
+  });
+
+  it('returns the engine status and text, even for an error', async () => {
+    const { client } = setup(() => json(401, { code: 'UNAUTHORIZED' }));
+    expect(await client.forwardWebhookCallback({ body, headers })).toEqual({
+      status: 401,
+      body: '{"code":"UNAUTHORIZED"}',
+    });
+  });
+
+  it('is unavailable without a url or key, or when fetch throws', async () => {
+    for (const overrides of [
+      { url: undefined },
+      { apiKey: undefined },
+    ] as Partial<EngineClientDeps>[]) {
+      const { client, fetchMock } = setup(() => json(200, {}), overrides);
+      expect(await client.forwardWebhookCallback({ body, headers })).toEqual({
+        kind: 'unavailable',
+      });
+      expect(fetchMock).not.toHaveBeenCalled();
+    }
+    const { client } = setup(() => {
+      throw new Error('down');
+    });
+    expect(await client.forwardWebhookCallback({ body, headers })).toEqual({
+      kind: 'unavailable',
+    });
+  });
+
+  it('logs the status only', async () => {
+    const { client, log } = setup(() => json(200, { secret: 'zzz' }));
+    await client.forwardWebhookCallback({ body, headers });
+    const lines = log.mock.calls.map((c) => String(c[0])).join('\n');
+    expect(lines).toContain('status=200');
+    expect(lines).not.toMatch(/zzz|sha256|wh-1/);
+  });
+});

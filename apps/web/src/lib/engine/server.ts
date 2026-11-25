@@ -15,3 +15,12 @@ export async function engineClient(): Promise<EngineClient> {
     },
   });
 }
+
+/** For the webhook callback route: no session, so no access token is read. */
+export function callbackEngineClient(): EngineClient {
+  return createEngineClient({
+    url: process.env.ENGINE_URL,
+    apiKey: process.env.ENGINE_API_KEY,
+    accessToken: async () => null,
+  });
+}
