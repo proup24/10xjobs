@@ -2,7 +2,7 @@
 
 ## Goal
 
-The hosted engine collects Indeed jobs for every published profile with Indeed on, through the actor slice 01 picked, on a schedule and under a daily cap.
+The hosted engine collects Indeed jobs for every published profile with Indeed on, through valig, the actor slice 01 picked, on a schedule and under a daily cap.
 
 ## What exists
 
@@ -33,5 +33,5 @@ The hosted engine collects Indeed jobs for every published profile with Indeed o
 
 - ~~Indeed's keyword limits and whether one search per profile group fits.~~ The LinkedIn merged boolean keyword works as is, up to 403 characters (slice 01). The longer limit is still unmeasured.
 - Indeed's language per site: on ma.indeed.com, the recipe's French role words find French titles (slice 01). Portuguese and Polish are still open.
-- ~~How remote is filtered per site.~~ Location `Remote` works on the US and UK sites. kaix's remote filter doesn't (rich mode). memo23's remote attribute is to be rechecked on the weekday re-run (slice 01).
-- ~~Rows per search per tick.~~ In the slice 01 window, no search passed one page (15 rows), so a tick's cost is mostly the start fee. Recheck on the weekday re-run.
+- ~~How remote is filtered per site.~~ Location `Remote` works on the US and UK sites. kaix's remote filter doesn't (rich mode). memo23's remote attribute isn't either (58% lost on the weekday re-run). valig, the pick, has only location `Remote`.
+- Rows per search per tick. On Sunday no search passed one page (15 rows). On the weekday re-run, the US remote search filled the 100-row cap, while UK and Morocco stayed under 10. What cap the US needs, and what it costs (valig: about $0.0009 per start plus $0.09 per 1,000 rows), is open.
