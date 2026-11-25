@@ -13,7 +13,7 @@ The hosted engine collects Indeed jobs for every published profile with Indeed o
 - A new channel, `INDEED`, built the Phase 3 slice 07 way, so a later trial actor (curious_coder is the candidate) needs only its channel value, input mapper, collector config and ingest mapper.
 - Searches built per profile from the same recipe as LinkedIn (role words, spellings), for profiles with the Indeed switch on:
   - remote: one search per **main market** (US, Brazil, Poland, UK, Canada _(user)_), whatever regions the profile names;
-  - on-site and hybrid: each country the profile names that has an Indeed site (Morocco: `ma`), as one search per place.
+  - each country the profile names, for remote, hybrid or on-site, that has an Indeed site (Morocco: `ma`): one search of that whole site _(user)_.
 - Indeed's sites as data: a table the engine reads. Adding a market is a row plus `db:regenerate`.
 - Hourly collection, weekdays 09:00–21:00 Morocco time, each run looking back 24 hours, a fixed cap of 1,000 rows per search _(user)_.
 - A daily cap of its own, `COLLECTION_DAILY_BUDGET_USD_INDEED`, counted from Apify's final cost, never shared with harvestapi's.
@@ -32,6 +32,7 @@ The hosted engine collects Indeed jobs for every published profile with Indeed o
 - **Missing the right jobs.** valig ranks by relevance, so a run that stops at its row cap silently drops the tail, and every later run drops the same jobs. The cap is set far above the measured supply, and hitting it is recorded, never silent.
 - **Spend that grows unseen.** Every run counts toward the Indeed daily cap, and the cap stops collection before it is passed.
 - **Searching places the profile didn't ask for.** Regions are never expanded into countries. Remote main-market searches are the one deliberate exception, decided in the Phase 5 brainstorm.
+- **Missing local remote jobs.** A country the profile names for remote gets its own site's search, not only the main markets.
 
 ## Evidence this rests on
 
@@ -49,7 +50,9 @@ Per profile with Indeed on, at the measured supply:
 | -------------------------- | ------- | ----------------- |
 | US remote, about 145 rows  | $0.014  | $0.18             |
 | 5 other searches, few rows | $0.006  | $0.08             |
-| **Total**                  | $0.02   | **about $0.26**   |
+
+The table assumes one named country (Morocco). Each further named country adds about $0.002 a run.
+| **Total** | $0.02 | **about $0.26** |
 
 Three profiles: about $0.80 a day. Repeat rows cost Apify money only: ingest drops a job it already has by its Indeed job key, so processing sees about one day's unique jobs, about 160 per profile per day.
 
@@ -98,7 +101,9 @@ An engine-only table (RLS on, no policies), say `indeed_markets`, in the Prisma 
 `indeedRecipes(input)` builds one recipe per search place, for the profile's position and ranked skills, through a new `INDEED` builder in `CHANNEL_QUERY_BUILDERS`:
 
 - **Remote:** one recipe per `mainRemote` market, with `type: remote`, location the market's `remoteLocation`, and params `{ site, location }`. It's built whenever the profile wants remote at all (`locations.remote` not empty), whatever the regions.
-- **On-site and hybrid:** for each place in `locations.onsite` or `locations.hybrid` that resolves to a country with a market row: a country place searches the whole site (empty location), and a city place searches that city on its country's site. On-site and hybrid for the same place make **one** search, because valig has no arrangement filter. The matcher decides the arrangement. A region place (`Europe`) gets no Indeed search.
+- **Named countries** _(user)_: each country the profile names for remote, hybrid or on-site that resolves to a market row gets **one** search of its whole site, with an empty location and `type` left to the matcher. valig has no arrangement filter, so one search covers every arrangement, and the matcher decides. Morocco returned 7 rows (about $0.002 a run). One exception: a country named only for remote that is also a main market (the US, Canada) adds nothing, because its main-market remote search covers it.
+- **Named cities** (on-site or hybrid): the city text on its country's site, unless that country already has a whole-site search.
+- **Regions** (`Europe`, `Africa`): no Indeed search of their own. Their remote side is covered by the main markets.
 - **No seniority filter and no seniority word:** valig has none, and the profile's levels stay with the matcher.
 - **Keyword:** the LinkedIn recipe's role words and spellings, merged the LinkedIn way (`mergedLinkedinKeyword`, `linkedinMemberWords`): builders that share a site and location are grouped, and their words merge into the fewest keywords that fit. That includes builders from different profiles, so profiles share runs like LinkedIn's. The LinkedIn limits (319 characters, 25 terms) are kept as the packing limit _(my call: they're known to work, and Indeed took 403)_.
 - Recipes join the query recipe version. Shipping this bumps `QUERY_SEARCH_RECIPE_VERSION`, and the rollout runs `db:regenerate`.
@@ -134,7 +139,7 @@ They apply only to a profile that lists Portuguese or Polish, on LinkedIn as wel
 
 ## Tests
 
-- Recipes: remote searches per main market only; on-site and hybrid merged per place; a city searches its city, a country searches the whole site; a region gets nothing; a country without a market row gets nothing; no seniority word; Portuguese and Polish words only when the profile lists them.
+- Recipes: one remote search per main market; one whole-site search per named country, whatever its arrangements; nothing extra for a main market named only for remote; a city searches its city unless its country has a whole-site search; a region gets nothing; a country without a market row gets nothing; no seniority word; Portuguese and Polish words only when the profile lists them.
 - The switch: on attaches Indeed builders, off detaches them, and `db:regenerate` and `db:publish-drafts` respect it (slice 02's paths with the real channel).
 - Input mapper: `datePosted` is `1` for a one-hour window, `3` for 60 hours, `limit` 1,000, `location` from the recipe.
 - Collection: the per-channel budget env, the row-cap flag at exactly 1,000 rows, and that an `INDEED` batch is stored and left pending by ingest.
@@ -143,7 +148,7 @@ They apply only to a profile that lists Portuguese or Polish, on LinkedIn as wel
 ## Rollout check on dev
 
 1. Merge and deploy. Migrations apply on dev at deploy. Run `db:regenerate`.
-2. Set `indeedSearch = true` on the owner's profile directly (the switch stays hidden). Confirm its Indeed builders: 5 remote and 1 Morocco.
+2. Set `indeedSearch = true` on the owner's profile directly (the switch stays hidden). Confirm its Indeed builders follow the rules above: the 5 main-market remote searches, plus one whole-site search per named country that isn't covered (Morocco).
 3. Add `worker-indeed` to the hosted engine, with `COLLECTION_DAILY_BUDGET_USD_INDEED=1`.
 4. After the first weekday: runs on every hourly tick, rows per search, the row-cap flag never set, spend against the cap, and batches stored and pending.
 5. Brazil, Poland and Canada: rows returned with `Remote`. If a site returns nothing or ignores it, fix its `remoteLocation` row (Portuguese `Remoto` is the first guess for Brazil) and rerun `db:regenerate`.
