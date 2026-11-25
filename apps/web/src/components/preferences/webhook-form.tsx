@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Code } from '@/components/ui/text';
+import { Code, TextLink } from '@/components/ui/text';
 import type { SaveResult } from '@/lib/setup/save-result';
 import { cn } from '@/lib/utils';
 import {
@@ -20,6 +20,7 @@ import {
   setWebhookEnabled,
 } from '@/lib/webhook/actions';
 import type { WebhookView } from '@/lib/webhook/load';
+import { formatDeliveryTime } from '@/components/preferences/webhook-deliveries';
 import { urlProblem } from '@/lib/webhook/url';
 
 const MASK = '••••••••••••';
@@ -66,7 +67,15 @@ function Row({
  * The webhook's URL, on/off switch, signing secret and test send. Without a webhook only
  * the URL shows; saving one creates it, on. Each action refreshes the server data.
  */
-export function WebhookForm({ webhook }: { webhook: WebhookView | null }) {
+export function WebhookForm({
+  webhook,
+  callbackUrl,
+  docsUrl,
+}: {
+  webhook: WebhookView | null;
+  callbackUrl: string;
+  docsUrl?: string;
+}) {
   const router = useRouter();
   const { setDirty } = useUnsavedChanges();
   const saved = webhook?.url ?? '';
@@ -131,6 +140,16 @@ export function WebhookForm({ webhook }: { webhook: WebhookView | null }) {
       toast.success('Copied');
     } catch {
       toast.error("Couldn't copy. Show the secret and copy it by hand.");
+    }
+  }
+
+  async function copyId() {
+    if (!webhook) return;
+    try {
+      await navigator.clipboard.writeText(webhook.id);
+      toast.success('Copied');
+    } catch {
+      toast.error("Couldn't copy. Select the ID and copy it by hand.");
     }
   }
 
@@ -226,6 +245,31 @@ export function WebhookForm({ webhook }: { webhook: WebhookView | null }) {
                 }
               />
             </div>
+          </Row>
+
+          <Row label="ID">
+            <Code className="min-w-0 break-all">{webhook.id}</Code>
+            <Button variant="outline" size="sm" onClick={copyId}>
+              Copy ID
+            </Button>
+          </Row>
+
+          <Row label="Callback">
+            <Code className="min-w-0 break-all">{callbackUrl}</Code>
+            <span className="text-muted-foreground">
+              {webhook.lastCallbackAt
+                ? `Last callback: ${formatDeliveryTime(webhook.lastCallbackAt, 'UTC')} UTC`
+                : 'Last callback: Never'}
+            </span>
+            {docsUrl && (
+              <TextLink
+                href={`${docsUrl}#calling-back`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                How to call back
+              </TextLink>
+            )}
           </Row>
 
           <div className="flex flex-wrap justify-between gap-2 sm:pl-22">

@@ -27,6 +27,7 @@ const J2 = '33333333-3333-4333-8333-333333333333';
 const M1 = '44444444-4444-4444-8444-444444444444';
 
 const WEBHOOK = {
+  id: 'w1',
   url: 'https://hooks.example.com/a',
   secret: 's'.repeat(43),
   enabled: true,
@@ -57,9 +58,11 @@ function client(opts: {
   deliveries?: Result;
   matches?: Result;
   reviews?: Result;
+  callbacks?: Result;
 }) {
   const webhooks = query(opts.webhook);
   const deliveries = query(opts.deliveries ?? { data: [], error: null });
+  const callbacks = query(opts.callbacks ?? { data: null, error: null });
   const rpc = vi.fn(
     async (_name: string, args: { p_outcome: string }) =>
       (args.p_outcome === 'review' ? opts.reviews : opts.matches) ?? {
@@ -71,14 +74,37 @@ function client(opts: {
   const supabase = {
     from: (table: string) => {
       tables.push(table);
+      if (table === 'webhook_callbacks') return callbacks.builder;
       return table === 'webhooks' ? webhooks.builder : deliveries.builder;
     },
     rpc,
   } as never;
-  return { supabase, webhooks, deliveries, rpc, tables };
+  return { supabase, webhooks, deliveries, callbacks, rpc, tables };
 }
 
 describe('loadWebhook', () => {
+  it('lastCallbackAt is the newest callback receivedAt, null with none', async () => {
+    const some = client({
+      webhook: { data: WEBHOOK, error: null },
+      callbacks: {
+        data: { receivedAt: '2026-11-25T10:00:00Z' },
+        error: null,
+      },
+    });
+    const r = await loadWebhook(some.supabase);
+    expect(r.webhook?.lastCallbackAt).toBe('2026-11-25T10:00:00Z');
+    expect(some.callbacks.calls).toContainEqual([
+      'order',
+      'receivedAt',
+      { ascending: false },
+    ]);
+    expect(some.callbacks.calls).toContainEqual(['limit', 1]);
+    const none = client({ webhook: { data: WEBHOOK, error: null } });
+    expect(
+      (await loadWebhook(none.supabase)).webhook?.lastCallbackAt,
+    ).toBeNull();
+  });
+
   it('returns null webhook when none', async () => {
     const c = client({ webhook: { data: null, error: null } });
     expect(await loadWebhook(c.supabase)).toEqual({
@@ -96,8 +122,12 @@ describe('loadWebhook', () => {
       deliveries: { data: [], error: null },
     });
     const r = await loadWebhook(c.supabase);
-    expect(r.webhook).toEqual(WEBHOOK);
-    expect(c.tables).toEqual(['webhooks', 'webhook_deliveries']);
+    expect(r.webhook).toEqual({ ...WEBHOOK, lastCallbackAt: null });
+    expect(c.tables).toEqual([
+      'webhooks',
+      'webhook_deliveries',
+      'webhook_callbacks',
+    ]);
     expect(c.deliveries.calls).toContainEqual([
       'order',
       'createdAt',

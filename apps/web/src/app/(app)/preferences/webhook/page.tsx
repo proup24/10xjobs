@@ -1,3 +1,4 @@
+import { headers } from 'next/headers';
 import { WebhookDeliveries } from '@/components/preferences/webhook-deliveries';
 import { WebhookForm } from '@/components/preferences/webhook-form';
 import { TextLink } from '@/components/ui/text';
@@ -18,6 +19,15 @@ export default async function Page() {
   // The layout already read the profiles; `cache` hands back the same labels.
   const { labels } = await preferenceProfiles();
   const { webhook, deliveries } = await loadWebhook(supabase, labels);
+  // The web app has no site-URL setting: build the callback URL from the request's origin.
+  const h = await headers();
+  const host = h.get('x-forwarded-host') ?? h.get('host') ?? 'localhost:3000';
+  const proto =
+    h.get('x-forwarded-proto') ??
+    (host.startsWith('localhost') || host.startsWith('127.')
+      ? 'http'
+      : 'https');
+  const callbackUrl = `${proto}://${host}/api/webhooks/callback`;
   return (
     <div className="flex flex-col gap-10">
       <section aria-labelledby="webhook-title" className="flex flex-col gap-6">
@@ -32,7 +42,11 @@ export default async function Page() {
             </TextLink>
           </p>
         </div>
-        <WebhookForm webhook={webhook} />
+        <WebhookForm
+          webhook={webhook}
+          callbackUrl={callbackUrl}
+          docsUrl={DOCS_URL}
+        />
       </section>
       {webhook && (
         <section

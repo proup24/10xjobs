@@ -5,6 +5,7 @@ import { loadError } from '@/lib/setup/load';
 type Client = SupabaseClient<Database>;
 
 export type WebhookView = {
+  id: string;
   url: string;
   secret: string;
   enabled: boolean;
@@ -13,6 +14,8 @@ export type WebhookView = {
   consecutiveFailures: number;
   lastSuccessAt: string | null;
   lastFailureAt: string | null;
+  /** The newest signed callback the receiver sent; null when none yet. */
+  lastCallbackAt: string | null;
 };
 
 export type DeliveryRow = {
@@ -55,7 +58,7 @@ export async function loadWebhook(
   const w = await supabase
     .from('webhooks')
     .select(
-      'url, secret, enabled, disabledReason, consecutiveFailures, lastSuccessAt, lastFailureAt',
+      'id, url, secret, enabled, disabledReason, consecutiveFailures, lastSuccessAt, lastFailureAt',
     )
     .maybeSingle();
   if (w.error) throw loadError('webhook read', w.error);
@@ -125,5 +128,16 @@ export async function loadWebhook(
       createdAt: r.createdAt,
     };
   });
-  return { webhook: w.data, deliveries };
+
+  const c = await supabase
+    .from('webhook_callbacks')
+    .select('receivedAt')
+    .order('receivedAt', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (c.error) throw loadError('webhook callbacks read', c.error);
+  return {
+    webhook: { ...w.data, lastCallbackAt: c.data?.receivedAt ?? null },
+    deliveries,
+  };
 }
