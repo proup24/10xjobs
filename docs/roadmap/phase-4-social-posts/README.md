@@ -20,7 +20,7 @@ Same as Phases 1 to 3: each slice is a short brief covering the goal, what exist
 | 01  | [Collect](01-collect.md)                       | Built ([spec](../../superpowers/specs/2026-11-20-posts-collect-design.md)) |
 | 02  | [Prepare](02-prepare.md)                       | Built ([spec](../../superpowers/specs/2026-11-21-posts-prepare-design.md)) |
 | 03  | [Extract](03-extract.md)                       | Built ([spec](../../superpowers/specs/2026-11-22-posts-extract-design.md)) |
-| 04  | [Ingest and qualify](04-ingest-and-qualify.md) | Brief                                                                      |
+| 04  | [Ingest and qualify](04-ingest-and-qualify.md) | Spec ([spec](../../superpowers/specs/2026-11-25-posts-qualify-design.md))  |
 | 04a | [Social posts page](04a-social-posts-page.md)  | Brief                                                                      |
 | 04b | [Open post search](04b-open-post-search.md)    | Brief                                                                      |
 | 05  | [Send email](05-send-email.md)                 | Brief                                                                      |
@@ -48,7 +48,7 @@ Same as Phases 1 to 3: each slice is a short brief covering the goal, what exist
   - Every sent email is visible to the user with its content, time and match reason.
   - No connected Gmail or no resume: nothing is sent.
 - **Social posts get their own page in the web app** _(user, 2026-11-21)_. Matches are separated by source, starting with social posts; job-board matches stay in today's view. On the social posts page:
-  - posts with a stated email are applied to automatically and show under **Applied**, never under matches;
+  - posts with a stated email are applied to automatically and show in **Applications**, never under matches _(changed 2026-11-25: no separate Applied tab)_;
   - every other post match is listed under **Matches** for the user to act on by hand: "connect / DM me / comment" posts, external apply links, and links to a LinkedIn job board listing. Nothing is ever sent to LinkedIn.
 - **Prepare drops only near-certain junk** _(user, 2026-11-21)_. Claude quota is the worry, but anything uncertain goes to Extract, including posts with no email or apply link. Prepare merges only exact duplicates (LinkedIn links them, or their cleaned text is identical); a post with different text is always read, so a second role at the same company is never hidden.
 - **Two kinds of blocked authors** _(user, 2026-11-21)_:

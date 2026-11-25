@@ -15,9 +15,10 @@ Decided in the slice 02 brainstorm _(user, 2026-11-21)_: matches are separated b
 
 ## In scope
 
-- **The social posts page**, with two views _(user)_:
+- **The matches page gets sub-pages when post search is on** _(user, 2026-11-25, slice 04 brainstorm)_: one for job-board listings, one for social posts, never mixed. Slice 04 hides post matches from today's views until this slice adds the posts sub-page.
+- **The social posts sub-page**, with two views _(user)_:
   - **Matches:** every post match the user acts on by hand: "connect / DM me / comment" posts (with links to the post and the author), external apply links, and links to a LinkedIn job board listing.
-  - **Applied:** posts with a stated email, applied to automatically. They never show under Matches. Slice 05 fills it; this slice lays it out.
+  - ~~Applied~~ _(replaced 2026-11-25, slice 04 brainstorm)_: an emailed post is an `applied` decision and shows in the existing **Applications** page, not in a tab of its own.
 - Each post match shows its facts, the original post (and for a share, the sharer's text), the author, how to apply, and why it matched.
 - **A Junk tab** next to Matches and Disqualified _(user, 2026-11-22, slice 03 brainstorm)_: the posts Extract ruled not hiring or junk, with the verdict and its reason, from the user's own searches. The owner watches it to confirm the junk.
 - **A review list** for posts whose verdict Extract was unsure of _(user, 2026-11-22)_: not a match, never emailed, like the job board's review outcome.
@@ -36,4 +37,5 @@ Decided in the slice 02 brainstorm _(user, 2026-11-21)_: matches are separated b
 
 - Where the social posts page sits in the app's navigation, and what it shows before post search is on.
 - Can a user block an author straight from a post match, besides the preferences page?
-- What the Applied view shows before slice 05 ships, and before Gmail is connected: "would have emailed"?
+- What Applications shows for an emailable post before slice 05 ships, and before Gmail is connected: "would have emailed"?
+- How a post linked to a job-board listing or another post (slice 04's linked group) is shown: "also on the job board", "also posted by …". Post match webhooks: whether they exist and what they carry (slice 04 keeps webhooks listing-only).
