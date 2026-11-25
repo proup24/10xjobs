@@ -52,27 +52,28 @@ Marked _(user)_ where the owner decided, _(proposal)_ where it was my proposal i
 ### Facts of a role job
 
 - A role job's facts are built by `FactsService` from its role extraction alone. There's no LinkedIn listing, so every listing-sourced input is absent: places, workplace type, `expiresAt`, salary from the listing. Each is treated as the listing not stating it, and the description facts decide.
-- **Posting language** reads the text the role was read from: the post's cleaned text and, for a share, the original's. It does not read a description the role job doesn't have _(my call)_.
+- **Posting language** reads the role job's `descriptionText`, which the processor copies from the post job: Prepare's description, the original's text for a share, else the post's own _(my call; planning found it already works this way)_.
+- **The role job's `postedAt` is the original post's date** (the shared post's for a share, else the post's), not the sharer's _(my call, planning)_. `postAge` and 04a's "posted N days ago" read it.
 - Closed facts follow the role job (a role that disappears from its post is archived, not closed).
 
-### The checks added (they apply to every source, but only posts trigger them)
+### The checks added for posts
 
-These are new checks in the matcher, not post-only rules. A listing always passes them with "nothing to check". They run in this order, after the existing checks.
+Three new checks, run after the existing ones, in this order. They are about the post itself (its verdict, its author, its age), so they are appended only to a role job's decision. A listing's decision keeps its ten checks, and the web app needs no "nothing to check" rows for them _(my call, planning)_.
 
-1. **`hiringVerdict`**: reads the parent post extraction's verdict confidence. `unsure` fails as unsure, so the decision is at best `review` (rule `hiringVerdict`, field `verdict`) and never `qualified` _(slice 03, user)_. `sure` passes. A listing has nothing to check.
-2. **`blockedAuthor`**: fails, sure, when any author of the post is on the user's blocked list. That covers the original's author and every sharer in `postSources`. The reason names the author: `you blocked <name>`. A listing has nothing to check. Checking sharers too is _(my call)_: a user who blocks a recruiter means none of that recruiter's posts, including reshares.
-3. **`postAge`**: fails, sure, when the original post (the shared post for a share, else the post itself) was posted more than `POST_MAX_AGE_DAYS` (30) days before the decision. The reason is `posted <n> days ago`. A missing `postedAt` is `unknown`. A listing has nothing to check: listing age keeps working through `MATCH_BACKFILL_DAYS` and `expiresAt` _(proposal)_. On dev only 2 of 708 hiring post sources are shares and the median post is 2 days old, so this is a safety net. **Ageing takes effect without a new observation** _(my call, from the builder check)_: a role qualified on day 29 must not stay qualified, so the facts of a role carry the moment its original turns 30 days old, and the sweep re-decides the role once that moment passes, the way a passed `expiresAt` makes listing facts stale. Unlike a closed listing, the row is decided again (and comes out `rejected`), not kept as it was. Slice 05 still checks the age at send time.
+1. **`hiringVerdict`**: reads the parent post extraction's verdict confidence. `unsure` fails as unsure, so the decision is at best `review` (rule `hiringVerdict`, field `verdict`) and never `qualified` _(slice 03, user)_. `sure` passes.
+2. **`blockedAuthor`**: fails, sure, when any author of the post is on the user's blocked list. That covers the original's author and every sharer in `postSources`. The reason names the author: `you blocked <name>`. Checking sharers too is _(my call)_: a user who blocks a recruiter means none of that recruiter's posts, including reshares.
+3. **`postAge`**: fails, sure, when the original post (the shared post for a share, else the post itself) was posted more than `POST_MAX_AGE_DAYS` (30) days before the decision. The reason is `posted <n> days ago`. A missing `postedAt` is `unknown`. Listing age keeps working through `MATCH_BACKFILL_DAYS` and `expiresAt` _(proposal)_. On dev only 2 of 708 hiring post sources are shares and the median post is 2 days old, so this is a safety net. **Ageing takes effect without a new observation** _(my call, from the builder check)_: a role qualified on day 29 must not stay qualified, so the facts of a role carry the moment its original turns 30 days old, and the sweep re-decides the role once that moment passes, the way a passed `expiresAt` makes listing facts stale. Unlike a closed listing, the row is decided again (and comes out `rejected`), not kept as it was. Slice 05 still checks the age at send time.
 
 Because a rejection needs only one sure fail, a blocked author or an old original rejects whatever else passes. Because the checks run with no early exit, the stored `checks` still show the whole picture.
 
 ### Tech lead roles _(proposal)_
 
-A `tech_lead` profile fails position today on a role like "Tech Lead Fullstack", which Extract codes as `fullstack_engineer` because the kind follows the duties. The position check changes for every source: a `tech_lead` profile **passes** position when the job's role kind is any software engineering kind and its seniority is `lead` (or a seniority code that stands for leading a team; the builder confirms against the seniority vocabulary). The other profiles are unchanged, and an exact role kind still passes as before. Seniority is not touched: a `tech_lead` profile whose seniority set leaves out `lead` still fails seniority on a lead role, because the profile said so _(my call)_. The reason says so: `lead-level fullstack_engineer counts for tech_lead`. This changes listings too, so it ships with a `MATCHER_VERSION` bump and a `db:rematch -- --all`.
+A `tech_lead` profile fails position today on a role like "Tech Lead Fullstack", which Extract codes as `fullstack_engineer` because the kind follows the duties. The position check changes for every source: a `tech_lead` profile **passes** position when the job's role kind is any software engineering kind and its seniority is `lead` (the only seniority code that stands for leading a team; `staff` and `principal` are individual-contributor levels). The other profiles are unchanged, and an exact role kind still passes as before. Seniority is not touched: a `tech_lead` profile whose seniority set leaves out `lead` still fails seniority on a lead role, because the profile said so _(my call)_. The reason says so: `lead-level fullstack_engineer counts for tech_lead`. This changes listings too, so it ships with a `MATCHER_VERSION` bump and a `db:rematch -- --all`.
 
 ### Blocked authors, per user _(user, slice 02 brainstorm)_
 
 - A new user-owned table `blocked_authors`: `userId`, `authorKey` (the same key Prepare uses: `profile:<publicIdentifier>` or `company:<universalName>`, lowercased), `profileUrl` (the LinkedIn link the user gave), an optional display `name`, timestamps, and unique `(userId, authorKey)`. RLS: owners select, insert and delete their own rows. The engine reads them all.
-- The list covers all of the user's profiles _(user)_. Turning a pasted LinkedIn profile or company link into an `authorKey` is a shared function used by 04a's page and by tests here.
+- The list covers all of the user's profiles _(user)_. Turning a pasted LinkedIn profile or company link into an `authorKey` is 04a's, with its page; tests here insert keys directly.
 - **Re-deciding on a change:** any insert or delete bumps `users.eligibilityVersion`, with a trigger like the work-authorization ones. The sweep's existing staleness then re-decides that user's rows, listings included (they pass the check and keep their outcome). This reuses a mechanism that is already tested instead of adding a third version column _(my call)_.
 - This slice adds the table, the trigger and the rule, and no UI. 04a adds the page. Until then the owner can insert rows by SQL to check the rule on dev.
 - Slice 05 honours the list for emails. Because a blocked author's role is `rejected` for that user, slice 05 never sees it as qualified anyway.
@@ -90,7 +91,7 @@ A `tech_lead` profile fails position today on a role like "Tech Lead Fullstack",
 ### Separate views _(user)_
 
 - The owner decided: when post search is on, the matches page has sub-pages, one for job-board listings and one for social posts, never mixed. An emailed post shows in **Applications**, as an `applied` decision, not in a separate "Applied" tab. This changes 04a's and 05's briefs, updated with this spec.
-- This slice ships before 04a's sub-pages. Until they exist, every reader of `job_matches` in the web app (matches, review, rejected, the job details page) and the match webhooks filter out role jobs, so today's views keep showing listings only. 04a then adds the posts sub-page on top _(proposal)_. Webhooks staying listing-only until 04a decides what a post webhook carries is _(my call)_.
+- This slice ships before 04a's sub-pages. Until they exist, every reader of `job_matches` in the web app (matches, review, rejected, the job details page) and the match webhooks filter out role jobs, so today's views keep showing listings only. In the web app this is a new `p_kind` parameter on `match_details`, defaulting to `'job'`, which 04a passes as `'post_role'` _(my call, planning)_. 04a then adds the posts sub-page on top _(proposal)_. Webhooks staying listing-only until 04a decides what a post webhook carries is _(my call)_.
 - The owner and testers can read post decisions on dev through SQL and `db:analyze` until 04a ships.
 
 ## Approaches
@@ -118,10 +119,7 @@ A `tech_lead` profile fails position today on a role like "Tech Lead Fullstack",
 
 ## Left to the builder
 
-- Where `linkKeys` is computed (the processor's role writer is the natural place) and how existing role jobs get theirs: a one-off backfill, or a `db:reprocess` of post jobs through extraction reuse with no model call.
-- Whether `hiringVerdict` reads the verdict from the parent's current extraction at match time, or from a column copied onto the role. Facts staleness must notice when the parent is re-extracted.
-- The exact seniority codes that count as lead for the `tech_lead` rule.
-- Splitting into PRs. A natural split: (1) the matcher widening and the three checks, with the web and webhook filters in the same PR, so nothing leaks; (2) blocked authors; (3) links and shared decisions; (4) tech lead.
+- Splitting into PRs (the plan settles three: matching with blocked authors and the filters, so nothing leaks; links and shared decisions; tech lead).
 
 ## Rollout check on dev
 
