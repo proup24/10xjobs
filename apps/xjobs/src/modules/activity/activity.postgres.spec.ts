@@ -48,7 +48,7 @@ describe.skipIf(!url)('activity in PostgreSQL', () => {
   beforeEach(async () => {
     await exec(
       db.raw
-        .sql`TRUNCATE webhook_deliveries, webhooks, job_decisions, job_matches, profile_query_search_builders, query_search_builder, profiles, job_extractions, normalized_jobs CASCADE`,
+        .sql`TRUNCATE job_views, match_reviews, webhook_deliveries, webhooks, job_decisions, job_matches, profile_query_search_builders, query_search_builder, profiles, job_extractions, normalized_jobs CASCADE`,
     );
   });
 
@@ -217,6 +217,34 @@ describe.skipIf(!url)('activity in PostgreSQL', () => {
     );
   }
 
+  async function seedView(
+    userId: string,
+    jobId: string,
+    viewedAt: Date,
+  ): Promise<void> {
+    await exec(
+      db.raw.sql`INSERT INTO job_views (id, "userId", "jobId", "viewedAt")
+        VALUES (${randomUUID()}::uuid, ${userId}::uuid, ${jobId}::uuid,
+          ${viewedAt.toISOString()}::timestamptz)`,
+    );
+  }
+
+  async function seedReview(
+    userId: string,
+    profileId: string,
+    matchId: string,
+    jobId: string,
+    createdAt: Date,
+  ): Promise<void> {
+    await exec(
+      db.raw.sql`INSERT INTO match_reviews
+          (id, "userId", "profileId", "matchId", "jobId", choice, rule, field, "createdAt", "updatedAt")
+        VALUES (${randomUUID()}::uuid, ${userId}::uuid, ${profileId}::uuid, ${matchId}::uuid,
+          ${jobId}::uuid, 'qualified', 'location', 'arrangement',
+          ${createdAt.toISOString()}::timestamptz, ${createdAt.toISOString()}::timestamptz)`,
+    );
+  }
+
   async function seedDelivery(
     userId: string,
     profileId: string,
@@ -351,6 +379,37 @@ describe.skipIf(!url)('activity in PostgreSQL', () => {
       expect(await paused()).toEqual([]);
     });
 
+    it('a job view', async () => {
+      const u = await waitingUser(25);
+      await seedView(u.userId, (await seedJob()).jobId, hoursBefore(1));
+      expect(await paused()).toEqual([]);
+    });
+
+    it('a review choice', async () => {
+      const u = await waitingUser(25);
+      const job = await seedJob();
+      const matchId = await seedMatch(u.userId, u.profileId, job, {
+        outcome: 'review',
+        decidedAt: hoursBefore(25),
+      });
+      await seedReview(
+        u.userId,
+        u.profileId,
+        matchId,
+        job.jobId,
+        hoursBefore(1),
+      );
+      expect(await paused()).toEqual([]);
+    });
+
+    it('a view wakes a paused user on the next tick', async () => {
+      const u = await waitingUser(25);
+      expect(await paused()).toEqual([u.builderId]);
+      await seedView(u.userId, u.job.jobId, new Date(at.getTime() + 60_000));
+      const later = new Date(at.getTime() + 120_000);
+      expect([...(await repo.pausedBuilderIds(BOARD, later, H))]).toEqual([]);
+    });
+
     it('a resume', async () => {
       const u = await waitingUser(25);
       await repo.resume(u.userId, hoursBefore(1));
@@ -380,6 +439,19 @@ describe.skipIf(!url)('activity in PostgreSQL', () => {
       await seedDelivery(u.userId, u.profileId, {
         deliveredAt: hoursBefore(-1),
       });
+      await seedView(u.userId, u.job.jobId, hoursBefore(H));
+      const reviewJob = await seedJob();
+      const reviewMatch = await seedMatch(u.userId, u.profileId, reviewJob, {
+        outcome: 'review',
+        decidedAt: hoursBefore(30),
+      });
+      await seedReview(
+        u.userId,
+        u.profileId,
+        reviewMatch,
+        reviewJob.jobId,
+        hoursBefore(-1),
+      );
       expect(await paused()).toEqual([u.builderId]);
     });
   });
@@ -552,6 +624,26 @@ describe.skipIf(!url)('activity in PostgreSQL', () => {
       paused: false,
       lastActiveAt: hoursBefore(30),
     });
+    // A view newer than every other signal, then a review newer still.
+    const viewJob = await seedJob();
+    await seedView(userId, viewJob.jobId, hoursBefore(20));
+    expect((await repo.userState(userId, at, H)).lastActiveAt).toEqual(
+      hoursBefore(20),
+    );
+    const reviewMatch = await seedMatch(userId, profileId, viewJob, {
+      outcome: 'review',
+      decidedAt: hoursBefore(90),
+    });
+    await seedReview(
+      userId,
+      profileId,
+      reviewMatch,
+      viewJob.jobId,
+      hoursBefore(10),
+    );
+    expect((await repo.userState(userId, at, H)).lastActiveAt).toEqual(
+      hoursBefore(10),
+    );
     expect(await repo.userState(await seedUser(), at, H)).toEqual({
       paused: false,
       lastActiveAt: null,
