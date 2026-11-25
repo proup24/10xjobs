@@ -8,6 +8,8 @@ export interface PlaceIndex {
   countryOfCity: Map<string, string>;
   /** Approved country codes (countries): a two-letter code outside it is not a sure country. */
   countries: Set<string>;
+  /** city id -> its name (cities), for reasons; a city missing here is named by its country. */
+  nameOfCity?: Map<string, string>;
 }
 
 export type Overlap = 'yes' | 'maybe' | 'no';

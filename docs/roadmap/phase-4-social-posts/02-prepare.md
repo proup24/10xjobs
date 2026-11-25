@@ -1,5 +1,7 @@
 # 02: Prepare
 
+Status: built. Spec: [posts prepare design](../../superpowers/specs/2026-11-21-posts-prepare-design.md). Built in PRs #108, #110 and #116.
+
 ## Goal
 
 Clean each raw post and drop the ones that clearly aren't hiring, with cheap rules, before any Claude call. Every dropped post keeps a reason, so a wrong drop can be found and fixed.
