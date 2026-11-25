@@ -4,12 +4,13 @@ import { DatabaseService } from 'src/database';
 import type { DatabaseTransaction } from '@xjobs/database';
 import { FACTS_VERSION } from 'src/modules/facts/config/facts.config';
 import { RatesRepository } from 'src/modules/rates';
-import { linkedInJobIds } from 'src/modules/processor';
+import { hasLinkedInSourceSql } from 'src/modules/processor';
 import { EXTRACTION_SCHEMA_VERSION } from 'src/modules/processor/schema';
 import type { PlacesByArrangement } from 'src/modules/users/types/place.types';
 import {
   MATCH_BACKFILL_DAYS,
   MATCHER_VERSION,
+  POST_AGE_STALE_MARGIN_MINUTES,
   POST_MAX_AGE_DAYS,
 } from '../config/matcher.config';
 import type { Decision, MatchContext } from '../rules/decide';
@@ -137,11 +138,12 @@ const TIMESTAMP = 'pg/timestamptz-date@1';
  * current extraction `e`: an active, processed, open LinkedIn job or LinkedIn
  * post role seen within the backfill window, with a current-schema (v3)
  * extraction. `processed` keeps archived roles out; a `post` job is never
- * matched (its roles are).
+ * matched (its roles are). The LinkedIn source test is the correlated one:
+ * inside the OR, `id IN (linkedInJobIds)` would hash every LinkedIn source.
  */
 function matchable(raw: Raw) {
   return raw.sql`j.status = 'active'
-    AND ((j.kind = 'job' AND j.id IN (${linkedInJobIds(raw)})) OR j.kind = 'post_role')
+    AND ((j.kind = 'job' AND ${hasLinkedInSourceSql(raw, 'j')}) OR j.kind = 'post_role')
     AND j."processingStatus" = 'processed' AND NOT j.closed
     AND j."lastSeenAt" >= now() - make_interval(days => ${MATCH_BACKFILL_DAYS}::int)
     AND e."schemaVersion" = ${EXTRACTION_SCHEMA_VERSION}::int`.returns(BOOL);
@@ -178,15 +180,18 @@ const TAKES_PART = (raw: Raw) =>
 
 /**
  * The row `m` was decided on the job `j`'s age as it is now: a role job's row decided
- * before its original turned POST_MAX_AGE_DAYS old is stale once that moment has passed,
- * with no new observation needed. A role with no `postedAt` never ages (its check is
+ * before its original turned POST_MAX_AGE_DAYS old is stale once that moment, plus
+ * POST_AGE_STALE_MARGIN_MINUTES, has passed, with no new observation needed. The margin
+ * covers a row decided on the engine clock just before the mark and written (database
+ * `updatedAt`) just after it; a row written after mark + margin is current, so each row
+ * is re-decided at most once. A role with no `postedAt` never ages (its check is
  * `unknown`); the explicit NOT NULL keeps the whole test false, not NULL, so its row
  * stays current.
  */
 const ON_CURRENT_AGE = (raw: Raw) =>
   raw.sql`NOT (j.kind = 'post_role' AND j."postedAt" IS NOT NULL
-    AND j."postedAt" + make_interval(days => ${POST_MAX_AGE_DAYS}::int) <= now()
-    AND m."updatedAt" < j."postedAt" + make_interval(days => ${POST_MAX_AGE_DAYS}::int))`.returns(
+    AND j."postedAt" + make_interval(days => ${POST_MAX_AGE_DAYS}::int, mins => ${POST_AGE_STALE_MARGIN_MINUTES}::int) <= now()
+    AND m."updatedAt" < j."postedAt" + make_interval(days => ${POST_MAX_AGE_DAYS}::int, mins => ${POST_AGE_STALE_MARGIN_MINUTES}::int))`.returns(
     BOOL,
   );
 

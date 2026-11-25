@@ -285,9 +285,11 @@ export function postScopeSql(raw: Raw, alias: string) {
 /**
  * True when the job aliased `alias` has a LinkedIn job board source: the same
  * test as `id IN (linkedInJobIds)`, but correlated, so inside an OR it probes
- * that job's sources by index instead of hashing every LinkedIn source.
+ * that job's sources by index instead of hashing every LinkedIn source. The
+ * processor's scope and the matcher's matchable test both use it.
  */
-function hasLinkedInSourceSql(raw: Raw, alias: string) {
+export function hasLinkedInSourceSql(raw: Raw, alias: string) {
+  if (!ALIAS.test(alias)) throw new Error(`Not a table alias: ${alias}`);
   return fragment(
     raw,
     [

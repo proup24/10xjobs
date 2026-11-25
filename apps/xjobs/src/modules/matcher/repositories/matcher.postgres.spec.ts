@@ -10,7 +10,11 @@ import type { SeedEnvironmentVariables } from 'src/config';
 import { EXTRACTION_SCHEMA_VERSION } from 'src/modules/processor/schema';
 import { fixtureDocument } from 'src/modules/processor/schema/fixture.testing';
 import { FACTS_VERSION } from 'src/modules/facts/config/facts.config';
-import { MATCHER_VERSION } from '../config/matcher.config';
+import {
+  MATCHER_VERSION,
+  POST_AGE_STALE_MARGIN_MINUTES,
+  POST_MAX_AGE_DAYS,
+} from '../config/matcher.config';
 import { PrismaRatesRepository } from 'src/modules/rates/rates.repository';
 import {
   PrismaMatcherRepository,
@@ -1240,6 +1244,22 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
       ).toEqual([p.id]);
       // Decided again: current again.
       await repo.upsertMatches([row(p, role)]);
+      expect(await repo.listStaleJobs(10)).toEqual([]);
+    });
+
+    it('a role row written just after the 30-day mark, within the margin, is stale; after the margin it is not', async () => {
+      const p = await profile({ postSearch: true });
+      const postedAt = new Date(Date.now() - 31 * DAY);
+      const role = await roleJob({ postedAt });
+      await facts(role);
+      await repo.upsertMatches([row(p, role)]);
+      const mark = postedAt.getTime() + POST_MAX_AGE_DAYS * DAY;
+      const margin = POST_AGE_STALE_MARGIN_MINUTES * 60_000;
+      // Decided on the engine clock just before the mark, written two minutes after it.
+      await setMatchUpdatedAt(role.id, new Date(mark + 2 * 60_000));
+      expect(await repo.listStaleJobs(10)).toEqual([role.id]);
+      // Written after mark + margin: current, so the sweep does not loop.
+      await setMatchUpdatedAt(role.id, new Date(mark + margin + 60_000));
       expect(await repo.listStaleJobs(10)).toEqual([]);
     });
 
