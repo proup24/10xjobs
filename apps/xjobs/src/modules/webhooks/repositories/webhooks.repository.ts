@@ -49,6 +49,16 @@ export interface FailureRecord {
   disabled: boolean;
 }
 
+/** What one retention pass changed. */
+export interface Retention {
+  /** Old match rows whose payload and error were cleared. */
+  cleared: number;
+  /** Old test rows deleted. */
+  deleted: number;
+  /** `webhook_callbacks` rows received before the retention period, deleted. */
+  callbacksDeleted: number;
+}
+
 /** Every read and write of webhook deliveries. */
 export abstract class WebhooksRepository {
   /**
@@ -110,10 +120,8 @@ export abstract class WebhooksRepository {
   abstract nextDue(webhookId: string, now: Date): Promise<string | null>;
   /** Rows `sending` for longer than `stuckSendingMs` go back to `pending`, due now; returns how many. */
   abstract recoverStuck(now: Date): Promise<number>;
-  /** Clears old match rows' payload and error, and deletes old test rows. */
-  abstract applyRetention(
-    now: Date,
-  ): Promise<{ cleared: number; deleted: number }>;
+  /** Clears old match rows' payload and error, and deletes old test rows and old callbacks. */
+  abstract applyRetention(now: Date): Promise<Retention>;
 }
 
 /** The wait after a failed attempt number `attempts` (1-based); null when it was the last one. */
@@ -652,9 +660,7 @@ export class PrismaWebhooksRepository extends WebhooksRepository {
     return rows.length;
   }
 
-  async applyRetention(
-    now: Date,
-  ): Promise<{ cleared: number; deleted: number }> {
+  async applyRetention(now: Date): Promise<Retention> {
     const { raw } = this.db;
     const before = new Date(
       now.getTime() - WEBHOOK_CONFIG.retentionDays * 86_400_000,
@@ -676,6 +682,17 @@ export class PrismaWebhooksRepository extends WebhooksRepository {
         .returnsRow({ id: UUID })
         .build(),
     );
-    return { cleared: cleared.length, deleted: deleted.length };
+    const callbacks = await this.db.query(
+      raw.sql`DELETE FROM webhook_callbacks
+        WHERE "receivedAt" < ${before}::timestamptz
+        RETURNING id`
+        .returnsRow({ id: UUID })
+        .build(),
+    );
+    return {
+      cleared: cleared.length,
+      deleted: deleted.length,
+      callbacksDeleted: callbacks.length,
+    };
   }
 }

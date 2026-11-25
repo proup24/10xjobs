@@ -16,7 +16,7 @@ const TEXT = 'pg/text@1';
  * seen in the last 7 days, with no decision, decided at or before
  * `at − hours`; the list of `match_details` and the web page) and none of the
  * six activity signals falls in `(at − hours, at]`: a decision of any status,
- * a job view, a review choice, a delivered match webhook, a resume, or a
+ * a job view, a review choice, a webhook callback, a resume, or a
  * published profile's `publishedAt`. A waiting match implies a published
  * profile.
  */
@@ -54,9 +54,9 @@ export function pausedUsersCte(raw: Raw, at: Date, hours: number): Cte {
              SELECT 1 FROM public.match_reviews r
               WHERE r."userId" = u.id AND r."createdAt" > w."since" AND r."createdAt" <= w."at")
        AND NOT EXISTS (
-             SELECT 1 FROM public.webhook_deliveries x
-              WHERE x."userId" = u.id AND x.kind = 'match' AND x.status = 'delivered'
-                AND x."deliveredAt" > w."since" AND x."deliveredAt" <= w."at")
+             SELECT 1 FROM public.webhook_callbacks x
+              WHERE x."userId" = u.id
+                AND x."receivedAt" > w."since" AND x."receivedAt" <= w."at")
        AND NOT EXISTS (
              SELECT 1 FROM public.profiles p
               WHERE p."userId" = u.id AND p.state = 'published'

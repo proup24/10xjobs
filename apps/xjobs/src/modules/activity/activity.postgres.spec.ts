@@ -48,7 +48,7 @@ describe.skipIf(!url)('activity in PostgreSQL', () => {
   beforeEach(async () => {
     await exec(
       db.raw
-        .sql`TRUNCATE job_views, match_reviews, webhook_deliveries, webhooks, job_decisions, job_matches, profile_query_search_builders, query_search_builder, profiles, job_extractions, normalized_jobs CASCADE`,
+        .sql`TRUNCATE job_views, match_reviews, webhook_callbacks, webhook_deliveries, webhooks, job_decisions, job_matches, profile_query_search_builders, query_search_builder, profiles, job_extractions, normalized_jobs CASCADE`,
     );
   });
 
@@ -276,6 +276,24 @@ describe.skipIf(!url)('activity in PostgreSQL', () => {
     );
   }
 
+  /** A logged callback from the user's receiver (any type counts), received at `receivedAt`. */
+  async function seedCallback(userId: string, receivedAt: Date): Promise<void> {
+    const [webhook] = await db.query(
+      db.raw.sql`INSERT INTO webhooks (id, "userId", url)
+        VALUES (${randomUUID()}::uuid, ${userId}::uuid, 'https://hook.example.com/x')
+        ON CONFLICT ("userId") DO UPDATE SET url = EXCLUDED.url
+        RETURNING id`
+        .returnsRow({ id: 'pg/uuid@1' })
+        .build(),
+    );
+    await exec(
+      db.raw.sql`INSERT INTO webhook_callbacks
+          (id, "userId", "webhookId", "receivedAt", type, result, signature, "createdAt", "updatedAt")
+        VALUES (${randomUUID()}::uuid, ${userId}::uuid, ${webhook!.id as string}::uuid,
+          ${receivedAt.toISOString()}::timestamptz, 'ping', 'ok', ${randomUUID()}, now(), now())`,
+    );
+  }
+
   async function seedBuilder(
     over: { channel?: Channel; isActive?: boolean; isDeleted?: boolean } = {},
   ): Promise<string> {
@@ -371,11 +389,9 @@ describe.skipIf(!url)('activity in PostgreSQL', () => {
       },
     );
 
-    it('a delivered match webhook', async () => {
+    it('a webhook callback', async () => {
       const u = await waitingUser(25);
-      await seedDelivery(u.userId, u.profileId, {
-        deliveredAt: hoursBefore(1),
-      });
+      await seedCallback(u.userId, hoursBefore(1));
       expect(await paused()).toEqual([]);
     });
 
@@ -437,9 +453,8 @@ describe.skipIf(!url)('activity in PostgreSQL', () => {
         'applied',
         hoursBefore(H),
       );
-      await seedDelivery(u.userId, u.profileId, {
-        deliveredAt: hoursBefore(-1),
-      });
+      await seedCallback(u.userId, hoursBefore(H));
+      await seedCallback(u.userId, hoursBefore(-1));
       await seedView(u.userId, u.job.jobId, hoursBefore(H));
       const reviewJob = await seedJob();
       const reviewMatch = await seedMatch(u.userId, u.profileId, reviewJob, {
@@ -455,6 +470,14 @@ describe.skipIf(!url)('activity in PostgreSQL', () => {
       );
       expect(await paused()).toEqual([u.builderId]);
     });
+  });
+
+  it('a delivered match webhook no longer counts', async () => {
+    const u = await waitingUser(25);
+    await seedDelivery(u.userId, u.profileId, {
+      deliveredAt: hoursBefore(1),
+    });
+    expect(await paused()).toEqual([u.builderId]);
   });
 
   it('a failed or test delivery is not a signal', async () => {
@@ -609,8 +632,9 @@ describe.skipIf(!url)('activity in PostgreSQL', () => {
       'expired',
       hoursBefore(40),
     );
-    await seedDelivery(userId, profileId, { deliveredAt: hoursBefore(30) });
-    // Not signals: a failed delivery, a test delivery, a draft's publishedAt.
+    await seedCallback(userId, hoursBefore(30));
+    // Not signals: any delivery (delivered, failed, test), a draft's publishedAt.
+    await seedDelivery(userId, profileId, { deliveredAt: hoursBefore(1) });
     await seedDelivery(userId, profileId, {
       status: 'failed',
       deliveredAt: hoursBefore(1),

@@ -5,6 +5,7 @@ import {
   type Claim,
   type FailureRecord,
   type LoadedMatch,
+  type Retention,
   retryDelayMs,
   WebhooksRepository,
 } from '../webhooks.repository';
@@ -316,9 +317,7 @@ export class MemoryWebhooksRepository extends WebhooksRepository {
     return n;
   }
 
-  async applyRetention(
-    now: Date,
-  ): Promise<{ cleared: number; deleted: number }> {
+  async applyRetention(now: Date): Promise<Retention> {
     const before = now.getTime() - WEBHOOK_CONFIG.retentionDays * 86_400_000;
     let cleared = 0;
     let deleted = 0;
@@ -336,6 +335,7 @@ export class MemoryWebhooksRepository extends WebhooksRepository {
         cleared += 1;
       }
     }
-    return { cleared, deleted };
+    // Callbacks live in MemoryCallbacksRepository; this one holds none.
+    return { cleared, deleted, callbacksDeleted: 0 };
   }
 }

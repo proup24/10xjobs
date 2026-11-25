@@ -19,8 +19,14 @@ function deps() {
     repo: {
       recoverStuck: vi.fn<(now: Date) => Promise<number>>(async () => 1),
       applyRetention: vi.fn<
-        (now: Date) => Promise<{ cleared: number; deleted: number }>
-      >(async () => ({ cleared: 2, deleted: 3 })),
+        (
+          now: Date,
+        ) => Promise<{
+          cleared: number;
+          deleted: number;
+          callbacksDeleted: number;
+        }>
+      >(async () => ({ cleared: 2, deleted: 3, callbacksDeleted: 4 })),
       listDue: vi.fn<(now: Date, limit: number) => Promise<string[]>>(
         async () => ['d1', 'd2'],
       ),
@@ -91,6 +97,7 @@ describe('processWebhookJob', () => {
       recovered: 1,
       cleared: 2,
       deleted: 3,
+      callbacksDeleted: 4,
       enqueued: 2,
     });
     expect(d.repo.recoverStuck).toHaveBeenCalledWith(now);
