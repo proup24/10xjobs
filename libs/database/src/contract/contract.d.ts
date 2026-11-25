@@ -24,7 +24,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'b5852fb88a982712de75cf95bee57f920a90aeb4f4c941188c17824f2f6ca558'>;
+  StorageHashBase<'721699fd795710dba11a1302672071c38fe5530517ed1022dee1bfbcfa2c9dea'>;
 export type ExecutionHash =
   ExecutionHashBase<'71a03ba0225916055a5855c4c4deaf607551051c05f9a67ec0aecfdefc43a862'>;
 export type ProfileHash =
@@ -297,14 +297,16 @@ type FieldTypeOverrides = {
             | 'LINKEDIN_JOB_BOARD_BEBITY'
             | 'LINKEDIN_POSTS'
             | 'GREEN_HOUSE'
-            | 'ASHBY';
+            | 'ASHBY'
+            | 'INDEED';
           readonly input:
             | 'LINKEDIN_JOB_BOARD'
             | 'LINKEDIN_JOB_BOARD_CHEAP'
             | 'LINKEDIN_JOB_BOARD_BEBITY'
             | 'LINKEDIN_POSTS'
             | 'GREEN_HOUSE'
-            | 'ASHBY';
+            | 'ASHBY'
+            | 'INDEED';
         };
       };
       readonly Contact: {
@@ -367,14 +369,16 @@ type FieldTypeOverrides = {
             | 'LINKEDIN_JOB_BOARD_BEBITY'
             | 'LINKEDIN_POSTS'
             | 'GREEN_HOUSE'
-            | 'ASHBY';
+            | 'ASHBY'
+            | 'INDEED';
           readonly input:
             | 'LINKEDIN_JOB_BOARD'
             | 'LINKEDIN_JOB_BOARD_CHEAP'
             | 'LINKEDIN_JOB_BOARD_BEBITY'
             | 'LINKEDIN_POSTS'
             | 'GREEN_HOUSE'
-            | 'ASHBY';
+            | 'ASHBY'
+            | 'INDEED';
         };
         readonly domain: {
           readonly output:
@@ -416,14 +420,16 @@ type FieldTypeOverrides = {
             | 'LINKEDIN_JOB_BOARD_BEBITY'
             | 'LINKEDIN_POSTS'
             | 'GREEN_HOUSE'
-            | 'ASHBY';
+            | 'ASHBY'
+            | 'INDEED';
           readonly input:
             | 'LINKEDIN_JOB_BOARD'
             | 'LINKEDIN_JOB_BOARD_CHEAP'
             | 'LINKEDIN_JOB_BOARD_BEBITY'
             | 'LINKEDIN_POSTS'
             | 'GREEN_HOUSE'
-            | 'ASHBY';
+            | 'ASHBY'
+            | 'INDEED';
         };
       };
       readonly SearchSegmentRun: {
@@ -434,14 +440,16 @@ type FieldTypeOverrides = {
             | 'LINKEDIN_JOB_BOARD_BEBITY'
             | 'LINKEDIN_POSTS'
             | 'GREEN_HOUSE'
-            | 'ASHBY';
+            | 'ASHBY'
+            | 'INDEED';
           readonly input:
             | 'LINKEDIN_JOB_BOARD'
             | 'LINKEDIN_JOB_BOARD_CHEAP'
             | 'LINKEDIN_JOB_BOARD_BEBITY'
             | 'LINKEDIN_POSTS'
             | 'GREEN_HOUSE'
-            | 'ASHBY';
+            | 'ASHBY'
+            | 'INDEED';
         };
       };
     };
@@ -471,14 +479,16 @@ type ColumnTypeOverrides = {
           | 'LINKEDIN_JOB_BOARD_BEBITY'
           | 'LINKEDIN_POSTS'
           | 'GREEN_HOUSE'
-          | 'ASHBY';
+          | 'ASHBY'
+          | 'INDEED';
         readonly input:
           | 'LINKEDIN_JOB_BOARD'
           | 'LINKEDIN_JOB_BOARD_CHEAP'
           | 'LINKEDIN_JOB_BOARD_BEBITY'
           | 'LINKEDIN_POSTS'
           | 'GREEN_HOUSE'
-          | 'ASHBY';
+          | 'ASHBY'
+          | 'INDEED';
       };
     };
     readonly contacts: {
@@ -527,14 +537,16 @@ type ColumnTypeOverrides = {
           | 'LINKEDIN_JOB_BOARD_BEBITY'
           | 'LINKEDIN_POSTS'
           | 'GREEN_HOUSE'
-          | 'ASHBY';
+          | 'ASHBY'
+          | 'INDEED';
         readonly input:
           | 'LINKEDIN_JOB_BOARD'
           | 'LINKEDIN_JOB_BOARD_CHEAP'
           | 'LINKEDIN_JOB_BOARD_BEBITY'
           | 'LINKEDIN_POSTS'
           | 'GREEN_HOUSE'
-          | 'ASHBY';
+          | 'ASHBY'
+          | 'INDEED';
       };
       readonly domain: {
         readonly output:
@@ -575,14 +587,16 @@ type ColumnTypeOverrides = {
           | 'LINKEDIN_JOB_BOARD_BEBITY'
           | 'LINKEDIN_POSTS'
           | 'GREEN_HOUSE'
-          | 'ASHBY';
+          | 'ASHBY'
+          | 'INDEED';
         readonly input:
           | 'LINKEDIN_JOB_BOARD'
           | 'LINKEDIN_JOB_BOARD_CHEAP'
           | 'LINKEDIN_JOB_BOARD_BEBITY'
           | 'LINKEDIN_POSTS'
           | 'GREEN_HOUSE'
-          | 'ASHBY';
+          | 'ASHBY'
+          | 'INDEED';
       };
     };
     readonly search_segment_runs: {
@@ -593,14 +607,16 @@ type ColumnTypeOverrides = {
           | 'LINKEDIN_JOB_BOARD_BEBITY'
           | 'LINKEDIN_POSTS'
           | 'GREEN_HOUSE'
-          | 'ASHBY';
+          | 'ASHBY'
+          | 'INDEED';
         readonly input:
           | 'LINKEDIN_JOB_BOARD'
           | 'LINKEDIN_JOB_BOARD_CHEAP'
           | 'LINKEDIN_JOB_BOARD_BEBITY'
           | 'LINKEDIN_POSTS'
           | 'GREEN_HOUSE'
-          | 'ASHBY';
+          | 'ASHBY'
+          | 'INDEED';
       };
     };
   };
@@ -760,6 +776,13 @@ export namespace Models {
     job: public_NormalizedJob;
     user: public_User;
     readonly [RelationKeys]?: 'extraction' | 'job' | 'user';
+  };
+  export type public_IndeedMarket = {
+    countryCode: FieldOutputTypes['public']['IndeedMarket']['countryCode'];
+    mainRemote: FieldOutputTypes['public']['IndeedMarket']['mainRemote'];
+    remoteLocation: FieldOutputTypes['public']['IndeedMarket']['remoteLocation'];
+    site: FieldOutputTypes['public']['IndeedMarket']['site'];
+    readonly [RelationKeys]?: never;
   };
   export type public_IsoCurrency = {
     code: FieldOutputTypes['public']['IsoCurrency']['code'];
@@ -1391,6 +1414,7 @@ export declare const models: {
     EngagementTerm: Models.public_EngagementTerm;
     ExchangeRate: Models.public_ExchangeRate;
     FactReport: Models.public_FactReport;
+    IndeedMarket: Models.public_IndeedMarket;
     IsoCurrency: Models.public_IsoCurrency;
     IsoLanguage: Models.public_IsoLanguage;
     JobDecision: Models.public_JobDecision;
@@ -2280,6 +2304,46 @@ type ContractBase = Omit<
                   };
                 },
               ];
+            };
+            readonly indeed_markets: {
+              columns: {
+                readonly countryCode: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly mainRemote: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
+                readonly remoteLocation: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'Remote'>;
+                  };
+                  readonly many: false;
+                };
+                readonly site: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['site'] };
+              uniques: readonly [{ readonly columns: readonly ['countryCode'] }];
+              indexes: readonly [];
+              foreignKeys: readonly [];
             };
             readonly iso_currencies: {
               columns: {
@@ -6313,6 +6377,7 @@ type ContractBase = Omit<
                 'LINKEDIN_POSTS',
                 'GREEN_HOUSE',
                 'ASHBY',
+                'INDEED',
               ];
             };
             readonly ContactKind: {
@@ -6404,6 +6469,10 @@ type ContractBase = Omit<
     readonly fact_reports: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'FactReport';
+    };
+    readonly indeed_markets: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'IndeedMarket';
     };
     readonly iso_currencies: {
       readonly namespace: 'public' & NamespaceId;
@@ -7342,6 +7411,37 @@ type ContractBase = Omit<
                 readonly proposedValue: { readonly column: 'proposedValue' };
                 readonly quote: { readonly column: 'quote' };
                 readonly userId: { readonly column: 'userId' };
+              };
+            };
+          };
+          readonly IndeedMarket: {
+            readonly fields: {
+              readonly countryCode: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly mainRemote: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly remoteLocation: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly site: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'indeed_markets';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly countryCode: { readonly column: 'countryCode' };
+                readonly mainRemote: { readonly column: 'mainRemote' };
+                readonly remoteLocation: { readonly column: 'remoteLocation' };
+                readonly site: { readonly column: 'site' };
               };
             };
           };
@@ -11060,6 +11160,7 @@ type ContractBase = Omit<
               { readonly name: 'LINKEDIN_POSTS'; readonly value: 'LINKEDIN_POSTS' },
               { readonly name: 'GREEN_HOUSE'; readonly value: 'GREEN_HOUSE' },
               { readonly name: 'ASHBY'; readonly value: 'ASHBY' },
+              { readonly name: 'INDEED'; readonly value: 'INDEED' },
             ];
           };
           readonly ContactKind: {
@@ -11139,6 +11240,7 @@ type ContractBase = Omit<
             { readonly name: 'LINKEDIN_POSTS'; readonly value: 'LINKEDIN_POSTS' },
             { readonly name: 'GREEN_HOUSE'; readonly value: 'GREEN_HOUSE' },
             { readonly name: 'ASHBY'; readonly value: 'ASHBY' },
+            { readonly name: 'INDEED'; readonly value: 'INDEED' },
           ];
           readonly ContactKind: readonly [
             { readonly name: 'phone'; readonly value: 'phone' },

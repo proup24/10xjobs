@@ -1,5 +1,5 @@
 {
-  "hash": "b5852fb88a982712de75cf95bee57f920a90aeb4f4c941188c17824f2f6ca558",
+  "hash": "721699fd795710dba11a1302672071c38fe5530517ed1022dee1bfbcfa2c9dea",
   "invariants": [
     "end-expired-sessions",
     "code-check-fixes",
@@ -32,6 +32,7 @@
     "set-profile-resume-no-key-lock",
     "profile-match-version-resumes",
     "searches-resumed-backfill",
-    "profile-switches-no-bump"
+    "profile-switches-no-bump",
+    "indeed-markets-seed"
   ]
 }

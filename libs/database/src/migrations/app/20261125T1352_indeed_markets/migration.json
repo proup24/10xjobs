@@ -1,0 +1,9 @@
+{
+  "from": "b5852fb88a982712de75cf95bee57f920a90aeb4f4c941188c17824f2f6ca558",
+  "to": "721699fd795710dba11a1302672071c38fe5530517ed1022dee1bfbcfa2c9dea",
+  "providedInvariants": [
+    "indeed-markets-seed"
+  ],
+  "createdAt": "2026-11-25T13:52:50.221Z",
+  "migrationHash": "7f66721294e5d25a98c2845d7e229bac021d1c8e9001e480af6cb963431ba06f"
+}
