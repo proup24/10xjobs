@@ -11,7 +11,7 @@ const TIMESTAMP = 'pg/timestamptz-date@1';
 export interface SearchesState {
   /** Paused, and at least one of their builders is paused (any channel). */
   paused: boolean;
-  /** The latest of every activity signals over all time; null when none. */
+  /** The latest of every activity signal over all time; null when none. */
   lastActiveAt: Date | null;
 }
 

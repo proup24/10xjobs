@@ -114,3 +114,12 @@ What this means per channel today:
 - Exact names of the endpoint, setting, columns and log lines.
 - Whether runnable filtering lives in `listActive` or a new repository method, and whether the cursor reset happens in the same statement.
 - Tests: the A/B example as a planner scenario; an empty or fully decided list never pausing; a match waiting 23h vs 25h; each signal's edges (exactly 24h, a failed delivery, a test delivery, an `expired` decision); a shared builder with one active and one paused owner; a returning builder's window; the notice and Resume in the web app.
+
+## Amendment (2026-11-25)
+
+Two more signals count as activity, as part 1 of the [activity signals spec](2026-11-24-activity-signals-design.md):
+
+- A job view: `job_views."viewedAt"`, the first time the user opens a job's post or apply link. Repeat views write nothing and do not count. Opening the detail panel does not count.
+- A review choice: `match_reviews."createdAt"`, when the user picks qualified or rejected on a review.
+
+Both are read by `pausedUsersCte` with the same 24-hour window as the other signals. Part 2 of that spec changes the webhook signal and is not covered here.

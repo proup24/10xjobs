@@ -22,6 +22,14 @@ Paused searches (PRs 123 and 124, spec `docs/superpowers/specs/2026-11-23-paused
 1. **Count viewing jobs as activity.** Add `job_views."viewedAt"` in `(t − 24h, t]` as a fifth signal in `pausedUsersCte`. `job_views` is written by `markViewed` in the web app when the user opens a job's post or apply link from the match detail. It keeps the first view only (`ignoreDuplicates`), so a repeat view of the same job writes nothing; viewing a new job does.
 2. **Count a webhook only with feedback from the receiver.** A delivered webhook (2xx) would no longer count by itself. Activity would come from the receiver reporting back what the user did with the job (applied, dismissed). This reverses a non-goal in the paused-searches spec ("A receiver calling back into 10xjobs to report applications", with delivery success chosen as the middle ground) _(owner, 2026-11-24)_. It needs a callback endpoint authenticated with the webhook's secret, a payload format in `docs/webhooks.md`, and a mapping from the callback to `job_decisions` or a new signal.
 
+3. **The owner's answers to the open questions below** _(2026-11-25, see the [spec](../../superpowers/specs/2026-11-24-activity-signals-design.md) and the [plan](../../superpowers/plans/2026-11-25-activity-signals.md))_:
+   - The detail panel does not count. Only clicking out to the post or apply link writes `job_views`.
+   - Only the first view of each job is kept.
+   - Review choices count (`match_reviews."createdAt"`).
+   - A callback writes a decision (`job_decisions`, `source = 'webhook'`) when it reports what the user did with a job.
+   - There is no notice outside the app: no event, no email.
+   - Webhook users get no longer window: a receiver that never calls back pauses its user after 24 hours.
+
 ## Open questions
 
 - Should opening a match's detail panel also count? Today it writes nothing; only clicking out to the post or apply link writes `job_views`. Counting it needs a new record from the web app.
