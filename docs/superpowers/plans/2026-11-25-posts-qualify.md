@@ -17,7 +17,7 @@
 - Contract changes only in `libs/database/src/contract/contract.prisma` (RLS included). Each migration: advance `libs/database/src/migrations/app/refs/db.json` to the new hash, re-add every earlier invariant (the ref rewrite drops them), and run `pnpm db:types` (CI diffs `database.types.ts`).
 - A listing's decision keeps exactly its ten checks, in today's order. Role decisions have thirteen: the ten, then `hiringVerdict`, `blockedAuthor`, `postAge`.
 - `POST_MAX_AGE_DAYS = 30`.
-- `MATCHER_VERSION`: 11 → 12 in Task 4, 12 → 13 in Task 7.
+- `MATCHER_VERSION`: 12 → 13 in Task 4, 13 → 14 in Task 7.
 - Reasons, verbatim: `you blocked <name>` (fall back to the author key when the name is empty); `posted <n> days ago`; `the post's hiring verdict is unsure`; `the post is hiring`; `the post's date is unknown`; `lead-level <roleKind> counts for tech_lead`.
 - Engine Vitest runs with `CI=1` (watch mode hangs otherwise): `CI=1 npx vitest run --config apps/xjobs/vitest.config.mts <path>`.
 - Postgres specs need `PROCESSOR_TEST_DATABASE_URL` (the `processor_test` DB). They skip without it, and a skipped spec doesn't count as passing: run them.
@@ -112,7 +112,7 @@
 - Produces in `post.ts`:
   - `checkHiringVerdict(post: PostContext): Check`. Unsure gives `fail` with `restsOn('verdict')` and the reason `the post's hiring verdict is unsure`. Sure gives `pass` with `the post is hiring`.
   - `checkBlockedAuthor(post: PostContext, blocked: string[]): Check`. A blocked key gives a sure `fail` with `you blocked <name>` (`jobValue` = the matched keys). Otherwise `pass` with `no author you blocked`.
-  - `checkPostAge(post: PostContext): Check`. `null` gives `unknown` with `the post's date is unknown`. More than `POST_MAX_AGE_DAYS` gives a sure `fail` with `posted <n> days ago` (n = `Math.floor(ageDays)`). Otherwise `pass` with `posted <n> days ago`.
+  - `checkPostAge(post: PostContext): Check`. `null` gives `unknown` with `the post's date is unknown`. A raw age above `POST_MAX_AGE_DAYS` gives a sure `fail` with `posted <n> days ago` (n = `Math.floor(ageDays)`, only for the reason; a negative age counts as 0). Otherwise `pass` with `posted <n> days ago`.
 - Produces in `matcher.config.ts`: `export const POST_MAX_AGE_DAYS = 30`.
 - Produces in `decide.ts`: when `job.post !== null`, the three checks are appended after `workAuthorization`. Update the `checks` doc comment to "ten checks for a listing, thirteen for a post role".
 - Produces in `checks.ts`: `RULE_LABELS` gains `hiringVerdict: 'Hiring post'`, `blockedAuthor: 'Blocked author'`, `postAge: 'Post age'`.
@@ -123,7 +123,7 @@
     - `sure verdict passes`.
     - `a blocked sharer blocks the post`: authors `[{key:'profile:orig'},{key:'profile:sharer',name:'Sam'}]`, blocked `['profile:sharer']`, so a sure `fail` with reason `you blocked Sam`.
     - `empty name falls back to the key`.
-    - `age 30.9 passes, 31 fails with "posted 31 days ago"`.
+    - `age 30.0 passes, 30.01 fails with "posted 30 days ago"` (the raw age is compared; `Math.floor` is only for the reason), a negative age counts as 0, and an empty author list passes.
     - `null age is unknown`.
   - `decide.spec.ts`:
     - `a listing keeps ten checks`: `post: null` gives `checks.length === 10`.
@@ -142,7 +142,7 @@
 
 **Files:**
 
-- Modify: `apps/xjobs/src/modules/matcher/repositories/matcher.repository.ts`, `testing/memory-matcher.repository.ts`, `services/matcher.service.ts`, `config/matcher.config.ts` (`MATCHER_VERSION = 12`)
+- Modify: `apps/xjobs/src/modules/matcher/repositories/matcher.repository.ts`, `testing/memory-matcher.repository.ts`, `services/matcher.service.ts`, `config/matcher.config.ts` (`MATCHER_VERSION = 13`)
 - Modify: `apps/xjobs/src/scripts/match-shares.ts` (split by job kind)
 - Modify: `apps/xjobs/src/modules/matcher/README.md` (Matchable jobs, Rules, Flow step 3, the new checks, `blocked_authors`)
 - Test: `repositories/matcher.postgres.spec.ts`, `services/matcher.service.spec.ts`
@@ -157,7 +157,7 @@
   - `postedAt` from the role job.
 - Produces: `MatcherService.matchJob` builds `job.post` with `ageDays = (this.now() - postedAt) / 86_400_000` (null when `postedAt` is null). For a role job it keeps only the profiles with `postSearch`.
 - Produces: `listPublishedProfiles` fills `postSearch` and `blockedAuthors` (one query over `blocked_authors` for the batch's users).
-- Produces: `STALE_ROW` and the `onlyStaleFor` query count a profile for a `post_role` job only when `p."postSearch"`. A role row is also stale when `j.kind = 'post_role' AND j."postedAt" + make_interval(days => POST_MAX_AGE_DAYS) <= now() AND m."updatedAt" < j."postedAt" + make_interval(days => POST_MAX_AGE_DAYS)`.
+- Produces: `STALE_ROW` and the `onlyStaleFor` query count a profile for a `post_role` job only when `p."postSearch"`. A role row is also stale when `j.kind = 'post_role' AND j."postedAt" + make_interval(days => POST_MAX_AGE_DAYS) <= now() AND m."updatedAt" < j."postedAt" + make_interval(days => POST_MAX_AGE_DAYS, mins => POST_AGE_STALE_MARGIN_MINUTES)` (the margin covers a row decided on the engine clock just before the mark and written just after it; a row written after mark + margin is current).
 - Produces: `deleteInactive()` also deletes rows whose job has `processingStatus = 'archived'`, and rows of `post_role` jobs whose profile has `postSearch = false`. It returns the total.
 - Produces: `db:match-shares` prints its tables once per job kind (`job`, `post_role`).
 
@@ -255,7 +255,7 @@
 
 **Files:**
 
-- Modify: `apps/xjobs/src/modules/matcher/rules/position.ts`, `config/matcher.config.ts` (`MATCHER_VERSION = 13`), `README.md` (Position table)
+- Modify: `apps/xjobs/src/modules/matcher/rules/position.ts`, `config/matcher.config.ts` (`MATCHER_VERSION = 14`), `README.md` (Position table)
 - Test: `apps/xjobs/src/modules/matcher/rules/position.spec.ts`, `rules/decide.spec.ts`
 
 **Interfaces:**
