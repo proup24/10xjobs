@@ -13,12 +13,12 @@ const TEXT = 'pg/text@1';
  *
  * A user is paused when a match has waited in their Matches list at least
  * `hours` (a qualified match of a published profile, on an active, open job
- * seen in the last 7 days, with no decision, decided at or before `at − hours`; the
- * list of `match_details` and the web page) and none of the six activity
- * signals falls in `(at − hours, at]`: a decision of any status, a job view, a
- * review choice, a delivered match webhook, a resume, or a published profile's
- * `publishedAt`. A waiting
- * match implies a published profile.
+ * seen in the last 7 days, with no decision, decided at or before
+ * `at − hours`; the list of `match_details` and the web page) and none of the
+ * six activity signals falls in `(at − hours, at]`: a decision of any status,
+ * a job view, a review choice, a delivered match webhook, a resume, or a
+ * published profile's `publishedAt`. A waiting match implies a published
+ * profile.
  */
 export function pausedUsersCte(raw: Raw, at: Date, hours: number): Cte {
   const t = at.toISOString();

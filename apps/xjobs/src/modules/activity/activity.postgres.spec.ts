@@ -381,7 +381,8 @@ describe.skipIf(!url)('activity in PostgreSQL', () => {
 
     it('a job view', async () => {
       const u = await waitingUser(25);
-      await seedView(u.userId, (await seedJob()).jobId, hoursBefore(1));
+      // The viewed job is the matched one: RLS only lets a user view a job they have a match for.
+      await seedView(u.userId, u.job.jobId, hoursBefore(1));
       expect(await paused()).toEqual([]);
     });
 

@@ -1,7 +1,7 @@
 # Activity signals for paused searches
 
 Date: 2026-11-24
-Status: draft, awaiting approval (builder check done)
+Status: approved (2026-11-25)
 Roadmap: [phase 3 slice 12](../../roadmap/phase-3-find-quality/12-activity-signals.md)
 Builds on: [paused searches](2026-11-23-paused-searches-design.md) (PRs 123, 124)
 

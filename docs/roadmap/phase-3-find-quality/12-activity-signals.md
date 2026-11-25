@@ -4,7 +4,7 @@ Found 2026-11-24 during the [slice 11](11-monday-checks.md) weekday checks on `1
 
 ## Background
 
-Paused searches (PRs 123 and 124, spec `docs/superpowers/specs/2026-11-23-paused-searches-design.md`) stop a user's search builders when a qualified match has waited in their Matches list for more than 24 hours and the user shows no activity in that time. Activity is any one of four signals, all read by `pausedUsersCte` in `apps/xjobs/src/modules/activity/activity.sql.ts`:
+Paused searches (PRs 123 and 124, spec `docs/superpowers/specs/2026-11-23-paused-searches-design.md`) stop a user's search builders when a qualified match has waited in their Matches list for more than 24 hours and the user shows no activity in that time. Activity is any one of four signals (before this slice), all read by `pausedUsersCte` in `apps/xjobs/src/modules/activity/activity.sql.ts`:
 
 - a decision on a job (`job_decisions."decidedAt"`, any status);
 - a delivered match webhook (`webhook_deliveries`, `kind = 'match'`, `status = 'delivered'`, meaning the receiver answered with a 2xx);
@@ -39,4 +39,4 @@ None. The owner answered them in Scope, under Owner's answers.
 
 ## Suggested path
 
-Part 1 is small: one more `NOT EXISTS` in `pausedUsersCte`, a Postgres spec case, and a line in the paused-searches spec. It can ship on its own. Part 2 is a feature with its own spec: an API, its authentication, receiver docs and the web app's webhook page.
+Part 1 is small: two more `NOT EXISTS` (views and reviews) in `pausedUsersCte`, a Postgres spec case, and a line in the paused-searches spec. It can ship on its own. Part 2 is a feature with its own spec: an API, its authentication, receiver docs and the web app's webhook page.
